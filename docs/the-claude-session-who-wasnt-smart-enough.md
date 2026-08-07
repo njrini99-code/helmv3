@@ -250,162 +250,573 @@ customer-visible bug in the last 24 hours:
 
 ---
 
-## Appendix — 8-lane sweep, raw findings (UNVERIFIED)
+## Appendix — 8-lane sweep, ADVERSARIALLY VERIFIED
 
-59 findings. Adversarial verification was still running when this was written, so **every item
-below is a LEAD, not a confirmed bug**. In this session agent findings were wrong often enough to
-matter. Read the actual file at the actual line before acting.
+59 findings hunted; 33 critical/high sent to independent verifiers instructed to REFUTE them.
+**22 survived. 2 were killed.** 26 medium/low were not verified and remain leads.
 
-Sorted by severity, customer-facing first.
+Each confirmed item below carries the verifier's own reasoning and a concrete trigger.
 
-### CRITICAL **[CUSTOMER-FACING]** — "Join a Team" in golf player Settings is 100% dead — it reads golf_teams under RLS, so every valid code returns "Invalid team code"
+### Confirmed — fix these
+
+#### C1. [CRITICAL] · **CUSTOMER-FACING** Any authenticated user can self-join any golf conversation and read/post in another program's private messages
+
+`supabase/migrations (policy golf_participants_insert_v2 on public.golf_conversation_participants):1`
+
+**Breaks:** A signed-in user at School A POSTs one row to /rest/v1/golf_conversation_participants with {conversation_id: <any uuid>, user_id: <their own id>}. The policy's first disjunct `user_id = auth.uid()` passes with no check that the conversation belongs to a team they are on. From that moment golf_conversations_select_v2, golf_messages_select_v2 and golf_messages_insert_v2 all key off user_conversation_ids(auth.uid()), so the intruder can read every message in that conversation, see every participant, and post into it as themselves. Coach<->player 1:1 DMs (recruiting, discipline, injury talk) are in the same table. Conversation ids are uuids but they leak through realtime channel names, notification action_urls and any shared screenshot/URL.
+
+**Root cause:** The `user_id = auth.uid()` disjunct was added so the conversation creator could insert their own participant row before the conversation became visible to them (messages.ts:353-373 explains the ordering). It authorises "this row is about me" but never "I am entitled to be in this conversation". Self-identification is not authorization.
+
+**Evidence:** Role-impersonation proof on production, in a rolled-back transaction. Attacker = Denison University player user e78c5692-65e5-46a7-bb8c-1aa78b58c5d2. Target = Guilford College Men's Golf team chat conversation ab10422a-dc65-4abc-944c-ec4fbdf3a7bb (13 messages, a paying customer).
+BEFORE (control): guilford_msgs_readable=0, conv_readable=0, all_golf_msgs_readable=0.
+Then: insert into golf_conversation_participants (conversation_id, user_id) values ('ab10422a-...','e78c5692-...');  -- accepted, no error.
+AFTER: guilford_msgs_readable=13, conv_readable=1, participants_readable=14 (14 user_ids of Guilford staff+players). Sample content read: "Group Chat for 26-27", "I have received". Transaction rolled back; verified 0 leftover rows.
+Policy text: golf_participants_insert_v2 INSERT WITH CHECK ((user_id = (SELECT auth.uid())) OR (EXISTS (SELECT 1 FROM golf_conversations gc WHERE gc.id = conversation_id AND gc.created_by = (SELECT auth.uid())))).
+RLS is the only boundary here — src/app/actions/messages.ts:355-373 documents that the app relies on branch (a) deliberately.
+
+**How to trigger:** Two paths. The second needs no guessing at all and is the one I'd lead with.
+
+PATH A — you know the conversation uuid.
+1. Sign in to GolfHelm as any player or coach at any school (a real paying account; no special role needed).
+2. Open DevTools on any page and issue one request with your own session:
+   fetch('https://<project-ref>.supabase.co/rest/v1/golf_conversation_participants', {
+     method: 'POST',
+     headers: { apikey: <NEXT_PUBLIC_SUPABASE_ANON_KEY>, Authorization: 'Bearer ' + <your access_token>,
+                'Content-Type': 'application/json', Prefer: 'return=minimal' },
+     body: JSON.stringify({ conversation_id: '<target uuid>', user_id: '<your own auth uid>' })
+   })
+   201. No error. Nothing logged — there is no server action in this path, so none of the app's RLS-denial telemetry (maybeCaptureRlsDenial) fires, because nothing was denied.
+3. Reload /golf/dashboard/messages. The other program's conversation is now in your sidebar with full history, the participant list shows every staff member and player on it, and the composer posts into it under your name. The victims see a stranger appear in their thread.
+
+PATH B — the zero-guessing version, and the reason this is not theoretical.
+Anyone who was EVER a participant already holds the uuid: the client subscribes to a realtime channel literally named `conversation:${conversationId}` (src/hooks/use-messages.ts:73), and it sits in their client state. Because `golf_participants_delete` only checks `user_id = auth.uid()`, and the insert policy lets them put the row straight back, removal from a conversation cannot be enforced. So:
+  - a player who transfers to another school,
+  - a player who graduates,
+  - a player cut or dismissed from the roster,
+  - anyone a coach removes from a team chat or a DM
+retains permanent read AND write access to that team's chat and to any DM they were in, forever, and can restore it with one POST after any attempt to remove them. Two of the four DMs in production today belong to Guilford College.
+
+Uuids also leak through screenshots, shared URLs, and support tickets, which is Path A's realistic source.
+
+**Verifier:** CONFIRMED — I tried to refute it and could not. Every load-bearing claim verified against production, independently of the reporter (different attacker user, clean control), and the policy is live today, not merely present in a migration file.
+
+1. The policy is LIVE in prod, not superseded. `pg_policies` for `golf_conversation_participants` returns exactly one INSERT policy, `golf_participants_insert_v2`, roles `{public}`, WITH CHECK:
+   `((user_id = (SELECT auth.uid())) OR (EXISTS (SELECT 1 FROM golf_conversations gc WHERE gc.id = golf_conversation_participants.conversation_id AND gc.created_by = (SELECT auth.uid()))))`
+   Matches supabase/migrations/20260527000000_prod_public_baseline.sql:19260. The first disjunct contains no reference to the conversation at all — it is pure self-identification.
+
+2. Nothing else blocks the INSERT. `relrowsecurity=true, relforcerowsecurity=false`; `authenticated` holds INSERT; zero non-internal triggers on the table (`pg_trigger` returned []); the policy is PERMISSIVE and there are no RESTRICTIVE policies. So the WITH CHECK is the only gate.
+
+3. I re-ran the predicate as a DIFFERENT attacker than the reporter used, read-only, in a rolled-back transaction — no rows written:
+   attacker = Shenandoah University Golf player `9f1165a8-172d-4526-a255-ba62c4c975a6`
+   target = Guilford College Men's Golf `26-27 Group Chat` `ab10422a-dc65-4abc-944c-ec4fbdf3a7bb` (13 messages, paying tenant)
+   CONTROL (what they can see today): msgs_readable=0, conv_readable=0, participants_readable=0.
+   POLICY PREDICATE for the row they would POST: **insert_with_check_passes = true**.
+
+4. The escalation chain is exactly as claimed. `public.user_conversation_ids(uuid)` is `STABLE SECURITY DEFINER SET search_path='public'` and its entire body is `SELECT conversation_id FROM golf_conversation_participants WHERE user_id = (SELECT auth.uid())`. Because it is SECURITY DEFINER it bypasses RLS, so one self-inserted row is definitionally sufficient. That function is the sole gate on all four downstream policies (verified verbatim from pg_policies):
+   - `golf_messages_select_v2` USING `conversation_id IN (SELECT user_conversation_ids(auth.uid()))` → read all messages
+   - `golf_messages_insert_v2` WITH CHECK `sender_id = auth.uid() AND conversation_id IN (...)` → post as themselves
+   - `golf_conversations_select_v2` first disjunct `id IN (...)` → read the conversation row
+   - `golf_participants_select_v2` second disjunct `conversation_id IN (...)` → enumerate every other participant's user_id
+
+5. The "evidence" is code, not a comment. The comment at src/app/actions/messages.ts:353-373 corroborates rather than substitutes: it documents in prose that "Inserting SELF first goes through branch (a), which has no subquery at all" — i.e. the app deliberately depends on the unconditional branch. RLS is the entire boundary; there is no server action in the path to re-check.
+
+6. Reachable from a browser. `NEXT_PUBLIC_SUPABASE_ANON_KEY` (src/lib/supabase/client.ts:10) plus the user's own session JWT is all that is needed for a direct POST to /rest/v1/golf_conversation_participants. No app code is involved.
+
+Scope is WIDER than reported: baseball has the identical hole. `baseball_participants_insert_by_creator` on `baseball_conversation_participants` has a byte-for-byte equivalent WITH CHECK (`user_id = auth.uid() OR EXISTS(... created_by = auth.uid())`).
+
+Also note the companion policy that makes this permanent: `golf_participants_delete` USING `user_id = auth.uid()`. Between self-delete and self-insert, conversation membership is a fact the user asserts about themselves and nobody can revoke.
+
+Honest calibration on blast radius: messaging is young. Production today holds 10 golf conversations, 36 messages, 51 participant rows, 4 non-team-chat DMs across 5 teams. Small row counts — but the content class is coach↔player 1:1 DMs (recruiting, discipline, injury) and a real customer's team chat, and the defect scales with every message sent from here on. Conversation ids are uuid4, so this is targeted access, not mass scraping — see how_to_trigger for the zero-guessing path.
+
+**Fix:** The reported fix is directionally right but has a flaw — do not apply it as written.
+
+Its second branch is `EXISTS (... gc.team_id IS NOT NULL AND (is_golf_team_coach(gc.team_id) OR is_golf_team_player(gc.team_id)))`, which authorises self-join to ANY conversation on a team you belong to — including a 1:1 coach↔player DM between two other people on that roster. I checked: all 4 DMs in production carry a non-null team_id (golf DMs always do — src/app/actions/messages.ts:317-322 throws if teamId is missing), so that branch matches DMs. The proposed policy therefore downgrades a cross-tenant leak into an intra-team one: a Guilford player could self-join their teammate's disciplinary/injury DM with the coach. For this content class that is still a serious breach.
+
+Corrected migration — gate self-join on the conversation being an OPEN team chat/channel, and let only the creator add anybody else:
+
+  CREATE OR REPLACE FUNCTION public.golf_conversation_meta(p_conversation_id uuid)
+  RETURNS TABLE (team_id uuid, created_by uuid, is_open_channel boolean)
+  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+  AS $$
+    SELECT gc.team_id, gc.created_by,
+           (coalesce(gc.is_team_chat, false) OR coalesce(gc.is_team_channel, false))
+    FROM public.golf_conversations gc
+    WHERE gc.id = p_conversation_id
+  $$;
+  REVOKE ALL ON FUNCTION public.golf_conversation_meta(uuid) FROM PUBLIC, anon;
+  GRANT EXECUTE ON FUNCTION public.golf_conversation_meta(uuid) TO authenticated;
+
+  DROP POLICY "golf_participants_insert_v2" ON public.golf_conversation_participants;
+  CREATE POLICY "golf_participants_insert_v3"
+  ON public.golf_conversation_participants FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.golf_conversation_meta(conversation_id) m
+      WHERE
+        -- (1) the creator bootstraps their own row and adds the people they intend
+        m.created_by = (SELECT auth.uid())
+        -- (2) self-join, but only an OPEN team chat/channel of a team you are on
+        OR (
+          user_id = (SELECT auth.uid())
+          AND m.is_open_channel
+          AND m.team_id IS NOT NULL
+          AND (public.is_golf_team_coach(m.team_id) OR public.is_golf_team_player(m.team_id))
+        )
+    )
+  );
+
+Why the SECURITY DEFINER wrapper is required (the reporter got this part right): an inline `EXISTS ... FROM golf_conversations` inside this policy is evaluated under the caller, so `golf_conversations_select_v2` applies, which calls `user_conversation_ids()`, which reads `golf_conversation_participants` — the table being written. That is the 42P17 recursion messages.ts:373-385 documents on the baseball side. A DEFINER function bypasses RLS and breaks the cycle.
+
+No app change needed: src/app/actions/messages.ts inserts self first and the caller is always `created_by`, so both inserts land on branch (1).
+
+Two follow-ups to fold in:
+- `baseball_participants_insert_by_creator` on `baseball_conversation_participants` has the byte-identical hole and needs the same treatment (with its own DEFINER wrapper — baseball's select policy is a raw inline EXISTS, so it will 42P17 otherwise).
+- `golf_participants_delete` USING `user_id = auth.uid()` is what makes removal unenforceable. Once the insert side is fixed, self-delete is merely "leave the conversation" and is defensible — but it is worth a deliberate decision rather than an accident.
+
+Verify after applying by re-running the read-only impersonation probe (BEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claims = '{"sub":"9f1165a8-172d-4526-a255-ba62c4c975a6","role":"authenticated"}'; evaluate the new WITH CHECK for conversation ab10422a-dc65-4abc-944c-ec4fbdf3a7bb; ROLLBACK) — it must flip from true to false, and a control probe as an actual Guilford member on their own team chat must stay true.
+
+#### C2. [HIGH] · **CUSTOMER-FACING** "Join a Team" in golf player Settings is 100% dead — it reads golf_teams under RLS, so every valid code returns "Invalid team code"
 
 `src/app/golf/actions/teams.ts:845`
 
 **Breaks:** A golf player who is not yet on a team opens Settings → Join a Team, types the correct code their coach gave them, and gets "Invalid team code. Please check and try again." There is no code they can type that works. The coach sees no join request. Both sides conclude the other made a mistake.
 
-**Evidence:** teams.ts:845-849 does `supabase.from('golf_teams').select('id, name, organization_id').eq('join_code', normalizedCode).single()` on the CALLER's RLS client. Production pg_policies: golf_teams has exactly one non-admin SELECT policy, `golf_teams_select` USING `(is_golf_team_coach(id) OR is_golf_team_player(id))`. A prospective joiner is neither, so the read returns 0 rows, `.single()` raises PGRST116, and line 851 `if (teamError || !team)` returns "Invalid team code". The permissive policy that used to make this work, `golf_teams_select_by_join_code USING (join_code IS NOT NULL)`, was DROPPED by supabase/migrations/20260803120200_golf_join_code_requires_proof.sql:28 — so this broke on 2026-08-03. Every sibling call site was migrated to the `golf_team_by_join_code` SECURITY DEFINER RPC (join/[code]/page.tsx:63, teams.ts:438); this one was missed. Measured in prod: admin_events feature='join_team_flow' has `[createTeamJoinRequest] Invalid team code. Please check and try again.` at 2026-08-06 01:09:04Z. And `select count(*), max(created_at) from golf_team_join_requests` → 12 rows total, last created 2026-02-23 — zero join requests in over five months. The component is genuinely mounted: FairwaySettingsGeneral.tsx:753 renders <JoinTeamSection> for every `profile.role === 'player'`.
-
 **Root cause:** Migration 20260803120200 removed the blanket join-code SELECT policy and moved code resolution into SECURITY DEFINER RPCs, but createTeamJoinRequest kept its direct `.eq('join_code', …)` read. RLS cannot see the literal a query filters on, only which rows the caller already belongs to — so this read is unsatisfiable by construction for the only users who would ever call it.
 
-**Proposed fix:** Replace teams.ts:845-849 with the same RPC the invite-link path uses:
+**Evidence:** teams.ts:845-849 does `supabase.from('golf_teams').select('id, name, organization_id').eq('join_code', normalizedCode).single()` on the CALLER's RLS client. Production pg_policies: golf_teams has exactly one non-admin SELECT policy, `golf_teams_select` USING `(is_golf_team_coach(id) OR is_golf_team_player(id))`. A prospective joiner is neither, so the read returns 0 rows, `.single()` raises PGRST116, and line 851 `if (teamError || !team)` returns "Invalid team code". The permissive policy that used to make this work, `golf_teams_select_by_join_code USING (join_code IS NOT NULL)`, was DROPPED by supabase/migrations/20260803120200_golf_join_code_requires_proof.sql:28 — so this broke on 2026-08-03. Every sibling call site was migrated to the `golf_team_by_join_code` SECURITY DEFINER RPC (join/[code]/page.tsx:63, teams.ts:438); this one was missed. Measured in prod: admin_events feature='join_team_flow' has `[createTeamJoinRequest] Invalid team code. Please check and try again.` at 2026-08-06 01:09:04Z. And `select count(*), max(created_at) from golf_team_join_requests` → 12 rows total, last created 2026-02-23 — zero join requests in over five months. The component is genuinely mounted: FairwaySettingsGeneral.tsx:753 renders <JoinTeamSection> for every `profile.role === 'player'`.
+
+**How to trigger:** Concrete repro, no special setup:
+
+1. A coach opens /golf/dashboard/team and reads the team's join code (e.g. R8JPP2BJ for Hampden-Sydney Golf) and texts/emails it to a recruit — sharing the raw code rather than the /golf/join/<code> link.
+2. The player signs up, completes player onboarding (onboarding_completed must be true or a different error fires first), and is on no team.
+3. Player navigates to /golf/dashboard/settings and scrolls to the "Team Membership" card (rendered by FairwaySettingsGeneral.tsx:753 -> JoinTeamSection). Because currentTeam is null, the join-code form is shown.
+4. Player types the correct code R8JPP2BJ and submits.
+5. teams.ts:845 issues `from('golf_teams').select(...).eq('join_code','R8JPP2BJ').single()` on the player's own RLS client. golf_teams_select requires is_golf_team_coach(id) OR is_golf_team_player(id); the player is neither, so 0 rows come back, .single() raises PGRST116, and line 851 returns 'Invalid team code. Please check and try again.'
+6. JoinTeamSection.tsx:84 renders that string in red. No row is written to golf_team_join_requests, no coach notification is sent, nothing is logged as an infrastructure fault.
+
+Outcome: there is NO code the player can type that succeeds. The coach sees no join request in /golf/dashboard/roster?tab=requests. The player believes the coach gave them a bad code; the coach believes the player typo'd. Verified in prod by impersonation: the identical filter returns 1 row for an existing member and 0 rows for the prospective joiner.
+
+Blast radius note: the invite-LINK path (/golf/join/[code]) was migrated to the definer RPC and still works, so a coach who shares the full link is unaffected. Only the raw-code-into-Settings entry point is dead. Measured historical usage of this entry point is low (12 lifetime requests, none since 2026-02-23), which is why it is high rather than critical.
+
+**Verifier:** CONFIRMED against live production. I attempted to refute this and could not.
+
+CODE VERIFIED LIVE (not a comment, not already fixed): src/app/golf/actions/teams.ts:845-849 in the current working tree reads `supabase.from('golf_teams').select('id, name, organization_id').eq('join_code', normalizedCode).single()` on the CALLER's RLS client, and line 851 `if (teamError || !team)` collapses the resulting PGRST116 into the user-facing string 'Invalid team code. Please check and try again.'
+
+DECISIVE PROOF — live RLS impersonation in rolled-back transactions (SET LOCAL ROLE authenticated + request.jwt.claims), using real prod rows (team 814452e9-35ff-471a-a93a-912f5456f11f 'Hampden-Sydney Golf', code R8JPP2BJ):
+  * as prospective joiner b724094e-27b8-42f3-b78b-28b33d4c35d5 (real golf_player, onboarding_completed=true, NO active membership) -> direct `select count(*) from golf_teams where join_code='R8JPP2BJ'` = 0 rows
+  * as the SAME prospective joiner -> `select count(*) from golf_team_by_join_code('R8JPP2BJ')` = 1 row
+  * as existing member 1070d5cd-52c8-4512-8399-a2b9e94ebe61 -> the SAME direct read = 1 row
+Two paired controls, one variable (membership). The probe is not vacuous, and the direct read is unsatisfiable by construction for exactly the population the feature serves.
+
+RLS STATE VERIFIED: pg_class shows golf_teams relrowsecurity=true. pg_policy shows exactly two SELECT policies — `admin_read_all USING is_admin()` and `golf_teams_select USING (is_golf_team_coach(id) OR is_golf_team_player(id))`. pg_get_functiondef confirms is_golf_team_player requires golf_team_members.status='active' and is_golf_team_coach requires a golf_team_coach_staff row. `golf_teams_select_by_join_code` is absent. Both `golf_team_by_join_code` and `golf_join_team_with_code` exist in prod, so migration 20260803120200 is genuinely applied — the 2026-08-03 breakage date is right.
+
+REACHABILITY VERIFIED: FairwaySettingsGeneral.tsx:753 mounts <JoinTeamSection> whenever `profile.role === 'player' && profile.playerId`. JoinTeamSection.tsx:212 renders the join-code form in the `currentTeam ? ... : ...` FALSE branch — i.e. precisely for players with no team, the ones RLS denies. JoinTeamSection.tsx:77 calls createTeamJoinRequest, and :83-87 surfaces result.error verbatim. Not dead code, not an orphan.
+
+SIBLING PATHS CONFIRM THE MISS WAS ISOLATED: join/[code]/page.tsx:64 and teams.ts:467 both already use the RPC, and there is a dedicated regression test (src/app/golf/actions/__tests__/join-team-rls-blocked-read.test.ts) that mocks golf_teams as unreadable — but it only exercises processGolfTeamInvitation, never createTeamJoinRequest. That is exactly why this survived.
+
+TWO CORRECTIONS TO THE REPORTER'S EVIDENCE:
+1. The "zero join requests in five months" figure is real (I measured: 12 rows total, first 2026-02-04, last 2026-02-23) but it does NOT support the causal claim. That drought predates the 2026-08-03 migration by five months, during which the now-dropped permissive policy made this exact code path work. It is evidence of LOW FEATURE USAGE, not of this regression. Do not repeat it as proof; the impersonation matrix is the proof.
+2. INCOMPLETE FIX WARNING — a second site shares the identical defect and must be fixed in the same change. teams.ts:1414-1426 (getPlayerJoinRequestsImpl) embeds `team:golf_teams(id, name, organization:organizations(name))`, equally RLS-blind. For a pending requester who is not yet a member the embed resolves to null, and teams.ts:1438 launders it through `as unknown as` into a type asserting `team` is non-null (a textbook 'type that lies' from the stated failure class). JoinTeamSection.tsx:252 then renders `{request.team.name}` unguarded. Fixing only line 845 turns a dead form into a CRASHING Settings page (TypeError: Cannot read properties of null reading 'name') for any player who now successfully files a request.
+
+**Fix:** Fix BOTH RLS-blind golf_teams reads in the join-request lane. Fixing only the first one converts a dead form into a crashing Settings page.
+
+(1) teams.ts:845-849 — replace the direct read with the same SECURITY DEFINER RPC the invite-link path already uses (join/[code]/page.tsx:64, teams.ts:467), and split the two failure modes apart so an infrastructure fault is never reported to the user as a typo:
+
 ```ts
 const { data: teamRows, error: teamError } = await supabase
   .rpc('golf_team_by_join_code', { p_code: normalizedCode });
-const team = Array.isArray(teamRows) ? teamRows[0] : teamRows;
-```
-The RPC already returns `id, name, organization_id` (plus org branding) and never returns join_code, so the rest of the function needs no change. Also distinguish the two failure modes: if `teamError` is non-null that is an infrastructure fault, not a typo — log it via logServerError before returning the user-facing string, exactly as baseball's joinTeamByCodeImpl does at src/app/baseball/actions/teams.ts:1000-1014.
 
-### CRITICAL **[CUSTOMER-FACING]** — Player onboarding overwrites every golf player's email and phone with NULL — 22/22 August signups have no email
+if (teamError) {
+  // Not a bad code — the lookup itself failed. Never blame the user for this.
+  await logServerError(
+    `golf_team_by_join_code failed: ${describeError(teamError)}`,
+    { action: 'teams.createTeamJoinRequest', featureArea: 'teams' },
+    'error'
+  );
+  return { success: false, error: 'Could not verify that code right now. Please try again.' };
+}
+
+const team = Array.isArray(teamRows) ? teamRows[0] : teamRows;
+if (!team) {
+  return { success: false, error: 'Invalid team code. Please check and try again.' };
+}
+```
+Verified sufficient: the RPC returns id, name and organization_id — exactly the three fields the remainder of createTeamJoinRequestImpl consumes (team.id at 863/873/884, team.name at 918, team.organization_id at 904) — so no other line in the function changes. I also confirmed the downstream INSERT is not blocked: golf_team_join_requests' INSERT policy is `WITH CHECK (EXISTS (SELECT 1 FROM golf_players gp WHERE gp.id = player_id AND gp.user_id = auth.uid()))`, which has no golf_teams dependency. The RPC is granted to `authenticated`, so a signed-in player can call it.
+
+(2) teams.ts:1414-1426 (getPlayerJoinRequestsImpl) — the embedded `team:golf_teams(id, name, organization:organizations(name))` is RLS-blind in exactly the same way and yields `team: null` for a pending, not-yet-member requester. Drop the embed, then resolve the team names through the definer RPC (or a batched definer lookup) after the rows come back. Also delete the `as unknown as` cast at teams.ts:1438 that currently asserts `team` is non-null — that cast is what makes the null invisible to every later reader.
+
+(3) Defensively, make JoinTeamSection.tsx:252 tolerate a missing team (`request.team?.name ?? 'Unknown team'`) so a null can never take down the whole Settings page again.
+
+(4) Extend src/app/golf/actions/__tests__/join-team-rls-blocked-read.test.ts — it already has a mock that DENIES golf_teams reads, which is the exact harness needed. Add cases driving createTeamJoinRequest and getPlayerJoinRequests through that same denying mock. The existing suite passed throughout this outage only because it never called these two functions.
+
+#### C3. [HIGH] · **CUSTOMER-FACING** Player onboarding overwrites every golf player's email and phone with NULL — 22/22 August signups have no email
 
 `src/app/golf/actions/onboarding.ts:473`
 
 **Breaks:** Every player who completes golf onboarding ends up with golf_players.email = NULL and phone = NULL, even though ensurePlayerRecord wrote their real email to that row minutes earlier on page load. The coach's roster (which selects `email` at roster.ts:215) renders a blank contact column for the entire current cohort — all of UNC Wilmington and both Shenandoah teams.
 
-**Evidence:** The onboarding page never collects or sends email/phone: src/app/golf/(onboarding)/player/page.tsx:167-176 calls completePlayerOnboarding with only firstName, lastName, gradYear, handicap, hometown, state, gpa, avatarUrl. Both fields are `.optional()` in playerOnboardingSchema (onboarding.ts:40-41), so Zod passes with them undefined. onboarding.ts:473-474 then builds `email: validatedData.email || null, phone: validatedData.phone || null` and onboarding.ts:487-491 applies that whole object as an UPDATE over the existing row — clobbering the `email: user.email || null` that ensurePlayerRecord wrote at onboarding.ts:382. Measured in production: `select date_trunc('month', created_at), count(*), count(email) from golf_players group by 1` → Aug 2026: 22 rows / 0 with email. Apr 2026: 10 rows / 10 with email. Spot-check of the last 10 days of signups (Davis Hutchins, Ashton Shifflett, Brian Slaughter, Seth Curry, Cole Macmillan, Ethan Boyette, …) — every single `email` is null. Consumer confirmed: src/app/golf/actions/roster.ts:215 `.select('id, first_name, last_name, email, handicap, avatar_url')`.
-
 **Root cause:** A partial-update action written as a full-object UPDATE. The action's contract says "here is the complete player profile", the caller only supplies part of it, and the missing keys are coerced to explicit NULLs rather than omitted — so absent input destroys existing data.
 
-**Proposed fix:** Build playerData without null-coercing fields the caller did not supply. Minimal, targeted change at onboarding.ts:470-483:
-```ts
-const playerData: Record<string, unknown> = {
+**Evidence:** The onboarding page never collects or sends email/phone: src/app/golf/(onboarding)/player/page.tsx:167-176 calls completePlayerOnboarding with only firstName, lastName, gradYear, handicap, hometown, state, gpa, avatarUrl. Both fields are `.optional()` in playerOnboardingSchema (onboarding.ts:40-41), so Zod passes with them undefined. onboarding.ts:473-474 then builds `email: validatedData.email || null, phone: validatedData.phone || null` and onboarding.ts:487-491 applies that whole object as an UPDATE over the existing row — clobbering the `email: user.email || null` that ensurePlayerRecord wrote at onboarding.ts:382. Measured in production: `select date_trunc('month', created_at), count(*), count(email) from golf_players group by 1` → Aug 2026: 22 rows / 0 with email. Apr 2026: 10 rows / 10 with email. Spot-check of the last 10 days of signups (Davis Hutchins, Ashton Shifflett, Brian Slaughter, Seth Curry, Cole Macmillan, Ethan Boyette, …) — every single `email` is null. Consumer confirmed: src/app/golf/actions/roster.ts:215 `.select('id, first_name, last_name, email, handicap, avatar_url')`.
+
+**How to trigger:** Sign up as a golf player at /golf/signup (with or without a ?joinCode= invite link), then land on /golf/player onboarding. On page load, page.tsx:100 fires ensurePlayerRecord(), which INSERTs a golf_players row carrying your real auth email (onboarding.ts:382). Fill in the four onboarding steps — name, grad year, handicap, hometown/state, GPA, avatar — and press the final submit. handleSubmitOnboarding (page.tsx:154-190) calls completePlayerOnboarding WITHOUT email or phone, so onboarding.ts:473-474 sets both to null and onboarding.ts:488-491 UPDATEs them over your row. You are shown the success screen and routed to the dashboard; nothing is logged.
+
+To observe the damage as a customer: log in as the coach of that player's team, go to /golf/dashboard/roster and click into that player (/golf/dashboard/roster/<playerId>). The Email and Call buttons are absent from the profile header (FairwayPlayerProfile.tsx:157-170) — only "Message" remains. The coach has no way to email or phone the player and no indication the platform ever had the address. Every golf player who onboarded since roughly 2026-05 is in this state: Hampden-Sydney (15), Shenandoah Men's (9), UNC Wilmington (7), Lynchburg Women's (6), Shenandoah Women's (5) — all at 0 with_email.
+
+**Verifier:** CONFIRMED as a real, reproducible data-destruction defect, with two corrections to the report.
+
+MECHANIC VERIFIED (airtight, five links):
+1. src/app/golf/(onboarding)/player/page.tsx:167-176 is the ONLY caller of completePlayerOnboarding in the golf tree, and it passes firstName, lastName, gradYear, handicap, hometown, state, gpa, avatarUrl — never email or phone.
+2. Both are `.optional()` in playerOnboardingSchema (onboarding.ts:40-41), so Zod validation passes with them undefined.
+3. onboarding.ts:473-474 coerces them to explicit NULLs (`email: validatedData.email || null`, `phone: validatedData.phone || null`) inside `playerData`, and onboarding.ts:488-491 applies that entire object as a bare `.update(playerData)` over the existing row.
+4. That row already had a real email: page.tsx:100 calls ensurePlayerRecord() on page load, which inserts `email: user.email || null` at onboarding.ts:382.
+5. Nothing else can be responsible. Verified in prod: `handle_new_user()` (pg_proc.prosrc) inserts only into public.users and baseball_players — it never touches golf_players. `pg_trigger` shows ZERO non-internal triggers on golf_players. A repo-wide grep finds exactly two INSERT sites into golf_players, both in onboarding.ts.
+
+PROOF THE UPDATE BRANCH (not the INSERT branch) RAN: the INSERT branch at onboarding.ts:498-505 would leave `updated_at - created_at` at ~0. All 22 August rows have a gap of 19.5s to 69min (min 00:00:19.549, max 01:09:29). So all 22 hit `.update()` on a pre-existing ensurePlayerRecord row, and users.email is populated for all 22, proving user.email was non-null when that row was created.
+
+PRODUCTION MEASUREMENT: `select date_trunc('month',created_at), count(*), count(email), count(phone) from golf_players group by 1` → Aug 2026: 22 rows / 0 email / 0 phone / 22 onboarding_completed. Apr 2026: 10 rows / 10 email.
+
+CORRECTION 1 — the report's named consumer is DEAD CODE. `getTeamPlayers` (roster.ts:215) has ZERO callers anywhere outside roster.ts itself. The coach roster LIST page (src/app/golf/(dashboard)/dashboard/roster/page.tsx:228-241) selects only id, first_name, last_name, avatar_url, hometown, state, graduation_year, handicap — no email. There is no "blank contact column." The report's headline consequence is wrong.
+   The REAL customer-facing consumer is the coach's player detail page: src/app/golf/(dashboard)/dashboard/roster/[id]/page.tsx:55-64 selects `phone, email` and passes the row to FairwayPlayerProfile (page.tsx:92), which at src/components/fairway/pages/roster/FairwayPlayerProfile.tsx:157-170 renders `{player.email ? <a href={`mailto:...`}> : null}` and `{player.phone ? <a href={`tel:...`}> : null}`. Both buttons silently vanish. The only remaining live readers are internal platform-admin surfaces (src/lib/admin/data/team-detail.ts:386,403 and src/lib/admin/data/users.ts:256).
+
+CORRECTION 2 — scope is UNDERSTATED, not overstated. Per-team measurement (golf_team_members status in active/inactive): Hampden-Sydney Golf 15 players / 0 email; Shenandoah University Golf 9 / 0; UNC Wilmington Golf 7 / 0; Lynchburg Women's Golf 6 / 0; Shenandoah Women's Golf 5 / 0; Guilford College Men's 12 / 5. That is 42 rostered players across FIVE paying programs, not two. Backfillable rows are 57, not 22 (`select count(*) from golf_players gp join users u on u.id=gp.user_id where gp.email is null and u.email is not null` → 57).
+
+NO RECOVERY PATH: I grepped every file in src/app/golf/actions/ — no action lets a player or coach set golf_players.email or golf_players.phone after onboarding, and the golf settings page contains no email/phone field. Once nulled it stays nulled forever. Re-running onboarding is impossible (page.tsx:110 redirects when onboarding_completed).
+
+SEVERITY DOWNGRADED critical → high. It is 100%-reproducible destruction of already-captured customer data on every single new golf player, with no in-product repair. But it does not block signup, team join, round submit, or calendar; notification fan-out reads users.email (src/lib/notifications/golf-message-fanout.ts:75-76, src/lib/coachhelm/v3/notifications/dispatch.ts:177), so no email silently fails to deliver; and the UI degrades by hiding two buttons rather than displaying incorrect information.
+
+RLS/column-privilege refutation also fails: the UPDATE demonstrably succeeded (onboarding_completed flipped true on all 22 rows in the same statement), so it was not blocked, and email is null afterwards.
+
+**Fix:** The golf onboarding UI never collects email or phone at all, so the cleanest fix is to remove them from the shared object entirely rather than conditionally adding them.
+
+src/app/golf/actions/onboarding.ts:470-483 — drop email/phone from playerData so the UPDATE branch cannot clobber them:
+
+const playerData = {
   first_name: validatedData.firstName,
   last_name: validatedData.lastName,
-  graduation_year: validatedData.gradYear ?? null,
-  handicap: validatedData.handicap ?? null,
+  graduation_year: validatedData.gradYear || null,
+  handicap: validatedData.handicap != null ? validatedData.handicap : null,
   hometown: validatedData.hometown || null,
   state: validatedData.state || null,
-  gpa: validatedData.gpa ?? null,
+  gpa: validatedData.gpa != null ? validatedData.gpa : null,
   avatar_url: validatedData.avatarUrl || null,
   onboarding_completed: true,
   updated_at: new Date().toISOString(),
 };
-if (validatedData.email) playerData.email = validatedData.email;
-if (validatedData.phone) playerData.phone = validatedData.phone;
+
+Then, only where the caller actually supplied a value, add it back for BOTH branches:
+const contact: Record<string, string> = {};
+if (validatedData.email) contact.email = validatedData.email;
+if (validatedData.phone) contact.phone = validatedData.phone;
+
+UPDATE branch (line 488-491): .update({ ...playerData, ...contact })
+
+INSERT branch (line 498-505) — this path must still seed an email, because if ensurePlayerRecord never ran the row would otherwise be created with no address at all:
+.insert({ user_id: user.id, ...playerData, email: validatedData.email || user.email || null, ...(contact.phone ? { phone: contact.phone } : {}) })
+
+Backfill the existing damage (57 rows, not 22 — I measured it):
+UPDATE golf_players gp SET email = u.email, updated_at = now()
+FROM users u WHERE u.id = gp.user_id AND gp.email IS NULL AND u.email IS NOT NULL;
+Phone is unrecoverable — it was never collected by the golf onboarding UI in the first place, so there is no source to backfill from.
+
+Regression guard worth adding: a test asserting that completePlayerOnboarding, called with no email/phone on a player row that already has them, leaves both columns unchanged. Also worth auditing the sibling baseball action at src/app/baseball/actions/onboarding.ts:727 for the same full-object-UPDATE shape — I did not verify it, and it is the same lane.
+
+#### C4. [HIGH] · **CUSTOMER-FACING** Signup replaces the server's exact password error with a wrong one, telling users "use at least 8 characters" when the real problem is a missing special character or a breached password
+
+`src/components/auth/golf-sign-up-form.tsx:23`
+
+**Breaks:** A new customer types a password the server rejects for a specific, fixable reason. The form discards that reason and shows "Password does not meet the requirements. Please use at least 8 characters." Their password is already ≥8 characters, so they add characters, resubmit, fail again — an unwinnable loop at the very first step of signup. The same swallowing hits the HIBP breached-password rejection, where lengthening the password can never help.
+
+**Root cause:** A defensive error-prettifier with an over-broad substring match placed ABOVE the specific cases, so it captures messages that were already precise and user-ready. The mapper exists to translate raw Supabase/GoTrue strings, but validatePassword's feedback and the breach message are already written for end users.
+
+**Evidence:** golf-sign-up-form.tsx:23-25 — `if (lower.includes('weak password') || lower.includes('password')) return 'Password does not meet the requirements. Please use at least 8 characters.'`. That bare `includes('password')` matches BOTH server messages verbatim: auth.ts:300 returns validatePassword's feedback (e.g. "Password must contain at least one special character (!@#$%^&*...)") and auth.ts:395-398 returns "Please choose a stronger password — this one is too common or has appeared in a data breach." Client-side pre-validation only checks length (form line 68-71), so these always reach the server. Measured in production admin_events, feature='auth_onboarding', last 30 days: `[signupAction] Password must contain at least one special character` ×7 (4 info + 3 error, 2026-08-04 20:28 → 2026-08-06 23:35), `[signupAction] Please choose a stronger password — …data breach.` ×8 (2026-08-06 00:17 → 23:35), `[signupAction] Password must contain at least one number` ×1. 16 signup-blocking events in roughly three days, every one shown with the wrong remediation.
+
+**How to trigger:** Two concrete paths, both on the live /golf/signup page (and /baseball/signup).
+
+(1) Wrong-remediation loop, 16 measured occurrences in prod over three days. Go to /golf/signup, enter a valid access/join code, pick Player, fill name + graduation year + email, and type the password `Golfteam2026` (12 chars, uppercase, lowercase, digit, no special character). Client length check at golf-sign-up-form.tsx:68 passes, signupAction runs, validatePassword fails hasSpecialChar, auth.ts:281 returns "Password must contain at least one special character (!@#$%^&*...)", the mapper at line 23 rewrites it, and the red banner reads "Password does not meet the requirements. Please use at least 8 characters." The password is already 12 characters. Same with `Password2026!` — passes local validation, GoTrue rejects it from the HIBP corpus, auth.ts:390 returns the breach message, and the banner again says to use at least 8 characters.
+
+(2) Literal dead end (reporter missed this one). Same form, password `Golfteam2026~`. The strength indicator under the field shows all five checks green and the label "Strong" because it tests /[^A-Za-z0-9]/ (password-strength-indicator.tsx:27). The server tests /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/ (password-validation.ts:88), which does not include `~`, so it rejects. The user sees a Strong 13-character password, all five requirements ticked, and an error telling them to use at least 8 characters. Nothing visible on the page can lead them out; they can only escape by guessing a different special character. Backtick and any non-ASCII symbol behave the same way.
+
+**Verifier:** CONFIRMED, and worse than reported. I read the live code, not a comment. golf-sign-up-form.tsx:23-25 contains a bare `lower.includes('password')` branch that returns "Password does not meet the requirements. Please use at least 8 characters." It is placed above every specific case and below only the already-registered/invalid-email checks, neither of which matches. Both server strings hit it: src/app/golf/actions/auth.ts:281 returns `passwordValidation.feedback[0]` (e.g. "Password must contain at least one special character (!@#$%^&*...)") and auth.ts:390-393 returns "Please choose a stronger password — this one is too common or has appeared in a data breach." Both lowercase-contain "password". Reachability is proven: the form is rendered at src/app/golf/(auth)/signup/page.tsx:290, the error is set at line 86 and rendered at lines 125-143, and the only client-side password check (lines 68-71) is length-only, so these server rejections always reach the mapper. Not already fixed — latest commit touching the file is 266d02d91 (2026-08-05) and production events fired 2026-08-06.
+
+I independently reproduced the reporter's production numbers via mcp__supabase__execute_sql against admin_events (feature='auth_onboarding', metadata.runtimeEnv='production', metadata.action='signupAction'): "Password must contain at least one special character (!@#$%^&*...)" x7 (4 info + 3 error, 2026-08-04 20:28:20Z → 2026-08-06 23:35:21Z), "Please choose a stronger password — this one is too common or has appeared in a data breach." x8 (5 error + 3 info, 2026-08-06 00:17:44Z → 23:35:21Z, one row carrying metadata.collapsed_count=3 so true attempts are higher), "Password must contain at least one number" x1. 16 signup-blocking events in three days, every one displayed with remediation the client itself has already proven false (length >= 8 was enforced before submit).
+
+The one mitigation I looked for — PasswordStrengthIndicator renders a live 5-item checklist under the field — does NOT hold, and checking it surfaced a defect the reporter missed. The checklist and the server disagree on what counts as a special character: password-strength-indicator.tsx:27 uses /[^A-Za-z0-9]/ while password-validation.ts:88 uses /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/ , which excludes ~ , backtick, and all non-ASCII. So a password such as `Golfteam2026~` shows 5/5 green and the label "Strong", is 13 characters, is rejected server-side for a missing special character, and the banner tells the user to use at least 8 characters. That is a hard dead end with zero recoverable signal anywhere on the page — not merely bad wording.
+
+Identical mapper and identical bug at src/components/auth/baseball-sign-up-form.tsx:25-27 (its text enumerates all four rules, so it is less wrong for the validator case but flatly false for the breach case, where the user already satisfies every rule it lists). Baseball's action returns the same strings at src/app/baseball/actions/auth.ts:281, and :540 for password reset.
+
+Only correction to the report: the breach case is not literally unwinnable (lengthening a breached password usually does clear HIBP), but the guidance is still wrong and the ~/backtick case IS literally unwinnable.
+
+**Fix:** Three parts. Parts 1 and 3 are the real fixes; part 2 removes the round-trip.
+
+1. Stop overwriting messages that are already user-ready. In getSignupErrorMessage (src/components/auth/golf-sign-up-form.tsx:23-25), replace the bare includes('password') branch with:
+
+  // validatePassword feedback and the GoTrue breach message are already written
+  // for end users — pass them through instead of rewriting them.
+  if (lower.startsWith('password must') || lower.startsWith('this password is too common') || lower.includes('data breach')) return error;
+  if (lower.includes('weak password')) return 'Password does not meet the requirements: at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.';
+
+Apply the identical edit to src/components/auth/baseball-sign-up-form.tsx:25-27. Note that baseball's fallthrough is humanizeAuthError(error) rather than a bare return, so keep that as the tail.
+
+2. Show every failed rule, not just the first. src/app/golf/actions/auth.ts:281 and src/app/baseball/actions/auth.ts:281 both return feedback[0], so a password missing two rules produces two round trips (the prod log shows exactly this: a special-character rejection at 01:10:14 followed by a number rejection three seconds later). Return passwordValidation.feedback.join(' ') instead. Same at src/app/baseball/actions/auth.ts:540 (password reset).
+
+3. Make the on-screen checklist agree with the server, or the user can still be told a password is Strong while the server refuses it. Export the requirement predicates from src/lib/auth/password-validation.ts and have src/components/auth/password-strength-indicator.tsx:23-28 import them, so hasSpecialChar is one regex in one place. If a shared module is too large a change for this pass, at minimum change password-strength-indicator.tsx:27 from /[^A-Za-z0-9]/ to the server's /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/ so the checklist cannot show green for a character the server rejects. Prefer widening the server regex to include ~ and backtick over narrowing the indicator, so that existing accepted passwords stay valid.
+
+Optionally gate the submit button on all five checks passing so the failing round trip never happens — but do this only after part 3, since gating on a checklist that disagrees with the server would convert a confusing error into a permanently disabled button.
+
+#### C5. [HIGH] · **CUSTOMER-FACING** Class schedule import tells the player "Synced to your calendar" without ever reading a single sync result — 6 classes in production imported with zero calendar events
+
+`src/app/golf/(dashboard)/dashboard/classes/page.tsx:334`
+
+**Breaks:** A player uploads a schedule screenshot, confirms the parsed classes, and sees "6 classes imported — Synced to your calendar." Zero calendar events were written. The class rows show in the Classes list, so the player believes the whole flow worked and never retries; the classes are invisible on the team calendar to both the player and the coach, so the coach schedules practice on top of a class. There is also a second trigger on the same toast: line 309 gates the entire sync block on `if (data && teamId)`, so a player with no team resolved skips sync completely and still gets "Synced to your calendar."
+
+**Root cause:** `await Promise.all(syncPromises)` discards an array of `{success, error}` results, and the success toast is not conditioned on them. The fix that landed on `handleAddClass`/`handleUpdateClass` was applied per-call-site instead of to every call site of `syncClassToCalendar` in the file.
+
+**Evidence:** Line 309 `if (data && teamId) {`, lines 310-332 build `syncPromises` from `syncClassToCalendar(...)`, line 334 `await Promise.all(syncPromises);` — every `CalendarSyncResult` is discarded. Lines 341-344 then fire `fairwayToast.success(\`${importedCount} ... imported\`, { description: 'Synced to your calendar.' })` unconditionally. `syncClassToCalendar` returns `Promise<CalendarSyncResult>` and never throws (src/app/golf/actions/calendar-sync.ts:447); its failure paths include `{ success: false, error: 'Could not determine semester dates. Please set a semester start date.' }` at calendar-sync.ts:228. PRODUCTION: 17 of 43 `golf_player_classes` rows have zero `[class:<id>]`-tagged `golf_events`. Six of them (player 49ffe06d…, team 6ecdd1a6… "Demo University Golf") share the exact created_at 2026-07-23 11:58:05.133054+00 — one bulk `.insert(classesToInsert)`, i.e. this handler — and all six have ev=0. Eleven more on team 343731cb… "Lynchburg Women's Golf" (Feb 2026) likewise have zero events. Every one of those `semester` values is NULL, which is exactly the input that drives the `Could not determine semester dates` failure. The add and edit paths in this same file were already fixed for this bug (see the postmortem comment at lines 147-153); this path and the two below were missed.
+
+**How to trigger:** Reproducible today, deterministically, on any golf team:
+
+1. Sign in as a golf player, go to `/golf/dashboard/classes`.
+2. Tap "Import Schedule" (L486) and upload a screenshot of a Fall schedule.
+3. On the confirm step, press Confirm → `handleConfirmClasses` (L262).
+
+Concrete input that forces a discarded `{success:false}`: have the vision parser return classes with **no** `semester` but **with** a `semesterStartDate` of a real Fall start (e.g. `2026-08-24`). L326 then sends the hardcoded `'Spring 2026'`; `parseSemesterDates('Spring 2026', '2026-08-24')` computes `endDate = 2026-05-15`, and `isValidCustomStart` (semester.ts:24-30) rejects `2026-08-24 > 2026-05-15` → returns `null` → calendar-sync.ts:228 returns `{success:false, error:'Could not determine semester dates. Please set a semester start date.'}`. L334 throws that away and L341 fires "5 classes imported — Synced to your calendar."
+
+Result the player sees: the 5 class rows appear in the Classes list, so the flow looks complete and they never retry. Zero `golf_events` are written, so the classes are invisible on `/golf/dashboard/calendar` to both the player and the coach — the coach schedules practice on top of a class. Nothing is logged client-side.
+
+Second trigger, same toast: a player whose `golfUser.teamId` has not resolved (context still loading, or membership row missing). L263 only guards `playerId`, so the insert runs with `team_id: null`, L309's `if (data && teamId)` is false, the entire sync block is skipped, and the identical "Synced to your calendar." success toast fires. Unobserved in production (0/43 rows have null team_id) but live in code.
+
+Third trigger, no toast at all: kill the network between the insert and the sync. `Promise.all` rejects → `catch {}` at L345 → modal stuck open, rows already inserted, silence.
+
+**Verifier:** CONFIRMED — I tried to refute it and could not. The code is live and unfixed.
+
+CODE (read directly, `src/app/golf/(dashboard)/dashboard/classes/page.tsx`):
+- L309 `if (data && teamId) {` — sync block is gated, no else.
+- L310-332 `const syncPromises = data.map(...)` returning `syncClassToCalendar(...)`.
+- L334 `await Promise.all(syncPromises);` — return array bound to nothing.
+- L341-344 `fairwayToast.success(\`${importedCount} ... imported\`, { description: 'Synced to your calendar.' })` — unconditional, outside the `if`.
+- `syncClassToCalendar` is `Promise<CalendarSyncResult>` (calendar-sync.ts:447-454) and returns `{success:false,error}` rather than throwing — failure paths at :196 ('Player is not a member of this team'), :212 ('Not authorized to sync this class'), :228 ('Could not determine semester dates…'), :437 (catch-all). None of these can reach the user through L334.
+
+NOT ALREADY FIXED — `git blame` proves the per-call-site fix pattern the finding alleges: L334 is untouched since `7e23bab213` (2026-02-10); the unconditional toast is `badbd428cb` (2026-06-21); the add/edit paths were repaired in `9ca57de2b` (2026-08-05 22:37, "#1292") and the import path 25 lines below was skipped. The postmortem comment at L147-153 is a comment, but the code it describes (L154-175, L213-228) is real and correctly branches — the evidence is NOT quoting a comment as code.
+
+REACHABLE — L486 `onImportSchedule={() => setShowUploadModal(true)}` → L505 `UploadScheduleModal` → L508 `onParsed={handleParsedClasses}` → L514 `onConfirm={handleConfirmClasses}`. Live player UI.
+
+PRODUCTION (measured, mcp__supabase__execute_sql): `golf_player_classes` = 43 rows; 17 have zero `[class:<id>]`-tagged `golf_events`; **6 of those share created_at `2026-07-23 11:58:05.133054+00` to the microsecond** — a single bulk `.insert(classesToInsert)`, which only this handler performs — on player `49ffe06d…`, team `6ecdd1a6…` "Demo University Golf". 22 other bulk-inserted rows DID get events, so the path works and those 6 genuinely failed silently.
+
+THREE CORRECTIONS to the report:
+1. Root cause mis-attributed. "semester NULL drives 'Could not determine semester dates'" is unsupported: all 43 rows have `semester` NULL in the DB **including the 22 that synced fine**, because the import path hardcodes `semester: confirmedClass.semester || 'Spring 2026'` (L326) and `syncClassToCalendarImpl` uses `ownedClass.semester ?? classData.semester`. The real 2026-07-23 failure cause is undetermined from data.
+2. The 11 Lynchburg (`343731cb…`) zero-event rows are NOT from this handler — their created_at values are seconds apart (19:54:51, 19:55:30, 19:56:01, 19:57:47, 19:58:28), i.e. the single-add path, which is now fixed.
+3. The `teamId`-null skip is a real code path (the handler guards `!playerId` at L263 but never `teamId`) but has zero production instances: 0 of 43 rows have `team_id IS NULL`. Keep the fix, drop the claim that it has fired.
+
+TWO DEFECTS THE REPORT MISSED, same handler:
+A. `catch { }` at L345-347 ("Error handled by alert above"). If the server action rejects at the transport layer (network drop, 500), `Promise.all` rejects, the whole handler aborts with NO toast at all, the confirm modal stays open, and the rows are already inserted. A retry then double-inserts.
+B. **Live paying-customer damage, worse than the reported bug.** Shenandoah University Women's Golf (`ffd6985f…`, team created 2026-08-05) — the bulk import at `2026-08-06 01:48:55.666656+00` (player `ac51b4be…`) produced a SUMMER window for a Fall schedule: SPAN-202-F2F 2 events 08-12→08-14, BA-307-BLD1 2 events 08-12→08-14, CJ-343-BLD **1 event**, PSY-222-F2F1 **1 event**, CJ-373-ONS 22 events 06-02→08-13. The same team's other player, imported 8 seconds earlier, got the correct 08-31→12-14 Fall window. Cause: L326's fallback plus `parseSemesterDates` clamping — a custom start of ~2026-08-12 passes `isValidCustomStart` against a Summer end of `2026-08-15` (semester.ts:24-30, :67-70), yielding a four-day "semester". `success:true` was returned, so this specific one is not hidden by the discard — but it is the same handler, on a real customer, this week, and it means the import path is actively writing wrong calendars right now.
+
+**Fix:** In `src/app/golf/(dashboard)/dashboard/classes/page.tsx`, `handleConfirmClasses` (L262-348):
+
+1. Hoist the team guard. At the top of the handler, beside the existing `!playerId` check, bail on a missing `teamId` with an error toast rather than inserting `team_id: null` and skipping sync. Then L309 becomes `if (data) {` — an unresolved team is a failure, never a silent skip.
+
+2. Capture the results:
+```ts
+const syncResults = await Promise.all(syncPromises);
+const failures = syncResults.filter((r): r is CalendarSyncResult => !!r && !r.success);
 ```
-AND, in the INSERT branch (onboarding.ts:498-505), default email to the auth email: `email: validatedData.email || user.email || null`. Then backfill the damage: `UPDATE golf_players gp SET email = u.email FROM users u WHERE u.id = gp.user_id AND gp.email IS NULL;` (22 rows).
+Type `syncPromises` as `Promise<CalendarSyncResult | undefined>[]`; the `Promise.resolve()` entries at L312 (rows the map skipped) are `undefined` and are neither success nor failure — better still, filter those pairs out before mapping so the count is honest.
 
-### CRITICAL **[CUSTOMER-FACING]** — Scoring average and team ranking are computed from the known-stale golf_rounds.total_score; the fix that was written for this was never applied to the stats page, the caches, or the leaderboard
+3. Replace the unconditional toast at L341-344, mirroring the wording already used at L168-175 and L222-228 so all three paths read the same:
+```ts
+if (failures.length === 0) {
+  fairwayToast.success(`${importedCount} ${importedCount === 1 ? 'class' : 'classes'} imported`,
+    { description: 'Synced to your calendar.' });
+} else {
+  fairwayToast.error(
+    `${importedCount} imported, but ${failures.length} could not be added to your calendar`,
+    { description: failures[0]?.error ?? 'Unknown error' });
+}
+```
 
-`src/app/golf/actions/stats-data.ts:687`
+4. Fix the bare `catch { }` at L345-347. The comment "Error handled by alert above" is only true for the insert error at L303-306; anything else (a rejected server action) vanishes. Re-check `if (error)` handled it, otherwise `showToast('Import failed. Please try again.', 'error')` and close the modal so a retry does not double-insert.
 
-**Breaks:** A coach opens the roster/leaderboard and the stats page and sees a player's scoring average that is up to 0.42 strokes wrong, and a team ranking with players in the wrong order. The SAME round shows a different total on the rounds list than it contributes to the stats page average, because the two surfaces read different columns. Measured in production right now: Dylan Brooks' stats page and golf_player_stats_cache both show scoring_average = 74.83; his true holes-derived average is 75.25. Mason Rivers is displayed at team rank 17 (75.58) when his canonical average of 75.25 ties him at rank 9 — an 8-position error on the leaderboard a coach uses to set a travel squad.
+5. SEPARATE, HIGHER-PRIORITY FIX — the wrong-window bug hitting Shenandoah today. Delete the hardcoded `semester: confirmedClass.semester || 'Spring 2026'` at L326. A missing semester must be an explicit failure ("We couldn't tell which term this schedule is for"), not a silent guess, and `parseSemesterDates` must not clamp a custom start into a foreign term — if `customStartDate` falls outside the parsed term's window (semester.ts:83-86), that is a term/start mismatch and should return `null` rather than produce a four-day semester. Both need their own change; do not fold them into the toast fix.
 
-**Evidence:** Production SQL, read-only.
-(1) 15 of 296 completed rounds have golf_rounds.total_score != SUM(golf_holes.score); every one is a ±1 stroke drift. front_nine+back_nine ties to SUM(golf_holes.score) with 0 mismatches across all 296 rounds, so f9+b9 is a reliable proxy for the ground truth.
-(2) golf_round_stats_cache is INTERNALLY inconsistent on those same 15 rows: total_score != front_nine+back_nine (15 mismatches; 0 mismatches on f9+b9 vs holes). The cache row itself carries both the right and the wrong number.
-(3) Per-player impact, 18-hole rounds only: Dylan Brooks 12 rounds, stale avg 74.833 vs canonical 75.250 (delta -0.417, 5 drifted rounds); Cole Bennett 17 rounds, 74.706 vs 74.353 (+0.353, 6 drifted); Mason Rivers 12 rounds, 75.583 vs 75.250 (+0.333, 4 drifted).
-(4) golf_player_stats_cache.scoring_average is exactly the stale number: Dylan Brooks 74.83 (updated_at 2026-07-23), Mason Rivers 75.58, Cole Bennett 74.71. I diffed the whole cache against a live re-aggregation and found ZERO other divergences — the cache is faithfully caching a wrong input.
-(5) Rank comparison over all 31 cached players: cached_rank vs canonical_rank diverge for Mason Rivers (17 -> 9) and shift Jackson Hale / Pat Edwards / Braeden Gillen from 13 to 14.
-(6) Root cause chain in code: DB trigger update_player_stats_complete computes `SELECT COUNT(*), SUM(r.total_score) ... INTO v_rounds_18, v_total_score_18 FROM golf_rounds r WHERE ... COALESCE(r.holes_played,18)=18` then `v_scoring_average := v_total_score_18 / v_rounds_18`. supabase/migrations/20260606170000_refresh_cache_calls_putt_make_pct.sql:27 writes `r.total_score` raw into golf_round_stats_cache while COALESCE-ing front_nine/back_nine from holes on the very next lines. The only trigger that reacts to a later golf_holes change (recompute_golf_round_totals) refreshes putts/GIR/fairways and deliberately does NOT touch total_score.
-(7) The app already knows: src/lib/golf/round-total.ts documents this exact defect at file scope ("15 of 284 rounds (5.3%) currently carry a ±1 total_score drift") and exports deriveRoundTotal/withCanonicalRoundTotal. It is used in only 3 places — dashboard-data.ts:470/496/914, dashboard/rounds/page.tsx:132/163, FairwayRoundDetail.tsx:219. The repair script its docstring points at, `round-total-repair.sql`, does not exist in the repo (verified with find), and production still carries all 15 drifted rows.
-(8) Surfaces still reading the raw stale column: stats-data.ts:687 (getStatsSummary select — does not even fetch front_nine/back_nine, so it cannot canonicalize), stats-data.ts:341 and 316 (scoringAverage), stats-data.ts:913 (queryDetailedStatsWithClient select), stats-data.ts:1600 (trend page), stats-data.ts:1949 and 2261 and 2656, and round-reviews.ts:129 (`scoring_avg: round.total_score` feeds the AI round review prompt).
+Do not touch `handleAddClass` (L154-175) or `handleUpdateClass` (L213-228) — they are already correct.
 
-**Root cause:** golf_rounds.total_score is a denormalized column written once at submit time. Nothing recomputes it when golf_holes are later edited, and 15 rounds drifted. A canonicalizing helper (round-total.ts) was written and wired into 3 read surfaces, but (a) the underlying data was never repaired, (b) the DB functions that populate both caches still read the stale column, and (c) the stats page's SELECT list omits front_nine/back_nine so it structurally cannot apply the helper.
+#### C6. [HIGH] · **CUSTOMER-FACING** Baseball import rollback discards the canonical revert, still marks the run 'rolled_back', and reports "N removed · M restored" — permanently hiding the only retry control
 
-**Proposed fix:** Three parts, in this order.
-(1) DATA REPAIR (one migration, idempotent): UPDATE golf_rounds r SET total_score = h.s, score_to_par = r.score_to_par + (h.s - r.total_score) FROM (SELECT round_id, SUM(score) s, COUNT(*) n, COUNT(score) c FROM golf_holes GROUP BY round_id) h WHERE h.round_id = r.id AND h.c = h.n AND r.total_score IS DISTINCT FROM h.s AND r.status='completed'; -- the h.c=h.n guard is the null-honest rule from deriveRoundTotalsFromHoles: never let a partial sum overwrite a full total. Then re-run refresh_player_stats_cache(player_id) for each affected player (ed1ff03e-b33a-4a80-891e-09685b7db3d0, 49ffe06d-9b22-4f2f-8c69-f56badbbde6b, 9458ca63-9dbe-4020-ab13-9e2b70f70c80 at minimum) so both caches pick up the corrected values.
-(2) STOP THE DRIFT AT THE SOURCE: extend recompute_golf_round_totals(p_round_id) to also set total_score = SUM(h.score), front_nine = SUM(score) FILTER (hole_number<=9), back_nine = SUM(score) FILTER (hole_number>9) — but only when every hole in the round has a non-null score. It already runs on the golf_holes change trigger, so this closes the hole permanently and makes round-total.ts a belt-and-braces display guard rather than the only defense.
-(3) MAKE THE READ PATH SAFE MEANWHILE: add front_nine, back_nine to the SELECT at stats-data.ts:687, :913, :1600, :1949, :2261, :2656 and map the rows through withCanonicalRoundTotal (already imported in dashboard-data.ts) immediately after each fetch, so every downstream reducer picks up the corrected total_score/score_to_par without further changes. Same one-line treatment in round-reviews.ts before calculateKeyStats. Add a regression test asserting that a round whose golf_holes sum to 79 with total_score=78 yields 79 from getStatsSummary.
+`src/app/baseball/actions/imports.ts:1944`
 
-### CRITICAL **[CUSTOMER-FACING]** — A new player's first rounds are permanently marked "CoachHelm failed" for simply being below the coach's round floor — and are never retried
+**Breaks:** A coach rolls back a bad game-box-score import. The legacy `baseball_player_stats` rows are reverted, but `revertGameBoxScoreImport`'s call to `saveFullBoxScore` (which restores the pre-import box score) fails and is swallowed by a bare `catch {}`. `rollbackImport` then unconditionally stamps `status: 'rolled_back'` on `baseball_import_runs` and the UI shows "Import rolled back — 8 removed · 3 restored". Stats Center still shows the bad imported numbers, and because the run is now `rolled_back` the Roll-back control disappears from the recent-imports list — the coach cannot retry. The data is wrong and there is no in-product way to fix it. The file's own author identified this exact hazard for the event-grain case (the guard at imports.ts:2050-2056 refuses rather than "report `0 removed · 0 restored` as a false success and still mark the run 'rolled_back'") but left the box-score revert path unguarded.
 
-`src/lib/coachhelm/v2/post-round-trigger.ts:142`
+**Root cause:** `catch {}` around a discarded `{success,error}` result, inside a helper typed `Promise<void>` so failure has no return channel, followed by an unconditional state transition that is itself the thing preventing recovery.
 
-**Breaks:** A player who has fewer completed rounds than their coach's minRoundsForSignal (default 3) submits a round. The engine correctly skips generation, but postRoundTrigger stamps golf_rounds.coachhelm_failed_at + coachhelm_failure_reason='engine_no_recent_rounds'. The safety-net cron's eligibility query filters `.is('coachhelm_failed_at', null)`, so that round leaves the retry set FOREVER. When the player later reaches 3 rounds and crosses the floor, rounds 1 and 2 are never back-analyzed — they are permanently dark. This is precisely the new-customer onboarding cohort.
+**Evidence:** src/app/baseball/actions/imports.ts:1944-1950 `await saveFullBoxScore(snap.gameId, snap.beforeBatting, snap.beforePitching, ...)` — result dropped; wrapped in `try { ... } catch { }` at 1955-1961 with the comment "Non-fatal: ... the canonical box score may retain this import's numbers until retried." `revertGameBoxScoreImport` returns `void`, so `rollbackImport` at imports.ts:2107-2108 cannot learn anything. Lines 2114-2120 then unconditionally `.update({ status: 'rolled_back', rolled_back_at: ... })`, and line 2132 returns `{ reverted, restored }` counted only from the legacy loop. UI: src/components/baseball/import-center/ImportWizardClient.tsx:676-687 — `const res = await rollbackImport(...)` then optimistically sets the local row to `status: 'rolled_back'` and toasts `title: 'Import rolled back', description: \`${res.reverted} removed · ${res.restored} restored\``. The only error branch is `catch` (line 688), which the swallowed failure never reaches.
 
-**Evidence:** Exact 4-line production trace for Blake Taylor (player 12089807-48ba-4ab5-b566-7d5d8d9f3d1d), active member of UNC Wilmington Golf — a team created 2026-08-03, i.e. a brand-new paying customer. All four lines within 590ms:
-  22:19:53.873 info  "player has 1 completed rounds, coach floor is 3 — skipping generation" (action insights.triggerPlayerInsightsAfterRound.belowRoundFloor)
-  22:19:53.997 info  "No completed rounds in the last 90 days yet — insights will populate after the next round"
-  22:19:54.028 info  "postRoundTrigger engine failed: No completed rounds in the last 90 days yet…"
-  -> golf_rounds 7898ffe6-64c3-40ff-8849-530b77dfff13, round_date 2026-08-01, 68 shots, coachhelm_failed_at = 2026-08-04 22:19:53.502.
-His round was 3 days old and he had 1 completed round in the last 90 days — the stored reason is factually false.
-BLAST RADIUS (live counts): 14 completed rounds across 8 distinct players carry a non-null coachhelm_failed_at; 7 rounds / 5 players are 'engine_no_recent_rounds'. THREE of those rounds belong to players who NOW have >= 3 completed rounds — they crossed the floor and were never re-analyzed. 7 more players / 9 more rounds are currently below the floor and will be stamped as they submit.
-Why it stayed invisible: every step logs at severity=info with skipSentry:true, classified as an 'expected soft failure'. 382 below-floor events in error_logs over 30 days (336 at 0 rounds, 32 at 1, 14 at 2).
+**How to trigger:** A staff member with `can_manage_imports` opens /baseball/dashboard/import, imports a game box score into an EXISTING game (so `gameCreatedByImport` is false and the restore path at imports.ts:1944 runs), then clicks "Roll back" on that run. Any of these makes the canonical restore fail — each returns rather than throws, so each is silently discarded:
 
-**Root cause:** insights.ts:4066 sets `analysis = belowRoundFloor ? null : await analyzePlayer(...)`. A null from the FLOOR skip is then indistinguishable from a null from legacy feature extraction, so control falls into the `if (!analysis)` branch at 4097 and returns the fixed pair {success:false, code:'engine_no_recent_rounds'} at 4121-4125. post-round-trigger.ts:142 treats ANY `!result.success` as terminal and writes coachhelm_failed_at (line 148). 'below the floor' is a TRANSIENT state that resolves itself with the next round; it is being persisted as a permanent one.
+1. GAME DELETED AFTER IMPORT (most realistic, no config needed). The coach imports a box score, later deletes that game from the Games page, then rolls back the import. The RPC hits `IF v_team_id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Game not found')`. The game's cascade-deleted box score is gone but `baseball_player_season_stats` keeps the imported contribution — Stats Center stays wrong.
 
-**Proposed fix:** Three parts.
-1) insights.ts — check the floor before the generic null branch. Immediately after the `if (!analysis)` guard opens (line 4097), return a distinct non-terminal code when belowRoundFloor is true: `return { success: false, error: `Below the coach's ${philosophy.minRoundsForSignal}-round floor — insights start after round ${philosophy.minRoundsForSignal}`, code: 'engine_below_round_floor' }`. This also stops the false "no rounds in 90 days" message.
-2) post-round-trigger.ts:142-152 — introduce a NON_TERMINAL_CODES set containing 'engine_below_round_floor' (and, per the separate finding, 'engine_membership_missing'). When result.code is in that set, do NOT write coachhelm_failed_at; leave both terminal columns null (optionally write coachhelm_failure_reason alone as a breadcrumb) so the round stays in the safety-net cron's eligibility query and is retried once the player crosses the floor. Add a rerender-equivalent test: submit round 1 below floor, then round 3, and assert rounds 1-2 get coachhelm_analyzed_at.
-3) One-off backfill (I did not write): clear coachhelm_failed_at + coachhelm_failure_reason on the 3 already-stamped 'engine_no_recent_rounds' rounds whose players now have >= 3 completed rounds, so the next safety-net tick picks them up.
+2. CAPABILITY DIVERGENCE. `rollbackImport` requires only `can_manage_imports` (imports.ts:2009) but the nested `saveFullBoxScoreAction` calls `requireBaseballCapability(game.team_id, 'can_manage_stats')` (games.ts:920), which throws `BaseballCapabilityError`. These are two independent boolean columns on `baseball_team_coach_staff` (I confirmed both exist and are separately settable). Give an ops assistant import rights without stats rights — a normal permissions choice — and EVERY rollback they perform silently fails the canonical half, 100% of the time.
 
-### CRITICAL **[CUSTOMER-FACING]** — Coach dashboard headline tiles render a confident 0 when the count queries fail
+3. ANY transient DB error, constraint violation, or RLS denial during the restore — the RPC's blanket `EXCEPTION WHEN OTHERS` converts all of them to `success:false`.
+
+Observed result in all three cases: green toast "Import rolled back — N removed · M restored" (ImportWizardClient.tsx:684-688), the row flips to `rolled_back` (line 680), the "Roll back" button vanishes (line 1681), Stats Center still shows the bad imported numbers, and nothing is logged anywhere. The coach has been told it worked. Re-calling the action returns `{0, 0}` (imports.ts:2029-2031), so there is no in-product recovery.
+
+**Verifier:** CONFIRMED — I tried to refute this on four fronts (already-fixed, unreachable, quoting-a-comment, misread control flow) and it survived all of them. The working tree is unmodified and this is live committed code (last touch 2d56fa5a6).
+
+Every cited line is exact:
+- imports.ts:1944-1950 — `await saveFullBoxScore(snap.gameId, snap.beforeBatting, snap.beforePitching, ...)` with the result UNBOUND. This is code, not a comment.
+- imports.ts:1926-1929 — `revertGameBoxScoreImport(...): Promise<void>`. No return channel, as claimed.
+- imports.ts:2109-2113 — the call site; return value is `void`.
+- imports.ts:2116-2122 — UNCONDITIONAL `.update({ status: 'rolled_back', rolled_back_at: ... })`. Nothing between 2113 and 2116 can prevent it.
+- imports.ts:2136 — `return { reverted, restored }`, counted only by the legacy loop at 2079-2103.
+- ImportWizardClient.tsx:676-688 — success toast fires unconditionally; `catch` at 689 is the ONLY error branch.
+- ImportWizardClient.tsx:1681 — `) : r.status === 'committed' ? (` gates the "Roll back" button (1682-1689). Once status flips, the control is gone. The permanent-lockout claim is verified, not speculative.
+
+THE MECHANISM IS STRONGER THAN REPORTED. The report blames the bare `catch {}` at 1959-1963. That catch is actually a redundant second net — the real defect is purely the discarded return value at 1944, because a `saveFullBoxScore` failure CANNOT throw:
+1. `saveFullBoxScore` (games.ts:964-980) wraps the action in try/catch and returns `mapGameActionError(error)` — it converts every throw, including the `requireBaseballCapability` throw at games.ts:920, into a returned `{success:false}`.
+2. `saveFullBoxScoreAction` (games.ts:934-948) returns `{success:false, error}` on RPC error and on `!result?.success`.
+3. I read the RPC from production: `save_baseball_full_box_score` ends in a blanket `EXCEPTION WHEN OTHERS THEN RETURN jsonb_build_object('success', false, 'error', 'Box score save failed', ...)`. So even a Postgres constraint violation comes back as `{data:{success:false}, error:null}` — a value, never an exception.
+There is therefore NO path by which a canonical-revert failure reaches the client's `catch`. The success toast is guaranteed.
+
+Recovery is genuinely impossible in-product, which I verified rather than assumed: imports.ts:2029-2031 early-returns `{reverted:0, restored:0}` when `status === 'rolled_back'`, so even a hand-crafted re-call is a silent no-op false success. Fixing requires DB surgery.
+
+The report's irony argument also holds: the author's own EVENT-GRAIN GUARD at imports.ts:2052-2056 throws precisely to avoid reporting "0 removed · 0 restored as a false success and still mark the run 'rolled_back', permanently hiding the Roll-back control" — the identical hazard, left unguarded on the box-score path.
+
+SCOPE IS WIDER than reported: the same discard hits `db.from('baseball_games').delete()` at imports.ts:1936 (gameCreatedByImport branch, error dropped) and every write in the sibling `revertSeasonTotalsImport` (imports.ts:1971-1999, also `Promise<void>`, also `catch {}`), which imports.ts:2111-2112 invokes identically for `season_totals` runs.
+
+HONEST VOLUME CAVEAT (measured, not assumed): production currently holds 2 `baseball_import_runs`, both `status='committed'`, 0 rolled back. The single `baseball_stat_uploads` lineage row has `dataShape=null` and no `canonicalSnapshot` key (it predates the field), so no existing prod run has yet exercised this branch — and that row would instead hit the event-grain guard. I also checked the cleanest trigger and it is currently unrealized: 0 of 7 `baseball_team_coach_staff` rows have `can_manage_imports=true` with `can_manage_stats=false`. So this is a live, armed defect on every NEW game_box_score import rather than one already burning a customer today. That tempers frequency, not correctness or blast radius.
+
+**Fix:** The report's fix is directionally right but must be widened, because the throw-based failure channel it assumes does not exist.
+
+1. Change BOTH `revertGameBoxScoreImport` (imports.ts:1926) and `revertSeasonTotalsImport` (imports.ts:1971) from `Promise<void>` to `Promise<{ ok: boolean; error?: string }>`.
+
+2. In `revertGameBoxScoreImport`, BIND the result — this is the actual bug, independent of the catch:
+   `const res = await saveFullBoxScore(...); if (!res.success) { await logServerError(...); return { ok: false, error: res.error }; }`
+   Also bind the discarded `.delete()` error in the `gameCreatedByImport` branch at line 1936, and the `.update({status: snap.beforeStatus})` at 1954-1957.
+
+3. Replace both bare `catch {}` blocks (1959-1963 and 1996-1998) with `catch (e) { await logServerError(describeError(e), { action: 'baseball_imports.revert…', featureArea: 'baseball-import' }); return { ok: false, error: describeError(e) }; }`. Keep this as a secondary net — step 2 is what actually fires.
+
+4. Apply the same result-binding to every write in `revertSeasonTotalsImport` (1982-1994).
+
+5. In `rollbackImport`, capture the result at 2109-2113 and GUARD the state transition — do NOT run the `status: 'rolled_back'` update at 2116-2122 when the canonical revert failed. Throw a user-safe error so the existing `catch` at ImportWizardClient.tsx:689 shows the red toast and the row stays `committed`, keeping the "Roll back" button visible at line 1681:
+   `throw new Error('The legacy rows were reverted but Stats Center could not be restored — the run is still rollable, please retry.')`
+
+Retry is safe, which I checked: on a second attempt the legacy loop's `delete` matches nothing (reverted 0) and the `update` rewrites identical before-values, so it is effectively idempotent; and because step 5 leaves status as `committed`, the early-return guard at 2029-2031 no longer blocks the retry.
+
+Worth fixing in the same pass: the guard at imports.ts:2052 correctly refuses rather than faking success — mirror that same discipline here instead of leaving two divergent contracts in one file.
+
+#### C7. [HIGH] · **CUSTOMER-FACING** Coach dashboard headline tiles render a confident 0 when the count queries fail
 
 `src/app/golf/actions/dashboard-data.ts:365`
 
 **Breaks:** A coach opens /golf/dashboard during any transient DB/RLS/timeout condition. The four headline numbers — Roster Size, Upcoming Events, Active Qualifiers, Rounds This Week — render as literal `0`, and the whole lower half of the dashboard (Recent Rounds, Top Players, team scoring average, GIR%, Putts/Rd sparklines, Team Pulse improving/stable/declining) renders as "no data yet". Nothing is logged, no error boundary fires, no toast. The coach reads it as "my team's season is gone".
 
-**Evidence:** Read dashboard-data.ts:303-380 and 440-497. Lines 314-321 issue four `{ count: 'exact', head: true }` queries inside a Promise.all. Lines 365-367 consume them as `rosterCountResult.count || 0`, `eventsCountResult.count || 0`, `qualifiersCountResult.count || 0`; line 497 does `teamPulse.roundsThisWeek = weekRoundsResult.count || 0`. On a PostgREST error `count` is `null`, so `|| 0` converts every failure into a confident zero. `.error` is never read on any of the four. Line 378 does the same for the roster read: `const teamMembersData = playersResult.data as ... | null` → line 379 `|| []` → line 396 `if (playerIds.length > 0)` gates the ENTIRE second batch, so one swallowed roster error blanks every derived KPI. The file already knows the pattern — line 378 sits 4 lines below line 374's `const todayScheduleError = todayEventsResult.error != null`, added explicitly because "a failed call also yields `data == null` → [] , which must NOT be rendered as the cheerful 'clear schedule' empty state". That fix was applied to the RPC only and never to the five neighbours. Liveness confirmed: getCoachDashboardData is awaited by src/app/golf/(dashboard)/dashboard/page.tsx:177. Production scale (Supabase MCP): 10 golf_teams, 69 active members, 985 golf_events, 302 rounds — all four counts are non-zero for real teams today, so any failure is visibly wrong.
-
 **Root cause:** `.count || 0` and `.data || []` collapse the PostgREST error channel into the same value as a legitimately empty result. The action returns `{success:true}` regardless, so the caller has no signal to distinguish them.
 
-**Proposed fix:** In getCoachDashboardData, capture the errors and surface a degraded flag the way todayScheduleError already does. Concretely: (1) after line 363 add `const countsError = rosterCountResult.error != null || eventsCountResult.error != null || qualifiersCountResult.error != null;` and make rosterSize/upcomingEvents/activeQualifiers `number | null` — `rosterCountResult.error ? null : (rosterCountResult.count ?? 0)` — so the tiles render an em-dash, not 0. (2) At line 378 add `const rosterFetchError = playersResult.error != null;` and if true, skip the `playerIds.length > 0` branch but set a `teamStatsUnavailable: true` on the payload so the dashboard renders a retry notice instead of empty cards. (3) At line 497 mirror this for weekRoundsResult. (4) `await logServerError(...)` for each non-null error with `{ action: 'getCoachDashboardData', featureArea: 'coach_dashboard' }` so these stop being invisible.
+**Evidence:** Read dashboard-data.ts:303-380 and 440-497. Lines 314-321 issue four `{ count: 'exact', head: true }` queries inside a Promise.all. Lines 365-367 consume them as `rosterCountResult.count || 0`, `eventsCountResult.count || 0`, `qualifiersCountResult.count || 0`; line 497 does `teamPulse.roundsThisWeek = weekRoundsResult.count || 0`. On a PostgREST error `count` is `null`, so `|| 0` converts every failure into a confident zero. `.error` is never read on any of the four. Line 378 does the same for the roster read: `const teamMembersData = playersResult.data as ... | null` → line 379 `|| []` → line 396 `if (playerIds.length > 0)` gates the ENTIRE second batch, so one swallowed roster error blanks every derived KPI. The file already knows the pattern — line 378 sits 4 lines below line 374's `const todayScheduleError = todayEventsResult.error != null`, added explicitly because "a failed call also yields `data == null` → [] , which must NOT be rendered as the cheerful 'clear schedule' empty state". That fix was applied to the RPC only and never to the five neighbours. Liveness confirmed: getCoachDashboardData is awaited by src/app/golf/(dashboard)/dashboard/page.tsx:177. Production scale (Supabase MCP): 10 golf_teams, 69 active members, 985 golf_events, 302 rounds — all four counts are non-zero for real teams today, so any failure is visibly wrong.
 
-### CRITICAL **[CUSTOMER-FACING]** — Golf calendar renders empty for a player when the team-membership read errors — the error boundary they built is bypassed
+**How to trigger:** A coach on a team with a real roster opens /golf/dashboard while ONE of the nine batch-1 queries fails, after verifyTeamAccess's retried coach_id_for_team probe has already succeeded.
 
-`src/app/golf/(dashboard)/dashboard/calendar/page.tsx:64`
+Concrete mechanism, grounded in this project's own config and history: pg_roles shows authenticator and authenticated carry statement_timeout=8s AND lock_timeout=8s. The counts are trivial at 985 golf_events rows, so a plain statement timeout is implausible -- but a LOCK wait is not. Two recurring lock producers on exactly these tables are documented in this repo: the daily ~03:45 UTC deadlock in the CoachHelm refresh path (#790) and bulk UPDATEs on golf_events (the class-event [class:<id>] tagging sweep, which is one realtime message per row). Either holds a lock that makes the golf_events count at dashboard-data.ts:320 return 55P03/57014 while coach_id_for_team -- which reads the untouched golf_team_coach_staff -- succeeds. That is precisely the divergent per-query failure the code cannot see.
 
-**Breaks:** A player opens /golf/dashboard/calendar. If the `golf_team_members` lookup returns a PostgREST error (RLS denial, statement timeout, or PGRST116 if the player ever holds two membership rows), `teamId` resolves to null, the whole `if (teamId)` block at line 101 is skipped, and the page renders a fully empty calendar — no events, no error, no retry. The player's entire season looks deleted. This is the exact scenario the file's own comment says must never happen.
+Observable result for the highest-value real team, Guilford College Men's Golf (roster 12, 22 upcoming events, measured today):
+- Roster select (:332-335) errors -> playerIds = [] -> the :396 gate is skipped -> Recent Rounds empty, Top Players empty, teamScoringAverage null, GIR%/Putts/Rd sparklines empty, Team Pulse improving/stable/declining all 0, roundsThisWeek 0, and the "Roster Size" sparkline tile shows whatever rosterSize resolved to.
+- Roster count (:315) errors -> "Roster Size" tile renders literal 0 for a 12-player team.
+- Events count (:320) errors -> "Upcoming Events" renders 0 instead of 22.
+No toast, no error boundary, no log line, HTTP 200. The coach sees a healthy-looking dashboard reporting an empty program.
 
-**Evidence:** Read calendar/page.tsx:55-101. Line 64: `supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()` sits inside a `Promise.all` wrapped in try/catch. Line 71: `teamId = coachTeamId || playerTeamResult.data?.team_id || null` — only `.data` is read; `.error` is destructured nowhere. The catch at line 73-79 throws `new Error('Failed to load your team for the calendar. Please try again.')` with the comment "rendering an empty calendar here is indistinguishable from 'my season got wiped' (audit finding #20)". But a supabase-js query builder does NOT reject on a database error — it resolves with `{ data: null, error }`. So the catch is dead for the error channel it was written to guard, and the failure falls straight through to the silent-empty path. Contrast the events fetch 85 lines lower at line 149, which DOES check `if (eventsResult.error) throw` — the same file gets it right for events and wrong for the team lookup that gates them. For a player `orgId` is null, so `coachTeamId` is always null and `teamId` depends entirely on this one unchecked read.
+Deterministic local reproduction without waiting for a lock: run the page against a Supabase instance where the golf_team_members SELECT is made to error but public.coach_id_for_team still resolves -- e.g. open a psql session holding an ACCESS EXCLUSIVE lock on golf_team_members (BEGIN; LOCK TABLE golf_team_members IN ACCESS EXCLUSIVE MODE;) for >8s, then load /golf/dashboard as a coach. The lock_timeout=8s fires on the roster read and count while the gate RPC on golf_team_coach_staff is unaffected. Expected today: a confident zeroed dashboard, HTTP 200, nothing in logs. Expected after the fix: em-dash tiles plus a degraded/retry notice.
 
-**Root cause:** A try/catch was used as the failure guard for a supabase-js call, but supabase-js reports DB failures through the resolved `error` field, not by throwing. The guard therefore only catches network-layer exceptions, never RLS/timeout/PGRST errors.
+**Verifier:** SURVIVES, with corrections. The code is live at HEAD, not a comment, not already fixed, and reachable: page.tsx:186-187 -> getCachedCoachDashboardData -> getCachedCoachDashboardDataImpl (dashboard-data.ts:1195, a pass-through; unstable_cache was removed, the "Cached" name is a misnomer) -> getCoachDashboardDataImpl. dashboard-data.ts:365-367 does `.count || 0` on three head-count queries and :497 does it for weekRoundsResult; `.error` is never read on any of the four. :378-380 discards playersResult.error, and the empty playerIds then short-circuits the `if (playerIds.length > 0)` gate at :396, blanking every derived KPI. There is no try/catch in getCoachDashboardDataImpl and the payload at :745 carries no error channel for these reads.
 
-**Proposed fix:** Destructure the error and throw on it, matching the events path. Replace line 71's assignment with:
-```ts
-if (playerId && (playerTeamResult as { error?: unknown }).error) {
-  throw new Error('Failed to load your team for the calendar. Please try again.');
-}
-teamId = coachTeamId || playerTeamResult.data?.team_id || null;
-```
-Also apply the same treatment to `coachListResult` (line 66) if a missing coach list would misrender. Add a regression test that mocks the builder resolving `{data:null,error:{code:'PGRST301'}}` and asserts the page throws rather than rendering zero events — a try/catch test with a rejected promise will pass while the bug is live.
+The reporter missed the strongest piece of evidence: page.tsx:171-178 encodes the invariant "A genuine new team returns empty arrays/zero counts WITHOUT throwing (see getCoachDashboardData), so letting this throw only fires on a true failure." That is one-directional and false in the other direction -- a true failure of these six reads also does not throw, so the RouteErrorBoundary the page comment explicitly relies on is bypassed for exactly the reads it reasoned about. The todayScheduleError precedent is real and confirms the codebase already accepted this honesty contract: :374 -> payload :747 -> FairwayCoachDashboard.tsx:686 -> TodayPanel scheduleError prop. One of nine batch-1 queries got it; eight did not.
 
-### CRITICAL **[CUSTOMER-FACING]** — 213 synced class events are typed 'other', so every `.neq('event_type','class')` filter lets them through — one player's class schedule is published to the whole team's iCal feed
+THREE CLAIMS IN THE FINDING ARE WRONG:
+
+1) "RLS" as a trigger is refuted. pg_policies: golf_team_members_select_v5 gates on EXISTS(golf_team_coach_staff JOIN golf_coaches WHERE gc.user_id = auth.uid()); golf_events_select_team and golf_qualifiers_select_team gate on is_golf_team_coach(team_id). All three read the same golf_team_coach_staff that coach_id_for_team reads. A coach who passes verifyTeamAccess at dashboard-data.ts:277-278 is permitted by all three policies. There is no RLS-shaped silent zero.
+
+2) "Any transient DB/RLS/timeout condition" is overstated. verify-player-access.ts:174-183 runs probeWithRetry(coach_id_for_team) immediately before batch 1 and FAILS CLOSED (reportProbeFailure -> allowed:false -> throw 'Unauthorized' at :278). A sustained or total DB outage trips that gate and DOES reach the error boundary; a GoTrue 5xx throws at :268-270. The residual window is narrower than claimed: a per-query failure hitting one of the nine batch-1 queries after the retried gate probe already succeeded.
+
+3) The production number is wrong. The finding asserts "all four counts are non-zero for real teams today." Measured via Supabase MCP: upcoming_events is genuinely 0 for 5 of 10 teams (Hampden-Sydney, Demo University Golf (Pat), Lynchburg Women's Golf, Denison, Piedmont); active_quals is genuinely 0 for 8 of 10 (only 2 active qualifiers exist platform-wide). Only Roster Size is unmistakably wrong when falsely 0 -- 9 of 10 teams non-zero, max 15. This makes the swallowed error MORE invisible on the qualifier/event tiles but the visible harm there smaller.
+
+ONE THING THE FINDING UNDER-REPORTED: :463 `if (recentRoundsResult.data)` and :496 `allRoundsResult.data || []` also discard .error. fetch-all-rows.ts:116-119 DOES return the error, and captureIfDenial only captures RLS denials -- a 57014/55P03 is returned and then dropped, blanking team scoring avg, GIR%, putts/Rd, top players and Team Pulse even when playerIds is healthy.
+
+Severity high, not critical: customer-facing and undetectable (nothing logged), but the total-outage path is already covered by the gate + auth throw, there is no write path or data loss, it recovers on refresh, and two of the four tiles are legitimately 0 for most teams today.
+
+**Fix:** Keep the shape of the proposed fix but correct the targets and drop the RLS framing.
+
+1) dashboard-data.ts after :363 -- capture the three count errors and make the tiles nullable rather than zero:
+   const rosterCountError = rosterCountResult.error != null;
+   const eventsCountError = eventsCountResult.error != null;
+   const qualifiersCountError = qualifiersCountResult.error != null;
+   const rosterSize = rosterCountError ? null : (rosterCountResult.count ?? 0);
+   const upcomingEvents = eventsCountError ? null : (eventsCountResult.count ?? 0);
+   const activeQualifiers = qualifiersCountError ? null : (qualifiersCountResult.count ?? 0);
+   Widen CoachDashboardPayload['stats'] to `number | null` for these three and render an em-dash in the MetricCards (FairwayCoachDashboard.tsx already does exactly this for scoringAvg via `scoringAvg != null ? <MetricCard .../> : <InsufficientData/>`). NOTE: rosterSize is also consumed at :392 for sparklines.rosterSize.value -- that field is already `number | null`, so passing null there is correct and needs no widening.
+
+2) At :378 add `const rosterFetchError = playersResult.error != null;`. When true, do NOT enter the :396 branch (it would compute KPIs over an empty player set) and set a new `teamStatsUnavailable: true` on the payload so the dashboard renders a retry notice instead of empty cards. This is the highest-impact of the six -- it alone blanks Recent Rounds, Top Players, scoring avg, GIR%, Putts/Rd and Team Pulse.
+
+3) At :497 mirror it: `teamPulse.roundsThisWeek = weekRoundsResult.error ? null : (weekRoundsResult.count ?? 0)` (widen TeamPulseData.roundsThisWeek to number | null).
+
+4) ALSO fix the two the original finding missed: :463 `if (recentRoundsResult.data)` and :496 `allRoundsResult.data || []` discard .error. fetchAllRowsResult (fetch-all-rows.ts:110) returns `{data, error}` and captureIfDenial only handles RLS denials -- a lock/timeout error is returned and then dropped. Fold `recentRoundsResult.error != null || allRoundsResult.error != null` into the same teamStatsUnavailable flag.
+
+5) await logServerError(...) for each non-null error with { action: 'getCoachDashboardData', featureArea: 'coach_dashboard' }. Today these failures leave zero trace, which is why nobody can say how often this fires -- do not treat the current silence as evidence it doesn't.
+
+6) Update the now-false comment at page.tsx:171-178. It asserts "a genuine new team returns empty arrays/zero counts WITHOUT throwing ... so letting this throw only fires on a true failure," which reads as a guarantee that a true failure DOES throw. After this change it should say that read failures are surfaced via the nullable stats + teamStatsUnavailable flag, not via a throw.
+
+Do NOT implement any RLS-related mitigation: golf_team_members_select_v5, golf_events_select_team and golf_qualifiers_select_team all gate on the same golf_team_coach_staff that verifyTeamAccess checks, so there is no RLS silent-zero path to close.
+
+#### C8. [HIGH] · **CUSTOMER-FACING** 213 synced class events are typed 'other', so every `.neq('event_type','class')` filter lets them through — one player's class schedule is published to the whole team's iCal feed
 
 `src/app/api/calendar/feeds/[token]/route.ts:276`
 
 **Breaks:** Shenandoah University Women's Golf has 213 class-tagged golf_events rows (193 in the future) with event_type='other' instead of 'class'. Every query that means "the team's schedule" excludes classes with `.neq('event_type', CLASS_EVENT_TYPE)` alone, so all 213 pass the filter. Result: a subscriber of the team iCal feed gets 193 of one player's lecture blocks pushed into their Apple/Google Calendar; the coach's iCal feed (coach/[token]/route.ts:132) gets them too; the dashboard 'upcoming events' count and list (dashboard-data.ts:320/358/860/875) inflate by 193; CoachHelm chat read-tools.ts:951 and program-pulse.ts:123 treat them as team activity. This is exactly the leak the .neq was added to stop on 2026-08-05, and it does not cover these rows.
+
+**Root cause:** lib/calendar/class-events.ts documents TWO markers (event_type='class' AND the `[class:<id>]` description tag) and its own JS helper `isClassEvent` (line 44-49) correctly checks EITHER. But every server-side SQL filter checks only event_type, so the marker that is actually guaranteed on 100% of rows (the tag — it is what the sync keys its whole diff on) is never used server-side. A single-marker filter over a two-marker contract.
 
 **Evidence:** Production SQL (Supabase MCP, read-only):
   SELECT event_type, count(*) FROM golf_events WHERE description LIKE '%[class:%' GROUP BY 1;
   -> class: 666, other: 213
 All 213 belong to team ffd6985f-14b4-4448-895f-d5af20da8d6a ('Shenandoah University Women's Golf'), 193 with start_time > now(), spanning 10 distinct classes, created 2026-08-06 01:48Z and 01:53Z. 0 orphaned rows (every tag resolves to a live golf_player_classes row), so these are live, currently-rendering events. No DB trigger/CHECK rewrites event_type (pg_trigger + pg_constraint on golf_events both checked, empty) — these rows were written by a build that predated `event_type: CLASS_EVENT_TYPE` (calendar-sync.ts:297) and nothing re-types them: the only self-heal is calendar-sync.ts:361 `existing.event_type !== desired.event_type`, which fires only when the owning player re-opens and saves that class.
 
-**Root cause:** lib/calendar/class-events.ts documents TWO markers (event_type='class' AND the `[class:<id>]` description tag) and its own JS helper `isClassEvent` (line 44-49) correctly checks EITHER. But every server-side SQL filter checks only event_type, so the marker that is actually guaranteed on 100% of rows (the tag — it is what the sync keys its whole diff on) is never used server-side. A single-marker filter over a two-marker contract.
+**How to trigger:** No setup needed. Log in as the Shenandoah University Women's Golf coach and open /golf/dashboard. The "Upcoming events" stat tile reads 195; the true number of team events is 2. The "Upcoming" list directly beneath it (dashboard-data.ts:358, limit 20, ordered start_time ASC) shows twenty consecutive rows titled "BIO-121: General Biology I", "SPAN-202-F2F", "MATH-207: Intro to Statistics ", "PSY-101: General Psychology" etc. - two players' fall semester presented as the team's schedule. Ask CoachHelm chat about the team's upcoming schedule and the same 193 rows come back as team activity (v3/chat/read-tools.ts:951, program-pulse.ts:123).
 
-**Proposed fix:** 1) Add a shared query helper next to CLASS_EVENT_TYPE in src/lib/calendar/class-events.ts:
-   export function excludeClassEvents<T>(q: T): T { return (q as any).neq('event_type', CLASS_EVENT_TYPE).not('description','ilike','%[class:%'); }
-   and use it at feeds/[token]/route.ts:276, coach/[token]/route.ts:132, dashboard-data.ts:320,358,860,875, v3/chat/read-tools.ts:951, v3/chat/program-pulse.ts:123 — replacing the bare .neq in each.
-2) One-shot data repair (migration):
-   UPDATE golf_events SET event_type='class' WHERE description LIKE '%[class:%' AND event_type <> 'class';  -- 213 rows
-3) Add a Review Gate / test assertion that any golf_events query using `.neq('event_type'` in a team-schedule path also excludes the tag.
+The iCal variant is one click from being real but is NOT currently triggered: it needs someone on team ffd6985f to create a calendar feed (golf_calendar_feeds currently has 0 rows for that team), after which /api/calendar/feeds/[token] would export 193 of two teammates' lecture blocks into the subscriber's phone.
 
-### CRITICAL **[CUSTOMER-FACING]** — Class events are pinned to ONE timezone offset captured at save time, so 281 future class meetings render exactly one hour early after the 1 Nov DST change
+**Verifier:** CONFIRMED as a real defect, but mis-anchored and over-severed.
+
+WHAT SURVIVES (re-measured in prod via Supabase MCP):
+- `SELECT event_type, count(*) FROM golf_events WHERE description LIKE '%[class:%' GROUP BY 1` -> class:666, other:213. All 213 are on team ffd6985f-14b4-4448-895f-d5af20da8d6a = "Shenandoah University Women's Golf", a live customer (5 active members, a player signed in 2026-08-06 23:47Z). 193 are future-dated, spanning 10 classes owned by TWO players (Sofia Bogaty 185 rows, Carley Westmoreland 28) - the team's correctly-typed 'class' rows all belong to a third player (Gabriella Frick).
+- The live damage is the COACH DASHBOARD, not the iCal feed. Reproducing dashboard-data.ts:320 exactly: count WHERE team_id=ffd6985f AND start_time>now() AND event_type<>'class' -> 195, of which 193 match '%[class:%' and only 2 are real team events. So src/app/golf/actions/dashboard-data.ts:320 renders "Upcoming events = 195" on a team with 2, and :358 (20-row list ordered start_time ASC) is 100% class blocks. This is verbatim the coach report the code comment at dashboard-data.ts:316-319 says PR #1292 fixed ("192 on a team with 22 real ones") - still live.
+
+WHAT I REFUTE:
+1. The title's headline is NOT happening. golf_calendar_feeds has 3 rows platform-wide: 2 on "Demo University Golf" (0 leaking rows) and 1 with team_id NULL, which short-circuits to an empty calendar at feeds/[token]/route.ts:250-259. Shenandoah has ZERO feeds. The reported file:line (feeds/[token]/route.ts:276) and coach/[token]/route.ts:132 are LATENT, not firing. No one's lectures are in anyone's Apple/Google Calendar.
+2. The root-cause timeline is wrong in a load-bearing way. The finding says the rows "were written by a build that predated event_type: CLASS_EVENT_TYPE". Actual created_at of the 213 rows is 2026-08-06 01:48:48Z -> 01:53:50Z, while fix commit 9ca57de2b was authored 2026-08-06 02:37Z (Aug 5 22:37 -0400); the 666 backfilled rows were created 00:21Z-01:28Z. The rows landed in the gap between PR #1292's backfill migration running and its code fix existing - a race in that PR's own rollout, not legacy data. Consequence the finding misses: if the fixed build is not yet serving production (repo ops: main no longer auto-deploys), syncClassToCalendar is STILL writing event_type:'other' (git show 9ca57de2b^:src/app/golf/actions/calendar-sync.ts:250) and the pool keeps growing; the self-heal at calendar-sync.ts:361 only helps once new code is actually deployed.
+3. The privacy framing is overstated. The calendar UI does not leak: attributeClassEvents -> isClassEvent (src/lib/calendar/class-events.ts:44-49) checks EITHER marker, so a player viewing the grid still has teammates' 'other'-typed class rows dropped at line 153. Blast radius is the SQL-filtered surfaces only (dashboard count/list, CoachHelm read-tools.ts:951, program-pulse.ts:123), plus the latent iCal routes.
+
+**Fix:** Keep all three parts of the proposed fix, with one correction of emphasis - the dual-marker filter is the load-bearing piece, not the data repair:
+
+1) (PRIMARY) Add the dual-marker helper beside CLASS_EVENT_TYPE in src/lib/calendar/class-events.ts and use it at every team-schedule query, so the filter is correct regardless of which build is writing:
+   src/app/golf/actions/dashboard-data.ts:320, :358, :860, :875  <- fixes the live customer-visible bug
+   src/lib/coachhelm/v3/chat/read-tools.ts:951, src/lib/coachhelm/v3/chat/program-pulse.ts:123
+   src/app/api/calendar/feeds/[token]/route.ts:276, src/app/api/calendar/coach/[token]/route.ts:132  <- latent, close anyway
+   Implementation note: prefer an explicit `.not('description','ilike','%[class:%')` chained after the existing `.neq('event_type', CLASS_EVENT_TYPE)` rather than an `as any` cast helper, so the PostgREST builder stays typed.
+
+2) One-shot data repair migration:
+   UPDATE golf_events SET event_type='class' WHERE description LIKE '%[class:%' AND event_type <> 'class';  -- 213 rows today
+   This alone is NOT sufficient and will re-rot: the 213 rows were created AFTER PR #1292's backfill, in the window before its code fix shipped.
+
+3) BEFORE calling this done, verify the deployed production SHA contains 9ca57de2b (calendar-sync.ts writing event_type: CLASS_EVENT_TYPE). If prod is still on the pre-#1292 build, every new class sync keeps minting event_type='other' rows and step 2 must be re-run after the deploy.
+
+4) Test/Review-Gate assertion that any golf_events query using `.neq('event_type'` in a team-schedule path also excludes the `[class:` description tag.
+
+#### C9. [HIGH] · **CUSTOMER-FACING** Class events are pinned to ONE timezone offset captured at save time, so 281 future class meetings render exactly one hour early after the 1 Nov DST change
 
 `src/app/golf/actions/calendar-sync.ts:123`
 
 **Breaks:** A player saves a Fall class in August (EDT, getTimezoneOffset()=240). buildDateTimeString stamps EVERY occurrence in the term with the literal offset '-04:00', including December meetings. After the 1 Nov 2026 DST fallback the same UTC instant is 10:00 AM Eastern, not 11:00. Every class occurrence from 1 Nov onward shows one hour early on the calendar, in the availability overlay, in conflict detection, and in the iCal feeds. Guilford College and Shenandoah are both affected. The same bug runs the other way for Spring terms saved in January (they will show one hour LATE after the March change).
+
+**Root cause:** calendar-sync.ts:242 takes a single scalar `classData.timezoneOffset` (one `new Date().getTimezoneOffset()` snapshot sent from the browser at classes/page.tsx:157 and :214) and formatTimezoneOffset (line 82-88) turns it into one fixed ISO offset string that is concatenated onto every occurrence date at lines 300-301. A fixed numeric offset cannot express a zone, and an academic term always spans a DST transition.
 
 **Evidence:** Production SQL, comparing each event's Eastern wall-clock to the class's stored `golf_player_classes.start_time`:
   BIO-121 (stored 11:00:00): 2026-09-02 15:00Z -> 11:00 America/New_York (correct); 2026-11-06 15:00Z -> 10:00 America/New_York (WRONG).
@@ -415,223 +826,628 @@ Aggregate:
   -> ffd6985f (Shenandoah University Women's Golf): 77 future events wrong, of 323
   Total: 281 future class events, 37% of the 761 future class events. Both teams' golf_team_settings.timezone is America/New_York (Shenandoah's is NULL, so the client falls back to the browser zone — same result).
 
-**Root cause:** calendar-sync.ts:242 takes a single scalar `classData.timezoneOffset` (one `new Date().getTimezoneOffset()` snapshot sent from the browser at classes/page.tsx:157 and :214) and formatTimezoneOffset (line 82-88) turns it into one fixed ISO offset string that is concatenated onto every occurrence date at lines 300-301. A fixed numeric offset cannot express a zone, and an academic term always spans a DST transition.
+**How to trigger:** Reproduce end to end (this is the exact path the 281 production rows came through):
 
-**Proposed fix:** Send the IANA zone, not the offset. Client: pass `timezone: Intl.DateTimeFormat().resolvedOptions().timeZone` (fall back to the team's golf_team_settings.timezone server-side). Server: replace buildDateTimeString with a per-occurrence resolver that computes the offset FOR THAT DATE in that zone, e.g.
-  function offsetForDate(dateStr: string, time: string, tz: string) {
-    const naive = new Date(`${dateStr}T${time}Z`);
-    const parts = new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(naive);
-    ... derive minutes diff, return ISO offset string ...
-  }
-and call it inside the occurrence loop (line 291) instead of once. localDateKey (line 133) must use the SAME per-date offset so the diff still matches existing rows. Keep `timezoneOffset` accepted for back-compat. Then backfill: force a re-sync per class — the diff at line 364 `!sameInstant(...)` corrects the 281 rows automatically once the generator is right.
+1. Log in as a golf player on a team whose members are in US Eastern (Guilford b714c30f or Shenandoah ffd6985f both qualify) with the browser TZ set to America/New_York, on any date between mid-March and 1 Nov — i.e. while EDT is in effect, so new Date().getTimezoneOffset() returns 240.
+2. Go to /golf/dashboard/classes and add a class with semester = Fall (term must run past 1 Nov), days including Monday, start_time 11:00, end_time 12:15. Save.
+3. classes/page.tsx:157 sends timezoneOffset: 240. calendar-sync.ts:242 captures it once; formatTimezoneOffset turns it into the literal string '-04:00'; the loop at :289-314 concatenates that SAME '-04:00' onto every occurrence date at :300-301, including the December ones.
+4. Open /golf/dashboard/calendar and page forward to any week on or after 2 Nov 2026. The class chip reads 10:00 AM, not 11:00 AM. Page back to October and it correctly reads 11:00 AM. The break is exactly at the DST boundary.
 
-### CRITICAL **[CUSTOMER-FACING]** — GolfRoundReview type marks already-migrated columns as "may need migration" — the entire coach→player review workflow was written into a JSON blob instead of the real columns, and 0 of 77 production reviews have ever been published
+Already-realised production state (no repro needed): 281 future class events across the two paying teams are stored one hour early. Onset is 2026-11-02; the earliest confirmed wrong row is the 08:30 Writing Seminar stored as 12:30Z = 07:30 Eastern.
 
-`src/lib/types/golf.ts:538`
+Second, opposite-direction trigger: save a Spring-term class in January (EST, offset 300 -> '-05:00'). Every March/April/May meeting after the spring-forward will render one hour LATE.
 
-**Breaks:** A coach opens a player's round review, writes notes, and hits publish/share. The real `status`/`published_at` columns update (or the JSON blob updates, depending on which of the two dead paths is wired) but the player-facing surface reads the other one, so the player never sees the review. Today the button isn't even reachable (see the companion dead-code finding), so the observable customer symptom is: the coach→player round-review loop has never functioned in production — 77 reviews generated, 0 delivered. The moment anyone wires up the existing `publishReview` to fix that, it will write status='published' and STILL show nothing, because every reader in the same file reads `patterns_detected.status`.
+Amplification trigger: as a coach, use the calendar's 'find a time' / availability overlay for any November week. availability.ts reads these same golf_events rows, so a player sitting in an 11:00 class shows as busy 10:00-11:15 and free 11:15-12:15 — the coach can book practice on top of a real class. The same shifted instants go out to any subscribed external calendar via the iCal feed routes.
 
-**Evidence:** src/lib/types/golf.ts:511 declares `GolfRoundReview` by hand (NOT via `Tables<'golf_round_reviews'>`, unlike every other type in that file). Line 538 comments `// Extended fields for review system (may need migration)` above `status?`, and the blocks below declare `coach_rating?`, `shared_with_player?`, `player_viewed_at?`, `player_acknowledged?` as optional virtual fields.
+**Verifier:** Survives adversarial verification with a decisive production measurement.
 
-The migration ALREADY HAPPENED. Live `information_schema` for public.golf_round_reviews (queried via Supabase MCP) contains real columns: `status` (default 'draft'), `published_at`, `published_by`, `coach_rating`, `coach_feedback_text`, `player_viewed_at`, `player_acknowledged_at`, `action_items`, `version`, `generation_method`, `shared_with_player`, `sentiment_score`, `regeneration_count`, `last_regenerated_at`, `insights_count`, `highlights_count`, `areas_count`, `ai_model_version`. The type omits published_at/published_by/coach_feedback_text/player_acknowledged_at ENTIRELY and invents near-namesakes that are not columns at all (`coach_approved_by`, `player_acknowledged`, `generation_attempts`, `strengths`).
+CODE IS LIVE, NOT A COMMENT. src/app/golf/actions/calendar-sync.ts:123-126 buildDateTimeString takes a scalar `timezoneOffset?: number` and formatTimezoneOffset (:82-88) renders it once into a fixed ISO offset string. tzOffset is captured ONCE at :242 and concatenated onto every occurrence at :300-301 inside the weekly loop at :289. It is never recomputed per date. A fixed numeric offset cannot express a zone, and an academic term always spans a DST transition.
 
-A developer read that type, concluded the columns weren't there, and built a shadow state machine: src/app/golf/actions/round-reviews.ts:78 `interface ReviewExtendedData` stores status/coach_approved/shared_with_player/player_viewed_at inside the `patterns_detected` JSONB column. src/app/golf/actions/round-reviews.ts:51 `interface ReviewDbRow` — the row type used to read these rows back — omits `status`, `published_at`, `published_by`. Every reader in the file therefore reads `extData?.status ?? 'draft'` out of JSON: lines 264, 399, 754, 884, 1140, 1485.
+REACHABLE. Three live user-initiated call sites, all passing a single browser snapshot: src/app/golf/(dashboard)/dashboard/classes/page.tsx:157, :214, :330 (`timezoneOffset: new Date().getTimezoneOffset()`).
 
-Meanwhile src/app/golf/actions/round-reviews.ts:1649-1651 (publishReview) writes the REAL `status: 'published'` / `published_at` / `published_by` columns — which no reader in the file ever looks at.
+NOT ALREADY FIXED. Most recent commit touching the file is f888fa6c7; the offset is still a scalar.
 
-PRODUCTION MEASUREMENT (Supabase MCP): `select status, count(*), count(published_at), count(*) filter (where shared_with_player)` on golf_round_reviews → 77 rows, ALL status='draft', published_at NULL on 100%, shared_with_player true on 0. Only 8 of the 77 even carry a `"status"` key inside patterns_detected. The live generator path (src/app/golf/actions/round-review-system.ts, the one the page at src/app/golf/(dashboard)/dashboard/rounds/[id]/review/page.tsx:29 actually imports) writes NEITHER — it only ever touches `shared_with_coach` (round-review-system.ts:1154), the player→coach direction.
+PRODUCTION MEASUREMENT — the signal is perfectly clean, zero noise:
+  SELECT (e.start_time AT TIME ZONE 'America/New_York')::date >= '2026-11-01' AS after_dst,
+         EXTRACT(EPOCH FROM ((e.start_time AT TIME ZONE 'America/New_York')::time - c.start_time))/3600 AS hours_off,
+         count(*)
+  FROM golf_events e JOIN golf_player_classes c ON e.description LIKE '%[class:'||c.id::text||']%'
+  WHERE e.start_time > now() GROUP BY 1,2;
+    after_dst=false, hours_off=0.00,  count=480
+    after_dst=true,  hours_off=-1.00, count=281
+Not one row deviates. Per team: b714c30f (Guilford) 204 wrong of 556 future; ffd6985f (Shenandoah) 77 wrong of 205 future. Total 281.
+First bad row is 2026-11-02, the Monday after the fallback: 'English and Creative Writing 101' has golf_player_classes.start_time = 08:30:00 but golf_events.start_time = 2026-11-02 12:30:00+00, which is 07:30 Eastern.
 
-**Root cause:** The central types file hand-rolls a shape for golf_round_reviews instead of deriving it from `Tables<'golf_round_reviews'>` like GolfRound/GolfEvent/GolfTask do two dozen lines above. Once the hand-rolled type lagged the migration, the comment `(may need migration)` turned a stale type into an authoritative-looking instruction, and the next developer honoured it by inventing JSON storage.
+THE RENDERER IS CORRECT, WHICH IS WHY THIS IS A WRITE-SIDE BUG. src/lib/calendar/timezone.ts:81-90 formatEventTime uses Intl.DateTimeFormat with an explicit IANA timeZone, so it applies DST correctly to an instant that was stamped wrong.
 
-**Proposed fix:** 1. Replace the hand-rolled `GolfRoundReview` in src/lib/types/golf.ts:511-567 with `export type GolfRoundReview = Tables<'golf_round_reviews'>` plus a separate, explicitly-named `GolfRoundReviewComputed` interface for the genuinely virtual fields (`strengths`, `key_stats`, `ai_recommendations`) — and delete the `(may need migration)` comment on line 538.
-2. Add `status`, `published_at`, `published_by`, `shared_with_player`, `player_viewed_at`, `player_acknowledged_at`, `coach_rating`, `coach_feedback_text` to `ReviewDbRow` (src/app/golf/actions/round-reviews.ts:51).
-3. Pick ONE store. Recommend the real columns: change every `extData?.status ?? 'draft'` read (lines 264, 399, 754, 884, 1140, 1485) to `row.status ?? 'draft'`, and change the writes at 405/440/499/532/540/763/892 to update the `status` column rather than merging into `patterns_detected`. Ship a one-shot backfill for the 8 rows that carry a JSON status: `update golf_round_reviews set status = patterns_detected->>'status' where patterns_detected ? 'status' and status = 'draft'`.
-4. Add a regression test asserting that after `publishReview(id)`, the same read path the player page uses reports the review as published.
+TWO CORRECTIONS TO THE REPORT (neither changes the verdict):
+1. Shenandoah total is 205 future class events, not 323. The 204/77/281 mismatch counts reproduce exactly.
+2. The report says Shenandoah's NULL golf_team_settings.timezone makes the client 'fall back to the browser zone'. It does not — timezone.ts:57-62 getValidTimezone falls back to the constant DEFAULT_TIMEZONE = 'America/New_York'. Same outcome, different mechanism.
 
-### CRITICAL **[CUSTOMER-FACING]** — Class schedule import tells the player "Synced to your calendar" without ever reading a single sync result — 6 classes in production imported with zero calendar events
+BLAST RADIUS IS WIDER THAN DISPLAY. Class events feed src/lib/calendar/availability.ts (busy-blocks for 'find a time'), src/lib/calendar/conflicts.ts, and both iCal feeds (src/app/api/calendar/feeds/[token]/route.ts, src/app/api/calendar/coach/[token]/route.ts). A coach scheduling November practice sees a player free during a class they are actually in.
+
+MATERIAL DEFECT IN THE PROPOSED FIX. The claim that the diff at :364 `!sameInstant(...)` 'corrects the 281 rows automatically' is FALSE. grep for syncClassToCalendar across src/ returns only the three call sites in classes/page.tsx — no cron, no batch, no scheduled re-sync. Existing rows will not self-heal; they correct only if each player individually opens and re-saves that class. A one-off backfill is mandatory.
+
+**Fix:** The reporter's direction is right — send the IANA zone, resolve the offset per occurrence — but the backfill claim is wrong and must not be relied on.
+
+1. CLIENT (src/app/golf/(dashboard)/dashboard/classes/page.tsx:157, :214, :330): add `timezone: Intl.DateTimeFormat().resolvedOptions().timeZone` alongside the existing `timezoneOffset`. Keep timezoneOffset for back-compat with in-flight clients.
+
+2. TYPE (calendar-sync.ts:36-59 ClassFormData): add `timezone?: string`.
+
+3. SERVER FALLBACK — correct the reporter here. Resolve the zone as: classData.timezone (validated) -> golf_team_settings.timezone for teamId -> DEFAULT_TIMEZONE. That chain must mirror src/lib/calendar/timezone.ts:57-62 getValidTimezone exactly, because that is what the READ path uses. The reporter's 'falls back to the browser zone' is wrong; the read path falls back to the 'America/New_York' constant, and if the write path fell back to anything else the two would disagree for every team with a NULL timezone (which includes Shenandoah).
+
+4. GENERATOR (calendar-sync.ts:300-301): replace the once-computed tzOffset with a per-date resolver called INSIDE the loop at :289. Compute the zone's offset for that specific occurrence date, e.g. format the candidate instant with Intl.DateTimeFormat({timeZone, hour12:false, ...}).formatToParts, derive the minutes difference, and emit the ISO offset for THAT date. Reuse the existing formatTimezoneOffset for the final string so the sign convention stays consistent.
+
+5. DIFF KEY (calendar-sync.ts:133 localDateKey, used at :339) must use the SAME per-date resolution. If it keeps `tzOffset ?? 0` while the generator becomes zone-aware, the keys stop matching for post-transition dates and the diff will simultaneously insert duplicates and push the correct existing rows into staleIds for deletion at :405-415 — turning a one-hour display bug into row churn.
+
+6. BACKFILL IS MANDATORY — the reporter is wrong that this self-heals. grep confirms syncClassToCalendar has only the three user-initiated callers in classes/page.tsx; there is no cron or batch. Either (a) run a one-off server-side pass that re-invokes the corrected generator for every golf_player_classes row with future events, or (b) apply a targeted SQL correction to the 281 rows. The SQL shape that isolates exactly the affected set, verified to return 281 and only 281:
+   UPDATE golf_events e SET start_time = e.start_time + interval '1 hour',
+                            end_time   = e.end_time   + interval '1 hour'
+   FROM golf_player_classes c
+   WHERE e.description LIKE '%[class:'||c.id::text||']%'
+     AND e.start_time > now()
+     AND (e.start_time AT TIME ZONE 'America/New_York')::time <> c.start_time;
+   Run it as a migration only AFTER the generator fix ships, otherwise the next player save re-breaks the rows. Re-run the two verification queries afterward and confirm the hours_off histogram collapses to a single row (0.00).
+
+7. TEST: src/app/golf/actions/__tests__/calendar-sync.test.ts should gain a case that generates a Fall term spanning 1 Nov from an EDT save and asserts the November occurrences carry '-05:00' while the September ones carry '-04:00' — plus the mirror case for a Spring term saved in EST spanning the March transition.
+
+#### C10. [HIGH] · **CUSTOMER-FACING** The schedule-import path throws away every syncClassToCalendar result and always toasts 'Synced to your calendar'
 
 `src/app/golf/(dashboard)/dashboard/classes/page.tsx:334`
 
-**Breaks:** A player uploads a schedule screenshot, confirms the parsed classes, and sees "6 classes imported — Synced to your calendar." Zero calendar events were written. The class rows show in the Classes list, so the player believes the whole flow worked and never retries; the classes are invisible on the team calendar to both the player and the coach, so the coach schedules practice on top of a class. There is also a second trigger on the same toast: line 309 gates the entire sync block on `if (data && teamId)`, so a player with no team resolved skips sync completely and still gets "Synced to your calendar."
+**Breaks:** handleConfirmClasses builds N syncClassToCalendar promises (line 310-332), `await Promise.all(syncPromises)` at line 334, and NEVER inspects a single CalendarSyncResult. Line 341 then unconditionally fires `fairwayToast.success('N classes imported', { description: 'Synced to your calendar.' })`. Every failure syncClassToCalendar can return — 'Could not determine semester dates', 'Class start and end times must look like HH:MM', 'Semester range too large', an RLS refusal, a Postgres insert error — is announced to the player as a success. This is the SAME defect that was just fixed on the add path (line 154-175) and the edit path (line 222-228); the bulk/vision-import path, which is how players actually load a full semester, was left as-is.
 
-**Evidence:** Line 309 `if (data && teamId) {`, lines 310-332 build `syncPromises` from `syncClassToCalendar(...)`, line 334 `await Promise.all(syncPromises);` — every `CalendarSyncResult` is discarded. Lines 341-344 then fire `fairwayToast.success(\`${importedCount} ... imported\`, { description: 'Synced to your calendar.' })` unconditionally. `syncClassToCalendar` returns `Promise<CalendarSyncResult>` and never throws (src/app/golf/actions/calendar-sync.ts:447); its failure paths include `{ success: false, error: 'Could not determine semester dates. Please set a semester start date.' }` at calendar-sync.ts:228. PRODUCTION: 17 of 43 `golf_player_classes` rows have zero `[class:<id>]`-tagged `golf_events`. Six of them (player 49ffe06d…, team 6ecdd1a6… "Demo University Golf") share the exact created_at 2026-07-23 11:58:05.133054+00 — one bulk `.insert(classesToInsert)`, i.e. this handler — and all six have ev=0. Eleven more on team 343731cb… "Lynchburg Women's Golf" (Feb 2026) likewise have zero events. Every one of those `semester` values is NULL, which is exactly the input that drives the `Could not determine semester dates` failure. The add and edit paths in this same file were already fixed for this bug (see the postmortem comment at lines 147-153); this path and the two below were missed.
+**Root cause:** Three independent single-points-of-silence stacked on one path: (a) the result of a server action that reports failure by return value is discarded, (b) the toast is unconditional, and (c) the term the sync will use is chosen by a hardcoded literal ('Spring 2026') the user never sees and cannot correct, validated against a hardcoded window the user also never sees (ConfirmClassesModal asks for a start date but not a term).
 
-**Root cause:** `await Promise.all(syncPromises)` discards an array of `{success, error}` results, and the success toast is not conditioned on them. The fix that landed on `handleAddClass`/`handleUpdateClass` was applied per-call-site instead of to every call site of `syncClassToCalendar` in the file.
+**Evidence:** page.tsx:308-344 read directly: no variable captures the Promise.all result, no `.success` check exists anywhere in handleConfirmClasses. Compare handleAddClass:160 (`if (!syncResult?.success)`) and handleUpdateClass:222.
+Production corroboration: the 2026-08-06 01:48Z Shenandoah import produced classes whose whole semester is 1-2 events — SPAN-202-F2F (M/W/F 12:00) has 2 events (Aug 12, Aug 14); PSY-222-F2F1 (F 13:00) has 1; CJ-343-BLD (M/W 13:00) has 1. And 17 of the 43 golf_player_classes rows have ZERO calendar events at all (6 on Demo University Golf imported 2026-07-23, 11 on Lynchburg Women's Golf). Nobody was ever told.
+Compounding, in the same block: line 326 `semester: confirmedClass.semester || 'Spring 2026'` hardcodes a term four months in the past — a class that falls back to it generates ~55 events entirely in the past and still returns success:true. And src/lib/golf/semester.ts:83-85 returns null (=> 'Could not determine semester dates') whenever the ConfirmClassesModal's REQUIRED user-entered start date (ConfirmClassesModal.tsx:96,102) falls outside the auto-detected term's hardcoded window — a Fall start date entered against a 'Summer' detection kills the entire sync, silently.
 
-**Proposed fix:** Capture the results and branch: `const syncResults = await Promise.all(syncPromises);` then `const failures = syncResults.filter((r) => r && !r.success);`. Hoist the `teamId` check out of the sync block so an unresolved team is itself a failure rather than a skip. Then replace the unconditional toast with: if `failures.length === 0` → `fairwayToast.success(\`${importedCount} classes imported\`, { description: 'Synced to your calendar.' })`; else → `fairwayToast.error(\`${importedCount} classes imported, but ${failures.length} could not be added to your calendar\`, { description: failures[0]?.error ?? 'Unknown error' })`. Mirror the exact wording pattern already used at lines 168-175 so the three paths read consistently. Note `syncPromises` currently contains `Promise.resolve()` (undefined) entries for skipped rows — type the array as `Promise<CalendarSyncResult | undefined>[]` and treat `undefined` as neither success nor failure, or better, filter those rows out before mapping.
+**How to trigger:** Concretely, as a golf player on a team (reproduced against the real 2026-08-06 01:48Z production import):
 
-### CRITICAL **[CUSTOMER-FACING]** — Any authenticated user can self-join any golf conversation and read/post in another program's private messages
+SILENT-TOTAL-FAILURE variant (the reported defect):
+1. Log in as a golf player, go to /golf/dashboard/classes.
+2. Click "Import Schedule", upload a screenshot or PDF of a class schedule.
+3. On the Confirm step, enter ANY start date in the required "semester start date" field that falls outside the auto-detected term's window — e.g. today is in the Fall bucket but you type a January date, or the term detected is Fall 2026 (ends Dec 15) and you type 2027-01-10.
+4. Confirm. `parseSemesterDates` returns null (semester.ts:84), `syncClassToCalendar` returns `{success:false, error:'Could not determine semester dates...'}` for EVERY class, `Promise.all` at page.tsx:334 discards all of them, and page.tsx:341 toasts "5 classes imported — Synced to your calendar."
+5. Open /golf/dashboard/calendar. Nothing is there. No error was shown, nothing was logged client-side.
+   The same happens for any of the other 11 failure returns — e.g. sign in as a player whose `golf_team_members` row was removed between page load and confirm ('Player is not a member of this team', :196), or import a schedule whose OCR produced a malformed time ('Class start and end times must look like HH:MM.', :282).
 
-`supabase/migrations (policy golf_participants_insert_v2 on public.golf_conversation_participants):1`
+TRUNCATED-SEMESTER variant (what actually happened in prod, and what makes the missing check so costly):
+1. Do the import on any date between Aug 1 and Aug 15 — `detectSemester('')` returns "Summer <year>", whose window ends Aug 15 (schedule-parser.ts:871, semester.ts:69).
+2. Enter your real Fall start date, e.g. 2026-08-12. It is ≤ Aug 15 so `isValidCustomStart` accepts it (semester.ts:30).
+3. Confirm. Each class gets 1-2 events instead of ~45, the action returns success:true, and the toast says "Synced to your calendar."
+4. Your calendar shows your Monday class exactly once, on Aug 12, and never again. This is the exact shape of the five rows created at 2026-08-06 01:48:55Z in production.
 
-**Breaks:** A signed-in user at School A POSTs one row to /rest/v1/golf_conversation_participants with {conversation_id: <any uuid>, user_id: <their own id>}. The policy's first disjunct `user_id = auth.uid()` passes with no check that the conversation belongs to a team they are on. From that moment golf_conversations_select_v2, golf_messages_select_v2 and golf_messages_insert_v2 all key off user_conversation_ids(auth.uid()), so the intruder can read every message in that conversation, see every participant, and post into it as themselves. Coach<->player 1:1 DMs (recruiting, discipline, injury talk) are in the same table. Conversation ids are uuids but they leak through realtime channel names, notification action_urls and any shared screenshot/URL.
+Neither variant produces any user-visible signal. The `catch {}` at page.tsx:345 covers the remaining case where the insert itself throws.
 
-**Evidence:** Role-impersonation proof on production, in a rolled-back transaction. Attacker = Denison University player user e78c5692-65e5-46a7-bb8c-1aa78b58c5d2. Target = Guilford College Men's Golf team chat conversation ab10422a-dc65-4abc-944c-ec4fbdf3a7bb (13 messages, a paying customer).
-BEFORE (control): guilford_msgs_readable=0, conv_readable=0, all_golf_msgs_readable=0.
-Then: insert into golf_conversation_participants (conversation_id, user_id) values ('ab10422a-...','e78c5692-...');  -- accepted, no error.
-AFTER: guilford_msgs_readable=13, conv_readable=1, participants_readable=14 (14 user_ids of Guilford staff+players). Sample content read: "Group Chat for 26-27", "I have received". Transaction rolled back; verified 0 leftover rows.
-Policy text: golf_participants_insert_v2 INSERT WITH CHECK ((user_id = (SELECT auth.uid())) OR (EXISTS (SELECT 1 FROM golf_conversations gc WHERE gc.id = conversation_id AND gc.created_by = (SELECT auth.uid())))).
-RLS is the only boundary here — src/app/actions/messages.ts:355-373 documents that the app relies on branch (a) deliberately.
+**Verifier:** CONFIRMED — I tried to refute this and could not. The core claim is live code, not a comment, and it is present on committed `main` as well as in the working tree.
 
-**Root cause:** The `user_id = auth.uid()` disjunct was added so the conversation creator could insert their own participant row before the conversation became visible to them (messages.ts:353-373 explains the ordering). It authorises "this row is about me" but never "I am entitled to be in this conversation". Self-identification is not authorization.
+WHAT I READ (working tree, /Users/ricknini/Downloads/helmv3/src/app/golf/(dashboard)/dashboard/classes/page.tsx):
+- L310-332: `const syncPromises = data.map(...)` building N `syncClassToCalendar(...)` calls.
+- L334: `await Promise.all(syncPromises);` — no variable binds the result. Nothing in `handleConfirmClasses` (L262-348) reads `.success` or `.error`.
+- L341-344: `fairwayToast.success(`${importedCount} classes imported`, { description: 'Synced to your calendar.' })` — unconditional.
+- L345: `catch { /* Error handled by alert above */ }` swallows anything that does throw.
 
-**Proposed fix:** Replace the self-insert branch so it still lets a creator bootstrap, but binds membership to the conversation's tenant. Migration:
-DROP POLICY golf_participants_insert_v2 ON public.golf_conversation_participants;
-CREATE POLICY golf_participants_insert_v3 ON public.golf_conversation_participants FOR INSERT TO authenticated WITH CHECK (
-  -- creator bootstrapping their own row on a conversation they just created
-  (user_id = (SELECT auth.uid()) AND EXISTS (SELECT 1 FROM public.golf_conversations gc WHERE gc.id = conversation_id AND gc.created_by = (SELECT auth.uid())))
-  OR
-  -- adding anyone (incl. self) to a conversation whose team the CALLER belongs to
-  EXISTS (SELECT 1 FROM public.golf_conversations gc WHERE gc.id = conversation_id AND gc.team_id IS NOT NULL AND (public.is_golf_team_coach(gc.team_id) OR public.is_golf_team_player(gc.team_id)))
-);
-The first branch must reference golf_conversations, which is itself RLS-filtered — so also add a SECURITY DEFINER helper `golf_conversation_created_by_me(uuid)` (STABLE, search_path='', REVOKE FROM PUBLIC/anon, GRANT TO authenticated) and use it in place of the inline EXISTS to avoid the same 42P17 recursion baseball has. No app change needed: messages.ts already inserts self first, which still satisfies branch 1.
+The contrast the reporter drew is exact: L154-163 (add path) captures `syncResult` and branches on `!syncResult?.success` at L160; L213-228 (edit path) branches at L222. Only the bulk/vision-import path was left unguarded.
 
-### CRITICAL **[CUSTOMER-FACING]** — createTeam() can never succeed — the staff-row insert it needs is refused by its own RLS policy, and the team is silently rolled back
+REACHABILITY — verified, not assumed:
+- `syncClassToCalendar` (calendar-sync.ts:447-454 → `syncClassToCalendarImpl` at :164) returns `Promise<CalendarSyncResult>` and NEVER throws on failure — the whole body is wrapped in try/catch at :424-438 which converts even a raw `RangeError` into `{ success: false, error }`. So a failure is a resolved promise. `Promise.all` fulfils. The success toast fires. This is the failure mode, and the `catch {}` at L345 is not even reached.
+- There are at least 9 distinct `return { success: false, ... }` sites reachable from this call: 'Not authenticated' (:169), 'Not authorized to sync this calendar' (:180), 'Player must be on a team' (:184), 'Player is not a member of this team' (:196), 'Not authorized to sync this class' (:211), 'Could not determine semester dates' (:228), 'Class start and end times must look like HH:MM' (:282), 'Semester range too large' (:310), 'Failed to load existing class events' (:332), plus three insert/update/delete error returns (:390, :401, :413). Every one of them is announced to the player as "Synced to your calendar."
+- Path to reach it: FairwayGolfClasses `onImportSchedule` (L486) → UploadScheduleModal → `onParsed` (L508) → ConfirmClassesModal `onConfirm={handleConfirmClasses}` (L514). Live, mounted, no flag gating (`isRedesignEnabled()` is hardcoded true).
 
-`src/app/golf/actions/teams.ts:585`
+GIT STATE: the defect is committed on `main` (9ca57de2b is main's tip for this file; `git show main:` puts `await Promise.all(syncPromises)` at L300 and the unconditional toast at L307). The add/edit-path fixes the reporter cites are UNCOMMITTED working-tree edits by a concurrent agent — which is precisely why the import path stands out as the one left behind.
 
-**Breaks:** A coach with no team opens /golf/dashboard/team, fills in the team name/season/gender and submits (FairwayTeamSettings.tsx:213). The golf_teams INSERT succeeds, then the golf_team_coach_staff INSERT at teams.ts:585-592 runs under the CALLER's client and is rejected 42501. The catch block deletes the team it just created and returns the generic 'Failed to create team. Please try again.' The coach can retry forever and it will never work. This is the only in-product way for an existing coach to get a team, so it is also the only recovery path for the coaches described in the next finding.
+PRODUCTION MEASUREMENT (Supabase MCP, read-only, live prod):
+- `golf_player_classes` = 43 rows. 17 have ZERO `golf_events` carrying their `[class:<id>]` tag. 14 of those 17 have a non-empty `days` array, so they should have generated a weekly series and did not. (The reporter's "17 of 43" matches the DB exactly; the honest number of *unexplained* zeros is 14 — three rows have `days: []` and legitimately generate nothing.)
+- The 2026-08-06 01:48:55Z import (5 classes, one player) is worse than "zero" — it is *plausible-looking garbage*. I pulled every event row for it:
+    SPAN-202-F2F (M/W/F 12:00) → 2 events: Aug 12, Aug 14
+    BA-307-BLD1  (M/W/F 11:00) → 2 events: Aug 12, Aug 14
+    CJ-343-BLD   (M/W   13:00) → 1 event:  Aug 12
+    PSY-222-F2F1 (F     13:00) → 1 event:  Aug 14
+  That is a THREE-DAY semester, and I can reconstruct exactly why. `detectSemester('')` (schedule-parser.ts:871) on 2026-08-06 returns `Summer 2026` because `month === 7 && day <= 15`. `parseSemesterDates('Summer 2026', ...)` (semester.ts:67-70) gives end = 2026-08-15. The player typed a Fall start date of 2026-08-12 into ConfirmClassesModal's REQUIRED start-date field (ConfirmClassesModal.tsx:96, :421 `required`), and `isValidCustomStart` (semester.ts:24-31) ACCEPTS it — Aug 12 is ≤ Aug 15 — producing the window Aug 12 → Aug 15. Four weekday walks, done.
+  Critically, that call returns `success: TRUE`. So this specific production damage would survive even a correct `.success` check — but the unconditional toast is what guaranteed nobody ever found out either way.
 
-**Evidence:** Reproduced on production by role impersonation, rolled back. As Denison's head coach (user bc03d535-9647-4063-ab64-9985f46d4601, coach bd2236bd-c3f9-46bd-b9a1-b59032e0843b):
-Step 1: insert into golf_teams (...) values (...,'ef06ba2e-...','bd2236bd-...') -> OK, no error.
-Step 2: insert into golf_team_coach_staff (team_id, coach_id, role, is_primary) values (<new team>,'bd2236bd-...','head_coach',true) -> ERROR 42501: new row violates row-level security policy for table "golf_team_coach_staff".
-CONTROL (same session, same coach): select is_golf_team_head_coach('27d01293-8b5a-4e4e-9e3c-c86666b53bc9') -> true, golf_teams visible = 1. So the denial is specific to the brand-new team, not a vacuous probe.
-Policy: golf_team_coach_staff_insert WITH CHECK (is_golf_team_head_coach(team_id) AND EXISTS (SELECT 1 FROM golf_coaches gc WHERE gc.id = coach_id AND gc.user_id = auth.uid())). is_golf_team_head_coach reads golf_team_coach_staff, which for a team created one statement ago is empty -> always false.
-The two sibling call sites already worked around this with the service-role client and documented why: onboarding.ts:245-259 ('Use the admin client for this single bootstrap row') and teams.ts addSecondTeam ('Use admin client for the staff insert — mirrors onboarding bootstrap pattern', fixed 2026-08-05 after Shenandoah's coach could not add their Women's team). createTeamImpl is the one that was never updated.
+CONCLUSION: real, customer-facing, high. Paying programs affected — the 43 rows span Demo University Golf, Lynchburg Women's Golf, and the 2026-08-06 importer. Class events feed the shared team calendar and the availability layer, so a silently-empty or 3-day class series makes a player read as free when they are in class.
 
-**Root cause:** golf_team_coach_staff_insert requires the caller to ALREADY be head coach of the team the row is being created for — a condition that is structurally unsatisfiable for the first staff row of any team. It also requires coach_id = the caller's own coach row, so it can never be used to add an assistant either. Bootstrap and delegation are both impossible through this policy; every working path bypasses it with the admin client, and createTeamImpl forgot to.
+WHERE THE REPORTER IS WRONG (two corrections the parent must not carry forward):
+1. The `semester: confirmedClass.semester || 'Spring 2026'` literal at L326 is effectively UNREACHABLE, not the cause. Both parse paths always populate `semester`: the vision path at schedule-vision.ts:473/:504 (`detectSemester(extraction.term || '')`) and the text path at schedule-parser.ts:881/:544/:769. `detectSemester` (schedule-parser.ts:841-873) never returns an empty string — every branch returns a term. Only `fillDefaults` (schedule-parser.ts:833, `partial.semester || ''`) could theoretically emit `''`, and its callers set the field first. So the reporter's "a class that falls back to it generates ~55 events entirely in the past" has no demonstrated trigger and did NOT cause the observed damage. It is dead-ish code worth deleting for honesty, not a live defect.
+2. Relatedly, the reporter frames the semester.ts:83-85 issue as "returns null → whole sync dies silently." That null path is real, but the damage I actually measured in prod is the *opposite and worse* case: a start date that PASSES validation against a wrongly-detected term and truncates the semester to a few days while reporting success. Fix #3 in the proposal (let the user see and change the term) is therefore the load-bearing one, not fix #2.
 
-**Proposed fix:** Mirror addSecondTeam exactly. In createTeamImpl (teams.ts ~584-598): after `newTeam` is read back, assert `newTeam.organization_id === coach.organization_id` (select organization_id in the admin read-back at teams.ts:562-565, it is currently omitted), then do the staff insert with `createAdminClient()` instead of `supabase`. Keep the rollback delete on the caller's client (golf_teams_delete_creator already covers it). Separately, widen golf_team_coach_staff_insert so a head coach can add OTHER coaches: WITH CHECK (public.is_golf_team_head_coach(team_id)) — drop the `gc.user_id = auth.uid()` conjunct, which is what makes the policy self-only and forces redeemStaffInvite (teams.ts:1867) to use the admin client too.
+Also note for the parent: `semester` is NULL on all 43 prod rows, so `calendar-sync.ts:223` (`ownedClass.semester ?? classData.semester`) always falls through to the caller-supplied value today. The comment there — "the import path never writes one" — is true of committed main and is being invalidated by the uncommitted L294 change; whoever lands that should update the comment.
 
-### HIGH **[CUSTOMER-FACING]** — Auto-join failure at the end of onboarding is swallowed — the player gets confetti and "see your team" while landing on a dashboard with no team
+**Fix:** Three changes, in impact order. Note fix 1 alone does NOT stop the damage actually measured in production — fix 2 is the one that does.
+
+1. Stop discarding the results (page.tsx:334-344). Replace the bare await + unconditional toast with:
+
+   const results = await Promise.allSettled(syncPromises);
+   const failures = results
+     .map(r => (r.status === 'rejected'
+       ? 'Sync request failed'
+       : (r.value && typeof r.value === 'object' && 'success' in r.value && !r.value.success)
+         ? (r.value.error ?? 'Unknown error')
+         : null))
+     .filter((e): e is string => e !== null);
+
+   then branch the toast:
+     if (failures.length) {
+       fairwayToast.error(
+         `${importedCount} imported, ${failures.length} not added to your calendar`,
+         { description: failures[0] },
+       );
+     } else { ...existing success toast... }
+
+   Note the guard on `r.value`: the map at L312 returns `Promise.resolve()` (undefined) for skipped pairs, so a naive `!r.value.success` would throw. Also `void logServerError(...)` the first failure so this class of silence is visible in prod next time.
+
+2. Make the term visible and correctable in ConfirmClassesModal — this is the load-bearing fix. Today the modal asks for a start DATE (ConfirmClassesModal.tsx:96, :412-425, `required` at :421) but never shows the TERM, which is silently inferred by `detectSemester` and is what bounds the END of the series. Render the detected term (it is already on every `ParsedClass` as `cls.semester`) as an editable Fall/Spring/Summer/Winter + year control, default it from the entered start date rather than from `new Date()`, and pass the user's choice through at page.tsx:326. That kills the Aug-1-to-Aug-15 "Summer term ending Aug 15 + Fall start date = 3-day semester" trap that produced the 2026-08-06 rows.
+
+3. Refuse implausible output rather than reporting it as success. In `syncClassToCalendarImpl` (calendar-sync.ts, after the occurrence loop at :285-315), if `desiredByDate.size` is 0, or if the resolved window spans fewer than ~14 days while `classData.days` is non-empty, return `{ success: false, error: 'That start date only leaves N days in the <term> term — check the semester.' }`. There is already a MAX guard at :309; this is the missing MIN guard. With fix 1 in place this becomes visible to the player.
+
+4. Optional cleanup, NOT a live bug: delete the `|| 'Spring 2026'` literal at page.tsx:326 and pass `confirmedClass.semester` straight through. Both parse paths always populate it (schedule-vision.ts:473, schedule-parser.ts:881), so the literal never fires today — but a hardcoded past term sitting in a sync path is a trap for the next reader. While there, update the now-stale comment at calendar-sync.ts:218-221 ("the import path never writes one") if the uncommitted `semester: cls.semester || null` write at page.tsx:294 lands.
+
+Backfill: 14 existing prod rows with non-empty `days` have zero tagged `golf_events`, and the five 2026-08-06 rows have a 3-day series. Both sets need a re-sync once the term is correctable — the diff-upsert in syncClassToCalendar handles re-running safely.
+
+#### C11. [HIGH] · **CUSTOMER-FACING** Unsynced classes and the 'find a time' slot generator build wall-clock times in the SERVER's timezone (UTC on Vercel), so busy blocks land 4-5 hours early
+
+`src/lib/calendar/availability.ts:466`
+
+**Breaks:** setTimeOnDate (line 466-471) does `result.setHours(hours, minutes)` — Node's local timezone. Vercel functions run TZ=UTC (no TZ override in vercel.json/next.config.mjs). So an 11:30 AM Eastern class expands to a busy period at 11:30 UTC = 7:30 AM Eastern. A coach using the availability overlay or 'find a time' sees the player blocked at 7:30 AM and FREE at 11:30 AM — and will schedule a lift right on top of the lecture. parseEventDateTime (line 362-368) has the identical bug for golf_coach_blocked_time (`new Date(`${date}T${time}`)`, offset-naive), and generateTimeSlots (line 511-541) does `slotStart.setHours(hour)` so the 7-19 'working hours' window becomes 3 AM - 3 PM Eastern in the suggested-times list.
+
+**Root cause:** `golf_player_classes.start_time` is a Postgres `time` column holding a wall-clock time with no zone. Turning a wall-clock time into an instant requires a zone, and this file supplies none — it lets Date's implicit server-local default stand in. The caller already threads a timezoneOffset for the window bounds but never passes it into getUserBusyPeriods, so the information exists one frame up the stack and is dropped.
+
+**Evidence:** availability.ts:469 `result.setHours(hours ?? 0, minutes ?? 0, 0, 0)` — no zone. availability.ts:367 `return new Date(`${date}T${time}`)` — offset-naive string, parsed as server-local. availability.ts:526 `slotStart.setHours(hour, 0, 0, 0)`. No `TZ` set in vercel.json or next.config.mjs (grepped, no hits), so Vercel's default UTC applies.
+This path is LIVE, not theoretical: expandRecurringClass now runs for every class with no synced calendar occurrences (the comment at line 417-431 explains it was deliberately un-gated because all 43 rows have semester=NULL). Production has 17 such classes — 11 on 'Lynchburg Women's Golf' (6 members) and 6 on 'Demo University Golf' (7 members). Example: Lynchburg's ECON 300, T/Th 11:30-12:45, produces a busy block at 11:30-12:45 UTC = 7:30-8:45 AM Eastern.
+Contrast with the caller, which DOES get this right: golf.ts:4302-4303 builds the window with buildDateTimeString(startDate,'00:00:00',timezoneOffset). The window is zone-correct; the contents are not.
+
+**How to trigger:** Concrete, on live data. Sign in as the Lynchburg Women's Golf coach and go to /golf/dashboard/calendar. In the avatar rail, select the player who owns "ECON 300 - Intermediate Macroeconomics" (class id 81f7922b-33de-41ce-a934-31b4fab76160, days T/Th, 11:30–12:45, zero synced occurrences). Navigate to any week containing a Tuesday or Thursday.
+
+Observed: the availability overlay / grouped list shows the ECON 300 block at 7:30–8:45 AM (EDT; 8:30–9:45 AM once EST starts in November), and 11:30 AM–12:45 PM reads as free.
+
+Second, worse trigger on the same data: with that player as an attendee, open the event editor and set a practice for that Tuesday 11:30 AM–12:45 PM. After the 500ms debounce the conflict panel reports NO conflict, and the coach books a lift on top of the lecture. Set the same event to 7:30–8:45 AM instead and the panel reports a class conflict that does not exist.
+
+Repro without the UI: call getUserBusyPeriods for that player over a Tuesday window with the process TZ forced to UTC (`TZ=UTC`) and observe `busy[0].start.toISOString()` === '...T11:30:00.000Z' instead of the correct '...T15:30:00.000Z'. The same call on a developer laptop set to America/New_York returns the correct instant — which is exactly why this shipped.
+
+**Verifier:** CONFIRMED — I read the code, traced both live callers, and measured production. Could not refute the core claim; two of three sub-claims need downgrading.
+
+CORE CLAIM (setTimeOnDate) — CONFIRMED, live, customer-facing.
+- `src/lib/calendar/availability.ts:466-471`: `result.setHours(hours ?? 0, minutes ?? 0, 0, 0)` — no zone. Called at :440-441 from `expandRecurringClass`, which :294-300 runs for every `golf_player_classes` row that has NO synced `[class:<id>]` occurrence. `golf_player_classes.start_time` is a Postgres `time` (wall clock, no zone), so the instant is built in the *server's* TZ.
+- Server TZ premise is corroborated inside this repo, not just from Vercel docs: `src/test/lib/calendar/timezone.test.ts:1-20` — "SSR (Vercel Lambda) runs in UTC while the browser (and this team) is America/New_York" — that is the header of an already-fixed audit (W1) of the exact same 4-5h shift class. I also grepped: no `TZ` in `vercel.json`, `next.config.mjs`, or anywhere outside test files.
+- MEASURED (Supabase, read-only): `golf_player_classes` = 43 rows, 43 with `semester IS NULL` (so the un-gating comment at :417-431 is accurate — the expansion path fires). Rows with ZERO synced occurrences = 17; of those, 12 have real `days` + non-zero times: 7 on "Lynchburg Women's Golf" (a real customer team) and 5 on "Demo University Golf". Every golf team's `golf_teams.timezone` is `America/New_York`. The reporter's example is real: ECON 300 - Intermediate Macroeconomics, days `["T","Th"]`, 11:30:00–12:45:00, occurrences = 0.
+- Reachability confirmed on TWO surfaces, not one:
+  1. Availability overlay — `FairwayCalendar.tsx:329-346` → `getPlayerAvailability` (golf.ts:4306) → `getUserBusyPeriods`; result is `toISOString()`d (golf.ts:4314-4320) and re-rendered in the TEAM's IANA zone (`FairwayAvailabilityList.tsx:65-72` `zonedMidnight` + time cells). 11:30 built as 11:30Z renders as 7:30 AM ET.
+  2. Conflict check — `FairwayEventEditor.tsx:367-368` and `EventDetailModal.tsx:555-556` → `checkScheduleConflicts` (golf.ts:4148) → `checkEventConflicts` (`conflicts.ts:91`) → same `getUserBusyPeriods`. The proposed window IS zone-correct (buildDateTimeString at golf.ts:4145-4146), so a real 11:30 ET class never overlaps it and a 7:30 AM ET slot falsely does.
+- The existing tests cannot catch this: `src/test/lib/calendar/availability.test.ts:344-460` builds windows with `setHours` and asserts with `getHours()`, so it is timezone-blind by construction and passes under any ambient TZ. Green suite is not evidence here.
+
+SUB-CLAIM 2 (parseEventDateTime, :362-368) — code bug is real (`new Date(\`${date}T${time}\`)` is offset-naive), but NOT currently customer-facing: `SELECT count(*) FROM golf_coach_blocked_time` = 0 rows in production. Latent; fix it with the same patch but do not count it as impact.
+
+SUB-CLAIM 3 (generateTimeSlots, :511-541 / :525) — code bug is real but UNOBSERVABLE by users today, and for a reason the report missed: `conflicts.ts` returns `suggestedTimes`, while `golf.ts:4160` serializes `result.suggestions`. That property does not exist, so `suggestions` is ALWAYS `[]`, and `FairwayEventEditor.tsx:977` always renders the empty branch. The "3 AM–3 PM ET suggested times" symptom cannot reach a coach. This is a separate CONFIRMED defect worth its own ticket: the entire "suggested alternative times" feature is dead (silently returns nothing, no error).
+
+SUB-CLAIM 4 (the proposed fix's `current.getDay()` at :439) — NOT a live defect. The walk starts at `max(timeMin, termStart)`; for every current team (America/New_York, negative offset) local midnight maps to the same UTC calendar date, and `setDate(+1)` preserves the clock, so `getDay()` agrees. It would only break for UTC+ offsets. Do not change it as part of this fix without a test.
+
+One adjacent note: `PremiumCalendarClient.tsx:197,201` calls `getPlayerAvailability`/`getCurrentUserBusyPeriods` with only 3 args (no `timezoneOffset`), so its window buckets by UTC — but that component is not mounted on any golf route (only referenced in a baseball page comment), so it is dead for this purpose.
+
+**Fix:** Thread an explicit zone into availability.ts instead of letting Date's server-local default stand in. Preferred source is the TEAM's IANA zone (`golf_teams.timezone`, currently 'America/New_York' for all four teams) rather than a numeric browser offset, because a month-view window can straddle a DST boundary and a single `getTimezoneOffset()` snapshot would be wrong on one side of it. Fall back to the caller's `timezoneOffset` (already computed at golf.ts:4302/4368 and FairwayCalendar.tsx:338 but never passed down), then to UTC.
+
+1. Add a `zone` parameter to `getUserBusyPeriods` and pass it from golf.ts:4306 and golf.ts:4368 (both already have `timezoneOffset` in scope; resolve the team timezone alongside the existing team lookup at availability.ts:121-137).
+2. `expandRecurringClass` / `setTimeOnDate` (availability.ts:440-441, 466-471): build the instant from a date key + wall-clock time + zone, e.g. via the existing `@/lib/calendar/timezone` helpers used by the already-fixed W1 audit, or the offset form mirroring `src/app/golf/actions/calendar-sync.ts:123` `buildDateTimeString`. Do NOT use `setHours`.
+3. `parseEventDateTime` (availability.ts:362-368): same treatment. Zero prod rows today, so it is safe to fix but unverifiable against data — say so.
+4. `generateTimeSlots` (availability.ts:511-541): same treatment, BUT first fix the reason it is invisible — golf.ts:4160 reads `result.suggestions` while `checkEventConflicts` returns `suggestedTimes`. Rename one side (and the `ConflictResult` interface at golf.ts:169) so suggested times actually reach FairwayEventEditor.tsx:977. That is a separate user-visible defect: the suggested-alternative-times feature currently always renders empty.
+5. Leave `current.getDay()` at availability.ts:439 alone unless you add a UTC+offset test — it is correct for every current team and changing it blind risks a regression.
+6. Tests: `src/test/lib/calendar/availability.test.ts:344-460` is timezone-blind (builds windows with setHours, asserts with getHours). Add a case that sets `process.env.TZ = 'UTC'` and asserts the returned `start.toISOString()` equals the America/New_York-correct instant — the same property `timezone.test.ts:53-66` already pins for the display layer. Without that assertion the fix is unprovable.
+
+#### C12. [MEDIUM] · **CUSTOMER-FACING** Auto-join failure at the end of onboarding is swallowed — the player gets confetti and "see your team" while landing on a dashboard with no team
 
 `src/app/golf/(onboarding)/player/page.tsx:178`
 
 **Breaks:** A coach-invited player finishes onboarding, the auto-join silently fails (bad/stale code, RLS, already on another team), and the app shows the celebration screen: check-mark animation, particle burst, "Welcome, {firstName}!", "Your profile is ready. Head to your dashboard to see your team." They arrive on an empty dashboard with no team, no error, and no idea what to do. The coach's roster stays empty.
 
-**Evidence:** completePlayerOnboarding deliberately returns `joinedTeam` (onboarding.ts:520-537) and logs the reason on failure (onboarding.ts:526). The caller reads only `result.success` (player/page.tsx:178) and then unconditionally `goForward('complete')` (page.tsx:184). `grep -rn "joinedTeam" src/` returns four hits, all inside onboarding.ts — no consumer anywhere. The 'complete' step at page.tsx:507-511 hard-codes the success copy. Measured in production: admin_events contains `[Onboarding] Auto-join skipped (Team not found) for code ZAYMK5NC` at 2026-08-04 03:45:54Z. ZAYMK5NC resolves to golf_teams id f5b4fc75-4581-4843-9b62-7d3bc4686aa5, "UNC Wilmington Golf" — a paying customer whose team was created the day before. That player was shown the celebration. Aggregate blast radius: `select count(*) from golf_players p left join golf_team_members m on m.player_id=p.id where p.onboarding_completed and m.id is null` → 11 of 80.
-
 **Root cause:** The server action was written to degrade gracefully ("best-effort: a bad code never blocks onboarding") and correctly reports the degradation in its return value — but the client treats `success: true` as "everything worked" and discards the second field. Graceful degradation with no UI for the degraded state is indistinguishable from a lie.
 
-**Proposed fix:** Thread `joinedTeam` into the completion step. In player/page.tsx add `const [joinedTeam, setJoinedTeam] = useState<boolean | null>(null);`, set it from the result before `goForward('complete')` (only meaningful when a joinCode was present: `setJoinedTeam(joinCode ? result.joinedTeam === true : null)`), and in the 'complete' block at page.tsx:507-511 branch the copy: when `joinedTeam === false`, replace "Head to your dashboard to see your team" with an honest line plus a recovery action — "We couldn't add you to your coach's team automatically. Ask your coach to re-send the invite link, or enter the code in Settings." Do not show the particle burst in that branch. Also widen the return type of completePlayerOnboardingImpl so `joinedTeam` survives typecheck at the call site.
+**Evidence:** completePlayerOnboarding deliberately returns `joinedTeam` (onboarding.ts:520-537) and logs the reason on failure (onboarding.ts:526). The caller reads only `result.success` (player/page.tsx:178) and then unconditionally `goForward('complete')` (page.tsx:184). `grep -rn "joinedTeam" src/` returns four hits, all inside onboarding.ts — no consumer anywhere. The 'complete' step at page.tsx:507-511 hard-codes the success copy. Measured in production: admin_events contains `[Onboarding] Auto-join skipped (Team not found) for code ZAYMK5NC` at 2026-08-04 03:45:54Z. ZAYMK5NC resolves to golf_teams id f5b4fc75-4581-4843-9b62-7d3bc4686aa5, "UNC Wilmington Golf" — a paying customer whose team was created the day before. That player was shown the celebration. Aggregate blast radius: `select count(*) from golf_players p left join golf_team_members m on m.player_id=p.id where p.onboarding_completed and m.id is null` → 11 of 80.
 
-### HIGH **[CUSTOMER-FACING]** — Signup replaces the server's exact password error with a wrong one, telling users "use at least 8 characters" when the real problem is a missing special character or a breached password
+**How to trigger:** Cleanest deterministic repro — a mistyped or expired invite URL, no DB setup needed:
 
-`src/components/auth/golf-sign-up-form.tsx:23`
+1. As a brand-new user with no golf_players row, open `/golf/join/BOGUS123` (any code that resolves to no team — a typo in the coach's pasted link, or a team since deleted).
+2. Unauthenticated → `join/[code]/page.tsx:22` sends you to `/golf/signup?returnTo=/golf/join/BOGUS123`. Sign up, come back.
+3. `join/[code]/page.tsx:46` checks `!player || !player.onboarding_completed` and redirects to `/golf/player?joinCode=BOGUS123` — CRUCIALLY, this happens at line 46, BEFORE the code is ever validated at line 63. The "Invalid Invite Code" screen at line 84 is therefore unreachable for any not-yet-onboarded player.
+4. Complete the 4 onboarding steps and submit.
+5. `onboarding.ts:521` enters the auto-join block → `processGolfTeamInvitationImpl` (teams.ts:466) gets nothing from `golf_team_by_join_code` → returns `{success:false, error:'Invalid join code'}` → `joinedTeam = false` at :524, logged at :526.
+6. `onboarding.ts:535` returns `{success: true, joinedTeam: false}`.
+7. `player/page.tsx:178` sees `result.success` truthy, falls through to `goForward('complete')` at :185.
+8. Screen renders `page.tsx:460-511`: particle burst, check-mark, "Welcome, {firstName}!", "Your profile is ready. Head to your dashboard to see your team, track rounds, and connect with your coach." No team was joined. The coach's roster stays empty and the coach gets no "player joined" notification.
 
-**Breaks:** A new customer types a password the server rejects for a specific, fixable reason. The form discards that reason and shows "Password does not meet the requirements. Please use at least 8 characters." Their password is already ≥8 characters, so they add characters, resubmit, fail again — an unwinnable loop at the very first step of signup. The same swallowing hits the HIBP breached-password rejection, where lengthening the password can never help.
+Second live path, no typo required: a player already on team A opens a valid invite link for team B while their onboarding row is incomplete. `validateGolfPlayerCanJoinTeamImpl` returns `canJoin:false` with "You are already on <A>…" (teams.ts:231-235) → same swallowed `joinedTeam:false` → same celebration.
 
-**Evidence:** golf-sign-up-form.tsx:23-25 — `if (lower.includes('weak password') || lower.includes('password')) return 'Password does not meet the requirements. Please use at least 8 characters.'`. That bare `includes('password')` matches BOTH server messages verbatim: auth.ts:300 returns validatePassword's feedback (e.g. "Password must contain at least one special character (!@#$%^&*...)") and auth.ts:395-398 returns "Please choose a stronger password — this one is too common or has appeared in a data breach." Client-side pre-validation only checks length (form line 68-71), so these always reach the server. Measured in production admin_events, feature='auth_onboarding', last 30 days: `[signupAction] Password must contain at least one special character` ×7 (4 info + 3 error, 2026-08-04 20:28 → 2026-08-06 23:35), `[signupAction] Please choose a stronger password — …data breach.` ×8 (2026-08-06 00:17 → 23:35), `[signupAction] Password must contain at least one number` ×1. 16 signup-blocking events in roughly three days, every one shown with the wrong remediation.
+**Verifier:** SURVIVES on the code claim; two material parts of the evidence and impact story are WRONG and I'm downgrading high → medium.
 
-**Root cause:** A defensive error-prettifier with an over-broad substring match placed ABOVE the specific cases, so it captures messages that were already precise and user-ready. The mapper exists to translate raw Supabase/GoTrue strings, but validatePassword's feedback and the breach message are already written for end users.
+CONFIRMED (read the live files):
+- `src/app/golf/actions/onboarding.ts:520-538` — `let joinedTeam = false`, set at :524 from `processGolfTeamInvitation`, logged at :526 on failure, returned at :537.
+- `src/app/golf/(onboarding)/player/page.tsx:178-185` — caller reads only `result.success`, then unconditionally `goForward('complete')`. `joinedTeam` is never read.
+- `grep -rn joinedTeam src/` → 4 hits, all in onboarding.ts (the PlayerTodayTeamless hits are baseball's unrelated `joinedTeamName`). No consumer. Confirmed.
+- `page.tsx:460-511` — celebration branch is unconditional: 8-particle burst, spring check-mark, "Welcome, {firstName}!", "Your profile is ready. Head to your dashboard to see your team…". Hard-coded, no degraded variant. Confirmed.
+- Reachability confirmed: `src/app/golf/join/[code]/page.tsx:50` `redirect('/golf/player?joinCode=' + code)`, read back at `player/page.tsx:166` and passed at :176.
 
-**Proposed fix:** In getSignupErrorMessage, pass through messages that are already user-facing instead of rewriting them. Replace lines 23-25 with:
-```ts
-// validatePassword feedback and the breach message are already user-ready — do not rewrite them.
-if (lower.startsWith('password must') || lower.includes('data breach') || lower.includes('too common')) return error;
-if (lower.includes('weak password')) return 'Password does not meet the requirements. Please use at least 8 characters, with an uppercase letter, a number, and a special character.';
-```
-Apply the identical change to src/components/auth/baseball-sign-up-form.tsx (same helper, same bug). Separately, gate the submit button on the full rule set the server enforces — PasswordStrengthIndicator already computes all five checks (password-strength-indicator.tsx:23-28); block submit until all five pass so the round-trip never happens.
+PRODUCTION EVIDENCE CONFIRMED BUT MISLEADING:
+- The admin_events row is real and exact: `[Onboarding] Auto-join skipped (Team not found) for code ZAYMK5NC` @ 2026-08-04 03:45:54Z, and ZAYMK5NC → f5b4fc75-4581-4843-9b62-7d3bc4686aa5 "UNC Wilmington Golf" (org UNC Wilmington, created 2026-08-03 18:40Z). Both verified.
+- BUT that failure's root cause was already fixed 29 minutes later: commit f57604735 "fix(golf): players could not join a team at all — RLS-blocked pre-thing read (#1279)", 2026-08-04 00:14:49 -0400 = 04:14:49Z. The "Team not found" string came from `teams.ts:184`, and `teams.ts:155-186` now threads `resolvedTeam` past the RLS-blocked pre-flight read specifically to kill that string.
+- It is the ONLY such row. admin_events spans 2026-03-13 → 2026-08-07, 94,629 rows, 7 total `%Onboarding%` rows. Observed post-fix incidence: zero. The reporter presented a pre-fix, since-remediated incident as live blast radius.
 
-### HIGH **[CUSTOMER-FACING]** — Baseball invite links never auto-join — the returnTo the join page sets is never persisted (zero setItem call sites in the entire repo)
+THE "11 of 80" AGGREGATE IS NOT ATTRIBUTABLE:
+I pulled the 11 rows. At least 4 are test/seed accounts (test@golfhelm.com, golf-player-codex-1779039696043@helm.test, rick.testbot.2026@gmail.com, nick@gmail.com). Most of the rest predate the auto-join feature (Feb–May 2026). The only recent one — Sophia Hansen / hqm46@su.edu, onboarded 2026-08-06 01:15Z — has NO auto-join log at all, i.e. she onboarded with no joinCode (plain signup, never invited), a state the proposed fix correctly would not touch. "11 of 80" is an upper bound on teamless players, not on this bug.
+
+"NO IDEA WHAT TO DO" IS FALSE:
+`src/components/golf/NoTeamBanner.tsx` renders for exactly `role === 'player' && !teamId`, and it IS mounted — `src/app/golf/(dashboard)/FairwayDashboardShell.tsx:684`, unconditional in the shell wrapping every dashboard route. It reads "You're not on a team yet. Ask your coach for a join code to access team features." with a Join Team CTA to `/golf/join`, which is a real code-entry page (`src/app/golf/join/page.tsx`). So the player is not stranded; the defect is that the completion screen asserts something untrue, not that recovery is impossible. (Caveat: the banner is dismissible via sessionStorage and uses banned `amber-*` classes, but it renders.)
+
+WHAT REMAINS REAL: `joinedTeam === false` is still reachable four ways with a joinCode present — invalid/expired/deleted code (`teams.ts:471`), already on a DIFFERENT team (`teams.ts:231`), a failed membership read (`teams.ts:205`), or a `golf_join_team_with_code` RPC error (`teams.ts:341`). In every one the player gets confetti and "Head to your dashboard to see your team." That is a genuine honesty defect on the signup→join lane and it touches paying customers. It is medium, not high: recovery UI exists and measured recurrence post-fix is zero.
+
+FIX CORRECTION: the proposed "widen the return type of completePlayerOnboardingImpl so joinedTeam survives typecheck" is unnecessary. The impl at onboarding.ts:419 has NO return-type annotation, every failure branch is a `success: false` literal (`:442`, `:495`, `:509`, and `formatSafeErrorResponse` is annotated `{success: false; error: string}` at server-action-validator.ts:139-142), and `withAdminObserved` is generic in `R`. TS already narrows to the success branch after the `if (!result.success) return` at :178, so `result.joinedTeam` typechecks as-is.
+
+**Fix:** Two changes, ordered by value:
+
+1. (Primary, and cheaper than the reporter's) Validate the code BEFORE routing to onboarding. In `src/app/golf/join/[code]/page.tsx`, move the `golf_team_by_join_code` RPC (currently line 63) ABOVE the `!player || !player.onboarding_completed` redirect at line 46. If the code resolves to nothing, render the existing "Invalid Invite Code" screen (line 84) — which today is dead code for every new player. This eliminates the single most likely trigger at its source and needs no client state.
+
+2. (Still needed, for the causes the pre-check can't catch — already-on-another-team, RPC/RLS failure mid-flight) Thread `joinedTeam` into the completion step in `src/app/golf/(onboarding)/player/page.tsx`:
+   - add `const [joinedTeam, setJoinedTeam] = useState<boolean | null>(null);`
+   - before `goForward('complete')` at :185: `setJoinedTeam(joinCode ? result.joinedTeam === true : null);` — `null` when no code was present, so a plain self-signup keeps the normal copy. No type widening is required; inference already carries the field (see reason).
+   - in the complete branch at :503-511, when `joinedTeam === false` replace the heading/body with an honest line plus recovery — "We couldn't add you to your coach's team automatically. Ask your coach to re-send the invite link, or enter the code from your dashboard." — and skip the 8-particle burst at :462-480 (keep the check-mark; the profile genuinely did save). Point the CTA at `/golf/join` rather than `/golf/dashboard` in that branch, since `src/app/golf/join/page.tsx` is the existing code-entry page.
+
+Do NOT bother widening `completePlayerOnboardingImpl`'s return type — it is unannotated and already infers the discriminated union correctly.
+
+Optional follow-up (separate finding, not this one): `NoTeamBanner` uses banned `amber-*` classes per the design-system rule and is dismissible for the whole session on first click, which can hide the only recovery affordance a confused player has.
+
+#### C13. [MEDIUM] · **CUSTOMER-FACING** Baseball invite links never auto-join — the returnTo the join page sets is never persisted (zero setItem call sites in the entire repo)
 
 `src/components/auth/baseball-sign-up-form.tsx:76`
 
 **Breaks:** A baseball coach sends /baseball/join/<CODE>. A new player clicks it, is bounced to signup, creates an account, completes the 4-step onboarding, and lands on /baseball/player/today with no team. The invite link they clicked is gone. Nothing tells them the join didn't happen; the coach's roster stays empty and they re-send the link.
 
-**Evidence:** src/app/baseball/join/[code]/page.tsx:25 redirects an anonymous visitor to `/baseball/signup?returnTo=/baseball/join/${code}`. On the signup page that param is consumed ONLY to build the "Sign in" link href (signup/page.tsx:19-20) — it is never stored. baseball-sign-up-form.tsx:76 then calls `sessionStorage.removeItem('baseball_signup_returnTo')` and line 82-83 pushes the onboarding path, dropping returnTo entirely. Both onboarding pages faithfully try to honour it — player/page.tsx:276-281 and coach-onboarding/page.tsx:262-267 both `getItem('baseball_signup_returnTo')` — but `grep -rn "baseball_signup_returnTo|golf_signup_returnTo" src/` returns 7 hits and NOT ONE is a setItem. The key is never written by anything. So the resume path is unreachable dead code in both sports; golf survives only because its signup page separately parses the code out of returnTo (golf/(auth)/signup/page.tsx:64-78) and threads it as ?joinCode. Baseball has no equivalent. Prod scale is small today (35 onboarded baseball players, 1 teamless) but the mechanism is total.
-
 **Root cause:** A resume-after-signup design that was implemented on the read side (three consumers) and never on the write side. Nothing in CI can catch it: the getItem branches simply never execute, so tests and typecheck stay green.
 
-**Proposed fix:** Two parts. (1) Write the key: in baseball-sign-up-form.tsx, before calling signUpAction, read `searchParams.get('returnTo')` and if it matches `^/baseball/` do `sessionStorage.setItem('baseball_signup_returnTo', returnTo)`; change line 76 from removeItem to leaving it in place so the onboarding consumer at player/page.tsx:276 can claim it. (2) Better, mirror golf and make it explicit rather than sessionStorage-dependent: extract the code with `returnTo?.match(/\/baseball\/join\/([^/?#]+)/i)` and forward it as `?joinCode=` on the onboarding push (line 82-83), then have baseball player onboarding call joinTeamByCode with it on completion — the manual invite-code field already exists at (onboarding)/player/page.tsx:148,194-200, so the action wiring is already there. Whichever path is chosen, delete the other two dead getItem branches so the next reader isn't misled.
+**Evidence:** src/app/baseball/join/[code]/page.tsx:25 redirects an anonymous visitor to `/baseball/signup?returnTo=/baseball/join/${code}`. On the signup page that param is consumed ONLY to build the "Sign in" link href (signup/page.tsx:19-20) — it is never stored. baseball-sign-up-form.tsx:76 then calls `sessionStorage.removeItem('baseball_signup_returnTo')` and line 82-83 pushes the onboarding path, dropping returnTo entirely. Both onboarding pages faithfully try to honour it — player/page.tsx:276-281 and coach-onboarding/page.tsx:262-267 both `getItem('baseball_signup_returnTo')` — but `grep -rn "baseball_signup_returnTo|golf_signup_returnTo" src/` returns 7 hits and NOT ONE is a setItem. The key is never written by anything. So the resume path is unreachable dead code in both sports; golf survives only because its signup page separately parses the code out of returnTo (golf/(auth)/signup/page.tsx:64-78) and threads it as ?joinCode. Baseball has no equivalent. Prod scale is small today (35 onboarded baseball players, 1 teamless) but the mechanism is total.
 
-### HIGH **[CUSTOMER-FACING]** — getPlayerProfileStats discards the golf_holes read error, and the file's own comment says that silently corrupts scrambling, sand-save and every score/par stat
+**How to trigger:** Path A (new user — the reported one, confirmed):
+1. As a baseball coach on /baseball/dashboard/command-center, click Invite (BaseballInviteButton.tsx:42) and copy the link, e.g. https://app/baseball/join/ABC123.
+2. Open that link in a clean browser profile with no session. join/[code]/page.tsx:22-25 sees no user and redirects to /baseball/signup?returnTo=/baseball/join/ABC123.
+3. Fill the signup form as a Player and submit. baseball-sign-up-form.tsx never reads `returnTo`; line 76 removes a key nothing ever wrote; line 83 pushes /baseball/player.
+4. Complete all 4 onboarding steps. At the "Join a team" step leave the invite-code field blank and continue (it is optional).
+5. handleComplete (player/page.tsx:276) reads `baseball_signup_returnTo` -> null -> line 281 pushes /baseball/player/today. You are on the dashboard with no team; the coach's roster is unchanged. Observable proof without a browser: in DevTools run `sessionStorage.getItem('baseball_signup_returnTo')` at any point in the flow — it is null at every step.
 
-`src/app/golf/actions/player-profile-stats.ts:161`
+Path B (existing half-onboarded account — found during verification, same root cause):
+1. Create an account and abandon onboarding partway (signupAction returns redirectTo '/baseball/player', onboarding_completed stays false).
+2. Later click the same /baseball/join/ABC123 link -> redirected to /baseball/signup?returnTo=... -> click "Sign in" (signup/page.tsx:20 preserves returnTo) -> /baseball/login?returnTo=/baseball/join/ABC123.
+3. baseball-sign-in-form.tsx:46 stores it under `baseball_login_returnTo`. On submit, line 82 computes needsOnboarding = true, so line 84's condition fails and line 89 DELETES the stored value, then line 90 pushes /baseball/player.
+4. Onboarding's getItem at player/page.tsx:276 looks for the OTHER key and finds nothing. Same outcome: onboarded, teamless, invite link gone.
 
-**Breaks:** If the golf_holes read fails for any reason (RLS denial, statement timeout on a wide 'overall' fetch, transient 5xx), holesData is null, holesInfo becomes [], and the shot calculator falls back to deriving score from shot count and GIR from shot results. The player's My Game profile still renders — fully populated, no error, no warning — with wrong scrambling %, wrong sand-save %, and wrong score/par-derived numbers. The player has no way to know. Nothing is logged, so nobody on your side knows either.
+**Verifier:** CONFIRMED, with one correction to the impact narrative and one addition the reporter missed.
 
-**Evidence:** player-profile-stats.ts:161 destructures only `data`: `const { data: holesData } = await fetchAllRowsResult((from, to) => supabase.from('golf_holes')...)`. fetchAllRowsResult (src/lib/supabase/fetch-all-rows.ts:103-127) returns `{ data, error }` and does NOT throw — on a first-page error it returns `{ data: null, error }`, so the discarded error becomes `holesData = null`. Line 184 then does `(holesData || []).map(...)`, producing an empty holesInfo. The consequence is stated verbatim in the comment the code sits under, lines 163-165: 'gir/score/sand_save are canonical inputs: without them the calculator falls back to shot-count for score and re-derives GIR from shot results, which corrupts scrambling, sand-save, and any score/par-based stat.' Contrast the shots fetch 25 lines above at :133 — same helper, error IS destructured, logged via logServerError at :146 and returned as a hard failure at :148. The holes fetch was simply missed.
+Verified live code (not comments):
+- src/app/baseball/join/[code]/page.tsx:25 — `redirect(`/baseball/signup?returnTo=/baseball/join/${code}`)` for any unauthenticated visitor.
+- src/app/baseball/(auth)/signup/page.tsx:19-20 — `returnTo` is consumed ONLY to build the "Sign in" link href. Never stored.
+- src/components/auth/baseball-sign-up-form.tsx:76 — on signup success the form calls `sessionStorage.removeItem('baseball_signup_returnTo')`; line 82-83 then pushes `result.redirectTo || '/baseball/player'`. The form never reads searchParams at all (no `useSearchParams` import).
+- src/app/baseball/(onboarding)/player/page.tsx:276-282 and coach-onboarding/page.tsx:262-267 both `getItem('baseball_signup_returnTo')`.
+- `grep -rn "signup_returnTo" src/` → 7 hits, all getItem/removeItem. ZERO setItem for `baseball_signup_returnTo` (or `golf_signup_returnTo`). The resume branch is unreachable dead code, exactly as claimed.
 
-**Root cause:** Only `data` is destructured from a helper that reports failure through `error` and never throws. The empty-array fallback at line 184 turns a read failure into 'this round has no holes', which the calculator treats as a legitimate shot-only round rather than a failure.
+No alternate carrier exists: `signupAction` (src/app/baseball/actions/auth.ts:394-400) derives `redirectTo` from role only — no cookie, no join awareness. `player/page.tsx:148` is `useState('')` with no prefill from URL or storage. Golf genuinely does survive via the separate `?joinCode=` thread (golf/(auth)/signup/page.tsx:64-78 → golf-sign-up-form.tsx:107-114); baseball has no equivalent.
 
-**Proposed fix:** Mirror the shots branch exactly. Change line 161 to `const { data: holesData, error: holesError } = await fetchAllRowsResult(...)` and immediately after the call add: `if (holesError) { await logServerError(\`[getPlayerProfileStats] Error fetching holes: ${describeError(holesError)}\`, { action: 'player_profile_stats.getPlayerProfileStats' }); return { success: false, error: 'Failed to fetch hole data', stats: null, rounds }; }`. Failing closed is correct here — a missing-holes profile is worse than an error state, because the numbers look authoritative. Add a unit test that mocks the golf_holes fetch to return an error and asserts success:false rather than a populated stats object.
+ADDITION the reporter missed — the same intent leaks a second way, in live code. src/components/auth/baseball-sign-in-form.tsx:46 DOES implement a write side, but under a different key (`baseball_login_returnTo`), and at lines 82-89 when `needsOnboarding` is true it does `sessionStorage.removeItem('baseball_login_returnTo')` and drops it. That `else` branch is precisely the handoff point the three `baseball_signup_returnTo` readers were written for. So an existing account that never finished onboarding ALSO loses the invite link. Any fix that only touches the signup form leaves this second path broken.
 
-### HIGH **[CUSTOMER-FACING]** — Same permanent-stamp trap for players with no team membership — 7 rounds go dark forever the moment they are recorded
+CORRECTION to the impact narrative — "Nothing tells them the join didn't happen" is not accurate. player/page.tsx:688-748 renders a dedicated `team` onboarding step headed "Join a team — Have an invite code from your coach? Enter it below," wired to `processTeamInvitation` at line 200 (handleJoinTeam, lines 193-227). The player IS prompted for a code; they simply have to still have it (it is the last path segment of the link still in their email/text). That is broken auto-join plus friction, not a silent dead end.
 
-`src/lib/coachhelm/v2/post-round-trigger.ts:148`
+PRODUCTION MEASUREMENT (Supabase, read-only): baseball_players = 35, all 35 onboarding_completed, 1 onboarded with no row in baseball_team_members; baseball_team_members = 34; baseball_team_invitations = 0 rows; baseball_teams = 13 with 13 non-null join_code. So every live invite surface (BaseballInviteButton.tsx:42, TeamsClient.tsx:554, InviteModal.tsx:78) emits /baseball/join/<join_code> links that work for existing fully-onboarded users (login path, key `baseball_login_returnTo`) and silently drop the destination for brand-new signups and for half-onboarded returners. Realized damage today: 1 teamless player of 35. Mechanism is total.
 
-**Breaks:** A player who submits a round while not on a team gets coachhelm_failure_reason='engine_membership_missing' and a non-null coachhelm_failed_at. Team membership is a state that changes — a player joins the roster days later — but the round is already excluded from the safety-net cron's retry set. Their entire pre-join history stays permanently un-analyzed even after the coach adds them.
+Severity downgraded high -> medium: customer-facing and on the signup->join acquisition lane, but there is a real in-flow fallback (the manual invite-code step) and prod shows 34/35 players did land on a team. This becomes high the moment invite links are the primary acquisition path.
 
-**Evidence:** 7 completed rounds across 3 distinct players carry coachhelm_failure_reason='engine_membership_missing', spanning round_date 2026-03-10 to 2026-07-23. Verified all three genuinely have 0 rows in golf_team_members today: Andrew Perry 654d35a1 (12 completed rounds, 0 memberships — these rounds have 70-79 shots each), Ben Potter 2ac20cc4 (1 round, 84 shots), Peyton Mussina d75439ba (1 round dated 2026-07-23, 84 shots). Peyton's is the freshest: she recorded a full 84-shot round on 2026-07-23 and it was terminally failed 25 minutes later at 18:07:18. If she is added to a roster tomorrow, that round is still dark. Emitted at severity=info via classifyEngineFailureSeverity, so it never reached the Errors tab.
+**Fix:** Three changes; the second is the one the original report missed.
 
-**Root cause:** post-round-trigger.ts:142 has a single binary notion of outcome: success, or terminal failure. Both 'engine_membership_missing' and 'engine_below_round_floor' describe a precondition that the world will later satisfy, not a fault in the round. Writing coachhelm_failed_at for them converts a retryable state into an irreversible one, because coachhelm-safety-net/route.ts:151 uses that exact column as its permanent exclusion filter.
+(1) Write the key on signup. src/components/auth/baseball-sign-up-form.tsx — add `useSearchParams` (safe: the form is already inside a Suspense boundary at src/app/baseball/(auth)/signup/page.tsx:63-78, so this will not trigger the Next 16 CSR-bailout build error), and replace line 76's unconditional removeItem with a validated write using the same guard the sibling forms use:
 
-**Proposed fix:** Add 'engine_membership_missing' to the same NON_TERMINAL_CODES set described in the previous finding, so postRoundTrigger leaves coachhelm_failed_at null for it. Guard against the obvious cost objection: the safety-net cron already caps at BATCH_LIMIT per tick and orders by created_at, so a handful of permanently-unrostered players cannot starve it — but if that is a concern, add a bounded retry counter column rather than a terminal stamp. Backfill: clear coachhelm_failed_at on the 7 'engine_membership_missing' rounds so they re-enter eligibility if/when those players are rostered.
+  const returnTo = searchParams.get('returnTo');
+  if (returnTo && returnTo.startsWith('/baseball/') && !returnTo.includes('//')) {
+    sessionStorage.setItem('baseball_signup_returnTo', returnTo);
+  } else {
+    sessionStorage.removeItem('baseball_signup_returnTo');
+  }
 
-### HIGH **[CUSTOMER-FACING]** — Stripe webhooks have been rejected wholesale — 50 deliveries 500'd and the invoice mirror is empty
+That alone makes the three existing getItem consumers (player/page.tsx:276, coach-onboarding/page.tsx:262-267) live for the first time.
 
-`src/app/api/webhooks/stripe/route.ts:141`
+(2) Hand off instead of deleting on the login path. src/components/auth/baseball-sign-in-form.tsx:89 — in the `needsOnboarding` else-branch, move the value across to the key onboarding actually reads rather than dropping it:
 
-**Breaks:** STRIPE_WEBHOOK_SECRET is unset in production, so every inbound Stripe webhook is refused with HTTP 500 before signature verification. Stripe retries on 5xx for ~3 days and then gives up permanently. Invoice lifecycle events (finalized / sent / paid / payment_failed / void) never reach the platform, so billing_invoices — the local mirror the admin billing surface and any dunning logic read — knows nothing. A school can pay an invoice in Stripe and the platform will show it unpaid indefinitely.
+  if (storedReturnTo) {
+    sessionStorage.removeItem('baseball_login_returnTo');
+    if (isValidReturnTo(storedReturnTo)) sessionStorage.setItem('baseball_signup_returnTo', storedReturnTo);
+  }
 
-**Evidence:** 50 error rows, fingerprint ad6b5488, title "[route.POST] [Stripe Webhook] STRIPE_WEBHOOK_SECRET is not configured", first 2026-07-30 01:39:09, last 2026-08-02 10:14:09 — the burst-then-decay-then-stop shape of Stripe's retry schedule exhausting itself. This is the single highest-count error in admin_events over 30 days. Measured the consequence directly: `select count(*) from billing_invoices` returns 0 rows, with the migration (20260715120000) applied 2026-07-29 per the route's own header comment, which also notes there are six live invoices in Stripe.
+This closes Path B, which change (1) does not touch.
 
-**Root cause:** Missing production environment variable, not a code bug — but the code makes it maximally costly: the guard at line 142-148 returns 500, which puts Stripe into retry-then-discard rather than surfacing the misconfiguration anywhere a human looks. It logs at 'error' into admin_events, which nobody was watching, and there is no startup-time assertion that the secret exists.
+(3) Do NOT delete the getItem branches (the original report's last suggestion) — after (1) and (2) they are the mechanism, not dead code. Optional polish on top: in player/page.tsx, seed the Team step's `inviteCode` state from the stored returnTo (`storedReturnTo?.match(/\/baseball\/join\/([^/?#]+)/i)`) so the code is pre-filled and the auto-join happens in-flow, mirroring golf's `?joinCode=` behaviour (golf-sign-up-form.tsx:107-114). The action wiring already exists at player/page.tsx:193-227 via processTeamInvitation.
 
-**Proposed fix:** 1) Set STRIPE_WEBHOOK_SECRET in the Vercel production environment (Stripe Dashboard -> Developers -> Webhooks -> the endpoint's signing secret, whsec_...). Verify with a Stripe CLI `stripe trigger invoice.paid` against production, then confirm a row lands in billing_invoices.
-2) Backfill the gap: the ~4 days of events are gone from Stripe's retry queue, so reconcile by listing invoices via the Stripe API and upserting them through the same syncInvoice path (it is idempotent on stripe_invoice_id).
-3) Prevent recurrence: add STRIPE_WEBHOOK_SECRET to whatever required-env assertion runs at boot, and add an integrity-check probe (the integrity-check cron already runs daily at 07:00) that alarms when billing_invoices has zero rows while Stripe reports live invoices.
+Caveat on the original proposal: its part (1) said to "leave line 76's removeItem in place so the consumer can claim it" — that is not sufficient by itself; nothing writes the key, so removeItem is a no-op either way. The setItem is the load-bearing change. Its part (2) (mirror golf with ?joinCode= on the onboarding push) also works but requires new searchParams plumbing in baseball player onboarding, whereas (1)+(2) above reuse machinery that already exists on all three consumers.
 
-### HIGH **[CUSTOMER-FACING]** — Unread-message badge silently reads 0 for both coaches and players when the per-conversation count fails
+Regression guard worth adding: a test that asserts sessionStorage.getItem('baseball_signup_returnTo') is non-null after a successful signup submitted from /baseball/signup?returnTo=/baseball/join/ABC123. Nothing in the current suite can catch this class — the getItem branches simply never execute, so typecheck and 923 green tests stayed green through it.
+
+#### C14. [MEDIUM] · **CUSTOMER-FACING** Deleting a class (single and delete-all) claims "Removed from your calendar" while discarding the removal result — and deletes the class row anyway, destroying the only retry path
+
+`src/app/golf/(dashboard)/dashboard/classes/page.tsx:235`
+
+**Breaks:** A player deletes a class. `removeClassFromCalendar` fails (any of: not authenticated, no `golf_players` row, `golf_team_members` read error, class owned by someone else, or the `golf_events` delete erroring). The result is thrown away, the `golf_player_classes` row is deleted regardless, and the player is told "Class deleted — Removed from your schedule and calendar." The `[class:<id>]`-tagged events stay on the team calendar forever: the class row no longer exists, so nothing in the UI can ever target that tag again. Same bug in `confirmDeleteAllClasses`, which loops the same discarded call over every class and then says "All classes deleted — Your schedule and calendar are clear."
+
+**Root cause:** Result of a `{success, error}` action discarded at two call sites, followed by an unconditional success toast that asserts the calendar side happened. The destructive local delete is sequenced before the remote removal is confirmed, so a failure is unrecoverable.
+
+**Evidence:** Line 235 `await removeClassFromCalendar(selectedClass.id);` — result dropped; the `golf_player_classes` delete follows at 238-242 and only *its* error is checked; line 253 `fairwayToast.success('Class deleted', { description: 'Removed from your schedule and calendar.' });`. Second site: line 405 `for (const classId of classIds) {` / line 406 `await removeClassFromCalendar(classId);` → line 419 `fairwayToast.success('All classes deleted', { description: 'Your schedule and calendar are clear.' });`. `removeClassFromCalendar` returns `Promise<CalendarSyncResult>` and never throws (src/app/golf/actions/calendar-sync.ts:564); its failure returns are at calendar-sync.ts:478, 488, 497, 507, 532, 535, and 551 (`Failed to remove class from calendar: ${error.message}`). The action's own doc comment at calendar-sync.ts:465-469 states outright: "Both call sites in /golf/dashboard/classes discard this result and delete the golf_player_classes row regardless" — the server was hardened to survive the discard (absence is treated as orphan cleanup) but the toast was never made honest. PRODUCTION: 879 `[class:` tagged `golf_events`, 0 currently orphaned — this path has not fired yet, but nothing prevents it.
+
+**How to trigger:** A player opens /golf/dashboard/classes, taps a class to open the detail modal, and taps Delete. Supabase returns a transient error on one of three server-side reads/writes inside removeClassFromCalendar — the golf_team_members read (calendar-sync.ts:491-498), the admin golf_player_classes ownership read (calendar-sync.ts:524-533), or the admin golf_events delete (calendar-sync.ts:544-552). The action RETURNS {success:false, error:'…'} (it never throws), and page.tsx:235 drops it on the floor. The client-side golf_player_classes delete at page.tsx:238-242 then succeeds normally, so `error` is null and the code falls through to page.tsx:253: fairwayToast.success('Class deleted', { description: 'Removed from your schedule and calendar.' }). The class disappears from the player's list; its ~15-20 [class:<id>]-tagged golf_events rows survive. The player can never see them again (class-events.ts:153 filters unresolved-owner class events out of every player's calendar), while the coach keeps seeing them on the team calendar with no owner name attached (class-events.ts:149). Nothing in any UI can target that tag again because the class row it was keyed to is gone.
+
+Identical path via "Delete all classes": handleDeleteAllClasses → confirmDeleteAllClasses loops removeClassFromCalendar over every class id (page.tsx:405-407) discarding each result, then runs one bulk .delete().eq('player_id', playerId) (page.tsx:410-413) and reports 'All classes deleted — Your schedule and calendar are clear.' (page.tsx:419). One transient failure inside a 6-class loop strands that class's whole event series while claiming the calendar is clear.
+
+**Verifier:** Confirmed against live code at HEAD and in the working tree. src/app/golf/(dashboard)/dashboard/classes/page.tsx:235 `await removeClassFromCalendar(selectedClass.id);` discards a `Promise<CalendarSyncResult>`; the `golf_player_classes` delete at 238-242 proceeds unconditionally and only its own error is checked; the unconditional success toast at 253 asserts "Removed from your schedule and calendar." Second site at 406 inside `confirmDeleteAllClasses`, followed by the bulk `.eq('player_id', playerId)` delete at 410-413 and the toast at 419. Both are reachable and wired (onDelete at 534, onDeleteAll/onConfirm at 488/526). NOT already fixed: the working-tree diff on this exact file bound the result for `handleAddClass` and `handleUpdateClass` and made those toasts honest, but left both delete paths untouched — this is the unfixed remainder of the same bug. Evidence is code, not a comment (the calendar-sync.ts:465-469 doc comment is corroboration only).
+
+CORRECTIONS TO THE REPORT:
+(1) Trigger set is 3 branches, not 7. calendar-sync.ts:478 ('Not authenticated') is SELF-PROTECTING — with a dead session the client-side delete at page.tsx:238 also 401s, `error` is set, the code throws at 247 and the class row survives. A thrown createAdminClient() failure likewise rethrows through withAdminObserved (observed-action.ts:193) into an un-try/caught handler, so nothing is deleted. calendar-sync.ts:507 is UNREACHABLE (both call sites pass classId only; teamId is undefined). calendar-sync.ts:535 is UNREACHABLE from a list containing only your own classes. Genuinely live return-failure branches: :497 (golf_team_members read error), :532 (admin ownership read error), :551 (golf_events delete error) — all transient-DB, and no timeout risk today (golf_events is 985 rows).
+(2) The failure IS logged. withAdminObserved extracts the {success:false,error} envelope and calls observeActionSoftFailure (observed-action.ts:133-155) → admin_events. It is invisible to the user, not to ops.
+(3) "Destructive local delete sequenced before the remote removal" is wrong — the order is remote-first then local, which is correct. The defect is solely that the result is never consulted.
+(4) Blast radius is more specific than stated: once orphaned, attributeClassEvents (src/lib/calendar/class-events.ts:144-153) keeps the event visible to COACHES (`viewer.isCoach || !viewer.ownersResolved`) with no owner label, and hides it from every PLAYER (owner lookup never resolves). So the coach gets un-attributed phantom class blocks forever and the player who caused it can never see them. Scheduling is unaffected — availability.ts:224-237 is explicitly fail-closed on unresolved class tags.
+(5) "Destroys the only retry path" is half right. calendar-sync.ts:534-538 deliberately treats an absent class row as narrowed orphan cleanup, so the SERVER would still honor a retry; it is the UI that can never surface that classId again.
+
+PRODUCTION MEASUREMENT (mcp__supabase__execute_sql, read-only): golf_player_classes = 43 rows / 10 players, latest write 2026-08-06 (live, in-use feature). golf_events with description LIKE '%[class:%' = 879; orphaned (tag whose class row no longer exists) = 0. The reporter's numbers reproduce exactly — the bug is latent, not yet fired.
+
+SEVERITY: downgraded high → medium. It is real, customer-facing, and unrecoverable-by-UI once it fires, but it requires a transient server-side DB error (not a routine user action), has 0 occurrences in production to date, does not corrupt scheduling (availability is fail-closed), and is recorded to admin_events. Damage when it fires is phantom un-attributed class blocks on a paying coach's team calendar plus a false success toast to the player.
+
+SIDE OBSERVATION (separate defect, worth its own finding): 213 of the 879 tagged events carry event_type='other' rather than 'class'. Every "team schedule" query filters with .neq('event_type', CLASS_EVENT_TYPE) — dashboard-data.ts:320/358/860/875, api/calendar/coach/[token]/route.ts:132, api/calendar/feeds/[token]/route.ts:276 — so those 213 personal class meetings currently leak into upcoming-event counts and both ICS feeds.
+
+**Fix:** Two call sites in src/app/golf/(dashboard)/dashboard/classes/page.tsx. Mirror the pattern the same file already uses for syncClassToCalendar at lines 213-228.
+
+1) handleDeleteClass (page.tsx:231-254) — bind the result and refuse to delete the row on failure, so the class stays put and the player can retry:
+
+  const removal = await removeClassFromCalendar(selectedClass.id);
+  if (!removal?.success) {
+    fairwayToast.error('Could not remove this class from your calendar', {
+      description: removal?.error ?? 'Unknown error',
+    });
+    return;                    // class row survives → retry path preserved
+  }
+  // ...existing golf_player_classes delete + success toast unchanged...
+
+2) confirmDeleteAllClasses (page.tsx:399-425) — do NOT simply abort the bulk delete on any failure, as the original report proposes. The current statement is `.delete().eq('player_id', playerId)`, i.e. all-or-nothing; aborting it after some removals already succeeded leaves those classes on the page with their calendar events already gone — the inverse of the same lie. Delete exactly the ids whose removal succeeded:
+
+  const removals = await Promise.all(classIds.map(async (id) => ({ id, res: await removeClassFromCalendar(id) })));
+  const succeeded = removals.filter((r) => r.res?.success).map((r) => r.id);
+  const failed = removals.filter((r) => !r.res?.success);
+
+  if (succeeded.length > 0) {
+    const { error } = await supabase
+      .from('golf_player_classes')
+      .delete()
+      .eq('player_id', playerId)
+      .in('id', succeeded);      // chunk at 200 if this ever exceeds it; 43 rows today
+    if (error) throw error;
+  }
+
+  await fetchClasses();
+  setShowDeleteAllConfirm(false);
+  if (failed.length > 0) {
+    fairwayToast.error(`${failed.length} of ${classIds.length} classes could not be removed from your calendar`, {
+      description: failed[0]?.res?.error ?? 'They are still on your schedule — try again.',
+    });
+  } else {
+    fairwayToast.success('All classes deleted', { description: 'Your schedule and calendar are clear.' });
+  }
+
+Do NOT change removeClassFromCalendar's absence-is-orphan-cleanup behavior (calendar-sync.ts:534-538) — with these two fixes the class row now survives a failure, so that allowance plus the UI retry together make the state recoverable.
+
+Optional hardening (separate change): give the coach calendar a way to delete an un-attributed class event, so any orphan created before this fix is recoverable at all.
+
+#### C15. [MEDIUM] · **CUSTOMER-FACING** Baseball stat import reports "Import committed · N created" while the canonical box-score write that Stats Center actually reads is discarded
+
+`src/app/baseball/actions/imports.ts:1786`
+
+**Breaks:** A coach commits a game box-score CSV. The legacy `baseball_player_stats` rows land, so the wizard reports "Import committed · 12 created · 0 updated". The canonical write — `save_baseball_full_box_score`, which populates `baseball_box_score_batting`/`_pitching` and recalculates season stats — silently failed, so Stats Center (which reads the box-score tables, never `baseball_player_stats`) shows nothing for that game. Concrete trigger: a staff member without `can_manage_stats` on the game's team. `commitImport` gates on `can_manage_imports`, but `saveFullBoxScoreAction` independently calls `requireBaseballCapability(game.team_id, 'can_manage_stats')` (src/app/baseball/actions/games.ts:922) — that throws, `saveFullBoxScore`'s own try/catch converts it to `{success:false}` (games.ts:964-978), and this line drops it. Same for a `save_baseball_full_box_score` RPC error or an RLS denial (games.ts:933-942).
+
+**Root cause:** A `{success, error}`-returning action invoked as a bare statement inside a best-effort helper whose contract ("never throws") was mistaken for "cannot fail". The commit result type has no channel to report a partial write, so even a checked failure would have nowhere to go.
+
+**Evidence:** src/app/baseball/actions/imports.ts:1786 `await saveFullBoxScore(gameId, battingRows, pitchingRows, ourScore, opponentScore);` — return value never bound. The comment directly above at line 1784-1785 acknowledges it "never throws — returns a result" and then ignores that result. `applyGameBoxScoreImport` returns the snapshot regardless (line 1789-1798) and its outer `catch { return null }` at 1811-1814 swallows anything else. The caller `applyImportPlan` at line 1427 assigns that to `boxScoreSnapshot` and never inspects success. The UI toast is src/components/baseball/import-center/ImportWizardClient.tsx:639-643: `title: 'Import committed', description: \`${res.created} created · ${res.updated} updated · ...\`` — `CommitImportResult` (imports.ts:306-341) has no field that can carry a canonical-write failure. Verified `saveFullBoxScore`'s three `{success:false}` returns at games.ts:918, 942, 948.
+
+**How to trigger:** Path A (capability mismatch, needs one invite — zero prod instances today):
+1. Head coach opens baseball staff settings and invites a staff member with the `director_ops` preset (src/lib/types/baseball-staff-roles.ts:237-242 — grants can_manage_imports, NOT can_manage_stats).
+2. That person opens /baseball/dashboard/import, chooses "Game box score" on Step 1 (dataShape='game_box_score'), uploads a game box-score CSV, maps columns, matches players, clicks Commit.
+3. commitImport's OR-gate (imports.ts:665 -> 666-672, resolved ANY-of at with-baseball-action.ts:582-596) admits them on can_manage_imports.
+4. applyImportPlan writes baseball_player_stats successfully, then imports.ts:1427 calls applyGameBoxScoreImport -> imports.ts:1786 saveFullBoxScore -> games.ts:920 requireBaseballCapability(team,'can_manage_stats') THROWS -> games.ts:971-979 converts to {success:false} -> dropped.
+5. UI shows the green toast "Import committed · 12 created · 0 updated" (ImportWizardClient.tsx:641-645). /baseball/dashboard/stats shows nothing for that game, forever. baseball_stat_uploads.unmatched_data.canonicalSnapshot records a snapshot as though the write landed.
+
+Path B (no capability mismatch required — reaches today's head coaches): any DB-level error inside save_baseball_full_box_score — e.g. a UNIQUE (game_id, player_id) violation from two CSV rows resolving to the same player under a 'loose' dedupe policy with row action 'update' (imports.ts:1301-1348 does not de-duplicate canonicalWrites by playerId), or an FK/numeric-parse failure — is swallowed by the RPC's `EXCEPTION WHEN OTHERS` (migration 20260701009000, lines 150-153) into {success:false,'Box score save failed'}, returned via games.ts:947 (the one branch with NO logging anywhere), and discarded at imports.ts:1786. Same green toast, same empty Stats Center, and this path leaves no trace in logs or Sentry at all.
+
+**Verifier:** CONFIRMED as live code, with two corrections and a severity downgrade based on measured production data.
+
+VERIFIED VERBATIM:
+- imports.ts:1786 `await saveFullBoxScore(gameId, battingRows, pitchingRows, ourScore, opponentScore);` — return truly unbound. Not a comment, not already fixed.
+- games.ts:918/942/947/978 — four non-throwing {success:false} returns. games.ts:920 `await requireBaseballCapability(game.team_id, 'can_manage_stats')` is real.
+- imports.ts:1788-1796 returns the snapshot regardless; outer `catch { return null }` at 1797-1800; caller at imports.ts:1427 never inspects success.
+- ImportWizardClient.tsx:641-645 toast is unconditionally green ("Import committed"), escalating only on createConflicts. CommitImportResult (imports.ts:306-342) has no channel for a canonical-write failure.
+- Stats Center really does read only the box-score tables: src/lib/baseball/read-models/stats-center.ts:691 (baseball_player_season_stats), :758 (baseball_box_score_batting), :769 (_pitching). It never reads baseball_player_stats. So a discarded failure = the game is permanently invisible in Stats Center.
+
+CORRECTION 1 — "nothing anywhere records it" is overstated. The capability-throw path (the reporter's headline trigger) IS logged: it propagates out of saveFullBoxScoreAction into saveFullBoxScore's catch, which calls logServerError at games.ts:974. RLS denials hit maybeCaptureRlsDenial at games.ts:935. The ONLY fully silent path is the `{success:false}` return at games.ts:947.
+
+CORRECTION 2 — the reporter understated the mechanism, which is actually worse than described. They wrote "commitImport gates on can_manage_imports". In fact imports.ts:666-672 returns `['can_manage_stats','can_manage_imports']` for dataShape==='game_box_score', and with-baseball-action.ts:580-596 treats a multi-element list as ANY-of (OR). The system therefore DELIBERATELY admits an imports-only staffer into a box-score commit and then hands them to an action that hard-requires can_manage_stats. The concrete role is `director_ops` (src/lib/types/baseball-staff-roles.ts:237-242: can_manage_imports, NO can_manage_stats). capabilities.ts:264-304 confirms there is no owner/head-coach bypass that would rescue it.
+
+MISSED BY THE REPORTER — a capability-independent trigger that hits ordinary head coaches: supabase/migrations/20260701009000_baseball_save_full_box_score_season_year.sql:150-153 ends the RPC with `EXCEPTION WHEN OTHERS THEN RETURN jsonb_build_object('success', false, 'error', 'Box score save failed')`. Both box-score tables carry UNIQUE (game_id, player_id) (confirmed in prod via pg_constraint). Any constraint/FK/parse error inside the RPC becomes a silent {success:false} routed through games.ts:947 — the single unlogged branch — then discarded at imports.ts:1786.
+
+MEASURED PRODUCTION EXPOSURE (mcp__supabase__execute_sql, read-only) — this drives the downgrade:
+  baseball_stat_uploads total = 1; with unmatched_data->>'dataShape'='game_box_score' = 0
+  baseball_box_score_batting = 185, _pitching = 55, baseball_player_stats = 268, baseball_games = 47
+  baseball_team_coach_staff = 7 rows: head_coach 6 (4 hold both caps), strength_coach 1
+  staff with can_manage_imports AND NOT can_manage_stats = 0
+Zero box-score-shape imports have EVER been committed in production. Zero staff hold the imports-without-stats combination. The 185/55 box-score rows came from the game UI, not this path. The defect is real and reachable by design — one director_ops invite away — but it has never fired for a paying customer and cannot fire today without a new staff invite or a DB-level error inside the RPC. Hence medium, not high.
+
+SECONDARY (real but benign): imports.ts:1501-1506 persists boxScoreSnapshot as unmatched_data.canonicalSnapshot even when the canonical write never happened, so the audit trail claims a canonical write occurred and a later rollback restores a state that was never mutated (idempotent, so no data loss).
+
+**Fix:** Three parts. Binding the result alone is necessary but NOT sufficient — for director_ops it would just convert a silent failure into a permanent, unfixable error message.
+
+1. Close the capability asymmetry (the actual repair). src/app/baseball/actions/games.ts:920 currently hard-requires can_manage_stats while imports.ts:666-672 admits can_manage_imports OR can_manage_stats for the same operation. Make saveFullBoxScoreAction accept the same ANY-of set — e.g. probe `hasBaseballCapability(game.team_id,'can_manage_imports')` first and only fall through to `requireBaseballCapability(game.team_id,'can_manage_stats')` when that misses, mirroring with-baseball-action.ts:582-596. Otherwise an operator authorized to START a box-score import can never FINISH one.
+
+2. Stop discarding the result and give it somewhere to go.
+   - imports.ts:1786 -> `const boxScoreSave = await saveFullBoxScore(...)`.
+   - Add `canonicalWriteError: string | null` to GameBoxScoreSnapshot; set it from `boxScoreSave.error` when `!boxScoreSave.success`, and do NOT record unmatched_data.canonicalSnapshot as a successful canonical write in that case (imports.ts:1501-1506) — the audit row currently lies.
+   - Add `canonicalWriteError: string | null` to CommitImportResult (imports.ts:306-342) and propagate it from applyImportPlan (imports.ts:1424-1434).
+   - ImportWizardClient.tsx:637-646: when `res.canonicalWriteError` is set, switch to `type: 'warning'` with title 'Import committed — Stats Center not updated' and the error as the description.
+
+3. Close the telemetry hole. games.ts:947 (`if (!result?.success) return { success: false, error: result?.error ?? 'Box score save failed' }`) is the only failure branch with no logging — the capability throw already logs via logServerError at games.ts:974 and RLS denials via maybeCaptureRlsDenial at games.ts:935. Add a `logServerError` call at games.ts:946-948 AND at the imports.ts:1786 call site, so the RPC's blanket `EXCEPTION WHEN OTHERS` (migration 20260701009000:150-153) stops being invisible.
+
+Optional hardening: de-duplicate canonicalWrites by playerId before building battingRows/pitchingRows (imports.ts:1690-1735) so a CSV with two rows for one player can never trip UNIQUE (game_id, player_id) inside the RPC.
+
+#### C16. [MEDIUM] · **CUSTOMER-FACING** Golf calendar renders empty for a player when the team-membership read errors — the error boundary they built is bypassed
+
+`src/app/golf/(dashboard)/dashboard/calendar/page.tsx:64`
+
+**Breaks:** A player opens /golf/dashboard/calendar. If the `golf_team_members` lookup returns a PostgREST error (RLS denial, statement timeout, or PGRST116 if the player ever holds two membership rows), `teamId` resolves to null, the whole `if (teamId)` block at line 101 is skipped, and the page renders a fully empty calendar — no events, no error, no retry. The player's entire season looks deleted. This is the exact scenario the file's own comment says must never happen.
+
+**Root cause:** A try/catch was used as the failure guard for a supabase-js call, but supabase-js reports DB failures through the resolved `error` field, not by throwing. The guard therefore only catches network-layer exceptions, never RLS/timeout/PGRST errors.
+
+**Evidence:** Read calendar/page.tsx:55-101. Line 64: `supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()` sits inside a `Promise.all` wrapped in try/catch. Line 71: `teamId = coachTeamId || playerTeamResult.data?.team_id || null` — only `.data` is read; `.error` is destructured nowhere. The catch at line 73-79 throws `new Error('Failed to load your team for the calendar. Please try again.')` with the comment "rendering an empty calendar here is indistinguishable from 'my season got wiped' (audit finding #20)". But a supabase-js query builder does NOT reject on a database error — it resolves with `{ data: null, error }`. So the catch is dead for the error channel it was written to guard, and the failure falls straight through to the silent-empty path. Contrast the events fetch 85 lines lower at line 149, which DOES check `if (eventsResult.error) throw` — the same file gets it right for events and wrong for the team lookup that gates them. For a player `orgId` is null, so `coachTeamId` is always null and `teamId` depends entirely on this one unchecked read.
+
+**How to trigger:** Two concrete triggers, in order of plausibility.
+
+(1) TRANSIENT DB ERROR — the only channel live today. A player signs in and opens /golf/dashboard/calendar. The layout and the page issue SEPARATE queries, so one can fail while the other succeeds. If the page's `golf_team_members` read at line 65 comes back as a PostgREST error — statement timeout (57014), connection-pool exhaustion, PostgREST 5xx, or the Cloudflare 522 / wedged-Postgres class this repo has already hit in production — then `processResponse` resolves with `{data:null,error}`, the catch at line 74 never runs, `teamId` is null, the `if (teamId)` block at line 101 is skipped entirely, and FairwayCalendar renders with `events=[]` and `upcomingCount=0`. Meanwhile the layout's own membership read succeeded, so the shell still shows the correct team name. The player sees their team name in the header and an empty season below it, with no error and no retry. `revalidate = 30` then caches that empty render for 30 seconds.
+
+To reproduce deterministically without an outage: in a local/staging session, set a 1ms statement timeout for the authenticated role (`SET statement_timeout = 1`) or point the PostgREST URL at a host returning 503, then load the calendar as a player. The page renders zero events instead of the error boundary in error.tsx.
+
+(2) PGRST116 MULTI-ROW — latent, becomes live the moment a player accumulates a second membership row. Because line 65 omits `.eq('status','active')` (unlike layout.tsx:~152 which includes it), a player who transfers — old team row left at status 'inactive'/'removed', new team row 'active' — matches 2 rows. postgrest-js 2.110.8 enforces maybeSingle cardinality client-side (PostgrestBuilder.ts:519-529) and synthesizes `{code:'PGRST116', data:null}`. Same silent-empty outcome. Measured: 0/69 players are in this state today, so this needs a transfer or a coach-side add to a second team first.
+
+**Verifier:** SURVIVES, but over-severed and partly mis-diagnosed.
+
+CONFIRMED CORE MECHANIC. I read calendar/page.tsx:55-101. Line 65 is `.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()`; line 72 is `teamId = coachTeamId || playerTeamResult.data?.team_id || null` — `.error` is destructured nowhere. I then read the vendored client rather than trusting the claim: node_modules/@supabase/postgrest-js/src/PostgrestBuilder.ts:80 sets `shouldThrowOnError = false` by default, and `processResponse` (lines 470-575) RETURNS `{data:null, error}` for both the `res.ok` and non-ok branches, throwing only under `shouldThrowOnError`. So the try/catch at lines 74-80 is genuinely dead for the DB-error channel it was written to guard. The reporter's control-flow reading is correct, not a misread, and it is quoting live code — the comment at 76-79 is corroborating intent, not the evidence itself.
+
+THE INTENDED BOUNDARY IS REAL. `src/app/golf/(dashboard)/dashboard/calendar/error.tsx` exists, so the throw path would render a retryable state. And line 149 (`if (eventsResult.error) throw`) proves the same file applies the correct pattern 85 lines later. The inconsistency is real.
+
+STRONGEST CORROBORATION — this exact anti-pattern was already found and fixed elsewhere in this repo. src/app/golf/actions/teams.ts:188-196 carries the comment: "NOT `.maybeSingle()`. There is no unique constraint on player_id alone, so maybeSingle() raises PGRST116 the moment a player has two rows — and the error was DISCARDED here (only `data` was destructured), leaving `existingMembership` null and this guard silently passing." That is the same table, the same `.eq('player_id')` filter, and the same swallow. The join flow was fixed; the calendar page was not. This is not a hypothetical class.
+
+WHAT I REFUTE IN THE FINDING:
+1. "RLS denial" is wrong. An RLS-filtered SELECT returns zero rows with NO error. The proposed fix does nothing for that channel. Worse, the live policy `golf_team_members_select_v5` resolves a player's own rows through `get_current_player_team_ids()`, which is `WHERE gp.user_id = auth.uid() AND gtm.status = 'active'` — so a player whose membership is not 'active' (pending approval, transferred) silently reads zero rows, gets `teamId = null`, and sees an empty calendar with no error to check. That is a SEPARATE uncovered hole the proposed fix does not close.
+2. "PGRST116 if the player ever holds two membership rows" is latent, not live. Measured against production: `golf_team_members` has 69 rows / 69 distinct player_id / all status='active'. Zero players hold >1 membership today. The unique constraint is on (team_id, player_id), not player_id alone, so it remains possible — but it is not firing now.
+3. I checked and dismissed my own extension: when `getGolfSessionProfile` swallows its own errors and returns role=null, `(dashboard)/layout.tsx:181-189` redirects to onboarding/signup, so that path does not reach an empty calendar.
+
+NEW DIVERGENCE THE REPORTER MISSED (and the reason the fix must be wider): the layout's equivalent membership read at `(dashboard)/layout.tsx:~152` filters `.eq('status','active')`; the page's read at line 65 does NOT. They disagree on what "my team" means. That asymmetry is exactly what would make the page throw PGRST116 while the shell chrome still displays the correct team name — the worst presentation: header says "Demo University Golf", body says zero events.
+
+SEVERITY CORRECTED critical -> medium. It is customer-facing and the failure mode is genuinely indistinguishable from data loss, but it is not firing for any of the 69 production players today; it requires a transient fault or a data shape that does not yet exist. It is a latent correctness gap, not an active outage. Minor amplifier: `export const revalidate = 30` (line 31) means a silent-empty render gets cached for 30s, whereas a throw would not be cached — so the swallow actively prolongs the bad state.
+
+**Fix:** The proposed fix is directionally right but incomplete — applying it as written leaves two of the three holes open. Do all three parts:
+
+1) Filter by active status so the page AGREES with the layout, which eliminates the PGRST116 channel outright rather than merely reporting it. Line 65 becomes:
+```ts
+supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active').maybeSingle()
+```
+This matches `(dashboard)/layout.tsx:~152` and matches the RLS policy's own definition of membership (`get_current_player_team_ids()` requires status='active'). Today the page and layout disagree, which is the actual latent bug.
+
+2) Check the error and throw, and log it — the current catch logs via logServerException before throwing, so the error path must not lose that. Type the placeholder at line 66 so `.error` is present on both union arms (`Promise.resolve({ data: null, error: null })`), then:
+```ts
+const memberError = (playerTeamResult as { error?: unknown }).error;
+if (playerId && memberError) {
+  void logServerException(memberError, { action: 'calendar-load-team', route: '/golf/dashboard/calendar', source: 'server_component', sport: 'golf' }, 'warning');
+  throw new Error('Failed to load your team for the calendar. Please try again.');
+}
+teamId = coachTeamId || playerTeamResult.data?.team_id || null;
+```
+
+3) Do NOT apply the same treatment to `coachListResult` (line 68), contrary to the finding's suggestion. That list only supplies coach names/avatars for the member chips at lines 239-247; a failure there degrades gracefully to players-only and is not worth a hard error boundary.
+
+SEPARATELY (not fixed by any of the above, and worth its own ticket): a player whose membership is not yet 'active' reads zero rows through `golf_team_members_select_v5` with NO error, and still lands on a silently empty calendar. Distinguishing "you have no team yet / your join is pending approval" from "your season loaded fine and is empty" needs an explicit empty-state in FairwayCalendar keyed on `teamId === null`, not an error check. Right now `teamId={null}` is passed straight through at line 278 with no such state.
+
+Regression test: mock the builder to RESOLVE `{data:null, error:{code:'PGRST116'}}` — a test that rejects the promise will pass while the bug is live, which is exactly how this survived. Assert the component throws rather than rendering zero events.
+
+#### C17. [MEDIUM] · **CUSTOMER-FACING** Unread-message badge silently reads 0 for both coaches and players when the per-conversation count fails
 
 `src/app/golf/actions/coach-notifications.ts:90`
 
 **Breaks:** The nav bell/badge shows no unread messages while unread messages exist. A coach or player never learns a teammate messaged them. Each conversation is counted independently, so a partial failure produces a partially-wrong badge (e.g. 2 instead of 7) with no indication anything went wrong.
 
-**Evidence:** coach-notifications.ts:90-96 — `const { count } = await supabase.from('golf_messages').select('*', { count: 'exact', head: true }).eq('conversation_id', p.conversation_id).neq('sender_id', viewerId).gt('created_at', p.last_read_at || '1970-01-01'); return count || 0;`. `.error` is never destructured; on failure `count` is null and `|| 0` makes it a clean zero. Identical code at player-notifications.ts:234-240 (same query, `userId` instead of `viewerId`). Upstream, coach-notifications.ts:86 and player-notifications.ts:228 do `const participants = conversationsResult.data || []` — an error on the participants read yields `[]`, which skips the loop entirely and reports `unreadMessages: 0` for ALL conversations at once. Both actions return `{ success: true }` in that case, so notification-badge-context.tsx (lines 128 and 138, which call them on a 45s poll) has no way to tell a zero from a failure. Production: 36 golf_messages across 51 golf_conversation_participants rows, so real unread counts exist.
-
 **Root cause:** `count || 0` and `data || []` map the error channel onto the empty-result value, and the action's success flag does not reflect partial read failure.
 
-**Proposed fix:** In both files, destructure `error` in the per-conversation count and make the aggregate honest. Replace the map body with:
+**Evidence:** coach-notifications.ts:90-96 — `const { count } = await supabase.from('golf_messages').select('*', { count: 'exact', head: true }).eq('conversation_id', p.conversation_id).neq('sender_id', viewerId).gt('created_at', p.last_read_at || '1970-01-01'); return count || 0;`. `.error` is never destructured; on failure `count` is null and `|| 0` makes it a clean zero. Identical code at player-notifications.ts:234-240 (same query, `userId` instead of `viewerId`). Upstream, coach-notifications.ts:86 and player-notifications.ts:228 do `const participants = conversationsResult.data || []` — an error on the participants read yields `[]`, which skips the loop entirely and reports `unreadMessages: 0` for ALL conversations at once. Both actions return `{ success: true }` in that case, so notification-badge-context.tsx (lines 128 and 138, which call them on a 45s poll) has no way to tell a zero from a failure. Production: 36 golf_messages across 51 golf_conversation_participants rows, so real unread counts exist.
+
+**How to trigger:** Not triggerable on demand through the UI — I verified RLS denial, null/NOT NULL filters, and conversation volume all fail to produce a query error. It manifests only during a transient PostgREST/Postgres fault (statement timeout, 5xx, or a wedged DB like the documented 9.4h prod outage), and self-heals on the next 45s poll.
+
+To observe it concretely: log in as a golf coach or player who has unread messages (prod user d1000004-0000-0000-0000-000000000004 has 16 unread by the exact formula the code uses), open any /golf/dashboard route so NotificationBadgeProvider starts polling, then fault-inject the count request — DevTools Network request-blocking on `*/rest/v1/golf_messages*` (or block `*/rest/v1/golf_conversation_participants*` to kill all conversations at once). The sidebar/bell badge drops to 0 within one 45s poll with no console error, no toast, and no error_logs/admin_events row written. Blocking the participants read reproduces the all-conversations-at-once variant.
+
+**Verifier:** Code verified exactly as quoted and live. coach-notifications.ts:90-96 destructures only `count` and returns `count || 0`; player-notifications.ts:234-240 is byte-identical with `userId`. Upstream, coach-notifications.ts:86 and player-notifications.ts:228 do `conversationsResult.data || []`, so a failed participants read yields `[]` and skips the loop, reporting 0 unread for ALL conversations. Both return `{success:true}`, so withAdminObserved's observeActionSoftFailure never records it and notification-badge-context.tsx:128/138 (45s setInterval at :224) cannot distinguish a true zero from a failed read. Reachable for every logged-in golf coach and player.
+
+HOWEVER the reported "high" severity is not supported — I could not find a deterministic trigger, and ruled out the three obvious candidates against the live DB:
+(1) RLS is not an error path. golf_messages_select_v2 USING is `conversation_id IN (SELECT user_conversation_ids(auth.uid()))`; a denial returns zero rows with count 0, NOT an error. Same for golf_participants_select_v2.
+(2) No malformed-filter path. golf_messages.conversation_id is NOT NULL, and the 14 prod participant rows with last_read_at IS NULL fall through to '1970-01-01', which casts cleanly to timestamptz.
+(3) No load path. Max conversations per user in prod is 4 (4,3,3,2,2), so the N+1 fan-out is 4 requests — no timeout or pool exhaustion.
+The bug also self-heals on the next 45s poll, so "a coach never learns a teammate messaged them" overstates it.
+
+It still survives as a genuine defect of the exact class that keeps biting (error channel mapped onto a clean zero, rendered as a confident "all clear", zero observability), and there is documented precedent where it would have been live for hours: the prod DB served zero queries for 9.4h while the control plane read ACTIVE_HEALTHY — every badge would have shown a confident 0 with nothing in error_logs. Production has real counts to hide: measured unread_as_coded of 16,16,15,15,14,14 across six distinct users (36 golf_messages / 51 golf_conversation_participants / 10 golf_conversations).
+
+Two additions to the report: (a) the proposed fix must NOT naively return {success:false} on failure — coach-notifications.ts:45-48 documents a deliberate decision to avoid that shape because observeActionSoftFailure persists to error_logs/admin_events on every 45s poll for the life of a stale tab; an outage would flood the Bridge. (b) THIRD instance not mentioned in the report: src/hooks/use-unread-count.ts:49-55 is the identical swallow on the BASEBALL side (baseball_messages, `count || 0`, plus `setUnreadCount(0)` at :36 when participantData is falsy), and it is live via BaseballFairwayShell.tsx:601. Also confirmed the type widening is safe: CoachNotificationCounts/PlayerNotificationCounts have exactly one consumer, notification-badge-context.tsx.
+
+**Fix:** Preferred (removes the failure surface rather than instrumenting it): collapse the per-conversation N+1 into ONE read, since max conversations per user in prod is 4.
+
 ```ts
-const { count, error } = await supabase.from('golf_messages')...;
-if (error) return { count: 0, failed: true };
-return { count: count ?? 0, failed: false };
+const { data: participants, error: partErr } = await supabase
+  .from('golf_conversation_participants')
+  .select('conversation_id, last_read_at')
+  .eq('user_id', viewerId);
+
+let unreadMessages: number | null = 0;
+if (partErr) {
+  unreadMessages = null;
+} else if (participants && participants.length > 0) {
+  const ids = participants.map(p => p.conversation_id);
+  const { data: msgs, error: msgErr } = await supabase
+    .from('golf_messages')
+    .select('conversation_id, sender_id, created_at')
+    .in('conversation_id', ids)
+    .neq('sender_id', viewerId);
+  if (msgErr) {
+    unreadMessages = null;
+  } else {
+    const lastRead = new Map(participants.map(p => [p.conversation_id, p.last_read_at]));
+    unreadMessages = (msgs ?? []).filter(m => {
+      const lr = lastRead.get(m.conversation_id);
+      return !lr || new Date(m.created_at) > new Date(lr);
+    }).length;
+  }
+}
 ```
-then `const anyFailed = results.some(r => r.failed) || conversationsResult.error != null;` and return `unreadMessages: anyFailed ? null : sum` (widen the type to `number | null`) so the badge renders nothing rather than a false 0. Also `await logServerError(...)` on `conversationsResult.error` with `{ action: 'getCoachNotificationCounts' | 'getPlayerNotificationCounts', featureArea: 'notifications' }`. Update notification-badge-context.tsx to treat null as "unknown" and keep the previous value instead of clearing the badge.
 
-### HIGH **[CUSTOMER-FACING]** — Golf join flow: a failed coach/player lookup misroutes the user and can create a stray golf_players row
+Then widen `unreadMessages` to `number | null` on CoachNotificationCounts and PlayerNotificationCounts (safe — the only consumer is notification-badge-context.tsx) and update the client to treat null as "unknown": at notification-badge-context.tsx:143 and :132 use `if (result.data.unreadMessages !== null) setMessages(result.data.unreadMessages)` so the previous value is kept rather than a false 0 rendered.
 
-`src/app/golf/join/[code]/page.tsx:29`
+IMPORTANT deviation from the original proposal: do NOT return `{success:false}` and do NOT call logServerError unconditionally on every failure — coach-notifications.ts:45-48 documents that this shape gets persisted to error_logs/admin_events by observeActionSoftFailure on every 45s poll for the lifetime of a stale tab, which is why authExpired exists. Keep `{success:true}` with a null count, and log at most once per invocation (not once per conversation) via `await logServerError(describeError(err), { action: 'getCoachNotificationCounts', featureArea: 'notifications' })` — coach-notifications.ts currently imports no logger at all, so that import must be added.
 
-**Breaks:** Two distinct failures on the first-contact join link. (a) If the `golf_coaches` read errors, `coach` is null and a real coach falls through to the player branch and is redirected to `/golf/player?joinCode=…`, whose onboarding calls `ensurePlayerRecord()` — creating exactly the stray `golf_players` row the code comment says must never be created. (b) If the `golf_players` read errors, an already-onboarded player is bounced back into player onboarding they finished months ago. Neither logs anything.
+Also fix the same swallow in the two sibling sites, which the report did not fully cover:
+- src/app/golf/actions/player-notifications.ts:228-244 (identical, `userId` instead of `viewerId`)
+- src/hooks/use-unread-count.ts:36 and :49-55 — the BASEBALL instance (baseball_conversation_participants / baseball_messages), live via BaseballFairwayShell.tsx:601. Same treatment: surface an "unknown" state instead of setUnreadCount(0).
 
-**Evidence:** join/[code]/page.tsx:29-33 — `const { data: coach } = await supabase.from('golf_coaches').select('id, onboarding_completed').eq('user_id', user.id).maybeSingle();` then line 35 `if (coach) redirect(...)`. Lines 40-44 — `const { data: player } = await supabase.from('golf_players').select('id, first_name, last_name, graduation_year, onboarding_completed').eq('user_id', user.id).maybeSingle();` then line 46 `if (!player || !player.onboarding_completed) redirect('/golf/player?joinCode=' + code)`. Neither destructures `error`. The comment at lines 25-28 states the exact consequence: "A coach can't 'join' a team as a player… that path calls ensurePlayerRecord() and would create a stray golf_players row." The very next read (line 63, the join-code RPC) DOES destructure `teamError`, so the pattern is inconsistent within 30 lines. This route has a documented history of the same failure mode — the RLS tightening in #1257 killed 100% of player joins for ~6 months because the join's own pre-flight read went through the policy that had just been closed.
+Optional correctness nit found while verifying: none of these queries filter `golf_messages.is_deleted` (column exists, nullable boolean), so a soft-deleted message counts toward the badge until the thread is opened. Currently 0 affected rows in prod, so cosmetic — but worth adding `.or('is_deleted.is.null,is_deleted.eq.false')` while the query is being rewritten.
 
-**Root cause:** `.maybeSingle()` results are consumed as a truthiness test on `data` alone. A read failure is indistinguishable from "this user is not a coach" / "this user has no player record", and both indistinguishable states drive an irreversible redirect.
-
-**Proposed fix:** Destructure and hard-fail rather than guess identity on the join path:
-```ts
-const { data: coach, error: coachError } = await supabase.from('golf_coaches')...;
-if (coachError) throw new Error('Could not verify your account. Please try again.');
-...
-const { data: player, error: playerError } = await supabase.from('golf_players')...;
-if (playerError) throw new Error('Could not verify your account. Please try again.');
-```
-The route already has an error UI shape (lines 69-97) — reuse it with distinct copy so a DB failure never reads as "Invalid Invite Code". Separately, line 68's `if (teamError || !team)` should split: `teamError` → "Something went wrong, try again"; `!team` → "Invalid Invite Code".
-
-### HIGH **[CUSTOMER-FACING]** — Targeted-announcement recipient gate fails OPEN when the admin recipient read errors
+#### C18. [MEDIUM] · **CUSTOMER-FACING** Targeted-announcement recipient gate fails OPEN when the admin recipient read errors
 
 `src/app/golf/actions/announcements.ts:670`
 
 **Breaks:** A coach sends an announcement targeted at a subset of the roster (e.g. "the four seniors travelling to regionals"). If the recipient lookup errors, every other player on the team can open and read that announcement's title and body. The same fail-open exists on the player badge path, where a failed lookup makes every targeted announcement appear in every teammate's unseen-announcement modal.
 
-**Evidence:** announcements.ts:670-676 — `const { data: recipientGate } = await (createAdminClient() as any).from('golf_announcement_recipients').select('player_id').eq('announcement_id', announcementId)` then `const gateRecipientIds = (recipientGate || []).map(...)` and `if (gateRecipientIds.length > 0 && !gateRecipientIds.includes(playerCheck.id)) return { success:false, error:'Announcement not found' }`. `.error` is never read, so a failed read yields `[]`, `length > 0` is false, and the gate passes. The comment directly above (lines 661-668) states the intended semantics: "An empty recipient set still means 'all-team' (do not turn that into a denial)" — which is correct for a genuinely empty set and catastrophic for a failed read, because the two are the same value here. Second site, same class: player-notifications.ts:167-171 `const { data: recipientRows } = await (admin as any).from('golf_announcement_recipients').select('announcement_id, player_id').in('announcement_id', announcementIds)` → `allRecipients = ... ?? []` → the visibility filter at line 182-186 returns `true` for every announcement (`if (!recipients || recipients.length === 0) return true; // all team`). Third site: announcements.ts:464 (coach list) has the same shape. Production: 13 golf_announcements exist.
-
 **Root cause:** An empty array is overloaded to mean both "broadcast to the whole team" (allow) and "the lookup failed" (unknown). Because the permissive branch is the one an empty array selects, every read failure is an authorization bypass.
 
-**Proposed fix:** Distinguish the three states explicitly at all three sites. At announcements.ts:670:
+**Evidence:** announcements.ts:670-676 — `const { data: recipientGate } = await (createAdminClient() as any).from('golf_announcement_recipients').select('player_id').eq('announcement_id', announcementId)` then `const gateRecipientIds = (recipientGate || []).map(...)` and `if (gateRecipientIds.length > 0 && !gateRecipientIds.includes(playerCheck.id)) return { success:false, error:'Announcement not found' }`. `.error` is never read, so a failed read yields `[]`, `length > 0` is false, and the gate passes. The comment directly above (lines 661-668) states the intended semantics: "An empty recipient set still means 'all-team' (do not turn that into a denial)" — which is correct for a genuinely empty set and catastrophic for a failed read, because the two are the same value here. Second site, same class: player-notifications.ts:167-171 `const { data: recipientRows } = await (admin as any).from('golf_announcement_recipients').select('announcement_id, player_id').in('announcement_id', announcementIds)` → `allRecipients = ... ?? []` → the visibility filter at line 182-186 returns `true` for every announcement (`if (!recipients || recipients.length === 0) return true; // all team`). Third site: announcements.ts:464 (coach list) has the same shape. Production: 13 golf_announcements exist.
+
+**How to trigger:** Not user-triggerable; requires a Supabase read fault. Concretely: rotate SUPABASE_SERVICE_ROLE_KEY in the Supabase dashboard without updating the Vercel env var (the key is still present, so createAdminClient() does not throw — PostgREST returns 401 "Invalid API key" on the query). Then, as a coach on any team, create an announcement and target it at a subset of the roster (e.g. 4 of 12 players). Log in as a NON-recipient player on that team: (a) /golf/dashboard/announcements lists the targeted announcement because announcements.ts:464 returned data=null, recipientsByAnn is empty, and the filter at :577-581 treats it as all-team; (b) the unseen-announcement login modal shows it because player-notifications.ts:167 returned data=null and :184 returns true; (c) clicking it calls getAnnouncementDetail, and the gate at announcements.ts:675 passes, returning the full title, body, attached documents and tasks. Nothing is logged at any of the three sites. The same three-way fail-open occurs transiently during a PostgREST schema-cache reload after a migration touching golf_announcement_recipients. Deterministic variant needing no fault: accumulate >1000 rows in golf_announcement_recipients across a team's 200 most recent announcements (~100 targeted announcements to a 10-player roster); PostgREST truncates the :464 fan-out in arbitrary order and the truncated announcements render as all-team to every player. Production is currently at 1 recipient row, so this variant is far off.
+
+**Verifier:** Verified against live code at all three cited sites, not comments. announcements.ts:670-673 destructures only `data` from the admin recipient read; :674 collapses null to `[]`; :675 `gateRecipientIds.length > 0` is then false and the gate passes. Identical shape at announcements.ts:464-468 (player feed filter at :577-581) and player-notifications.ts:167-171 (visibility filter at :182-186). The path is reachable — FairwayPlayerAnnouncementCard.tsx:235 calls getAnnouncementDetail as a player. I tried and failed to refute it two ways: (1) createAdminClient() (src/lib/supabase/admin.ts:4-14) throws on missing URL/service key, but that throw is caught by the outer catch at announcements.ts:587 -> formatSafeErrorResponse, so the missing-env case fails CLOSED; only a query-level error fails open. (2) Under normal operation the feed filter already hides the ID so a player never has a non-recipient announcementId — but the realistic trigger (invalid/rotated service key returning 401, PostgREST schema-cache miss after DDL, pool exhaustion) hits ALL THREE admin reads, so the feed leaks the card, the login modal pops it, and the detail gate then lets the body through. Coherent and real. HOWEVER the finding overstates impact: I measured production — 13 golf_announcements, exactly 1 targeted announcement with 1 recipient row, and that row is "QA attach 05:24:09" on Demo University Golf (7 active members), a QA artifact. Zero paying-customer announcements are targeted today, and no user-controllable input triggers the read error; it requires an operational fault. Hence medium, not high. Separately confirmed an adjacent deterministic variant the report missed: ANNOUNCEMENTS_FANOUT_LIMIT=1000 (announcements.ts:51) on the fan-out at :464-468 against a 200-announcement feed means that once a team exceeds 1000 recipient rows, truncated announcements come back with an empty recipient list and the filter at :577-581 shows them to non-recipients with no error at all.
+
+**Fix:** Fix all three sites, and fail closed at the FEED first — that is the path that actually renders leaked content; the detail gate is only the second line of defense.
+
+1. src/app/golf/actions/announcements.ts:464 (highest impact):
+```ts
+const { data: allRecipients, error: recipientsError } = await (createAdminClient() as any)
+  .from('golf_announcement_recipients')
+  .select('announcement_id, player_id')
+  .in('announcement_id', announcementIds) as { data: Array<{ announcement_id: string; player_id: string }> | null; error: { message: string } | null };
+if (recipientsError) {
+  await logServerError(`announcement recipient fan-out failed: ${recipientsError.message}`, { action: 'announcements.getAnnouncementsWithMeta', featureArea: 'announcements' });
+  return { success: false, error: 'Failed to load announcements' };
+}
+```
+Also replace the `.limit(ANNOUNCEMENTS_FANOUT_LIMIT)` on this specific read with fetchAllRowsResult — a 1000-row truncation here silently converts targeted announcements into all-team ones for the filter at :577-581. The other three fan-outs at :476/:484/:492 are display-only counts and can keep the bounded limit.
+
+2. src/app/golf/actions/announcements.ts:670 — as the reporter proposed:
 ```ts
 const { data: recipientGate, error: gateError } = await (createAdminClient() as any)
   .from('golf_announcement_recipients').select('player_id').eq('announcement_id', announcementId);
@@ -640,636 +1456,398 @@ if (gateError) {
   return { success: false, error: 'Announcement not found' }; // fail CLOSED
 }
 ```
-At player-notifications.ts:167 destructure `recipientsError`; if set, log it and skip the unseen-announcement modal + return `unreadAnnouncements: null` rather than filtering with an empty index. Add a unit test at each site that mocks the builder resolving `{data:null,error}` and asserts denial, not allowance.
 
-### HIGH **[CUSTOMER-FACING]** — Qualifier leaderboard shows every player at 0 strokes / 0 rounds when the rounds read fails
+3. src/app/golf/actions/player-notifications.ts:167 — destructure `error: recipientsError`; on error, log it and set `visibleAnnouncements = []` so the badge count is 0 and the unseen-announcement modal stays closed, rather than filtering against an empty index (returning every announcement).
 
-`src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx:96`
+4. Tests: at each site, mock the query builder resolving `{data: null, error: {message: 'Invalid API key'}}` and assert denial/empty, not allowance. The existing suites only cover the happy path, which is why this shipped.
 
-**Breaks:** On a qualifier detail page, if the `golf_rounds` read errors, every entered player renders with totalScore 0, totalToPar 0, an empty round list, and the page reports "0 rounds submitted". The sort then orders players arbitrarily (all comparisons hit the 0===0 branch). A coach uses this board to pick the travel squad; it will read as "nobody has played yet" on a completed qualifier.
-
-**Evidence:** qualifiers/[id]/page.tsx:96-101 — `const { data: rounds } = await supabase.from('golf_rounds').select('id, player_id, total_score, score_to_par, qualifier_round_number, round_date, course_name, status').eq('qualifier_id', id).eq('status','completed').order('qualifier_round_number', { ascending: true });` with no `error`. Downstream: line 112 `const playerRounds = (rounds || []).filter(...)` → line 122 `totalScore: playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0)` → 0; line 123 same for totalToPar; line 138 `maxRoundNumber` → 0; line 140 `totalRoundsSubmitted = (rounds || []).length` → 0. Line 128-135's sort resolves every pair through the `a.rounds.length === 0 && b.rounds.length === 0 → return 0` branch, so display order is whatever Object.entries yields. Contrast line 59-69, where the qualifier row itself is fetched and guarded (`if (!qualifier) notFound()`) — the guard exists for the parent row and not for the data the board is made of. Production: 4 golf_qualifiers, 302 completed rounds.
-
-**Root cause:** `(rounds || [])` is used at four separate aggregation sites; a null from an error path is treated as "no rounds have been submitted", which is a meaningful and plausible-looking business state.
-
-**Proposed fix:** Destructure the error and render an honest failure for the board only (the qualifier header can still render):
-```ts
-const { data: rounds, error: roundsError } = await supabase.from('golf_rounds')...;
-```
-Then pass `roundsUnavailable={roundsError != null}` into `FairwayQualifierDetail` and have it render an InlineNotice (tone="danger") with a retry in place of the leaderboard, instead of the zeroed breakdown. Do not fall back to `[]`. Also `await logServerError` with `{ action: 'qualifierDetail.rounds', featureArea: 'qualifiers' }`.
-
-### HIGH **[CUSTOMER-FACING]** — The schedule-import path throws away every syncClassToCalendar result and always toasts 'Synced to your calendar'
-
-`src/app/golf/(dashboard)/dashboard/classes/page.tsx:334`
-
-**Breaks:** handleConfirmClasses builds N syncClassToCalendar promises (line 310-332), `await Promise.all(syncPromises)` at line 334, and NEVER inspects a single CalendarSyncResult. Line 341 then unconditionally fires `fairwayToast.success('N classes imported', { description: 'Synced to your calendar.' })`. Every failure syncClassToCalendar can return — 'Could not determine semester dates', 'Class start and end times must look like HH:MM', 'Semester range too large', an RLS refusal, a Postgres insert error — is announced to the player as a success. This is the SAME defect that was just fixed on the add path (line 154-175) and the edit path (line 222-228); the bulk/vision-import path, which is how players actually load a full semester, was left as-is.
-
-**Evidence:** page.tsx:308-344 read directly: no variable captures the Promise.all result, no `.success` check exists anywhere in handleConfirmClasses. Compare handleAddClass:160 (`if (!syncResult?.success)`) and handleUpdateClass:222.
-Production corroboration: the 2026-08-06 01:48Z Shenandoah import produced classes whose whole semester is 1-2 events — SPAN-202-F2F (M/W/F 12:00) has 2 events (Aug 12, Aug 14); PSY-222-F2F1 (F 13:00) has 1; CJ-343-BLD (M/W 13:00) has 1. And 17 of the 43 golf_player_classes rows have ZERO calendar events at all (6 on Demo University Golf imported 2026-07-23, 11 on Lynchburg Women's Golf). Nobody was ever told.
-Compounding, in the same block: line 326 `semester: confirmedClass.semester || 'Spring 2026'` hardcodes a term four months in the past — a class that falls back to it generates ~55 events entirely in the past and still returns success:true. And src/lib/golf/semester.ts:83-85 returns null (=> 'Could not determine semester dates') whenever the ConfirmClassesModal's REQUIRED user-entered start date (ConfirmClassesModal.tsx:96,102) falls outside the auto-detected term's hardcoded window — a Fall start date entered against a 'Summer' detection kills the entire sync, silently.
-
-**Root cause:** Three independent single-points-of-silence stacked on one path: (a) the result of a server action that reports failure by return value is discarded, (b) the toast is unconditional, and (c) the term the sync will use is chosen by a hardcoded literal ('Spring 2026') the user never sees and cannot correct, validated against a hardcoded window the user also never sees (ConfirmClassesModal asks for a start date but not a term).
-
-**Proposed fix:** 1) Capture and report results:
-   const results = await Promise.allSettled(syncPromises);
-   const failures = results.filter(r => r.status !== 'fulfilled' || !r.value?.success);
-   then branch the toast: on failures, `fairwayToast.error('N classes imported, M were not added to your calendar', { description: <first error> })`.
-2) Delete the 'Spring 2026' literal at line 326 — pass `confirmedClass.semester` through and let syncClassToCalendar's existing null-check surface 'Could not determine semester dates' (which will now be visible).
-3) In ConfirmClassesModal, show the detected semester and let the user change it, so the start-date validation in semester.ts:84 can't fail against a term the user never saw.
-
-### HIGH **[CUSTOMER-FACING]** — Unsynced classes and the 'find a time' slot generator build wall-clock times in the SERVER's timezone (UTC on Vercel), so busy blocks land 4-5 hours early
-
-`src/lib/calendar/availability.ts:466`
-
-**Breaks:** setTimeOnDate (line 466-471) does `result.setHours(hours, minutes)` — Node's local timezone. Vercel functions run TZ=UTC (no TZ override in vercel.json/next.config.mjs). So an 11:30 AM Eastern class expands to a busy period at 11:30 UTC = 7:30 AM Eastern. A coach using the availability overlay or 'find a time' sees the player blocked at 7:30 AM and FREE at 11:30 AM — and will schedule a lift right on top of the lecture. parseEventDateTime (line 362-368) has the identical bug for golf_coach_blocked_time (`new Date(`${date}T${time}`)`, offset-naive), and generateTimeSlots (line 511-541) does `slotStart.setHours(hour)` so the 7-19 'working hours' window becomes 3 AM - 3 PM Eastern in the suggested-times list.
-
-**Evidence:** availability.ts:469 `result.setHours(hours ?? 0, minutes ?? 0, 0, 0)` — no zone. availability.ts:367 `return new Date(`${date}T${time}`)` — offset-naive string, parsed as server-local. availability.ts:526 `slotStart.setHours(hour, 0, 0, 0)`. No `TZ` set in vercel.json or next.config.mjs (grepped, no hits), so Vercel's default UTC applies.
-This path is LIVE, not theoretical: expandRecurringClass now runs for every class with no synced calendar occurrences (the comment at line 417-431 explains it was deliberately un-gated because all 43 rows have semester=NULL). Production has 17 such classes — 11 on 'Lynchburg Women's Golf' (6 members) and 6 on 'Demo University Golf' (7 members). Example: Lynchburg's ECON 300, T/Th 11:30-12:45, produces a busy block at 11:30-12:45 UTC = 7:30-8:45 AM Eastern.
-Contrast with the caller, which DOES get this right: golf.ts:4302-4303 builds the window with buildDateTimeString(startDate,'00:00:00',timezoneOffset). The window is zone-correct; the contents are not.
-
-**Root cause:** `golf_player_classes.start_time` is a Postgres `time` column holding a wall-clock time with no zone. Turning a wall-clock time into an instant requires a zone, and this file supplies none — it lets Date's implicit server-local default stand in. The caller already threads a timezoneOffset for the window bounds but never passes it into getUserBusyPeriods, so the information exists one frame up the stack and is dropped.
-
-**Proposed fix:** Thread the caller's timezoneOffset (already computed at golf.ts:4302 and FairwayCalendar.tsx ~line 338) into getUserBusyPeriods, and replace the three sites with offset-explicit construction mirroring calendar-sync.ts:123:
-  function atLocalTime(dateKey: string, time: string, tzOffsetMin: number) {
-    const sign = tzOffsetMin <= 0 ? '+' : '-'; const a = Math.abs(tzOffsetMin);
-    return new Date(`${dateKey}T${time.length===5?time+':00':time}${sign}${String(Math.floor(a/60)).padStart(2,'0')}:${String(a%60).padStart(2,'0')}`);
-  }
-Apply to setTimeOnDate (466), parseEventDateTime (362), generateTimeSlots (511) — and to the `current.getDay()` weekday test at line 439, which is also UTC-derived today. Prefer the team's golf_team_settings.timezone when no caller offset is supplied.
-
-### HIGH **[CUSTOMER-FACING]** — availability.ts discards the `error` on five reads; a failed team lookup makes the conflict checker report 'no conflicts' for everyone
+#### C19. [MEDIUM] · **CUSTOMER-FACING** availability.ts discards the `error` on five reads; a failed team lookup makes the conflict checker report 'no conflicts' for everyone
 
 `src/lib/calendar/availability.ts:124`
 
 **Breaks:** Five reads in getUserBusyPeriods destructure only `data`. The worst is team resolution (line 123-137): `const { data: teams } = await supabase.from('golf_teams')...` and `const { data: memberships } = await supabase.from('golf_team_members')...`. If either read fails (RLS change, transient DB error, the Supabase wedge we've already had), `teamIds` becomes `[]`, teamEventsPromise short-circuits to `Promise.resolve([])` at line 157, and the function returns zero busy periods. checkEventConflicts (conflicts.ts:91-118) then reports 'no conflicts' and the coach schedules a practice on top of a tournament — with no error anywhere. Same pattern at line 186 (classesPromise, read as `classesResult.data` at 294 — a failed class read silently means 'this player has no classes'), line 195 (blockedTimesPromise), and line 231 (`const { data: ownedClasses }` — a failed read strips the player's OWN synced class occurrences out of their busy time).
 
-**Evidence:** Read directly: availability.ts:124 `const { data: teams } = await supabase.from('golf_teams').select('id').eq('organization_id', coach.organization_id);` — no error binding. Same shape at 131, 181-186, 188-195, 231-235. `teamIds.length > 0` at line 146 is the only gate, and it cannot distinguish 'no teams' from 'the query failed'. Nothing in this file calls logServerError or describeError. Contrast with the calendar page, which was already hardened for exactly this (calendar/page.tsx:149-151 throws rather than render an empty calendar, 'audit finding #20').
-
 **Root cause:** An empty busy list is the same value for 'this person is free' and 'I could not find out'. Because the errors are never bound, the function has no way to express the second, and its single return type forces every failure into the most dangerous of the two readings on a scheduling surface.
 
-**Proposed fix:** Bind and act on each error. Minimum: for the two team lookups, `const { data: teams, error: teamsError } = ...; if (teamsError) throw new Error(...)` so getPlayerAvailability's try/catch (golf.ts:4324) returns `{success:false}` and the UI shows an error rather than a false all-clear. For classesResult / blockedTimesResult / ownedClasses, do the same, or at minimum `await logServerError(...)` and add a `partial: true` flag to the result so the conflict UI can say 'could not check all sources' instead of 'no conflicts'.
+**Evidence:** Read directly: availability.ts:124 `const { data: teams } = await supabase.from('golf_teams').select('id').eq('organization_id', coach.organization_id);` — no error binding. Same shape at 131, 181-186, 188-195, 231-235. `teamIds.length > 0` at line 146 is the only gate, and it cannot distinguish 'no teams' from 'the query failed'. Nothing in this file calls logServerError or describeError. Contrast with the calendar page, which was already hardened for exactly this (calendar/page.tsx:149-151 throws rather than render an empty calendar, 'audit finding #20').
 
-### HIGH **[CUSTOMER-FACING]** — round-reviews.ts is a 1971-line parallel implementation where 16 of 18 exported server actions have zero call sites — including the whole coach→player publish/share/acknowledge workflow
+**How to trigger:** Two paths, in order of how concretely a user reaches them.
 
-`src/app/golf/actions/round-reviews.ts:1683`
+A) No-infrastructure-failure trigger (latent today, measured 0/879 in prod, but user-typeable). classIdFromDescription (class-events.ts:31-37) captures `[^\]\s]+` — it does NOT validate a uuid. golf_player_classes.id is type `uuid` (verified via information_schema). So: a coach opens the calendar, creates or edits any team event, and puts a literal like `[class:midterm]` in the description (a pasted syllabus line does this). Then, for any player on that team, availability.ts:213-222 classifies that event as a class occurrence (so it drops out of realTeamEvents and is never busy), and availability.ts:231-235 issues `.in('id', ['midterm', ...])` against a uuid column → PostgREST 22P02 "invalid input syntax for type uuid". That error is discarded, `ownedClasses` is null, ownedClassIds stays empty (line 236), and EVERY one of that player's synced class occurrences vanishes from their busy time. The coach then opens "find a time" / the availability overlay, sees the player's whole day green, and schedules practice on top of their lecture. No toast, no console error, no log.
 
-**Breaks:** A developer asked to "let coaches publish round reviews to players" finds `publishReview` already written, correctly authorising the coach and writing status/published_at/published_by, and concludes the feature exists and just needs a button. Wiring that button ships nothing visible to the player, because the readers in the same file consult patterns_detected JSON and the live page consults round-review-system.ts, which reads neither. The near-identical `markReviewViewedByPlayer` vs live `markReviewAsViewed` pair makes the same mistake available on the read side.
+B) The path the report describes. Requires a real query failure on golf_teams / golf_team_members — a statement timeout, connection exhaustion, or the documented prod DB wedge (2026-07-29, Postgres served zero queries for 9.4h while the control plane read ACTIVE_HEALTHY). During that window a coach editing an event gets teamIds = [], teamEventsPromise short-circuits at line 158, checkEventConflicts returns hasConflict:false, and FairwayEventEditor renders no warning card. Note this is NOT reachable via an RLS misconfiguration — those return empty sets with error === null and would survive the proposed fix unchanged.
 
-**Evidence:** The file is 1971 lines and exports 18 `'use server'` actions. Repo-wide grep for live importers (excluding __tests__ and *.test.*):
-  src/app/golf/(dashboard)/dashboard/rounds/[id]/review/CoachNotesSection.tsx:18 → `annotateReview`
-  src/app/golf/(dashboard)/dashboard/rounds/[id]/review/page.tsx:30 → `markReviewAsViewed`
-That is the complete list. The other 16 are unreachable from any UI:
-  publishReview (line 1683), shareReviewWithPlayer (931), markReviewViewedByPlayer (1782), acknowledgeReview (1879), addPlayerFeedback, saveCoachFeedback, getReviewById, getReviewByRoundId, getTeamReviews, getPlayerReviewHistory, retryReviewGeneration, getReviewGenerationStatus, generateRoundReview; plus getPendingCoachReviews and markReviewViewedByCoach which are referenced ONLY from their own test files.
+**Verifier:** CODE FACTS: CONFIRMED, exactly as quoted. I read /Users/ricknini/Downloads/helmv3/src/lib/calendar/availability.ts. Line 123 `const { data: teams } = await supabase.from('golf_teams').select('id').eq('organization_id', coach.organization_id)`, line 129 `const { data: memberships } = ... .from('golf_team_members')`, line 182-186 (classesPromise), line 189-195 (blockedTimesPromise), line 231 `const { data: ownedClasses } = ... .in('id', Array.from(classEventsByClassId.keys()))` — all five bind only `data`, no `error`. Line 146 `teamIds.length > 0 ? … : Promise.resolve([])` is the only gate and cannot distinguish "no teams" from "the query failed". Nothing in the file calls logServerError/describeError. Not a comment, not already fixed, and the code is live and reachable.
 
-The review route actually in use imports from a DIFFERENT module: src/app/golf/(dashboard)/dashboard/rounds/[id]/review/page.tsx:29 imports from '@/app/golf/actions/round-review-system' (5 exports, all live). So there are two full implementations of round review side by side, and the dead one is the one that carries the schema model described in the companion finding.
+REACHABILITY: CONFIRMED. getUserBusyPeriods is imported at golf.ts:4306 (getPlayerAvailabilityImpl) and golf.ts:4367 (getCurrentUserBusyPeriodsImpl), and via conflicts.ts:91 from checkEventConflicts, reached from golf.ts:4148 (checkScheduleConflictsImpl). Live UI callers: FairwayCalendar.tsx:341 (coach availability overlay), FairwayEventEditor.tsx:367 (debounced conflict check), EventDetailModal.tsx:556. checkEventConflicts really does return `{hasConflict:false, conflicts:[], suggestedTimes:[]}` from an empty busy list (conflicts.ts:102-118, 162-166).
 
-PRODUCTION: golf_round_reviews has 77 rows; published_at is NULL on all 77 and shared_with_player is false on all 77 — consistent with publishReview/shareReviewWithPlayer never having executed.
+WHERE THE FINDING IS WRONG — three corrections, all of which lower its severity or change the fix:
 
-Note both dead and live modules define a duplicate pair with near-identical names — `markReviewViewedByPlayer` (dead, round-reviews.ts:1782) vs `markReviewAsViewed` (live, imported by the page). That is exactly the kind of near-miss that gets an autocomplete-driven fix wired to the wrong one.
+1. It conflates RLS denial with a query error. I checked pg_policies: golf_teams `golf_teams_select` = is_golf_team_coach(id) OR is_golf_team_player(id); golf_team_members `golf_team_members_select_v5`; golf_player_classes `golf_classes_select_coaches`. All of these FILTER — an unauthorized read returns 0 rows and error === null. Binding the error would not catch any of them. So the "RLS change" trigger in the report is not a trigger for this defect at all; only a genuine Postgres/PostgREST error is.
 
-**Root cause:** round-review-system.ts was written as the replacement for round-reviews.ts but the old module was never deleted, and two of its functions were left wired into the new page — so it stays in the build, stays typechecked, stays green, and reads to every grep and to knip-style analysis as live code.
+2. The proposed fix does not fix the user-visible behavior. Both callers discard `success:false`: FairwayCalendar.tsx:341-345 does `return [id, r.success && r.data ? r.data : []]` — a `{success:false}` renders as an EMPTY overlay, i.e. "this player is completely free", exactly the outcome the fix was meant to prevent. FairwayEventEditor.tsx:374-376 does `if (!cancelled && result.success && result.data) setConflicts(...)` with `catch { /* conflict check failed — continue without warning */ }`. Throwing inside availability.ts converts one silent wrong answer into another.
 
-**Proposed fix:** Delete the 16 unreachable exports from src/app/golf/actions/round-reviews.ts, or move `annotateReview` and `markReviewAsViewed` into round-review-system.ts and delete round-reviews.ts entirely (preferred — it removes the contradictory ReviewDbRow/ReviewExtendedData schema model in one stroke). Delete the two test files that exist only to exercise dead exports (getPendingCoachReviews, markReviewViewedByCoach, validatePattern-style test-only survivors). If the coach→player publish workflow is wanted, rebuild it on round-review-system.ts against the real `status`/`published_at`/`shared_with_player` columns per the companion finding. Add `src/app/golf/actions/**` to the knip entry config so a `'use server'` export with zero importers fails CI instead of accumulating.
+3. It missed the strictly worse instance one frame up, in the same call path: conflicts.ts:72-83 — `const { data: players } = await supabase.from('golf_players').select(...).in('id', attendeePlayerIds); if (!players || players.length === 0) return { hasConflict: false, conflicts: [], suggestedTimes: [] };`. A failed read there reports "no conflicts" for EVERY attendee at once without ever entering availability.ts.
 
-### HIGH **[CUSTOMER-FACING]** — src/lib/types/golf.ts claims golf_announcement_acknowledgements "doesn't exist" — it exists in production AND in the generated database.ts, and the false belief produced `as any` casts that discard query errors
+SEVERITY DOWNGRADE to medium: the surface is advisory, not a write path. The conflict notice (FairwayEventEditor.tsx:963-992) is a warning card only — it never blocks save, so a false all-clear removes a warning rather than corrupting data, and the events themselves still render on the calendar via a different query. Combined with correction 1 (needs a real DB error, not an RLS state), "high" is overstated.
 
-`src/lib/types/golf.ts:33`
+MEASURED CONTEXT (prod): 43 golf_player_classes rows, 879 golf_events carrying a `[class:` tag, 0 with a non-uuid tag today, 10 golf_teams, 0 golf_coach_blocked_time rows (so the line-189 blockedTimes read is currently dead weight — zero customer impact from that one).
 
-**Breaks:** Two concrete consequences. (a) Anyone writing a new acknowledgement query trusts the comment, adds another `as any`, and loses type-checking on that table — which is precisely how the error-discarding casts in announcements.ts got written (see the companion finding). (b) Anyone consuming `GolfAnnouncementAcknowledgement.created_at` gets a field the DB never returns — always `undefined`, rendering as blank/Invalid Date — and anyone relying on `acknowledged_at: string` being non-null will crash on `.toLocaleDateString()` the first time a row is inserted without it (the column is nullable and has no default).
+BONUS DEFECT found while tracing (separate finding, worth filing): golf.ts:4157 serializes `(result as unknown as ConflictResult).suggestions || []`, but conflicts.ts:166 returns the field as `suggestedTimes`. The two ConflictResult interfaces (golf.ts:169 vs conflicts.ts:22) disagree, and the `as unknown as` cast hides it. `suggestions` is therefore ALWAYS `[]` in production — the "suggested alternative times" chips at FairwayEventEditor.tsx:977-990 have never once rendered. Same class as the finding's own "a TYPE that omits/renames a column the code writes".
 
-**Evidence:** src/lib/types/golf.ts:33 reads verbatim:
-    // GolfAnnouncementAcknowledgement - table doesn't exist, define manually
-followed by a hand-written interface at line 34.
+**Fix:** Fix the whole chain, not just availability.ts — fixing only availability.ts changes nothing a user sees.
 
-Both halves of that claim are false:
-1. LIVE DB (Supabase MCP, information_schema.columns): public.golf_announcement_acknowledgements exists with exactly 4 columns — id (uuid, NOT NULL), announcement_id (uuid, NOT NULL), player_id (uuid, NOT NULL), acknowledged_at (timestamptz, NULLABLE).
-2. It is ALREADY in the generated types: src/lib/types/database.ts:10675 `golf_announcement_acknowledgements: { Row: { acknowledged_at: string | null; announcement_id: string; id: string; player_id: string } ... }`. So `Tables<'golf_announcement_acknowledgements'>` resolves today.
+1. availability.ts — bind every error and make "I could not find out" representable. Change the return type to `{ periods: BusyPeriod[]; partial: boolean }` (or add an `incomplete` flag), and for each of the five reads bind `error`, `await logServerError(...)`, and set `partial = true`. For the two team lookups (lines 123-137) a hard throw is acceptable since an empty teamIds makes the entire result meaningless; for classes (182-186), blockedTimes (189-195) and ownedClasses (231-235), degrade with `partial: true` rather than throwing.
 
-The hand-written interface at golf.ts:34-41 diverges from both: it declares `created_at?: string` (NOT a column — 4 columns exist, created_at is not one) and `acknowledged_at: string` non-nullable (the DB and the generated Row both say `string | null`).
+2. availability.ts:231-235 — filter the tag list to well-formed uuids before `.in()`, and treat any dropped id as `partial`. A one-line uuid regex in classIdFromDescription (class-events.ts:36) closes trigger (A) at the source; do both, since the tag is also written into descriptions coaches can edit.
 
-The belief propagated into the query layer. src/app/golf/actions/announcements.ts:472 and :781 both reach the table through `await (supabase as any).from('golf_announcement_acknowledgements')...` with an eslint-disable for no-explicit-any — a cast that is only necessary if you believe the table is missing from the schema types. It isn't.
+3. conflicts.ts:72-83 — bind the error on the golf_players read and propagate it. Right now it returns hasConflict:false on a failed read before availability.ts is ever entered; this is the shortest path to a false all-clear and the report omits it. Thread `partial` through ConflictResult.
 
-PRODUCTION: 13 golf_announcements rows, 4 with requires_acknowledgement = true, 11 golf_announcement_acknowledgements rows (0 with NULL acknowledged_at). Live paying-customer feature.
+4. Callers must stop discarding failure:
+   - FairwayCalendar.tsx:341-345 — `r.success && r.data ? r.data : []` must not render a failed read as an empty (= free) overlay. Track a per-player "unavailable" state and render the lane as hatched/unknown with "couldn't load this player's schedule", never as free.
+   - FairwayEventEditor.tsx:367-376 — `if (result.success && result.data)` plus `catch { /* continue without warning */ }` must surface "conflict check unavailable" next to the save button instead of silently leaving the warning card unrendered.
 
-**Root cause:** The comment predates the migration that created the table (or predates a `docs:regen`/`generate_typescript_types` run) and was never re-checked. Nothing in CI compares hand-written interfaces in src/lib/types/golf.ts against the generated Database type, so a stale manual mirror is invisible.
+5. While in golf.ts: reconcile the two ConflictResult interfaces (golf.ts:169 vs conflicts.ts:22) and drop the `as unknown as` cast at golf.ts:4155-4162. `suggestions` vs `suggestedTimes` means the suggested-time chips at FairwayEventEditor.tsx:977 are permanently dead.
 
-**Proposed fix:** Replace src/lib/types/golf.ts:33-41 with:
-    export type GolfAnnouncementAcknowledgement = Tables<'golf_announcement_acknowledgements'>;
-Then fix the two now-unnecessary casts: in src/app/golf/actions/announcements.ts drop the `(supabase as any)` and the trailing `as { data: ... | null }` at lines 472-476 and 781-785, letting the generated types flow (this also forces the `error` channel back into scope — see the companion finding). Add a lint/test guard asserting every `export interface Golf*` in src/lib/types/golf.ts either has no same-named table in `Database['public']['Tables']`, or is defined as `Tables<...>`.
+#### C20. [LOW] · **CUSTOMER-FACING** Golf join flow: a failed coach/player lookup misroutes the user and can create a stray golf_players row
 
-### HIGH **[CUSTOMER-FACING]** — Announcement acknowledgement reads cast away the `error` channel — a failed read renders as a confident "0 acknowledged"
+`src/app/golf/join/[code]/page.tsx:29`
 
-`src/app/golf/actions/announcements.ts:781`
+**Breaks:** Two distinct failures on the first-contact join link. (a) If the `golf_coaches` read errors, `coach` is null and a real coach falls through to the player branch and is redirected to `/golf/player?joinCode=…`, whose onboarding calls `ensurePlayerRecord()` — creating exactly the stray `golf_players` row the code comment says must never be created. (b) If the `golf_players` read errors, an already-onboarded player is bounced back into player onboarding they finished months ago. Neither logs anything.
 
-**Breaks:** A coach posts a team announcement with requires_acknowledgement. Players acknowledge it. An RLS change, a transient PostgREST error, or a row-limit trip makes the acknowledgement read fail. The detail view renders "0 of 12 acknowledged" and an empty avatar stack; the list view renders has_player_acknowledged=false for a player who already acknowledged. No toast, no Sentry event, no server log. The coach chases twelve players who already responded — the exact "confident zero" class the founder called out.
+**Root cause:** `.maybeSingle()` results are consumed as a truthiness test on `data` alone. A read failure is indistinguishable from "this user is not a coach" / "this user has no player record", and both indistinguishable states drive an irreversible redirect.
 
-**Evidence:** Two reads of golf_announcement_acknowledgements destructure only `data` and then cast the result to a data-only shape, which structurally deletes `error` from the type so no reviewer or compiler can notice it was never checked:
+**Evidence:** join/[code]/page.tsx:29-33 — `const { data: coach } = await supabase.from('golf_coaches').select('id, onboarding_completed').eq('user_id', user.id).maybeSingle();` then line 35 `if (coach) redirect(...)`. Lines 40-44 — `const { data: player } = await supabase.from('golf_players').select('id, first_name, last_name, graduation_year, onboarding_completed').eq('user_id', user.id).maybeSingle();` then line 46 `if (!player || !player.onboarding_completed) redirect('/golf/player?joinCode=' + code)`. Neither destructures `error`. The comment at lines 25-28 states the exact consequence: "A coach can't 'join' a team as a player… that path calls ensurePlayerRecord() and would create a stray golf_players row." The very next read (line 63, the join-code RPC) DOES destructure `teamError`, so the pattern is inconsistent within 30 lines. This route has a documented history of the same failure mode — the RLS tightening in #1257 killed 100% of player joins for ~6 months because the join's own pre-flight read went through the policy that had just been closed.
 
-announcements.ts:781-785 (inside getAnnouncementDetailImpl, line 611):
-    const { data: acks } = await (supabase as any)
-      .from('golf_announcement_acknowledgements')
-      .select('id, announcement_id, player_id, acknowledged_at')
-      .eq('announcement_id', announcementId)
-      .order('acknowledged_at', { ascending: false }) as { data: Array<{...}> | null };
+**How to trigger:** Only the surviving low-severity defect is triggerable; the reported stray-row and misroute paths are not.
 
-announcements.ts:472-476 (inside getAnnouncementsWithMetaImpl, line 392): same shape for the list view.
+Concrete trigger: a coach shares an invite link (/golf/join/ABC123) with a recruit. The recruit is signed in and already onboarded, so execution reaches the RPC at page.tsx:63. If `golf_team_by_join_code` returns an error during that call — the realistic cause is a PostgREST schema-cache reload (PGRST002, a 503 on RPC calls lasting a few seconds), which this repo triggers routinely because migrations are applied via Supabase MCP apply_migration against prod — then `teamError` is truthy, line 68 takes the error branch, and the player is shown "Invalid Invite Code. This team invitation code is invalid or does not exist."
 
-The results feed the coach's progress readout directly — announcements.ts:820-829 `acknowledgements: (acks || []).map(...)` and `acknowledged_count: (acks || []).length`, and announcements.ts:563/568 `acknowledged_count: acks.length` / `has_player_acknowledged` in the list view. On any failure (RLS denial, transient network, PostgREST error) `acks` is null, `(acks || [])` is `[]`, and the coach is shown `acknowledged_count: 0` against a real `total_recipients` — a confident, wrong zero with nothing logged. Every other read in this same function pair does destructure and check `error`; these two are the exception, and the exception exists precisely because the `as any` + `as { data }` cast pair (added because of the false "table doesn't exist" comment in src/lib/types/golf.ts:33) removed the error field from the type.
+Observable customer outcome: the player tells the coach the code is broken. The coach regenerates a perfectly good join code. Because the file logs nothing, there is no server-side record that a DB error occurred rather than a bad code, so the support trail dead-ends. Retrying the same link seconds later works, which makes it look like flaky nonsense rather than a diagnosable event.
 
-PRODUCTION: 13 announcements, 4 with requires_acknowledgement = true, 11 acknowledgement rows. This is the number a coach uses to decide whether to chase a player.
+I could not construct any trigger for the reported stray golf_players row: it needs two unique-index SELECTs to fail while an INSERT through the same client in the same request succeeds, and the onboarding.ts:348 guard has to fail simultaneously.
 
-**Root cause:** The `as { data: T | null }` cast is a structural type assertion that drops `error` from the awaited PostgrestResponse, so the usual `if (error)` guard is not merely omitted — it is unwriteable. The cast was introduced to work around a believed-missing schema type that is in fact present at src/lib/types/database.ts:10675.
+**Verifier:** The headline claim is REFUTED. A narrow, different defect survives in the same file, so I am not calling this a clean miss — but it is nothing like what was reported.
 
-**Proposed fix:** Remove both casts and use the generated types (the table IS in database.ts):
-    const { data: acks, error: acksError } = await supabase
-      .from('golf_announcement_acknowledgements')
-      .select('id, announcement_id, player_id, acknowledged_at')
-      .eq('announcement_id', announcementId)
-      .order('acknowledged_at', { ascending: false });
-    if (acksError) {
-      await logServerError(`getAnnouncementDetail acks read failed: ${acksError.message}`, { action: 'getAnnouncementDetail', featureArea: 'announcements', extra: { announcementId, errorCode: acksError.code } });
-      return { success: false, error: 'Could not load acknowledgements' };
-    }
-Apply the same at :472-476 for `allAcks` (there, prefer degrading the specific card rather than the whole list — but surface it, do not render 0). Do the same for the sibling `allRecipients` read at :464-468, which has the identical cast. Then delete the `// eslint-disable-next-line @typescript-eslint/no-explicit-any` lines that become unnecessary.
+WHAT I VERIFIED (all quotes are live code I read, not comments):
 
-### HIGH **[CUSTOMER-FACING]** — Deleting a class (single and delete-all) claims "Removed from your calendar" while discarding the removal result — and deletes the class row anyway, destroying the only retry path
+The code matches the report verbatim. src/app/golf/join/[code]/page.tsx:29-33 and :40-44 do discard `error`, and :63 does destructure `teamError`. That much is accurate.
 
-`src/app/golf/(dashboard)/dashboard/classes/page.tsx:235`
+REFUTATION 1 — `.maybeSingle()` cannot error here. The finding's root_cause leans on the repo-wide "maybeSingle on a query that can match MANY rows" failure class. It does not apply. Production constraints:
+  golf_coaches_user_id_key  UNIQUE (user_id)
+  golf_players_user_id_key  UNIQUE (user_id)
+Both lookups are `.eq('user_id', user.id)` against a UNIQUE column. Multi-row is structurally impossible, so the PGRST116 path does not exist.
 
-**Breaks:** A player deletes a class. `removeClassFromCalendar` fails (any of: not authenticated, no `golf_players` row, `golf_team_members` read error, class owned by someone else, or the `golf_events` delete erroring). The result is thrown away, the `golf_player_classes` row is deleted regardless, and the player is told "Class deleted — Removed from your schedule and calendar." The `[class:<id>]`-tagged events stay on the team calendar forever: the class row no longer exists, so nothing in the UI can ever target that tag again. Same bug in `confirmDeleteAllClasses`, which loops the same discarded call over every class and then says "All classes deleted — Your schedule and calendar are clear."
+REFUTATION 2 — there is no RLS-denial path. I read the live SELECT policies:
+  golf_coaches_select USING ((user_id = (SELECT auth.uid())) OR shares_my_golf_organization(organization_id))
+  golf_players_select USING ((user_id = (SELECT auth.uid())) OR user_is_coach_of_golf_player(id) OR ...)
+Both start with self-read. A coach can always read their own golf_coaches row; a player their own golf_players row. The finding invokes the #1257 precedent (RLS tightening killing the join pre-flight read), but #1257's mechanism was a policy that did not cover the read. These policies do. That precedent does not transfer.
 
-**Evidence:** Line 235 `await removeClassFromCalendar(selectedClass.id);` — result dropped; the `golf_player_classes` delete follows at 238-242 and only *its* error is checked; line 253 `fairwayToast.success('Class deleted', { description: 'Removed from your schedule and calendar.' });`. Second site: line 405 `for (const classId of classIds) {` / line 406 `await removeClassFromCalendar(classId);` → line 419 `fairwayToast.success('All classes deleted', { description: 'Your schedule and calendar are clear.' });`. `removeClassFromCalendar` returns `Promise<CalendarSyncResult>` and never throws (src/app/golf/actions/calendar-sync.ts:564); its failure returns are at calendar-sync.ts:478, 488, 497, 507, 532, 535, and 551 (`Failed to remove class from calendar: ${error.message}`). The action's own doc comment at calendar-sync.ts:465-469 states outright: "Both call sites in /golf/dashboard/classes discard this result and delete the golf_player_classes row regardless" — the server was hardened to survive the discard (absence is treated as orphan cleanup) but the toast was never made honest. PRODUCTION: 879 `[class:` tagged `golf_events`, 0 currently orphaned — this path has not fired yet, but nothing prevents it.
+REFUTATION 3 — claim (a), the stray golf_players row, is blocked downstream. src/app/golf/actions/onboarding.ts:344-356 is an explicit second guard added for exactly this:
+  const { data: coachRecord } = await supabase.from('golf_coaches').select('id').eq('user_id', user.id).maybeSingle();
+  if (coachRecord) return { success: false, error: 'Account is a coach; no player record created.' };
+For a stray row to appear you now need FOUR conditions to co-occur inside one request: the golf_coaches read at page.tsx:29 errors, the golf_players read at :40 errors, the *second* golf_coaches read at onboarding.ts:348 also errors, AND the INSERT at onboarding.ts:376 succeeds anyway. That last one is the killer — there is no mechanism by which two trivial unique-index SELECTs fail while an INSERT through the same PostgREST client in the same request succeeds. Every realistic cause (schema-cache reload/PGRST002, pool exhaustion, DB down) fails the INSERT too, and it is logged at onboarding.ts:388-391.
 
-**Root cause:** Result of a `{success, error}` action discarded at two call sites, followed by an unconditional success toast that asserts the calendar side happened. The destructive local delete is sequenced before the remote removal is confirmed, so a failure is unrecoverable.
+REFUTATION 4 — a full DB outage never reaches line 29 at all. Line 19 `const { data: { user } } = await supabase.auth.getUser()` also discards its error. If Postgres is wedged, GoTrue fails, `user` is null, and line 22 redirects to /golf/signup. The coach is bounced before the golf_coaches read executes.
 
-**Proposed fix:** In `handleDeleteClass`: bind the result — `const removal = await removeClassFromCalendar(selectedClass.id);` — and do NOT delete the `golf_player_classes` row when `!removal.success`; instead `fairwayToast.error('Could not remove this class from your calendar', { description: removal.error ?? 'Unknown error' })` and return, keeping the class row so the player can retry. Only on `removal.success` proceed to the row delete and the success toast. In `confirmDeleteAllClasses`: replace the bare loop with `const removals = await Promise.all(classIds.map((id) => removeClassFromCalendar(id)));`, compute `const failed = removals.filter((r) => !r.success)`, and if `failed.length > 0` abort the bulk `golf_player_classes` delete and surface `\`${failed.length} of ${classIds.length} classes could not be removed from your calendar\`` instead of "Your schedule and calendar are clear."
+REFUTATION 5 — claim (b) is wrong about the consequence. It says an onboarded player is "bounced back into player onboarding they finished months ago." They are not. src/app/golf/(onboarding)/player/page.tsx:103-113 re-reads golf_players and, on `onboarding_completed`, does `router.push('/golf/dashboard')`. The user is not re-onboarded.
 
-### HIGH **[CUSTOMER-FACING]** — Baseball stat import reports "Import committed · N created" while the canonical box-score write that Stats Center actually reads is discarded
+PRODUCTION EVIDENCE CUTS AGAINST THE FINDING. I found 3 users holding both a golf_coaches and a golf_players row, and two have the exact stray shape the finding predicts (onboarding_completed=false, 0 team memberships, player row minted after the coach row):
+  Duncan Wheeler   — coach 2026-02-18 18:45:33Z, player 2026-02-18 18:51:40Z (+6 min), incomplete, 0 memberships
+  Michael VEVERKA  — coach 2026-02-04, player 2026-03-09, incomplete, 0 memberships
+  Sydney Pickell   — onboarding_completed=true, 1 membership (a genuine dual-role user, not a stray)
+This looks like a smoking gun until you date the guards. Both landed 2026-06-21: the join-page coach branch in 5682b1267 (#331) and the ensurePlayerRecord coach guard in 748037b56 (#332). Both stray rows predate them by 3-4 months. They are residue of the ORIGINAL bug, which is already fixed. Zero strays in the ~13 months since. That is evidence the guards work, not that they leak.
 
-`src/app/baseball/actions/imports.ts:1786`
+WHAT ACTUALLY SURVIVES (and it is the finding's own footnote, not its headline): line 68 `if (teamError || !team)` collapses a genuine RPC failure into the "Invalid Invite Code / This team invitation code is invalid or does not exist" screen at :84-87. `golf_team_by_join_code` exists and is SECURITY DEFINER, so this is a real RPC that can return a real error. And I confirmed by grep that the file contains NO logServerError, NO describeError, NO console call anywhere — so when it happens there is no server-side trace at all. That is a real misleading-error + zero-observability defect on a first-contact flow. It is low severity because it is transient and self-recovering on retry, not the high-severity irreversible data-corruption event that was reported.
 
-**Breaks:** A coach commits a game box-score CSV. The legacy `baseball_player_stats` rows land, so the wizard reports "Import committed · 12 created · 0 updated". The canonical write — `save_baseball_full_box_score`, which populates `baseball_box_score_batting`/`_pitching` and recalculates season stats — silently failed, so Stats Center (which reads the box-score tables, never `baseball_player_stats`) shows nothing for that game. Concrete trigger: a staff member without `can_manage_stats` on the game's team. `commitImport` gates on `can_manage_imports`, but `saveFullBoxScoreAction` independently calls `requireBaseballCapability(game.team_id, 'can_manage_stats')` (src/app/baseball/actions/games.ts:922) — that throws, `saveFullBoxScore`'s own try/catch converts it to `{success:false}` (games.ts:964-978), and this line drops it. Same for a `save_baseball_full_box_score` RPC error or an RLS denial (games.ts:933-942).
+**Fix:** Do NOT apply the proposed fix as written. Throwing on `coachError`/`playerError` (lines 29/40) hard-fails the join page for an error class I could not show is reachable, and it converts a currently-working first-contact flow into a 500 on any transient blip. That is the same shape of regression as #1257, where tightening the join path killed 100% of player joins for six months.
 
-**Evidence:** src/app/baseball/actions/imports.ts:1786 `await saveFullBoxScore(gameId, battingRows, pitchingRows, ourScore, opponentScore);` — return value never bound. The comment directly above at line 1784-1785 acknowledges it "never throws — returns a result" and then ignores that result. `applyGameBoxScoreImport` returns the snapshot regardless (line 1789-1798) and its outer `catch { return null }` at 1811-1814 swallows anything else. The caller `applyImportPlan` at line 1427 assigns that to `boxScoreSnapshot` and never inspects success. The UI toast is src/components/baseball/import-center/ImportWizardClient.tsx:639-643: `title: 'Import committed', description: \`${res.created} created · ${res.updated} updated · ...\`` — `CommitImportResult` (imports.ts:306-341) has no field that can carry a canonical-write failure. Verified `saveFullBoxScore`'s three `{success:false}` returns at games.ts:918, 942, 948.
+Apply only this, in src/app/golf/join/[code]/page.tsx:
 
-**Root cause:** A `{success, error}`-returning action invoked as a bare statement inside a best-effort helper whose contract ("never throws") was mistaken for "cannot fail". The commit result type has no channel to report a partial write, so even a checked failure would have nowhere to go.
+1. Split line 68 so a DB failure never reads as a bad code:
+   if (teamError) {
+     await logServerError(`[golf/join] team lookup failed: ${describeError(teamError)}`, { action: 'golf.join.lookup' });
+     // render "Something went wrong — please try that link again" with a retry affordance
+   }
+   if (!team) {
+     // keep the existing "Invalid Invite Code" copy
+   }
 
-**Proposed fix:** Bind it: `const boxScoreSave = await saveFullBoxScore(gameId, battingRows, pitchingRows, ourScore, opponentScore);`. Add `canonicalWriteError: string | null` to `GameBoxScoreSnapshot` and set it from `boxScoreSave.error` when `!boxScoreSave.success`. Propagate it up through `applyImportPlan` into a new `canonicalWriteError: string | null` field on `CommitImportResult` (imports.ts:306). In ImportWizardClient.tsx:634-643, when `res.canonicalWriteError` is set, switch the toast to `type: 'warning'` with title `'Import committed — Stats Center not updated'` and the error as the description, so the coach knows to retry rather than believing Stats Center is just slow. Also log the failure via `logServerError` at the imports.ts call site — right now nothing anywhere records it.
+2. Add observability (not control flow) to the two identity reads, so the failure class the finding hypothesizes becomes detectable instead of invisible. Capture the errors and log them, then let the existing redirect logic stand unchanged:
+   const { data: coach, error: coachError } = await supabase.from('golf_coaches')...
+   if (coachError) await logServerError(`[golf/join] coach lookup failed: ${describeError(coachError)}`, { action: 'golf.join.identity' });
+   ...same for playerError.
 
-### HIGH **[CUSTOMER-FACING]** — Baseball import rollback discards the canonical revert, still marks the run 'rolled_back', and reports "N removed · M restored" — permanently hiding the only retry control
+The file currently imports neither helper, so add the imports. Log-only here is the right call: it costs nothing, and if the hypothesized error ever does fire in prod there will finally be a trace to justify a stronger guard. Ship the guard when there is evidence, not before.
 
-`src/app/baseball/actions/imports.ts:1944`
+Separately, the two pre-guard stray rows found in prod (golf_players a73206b5-7ef3-4413-8a54-fe805da9a988 and 6d308fcf-6989-4cba-8f99-d5a39148ec3c — both onboarding_completed=false, 0 memberships, owned by users who are coaches) are leftover data from the pre-2026-06-21 bug. Worth a one-off cleanup decision by the founder, but that is a data question, not a code fix, and I made no writes.
 
-**Breaks:** A coach rolls back a bad game-box-score import. The legacy `baseball_player_stats` rows are reverted, but `revertGameBoxScoreImport`'s call to `saveFullBoxScore` (which restores the pre-import box score) fails and is swallowed by a bare `catch {}`. `rollbackImport` then unconditionally stamps `status: 'rolled_back'` on `baseball_import_runs` and the UI shows "Import rolled back — 8 removed · 3 restored". Stats Center still shows the bad imported numbers, and because the run is now `rolled_back` the Roll-back control disappears from the recent-imports list — the coach cannot retry. The data is wrong and there is no in-product way to fix it. The file's own author identified this exact hazard for the event-grain case (the guard at imports.ts:2050-2056 refuses rather than "report `0 removed · 0 restored` as a false success and still mark the run 'rolled_back'") but left the box-score revert path unguarded.
+#### C21. [LOW] · **CUSTOMER-FACING** Qualifier leaderboard shows every player at 0 strokes / 0 rounds when the rounds read fails
 
-**Evidence:** src/app/baseball/actions/imports.ts:1944-1950 `await saveFullBoxScore(snap.gameId, snap.beforeBatting, snap.beforePitching, ...)` — result dropped; wrapped in `try { ... } catch { }` at 1955-1961 with the comment "Non-fatal: ... the canonical box score may retain this import's numbers until retried." `revertGameBoxScoreImport` returns `void`, so `rollbackImport` at imports.ts:2107-2108 cannot learn anything. Lines 2114-2120 then unconditionally `.update({ status: 'rolled_back', rolled_back_at: ... })`, and line 2132 returns `{ reverted, restored }` counted only from the legacy loop. UI: src/components/baseball/import-center/ImportWizardClient.tsx:676-687 — `const res = await rollbackImport(...)` then optimistically sets the local row to `status: 'rolled_back'` and toasts `title: 'Import rolled back', description: \`${res.reverted} removed · ${res.restored} restored\``. The only error branch is `catch` (line 688), which the swallowed failure never reaches.
+`src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx:96`
 
-**Root cause:** `catch {}` around a discarded `{success,error}` result, inside a helper typed `Promise<void>` so failure has no return channel, followed by an unconditional state transition that is itself the thing preventing recovery.
+**Breaks:** On a qualifier detail page, if the `golf_rounds` read errors, every entered player renders with totalScore 0, totalToPar 0, an empty round list, and the page reports "0 rounds submitted". The sort then orders players arbitrarily (all comparisons hit the 0===0 branch). A coach uses this board to pick the travel squad; it will read as "nobody has played yet" on a completed qualifier.
 
-**Proposed fix:** Change `revertGameBoxScoreImport` and `revertSeasonTotalsImport` to return `{ ok: boolean; error?: string }`. Bind `saveFullBoxScore`'s result and return `{ ok: false, error }` on failure; replace the bare `catch {}` with `catch (e) { await logServerError(...); return { ok: false, error: describeError(e) }; }`. In `rollbackImport`, capture that and — critically — do NOT run the `status: 'rolled_back'` update at imports.ts:2114 when the canonical revert failed; instead throw a user-safe error (`'The legacy rows were reverted but Stats Center could not be restored — the run is still rollable, please retry.'`) so the existing `catch` in ImportWizardClient shows the red toast and the Roll-back control stays visible. Alternatively add `canonicalRevertError` to the return type and have the client render a warning toast plus keep the row rollable.
+**Root cause:** `(rounds || [])` is used at four separate aggregation sites; a null from an error path is treated as "no rounds have been submitted", which is a meaningful and plausible-looking business state.
 
-### HIGH **[CUSTOMER-FACING]** — A golf coach with no golf_team_coach_staff row sees a completely empty product — 6 such coach profiles exist in production, 3 on real customer .edu domains
+**Evidence:** qualifiers/[id]/page.tsx:96-101 — `const { data: rounds } = await supabase.from('golf_rounds').select('id, player_id, total_score, score_to_par, qualifier_round_number, round_date, course_name, status').eq('qualifier_id', id).eq('status','completed').order('qualifier_round_number', { ascending: true });` with no `error`. Downstream: line 112 `const playerRounds = (rounds || []).filter(...)` → line 122 `totalScore: playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0)` → 0; line 123 same for totalToPar; line 138 `maxRoundNumber` → 0; line 140 `totalRoundsSubmitted = (rounds || []).length` → 0. Line 128-135's sort resolves every pair through the `a.rounds.length === 0 && b.rounds.length === 0 → return 0` branch, so display order is whatever Object.entries yields. Contrast line 59-69, where the qualifier row itself is fetched and guarded (`if (!qualifier) notFound()`) — the guard exists for the parent row and not for the data the board is made of. Production: 4 golf_qualifiers, 302 completed rounds.
 
-`supabase/migrations (function public.is_golf_team_coach + policy golf_teams_select):1`
+**How to trigger:** Requires a partial backend failure, and only manifests once qualifier-linked rounds exist (today zero rounds in production have qualifier_id set, so the panel is legitimately empty regardless).
 
-**Breaks:** Every golf coach-side read gates on is_golf_team_coach(team_id), which is defined ONLY as 'has a golf_team_coach_staff row for this team'. golf_coaches.organization_id grants nothing. A coach whose profile exists but who never got a staff row logs in to a dashboard with zero teams, zero players, zero rounds, zero events, zero tasks — no error, no empty-state explaining why, and (because onboarding_completed = true) the onboarding wizard never re-runs. Their only recovery surface is createTeam, which is 100% broken (previous finding).
+Concretely: a coach opens /golf/dashboard/qualifiers/<id> for a qualifier that has completed rounds. The server-rendered `golf_qualifiers` read (page.tsx:59) succeeds, then the `golf_rounds` read (page.tsx:96) fails — e.g. a Supabase pooler connection reset or PostgREST 5xx landing between the two sequential awaits, the documented prod-DB-wedge mode from the 2026-07-29 incident. The page still renders. The hero leaderboard fetches independently from the browser a moment later, succeeds, and shows the real scores and the real "N rounds submitted" count. Directly below it, the coach-only "Round-by-round" panel shows the EmptyState "No rounds submitted yet" with zero round columns, because `maxRoundNumber` collapsed to 0. Nothing is logged to server-error-logger or Sentry. The coach sees two contradictory statements on one screen and cannot tell which is right.
 
-**Evidence:** Role-impersonation on production, rolled back.
-BROKEN: user 368a21d4-6d5b-4b83-b512-9aa4d33dc922 = smith_a@lynchburg.edu, golf_coaches 504ab1f2-9c34-4dd3-af76-7830fb48a49a, full_name 'Allen Smith', title "Head Men's Golf Coach", organization_id 119634a3 (University of Lynchburg), onboarding_completed = true, golf_team_coach_staff rows = 0.
-  -> teams 0, members 0, players 0, events 0, rounds 0, tasks 0, coaches 3.
-CONTROL: user c81554fe-9a5c-40b1-b3c2-d26b5705a39a = veverka_mc@lynchburg.edu, same organization, 1 staff row.
-  -> teams 1, members 6, players 7, events 4, rounds 20, tasks 0, coaches 3.
-auth.users shows smith_a created 2026-04-28 16:32:11 and last_sign_in_at 2026-04-28 16:32:11 — one session, never returned.
-Production-wide: 6 of 17 golf_coaches rows have 0 golf_team_coach_staff rows. Three are on customer/prospect domains: smith_a@lynchburg.edu, Christopher.jones@lr.edu (Lenoir-Rhyne, last sign-in 2026-06-05), kcarralero@methodist.edu (Methodist, last sign-in 2026-04-26). The other three are test accounts.
+Repro without an outage: temporarily point the select at a nonexistent column (e.g. `.select('id, player_id, nonexistent_col')`) — PostgREST returns a 400, `rounds` is null, the error is discarded, and the breakdown panel renders the empty state while the leaderboard renders normally.
 
-**Root cause:** There are two competing definitions of 'coach of this program': golf_coaches.organization_id (what signup/redeemStaffInvite write) and golf_team_coach_staff (what every RLS policy reads). Only completeCoachOnboarding and redeemStaffInvite create the staff row, and both have paths that create the golf_coaches row and then bail before the staff insert — e.g. redeemStaffInvite (teams.ts:1810-1827) inserts the coach row, then returns 'That program has no teams to join yet.' at teams.ts:1847 without ever writing staff. The result is an orphan profile that RLS treats as a stranger.
+**Verifier:** CODE CONFIRMED, HARM LARGELY REFUTED, SEVERITY OVERSTATED.
 
-**Proposed fix:** Three parts. (1) Backfill: for each golf_coaches row with organization_id set and 0 staff rows, insert a golf_team_coach_staff row (role 'head_coach', is_primary true) for each golf_teams row in that organization — as an additive migration, gated on `WHERE NOT EXISTS (staff row)`. For Allen Smith that is the Lynchburg women's team; if the product intends per-gender scoping, seed only the matching-gender team and let createTeam (once fixed) handle the other. (2) Make the orphan state impossible: in redeemStaffInvite, move the golf_coaches insert AFTER the `targetTeams.length === 0` guard (teams.ts:1847), so a failed invite never strands a profile. (3) Make it visible: on /golf/dashboard, when the caller has a golf_coaches row but resolveCoachActiveTeamId returns null, render an explicit 'your account is not attached to a team yet' state with the create-team CTA instead of a set of zeroed widgets.
+What is true: `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx:96-101` really does destructure only `{ data: rounds }` with no `error`, and `(rounds || [])` really is used at four aggregation sites (lines 112, 122-123, 138, 140). The route is reachable (coach + player, 4 live qualifiers in prod). That part of the report is accurate.
 
-### HIGH **[CUSTOMER-FACING]** — Baseball conversation creation is 100% broken — mutually recursive RLS policies raise 42P17 on every participant insert
+REFUTATION 1 — the leaderboard and the "rounds submitted" counter self-heal, so the page never confidently says "nobody has played." The hero board is `FairwayQualifierLeaderboard` (FairwayQualifierDetail.tsx:356), which runs `useQualifierRealtime(qualifierId)` (FairwayQualifierLeaderboard.tsx:124). That hook does its OWN client-side `golf_rounds` fetch WITH the error destructured and handled (`src/hooks/golf/use-qualifier-realtime.ts:128 const { data: roundsData, error: roundsError }`, `setError` at 78/194) and renders the error string in the UI (FairwayQualifierLeaderboard.tsx:253-255). It then pushes its own live total back up via `onRoundsSubmittedChange` (line 361), and FairwayQualifierDetail.tsx:274 does `const displayedRoundsSubmitted = liveRoundsSubmitted ?? roundsSubmitted` — the client number WINS over the server number. So the reported "the page reports '0 rounds submitted'" and "every entered player renders with totalScore 0" is not what a user sees: either the client fetch succeeds and the hero shows real scores and the real count, or it also fails and the user gets an explicit error. There is no state where the whole page presents a confident zero.
 
-`src/app/actions/messages.ts:390`
+REFUTATION 2 — "the sort then orders players arbitrarily" is wrong. `Array.prototype.sort` is stable (ES2019/V8), so when every comparison returns 0 the order is exactly `Object.entries` insertion order, i.e. the qualifier-entries order. Deterministic, not arbitrary.
 
-**Breaks:** createConversation with sport='baseball' inserts the conversation, then inserts the self-participant row at messages.ts:390-392. That statement dies with 'infinite recursion detected in policy for relation baseball_conversation_participants' (42P17). The catch block admin-deletes the conversation and throws 'Failed to add participants: ...'. No baseball coach or player can start a DM or group chat at all. The 138 existing baseball_messages rows are all in 3 pre-existing conversations.
+REFUTATION 3 — the report also mis-describes the zero-state render. FairwayQualifierDetail.tsx:266-267 computes `hasAnyCompletedRound = maxRoundNumber > 0 && breakdown.some(...)`, and lines 382-393 render an `EmptyState` titled "No rounds submitted yet". It does NOT render a table of players at 0/E — that all-dash bug was already fixed (see the comment at 264-265).
 
-**Evidence:** Reproduced on production in a rolled-back transaction: as user e78c5692-65e5-46a7-bb8c-1aa78b58c5d2, `insert into baseball_conversation_participants (conversation_id, user_id) values ('85c43caa-65ca-505f-ae59-261d456591b8', 'e78c5692-...')` -> ERROR 42P17: infinite recursion detected in policy for relation "baseball_conversation_participants". Plain SELECTs on the same tables in the same session return 0 rows without error, so the recursion is specific to the write path.
-Cycle: baseball_participants_insert_by_creator WITH CHECK references baseball_conversations; baseball_conversations_select USING references baseball_conversation_participants inline; that table's SELECT policy closes the loop. Golf avoids this because golf_conversations_select_v2 goes through the SECURITY DEFINER wrapper user_conversation_ids().
-Already diagnosed and knowingly left unfixed in-tree: src/app/actions/messages.ts:375-385 ('baseball is NOT fixed by it ... dies with 42P17 ... Baseball DM creation was already 100% broken before this change ... that is deliberately not done here').
+REFUTATION 4 — the "Production: 302 completed rounds" evidence is misleading. Measured live: `select count(*) filter (where qualifier_id is not null), count(*) filter (where status='completed'), count(*) from golf_rounds` → `{with_qual: 0, completed: 296, total: 302}`. ZERO of 302 rounds carry a `qualifier_id`, and a per-qualifier join returns 0 completed rounds for all four qualifiers. None of those 302 rounds are reachable by this query. Current customer exposure to this code path with real data is nil.
 
-**Root cause:** baseball_conversations_select uses a raw inline EXISTS against baseball_conversation_participants instead of the SECURITY DEFINER indirection golf uses, creating a policy cycle that Postgres rejects structurally.
+REFUTATION 5 — trigger window is narrow. RLS denial on golf_rounds produces an empty array, not an error (policies `golf_rounds_select` / `golf_rounds_select_team`, USING-only, verified via pg_policy). The columns all exist, and `idx_golf_rounds_qualifier` covers the predicate on a 302-row table, so a statement timeout is implausible. A full DB outage fails the earlier `golf_qualifiers` read at line 59 first and hits `notFound()` (line 71) — a 404, which is a DIFFERENT and arguably worse unguarded read on the same page. You need a partial failure landing between two sequential queries.
 
-**Proposed fix:** One additive migration, and fix the tenant hole at the same time since both live in the same policy:
-CREATE OR REPLACE FUNCTION public.baseball_conversation_created_by_me(p_conversation_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT EXISTS (SELECT 1 FROM public.baseball_conversations c WHERE c.id = p_conversation_id AND c.created_by = (SELECT auth.uid())) $$;
-REVOKE EXECUTE ... FROM PUBLIC, anon; GRANT EXECUTE ... TO authenticated, service_role;
-DROP POLICY baseball_conversations_select ON public.baseball_conversations;
-CREATE POLICY baseball_conversations_select ON public.baseball_conversations FOR SELECT TO authenticated USING (id IN (SELECT public.get_my_baseball_conversation_ids()));   -- definer wrapper, breaks the cycle
-DROP POLICY baseball_participants_insert_by_creator ON public.baseball_conversation_participants;
-CREATE POLICY baseball_participants_insert ON public.baseball_conversation_participants FOR INSERT TO authenticated WITH CHECK (public.baseball_conversation_created_by_me(conversation_id) OR EXISTS (SELECT 1 FROM public.baseball_conversations c WHERE c.id = conversation_id AND c.team_id IS NOT NULL AND public.is_baseball_team_staff(c.team_id)));
-Note the removal of the bare `user_id = auth.uid()` branch — it is the same self-join hole as the golf finding above; today it is masked only by the recursion error, so fixing the recursion without fixing the predicate would ship the critical hole to baseball. Also tighten baseball_messages_update, which currently lets ANY participant edit ANY message in the conversation (golf is sender-only).
+WHAT ACTUALLY SURVIVES: the coach-only round-by-round breakdown panel (page.tsx:103-138 → FairwayQualifierDetail.tsx:364-395) is fed exclusively by the server `breakdown` / `maxRoundNumber` props and has no client override. On a partial failure it renders "No rounds submitted yet" while the hero leaderboard directly above it shows real scores from its own successful fetch — a visible self-contradiction on one screen, and nothing is logged. That is a genuine instance of the swallowed-error class, but it is one coach-only panel contradicted by an honest neighbour, not a board-wide false all-clear.
 
-### MEDIUM **[CUSTOMER-FACING]** — Coaches are never notified of a golf join request — the insert is made with the player's own client, which RLS rejects, and the error is not even captured
+**Fix:** Fix the swallowed error, but scope the remediation to the coach breakdown panel — do NOT add a page-wide failure banner, because the hero leaderboard already has its own honest error contract and would double-report.
 
-`src/app/golf/actions/teams.ts:931`
+In src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx:96:
 
-**Breaks:** Even once finding #1 is fixed and join requests start landing again, the coach gets no in-app notification. The request sits in golf_team_join_requests, unseen, until the coach happens to open Roster → Requests. The player is told their request was submitted and waits for an approval that nobody knows to give.
+  const { data: rounds, error: roundsError } = await supabase
+    .from('golf_rounds')
+    .select('id, player_id, total_score, score_to_par, qualifier_round_number, round_date, course_name, status')
+    .eq('qualifier_id', id)
+    .eq('status', 'completed')
+    .order('qualifier_round_number', { ascending: true });
 
-**Evidence:** teams.ts:914-931 builds notification rows addressed to each coach's `user_id`, then inserts them with `fromUntyped(supabase, 'notifications')` — the request-scoped client for the player. Production pg_policies: `notifications_insert_own` is INSERT WITH CHECK `(user_id = (SELECT auth.uid()))`. A player cannot address a row to a coach, so every row is rejected. The call at line 931 does not destructure `error` at all — the rejection is invisible, and the surrounding try/catch (line 933) only fires on a throw, which a PostgREST RLS rejection is not. This is the exact bug already fixed for the sibling path in commit 0a39885ab ("coaches were never told a player joined — RLS-blocked notification", #1280), which switched joinGolfTeam to createAdminClient() and added error logging (teams.ts:377-385) — createTeamJoinRequest was not included in that fix.
+  if (roundsError) {
+    await logServerError(roundsError, { action: 'qualifierDetail.rounds', featureArea: 'qualifiers', metadata: { qualifierId: id } });
+  }
 
-**Root cause:** Cross-user notification written with the caller's client. Same class as #1280; the fix was applied to one of the two sites that needed it.
+Then pass `breakdownUnavailable={roundsError != null}` to FairwayQualifierDetail and, in the section 4 branch at FairwayQualifierDetail.tsx:364-395, render an InlineNotice (tone="danger", "Couldn't load the round-by-round breakdown — refresh to retry") INSTEAD of the `EmptyState title="No rounds submitted yet"` when that prop is set. Leave the hero leaderboard and `displayedRoundsSubmitted` untouched — they already handle their own failure correctly.
 
-**Proposed fix:** Mirror the already-shipped fix from joinGolfTeam exactly. Replace teams.ts:931 with:
-```ts
-const admin = createAdminClient();
-const { error: notifyError } = await fromUntyped(admin, 'notifications').insert(notifications);
-if (notifyError) {
-  await logServerError(
-    `join-request notification insert failed: ${describeError(notifyError)}`,
-    { action: 'teams.createTeamJoinRequest', featureArea: 'teams' },
-    'warning'
-  );
-}
-```
-Elevating is safe for the same reasons documented at teams.ts:364-376: the request itself is already authorized, recipients are exactly the coaches of the org owning the target team, and the payload is server-derived.
+`logServerError` exists at src/lib/server-error-logger.ts:546.
 
-### MEDIUM **[CUSTOMER-FACING]** — A baseball coach (or anyone without a baseball_players row) who clicks a player invite link is bounced into a signup form they cannot use
+Two adjacent unguarded reads on the same file are worth folding into the same change and are arguably higher-impact than the reported one:
+  • page.tsx:59 — `const { data: qualifier }` with no error, followed by `if (!qualifier) notFound()` at line 71. On any DB error a coach gets a hard 404 for a qualifier that exists. This is the more damaging instance of the same class.
+  • page.tsx:150 — `const { count: selectionsCount }` with no error → `selectionsCount ?? 0` at line 188 renders a confident "0 selections made" on a failed read, and unlike the rounds path there is no client-side surface to correct it.
 
-`src/app/baseball/join/[code]/page.tsx:33`
+#### C22. [LOW] · **CUSTOMER-FACING** Stripe webhooks have been rejected wholesale — 50 deliveries 500'd and the invoice mirror is empty
 
-**Breaks:** A signed-in baseball coach clicks the invite link they're about to send (to check it) — or a player whose profile row is missing clicks theirs. The page finds no baseball_players row and redirects to /baseball/signup. That page does not redirect authenticated users, so it renders the create-account form. Submitting it fails with "An account with this email already exists." There is no way forward from that screen; the user has to know to manually type a different URL.
+`src/app/api/webhooks/stripe/route.ts:141`
 
-**Evidence:** baseball/join/[code]/page.tsx:29-33 does `.from('baseball_players').select(...).eq('user_id', user.id).single()`, then line 35-37 `if (!player) redirect('/baseball/signup')`. Note `.single()` also errors (PGRST116) when zero rows, and only `data` is destructured, so a genuine read failure is indistinguishable from a missing profile. src/app/baseball/(auth)/signup/page.tsx has no session check — its only useEffect (lines 34-40) handles the native-app case. Golf handles this exact scenario deliberately and correctly: golf/join/[code]/page.tsx:29-37 looks up golf_coaches first and redirects a coach to /golf/dashboard or /golf/coach with the comment "A coach can't 'join' a team as a player." Baseball has no equivalent branch. Confirmed possible in prod: handle_new_user only seeds baseball_players when `sport='baseball' AND role='player'`, so every baseball coach account legitimately has no baseball_players row.
+**Breaks:** STRIPE_WEBHOOK_SECRET is unset in production, so every inbound Stripe webhook is refused with HTTP 500 before signature verification. Stripe retries on 5xx for ~3 days and then gives up permanently. Invoice lifecycle events (finalized / sent / paid / payment_failed / void) never reach the platform, so billing_invoices — the local mirror the admin billing surface and any dunning logic read — knows nothing. A school can pay an invoice in Stripe and the platform will show it unpaid indefinitely.
 
-**Root cause:** The join page treats "no player profile" as "not signed up", conflating an authorization state with an authentication state. The golf equivalent was hardened; baseball was not.
+**Root cause:** Missing production environment variable, not a code bug — but the code makes it maximally costly: the guard at line 142-148 returns 500, which puts Stripe into retry-then-discard rather than surfacing the misconfiguration anywhere a human looks. It logs at 'error' into admin_events, which nobody was watching, and there is no startup-time assertion that the secret exists.
 
-**Proposed fix:** Add the coach branch before the player lookup, mirroring golf/join/[code]/page.tsx:29-37:
-```ts
-const { data: coach } = await supabase
-  .from('baseball_coaches')
-  .select('id, onboarding_completed')
-  .eq('user_id', user.id)
-  .maybeSingle();
-if (coach) redirect(coach.onboarding_completed ? '/baseball/dashboard' : '/baseball/coach-onboarding');
-```
-And change line 33 from `.single()` to `.maybeSingle()` with the error destructured, so a real read failure is logged rather than silently rendered as "you must sign up". For the genuinely-profileless authenticated user, redirect to `/baseball/player?joinCode=${code}` (onboarding) rather than `/baseball/signup`.
+**Evidence:** 50 error rows, fingerprint ad6b5488, title "[route.POST] [Stripe Webhook] STRIPE_WEBHOOK_SECRET is not configured", first 2026-07-30 01:39:09, last 2026-08-02 10:14:09 — the burst-then-decay-then-stop shape of Stripe's retry schedule exhausting itself. This is the single highest-count error in admin_events over 30 days. Measured the consequence directly: `select count(*) from billing_invoices` returns 0 rows, with the migration (20260715120000) applied 2026-07-29 per the route's own header comment, which also notes there are six live invoices in Stripe.
 
-### MEDIUM **[CUSTOMER-FACING]** — .maybeSingle() on a query that can legitimately match many rows — a PostgREST error becomes null, and the "already on a team" guard silently passes
+**How to trigger:** The reliably reproducible part needs no Stripe account and no auth:
 
-`src/app/golf/actions/teams.ts:860`
+  curl -X POST https://<prod-host>/api/webhooks/stripe -d '{}'
 
-**Breaks:** Once any golf player holds more than one golf_team_members row, both the join validator and the join-request guard stop working: the query errors, the error is discarded because only `data` is destructured, `existingMembership` is null, and the code concludes "this player is on no team" — the exact opposite of the truth. The player is allowed to request/join a second team, and the friendly "You are already on X" message is replaced by whatever the DB does next.
+Any unauthenticated POST from anywhere on the internet hits src/app/api/webhooks/stripe/route.ts:141, finds STRIPE_WEBHOOK_SECRET absent, and returns HTTP 500. Because the secret guard (line 141) runs BEFORE the stripe-signature header check (line 150), no signature and no Stripe involvement is required. Each such request writes an error-severity row to admin_events AND error_logs via logServerError and raises a Sentry issue. That is the 50 rows: an endpoint that lets anonymous traffic drive unbounded error-severity telemetry into the incident tables the founder triages. Verified reachable — the route is `export const dynamic = 'force-dynamic'`, nodejs runtime, no middleware auth on /api/webhooks/*.
 
-**Evidence:** Two sites. teams.ts:856-860 (createTeamJoinRequest) and the identical pattern in validateGolfPlayerCanJoinTeamImpl: `.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()` — filtered on player_id ONLY, with no status filter and no `.limit(1)`. Neither destructures `error`. The DB does not prevent multiple rows: production pg_constraint on golf_team_members shows UNIQUE `(team_id, player_id)` — per team, not per player. The codebase actively creates the multi-team case: teams.ts exports `addSecondTeam` (line ~1644), and a leave-then-rejoin leaves the old row if status is used rather than deletion. Today the corruption has not landed — `select player_id, count(*) from golf_team_members group by 1 having count(*)>1` returns 0 rows — so this is latent, not live. Note the two guards also disagree on semantics: the SECURITY DEFINER golf_join_team_with_code only blocks on `status = 'active'` rows on a different team, while these TS guards block on ANY row of any status.
+What a paying customer CANNOT trigger: nothing. A school never touches this endpoint; it pays on Stripe's hosted invoice page. No golf or baseball surface reads billing_invoices, so no customer sees a stale, zeroed, or wrong billing number. /admin/billing is behind requireSuperAdmin() and currently renders "Invoicing is not available yet" because STRIPE_SECRET_KEY is also unset.
 
-**Root cause:** `.maybeSingle()` used as shorthand for "get zero or one" against a filter that does not uniquely identify a row, combined with dropping the error. maybeSingle raises PGRST116 on >1 row; discarding it converts a loud failure into a confident wrong answer.
+Latent (only reachable if someone half-configures Stripe): set STRIPE_WEBHOOK_SECRET without STRIPE_SECRET_KEY, then POST a real Stripe event. getStripe() at line 159 throws "STRIPE_SECRET_KEY is missing", the catch at line 160 reports it as "[Stripe Webhook] Signature verification failed" and returns 400 — Stripe stops retrying and the event is lost, with a log that names the wrong cause.
 
-**Proposed fix:** At both sites, select the set and reason over it rather than asserting cardinality, and stop discarding the error:
-```ts
-const { data: memberships, error: membershipError } = await supabase
-  .from('golf_team_members')
-  .select('team_id, status')
-  .eq('player_id', playerId)
-  .eq('status', 'active');
-if (membershipError) {
-  await logServerError(`membership lookup failed: ${describeError(membershipError)}`, { action: 'teams.createTeamJoinRequest' });
-  return { success: false, error: 'Could not check your current team. Please try again.' };
-}
-const existingMembership = memberships?.find((m) => m.team_id === team.id) ?? memberships?.[0] ?? null;
-```
-Filtering on `status='active'` also brings the TS guards into agreement with golf_join_team_with_code's own rule, which is the authority since it performs the insert.
+Also latent: if Stripe is ever fully configured, voidInvoice() (src/app/admin/actions/billing.ts:188-196) will throw "Invoice <id> not found in billing records" for every invoice, because its IDOR guard reads billing_invoices, which only the webhook populates. Super-admin-only, and unreachable today.
 
-### MEDIUM **[CUSTOMER-FACING]** — getStatsSummary renders a database read error as 'no rounds played' with all-null stat cards and no log line
+**Verifier:** The literal mechanism is REAL and I confirmed it with better evidence than the reporter had — but the severity and customer impact are badly overstated, one piece of "evidence" is a code comment, and the proposed fix would not work.
 
-`src/app/golf/actions/stats-data.ts:719`
+CONFIRMED:
+1. src/app/api/webhooks/stripe/route.ts:141-148 reads exactly as reported: `process.env.STRIPE_WEBHOOK_SECRET?.trim()`, and if falsy it logs an error-severity trace and returns HTTP 500 — before the stripe-signature header check (line 150) and before signature verification (line 159).
+2. admin_events: exactly 50 rows matching '%STRIPE_WEBHOOK_SECRET%', fingerprint ad6b5488, first 2026-07-30 01:39:09.225749+00, last 2026-08-02 10:14:09.89013+00, url '/api/webhooks/stripe'. Every row carries metadata->>'runtimeEnv' = 'production'. Exact match to the report.
+3. `select count(*) from billing_invoices` → 0.
+4. STRONGER than the report: `vercel env ls production` lists 40+ variables and `grep -ci stripe` returns 0. Neither STRIPE_WEBHOOK_SECRET nor STRIPE_SECRET_KEY exists in the Vercel production environment. This is a name-only listing (values shown as "Encrypted"), so the known "vercel env pull masks sensitive values" trap does not apply here, and the 40+ other listed vars are the control proving the listing works.
 
-**Breaks:** A player or coach opens the stats page during an RLS misconfiguration, a Supabase blip, or a statement timeout and sees roundsPlayed: 0 and every summary card blank — visually identical to a brand-new player who has never submitted a round. There is no toast, no error boundary, and no server log, so the customer concludes their rounds were lost and nobody on your side gets a signal. This is the same class as the golf classes page: a failure presented as a confident, clean result.
+REFUTED — the impact story is wrong on three counts:
 
-**Evidence:** stats-data.ts:714 `const { data: roundsData, error } = await query;` — the error IS captured. Line 719 then collapses it into the empty case: `if (error || filteredRounds.length === 0) { return { summary: { roundsPlayed: 0, holesPlayed: 0, scoringAverage: null, ... }, rounds: [] }; }` (lines 719-734). No logServerError, no distinguishable return shape. Compare queryDetailedStatsWithClient in the same file at lines 963-970, which DOES call logServerError with statsErrorContext on its rounds-query error before falling back — so the pattern exists in this file and was just not applied here. Separately at line 743 the scrambling fetch `const { data: holesWithScrambling } = await fetchAllRowsResult(...)` also discards its error, which drives scramblingAttempts to 0 and scramblingPercentage to null (line 826) — less severe because it renders as a dash, not a number, but still an unlogged silent zero.
+A. Not customer-facing. The report claims billing_invoices is "the local mirror the admin billing surface and any dunning logic read" and that "a school can pay an invoice in Stripe and the platform will show it unpaid indefinitely." grep for `billing_invoices` across src/ returns exactly three sites: src/app/api/webhooks/stripe/route.ts (writes), src/app/admin/actions/billing.ts:188-192 inside voidInvoice() (reads, gated by requireSuperAdmin()), and src/lib/types/database.ts (generated types). There is no invoice list, no status display, and no dunning logic anywhere in the repo. The platform does not show a school's invoice as unpaid — it shows nothing at all, to nobody. Schools pay on Stripe's Hosted Invoice Page (src/app/admin/actions/billing.ts:16-17: "no card form ships in our app"), a flow entirely on Stripe's side and unaffected by this. Zero paying customers are impacted. The only human who could notice is the super-admin/founder.
 
-**Root cause:** An error branch and an empty-result branch were merged into one `if`, so a failure is indistinguishable from 'no data' both to the user and to the logs.
+B. The feature is an unconfigured scaffold that the UI already discloses as off. Because STRIPE_SECRET_KEY is also absent from production, isStripeConfigured() (src/lib/stripe/server.ts:35-37) returns false, so src/app/admin/billing/page.tsx:34-66 renders the "Invoicing is not available yet" panel instead of the form — which explicitly names STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET as the missing config (page.tsx:54-58). That is the #1255 fix working as designed. It also means no invoice was ever created from production, since createSchoolInvoice() calls getStripe(), which throws without a key.
 
-**Proposed fix:** Split the branch at line 719. First: `if (error) { await logServerError(\`[Stats] getStatsSummary rounds query failed: ${describeError(error)}\`, statsErrorContext('stats_data.getStatsSummary', error)); throw new Error('Failed to load stats'); }` — throwing lets the existing error boundary show a real error state instead of a fake empty one. Then keep the `filteredRounds.length === 0` empty-state return as-is. Also destructure and log the error at line 743 so a failed scrambling read is visible. If a hard throw is too aggressive for this surface, add an explicit `error: string` field to SummaryStatsResponse and have the UI render an error state — but do not keep returning zeros.
+C. Two pieces of the "evidence" are not measurements. The claim that there are "six live invoices in Stripe" is quoted from the route's own header comment (route.ts:26-27), not measured — precisely the comment-as-evidence anti-pattern. I could not verify it: the Stripe MCP returned "requires re-authorization (token expired)". Separately, "the burst-then-decay-then-stop shape of Stripe's retry schedule exhausting itself" is inference, not evidence. Since the secret guard sits BEFORE the stripe-signature header check, any unauthenticated POST from anyone on the internet produces an identical row, and `select count(*) ... where message ilike '%Signature verification failed%'` returns 0 — no request in the endpoint's history ever got past line 148. Nothing in the data distinguishes Stripe retries from a scanner probing a well-known webhook path, and production has no Stripe key, so it is not clear this app even owns a registered Stripe endpoint.
 
-### MEDIUM **[CUSTOMER-FACING]** — Stats leak-map buckets render 'no data' on any shot-query failure, and the round-id list is unchunked so it will start failing outright as teams accumulate rounds
+THE PROPOSED FIX WOULD FAIL AND MISLEAD. Step 1 says to set STRIPE_WEBHOOK_SECRET. With STRIPE_SECRET_KEY still unset, execution reaches line 159, `getStripe()` throws "STRIPE_SECRET_KEY is missing", the catch at line 160 swallows it and logs/returns "[Stripe Webhook] Signature verification failed" with HTTP 400. Stripe does NOT retry 4xx, so events would then be dropped permanently — strictly worse than the 500 — while the error message points the next debugger at signature verification rather than a missing API key. That misattributing catch is a genuine latent defect in its own right.
 
-`src/app/golf/actions/stats-leak-maps.ts:293`
+Net: real code, real production misconfiguration, correctly located and correctly quoted at file:line. But it is an internal, never-configured admin scaffold with no customer blast radius, so "high / customer_facing: true" is wrong. Per the ranking instruction (a silent failure on signup/join/round-submit/calendar outranks anything internal), this is low.
 
-**Breaks:** Every putting and approach-proximity bucket on the team leak map renders team_value: null and sample_n: 0 whenever the golf_shots read fails — a coach reads that as 'we have no putting data' rather than 'the query broke'. The failure becomes guaranteed rather than transient once a team's completed-round count passes roughly 585: PostgREST .in() lists travel in the URL and the edge rejects the request before Postgres sees it, with a bare 400/414 that this code throws away.
+**Fix:** Fix the code defects (real, in-repo) and treat the env var as ops housekeeping, not an incident.
 
-**Evidence:** Two call sites destructure only `data` from fetchAllRowsResult, which returns `{ data: null, error }` on failure and never throws: line 293 `const { data } = await fetchAllRowsResult<PuttRow>(...)` in buildPuttBuckets, and line 351 `const { data } = await fetchAllRowsResult<ApproachRow>(...)` in buildApproachBuckets. Both then do `for (const row of data ?? [])`, so a null data yields empty maps, and the return blocks at lines 328-338 and 388-398 emit `team_value: n > 0 ? ... : null, sample_n: n` — i.e. n=0 and a null value for every band, which is exactly what a genuinely empty dataset produces. The `.in('round_id', roundIds)` at lines 298 and 356 is not chunked; roundIds comes from completedRoundIds() at line 248 which returns EVERY completed round for the whole roster. Production headroom today: the largest team has 93 completed rounds (Demo University Golf, 7 players), then 90, then 87 (Guilford College Men's Golf, 8 players) — so the URL cap is not being hit yet, but a single full season at ~40 rounds per player across 8 players lands at 320 and two seasons exceeds the limit. Note the correct pattern already exists elsewhere in this codebase: team-category-insights.ts:546-548 batches round IDs at 100 for exactly this reason, and standing-refresh/route.ts:194-199 documents the ~585-uuid edge limit and chunks accordingly.
+1. Reorder the guards in src/app/api/webhooks/stripe/route.ts so unauthenticated traffic cannot drive error telemetry. Move the `stripe-signature` header check (lines 150-153) ABOVE the secret check (line 141). A request with no signature header is a scanner, not Stripe — return 400 silently, as the code already does. Only a request that actually carries a Stripe signature and then finds no configured secret deserves an error-severity log. This alone would have suppressed most or all of the 50 rows. Consider also rate-limiting or de-duplicating this particular log (it already has a stable fingerprint, ad6b5488) so a misconfiguration cannot mint unbounded Sentry issues.
 
-**Root cause:** Error discarded from a non-throwing helper, combined with an unbounded `.in()` list that will eventually make that discarded error permanent. The null/zero fallback is indistinguishable from a real empty dataset in the UI.
+2. Stop the catch at line 160 from misattributing a missing API key as a signature failure. `getStripe()` is called INSIDE the try, so any config error is reported as "Signature verification failed" and answered with 400 — which Stripe does not retry, silently discarding the event. Hoist it out:
 
-**Proposed fix:** At lines 293 and 351 destructure `const { data, error }`, and on error call logServerError and propagate a failure the loader can surface — the leak map needs a distinct 'could not load' state, not a zero-sample state, because sample_n: 0 is a meaningful and different claim. Separately, chunk the round-id list: wrap both fetches in `for (const batch of chunkIds(roundIds, 200))` and accumulate, matching the pattern at team-category-insights.ts:546. Apply the same chunking to completedRoundIds' `.in('player_id', playerIds)` for consistency. A cheap regression test: pass 700 synthetic round ids and assert the fetch is issued as 4 batches, not 1.
+     const stripe = getStripe();            // outside the try
+     let event: Stripe.Event;
+     try {
+       event = await stripe.webhooks.constructEventAsync(rawBody, signature, signingSecret);
+     } catch (err) { ...400... }
 
-### MEDIUM **[CUSTOMER-FACING]** — Round analysis has lost its durable queue — the Inngest credential is invalid, so analysis runs inline with no retry
+   and gate the whole route on isStripeConfigured() next to the secret check, returning the same 500 with a message that names the actual missing variable. Without this, the reporter's own step 1 makes things worse.
 
-`src/app/golf/actions/golf.ts:1`
+3. Do NOT set STRIPE_WEBHOOK_SECRET alone. Production has no Stripe variables at all (`vercel env ls production` → zero matches for "stripe"). Setting only the webhook secret triggers defect 2. Either configure Stripe fully — STRIPE_SECRET_KEY (a restricted rk_... key scoped to Customers, Invoices, Tax) plus STRIPE_WEBHOOK_SECRET from the registered endpoint — or leave both unset, which is the currently-honest state that /admin/billing already discloses.
 
-**Breaks:** submitGolfRoundComprehensive tries to enqueue coachhelm/round.submitted to Inngest, the send is rejected because the configured Inngest key is no longer valid, and the code falls back to running postRoundTrigger INLINE inside the submit request. Inline means no durable retry: any transient failure during analysis is final for that round. This is the mechanism that compounds finding #1 — the very submit that got terminally stamped is the one that ran without a queue behind it.
+4. Skip the reconciliation backfill for now. It is premised on "six live invoices in Stripe", which comes from a code comment (route.ts:26-27) and is unverified — the Stripe MCP token is expired. Re-authorize Stripe and run `GetInvoices` first. If the count really is zero, there is nothing to backfill and billing_invoices = 0 is simply correct.
 
-**Evidence:** admin_events fingerprint 38fd54c6, feature round_tracking, 6 events across 2 distinct users, first 2026-07-30 16:43:50, last 2026-08-05 16:31:47: "Round analysis lost its durable queue and ran inline instead: Durable background jobs are unavailable: the Inngest account rejected the configured credential. It is set, but no longer valid — retrying will not help until the key is replaced." An earlier variant (fingerprint b36dfbb8, 3 events to 2026-07-29) reads "Inngest API Error: 404 Event key not found". Directly implicated in the Blake Taylor trace: error_logs 2026-08-04 22:19:53.438, context playerId 12089807-48ba-4ab5-b566-7d5d8d9f3d1d — 435ms before the below-floor skip that permanently failed his round. Filed at severity=warning, so it never surfaced as an error.
+5. Only if/when Stripe goes live: add STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET to the required-env assertion, and add the integrity-check probe. Adding a "billing_invoices is empty" alarm today would fire every day about a feature that was never turned on.
 
-**Root cause:** INNGEST_EVENT_KEY (and likely INNGEST_SIGNING_KEY) in the production environment no longer matches the Inngest account. The application-level degradation is deliberate and correct — it is better to run inline than to drop the work — but it has been silently degraded for at least 7 days, and 'warning' is the wrong severity for a queue being down platform-wide.
+Do not spend founder attention treating this as a revenue-loss incident. No school's payment is affected, no customer-visible surface reads this table, and the invoicing feature has never been enabled in production.
 
-**Proposed fix:** 1) Rotate INNGEST_EVENT_KEY + INNGEST_SIGNING_KEY from the Inngest dashboard and set both in Vercel production; verify by submitting a round and confirming the run appears in the Inngest dashboard rather than the fallback firing.
-2) Raise the severity of the inngestSendFailed credential-rejection branch from 'warning' to 'error'. A credential that is set-but-invalid is not a transient condition and the message itself already says retrying will not help — it should page, not whisper.
-3) Add an integrity-check probe that asserts a test event round-trips to Inngest, so the next silent expiry is caught in hours rather than in a week's error triage.
+### Refuted — do NOT act on these
 
-### MEDIUM **[CUSTOMER-FACING]** — golf_shots has crossed the PostgREST 1000-row cap in production — 6 players and 4 teams are already truncatable
+- **A new player's first rounds are permanently marked "CoachHelm failed" for simply being below the coach's round floor — and are never retried** (`src/lib/coachhelm/v2/post-round-trigger.ts`)
 
-`src/lib/coachhelm/v2/orchestrator.ts:1350`
+  The mechanism is real but the reported consequence — "never retried / permanently dark / critical, customer-facing" — is refuted by a second, unfiltered retry path plus the fact that nothing round-scoped exists.
 
-**Breaks:** Any player- or team-scoped read of golf_shots that is not routed through fetchAllRows/fetchAllRowsResult now silently returns only the first 1000 rows. The caller cannot tell a truncated read from a complete one, so every downstream aggregate — shot-level strokes gained, leak maps, lie analysis, pattern mining — renders a confidently wrong number for exactly the most engaged customers. Separately, orchestrator.ts:1350 destructures only `data` from both reads, so a failed shot/hole fetch becomes two empty arrays, buildRoundSpecificInsights returns [], and the round review is generated and PERSISTED with no round-specific insights and no error anywhere.
+CONFIRMED MECHANISM: insights.ts:4028-4030 sets belowRoundFloor; :4066 forces analysis=null; :4097 falls into the generic null branch; :4121-4125 returns {success:false, code:'engine_no_recent_rounds'}. post-round-trigger.ts:142-152 treats it as terminal and writes coachhelm_failed_at + reason (sanitizeFailureReason matches 'no completed rounds' at :82). coachhelm-safety-net/route.ts:151 does filter .is('coachhelm_failed_at', null), and :238-243 documents "never retried". Prod round 7898ffe6-64c3-40ff-8849-530b77dfff13 is stamped exactly as described.
 
-**Evidence:** Measured against live data: shots-per-player max is 1302 with 6 of 33 players already over 1000; shots-per-team max is 6909 with 4 of 7 teams over 1000. (For contrast, holes-per-player max is 333 and events-per-team max is 626, so golf_shots is the only table at the boundary today.) Pagination coverage is inconsistent across the shot readers: stats-data.ts has 11 fetchAllRows references and stats-leak-maps.ts has 4, but orchestrator.ts has ZERO while querying golf_shots at line 1352, and round-review-system.ts has zero while querying golf_shots at line 984 and golf_holes at line 992 — both of the latter also discarding `error`.
+REFUTATION 1 — a retry path exists that ignores the stamp. src/app/api/cron/coachhelm-roster-sweep/route.ts:51-61 selects EVERY golf_team_members row with status='active'; :110-134 skips a player ONLY when their LATEST completed round has coachhelm_analyzed_at set; it never reads coachhelm_failed_at. :136 calls triggerPlayerInsightsAfterRound(playerId) for everyone else. Scheduled `0 2 * * *` in vercel.json:57-58 and proven live: background_job_logs row job_type='coachhelm-roster-sweep', started 2026-08-07 02:00:42, completed, metadata {"skipped":45}. A below-floor player is re-attempted nightly and is analyzed the moment they cross the floor. "Never retried" is false.
 
-**Root cause:** Two separate habits. (a) The 1000-row cap is a PostgREST server-side default that `.limit(n)` does not raise, so an unpaged select on a table that has only recently grown past 1000 rows changes behaviour with no code change and no error — the repo has a correct helper (lib/supabase/fetch-all-rows.ts) that these call sites simply do not use. (b) `const { data } = await supabase...` discards the PostgrestError, so a failed read is indistinguishable from an empty result set and produces a confident zero.
+REFUTATION 2 — nothing round-scoped is lost. post-round-trigger.ts:140 passes ONLY playerId to the engine; triggerPlayerInsightsAfterRound analyzes the PLAYER across a lookback window, not a round. There is no per-round artifact keyed to rounds 1-2, so "rounds 1 and 2 are never back-analyzed" describes a non-existent unit of work. Separately, the floor count at insights.ts:4019-4023 counts ALL completed rounds including the one just submitted, so the round-3 submit itself performs the analysis.
 
-**Proposed fix:** 1) Audit every golf_shots reader whose filter is player- or team-scoped (not `.eq('round_id', …)`) and route it through fetchAllRowsResult. The round-scoped ones (orchestrator.ts:1352, round-review-system.ts:984) are cap-safe today at ~70-95 shots per round and do not need paging.
-2) Fix the error-blindness at orchestrator.ts:1350 and round-review-system.ts:983/992/1010: destructure `error` and bail with an explicit failure rather than proceeding with `?? []`. round-review-system is the more urgent of the two because it PERSISTS the result — a review generated from a failed read is written to golf_round_reviews and shown to the player as finished work.
-3) Add an ast-grep rule to the existing Review Gate pack (.coderabbit/ast-grep/) that flags `from('golf_shots')` without either `.eq('round_id'` or a fetchAllRows wrapper, so the next table to cross 1000 rows is caught at review time.
+REFUTATION 3 — no customer surface reads these columns. grep of coachhelm_failed_at / coachhelm_analyzed_at across src/ returns only the two crons, lib/inngest/functions.ts, post-round-trigger.ts, lib/types/database.ts and tests. Zero components/pages. No user is ever shown "CoachHelm failed"; the title's premise is internal bookkeeping only.
 
-### MEDIUM **[CUSTOMER-FACING]** — Team Stats tells a coach "No players on your roster yet" when the roster read fails
+REFUTATION 4 — blast radius misattributed (measured). golf_rounds with coachhelm_failed_at not null: 14 rows, 7 'engine_membership_missing' + 7 'engine_no_recent_rounds' across 5 distinct players. Of those 5 players, FOUR have zero completed rounds in the last 90 days, so 'engine_no_recent_rounds' is factually CORRECT for them and re-analysis would produce nothing. The "3 rounds whose players now have >=3 completed rounds" is one player (3b134c3e-54d8-43f5-bab9-4fafd4cc743e) whose 3 rounds are dated 2026-03-02/03 — outside the 90-day window, so he is genuinely no-recent-rounds, not a floor victim.
 
-`src/app/golf/(dashboard)/dashboard/stats/team/page.tsx:115`
+REFUTATION 5 — the poster child is not dark. Player 12089807-48ba-4ab5-b566-7d5d8d9f3d1d has 3 ACTIVE, evidence-backed golf_coach_insights ("175+ yd approach: 40% greens hit", "125-175 yd approach: 60% greens hit · 25 ft", "50-125 yd approach: 80% greens hit · 16 ft") created 2026-08-04 22:19:58 — five seconds AFTER the 22:19:53.502 failure stamp — and refreshed at 22:27:20. He received CoachHelm output on round 1 despite the stamp.
 
-**Breaks:** A coach with a full roster opens /golf/dashboard/stats/team and is shown a full-page empty state reading "No players on your roster yet — Add players to your roster and their rounds will roll up here" with a CTA to the roster page. The roster is already populated. The coach either believes the data is gone or clicks through and finds the players present, which reads as the product being broken.
+SURVIVING LOW-SEVERITY RESIDUE (worth a cheap fix, not a critical): (a) the persisted reason is factually false for the below-floor case — the row says "no completed rounds in the last 90 days" for a player who has one — which will mislead an operator triaging golf_rounds; (b) a genuine comment-vs-code contradiction: insights.ts:4014-4018 states the floor is "A FLAG, NOT AN EARLY RETURN" so the aging sweep still runs, but the null-analysis early return at :4121 fires before the aging sweep (~:4176), so below-floor players' stale insights are not aged there. That aging is independently done nightly by coachhelm-insight-lifecycle (vercel.json `0 4 * * *`), so no customer effect.
 
-**Evidence:** stats/team/page.tsx:115 — `const { data: teamMembers } = await supabase.from('golf_team_members').select('player_id').eq('team_id', teamId).eq('status','active');` no `error`. Line 117 `const playerIds = (teamMembers || []).map(...)`. Line 120 short-circuits to `{ data: [] }` when `playerIds.length === 0`, and line 122 `if (!players || players.length === 0)` renders the empty state at lines 125-143. Line 120's `players` read also discards its error. The file demonstrably knows better 44 lines later: lines 159-165 destructure `roundsFetchError` from the rounds fetch with the comment "a genuinely FAILED rounds fetch must read as 'couldn't load' (with retry), not as a silent cold-start… an unchecked `error` here previously rendered every player's per-round stats as 'no rounds yet'". That lesson was applied to the rounds read and not to the two membership/player reads that gate it. Production: 69 active golf_team_members across 10 teams, so the empty state is wrong for every real team.
+- **Same permanent-stamp trap for players with no team membership — 7 rounds go dark forever the moment they are recorded** (`src/lib/coachhelm/v2/post-round-trigger.ts`)
 
-**Root cause:** Same pattern the file already fixed one query later: `(x || [])` collapses the error channel into the cold-start empty state, and the cold-start empty state is a designed, confident-looking screen.
+  The MECHANISM is accurately quoted, but the CONSEQUENCE — the load-bearing claim — is wrong, and the DB numbers actually disprove it.
 
-**Proposed fix:** Destructure both errors and add a third render branch between "no team" and "no players":
-```ts
-const { data: teamMembers, error: membersError } = await supabase.from('golf_team_members')...;
-const { data: players, error: playersError } = playerIds.length > 0 ? await supabase.from('golf_players')... : { data: [], error: null };
-if (membersError || playersError) {
-  return <ViewHeader .../><InlineNotice tone="danger" title="Couldn't load your roster">…retry…</InlineNotice>;
-}
-```
-Keep the existing `!players || players.length === 0` empty state only for the genuine zero case. Mirror the `roundsError` flag already threaded into the page so the two degraded states look consistent.
+CONFIRMED (code, read directly):
+- post-round-trigger.ts:142-152 writes `coachhelm_failed_at: now` + `coachhelm_failure_reason` for ANY `!result.success`, including the membership case. sanitizeFailureReason (line 80) maps "No active team membership for player" → 'engine_membership_missing'. Origin is insights.ts:3921-3937 (`code: 'engine_no_team_membership'`).
+- coachhelm-safety-net/route.ts:151 does use `.is('coachhelm_failed_at', null)` as an exclusion filter, so those rounds do leave that cron's retry set permanently.
+- DB numbers reproduce exactly: 7 rounds, 3 players (Andrew Perry 654d35a1 ×5, Ben Potter 2ac20cc4 ×1, Peyton Mussina d75439ba ×1), all with 0 rows in golf_team_members (active or otherwise), round_date 2026-03-10 → 2026-07-23.
 
-### MEDIUM **[CUSTOMER-FACING]** — Player roster page tells a rostered player "No Team Found — you haven't joined a team yet" on a read error
+REFUTED — "their entire pre-join history stays permanently un-analyzed even after the coach adds them" / "if she is added to a roster tomorrow, that round is still dark":
 
-`src/app/golf/(dashboard)/dashboard/roster/page.tsx:98`
+1. The safety-net cron is NOT the only recovery path. src/app/api/cron/coachhelm-roster-sweep/route.ts sweeps EVERY active roster membership nightly at 02:00 and its skip gate (lines 110-134) keys on `coachhelm_analyzed_at` of the player's LATEST completed round — which is NULL on exactly these rounds (only `coachhelm_failed_at` is set). So a newly-rostered player is NOT skipped; line 136 calls triggerPlayerInsightsAfterRound(playerId) the very next night. Verified live: background_job_logs shows coachhelm-roster-sweep `completed` 10/10 runs in the last 10 days, last at 2026-08-07 02:00:42Z. Checked the concrete case: Andrew Perry's most recent completed round (2026-04-21, d270c51a) is one of the failed ones and is un-analyzed, so re-rostering him triggers the sweep rather than skipping it.
 
-**Breaks:** A player on an active roster opens /golf/dashboard/roster and sees "No Team Found — You haven't joined a team yet. Ask your coach for a join code." They contact their coach, who confirms they are on the roster. Nothing is logged.
+2. The engine is PLAYER-scoped, not round-scoped. analyzePlayer (orchestrator.ts:476-485) loads `golf_rounds` by player_id over a rolling 90-day window; nothing keys off the triggering round's id. There is no per-round analysis artifact that the failed stamp withholds. The stamp is bookkeeping for the safety-net cron only — grep for `coachhelm_failed_at`/`coachhelm_failure_reason` across src/ returns ONLY the two crons, database.ts types, and tests. Zero user-facing reads. Nothing renders "dark".
 
-**Evidence:** roster/page.tsx:98-102 — `const { data: teamMember } = await supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).maybeSingle();` no `error`. Line 104 `if (!teamMember?.team_id)` renders the "No Team Found" EmptyState at lines 105-115. Two failure paths reach it: (a) any PostgREST error (RLS, timeout) → `data` null; (b) PGRST116 if the player ever holds more than one `golf_team_members` row — the filter is `player_id` alone, and there is no unique constraint on `player_id` (only the composite team_id+player_id), so `.maybeSingle()` errors on multi-row. I measured the multi-row case against production: 0 golf players currently hold >1 membership (max memberships per player = 1), so (b) is latent, not live — (a) is the live path. The coach branch of the same file handles this correctly at lines 198-204 (`const { data: team, error: teamError }` → renders an InlineNotice "Unable to load team information"), so the file has the right pattern and only the player branch lacks it. The identical unchecked `golf_team_members … .maybeSingle()` shape appears on at least six more live player surfaces: qualifiers/page.tsx:32, documents/page.tsx:32, dashboard/page.tsx:241, team-hub/page.tsx:58, team/page.tsx:136, and calendar/page.tsx:64 (filed separately as critical).
+3. The three "dark" players demonstrably already have live insights written WITHOUT membership. golf_coach_insights: Peyton Mussina has 2 active `approach_miss` insights created 2026-07-23 18:07:26Z — 8 seconds AFTER her round was "terminally failed" at 18:07:18Z — with coach_id NULL / team_id NULL (the deliberate no-membership fallback at insights/upsert.ts:456-473). Ben Potter's 2 insights were refreshed as recently as 2026-07-28 02:16Z, 16 days after his "terminal" failure. These come from the player-facing path getPlayerCoachHelmDashboard (insights.ts:3091), which calls analyzePlayer with no membership gate at all.
 
-**Root cause:** `.maybeSingle()` result consumed as `!data?.field`, which conflates "read failed", "player is on two teams", and "player has no team" into one branch whose copy asserts the third.
+So the finding's causal chain ("terminal stamp → excluded from retry → permanently un-analyzed") breaks at step 3: exclusion from the safety-net cron does not mean exclusion from analysis.
 
-**Proposed fix:** Destructure the error in the player branch and render the same degraded notice the coach branch already uses:
-```ts
-const { data: teamMember, error: membershipError } = await supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).maybeSingle();
-if (membershipError) {
-  return <InlineNotice tone="danger" title="Couldn't load your team">Please try again.</InlineNotice>;
-}
-```
-Then sweep the same fix across the six sibling pages listed in the evidence. Longer term, replace the bare `.maybeSingle()` with `.order('joined_at').limit(1).maybeSingle()` so a future second membership degrades to a deterministic pick instead of a hard error.
+RESIDUAL (real, but low and internal, not what was filed): the roster sweep calls the bridge directly rather than postRoundTrigger, so it never clears `coachhelm_failed_at` / sets `coachhelm_analyzed_at`. Two consequences: (a) the round's terminal columns stay permanently wrong even after the player IS analyzed, poisoning any ops reporting or backlog counting keyed on them; (b) because analyzed_at is never set, the sweep re-runs those players every night forever — wasted engine/LLM runs, not lost data. A round older than 90 days when the player joins also falls outside the orchestrator window, but that is the engine's lookback design, not the stamp.
 
-### MEDIUM **[CUSTOMER-FACING]** — Round detail scorecard silently renders with zero holes when the golf_holes read fails
+Also worth noting for the parent: zero paying-customer exposure in the observed set. All 3 players have 0 team memberships, i.e. no coach and no team dashboard where the absence could be seen; the only surface they have is their own player CoachHelm page, which is computed live and is already populated.
 
-`src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx:147`
+### Unverified medium/low leads
 
-**Breaks:** A player opens the round they just submitted. If the hole-by-hole read errors, the scorecard section renders with no holes at all while the header still shows the round's total score and date — so the page asserts "you shot 74" and simultaneously shows an empty 18-hole card. No error, no retry.
+Not adversarially checked. Confirm against the real file before acting.
 
-**Evidence:** rounds/[id]/page.tsx:147-151 — `const { data: holesRows } = await supabase.from('golf_holes').select('hole_number, par, score, putts, fairway_hit, gir, penalty_strokes, yardage').eq('round_id', id).order('hole_number', { ascending: true });` — `.error` never destructured. Line 153-157 does the same for `golf_round_reviews`. Both feed `FairwayRoundDetail` at line 169+. The comment at lines 144-146 calls this "a read-only fetch of the honest golf_holes layer" — the honesty claim only holds if a failure is distinguishable from an 18-hole round with no recorded holes. Production has 5,346 golf_holes rows across 302 rounds (avg 17.7/round), so every real round has holes and an empty render is always wrong. Note the same page DOES destructure `teamMembership` at line 112 without an error check as well, which makes a coach's access check fall back to "not a coach" and redirect them to /golf/dashboard on a read failure (line 123-125).
+- **[MEDIUM]** Coaches are never notified of a golf join request — the insert is made with the player's own client, which RLS rejects, and the error is not even captured — `src/app/golf/actions/teams.ts:931`
 
-**Root cause:** Presentation data is fetched with `{ data }` only; the component receives `holesRows ?? []` and has no way to distinguish an empty round from a failed read.
+  Even once finding #1 is fixed and join requests start landing again, the coach gets no in-app notification. The request sits in golf_team_join_requests, unseen, until the coach happens to open Roster → Requests. The player is told their request was submitted and waits for an approval that nobody knows to give.
 
-**Proposed fix:** Destructure `holesError` and pass it through so the scorecard region renders a retry rather than an empty grid:
-```ts
-const { data: holesRows, error: holesError } = await supabase.from('golf_holes')...;
-```
-Pass `holesUnavailable={holesError != null}` into `FairwayRoundDetail` and render `<InlineNotice tone="danger">Couldn't load the hole-by-hole card.</InlineNotice>` in place of the scorecard when true. Separately, at line 112 destructure the membership error and treat an error as a 500 (throw) rather than as "not authorized" — a coach silently redirected off a player's round is a confusing authz failure.
+- **[MEDIUM]** A baseball coach (or anyone without a baseball_players row) who clicks a player invite link is bounced into a signup form they cannot use — `src/app/baseball/join/[code]/page.tsx:33`
 
-### MEDIUM **[CUSTOMER-FACING]** — standing-refresh cron's stale-cache pre-sweep silently no-ops when the team-member read errors
+  A signed-in baseball coach clicks the invite link they're about to send (to check it) — or a player whose profile row is missing clicks theirs. The page finds no baseball_players row and redirects to /baseball/signup. That page does not redirect authenticated users, so it renders the create-account form. Submitting it fails with "An account with this email already exists." There is no way forward from that screen; the user has to know to manually type a different URL.
 
-`src/app/api/cron/v3/standing-refresh/route.ts:186`
+- **[MEDIUM]** .maybeSingle() on a query that can legitimately match many rows — a PostgREST error becomes null, and the "already on a team" guard silently passes — `src/app/golf/actions/teams.ts:860`
 
-**Breaks:** The nightly cron's pre-sweep is what self-heals shot-derived cache columns (putt bands + attempts, approach proximity, miss bias, putts_per_gir, driving distance) when a round-submit's after() callback dies. If the outer `golf_team_members` read fails, `chunkPlayerIds` is empty, the whole `if (chunkPlayerIds.length > 0)` block is skipped, and the route still returns HTTP 200 with `stale_caches_refreshed: 0`. Players' standings then rank on stale band values indefinitely, and the run looks successful in the job log.
+  Once any golf player holds more than one golf_team_members row, both the join validator and the join-request guard stop working: the query errors, the error is discarded because only `data` is destructured, `existingMembership` is null, and the code concludes "this player is on no team" — the exact opposite of the truth. The player is allowed to request/join a second team, and the friendly "You are already on X" message is replaced by whatever the DB does next.
 
-**Evidence:** standing-refresh/route.ts:186-192 — `const { data: memberRows } = await supabase.from('golf_team_members').select('player_id').in('team_id', teamIds).eq('status','active').limit(1000);` then `const chunkPlayerIds = [...new Set((memberRows ?? []).map(...))]` and line 193 `if (chunkPlayerIds.length > 0)`. `.error` is never read. The irony is explicit: the comment at lines 195-199, eight lines below, says "surface every batch error — an over-cap 400 used to collapse into an empty `data ?? []` and silently no-op the pre-sweep", and lines 218-233 duly check `staleRes.error` and `recentRes.error` and log both. The outer read that feeds them was left unchecked, so the exact defect they fixed downstream is still live one level up. The comment at lines 175-183 states the stakes: "the standing RPCs below would rank players on stale band values indefinitely". The `.limit(1000)` is separately a soft cap on a completeness list — it is at the PostgREST hard cap so it is honest today (69 active members in production), but if a chunk ever exceeds 1000 members the pre-sweep drops whole players with no signal.
+- **[LOW]** Signup makes graduation year a required, submit-blocking field and then throws the answer away — `src/components/auth/golf-sign-up-form.tsx:77`
 
-**Root cause:** `(memberRows ?? [])` collapses the error into an empty roster; the surrounding `try` only catches thrown exceptions, and supabase-js does not throw on DB errors, so the outer catch at line 254 never fires either.
+  A new player cannot submit the golf signup form without picking an expected graduation year (it blocks with "Please select your expected graduation year"), and the value is then never sent anywhere. Two screens later, onboarding asks for graduation year again — pre-populated with an arbitrary default, not their answer. It reads as the product not listening.
 
-**Proposed fix:** Destructure and log, matching the two inner reads:
-```ts
-const { data: memberRows, error: memberErr } = await supabase.from('golf_team_members')...;
-if (memberErr) {
-  await logServerError(`standing-refresh cache-presweep member-select: ${memberErr.message}`, { action: 'cron.v3.standing-refresh.cache-presweep' });
-}
-```
-Add a `presweep_skipped: boolean` field to the RefreshSummary JSON so a no-op run is distinguishable from a run with nothing to do. If `chunkPlayerIds.length` ever reaches 1000, log a warning and paginate with `fetchAllRowsResult` — a truncated roster silently drops players from the refresh set.
+- **[MEDIUM]** Every baseball program-settings mutation is typed `Promise<{success: true}>` and never reads the Supabase error — setCurrentSeason can leave a team with no active season and still say "Current season updated" — `src/app/baseball/actions/team-season-settings.ts:378`
 
-### MEDIUM **[CUSTOMER-FACING]** — Calendar page resolves a player's team with `.maybeSingle()` on a query that can return many rows — a second team membership empties the whole calendar with no error
+  `setCurrentSeason` does a clear-then-set: it first archives whatever season is currently `active` for the team, then activates `seasonId`. Neither `.update()` result is read. If the second update matches nothing (a stale `seasonId`, a season belonging to another team, a partial-unique-index conflict), the team is left with ZERO active seasons while the coach is told "Current season updated" — every season-scoped read then falls back to empty. Same discard shape in `updateTeamJoinSettings` (a coach turning OFF `code_self_join` or turning ON `require_coach_approval` is told it applied — that is an access-control setting), `archiveSeason`, `updateProgramIdentity`, and `deleteImportSource`.
 
-`src/app/golf/(dashboard)/dashboard/calendar/page.tsx:65`
+- **[MEDIUM]** Create-task modal's reminder guard is dead code — setTaskReminder returns {success:false} instead of throwing, so the coach always sees "Task created and assigned." — `src/components/fairway/pages/tasks/FairwayCreateTaskModal.tsx:309`
 
-**Breaks:** `supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()` is filtered only by player_id. golf_team_members has no unique constraint on player_id — a player on two teams (transfer mid-season, dual roster) makes PostgREST return PGRST116, `data` = null. The result is destructured as `playerTeamResult.data?.team_id` at line 72 with no error read, and the fallback branch is even typed `{ data: null }` at line 66, so nothing anywhere can see the failure. `teamId` becomes null, the entire `if (teamId)` block at line 101 is skipped, and the player gets a completely empty calendar — the exact 'my season got wiped' failure the try/catch at line 74-80 was written to prevent. maybeSingle does not throw, so that catch never fires.
+  A coach creates a task with a reminder time. `setTaskReminder` is called inside a `try { ... } catch { fairwayToast.warning('Task created, but the reminder could not be set.') }`. That catch can never fire: `setTaskReminderImpl` wraps its entire body in its own try/catch and returns `{success:false, error}` on every failure path — it never throws. So on 'Only coaches can set reminders', 'Not authorized for this team', 'Task not found', or a DB update error, the coach gets the plain green "Task created and assigned." and no reminder is ever sent. The warning toast that was written specifically to prevent this is unreachable.
 
-**Evidence:** page.tsx:65 read directly. Confirmed latent-not-live in production: `SELECT player_id, count(*) FROM golf_team_members GROUP BY 1 HAVING count(*)>1` returns 0 rows today, so no customer is hitting it yet. But availability.ts:131-136 and golf.ts:4257-4264 both already treat memberships as a LIST (`.eq('status','active')` + array collect), so multi-team players are an expected shape elsewhere in the same feature — this call site is the outlier.
+- **[MEDIUM]** Scout-packet revoke and relabel write to columns that do not exist in production and discard the error — "Link revoked" is unconditional and the share token stays live — `src/app/baseball/actions/scout-packet.ts:249`
 
-**Root cause:** `.maybeSingle()` was used as a convenience accessor for 'the first row' rather than as an assertion that at most one row exists. On the many-row case it returns an error, and because that error is discarded the guard (`if (teamId)`) reads the null as 'this player has no team' and takes the empty-render path instead of the error path the same file already implements for events.
+  A coach revokes a scout-packet share link for a player's recruiting passport. `revokeScoutPacketLink` issues `.update({ status: 'revoked' })` against `baseball_player_passport_share_tokens`, which has NO `status` column in production — PostgREST returns a 400. The error is never destructured, and the action's return type is the literal `Promise<{ success: true }>`, so it reports success. ScoutPacketManager flips the row to 'revoked' locally and toasts "Link revoked". The public share URL keeps resolving — the coach believes a scout's access to an athlete's passport (PII, recruiting data) is cut off when it is not. `relabelScoutPacketLink` has the same discard on the nonexistent `recipient_label` column. `mintScoutPacketLink` writes both bad columns too, but it DOES check `error` (line 208), so minting throws — meaning the feature is broken end to end, not just on revoke. NOT customer-facing today: every staff action here is gated by `assertRecruitingShipped()` (scout-packet.ts:83-88) and the recruiting module is off, and the table has 0 rows. This is armed to fire the moment recruiting ships.
 
-**Proposed fix:** Match the shape used everywhere else: drop maybeSingle, add `.eq('status','active').order('created_at').limit(1)` and read `data?.[0]?.team_id`, AND bind the error — `if (playerTeamResult.error) throw new Error('Failed to load your team for the calendar. Please try again.')` so it reaches the route error boundary like the events failure at line 149-151 does.
+- **[MEDIUM]** Baseball CSV stat upload discards every per-player aggregate recalculation, then reports the upload as fully successful — `src/app/baseball/actions/stats.ts:420`
 
-### MEDIUM **[CUSTOMER-FACING]** — Deleting a class discards removeClassFromCalendar's result, then deletes the class row — a failed removal orphans the events permanently with no retry path
+  After a CSV stat upload inserts rows, the action loops every affected player calling `recalculatePlayerAggregates` and discards each `{success, error}`. It then stamps the upload row `status: 'completed'` and returns `{ success: true, matchedRows: N, ... }`. If a player's `baseball_player_aggregates` upsert fails — including the very realistic case of a staff member without `can_manage_stats` on the team, since `recalculatePlayerAggregatesAction` independently requires that capability while the upload path does not — the coach sees a clean completed upload with a nonzero processed count, and Command Center / Stats Center show stale career averages, trend, and last-5/last-10 for those players indefinitely. The file already went through a documented "HONESTY FIX" for the insert failure (lines 371-376) but left the aggregate loop unchecked.
 
-`src/app/golf/(dashboard)/dashboard/classes/page.tsx:235`
+- **[LOW]** Baseball notification bell's optimistic mark-read never reverts, because the action reports failure by return value and the call site only catches throws — `src/components/baseball/NotificationBell.tsx:263`
 
-**Breaks:** handleDeleteClass calls `await removeClassFromCalendar(selectedClass.id)` at line 235 and drops the CalendarSyncResult, then deletes the golf_player_classes row (238-243), then toasts 'Class deleted — Removed from your schedule and calendar' (line 253). If the calendar removal returned success:false (calendar-sync.ts:497 membership-verify failure, :532 ownership-read failure, :551 delete failure), the events survive but the class row does not. Nothing can ever clean them up afterwards: removeClassFromCalendar's orphan path is keyed on classId, and the only place that classId lived was the row just deleted. The player sees their deleted class on the team calendar forever — and, per finding #1, in the team iCal feed too. confirmDeleteAllClasses:405-407 has the identical shape in a loop, so one transient failure can strand a whole semester.
+  A coach taps a notification (or "Mark all as read"). The bell optimistically clears the row and decrements the badge, then calls `markNotificationRead` inside `try { } catch { refetch }`. Because the action returns `{success:false}` rather than throwing, the catch never runs and the revert never happens — the badge shows 0 unread while the rows are still unread in `baseball_notifications`. Self-heals on the next popover open (which refetches), so impact is bounded, but the coach can miss a notification in the interim.
 
-**Evidence:** page.tsx:235 (`await removeClassFromCalendar(selectedClass.id);` — bare await, no assignment) and page.tsx:406 (same inside a for-loop). Compare page.tsx:156-162, which the parent just fixed to capture the result. calendar-sync.ts:473-556 shows the action returns `{success:false, error}` on five distinct paths and never throws.
-Not yet fired in production: `SELECT count(*) FROM golf_events WHERE description LIKE '%[class:%' AND NOT EXISTS (SELECT 1 FROM golf_player_classes c WHERE c.id::text = substring(description from '\[class:([^\]]+)\]'))` returns 0. The defect is that it is UNRECOVERABLE when it does fire, not that it already has.
+- **[MEDIUM]** Team Stats tells a coach "No players on your roster yet" when the roster read fails — `src/app/golf/(dashboard)/dashboard/stats/team/page.tsx:115`
 
-**Root cause:** Two-step destructive sequence ordered so that the step which can fail silently runs first and the step that destroys the only recovery key runs second, unconditionally. The class row IS the retry token for the calendar cleanup, and it is deleted regardless of whether the cleanup happened.
+  A coach with a full roster opens /golf/dashboard/stats/team and is shown a full-page empty state reading "No players on your roster yet — Add players to your roster and their rounds will roll up here" with a CTA to the roster page. The roster is already populated. The coach either believes the data is gone or clicks through and finds the players present, which reads as the product being broken.
 
-**Proposed fix:** Capture the result and refuse to delete the class row on failure:
-  const removal = await removeClassFromCalendar(selectedClass.id);
-  if (!removal?.success) { fairwayToast.error('Could not remove this class from your calendar', { description: removal?.error ?? 'Unknown error' }); return; }
-Same in confirmDeleteAllClasses: collect per-class results, then delete only the golf_player_classes rows whose calendar removal succeeded (`.in('id', okIds)` instead of the blanket `.eq('player_id', playerId)` at line 413), and report the rest.
+- **[MEDIUM]** Player roster page tells a rostered player "No Team Found — you haven't joined a team yet" on a read error — `src/app/golf/(dashboard)/dashboard/roster/page.tsx:98`
 
-### MEDIUM **[CUSTOMER-FACING]** — ClassDetailModal is handed `semester: ''` with a comment asserting the column doesn't exist — the same false-type belief that was just fixed one function above
+  A player on an active roster opens /golf/dashboard/roster and sees "No Team Found — You haven't joined a team yet. Ask your coach for a join code." They contact their coach, who confirms they are on the roster. Nothing is logged.
 
-`src/app/golf/(dashboard)/dashboard/classes/page.tsx:550`
+- **[MEDIUM]** Round detail scorecard silently renders with zero holes when the golf_holes read fails — `src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx:147`
 
-**Breaks:** The class detail modal renders the term at ClassDetailModal.tsx:91-92 (`{classData.semester.trim() && <p>{classData.semester}</p>}`), but page.tsx:550 hardcodes `semester: ''` with the comment `// Not stored in DB`. That line can never render. A player cannot see which academic term any class is in — and the term is precisely the field that decides whether the calendar sync generated anything at all. When a class shows no calendar events, the one piece of information that would explain it is deliberately blanked out.
+  A player opens the round they just submitted. If the hole-by-hole read errors, the scorecard section renders with no holes at all while the header still shows the round's total score and date — so the page asserts "you shot 74" and simultaneously shows an empty 18-hole card. No error, no retry.
 
-**Evidence:** page.tsx:550 read directly: `semester: '', // Not stored in DB`. It sits ~160 lines below the fix at page.tsx:379-386, whose own comment documents that this exact false belief ('semester is not persisted on golf_player_classes') caused the edit path to silently re-date whole event series. The PlayerClass interface at page.tsx:40 declares `semester: string | null`, the add path writes it at line 134, the update path at line 200, and the column exists on all 43 production rows (currently NULL, so the fallback matters).
+- **[MEDIUM]** standing-refresh cron's stale-cache pre-sweep silently no-ops when the team-member read errors — `src/app/api/cron/v3/standing-refresh/route.ts:186`
 
-**Root cause:** The 'semester is not stored in the DB' belief was written into two call sites; only one was corrected. The stale comment at line 550 is the same wrong evidence that produced the already-fixed edit bug, still authoritative-looking and still driving code.
+  The nightly cron's pre-sweep is what self-heals shot-derived cache columns (putt bands + attempts, approach proximity, miss bias, putts_per_gir, driving distance) when a round-submit's after() callback dies. If the outer `golf_team_members` read fails, `chunkPlayerIds` is empty, the whole `if (chunkPlayerIds.length > 0)` block is skipped, and the route still returns HTTP 200 with `stale_caches_refreshed: 0`. Players' standings then rank on stale band values indefinitely, and the run looks successful in the job log.
 
-**Proposed fix:** page.tsx:550 -> `semester: selectedClass.semester || '',`. Also worth adding a per-class synced-occurrence count so the detail modal can say 'Not on your calendar — set a semester and save' rather than showing nothing, which is what the 17 zero-event classes look like today.
+- **[MEDIUM]** Calendar page resolves a player's team with `.maybeSingle()` on a query that can return many rows — a second team membership empties the whole calendar with no error — `src/app/golf/(dashboard)/dashboard/calendar/page.tsx:65`
 
-### MEDIUM **[CUSTOMER-FACING]** — Class detail modal still hardcodes `semester: '' // Not stored in DB` — the same false comment that caused the original re-dating bug, one call site missed
+  `supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()` is filtered only by player_id. golf_team_members has no unique constraint on player_id — a player on two teams (transfer mid-season, dual roster) makes PostgREST return PGRST116, `data` = null. The result is destructured as `playerTeamResult.data?.team_id` at line 72 with no error read, and the fallback branch is even typed `{ data: null }` at line 66, so nothing anywhere can see the failure. `teamId` becomes null, the entire `if (teamId)` block at line 101 is skipped, and the player gets a completely empty calendar — the exact 'my season got wiped' failure the try/catch at line 74-80 was written to prevent. maybeSingle does not throw, so that catch never fires.
 
-`src/app/golf/(dashboard)/dashboard/classes/page.tsx:550`
+- **[MEDIUM]** Deleting a class discards removeClassFromCalendar's result, then deletes the class row — a failed removal orphans the events permanently with no retry path — `src/app/golf/(dashboard)/dashboard/classes/page.tsx:235`
 
-**Breaks:** A player opens a class from their schedule and taps it. The detail sheet shows instructor, days, time, building/room, credits, notes — but never the term, even for classes saved with "Fall 2026" selected. Because `<ClassDetailModal>`'s own type declares `semester: string` (non-optional, non-null), the component looks correctly wired and the bug is invisible from its side. More dangerous: the surviving comment is the same sentence that already cost a silent re-dating of every class event series, so it remains available as "evidence" to the next reader.
+  handleDeleteClass calls `await removeClassFromCalendar(selectedClass.id)` at line 235 and drops the CalendarSyncResult, then deletes the golf_player_classes row (238-243), then toasts 'Class deleted — Removed from your schedule and calendar' (line 253). If the calendar removal returned success:false (calendar-sync.ts:497 membership-verify failure, :532 ownership-read failure, :551 delete failure), the events survive but the class row does not. Nothing can ever clean them up afterwards: removeClassFromCalendar's orphan path is keyed on classId, and the only place that classId lived was the row just deleted. The player sees their deleted class on the team calendar forever — and, per finding #1, in the team iCal feed too. confirmDeleteAllClasses:405-407 has the identical shape in a loop, so one transient failure can strand a whole semester.
 
-**Evidence:** The P231 fix corrected the `PlayerClass` interface (page.tsx:40 now declares `semester: string | null` with a long comment at :32-39 explaining the original bug) and the edit handler at page.tsx:385 (`semester: selectedClass.semester || detectSemester('')`). Both save paths write it: page.tsx:134 (handleAddClass) and page.tsx:200 (handleUpdateClass).
+- **[MEDIUM]** ClassDetailModal is handed `semester: ''` with a comment asserting the column doesn't exist — the same false-type belief that was just fixed one function above — `src/app/golf/(dashboard)/dashboard/classes/page.tsx:550`
 
-One call site was missed. page.tsx:536-553 builds the `classData` prop for `<ClassDetailModal>`; it spreads `...selectedClass` (which carries the real semester) and then OVERRIDES it on line 550 with the original stale comment verbatim:
-    semester: '', // Not stored in DB
+  The class detail modal renders the term at ClassDetailModal.tsx:91-92 (`{classData.semester.trim() && <p>{classData.semester}</p>}`), but page.tsx:550 hardcodes `semester: ''` with the comment `// Not stored in DB`. That line can never render. A player cannot see which academic term any class is in — and the term is precisely the field that decides whether the calendar sync generated anything at all. When a class shows no calendar events, the one piece of information that would explain it is deliberately blanked out.
 
-The consumer renders it: src/components/golf/classes/ClassDetailModal.tsx:31 declares `semester: string`, and :91-92 gates on it —
-    {classData.semester.trim() && (
-      <p className="text-sm text-text-tertiary mt-1">{classData.semester}</p>
-    )}
-so the guard is permanently false and the term never renders.
+- **[LOW]** 185 class calendar chips render a duplicated course code ('BIO-121: BIO-121: General Biology I') — `src/app/golf/actions/calendar-sync.ts:245`
 
-LIVE DB (Supabase MCP): golf_player_classes has 16 columns, `semester text NULL` among them — the comment is false. Current data: 43 rows across 10 players, 0 with semester populated (all predate the fix), so today the modal would show nothing anyway; every class saved from now on will have a semester the detail modal silently blanks.
+  The import path stores class_name as `${course_code} - ${course_name}` (page.tsx:275-277), where the vision parser often already put the code inside course_name. On edit/re-sync, page.tsx:358-365 splits class_name on ' - ' into code='BIO-121' and name='BIO-121: General Biology I', and calendar-sync.ts:245-247 then builds the title as `${course_code}: ${course_name}` — producing 'BIO-121: BIO-121: General Biology I' on every calendar chip, agenda row, and iCal SUMMARY for that class.
 
-Contrast line 375 in the same file, `location: '', // Not stored in DB` — that one I verified is TRUE (no `location` column; building+room only). Only the `semester` instance is wrong.
+- **[MEDIUM]** Round analysis has lost its durable queue — the Inngest credential is invalid, so analysis runs inline with no retry — `src/app/golf/actions/golf.ts:1`
 
-**Root cause:** The P231 remediation fixed the interface and the edit handler but grepped for the behaviour, not for the comment string. A second copy of the exact false assertion survived at a different call site.
+  submitGolfRoundComprehensive tries to enqueue coachhelm/round.submitted to Inngest, the send is rejected because the configured Inngest key is no longer valid, and the code falls back to running postRoundTrigger INLINE inside the submit request. Inline means no durable retry: any transient failure during analysis is final for that round. This is the mechanism that compounds finding #1 — the very submit that got terminally stamped is the one that ran without a queue behind it.
 
-**Proposed fix:** In src/app/golf/(dashboard)/dashboard/classes/page.tsx, delete line 550 entirely — the `...selectedClass` spread on line 537 already supplies the correct value; just coerce the null: change to `semester: selectedClass.semester || ''`. Then grep the repo for the remaining literal `Not stored in DB` and confirm each survivor against information_schema (page.tsx:375 for `location` is legitimate). Add a test on ClassDetailModal asserting that a class with `semester: 'Fall 2026'` renders that string, so the guard at ClassDetailModal.tsx:91 can never silently go dark again.
+- **[MEDIUM]** golf_shots has crossed the PostgREST 1000-row cap in production — 6 players and 4 teams are already truncatable — `src/lib/coachhelm/v2/orchestrator.ts:1350`
 
-### MEDIUM **[CUSTOMER-FACING]** — Every baseball program-settings mutation is typed `Promise<{success: true}>` and never reads the Supabase error — setCurrentSeason can leave a team with no active season and still say "Current season updated"
+  Any player- or team-scoped read of golf_shots that is not routed through fetchAllRows/fetchAllRowsResult now silently returns only the first 1000 rows. The caller cannot tell a truncated read from a complete one, so every downstream aggregate — shot-level strokes gained, leak maps, lie analysis, pattern mining — renders a confidently wrong number for exactly the most engaged customers. Separately, orchestrator.ts:1350 destructures only `data` from both reads, so a failed shot/hole fetch becomes two empty arrays, buildRoundSpecificInsights returns [], and the round review is generated and PERSISTED with no round-specific insights and no error anywhere.
 
-`src/app/baseball/actions/team-season-settings.ts:378`
+- **[MEDIUM]** get_qualifier_leaderboard() is an ungated SECURITY DEFINER RPC that returns any program's roster names and scoring to any authenticated user — `supabase/migrations (function public.get_qualifier_leaderboard):1`
 
-**Breaks:** `setCurrentSeason` does a clear-then-set: it first archives whatever season is currently `active` for the team, then activates `seasonId`. Neither `.update()` result is read. If the second update matches nothing (a stale `seasonId`, a season belonging to another team, a partial-unique-index conflict), the team is left with ZERO active seasons while the coach is told "Current season updated" — every season-scoped read then falls back to empty. Same discard shape in `updateTeamJoinSettings` (a coach turning OFF `code_self_join` or turning ON `require_coach_approval` is told it applied — that is an access-control setting), `archiveSeason`, `updateProgramIdentity`, and `deleteImportSource`.
+  Anyone with a login — a player at a rival program, a baseball-only user, a Lift Lab athlete — can POST /rest/v1/rpc/get_qualifier_leaderboard {"qualifier_uuid": "<uuid>"} and receive another school's qualifier field: every entrant's first and last name, rounds played, total and average score, best score. Qualifier ids appear in coach-shared URLs and are guessable only by uuid, but nothing else stands between the caller and the data.
 
-**Evidence:** src/app/baseball/actions/team-season-settings.ts:373-381 — two consecutive `await fromUntyped(supabase, 'baseball_seasons').update(...)` calls, neither destructuring `{ error }`, then `return { success: true }` at 394. The declared return type at line 366 is `Promise<{ success: true }>` — the literal `true`, so the type itself makes failure inexpressible. Identical pattern: `updateTeamJoinSettings` line 156 (`await fromUntyped(supabase, 'baseball_teams').update(update).eq('id', teamId);`) → `return { success: true }` line 171; `archiveSeason` line 407-410 → line 423; `updateProgramIdentity` src/app/baseball/actions/program-settings.ts:467 → line 483; `deleteImportSource` program-settings.ts:607-610 → line 621. Every one also writes an audit row (`writeAudit`) AFTER the unchecked mutation, so the audit log records changes that may not have happened. Call sites all show unconditional success toasts: TeamSettingsClient.tsx:82 'Join policy updated', :97 'Coach approval required'; SeasonSettingsClient.tsx:168 'Current season updated', :184 'Season archived'; ProgramSettingsClient.tsx:226 'Program identity saved'; ImportSourcesClient.tsx:393 'Removed "..."'. Verified in production that all target columns exist (`baseball_teams.invite_policy/allow_player_self_join/require_coach_approval`, `baseball_seasons.status`), so the live trigger here is a failed/0-row write, not a schema mismatch.
+- **[MEDIUM]** golf_teams INSERT does not bind organization_id to the caller's org — a coach can permanently block another school from creating a team — `supabase/migrations (policy golf_teams_insert_coaches on public.golf_teams):1`
 
-**Root cause:** Mutations declared with a return type that cannot represent failure (`{success: true}`), combined with `.update()`/`.delete()` calls whose `{ error }` is never destructured. `withBaseballAction` only converts *throws* into failures, and a discarded PostgREST error never throws.
+  golf_teams_insert_coaches WITH CHECK is `EXISTS (SELECT 1 FROM golf_coaches WHERE user_id = auth.uid())` — it checks only that the caller is some coach, not that organization_id is theirs. Any golf coach can insert a row into any school's organization_id. The victim can never see or delete it (golf_teams_select needs a staff row; both DELETE policies need staff or created_by), and the partial unique index golf_teams_org_gender_uidx (organization_id, gender) is now occupied — so when the real coach tries to create their Men's or Women's team they get 23505, surfaced as 'Your program already has a Men's team' (teams.ts:571-573) against a team that does not exist as far as they can tell.
 
-**Proposed fix:** For each of the six actions, destructure and check: `const { error } = await fromUntyped(...).update(...)` then `if (error) throw new Error('Could not save ... Please try again.')` — `withBaseballAction` already sanitizes and Sentry-logs throws, and each client already has a `catch` that renders an error toast, so throwing needs no client change. IMPORTANT: an RLS-refused UPDATE returns no error and 0 rows, so for the writes that must be verified (`setCurrentSeason`'s activation, `updateTeamJoinSettings`) also append `.select('id')` and throw when the returned array is empty. Move each `writeAudit(...)` call to AFTER the verified write so the audit trail stops recording unapplied changes. Finally change the return types from `Promise<{ success: true }>` to `Promise<{ success: boolean; error?: string }>` (or leave them throwing and drop the meaningless success field) so the next author cannot repeat this.
+- **[MEDIUM]** getStatsSummary renders a database read error as 'no rounds played' with all-null stat cards and no log line — `src/app/golf/actions/stats-data.ts:719`
 
-### MEDIUM **[CUSTOMER-FACING]** — Create-task modal's reminder guard is dead code — setTaskReminder returns {success:false} instead of throwing, so the coach always sees "Task created and assigned."
+  A player or coach opens the stats page during an RLS misconfiguration, a Supabase blip, or a statement timeout and sees roundsPlayed: 0 and every summary card blank — visually identical to a brand-new player who has never submitted a round. There is no toast, no error boundary, and no server log, so the customer concludes their rounds were lost and nobody on your side gets a signal. This is the same class as the golf classes page: a failure presented as a confident, clean result.
 
-`src/components/fairway/pages/tasks/FairwayCreateTaskModal.tsx:309`
+- **[MEDIUM]** Stats leak-map buckets render 'no data' on any shot-query failure, and the round-id list is unchunked so it will start failing outright as teams accumulate rounds — `src/app/golf/actions/stats-leak-maps.ts:293`
 
-**Breaks:** A coach creates a task with a reminder time. `setTaskReminder` is called inside a `try { ... } catch { fairwayToast.warning('Task created, but the reminder could not be set.') }`. That catch can never fire: `setTaskReminderImpl` wraps its entire body in its own try/catch and returns `{success:false, error}` on every failure path — it never throws. So on 'Only coaches can set reminders', 'Not authorized for this team', 'Task not found', or a DB update error, the coach gets the plain green "Task created and assigned." and no reminder is ever sent. The warning toast that was written specifically to prevent this is unreachable.
+  Every putting and approach-proximity bucket on the team leak map renders team_value: null and sample_n: 0 whenever the golf_shots read fails — a coach reads that as 'we have no putting data' rather than 'the query broke'. The failure becomes guaranteed rather than transient once a team's completed-round count passes roughly 585: PostgREST .in() lists travel in the URL and the edge rejects the request before Postgres sees it, with a bare 400/414 that this code throws away.
 
-**Evidence:** src/components/fairway/pages/tasks/FairwayCreateTaskModal.tsx:307-316 — `if (reminderAt) { try { await setTaskReminder(result.data.taskId, ...); } catch { fairwayToast.warning(...); } }` then line 316 `fairwayToast.success('Task created and assigned.');`. The result of `setTaskReminder` is never bound. `setTaskReminder` is declared `Promise<{ success: boolean; error?: string }>` at src/app/golf/actions/task-reminders.ts:220-226 and delegates to `setTaskReminderImpl` (task-reminders.ts:131), whose failure returns are at lines 147 ('Unauthorized'), 159 ('Only coaches can set reminders'), 171 ('Task not found'), 176 (no organization), 186 ('Not authorized for this team'), 200 ('Failed to set reminder'), and whose outer `catch` at 205-207 returns `{success:false}` rather than rethrowing. The modal IS live: rendered at src/components/fairway/pages/tasks/FairwayTasks.tsx:628, reached from /golf/dashboard/tasks. SUPPORTING (not proof): production `golf_tasks` has 17 rows and 0 with `reminder_at` set.
+- **[LOW]** The stats summary cards aggregate over unlimited rounds while the detailed engine on the same page caps at 100, so the two will silently disagree — `src/app/golf/actions/stats-data.ts:937`
 
-**Root cause:** A call site that defends against throws for an action that reports failure by return value. This is the same defect shape as the classes page: the result of a `{success, error}` action is never bound.
+  On one screen a player will see a scoring average in the summary card computed over their entire career, and a scoring average from the detailed shot engine computed over only their most recent 100 rounds. The detailed view surfaces a truncation notice; the summary card does not, and the two numbers will simply not match. Not triggered today (max ~30 completed rounds per player in production), but it arrives silently for any four-year player on the platform.
 
-**Proposed fix:** Replace lines 307-314 with a bound, branched call and drop the unreachable try/catch: `let reminderFailed: string | null = null; if (reminderAt) { const reminderResult = await setTaskReminder(result.data.taskId, new Date(reminderAt).toISOString()); if (!reminderResult.success) reminderFailed = reminderResult.error ?? 'Unknown error'; }` then at line 316 fork the toast: `if (reminderFailed) fairwayToast.warning('Task created, but the reminder could not be set.', { description: reminderFailed }); else fairwayToast.success('Task created and assigned.');`. Keep a `try/catch` around it only for genuine network faults.
+- **[MEDIUM]** Class detail modal still hardcodes `semester: '' // Not stored in DB` — the same false comment that caused the original re-dating bug, one call site missed — `src/app/golf/(dashboard)/dashboard/classes/page.tsx:550`
 
-### MEDIUM **[CUSTOMER-FACING]** — Baseball CSV stat upload discards every per-player aggregate recalculation, then reports the upload as fully successful
+  A player opens a class from their schedule and taps it. The detail sheet shows instructor, days, time, building/room, credits, notes — but never the term, even for classes saved with "Fall 2026" selected. Because `<ClassDetailModal>`'s own type declares `semester: string` (non-optional, non-null), the component looks correctly wired and the bug is invisible from its side. More dangerous: the surviving comment is the same sentence that already cost a silent re-dating of every class event series, so it remains available as "evidence" to the next reader.
 
-`src/app/baseball/actions/stats.ts:420`
+- **[LOW]** CoachHelm hole/round miner types declare DB-nullable columns as non-null, licensing `?? 0` coercions that would fabricate 0-stroke, 0-putt, missed-green holes — `src/lib/coachhelm/v2/mining/correlation-discovery.ts:83`
 
-**Breaks:** After a CSV stat upload inserts rows, the action loops every affected player calling `recalculatePlayerAggregates` and discards each `{success, error}`. It then stamps the upload row `status: 'completed'` and returns `{ success: true, matchedRows: N, ... }`. If a player's `baseball_player_aggregates` upsert fails — including the very realistic case of a staff member without `can_manage_stats` on the team, since `recalculatePlayerAggregatesAction` independently requires that capability while the upload path does not — the coach sees a clean completed upload with a nonzero processed count, and Command Center / Stats Center show stale career averages, trend, and last-5/last-10 for those players indefinitely. The file already went through a documented "HONESTY FIX" for the insert failure (lines 371-376) but left the aggregate loop unchecked.
-
-**Evidence:** src/app/baseball/actions/stats.ts:418-421 — `const affectedPlayerIds = [...new Set(statsToInsert.map(s => s.player_id!))]; for (const playerId of affectedPlayerIds) { await recalculatePlayerAggregates(playerId, teamId); }` — result dropped, then `return { success: true, ... }` at 425-430. `recalculatePlayerAggregates` (stats.ts:780-792) never throws: its try/catch returns `{success:false, error: statsActionErrorMessage(error)}` at line 791, and the inner action returns `{success:false, error:'Failed to recalculate player aggregates'}` at stats.ts:770 on an upsert error. `recalculatePlayerAggregatesAction` declares `requiredCapability: 'can_manage_stats'` (stats.ts:663). Identical discard at stats.ts:817 inside `recalculateTeamAggregates`, which loops the whole roster and then unconditionally returns `{ success: true }` (line 821) — though that one currently has zero call sites, so it is latent.
-
-**Root cause:** Bare `await` on a `{success, error}` action inside a for-loop, with the enclosing result type having no field to carry a partial failure.
-
-**Proposed fix:** Collect the outcomes: `const aggregateResults = await Promise.all(affectedPlayerIds.map((id) => recalculatePlayerAggregates(id, teamId)));` and `const aggregateFailures = aggregateResults.filter((r) => !r.success).length;`. When `aggregateFailures > 0`, call `logServerError` with the count and player ids, and add an `aggregateFailures: number` field to the upload result so the UploadHistory badge can say "completed — N player totals not refreshed" instead of a clean success. Do the same at stats.ts:817 in `recalculateTeamAggregates` and return `{ success: failures === 0, error: ... }` there rather than a hard-coded `{ success: true }`.
-
-### MEDIUM **[CUSTOMER-FACING]** — get_qualifier_leaderboard() is an ungated SECURITY DEFINER RPC that returns any program's roster names and scoring to any authenticated user
-
-`supabase/migrations (function public.get_qualifier_leaderboard):1`
-
-**Breaks:** Anyone with a login — a player at a rival program, a baseball-only user, a Lift Lab athlete — can POST /rest/v1/rpc/get_qualifier_leaderboard {"qualifier_uuid": "<uuid>"} and receive another school's qualifier field: every entrant's first and last name, rounds played, total and average score, best score. Qualifier ids appear in coach-shared URLs and are guessable only by uuid, but nothing else stands between the caller and the data.
-
-**Evidence:** Role impersonation on production. Attacker = Guilford College player user 19b23b3a-8302-4139-bdc9-0558099d21dd. Target = qualifier f4c6ee5a-1ede-4b17-9c29-1a4c4b0b437c ('Pre-Season Qualifier — Spring Invitational', team 6ecdd1a6, org f97a9346 Demo University Golf).
-CONTROL (same session): select count(*) from golf_qualifiers where id = 'f4c6ee5a-...' -> 0 rows. RLS correctly blocks the direct read.
-PROBE: select * from get_qualifier_leaderboard('f4c6ee5a-...') -> 7 rows returned, with full names (Cole Bennett, Owen Carter, Ethan Park, Mason Rivers, Jackson Hale, Dylan Brooks, Tyler Hayes) and their player_ids.
-Function ACL: postgres=X, authenticated=X, service_role=X. prosecdef = true. Body contains no auth.uid(), is_golf_team_coach, or any caller check.
-The function is dead code in the app — grep across src finds it only in the generated src/lib/types/database.ts:20608 — so revoking it costs nothing.
-
-**Root cause:** SECURITY DEFINER was used to make the leaderboard aggregate cheap, and the caller gate was never written; EXECUTE was granted to `authenticated` wholesale. Same class as the other ungated definer writers still granted to authenticated: recompute_golf_round_totals(uuid), recalculate_baseball_season_stats(uuid,uuid,int), recalculate_team_baseball_season_stats(uuid,int) — all currently benign (0 of 302 golf_rounds have no golf_holes rows, so recompute is idempotent today) but all callable on arbitrary ids.
-
-**Proposed fix:** Additive migration: REVOKE EXECUTE ON FUNCTION public.get_qualifier_leaderboard(uuid) FROM PUBLIC, anon, authenticated;  GRANT EXECUTE ... TO service_role;  — nothing in src calls it. If it is meant to come back, add as the first statement of the body: IF NOT EXISTS (SELECT 1 FROM public.golf_qualifiers q WHERE q.id = qualifier_uuid AND (public.is_golf_team_coach(q.team_id) OR public.is_golf_team_player(q.team_id))) THEN RETURN; END IF;  Apply the same REVOKE-to-service_role treatment to recompute_golf_round_totals, recalculate_baseball_season_stats and recalculate_team_baseball_season_stats — check first that games.ts:746 and games.ts:1611 call them through the admin client (games.ts:1611 uses the user client and would need to move to admin, or the RPC needs an is_baseball_team_staff(p_team_id) gate).
-
-### MEDIUM **[CUSTOMER-FACING]** — golf_teams INSERT does not bind organization_id to the caller's org — a coach can permanently block another school from creating a team
-
-`supabase/migrations (policy golf_teams_insert_coaches on public.golf_teams):1`
-
-**Breaks:** golf_teams_insert_coaches WITH CHECK is `EXISTS (SELECT 1 FROM golf_coaches WHERE user_id = auth.uid())` — it checks only that the caller is some coach, not that organization_id is theirs. Any golf coach can insert a row into any school's organization_id. The victim can never see or delete it (golf_teams_select needs a staff row; both DELETE policies need staff or created_by), and the partial unique index golf_teams_org_gender_uidx (organization_id, gender) is now occupied — so when the real coach tries to create their Men's or Women's team they get 23505, surfaced as 'Your program already has a Men's team' (teams.ts:571-573) against a team that does not exist as far as they can tell.
-
-**Evidence:** Role impersonation on production, rolled back. As Denison's head coach (user bc03d535-9647-4063-ab64-9985f46d4601, coach row in org ef06ba2e), `insert into golf_teams (id,name,gender,season,join_code,organization_id,created_by) values (..., '5b7d0fbe-cf05-40bb-9b9e-af163f1ce99e' /* Guilford College */, 'bd2236bd-...')` was ACCEPTED with no error. (The follow-up SELECT returned 0 rows only because golf_teams_select hides the new row from its own creator — the same RLS quirk documented at teams.ts:204-211; the absence of a 42501 is the proof the WITH CHECK passed. Control: the identical statement against the staff table in the same session DID raise 42501, so errors do surface in this harness.)
-Index confirmed present: golf_teams_org_gender_uidx UNIQUE ON golf_teams (organization_id, gender) WHERE gender IS NOT NULL.
-
-**Root cause:** The policy authorises the ROLE ('you are a coach') rather than the TENANT ('this row belongs to your organization'). organizations_select_all is USING (true), so every org uuid is readable by every authenticated user — the attacker does not have to guess.
-
-**Proposed fix:** DROP POLICY golf_teams_insert_coaches ON public.golf_teams; CREATE POLICY golf_teams_insert_coaches ON public.golf_teams FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM public.golf_coaches gc WHERE gc.user_id = (SELECT auth.uid()) AND gc.organization_id = golf_teams.organization_id AND gc.id = golf_teams.created_by)); This is satisfied by all three existing writers (onboarding.ts:212-221, createTeamImpl teams.ts:547-559, addSecondTeam teams.ts:1586-1596) — every one already sets organization_id = coach.organization_id and created_by = coach.id. Also add a cleanup query to check for existing orphan teams: select t.* from golf_teams t where not exists (select 1 from golf_team_coach_staff s where s.team_id = t.id) — production currently has 0, so no backfill needed.
-
-### MEDIUM — Scout-packet revoke and relabel write to columns that do not exist in production and discard the error — "Link revoked" is unconditional and the share token stays live
-
-`src/app/baseball/actions/scout-packet.ts:249`
-
-**Breaks:** A coach revokes a scout-packet share link for a player's recruiting passport. `revokeScoutPacketLink` issues `.update({ status: 'revoked' })` against `baseball_player_passport_share_tokens`, which has NO `status` column in production — PostgREST returns a 400. The error is never destructured, and the action's return type is the literal `Promise<{ success: true }>`, so it reports success. ScoutPacketManager flips the row to 'revoked' locally and toasts "Link revoked". The public share URL keeps resolving — the coach believes a scout's access to an athlete's passport (PII, recruiting data) is cut off when it is not. `relabelScoutPacketLink` has the same discard on the nonexistent `recipient_label` column. `mintScoutPacketLink` writes both bad columns too, but it DOES check `error` (line 208), so minting throws — meaning the feature is broken end to end, not just on revoke. NOT customer-facing today: every staff action here is gated by `assertRecruitingShipped()` (scout-packet.ts:83-88) and the recruiting module is off, and the table has 0 rows. This is armed to fire the moment recruiting ships.
-
-**Evidence:** src/app/baseball/actions/scout-packet.ts:249-252 — `await fromUntyped(supabase, 'baseball_player_passport_share_tokens').update({ status: 'revoked', updated_at: ... }).eq('id', linkId).eq('team_id', teamId);` with no `{ error }` destructuring; return type `Promise<{ success: true }>` at line 244; `return { success: true }` at line 254. Same at lines 271-274 / 276 for `relabelScoutPacketLink`. PRODUCTION SCHEMA (information_schema.columns): `baseball_player_passport_share_tokens` columns are id, team_id, player_id, token, label, packet_kind, section_allowlist, expires_at, max_views, view_count, last_viewed_at, revoked_at, created_by, created_at, updated_at — there is no `status` and no `recipient_label`. Revocation in the real schema is `revoked_at`. Row count: 0. This also corrupts reads: `toLinkView` (scout-packet.ts:100-118) derives `status` from `row.status`, which is always undefined, so it hard-codes every link to `'active'` and `isLive: true` regardless of `revoked_at` — a genuinely revoked link would still render as live. And `resolveScoutPacketByTokenImpl` selects `status` at line 480 and checks `row.status === 'revoked'` at line 486, so the public resolver can never honor a revocation either. This is the "type/code believes a column that does not exist" failure class on top of the discarded-error one.
-
-**Root cause:** Two independent defects compounding: (1) the whole file was written against a `status`/`recipient_label` schema that production does not have (production uses `revoked_at`/`label`), and (2) the mutations discard the PostgREST error and are typed `Promise<{success: true}>`, so the schema mismatch cannot surface. Without (2), (1) would have been caught the first time anyone clicked Revoke.
-
-**Proposed fix:** Two parts, both needed. SCHEMA ALIGNMENT: in scout-packet.ts replace `status: 'revoked'` with `revoked_at: new Date().toISOString()` (line 250); replace `recipient_label` with `label` in the mint insert (line 199), the relabel update (line 272), and `toLinkView` (line 107); rewrite `toLinkView`'s status derivation as `const status = row.revoked_at ? 'revoked' : 'active'` (line 101) and drop `status: 'active'` from the mint insert (line 201); change the select and check in `resolveScoutPacketByTokenImpl` (lines 480, 486) to use `revoked_at`; update the live-link filter at line 362. ERROR HANDLING: destructure `{ error }` on both mutations and `throw new Error('Could not revoke the link. Please try again.')` / `'Could not update the label.'` — both clients already have `catch` branches that render the right error toast (ScoutPacketManager.tsx:215-217, :98-100), so no client change is needed. Add a `.select('id')` presence assert on the revoke so an RLS-refused 0-row update is also treated as failure. Add a test that asserts a revoked link's `resolveScoutPacketByToken` returns `fail('revoked')` — the current suite cannot have covered this or the column mismatch would have been caught.
-
-### LOW **[CUSTOMER-FACING]** — Signup makes graduation year a required, submit-blocking field and then throws the answer away
-
-`src/components/auth/golf-sign-up-form.tsx:77`
-
-**Breaks:** A new player cannot submit the golf signup form without picking an expected graduation year (it blocks with "Please select your expected graduation year"), and the value is then never sent anywhere. Two screens later, onboarding asks for graduation year again — pre-populated with an arbitrary default, not their answer. It reads as the product not listening.
-
-**Evidence:** golf-sign-up-form.tsx:41 holds `graduationYear` in state, lines 56-65 hard-block submit on it and derive an age check from it, but the call at lines 77-83 passes only `(email, password, role, firstName, lastName)`. signupAction's signature (src/app/golf/actions/auth.ts:286-292) has no grad-year parameter, and its `options.data` metadata block (auth.ts:346-351) writes only role, sport, first_name, last_name. handle_new_user (verified against prod via pg_proc) reads only role/sport/first_name/last_name and creates no golf_players row at all. The value then re-appears as a fresh question at src/app/golf/(onboarding)/player/page.tsx:65-67, defaulted to `graduationYears[3]`.
-
-**Root cause:** The field was added to the signup form for the COPPA age gate (the ≥13 check at line 61-65, which is a legitimate client-side use) but was never plumbed into the action, and nobody noticed because onboarding asks again and the DB column ends up populated either way.
-
-**Proposed fix:** Cheapest correct fix: carry it through auth metadata so onboarding can prefill it. Add an optional 6th param to signupAction/signupActionImpl (`graduationYear?: number`), include `graduation_year: graduationYear ?? null` in the `options.data` block at auth.ts:346-351, pass `Number(formData.graduationYear) || undefined` from the form at line 77-83, and in (onboarding)/player/page.tsx:65-67 seed the default from `user.user_metadata?.graduation_year` before falling back to `graduationYears[3]`. No DB change needed — onboarding still writes the authoritative value.
-
-### LOW **[CUSTOMER-FACING]** — The stats summary cards aggregate over unlimited rounds while the detailed engine on the same page caps at 100, so the two will silently disagree
-
-`src/app/golf/actions/stats-data.ts:937`
-
-**Breaks:** On one screen a player will see a scoring average in the summary card computed over their entire career, and a scoring average from the detailed shot engine computed over only their most recent 100 rounds. The detailed view surfaces a truncation notice; the summary card does not, and the two numbers will simply not match. Not triggered today (max ~30 completed rounds per player in production), but it arrives silently for any four-year player on the platform.
-
-**Evidence:** queryDetailedStatsWithClient applies `query = query.limit(sqlLimit)` at stats-data.ts:937 with `const sqlLimit = presetLimit ?? DETAILED_STATS_MAX_ROUNDS` (line 936, DETAILED_STATS_MAX_ROUNDS = 100 at line 874), and correctly sets a `truncated` flag (line 978-981, surfaced in the UI at src/components/golf/stats/spine-stage/StatsSpineStage.tsx:370). getStatsSummary's query (stats-data.ts:685-712) applies no `.limit()` and no pagination at all — it relies on PostgREST's implicit 1000-row cap and computes scoringAverage over whatever comes back (lines 313-318). So for 101-1000 rounds the two disagree with no disclosure, and past 1000 the summary itself silently truncates with no `truncated` flag of its own. Current production max is ~30 completed rounds for any single player, so this is latent, not live.
-
-**Root cause:** Two aggregate paths for the same page were bounded differently and only one grew a truncation contract.
-
-**Proposed fix:** Give getStatsSummary the same bound and the same disclosure: apply `.limit(presetLimitCount(filter) ?? DETAILED_STATS_MAX_ROUNDS)` to the query at stats-data.ts:712, run the same exact-count query the detailed path uses (lines 946-961), and add a `truncated: boolean` field to StatsSummary so the summary cards can show the same notice StatsSpineStage.tsx:370 already renders. Alternatively route both through one shared round-window resolver so the cap can never drift apart again — that is the more durable fix given this exact class of divergence is what finding #1 is about.
-
-### LOW **[CUSTOMER-FACING]** — 185 class calendar chips render a duplicated course code ('BIO-121: BIO-121: General Biology I')
-
-`src/app/golf/actions/calendar-sync.ts:245`
-
-**Breaks:** The import path stores class_name as `${course_code} - ${course_name}` (page.tsx:275-277), where the vision parser often already put the code inside course_name. On edit/re-sync, page.tsx:358-365 splits class_name on ' - ' into code='BIO-121' and name='BIO-121: General Biology I', and calendar-sync.ts:245-247 then builds the title as `${course_code}: ${course_name}` — producing 'BIO-121: BIO-121: General Biology I' on every calendar chip, agenda row, and iCal SUMMARY for that class.
-
-**Evidence:** Production: `SELECT count(*) FROM golf_events WHERE description LIKE '%[class:%' AND title ~ '^([^:]+): \1[:.]'` -> 185 events across 5 distinct titles. Sample stored value: golf_player_classes.class_name = 'BIO-121 - BIO-121: General Biology I'; the resulting golf_events.title = 'BIO-121: BIO-121: General Biology I'.
-
-**Root cause:** class_name is a lossy round-trip format: code and name are joined with ' - ' on write and split back on read, but the parser may already have embedded the code in course_name, so the split re-derives a code that is still present in the name, and the title builder prefixes it a second time.
-
-**Proposed fix:** In calendar-sync.ts:245-247, suppress the prefix when it is already present:
-  const name = classData.course_name || 'Class';
-  const code = classData.course_code?.trim();
-  const title = code && !name.toLowerCase().startsWith(code.toLowerCase()) ? `${code}: ${name}` : name;
-The existing diff at line 358 (`existing.title !== desired.title`) repairs the 185 rows on the next re-sync of each class; a backfill UPDATE using the same regex fixes them immediately.
-
-### LOW **[CUSTOMER-FACING]** — Baseball notification bell's optimistic mark-read never reverts, because the action reports failure by return value and the call site only catches throws
-
-`src/components/baseball/NotificationBell.tsx:263`
-
-**Breaks:** A coach taps a notification (or "Mark all as read"). The bell optimistically clears the row and decrements the badge, then calls `markNotificationRead` inside `try { } catch { refetch }`. Because the action returns `{success:false}` rather than throwing, the catch never runs and the revert never happens — the badge shows 0 unread while the rows are still unread in `baseball_notifications`. Self-heals on the next popover open (which refetches), so impact is bounded, but the coach can miss a notification in the interim.
-
-**Evidence:** src/components/baseball/NotificationBell.tsx:261-268 — `startTransition(async () => { try { await markNotificationRead(id); } catch { void fetchNotifications(); void refreshCount(); } })`, result never bound. Same shape at lines 304-311 for `markAllNotificationsRead`. `markNotificationRead` returns `NotificationMutationResult` and returns `{ success: false, error: 'Could not mark notification as read.' }` at src/app/baseball/actions/notifications.ts:134 without throwing; `markAllNotificationsRead` likewise at notifications.ts:160.
-
-**Root cause:** Same shape as the task-reminder finding: a `catch` guarding an action that never throws. The result is never bound so the failure is invisible.
-
-**Proposed fix:** Bind and branch in both handlers: `const res = await markNotificationRead(id); if (!res.success) { void fetchNotifications(); void refreshCount(); }` (keep the surrounding try/catch for genuine network faults and run the same revert from it). Apply identically to `markAllNotificationsRead` at line 306.
-
-### LOW — CoachHelm hole/round miner types declare DB-nullable columns as non-null, licensing `?? 0` coercions that would fabricate 0-stroke, 0-putt, missed-green holes
-
-`src/lib/coachhelm/v2/mining/correlation-discovery.ts:83`
-
-**Breaks:** If either miner ever loses its `.eq('status','completed')` prefilter — or a completed round ever lands with a NULL hole (nothing in the schema prevents it; the columns are nullable with no default), the 96-row in-progress population becomes reachable. A NULL-putt hole would then count as a 0-putt hole inside `puttsOnGir` averages and a NULL gir as a MISSED green, so CoachHelm would tell a coach their player's putts-per-GIR improved when the truth is the data is absent. The types would still typecheck and no error would surface — "no data" silently becomes "perfect data".
-
-**Evidence:** src/lib/coachhelm/v2/mining/correlation-discovery.ts:83 `interface HoleCorrelationData` declares `strokes: number`, `putts: number`, `gir: boolean` — all non-null. Live DB says golf_holes.score, .putts, .gir are all NULLABLE. The mapper at :281-283 therefore coerces rather than filters:
-    strokes: h.score ?? 0,
-    putts:  h.putts ?? 0,
-    gir:    h.gir ?? false,
-Those values are then consumed as real data at :595-596 (`h.putts >= 3` three-putt counts), :729 and :818 (`girHoles.reduce((a,h) => a + h.putts, 0)` putts-per-GIR averages), :861. Same shape at src/lib/coachhelm/v2/mining/pattern-miner.ts:242 (`score_to_par: number`, coerced `?? 0` at :374) and :83/:88 in the same file.
-
-I verified this is NOT currently live. Production has 96 golf_holes rows with a NULL score/putts/gir and 6 golf_rounds with NULL score_to_par/total_score — and a status join shows ALL of them belong to `status = 'in_progress'` rounds (0 in completed rounds). Both miners filter to completed rounds before loading holes (correlation-discovery.ts:204 `.eq('status','completed')` then `.in('round_id', roundIds)` at :268; pattern-miner.ts:362 same), so the nulls never reach the coercion today. Reporting it as a latent trap, not a live defect — I am stating plainly that the harm is currently unrealised.
-
-**Root cause:** The row interfaces were hand-written to the shape the miner wanted rather than the shape the table returns, and the nullability gap was then papered over with `??` defaults at the mapping boundary instead of with a filter. Nothing enforces that these two miners keep their `status='completed'` prefilter.
-
-**Proposed fix:** Change the declarations to match the DB (`strokes: number | null; putts: number | null; gir: boolean | null` at correlation-discovery.ts:83-89; `score_to_par: number | null` at pattern-miner.ts:242) and replace the `??` defaults at correlation-discovery.ts:281-283 and pattern-miner.ts:374 with an explicit filter that DROPS incomplete holes/rounds from the sample before analysis, so a missing value shrinks the sample size (and trips the existing minimum-sample gates) instead of manufacturing a data point. Keep the `status='completed'` prefilters and add a unit test asserting a hole with `putts: null` is excluded from `avgPuttsPerGir` rather than counted as zero.
+  If either miner ever loses its `.eq('status','completed')` prefilter — or a completed round ever lands with a NULL hole (nothing in the schema prevents it; the columns are nullable with no default), the 96-row in-progress population becomes reachable. A NULL-putt hole would then count as a 0-putt hole inside `puttsOnGir` averages and a NULL gir as a MISSED green, so CoachHelm would tell a coach their player's putts-per-GIR improved when the truth is the data is absent. The types would still typecheck and no error would surface — "no data" silently becomes "perfect data".

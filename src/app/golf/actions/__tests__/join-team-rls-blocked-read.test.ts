@@ -51,7 +51,16 @@ function makeChain(table: string) {
   chain.single = vi.fn(async () => result());
   chain.maybeSingle = vi.fn(async () => result());
   chain.then = vi.fn((onFulfilled: (v: unknown) => void) => {
-    void Promise.resolve(result()).then(onFulfilled);
+    // A bare awaited select resolves PostgREST-style: `data` is an ARRAY of
+    // rows, never a bare object. The membership guard reads this way since it
+    // dropped `.maybeSingle()`; a stub that hands back the naked object is
+    // lying about the contract the real client keeps.
+    const base = result();
+    const value =
+      table === 'golf_team_members'
+        ? { ...base, data: base.data == null ? [] : Array.isArray(base.data) ? base.data : [base.data] }
+        : base;
+    void Promise.resolve(value).then(onFulfilled);
   });
   return chain;
 }
@@ -174,13 +183,19 @@ describe('joining a team when golf_teams is not readable by the joiner', () => {
     expect(rpcCalls.find((c) => c.fn === 'golf_join_team_with_code')).toBeUndefined();
   });
 
-  it('still refuses a second join of the same team', async () => {
+  it('treats a second join of the same team as SUCCESS — joining is idempotent', async () => {
+    // The invite flow legitimately runs the join twice (onboarding auto-joins,
+    // the join page confirms). The desired end state already holds, so this is
+    // success — reporting it as a red error was losing brand-new players at
+    // the signup door on 2026-08-06.
     teamMembership = { team_id: TEAM.id };
 
     const result = await processGolfTeamInvitation(CODE, PLAYER_ID);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/already a member/i);
+    expect(result.success).toBe(true);
+    expect(result.alreadyMember).toBe(true);
+    // The INSERT must not re-run — no duplicate "player joined" notification.
+    expect(rpcCalls.find((c) => c.fn === 'golf_join_team_with_code')).toBeUndefined();
   });
 
   it('still refuses when onboarding is not complete', async () => {
