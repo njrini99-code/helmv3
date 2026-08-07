@@ -56,6 +56,22 @@ interface ClassFormData {
    * convention's default rather than relying on offset-naive strings.
    */
   timezoneOffset?: number;
+  /**
+   * The caller's IANA timezone, e.g. "America/New_York".
+   *
+   * REQUIRED for a correct multi-month series, and why `timezoneOffset` alone
+   * is not enough: an offset is a single number captured at save time, but a
+   * semester crosses a daylight-saving boundary. A schedule saved in August
+   * (EDT, -04:00) stamped every December occurrence -04:00 too, and December is
+   * EST — so every meeting after the change was stored an hour early. Measured
+   * on production 2026-08-07: 281 of 879 class events, across 17 classes and 2
+   * teams, all dated on or after 1 November.
+   *
+   * With the zone name the offset is resolved PER OCCURRENCE, so the wall-clock
+   * time the player typed is what they get on every date. `timezoneOffset`
+   * stays as the fallback for callers that have not been updated.
+   */
+  timezone?: string;
 }
 
 type GolfEventInsert = Database['public']['Tables']['golf_events']['Insert'];
@@ -123,6 +139,47 @@ function normalizeTimeOfDay(value: string | null | undefined): string | null {
 function buildDateTimeString(date: string, time: string, timezoneOffset?: number): string {
   const tz = timezoneOffset !== undefined ? formatTimezoneOffset(timezoneOffset) : '+00:00';
   return `${date}T${time}${tz}`;
+}
+
+/**
+ * The UTC offset, in minutes west of UTC (the `getTimezoneOffset()` sign
+ * convention), that `timeZone` was actually at on a given local date+time.
+ *
+ * This is what makes a semester-long series survive daylight saving: it is
+ * evaluated per occurrence rather than once at save time. Returns null for an
+ * unknown zone so the caller can fall back rather than silently guess.
+ */
+function offsetMinutesFor(date: string, time: string, timeZone: string): number | null {
+  try {
+    // Interpret the wall-clock reading as if it were UTC, then ask what that
+    // instant looks like in the target zone. The difference between the two is
+    // the zone's offset near that date — correct on both sides of a DST change.
+    const asUtc = new Date(`${date}T${time}Z`);
+    if (Number.isNaN(asUtc.getTime())) return null;
+
+    const dtf = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+    const p: Record<string, string> = {};
+    for (const part of dtf.formatToParts(asUtc)) p[part.type] = part.value;
+    // Intl renders midnight as hour 24 in some locales/zones.
+    const hour = p.hour === '24' ? '00' : p.hour;
+
+    const localAsUtc = Date.UTC(
+      Number(p.year), Number(p.month) - 1, Number(p.day),
+      Number(hour), Number(p.minute), Number(p.second),
+    );
+    if (Number.isNaN(localAsUtc)) return null;
+
+    // Positive west of UTC, matching Date.getTimezoneOffset().
+    return Math.round((asUtc.getTime() - localAsUtc) / 60_000);
+  } catch {
+    // Invalid IANA name — the caller falls back to the fixed offset.
+    return null;
+  }
 }
 
 /**
@@ -241,6 +298,21 @@ async function syncClassToCalendarImpl(
     const tag = classTag(classId);
     const tzOffset = classData.timezoneOffset;
 
+    /**
+     * The offset to stamp on a given occurrence. Prefers the caller's IANA zone
+     * resolved AT THAT DATE, so a series spanning a daylight-saving change
+     * keeps the same wall-clock time throughout. Falls back to the single
+     * save-time offset when no zone was supplied (older callers) or the name is
+     * not a zone Intl recognises.
+     */
+    const offsetForDate = (date: string, time: string): number | undefined => {
+      if (classData.timezone) {
+        const resolved = offsetMinutesFor(date, time, classData.timezone);
+        if (resolved !== null) return resolved;
+      }
+      return tzOffset;
+    };
+
     // Build shared event fields
     const title = classData.course_code
       ? `${classData.course_code}: ${classData.course_name}`
@@ -295,10 +367,12 @@ async function syncClassToCalendarImpl(
           // team-scoped query able to say so in SQL instead of LIKE-scanning
           // the description — see lib/calendar/class-events.ts.
           event_type: CLASS_EVENT_TYPE,
-          // start_time/end_time are timestamptz — date + class time + explicit
-          // offset, the same convention golf.ts events use.
-          start_time: buildDateTimeString(dateStr, startTimeOfDay, tzOffset),
-          end_time: buildDateTimeString(dateStr, endTimeOfDay, tzOffset),
+          // start_time/end_time are timestamptz — date + class time + the
+          // offset THAT DATE was actually at, resolved per occurrence from the
+          // caller's IANA zone. A single save-time offset applied to a whole
+          // semester put every meeting after the DST change an hour early.
+          start_time: buildDateTimeString(dateStr, startTimeOfDay, offsetForDate(dateStr, startTimeOfDay)),
+          end_time: buildDateTimeString(dateStr, endTimeOfDay, offsetForDate(dateStr, endTimeOfDay)),
           all_day: false,
           location,
           description,
