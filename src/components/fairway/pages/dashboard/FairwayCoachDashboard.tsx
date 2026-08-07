@@ -257,6 +257,13 @@ export function FairwayCoachDashboard({
   todayLabel,
 }: FairwayCoachDashboardProps) {
   const { coach, team, stats, recentRounds, topPlayers, teamScoringTrend } = data;
+  /**
+   * A read behind the team KPIs failed — the roster fetch or either round
+   * fetch. Distinguishes "this team has no rounds" from "we could not read this
+   * team's rounds", which otherwise render as the same screen. Mirrors the
+   * existing `todayScheduleError` contract.
+   */
+  const teamStatsUnavailable = enhancedData?.teamStatsUnavailable ?? false;
   const router = useRouter();
 
   const [range, setRange] = useState<DashboardDateRange>(initialRange);
@@ -897,16 +904,30 @@ export function FairwayCoachDashboard({
           // Surface). "sm" removes the doubled padding without touching the
           // shared EmptyState primitive.
           <Surface elevation="border" padding="sm">
-            <EmptyState
-              variant="subtle"
-              icon={LucideFlag}
-              title={range !== 'all' ? 'No rounds in this window' : 'No rounds logged yet'}
-              description={
-                range !== 'all'
-                  ? 'Try a wider window, or have players log rounds from their dashboard.'
-                  : 'Players can submit rounds from their dashboard — they’ll appear here.'
-              }
-            />
+            {/* `teamStatsUnavailable` says a read behind the round data FAILED.
+                Without it, a lock wait or timeout rendered "No rounds logged
+                yet" to a team with a full season on file — the empty state and
+                the failure state were the same screen. The action has computed
+                this flag since #1307; nothing consumed it until now. */}
+            {teamStatsUnavailable ? (
+              <EmptyState
+                variant="subtle"
+                icon={LucideFlag}
+                title="Couldn’t load rounds"
+                description="Something went wrong reading this team’s rounds. Refresh to try again — nothing has been lost."
+              />
+            ) : (
+              <EmptyState
+                variant="subtle"
+                icon={LucideFlag}
+                title={range !== 'all' ? 'No rounds in this window' : 'No rounds logged yet'}
+                description={
+                  range !== 'all'
+                    ? 'Try a wider window, or have players log rounds from their dashboard.'
+                    : 'Players can submit rounds from their dashboard — they’ll appear here.'
+                }
+              />
+            )}
           </Surface>
         ) : (
           <DataTable<RoundRow>
@@ -971,11 +992,19 @@ export function FairwayCoachDashboard({
                   to "invite players" because they filtered to 7 days reads as
                   the product not knowing its own state (audit 2026-07-24, H5). */}
               <InsufficientData
-                title={range !== 'all' ? 'Not enough rounds in this window' : 'Trend appears as rounds build'}
+                title={
+                  teamStatsUnavailable
+                    ? 'Couldn’t load the trend'
+                    : range !== 'all'
+                      ? 'Not enough rounds in this window'
+                      : 'Trend appears as rounds build'
+                }
                 description={
-                  range !== 'all'
-                    ? 'A trend needs rounds spread across a longer period. Try a wider window.'
-                    : 'Trends need rounds across multiple months. Invite players and keep logging.'
+                  teamStatsUnavailable
+                    ? 'Something went wrong reading this team’s rounds. Refresh to try again.'
+                    : range !== 'all'
+                      ? 'A trend needs rounds spread across a longer period. Try a wider window.'
+                      : 'Trends need rounds across multiple months. Invite players and keep logging.'
                 }
               />
               {/* handleRangeChange, not setRange — the range is also a URL
@@ -1060,8 +1089,12 @@ export function FairwayCoachDashboard({
             ) : (
               <InsufficientData
                 compact
-                title="No leaderboard yet"
-                description="Player averages appear once rounds are logged."
+                title={teamStatsUnavailable ? 'Couldn’t load performers' : 'No leaderboard yet'}
+                description={
+                  teamStatsUnavailable
+                    ? 'Something went wrong reading this team’s rounds. Refresh to try again.'
+                    : 'Player averages appear once rounds are logged.'
+                }
               />
             )}
           </Surface>

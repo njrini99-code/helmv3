@@ -249,12 +249,22 @@ export function RosterHealthHeader({
       ) : (
         <div className="flex flex-col gap-2">
           <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
-            {totalPlayers > 0 ? '0' : '—'}
+            {/* An em-dash, not a "0", when there is nothing to evaluate. Zero
+                reads as a measured result; this is the absence of measurement. */}
+            {totalPlayers > 0 && playersWithRounds > 0 ? '0' : '—'}
           </span>
           <span className="font-fw-sans text-body-sm text-text-secondary">
-            {totalPlayers > 0
-              ? 'Roster’s covered — everyone with rounds has a focus area and no one’s trending down.'
-              : 'Awaiting roster — add players to start tracking who needs attention.'}
+            {totalPlayers === 0
+              ? 'Awaiting roster — add players to start tracking who needs attention.'
+              : playersWithRounds === 0
+                ? // A roster with no rounds is not a covered roster. This branch
+                  // used to fall through to the all-clear below, which is
+                  // VACUOUSLY true — "everyone with rounds" is nobody — and reads
+                  // to a coach as an assurance that their squad has been assessed.
+                  // Shenandoah has 9 and 6 players and zero rounds between them,
+                  // so the all-clear is the first thing both new coaches saw.
+                  'Nothing to assess yet — attention flags appear once players start logging rounds.'
+                : 'Roster’s covered — everyone with rounds has a focus area and no one’s trending down.'}
           </span>
           <span className="font-fw-sans text-caption text-text-tertiary">{coveredText}.</span>
         </div>
