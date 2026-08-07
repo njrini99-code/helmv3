@@ -104,13 +104,36 @@ export function AvatarUpload({
 
       onUploadComplete(publicUrl);
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+
+      // An ABORTED upload is the browser, not a defect. There is no
+      // AbortSignal.timeout anywhere in this path, so "Fetch is aborted" here
+      // can only mean the request was cut off from the outside: the user
+      // navigated away, closed the tab, picked a different file, or the
+      // connection dropped mid-transfer. Nothing failed that anyone can fix.
+      //
+      // It was logged at 'high' like any other upload failure, so a coach
+      // wandering off mid-upload opened a high-severity incident with a
+      // scary-looking red banner. (The global transient-network matcher in
+      // lib/error-logging.ts deliberately does NOT match AbortError, on the
+      // reasoning that aborts are our own timeouts firing — a budget worth
+      // knowing about. That reasoning is sound and is left alone; it simply
+      // does not apply to this call site, which sets no timeout.)
+      const wasAborted =
+        (err instanceof Error && err.name === 'AbortError') ||
+        /\babort(ed)?\b/i.test(message);
+
       console.error('Upload error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to upload image');
+      setError(
+        wasAborted
+          ? 'Upload was interrupted. Choose the photo again to retry.'
+          : (err instanceof Error ? err.message : 'Failed to upload image'),
+      );
       setPreviewUrl(currentAvatarUrl || null); // Revert preview on error
       logError(
         err instanceof Error ? err : new Error(String(err)),
         { component: 'AvatarUpload', action: 'upload-avatar', sport: 'shared', bucket },
-        'high'
+        wasAborted ? 'low' : 'high'
       );
     } finally {
       setUploading(false);
