@@ -154,7 +154,7 @@ export default function GolfClassesPage() {
     let syncFailure: string | null = null;
     if (newClass) {
       const syncResult = await syncClassToCalendar(
-        { ...formData, timezoneOffset: new Date().getTimezoneOffset() },
+        { ...formData, timezoneOffset: new Date().getTimezoneOffset(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         newClass.id, playerId, teamId,
       );
       if (!syncResult?.success) {
@@ -211,7 +211,7 @@ export default function GolfClassesPage() {
     // Re-sync to calendar (diff-upserts the series). Same rule as the add path:
     // the toast reports what actually happened, not what we hoped happened.
     const syncResult = await syncClassToCalendar(
-      { ...formData, timezoneOffset: new Date().getTimezoneOffset() },
+      { ...formData, timezoneOffset: new Date().getTimezoneOffset(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
       formData.id, playerId, teamId,
     );
 
@@ -336,6 +336,9 @@ export default function GolfClassesPage() {
             color: confirmedClass.color || generateClassColor(),
             notes: '',
             timezoneOffset: new Date().getTimezoneOffset(),
+            // The IANA zone, so a semester crossing the DST change keeps its
+            // wall-clock time on every occurrence — a fixed offset cannot.
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           }, insertedClass.id, playerId, teamId);
         });
 
