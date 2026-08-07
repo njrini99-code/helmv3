@@ -411,6 +411,21 @@ export function FairwayPlayerDashboard({
             COLD START (0 rounds) — one OnboardingStep-style hero, no duplicate
             CTAs. The persistent header CTA still applies.
            ════════════════════════════════════════════════════════════════ */}
+        {/* The TEAM's schedule is not gated on the player's own round count.
+            DayScheduleSwipe used to live only inside the normal branch below,
+            so a brand-new player saw no calendar at all — despite the team
+            having real events on it. Measured: Shenandoah Women's Golf has
+            "First Year move in" (26 Aug) and "Media and Compliance" (30 Aug)
+            upcoming, and the player added to that roster could not see either.
+            Whether I have logged a round says nothing about whether my team has
+            a schedule, and the first week is exactly when a new player most
+            needs to know where to be. */}
+        <DayScheduleSwipe
+          events={scheduleEvents}
+          timezone={enhancedData?.timezone}
+          viewAllHref="/golf/dashboard/calendar"
+        />
+
         {!hasRounds ? (
           <div className="flex flex-col gap-8">
             <InsightCard
@@ -470,15 +485,10 @@ export function FairwayPlayerDashboard({
              NORMAL STATE
             ════════════════════════════════════════════════════════════════ */
           <div className="flex flex-col gap-10">
-            {/* ── Top slot: swipeable day calendar (founder call 2026-07-24 —
-                replaced the "You're gaining most …" game-trend hero; the
-                standing story lives at My Standing). Same today+upcoming feed
-                the bottom schedule card used before it moved up here. */}
-            <DayScheduleSwipe
-              events={scheduleEvents}
-              timezone={enhancedData?.timezone}
-              viewAllHref="/golf/dashboard/calendar"
-            />
+            {/* The swipeable day calendar (founder call 2026-07-24 — replaced
+                the "You're gaining most …" game-trend hero; the standing story
+                lives at My Standing) now renders ABOVE this branch, for every
+                player, so it is not duplicated here. */}
 
             {/* ── KPI row: matte MetricCards (honest insufficient-data) + standing */}
             <section>
