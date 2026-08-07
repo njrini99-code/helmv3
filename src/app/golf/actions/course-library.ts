@@ -25,6 +25,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
@@ -690,12 +691,24 @@ async function loadTeamSaved(
   supabase: Awaited<ReturnType<typeof createClient>>,
   teamId: string,
 ): Promise<GolfTeamSavedCourseWithCourse[]> {
-  const { data: savedRows } = await supabase
+  // Deliberately lenient — this feeds the course picker's "Saved" tab, where a
+  // degraded tab is better than a broken picker (the user can still search).
+  // Lenient must not mean silent, though: every one of these failures used to
+  // render as "you haven't saved any courses", with nothing written down
+  // anywhere, so nobody could tell a quiet library from a broken one.
+  const { data: savedRows, error: savedError } = await supabase
     .from('golf_team_saved_courses')
     .select('*')
     .eq('team_id', teamId)
     .order('pinned', { ascending: false })
     .order('last_played_at', { ascending: false, nullsFirst: false });
+  if (savedError) {
+    await logServerError(
+      `[getTeamSavedCourses] saved-courses read failed — the Saved tab will look empty: ${describeError(savedError)}`,
+      { action: 'courseLibrary.getTeamSavedCourses', featureArea: 'course_library', teamId },
+    );
+    return [];
+  }
   if (!savedRows || savedRows.length === 0) return [];
 
   const courseIds = [...new Set(savedRows.map((r) => r.course_id as string))];
@@ -704,14 +717,25 @@ async function loadTeamSaved(
   // Mirror every other read path: never surface soft-deleted courses/tees. A
   // course soft-deleted from the global catalog must also vanish from each
   // team's saved library; a soft-deleted default tee resolves back to null.
-  const [{ data: courseRows }, teeRes] = await Promise.all([
+  const [courseRes, teeRes] = await Promise.all([
     supabase.from('golf_courses').select('*').in('id', courseIds).is('deleted_at', null),
     teeIds.length
       ? supabase.from('golf_course_tees').select('*').in('id', teeIds).is('deleted_at', null)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
 
-  const courseById = new Map((courseRows ?? []).map((c) => [c.id as string, mapCourseRow(c)]));
+  // Same leniency, same duty to say so. A failed courses read empties the map
+  // below, and `if (!course) return null` then drops every saved row — which
+  // reads as an empty library rather than as the outage it is.
+  const teeError = 'error' in teeRes ? teeRes.error : null;
+  if (courseRes.error || teeError) {
+    await logServerError(
+      `[getTeamSavedCourses] course/tee resolve failed — saved courses will be dropped: ${describeError(courseRes.error ?? teeError)}`,
+      { action: 'courseLibrary.getTeamSavedCourses', featureArea: 'course_library', teamId },
+    );
+  }
+
+  const courseById = new Map((courseRes.data ?? []).map((c) => [c.id as string, mapCourseRow(c)]));
   const teeById = new Map((teeRes.data ?? []).map((t) => [t.id as string, mapTeeRow(t)]));
 
   return savedRows
@@ -785,14 +809,30 @@ async function loadTeamSavedStrict(
   const courseIds = [...new Set(savedRows.map((r) => r.course_id as string))];
   const teeIds = savedRows.map((r) => r.default_tee_id as string | null).filter(Boolean) as string[];
 
-  const [{ data: courseRows }, teeRes] = await Promise.all([
+  const [courseRes, teeRes] = await Promise.all([
     supabase.from('golf_courses').select('*').in('id', courseIds).is('deleted_at', null),
     teeIds.length
       ? supabase.from('golf_course_tees').select('*').in('id', teeIds).is('deleted_at', null)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
 
-  const courseById = new Map((courseRows ?? []).map((c) => [c.id as string, mapCourseRow(c)]));
+  // The docstring above promises this variant THROWS so a failure "can't
+  // masquerade as 'this team has saved nothing yet'". That guarantee stopped at
+  // the saved-courses read. It has to cover this fetch too, because the very
+  // next block drops any saved row whose course is missing (`if (!course)
+  // return null`) — so a failed courses read empties `courseById`, every row is
+  // filtered out, and the page renders the exact empty library the strict
+  // variant exists to prevent. The tees read matters less (a missing tee
+  // resolves to null rather than dropping the row) but it is the same lie.
+  const courseError = courseRes.error;
+  const teeError = 'error' in teeRes ? teeRes.error : null;
+  if (courseError || teeError) {
+    throw new Error(
+      `getTeamSavedCourses failed resolving saved courses: ${describeError(courseError ?? teeError)}`,
+    );
+  }
+
+  const courseById = new Map((courseRes.data ?? []).map((c) => [c.id as string, mapCourseRow(c)]));
   const teeById = new Map((teeRes.data ?? []).map((t) => [t.id as string, mapTeeRow(t)]));
 
   return savedRows
