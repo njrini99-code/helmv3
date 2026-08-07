@@ -19,6 +19,8 @@
  */
 
 import { notFound, redirect } from 'next/navigation';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
@@ -61,19 +63,36 @@ export default async function PlayerGenomePage({ params }: PageProps) {
   const teamId = await resolveCoachTeamIdWithCookie(sb, session.coach.organization_id, session.coach.id);
   if (!teamId) redirect('/golf/dashboard/roster');
 
-  const { data: membership } = await sb
+  // Same shape as roster/[id]: on a detail page a discarded read error wears
+  // notFound(), so a coach opening a player from their own roster is told that
+  // player does not exist. Absent is a 404; unreadable is not.
+  const { data: membership, error: membershipError } = await sb
     .from('golf_team_members')
     .select('player_id')
     .eq('team_id', teamId)
     .eq('player_id', playerId)
     .maybeSingle();
+  if (membershipError) {
+    await logServerError(
+      `[genome] membership read failed — would have 404'd a rostered player: ${describeError(membershipError)}`,
+      { action: 'genome.membership', featureArea: 'coachhelm', playerId },
+    );
+    throw new Error("Couldn't load this player. Please try again.");
+  }
   if (!membership) notFound();
 
-  const { data: player } = await sb
+  const { data: player, error: playerError } = await sb
     .from('golf_players')
     .select('id, first_name, last_name')
     .eq('id', playerId)
     .maybeSingle();
+  if (playerError) {
+    await logServerError(
+      `[genome] player read failed — would have 404'd a player who exists: ${describeError(playerError)}`,
+      { action: 'genome.player', featureArea: 'coachhelm', playerId },
+    );
+    throw new Error("Couldn't load this player. Please try again.");
+  }
   if (!player) notFound();
 
   const genome = await loadGenome(sb, playerId);
@@ -85,13 +104,23 @@ export default async function PlayerGenomePage({ params }: PageProps) {
   // (no separate fork) — it renders both the populated genome AND the Compute-now
   // empty state on this one component. loadGenome + derivePersona + notFound +
   // coach gate all ran above.
-  const { data: faRows } = await sb
+  // A failed focus-area read renders as "this player has no focus areas" — a
+  // coaching judgement the coach never made. Non-fatal (the genome above is
+  // the point of the page) but no longer silent.
+  const { data: faRows, error: faError } = await sb
     .from('golf_player_focus_areas')
     .select(
       'id, area_type, title, description, status, target_metric, current_value, target_value, started_at, completed_at, from_review_id, from_insight_id',
     )
     .eq('player_id', playerId)
     .order('created_at', { ascending: false });
+
+  if (faError) {
+    await logServerError(
+      `[genome] focus-area read failed — the page will claim this player has none: ${describeError(faError)}`,
+      { action: 'genome.focusAreas', featureArea: 'coachhelm', playerId },
+    );
+  }
 
   const countsRes = await getAlertCounts(session.coach.id);
   const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
