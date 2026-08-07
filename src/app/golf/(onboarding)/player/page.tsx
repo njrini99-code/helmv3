@@ -55,6 +55,13 @@ function GolfPlayerOnboardingContent() {
   const [step, setStep] = useState<Step>('about');
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
+  /**
+   * Did the invite-code auto-join actually work?
+   *   true  — joined, show the normal celebration
+   *   false — the code was carried in and the join FAILED; say so
+   *   null  — no code was supplied (plain self-signup); nothing to report
+   */
+  const [joinedTeam, setJoinedTeam] = useState<boolean | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -180,6 +187,17 @@ function GolfPlayerOnboardingContent() {
         setLoading(false);
         return;
       }
+
+      // completePlayerOnboarding deliberately degrades rather than blocking:
+      // a bad code never stops the profile saving, and it reports that in
+      // `joinedTeam`. Nothing read it, so a swallowed failure rendered the
+      // celebration screen — confetti and "head to your dashboard to see your
+      // team" — to someone who had joined no team. Graceful degradation with no
+      // UI for the degraded state is indistinguishable from a lie.
+      //
+      // null when no code was supplied, so a plain self-signup keeps the normal
+      // copy and never sees a join failure it did not attempt.
+      setJoinedTeam(joinCode ? result.joinedTeam === true : null);
 
       setLoading(false);
       goForward('complete');
@@ -458,8 +476,11 @@ function GolfPlayerOnboardingContent() {
                   {/* Success Icon with Celebration */}
                   <m.div variants={staggerItem} className="flex justify-center">
                     <div className="relative">
-                      {/* Celebration particles */}
-                      {[...Array(8)].map((_, i) => (
+                      {/* Celebration particles — suppressed when the invite
+                          join failed. Confetti over "we couldn't add you to
+                          your team" is the tonal version of the same lie the
+                          copy used to tell. */}
+                      {joinedTeam !== false && [...Array(8)].map((_, i) => (
                         <m.div
                           key={i}
                           className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full"
@@ -500,26 +521,50 @@ function GolfPlayerOnboardingContent() {
                     </div>
                   </m.div>
 
-                  {/* Personalized Heading */}
+                  {/* Personalized Heading.
+                      The profile genuinely did save either way, so the check-mark
+                      stays. What changes is the claim about the TEAM, which is the
+                      part that can be false. */}
                   <m.div variants={staggerItem} className="text-center">
                     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">
                       Welcome, {firstName || 'Player'}!
                     </h1>
-                    <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
-                      Your profile is ready. Head to your dashboard to see your team, track rounds, and connect with your coach.
-                    </p>
+                    {joinedTeam === false ? (
+                      <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
+                        Your profile is saved, but we couldn&apos;t add you to your coach&apos;s
+                        team with that invite link. Ask your coach to re-send it, or enter the
+                        code below.
+                      </p>
+                    ) : (
+                      <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
+                        Your profile is ready. Head to your dashboard to see your team, track rounds, and connect with your coach.
+                      </p>
+                    )}
                   </m.div>
 
-                  {/* Dashboard CTA */}
+                  {/* CTA — points at the code-entry page when the join failed,
+                      because sending someone to a dashboard with no team is the
+                      dead end this whole fix exists to remove. */}
                   <m.div variants={staggerItem} className="text-center">
-                    <Button
-                      size="lg"
-                      onClick={handleGoToDashboard}
-                      className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
-                    >
-                      Go to Dashboard
-                      <IconArrowRight size={16} className="ml-2" />
-                    </Button>
+                    {joinedTeam === false ? (
+                      <Button
+                        size="lg"
+                        onClick={() => router.push('/golf/join')}
+                        className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                      >
+                        Enter a join code
+                        <IconArrowRight size={16} className="ml-2" />
+                      </Button>
+                    ) : (
+                      <Button
+                        size="lg"
+                        onClick={handleGoToDashboard}
+                        className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                      >
+                        Go to Dashboard
+                        <IconArrowRight size={16} className="ml-2" />
+                      </Button>
+                    )}
                   </m.div>
                 </m.div>
               </m.div>
