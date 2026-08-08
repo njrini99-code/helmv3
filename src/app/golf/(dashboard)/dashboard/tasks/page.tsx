@@ -80,13 +80,25 @@ export default function GolfTasksPage() {
     })),
   }));
 
+  // KEYED ON teamId, NOT MOUNT-ONLY.
+  //
+  // This ran once with `[]`, so a program head toggling between the men's and
+  // women's squads kept the FIRST team's roster in `players` for the rest of
+  // the session. "Assign to all players" then wrote the new team's task to the
+  // old team's players — a compliance task landing on ten men who were never
+  // asked, while the six women it was for never saw it. The page looked
+  // entirely correct throughout: right task, right team header, wrong people.
+  //
+  // The roster is cleared before the refetch so the picker cannot briefly show
+  // the previous squad's names, which is the same wrong answer in miniature.
   useEffect(() => {
     if (userRole === 'coach' && teamId) {
+      setPlayers([]);
+      setPlayersError(false);
       loadPlayers(teamId);
     }
     setInitialLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userRole, teamId]);
 
   async function loadPlayers(tId: string) {
     const supabase = createClient();

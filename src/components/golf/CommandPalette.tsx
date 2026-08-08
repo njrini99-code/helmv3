@@ -18,7 +18,8 @@
  * same cubic-bezier(0.16, 1, 0.3, 1) easing as DropdownMenu/Tooltip.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useGolfUser } from '@/contexts/golf-user-context';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import { cn } from '@/lib/utils';
@@ -55,6 +56,20 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   const [data, setData] = useState<CommandPaletteData | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
   const router = useRouter();
+  const { teamId } = useGolfUser();
+
+  // The session cache below is keyed on the ACTIVE TEAM.
+  //
+  // Without this, a program head who opened the palette on the men's team and
+  // then toggled to the women's kept searching the men's roster, rounds and
+  // insights for the rest of the session — with the women's team named in the
+  // header above it. Jumping to a player from here would then navigate to
+  // someone who is not on the team the coach is looking at.
+  const cachedTeamRef = useRef<string | undefined>(teamId);
+  if (cachedTeamRef.current !== teamId) {
+    cachedTeamRef.current = teamId;
+    if (data !== null) setData(null);
+  }
 
   // Coach quick-actions (the high-leverage shortcuts the design brief
   // calls out: "Today's calls", "Log a round" — keep as static commands
@@ -174,13 +189,20 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   // Lazy-fetch dynamic data on first open. Cached for the session — the
   // bundle is small enough (~60 players + 10 rounds + 10 insights) that
   // a single fetch covers any reasonable session. Re-fetch on every open
-  // would feel slow; we trade staleness for speed.
+  // would feel slow; we trade staleness for speed. The cache is dropped on a
+  // team change (above), which is the one staleness that is not acceptable:
+  // it would search the other squad.
   useEffect(() => {
     if (open && !data && !dataLoading) {
       setDataLoading(true);
       getCommandPaletteData()
         .then(setData)
-        .catch(() => setData({ players: [], recentRounds: [], recentInsights: [] }))
+        .catch((error: unknown) => {
+          // An empty palette is indistinguishable from a team with nobody on
+          // it. Say so rather than presenting the failure as a finding.
+          console.warn('[command palette] data fetch failed:', error);
+          setData({ players: [], recentRounds: [], recentInsights: [] });
+        })
         .finally(() => setDataLoading(false));
     }
   }, [open, data, dataLoading]);
