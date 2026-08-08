@@ -142,11 +142,24 @@ export function attributeClassEvents<
     const owner = classId ? owners[classId] : undefined;
 
     if (!owner) {
-      // Unknown owner. A coach still sees the event (never hide a coach's own
-      // calendar data); a player only would if the lookup itself was
-      // unavailable, in which case nothing has been established either way and
-      // the pre-existing behavior stands.
-      if (viewer.isCoach || !viewer.ownersResolved) out.push(event);
+      // Unknown owner.
+      //
+      // A coach still sees the event — never hide a coach's own calendar data,
+      // and the conflict checker depends on it.
+      //
+      // A PLAYER does not. This used to fall the other way: when the owner
+      // index could not be resolved, "nothing has been established either way"
+      // was read as grounds to leave the rows in place, so a single failed
+      // roster read flipped a player's calendar from "my classes" to every
+      // teammate's, fully rendered. That is the wrong side to fail to on a
+      // privacy filter — the cost of being wrong is a published timetable of
+      // three students' whereabouts for a term, against the cost of a player
+      // briefly not seeing class blocks they can re-load.
+      //
+      // `ownersResolved` is kept because it still distinguishes the two cases
+      // for the CALLER (which logs the failed lookup); it just no longer
+      // decides whether to show the rows.
+      if (viewer.isCoach) out.push(event);
       continue;
     }
 
