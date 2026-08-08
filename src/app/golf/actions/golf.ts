@@ -4062,12 +4062,29 @@ async function sendEventReminderToPlayersImpl(
     // event's team. Without this, a coach of team A could pass arbitrary
     // playerIds (e.g. UUIDs from team B) and admin-bypass-insert
     // notifications targeting other teams' players.
-    const { data: teamPlayers } = await supabase
+    const { data: teamPlayers, error: teamPlayersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', event.team_id)
       .eq('status', 'active')
       .in('player_id', playerIds);
+
+    // Scoping to the event's team must FAIL CLOSED — that is the point of this
+    // read and it is kept. What was wrong is that it failed closed while
+    // reporting `success: true, sent: 0`: the coach is told the send worked
+    // and that it reached nobody, in the same breath, and no player gets the
+    // reminder for an event they are expected to attend.
+    //
+    // Third instance of this shape found today, after the announcements roster
+    // read and createTaskFromTemplate. Sending to nobody is never a success.
+    if (teamPlayersError) {
+      await logServerError(
+        `[notifyEventPlayers] recipient scoping read failed — nothing was sent: ${describeError(teamPlayersError)}`,
+        { action: 'golf.notifyEventPlayers', featureArea: 'calendar' },
+      );
+      return { success: false, error: "Couldn't confirm who to notify, so nothing was sent. Please try again." };
+    }
+
     const allowedPlayerIds = (teamPlayers ?? [])
       .map((m) => m.player_id)
       .filter((id): id is string => Boolean(id));
@@ -4075,10 +4092,18 @@ async function sendEventReminderToPlayersImpl(
       return { success: true, data: { sent: 0 } };
     }
 
-    const { data: players } = await supabase
+    const { data: players, error: playersError } = await supabase
       .from('golf_players')
       .select('id, user_id')
       .in('id', allowedPlayerIds);
+
+    if (playersError) {
+      await logServerError(
+        `[notifyEventPlayers] player lookup failed — nothing was sent: ${describeError(playersError)}`,
+        { action: 'golf.notifyEventPlayers', featureArea: 'calendar' },
+      );
+      return { success: false, error: "Couldn't confirm who to notify, so nothing was sent. Please try again." };
+    }
 
     const userIds = (players ?? [])
       .map((p) => p.user_id)
