@@ -76,11 +76,29 @@ async function syncInvoice(invoice: Stripe.Invoice): Promise<void> {
   // Cheap pre-read to enforce the no-regression rule. A race with a concurrent
   // delivery is acceptable here: both writers converge on the same terminal row,
   // and the loser is the one carrying the staler status.
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('billing_invoices')
     .select('status')
     .eq('stripe_invoice_id', invoice.id)
     .maybeSingle();
+
+  // This read IS the no-regression guard, and it failed OPEN. The error was
+  // discarded, so a failed read produced `existing = null`, the terminal-status
+  // check below could not fire, and the upsert proceeded — letting a
+  // late-arriving EARLIER Stripe event overwrite a terminal status. A paid
+  // invoice could be walked back to open by an out-of-order delivery.
+  //
+  // The comment above reasons that a concurrent-delivery race is acceptable
+  // because "both writers converge on the same terminal row". That holds only
+  // while the read WORKS; if it fails there is nothing to converge on and the
+  // staler value simply wins.
+  //
+  // Throw rather than continue, matching what the upsert below already does on
+  // failure: the handler's catch returns 500, Stripe retries, and the guard
+  // gets a real chance to run. Acknowledging would drop the event silently.
+  if (existingError) {
+    throw new Error(`billing_invoices pre-read failed: ${existingError.message}`);
+  }
 
   const incomingStatus = invoice.status ?? 'draft';
   if (
