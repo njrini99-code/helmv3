@@ -1,4 +1,6 @@
 import 'server-only';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // =============================================================================
 // src/lib/baseball/coachhelm/engine-run.ts
@@ -776,12 +778,27 @@ export async function runBaseballEngineCore(
 
   // 4. RECONCILE STALE INSIGHTS — soft-archive engine rows not re-emitted.
   let archivedStale = 0;
-  const { data: existingActiveRaw } = await db
+  const { data: existingActiveRaw, error: existingActiveError } = await db
     .from('baseball_coach_insights')
     .select('*')
     .eq('team_id', teamId)
     .in('insight_type', BASEBALL_ALL_INSIGHT_TYPES)
     .eq('status', 'active');
+
+  // This read runs the OPPOSITE way to most discarded reads. A failure leaves
+  // existingActive empty, so staleIds is empty, so NOTHING gets archived — and
+  // insights the engine no longer emits stay `active`. The coach keeps seeing
+  // advice the engine has already moved on from, presented as current.
+  //
+  // It must not fail the run: the insights above were upserted successfully and
+  // that work should stand. But a reconciliation pass that silently did nothing
+  // is indistinguishable from one that found nothing to do, so say which.
+  if (existingActiveError) {
+    await logServerError(
+      `[baseballEngineRun] active-insight read failed — stale insights were NOT archived and will keep showing as current: ${describeError(existingActiveError)}`,
+      { action: 'baseball.engineRun.reconcileStale', featureArea: 'coachhelm', teamId },
+    );
+  }
 
   const existingActive = (existingActiveRaw ?? []) as Array<{ id: string; dedupe_key: string | null }>;
   const staleIds = existingActive
