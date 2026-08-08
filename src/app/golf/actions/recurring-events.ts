@@ -785,21 +785,45 @@ async function createRecurringEventImpl(
     after(async () => {
       try {
         const adminClient = createAdminClient();
-        const { data: teamMembers } = await adminClient
+        // Same silent fan-out as createGolfEvent, and worse in scope: this one
+        // announces a whole RECURRING SERIES. A failed roster read meant nobody
+        // was told about a season of practices, and because this runs inside
+        // after() there is no return value to carry the failure — no error, no
+        // feedback, no record.
+        //
+        // It must not fail the request: the series was created and stays
+        // created. Logging is what makes a missed fan-out visible at all.
+        const { data: teamMembers, error: teamMembersError } = await adminClient
           .from('golf_team_members')
           .select('player_id')
           .eq('team_id', fanOutTeamId)
           .eq('status', 'active');
+
+        if (teamMembersError) {
+          await logServerError(
+            `[recurringEvents.fanOut] roster read failed — no one was notified about this series: ${describeError(teamMembersError)}`,
+            { action: 'recurringEvents.createSeries.fanOut', featureArea: 'calendar' },
+          );
+          return;
+        }
 
         const playerIds = (teamMembers ?? [])
           .map((m) => m.player_id)
           .filter((id): id is string => Boolean(id));
         if (playerIds.length === 0) return;
 
-        const { data: players } = await adminClient
+        const { data: players, error: playersError } = await adminClient
           .from('golf_players')
           .select('id, user_id')
           .in('id', playerIds);
+
+        if (playersError) {
+          await logServerError(
+            `[recurringEvents.fanOut] player lookup failed — no one was notified about this series: ${describeError(playersError)}`,
+            { action: 'recurringEvents.createSeries.fanOut', featureArea: 'calendar' },
+          );
+          return;
+        }
 
         const userIds = (players ?? [])
           .map((p) => p.user_id)
@@ -1809,10 +1833,22 @@ async function createAcademicExclusionImpl(input: {
     // Otherwise, get all team members and create exclusions for all
     let playerIds = input.playerIds;
     if (!playerIds || playerIds.length === 0) {
-      const { data: members } = await supabase
+      const { data: members, error: membersError } = await supabase
         .from('golf_team_members')
         .select('player_id')
         .eq('team_id', teamId);
+
+      // A failed read here lands in "No players found to exclude" — a claim
+      // about the roster, made when the roster was never read. The coach is
+      // told their team is empty rather than that we could not check.
+      if (membersError) {
+        await logServerError(
+          `[recurringEvents] roster read failed — would have reported the team as having no players: ${describeError(membersError)}`,
+          { action: 'recurringEvents.createExclusion', featureArea: 'calendar' },
+        );
+        return { success: false, error: "Couldn't load your roster. Please try again." };
+      }
+
       playerIds = (members || []).map(m => m.player_id);
     }
 
