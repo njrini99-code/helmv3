@@ -7,6 +7,8 @@ import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notificatio
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamHubWrapper } from '@/components/fairway/pages/team-hub';
 import { EmptyState, Button, FeatureUnavailable } from '@/components/fairway';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
   title: 'Team Hub | Helm Golf',
@@ -55,12 +57,30 @@ export default async function TeamHubPage({
   const supabase = await createClient();
 
   // Resolve the player's active team.
-  const { data: teamMember } = await supabase
+  const { data: teamMember, error: teamMemberError } = await supabase
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', player.id)
     .eq('status', 'active')
     .maybeSingle();
+
+  // "No team found. Join a team to see tasks, announcements, travel…" is the
+  // right thing to say to someone genuinely without a team, and it stays. It is
+  // the wrong thing to say to a rostered player whose membership read failed —
+  // they are told to enter a team code for a team they are already on, and the
+  // page they came here for is simply gone.
+  //
+  // This is a player's home surface, so it throws to the dashboard error
+  // boundary instead: "something went wrong, try again" is recoverable, and an
+  // invitation to re-join is not.
+  if (teamMemberError) {
+    void logServerError(
+      `[team hub] membership read failed for player ${player.id}: ${describeError(teamMemberError)}`,
+      { action: 'teamHub.resolveTeam', featureArea: 'teams' },
+      'error',
+    );
+    throw new Error("Couldn't load your team. Please try again.");
+  }
 
   const teamId = teamMember?.team_id;
 
@@ -83,6 +103,12 @@ export default async function TeamHubPage({
   }
 
   const playerName = `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player';
+
+  // Every panel below reads `.data || []`, so a failed fetch renders as an
+  // empty panel — "no trips", "no tasks", "no teammates" — stated to the player
+  // as fact. The Hub is deliberately tolerant (one dead panel should not take
+  // the page down), so these still degrade; what changes is that the failure
+  // now leaves a trace instead of looking like a quiet week.
 
   // Fetch the four datasets in parallel — SAME queries the player Hub uses.
   // (golf_task_assignments + the casts mirror hub/page.tsx because the table is
@@ -126,6 +152,21 @@ export default async function TeamHubPage({
   ]);
 
   // ── Trips (jsonb → string, text[] → csv) — verbatim from hub/page.tsx ──────
+  for (const [panel, failed] of [
+    ['trips', tripsResult.error],
+    ['tasks', tasksRaw.error],
+    ['classes', classesResult.error],
+    ['team', teamResult.error],
+    ['teammates', teammatesResult.error],
+  ] as const) {
+    if (!failed) continue;
+    void logServerError(
+      `[team hub] ${panel} read failed for team ${teamId}; that panel will render empty: ${describeError(failed)}`,
+      { action: 'teamHub.load', featureArea: 'teams' },
+      'warning',
+    );
+  }
+
   const trips = (tripsResult.data || []).map((item) => ({
     id: item.id,
     event_name: item.event_name || '',
@@ -184,12 +225,22 @@ export default async function TeamHubPage({
   }> = [];
 
   if (taskIds.length > 0) {
-    const { data: taskDetails } = await supabase
+    const { data: taskDetails, error: taskDetailsError } = await supabase
       .from('golf_tasks')
       .select('id, title, description, due_date, category')
       .in('id', taskIds)
       .eq('team_id', teamId)
       .order('due_date', { ascending: true, nullsFirst: false });
+
+    if (taskDetailsError) {
+      // The assignments exist; only their titles are missing. Rendering the
+      // task list empty tells the player they have nothing to do.
+      void logServerError(
+        `[team hub] task detail read failed for team ${teamId}; assigned tasks will not render: ${describeError(taskDetailsError)}`,
+        { action: 'teamHub.load', featureArea: 'tasks' },
+        'warning',
+      );
+    }
 
     tasks = (taskDetails || []).map((t) => {
       const assignment = assignmentMap.get(t.id);
