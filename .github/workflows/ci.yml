@@ -200,6 +200,17 @@ jobs:
       - name: Lint ratchet
         run: npm run lint:ratchet
 
+      # A failed Supabase read must not render as an empty one. supabase-js
+      # RESOLVES errors as { data: null, error } rather than throwing, so
+      # `const { data } = await ...` turns an outage into "no team", "no
+      # entries yet", a 404, or a leaderboard with no scores. 15 instances of
+      # that were fixed on 2026-08-07 across 12 files.
+      #
+      # This fails only if the count goes UP, so it blocks new ones without
+      # demanding the existing backlog be paid off first.
+      - name: Unchecked Supabase reads (ratchet)
+        run: npm run audit:supabase-errors
+
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest
