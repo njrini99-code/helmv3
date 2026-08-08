@@ -161,19 +161,66 @@ export async function sendEventInvitations(
   if (playerIds.length === 0) return;
 
   // Get event details
-  const { data: event } = await supabase
+  const { data: event, error: eventError } = await supabase
     .from('golf_events')
     .select('*')
     .eq('id', eventId)
     .single();
 
+  // A failed read is not "no such event". Throwing on both is right — nobody
+  // should be invited to an event we could not confirm — but the caller and
+  // the log deserve to know which one happened.
+  if (eventError && eventError.code !== 'PGRST116') {
+    throw new Error(`Could not load the event to send invitations: ${eventError.message}`);
+  }
   if (!event) throw new Error('Event not found');
 
+  // ONLY PLAYERS ON THE EVENT'S OWN TEAM MAY BE INVITED.
+  //
+  // `playerIds` arrived from the caller and was used as-is. Nothing checked it
+  // against `event.team_id`, so a program head staffed on both squads — the
+  // Shenandoah case exactly — could attach the men's roster to a women's
+  // event. RLS does not catch it either: `golf_event_attendance` is gated on
+  // the coach's relationship to the EVENT, and that coach really does staff
+  // both teams, so the insert is permitted.
+  //
+  // The result is a men's player holding an RSVP for a women's event, counted
+  // in its attendance totals, and notified about a trip they are not on.
+  const { data: roster, error: rosterError } = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', event.team_id)
+    .eq('status', 'active');
+
+  if (rosterError) {
+    // Cannot establish who belongs, so invite nobody. Silently inviting the
+    // requested list is how the wrong squad gets attached in the first place.
+    throw new Error(`Could not verify the event's roster before inviting: ${rosterError.message}`);
+  }
+
+  const onTeam = new Set((roster ?? []).map((row) => row.player_id));
+  const eligibleIds = playerIds.filter((id) => onTeam.has(id));
+  const rejected = playerIds.filter((id) => !onTeam.has(id));
+
+  if (rejected.length > 0) {
+    console.warn(
+      `[rsvp] refused to invite ${rejected.length} player(s) who are not active members of event ${eventId}'s team (${event.team_id})`,
+    );
+  }
+
+  if (eligibleIds.length === 0) return;
+
   // Get player details (including user_id for notifications)
-  const { data: players } = await supabase
+  const { data: players, error: playersError } = await supabase
     .from('golf_players')
     .select('id, user_id, first_name, last_name')
-    .in('id', playerIds);
+    .in('id', eligibleIds);
+
+  // A failed read here returned silently, so the coach was told the event was
+  // created and nobody was invited to it.
+  if (playersError) {
+    throw new Error(`Could not load players to invite: ${playersError.message}`);
+  }
 
   if (!players || players.length === 0) return;
 
