@@ -49,6 +49,7 @@ import {
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
@@ -68,6 +69,45 @@ async function getCoachTeamId(
   // (validated server-side) so coach WRITES target the toggled team.
   return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
+
+/**
+ * Resolve the team a write should land on, preferring the caller's explicit
+ * `teamId` ONLY after proving they staff it.
+ *
+ * `input.teamId || coachTeamId` trusted whatever the client sent. Nothing
+ * re-checked it, so the one place the men's/women's wall is enforced for this
+ * write was the RLS policy — and a program head staffed on both Shenandoah
+ * squads satisfies that for either team, so the database would have accepted a
+ * men's series created while the coach was toggled to the women's team. For any
+ * other coach a hand-edited request could target a sibling team they do not
+ * staff, and the failure would surface as a generic insert error rather than a
+ * refusal.
+ *
+ * Same rule the cookie already goes through (`validateCoachTeamAccess`), which
+ * is exactly the point: an explicit id must not be more trusted than a cookie.
+ */
+async function resolveWriteTeamId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  coachId: string,
+  organizationId: string | null,
+  requestedTeamId: string | null | undefined,
+  fallbackTeamId: string | null,
+): Promise<{ ok: true; teamId: string } | { ok: false; error: string }> {
+  if (requestedTeamId && requestedTeamId !== fallbackTeamId) {
+    const allowed = await validateCoachTeamAccess(
+      supabase, coachId, requestedTeamId, organizationId,
+    );
+    if (!allowed) {
+      return { ok: false, error: 'You are not a coach of that team.' };
+    }
+    return { ok: true, teamId: requestedTeamId };
+  }
+
+  const teamId = requestedTeamId || fallbackTeamId;
+  if (!teamId) return { ok: false, error: 'Coach not assigned to a team' };
+  return { ok: true, teamId };
+}
+
 
 // ============================================================================
 // TYPES
@@ -637,10 +677,13 @@ async function createRecurringEventImpl(
     // remaining occurrences. Two queries instead of one buys a clean,
     // queryable series identity (`WHERE parent_event_id = root.id OR id =
     // root.id`) that the edit + delete scope dialogs lean on.
-    const teamId = input.teamId || coachTeamId;
-    if (!teamId) {
-      return { success: false, error: 'Coach not assigned to a team' };
+    const teamResolution = await resolveWriteTeamId(
+      supabase, coach.id, coach.organization_id, input.teamId, coachTeamId,
+    );
+    if (!teamResolution.ok) {
+      return { success: false, error: teamResolution.error };
     }
+    const teamId = teamResolution.teamId;
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
 
     const rootDate = occurrenceDates[0]!;
@@ -1824,7 +1867,13 @@ async function createAcademicExclusionImpl(input: {
     }
 
     const coachTeamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
-    const teamId = input.teamId || coachTeamId;
+    const teamResolution = await resolveWriteTeamId(
+      supabase, coach.id, coach.organization_id, input.teamId, coachTeamId,
+    );
+    if (!teamResolution.ok) {
+      return { success: false, error: teamResolution.error };
+    }
+    const teamId = teamResolution.teamId;
     if (!teamId) {
       return { success: false, error: 'Team ID is required' };
     }
