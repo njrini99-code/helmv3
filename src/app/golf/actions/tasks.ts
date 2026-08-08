@@ -654,6 +654,92 @@ export async function createRecurringTask(
 // ============================================================================
 
 /**
+ * Coach authorization for a single task — one resolver, three call sites.
+ *
+ * delete / setReminder / clearReminder each carried their own copy of this
+ * three-read block, and all three copies discarded every error. supabase-js
+ * resolves a failure as `{ data: null, error }`, so a dropped connection was
+ * indistinguishable from a finding, and each read had its own wrong answer
+ * ready: "Only coaches can delete tasks" to a coach, "Task not found" for a
+ * task the coach is looking at, "Not authorized for this team" for their own
+ * team.
+ *
+ * Refusing when a check cannot run is correct and is kept — an authorization
+ * check that did not complete has not passed. Only the sentence changes.
+ *
+ * `.single()` reports no-row as PGRST116, so that code is the genuine answer
+ * ("really not a coach", "task really is gone") and anything else is a failed
+ * read. `notACoachError` is the caller's own verb; everything else is shared.
+ */
+const TASK_AUTHZ_UNREADABLE = "Couldn't verify your access to this task. Please try again.";
+
+type TaskAuthzResult =
+  | { ok: true; coach: { id: string; organization_id: string | null }; task: { id: string; team_id: string } }
+  | { ok: false; error: string };
+
+async function authorizeCoachForTask(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  taskId: string,
+  notACoachError: string,
+): Promise<TaskAuthzResult> {
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', userId)
+    .single();
+
+  if (coachError && coachError.code !== 'PGRST116') {
+    await logServerError(
+      `task authz coach read failed: ${describeError(coachError)}`,
+      { action: 'tasks.authorizeCoachForTask', featureArea: 'tasks' },
+      'warning',
+    );
+    return { ok: false, error: TASK_AUTHZ_UNREADABLE };
+  }
+  if (!coach) return { ok: false, error: notACoachError };
+
+  const { data: task, error: taskError } = await supabase
+    .from('golf_tasks')
+    .select('id, team_id')
+    .eq('id', taskId)
+    .single();
+
+  if (taskError && taskError.code !== 'PGRST116') {
+    await logServerError(
+      `task authz task read failed for ${taskId}: ${describeError(taskError)}`,
+      { action: 'tasks.authorizeCoachForTask', featureArea: 'tasks' },
+      'warning',
+    );
+    return { ok: false, error: TASK_AUTHZ_UNREADABLE };
+  }
+  if (!task) return { ok: false, error: 'Task not found' };
+
+  if (!coach.organization_id) {
+    return { ok: false, error: 'Coach profile is not associated with an organization' };
+  }
+
+  const { data: team, error: teamError } = await supabase
+    .from('golf_teams')
+    .select('id')
+    .eq('id', task.team_id)
+    .eq('organization_id', coach.organization_id)
+    .single();
+
+  if (teamError && teamError.code !== 'PGRST116') {
+    await logServerError(
+      `task authz team read failed for ${task.team_id}: ${describeError(teamError)}`,
+      { action: 'tasks.authorizeCoachForTask', featureArea: 'tasks' },
+      'warning',
+    );
+    return { ok: false, error: TASK_AUTHZ_UNREADABLE };
+  }
+  if (!team) return { ok: false, error: 'Not authorized for this team' };
+
+  return { ok: true, coach, task };
+}
+
+/**
  * Delete a task (coach only)
  */
 async function deleteTaskImpl(taskId: string): Promise<ActionResult> {
@@ -666,42 +752,9 @@ async function deleteTaskImpl(taskId: string): Promise<ActionResult> {
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Verify user is a coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Only coaches can delete tasks' };
-    }
-
-    // Get task to verify ownership
-    const { data: task } = await supabase
-      .from('golf_tasks')
-      .select('id, team_id')
-      .eq('id', taskId)
-      .single();
-
-    if (!task) {
-      return { success: false, error: 'Task not found' };
-    }
-
-    // Verify coach has access to this team
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', task.team_id)
-        .eq('organization_id', coach.organization_id)
-        .single();
-
-      if (!team) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else {
-      return { success: false, error: 'Coach profile is not associated with an organization' };
+    const authz = await authorizeCoachForTask(supabase, user.id, taskId, 'Only coaches can delete tasks');
+    if (!authz.ok) {
+      return { success: false, error: authz.error };
     }
 
     // Delete task (assignments should cascade delete via FK)
@@ -753,41 +806,9 @@ async function setTaskReminderImpl(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Verify user is a coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Only coaches can set reminders' };
-    }
-
-    // Verify task exists and belongs to coach's team
-    const { data: task } = await supabase
-      .from('golf_tasks')
-      .select('id, team_id')
-      .eq('id', taskId)
-      .single();
-
-    if (!task) {
-      return { success: false, error: 'Task not found' };
-    }
-
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', task.team_id)
-        .eq('organization_id', coach.organization_id)
-        .single();
-
-      if (!team) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else {
-      return { success: false, error: 'Coach profile is not associated with an organization' };
+    const authz = await authorizeCoachForTask(supabase, user.id, taskId, 'Only coaches can set reminders');
+    if (!authz.ok) {
+      return { success: false, error: authz.error };
     }
 
     // Arm the dispatch queue BEFORE touching golf_tasks' display columns, so a
@@ -879,41 +900,9 @@ async function clearTaskReminderImpl(taskId: string): Promise<ActionResult> {
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Verify user is a coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Only coaches can clear reminders' };
-    }
-
-    // Verify task exists and belongs to coach's team
-    const { data: task } = await supabase
-      .from('golf_tasks')
-      .select('id, team_id')
-      .eq('id', taskId)
-      .single();
-
-    if (!task) {
-      return { success: false, error: 'Task not found' };
-    }
-
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', task.team_id)
-        .eq('organization_id', coach.organization_id)
-        .single();
-
-      if (!team) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else {
-      return { success: false, error: 'Coach profile is not associated with an organization' };
+    const authz = await authorizeCoachForTask(supabase, user.id, taskId, 'Only coaches can clear reminders');
+    if (!authz.ok) {
+      return { success: false, error: authz.error };
     }
 
     // Disarm the dispatch queue FIRST — if this fails we must not report
