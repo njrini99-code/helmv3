@@ -2345,21 +2345,46 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
     after(async () => {
       try {
         const adminClient = createAdminClient();
-        const { data: teamMembers } = await adminClient
+        // Fire-and-forget fan-out for a newly created event. Both reads
+        // discarded their error and both `length === 0` guards then `return`,
+        // so a failed roster read meant NOBODY was told about a new team event
+        // — and because this runs inside after(), there is no return value to
+        // carry a failure and nothing surfaced anywhere. Silent in the truest
+        // sense: no error, no user feedback, no record.
+        //
+        // It cannot fail the request (the event was created successfully and
+        // should stay created), so the honest thing is to say so in the log.
+        const { data: teamMembers, error: teamMembersError } = await adminClient
           .from('golf_team_members')
           .select('player_id')
           .eq('team_id', fanOutTeamId)
           .eq('status', 'active');
+
+        if (teamMembersError) {
+          await logServerError(
+            `[createGolfEvent.fanOut] roster read failed — no one was notified about this event: ${describeError(teamMembersError)}`,
+            { action: 'golf.createEvent.fanOut', featureArea: 'calendar' },
+          );
+          return;
+        }
 
         const playerIds = (teamMembers ?? [])
           .map((m) => m.player_id)
           .filter((id): id is string => Boolean(id));
         if (playerIds.length === 0) return;
 
-        const { data: players } = await adminClient
+        const { data: players, error: playersError } = await adminClient
           .from('golf_players')
           .select('id, user_id')
           .in('id', playerIds);
+
+        if (playersError) {
+          await logServerError(
+            `[createGolfEvent.fanOut] player lookup failed — no one was notified about this event: ${describeError(playersError)}`,
+            { action: 'golf.createEvent.fanOut', featureArea: 'calendar' },
+          );
+          return;
+        }
 
         const userIds = (players ?? [])
           .map((p) => p.user_id)
@@ -2888,10 +2913,19 @@ async function deleteGolfEventImpl(
             .filter((id): id is string => Boolean(id));
           let teamUserIds: string[] = [];
           if (activePlayerIds.length > 0) {
-            const { data: activePlayers } = await adminClient
+            const { data: activePlayers, error: activePlayersError } = await adminClient
               .from('golf_players')
               .select('id, user_id')
               .in('id', activePlayerIds);
+            // Same fan-out, same silence: a failed lookup here drops the whole
+            // team from the recipient set for an event UPDATE, leaving only
+            // whoever had already RSVP'd.
+            if (activePlayersError) {
+              await logServerError(
+                `[golf event update.fanOut] player lookup failed — the team was dropped from this notification: ${describeError(activePlayersError)}`,
+                { action: 'golf.updateEvent.fanOut', featureArea: 'calendar' },
+              );
+            }
             teamUserIds = (activePlayers ?? [])
               .map((p) => p.user_id)
               .filter((id): id is string => Boolean(id));
