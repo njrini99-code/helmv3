@@ -81,7 +81,7 @@ import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
 import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
 import { FairwayEventEditor } from './FairwayEventEditor';
-import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
+import { attributeClassEvents, isClassEvent, type ClassOwnerIndex } from '@/lib/calendar/class-events';
 
 // Code-split: the ICS feed manager (legacy component, reused UNCHANGED) only
 // loads when the Subscribe sheet is opened.
@@ -696,9 +696,17 @@ export function FairwayCalendar({
   // starts equal to `serverNow` (hydration-safe: identical on the first
   // client render, so no SSR/CSR mismatch), then promotes to the real client
   // clock exactly like every other "now" in this surface.
+  //
+  // Class meetings are excluded. "12 upcoming" means team commitments — the
+  // coach dashboard's own tile counts exactly that — and counting every
+  // lecture put the two numbers ~150x apart on the same screen for the same
+  // team. A player seeing "187 upcoming" on their calendar is being told
+  // their week is full of the team's business when most of it is their own
+  // timetable, which they can already see rendered.
   const liveUpcomingCount = React.useMemo(() => {
     const nowMs = nowRef.getTime();
     return events.filter((e) => {
+      if (isClassEvent(e)) return false;
       const s = e.start_time || e.start_date;
       if (!s) return false;
       return new Date(s).getTime() >= nowMs;
