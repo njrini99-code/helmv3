@@ -90,13 +90,38 @@ describe('attributeClassEvents — a player sees only their own classes', () => 
     expect(out).toHaveLength(0);
   });
 
-  it('does NOT strip classes when the ownership lookup failed', () => {
-    // A failed lookup is unknown ownership. Treating it as "owns nothing" would
-    // make a player's own schedule vanish on a transient DB error.
+  it('strips ALL classes from a player when the ownership lookup failed', () => {
+    // THIS EXPECTATION WAS DELIBERATELY REVERSED (2026-08-08).
+    //
+    // It used to assert that a failed lookup left both rows in place, on the
+    // reasoning that unknown ownership should not make a player's own schedule
+    // vanish on a transient error. That reasoning weighed the wrong two costs:
+    // the alternative is not "the player loses their own classes", it is "one
+    // failed roster read publishes every teammate's timetable, fully rendered".
+    //
+    // Measured on production: 323 class rows on Shenandoah's women's team
+    // belonging to three players — course, building, meeting times, all term.
+    // Against that, a player briefly not seeing class blocks they can re-load
+    // is the cheaper way to be wrong.
+    //
+    // The caller still logs the failed lookup, so this is not silent.
     const out = attributeClassEvents(
       [classEvent('mine', 'cls-braeden'), classEvent('theirs', 'cls-kalani')],
       {},
       { ...BRAEDEN, ownersResolved: false },
+    );
+
+    expect(out).toHaveLength(0);
+  });
+
+  it('still shows a COACH every class when the ownership lookup failed', () => {
+    // A coach is entitled to the whole squad's class blocks, and the conflict
+    // checker is built on them — failing closed for a coach would break
+    // scheduling to protect data they may already see.
+    const out = attributeClassEvents(
+      [classEvent('mine', 'cls-braeden'), classEvent('theirs', 'cls-kalani')],
+      {},
+      { isCoach: true, playerId: null, ownersResolved: false },
     );
 
     expect(out).toHaveLength(2);
