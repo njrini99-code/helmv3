@@ -1569,12 +1569,25 @@ async function rateInsightImpl(
 
     // Get the insight to record its type/tone
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: insight } = await (supabase as any)
+    const { data: insight, error: insightError } = await (supabase as any)
       .from('golf_coach_insights')
       .select('id, insight_type, priority, metadata')
       .eq('id', insightId)
       .eq('coach_id', coach.id)
       .single();
+
+    // Ownership guard — denying on a failed read is right and is kept. What
+    // was wrong is the reason: a discarded error became "Insight not found",
+    // telling a coach the insight they are looking at does not exist.
+    // .single() reports no-row as PGRST116 rather than null data, so the two
+    // are separated explicitly and the genuine not-found still fires.
+    if (insightError && (insightError as { code?: string }).code !== 'PGRST116') {
+      await logServerError(
+        `[insights] insight read failed — denying, but this is an outage not a missing insight: ${describeError(insightError)}`,
+        { action: 'insights.rateInsight', featureArea: 'coachhelm' },
+      );
+      return { success: false, error: "Couldn't load this insight. Please try again." };
+    }
 
     if (!insight) {
       return { success: false, error: 'Insight not found' };
@@ -2193,12 +2206,26 @@ async function generateTeamInsightImpl(): Promise<{
       return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
     }
 
-    // 3. Get all players on team via golf_team_members
-    const { data: teamMembers } = await supabase
+    // 3. Get all players on team via golf_team_members.
+    //
+    // The `players` read immediately below already checks its error; this one
+    // did not, and a failed read here lands in the same "No players found"
+    // that a genuinely empty roster produces. So a coach asking CoachHelm to
+    // analyse their squad was told they have no players — a claim about a
+    // roster that was never successfully read.
+    const { data: teamMembers, error: teamMembersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', teamId)
       .eq('status', 'active');
+
+    if (teamMembersError) {
+      await logServerError(
+        `[insights] roster read failed — would have reported the team as having no players: ${describeError(teamMembersError)}`,
+        { action: 'insights.rosterRead', featureArea: 'coachhelm' },
+      );
+      return { success: false, error: "Couldn't load your roster. Please try again." };
+    }
 
     const playerIds = (teamMembers || []).map(m => m.player_id);
     if (playerIds.length === 0) {
