@@ -599,6 +599,9 @@ export function PremiumCalendarClient({
     visibleEnd: visibleRange.end,
     realtime: true,
     onRealtimeEvent: () => router.refresh(),
+    // No player id in this shell, so a non-coach viewer fetches no class rows
+    // at all rather than every teammate's. Under-fetching is the safe side.
+    viewer: { isCoach: Boolean(isCoach), playerId: null },
   });
 
   // Follow initialDate / initialView prop changes WITHOUT a keyed remount —
