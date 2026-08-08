@@ -310,21 +310,47 @@ async function acknowledgeAnnouncementImpl(
 
     // Verify announcement exists
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: announcement } = await (supabase as any)
+    const { data: announcement, error: announcementError } = await (supabase as any)
       .from('baseball_announcements')
       .select('id, team_id')
       .eq('id', announcementId)
       .single();
 
+    // Same shape: a failed read said the announcement on the player's screen
+    // does not exist. Absent is a genuine not-found; unreadable is not.
+    if (announcementError && (announcementError as { code?: string }).code !== 'PGRST116') {
+      await logServerError(
+        `[acknowledgeAnnouncement] announcement read failed — would have reported it as missing: ${describeError(announcementError)}`,
+        { action: 'baseball.acknowledgeAnnouncement', featureArea: 'announcements' },
+      );
+      return { success: false, error: "Couldn't load this announcement. Please try again." };
+    }
+
     if (!announcement) return { success: false, error: 'Announcement not found' };
 
     // Verify player is on the same team
-    const { data: membership } = await supabase
+    const { data: membership, error: membershipError } = await supabase
       .from('baseball_team_members')
       .select('id')
       .eq('player_id', player.id)
       .eq('team_id', announcement.team_id)
       .single();
+
+    // Denying on a failed read is right and is kept — a membership check that
+    // could not run must never grant access. What was wrong is the reason: a
+    // discarded error landed in "You are not authorized to acknowledge this
+    // announcement", told to a player who IS on the team, about an
+    // announcement their own coach posted to them.
+    //
+    // .single() reports no-row as PGRST116 rather than null data, so the two
+    // are separated explicitly and the genuine not-authorized still fires.
+    if (membershipError && (membershipError as { code?: string }).code !== 'PGRST116') {
+      await logServerError(
+        `[acknowledgeAnnouncement] membership read failed — denying, but this is an outage not a permissions problem: ${describeError(membershipError)}`,
+        { action: 'baseball.acknowledgeAnnouncement', featureArea: 'announcements', playerId: player.id },
+      );
+      return { success: false, error: "Couldn't confirm your team membership just now. Please try again." };
+    }
 
     if (!membership) {
       return { success: false, error: 'You are not authorized to acknowledge this announcement' };
