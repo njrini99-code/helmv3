@@ -17,6 +17,7 @@ import { notifyTaskAssigned } from '@/lib/notifications';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import {
   generateOccurrences,
   serializeRecurrenceRule,
@@ -282,20 +283,23 @@ async function createTaskImpl(
       return { success: false, error: 'Only coaches can create tasks' };
     }
 
-    // Verify coach has access to this team
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', teamId)
-        .eq('organization_id', coach.organization_id)
-        .single();
-
-      if (!team) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else {
+    // STAFF-STRICT, NOT ORGANIZATION-SCOPED.
+    //
+    // This asked only whether the team belonged to the coach's ORGANIZATION.
+    // Shenandoah runs a men's and a women's team in one org, so that question
+    // answers yes for both — the men's/women's wall simply did not exist for
+    // task writes. A coach staffed only on the men's team could create, edit
+    // and delete the women's team's tasks and templates.
+    //
+    // validateCoachTeamAccess is the canonical gate (golf_team_coach_staff,
+    // with the documented legacy escape hatch for a coach who predates the
+    // staff table), and it is what the cookie already goes through. Tasks now
+    // use the same rule as everything else.
+    if (!coach.organization_id) {
       return { success: false, error: 'Coach profile is not associated with an organization' };
+    }
+    if (!(await validateCoachTeamAccess(supabase, coach.id, teamId, coach.organization_id))) {
+      return { success: false, error: 'Not authorized for this team' };
     }
 
     // Create the task
@@ -461,14 +465,19 @@ async function createRecurringTaskImpl(
       return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('id', input.teamId)
-      .eq('organization_id', coach.organization_id)
-      .single();
-
-    if (!team) {
+    // STAFF-STRICT, NOT ORGANIZATION-SCOPED.
+    //
+    // This asked only whether the team belonged to the coach's ORGANIZATION.
+    // Shenandoah runs a men's and a women's team in one org, so that question
+    // answers yes for both — the men's/women's wall simply did not exist for
+    // task writes. A coach staffed only on the men's team could create, edit
+    // and delete the women's team's tasks and templates.
+    //
+    // validateCoachTeamAccess is the canonical gate (golf_team_coach_staff,
+    // with the documented legacy escape hatch for a coach who predates the
+    // staff table), and it is what the cookie already goes through. Tasks now
+    // use the same rule as everything else.
+    if (!(await validateCoachTeamAccess(supabase, coach.id, input.teamId, coach.organization_id))) {
       return { success: false, error: 'Not authorized for this team' };
     }
 
@@ -719,22 +728,34 @@ async function authorizeCoachForTask(
     return { ok: false, error: 'Coach profile is not associated with an organization' };
   }
 
-  const { data: team, error: teamError } = await supabase
-    .from('golf_teams')
+  // STAFF-STRICT (see the note in createTask). This asked only whether the
+  // task's team shared an ORGANIZATION with the coach, which is true of both
+  // Shenandoah squads — so delete/setReminder/clearReminder reached across the
+  // men's/women's line.
+  //
+  // Read inline rather than via validateCoachTeamAccess, deliberately: that
+  // helper returns a bare boolean, so a failed read and a genuine refusal come
+  // back identical. This resolver exists to tell those apart — a coach whose
+  // check merely failed must not be told they are not a coach of their own
+  // team — so it needs the error, not just the verdict. Same staff-strict rule,
+  // one extra query's worth of honesty.
+  const { data: staffRow, error: staffError } = await supabase
+    .from('golf_team_coach_staff')
     .select('id')
-    .eq('id', task.team_id)
-    .eq('organization_id', coach.organization_id)
-    .single();
+    .eq('coach_id', coach.id)
+    .eq('team_id', task.team_id)
+    .maybeSingle();
 
-  if (teamError && teamError.code !== 'PGRST116') {
+  if (staffError) {
     await logServerError(
-      `task authz team read failed for ${task.team_id}: ${describeError(teamError)}`,
+      `task authz staff read failed for team ${task.team_id}: ${describeError(staffError)}`,
       { action: 'tasks.authorizeCoachForTask', featureArea: 'tasks' },
       'warning',
     );
     return { ok: false, error: TASK_AUTHZ_UNREADABLE };
   }
-  if (!team) return { ok: false, error: 'Not authorized for this team' };
+
+  if (!staffRow) return { ok: false, error: 'Not authorized for this team' };
 
   return { ok: true, coach, task };
 }
@@ -1045,20 +1066,23 @@ async function createTaskTemplateImpl(
       return { success: false, error: 'Only coaches can create templates' };
     }
 
-    // Verify coach has access to this team
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', teamId)
-        .eq('organization_id', coach.organization_id)
-        .single();
-
-      if (!team) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else {
+    // STAFF-STRICT, NOT ORGANIZATION-SCOPED.
+    //
+    // This asked only whether the team belonged to the coach's ORGANIZATION.
+    // Shenandoah runs a men's and a women's team in one org, so that question
+    // answers yes for both — the men's/women's wall simply did not exist for
+    // task writes. A coach staffed only on the men's team could create, edit
+    // and delete the women's team's tasks and templates.
+    //
+    // validateCoachTeamAccess is the canonical gate (golf_team_coach_staff,
+    // with the documented legacy escape hatch for a coach who predates the
+    // staff table), and it is what the cookie already goes through. Tasks now
+    // use the same rule as everything else.
+    if (!coach.organization_id) {
       return { success: false, error: 'Coach profile is not associated with an organization' };
+    }
+    if (!(await validateCoachTeamAccess(supabase, coach.id, teamId, coach.organization_id))) {
+      return { success: false, error: 'Not authorized for this team' };
     }
 
     // Create template
@@ -1157,19 +1181,13 @@ async function updateTaskTemplateImpl(
       return { success: false, error: 'Template not found' };
     }
 
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', template.team_id)
-        .eq('organization_id', coach.organization_id)
-        .single();
-
-      if (!team) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else {
+    // STAFF-STRICT (see the note in createTask): an organization check
+    // answers "yes" for both Shenandoah squads, so it was no wall at all.
+    if (!coach.organization_id) {
       return { success: false, error: 'Coach profile is not associated with an organization' };
+    }
+    if (!(await validateCoachTeamAccess(supabase, coach.id, template.team_id, coach.organization_id))) {
+      return { success: false, error: 'Not authorized for this team' };
     }
 
     // Build update object
@@ -1257,19 +1275,13 @@ async function deleteTaskTemplateImpl(templateId: string): Promise<ActionResult>
       return { success: false, error: 'Template not found' };
     }
 
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', template.team_id)
-        .eq('organization_id', coach.organization_id)
-        .single();
-
-      if (!team) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else {
+    // STAFF-STRICT (see the note in createTask): an organization check
+    // answers "yes" for both Shenandoah squads, so it was no wall at all.
+    if (!coach.organization_id) {
       return { success: false, error: 'Coach profile is not associated with an organization' };
+    }
+    if (!(await validateCoachTeamAccess(supabase, coach.id, template.team_id, coach.organization_id))) {
+      return { success: false, error: 'Not authorized for this team' };
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

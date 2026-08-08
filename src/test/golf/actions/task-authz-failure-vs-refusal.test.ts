@@ -89,6 +89,7 @@ describe('task authz — a failed read is not a verdict about the coach', () => 
     outcomes.set('golf_coaches', ok({ id: 'c1', organization_id: 'o1' }));
     outcomes.set('golf_tasks', ok({ id: 'task-1', team_id: 't1' }));
     outcomes.set('golf_teams', ok({ id: 't1' }));
+    outcomes.set('golf_team_coach_staff', ok({ id: 'staff-1' }));
   });
 
   it('does not tell a coach only coaches may delete tasks when the read failed', async () => {
@@ -109,8 +110,12 @@ describe('task authz — a failed read is not a verdict about the coach', () => 
     expect(result.error).not.toMatch(/Task not found/);
   });
 
-  it('does not say "Not authorized for this team" when the team read failed', async () => {
-    outcomes.set('golf_teams', fails('permission denied', '42501'));
+  it('does not say "Not authorized for this team" when the staffing read failed', async () => {
+    // Now reads golf_team_coach_staff, not golf_teams: the gate moved from
+    // "same organization" (which is true of BOTH Shenandoah squads, so no wall
+    // at all) to "staffed on this team". The assertion is unchanged — a failed
+    // authorization read must not be reported as a refusal.
+    outcomes.set('golf_team_coach_staff', fails('permission denied', '42501'));
 
     const result = refused(await remove());
 
@@ -135,6 +140,7 @@ describe('task authz — the genuine refusals still say what is actually wrong',
     outcomes.set('golf_coaches', ok({ id: 'c1', organization_id: 'o1' }));
     outcomes.set('golf_tasks', ok({ id: 'task-1', team_id: 't1' }));
     outcomes.set('golf_teams', ok({ id: 't1' }));
+    outcomes.set('golf_team_coach_staff', ok({ id: 'staff-1' }));
   });
 
   it('someone who really is not a coach is still told so', async () => {
@@ -148,7 +154,11 @@ describe('task authz — the genuine refusals still say what is actually wrong',
   });
 
   it("another team's task is still refused", async () => {
-    outcomes.set('golf_teams', noRow());
+    // No staff row for this task's team → genuinely not this coach's team.
+    // `ok(null)`, not `noRow()`: the staff read uses `.maybeSingle()`, where a
+    // genuine miss is `{ data: null, error: null }`. PGRST116 there would be a
+    // real error and must land on the "couldn't verify" side, not this one.
+    outcomes.set('golf_team_coach_staff', ok(null));
     expect(refused(await remove()).error).toMatch(/Not authorized for this team/);
   });
 
