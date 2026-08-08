@@ -4,8 +4,10 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Capacitor } from '@capacitor/core';
 import { initCapacitor, isNativeApp, hideSplashScreen, syncStatusBarToTheme } from '@/lib/utils/capacitor';
+import { createClient } from '@/lib/supabase/client';
 import {
   initPushListeners,
+  flushPendingDeviceToken,
   PUSH_NAVIGATE_EVENT,
   PUSH_RECEIVED_EVENT,
   type PushNavigateDetail,
@@ -87,6 +89,20 @@ export function CapacitorProvider() {
       // Wire up push notification listeners WITHOUT prompting the user.
       initPushListeners();
 
+      // APNs hands us the device token once per launch — on a cold start that
+      // happens while the app is still on the login screen, so there is no
+      // session to attach it to and the token sits parked. Finish the handshake
+      // the moment one exists, otherwise the device registers no token at all
+      // for the whole launch and silently receives no push (6 of 7 attempts in
+      // the week to 2026-08-06).
+      const authClient = createClient();
+      const { data: { subscription: authSub } } = authClient.auth.onAuthStateChange((event, session) => {
+        if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
+          void flushPendingDeviceToken();
+        }
+      });
+      const pushAuthUnsubscribe = () => authSub.unsubscribe();
+
       // Keyboard lifecycle — dynamic import to avoid "Keyboard plugin
       // is not implemented on web" errors. The static import was causing
       // unhandled rejections on every web page load. A `cancelled` flag
@@ -138,6 +154,7 @@ export function CapacitorProvider() {
         if (innerRaf) cancelAnimationFrame(innerRaf);
         themeObserver.disconnect();
         cleanupKeyboard?.();
+        pushAuthUnsubscribe();
       };
     }
     return undefined;

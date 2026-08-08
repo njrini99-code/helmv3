@@ -24,6 +24,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import type { CoachChatContext } from './context';
+import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 
 type Sb = SupabaseClient<Database>;
 
@@ -117,6 +118,9 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
         .from('golf_events')
         .select('id, title, start_time, event_type, requires_rsvp, status')
         .eq('team_id', ctx.team_id)
+        // Team events only — a player's class schedule is not the program's
+        // next two weeks (see read-tools.ts).
+        .neq('event_type', CLASS_EVENT_TYPE)
         .gte('start_time', new Date(now).toISOString())
         .lte('start_time', new Date(now + 14 * DAY).toISOString())
         .order('start_time', { ascending: true })

@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import {
   FEATURE_REGISTRY,
@@ -9,6 +10,9 @@ import {
   type FeatureTier,
 } from '@/lib/admin/feature-registry';
 import { fetchSentryFeatureCounts } from '@/lib/admin/sentry-api';
+import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * W16 Task 1 — Feature Health data layer + classifier.
@@ -314,20 +318,42 @@ function inputsForFeature(
 
 const STATUS_RANK: Record<FeatureStatus, number> = { red: 0, amber: 1, neutral: 2, green: 3 };
 
-/** USER-SCOPED client — get_feature_health() gates on auth.uid() via
- *  is_super_admin() and Forbids under service_role (by design, same as
- *  get_active_sessions / revoke_user_sessions). */
-export async function fetchFeatureHealth(): Promise<{
+/**
+ * USER-SCOPED client — get_feature_health() gates on auth.uid() via
+ * is_super_admin() and Forbids under service_role (by design, same as
+ * get_active_sessions / revoke_user_sessions).
+ *
+ * `cache()`-memoised per request. One render of /admin called this TWICE —
+ * once inside `fetchOverviewSnapshot()` for the banner rollup, once again for
+ * the "Feature command map" panel — and a single call is the
+ * get_feature_health() RPC PLUS `fetchSentryFeatureCounts`, which issues one
+ * Sentry search PER registry feature (85 non-excluded features, 6 at a time).
+ * Paying that fan-out twice for one screen was the most expensive duplicate on
+ * the page.
+ *
+ * Zero arguments, so it keys cleanly — no reference-identity trap (contrast
+ * `cachedIncidentFeed` in data/incident-feed.ts, which exists ONLY because
+ * `cache()` cannot key an object literal). Memoisation is scoped to a React
+ * request, so route handlers and cron callers still get a fresh pull.
+ */
+export const fetchFeatureHealth = cache(async (): Promise<{
   features: FeatureHealth[];
   generatedAt: string;
   degraded: boolean;
-}> {
+  /** Why the RPC failed, verbatim, when `degraded` — null otherwise. The
+   *  board short-circuits to a single all-neutral panel on degrade, so this
+   *  string is the ONLY thing that distinguishes "the DB is down" from "the
+   *  payload was rejected" (the shape the 100-descriptor p_features ceiling
+   *  took before 20260806030000 raised it to 500). */
+  degradedReason: string | null;
+}> => {
   const now = new Date();
   const registryFeatures = FEATURE_REGISTRY.filter((def) => !def.excluded);
   const keys = registryFeatures.map((def) => def.key);
 
   let rows: RawFeatureHealthRow[] | null = null;
   let degraded = false;
+  let degradedReason: string | null = null;
   try {
     const supabase = await createClient();
     const rpc = supabase.rpc.bind(supabase) as unknown as (
@@ -337,11 +363,42 @@ export async function fetchFeatureHealth(): Promise<{
     const { data, error } = await rpc('get_feature_health', { p_features: rpcInput() });
     if (error) throw new Error(error.message);
     rows = data ?? [];
-  } catch {
+  } catch (rpcError) {
     // Fail-soft (Task 1 step 3): RPC failure → every feature reads neutral
     // with an explicit "pipeline degraded" reason — never fake-green, never
     // fake-red. The rollup (Task 5) surfaces this to the Overview banner.
+    //
+    // The bare `catch {}` this replaces discarded the message, which made the
+    // two failures an operator most needs to tell apart look identical: a
+    // dead database and a REJECTED PAYLOAD. FEATURE_REGISTRY is at 86 entries
+    // (85 after `excluded`) against get_feature_health()'s old 100-descriptor
+    // ceiling — the 101st feature would have turned the whole board, and the
+    // /admin rollup with it, neutral behind the word "degraded" with nothing
+    // anywhere naming the cap. Keep the reason, and record the failure: a
+    // blind health board is itself an incident.
     degraded = true;
+    degradedReason = describeError(rpcError);
+    // Throttled: /admin, /admin/golf, /admin/baseball and /admin/health all
+    // call this on a 30s AutoRefresh, so an outage must collapse to ONE line
+    // with a count, not ~8 admin_events rows a minute (Noise Charter N4).
+    const throttleKey = 'admin:feature_health:rpc_failed';
+    if (shouldEmit(throttleKey)) {
+      const collapsed = drainCollapsedCount(throttleKey);
+      void logServerError(
+        `[Bridge] feature health pipeline degraded: ${degradedReason}`,
+        {
+          action: 'admin.fetchFeatureHealth',
+          feature: 'admin_dashboard',
+          sport: 'shared',
+          source: 'server_component',
+          // Stable across wording so one outage is one incident.
+          errorCode: 'feature_health_rpc_failed',
+          errorDetails: degradedReason.slice(0, 500),
+          handled: true,
+          ...(collapsed > 0 ? { metadata: { collapsed_count: collapsed } } : {}),
+        },
+      ).catch(() => {});
+    }
   }
 
   const rowByKey = new Map((rows ?? []).map((r) => [r.key, r]));
@@ -404,8 +461,8 @@ export async function fetchFeatureHealth(): Promise<{
 
   features.sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status]);
 
-  return { features, generatedAt: now.toISOString(), degraded };
-}
+  return { features, generatedAt: now.toISOString(), degraded, degradedReason };
+});
 
 // ---------------------------------------------------------------------------
 // Overview rollup support (W16 Task 5) — pure, unit-tested independently of

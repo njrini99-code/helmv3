@@ -7,6 +7,7 @@ import { fetchBaseballTab } from '@/lib/admin/data/baseball';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
 import { Surface, StatStrip, StatTile, StatusPill, TrendChart } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
 import { KpiTile } from '../_components/KpiTile';
 import { TeamHealthTable, type TeamHealthEntry } from '../_components/TeamHealthTable';
@@ -373,7 +374,7 @@ export default async function BaseballTabPage() {
   return (
     <div className="space-y-6">
       <AutoRefresh />
-      <PanelBoundary title="Baseball">
+      <PanelBoundary title="Baseball" skeleton={<PanelPageSkeleton rows={8} />}>
         <BaseballBody />
       </PanelBoundary>
     </div>

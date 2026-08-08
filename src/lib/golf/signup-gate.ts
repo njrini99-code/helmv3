@@ -3,7 +3,7 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/supabase-rate-limit';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 /**
  * GolfHelm signup access-code gate.
@@ -45,19 +45,27 @@ const SIGNUP_GATE_COOKIE = 'helm_golf_signup_gate';
 const SIGNUP_GATE_TTL_SECONDS = 60 * 60;
 
 /**
- * DS-B2 follow-up: an unset SIGNUP_ACCESS_CODE silently disables the shared-
- * code signup path (see isAcceptedSignupCode below) — self-serve signup then
- * only works via a coach's team join_code. That's correct behavior for a
- * removed committed secret, but a misconfigured deploy (env var never set in
- * Vercel) must not fail silently. Page this loudly instead.
+ * An unset SIGNUP_ACCESS_CODE disables the shared-code signup path, leaving
+ * only a coach's team join_code — which is now the INTENDED configuration: the
+ * shared code was deliberately retired on 2026-08-04 so a player signs up with
+ * the code their coach gave them and lands on that coach's roster.
+ *
+ * This was originally logged 'critical' on the theory that an unset env var
+ * meant a misconfigured deploy. That is no longer true, and the alarm fired on
+ * every signup — 10 CRITICAL incidents in one 24h window on 2026-08-05, all of
+ * them the platform working as designed. A permanent critical that nobody can
+ * action is worse than silence: it trains you to ignore the queue, and it
+ * buries the real failures next to it.
+ *
+ * Kept as a one-shot 'info' so the state is still discoverable if someone
+ * wonders why the shared code stopped working, without paging anyone.
  */
 async function warnMissingAccessCodeOnce(): Promise<void> {
   if (warnedMissingAccessCode) return;
   warnedMissingAccessCode = true;
-  await logServerError(
-    'SIGNUP_ACCESS_CODE is unset — shared-code signup is disabled; only team join_code signup will succeed',
+  await logServerEvent(
+    'SIGNUP_ACCESS_CODE is unset — by design: signup is team join_code only',
     { action: 'access-code.validateAccessCode', source: 'auth' },
-    'critical',
   ).catch(() => {});
 }
 

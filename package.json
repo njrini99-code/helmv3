@@ -60,7 +60,8 @@
     "ui:dataflow": "tsx scripts/ui-intelligence/generate-data-flow.ts",
     "routes:hygiene:p0p1": "node scripts/check-route-hygiene-p0-p1.mjs",
     "check:row-caps": "node scripts/check-row-cap-limits.mjs",
-    "check:env-secrets": "node scripts/check-env-secret-fallbacks.mjs"
+    "check:env-secrets": "node scripts/check-env-secret-fallbacks.mjs",
+    "audit:supabase-errors": "node scripts/supabase-error-audit.mjs"
   },
   "keywords": [],
   "author": "",

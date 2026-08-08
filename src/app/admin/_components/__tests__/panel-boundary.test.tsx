@@ -28,7 +28,10 @@ describe('PanelBoundary', () => {
   it('contains a child crash to an amber stale card — never blanks the console', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     render(
-      <PanelBoundary title="Errors">
+      // `skeleton` is required in app code, but every child here throws or
+      // resolves synchronously — nothing suspends, so a null fallback keeps
+      // skeleton markup out of the error-path assertions below.
+      <PanelBoundary title="Errors" skeleton={null}>
         <Bomb />
       </PanelBoundary>,
     );
@@ -40,7 +43,7 @@ describe('PanelBoundary', () => {
   it('never claims to show data it does not have', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     render(
-      <PanelBoundary title="Errors">
+      <PanelBoundary title="Errors" skeleton={null}>
         <Bomb />
       </PanelBoundary>,
     );
@@ -61,7 +64,7 @@ describe('PanelBoundary', () => {
     }
 
     render(
-      <PanelBoundary title="Errors">
+      <PanelBoundary title="Errors" skeleton={null}>
         <FlakyPanel />
       </PanelBoundary>,
     );
@@ -77,7 +80,7 @@ describe('PanelBoundary', () => {
 
   it('renders healthy children untouched', () => {
     render(
-      <PanelBoundary title="Errors">
+      <PanelBoundary title="Errors" skeleton={null}>
         <p>healthy content</p>
       </PanelBoundary>,
     );
@@ -89,7 +92,7 @@ describe('PanelBoundary', () => {
     mockLogError.mockClear();
 
     render(
-      <PanelBoundary title="Live posture">
+      <PanelBoundary title="Live posture" skeleton={null}>
         <Bomb />
       </PanelBoundary>,
     );
@@ -118,7 +121,7 @@ describe('PanelBoundary', () => {
   it('does not report when children render healthily', () => {
     mockLogError.mockClear();
     render(
-      <PanelBoundary title="Errors">
+      <PanelBoundary title="Errors" skeleton={null}>
         <p>healthy content</p>
       </PanelBoundary>,
     );
@@ -134,7 +137,7 @@ describe('PanelBoundary', () => {
 
     expect(() =>
       render(
-        <PanelBoundary title="Errors">
+        <PanelBoundary title="Errors" skeleton={null}>
           <Bomb />
         </PanelBoundary>,
       ),

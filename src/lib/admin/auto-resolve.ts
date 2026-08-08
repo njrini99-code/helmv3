@@ -32,6 +32,19 @@
  *   Rule C (legacy, no fingerprint): rows with `fingerprint IS NULL` older
  *   than the same 14-day quiet window.
  *
+ *   EXCLUSION (operator-gated provider faults): Rules A and B are skipped
+ *   entirely for any fingerprint whose rows carry a `provider_*_credit_exhausted
+ *   / _invalid_credential / _missing_credential / _plan_gated_model` code. Both
+ *   rules infer "fixed" from silence, and that inference is simply false here:
+ *   a provider fault only fires when something exercises the path, so a quiet
+ *   weekend is indistinguishable from a fix, and no deploy has ever topped up a
+ *   billing account or rotated a key. Measured 2026-08-06: every provider fault
+ *   in the table was flagged resolved while still broken —
+ *   provider_inngest_invalid_credential sat closed for 10 days with a dead
+ *   credential, and both AI accounts read resolved while still out of credit,
+ *   one having last fired an hour before. Rate-limit and transient-unavailable
+ *   faults are NOT excluded: those genuinely do clear on their own.
+ *
  * WHY RULE C EXISTS. Rules A and B are both keyed on fingerprint — the
  * snapshot read carried `.not('fingerprint', 'is', null)` and the UPDATE
  * matches `.in('fingerprint', batch)`, which cannot match NULL in SQL under
@@ -77,6 +90,7 @@
  */
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
+import { isOperatorGatedFaultCode } from '@/lib/admin/provider-fault';
 import { fetchVercelDeployments, type VercelDeployment } from '@/lib/admin/vercel-api';
 
 /** Exported so incident-feed.ts's read-time Sentry filter (the "mirror of
@@ -291,10 +305,15 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   // created_at) — the PostgREST client has no server-side GROUP BY, so
   // max(created_at) per fingerprint is reduced client-side from this page
   // set. fetchAllRows already paginates past the 1000-row cap.
-  const rows = await fetchAllRows<{ fingerprint: string | null; created_at: string | null }>((from, to) =>
+  const rows = await fetchAllRows<{
+    fingerprint: string | null;
+    created_at: string | null;
+    /** Generated types widen this to `Json`; narrowed at the read below. */
+    metadata: unknown;
+  }>((from, to) =>
     admin
       .from('admin_events')
-      .select('fingerprint, created_at')
+      .select('fingerprint, created_at, metadata')
       .eq('resolved', false)
       .eq('event_type', 'error')
       .not('fingerprint', 'is', null)
@@ -303,13 +322,34 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   );
 
   const maxByFingerprint = new Map<string, number>();
+  // Fingerprints that NO deploy and no amount of quiet can fix: a spent
+  // balance, a rejected key, a missing credential. See the note below.
+  const operatorGated = new Set<string>();
   for (const row of rows) {
     if (!row.fingerprint || !row.created_at) continue;
     const t = Date.parse(row.created_at);
     if (Number.isNaN(t)) continue;
     const prev = maxByFingerprint.get(row.fingerprint);
     if (prev === undefined || t > prev) maxByFingerprint.set(row.fingerprint, t);
+    const errorCode = (row.metadata as { errorCode?: string | null } | null)?.errorCode;
+    if (isOperatorGatedFaultCode(errorCode)) operatorGated.add(row.fingerprint);
   }
+
+  // WHY THESE ARE NEVER AUTO-RESOLVED
+  // ---------------------------------
+  // Both rules below infer "fixed" from SILENCE — Rule A from silence since a
+  // deploy, Rule B from silence for 14 days. That inference holds for a code
+  // defect: the deploy shipped, the bug stopped, done.
+  //
+  // It is false for a provider fault. Those fire only when something happens to
+  // exercise the path, so a quiet weekend is indistinguishable from a fix, and
+  // no deploy has ever topped up a billing account or rotated a key. Measured in
+  // production 2026-08-06: EVERY provider fault was flagged resolved while still
+  // broken — provider_inngest_invalid_credential sat closed for 10 days with a
+  // dead credential, and both AI accounts read resolved while still out of
+  // credit, one of them having last fired an hour earlier.
+  //
+  // Silence is not recovery. These stay open until a human clears them.
 
   const deploy = await getProductionDeployAt(now);
 
@@ -318,6 +358,7 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   if (deploy.deployAt !== null) {
     if (now - deploy.deployAt >= RELEASE_GRACE_MS) {
       for (const [fp, maxT] of maxByFingerprint) {
+        if (operatorGated.has(fp)) continue;
         if (maxT < deploy.deployAt) releaseFingerprints.push(fp);
       }
     } else {
@@ -329,6 +370,7 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   const quietCutoff = now - QUIET_MS;
   const quietFingerprints: string[] = [];
   for (const [fp, maxT] of maxByFingerprint) {
+    if (operatorGated.has(fp)) continue;
     if (maxT < quietCutoff && !releaseSet.has(fp)) quietFingerprints.push(fp);
   }
 

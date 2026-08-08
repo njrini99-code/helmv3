@@ -29,6 +29,15 @@ interface PlayerClass {
   credits: number | null;
   color: string | null;
   notes: string | null;
+  /**
+   * Academic term, e.g. "Fall 2026". Drives the calendar sync's occurrence
+   * window and the availability fallback. This field was MISSING from this
+   * interface while both save paths below were already writing the column —
+   * which is how the edit handler came to carry a comment asserting semester
+   * "is not persisted on golf_player_classes" and re-deriving the current term
+   * on every edit. The type was the evidence, and the type was wrong.
+   */
+  semester: string | null;
   team_id: string | null;
   created_at: string | null;
   updated_at: string | null;
@@ -118,6 +127,11 @@ export default function GolfClassesPage() {
         credits: formData.credits,
         color: formData.color,
         notes: formData.notes || null,
+        // Persist the term. It drives the calendar sync's occurrence window AND
+        // bounds the availability fallback for a class that never synced —
+        // without it a weekly class reads as busy forever, including over the
+        // summer, so the fallback has to refuse to expand.
+        semester: formData.semester || null,
       })
       .select()
       .single();
@@ -130,17 +144,35 @@ export default function GolfClassesPage() {
 
     // Sync to calendar (timezoneOffset so class times store as local wall-time,
     // matching the event timestamp convention — not UTC wall-time)
+    // The sync's RESULT decides what we claim. This used to be a bare `await`
+    // with the return value dropped on the floor, followed unconditionally by
+    // "Synced to your calendar" — so every failure syncClassToCalendar reports
+    // (`Could not determine semester dates`, an RLS refusal, a bad time value)
+    // was announced to the player as a success. The class row saved, no events
+    // were written, and nothing anywhere said so. That is why this read as
+    // "sync silently does nothing" rather than as an error.
+    let syncFailure: string | null = null;
     if (newClass) {
-      await syncClassToCalendar(
-        { ...formData, timezoneOffset: new Date().getTimezoneOffset() },
+      const syncResult = await syncClassToCalendar(
+        { ...formData, timezoneOffset: new Date().getTimezoneOffset(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         newClass.id, playerId, teamId,
       );
+      if (!syncResult?.success) {
+        syncFailure = syncResult?.error ?? 'Unknown error';
+      }
     }
 
     await fetchClasses();
     setShowAddModal(false);
     setEditingClass(null);
-    fairwayToast.success('Class added', { description: 'Synced to your calendar.' });
+    if (syncFailure) {
+      // The class IS saved — say so, and say exactly what did not happen.
+      fairwayToast.error('Class saved, but not added to your calendar', {
+        description: syncFailure,
+      });
+    } else {
+      fairwayToast.success('Class added', { description: 'Synced to your calendar.' });
+    }
   };
 
   const handleUpdateClass = async (formData: ClassFormData) => {
@@ -165,6 +197,7 @@ export default function GolfClassesPage() {
         credits: formData.credits,
         color: formData.color,
         notes: formData.notes || null,
+        semester: formData.semester || null,
       })
       .eq('id', formData.id)
       .eq('player_id', playerId);
@@ -175,9 +208,10 @@ export default function GolfClassesPage() {
       throw error;
     }
 
-    // Re-sync to calendar (diff-upserts the series)
-    await syncClassToCalendar(
-      { ...formData, timezoneOffset: new Date().getTimezoneOffset() },
+    // Re-sync to calendar (diff-upserts the series). Same rule as the add path:
+    // the toast reports what actually happened, not what we hoped happened.
+    const syncResult = await syncClassToCalendar(
+      { ...formData, timezoneOffset: new Date().getTimezoneOffset(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
       formData.id, playerId, teamId,
     );
 
@@ -185,14 +219,40 @@ export default function GolfClassesPage() {
     setShowAddModal(false);
     setEditingClass(null);
     setShowDetailModal(false);
-    fairwayToast.success('Class updated', { description: 'Your calendar has been re-synced.' });
+    if (!syncResult?.success) {
+      fairwayToast.error('Class updated, but the calendar was not re-synced', {
+        description: syncResult?.error ?? 'Unknown error',
+      });
+    } else {
+      fairwayToast.success('Class updated', { description: 'Your calendar has been re-synced.' });
+    }
   };
 
   const handleDeleteClass = async () => {
     if (!selectedClass) return;
 
-    // Remove from calendar first
-    await removeClassFromCalendar(selectedClass.id);
+    // Remove from calendar FIRST, and only delete the class if that worked.
+    //
+    // The result used to be dropped and the class row deleted regardless. Once
+    // the row is gone nothing in any UI can target its `[class:<id>]` tag
+    // again, so the event series is stranded: the coach keeps seeing
+    // un-attributed phantom class blocks on the team calendar forever, and the
+    // player who caused it can never see them at all (attributeClassEvents
+    // hides class events whose owner cannot be resolved from every player).
+    // Meanwhile the player was told "Removed from your schedule and calendar."
+    //
+    // Keeping the class row on failure is what makes a retry possible — the
+    // server already treats a re-run as orphan cleanup, so pressing Delete
+    // again is safe and is the recovery path.
+    const removal = await removeClassFromCalendar(selectedClass.id);
+
+    if (!removal?.success) {
+      showToast(
+        `Couldn't remove this class from your calendar: ${removal?.error ?? 'Unknown error'}. The class was kept so you can try again.`,
+        'error',
+      );
+      return;
+    }
 
     // Then delete the class
     const { error } = await supabase
@@ -249,6 +309,9 @@ export default function GolfClassesPage() {
           credits: cls.credits || null,
           color: cls.color || generateClassColor(),
           notes: null,
+          // The vision parser derives the term from the screenshot — keep it
+          // (see handleAddClass) instead of dropping it on the floor.
+          semester: cls.semester || null,
         };
       });
       
@@ -262,11 +325,13 @@ export default function GolfClassesPage() {
         throw error;
       }
 
-      // Sync all classes to calendar in parallel
+      // Sync all classes to calendar in parallel. The RESULTS decide what we
+      // claim below — see the note on the toast.
+      const syncFailures: string[] = [];
       if (data && teamId) {
         const syncPromises = data.map((insertedClass, i) => {
           const confirmedClass = confirmed[i];
-          if (!insertedClass || !confirmedClass) return Promise.resolve();
+          if (!insertedClass || !confirmedClass) return Promise.resolve(null);
 
           return syncClassToCalendar({
             id: insertedClass.id,
@@ -280,25 +345,52 @@ export default function GolfClassesPage() {
             building: confirmedClass.building || '',
             room: confirmedClass.room || '',
             credits: confirmedClass.credits,
-            semester: confirmedClass.semester || 'Spring 2026',
+            // NOT a hardcoded term. This read `|| 'Spring 2026'`, a term that
+            // has already ENDED — so any imported class whose semester the
+            // parser could not detect was dated into the past and generated
+            // zero future occurrences. The player saw "Synced to your calendar"
+            // and an empty calendar. detectSemester('') returns the current
+            // academic term.
+            semester: confirmedClass.semester || detectSemester(''),
             semesterStartDate: confirmedClass.semesterStartDate,
             color: confirmedClass.color || generateClassColor(),
             notes: '',
             timezoneOffset: new Date().getTimezoneOffset(),
+            // The IANA zone, so a semester crossing the DST change keeps its
+            // wall-clock time on every occurrence — a fixed offset cannot.
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           }, insertedClass.id, playerId, teamId);
         });
 
-        await Promise.all(syncPromises);
+        const syncResults = await Promise.all(syncPromises);
+        syncResults.forEach((result, i) => {
+          if (result && !result.success) {
+            const label = confirmed[i]?.course_code || confirmed[i]?.course_name || 'A class';
+            syncFailures.push(`${label}: ${result.error ?? 'Unknown error'}`);
+          }
+        });
       }
 
       const importedCount = data?.length ?? confirmed.length;
       await fetchClasses();
       setShowConfirmModal(false);
       setParsedClasses([]);
-      fairwayToast.success(
-        `${importedCount} ${importedCount === 1 ? 'class' : 'classes'} imported`,
-        { description: 'Synced to your calendar.' },
-      );
+
+      // Say what actually happened. This toast fired unconditionally while
+      // every syncClassToCalendar result was thrown away, so an import that
+      // wrote no calendar events at all still reported "Synced to your
+      // calendar" — six classes in production imported with zero events.
+      if (syncFailures.length > 0) {
+        fairwayToast.error(
+          `${importedCount} imported, ${syncFailures.length} not added to your calendar`,
+          { description: syncFailures.slice(0, 3).join(' · ') },
+        );
+      } else {
+        fairwayToast.success(
+          `${importedCount} ${importedCount === 1 ? 'class' : 'classes'} imported`,
+          { description: 'Synced to your calendar.' },
+        );
+      }
     } catch {
       // Error handled by alert above
     }
@@ -333,14 +425,14 @@ export default function GolfClassesPage() {
       building: selectedClass.building || '',
       room: selectedClass.room || '',
       credits: selectedClass.credits,
-      // semester is not persisted on golf_player_classes, so on edit we re-derive
-      // the CURRENT term. detectSemester('') always returns a valid term string,
-      // so the calendar re-sync produces valid dates. LATENT ISSUE (P231): a class
-      // originally created for a DIFFERENT term gets its calendar events re-dated
-      // to the current term on edit. The real fix requires persisting semester (or
-      // semesterStartDate) on golf_player_classes — tracked separately; today this
-      // is masked by most classes being current-term.
-      semester: detectSemester(''),
+      // P231, fixed: `semester` IS a column on golf_player_classes and both save
+      // paths below write it — the comment that used to sit here claimed it was
+      // not persisted, and so re-derived the CURRENT term on every edit. That
+      // silently re-dated a Spring class's whole event series into the current
+      // term the first time anyone touched it. Prefer the stored value; fall
+      // back to the current term only for legacy rows written before the column
+      // was populated (all 43 rows in production as of 2026-08-07).
+      semester: selectedClass.semester || detectSemester(''),
       color: selectedClass.color || 'var(--color-primary-600)',
       notes: selectedClass.notes || '',
     });
@@ -357,23 +449,42 @@ export default function GolfClassesPage() {
     if (!playerId) return;
     setDeletingAll(true);
     try {
-      // Delete all calendar events for these classes
-      const classIds = classes.map(c => c.id);
-      for (const classId of classIds) {
-        await removeClassFromCalendar(classId);
+      // Remove each class's calendar events, and REMEMBER which ones worked.
+      //
+      // This loop discarded every result and was then followed by one bulk
+      // `.eq('player_id', …)` delete, so a single transient failure inside a
+      // six-class loop stranded that class's whole event series while the toast
+      // announced "Your schedule and calendar are clear." Only classes whose
+      // events actually came off the calendar are deleted now; the rest stay so
+      // the player can retry them.
+      const removed: string[] = [];
+      const failed: string[] = [];
+      for (const cls of classes) {
+        const result = await removeClassFromCalendar(cls.id);
+        if (result?.success) removed.push(cls.id);
+        else failed.push(cls.class_name || 'A class');
       }
 
-      // Delete all classes
-      const { error } = await supabase
-        .from('golf_player_classes')
-        .delete()
-        .eq('player_id', playerId);
+      if (removed.length > 0) {
+        const { error } = await supabase
+          .from('golf_player_classes')
+          .delete()
+          .in('id', removed);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       await fetchClasses();
       setShowDeleteAllConfirm(false);
-      fairwayToast.success('All classes deleted', { description: 'Your schedule and calendar are clear.' });
+
+      if (failed.length > 0) {
+        showToast(
+          `${removed.length} deleted. ${failed.length} could not be removed from your calendar and ${failed.length === 1 ? 'was' : 'were'} kept so you can try again: ${failed.slice(0, 3).join(', ')}`,
+          'error',
+        );
+      } else {
+        fairwayToast.success('All classes deleted', { description: 'Your schedule and calendar are clear.' });
+      }
     } catch (_err) {
       showToast('Error deleting classes. Please try again.', 'error');
     } finally {

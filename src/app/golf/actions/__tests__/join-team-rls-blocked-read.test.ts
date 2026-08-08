@@ -34,6 +34,10 @@ let readable: Record<string, unknown>;
 let teamMembership: unknown;
 const rpcCalls: Array<{ fn: string; args: Record<string, unknown> }> = [];
 let joinRpcError: { message: string } | null = null;
+/** Simulates the code LOOKUP itself failing, as distinct from a bad code. */
+let lookupRpcError: { message: string } | null = null;
+/** Rows `golf_my_join_requests` returns — the definer view of the caller's requests. */
+let myJoinRequests: Array<Record<string, unknown>> = [];
 
 function makeChain(table: string) {
   const chain: Record<string, unknown> = {};
@@ -51,7 +55,16 @@ function makeChain(table: string) {
   chain.single = vi.fn(async () => result());
   chain.maybeSingle = vi.fn(async () => result());
   chain.then = vi.fn((onFulfilled: (v: unknown) => void) => {
-    void Promise.resolve(result()).then(onFulfilled);
+    // A bare awaited select resolves PostgREST-style: `data` is an ARRAY of
+    // rows, never a bare object. The membership guard reads this way since it
+    // dropped `.maybeSingle()`; a stub that hands back the naked object is
+    // lying about the contract the real client keeps.
+    const base = result();
+    const value =
+      table === 'golf_team_members'
+        ? { ...base, data: base.data == null ? [] : Array.isArray(base.data) ? base.data : [base.data] }
+        : base;
+    void Promise.resolve(value).then(onFulfilled);
   });
   return chain;
 }
@@ -61,10 +74,14 @@ const rpc = vi.fn(async (fn: string, args: Record<string, unknown>) => {
   // The definer functions see the team regardless of membership — that is the
   // entire point of them.
   if (fn === 'golf_team_by_join_code') {
+    if (lookupRpcError) return { data: null, error: lookupRpcError };
     return { data: args.p_code === CODE ? [TEAM] : [], error: null };
   }
   if (fn === 'golf_join_team_with_code') {
     return { data: null, error: joinRpcError };
+  }
+  if (fn === 'golf_my_join_requests') {
+    return { data: myJoinRequests, error: null };
   }
   return { data: null, error: null };
 });
@@ -113,14 +130,24 @@ vi.mock('@/lib/server-error-logger', () => ({
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
-import { processGolfTeamInvitation } from '../teams';
+import { processGolfTeamInvitation, createTeamJoinRequest, getPlayerJoinRequests } from '../teams';
 
 describe('joining a team when golf_teams is not readable by the joiner', () => {
   beforeEach(() => {
     rpcCalls.length = 0;
     adminInserts.length = 0;
     joinRpcError = null;
+    lookupRpcError = null;
     teamMembership = null;
+    myJoinRequests = [{
+      id: 'req-1',
+      status: 'pending',
+      message: null,
+      created_at: '2026-08-07T00:00:00Z',
+      team_id: TEAM.id,
+      team_name: TEAM.name,
+      organization_name: 'UNC Wilmington',
+    }];
     readable = {
       golf_players: {
         id: PLAYER_ID,
@@ -174,13 +201,19 @@ describe('joining a team when golf_teams is not readable by the joiner', () => {
     expect(rpcCalls.find((c) => c.fn === 'golf_join_team_with_code')).toBeUndefined();
   });
 
-  it('still refuses a second join of the same team', async () => {
+  it('treats a second join of the same team as SUCCESS — joining is idempotent', async () => {
+    // The invite flow legitimately runs the join twice (onboarding auto-joins,
+    // the join page confirms). The desired end state already holds, so this is
+    // success — reporting it as a red error was losing brand-new players at
+    // the signup door on 2026-08-06.
     teamMembership = { team_id: TEAM.id };
 
     const result = await processGolfTeamInvitation(CODE, PLAYER_ID);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/already a member/i);
+    expect(result.success).toBe(true);
+    expect(result.alreadyMember).toBe(true);
+    // The INSERT must not re-run — no duplicate "player joined" notification.
+    expect(rpcCalls.find((c) => c.fn === 'golf_join_team_with_code')).toBeUndefined();
   });
 
   it('still refuses when onboarding is not complete', async () => {
@@ -243,5 +276,74 @@ describe('joining a team when golf_teams is not readable by the joiner', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/failed to join/i);
+  });
+
+  /**
+   * The SECOND entry point, which this harness never exercised.
+   *
+   * These tests exist because the suite above passed for the entire four days
+   * `createTeamJoinRequest` was dead in production. The denying mock was
+   * already the right harness — it was simply never pointed at this function.
+   * A player typing their correct code into Settings → Join a Team got
+   * "Invalid team code" every time, because the lookup was a direct
+   * `.eq('join_code', …)` on a table RLS will not show a non-member.
+   */
+  describe('createTeamJoinRequest — the Settings entry point', () => {
+    // These assert on the CODE-RESOLUTION step, not on the end-to-end result:
+    // this harness returns one canned result per table, so it cannot tell an
+    // INSERT ... RETURNING apart from the SELECT that precedes it. The
+    // regression being pinned is precisely that a valid code no longer dies at
+    // the golf_teams read, which is fully observable here.
+    it('resolves the code through the definer RPC, not a direct read', async () => {
+      const result = await createTeamJoinRequest(CODE, PLAYER_ID);
+
+      expect(rpcCalls.find((c) => c.fn === 'golf_team_by_join_code')).toBeDefined();
+      // The four-day outage was exactly this string, for a correct code.
+      expect(result.error ?? '').not.toMatch(/invalid team code/i);
+    });
+
+    it('still rejects a code that resolves to no team', async () => {
+      const result = await createTeamJoinRequest('NOSUCHCD', PLAYER_ID);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/invalid team code/i);
+    });
+
+    it('does not blame the user when the LOOKUP ITSELF fails', async () => {
+      // An infrastructure fault reported as "check your typing" sends the
+      // player into a loop that cannot terminate and logs nothing actionable.
+      lookupRpcError = { message: 'connection reset' };
+
+      const result = await createTeamJoinRequest(CODE, PLAYER_ID);
+
+      expect(result.success).toBe(false);
+      expect(result.error).not.toMatch(/invalid team code/i);
+      expect(result.error).toMatch(/try again/i);
+    });
+  });
+
+  describe('getPlayerJoinRequests — resolving a team you are not yet on', () => {
+    it('returns the team name for a pending request', async () => {
+      const result = await getPlayerJoinRequests(PLAYER_ID);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.[0]?.team?.name).toBe(TEAM.name);
+    });
+
+    it('yields a NULL team rather than crashing when it cannot be resolved', async () => {
+      // The old shape asserted `team` was non-null through an `as unknown as`
+      // cast while the value was in fact always null, so the UI dereferenced
+      // it and took the whole Settings page down.
+      myJoinRequests = [{
+        id: 'req-1', status: 'pending', message: null,
+        created_at: '2026-08-07T00:00:00Z',
+        team_id: TEAM.id, team_name: null, organization_name: null,
+      }];
+
+      const result = await getPlayerJoinRequests(PLAYER_ID);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.[0]?.team).toBeNull();
+    });
   });
 });

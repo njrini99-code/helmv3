@@ -3,6 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { classifyTeamHealth, type GolfTeamHealthRow } from '@/lib/admin/data/golf';
 import type { Database } from '@/lib/types/database';
+import { excludeAuthNoise } from '@/lib/admin/data/triage';
+import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
+import { resolveTeamErrorCounts } from '@/lib/admin/data/team-scope';
 
 type UserRole = Database['public']['Enums']['user_role'];
 export const USER_ROLES: readonly UserRole[] = ['coach', 'player', 'admin'];
@@ -163,7 +166,9 @@ export interface TeamRosterInsight extends GolfTeamHealthRow {
  *     roster counts (golf_team_members/baseball_team_members, status=active),
  *     real last-activity (golf_rounds.team_id / baseball_games.team_id, both
  *     of which carry a team-level created_at), and real 7d error counts
- *     (admin_events.team_id + sport) — all from bulk queries already cheap
+ *     (resolveTeamErrorCounts — team_id OR the team's resolved roster/staff
+ *     user ids; team_id alone is written on 7 of 1,116 weekly error rows and
+ *     never on an error-severity one) — all from bulk queries already cheap
  *     at this scale.
  *   - `filters.team` is honored (the doc's signature accepted it but never
  *     applied it — the Teams table links to `?team=<id>` so a no-op filter
@@ -352,10 +357,19 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
         )
       : emptyRows,
     fetchAllRowsResult((from, to) =>
-      admin
-        .from('admin_events')
-        .select('team_id, sport, user_id')
-        .eq('event_type', 'error')
+      excludeAuthNoise(
+        admin
+          .from('admin_events')
+          .select('team_id, sport, user_id, severity')
+          .eq('event_type', 'error')
+          // This counted EVERY event_type='error' row regardless of severity,
+          // and `severity` was not even selected. Measured over 7 days: 593 of
+          // 629 counted rows (94%) were severity='info' — routine soft-failure
+          // narration like "no completed rounds yet". Of the users actually
+          // rendered, 31 were painted danger-red where 11 had a real error: a
+          // 65% false-positive rate on the console's primary attention column.
+          .in('severity', INCIDENT_SEVERITIES),
+      )
         .gte('created_at', ago7d)
         .order('id', { ascending: true })
         .range(from, to),
@@ -490,12 +504,21 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
     }
   }
 
-  const errorCounts = new Map<string, number>();
-  for (const e of (errorsRes.data ?? []) as ErrorRow[]) {
-    if (!e.team_id) continue;
-    const key = `${e.sport ?? 'unknown'}:${e.team_id}`;
-    errorCounts.set(key, (errorCounts.get(key) ?? 0) + 1);
-  }
+  // Team error counts come from the shared resolver (data/team-scope.ts), not
+  // from bucketing `errorsRes` by team_id. That bucketing could only ever
+  // produce zeros: `admin_events.team_id` is populated on 7 of 1,116 error
+  // rows in a week and on ZERO rows of error-or-worse severity, so every team
+  // row on this page read 0 errors regardless of what its people hit. The
+  // resolver is cross-sport and keyed on the bare team id — team ids are uuids
+  // and do not collide across golf_teams/baseball_teams, so the old
+  // `sport:team_id` composite key is no longer needed.
+  //
+  // `errorsRes` is still used below for the PER-USER counts, which key on
+  // user_id and were always correct.
+  const errorCounts = await resolveTeamErrorCounts([
+    ...((golfTeamsRes.data ?? []) as TeamRow[]).map((t) => t.id),
+    ...((baseballTeamsRes.data ?? []) as TeamRow[]).map((t) => t.id),
+  ]);
 
   const baseTeams: Array<GolfTeamHealthRow & { sport: 'golf' | 'baseball' }> = [
     ...((golfTeamsRes.data ?? []) as TeamRow[]).map((t) => {
@@ -506,7 +529,7 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
         playerCount: golfMemberCounts.get(t.id) ?? 0,
         lastActivity,
         health: classifyTeamHealth(lastActivity, now),
-        errors7d: errorCounts.get(`golf:${t.id}`) ?? 0,
+        errors7d: errorCounts.get(t.id) ?? 0,
         sport: 'golf' as const,
       };
     }),
@@ -518,7 +541,7 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
         playerCount: baseballMemberCounts.get(t.id) ?? 0,
         lastActivity,
         health: classifyTeamHealth(lastActivity, now),
-        errors7d: errorCounts.get(`baseball:${t.id}`) ?? 0,
+        errors7d: errorCounts.get(t.id) ?? 0,
         sport: 'baseball' as const,
       };
     }),

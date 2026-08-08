@@ -36,21 +36,16 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
     redirect(coach.onboarding_completed ? '/golf/dashboard' : '/golf/coach');
   }
 
-  // Get golf player record
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id, first_name, last_name, graduation_year, onboarding_completed')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!player || !player.onboarding_completed) {
-    // User is logged in but hasn't completed player onboarding
-    // Store the join code so they can auto-join after onboarding
-    // Redirect to player onboarding with the join code
-    redirect(`/golf/player?joinCode=${code}`);
-  }
-
-  // Find team by join code (case-insensitive).
+  // Resolve the code BEFORE deciding where to send anyone.
+  //
+  // This lookup used to sit BELOW the not-yet-onboarded redirect, which made
+  // the "Invalid Invite Code" screen further down dead code for every new
+  // player: they were bounced to onboarding at the redirect and the code was
+  // never checked. They then completed four onboarding steps, the auto-join
+  // quietly failed on the bad code, and they were shown a celebration screen
+  // telling them to go see their team. Checking first is both cheaper and
+  // kinder — a mistyped or expired link now fails immediately, while the person
+  // still has the coach's message open, instead of twenty screens later.
   //
   // #1257 — this used to be a direct `.eq('join_code', …)` against golf_teams,
   // which only worked because a policy read `USING (join_code IS NOT NULL)`.
@@ -64,6 +59,13 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
     .rpc('golf_team_by_join_code', { p_code: normalizedCode });
 
   const team = Array.isArray(teamRows) ? teamRows[0] : teamRows;
+
+  // Get golf player record
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id, first_name, last_name, graduation_year, onboarding_completed')
+    .eq('user_id', user.id)
+    .maybeSingle();
 
   if (teamError || !team) {
     return (
@@ -95,6 +97,16 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
         </div>
       </div>
     );
+  }
+
+  // The code is now known to resolve, so it is safe to carry into onboarding.
+  // This redirect used to sit ABOVE the lookup, which is what made the
+  // "Invalid Invite Code" screen unreachable for anyone who was not already
+  // onboarded — the exact population an invite link is for.
+  if (!player || !player.onboarding_completed) {
+    // User is logged in but hasn't completed player onboarding
+    // Store the join code so they can auto-join after onboarding
+    redirect(`/golf/player?joinCode=${code}`);
   }
 
   // The RPC returns the organization fields flattened alongside the team,

@@ -77,6 +77,95 @@ export function setPushSoftAskState(state: SoftAskState): void {
 }
 
 /**
+ * The device token APNs/FCM handed us, held until it is accepted by the server.
+ *
+ * APNs fires `registration` exactly ONCE per launch, and on a cold start it
+ * fires while the app is still sitting on the login screen — there is no
+ * session, so `registerDeviceToken` answers UNAUTHORIZED_RETRYABLE. The old
+ * code treated that as a cookie-propagation race and retried for ~15 seconds,
+ * which cannot succeed when the truth is "this person has not logged in yet":
+ * the token was then dropped for the rest of the launch and the device silently
+ * received no push at all. 6 of 7 registrations in the week to 2026-08-06 never
+ * landed a token that way. Parking it here lets the login itself complete the
+ * handshake — see flushPendingDeviceToken.
+ */
+let pendingDeviceToken: { value: string; platform: 'ios' | 'android' } | null = null;
+/** Guards against two flushes racing (auth event + app-resume, say). */
+let deviceTokenSubmitInFlight = false;
+
+/**
+ * Try to hand the parked token to the server, with a short backoff for the
+ * genuine case the old comment described (session cookie mid-propagation).
+ *
+ * Keeps the token parked on an auth failure so a later flush can retry; clears
+ * it on success, and on a NON-retryable rejection where retrying is pointless.
+ */
+async function submitPendingDeviceToken(): Promise<void> {
+  if (!pendingDeviceToken || deviceTokenSubmitInFlight) return;
+  deviceTokenSubmitInFlight = true;
+  try {
+    const { registerDeviceToken } = await import('@/app/golf/actions/push-notifications');
+    const backoffsMs = [1000, 2000, 4000, 8000];
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= backoffsMs.length; attempt++) {
+      const token = pendingDeviceToken;
+      if (!token) return;
+      try {
+        const result = await registerDeviceToken(token.value, token.platform);
+        if (result.success) {
+          pendingDeviceToken = null;
+          return;
+        }
+        if (!result.retryable) {
+          // A rejection that retrying cannot fix (malformed payload). Drop it
+          // rather than re-attempting on every future auth event.
+          pendingDeviceToken = null;
+          console.error('[Push] Failed to save device token:', result.error);
+          return;
+        }
+        lastError = result.error;
+      } catch (err) {
+        // Transient transport/import failures are retryable too — keep
+        // looping through the backoff rather than bailing on the first one.
+        lastError = err;
+      }
+      if (attempt < backoffsMs.length) {
+        await new Promise((resolve) => setTimeout(resolve, backoffsMs[attempt]));
+      }
+    }
+    // Still unauthorized. The token STAYS parked: the user has most likely not
+    // signed in yet, and flushPendingDeviceToken will finish the job the moment
+    // they do.
+    console.warn('[Push] Device token not registered yet; will retry when a session exists', lastError);
+  } finally {
+    deviceTokenSubmitInFlight = false;
+  }
+}
+
+/**
+ * Submit the parked device token now that a session should exist.
+ *
+ * Call this on sign-in. No-op when nothing is parked, so it is safe to call on
+ * every auth event.
+ */
+export async function flushPendingDeviceToken(): Promise<void> {
+  if (!pendingDeviceToken) return;
+  await submitPendingDeviceToken();
+}
+
+/** Test seam — the parked token is module state with no other way in. */
+export async function __setPendingDeviceTokenForTest(
+  token: { value: string; platform: 'ios' | 'android' } | null,
+): Promise<void> {
+  pendingDeviceToken = token;
+}
+
+/** Test seam — see above. */
+export function __getPendingDeviceTokenForTest(): { value: string; platform: 'ios' | 'android' } | null {
+  return pendingDeviceToken;
+}
+
+/**
  * Wire up push notification listeners without prompting for permission.
  * Safe to call on every app launch.
  */
@@ -106,38 +195,17 @@ export async function initPushListeners(): Promise<void> {
 
     // Listen for the registration event (fires once per session with APNs token)
     PushNotifications.addListener('registration', async (token) => {
-      const { registerDeviceToken } = await import('@/app/golf/actions/push-notifications');
-      // The webview can fire `registration` before the Supabase session
-      // cookie has propagated, so registerDeviceToken may return a retryable
-      // Unauthorized result. Back off and retry a few times before giving up
-      // — initPushListeners re-registers on the next launch regardless.
       // Was hardcoded 'ios'. On Android this listener fires with an **FCM**
       // token, and storing it as 'ios' sends it to `send-apns-push`, where
       // Apple rejects it — silently, since a rejected token just increments
       // failed_count. Read the real platform so `sendPushNotification` can
       // route to the right transport.
       const platform = Capacitor.getPlatform() === 'android' ? 'android' : 'ios';
-      const backoffsMs = [1000, 2000, 4000, 8000];
-      let lastError: unknown;
-      for (let attempt = 0; attempt <= backoffsMs.length; attempt++) {
-        try {
-          const result = await registerDeviceToken(token.value, platform);
-          if (result.success) return;
-          if (!result.retryable) {
-            console.error('[Push] Failed to save device token:', result.error);
-            return;
-          }
-          lastError = result.error;
-        } catch (err) {
-          // Transient transport/import failures are retryable too — keep
-          // looping through the backoff rather than bailing on the first one.
-          lastError = err;
-        }
-        if (attempt < backoffsMs.length) {
-          await new Promise((resolve) => setTimeout(resolve, backoffsMs[attempt]));
-        }
-      }
-      console.warn('[Push] Device token registration failed after retries; will retry on next launch', lastError);
+      // Park it before trying. APNs delivers the token ONCE per launch, so if
+      // the submit below fails there is no second event to fall back on — the
+      // token has to survive until a session exists. See flushPendingDeviceToken.
+      pendingDeviceToken = { value: token.value, platform };
+      await submitPendingDeviceToken();
     }).catch((err) => {
       // addListener() itself rejects async when the plugin is unavailable —
       // separate from anything the callback above does.

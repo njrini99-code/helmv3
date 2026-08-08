@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -95,11 +97,34 @@ export default async function GolfRosterPage() {
       );
     }
 
-    const { data: teamMember } = await supabase
+    // The coach branch below already checks BOTH of its reads for errors. This
+    // player branch checked neither, and the consequence is the single most
+    // confusing screen in the product: a failed membership read fell straight
+    // through to "You haven't joined a team yet. Ask your coach for a join
+    // code." — told to a player who is on the roster, over a transient RLS
+    // denial or timeout. That is the screen behind "teams joining doesn't
+    // work"; the join itself was fine.
+    const { data: teamMember, error: teamMemberError } = await supabase
       .from('golf_team_members')
       .select('team_id')
       .eq('player_id', player.id)
       .maybeSingle();
+
+    if (teamMemberError) {
+      await logServerError(
+        `[roster] player membership read failed — would have rendered "No Team Found": ${describeError(teamMemberError)}`,
+        { action: 'roster.playerMembership', featureArea: 'roster', playerId: player.id },
+      );
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
+            <InlineNotice tone="danger" title="Couldn't load your roster">
+              <p>We couldn&apos;t reach your team just now. This is on us, not your account — try again in a moment.</p>
+            </InlineNotice>
+          </div>
+        </div>
+      );
+    }
 
     if (!teamMember?.team_id) {
       return (
@@ -129,7 +154,7 @@ export default async function GolfRosterPage() {
 
     // F083: a player's teammate list is active members only — pending invites
     // and removed players must not show up as teammates.
-    const { data: tmData } = await supabase
+    const { data: tmData, error: teammatesError } = await supabase
       .from('golf_team_members')
       .select(`
         player:golf_players!inner (
@@ -140,6 +165,24 @@ export default async function GolfRosterPage() {
       .eq('team_id', teamMember.team_id)
       .eq('status', 'active')
       .neq('player_id', player.id);
+
+    // Same trap one step further in: an unread teammate list renders as a team
+    // of one. The coach equivalent (playersError, below) is already guarded.
+    if (teammatesError) {
+      await logServerError(
+        `[roster] teammate read failed — would have rendered an empty roster: ${describeError(teammatesError)}`,
+        { action: 'roster.teammates', featureArea: 'roster', playerId: player.id },
+      );
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
+            <InlineNotice tone="danger" title="Couldn't load your roster">
+              <p>We couldn&apos;t load your teammates just now. Try again in a moment.</p>
+            </InlineNotice>
+          </div>
+        </div>
+      );
+    }
 
     const teammates = (tmData || [])
       .filter(tm => tm.player && !('error' in tm.player))
