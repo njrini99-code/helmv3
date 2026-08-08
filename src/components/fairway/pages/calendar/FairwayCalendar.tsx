@@ -265,6 +265,9 @@ export function FairwayCalendar({
     loadedEnd: loadedRangeEnd,
     realtime: true,
     onRealtimeEvent: () => router.refresh(),
+    // Decides whether teammates' class rows are even fetched. attributeClassEvents
+    // below still runs — this stops the data reaching the browser at all.
+    viewer: { isCoach, playerId: viewerPlayerId },
   });
 
   // ── ONE canonical, deterministically-ordered event list (finding #37/#166/
