@@ -533,3 +533,125 @@ describe('useCalendarRangeEvents — class rows must not reach a player\'s brows
     expect(eventsOrClause()).toBe('event_type.neq.class');
   });
 });
+
+/**
+ * Switching teams has to clear this hook's state, and neither piece was.
+ *
+ * `eventVersions` is a merge map keyed by event id whose initialEvents effect
+ * only ever ADDS. Toggling from the men's team to the women's kept every men's
+ * event in the map, so the women's calendar rendered both squads at once — no
+ * error, just a calendar quietly showing a program that does not exist.
+ *
+ * `loadedRef` initialised once on mount and was never rebuilt, so after the
+ * toggle the hook believed the new team's window was already loaded and SKIPPED
+ * the fetch. A month already visited under the old team then rendered only the
+ * OLD team's events — worse, because it looks like a complete answer.
+ *
+ * Scott Singhass is head coach of both Shenandoah squads, so he is the person
+ * this happens to, on the surface he uses to decide who travels.
+ */
+describe('useCalendarRangeEvents — switching teams must not bleed the previous squad', () => {
+  const NOW = Date.now();
+
+  beforeEach(() => {
+    queryLog.length = 0;
+    nextResults = [];
+    deferredResolvers = [];
+    useDeferredForNextN = 0;
+  });
+
+  function renderForTeam(teamId: string, initialEvents: CalendarEvent[]) {
+    return renderHook(
+      ({ team, events }: { team: string; events: CalendarEvent[] }) =>
+        useCalendarRangeEvents({
+          teamId: team,
+          initialEvents: events,
+          visibleStart: new Date(NOW),
+          visibleEnd: new Date(NOW + 6 * DAY_MS),
+          loadedStart: new Date(NOW - 90 * DAY_MS).toISOString(),
+          loadedEnd: new Date(NOW + 90 * DAY_MS).toISOString(),
+          viewer: { isCoach: true, playerId: null },
+        }),
+      { initialProps: { team: teamId, events: initialEvents } },
+    );
+  }
+
+  it("drops the previous team's events instead of merging both squads", async () => {
+    const mens = [makeEvent('mens-practice', new Date(NOW).toISOString())];
+    const womens = [makeEvent('womens-practice', new Date(NOW + DAY_MS).toISOString())];
+
+    const { result, rerender } = renderForTeam('team-mens', mens);
+    await act(async () => {});
+    expect(result.current.events.map((e) => e.id)).toEqual(['mens-practice']);
+
+    // The toggle: new team id AND the server's new payload arrive together.
+    rerender({ team: 'team-womens', events: womens });
+    await act(async () => {});
+
+    const ids = result.current.events.map((e) => e.id);
+    expect(ids).toEqual(['womens-practice']);
+    expect(ids).not.toContain('mens-practice');
+  });
+
+  it('refetches a far range it had already loaded under the previous team', async () => {
+    // The bug needs the coach to have navigated OUTSIDE the server window
+    // first — that is what grows `loadedRef`. Inside the window nothing is
+    // ever fetched, which is why the stale bookkeeping stayed invisible.
+    const FAR = NOW + 150 * DAY_MS;
+
+    const { rerender } = renderHook(
+      ({ team, start, end }: { team: string; start: Date; end: Date }) =>
+        useCalendarRangeEvents({
+          teamId: team,
+          initialEvents: [],
+          visibleStart: start,
+          visibleEnd: end,
+          loadedStart: new Date(NOW - 90 * DAY_MS).toISOString(),
+          loadedEnd: new Date(NOW + 90 * DAY_MS).toISOString(),
+          viewer: { isCoach: true, playerId: null },
+        }),
+      {
+        initialProps: {
+          team: 'team-mens',
+          start: new Date(NOW),
+          end: new Date(NOW + 6 * DAY_MS),
+        },
+      },
+    );
+    await act(async () => {});
+
+    // Navigate to the far month under the MEN'S team — this fetches and marks
+    // that interval loaded.
+    nextResults = [{ data: [makeRow('mens-far', new Date(FAR + DAY_MS).toISOString())], error: null }];
+    rerender({ team: 'team-mens', start: new Date(FAR), end: new Date(FAR + 6 * DAY_MS) });
+    await waitFor(() => expect(queryLog.some((q) => q.table === 'golf_events')).toBe(true));
+
+    const fetchesBeforeToggle = queryLog.filter((q) => q.table === 'golf_events').length;
+
+    // Toggle to the women's team while sitting on that same far month.
+    nextResults = [{ data: [], error: null }];
+    rerender({ team: 'team-womens', start: new Date(FAR), end: new Date(FAR + 6 * DAY_MS) });
+
+    // Without the reset, `loadedRef` still claims this interval is loaded, so
+    // no fetch happens and the month renders the MEN'S events.
+    await waitFor(() =>
+      expect(queryLog.filter((q) => q.table === 'golf_events').length).toBeGreaterThan(
+        fetchesBeforeToggle,
+      ),
+    );
+  });
+
+  it('a re-render with the SAME team does not reset anything', async () => {
+    // The reset must key on a real team change, not on every render — this
+    // hook merges by generation and a spurious reset would drop live edits.
+    const mens = [makeEvent('mens-practice', new Date(NOW).toISOString())];
+    const { result, rerender } = renderForTeam('team-mens', mens);
+    await act(async () => {});
+
+    rerender({ team: 'team-mens', events: mens });
+    await act(async () => {});
+
+    expect(result.current.events.map((e) => e.id)).toEqual(['mens-practice']);
+    expect(queryLog.filter((q) => q.table === 'golf_events')).toHaveLength(0);
+  });
+});
