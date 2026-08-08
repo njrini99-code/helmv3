@@ -93,3 +93,53 @@ describe('the membership lookup cannot silently pass on an error', () => {
     expect(CODE).toMatch(/memberships\?\.find\(\(m\) => m\.team_id === teamId\)/);
   });
 });
+
+describe('a failed read on the join path does not become a wrong answer', () => {
+  /** The body of one function, by name, with comments already stripped. */
+  function fn(name: string): string {
+    const start = CODE.indexOf(`async function ${name}(`);
+    expect(start, `${name} not found — was it renamed?`).toBeGreaterThan(-1);
+    const next = CODE.indexOf('\nasync function ', start + 1);
+    return CODE.slice(start, next === -1 ? CODE.length : next);
+  }
+
+  it('a failed team lookup is not reported as "Team not found"', () => {
+    // Zero rows IS the expected result here — RLS hides the team from the very
+    // people this validator exists to let through, which is why the caller
+    // resolves it through the definer function instead. So PGRST116 stays
+    // silent, and anything else is a genuine failure. Telling someone with a
+    // valid code "Team not found" sends them hunting for a typo that is not
+    // there.
+    const body = fn('validateGolfPlayerCanJoinTeamImpl');
+    expect(body).toContain("teamError.code !== 'PGRST116'");
+    expect(body).toContain("Couldn't look up that team just now");
+  });
+
+  it('every read gating the coach notification records its own failure', () => {
+    // "A player joined your team" is gated by three reads in a row — player,
+    // team, coaches — and each one skipped the notify block on a null. That is
+    // how this notification went dark for six months while joins kept working:
+    // nothing failed, so nothing looked wrong.
+    const body = fn('joinGolfTeamImpl');
+    expect(body).toContain('error: playerError');
+    expect(body).toContain('error: coachesError');
+    expect(body).toMatch(/coach notification will be skipped/);
+    expect(body).toMatch(/nobody was notified/);
+  });
+
+  it('the join still succeeds when the notification reads fail', () => {
+    // A coach's notification is not worth failing a player's join over. The
+    // guards must log, never return.
+    const body = fn('joinGolfTeamImpl');
+    const notifySection = body.slice(body.indexOf('playerError'));
+    expect(notifySection).not.toMatch(/if \(playerError\)[\s\S]{0,200}return \{\s*success: false/);
+  });
+
+  it('a failed duplicate check does not let a second pending request through', () => {
+    // There is no unique constraint behind this read. Treating a failure as
+    // "no request yet" stacked duplicates in the coach's approval queue.
+    const body = fn('createTeamJoinRequestImpl');
+    expect(body).toContain('error: existingRequestError');
+    expect(body).toContain("Couldn't check your existing requests just now");
+  });
+});
