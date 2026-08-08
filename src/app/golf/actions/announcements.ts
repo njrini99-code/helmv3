@@ -333,13 +333,28 @@ async function createEnrichedAnnouncementImpl(input: {
     // in one call, ALL announcement links in one call, and ALL assignments in
     // one call — keeping the same data shape and the same sort_order semantics.
     if (validated.inlineTasks.length > 0) {
+      // COLUMN NAMES, CHECKED AGAINST THE LIVE TABLE.
+      //
+      // This wrote `created_by`, and golf_tasks has no such column — it has
+      // `assigned_by`, which is what createTask (tasks.ts:312) uses. Postgres
+      // answers 42703 undefined_column, supabase-js RESOLVES that as
+      // `{ data: null, error }` rather than throwing, and the error was
+      // discarded. `insertedTaskIds` came back empty, the `length > 0` guard
+      // skipped the links and the assignments, and the action returned
+      // success — so a coach who attached tasks to an announcement was told
+      // it all went out, and not one task existed.
+      //
+      // `status` was 'active'. The column is free text defaulting to
+      // 'pending', and every other writer and reader in the product uses
+      // 'pending' — an 'active' row would have inserted and then been
+      // invisible to the tasks list, which is the same bug one layer later.
       const taskRows = validated.inlineTasks.map(task => ({
         team_id: teamId,
-        created_by: coach.id,
+        assigned_by: coach.id,
         title: task.title,
         description: task.description || null,
         due_date: task.dueDate || null,
-        status: 'active',
+        status: 'pending',
       }));
 
       // Bulk insert tasks, returning ids in insertion order so we can map them
@@ -348,6 +363,14 @@ async function createEnrichedAnnouncementImpl(input: {
         .from('golf_tasks' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
         .insert(taskRows)
         .select('id')) as unknown as { data: Array<{ id: string }> | null; error: { message?: string } | null };
+
+      if (insertedTasksResult.error) {
+        await logServerError(
+          `[createEnrichedAnnouncement] inline task insert failed for announcement ${announcementId}; the announcement exists but carries no tasks: ${describeError(insertedTasksResult.error)}`,
+          { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements' },
+          'error'
+        );
+      }
 
       const insertedTaskIds = (insertedTasksResult.data || []).map(t => t.id);
 
@@ -359,9 +382,19 @@ async function createEnrichedAnnouncementImpl(input: {
           sort_order: i,
         }));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
+        const linkResult = await (supabase as any)
           .from('golf_announcement_tasks')
-          .insert(linkRows);
+          .insert(linkRows) as { error: { message?: string } | null };
+
+        if (linkResult.error) {
+          // The tasks now exist but are attached to nothing, so they appear on
+          // the task list orphaned from the announcement that explained them.
+          await logServerError(
+            `[createEnrichedAnnouncement] task link insert failed for announcement ${announcementId}; tasks exist but are not attached to it: ${describeError(linkResult.error)}`,
+            { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements' },
+            'error'
+          );
+        }
 
         // Assign every task to every target player in one insert.
         if (targetPlayerIds.length > 0) {
@@ -374,9 +407,21 @@ async function createEnrichedAnnouncementImpl(input: {
               assigned_at: assignedAt,
             }))
           );
-          await (supabase
+          const assignmentResult = await (supabase
             .from('golf_task_assignments' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
             .insert(assignmentRows)) as unknown as { error: { message?: string } | null };
+
+          if (assignmentResult.error) {
+            // Worst of the three: the task exists and is linked, so the coach
+            // sees it on the announcement — but it is assigned to nobody, so
+            // no player is ever asked to do it and the completion count sits
+            // at 0/0 looking finished.
+            await logServerError(
+              `[createEnrichedAnnouncement] task assignment insert failed for announcement ${announcementId}; the tasks reached no players: ${describeError(assignmentResult.error)}`,
+              { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements' },
+              'error'
+            );
+          }
         }
       }
     }
