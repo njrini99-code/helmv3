@@ -162,12 +162,27 @@ export default async function PlayerGamePage({
   const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   if (!teamId) redirect('/golf/dashboard/roster');
 
-  const { data: membership } = await supabase
+  const { data: membership, error: membershipError } = await supabase
     .from('golf_team_members')
     .select('player_id')
     .eq('team_id', teamId)
     .eq('player_id', playerId)
     .maybeSingle();
+
+  // A failed read is not "this player is not on your team". Left unchecked,
+  // this returned a 404 for a player the coach had just clicked on their own
+  // roster — the most confusing thing this page can do, because the roster
+  // right behind it still lists them. There is an error boundary at
+  // (dashboard)/dashboard/error.tsx, so throwing shows "something went wrong,
+  // try again" instead. notFound() still fires for a genuine non-member.
+  if (membershipError) {
+    void logServerError(
+      `[player game page] membership read failed for ${playerId}: ${describeError(membershipError)}`,
+      { action: 'players.gamePage', featureArea: 'roster' },
+      'warning',
+    );
+    throw new Error("Couldn't confirm this player is on your team. Please try again.");
+  }
   if (!membership) notFound();
 
   // ---------------------------------------------------------------------
@@ -272,6 +287,41 @@ export default async function PlayerGamePage({
   ]);
 
   if (!fingerprint) notFound();
+
+  // Every `?? []` and `?? null` below turns a FAILED read into an empty one,
+  // and this page is where a coach decides what to work on with a player. An
+  // empty patterns list reads as "nothing wrong", an empty rounds list as
+  // "hasn't played", and neither is retractable once the coach has acted on it.
+  //
+  // The profile and the rounds are the spine of both tabs — without them the
+  // page is not a degraded view, it is a wrong one, so those throw to the error
+  // boundary. The analysis panels are additive: they degrade, but loudly, so a
+  // silent stretch shows up in Bridge rather than as a coach wondering why
+  // CoachHelm has stopped noticing anything.
+  const spineFailure = playerResult.error ?? roundsResult.error ?? null;
+  if (spineFailure) {
+    void logServerError(
+      `[player game page] profile/rounds read failed for ${playerId}: ${describeError(spineFailure)}`,
+      { action: 'players.gamePage', featureArea: 'stats' },
+      'error',
+    );
+    throw new Error("Couldn't load this player's game. Please try again.");
+  }
+
+  for (const [label, failed] of [
+    ['patterns', patternsResult.error],
+    ['insights', insightsResult.error],
+    ['focus areas', focusAreasResult.error],
+    ['predictions', predictionsResult.error],
+    ['themes', themesResult?.error ?? null],
+  ] as const) {
+    if (!failed) continue;
+    void logServerError(
+      `[player game page] ${label} read failed for ${playerId}; that panel will render empty: ${describeError(failed)}`,
+      { action: 'players.gamePage', featureArea: 'coachhelm' },
+      'warning',
+    );
+  }
 
   const player = (playerResult.data as PlayerProfile | null) ?? null;
   if (!player) notFound();
