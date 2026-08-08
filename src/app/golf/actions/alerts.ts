@@ -356,19 +356,45 @@ async function generateAlertsImpl(
     // pre-scan visible count as the baseline for the honest delta.
     const visibleBefore = await countVisibleCoachInsights(supabase);
 
-    // Get active players on the team
-    const { data: teamMembers } = await supabase
+    // Get active players on the team.
+    //
+    // The early return below answers `success: true, alerts: [], generated: 0`
+    // — CoachHelm telling a coach it scanned the squad and found nothing to
+    // flag. On a failed roster read that is a clean bill of health issued
+    // WITHOUT LOOKING AT ANYONE, which is worse than an error on an
+    // intelligence surface: the coach's takeaway is "my team is fine".
+    //
+    // The comment directly above records the same lesson being learned on the
+    // INSERT path here ("fail the action when the insert fails instead of
+    // swallowing it"). These two reads were left behind.
+    const { data: teamMembers, error: teamMembersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', teamId)
       .eq('status', 'active');
 
+    if (teamMembersError) {
+      await logServerError(
+        `[generateAlerts] roster read failed — would have reported a clean scan of nobody: ${describeError(teamMembersError)}`,
+        { action: 'alerts.generateAlerts', featureArea: 'coachhelm' },
+      );
+      return { success: false, error: "Couldn't load your roster, so no scan was run. Please try again." };
+    }
+
     const playerIds = (teamMembers || []).map((m) => m.player_id);
 
-    const { data: players } = await supabase
+    const { data: players, error: playersError } = await supabase
       .from('golf_players')
       .select('id, first_name, last_name, avatar_url')
       .in('id', playerIds);
+
+    if (playersError) {
+      await logServerError(
+        `[generateAlerts] player read failed — would have reported a clean scan of nobody: ${describeError(playersError)}`,
+        { action: 'alerts.generateAlerts', featureArea: 'coachhelm' },
+      );
+      return { success: false, error: "Couldn't load your players, so no scan was run. Please try again." };
+    }
 
     if (!players || players.length === 0) {
       return { success: true, alerts: [], generated: 0 };
