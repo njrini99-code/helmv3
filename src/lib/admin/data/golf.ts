@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { assertQueryOk } from '@/lib/admin/data/assert-query-ok';
+import { resolveTeamErrorCounts } from '@/lib/admin/data/team-scope';
 import { fetchAdminRollupA, type RollupA } from '@/app/golf/actions/admin/rollup-a';
 
 export type TeamHealth = 'active' | 'cooling' | 'dormant';
@@ -77,7 +78,6 @@ export async function fetchGolfTab(): Promise<{
 }> {
   const admin = createAdminClient();
   const ago30d = new Date(Date.now() - 30 * 86400_000).toISOString();
-  const ago7d = new Date(Date.now() - 7 * 86400_000).toISOString();
   const today = new Date();
   const todayDate = today.toISOString().slice(0, 10);
 
@@ -85,7 +85,6 @@ export async function fetchGolfTab(): Promise<{
     rollup,
     teamsRes,
     membersRes,
-    errorRes,
     llmCallsCountRes,
     llmCostRes,
     llmBudgetRes,
@@ -108,20 +107,9 @@ export async function fetchGolfTab(): Promise<{
           .order('id', { ascending: true })
           .range(from, to),
       ),
-      // 7d golf error events — same pagination fix as above, replacing a
-      // bare `.limit(1000)` that silently under-counted `errors7d` on the
-      // Teams health table during an actual error storm (the exact scenario
-      // this table exists to surface).
-      fetchAllRowsResult((from, to) =>
-        admin
-          .from('admin_events')
-          .select('team_id')
-          .eq('sport', 'golf')
-          .eq('event_type', 'error')
-          .gte('created_at', ago7d)
-          .order('id', { ascending: true })
-          .range(from, to),
-      ),
+      // errors7d is NOT read here — it needs the team id list, so it runs
+      // after this batch via resolveTeamErrorCounts(). See below.
+      //
       // Pure count — head:true never triggers the PostgREST 1000-row cap,
       // unlike deriving calls30d from llmCalls.length on a capped fetch.
       admin.from('golf_coachhelm_llm_calls').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
@@ -167,7 +155,6 @@ export async function fetchGolfTab(): Promise<{
   // fetchBaseballTab (src/lib/admin/data/baseball.ts:131-139) already does.
   assertQueryOk(teamsRes, 'fetchGolfTab: golf_teams');
   assertQueryOk(membersRes, 'fetchGolfTab: golf_team_members');
-  assertQueryOk(errorRes, 'fetchGolfTab: admin_events');
   assertQueryOk(llmCallsCountRes, 'fetchGolfTab: golf_coachhelm_llm_calls count');
   assertQueryOk(llmCostRes, 'fetchGolfTab: golf_coachhelm_llm_calls cost');
   assertQueryOk(llmBudgetRes, 'fetchGolfTab: golf_coachhelm_llm_budget');
@@ -181,11 +168,18 @@ export async function fetchGolfTab(): Promise<{
     const tid = (m as { team_id: string | null }).team_id;
     if (tid) memberCounts.set(tid, (memberCounts.get(tid) ?? 0) + 1);
   }
-  const errorCounts = new Map<string, number>();
-  for (const e of errorRes.data ?? []) {
-    const tid = (e as { team_id: string | null }).team_id;
-    if (tid) errorCounts.set(tid, (errorCounts.get(tid) ?? 0) + 1);
-  }
+  // errors7d, resolved the one honest way — see resolveTeamErrorCounts in
+  // data/team-scope.ts. This used to count `admin_events` by `team_id` alone,
+  // which is written on 7 of 1,116 error rows in a week and on ZERO rows of
+  // error-or-worse severity: measured on production 2026-08-06, EVERY golf
+  // team read 0 while the same week resolved through the roster to Demo
+  // University 11, Guilford 9, Shenandoah Womens 9, Shenandoah 3. Because
+  // TeamHealthTable paints its leader wash on `health === 'active' &&
+  // errors7d === 0`, the board was badging the three worst teams as its
+  // cleanest. Runs after the batch above because it needs the team id list.
+  const errorCounts = await resolveTeamErrorCounts(
+    (teamsRes.data ?? []).map((t) => (t as { id: string }).id),
+  );
   // Last activity per team from the rollup's bounded 12-week round slice.
   const lastRound = new Map<string, string>();
   for (const r of rollup.allRoundsMinimal) {

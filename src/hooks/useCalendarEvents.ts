@@ -31,6 +31,12 @@ export interface CalendarEvent {
   // back to the root.
   parent_event_id?: string | null;
   recurrence_rule?: string | null;
+  // Class attribution — populated by attributeClassEvents for synced class
+  // meetings so the shared "All" calendar can say WHOSE class it is. Absent on
+  // every other event type. See lib/calendar/class-events.ts.
+  owner_player_id?: string | null;
+  owner_label?: string | null;
+  owner_initials?: string | null;
 }
 
 interface UseCalendarEventsOptions {

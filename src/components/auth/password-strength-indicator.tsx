@@ -25,7 +25,14 @@ function evaluatePassword(password: string): StrengthResult {
     { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
     { label: 'Contains lowercase letter', met: /[a-z]/.test(password) },
     { label: 'Contains a number', met: /[0-9]/.test(password) },
-    { label: 'Contains special character', met: /[^A-Za-z0-9]/.test(password) },
+    // MUST match the server's rule exactly — src/lib/auth/password-validation.ts.
+    // This used to be /[^A-Za-z0-9]/, i.e. "any non-alphanumeric", which is
+    // WIDER than what the server accepts. So `Golfteam2026~` showed all five
+    // checks green and the label "Strong", and was then rejected server-side
+    // for having no special character. Backtick and every non-ASCII symbol
+    // behaved the same way. That is a dead end, not bad wording: the page told
+    // the user they had satisfied a requirement the server says they had not.
+    { label: 'Contains special character', met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password) },
   ];
 
   const metCount = checks.filter((c) => c.met).length;

@@ -1,7 +1,7 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFeatureHealth } from '@/lib/admin/data/feature-health';
 import { fetchAiAvailability } from '@/lib/admin/data/ai-availability';
-import { Eyebrow } from '@/components/fairway';
+import { Eyebrow, Skeleton } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -9,6 +9,30 @@ import { FeatureDotGrid } from '../_components/FeatureDotGrid';
 import { LocalTime } from '../_components/LocalTime';
 
 export const dynamic = 'force-dynamic';
+
+// Neither panel below is a card, so neither gets a card-shaped fallback:
+// AiBody is one status dot beside two lines of copy, and Body is a mono
+// timestamp above FeatureDotGrid's `rounded-xl` chip grid.
+const AI_SKELETON = (
+  <div className="flex items-start gap-3">
+    <Skeleton circle className="mt-1.5 h-2.5 w-2.5 shrink-0" />
+    <div className="min-w-0 flex-1 space-y-2">
+      <Skeleton className="h-4 w-56 max-w-full" />
+      <Skeleton className="h-3.5 w-80 max-w-full" />
+    </div>
+  </div>
+);
+
+const HEALTH_SKELETON = (
+  <div>
+    <Skeleton className="h-3 w-36" />
+    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+      {Array.from({ length: 8 }, (_, i) => (
+        <Skeleton key={i} className="h-12 w-full rounded-xl" />
+      ))}
+    </div>
+  </div>
+);
 
 /**
  * W16 Task 3 — Feature Health board. requireSuperAdmin() FIRST LINE
@@ -21,12 +45,21 @@ export default async function FeatureHealthPage() {
   await requireSuperAdmin();
 
   async function Body() {
-    const { features, generatedAt, degraded } = await fetchFeatureHealth();
+    const { features, generatedAt, degraded, degradedReason } = await fetchFeatureHealth();
     if (degraded) {
       return (
         <PanelStale
           label="Feature health pipeline degraded — get_feature_health() did not respond"
-          error="Every feature is rendering neutral, not a fabricated state."
+          // Show the RPC's own words. This panel replaces the entire board, so
+          // without them "degraded" covers everything from a dead database to a
+          // payload the function rejected — states with very different fixes.
+          // Super-admin-gated route (requireSuperAdmin() above), so the raw
+          // Postgres message is not an exposure.
+          error={
+            degradedReason
+              ? `${degradedReason} — every feature is rendering neutral, not a fabricated state.`
+              : 'Every feature is rendering neutral, not a fabricated state.'
+          }
         />
       );
     }
@@ -67,8 +100,12 @@ export default async function FeatureHealthPage() {
     const dot =
       ai.status === 'red'
         ? 'bg-fw-danger'
+        // `bg-fw-warning`, not `bg-amber-500`: a fixed-palette amber does not
+        // move when the dark token block flips, and it was the only hardcoded
+        // colour left on this board. Its three siblings here are already on
+        // tokens (fw-danger / accent-500 / warm-300).
         : ai.status === 'amber'
-          ? 'bg-amber-500'
+          ? 'bg-fw-warning'
           : ai.status === 'green'
             ? 'bg-accent-500'
             : 'bg-warm-300';
@@ -108,10 +145,10 @@ export default async function FeatureHealthPage() {
           feature tags before they reach this board.
         </p>
       </div>
-      <PanelBoundary title="AI availability">
+      <PanelBoundary title="AI availability" skeleton={AI_SKELETON}>
         <AiBody />
       </PanelBoundary>
-      <PanelBoundary title="Feature Health">
+      <PanelBoundary title="Feature Health" skeleton={HEALTH_SKELETON}>
         <Body />
       </PanelBoundary>
     </div>

@@ -60,16 +60,30 @@ export function AvatarUpload({
     setUploading(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      // getSession() reads the session the browser already holds. getUser()
+      // makes a NETWORK call to /auth/v1/user, and this code discarded its
+      // error — so a dropped request reported "You must be logged in to
+      // upload files" to a player who was perfectly well logged in. That
+      // request is at its most fragile in exactly this moment: the OS photo
+      // picker has just handed control back and the radio is still waking up.
+      // Reported by a Shenandoah player mid-onboarding, 2026-08-06.
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      if (!user) {
-        throw new Error('You must be logged in to upload files');
+      if (sessionError) {
+        // Unknown, NOT signed out — never tell someone to log in based on a
+        // lookup that failed.
+        throw new Error("Couldn't check your session just now. Check your connection and try again.");
+      }
+
+      const userId = session?.user?.id;
+      if (!userId) {
+        throw new Error('Your session has expired — please sign in again to upload a photo.');
       }
 
       // Generate unique filename in user's folder
       const fileExt = file.name.split('.').pop();
       const fileName = `avatar-${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const filePath = `${userId}/${fileName}`;
 
       // Upload file
       const { error: uploadError, data } = await supabase.storage
@@ -90,13 +104,36 @@ export function AvatarUpload({
 
       onUploadComplete(publicUrl);
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+
+      // An ABORTED upload is the browser, not a defect. There is no
+      // AbortSignal.timeout anywhere in this path, so "Fetch is aborted" here
+      // can only mean the request was cut off from the outside: the user
+      // navigated away, closed the tab, picked a different file, or the
+      // connection dropped mid-transfer. Nothing failed that anyone can fix.
+      //
+      // It was logged at 'high' like any other upload failure, so a coach
+      // wandering off mid-upload opened a high-severity incident with a
+      // scary-looking red banner. (The global transient-network matcher in
+      // lib/error-logging.ts deliberately does NOT match AbortError, on the
+      // reasoning that aborts are our own timeouts firing — a budget worth
+      // knowing about. That reasoning is sound and is left alone; it simply
+      // does not apply to this call site, which sets no timeout.)
+      const wasAborted =
+        (err instanceof Error && err.name === 'AbortError') ||
+        /\babort(ed)?\b/i.test(message);
+
       console.error('Upload error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to upload image');
+      setError(
+        wasAborted
+          ? 'Upload was interrupted. Choose the photo again to retry.'
+          : (err instanceof Error ? err.message : 'Failed to upload image'),
+      );
       setPreviewUrl(currentAvatarUrl || null); // Revert preview on error
       logError(
         err instanceof Error ? err : new Error(String(err)),
         { component: 'AvatarUpload', action: 'upload-avatar', sport: 'shared', bucket },
-        'high'
+        wasAborted ? 'low' : 'high'
       );
     } finally {
       setUploading(false);

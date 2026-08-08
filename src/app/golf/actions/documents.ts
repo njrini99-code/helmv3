@@ -361,7 +361,7 @@ async function createDocumentImpl(
 
 const observedCreateDocument = withAdminObserved(
   'createDocument',
-  { sport: 'golf', feature: 'documents' },
+  { demoSafe: true, sport: 'golf', feature: 'documents' },
   createDocumentImpl,
 );
 
@@ -478,7 +478,7 @@ async function saveTextDocumentImpl(
 
 const observedSaveTextDocument = withAdminObserved(
   'saveTextDocument',
-  { sport: 'golf', feature: 'documents' },
+  { demoSafe: true, sport: 'golf', feature: 'documents' },
   saveTextDocumentImpl,
 );
 
@@ -560,7 +560,7 @@ async function updateDocumentImpl(
 
 const observedUpdateDocument = withAdminObserved(
   'updateDocument',
-  { sport: 'golf', feature: 'documents' },
+  { demoSafe: true, sport: 'golf', feature: 'documents' },
   updateDocumentImpl,
 );
 
@@ -632,7 +632,7 @@ async function deleteDocumentImpl(documentId: string): Promise<{ success: boolea
 
 const observedDeleteDocument = withAdminObserved(
   'deleteDocument',
-  { sport: 'golf', feature: 'documents' },
+  { demoSafe: true, sport: 'golf', feature: 'documents' },
   deleteDocumentImpl,
 );
 
@@ -910,7 +910,7 @@ async function revertToVersionImpl(
 
 const observedRevertToVersion = withAdminObserved(
   'revertToVersion',
-  { sport: 'golf', feature: 'documents' },
+  { demoSafe: true, sport: 'golf', feature: 'documents' },
   revertToVersionImpl,
 );
 
@@ -1294,7 +1294,7 @@ async function createGolfDocumentImpl(data: {
 
 const observedCreateGolfDocument = withAdminObserved(
   'createGolfDocument',
-  { sport: 'golf', feature: 'documents' },
+  { demoSafe: true, sport: 'golf', feature: 'documents' },
   createGolfDocumentImpl,
 );
 

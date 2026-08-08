@@ -889,7 +889,7 @@ async function createRecurringEventImpl(
 
 const observedCreateRecurringEvent = withAdminObserved(
   'createRecurringEvent',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   createRecurringEventImpl,
 );
 
@@ -1316,7 +1316,7 @@ async function editRecurringEventImpl(
 
 const observedEditRecurringEvent = withAdminObserved(
   'editRecurringEvent',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   editRecurringEventImpl,
 );
 
@@ -1670,7 +1670,7 @@ async function deleteRecurringEventImpl(
 
 const observedDeleteRecurringEvent = withAdminObserved(
   'deleteRecurringEvent',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   deleteRecurringEventImpl,
 );
 
@@ -1858,7 +1858,7 @@ async function createAcademicExclusionImpl(input: {
 
 const observedCreateAcademicExclusion = withAdminObserved(
   'createAcademicExclusion',
-  { sport: 'golf', feature: 'academics_classes' },
+  { demoSafe: true, sport: 'golf', feature: 'academics_classes' },
   createAcademicExclusionImpl,
 );
 
@@ -1904,7 +1904,7 @@ async function deleteAcademicExclusionImpl(id: string): Promise<ActionResult> {
 
 const observedDeleteAcademicExclusion = withAdminObserved(
   'deleteAcademicExclusion',
-  { sport: 'golf', feature: 'academics_classes' },
+  { demoSafe: true, sport: 'golf', feature: 'academics_classes' },
   deleteAcademicExclusionImpl,
 );
 

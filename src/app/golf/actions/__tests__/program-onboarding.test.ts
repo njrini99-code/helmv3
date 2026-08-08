@@ -47,7 +47,15 @@ function buildSupabaseMock() {
     // Allow `await supabase.from(table).insert(row)` (PostgREST-style awaitable)
     chain.then = vi.fn((onFulfilled: (v: unknown) => void) => {
       const r = result();
-      void Promise.resolve(r).then(onFulfilled);
+      // A bare awaited SELECT resolves with `data` as an ARRAY of rows — the
+      // real client never hands a naked object to a non-single read. The
+      // membership guard reads golf_team_members this way (it dropped
+      // `.maybeSingle()`), so the stub must keep the array contract honest.
+      const value =
+        table === 'golf_team_members'
+          ? { ...r, data: r.data == null ? [] : Array.isArray(r.data) ? r.data : [r.data] }
+          : r;
+      void Promise.resolve(value).then(onFulfilled);
     });
 
     return chain;
@@ -157,6 +165,12 @@ describe('completeCoachOnboarding', () => {
     serverMock.seed('organizations', { id: 'org-1' });
     serverMock.seed('golf_coaches', { id: 'coach-1' });
     serverMock.seed('golf_teams', {
+      id: 'team-1',
+      join_code: 'ABCD1234',
+    });
+    // The create path reads the new team back with the ADMIN client —
+    // RETURNING on golf_teams is filtered by RLS and fails 42501.
+    adminMock.seed('golf_teams', {
       id: 'team-1',
       join_code: 'ABCD1234',
     });
@@ -281,6 +295,16 @@ describe('addSecondTeam', () => {
       created_at: new Date().toISOString(),
       organization_id: 'org-1',
     });
+    // The create path reads the new team back with the ADMIN client —
+    // RETURNING on golf_teams is filtered by RLS and fails 42501.
+    adminMock.seed('golf_teams', {
+      id: TEAM_ID,
+      name: "Women's Golf",
+      season: '2025-2026',
+      join_code: JOIN_CODE,
+      created_at: new Date().toISOString(),
+      organization_id: 'org-1',
+    });
     adminMock.seed('golf_team_coach_staff', null);
   });
 
@@ -345,6 +369,9 @@ describe('processGolfTeamInvitation — dual-team org routing', () => {
   it('routes MENS1234 to the mens team (team-mens), not team-womens', async () => {
     // The join code lookup finds team-mens
     serverMock.seed('golf_teams', { id: 'team-mens', name: "Men's Golf", join_code: 'MENS1234' });
+    // The create path reads the new team back with the ADMIN client —
+    // RETURNING on golf_teams is filtered by RLS and fails 42501.
+    adminMock.seed('golf_teams', { id: 'team-mens', name: "Men's Golf", join_code: 'MENS1234' });
     // Player is not yet on any team
     serverMock.seed('golf_team_members', null);
     // Player profile
@@ -375,6 +402,9 @@ describe('processGolfTeamInvitation — dual-team org routing', () => {
 
   it('routes WOMN5678 to the womens team (team-womens), not team-mens', async () => {
     serverMock.seed('golf_teams', { id: 'team-womens', name: "Women's Golf", join_code: 'WOMN5678' });
+    // The create path reads the new team back with the ADMIN client —
+    // RETURNING on golf_teams is filtered by RLS and fails 42501.
+    adminMock.seed('golf_teams', { id: 'team-womens', name: "Women's Golf", join_code: 'WOMN5678' });
     serverMock.seed('golf_team_members', null);
     serverMock.seed('golf_players', {
       id: 'player-2',
@@ -396,6 +426,9 @@ describe('processGolfTeamInvitation — dual-team org routing', () => {
 
   it('rejects an invalid/unknown join code', async () => {
     serverMock.seed('golf_teams', null);
+    // The create path reads the new team back with the ADMIN client —
+    // RETURNING on golf_teams is filtered by RLS and fails 42501.
+    adminMock.seed('golf_teams', null);
 
     const result = await processGolfTeamInvitation('BADCODE1', 'player-1');
 
@@ -405,6 +438,9 @@ describe('processGolfTeamInvitation — dual-team org routing', () => {
 
   it('rejects a player already on a team', async () => {
     serverMock.seed('golf_teams', { id: 'team-a', name: 'Team A', join_code: 'CODEA123' });
+    // The create path reads the new team back with the ADMIN client —
+    // RETURNING on golf_teams is filtered by RLS and fails 42501.
+    adminMock.seed('golf_teams', { id: 'team-a', name: 'Team A', join_code: 'CODEA123' });
     serverMock.seed('golf_team_members', { team_id: 'team-b' }); // already on team-b
     serverMock.seed('golf_players', {
       id: 'player-3',
@@ -420,6 +456,9 @@ describe('processGolfTeamInvitation — dual-team org routing', () => {
 
   it('normalizes the join code to uppercase before lookup', async () => {
     serverMock.seed('golf_teams', { id: 'team-x', name: 'Team X', join_code: 'ABCD1234' });
+    // The create path reads the new team back with the ADMIN client —
+    // RETURNING on golf_teams is filtered by RLS and fails 42501.
+    adminMock.seed('golf_teams', { id: 'team-x', name: 'Team X', join_code: 'ABCD1234' });
     serverMock.seed('golf_team_members', null);
     serverMock.seed('golf_players', {
       id: 'player-4',

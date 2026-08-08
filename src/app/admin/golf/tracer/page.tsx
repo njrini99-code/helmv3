@@ -1,7 +1,9 @@
+import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { bridgeGetTracerData, bridgeGetTracerEnrichedData } from '@/app/admin/actions/golf-tracer';
 import { Surface, InlineNotice, Sparkline, StatStrip } from '@/components/fairway';
 import { PanelBoundary } from '../../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelAllClear } from '../../_components/PanelStates';
 import { KpiTile } from '../../_components/KpiTile';
 import { AutoRefresh } from '../../_components/AutoRefresh';
@@ -19,8 +21,11 @@ export const dynamic = 'force-dynamic';
  * (`TracerPlayerList` → `TracerRoundDiagnostic`, wired to
  * `bridgeGetTracerRoundDiagnostic`/`bridgeFixRoundData`), and every tracer
  * incident (here and inside the drill-down) exposes its dropped remediation
- * fields via expand-on-click. Marking an incident "resolved" and the full
- * hole-by-hole shot browser still live on the legacy tracer tab only.
+ * fields via expand-on-click. Two things never crossed over: marking a tracer
+ * incident "resolved" (these rows ARE `admin_events`, so /admin/errors is where
+ * that happens) and the full hole-by-hole shot browser, which has no Bridge
+ * equivalent. Neither is on the legacy tracer tab any more either — /golf/admin
+ * is redirected to /admin (next.config.mjs:183), so that page is unreachable.
  */
 
 async function TracerBody() {
@@ -129,18 +134,18 @@ export default async function TracerPage() {
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      <InlineNotice tone="info" title="Round diagnostics and fixes now live here">
+      <InlineNotice tone="info" title="Round diagnostics and fixes live here">
         Click any player below to see their rounds; expand a round to inspect
         its data-quality checks and run a fix (recalculate totals, GIR,
         strokes gained, refresh the stats cache, or remove a stuck round).
-        Marking a tracer incident resolved and the full hole-by-hole shot
-        browser still live on the legacy tracer tab at{' '}
-        <a href="/golf/admin?tab=tracer" className="underline">
-          /golf/admin?tab=tracer
-        </a>{' '}
-        for now.
+        These incidents are <span className="font-fw-mono">admin_events</span>{' '}
+        rows, so marking one resolved happens in{' '}
+        <Link href="/admin/errors" className="underline">
+          Errors
+        </Link>
+        . The hole-by-hole shot browser has no Bridge equivalent yet.
       </InlineNotice>
-      <PanelBoundary title="Tracer">
+      <PanelBoundary title="Tracer" skeleton={<PanelPageSkeleton rows={8} />}>
         <TracerBody />
       </PanelBoundary>
     </div>

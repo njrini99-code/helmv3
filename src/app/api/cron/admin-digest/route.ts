@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
 import { fetchTriageQueue, groupAppErrorEvents, type AppTriageEventRow } from '@/lib/admin/data/triage';
@@ -271,6 +271,26 @@ export async function GET(req: NextRequest) {
         'error',
       );
     }
+
+    // Record WHICH message went WHERE, not just that something was sent.
+    //
+    // `{ sent: true }` alone is unfalsifiable from the outside: when the
+    // briefing appears not to arrive, the log cannot distinguish "never sent"
+    // from "sent to an address you weren't reading". That ambiguity cost a
+    // full investigation on 2026-08-04 — the digest had been delivered every
+    // day to the personal address while the admin alias, which was the inbox
+    // being checked, was not on OPS_DIGEST_TO at all.
+    //
+    // recipients are the ADDRESSES, deliberately: this is an internal ops log
+    // for a founder-only briefing, and the whole point is being able to answer
+    // "where did today's actually go?" without reading env vars out of Vercel.
+    if (result.sent) {
+      await logServerEvent(
+        `admin-digest sent ${result.messageId ?? '(no id)'} to ${result.recipients?.join(', ') || '(none configured)'}`,
+        { action: 'cron.admin-digest', source: 'cron' },
+      );
+    }
+
     return NextResponse.json({ ok: true, ...result, reds: reds.length });
   });
 }

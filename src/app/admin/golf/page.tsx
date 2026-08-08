@@ -8,6 +8,7 @@ import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/fea
 import type { RollupAFeatureAdoptionPayload, FeatureCountPair } from '@/app/golf/actions/admin/rollup-a';
 import { Surface, StatStrip, StatTile, TrendChart, type StatTileProps } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
 import { KpiTile } from '../_components/KpiTile';
 import { TeamHealthTable } from '../_components/TeamHealthTable';
@@ -449,12 +450,17 @@ async function GolfBody() {
         </Surface>
       </div>
 
-      {/* Tracer link-out */}
+      {/* Tracer link-out. This card promised the write fixes for "W14" long
+          after they shipped: bridgeFixRoundData (src/app/admin/actions/
+          golf-tracer.ts:48) is wired to real buttons in TracerRoundDiagnostic
+          and StuckRoundsPanel. A console that understates its own powers sends
+          an operator to psql for work it can already do safely. */}
       <Surface as={Link} href="/admin/golf/tracer" interactive padding="sm" className="block">
         <p className="text-sm font-medium text-accent-700">Tracer data-quality suite →</p>
         <p className="text-xs text-warm-500">
-          Read-only diagnostics today (player round data quality + recent incidents). Write fixes
-          (recalculate totals/GIR/strokes gained, resolve stuck rounds) land in W14.
+          Player round data quality, stuck rounds and recent incidents — with the fixes attached:
+          recalculate totals, GIR or strokes gained, refresh the player stats cache, or resolve a
+          stuck round.
         </p>
       </Surface>
     </div>
@@ -466,7 +472,7 @@ export default async function GolfAdminPage() {
   return (
     <div className="space-y-6">
       <AutoRefresh />
-      <PanelBoundary title="Golf">
+      <PanelBoundary title="Golf" skeleton={<PanelPageSkeleton rows={8} />}>
         <GolfBody />
       </PanelBoundary>
     </div>

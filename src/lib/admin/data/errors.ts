@@ -21,6 +21,7 @@ import {
   INCIDENT_CLASS_LABEL,
   type IncidentClass,
 } from '@/lib/admin/incident-classification';
+import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
 import {
   buildIncidentReport,
   buildCombinedIncidentReport,
@@ -198,7 +199,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
         .select('id', { count: 'exact', head: true })
         .eq('event_type', 'error')
         .eq('resolved', false)
-        .neq('severity', 'info')
+        .in('severity', INCIDENT_SEVERITIES)
         .gte('created_at', widerSince)
     : null;
   if (widerQuery && filters.sport) widerQuery = widerQuery.eq('sport', filters.sport);
@@ -210,7 +211,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
           .select('id', { count: 'exact', head: true })
           .eq('event_type', 'error')
           .eq('resolved', false)
-          .neq('severity', 'info')
+          .in('severity', INCIDENT_SEVERITIES)
           .gte('created_at', widerSince)
           .is('sport', null)
       : null;

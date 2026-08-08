@@ -64,6 +64,7 @@ const TYPE_DOT_CLASS: Record<string, string> = {
   workout: 'bg-accent-500',
   team_meeting: 'bg-text-tertiary',
   meeting: 'bg-text-tertiary',
+  class: 'bg-text-tertiary',
 };
 const DEFAULT_DOT_CLASS = 'bg-text-tertiary';
 

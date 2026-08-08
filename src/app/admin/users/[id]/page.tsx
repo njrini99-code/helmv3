@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchUserDetail } from '@/lib/admin/data/users';
 import { fetchActiveSessions } from '@/lib/admin/data/auth';
-import { Surface, StatusPill, Button, type FwStatusTone } from '@/components/fairway';
+import { Surface, StatusPill, Button, Skeleton, type FwStatusTone } from '@/components/fairway';
 import { SessionsPanel } from '../../_components/SessionsPanel';
 import { PanelBoundary } from '../../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
 import { SportBadge } from '../../_components/SportBadge';
 import { LocalTime } from '../../_components/LocalTime';
@@ -13,6 +14,24 @@ import { EngagementPanel } from './EngagementPanel';
 import { ViewAsButton } from './ViewAsButton';
 
 export const dynamic = 'force-dynamic';
+
+// EngagementPanel renders its own <Surface> with a dateline rule, a heading,
+// and the 112px engagement ring beside a pill + two caption lines — reserve
+// exactly that so the ring does not shove the memberships panel down on swap.
+const ENGAGEMENT_SKELETON = (
+  <Surface padding="sm">
+    <Skeleton className="mb-3 h-[2px] w-7 rounded-full" />
+    <Skeleton className="h-3 w-24" />
+    <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
+      <Skeleton circle className="h-28 w-28 shrink-0" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <Skeleton className="h-5 w-24 rounded-full" />
+        <Skeleton className="h-3 w-40" />
+        <Skeleton className="h-3 w-56 max-w-full" />
+      </div>
+    </div>
+  </Surface>
+);
 
 const SEVERITY_TONE: Record<string, FwStatusTone> = {
   critical: 'danger',
@@ -100,7 +119,7 @@ export default async function UserDetailPage({
           )}
         </header>
 
-        <PanelBoundary title="Engagement">
+        <PanelBoundary title="Engagement" skeleton={ENGAGEMENT_SKELETON}>
           <EngagementPanel userId={id} />
         </PanelBoundary>
 
@@ -233,7 +252,7 @@ export default async function UserDetailPage({
 
   return (
     <div className="space-y-6">
-      <PanelBoundary title="User detail">
+      <PanelBoundary title="User detail" skeleton={<PanelPageSkeleton stats={3} rows={6} />}>
         <Body />
       </PanelBoundary>
     </div>

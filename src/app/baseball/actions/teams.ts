@@ -48,6 +48,16 @@ interface TeamMembershipWithTeam {
 
 export interface TeamValidationResult {
   canJoin: boolean;
+  /**
+   * The player is ALREADY on the team they are trying to join — the desired end
+   * state already holds, so the caller treats it as SUCCESS. Same fix as the
+   * golf side (actions/golf/teams.ts): joining must be idempotent, because the
+   * invite flow legitimately runs the join twice (onboarding auto-joins with
+   * the carried code, then the join page confirms). Kept separate from
+   * `canJoin: true` so the INSERT never re-runs and coaches get no duplicate
+   * "player joined" notification.
+   */
+  alreadyOnThisTeam?: boolean;
   reason?: string;
   currentTeams?: TeamInfo[];
 }
@@ -134,10 +144,12 @@ async function validatePlayerCanJoinTeamImpl(
     team_type: m.baseball_teams.team_type,
   }));
 
-  // Check if already on this team
+  // Already on the team being joined. Flagged, not just refused — see
+  // TeamValidationResult.alreadyOnThisTeam and the caller below.
   if (currentTeams.some((t) => t.id === teamId)) {
     return {
       canJoin: false,
+      alreadyOnThisTeam: true,
       reason: 'You are already a member of this team',
       currentTeams,
     };
@@ -312,6 +324,15 @@ async function joinTeamImpl(playerId: string, teamId: string) {
 
   // Validate first
   const validation = await validatePlayerCanJoinTeam(playerId, teamId);
+
+  // Already on this team is SUCCESS. The invite flow runs the join twice by
+  // design (onboarding auto-joins with the carried code, then the join page
+  // confirms), and reporting the correct end state as a red error is what golf
+  // was doing to brand-new signups on 2026-08-06 — three of them within
+  // minutes of creating their account.
+  if (validation.alreadyOnThisTeam) {
+    return { success: true, alreadyMember: true };
+  }
 
   if (!validation.canJoin) {
     return {

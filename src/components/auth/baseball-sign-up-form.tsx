@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signupAction } from '@/app/baseball/actions/auth';
 import { Users, GraduationCap } from 'lucide-react';
@@ -22,7 +22,12 @@ function getSignupErrorMessage(error: string): string {
   if (lower.includes('invalid email') || lower.includes('validate email')) {
     return 'Please enter a valid email address.';
   }
-  if (lower.includes('weak password') || lower.includes('password')) {
+  // ONLY the raw GoTrue string. Same defect as the golf form: the bare
+  // `includes('password')` matched the server's own already-user-ready
+  // messages and replaced a precise, fixable reason ("missing a special
+  // character", "appeared in a data breach") with generic advice the client
+  // had already enforced.
+  if (lower.includes('weak password')) {
     return 'Password does not meet the requirements. Use at least 8 characters with uppercase, lowercase, number, and special character.';
   }
   if (lower.includes('network') || lower.includes('fetch')) {
@@ -36,7 +41,29 @@ function getSignupErrorMessage(error: string): string {
 
 export function BaseballSignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [role, setRole] = useState<Role>('player');
+
+  // The invite link carries where to go BACK to:
+  //   /baseball/join/[code]       -> /baseball/signup?returnTo=/baseball/join/CODE
+  //   /baseball/staff/join/[code] -> /baseball/signup?returnTo=/baseball/staff/join/CODE
+  //
+  // Nothing in the codebase ever wrote this key — the submit handler below only
+  // ever REMOVED it, and both onboarding pages read it. So a brand-new user who
+  // clicked a coach's invite link finished signup and onboarding and landed on
+  // the generic dashboard with no team, having to find and re-open the original
+  // link to actually join. This is the primary self-serve path: a coach shares a
+  // link and expects the player to end up on the roster.
+  //
+  // Mirrors baseball-sign-in-form.tsx, which has always had this half. The
+  // consumers already validate the value against open redirects before using it.
+  const returnTo = searchParams.get('returnTo');
+  useEffect(() => {
+    if (returnTo) {
+      sessionStorage.setItem('baseball_signup_returnTo', returnTo);
+    }
+  }, [returnTo]);
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -72,8 +99,12 @@ export function BaseballSignUpForm() {
         return;
       }
 
-      // After signup, user always needs onboarding first.
-      sessionStorage.removeItem('baseball_signup_returnTo');
+      // The returnTo is deliberately NOT cleared here. Onboarding comes first,
+      // and it is the ONBOARDING pages that consume this key to send the user
+      // back to the invite they came from (coach-onboarding navigateAfterOnboarding,
+      // player page handleSubmit — both remove it once used). Clearing it on
+      // signup destroyed the value one step before its only reader, which is the
+      // second half of why invite links never landed anyone on a roster.
 
       // Refresh router cache so the new session cookie is recognized server-side
       router.refresh();

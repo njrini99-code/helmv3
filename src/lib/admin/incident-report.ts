@@ -147,6 +147,27 @@ export function extractRoute(metadata: unknown): string | null {
   return null;
 }
 
+/**
+ * The stable `provider_<provider>_<kind>` code the app already writes on every
+ * provider fault (server-error-logger persists context.errorCode into
+ * metadata.errorCode).
+ *
+ * classifyIncident has had a dedicated `provider_` branch since day one
+ * (incident-classification.ts:242) mapping these to the `integration` kind —
+ * but no production caller ever passed errorCode, only tests. So a spent
+ * Anthropic balance, an exhausted AI Gateway and a rejected Inngest credential
+ * all classified as `defect / "Unexpected failure"`, i.e. read as app bugs, and
+ * /admin/errors?kind=integration returned network noise instead of the four
+ * faults the module exists to tag.
+ */
+export function extractErrorCode(metadata: unknown): string | null {
+  if (metadata && typeof metadata === 'object') {
+    const code = (metadata as { errorCode?: unknown }).errorCode;
+    if (typeof code === 'string' && code.length > 0) return code;
+  }
+  return null;
+}
+
 /** Flood-throttle collapsed count lives at metadata.metadata.collapsed_count
  *  (observed-action.ts nests it under RoundErrorContext.metadata, which
  *  normalizeContext then nests again under the admin_events.metadata column). */

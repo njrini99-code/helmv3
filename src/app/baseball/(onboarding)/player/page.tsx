@@ -273,9 +273,17 @@ export default function BaseballPlayerOnboarding() {
         return;
       }
 
+      // VALIDATED before use. This value now actually arrives (the signup form
+      // never wrote it until 2026-08-07, so this branch was dead), and it comes
+      // from a query string — an unvalidated router.push of it is an open
+      // redirect. Same guard the coach onboarding page already applies.
       const storedReturnTo = sessionStorage.getItem('baseball_signup_returnTo');
-      if (storedReturnTo) {
-        sessionStorage.removeItem('baseball_signup_returnTo');
+      const isSafeReturnTo = (path: string) =>
+        (path.startsWith('/baseball/') || path.startsWith('/golf/')) && !path.includes('//');
+
+      if (storedReturnTo) sessionStorage.removeItem('baseball_signup_returnTo');
+
+      if (storedReturnTo && isSafeReturnTo(storedReturnTo)) {
         router.push(storedReturnTo);
       } else {
         router.push(result.redirectTo || '/baseball/player/today');

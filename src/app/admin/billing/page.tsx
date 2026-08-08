@@ -36,7 +36,13 @@ export default async function AdminBillingPage() {
       ) : (
         <div
           role="status"
-          className="rounded-2xl border border-amber-300/70 bg-amber-50 p-6"
+          // Tokens, not amber-50/amber-300: this is the only fixed-palette
+          // panel left in /admin and it would stay a light cream card after
+          // the dark token flip, with warm-700 body copy inverting to near-
+          // white on top of it. fw-warning-bg is the same warm amber wash in
+          // light and a deep amber in dark; the /40 border matches the amber
+          // hairline PanelBoundary's own retry button already uses.
+          className="rounded-2xl border border-fw-warning/40 bg-fw-warning-bg p-6"
         >
           <h2 className="text-h3 text-warm-900">Invoicing is not available yet</h2>
           <p className="mt-2 text-body-sm text-warm-700">

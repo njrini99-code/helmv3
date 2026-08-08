@@ -92,16 +92,33 @@ async function getCoachTeamId(
   return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
 
+/**
+ * The roster read behind every "send this to the whole team" decision.
+ *
+ * This used to discard its error and return `[]`, and `[]` is the single most
+ * dangerous value it can return: downstream, "no players" and "we could not
+ * read the players" are the same empty array, and every guard here is written
+ * as `targetPlayerIds.length > 0`. A failed read therefore did not fail — it
+ * quietly meant "send to nobody", while the announcement itself was created
+ * and the action returned success.
+ *
+ * So the result now says which of the two happened, and callers must decide.
+ */
+type TeamRosterIds =
+  | { ok: true; ids: string[] }
+  | { ok: false; error: unknown };
+
 async function getTeamPlayerIds(
   supabase: SupabaseClient,
   teamId: string
-): Promise<string[]> {
-  const { data } = await supabase
+): Promise<TeamRosterIds> {
+  const { data, error } = await supabase
     .from('golf_team_members')
     .select('player_id')
     .eq('team_id', teamId)
     .eq('status', 'active');
-  return (data || []).map(m => m.player_id);
+  if (error) return { ok: false, error };
+  return { ok: true, ids: (data || []).map(m => m.player_id) };
 }
 
 // ============================================================================
@@ -139,13 +156,35 @@ async function createEnrichedAnnouncementImpl(input: {
     // coach could point task assignments + the service-role email/push fan-out
     // below at ANY player uuid, not just this team's. Intersect with the
     // active roster before the id is used anywhere.
+    // Resolve the roster ONCE, and BEFORE anything is written.
+    //
+    // It used to be read twice, both times after validation and the second time
+    // after the announcement row already existed — so a roster read that failed
+    // left a published announcement addressed to nobody. Reading it up front
+    // means a failure costs nothing: we return before creating anything.
+    const roster = await getTeamPlayerIds(supabase, teamId);
+    if (!roster.ok) {
+      await logServerError(
+        `[createEnrichedAnnouncement] roster read failed: ${describeError(roster.error)}`,
+        { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load your roster just now, so nothing was sent. Please try again." };
+    }
+
     if (validated.recipientPlayerIds && validated.recipientPlayerIds.length > 0) {
-      const rosterIds = new Set(await getTeamPlayerIds(supabase, teamId));
+      // Note this is now reached only when the roster read SUCCEEDED. Before,
+      // a failed read emptied `rosterIds` and every selected player was
+      // therefore "not on your team" — accusing the coach of picking the wrong
+      // players when the truth was that we could not check.
+      const rosterIds = new Set(roster.ids);
       const invalidIds = validated.recipientPlayerIds.filter(pid => !rosterIds.has(pid));
       if (invalidIds.length > 0) {
         return { success: false, error: 'Some selected players are not on your team' };
       }
     }
+
+    // Who this actually reaches. Resolved before the write for the reason above.
+    const targetPlayerIds = validated.recipientPlayerIds ?? roster.ids;
 
     // 1. Create the announcement
     const { data: announcement, error: annError } = await supabase
@@ -169,11 +208,6 @@ async function createEnrichedAnnouncementImpl(input: {
     }
 
     const announcementId = announcement.id;
-
-    // Determine target players for task assignments
-    const targetPlayerIds = validated.recipientPlayerIds
-      ? validated.recipientPlayerIds
-      : await getTeamPlayerIds(supabase, teamId);
 
     // 2. Insert recipients (only if specific players selected)
     if (validated.recipientPlayerIds && validated.recipientPlayerIds.length > 0) {
@@ -369,7 +403,7 @@ async function createEnrichedAnnouncementImpl(input: {
 
 const observedCreateEnrichedAnnouncement = withAdminObserved(
   'createEnrichedAnnouncement',
-  { sport: 'golf', feature: 'announcements' },
+  { demoSafe: true, sport: 'golf', feature: 'announcements' },
   createEnrichedAnnouncementImpl,
 );
 
@@ -460,12 +494,29 @@ async function getAnnouncementsWithMetaImpl(
     // otherwise limit a player caller to only their OWN recipient rows,
     // making every targeted announcement look empty (= "all-team") to the
     // L558-563 filter below and defeating it entirely.
+    // The `error` is READ, and a failure fails CLOSED. This is the recipient
+    // gate itself: the filter at the bottom of this function treats "no
+    // recipient rows" as "addressed to the whole team". A failed read also
+    // produces no recipient rows, so discarding the error made every TARGETED
+    // announcement — the ones a coach deliberately sent to a subset — read as
+    // all-team and publish to the entire roster. A gate that fails open is not
+    // a gate.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: allRecipients } = await (createAdminClient() as any)
+    const { data: allRecipients, error: recipientsError } = await (createAdminClient() as any)
       .from('golf_announcement_recipients')
       .select('announcement_id, player_id')
       .in('announcement_id', announcementIds)
-      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; player_id: string }> | null };
+      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; player_id: string }> | null; error: { message?: string } | null };
+
+    if (recipientsError) {
+      await logServerError(
+        `[getAnnouncementsWithMeta] recipient gate read failed: ${describeError(recipientsError)}`,
+        { action: 'announcements.getAnnouncementsWithMeta', featureArea: 'announcements' },
+      );
+      // Refusing to render is the only honest option: we cannot tell an
+      // all-team announcement from a targeted one we failed to resolve.
+      return { success: false, error: 'Could not load announcements right now. Please try again.' };
+    }
 
     // Fetch all acknowledgements (P275: bounded fan-out)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -513,9 +564,23 @@ async function getAnnouncementsWithMetaImpl(
       completedAssignments = (assignments || []).filter(a => a.status === 'completed');
     }
 
-    // Get total team member count for "all team" announcements
-    const teamPlayerIds = await getTeamPlayerIds(supabase, teamId);
-    const totalTeamCount = teamPlayerIds.length;
+    // Get total team member count for "all team" announcements.
+    //
+    // This is the DENOMINATOR of the acknowledgement progress a coach reads to
+    // decide whether everyone has signed the waiver. On a failed read it falls
+    // back to 0, which is wrong in a visible way (a real numerator over zero)
+    // rather than a plausible way — but it is still wrong, and it used to be
+    // wrong SILENTLY. Making it honest means typing it `number | null` and
+    // teaching the progress UI to render "unknown", which is a UI change and is
+    // deliberately not bundled here; this at least stops it happening unseen.
+    const teamPlayers = await getTeamPlayerIds(supabase, teamId);
+    if (!teamPlayers.ok) {
+      await logServerError(
+        `[getAnnouncements] roster count read failed — acknowledgement denominator is wrong: ${describeError(teamPlayers.error)}`,
+        { action: 'announcements.getAnnouncements', featureArea: 'announcements' },
+      );
+    }
+    const totalTeamCount = teamPlayers.ok ? teamPlayers.ids.length : 0;
 
     // Fetch player info for acknowledged players (for avatar display)
     const allAckPlayerIds = [...new Set((allAcks || []).map(a => a.player_id))];
@@ -666,11 +731,24 @@ async function getAnnouncementDetailImpl(
       // every player. An empty recipient set still means "all-team" (do not
       // turn that into a denial); a non-empty set that excludes this player
       // is reported as "not found" so existence isn't leaked.
+      // The `error` is READ, and a failure fails CLOSED — see the matching note
+      // in getAnnouncementsWithMeta. An empty set legitimately means "all-team",
+      // so a discarded error was indistinguishable from "everyone may read
+      // this", which is the wrong side to guess on for a targeted announcement.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: recipientGate } = await (createAdminClient() as any)
+      const { data: recipientGate, error: gateError } = await (createAdminClient() as any)
         .from('golf_announcement_recipients')
         .select('player_id')
-        .eq('announcement_id', announcementId) as { data: Array<{ player_id: string }> | null };
+        .eq('announcement_id', announcementId) as { data: Array<{ player_id: string }> | null; error: { message?: string } | null };
+
+      if (gateError) {
+        await logServerError(
+          `[getAnnouncementDetail] recipient gate read failed: ${describeError(gateError)}`,
+          { action: 'announcements.getAnnouncementDetail', featureArea: 'announcements' },
+        );
+        return { success: false, error: 'Announcement not found' };
+      }
+
       const gateRecipientIds = (recipientGate || []).map(r => r.player_id);
       if (gateRecipientIds.length > 0 && !gateRecipientIds.includes(playerCheck.id)) {
         return { success: false, error: 'Announcement not found' };
@@ -803,8 +881,15 @@ async function getAnnouncementDetailImpl(
     const isAllTeam = (recipients || []).length === 0;
     let totalRecipients = 0;
     if (isAllTeam) {
-      const teamPlayerIds = await getTeamPlayerIds(supabase, ann.team_id);
-      totalRecipients = teamPlayerIds.length;
+      // Same denominator, same caveat as getAnnouncements above.
+      const teamPlayers = await getTeamPlayerIds(supabase, ann.team_id);
+      if (!teamPlayers.ok) {
+        await logServerError(
+          `[getAnnouncementById] roster count read failed — acknowledgement denominator is wrong: ${describeError(teamPlayers.error)}`,
+          { action: 'announcements.getAnnouncementById', featureArea: 'announcements' },
+        );
+      }
+      totalRecipients = teamPlayers.ok ? teamPlayers.ids.length : 0;
     } else {
       totalRecipients = (recipients || []).length;
     }
@@ -893,7 +978,7 @@ async function completeAnnouncementTaskImpl(
 
 const observedCompleteAnnouncementTask = withAdminObserved(
   'completeAnnouncementTask',
-  { sport: 'golf', feature: 'announcements' },
+  { demoSafe: true, sport: 'golf', feature: 'announcements' },
   completeAnnouncementTaskImpl,
 );
 
@@ -962,7 +1047,7 @@ async function deleteAnnouncementImpl(
 
 const observedDeleteAnnouncement = withAdminObserved(
   'deleteAnnouncement',
-  { sport: 'golf', feature: 'announcements' },
+  { demoSafe: true, sport: 'golf', feature: 'announcements' },
   deleteAnnouncementImpl,
 );
 

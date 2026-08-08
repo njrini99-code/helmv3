@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { resolveTeamErrorCounts } from '@/lib/admin/data/team-scope';
 
 /**
  * Bridge V2 /admin/teams/[id] — small supplement to the pinned
@@ -57,19 +58,20 @@ export async function fetchTeamPageExtras(input: {
   coachIds: readonly string[];
 }): Promise<TeamPageExtras> {
   const admin = createAdminClient();
-  const ago7d = new Date(Date.now() - 7 * 86400_000).toISOString();
+  // The 7d window now lives in resolveTeamErrorCounts (data/team-scope.ts) —
+  // one definition of "last 7 days" for every surface that shows that number.
   const ago30d = new Date(Date.now() - 30 * 86400_000).toISOString();
 
   const [orgResult, errors7dResult, scoresResult, insightsTotalResult, insightsAckResult] = await Promise.allSettled([
     input.organizationId
       ? admin.from('organizations').select('name').eq('id', input.organizationId).maybeSingle()
       : Promise.resolve({ data: null }),
-    admin
-      .from('admin_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('team_id', input.teamId)
-      .eq('event_type', 'error')
-      .gte('created_at', ago7d),
+    // errors7d via the shared resolver (data/team-scope.ts) rather than a
+    // `.eq('team_id')` count. `admin_events.team_id` is written on 7 of 1,116
+    // error rows in a week and on ZERO rows of error-or-worse severity, so the
+    // count this replaced returned 0 for every team on production — and 0 here
+    // means grade 'A' out of computeTeamGrade instead of 'C'.
+    resolveTeamErrorCounts([input.teamId]).then((m) => m.get(input.teamId) ?? 0),
     admin
       .from('golf_rounds')
       .select('player_id, total_score, score_to_par, created_at')
@@ -97,7 +99,12 @@ export async function fetchTeamPageExtras(input: {
   const organizationName =
     orgResult.status === 'fulfilled' ? ((orgResult.value.data as { name: string } | null)?.name ?? null) : null;
 
-  const errors7d = errors7dResult.status === 'fulfilled' ? (errors7dResult.value.count ?? 0) : 0;
+  // KNOWN RESIDUAL RISK, deliberately left as-is: a rejected lookup still
+  // reads as 0, which grades the team 'A'. Unlike the old `.eq('team_id')`
+  // count that returned 0 *always*, this is now only reachable on a genuine
+  // read failure — but making it honest means giving computeTeamGrade an
+  // "unknown" grade, which is a product decision, not a bug fix.
+  const errors7d = errors7dResult.status === 'fulfilled' ? errors7dResult.value : 0;
 
   const roundScoresByPlayer =
     scoresResult.status === 'fulfilled'
