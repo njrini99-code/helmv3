@@ -559,12 +559,32 @@ async function getPlayerTeamId(
   playerId: string
 ): Promise<string | null> {
   // Prefer the active membership.
-  const { data: active } = await supabase
+  //
+  // Both reads below bind their error for a specific reason: this function's
+  // only failure signal is `null`, and both callers write that null straight
+  // into `golf_rounds.team_id`. The coach SELECT policy is keyed on
+  // `team_id IS NOT NULL AND is_golf_team_coach(team_id)`, so a round saved
+  // with a null team is invisible to the coach forever — and the player, who
+  // can always see their own rounds, has no way to notice. A read that failed
+  // and a player who genuinely has no team produce the identical null, so
+  // without these logs there is nothing to tell them apart afterwards.
+  const { data: active, error: activeError } = await supabase
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', playerId)
     .eq('status', 'active')
     .maybeSingle();
+
+  // PGRST116 is not a failure here — it is `.maybeSingle()` meeting a player
+  // with two active memberships, and the ordered fallback below handles that
+  // case correctly. Logging it would be noise on a working path.
+  if (activeError && activeError.code !== 'PGRST116') {
+    await logServerError(
+      `active membership read failed for player ${playerId}: ${describeError(activeError)}`,
+      { action: 'golf.getPlayerTeamId', featureArea: 'rounds' },
+      'warning'
+    );
+  }
   if (active?.team_id) return active.team_id;
 
   // F147: an injured/redshirt/inactive member still belongs to a team. If we
@@ -575,13 +595,26 @@ async function getPlayerTeamId(
   // player's most recent membership so the round stays coach-visible. This does
   // NOT loosen RLS (no cross-team leak): the round only carries the player's own
   // real team_id, which only that team's coach can read.
-  const { data: anyMembership } = await supabase
+  const { data: anyMembership, error: anyError } = await supabase
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', playerId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (anyError) {
+    // Both reads are now exhausted, so this null is about to be written to a
+    // round. Record it at error level: the round still saves — a player who
+    // has just entered eighteen holes must never lose them to a membership
+    // lookup — but the round will not reach their coach, and this line is the
+    // only trace of why.
+    await logServerError(
+      `membership lookup failed for player ${playerId}; the round will be saved with no team and will not appear on the coach's roster: ${describeError(anyError)}`,
+      { action: 'golf.getPlayerTeamId', featureArea: 'rounds' },
+      'error'
+    );
+  }
 
   return anyMembership?.team_id ?? null;
 }
@@ -3904,12 +3937,31 @@ async function respondToEventImpl(
       return { success: false, error: 'You must be signed in' };
     }
 
+    // The three reads below decide what a player is told when they tap Going.
+    // Refusing on a failed read is right — RSVP is authorized here as well as
+    // at the DB, and a check that could not run must not pass. What each one
+    // must NOT do is dress a failure up as a finding: this path otherwise
+    // tells a player with a profile "Player profile not found", tells them the
+    // event they are looking at does not exist, or tells an active member of
+    // the team that only active members may RSVP. All three read as the app
+    // having lost them, and none suggests trying again.
+    const UNREADABLE = "Couldn't check your RSVP for this event. Please try again.";
+
     // Get player ID
-    const { data: player } = await supabase
+    const { data: player, error: playerError } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
       .single();
+
+    if (playerError && playerError.code !== 'PGRST116') {
+      await logServerError(
+        `RSVP player read failed: ${describeError(playerError)}`,
+        { action: 'golf.respondToEvent', featureArea: 'calendar' },
+        'warning'
+      );
+      return { success: false, error: UNREADABLE };
+    }
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -3919,23 +3971,41 @@ async function respondToEventImpl(
     // member of its team. The RLS INSERT policy enforces the same rule at the
     // DB — this check exists to return a typed, renderable error instead of a
     // generic write failure.
-    const { data: event } = await supabase
+    const { data: event, error: eventError } = await supabase
       .from('golf_events')
       .select('id, team_id')
       .eq('id', eventId)
       .maybeSingle();
 
+    if (eventError) {
+      await logServerError(
+        `RSVP event read failed for ${eventId}: ${describeError(eventError)}`,
+        { action: 'golf.respondToEvent', featureArea: 'calendar' },
+        'warning'
+      );
+      return { success: false, error: UNREADABLE };
+    }
+
     if (!event) {
       return { success: false, error: 'Event not found' };
     }
 
-    const { data: membership } = await supabase
+    const { data: membership, error: membershipError } = await supabase
       .from('golf_team_members')
       .select('id')
       .eq('team_id', event.team_id)
       .eq('player_id', player.id)
       .eq('status', 'active')
       .maybeSingle();
+
+    if (membershipError) {
+      await logServerError(
+        `RSVP membership read failed for player ${player.id}: ${describeError(membershipError)}`,
+        { action: 'golf.respondToEvent', featureArea: 'calendar' },
+        'warning'
+      );
+      return { success: false, error: UNREADABLE };
+    }
 
     if (!membership) {
       return {

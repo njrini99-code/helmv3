@@ -170,11 +170,27 @@ async function validateGolfPlayerCanJoinTeamImpl(
   let targetTeam = resolvedTeam ?? null;
 
   if (!targetTeam) {
-    const { data } = await supabase
+    const { data, error: teamError } = await supabase
       .from('golf_teams')
       .select('id, name')
       .eq('id', teamId)
       .single();
+
+    // PGRST116 here is the expected outcome, not a fault: the RLS note above
+    // says a prospective member reads zero rows. Any OTHER error is a failed
+    // read, and telling someone with a valid join code "Team not found" sends
+    // them to hunt for a typo in a code that is fine.
+    if (teamError && teamError.code !== 'PGRST116') {
+      await logServerError(
+        `join validation team read failed: ${describeError(teamError)}`,
+        { action: 'teams.validateGolfPlayerCanJoinTeam', featureArea: 'teams' },
+        'warning'
+      );
+      return {
+        canJoin: false,
+        reason: "Couldn't look up that team just now. Please try again.",
+      };
+    }
     targetTeam = data;
   }
 
@@ -221,12 +237,23 @@ async function validateGolfPlayerCanJoinTeamImpl(
       };
     }
 
-    // Already on a different team
-    const { data: currentTeam } = await supabase
+    // Already on a different team. The name is decoration on a decision that
+    // has already been made, so a failed read degrades to "another team" — but
+    // it degrades LOUDLY. A player told "you are already on another team" with
+    // no name has nothing to act on, and that reads as a bug to them.
+    const { data: currentTeam, error: currentTeamError } = await supabase
       .from('golf_teams')
       .select('id, name')
       .eq('id', existingMembership.team_id)
       .single();
+
+    if (currentTeamError) {
+      await logServerError(
+        `current-team name read failed, falling back to "another team": ${describeError(currentTeamError)}`,
+        { action: 'teams.validateGolfPlayerCanJoinTeam', featureArea: 'teams' },
+        'warning'
+      );
+    }
 
     return {
       canJoin: false,
@@ -294,12 +321,32 @@ async function joinGolfTeamImpl(
     };
   }
 
-  // Get player details for notification
-  const { data: player } = await supabase
+  // Get player details for notification.
+  //
+  // Every read between here and the notification insert is a gate on "a player
+  // joined your team" reaching a coach — `if (player && team?.organization_id)`
+  // below, then `if (coaches && coaches.length > 0)`. A failure in any of them
+  // produced a null, skipped the notify block, and returned success. That is
+  // how this notification went dark for six months before anyone noticed: the
+  // join worked, so nothing looked wrong.
+  //
+  // The join must still succeed if these fail — a coach's notification is not
+  // worth failing a player's join over. But the failure gets recorded now, so
+  // the next silent stretch is visible in Bridge instead of being inferred
+  // from a months-old last-sent date.
+  const { data: player, error: playerError } = await supabase
     .from('golf_players')
     .select('id, first_name, last_name, user_id')
     .eq('id', playerId)
     .single();
+
+  if (playerError) {
+    await logServerError(
+      `player read failed after join; coach notification will be skipped: ${describeError(playerError)}`,
+      { action: 'teams.joinGolfTeam', featureArea: 'teams' },
+      'warning'
+    );
+  }
 
   // Get team details including organization, for the coach notification below.
   //
@@ -318,11 +365,22 @@ async function joinGolfTeamImpl(
       : null;
 
   if (!team) {
-    const { data } = await supabase
+    const { data, error: teamError } = await supabase
       .from('golf_teams')
       .select('id, name, organization_id')
       .eq('id', teamId)
       .single();
+
+    // As above: zero rows is the documented RLS outcome for a player who is not
+    // on the team yet, and the caller normally passes `resolvedTeam` so this
+    // does not run at all. A different error means the read failed.
+    if (teamError && teamError.code !== 'PGRST116') {
+      await logServerError(
+        `team read failed after join; coach notification will be skipped: ${describeError(teamError)}`,
+        { action: 'teams.joinGolfTeam', featureArea: 'teams' },
+        'warning'
+      );
+    }
     team = data;
   }
 
@@ -365,10 +423,18 @@ async function joinGolfTeamImpl(
   if (player && team?.organization_id) {
     try {
       // Find all coaches for this organization
-      const { data: coaches } = await supabase
+      const { data: coaches, error: coachesError } = await supabase
         .from('golf_coaches')
         .select('id, user_id')
         .eq('organization_id', team.organization_id);
+
+      if (coachesError) {
+        await logServerError(
+          `coach lookup failed after join; nobody was notified: ${describeError(coachesError)}`,
+          { action: 'teams.joinGolfTeam', featureArea: 'teams' },
+          'warning'
+        );
+      }
 
       if (coaches && coaches.length > 0) {
         const playerName = `${player.first_name} ${player.last_name}`.trim();
@@ -903,13 +969,34 @@ async function createTeamJoinRequestImpl(
     return { success: false, error: 'You are already on a team. Leave your current team before requesting to join another.' };
   }
 
-  // Check for existing pending request to this team
-  const { data: existingRequest } = await fromUntyped(supabase, 'golf_team_join_requests')
+  // Check for existing pending request to this team.
+  //
+  // This is the only thing standing between a player and a second pending row
+  // for the same team — there is no unique constraint behind it. A failed read
+  // read as "no request yet", so a player tapping Request again on a slow
+  // connection stacked duplicates in the coach's queue, and the coach has to
+  // approve or reject each one.
+  const { data: existingRequest, error: existingRequestError } = await fromUntyped(
+    supabase,
+    'golf_team_join_requests'
+  )
     .select('id, status')
     .eq('player_id', playerId)
     .eq('team_id', team.id)
     .eq('status', 'pending')
     .maybeSingle();
+
+  if (existingRequestError) {
+    await logServerError(
+      `pending join-request check failed: ${describeError(existingRequestError)}`,
+      { action: 'teams.createTeamJoinRequest', featureArea: 'teams' },
+      'warning'
+    );
+    return {
+      success: false,
+      error: "Couldn't check your existing requests just now. Please try again.",
+    };
+  }
 
   if (existingRequest) {
     return { success: false, error: 'You already have a pending request to join this team' };
