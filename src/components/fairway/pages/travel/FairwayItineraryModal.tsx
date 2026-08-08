@@ -27,6 +27,7 @@ import { Input, Select, TextArea } from '@/components/fairway/forms';
 import { formatShortDate } from '@/lib/golf/format-date';
 import type { TransportationType, TravelItinerary } from './travel-helpers';
 import { TRANSPORT_LABEL } from './travel-helpers';
+import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 
 /* ── shared field recipes (verbatim from FairwayEventEditor) ──────────────── */
 const fieldCls =
@@ -171,12 +172,25 @@ export function FairwayItineraryModal({
     let cancelled = false;
     void (async () => {
       const supabase = createClient();
-      const { data } = await supabase
+      // Academic class meetings are not travel-linkable, and they DROWN this
+      // picker: Shenandoah's women's team carries 323 class rows against two
+      // real events, so the tournament a coach is trying to link is one entry
+      // in ~325 — past the `.limit(500)` on a busier team it would not appear
+      // at all. They are also personal data that has no business on a
+      // team-facing dropdown.
+      const { data, error } = await supabase
         .from('golf_events')
         .select('id, title, start_time')
         .eq('team_id', teamId)
+        .neq('event_type', CLASS_EVENT_TYPE)
         .order('start_time', { ascending: false })
         .limit(500);
+      if (error) {
+        // The link is optional, so an empty picker is survivable — but an
+        // empty picker also looks exactly like "this team has no events",
+        // which for a travelling team is never true.
+        console.warn('[itinerary modal] event list read failed:', error.message);
+      }
       if (!cancelled) setEvents((data as EventOption[] | null) ?? []);
     })();
     return () => {
