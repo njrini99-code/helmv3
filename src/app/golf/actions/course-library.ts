@@ -67,7 +67,19 @@ function revalidateLibrary() {
 // Actor / team resolution
 // ─────────────────────────────────────────────────────────────────────────────
 
-type Actor = { userId: string; teamId: string | null; isCoach: boolean };
+type Actor = {
+  userId: string;
+  teamId: string | null;
+  isCoach: boolean;
+  /**
+   * The coach lookup FAILED, as distinct from returning no row. Both leave
+   * `isCoach` false and both must keep the caller out — an authorization check
+   * that could not run has not passed. The difference is only in what the
+   * coach is then told, and "Only coaches can manage the course library" is the
+   * wrong thing to tell one.
+   */
+  coachReadFailed: boolean;
+};
 
 /** Authenticated user + best-effort attribution team (coach's active team). */
 async function getActor(
@@ -79,15 +91,32 @@ async function getActor(
   // Attribution team is best-effort: coaches get their active (cookie-aware)
   // team; players leave it null. created_by_user_id is the required attribution.
   let teamId: string | null = null;
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  // Not `return null` — null here means "not signed in", and this user plainly
+  // is. Carry the failure instead so the gate below can keep them out while
+  // saying something true about why.
+  if (coachError) {
+    await logServerError(
+      `coach lookup failed while resolving the course-library actor: ${describeError(coachError)}`,
+      { action: 'courseLibrary.getActor', featureArea: 'courses' },
+      'warning'
+    );
+  }
+
   if (coach) {
     teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   }
-  return { userId: user.id, teamId, isCoach: Boolean(coach) };
+  return {
+    userId: user.id,
+    teamId,
+    isCoach: Boolean(coach),
+    coachReadFailed: Boolean(coachError),
+  };
 }
 
 /**
@@ -119,6 +148,11 @@ async function getActor(
  */
 function requireCoachActor(actor: Actor): string | null {
   if (actor.isCoach || isActorSuperAdmin(actor)) return null;
+  // Still closed, but honest: a coach whose lookup failed is not a player, and
+  // telling them they are one gives them nothing to do about it.
+  if (actor.coachReadFailed) {
+    return "Couldn't verify your coach access just now. Please try again.";
+  }
   return 'Only coaches can manage the course library';
 }
 
@@ -129,11 +163,23 @@ async function getCoachTeam(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'You must be logged in' };
 
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  // Same split as getActor: refuse either way, but do not tell a coach they
+  // are not one because a read fell over.
+  if (coachError) {
+    await logServerError(
+      `coach lookup failed while resolving the team course library: ${describeError(coachError)}`,
+      { action: 'courseLibrary.getCoachTeam', featureArea: 'courses' },
+      'warning'
+    );
+    return { error: "Couldn't verify your coach access just now. Please try again." };
+  }
+
   if (!coach) return { error: 'Only coaches can manage the team course library' };
 
   const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
