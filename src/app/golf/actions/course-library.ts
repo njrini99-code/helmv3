@@ -288,12 +288,28 @@ async function getRecentlyPlayedCoursesImpl(limit = 12): Promise<GolfCourse[]> {
     .maybeSingle();
   if (!player) return [];
 
-  const { data: rounds } = await supabase
+  // This function returns a bare GolfCourse[], so there is no channel to
+  // report a failure without changing its signature and the picker that
+  // consumes it. The consequence of a failed read is mild — the player sees
+  // none of the courses they play every week and has to search for one by
+  // hand — so it stays lenient rather than throwing.
+  //
+  // Lenient must not mean invisible, though: "you have played nowhere" and
+  // "we could not read your rounds" were the same empty array, and neither
+  // left a trace. They are logged now.
+  const { data: rounds, error: roundsError } = await supabase
     .from('golf_rounds')
     .select('course_id, tee_id, round_date')
     .eq('player_id', player.id)
     .order('round_date', { ascending: false })
     .limit(200);
+  if (roundsError) {
+    await logServerError(
+      `[getRecentlyPlayedCourses] rounds read failed — the player's recent courses will look empty: ${describeError(roundsError)}`,
+      { action: 'courseLibrary.recentlyPlayed', featureArea: 'course_library', playerId: player.id },
+    );
+    return [];
+  }
   if (!rounds || rounds.length === 0) return [];
 
   // Prefer course_id; fall back to the tee's course for any round that carries
@@ -327,11 +343,20 @@ async function getRecentlyPlayedCoursesImpl(limit = 12): Promise<GolfCourse[]> {
   if (orderedIds.length === 0) return [];
 
   // Only surface active courses; preserve recency order.
-  const { data: courseRows } = await supabase
+  const { data: courseRows, error: courseRowsError } = await supabase
     .from('golf_courses')
     .select('*')
     .in('id', orderedIds)
     .is('deleted_at', null);
+  // Same leniency, same duty to say so: a failure here drops every course the
+  // rounds above just resolved.
+  if (courseRowsError) {
+    await logServerError(
+      `[getRecentlyPlayedCourses] course resolve failed — recent courses will look empty: ${describeError(courseRowsError)}`,
+      { action: 'courseLibrary.recentlyPlayed', featureArea: 'course_library' },
+    );
+    return [];
+  }
   if (!courseRows) return [];
 
   const byId = new Map(courseRows.map((c) => [c.id as string, mapCourseRow(c)]));
