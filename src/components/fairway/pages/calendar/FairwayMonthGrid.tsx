@@ -37,6 +37,7 @@ import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { formatEventTimeCompact, zonedMidnight, eventCalendarDay } from '@/lib/calendar/timezone';
 import { typeMeta } from './FairwayEventCard';
+import { tintFor } from './FairwayCalendarMemberRail';
 
 /** A color-coded busy period for the coach availability overlay. */
 export interface ScheduleOverlay {
@@ -247,6 +248,14 @@ export function FairwayMonthGrid({
                   }
                   const e = item.event;
                   const { tone } = typeMeta(e.event_type);
+                  // A class chip wears its PLAYER's identity color — the same
+                  // `tintFor(id)` used by their avatar in the rail above, on
+                  // the roster, and in the attendee picker. Every class used to
+                  // render the same neutral tone, so a month of a full roster's
+                  // classes was an unreadable wall (coach report, 2026-08-05).
+                  // Initials carry it when color alone is ambiguous: 8 tints,
+                  // more players than that.
+                  const ownerTint = e.owner_player_id ? tintFor(e.owner_player_id) : null;
                   // Cancelled events get the same distinct cue as the Agenda/Week
                   // card (FairwayEventCard) — danger tint + strike-through —
                   // instead of rendering identically to a live event (2026-07-10
@@ -260,7 +269,12 @@ export function FairwayMonthGrid({
                       variant="ghost"
                       haptic="none"
                       onClick={onEventClick ? () => onEventClick(e) : undefined}
-                      title={isCancelled ? `${e.title} (cancelled)` : e.title}
+                      title={[
+                        e.owner_label ? `${e.owner_label} — ` : '',
+                        e.title,
+                        isCancelled ? ' (cancelled)' : '',
+                      ].join('')}
+                      style={!isCancelled && ownerTint ? { backgroundColor: ownerTint.bg, color: ownerTint.text } : undefined}
                       className={cn(
                         // `flex` + `min-w-0` (NOT `block`) — the Button base
                         // is already `inline-flex`, and a bare `truncate` on
@@ -272,10 +286,18 @@ export function FairwayMonthGrid({
                         // row an explicit flex layout and letting ONLY the
                         // title span shrink/truncate fixes it.
                         'flex h-auto min-h-0 w-full min-w-0 items-center gap-1 rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
-                        isCancelled ? TONE_CHIP.danger : TONE_CHIP[tone],
+                        isCancelled ? TONE_CHIP.danger : ownerTint ? undefined : TONE_CHIP[tone],
                         isCancelled && 'line-through decoration-2',
                       )}
                     >
+                      {!isCancelled && e.owner_initials ? (
+                        <span
+                          aria-hidden
+                          className="flex-shrink-0 font-fw-sans text-microbadge font-bold tracking-[0.04em] opacity-80"
+                        >
+                          {e.owner_initials}
+                        </span>
+                      ) : null}
                       {!e.all_day && eventStart(e) ? (
                         <span className="flex-shrink-0 font-fw-mono tabular-nums opacity-70">
                           {formatEventTimeCompact(eventStart(e)!, timezone)}

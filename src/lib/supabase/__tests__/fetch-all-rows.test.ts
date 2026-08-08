@@ -32,7 +32,18 @@ function page(rows: Row[], error: QueryError | null = null) {
 }
 
 describe('fetchAllRows', () => {
-  beforeEach(() => mocks.logServerEvent.mockClear());
+  // Drain before clearing, not just clear. maybeCaptureRlsDenial fires on ANY
+  // 42501 — including the type-level case below, which asserts on the throw and
+  // never flushes — and the capture is deliberately fire-and-forget, so it can
+  // settle after the NEXT test has started and be counted there. That made the
+  // "exactly one" assertions depend on how many dynamic imports the capture
+  // path happens to await (rls-denial.ts went from one to two when the feature
+  // registry was made lazy to keep it out of customer bundles). Draining here
+  // makes each test see only its own captures, whatever that path costs.
+  beforeEach(async () => {
+    await flushRlsDenialLogs();
+    mocks.logServerEvent.mockClear();
+  });
 
   it('unchanged contract: paginates across pages and returns all rows on success', async () => {
     let call = 0;

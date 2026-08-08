@@ -9,9 +9,10 @@ import {
 import { fetchSentryReleaseHealth } from '@/lib/admin/sentry-api';
 import { githubIssuesRepo } from '@/lib/admin/github-issues-config';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { PanelStatsSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
-import { Surface, Inset, StatTile, StatusPill, type FwStatusTone } from '@/components/fairway';
+import { Surface, Inset, StatTile, StatusPill, SkeletonList, type FwStatusTone } from '@/components/fairway';
 import { ShowMoreList } from './_components/ShowMoreList';
 import { ReleaseLedger } from './_components/ReleaseLedger';
 
@@ -397,7 +398,12 @@ export default async function DeploysPage() {
       <Surface padding="sm">
         <SectionLabel>Release ledger</SectionLabel>
         <div className="mt-3">
-          <PanelBoundary title="Release ledger">
+          {/* Rows, not a card: every boundary on this page already sits inside
+              a <Surface>, so the old default <SkeletonStat/> painted a card
+              inside a card. The two table panels get row skeletons; the two
+              tile panels below genuinely are cards-in-the-surface, so their
+              StatTile grids keep card-shaped fallbacks. */}
+          <PanelBoundary title="Release ledger" skeleton={<SkeletonList rows={5} />}>
             <ReleaseLedger />
           </PanelBoundary>
         </div>
@@ -406,7 +412,7 @@ export default async function DeploysPage() {
       <Surface padding="sm">
         <SectionLabel>Deployments</SectionLabel>
         <div className="mt-3">
-          <PanelBoundary title="Deployments">
+          <PanelBoundary title="Deployments" skeleton={<SkeletonList rows={6} />}>
             <DeploymentsTable />
           </PanelBoundary>
         </div>
@@ -416,7 +422,7 @@ export default async function DeploysPage() {
         <Surface padding="sm">
           <SectionLabel>Release health</SectionLabel>
           <div className="mt-3">
-            <PanelBoundary title="Release health">
+            <PanelBoundary title="Release health" skeleton={<PanelStatsSkeleton count={2} />}>
               <ReleaseHealth />
             </PanelBoundary>
           </div>
@@ -424,7 +430,7 @@ export default async function DeploysPage() {
         <Surface padding="sm">
           <SectionLabel>Traffic</SectionLabel>
           <div className="mt-3">
-            <PanelBoundary title="Traffic">
+            <PanelBoundary title="Traffic" skeleton={<PanelStatsSkeleton count={3} />}>
               <WebVitals />
             </PanelBoundary>
           </div>

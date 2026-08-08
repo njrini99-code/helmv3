@@ -29,6 +29,7 @@ interface AdminOp {
 interface ExistingRow {
   id: string;
   title: string;
+  event_type: string | null;
   start_time: string;
   end_time: string | null;
   location: string | null;
@@ -227,6 +228,9 @@ function existingRowOn(date: string, id: string, overrides: Partial<ExistingRow>
   return {
     id,
     title: EXPECTED_TITLE,
+    // Synced class rows carry event_type 'class' — a row still on the legacy
+    // 'other' is what the re-sync self-heal exists to converge.
+    event_type: 'class',
     start_time: `${date}T09:00:00+00:00`,
     end_time: `${date}T10:15:00+00:00`,
     location: EXPECTED_LOCATION,
@@ -403,6 +407,75 @@ describe('syncClassToCalendar — diff upsert (no blanket delete)', () => {
     expect(opsByVerb('insert')).toHaveLength(0);
     expect(opsByVerb('update')).toHaveLength(0);
     expect(opsByVerb('delete')).toHaveLength(0);
+  });
+
+  // Production, 2026-08-06: three players failed to re-sync a saved class with
+  //   invalid input syntax for type timestamp with time zone:
+  //   "2026-06-01T10:50:00:00-04:00"
+  // golf_player_classes.start_time is a Postgres `time`, so PostgREST returns
+  // "10:50:00" — and the sync appended ":00" to whatever it was handed. Editing
+  // an already-saved class was therefore broken outright.
+  it('accepts a time that already carries seconds (the re-sync path)', async () => {
+    adminCfg = { existingRows: [] };
+    const result = await syncClassToCalendar(
+      classData({ start_time: '10:50:00', end_time: '12:05:00' }),
+      CLASS_ID,
+      PLAYER_ID,
+      TEAM_ID,
+    );
+
+    expect(result.success).toBe(true);
+    const rows = insertedRows();
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      // Exactly one seconds field, and a parseable instant.
+      expect(row.start_time).toMatch(/T10:50:00[+-]\d{2}:\d{2}$/);
+      expect(Number.isNaN(new Date(row.start_time as string).getTime())).toBe(false);
+      expect(Number.isNaN(new Date(row.end_time as string).getTime())).toBe(false);
+    }
+  });
+
+  it('still accepts the plain HH:MM the class form emits', async () => {
+    adminCfg = { existingRows: [] };
+    const result = await syncClassToCalendar(classData({ start_time: '9:05' }), CLASS_ID, PLAYER_ID, TEAM_ID);
+
+    expect(result.success).toBe(true);
+    expect(insertedRows()[0]!.start_time).toMatch(/T09:05:00[+-]\d{2}:\d{2}$/);
+  });
+
+  it('refuses an unparseable time instead of fabricating a midnight meeting', async () => {
+    adminCfg = { existingRows: [] };
+    const result = await syncClassToCalendar(classData({ start_time: 'lunchtime' }), CLASS_ID, PLAYER_ID, TEAM_ID);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('HH:MM');
+    expect(insertedRows()).toHaveLength(0);
+  });
+
+  it("types every generated occurrence as a class, not a team event", async () => {
+    adminCfg = { existingRows: [] };
+    const result = await syncClassToCalendar(classData(), CLASS_ID, PLAYER_ID, TEAM_ID);
+
+    expect(result.success).toBe(true);
+    const rows = insertedRows();
+    expect(rows.length).toBeGreaterThan(0);
+    // event_type is what every team-scoped query filters on so one player's
+    // classes stop counting as the team's schedule.
+    expect(rows.every((r) => r.event_type === 'class')).toBe(true);
+  });
+
+  it("re-syncs a legacy 'other' row onto the class type", async () => {
+    adminCfg = {
+      existingRows: DESIRED_DATES.map((d, i) =>
+        existingRowOn(d, `ex-${i}`, { event_type: 'other' }),
+      ),
+    };
+    const result = await syncClassToCalendar(classData(), CLASS_ID, PLAYER_ID, TEAM_ID);
+
+    expect(result.success).toBe(true);
+    expect(result.eventsCreated).toBe(0);
+    expect(result.eventsDeleted).toBe(0);
+    expect(result.eventsUpdated).toBe(DESIRED_DATES.length);
   });
 
   it('diff: inserts missing occurrences, updates changed rows, deletes ONLY orphaned rows by id', async () => {

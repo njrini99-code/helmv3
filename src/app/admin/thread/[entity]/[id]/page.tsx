@@ -12,6 +12,7 @@ import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
 import { Surface, StatusPill, type FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../../../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../../../_components/PanelSkeletons';
 import { PanelNoData } from '../../../_components/PanelStates';
 import { LocalTime } from '../../../_components/LocalTime';
 
@@ -196,7 +197,7 @@ export default async function EntityThreadPage({
       <Link href={entity === 'team' ? '/admin/teams' : '/admin/users'} className="text-xs text-warm-500 underline">
         ← {entity === 'team' ? 'Teams pulse' : 'Users'}
       </Link>
-      <PanelBoundary title="Thread">
+      <PanelBoundary title="Thread" skeleton={<PanelPageSkeleton stats={3} rows={8} />}>
         <Body kind={entity} id={id} />
       </PanelBoundary>
     </div>

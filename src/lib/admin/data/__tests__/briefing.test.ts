@@ -187,7 +187,7 @@ describe('fetchBriefing — checkAuthFailureConcentration recency bound', () => 
       error: null,
     };
     mocks.tableResults.users = { data: { id: 'user-1' }, error: null } as unknown as { data: unknown[] | null; error: unknown };
-    const items = await fetchBriefing();
+    const { items } = await fetchBriefing();
     const hit = items.find((i) => i.headline.includes('attacked@example.com'));
     expect(hit).toBeDefined();
     expect(hit!.severity).toBe('attention');
@@ -195,7 +195,7 @@ describe('fetchBriefing — checkAuthFailureConcentration recency bound', () => 
 
   it('surfaces nothing when login_attempts has no rows (e.g. old lockouts fell outside the recency window)', async () => {
     mocks.tableResults.login_attempts = { data: [], error: null };
-    const items = await fetchBriefing();
+    const { items } = await fetchBriefing();
     expect(items.some((i) => i.headline.includes('failed sign-in'))).toBe(false);
   });
 });

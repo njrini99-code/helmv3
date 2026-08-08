@@ -23,11 +23,15 @@ interface PendingRequest {
   status: string;
   message: string | null;
   created_at: string;
+  // NULLABLE. A pending requester is by definition not yet a member, so the
+  // team may not be resolvable for them — this used to be declared non-null
+  // while the server was in fact always sending null, and the render below
+  // dereferenced it.
   team: {
     id: string;
     name: string;
     organization?: { name: string } | null;
-  };
+  } | null;
 }
 
 export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps) {
@@ -249,9 +253,12 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                       <IconClock size={20} aria-hidden />
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate font-fw-sans text-body font-medium text-text-primary">{request.team.name}</p>
+                      {/* Optional-chained on purpose: a team we could not
+                          resolve renders as a placeholder rather than taking
+                          the entire Settings page down with it. */}
+                      <p className="truncate font-fw-sans text-body font-medium text-text-primary">{request.team?.name ?? 'Unknown team'}</p>
                       <p className="truncate font-fw-sans text-body-sm text-text-secondary" suppressHydrationWarning>
-                        {request.team.organization?.name && `${request.team.organization.name} · `}
+                        {request.team?.organization?.name && `${request.team.organization.name} · `}
                         Requested {formatDate(request.created_at)}
                       </p>
                     </div>

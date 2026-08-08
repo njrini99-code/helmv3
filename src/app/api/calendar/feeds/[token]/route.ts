@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
+import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 
 /**
  * Calendar Feed API Route
@@ -270,6 +271,9 @@ export async function GET(
         .from('golf_events')
         .select('id, title, description, location, event_type, start_time, end_time, all_day, status')
         .eq('team_id', teamId)
+        // A subscribed TEAM calendar must not export one player's class
+        // schedule to every teammate's phone (2026-08-05).
+        .neq('event_type', CLASS_EVENT_TYPE)
         .gte('start_time', windowStart)
         .lte('start_time', windowEnd);
 

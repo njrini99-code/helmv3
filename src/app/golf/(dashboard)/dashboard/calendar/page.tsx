@@ -9,6 +9,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import type { Metadata } from 'next';
 import { logServerException } from '@/lib/server-error-logger';
+import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
 
 // Code-split the Fairway calendar surface — it's the ONLY tree the route
 // renders, so this next/dynamic keeps its chunk loaded only when actually
@@ -55,26 +56,66 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   let teamId: string | null = null;
 
   let coachList: { id: string; full_name: string | null; avatar_url: string | null }[] = [];
+  /** DB error from the membership read — checked after the try/catch, not inside it. */
+  let playerTeamError: { message?: string; code?: string } | null = null;
   try {
     const [coachTeamId, playerTeamResult, coachListResult] = await Promise.all([
       orgId
         ? resolveCoachTeamIdWithCookie(supabase, orgId, coach?.id ?? null)
         : Promise.resolve(null),
+      // `.eq('status','active')` matches what the DASHBOARD LAYOUT already
+      // filters on. The two disagreed: the layout resolved "my team" from
+      // active memberships only, this page from any membership. That asymmetry
+      // is what would let the shell print the right team name in the header
+      // while the body underneath rendered an empty season — the worst possible
+      // presentation of the failure.
+      //
+      // It also removes the maybeSingle cardinality hazard: without the filter,
+      // a transferred player holding an old inactive row plus a new active one
+      // matches two rows, and maybeSingle synthesises PGRST116 client-side.
+      // (Not firing today — all 69 membership rows are active — but the same
+      // swallow on the same table was already a live bug in the join flow.)
       playerId
-        ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
-        : Promise.resolve({ data: null }),
+        ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active').maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
       orgId
         ? supabase.from('golf_coaches').select('id, full_name, avatar_url').eq('organization_id', orgId).order('full_name', { ascending: true }).limit(20)
         : Promise.resolve({ data: null }),
     ]);
 
+    // Captured, not swallowed — checked immediately after this block. It cannot
+    // be checked in here, because the catch below would swallow its own throw
+    // and log the failure twice.
+    playerTeamError = playerTeamResult.error ?? null;
+
     teamId = coachTeamId || playerTeamResult.data?.team_id || null;
     coachList = coachListResult.data || [];
   } catch (error) {
     void logServerException(error, { action: 'calendar-load', route: '/golf/dashboard/calendar', source: 'server_component', sport: 'golf' }, 'warning');
-    // Team resolution failed (network/DB) — rendering an empty calendar here
-    // is indistinguishable from "my season got wiped" (audit finding #20).
-    // Throw so the route error boundary renders a real, retryable error state.
+    // Catches the NETWORK-layer exceptions supabase-js does throw (fetch
+    // failure, aborted request) and anything resolveCoachTeamIdWithCookie
+    // raises. It does NOT catch database errors — see below.
+    throw new Error('Failed to load your team for the calendar. Please try again.');
+  }
+
+  // The `error` is READ.
+  //
+  // The try/catch above was written to guard exactly this failure — its own
+  // comment said rendering an empty calendar "is indistinguishable from 'my
+  // season got wiped'" — but it was dead for the channel it guarded:
+  // supabase-js does not REJECT on a database error, it RESOLVES with
+  // `{ data: null, error }`. So a statement timeout, pool exhaustion or a
+  // PostgREST 5xx fell straight past the catch, teamId became null, the entire
+  // events block was skipped, and the player got a silent empty calendar —
+  // precisely the outcome that comment exists to prevent. `revalidate = 30`
+  // then cached the empty render for 30 seconds, so the swallow actively
+  // prolonged the bad state.
+  //
+  // The same file already gets this right for the events fetch further down
+  // (`if (eventsResult.error) throw`). This is that pattern applied to the read
+  // which gates it.
+  if (playerTeamError) {
+    void logServerException(playerTeamError, { action: 'calendar-load', route: '/golf/dashboard/calendar', source: 'server_component', sport: 'golf' }, 'warning');
     throw new Error('Failed to load your team for the calendar. Please try again.');
   }
 
@@ -90,6 +131,12 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   let eventsData: { id: string; team_id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null; description: string | null; status: string | null; all_day: boolean | null; created_by: string | null; requires_rsvp: boolean | null; rsvp_deadline: string | null; max_attendees: number | null; parent_event_id: string | null; recurrence_rule: string | null }[] | null = null;
   let playersData: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }[] = [];
   let teamTimezone: string | null = null;
+  // Class id → owning player. Class meetings live on the team calendar with no
+  // owner column, so this index is what lets the "All" lens say whose class a
+  // block is. `classOwnersResolved` distinguishes "nobody owns classes" from
+  // "the lookup failed" — see attributeClassEvents.
+  let classOwners: ClassOwnerIndex = {};
+  let classOwnersResolved = false;
 
   if (teamId) {
     // NOTE: cancelled events are INCLUDED on purpose — they render distinctly
@@ -97,7 +144,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
     // parent_event_id + recurrence_rule are REQUIRED end-to-end: without them
     // series members render as one-offs and the edit/delete scope picker never
     // appears (audit finding #6, which armed the P0 cascade delete).
-    const [eventsResult, teamMembersResult, teamSettingsResult] = await Promise.all([
+    const [eventsResult, teamMembersResult, teamSettingsResult, classOwnersResult] = await Promise.all([
       // Paginate past the PostgREST 1000-row server cap (audit F102): a busy
       // team's ±3-month window can exceed a single page, and a bare `.limit(500)`
       // silently dropped the overflow (events vanish from the calendar). A
@@ -126,6 +173,14 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
         .select('timezone')
         .eq('team_id', teamId)
         .maybeSingle(),
+      // Who owns which class. RLS does the scoping for us: a coach reads every
+      // rostered player's classes, a player reads only their own — so this
+      // index is already viewer-correct before attributeClassEvents runs.
+      supabase
+        .from('golf_player_classes')
+        .select('id, player_id')
+        .eq('team_id', teamId)
+        .limit(1000),
     ]);
 
     // A failed events fetch must NOT render as a cheerful empty calendar
@@ -140,6 +195,30 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
       .map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player)
       .filter((p): p is NonNullable<typeof p> => p !== null);
     teamTimezone = teamSettingsResult.data?.timezone || null;
+
+    // Only claim the ownership index is authoritative when the query actually
+    // succeeded — an error here must not read as "these classes belong to
+    // nobody", which would strip a player's own classes off their calendar.
+    const classRows = classOwnersResult.data ?? [];
+    // Resolved means we could genuinely map every readable class to a player:
+    // the class query succeeded AND either we have the roster to map onto or
+    // there are no classes to map. A silently-empty roster fetch would
+    // otherwise masquerade as "no classes have owners".
+    if (!classOwnersResult.error && (playersData.length > 0 || classRows.length === 0)) {
+      classOwnersResolved = true;
+      const playerById = new Map(playersData.map((p) => [p.id, p]));
+      classOwners = Object.fromEntries(
+        classRows.flatMap((row) => {
+          const player = row.player_id ? playerById.get(row.player_id) : undefined;
+          if (!player) return [];
+          return [[row.id, {
+            playerId: player.id,
+            firstName: player.first_name,
+            lastName: player.last_name,
+          }] as const];
+        }),
+      );
+    }
   }
 
   // Map golf_events to CalendarEvent format
@@ -181,6 +260,16 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
       parent_event_id: event.parent_event_id,
       recurrence_rule: event.recurrence_rule,
     };
+  });
+
+  // Label each class occurrence with the player it belongs to (and, for a
+  // player viewer, drop teammates' classes — see attributeClassEvents). Done
+  // here so `upcomingCount` below counts what the viewer will actually see;
+  // FairwayCalendar re-runs the same pure pass over client-fetched pages.
+  events = attributeClassEvents(events, classOwners, {
+    isCoach,
+    playerId,
+    ownersResolved: classOwnersResolved,
   });
 
   // Combine players and coaches for team members display (data already fetched in parallel above)
@@ -230,6 +319,9 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
         loadedRangeStart={threeMonthsAgo.toISOString()}
         loadedRangeEnd={threeMonthsAhead.toISOString()}
         initialEventId={initialEventId}
+        classOwners={classOwners}
+        classOwnersResolved={classOwnersResolved}
+        viewerPlayerId={playerId}
       />
     </div>
   );

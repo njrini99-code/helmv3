@@ -26,6 +26,7 @@ function queryBuilder(response: unknown) {
   const builder = thenable({
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
+    neq: vi.fn(() => builder),
     gte: vi.fn(() => builder),
     lte: vi.fn(() => builder),
     order: vi.fn(() => builder),

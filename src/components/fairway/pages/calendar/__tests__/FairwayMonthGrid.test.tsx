@@ -55,4 +55,49 @@ describe('FairwayMonthGrid — event chip layout', () => {
     expect(chip.className).toContain('flex');
     expect(chip.className).toContain('min-w-0');
   });
+
+  // A coach looking at a full month sees every player's class meetings side by
+  // side. Before attribution they were all the same neutral chip with nothing
+  // saying whose was whose ("if I'm looking at a full calendar how do I know
+  // who is who?", 2026-08-05).
+  it("wears the owning player's identity color and initials on a class chip", () => {
+    render(
+      <FairwayMonthGrid
+        events={[
+          makeEvent({
+            id: 'cls-evt',
+            title: 'BUS 324: Marketing Management',
+            event_type: 'class',
+            owner_player_id: 'p-braeden',
+            owner_label: 'Braeden G.',
+            owner_initials: 'BG',
+          }),
+        ]}
+        focusDate={new Date('2026-07-16T12:00:00')}
+        nowRef={new Date('2026-07-16T12:00:00')}
+        timezone="America/New_York"
+      />,
+    );
+
+    // The tooltip names the owner outright.
+    const chip = screen.getByTitle('Braeden G. — BUS 324: Marketing Management');
+    expect(chip.textContent).toContain('BG');
+    // Tinted from the player's id, NOT the generic event-type tone — that tint
+    // is the same one their avatar wears in the member rail and on the roster.
+    expect(chip.getAttribute('style')).toMatch(/background-color/);
+  });
+
+  it('leaves a team event on its event-type tone, with no owner marks', () => {
+    render(
+      <FairwayMonthGrid
+        events={[makeEvent({ title: 'Team Practice', event_type: 'practice' })]}
+        focusDate={new Date('2026-07-16T12:00:00')}
+        nowRef={new Date('2026-07-16T12:00:00')}
+        timezone="America/New_York"
+      />,
+    );
+
+    const chip = screen.getByTitle('Team Practice');
+    expect(chip.getAttribute('style')).toBeNull();
+  });
 });

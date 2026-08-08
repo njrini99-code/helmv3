@@ -80,6 +80,34 @@ export default async function TeamSettingsPage() {
     const team = coachData.golf_teams
       ? { ...coachData.golf_teams, created_at: coachData.golf_teams.created_at ?? '' }
       : null;
+
+    // Every team this coach staffs, with its OWN join code.
+    //
+    // A program running both a Men's and a Women's squad previously saw only
+    // the ACTIVE team's code — the other one existed but was reachable solely
+    // by flipping the top-bar toggle first. Both codes are 8 uppercase
+    // characters in the same position on the page, and nothing on the code says
+    // which squad it belongs to, so a coach writing two invite emails back to
+    // back could hand the women's team the men's code. The code would be
+    // perfectly valid, the players would land on the wrong roster, and nothing
+    // would flag it.
+    //
+    // Readable under RLS without elevation: golf_teams_select admits a coach
+    // staffed on the team, and these are exactly the teams they staff.
+    const { data: staffRows } = await supabase
+      .from('golf_team_coach_staff')
+      .select('team_id')
+      .eq('coach_id', coachData.id);
+
+    const staffedIds = [...new Set((staffRows ?? []).map((r) => r.team_id).filter(Boolean))] as string[];
+    const { data: programTeamRows } = staffedIds.length > 1
+      ? await supabase
+          .from('golf_teams')
+          .select('id, name, gender, join_code')
+          .in('id', staffedIds)
+          .order('gender', { ascending: true })
+      : { data: null };
+
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayTeam
@@ -91,6 +119,12 @@ export default async function TeamSettingsPage() {
             full_name: coachData.full_name,
           }}
           team={team}
+          programTeams={(programTeamRows ?? []).map((t) => ({
+            id: t.id,
+            name: t.name,
+            gender: t.gender ?? null,
+            join_code: t.join_code ?? null,
+          }))}
         />
       </div>
     );
