@@ -28,6 +28,8 @@
 // =============================================================================
 
 import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 import { createClient } from '@/lib/supabase/server';
 import { assertImportSourceEnabled } from '@/lib/baseball/import-source-enabled';
@@ -1300,7 +1302,7 @@ async function applyImportPlan(
 
   for (const w of writes) {
     // Look for an existing stat row for this player + session (idempotency key).
-    const { data: existing } = await db
+    const { data: existing, error: existingError } = await db
       .from('baseball_player_stats')
       .select('*')
       .eq('player_id', w.playerId)
@@ -1308,6 +1310,28 @@ async function applyImportPlan(
       .eq('session_date', sessionDate)
       .eq('stat_type', statType)
       .maybeSingle();
+
+    // This read IS the idempotency key, and it failed OPEN. Its error was
+    // discarded, so a failed read produced `existing = null`, the dedupe pass
+    // below was skipped entirely, and the row was written as a fresh CREATE —
+    // duplicating a player's stats for that session on a re-import.
+    //
+    // Verified against the database rather than assumed: baseball_player_stats
+    // carries no unique constraint on (player_id, team_id, session_date,
+    // stat_type), only the primary key on id. Nothing downstream would catch
+    // the duplicate, and duplicated stats feed averages, leaderboards and
+    // CoachHelm.
+    //
+    // Skip this row and count it rather than guessing. The coach sees an
+    // honest per-row failure instead of a silent double-write.
+    if (existingError) {
+      await logServerError(
+        `[imports] idempotency read failed for player ${w.playerId} — row skipped rather than risk duplicating stats: ${describeError(existingError)}`,
+        { action: 'baseball.imports.applyWrites', featureArea: 'imports', teamId },
+      );
+      createConflicts++;
+      continue;
+    }
 
     // DEDUPE PASS driven by the registered source's dedupe_strictness.
     if (existing) {
