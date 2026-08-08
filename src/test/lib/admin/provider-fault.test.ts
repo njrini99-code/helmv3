@@ -226,3 +226,34 @@ describe('classifyProviderFault', () => {
     }
   });
 });
+
+describe('rate_limited copy does not promise recovery it cannot know', () => {
+  /**
+   * A 429 means "throttled" OR "out of credit" — providers use it for both, and
+   * without a message body the two are indistinguishable. The copy used to say
+   * flatly "This clears on its own", and on 2026-08-07 at 17:39 a Guilford
+   * player retried a schedule-image import three times in fifty seconds on the
+   * strength of it. The Anthropic account had been out of credit since that
+   * morning, so waiting could never have worked.
+   */
+  it('never tells the user it will clear on its own', () => {
+    const fault = classifyProviderFault(new Error('Request failed with status 429'));
+
+    expect(fault?.kind).toBe('rate_limited');
+    expect(fault?.summary).not.toMatch(/clears on its own/i);
+  });
+
+  it('still says the request was not lost, and names out-of-credit as the likelier cause', () => {
+    const fault = classifyProviderFault(new Error('rate limit exceeded'));
+
+    expect(fault?.summary).toMatch(/was not lost/i);
+    expect(fault?.summary).toMatch(/out of credit/i);
+  });
+
+  it('an explicit out-of-credit error still classifies as credit_exhausted, not rate_limited', () => {
+    const fault = classifyProviderFault(new Error('Your credit balance is too low to access the API'));
+
+    expect(fault?.kind).toBe('credit_exhausted');
+    expect(fault?.summary).toMatch(/retrying will not help/i);
+  });
+});
