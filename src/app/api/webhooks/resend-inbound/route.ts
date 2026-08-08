@@ -164,11 +164,29 @@ export async function POST(request: Request) {
     let contactLogId: string | null = null;
 
     if (inReplyTo) {
-      const { data: contactLog } = await adminClient
+      const { data: contactLog, error: contactLogError } = await adminClient
         .from('crm_contact_log')
         .select('id, coach_id')
         .eq('resend_message_id', inReplyTo)
         .maybeSingle();
+
+      // Best-effort attribution, and it stays best-effort — the reply is worth
+      // storing whether or not we can link it. But the error was discarded, so
+      // "no matching outbound message" and "the lookup failed" both left
+      // coachId null, and the second one has a consequence: with no coach_id
+      // the reply never reaches the coach timeline AND the sequence-stop
+      // trigger never fires, so we keep emailing someone who has already
+      // replied. That is worth a line in the log rather than silence.
+      //
+      // The reply itself cannot be duplicated — crm_replies is UNIQUE
+      // (message_id) and this is an upsert — so proceeding is safe.
+      if (contactLogError) {
+        await logServerError(
+          `[Resend Inbound] reply attribution lookup failed — storing the reply unattributed, so no coach timeline entry and no sequence stop: ${describeError(contactLogError)}`,
+          { action: 'route.POST', featureArea: 'crm', metadata: { inReplyTo } },
+        );
+      }
+
       if (contactLog) {
         contactLogId = (contactLog as { id: string }).id;
         coachId = (contactLog as { coach_id: string | null }).coach_id ?? null;
