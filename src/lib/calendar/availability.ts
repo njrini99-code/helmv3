@@ -13,6 +13,8 @@ import type { GolfEvent, GolfPlayerClass } from '@/lib/types/golf';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { classIdFromDescription } from '@/lib/calendar/class-events';
 import { parseSemesterDates } from '@/lib/golf/semester';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // TYPES
@@ -79,12 +81,38 @@ interface CoachBlockedTimeRow {
  * Combines: golf_events (where they're creator OR attendee with accepted status)
  *           golf_player_classes (their academic schedule)
  */
+export interface BusyPeriodsResult {
+  periods: BusyPeriod[];
+  /**
+   * At least one read that feeds these periods FAILED, so the list is
+   * incomplete. Callers that present "free"/"no conflicts" as a finding must
+   * not do so when this is true — an empty list from a failed read looks
+   * exactly like an open calendar.
+   */
+  partial: boolean;
+}
+
+/**
+ * Busy periods only. Kept for callers that render the periods themselves and
+ * therefore cannot state an absence as a fact; use
+ * `getUserBusyPeriodsWithStatus` where "nothing found" is shown to a user.
+ */
 export async function getUserBusyPeriods(
   userId: string,
   timeMin: Date,
   timeMax: Date,
   supabase: SupabaseClient
 ): Promise<BusyPeriod[]> {
+  const { periods } = await getUserBusyPeriodsWithStatus(userId, timeMin, timeMax, supabase);
+  return periods;
+}
+
+export async function getUserBusyPeriodsWithStatus(
+  userId: string,
+  timeMin: Date,
+  timeMax: Date,
+  supabase: SupabaseClient
+): Promise<BusyPeriodsResult> {
   const busyPeriods: BusyPeriod[] = [];
   // Event windows compare REAL UTC timestamps (audit finding #7): the old
   // date-only collapse (`.lte('start_time', 'YYYY-MM-DD')` = midnight UTC)
@@ -118,19 +146,44 @@ export async function getUserBusyPeriods(
   // multi-team players both need cross-team conflict surfacing — a coach who
   // runs two squads expects events on team B to count when scheduling on team
   // A, and a dual-roster player can have busy time on either team.
+  //
+  // `partial` tracks whether any read below FAILED, as opposed to legitimately
+  // finding nothing. It matters because this function's only output is a list
+  // of busy periods, and a short list is indistinguishable from a free
+  // calendar: a failed team read yields `teamIds = []`, the team-events query
+  // is then skipped entirely by the `teamIds.length > 0` gate, and the coach
+  // is told the whole squad is free. RLS returning an empty set is NOT this
+  // case — that comes back with `error === null` and is a real answer.
+  let partial = false;
   let teamIds: string[] = [];
   if (coach?.organization_id) {
-    const { data: teams } = await supabase
+    const { data: teams, error: teamsError } = await supabase
       .from('golf_teams')
       .select('id')
       .eq('organization_id', coach.organization_id);
+    if (teamsError) {
+      partial = true;
+      await logServerError(
+        `[availability] team read failed for org ${coach.organization_id}; busy periods will be incomplete: ${describeError(teamsError)}`,
+        { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+        'warning',
+      );
+    }
     teamIds = (teams ?? []).map((t) => t.id);
   } else if (player) {
-    const { data: memberships } = await supabase
+    const { data: memberships, error: membershipsError } = await supabase
       .from('golf_team_members')
       .select('team_id')
       .eq('player_id', player.id)
       .eq('status', 'active');
+    if (membershipsError) {
+      partial = true;
+      await logServerError(
+        `[availability] membership read failed for player ${player.id}; busy periods will be incomplete: ${describeError(membershipsError)}`,
+        { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+        'warning',
+      );
+    }
     teamIds = (memberships ?? [])
       .map((m) => m.team_id)
       .filter((id): id is string => Boolean(id));
@@ -228,11 +281,22 @@ export async function getUserBusyPeriods(
   // row at all, so no class occurrence is ever theirs.
   const ownedClassIds = new Set<string>();
   if (player && classEventsByClassId.size > 0) {
-    const { data: ownedClasses } = await supabase
+    const { data: ownedClasses, error: ownedClassesError } = await supabase
       .from('golf_player_classes')
       .select('id')
       .eq('player_id', player.id)
       .in('id', Array.from(classEventsByClassId.keys()));
+    if (ownedClassesError) {
+      // Fail-closed stays fail-closed (an unowned occurrence must not block
+      // anyone), but a failed read drops this player's OWN class time, so the
+      // result is incomplete rather than simply strict.
+      partial = true;
+      await logServerError(
+        `[availability] owned-class read failed for player ${player.id}; class busy time will be missing: ${describeError(ownedClassesError)}`,
+        { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+        'warning',
+      );
+    }
     for (const row of (ownedClasses ?? []) as { id: string }[]) ownedClassIds.add(row.id);
   }
 
@@ -291,6 +355,15 @@ export async function getUserBusyPeriods(
   // Process academic classes that were never synced onto the calendar. A synced
   // class already contributed its real occurrences above; expanding it again
   // here would double-count it into one merged block with a doubled-up title.
+  const classesError = 'error' in classesResult ? classesResult.error : null;
+  if (classesError) {
+    partial = true;
+    await logServerError(
+      `[availability] class read failed; unsynced class time will be missing: ${describeError(classesError)}`,
+      { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+      'warning',
+    );
+  }
   if (classesResult.data) {
     for (const cls of classesResult.data as GolfPlayerClass[]) {
       if (classEventsByClassId.has(cls.id)) continue;
@@ -300,6 +373,15 @@ export async function getUserBusyPeriods(
   }
 
   // Process coach blocked time
+  const blockedTimesError = 'error' in blockedTimesResult ? blockedTimesResult.error : null;
+  if (blockedTimesError) {
+    partial = true;
+    await logServerError(
+      `[availability] blocked-time read failed; the coach's own blocked time will be missing: ${describeError(blockedTimesError)}`,
+      { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+      'warning',
+    );
+  }
   if (blockedTimesResult.data) {
     for (const blocked of blockedTimesResult.data as CoachBlockedTimeRow[]) {
       const startDateTime = parseEventDateTime(blocked.start_date, blocked.start_time);
@@ -320,7 +402,7 @@ export async function getUserBusyPeriods(
   }
 
   // Sort by start time and merge overlapping periods
-  return mergeOverlappingPeriods(busyPeriods);
+  return { periods: mergeOverlappingPeriods(busyPeriods), partial };
 }
 
 /**
