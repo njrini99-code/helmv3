@@ -34,6 +34,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { CLASS_EVENT_TYPE, classTag } from '@/lib/calendar/class-events';
 
 /** Columns fetched for calendar rendering — keep in sync with the page select. */
 const CALENDAR_EVENT_COLUMNS =
@@ -150,6 +151,21 @@ export interface UseCalendarRangeEventsOptions {
   realtime?: boolean;
   /** Called on every realtime event (e.g. router.refresh). */
   onRealtimeEvent?: () => void;
+  /**
+   * Who is looking. Required to keep academic class meetings off the wire.
+   *
+   * Class rows live on the TEAM row and `golf_events_select_team` grants every
+   * rostered player SELECT on all of them, so RLS will happily hand a player
+   * every teammate's timetable. The server page filters them in
+   * `attributeClassEvents` AFTER the fetch, which is fine there because the
+   * fetch is server-side — but this hook fetches from the BROWSER with the anon
+   * key, so an unfiltered query ships three teammates' course, building and
+   * meeting times into the DOM where DevTools reads them.
+   *
+   * Omitting this is treated as "a player with no classes", i.e. the most
+   * restrictive answer, so a caller that forgets it leaks nothing.
+   */
+  viewer?: { isCoach: boolean; playerId: string | null };
 }
 
 export interface UseCalendarRangeEventsResult {
@@ -195,6 +211,7 @@ export function useCalendarRangeEvents({
   loadedEnd,
   realtime = false,
   onRealtimeEvent,
+  viewer,
 }: UseCalendarRangeEventsOptions): UseCalendarRangeEventsResult {
   // Shared monotonic "which observation happened most recently" counter.
   // BOTH the server-supplied `initialEvents` prop (refreshed via
@@ -298,22 +315,54 @@ export function useCalendarRangeEvents({
     void (async () => {
       try {
         const supabase = createClient();
+
+        // Keep other people's class meetings OFF THE WIRE for a player viewer.
+        //
+        // A coach is entitled to the whole squad's class blocks — the conflict
+        // checker and "find a time" are built on them — so their query is
+        // unchanged. A player gets their own classes and nothing else, decided
+        // HERE rather than after the rows have already reached the browser.
+        //
+        // `golf_player_classes` RLS scopes this read to the caller's own rows,
+        // so the ids that come back are by construction the only ones a player
+        // may see. A failed read yields no ids, which excludes every class row
+        // — a player briefly missing their own class blocks is the right way to
+        // fail on a privacy filter.
+        let ownClassIds: string[] = [];
+        if (!viewer?.isCoach && viewer?.playerId) {
+          const { data: ownClasses } = await supabase
+            .from('golf_player_classes')
+            .select('id')
+            .eq('player_id', viewer.playerId)
+            .abortSignal(abortController.signal);
+          ownClassIds = (ownClasses ?? []).map((row) => row.id).filter(Boolean);
+        }
+
         // Paginate past the PostgREST 1000-row server cap (audit F102): a busy
         // team's ±1-month buffered window can exceed a single page, and a bare
         // `.limit(500)` silently dropped the overflow. A secondary `.order('id')`
         // gives a STABLE page boundary so rows can't drift or repeat across pages.
-        const { data, error } = await fetchAllRowsResult<GolfEventRangeRow>((from, to) =>
-          supabase
+        const { data, error } = await fetchAllRowsResult<GolfEventRangeRow>((from, to) => {
+          let query = supabase
             .from('golf_events')
             .select(CALENDAR_EVENT_COLUMNS)
             .abortSignal(abortController.signal)
             .eq('team_id', teamId)
             .gte('start_time', fetchStart.toISOString())
-            .lte('start_time', fetchEnd.toISOString())
+            .lte('start_time', fetchEnd.toISOString());
+
+          if (!viewer?.isCoach) {
+            // Class ids are UUIDs, so they cannot contain the comma or paren
+            // that would break PostgREST's `or` parsing.
+            const mine = ownClassIds.map((id) => `description.like.*${classTag(id)}*`);
+            query = query.or([`event_type.neq.${CLASS_EVENT_TYPE}`, ...mine].join(','));
+          }
+
+          return query
             .order('start_time', { ascending: true })
             .order('id', { ascending: true })
-            .range(from, to),
-        );
+            .range(from, to);
+        });
 
         // Request-epoch guard (#37/#166/#185/#83 mustFix #1): an older
         // in-flight fetch resolving AFTER a newer one was dispatched must
@@ -351,7 +400,11 @@ export function useCalendarRangeEvents({
       cancelled = true;
       abortController.abort();
     };
-  }, [teamId, visibleStartMs, visibleEndMs, fetchNonce]);
+    // Viewer identity is a REAL dependency, not a lint appeasement: it decides
+    // which class rows the query asks for, so a coach/player change (or a
+    // player id arriving after hydration) must refetch rather than keep serving
+    // a range fetched under the previous viewer's scope.
+  }, [teamId, visibleStartMs, visibleEndMs, fetchNonce, viewer?.isCoach, viewer?.playerId]);
 
   const retryRange = useCallback(() => {
     forceRefetchRef.current = true;

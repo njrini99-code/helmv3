@@ -34,6 +34,7 @@ function makeChain(record: QueryRecord) {
     'select',
     'eq',
     'neq',
+    'or',
     'gte',
     'lte',
     'order',
@@ -69,6 +70,7 @@ function deferredChain(record: QueryRecord) {
     'select',
     'eq',
     'neq',
+    'or',
     'gte',
     'lte',
     'order',
@@ -448,5 +450,86 @@ describe('mapGolfEventRow', () => {
     expect(mapped.parent_event_id).toBe('root-1');
     expect(mapped.recurrence_rule).toBe('RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=10');
     expect(mapped.requires_rsvp).toBe(false);
+  });
+});
+
+/**
+ * Class meetings are personal data on a TEAM row, and this hook fetches from
+ * the BROWSER with the anon key. `golf_events_select_team` grants every
+ * rostered player SELECT on all of them, so an unfiltered query ships three
+ * teammates' course, building and meeting times into the DOM — where the
+ * page's `attributeClassEvents` only hides them visually, one DevTools tab
+ * away from being read.
+ *
+ * Measured on production 2026-08-08: 323 such rows on Shenandoah's women's
+ * team, belonging to Sofia Bogaty, Gabriella Frick and Carley Westmoreland.
+ *
+ * The narrowing has to happen in the QUERY, not after it.
+ */
+describe('useCalendarRangeEvents — class rows must not reach a player\'s browser', () => {
+  const NOW = Date.now();
+  const FAR = NOW + 150 * DAY_MS; // outside the ±90d server window, so it fetches
+
+  beforeEach(() => {
+    queryLog.length = 0;
+    nextResults = [];
+    deferredResolvers = [];
+    useDeferredForNextN = 0;
+  });
+
+  function renderWithViewer(viewer?: { isCoach: boolean; playerId: string | null }) {
+    return renderHook(() =>
+      useCalendarRangeEvents({
+        teamId: 'team-1',
+        initialEvents: [],
+        visibleStart: new Date(FAR),
+        visibleEnd: new Date(FAR + 6 * DAY_MS),
+        loadedStart: new Date(NOW - 90 * DAY_MS).toISOString(),
+        loadedEnd: new Date(NOW + 90 * DAY_MS).toISOString(),
+        viewer,
+      }),
+    );
+  }
+
+  function eventsOrClause(): string | null {
+    const record = queryLog.find((q) => q.table === 'golf_events');
+    const call = record?.calls.find((c) => c.method === 'or');
+    return call ? String(call.args[0]) : null;
+  }
+
+  it('narrows the query for a player, and never asks for a teammate\'s classes', async () => {
+    nextResults = [
+      { data: [{ id: 'own-class' }], error: null }, // golf_player_classes (RLS-scoped)
+      { data: [], error: null },                    // golf_events
+    ];
+
+    renderWithViewer({ isCoach: false, playerId: 'sofia' });
+    await waitFor(() => expect(queryLog.some((q) => q.table === 'golf_events')).toBe(true));
+
+    const clause = eventsOrClause();
+    expect(clause).toContain('event_type.neq.class');
+    expect(clause).toContain('own-class');   // only the viewer's OWN class id
+    expect(clause).not.toContain('carley');
+  });
+
+  it('does not narrow for a coach — the squad\'s class blocks are theirs to see', async () => {
+    // The conflict checker and "find a time" are built on the coach seeing
+    // when players are in class; filtering here would break both.
+    nextResults = [{ data: [], error: null }];
+
+    renderWithViewer({ isCoach: true, playerId: null });
+    await waitFor(() => expect(queryLog.some((q) => q.table === 'golf_events')).toBe(true));
+
+    expect(eventsOrClause()).toBeNull();
+  });
+
+  it('omitting the viewer excludes every class row rather than leaking them', async () => {
+    // A caller that forgets to pass `viewer` must under-fetch, not over-share.
+    nextResults = [{ data: [], error: null }];
+
+    renderWithViewer(undefined);
+    await waitFor(() => expect(queryLog.some((q) => q.table === 'golf_events')).toBe(true));
+
+    expect(eventsOrClause()).toBe('event_type.neq.class');
   });
 });
