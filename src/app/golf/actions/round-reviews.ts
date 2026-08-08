@@ -1094,12 +1094,27 @@ async function getPendingCoachReviewsImpl(_coachId?: string): Promise<{
       return { success: true, reviews: [] };
     }
 
-    // Get active player IDs on this team
-    const { data: teamMembers } = await supabase
+    // Get active player IDs on this team.
+    //
+    // The early return below answers `success: true, reviews: []` — "nothing
+    // is waiting on you". That is right for a coach whose team has no pending
+    // reviews, and wrong for one whose ROSTER we failed to read, because
+    // supabase-js resolves errors as { data: null, error } and both produced
+    // the same empty list. A coach who sees an empty review queue moves on;
+    // the rounds their players submitted go unreviewed and nothing says why.
+    const { data: teamMembers, error: teamMembersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', teamId)
       .eq('status', 'active');
+
+    if (teamMembersError) {
+      await logServerError(
+        `[getPendingReviews] roster read failed — would have shown an empty review queue: ${describeError(teamMembersError)}`,
+        { action: 'roundReviews.getPendingReviews', featureArea: 'round_reviews' },
+      );
+      return { success: false, error: "Couldn't load your review queue. Please try again." };
+    }
 
     if (!teamMembers || teamMembers.length === 0) {
       return { success: true, reviews: [] };
@@ -1814,11 +1829,24 @@ async function acknowledgeReviewImpl(
     }
 
     // Verify the review belongs to this player
-    const { data: review } = await supabase
+    const { data: review, error: reviewError } = await supabase
       .from('golf_round_reviews')
       .select('player_id, patterns_detected')
       .eq('id', reviewId)
       .single();
+
+    // Ownership guard. Failing closed is right and is kept; what was wrong is
+    // that a discarded read error landed in "not found or not accessible",
+    // telling a player the review their coach just wrote them does not exist.
+    // .single() also reports no-row as PGRST116 rather than null data, so the
+    // two cases have to be separated explicitly.
+    if (reviewError && (reviewError as { code?: string }).code !== 'PGRST116') {
+      await logServerError(
+        `[acknowledgeReview] review read failed — denying, but this is an outage not a missing review: ${describeError(reviewError)}`,
+        { action: 'roundReviews.acknowledgeReview', featureArea: 'round_reviews', playerId: player.id },
+      );
+      return { success: false, error: "Couldn't load this review. Please try again." };
+    }
 
     if (!review || review.player_id !== player.id) {
       return { success: false, error: 'Review not found or not accessible' };

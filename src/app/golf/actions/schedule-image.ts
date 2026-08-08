@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { describeError } from '@/lib/utils/describe-error';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { gateUserAction, VISION_EXTRACT_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
@@ -132,7 +133,16 @@ async function extractClassesFromScheduleImageImpl(
           featureArea: 'classes',
           errorCode: fault.code,
           skipSentry: providerFaultSeverity(fault).skipSentry,
-          extra: { providerFaultKind: fault.kind, provider: fault.provider },
+          // providerMessage was NOT recorded here, unlike the sibling call
+          // sites in golf.ts and compose.ts. When this fired for a real player
+          // on 2026-08-07 the record read provider "unknown" with an empty
+          // message, so there was no way to tell a genuine throttle from an
+          // exhausted account — the exact distinction the copy above turns on.
+          extra: {
+            providerFaultKind: fault.kind,
+            provider: fault.provider,
+            providerMessage: describeError(error).slice(0, 300),
+          },
         },
         providerFaultSeverity(fault).severity,
       );

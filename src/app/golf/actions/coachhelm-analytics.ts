@@ -502,11 +502,24 @@ async function getPatternImpactImpl(
 
     // Get active team players first. Inactive memberships are excluded so
     // removed/transferred players do not inflate pattern impact metrics.
-    const { data: teamMembers } = await supabase
+    const { data: teamMembers, error: teamMembersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', teamId)
       .eq('status', 'active');
+
+    // A failed roster read here does not blank the dashboard — it reports a
+    // confident ZERO: no patterns detected, no strokes saved, 0% conversion.
+    // That is the number a coach uses to judge whether CoachHelm is worth
+    // anything, so a zero it never measured is the most misleading answer this
+    // surface can give. A genuinely empty roster still returns the zeros.
+    if (teamMembersError) {
+      await logServerError(
+        `[coachhelmAnalytics] roster read failed — would have reported zero effectiveness it never measured: ${describeError(teamMembersError)}`,
+        { action: 'coachhelmAnalytics.roster', featureArea: 'coachhelm' },
+      );
+      return { success: false, error: "Couldn't load your roster, so these numbers were not calculated. Please try again." };
+    }
 
     if (!teamMembers || teamMembers.length === 0) {
       return {
@@ -703,11 +716,24 @@ async function getCoachHelmOverviewImpl(
 
     // Get active team players (skip transferred / inactive members so they
     // do not inflate team analytics).
-    const { data: teamMembers } = await supabase
+    const { data: teamMembers, error: teamMembersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', teamId)
       .eq('status', 'active');
+
+    // A failed roster read here does not blank the dashboard — it reports a
+    // confident ZERO: no patterns detected, no strokes saved, 0% conversion.
+    // That is the number a coach uses to judge whether CoachHelm is worth
+    // anything, so a zero it never measured is the most misleading answer this
+    // surface can give. A genuinely empty roster still returns the zeros.
+    if (teamMembersError) {
+      await logServerError(
+        `[coachhelmAnalytics] roster read failed — would have reported zero effectiveness it never measured: ${describeError(teamMembersError)}`,
+        { action: 'coachhelmAnalytics.roster', featureArea: 'coachhelm' },
+      );
+      return { success: false, error: "Couldn't load your roster, so these numbers were not calculated. Please try again." };
+    }
 
     const playerIds = (teamMembers || []).map((m) => m.player_id);
 

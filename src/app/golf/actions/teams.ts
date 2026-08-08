@@ -1150,12 +1150,30 @@ async function acceptJoinRequestImpl(
     return { success: false, error: 'This request has already been processed' };
   }
 
-  // Check if player is already on a team (race condition protection)
-  const { data: existingMembership } = await supabase
+  // Check if player is already on a team (race condition protection).
+  //
+  // This guard FAILED OPEN. Its error was discarded, so a read that failed
+  // produced null — indistinguishable from "not on any team" — and the
+  // approval sailed past the one-team rule into the insert below.
+  //
+  // Two ways that bites. .maybeSingle() reports MULTIPLE rows as an error, so
+  // the very state this guard exists to catch is one of the errors being
+  // thrown away. And a guard that cannot run must not be treated as a guard
+  // that passed: the safe answer is to decline the approval and let the coach
+  // retry, not to approve on the strength of a read that did not happen.
+  const { data: existingMembership, error: existingMembershipError } = await supabase
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', request.player_id)
     .maybeSingle();
+
+  if (existingMembershipError) {
+    await logServerError(
+      `[approveJoinRequest] one-team check failed — declining rather than approving on an unverified guard: ${describeError(existingMembershipError)}`,
+      { action: 'teams.approveJoinRequest', featureArea: 'roster', playerId: request.player_id },
+    );
+    return { success: false, error: "Couldn't confirm this player isn't already on a team. Nothing was changed — please try again." };
+  }
 
   if (existingMembership) {
     // Update request to rejected since they're already on a team

@@ -1050,13 +1050,33 @@ async function uploadBoxScoreCSVImpl(
   }
 
   // Get team players for name matching
-  const { data: teamMembers } = await supabase
+  const { data: teamMembers, error: teamMembersError } = await supabase
     .from('baseball_team_members')
     .select(`
       player_id,
       baseball_players!inner(id, first_name, last_name)
     `)
     .eq('team_id', teamId);
+
+  // Name matching runs against this roster. A failed read leaves it empty, so
+  // every player in the uploaded stat file comes back unmatched — which reads
+  // to the coach as "none of these names are on my team" rather than "we could
+  // not load your team".
+  if (teamMembersError) {
+    await logServerError(
+      `[games] roster read failed — every uploaded name would have come back unmatched: ${describeError(teamMembersError)}`,
+      { action: 'baseball.games.rosterMatch', featureArea: 'games', teamId },
+    );
+    return {
+      success: false,
+      matched: [],
+      unmatched: [],
+      battingRows: [],
+      pitchingRows: [],
+      allMatched: false,
+      error: "Couldn't load your roster. Please try again.",
+    };
+  }
 
   type TeamMemberRow = {
     player_id: string;
@@ -1702,10 +1722,31 @@ async function importScheduleImpl(
   // ── Fetch existing games for this team to enable idempotent dedup ──────────
   // Natural key: (team_id, game_date, opponent_name)
   const db = supabase as unknown as SupabaseClient;
-  const { data: existingGames } = await db
+  const { data: existingGames, error: existingGamesError } = await db
     .from('baseball_games')
     .select('game_date, opponent_name')
     .eq('team_id', teamId);
+
+  // This read IS the idempotency guard, and it failed OPEN. Its error was
+  // discarded, so a failed read produced an empty "already imported" set —
+  // every game in the file then looked new and got inserted again. Re-running
+  // an import after a transient failure would duplicate a whole schedule, and
+  // the natural key (team, date, opponent) exists precisely to stop that.
+  //
+  // A guard that could not run must not be treated as a guard that passed.
+  if (existingGamesError) {
+    await logServerError(
+      `[importGames] existing-game read failed — refusing to import rather than risk duplicating the schedule: ${describeError(existingGamesError)}`,
+      { action: 'baseball.importGames.dedupe', featureArea: 'games', teamId },
+    );
+    return {
+      success: false,
+      created: 0,
+      skipped: 0,
+      rowErrors: [],
+      error: "Couldn't check which games are already imported, so nothing was imported. Please try again.",
+    };
+  }
 
   // Build a fast lookup set: "YYYY-MM-DD:opponent" (lowercased opponent for
   // case-insensitive dedup — coaches often format names inconsistently).

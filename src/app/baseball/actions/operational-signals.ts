@@ -138,13 +138,30 @@ async function loadEventFacts(
   nowIso: string,
   horizonIso: string,
 ): Promise<FactEvent[]> {
-  const { data: events } = await db
+  // The header above says an empty source "degrades gracefully — the
+  // corresponding rules simply produce nothing". That is right for a source
+  // that is genuinely empty, and wrong for one that FAILED: supabase-js
+  // resolves errors as { data: null, error }, so a failed read produces the
+  // same empty array and a whole category of operational signal silently
+  // stops firing. The coach sees a quieter dashboard than reality and has no
+  // way to know a rule never got its facts.
+  //
+  // Degrading stays — one dead source must not take down the whole signals
+  // run — but it no longer degrades in silence.
+  const { data: events, error: eventsError } = await db
     .from('baseball_events')
     .select('id, title, event_type, start_time, is_mandatory')
     .eq('team_id', teamId)
     .eq('is_mandatory', true)
     .gte('start_time', nowIso)
     .lte('start_time', horizonIso);
+  if (eventsError) {
+    await logServerError(
+      `[operationalSignals] mandatory-event facts failed to load — those signals will not fire: ${describeError(eventsError)}`,
+      { action: 'baseball.operationalSignals.loadEventFacts', featureArea: 'coachhelm', teamId },
+    );
+    return [];
+  }
   const rows = (events ?? []) as Array<{
     id: string;
     title: string;
@@ -156,10 +173,20 @@ async function loadEventFacts(
 
   // Batch the ack rows for just these events.
   const ids = rows.map((e) => e.id);
-  const { data: acks } = await db
+  const { data: acks, error: acksError } = await db
     .from('baseball_event_acknowledgements')
     .select('event_id, user_id')
     .in('event_id', ids);
+  // A failed ack read is the more misleading of the two: every event then
+  // looks unacknowledged by everyone, which is a claim about the players
+  // rather than about the query.
+  if (acksError) {
+    await logServerError(
+      `[operationalSignals] acknowledgement facts failed to load — events will look unacknowledged: ${describeError(acksError)}`,
+      { action: 'baseball.operationalSignals.loadEventFacts', featureArea: 'coachhelm', teamId },
+    );
+    return [];
+  }
   const ackByEvent = new Map<string, string[]>();
   for (const a of (acks ?? []) as Array<{ event_id: string; user_id: string }>) {
     const arr = ackByEvent.get(a.event_id) ?? [];
@@ -183,12 +210,19 @@ async function loadPracticeFacts(
 ): Promise<FactPractice[]> {
   // baseball_practices has no own date column — it links to a calendar event
   // (event_id -> baseball_events.start_time) for its scheduled time.
-  const { data: practices } = await db
+  const { data: practices, error: practicesError } = await db
     .from('baseball_practices')
     .select('id, title, status, event_id')
     .eq('team_id', teamId)
     .neq('status', 'completed')
     .limit(200);
+  if (practicesError) {
+    await logServerError(
+      `[operationalSignals] practice facts failed to load — those signals will not fire: ${describeError(practicesError)}`,
+      { action: 'baseball.operationalSignals.practice', featureArea: 'coachhelm', teamId },
+    );
+    return [];
+  }
   const rows = (practices ?? []) as Array<{
     id: string;
     title: string | null;
@@ -212,10 +246,17 @@ async function loadPracticeFacts(
     }
   }
 
-  const { data: blocks } = await db
+  const { data: blocks, error: blocksError } = await db
     .from('baseball_practice_blocks')
     .select('id, practice_id, activity, coach_owner_id')
     .in('practice_id', ids);
+  if (blocksError) {
+    await logServerError(
+      `[operationalSignals] practice-block facts failed to load — those signals will not fire: ${describeError(blocksError)}`,
+      { action: 'baseball.operationalSignals.practiceBlocks', featureArea: 'coachhelm', teamId },
+    );
+    return [];
+  }
   const blocksByPractice = new Map<
     string,
     Array<{ id: string; activity: string; hasOwner: boolean }>
@@ -303,10 +344,19 @@ async function loadPlayerFacts(
   teamId: string,
 ): Promise<{ players: FactPlayer[]; expectedAttendeeCount: number }> {
   // Roster membership (status) for this team.
-  const { data: members } = await db
+  const { data: members, error: membersError } = await db
     .from('baseball_team_members')
     .select('player_id, status')
     .eq('team_id', teamId);
+  if (membersError) {
+    await logServerError(
+      `[operationalSignals] roster facts failed to load — those signals will not fire: ${describeError(membersError)}`,
+      { action: 'baseball.operationalSignals.playerRoster', featureArea: 'coachhelm', teamId },
+    );
+    // This loader returns an object, not an array — degrade to the same shape
+    // the genuinely-empty roster produces a few lines below.
+    return { players: [], expectedAttendeeCount: 0 };
+  }
   const memberRows = (members ?? []) as Array<{
     player_id: string;
     status: string | null;
@@ -367,7 +417,7 @@ async function loadGameFacts(
 ): Promise<FactGame[]> {
   const sinceDate = sinceIso.slice(0, 10);
   const nowDate = nowIso.slice(0, 10);
-  const { data: games } = await db
+  const { data: games, error: gamesError } = await db
     .from('baseball_games')
     .select('id, opponent_name, game_date, status')
     .eq('team_id', teamId)
@@ -375,6 +425,13 @@ async function loadGameFacts(
     .gte('game_date', sinceDate)
     .lte('game_date', nowDate)
     .limit(100);
+  if (gamesError) {
+    await logServerError(
+      `[operationalSignals] game facts failed to load — those signals will not fire: ${describeError(gamesError)}`,
+      { action: 'baseball.operationalSignals.gameFacts', featureArea: 'coachhelm', teamId },
+    );
+    return [];
+  }
   const rows = (games ?? []) as Array<{
     id: string;
     opponent_name: string | null;
