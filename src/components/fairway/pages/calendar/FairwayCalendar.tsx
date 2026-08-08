@@ -307,6 +307,24 @@ export function FairwayCalendar({
   >(new Map());
   const availabilityMode = isCoach && selectedPlayerIds.length > 0;
 
+  // SWITCHING TEAMS CLEARS THE OVERLAY SELECTION.
+  //
+  // `selectedPlayerIds` is component state and this component is not remounted
+  // on a toggle — `teamId` is a prop. So a coach who had three men's players
+  // overlaid kept them overlaid on the women's calendar, and because those ids
+  // are not in the new team's member list they rendered as unnamed "Player"
+  // blocks: three anonymous schedules pinned over the wrong squad's week, with
+  // no way to tell whose they were or why they were there.
+  //
+  // Reset during render, like the range hook's own team reset, so the stale
+  // overlay never paints.
+  const overlayTeamRef = React.useRef(teamId);
+  if (overlayTeamRef.current !== teamId) {
+    overlayTeamRef.current = teamId;
+    if (selectedPlayerIds.length > 0) setSelectedPlayerIds([]);
+    if (availByPlayer.size > 0) setAvailByPlayer(new Map());
+  }
+
   // Availability fetch window — tight by view (month grid span / week / day).
   const availWindow = React.useMemo(() => {
     if (view === 'month') {
