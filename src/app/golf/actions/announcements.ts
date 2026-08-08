@@ -92,6 +92,98 @@ async function getCoachTeamId(
   return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
 
+
+/**
+ * "May this user see this team's announcements?" — one resolver, two call
+ * sites (the list and the detail), which each carried their own copy.
+ *
+ * All three reads discarded their error. supabase-js resolves a failure as
+ * `{ data: null, error }`, so a dropped connection produced no coach row and
+ * no player row and fell to the final `else`, answering **"Not authorized for
+ * this team"** — to a coach, or to a rostered player, about their own team.
+ * Announcements are how a team is told things, so the player sees a locked
+ * door where the message was, is given nothing to retry, and concludes there
+ * is nothing to read.
+ *
+ * Denying when the check cannot run is correct and is kept. Only the sentence
+ * changes. The authorization RULES are unchanged, deliberately, including the
+ * dual coach/player case where a coach not staffed on this team is still let
+ * through if they also hold a player profile.
+ */
+const ANNOUNCEMENT_AUTHZ_UNREADABLE =
+  "Couldn't verify your access to this team's announcements. Please try again.";
+const NOT_AUTHORIZED_FOR_TEAM = 'Not authorized for this team';
+
+type TeamViewer =
+  | { ok: true; player: { id: string } | null; viaCoach: boolean }
+  | { ok: false; error: string };
+
+async function resolveTeamAnnouncementViewer(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  teamId: string,
+  action: string,
+): Promise<TeamViewer> {
+  const { data: coachCheck, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const { data: playerCheck, error: playerError } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  // Either read failing means we cannot tell who this is — which is not the
+  // same as knowing they are nobody.
+  if (coachError || playerError) {
+    await logServerError(
+      `[${action}] viewer identity read failed: ${describeError(coachError ?? playerError)}`,
+      { action: `announcements.${action}`, featureArea: 'announcements' },
+      'warning',
+    );
+    return { ok: false, error: ANNOUNCEMENT_AUTHZ_UNREADABLE };
+  }
+
+  if (coachCheck) {
+    // Staff-strict: authorize the coach iff staffed on the requested team
+    // (a program head on both men's & women's can read either), instead of
+    // authorizing ANY same-org team. Not tied to the active-team toggle.
+    const coachAuthorized = await validateCoachTeamAccess(
+      supabase, coachCheck.id, teamId, coachCheck.organization_id,
+    );
+    if (!coachAuthorized && !playerCheck) {
+      return { ok: false, error: NOT_AUTHORIZED_FOR_TEAM };
+    }
+    return { ok: true, player: playerCheck, viaCoach: true };
+  }
+
+  if (playerCheck) {
+    const { data: memberCheck, error: memberError } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('player_id', playerCheck.id)
+      .eq('team_id', teamId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (memberError) {
+      await logServerError(
+        `[${action}] membership read failed for player ${playerCheck.id}: ${describeError(memberError)}`,
+        { action: `announcements.${action}`, featureArea: 'announcements' },
+        'warning',
+      );
+      return { ok: false, error: ANNOUNCEMENT_AUTHZ_UNREADABLE };
+    }
+    if (!memberCheck) return { ok: false, error: NOT_AUTHORIZED_FOR_TEAM };
+    return { ok: true, player: playerCheck, viaCoach: false };
+  }
+
+  return { ok: false, error: NOT_AUTHORIZED_FOR_TEAM };
+}
+
 /**
  * The roster read behind every "send this to the whole team" decision.
  *
@@ -435,41 +527,10 @@ async function getAnnouncementsWithMetaImpl(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    // Verify team membership - check coach or player association
-    const { data: coachCheck } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    const { data: playerCheck } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (coachCheck) {
-      // Staff-strict: authorize the coach iff staffed on the requested team
-      // (a program head on both men's & women's can read either), instead of
-      // authorizing ANY same-org team. Not tied to the active-team toggle.
-      const coachAuthorized = await validateCoachTeamAccess(supabase, coachCheck.id, teamId, coachCheck.organization_id);
-      if (!coachAuthorized && !playerCheck) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else if (playerCheck) {
-      const { data: memberCheck } = await supabase
-        .from('golf_team_members')
-        .select('id')
-        .eq('player_id', playerCheck.id)
-        .eq('team_id', teamId)
-        .eq('status', 'active')
-        .maybeSingle();
-      if (!memberCheck) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else {
-      return { success: false, error: 'Not authorized for this team' };
-    }
+    const viewer = await resolveTeamAnnouncementViewer(
+      supabase, user.id, teamId, 'getAnnouncementsWithMeta',
+    );
+    if (!viewer.ok) return { success: false, error: viewer.error };
 
     // Fetch the most-recent announcements for this team. Bounded (P275): an
     // unbounded select silently truncates at PostgREST's 1000-row cap in
@@ -691,36 +752,16 @@ async function getAnnouncementDetailImpl(
 
     if (error || !ann) return { success: false, error: 'Announcement not found' };
 
-    // Verify team membership - check coach or player association
-    const { data: coachCheck } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    const viewer = await resolveTeamAnnouncementViewer(
+      supabase, user.id, ann.team_id, 'getAnnouncementDetail',
+    );
+    if (!viewer.ok) return { success: false, error: viewer.error };
 
-    const { data: playerCheck } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (coachCheck) {
-      // Staff-strict: authorize the coach iff staffed on the announcement's team.
-      const coachAuthorized = await validateCoachTeamAccess(supabase, coachCheck.id, ann.team_id, coachCheck.organization_id);
-      if (!coachAuthorized && !playerCheck) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
-    } else if (playerCheck) {
-      const { data: memberCheck } = await supabase
-        .from('golf_team_members')
-        .select('id')
-        .eq('player_id', playerCheck.id)
-        .eq('team_id', ann.team_id)
-        .eq('status', 'active')
-        .maybeSingle();
-      if (!memberCheck) {
-        return { success: false, error: 'Not authorized for this team' };
-      }
+    // Recipient gating applies to a PLAYER's own view. A coach reaching this
+    // through staff access sees the announcement regardless of targeting —
+    // unchanged from the original `else if (playerCheck)` structure.
+    if (!viewer.viaCoach && viewer.player) {
+      const playerCheck = viewer.player;
 
       // DS-B10-3: team membership is not recipient membership. A targeted
       // announcement deliberately excludes non-recipients, but the check
@@ -753,8 +794,6 @@ async function getAnnouncementDetailImpl(
       if (gateRecipientIds.length > 0 && !gateRecipientIds.includes(playerCheck.id)) {
         return { success: false, error: 'Announcement not found' };
       }
-    } else {
-      return { success: false, error: 'Not authorized for this team' };
     }
 
     // Fetch recipients with player info
