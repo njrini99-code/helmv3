@@ -1860,12 +1860,31 @@ async function upsertSeasonTotalsImport(
     // player, keyed by the table's own unique constraint, so rollback can
     // restore (or delete, if this run created it) each affected line.
     const playerIds = [...new Set(writes.map((w) => w.playerId))];
-    const { data: existingRows } = await db
+    const { data: existingRows, error: existingRowsError } = await db
       .from('baseball_player_season_stats')
       .select('*')
       .eq('team_id', teamId)
       .eq('season_year', seasonYear)
       .in('player_id', playerIds);
+
+    // This read IS the rollback snapshot. A discarded error left
+    // beforeByPlayer empty, which is indistinguishable from "no prior season
+    // rows existed" — so a later rollbackImport would treat every touched row
+    // as created by this run and DELETE it, instead of restoring the season
+    // totals that were there before. The coach undoes an import and loses the
+    // baseline rather than getting it back.
+    //
+    // This function is documented "best-effort: never throws", and that
+    // contract is kept — baseball_player_stats above remains the write of
+    // record. But a snapshot that silently captured nothing must not look the
+    // same as one that correctly found nothing.
+    if (existingRowsError) {
+      await logServerError(
+        `[imports] season-totals rollback snapshot failed — a later rollback will delete these rows instead of restoring them: ${describeError(existingRowsError)}`,
+        { action: 'baseball.imports.seasonTotalsSnapshot', featureArea: 'imports', teamId },
+      );
+    }
+
     const beforeByPlayer = new Map(
       ((existingRows ?? []) as Array<{ id: string; player_id: string } & Record<string, unknown>>).map(
         (r) => [r.player_id, r]
