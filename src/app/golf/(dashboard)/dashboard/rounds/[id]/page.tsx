@@ -170,17 +170,46 @@ export default async function RoundDetailPage({
   // Re-skin the SAME resolved data: the round + aiRecap above, plus a
   // read-only fetch of the honest golf_holes layer and the persisted
   // golf_round_reviews.round_stats. No writes.
-  const { data: holesRows } = await supabase
+  const { data: holesRows, error: holesError } = await supabase
     .from('golf_holes')
     .select('hole_number, par, score, putts, fairway_hit, gir, penalty_strokes, yardage')
     .eq('round_id', id)
     .order('hole_number', { ascending: true });
 
-  const { data: reviewRow } = await supabase
+  // The scorecard IS this page. A failed read gave the same empty array as a
+  // round with no holes recorded, so eighteen holes of entered data rendered as
+  // a blank card — and a player looking at their own round would reasonably
+  // conclude it had been lost. Throwing reaches the dashboard error boundary,
+  // which offers a retry; a blank scorecard offers nothing.
+  //
+  // A genuinely hole-less round (an old summary-only entry) still renders
+  // empty, because that read succeeds and returns [].
+  if (holesError) {
+    void logServerError(
+      `[round detail] holes read failed for round ${id}: ${describeError(holesError)}`,
+      { action: 'roundDetail.load', featureArea: 'rounds' },
+      'error',
+    );
+    throw new Error("Couldn't load this round's scorecard. Please try again.");
+  }
+
+  const { data: reviewRow, error: reviewError } = await supabase
     .from('golf_round_reviews')
     .select('round_stats')
     .eq('round_id', id)
     .maybeSingle();
+
+  // The review layer is additive — the scorecard stands without it — so this
+  // degrades rather than throws. It is logged because "no review yet" and
+  // "the review could not be read" look identical on screen, and only one of
+  // them is worth a coach's attention.
+  if (reviewError) {
+    void logServerError(
+      `[round detail] review read failed for round ${id}; derived stats will be missing: ${describeError(reviewError)}`,
+      { action: 'roundDetail.load', featureArea: 'rounds' },
+      'warning',
+    );
+  }
 
   const reviewStats = (reviewRow?.round_stats ?? null) as
     | {
