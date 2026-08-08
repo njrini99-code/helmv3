@@ -807,11 +807,25 @@ async function getExpensesForItineraryImpl(itineraryId: string): Promise<{ succe
   // existing golf_travel_expenses_player_select RLS policy, which is already
   // correctly team-scoped.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: itineraryRow } = await (supabase as any)
+  const { data: itineraryRow, error: itineraryError } = await (supabase as any)
     .from('golf_travel_itineraries')
     .select('team_id')
     .eq('id', parsed.data)
     .maybeSingle();
+
+  // Gating on a read whose error was discarded meant a FAILED read resolved
+  // the team to null, the gate denied, and the caller was told "Not authorized
+  // for this team" — about their own team. Denying is right (a check that
+  // could not run must never grant access) but calling it an authorization
+  // problem is not: it sends a coach to chase permissions during an outage.
+  if (itineraryError) {
+    await logServerError(
+      `[travel] itinerary team read failed — denying access, but this is an outage and not a permissions problem: ${describeError(itineraryError)}`,
+      { action: 'travel.itineraryTeamLookup', featureArea: 'travel' },
+    );
+    return { success: false, error: "Couldn't verify this trip's team. Please try again." };
+  }
+
   if (!(await callerMayAccessTravelTeam(supabase, user.id, itineraryRow?.team_id ?? null))) {
     return { success: false, error: 'Not authorized for this team' };
   }
@@ -905,11 +919,25 @@ async function getExpenseSummaryImpl(itineraryId: string): Promise<{ success: bo
   // DS-42: see callerMayAccessTravelTeam — closes the org-scoped coach RLS gap
   // without narrowing player reads, which are already team-scoped by RLS.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: itineraryRow } = await (supabase as any)
+  const { data: itineraryRow, error: itineraryError } = await (supabase as any)
     .from('golf_travel_itineraries')
     .select('team_id')
     .eq('id', parsed.data)
     .maybeSingle();
+
+  // Gating on a read whose error was discarded meant a FAILED read resolved
+  // the team to null, the gate denied, and the caller was told "Not authorized
+  // for this team" — about their own team. Denying is right (a check that
+  // could not run must never grant access) but calling it an authorization
+  // problem is not: it sends a coach to chase permissions during an outage.
+  if (itineraryError) {
+    await logServerError(
+      `[travel] itinerary team read failed — denying access, but this is an outage and not a permissions problem: ${describeError(itineraryError)}`,
+      { action: 'travel.itineraryTeamLookup', featureArea: 'travel' },
+    );
+    return { success: false, error: "Couldn't verify this trip's team. Please try again." };
+  }
+
   if (!(await callerMayAccessTravelTeam(supabase, user.id, itineraryRow?.team_id ?? null))) {
     return { success: false, error: 'Not authorized for this team' };
   }
@@ -1097,11 +1125,22 @@ async function exportExpensesToCSVImpl(itineraryId: string): Promise<{ success: 
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: itinerary } = await (supabase as any)
+  const { data: itinerary, error: itineraryError } = await (supabase as any)
     .from('golf_travel_itineraries')
     .select('team_id, event_name, destination, departure_date')
     .eq('id', parsed.data)
     .single();
+
+  // Same gate, same reasoning as above. PGRST116 here means the itinerary is
+  // genuinely gone, which the authorization check below already handles by
+  // denying; anything else is a failed read and should say so.
+  if (itineraryError && (itineraryError as { code?: string }).code !== 'PGRST116') {
+    await logServerError(
+      `[travel] itinerary read failed on export — denying access, but this is an outage and not a permissions problem: ${describeError(itineraryError)}`,
+      { action: 'travel.exportItineraryLookup', featureArea: 'travel' },
+    );
+    return { success: false, error: "Couldn't verify this trip's team. Please try again." };
+  }
 
   // DS-42: the coach check above is org-wide (golf_travel_expenses_coach_all
   // joins on organization_id), so without this the export leaks a sibling
