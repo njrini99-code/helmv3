@@ -146,11 +146,22 @@ export default async function GolfRosterPage() {
     // 2026-06-18.)
 
     // Fetch team info and teammates for player view
-    const { data: playerTeam } = await supabase
+    const { data: playerTeam, error: playerTeamError } = await supabase
       .from('golf_teams')
       .select('name')
       .eq('id', teamMember.team_id)
       .maybeSingle();
+
+    if (playerTeamError) {
+      // Decoration on a page the player is entitled to either way, so it
+      // degrades — but a nameless team header on the roster reads as the app
+      // having lost track of which team this is.
+      void logServerError(
+        `[roster] team name read failed for team ${teamMember.team_id}: ${describeError(playerTeamError)}`,
+        { action: 'roster.playerView', featureArea: 'roster' },
+        'warning',
+      );
+    }
 
     // F083: a player's teammate list is active members only — pending invites
     // and removed players must not show up as teammates.
@@ -405,6 +416,30 @@ export default async function GolfRosterPage() {
       loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
       loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
     ]);
+    // Each `?? []` turns a FAILED read into an empty one, and every roster card
+    // is computed from these three. A failed rounds read prints "0 rounds" and
+    // an empty scoring average next to every player's name; a failed stats-cache
+    // read blanks SG:Total for the whole squad; a failed focus-area read shows
+    // nobody working on anything. The coach reads those numbers as the state of
+    // their team.
+    //
+    // The page still renders — a roster with blank metrics beats no roster at
+    // all, and the names and links above are already resolved — but the failure
+    // is recorded, so a squad that suddenly has no rounds is traceable to the
+    // read that failed rather than looking like a quiet fortnight.
+    for (const [dataset, failed] of [
+      ['rounds', allRoundsResult.error],
+      ['stats cache', statsResult.error],
+      ['focus areas', focusResult.error],
+    ] as const) {
+      if (!failed) continue;
+      void logServerError(
+        `[roster] ${dataset} read failed for ${playerIds.length} players; those metrics will render empty: ${describeError(failed)}`,
+        { action: 'roster.loadMetrics', featureArea: 'roster' },
+        'warning',
+      );
+    }
+
     allRounds = allRoundsResult.data ?? [];
     statsCacheRows = (statsResult.data as StatsCacheStatRow[] | null) ?? [];
     focusAreaRows = (focusResult.data as FocusAreaStatRow[] | null) ?? [];
@@ -422,11 +457,22 @@ export default async function GolfRosterPage() {
   );
   const outcomeByInsightId: Record<string, string> = {};
   if (sourceInsightIds.length > 0) {
-    const { data: insightOutcomes } = await supabase
+    const { data: insightOutcomes, error: insightOutcomesError } = await supabase
       .from('golf_coach_insights')
       .select('id, outcome_status')
       .in('id', sourceInsightIds)
       .not('outcome_status', 'is', null);
+
+    if (insightOutcomesError) {
+      // The roster-health header's "did the coaching land" mix. Empty reads as
+      // "no outcomes recorded yet", which is a claim about the coaching rather
+      // than about the query.
+      void logServerError(
+        `[roster] insight outcome read failed; the roster-health outcome mix will render empty: ${describeError(insightOutcomesError)}`,
+        { action: 'roster.loadOutcomes', featureArea: 'roster' },
+        'warning',
+      );
+    }
     for (const row of insightOutcomes ?? []) {
       if (row.outcome_status) outcomeByInsightId[row.id] = row.outcome_status;
     }
