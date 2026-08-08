@@ -93,6 +93,30 @@ if (!existsSync(BASELINE_PATH)) {
 }
 
 const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf-8')).total ?? 0;
+
+// SLACK IS AN ERROR, not a pass.
+//
+// A ratchet that only watches the number RISE cannot see fixes disappearing
+// underneath a baseline that sits above the real count. That is not
+// hypothetical: on 2026-08-07, PR #1326 reverted four files and put six
+// unchecked reads back. The count went 1098 -> 1104 against a baseline of
+// 1107, so this script said "no regression" and the revert went unnoticed
+// until it was found by hand.
+//
+// Every gap between baseline and reality is room for a fix to be silently
+// undone. So a paydown must lock itself in: fix reads, run --update, commit
+// the new number in the same change.
+if (total < baseline) {
+  console.error(
+    `\nSLACK: ${total} unchecked Supabase reads against a baseline of ${baseline}.\n` +
+      `That ${baseline - total}-read gap is room for a fix to be reverted without this script noticing —\n` +
+      'which is exactly how #1326 undid four files unseen. Lock the paydown in:\n' +
+      '  npm run audit:supabase-errors -- --update\n' +
+      'and commit .supabase-error-baseline.json alongside the fix.',
+  );
+  process.exit(1);
+}
+
 if (total > baseline) {
   console.error(
     `\nREGRESSION: ${total} unchecked Supabase reads, baseline is ${baseline}.\n` +
