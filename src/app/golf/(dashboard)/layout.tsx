@@ -48,11 +48,31 @@ export default async function GolfDashboardLayout({
     // Re-fetch directly (bypassing React.cache) to get fresh data after the
     // brief propagation delay, then also query users.role for disambiguation.
     const supabase = await createClient();
-    const { data: userData } = await supabase
+    const { data: userData, error: roleError } = await supabase
       .from('users')
       .select('role')
       .eq('id', session.userId)
       .maybeSingle();
+
+    // An admin has NO golf profile, so an admin reaching any golf dashboard URL
+    // always lands on this slow path — this one read is the entire basis for
+    // sending them where they belong. Discarding its error made a failed read
+    // look identical to "not an admin", and the admin fell through to the
+    // onboarding redirect below: signed in, bounced, and asked to complete a
+    // golf profile they do not have and cannot finish.
+    //
+    // Logged, not thrown, for the same reason as the player-team read further
+    // down: this layout wraps EVERY dashboard route, so throwing would turn a
+    // transient blip into a whole-product outage. The read failing is not
+    // evidence about this user, so it must not be recorded as evidence that
+    // they are not an admin.
+    if (roleError) {
+      void logServerError(
+        `[golf dashboard layout] role lookup failed; an admin on this path is sent to onboarding instead of the admin dashboard: ${describeError(roleError)}`,
+        { action: 'golf.dashboardLayout.resolveRole', featureArea: 'auth' },
+        'error'
+      );
+    }
 
     // Admin users don't have golf profiles — send them to the admin dashboard
     if (userData?.role === 'admin') {
