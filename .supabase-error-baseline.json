@@ -1,17 +1,17 @@
 {
-  "total": 1018,
+  "total": 1185,
   "byArea": {
-    "app/golf/actions": 412,
-    "app/baseball/actions": 213,
-    "lib/baseball/read-models": 50,
-    "app/baseball/(dashboard)": 37,
+    "app/golf/actions": 458,
+    "app/baseball/actions": 219,
+    "lib/baseball/read-models": 62,
+    "app/golf/(dashboard)": 53,
+    "lib/admin/data": 46,
+    "app/baseball/(dashboard)": 43,
     "lib/coachhelm/v3": 31,
-    "app/golf/(dashboard)": 30,
+    "app/api/cron": 20,
     "lib/baseball/coachhelm": 15,
     "lib/coachhelm/v2": 15,
-    "app/api/cron": 14,
     "app/actions/messages.ts": 11,
-    "test/coachhelm/v2": 10,
-    "app/golf/admin": 9
+    "app/golf/admin": 10
   }
 }
