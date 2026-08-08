@@ -167,30 +167,62 @@ async function authorizeCoachForEvent(
   userId: string,
   eventId: string,
 ): Promise<EventAuthzOk | EventAuthzFail> {
-  const { data: event } = await supabase
+  // Shared authz resolver for every attendance call site, so all three of these
+  // reads decide what a coach is told. Denying on a failed read is right and is
+  // kept — an authorization check that could not run must never grant access.
+  //
+  // What was wrong is what it then SAID. A discarded error meant a failed event
+  // read reported "Event not found" for an event the coach is looking at, and a
+  // failed coach or staff read reported NOT_A_COACH_ERROR — telling a coach they
+  // are not a coach. golf_events is the busiest table in the product (1,172
+  // rows), so this resolver is on a well-travelled path.
+  const UNREADABLE = "Couldn't verify your access to this event. Please try again.";
+
+  const { data: event, error: eventError } = await supabase
     .from('golf_events')
     .select('id, team_id, start_time')
     .eq('id', eventId)
     .maybeSingle();
+  if (eventError) {
+    await logServerError(
+      `[attendance] event read failed — denying, but this is an outage not a missing event: ${describeError(eventError)}`,
+      { action: 'attendance.authorizeCoachForEvent', featureArea: 'calendar' },
+    );
+    return { ok: false, error: UNREADABLE };
+  }
   if (!event) {
     return { ok: false, error: 'Event not found' };
   }
 
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id')
     .eq('user_id', userId)
     .maybeSingle();
+  if (coachError) {
+    await logServerError(
+      `[attendance] coach read failed — denying, but this is an outage not a permissions problem: ${describeError(coachError)}`,
+      { action: 'attendance.authorizeCoachForEvent', featureArea: 'calendar' },
+    );
+    return { ok: false, error: UNREADABLE };
+  }
   if (!coach) {
     return { ok: false, error: NOT_A_COACH_ERROR };
   }
 
-  const { data: staffRow } = await supabase
+  const { data: staffRow, error: staffError } = await supabase
     .from('golf_team_coach_staff')
     .select('id')
     .eq('team_id', event.team_id)
     .eq('coach_id', coach.id)
     .maybeSingle();
+  if (staffError) {
+    await logServerError(
+      `[attendance] staff read failed — denying, but this is an outage not a permissions problem: ${describeError(staffError)}`,
+      { action: 'attendance.authorizeCoachForEvent', featureArea: 'calendar' },
+    );
+    return { ok: false, error: UNREADABLE };
+  }
   if (!staffRow) {
     return { ok: false, error: NOT_A_COACH_ERROR };
   }
