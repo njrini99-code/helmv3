@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { CalendarEvent } from '@/lib/types/calendar';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
 
 /**
  * GET /api/calendar/events
@@ -31,6 +32,10 @@ export async function GET(request: Request) {
     // Always resolve team membership from the authenticated user's profile.
     // Even if the client supplies a teamId, we verify the user belongs to it.
     let resolvedTeamId: string | null = null;
+    // Who is asking. Needed for class-event scoping below — a coach sees the
+    // whole squad's class blocks, a player sees only their own.
+    let isCoachViewer = false;
+    let viewerPlayerId: string | null = null;
 
     // Try to resolve from coach profile
     const { data: coach, error: coachError } = await supabase
@@ -53,6 +58,8 @@ export async function GET(request: Request) {
         errorDetails: coachError.details,
       }, 'warning');
     }
+
+    isCoachViewer = Boolean(coach?.organization_id);
 
     if (coach?.organization_id) {
       const { data: team, error: teamError } = await supabase
@@ -128,6 +135,7 @@ export async function GET(request: Request) {
           }, 'warning');
         }
         resolvedTeamId = membership?.team_id ?? null;
+        viewerPlayerId = player.id;
       }
     }
 
@@ -178,7 +186,68 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data as unknown as CalendarEvent[]);
+    // Academic class meetings are personal data sitting on a TEAM row.
+    //
+    // `golf_events` has no player_id, no visibility column, and `created_by` is
+    // NULL on every synced class row, so there is no database-level way to
+    // scope them — and `golf_events_select_team` positively grants every
+    // rostered player SELECT on all of them. On Shenandoah's women's team that
+    // is 323 rows belonging to three players: their full semester timetable,
+    // where they are and when, readable by all five teammates.
+    //
+    // The calendar page has always filtered this (attributeClassEvents). This
+    // route returned `select('*')` scoped only by team, so the same data was
+    // one authenticated fetch away. Same filter, same owner index, same
+    // fail-closed-for-players semantics as the page.
+    const events = (data ?? []) as unknown as CalendarEvent[];
+
+    const { data: classOwnerRows, error: classOwnersError } = await supabase
+      .from('golf_player_classes')
+      .select('id, player_id, player:golf_players(first_name, last_name)')
+      .eq('team_id', resolvedTeamId)
+      .limit(1000);
+
+    if (classOwnersError) {
+      await logServerError(`Calendar events GET class-owner lookup failed: ${classOwnersError.message}`, {
+        action: 'calendarEventsApi.get.classOwners',
+        source: 'route_handler',
+        featureArea: 'calendar',
+        route: '/api/calendar/events',
+        url: request.url,
+        userId,
+        userEmail,
+        errorCode: classOwnersError.code,
+        extra: { resolvedTeamId },
+      }, 'warning');
+    }
+
+    // RLS already scopes this read (a coach reads the roster's classes, a
+    // player only their own), so the index is viewer-correct before the filter
+    // runs. `ownersResolved` distinguishes "nobody owns classes" from "the
+    // lookup failed", which is what stops a failed read from either hiding a
+    // coach's own calendar or publishing a player's.
+    const classOwners: ClassOwnerIndex = {};
+    for (const row of classOwnerRows ?? []) {
+      if (!row?.id || !row?.player_id) continue;
+      // The embed comes back as an object or a single-element array depending
+      // on how PostgREST resolves the relationship; normalise before reading.
+      const embedded = row.player as unknown;
+      const owner = Array.isArray(embedded) ? embedded[0] : embedded;
+      const named = (owner ?? null) as { first_name?: string | null; last_name?: string | null } | null;
+      classOwners[row.id] = {
+        playerId: row.player_id,
+        firstName: named?.first_name ?? null,
+        lastName: named?.last_name ?? null,
+      };
+    }
+
+    const visible = attributeClassEvents(events, classOwners, {
+      isCoach: isCoachViewer,
+      playerId: viewerPlayerId,
+      ownersResolved: !classOwnersError,
+    });
+
+    return NextResponse.json(visible as unknown as CalendarEvent[]);
   } catch (error) {
     await logServerError(`Calendar events GET unexpected failure: ${describeError(error)}`, {
       action: 'calendarEventsApi.get',
