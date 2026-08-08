@@ -853,9 +853,23 @@ export function detectSemester(text: string): string {
   if (summerMatch) return `Summer ${summerMatch[1] || year}`;
   if (winterMatch) return `Winter ${winterMatch[1] || year}`;
 
-  if (month >= 0 && month <= 4) return `Spring ${year}`;
-  if (month >= 5 && month <= 7) return `Summer ${year}`;
-  return `Fall ${year}`;
+  // ACADEMIC terms, not calendar months. These buckets must line up with the
+  // windows parseSemesterDates() actually generates (src/lib/golf/semester.ts):
+  //   Spring 15 Jan – 15 May · Summer 1 Jun – 15 Aug · Fall 20 Aug – 15 Dec
+  //
+  // The old rule was month-only, so all of August read as "Summer". A class
+  // added on 6 August therefore got a term ENDING 15 August — nine days of
+  // occurrences and then nothing — and one added on 20 August got a term that
+  // had already closed, generating ZERO future events. Both look identical to
+  // the player: "I added my classes and my calendar is empty." Late August is
+  // exactly when a college roster enters its fall schedule, so this was the
+  // single most likely moment for the feature to be used and to fail.
+  const day = now.getDate();
+  if (month <= 3) return `Spring ${year}`;                       // Jan–Apr
+  if (month === 4) return day <= 15 ? `Spring ${year}` : `Summer ${year}`;
+  if (month <= 6) return `Summer ${year}`;                       // Jun–Jul
+  if (month === 7) return day <= 15 ? `Summer ${year}` : `Fall ${year}`;
+  return `Fall ${year}`;                                          // Sep–Dec
 }
 
 // ============================================================================

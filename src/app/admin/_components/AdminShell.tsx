@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
+  Radar, CreditCard,
   RefreshCw, Dumbbell, Search,
 } from 'lucide-react';
 import {
@@ -39,11 +40,35 @@ function isOpaqueIdSegment(segment: string): boolean {
   return /^[0-9a-f-]{8,}$/i.test(segment) || segment.length > 24;
 }
 
+/** `ben-leah` → `Ben Leah`, `thread` → `Thread`. Raw URL segments only —
+ *  `isOpaqueIdSegment` screens ids out before this is ever reached. */
+function titleCaseSegment(segment: string): string {
+  return segment
+    .split('-')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 function computeBreadcrumbs(pathname: string): readonly Breadcrumb[] {
   const tab = ADMIN_NAV.find((entry) =>
     entry.href === '/admin' ? pathname === '/admin' : pathname.startsWith(entry.href),
   );
-  if (!tab) return [{ label: 'Bridge', href: '/admin' }];
+  // No nav entry owns this path — today that is /admin/thread/<entity>/<id>,
+  // the destination of every entity link in the console (and an explicit
+  // detail leaf in nav-covers-every-route.test.ts). The LEAF crumb is also the
+  // phone header's standing title and the header's aria-label (see the
+  // `breadcrumbs` note below), so the old single "Bridge" crumb made those
+  // routes announce themselves with the Overview tab's own name. Derive the
+  // section from the first path segment instead.
+  if (!tab) {
+    const first = pathname.split('/').filter(Boolean)[1];
+    if (!first || isOpaqueIdSegment(first)) return [{ label: 'Bridge', href: '/admin' }];
+    return [
+      { label: 'Bridge', href: '/admin' },
+      { label: SUBROUTE_LABELS[first] ?? titleCaseSegment(first) },
+    ];
+  }
 
   const rest = pathname.slice(tab.href.length).split('/').filter(Boolean);
   const crumbs: Breadcrumb[] = [
@@ -57,6 +82,18 @@ function computeBreadcrumbs(pathname: string): readonly Breadcrumb[] {
   });
   return crumbs;
 }
+
+/**
+ * Rail / ⌘K group order, DERIVED from ADMIN_NAV rather than hand-listed.
+ * The hand-listed tuple here was `['Operations', 'Apps', 'Platform']`, and when
+ * the nav was regrouped into question-shaped sections (Triage / Customers /
+ * Apps / Platform / Revenue) nothing in this file changed — so the rail and the
+ * command menu silently dropped every Triage, Customers and Revenue entry (9 of
+ * the 16 tabs, Overview and Errors among them) and rendered an empty
+ * "Operations" heading. Deriving the order means adding or renaming a section
+ * can never again half-land.
+ */
+const NAV_SECTION_ORDER = [...new Set(ADMIN_NAV.map((entry) => entry.section))];
 
 const NAV_ICON_BY_HREF = {
   '/admin': LayoutDashboard,
@@ -73,6 +110,8 @@ const NAV_ICON_BY_HREF = {
   '/admin/jobs': Timer,
   '/admin/deploys': Rocket,
   '/admin/health': HeartPulse,
+  '/admin/teams': Radar,
+  '/admin/billing': CreditCard,
 } as const;
 
 /**
@@ -187,7 +226,7 @@ export function AdminShell({
 
   const sections: readonly NavSection[] = useMemo(
     () => {
-      const groups = (['Operations', 'Apps', 'Platform'] as const).map((section) => ({
+      const groups = NAV_SECTION_ORDER.map((section) => ({
         heading: section,
         items: ADMIN_NAV.filter((entry) => entry.section === section).map((entry) => ({
           label: entry.label,
@@ -294,7 +333,7 @@ export function AdminShell({
             },
           ],
         },
-        ...(['Operations', 'Apps', 'Platform'] as const).map((section) => ({
+        ...NAV_SECTION_ORDER.map((section) => ({
           heading: section,
           items: ADMIN_NAV.filter((entry) => entry.section === section).map((entry) => {
             const Icon = NAV_ICON_BY_HREF[entry.href];

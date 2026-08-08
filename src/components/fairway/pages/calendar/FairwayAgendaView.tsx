@@ -26,7 +26,7 @@ import { Surface, EmptyState, Button } from '@/components/fairway';
 import { CalendarDays } from 'lucide-react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
-import { zonedMidnight } from '@/lib/calendar/timezone';
+import { eventCalendarDay } from '@/lib/calendar/timezone';
 import { FairwayEventCard } from './FairwayEventCard';
 
 export interface FairwayAgendaViewProps {
@@ -92,7 +92,9 @@ function bucketEvents(
         // (implicit-local) — an event's own calendar day must agree with
         // `focusDate` (already zoned) regardless of which process is doing
         // the comparing (audit W1/cal-tz, React #418 on /calendar).
-        return isSameDay(zonedMidnight(start, timezone), focusDate);
+        // `eventCalendarDay` — an all-day event stores its date at UTC
+        // midnight, so zone-converting it lands it on the previous day.
+        return isSameDay(eventCalendarDay(start, ev.all_day, timezone), focusDate);
       })
       .sort(sortByStart);
     return [
@@ -123,7 +125,7 @@ function bucketEvents(
     // a DIFFERENT day bucket — with a DIFFERENT rendered header string via
     // `formatDayLabel` below — between the SSR pass (Vercel, UTC) and the
     // first client render (the visitor's browser), tripping React #418.
-    const evDate = zonedMidnight(startStr, timezone);
+    const evDate = eventCalendarDay(startStr, ev.all_day, timezone);
     if (evDate < start || evDate > end) continue;
     const key = format(evDate, 'yyyy-MM-dd');
     const bucket = buckets.get(key);

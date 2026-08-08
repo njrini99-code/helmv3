@@ -23,6 +23,8 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { TripData, PlayerTask, EventInvite } from '@/components/fairway/pages/hub/hub-parts';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 interface RawAssignment {
   task_id: string;
@@ -103,6 +105,37 @@ async function getPlayerHubSummaryDataImpl(
 
     getTopInsightForPlayer(playerId),
   ]);
+
+  // The docstring above states the intended contract: a genuinely empty team
+  // returns empty arrays, and a real DB/network failure is ALLOWED TO THROW so
+  // the route's error.tsx retry boundary can surface it.
+  //
+  // That contract was never actually met. supabase-js RESOLVES database errors
+  // as `{ data: null, error }` — it does not throw — so all three of these legs
+  // turned a failed read into an empty one and the boundary never fired. A
+  // player whose events read failed saw "no upcoming events", including
+  // MANDATORY ones, and could no-show a team departure; a failed trips read hid
+  // the itinerary with the bus time on it.
+  //
+  // The announcements leg two lines below already had this right (it sets
+  // announcementsLoadError from `.success`), which is what makes the other
+  // three an oversight rather than a decision.
+  const failedLeg = (
+    [
+      ['events', eventsResult.error],
+      ['travel', tripsResult.error],
+      ['tasks', tasksRaw.error],
+    ] as const
+  ).find(([, error]) => Boolean(error));
+
+  if (failedLeg) {
+    const [leg, error] = failedLeg;
+    await logServerError(
+      `[getPlayerHubSummaryData] ${leg} read failed — refusing to render an empty hub: ${describeError(error)}`,
+      { action: 'playerHub.summary', featureArea: 'player_hub', playerId, teamId },
+    );
+    throw new Error("Couldn't load your hub just now. Please try again.");
+  }
 
   const trips: TripData[] = (tripsResult.data || []).map((item) => ({
     id: item.id,

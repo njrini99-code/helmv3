@@ -144,7 +144,19 @@ function summarise(kind: ProviderFaultKind, provider: ProviderId): string {
     case 'missing_credential':
       return `${capability} are unavailable: no credential is configured for ${account} in this environment.`;
     case 'rate_limited':
-      return `${account} is rate-limiting requests. This clears on its own; the request was not lost.`;
+      // "This clears on its own" USED TO BE STATED FLATLY HERE, and it is a
+      // promise about the future that a 429 does not support. Providers return
+      // 429 for a throttled-but-healthy account AND for one that has run out of
+      // credit, and the two are indistinguishable without a message body.
+      //
+      // On 2026-08-07 at 17:39 a Guilford player retried a schedule-image
+      // import three times in fifty seconds because this line told him to wait
+      // it out. The Anthropic account had been out of credit since that morning,
+      // so waiting could never have worked.
+      //
+      // The request-was-not-lost half is true and stays. The recovery promise
+      // is replaced by the one thing that is honest in both cases.
+      return `${account} is rate-limiting requests. The request was not lost. If it keeps happening, the account is more likely out of credit than merely busy.`;
   }
 }
 
@@ -329,4 +341,36 @@ export function providerFaultSeverity(
   fault: ProviderFault,
 ): { severity: 'warning' | 'error'; skipSentry: true } {
   return { severity: fault.needsOperator ? 'error' : 'warning', skipSentry: true };
+}
+
+/**
+ * Kinds that ONLY a human can clear — a top-up, a rotated key, a plan change.
+ * No deploy fixes any of these, and no amount of waiting does either.
+ */
+const OPERATOR_GATED_KINDS: ProviderFaultKind[] = [
+  'credit_exhausted',
+  'invalid_credential',
+  'missing_credential',
+  'plan_gated_model',
+];
+
+/**
+ * Does this stored `error_code` describe a fault only an operator can clear?
+ *
+ * Reads the code back off a persisted row (`provider_<provider>_<kind>`) rather
+ * than a live ProviderFault, because that is all the auto-resolver has.
+ * Provider ids themselves contain underscores (`vercel_ai_gateway`), so match
+ * on the kind SUFFIX rather than splitting on '_'.
+ *
+ * Why it exists: release-based auto-resolution assumes "stopped firing after a
+ * deploy ⇒ the deploy fixed it". True for a code defect, false for a dead
+ * credential — a provider fault only fires when something happens to exercise
+ * that path, so a quiet weekend looks identical to a fix. In production every
+ * one of these was auto-resolved while still broken: Inngest sat closed-but-dead
+ * for 10 days, and both AI accounts were marked resolved while still out of
+ * credit (verified 2026-08-06).
+ */
+export function isOperatorGatedFaultCode(errorCode: string | null | undefined): boolean {
+  if (!errorCode || !errorCode.startsWith('provider_')) return false;
+  return OPERATOR_GATED_KINDS.some((kind) => errorCode.endsWith(`_${kind}`));
 }

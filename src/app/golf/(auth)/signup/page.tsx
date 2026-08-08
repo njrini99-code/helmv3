@@ -140,10 +140,10 @@ export default function SignupPage() {
 
               <div className="text-center mb-6">
                 <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
-                  Access Code Required
+                  Enter your team code
                 </h2>
                 <p className="text-warm-500 text-sm sm:text-base">
-                  Enter your invite code to create an account
+                  Use the code your coach gave you. You&rsquo;ll join their team automatically.
                 </p>
               </div>
 
@@ -158,10 +158,10 @@ export default function SignupPage() {
                     autoCapitalize="characters"
                     spellCheck={false}
                     enterKeyHint="go"
-                    aria-label="Access code"
+                    aria-label="Team code"
                     value={code}
                     onChange={(e) => { setCode(e.target.value.toUpperCase()); setCodeError(false); }}
-                    placeholder="Enter access code"
+                    placeholder="Team code"
                     // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on signup access-code gate
                     autoFocus
                     className={`w-full h-12 px-4 rounded-xl border bg-cream-100/82 text-warm-900 placeholder:text-warm-400 text-center text-lg tracking-widest font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all ${
@@ -170,7 +170,7 @@ export default function SignupPage() {
                   />
                   {codeError && (
                     <p className="text-sm text-red-600 mt-2 text-center">
-                      Invalid access code. Please try again.
+                      That code didn&rsquo;t match a team. Check it with your coach and try again.
                     </p>
                   )}
                 </div>

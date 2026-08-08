@@ -19,6 +19,7 @@ import { validatePassword } from '@/lib/auth/password-validation';
 import { logSignup, logLogin, logSecurityEvent } from '@/lib/admin-logger';
 import { logServerError } from '@/lib/server-error-logger';
 import { getAppBaseUrl } from '@/lib/app-base-url';
+import { sendPasswordResetEmail } from '@/lib/auth/send-password-reset';
 import { DEMO_ENTER_EVENT } from '@/lib/demo/config';
 import { isDemoCoachEmail } from '@/lib/demo/config.server';
 import { captureServer } from '@/lib/analytics/posthog-server';
@@ -323,8 +324,8 @@ async function signupActionImpl(
   //
   // Placed AFTER the IP rate limit deliberately: a miss falls through to a
   // service-role join_code lookup, which must stay behind a throttle.
-  const gatePassed = await verifySignupGate();
-  if (!gatePassed) {
+  const gate = await verifySignupGate();
+  if (!gate.passed) {
     logSecurityEvent('Golf signup attempted without a valid access-code grant', 'warning', {
       email: normalizedEmail,
       ip,
@@ -429,10 +430,24 @@ async function signupActionImpl(
   // so server components re-read the new authenticated session.
   revalidatePath('/golf/dashboard');
 
-  // Redirect based on role - coaches go to coach onboarding, players go to player onboarding
+  // Redirect based on role - coaches go to coach onboarding, players go to player onboarding.
+  //
+  // A PLAYER who cleared the gate with their coach's team join code carries it
+  // into onboarding as `?joinCode=`, which completePlayerOnboarding already
+  // consumes to auto-join the inviting team on completion (the same parameter
+  // the /golf/join/[code] invite link uses).
+  //
+  // Without this the code was verified and then thrown away in the same
+  // breath: a coach-invited player cleared the gate, finished onboarding with
+  // no team attached, and had to be invited a second time. Coaches keep going
+  // to their own onboarding — a join code is meaningless for them, since they
+  // create the team rather than join one.
+  const carryJoinCode = role === 'player' && gate.teamJoinCode;
   const redirectTo = role === 'coach'
     ? '/golf/coach'
-    : '/golf/player';
+    : carryJoinCode
+      ? `/golf/player?joinCode=${encodeURIComponent(gate.teamJoinCode as string)}`
+      : '/golf/player';
 
   return {
     success: true,
@@ -510,11 +525,26 @@ async function requestPasswordResetActionImpl(
     };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-    redirectTo: `${getAppBaseUrl()}/golf/reset-password`,
-  });
+  // Sent through OUR Resend account, not Supabase's built-in mailer.
+  //
+  // That mailer is rate limited to a couple of messages an hour: on
+  // 2026-08-05 two resets ~7 minutes apart produced one logged /recover, one
+  // that never reached the auth log at all, and NEITHER email arrived — while
+  // the UI said "Check your email" both times. A coach locked out the night
+  // their team signs up would have had no way back in, and nothing in the
+  // incident queue would have shown a failure.
+  //
+  // Resend is already the transport for every other email here, on a verified
+  // domain, and it writes to public.emails — so a reset that fails to deliver
+  // is now visible instead of silent.
+  const outcome = await sendPasswordResetEmail(
+    normalizedEmail,
+    `${getAppBaseUrl()}/golf/reset-password`,
+    'GolfHelm',
+  );
+  const error = outcome === 'send-failed' || outcome === 'link-failed' || outcome === 'unconfigured'
+    ? { message: `password reset delivery: ${outcome}` }
+    : null;
 
   if (error) {
     await logServerError(`[Golf Auth Error]: ${error.message}`, {

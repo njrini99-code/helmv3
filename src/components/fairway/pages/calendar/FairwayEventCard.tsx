@@ -23,6 +23,7 @@ import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { formatEventTime } from '@/lib/calendar/timezone';
+import { tintFor } from './FairwayCalendarMemberRail';
 
 /**
  * event_type → { label, tone } using ONLY the Fairway status tones
@@ -38,6 +39,10 @@ const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
   workout: { label: 'Workout', tone: 'accent' },
   team_meeting: { label: 'Meeting', tone: 'neutral' },
   meeting: { label: 'Meeting', tone: 'neutral' },
+  // A synced class meeting. It shows on the team calendar's "All" lens by
+  // design, so it has to SAY it's a class — otherwise a roster's worth of
+  // classes reads as unexplained "Event" chips.
+  class: { label: 'Class', tone: 'neutral' },
   other: { label: 'Event', tone: 'neutral' },
 };
 
@@ -166,6 +171,22 @@ export function FairwayEventCard({
             <StatusPill tone={typeTone} size="sm" dot={false}>
               {typeLabel}
             </StatusPill>
+            {/* Whose class this is. Carries the player's identity tint — the
+                same one their avatar wears in the member rail and on the
+                roster — so the name and the color reinforce each other. The
+                name is what makes it certain: the tint palette is 8 wide and
+                a roster can be larger. */}
+            {event.owner_label && event.owner_player_id ? (
+              <span
+                className="flex-shrink-0 rounded-full px-2 py-0.5 font-fw-sans text-caption font-semibold"
+                style={{
+                  backgroundColor: tintFor(event.owner_player_id).bg,
+                  color: tintFor(event.owner_player_id).text,
+                }}
+              >
+                {event.owner_label}
+              </span>
+            ) : null}
             {isCancelled ? (
               <StatusPill tone="danger" size="sm" dot={false}>
                 Cancelled

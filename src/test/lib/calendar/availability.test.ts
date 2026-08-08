@@ -261,6 +261,205 @@ describe('getUserBusyPeriods — timed team events (audit #7)', () => {
   });
 });
 
+describe('getUserBusyPeriods — class occurrences belong to ONE player', () => {
+  // syncClassToCalendar writes each class meeting as a plain golf_events row on
+  // the TEAM calendar (that is what puts classes on the calendar's "All" lens),
+  // tagged `[class:<id>]` in the description and with no per-member column. The
+  // team-event sweep therefore counted every player's class schedule as every
+  // OTHER member's busy time — a coach filtering the calendar to their own
+  // avatar saw the whole roster's classes (coach report, 2026-08-05).
+  function classEvent(id: string, classId: string, title: string): Row {
+    return {
+      id,
+      team_id: 't1',
+      title,
+      status: 'scheduled',
+      start_time: '2026-06-10T18:30:00+00:00',
+      end_time: '2026-06-10T19:30:00+00:00',
+      created_by: null,
+      description: `Instructor: Dr. Who\nCredits: 3\n[class:${classId}]`,
+    };
+  }
+
+  /** Coach c1 (user u2) over org org1, which owns team t1. */
+  function coachTables(): SeedTables {
+    const tables = baseTables();
+    tables.golf_coaches.push({ id: 'c1', user_id: 'u2', organization_id: 'org1' });
+    tables.golf_teams.push({ id: 't1', organization_id: 'org1' });
+    return tables;
+  }
+
+  const WINDOW: [Date, Date] = [
+    new Date('2026-06-10T18:00:00Z'),
+    new Date('2026-06-10T20:00:00Z'),
+  ];
+
+  it('keeps a player\'s class off the COACH\'s own busy calendar', async () => {
+    const tables = coachTables();
+    tables.golf_player_classes.push({ id: 'cls-p1', player_id: 'p1', class_name: 'Marketing Management' });
+    tables.golf_events.push(
+      classEvent('ev-class', 'cls-p1', 'BUS 324: Marketing Management'),
+      // Control: a REAL team event must still count as the coach's busy time.
+      { id: 'ev-team', team_id: 't1', title: 'Team Practice', status: 'scheduled',
+        start_time: '2026-06-10T18:00:00+00:00', end_time: '2026-06-10T19:00:00+00:00',
+        created_by: 'c1', description: 'Bring wedges' },
+    );
+
+    const busy = await getUserBusyPeriods('u2', WINDOW[0], WINDOW[1], createStubClient(tables));
+
+    expect(busy.map((p) => p.title)).toEqual(['Team Practice']);
+  });
+
+  it('keeps a TEAMMATE\'s class off a player\'s busy calendar but keeps their own', async () => {
+    const tables = baseTables();
+    tables.golf_players.push({ id: 'p2', user_id: 'u2', first_name: 'Other', last_name: 'Player' });
+    tables.golf_team_members.push({ team_id: 't1', player_id: 'p2', status: 'active' });
+    tables.golf_player_classes.push(
+      { id: 'cls-p1', player_id: 'p1', class_name: 'Marketing Management' },
+      { id: 'cls-p2', player_id: 'p2', class_name: 'Econometrics' },
+    );
+    tables.golf_events.push(
+      classEvent('ev-mine', 'cls-p1', 'BUS 324: Marketing Management'),
+      classEvent('ev-theirs', 'cls-p2', 'ECON 350: Econometrics'),
+    );
+
+    const busy = await getUserBusyPeriods('u1', WINDOW[0], WINDOW[1], createStubClient(tables));
+
+    expect(busy).toHaveLength(1);
+    expect(busy[0]!.title).toBe('BUS 324: Marketing Management');
+    // It is a class, not a team event — the overlay labels/colors on `type`.
+    expect(busy[0]!.type).toBe('class');
+  });
+
+  it('drops a class occurrence whose class row is gone (orphan blocks nobody)', async () => {
+    const tables = baseTables();
+    tables.golf_events.push(classEvent('ev-orphan', 'cls-deleted', 'PHYS 101: Mechanics'));
+
+    const busy = await getUserBusyPeriods('u1', WINDOW[0], WINDOW[1], createStubClient(tables));
+
+    expect(busy).toHaveLength(0);
+  });
+});
+
+describe('getUserBusyPeriods — unsynced classes expand within their term only', () => {
+  // A class that never made it onto the calendar has to come from
+  // golf_player_classes. `days` holds the SHORT codes the class UI writes
+  // ('M', 'T', 'W', 'Th'), which the old expansion compared against full
+  // lowercase weekday names — so it silently produced nothing.
+  const MONDAY = new Date(2026, 8, 14); // 2026-09-14, inside Fall 2026
+  const TUESDAY = new Date(2026, 8, 15);
+  const THURSDAY = new Date(2026, 8, 17);
+
+  function dayWindow(day: Date): [Date, Date] {
+    const start = new Date(day); start.setHours(0, 0, 0, 0);
+    const end = new Date(day); end.setHours(23, 59, 59, 999);
+    return [start, end];
+  }
+
+  function classRow(over: Row = {}): Row {
+    return {
+      id: 'cls-1', player_id: 'p1', class_name: 'MATH 2415 - Calculus III',
+      days: ['M', 'W', 'F'], start_time: '09:00', end_time: '10:15',
+      semester: 'Fall 2026', ...over,
+    };
+  }
+
+  it('expands a short-code meeting day the old full-name match missed', async () => {
+    const tables = baseTables();
+    tables.golf_player_classes.push(classRow());
+    const [start, end] = dayWindow(MONDAY);
+
+    const busy = await getUserBusyPeriods('u1', start, end, createStubClient(tables));
+
+    expect(busy).toHaveLength(1);
+    expect(busy[0]!.type).toBe('class');
+    expect(busy[0]!.title).toBe('MATH 2415 - Calculus III');
+    expect(busy[0]!.start.getHours()).toBe(9);
+  });
+
+  it("reads 'T' as Tuesday and 'Th' as Thursday, never both", async () => {
+    const tables = baseTables();
+    tables.golf_player_classes.push(classRow({ days: ['T'] }));
+    const supabase = createStubClient(tables);
+
+    const onTuesday = await getUserBusyPeriods('u1', ...dayWindow(TUESDAY), supabase);
+    const onThursday = await getUserBusyPeriods('u1', ...dayWindow(THURSDAY), supabase);
+
+    expect(onTuesday).toHaveLength(1);
+    expect(onThursday).toHaveLength(0);
+  });
+
+  it('does not mark the player busy outside the class\'s term', async () => {
+    const tables = baseTables();
+    tables.golf_player_classes.push(classRow());
+    // A Monday in July — Fall 2026 has not started. A weekly rule with no end
+    // date would happily claim it.
+    const [start, end] = dayWindow(new Date(2026, 6, 13));
+
+    const busy = await getUserBusyPeriods('u1', start, end, createStubClient(tables));
+
+    expect(busy).toHaveLength(0);
+  });
+
+  it('still expands a class whose term is unknown, within the query window', async () => {
+    // REVERSED 2026-08-07, deliberately. This asserted `toHaveLength(0)` — that
+    // an unreadable term expands to NOTHING rather than to a guess. The
+    // reasoning was sound and the measurement behind it was missing: EVERY one
+    // of the 43 golf_player_classes rows in production has `semester = NULL`,
+    // so the refusal fired 100% of the time and class-conflict detection was
+    // dead platform-wide. "Find a time" scheduled coaches straight over
+    // players' lectures, silently.
+    //
+    // Expanding is bounded by the caller's own window (see the next test), so
+    // the worst case is a finished class still reading as busy — visible and
+    // correctable. A missed conflict is neither, and on a scheduling surface
+    // that is the more expensive error.
+    const tables = baseTables();
+    tables.golf_player_classes.push(classRow({ semester: null }));
+    const [start, end] = dayWindow(MONDAY);
+
+    const busy = await getUserBusyPeriods('u1', start, end, createStubClient(tables));
+
+    expect(busy).toHaveLength(1);
+    expect(busy[0]?.type).toBe('class');
+  });
+
+  it('a term-less class is still bounded by the query window, not unbounded', async () => {
+    // The guard the reversal above must not lose: no term means "use the
+    // caller's window", never "walk forever". A window containing no meeting
+    // day yields nothing.
+    const tables = baseTables();
+    // classRow() meets Monday/Wednesday; ask about a Sunday.
+    const sunday = new Date(MONDAY); sunday.setDate(sunday.getDate() - 1);
+    tables.golf_player_classes.push(classRow({ semester: null }));
+    const [start, end] = dayWindow(sunday);
+
+    const busy = await getUserBusyPeriods('u1', start, end, createStubClient(tables));
+
+    expect(busy).toHaveLength(0);
+  });
+
+  it('does not double-count a class that already has synced calendar rows', async () => {
+    const tables = baseTables();
+    tables.golf_player_classes.push(classRow());
+    const [start, end] = dayWindow(MONDAY);
+    const synced = new Date(MONDAY); synced.setHours(9, 0, 0, 0);
+    const syncedEnd = new Date(MONDAY); syncedEnd.setHours(10, 15, 0, 0);
+    tables.golf_events.push({
+      id: 'ev-1', team_id: 't1', title: 'MATH 2415: Calculus III', status: 'confirmed',
+      start_time: synced.toISOString(), end_time: syncedEnd.toISOString(),
+      created_by: null, description: 'Instructor: Dr. Who\n[class:cls-1]',
+    });
+
+    const busy = await getUserBusyPeriods('u1', start, end, createStubClient(tables));
+
+    // One block, from the synced row — not a merged duplicate with a doubled title.
+    expect(busy).toHaveLength(1);
+    expect(busy[0]!.title).toBe('MATH 2415: Calculus III');
+    expect(busy[0]!.eventId).toBe('ev-1');
+  });
+});
+
 describe('checkEventConflicts — timed conflict across timezones', () => {
   it('flags an existing UTC-stored timed practice against an ET-proposed window', async () => {
     const tables = baseTables();

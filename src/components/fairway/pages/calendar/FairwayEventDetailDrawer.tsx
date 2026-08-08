@@ -33,6 +33,8 @@ import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { rsvpLockMessage } from '@/hooks/useRSVP';
 import { getItineraryForEvent } from '@/app/golf/actions/travel';
 import { formatEventTime, formatEventDateLabel } from '@/lib/calendar/timezone';
+import { stripClassTag } from '@/lib/calendar/class-events';
+import { tintFor } from './FairwayCalendarMemberRail';
 
 // Coach-only roll-call panel — code-split so players never download it.
 const AttendancePanel = dynamic(
@@ -54,6 +56,10 @@ const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
   workout: { label: 'Workout', tone: 'accent' },
   team_meeting: { label: 'Meeting', tone: 'neutral' },
   meeting: { label: 'Meeting', tone: 'neutral' },
+  // Kept in step with FairwayEventCard's TYPE_META — this is a second copy of
+  // that map, so a type added there and not here reads "Class" on the card and
+  // "Event" in the drawer for the same event.
+  class: { label: 'Class', tone: 'neutral' },
   other: { label: 'Event', tone: 'neutral' },
 };
 
@@ -271,6 +277,27 @@ export function FairwayEventDetailDrawer({
             </Button>
           ) : null}
 
+          {/* Whose class this is. Only ever set on synced class meetings, and
+              the one place the FULL name is shown — the chips elsewhere are
+              abbreviated to fit. */}
+          {event.owner_label && event.owner_player_id ? (
+            <div className="flex items-center gap-2.5 rounded-fw-md bg-surface-sunken px-4 py-3">
+              <span
+                aria-hidden
+                className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full font-fw-sans text-microbadge font-bold"
+                style={{
+                  backgroundColor: tintFor(event.owner_player_id).bg,
+                  color: tintFor(event.owner_player_id).text,
+                }}
+              >
+                {event.owner_initials ?? '—'}
+              </span>
+              <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                {event.owner_label}
+              </span>
+            </div>
+          ) : null}
+
           {/* Location — taps through to Maps. */}
           {event.location ? (
             <a
@@ -294,10 +321,12 @@ export function FairwayEventDetailDrawer({
             </a>
           ) : null}
 
-          {/* Description. */}
-          {event.description ? (
+          {/* Description. The `[class:<id>]` ownership marker is internal
+              plumbing, not prose — it was rendering verbatim to coaches under
+              a class's instructor and credits. */}
+          {stripClassTag(event.description) ? (
             <p className="whitespace-pre-wrap font-fw-sans text-body-sm leading-[1.5] text-text-secondary">
-              {event.description}
+              {stripClassTag(event.description)}
             </p>
           ) : null}
 

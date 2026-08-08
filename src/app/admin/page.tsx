@@ -21,7 +21,7 @@ import { AutoRefresh } from './_components/AutoRefresh';
 import { PanelBoundary } from './_components/PanelBoundary';
 import { PanelAllClear, PanelNoData, PanelStale } from './_components/PanelStates';
 import { FeatureHealthRollup } from './_components/FeatureHealthRollup';
-import { SkeletonStat, SkeletonList, Surface, Eyebrow, StatusPill, StatStrip } from '@/components/fairway';
+import { Skeleton, SkeletonStat, SkeletonList, Surface, Eyebrow, StatusPill, StatStrip } from '@/components/fairway';
 import { ADMIN_COMMAND_SHORTCUTS } from './_components/admin-nav';
 
 export const dynamic = 'force-dynamic';
@@ -33,11 +33,24 @@ export const dynamic = 'force-dynamic';
  * a scoped STALE card, never the whole Status panel. Signal discipline:
  * attention is the ONLY red pill on this page outside genuine error counts;
  * the all-clear case is one quiet green line, never an empty box.
+ *
+ * That boundary is mounted as a SIBLING of the banner and KPI panels in the
+ * page body — not nested inside them. It used to live inside the component
+ * that awaits fetchOverviewSnapshot() (11 parallel Supabase reads + the Vercel
+ * API + fetchFeatureHealth's per-feature Sentry sweep), so the highest-signal
+ * panel on the page could not even ISSUE its own query — fetchBriefing()
+ * shares no data with any of that — until an unrelated fetch had resolved.
+ * Sibling boundaries render concurrently; nested ones serialize.
  */
 async function BriefingStrip() {
-  const items = await fetchBriefing();
+  const { items, degraded } = await fetchBriefing().then((r) => ({
+    items: r.items,
+    degraded: r.degradedChecks,
+  }));
 
-  if (items.length === 0) {
+  // An all-clear is a CLAIM. Only make it when every check actually ran —
+  // otherwise a broken check renders as good news.
+  if (items.length === 0 && degraded.length === 0) {
     return (
       <p className="flex items-center gap-2 text-sm text-accent-700">
         <CheckCircle2 size={14} className="shrink-0" aria-hidden />
@@ -46,10 +59,24 @@ async function BriefingStrip() {
     );
   }
 
+  if (items.length === 0) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-fw-warning">
+        <AlertTriangle size={14} className="shrink-0" aria-hidden />
+        {degraded.length} {degraded.length === 1 ? 'check' : 'checks'} couldn&apos;t run — this is not an all-clear.
+      </p>
+    );
+  }
+
   return (
     <Surface as="section" padding="sm">
-      <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-        Needs your eyes
+      <h2 className="flex items-center justify-between gap-2 border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+        <span>Needs your eyes</span>
+        {degraded.length > 0 ? (
+          <span className="font-normal normal-case tracking-normal text-fw-warning">
+            {degraded.length} {degraded.length === 1 ? 'check' : 'checks'} couldn&apos;t run
+          </span>
+        ) : null}
       </h2>
       <ul className="mt-1 divide-y divide-warm-200/60">
         {items.map((item) => {
@@ -83,8 +110,32 @@ async function BriefingStrip() {
   );
 }
 
-async function BannerAndKpis() {
-  const { kpis, banner, watcher } = await fetchOverviewSnapshot();
+/**
+ * The posture line, and nothing else. Split out of the old `BannerAndKpis` so
+ * `BriefingStrip` can sit BETWEEN the banner and the numbers in its own
+ * Suspense boundary while keeping the on-screen order it has always had —
+ * moving it above the banner would push the "is anything on fire" answer below
+ * a card-sized panel on phone, which is exactly what the M1 masthead fix
+ * (see CommandHeader) exists to prevent.
+ *
+ * This and `PostureBoards` await the SAME fetchOverviewSnapshot(), which is
+ * cache()-memoised per request, so the split costs zero extra queries. If that
+ * memoisation is ever dropped, this page silently pays for its whole fan-out
+ * twice.
+ */
+async function StatusBanner() {
+  const { banner } = await fetchOverviewSnapshot();
+  return (
+    <AdminStatusBanner
+      state={banner.state}
+      attentionCount={banner.attentionCount}
+      checkedAt={banner.checkedAt}
+    />
+  );
+}
+
+async function PostureBoards() {
+  const { kpis, watcher } = await fetchOverviewSnapshot();
   // Built as a list (not 6 hand-written <KpiTile> literals) so `StatStrip`'s
   // `count` — which drives its phone grid-vs-rail breakpoint — is always
   // derived from what's actually rendered, never a hand-maintained literal
@@ -148,16 +199,9 @@ async function BannerAndKpis() {
   ];
   return (
     <>
-      <AdminStatusBanner
-        state={banner.state}
-        attentionCount={banner.attentionCount}
-        checkedAt={banner.checkedAt}
-      />
-      <div className="mt-4">
-        <PanelBoundary title="Needs your eyes" skeleton={<SkeletonStat />}>
-          <BriefingStrip />
-        </PanelBoundary>
-      </div>
+      {/* No `mt-4` any more: the KPI strip is now the first child of its own
+          panel, and the enclosing section's `space-y-4` already supplies the
+          gap that used to come from this margin. */}
       <StatStrip
         count={kpiTiles.length}
         columns={6}
@@ -165,7 +209,6 @@ async function BannerAndKpis() {
         xlColumns={6}
         edgeBleedClassName="-mx-4 px-4"
         ariaLabel="Platform KPIs"
-        className="mt-4"
       >
         {kpiTiles.map(({ key, ...tile }) => (
           <KpiTile key={key} {...tile} />
@@ -229,11 +272,16 @@ function SignalBoard({
           <div className="mt-3 space-y-2">
             {activity.map(([label, value, href]) => {
               const pct = totalActivity > 0 ? Math.round((value / totalActivity) * 100) : 0;
+              // `-mx-2 px-2 py-2`: this is a tap target on the Bridge's most
+              // phone-primary surface, and at py-0 it was a ~20px strip whose
+              // hover tint clipped hard against the text. Same negative-margin
+              // bleed the briefing strip above uses, so the label stays aligned
+              // with the section heading.
               return (
                 <Link
                   key={label}
                   href={href}
-                  className="grid grid-cols-[72px_1fr_44px] items-center gap-2 rounded-fw-md transition-colors hover:bg-surface-sunken"
+                  className="-mx-2 grid grid-cols-[72px_1fr_44px] items-center gap-2 rounded-fw-md px-2 py-2 transition-colors hover:bg-surface-sunken"
                 >
                   <span className="text-caption text-warm-600">{label}</span>
                   <span className="h-2 overflow-hidden rounded-full bg-warm-100">
@@ -589,8 +637,26 @@ export default async function AdminOverviewPage() {
           <Eyebrow as="h2" tone="secondary">Live posture</Eyebrow>
           <p className="mt-1 text-sm text-warm-500">Signals refresh server-side and degrade per panel.</p>
         </div>
-        <PanelBoundary title="Live posture" skeleton={<SkeletonStat />}>
-          <BannerAndKpis />
+        {/* THREE sibling boundaries, not one nested tree. "Needs your eyes"
+            used to render inside the banner/KPI component, which meant it could
+            not start fetchBriefing() until fetchOverviewSnapshot() had resolved
+            — 11 parallel Supabase reads, the Vercel API, and a per-feature
+            Sentry sweep it shares no data with. Siblings render concurrently.
+            The banner is split off (rather than the briefing simply moved to
+            the top) purely to keep the briefing in its original slot between
+            the posture line and the numbers; both halves await the same
+            cache()-memoised snapshot, so this is free. */}
+        <PanelBoundary
+          title="Live posture"
+          skeleton={<Skeleton className="h-11 w-full rounded-2xl" />}
+        >
+          <StatusBanner />
+        </PanelBoundary>
+        <PanelBoundary title="Needs your eyes" skeleton={<SkeletonStat />}>
+          <BriefingStrip />
+        </PanelBoundary>
+        <PanelBoundary title="Platform KPIs" skeleton={<SkeletonStat />}>
+          <PostureBoards />
         </PanelBoundary>
       </section>
 

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
 import { type AdminFetchResult, unconfigured, ok } from '@/lib/admin/fetch-result';
+import { FAILURE_SEVERITIES } from '@/lib/admin/severity';
 
 /**
  * Helm Bridge — Release Ledger (deploys tab hero panel) + Regression Radar
@@ -240,7 +241,7 @@ export async function fetchReleaseLedger(): Promise<AdminFetchResult<ReleaseLedg
       .from('admin_events')
       .select('id, created_at, fingerprint, feature, severity, resolved, resolved_at, title')
       .eq('event_type', 'error')
-      .in('severity', ['error', 'critical'])
+      .in('severity', FAILURE_SEVERITIES)
       .not('fingerprint', 'is', null)
       .gte('created_at', lookbackStartIso)
       .order('id', { ascending: true })

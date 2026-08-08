@@ -4,6 +4,7 @@ import { fetchPulseGrid, PULSE_SORTS, type PulseSort, type PulseTeamRow } from '
 import { Surface, StatusPill, EkgSparkline } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
@@ -137,7 +138,7 @@ export default async function TeamsPulsePage({
           }))}
         />
       </div>
-      <PanelBoundary title="Teams pulse">
+      <PanelBoundary title="Teams pulse" skeleton={<PanelPageSkeleton stats={3} rows={8} />}>
         <Body sort={sort} />
       </PanelBoundary>
     </div>

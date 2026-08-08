@@ -124,15 +124,41 @@ describe('signupAction — server-side access-code gate (B8-1)', () => {
   });
 
   // (b) valid team join code — the coach-invited player path
-  it('creates the account when the grant carries a live team join code', async () => {
+  it('carries the team join code into onboarding so the player auto-joins', async () => {
     // Not the global code: only the golf_teams.join_code lookup can pass it.
     maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
     cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
 
     const result = await signupAction('player@example.com', STRONG_PASSWORD, 'player', 'New', 'Player');
 
-    expect(result).toEqual({ success: true, redirectTo: '/golf/player' });
+    // `?joinCode=` is the parameter completePlayerOnboarding already consumes
+    // to attach the player to the inviting team. This previously asserted a
+    // bare '/golf/player', which pinned the bug: the gate verified the code
+    // and discarded it in the same breath, so a coach-invited player finished
+    // onboarding with NO team and had to be invited a second time.
+    expect(result).toEqual({ success: true, redirectTo: '/golf/player?joinCode=K7PQX4MN' });
     expect(signUp).toHaveBeenCalledTimes(1);
+  });
+
+  // (b2) a COACH never carries a join code — they create a team, not join one.
+  it('does not carry a join code for a coach', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
+    cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
+
+    const result = await signupAction('coach@example.com', STRONG_PASSWORD, 'coach', 'New', 'Coach');
+
+    expect(result).toEqual({ success: true, redirectTo: '/golf/coach' });
+  });
+
+  // (b3) the GLOBAL access code is not a team, so there is nothing to join.
+  it('does not carry a join code when the global access code was used', async () => {
+    // No team matches, so only the global-code branch can pass this.
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+    cookieJar.set(GRANT_COOKIE, 'HELM25');
+
+    const result = await signupAction('player2@example.com', STRONG_PASSWORD, 'player', 'New', 'Player');
+
+    expect(result).toEqual({ success: true, redirectTo: '/golf/player' });
   });
 
   // (c) neither — a direct POST with no gate

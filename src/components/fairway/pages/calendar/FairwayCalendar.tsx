@@ -66,7 +66,7 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
-import { zonedMidnight } from '@/lib/calendar/timezone';
+import { zonedMidnight, eventCalendarDay } from '@/lib/calendar/timezone';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -81,6 +81,7 @@ import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
 import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
 import { FairwayEventEditor } from './FairwayEventEditor';
+import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
 
 // Code-split: the ICS feed manager (legacy component, reused UNCHANGED) only
 // loads when the Subscribe sheet is opened.
@@ -121,6 +122,17 @@ export interface FairwayCalendarProps {
    * no error thrown for a stale link.
    */
   initialEventId?: string;
+  /**
+   * Class id → owning player, for every class on this team the VIEWER may read
+   * (RLS already scopes it). Class meetings live on the team calendar with no
+   * owner column, so this is what lets the "All" lens say whose class a block
+   * is — and what keeps a player from seeing a teammate's.
+   */
+  classOwners?: ClassOwnerIndex;
+  /** False when the ownership lookup failed — unknown, not "no owners". */
+  classOwnersResolved?: boolean;
+  /** The viewer's own `golf_players.id`, when they are a player. */
+  viewerPlayerId?: string | null;
 }
 
 /** Local midnight of the day represented by the given Date. */
@@ -171,6 +183,9 @@ export function FairwayCalendar({
   loadedRangeStart,
   loadedRangeEnd,
   initialEventId,
+  classOwners,
+  classOwnersResolved = false,
+  viewerPlayerId = null,
 }: FairwayCalendarProps) {
   const router = useRouter();
   const badges = useNotificationBadges();
@@ -264,7 +279,20 @@ export function FairwayCalendar({
   // imminent un-RSVP'd" pick) now reads this ONE re-sorted, id-tie-broken
   // list instead of the raw hook output, so ties always resolve the same way
   // regardless of fetch/merge timing.
-  const events = React.useMemo(() => sortEventsStably(rangeEvents), [rangeEvents]);
+  // Class attribution runs HERE, not only on the server payload: the range hook
+  // merges client-fetched pages straight from golf_events as the coach scrolls
+  // to another month, and those rows arrive with no owner. Re-running the same
+  // pure pass over the merged list is what keeps a scrolled-to month labelled
+  // (and keeps a player from seeing a teammate's classes there).
+  const events = React.useMemo(
+    () =>
+      attributeClassEvents(sortEventsStably(rangeEvents), classOwners ?? {}, {
+        isCoach,
+        playerId: viewerPlayerId,
+        ownersResolved: classOwnersResolved,
+      }),
+    [rangeEvents, classOwners, isCoach, viewerPlayerId, classOwnersResolved],
+  );
 
   // ── Coach availability filter (avatar rail → overlay player schedules) ──────
   // Multi-select up to 8 (color-coded). Empty = "All" (team calendar). When
@@ -643,7 +671,7 @@ export function FairwayCalendar({
         // with what FairwayAgendaView mode="day" actually renders for the
         // same day (both bucket by `teamTimezone`), or the hero count and
         // the visible list could silently disagree near a midnight boundary.
-        return isSameDay(zonedMidnight(s, teamTimezone), focusDate);
+        return isSameDay(eventCalendarDay(s, e.all_day, teamTimezone), focusDate);
       }).length;
     }
     const startMs = visibleWindow.start.getTime();

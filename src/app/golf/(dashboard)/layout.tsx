@@ -7,6 +7,8 @@ import { getActiveTeamCookie } from '@/app/golf/actions/team-switcher';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { ThemeApplier } from '@/components/golf/theme/ThemeApplier';
 import type { GolfUserData } from '@/contexts/golf-user-context';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Golf Dashboard Layout — SERVER COMPONENT
@@ -156,12 +158,28 @@ export default async function GolfDashboardLayout({
     let teamId: string | undefined;
     let teamName: string | undefined;
     const supabase = await createClient();
-    const { data: teamMember } = await supabase
+    // The `error` is READ — logged, not thrown.
+    //
+    // Same swallow the calendar page had: only `data` was destructured, so a
+    // failed read was indistinguishable from "this player is on no team", and
+    // the shell rendered the not-on-a-team affordance to a rostered player with
+    // nothing recorded anywhere. Deliberately NOT a throw: this layout wraps
+    // EVERY dashboard route, so throwing here would turn a transient blip into
+    // a whole-product outage. Logging makes the failure visible without that
+    // blast radius; the calendar page, which can fail alone, does throw.
+    const { data: teamMember, error: teamMemberError } = await supabase
       .from('golf_team_members')
       .select('team_id, golf_teams(id, name)')
       .eq('player_id', player.id)
       .eq('status', 'active')
       .maybeSingle();
+
+    if (teamMemberError) {
+      void logServerError(
+        `[golf dashboard layout] player team read failed: ${describeError(teamMemberError)}`,
+        { action: 'golf.dashboardLayout.resolvePlayerTeam', featureArea: 'teams' },
+      );
+    }
 
     if (teamMember) {
       const teamData = teamMember.golf_teams as { id: string; name: string } | null;

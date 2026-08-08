@@ -8,6 +8,8 @@ import type { Database } from '@/lib/types/database';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { parseSemesterDates } from '@/lib/golf/semester';
+import { CLASS_EVENT_TYPE, classTag } from '@/lib/calendar/class-events';
 
 /**
  * Hard ceiling on occurrences generated for one class sync. ~400 covers a full
@@ -54,6 +56,22 @@ interface ClassFormData {
    * convention's default rather than relying on offset-naive strings.
    */
   timezoneOffset?: number;
+  /**
+   * The caller's IANA timezone, e.g. "America/New_York".
+   *
+   * REQUIRED for a correct multi-month series, and why `timezoneOffset` alone
+   * is not enough: an offset is a single number captured at save time, but a
+   * semester crosses a daylight-saving boundary. A schedule saved in August
+   * (EDT, -04:00) stamped every December occurrence -04:00 too, and December is
+   * EST — so every meeting after the change was stored an hour early. Measured
+   * on production 2026-08-07: 281 of 879 class events, across 17 classes and 2
+   * teams, all dated on or after 1 November.
+   *
+   * With the zone name the offset is resolved PER OCCURRENCE, so the wall-clock
+   * time the player typed is what they get on every date. `timezoneOffset`
+   * stays as the fallback for callers that have not been updated.
+   */
+  timezone?: string;
 }
 
 type GolfEventInsert = Database['public']['Tables']['golf_events']['Insert'];
@@ -61,6 +79,7 @@ type GolfEventInsert = Database['public']['Tables']['golf_events']['Insert'];
 interface ExistingClassEventRow {
   id: string;
   title: string;
+  event_type: string | null;
   start_time: string;
   end_time: string | null;
   location: string | null;
@@ -84,10 +103,83 @@ function formatTimezoneOffset(offsetMinutes: number): string {
   return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-/** Mirrors golf.ts:buildDateTimeString — date + time + explicit offset. */
+/**
+ * Normalize a wall-clock time to strict `HH:MM:SS`.
+ *
+ * `golf_player_classes.start_time` is a Postgres `time` column, so PostgREST
+ * hands it back as "10:50:00" — while the class form emits "10:50". The sync
+ * used to append ":00" unconditionally, so every RE-sync of an already-saved
+ * class built "10:50:00:00" and Postgres rejected the entire batch:
+ *
+ *   invalid input syntax for type timestamp with time zone:
+ *   "2026-06-01T10:50:00:00-04:00"
+ *
+ * Three real players hit that on 2026-08-06 — editing a saved class failed
+ * outright. Accept either shape, and refuse anything else rather than hand
+ * Postgres a string it will reject.
+ */
+function normalizeTimeOfDay(value: string | null | undefined): string | null {
+  const match = (value ?? '').trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3] ?? '0');
+  if (hours > 23 || minutes > 59 || seconds > 59) return null;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
+/**
+ * Mirrors golf.ts:buildDateTimeString — date + time + explicit offset.
+ * `time` must already be normalized; callers use normalizeTimeOfDay and
+ * surface an error rather than let an unparseable value become midnight (a
+ * fabricated 12:00 AM meeting is exactly what the class form avoids by
+ * storing NULL for "no time set").
+ */
 function buildDateTimeString(date: string, time: string, timezoneOffset?: number): string {
   const tz = timezoneOffset !== undefined ? formatTimezoneOffset(timezoneOffset) : '+00:00';
   return `${date}T${time}${tz}`;
+}
+
+/**
+ * The UTC offset, in minutes west of UTC (the `getTimezoneOffset()` sign
+ * convention), that `timeZone` was actually at on a given local date+time.
+ *
+ * This is what makes a semester-long series survive daylight saving: it is
+ * evaluated per occurrence rather than once at save time. Returns null for an
+ * unknown zone so the caller can fall back rather than silently guess.
+ */
+function offsetMinutesFor(date: string, time: string, timeZone: string): number | null {
+  try {
+    // Interpret the wall-clock reading as if it were UTC, then ask what that
+    // instant looks like in the target zone. The difference between the two is
+    // the zone's offset near that date — correct on both sides of a DST change.
+    const asUtc = new Date(`${date}T${time}Z`);
+    if (Number.isNaN(asUtc.getTime())) return null;
+
+    const dtf = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+    const p: Record<string, string> = {};
+    for (const part of dtf.formatToParts(asUtc)) p[part.type] = part.value;
+    // Intl renders midnight as hour 24 in some locales/zones.
+    const hour = p.hour === '24' ? '00' : p.hour;
+
+    const localAsUtc = Date.UTC(
+      Number(p.year), Number(p.month) - 1, Number(p.day),
+      Number(hour), Number(p.minute), Number(p.second),
+    );
+    if (Number.isNaN(localAsUtc)) return null;
+
+    // Positive west of UTC, matching Date.getTimezoneOffset().
+    return Math.round((asUtc.getTime() - localAsUtc) / 60_000);
+  } catch {
+    // Invalid IANA name — the caller falls back to the fixed offset.
+    return null;
+  }
 }
 
 /**
@@ -203,8 +295,23 @@ async function syncClassToCalendarImpl(
     // anything the checks above didn't authorize.
     const admin = createAdminClient();
 
-    const classTag = `[class:${classId}]`;
+    const tag = classTag(classId);
     const tzOffset = classData.timezoneOffset;
+
+    /**
+     * The offset to stamp on a given occurrence. Prefers the caller's IANA zone
+     * resolved AT THAT DATE, so a series spanning a daylight-saving change
+     * keeps the same wall-clock time throughout. Falls back to the single
+     * save-time offset when no zone was supplied (older callers) or the name is
+     * not a zone Intl recognises.
+     */
+    const offsetForDate = (date: string, time: string): number | undefined => {
+      if (classData.timezone) {
+        const resolved = offsetMinutesFor(date, time, classData.timezone);
+        if (resolved !== null) return resolved;
+      }
+      return tzOffset;
+    };
 
     // Build shared event fields
     const title = classData.course_code
@@ -215,8 +322,8 @@ async function syncClassToCalendarImpl(
       classData.instructor && `Instructor: ${classData.instructor}`,
       classData.credits && `Credits: ${classData.credits}`,
       classData.notes,
-      classTag,
-    ].filter(Boolean).join('\n') || classTag;
+      tag,
+    ].filter(Boolean).join('\n') || tag;
 
     // Generate one desired occurrence per weekly meeting, keyed by local date.
     // The calendar UI matches events by comparing start_time to the displayed
@@ -238,6 +345,15 @@ async function syncClassToCalendarImpl(
       dayNumbers.add(getDayOfWeek(day));
     }
 
+    // Resolve the meeting times ONCE, before generating anything. An absent
+    // time keeps the long-standing 08:00/09:00 default; an unparseable one is
+    // refused outright rather than silently becoming midnight.
+    const startTimeOfDay = classData.start_time ? normalizeTimeOfDay(classData.start_time) : '08:00:00';
+    const endTimeOfDay = classData.end_time ? normalizeTimeOfDay(classData.end_time) : '09:00:00';
+    if (!startTimeOfDay || !endTimeOfDay) {
+      return { success: false, error: 'Class start and end times must look like HH:MM.' };
+    }
+
     for (const dayOfWeek of dayNumbers) {
       const firstDateStr = getFirstOccurrenceDate(semesterDates.start, dayOfWeek);
       const cursor = new Date(firstDateStr + 'T00:00:00Z');
@@ -247,11 +363,16 @@ async function syncClassToCalendarImpl(
         desiredByDate.set(dateStr, {
           team_id: teamId,
           title,
-          event_type: 'other',
-          // start_time/end_time are timestamptz — date + class time + explicit
-          // offset, the same convention golf.ts events use.
-          start_time: buildDateTimeString(dateStr, `${classData.start_time || '08:00'}:00`, tzOffset),
-          end_time: buildDateTimeString(dateStr, `${classData.end_time || '09:00'}:00`, tzOffset),
+          // A class meeting is NOT a team event. Typing it makes every
+          // team-scoped query able to say so in SQL instead of LIKE-scanning
+          // the description — see lib/calendar/class-events.ts.
+          event_type: CLASS_EVENT_TYPE,
+          // start_time/end_time are timestamptz — date + class time + the
+          // offset THAT DATE was actually at, resolved per occurrence from the
+          // caller's IANA zone. A single save-time offset applied to a whole
+          // semester put every meeting after the DST change an hour early.
+          start_time: buildDateTimeString(dateStr, startTimeOfDay, offsetForDate(dateStr, startTimeOfDay)),
+          end_time: buildDateTimeString(dateStr, endTimeOfDay, offsetForDate(dateStr, endTimeOfDay)),
           all_day: false,
           location,
           description,
@@ -272,9 +393,9 @@ async function syncClassToCalendarImpl(
     const { data: existingRows, error: existingError } = await fetchAllRowsResult((from, to) =>
       admin
         .from('golf_events')
-        .select('id, title, start_time, end_time, location, description')
+        .select('id, title, event_type, start_time, end_time, location, description')
         .eq('team_id', teamId)
-        .like('description', `%${classTag}%`)
+        .like('description', `%${tag}%`)
         .order('id', { ascending: true })
         .range(from, to),
       undefined,
@@ -309,6 +430,9 @@ async function syncClassToCalendarImpl(
       }
       const changed =
         existing.title !== desired.title ||
+        // Self-heals a row written before class events were typed, so a
+        // re-sync converges even if the one-off backfill missed it.
+        existing.event_type !== desired.event_type ||
         existing.location !== desired.location ||
         existing.description !== desired.description ||
         !sameInstant(existing.start_time, desired.start_time ?? null) ||
@@ -318,6 +442,7 @@ async function syncClassToCalendarImpl(
           id: existing.id,
           changes: {
             title: desired.title,
+            event_type: desired.event_type,
             start_time: desired.start_time,
             end_time: desired.end_time,
             location: desired.location,
@@ -489,11 +614,11 @@ async function removeClassFromCalendarImpl(classId: string, teamId?: string): Pr
   // Authz established above — admin client also required for the delete itself
   // because player RLS has no DELETE grant on golf_events. Scoped to the class
   // tag + the player's teams.
-  const classTag = `[class:${classId}]`;
+  const tag = classTag(classId);
   const { error } = await admin
     .from('golf_events')
     .delete()
-    .like('description', `%${classTag}%`)
+    .like('description', `%${tag}%`)
     .in('team_id', targetTeamIds);
 
   if (error) {
@@ -512,76 +637,6 @@ const observedRemoveClassFromCalendar = withAdminObserved(
 
 export async function removeClassFromCalendar(classId: string, teamId?: string): Promise<CalendarSyncResult> {
   return observedRemoveClassFromCalendar(classId, teamId);
-}
-
-/**
- * A caller-supplied semester start must be a real calendar date inside the
- * term's own window — on or after 1 January of the term year, and on or before
- * the term end. DS-B4: it was previously used verbatim, so a year-0001 start on
- * a "Fall 9999" term produced a five-century occurrence walk.
- */
-function isValidCustomStart(customStartDate: string, termYear: number, endDate: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(customStartDate)) return false;
-  const start = new Date(customStartDate + 'T00:00:00Z').getTime();
-  const lowerBound = new Date(`${termYear}-01-01T00:00:00Z`).getTime();
-  const upperBound = new Date(endDate + 'T00:00:00Z').getTime();
-  if (!Number.isFinite(start)) return false;
-  return start >= lowerBound && start <= upperBound;
-}
-
-/**
- * Parse semester string to get start and end dates
- * Format: "Fall 2025", "Spring 2026", etc.
- * If customStartDate is provided, use it instead of the default start date
- *
- * DS-B4: both inputs are caller-controlled, so the term year is bounded to a
- * plausible range and a custom start is range-checked against the term. An
- * unusable value returns null, which the caller surfaces as the existing
- * "Could not determine semester dates" error.
- */
-function parseSemesterDates(semester: string, customStartDate?: string): { start: string; end: string } | null {
-  if (typeof semester !== 'string') return null;
-
-  const match = semester.match(/(Fall|Spring|Summer|Winter)\s+(\d{4})/i);
-  if (!match || !match[1] || !match[2]) return null;
-
-  const term = match[1];
-  const year = match[2];
-  const yearNum = parseInt(year, 10);
-  // Anything outside this window is not a real academic term, and it is what
-  // made the generated range unbounded ("Fall 9999").
-  if (!Number.isFinite(yearNum) || yearNum < 2000 || yearNum > 2100) return null;
-
-  let defaultStartDate: string;
-  let endDate: string;
-
-  switch (term.toLowerCase()) {
-    case 'spring':
-      defaultStartDate = `${yearNum}-01-15`; // Mid-January
-      endDate = `${yearNum}-05-15`;   // Mid-May
-      break;
-    case 'summer':
-      defaultStartDate = `${yearNum}-06-01`; // Early June
-      endDate = `${yearNum}-08-15`;   // Mid-August
-      break;
-    case 'fall':
-      defaultStartDate = `${yearNum}-08-20`; // Late August
-      endDate = `${yearNum}-12-15`;   // Mid-December
-      break;
-    case 'winter':
-      defaultStartDate = `${yearNum}-12-15`; // Mid-December
-      endDate = `${yearNum + 1}-01-15`; // Mid-January next year
-      break;
-    default:
-      return null;
-  }
-
-  if (customStartDate) {
-    if (!isValidCustomStart(customStartDate, yearNum, endDate)) return null;
-    return { start: customStartDate, end: endDate };
-  }
-
-  return { start: defaultStartDate, end: endDate };
 }
 
 /**

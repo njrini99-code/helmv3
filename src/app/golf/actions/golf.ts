@@ -36,7 +36,7 @@ import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logServerError, logServerException, logServerEvent } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
-import { classifyProviderFault } from '@/lib/admin/provider-fault';
+import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
@@ -2064,7 +2064,14 @@ async function submitGolfRoundComprehensiveImpl(
                   : {}),
               },
             },
-            'warning',
+            // Was a hardcoded 'warning'. providerFaultSeverity assigns 'error'
+            // to an operator-blocking fault, and 'warning' sits BELOW
+            // FAILURE_SEVERITIES — so a dead Inngest credential was excluded
+            // from the briefing's error-cluster check, the release ledger and
+            // every headline count. This was the lone hand-written outlier;
+            // schedule-image.ts, chat/stream/route.ts and compose.ts all use
+            // the helper.
+            fault ? providerFaultSeverity(fault).severity : 'warning',
           );
         }
       } else {
@@ -2459,7 +2466,7 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
 
 const observedCreateGolfEvent = withAdminObserved(
   'createGolfEvent',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   createGolfEventImpl,
 );
 
@@ -2708,7 +2715,7 @@ async function updateGolfEventImpl(
 
 const observedUpdateGolfEvent = withAdminObserved(
   'updateGolfEvent',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   updateGolfEventImpl,
 );
 
@@ -2986,7 +2993,7 @@ async function deleteGolfEventImpl(
 
 const observedDeleteGolfEvent = withAdminObserved(
   'deleteGolfEvent',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   deleteGolfEventImpl,
 );
 
@@ -3009,7 +3016,7 @@ async function deleteGolfEventPermanentlyImpl(
 
 const observedDeleteGolfEventPermanently = withAdminObserved(
   'deleteGolfEventPermanently',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   deleteGolfEventPermanentlyImpl,
 );
 
@@ -3215,7 +3222,7 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
 
 const observedCreateGolfQualifier = withAdminObserved(
   'createGolfQualifier',
-  { sport: 'golf', feature: 'qualifiers' },
+  { demoSafe: true, sport: 'golf', feature: 'qualifiers' },
   createGolfQualifierImpl,
 );
 
@@ -3427,7 +3434,7 @@ async function updateQualifierStatusImpl(
 
 const observedUpdateQualifierStatus = withAdminObserved(
   'updateQualifierStatus',
-  { sport: 'golf', feature: 'qualifiers' },
+  { demoSafe: true, sport: 'golf', feature: 'qualifiers' },
   updateQualifierStatusImpl,
 );
 
@@ -3559,7 +3566,7 @@ async function updateGolfQualifierDetailsImpl(
 
 const observedUpdateGolfQualifierDetails = withAdminObserved(
   'updateGolfQualifierDetails',
-  { sport: 'golf', feature: 'qualifiers' },
+  { demoSafe: true, sport: 'golf', feature: 'qualifiers' },
   updateGolfQualifierDetailsImpl,
 );
 
@@ -3643,7 +3650,7 @@ async function createAnnouncementImpl(data: {
 
 const observedCreateAnnouncement = withAdminObserved(
   'createAnnouncement',
-  { sport: 'golf', feature: 'announcements' },
+  { demoSafe: true, sport: 'golf', feature: 'announcements' },
   createAnnouncementImpl,
 );
 
@@ -3820,7 +3827,7 @@ async function updatePlayerStatusImpl(
 
 const observedUpdatePlayerStatus = withAdminObserved(
   'updatePlayerStatus',
-  { sport: 'golf', feature: 'roster_management' },
+  { demoSafe: true, sport: 'golf', feature: 'roster_management' },
   updatePlayerStatusImpl,
 );
 
@@ -4725,7 +4732,7 @@ async function addCoachBlockedTimeImpl(
 
 const observedAddCoachBlockedTime = withAdminObserved(
   'addCoachBlockedTime',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   addCoachBlockedTimeImpl,
 );
 
@@ -4793,7 +4800,7 @@ async function deleteCoachBlockedTimeImpl(id: string): Promise<ActionResult<void
 
 const observedDeleteCoachBlockedTime = withAdminObserved(
   'deleteCoachBlockedTime',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   deleteCoachBlockedTimeImpl,
 );
 
@@ -4873,7 +4880,7 @@ async function updateCoachBlockedTimeImpl(
 
 const observedUpdateCoachBlockedTime = withAdminObserved(
   'updateCoachBlockedTime',
-  { sport: 'golf', feature: 'calendar_events' },
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
   updateCoachBlockedTimeImpl,
 );
 
@@ -6104,19 +6111,46 @@ async function getQualifierLeaderboardImpl(
       .eq('id', qualifierId)
       .single();
 
-    if (qualifierError || !qualifier) {
+    // PGRST116 is PostgREST's "no rows" for .single(); that one really is
+    // "not found". Every other error is a read that failed, and telling a
+    // coach their qualifier doesn't exist because a connection dropped sends
+    // them looking for data loss that never happened.
+    if (qualifierError && (qualifierError as { code?: string }).code !== 'PGRST116') {
+      await logServerError(
+        `[getQualifierLeaderboard] qualifier read failed: ${describeError(qualifierError)}`,
+        { action: 'getQualifierLeaderboard.qualifier', featureArea: 'qualifiers', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load this qualifier. Please try again." };
+    }
+
+    if (!qualifier) {
       return { success: false, error: 'Qualifier not found' };
     }
 
-    // Get current player (if exists)
-    const { data: currentPlayer } = await supabase
+    // Get current player (if exists).
+    //
+    // "No row" and "the read failed" are NOT the same answer, and this used to
+    // discard the error and treat both as no row. A coach legitimately has no
+    // golf_players row, so null is expected — but when the query itself fails,
+    // `isPlayerEntered` below would be computed against a player id we never
+    // learned, and the page would tell an entered player they hadn't entered
+    // and offer them the Enter button again.
+    const { data: currentPlayer, error: currentPlayerError } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
 
+    if (currentPlayerError) {
+      await logServerError(
+        `[getQualifierLeaderboard] player lookup failed: ${describeError(currentPlayerError)}`,
+        { action: 'getQualifierLeaderboard.playerLookup', featureArea: 'qualifiers', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load this qualifier. Please try again." };
+    }
+
     // Get all entries with player info
-    const { data: entries } = await supabase
+    const { data: entries, error: entriesError } = await supabase
       .from('golf_qualifier_entries')
       .select(`
         player_id,
@@ -6128,6 +6162,18 @@ async function getQualifierLeaderboardImpl(
         )
       `)
       .eq('qualifier_id', qualifierId);
+
+    // A failed read is not an empty field. Without this branch the early
+    // return below answers `success: true, leaderboard: []` — the exact same
+    // payload as a qualifier nobody has entered yet — so an RLS denial or a
+    // dropped connection rendered as "no entries yet" on a full field.
+    if (entriesError) {
+      await logServerError(
+        `[getQualifierLeaderboard] entries read failed: ${describeError(entriesError)}`,
+        { action: 'getQualifierLeaderboard.entries', featureArea: 'qualifiers', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load the field for this qualifier. Please try again." };
+    }
 
     if (!entries || entries.length === 0) {
       return {
@@ -6158,6 +6204,18 @@ async function getQualifierLeaderboardImpl(
       .select('player_id, qualifier_round_number, total_score, score_to_par')
       .eq('qualifier_id', qualifierId)
       .eq('status', 'completed');
+
+    // This one is the most dangerous of the three to swallow. Every downstream
+    // calculation reads `rounds || []`, so a failed read doesn't blank the
+    // page — it produces a complete, confident leaderboard in which nobody has
+    // posted a score. Coaches make lineup decisions off this screen.
+    if (roundsResult.error) {
+      await logServerError(
+        `[getQualifierLeaderboard] rounds read failed: ${describeError(roundsResult.error)}`,
+        { action: 'getQualifierLeaderboard.rounds', featureArea: 'qualifiers', userId: user.id },
+      );
+      return { success: false, error: "Couldn't load scores for this qualifier. Please try again." };
+    }
 
     const rounds = (roundsResult.data as unknown) as Array<{
       player_id: string;

@@ -23,6 +23,7 @@ import {
   FairwayTeamSettings,
   type FairwayTeamSettingsCoach,
   type FairwayTeamSettingsTeam,
+  type FairwayProgramTeam,
 } from './FairwayTeamSettings';
 import { FairwayTeamInfo, type FairwayTeamInfoProps } from './FairwayTeamInfo';
 
@@ -31,12 +32,14 @@ export type FairwayTeamProps =
       role: 'coach';
       coach: FairwayTeamSettingsCoach;
       team: FairwayTeamSettingsTeam | null;
+      /** Every team this coach staffs, when the program runs more than one. */
+      programTeams?: FairwayProgramTeam[];
     }
   | ({ role: 'player' } & FairwayTeamInfoProps);
 
 export function FairwayTeam(props: FairwayTeamProps) {
   if (props.role === 'coach') {
-    return <FairwayTeamSettings coach={props.coach} team={props.team} />;
+    return <FairwayTeamSettings coach={props.coach} team={props.team} programTeams={props.programTeams} />;
   }
 
   const { role: _role, ...playerProps } = props;

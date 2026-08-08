@@ -187,3 +187,12 @@ e2e-screenshots/
 *.keystore
 *.jks
 android/keystore.properties
+
+# Local-only working folders (2026-08-03 tidy).
+#
+# The repo root had accumulated 99 loose dev screenshots plus zips, PDFs and
+# decks — all already ignored individually, so git never saw them, but they
+# made the root unreadable. They now live in one place each rather than
+# scattered across the top level.
+.dev-screenshots/
+.dev-assets/

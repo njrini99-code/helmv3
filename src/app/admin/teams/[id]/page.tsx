@@ -5,9 +5,10 @@ import { fetchTeamDetail } from '@/lib/admin/data/team-detail';
 import { fetchTeamPageExtras } from '@/lib/admin/data/team-page-extras';
 import { computeTeamGrade, computeTeamComputedInsights, type TeamGrade } from '@/lib/admin/data/team-grade';
 import { classifyTeamHealth, type TeamHealth } from '@/lib/admin/data/golf';
-import { Surface, StatusPill, Badge, TrendChart, type FwStatusTone } from '@/components/fairway';
+import { Surface, StatusPill, Badge, TrendChart, InlineNotice, type FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { PanelBoundary } from '../../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelAllClear, PanelNoData } from '../../_components/PanelStates';
 import { LocalTime } from '../../_components/LocalTime';
 import { RosterTable, type RosterDisplayRow } from './RosterTable';
@@ -88,7 +89,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
     );
   }
 
-  const { team, coaches, roster, activityDaily, errors, coachhelm, teamLastActivity } = detail;
+  const { team, coaches, roster, activityDaily, errors, coachhelm, teamLastActivity, degraded } = detail;
   const coachIds = coaches.map((c) => c.id);
   const extras = await fetchTeamPageExtras({ teamId, organizationId: team.organizationId, coachIds });
 
@@ -118,6 +119,16 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
 
   return (
     <div className="space-y-6">
+      {/* Every section falls back to empty/null on a query failure so the page
+          still renders — but empty and unavailable then look identical, and on
+          an observability surface that reads as "this team is clean" at exactly
+          the moment it is not (fetchTeamDetail's own `degraded` doc comment). */}
+      {degraded.length > 0 ? (
+        <InlineNotice tone="warning" title="Some sections could not be loaded">
+          {degraded.join(', ')} failed to load this request — those panels are showing unknown, not zero. Reload to
+          retry.
+        </InlineNotice>
+      ) : null}
       <Surface padding="sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
@@ -213,7 +224,16 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
         <SectionLabel>Team errors</SectionLabel>
         <div className="mt-3">
           {errors.length === 0 ? (
-            <PanelAllClear label="No recent errors for this team" checkedAt={new Date().toISOString()} />
+            // Never claim all-clear off a failed read — `degraded` carrying
+            // 'errors' means we could not look, which is not the same as zero.
+            degraded.includes('errors') ? (
+              <PanelNoData
+                label="Team errors unavailable"
+                description="The error query failed this request — this is not an all-clear."
+              />
+            ) : (
+              <PanelAllClear label="No recent errors for this team" checkedAt={new Date().toISOString()} />
+            )
           ) : (
             <ul className="divide-y divide-warm-200/60">
               {errors.map((e) => (
@@ -284,7 +304,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ id:
       <Link href="/admin/golf" className="text-xs text-warm-500 underline">
         ← Golf
       </Link>
-      <PanelBoundary title="Team detail">
+      <PanelBoundary title="Team detail" skeleton={<PanelPageSkeleton rows={8} />}>
         <TeamDetailBody teamId={id} />
       </PanelBoundary>
     </div>

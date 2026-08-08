@@ -35,7 +35,8 @@ export function CoachHelmSection() {
       >
         <div data-ch="copy" className="max-w-[440px]">
           <div className="flex items-center gap-[9px]">
-            <Image src="/helm-golf-logo-transparent.png" alt="" width={22} height={22} className="h-[22px] w-[22px]" />
+            {/* object-contain — see LandingHero: 189x154 source in a square box. */}
+            <Image src="/helm-golf-logo-transparent.png" alt="" width={22} height={22} className="h-[22px] w-[22px] object-contain" />
             <span className="font-fw-mono text-[0.719rem] uppercase tracking-[0.18em] text-[oklch(0.75_0.13_150)]">CoachHelm</span>
           </div>
           <h2

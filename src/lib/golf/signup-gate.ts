@@ -3,7 +3,7 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/supabase-rate-limit';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 /**
  * GolfHelm signup access-code gate.
@@ -45,19 +45,27 @@ const SIGNUP_GATE_COOKIE = 'helm_golf_signup_gate';
 const SIGNUP_GATE_TTL_SECONDS = 60 * 60;
 
 /**
- * DS-B2 follow-up: an unset SIGNUP_ACCESS_CODE silently disables the shared-
- * code signup path (see isAcceptedSignupCode below) — self-serve signup then
- * only works via a coach's team join_code. That's correct behavior for a
- * removed committed secret, but a misconfigured deploy (env var never set in
- * Vercel) must not fail silently. Page this loudly instead.
+ * An unset SIGNUP_ACCESS_CODE disables the shared-code signup path, leaving
+ * only a coach's team join_code — which is now the INTENDED configuration: the
+ * shared code was deliberately retired on 2026-08-04 so a player signs up with
+ * the code their coach gave them and lands on that coach's roster.
+ *
+ * This was originally logged 'critical' on the theory that an unset env var
+ * meant a misconfigured deploy. That is no longer true, and the alarm fired on
+ * every signup — 10 CRITICAL incidents in one 24h window on 2026-08-05, all of
+ * them the platform working as designed. A permanent critical that nobody can
+ * action is worse than silence: it trains you to ignore the queue, and it
+ * buries the real failures next to it.
+ *
+ * Kept as a one-shot 'info' so the state is still discoverable if someone
+ * wonders why the shared code stopped working, without paging anyone.
  */
 async function warnMissingAccessCodeOnce(): Promise<void> {
   if (warnedMissingAccessCode) return;
   warnedMissingAccessCode = true;
-  await logServerError(
-    'SIGNUP_ACCESS_CODE is unset — shared-code signup is disabled; only team join_code signup will succeed',
+  await logServerEvent(
+    'SIGNUP_ACCESS_CODE is unset — by design: signup is team join_code only',
     { action: 'access-code.validateAccessCode', source: 'auth' },
-    'critical',
   ).catch(() => {});
 }
 
@@ -119,7 +127,9 @@ async function isValidTeamJoinCode(code: string): Promise<boolean> {
  * Every caller MUST rate-limit before reaching here — a miss falls through to
  * a service-role join_code lookup.
  */
-async function isAcceptedSignupCode(candidate: string): Promise<boolean> {
+type SignupCodeMatch = 'none' | 'global' | 'team_join_code';
+
+async function classifySignupCode(candidate: string): Promise<SignupCodeMatch> {
   // DS-B2: no committed fallback. An unset SIGNUP_ACCESS_CODE used to make the
   // source-published literal the live gate value; empty now fails the guard
   // below closed, leaving only the team join_code path.
@@ -127,11 +137,15 @@ async function isAcceptedSignupCode(candidate: string): Promise<boolean> {
   if (!accessCode) {
     await warnMissingAccessCodeOnce();
   } else if (candidate.toLowerCase() === accessCode.toLowerCase()) {
-    return true;
+    return 'global';
   }
 
   // Otherwise accept a real team join code so coach-invited players get in.
-  return isValidTeamJoinCode(candidate);
+  return (await isValidTeamJoinCode(candidate)) ? 'team_join_code' : 'none';
+}
+
+async function isAcceptedSignupCode(candidate: string): Promise<boolean> {
+  return (await classifySignupCode(candidate)) !== 'none';
 }
 
 /**
@@ -199,16 +213,45 @@ export async function grantSignupAccess(code: string): Promise<boolean> {
  * interactive gate's budget, and so this path cannot be used as an unbounded
  * join_code oracle either.
  */
-export async function verifySignupGate(): Promise<boolean> {
+export interface SignupGateResult {
+  /** True when the recorded grant still validates. */
+  passed: boolean;
+  /**
+   * The TEAM JOIN CODE the visitor cleared the gate with, when that is what
+   * let them in (uppercased), otherwise null.
+   *
+   * Returned so `signupAction` can carry it into player onboarding as
+   * `?joinCode=`, which is the parameter completePlayerOnboarding already uses
+   * to auto-join the inviting team. Before this, a player who signed up with
+   * the code their coach gave them cleared the gate and was then dropped on
+   * onboarding with no team — the code was verified and discarded in the same
+   * breath, so they finished onboarding unattached and had to be invited a
+   * second time.
+   *
+   * Reuses the classification the gate already performed; it does NOT cost a
+   * second service-role join_code lookup or a second throttle slot.
+   */
+  teamJoinCode: string | null;
+}
+
+export async function verifySignupGate(): Promise<SignupGateResult> {
+  const denied: SignupGateResult = { passed: false, teamJoinCode: null };
+
   const cookieStore = await cookies();
   const granted = cookieStore.get(SIGNUP_GATE_COOKIE)?.value?.trim();
-  if (!granted) return false;
+  if (!granted) return denied;
 
   const rateLimit = await checkRateLimit(
     `signup:gate:verify:${await clientIp()}`,
     RATE_LIMITS.SIGNUP,
   );
-  if (!rateLimit.allowed) return false;
+  if (!rateLimit.allowed) return denied;
 
-  return isAcceptedSignupCode(granted);
+  const match = await classifySignupCode(granted);
+  if (match === 'none') return denied;
+
+  return {
+    passed: true,
+    teamJoinCode: match === 'team_join_code' ? granted.toUpperCase() : null,
+  };
 }

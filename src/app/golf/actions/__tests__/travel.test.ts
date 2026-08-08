@@ -329,7 +329,14 @@ describe('travel server actions', () => {
     });
 
     it('returns unauthorized when no user', async () => {
-      mockGetUser.mockReturnValueOnce({
+      // Not `...Once`: this action is `demoSafe`, so the wrapper resolves the
+      // session for the shared-demo check BEFORE the implementation runs its
+      // own auth check — two reads, not one. A one-shot mock was satisfied by
+      // the first and left the second seeing the signed-in default, so the
+      // action reported success for an unauthenticated caller. The scenario
+      // being described is "nobody is signed in for this whole call", which is
+      // what a persistent value says. `beforeEach` restores the default.
+      mockGetUser.mockReturnValue({
         data: { user: null },
         error: null,
       });

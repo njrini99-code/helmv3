@@ -17,7 +17,7 @@ export default function Error({
       component="GolfAdminCRMPage"
       title="Failed to load CRM"
       message="We couldn't load the CRM. Please try again."
-      homePath="/golf/admin"
+      homePath="/admin"
     />
   );
 }

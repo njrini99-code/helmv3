@@ -8,27 +8,45 @@ import {
 } from '@/app/admin/_components/admin-nav';
 
 describe('ADMIN_NAV', () => {
+  // Regrouped 2026-08-06 from system-shaped sections (Operations/Apps/Platform)
+  // to question-shaped ones, and the two orphaned boards were added. Keyboard
+  // keys are deliberately NOT renumbered — '1'-'9'/'0' keep their original
+  // routes so existing muscle memory survives the regrouping.
   it('declares the canonical tabs in order', () => {
     expect(ADMIN_NAV.map((e) => e.href)).toEqual([
+      // Triage
       '/admin',
-      '/admin/activity',
       '/admin/errors',
-      '/admin/auth',
+      '/admin/health',
+      '/admin/jobs',
+      '/admin/teams',
+      // Customers
+      '/admin/users',
+      '/admin/activity',
       '/admin/utilization',
+      // Apps
       '/admin/golf',
       '/admin/baseball',
       '/admin/lifting',
-      '/admin/ben-leah',
-      '/admin/work',
-      '/admin/users',
-      '/admin/jobs',
+      // Platform
       '/admin/deploys',
-      '/admin/health',
+      '/admin/auth',
+      '/admin/work',
+      // Revenue
+      '/admin/billing',
+      // Intake
+      '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      '1', '2', '3', '4', 'U', '5', '6', 'L', 'B', 'W', '7', '8', '9', '0',
+      '1', '3', '0', '8', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
     ]);
   });
+
+  it('groups by the question being asked, not by subsystem', () => {
+    const sections = [...new Set(ADMIN_NAV.map((e) => e.section))];
+    expect(sections).toEqual(['Triage', 'Customers', 'Apps', 'Platform', 'Revenue']);
+  });
+
   it('maps shortcut keys to hrefs', () => {
     expect(hrefForShortcut('2')).toBe('/admin/activity');
     expect(hrefForShortcut('3')).toBe('/admin/errors');

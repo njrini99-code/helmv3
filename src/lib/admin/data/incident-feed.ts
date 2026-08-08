@@ -1,10 +1,12 @@
 import 'server-only';
+import { cache } from 'react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { fetchSentryIssues, type SentryIssue } from '@/lib/admin/sentry-api';
 import { getProductionDeployAt, RELEASE_GRACE_MS } from '@/lib/admin/auto-resolve';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
+import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
 import {
   mergeTriage,
   type AppTriageEventRow,
@@ -180,7 +182,16 @@ export async function queryAppErrorEvents(
   // matters most). `.order('id')` as a tiebreaker keeps page boundaries
   // stable alongside `created_at desc`, matching the fetchAllRowsResult
   // pattern already used by golf.ts/briefing.ts.
-  const { data } = await fetchAllRowsResult((from, to) => {
+  // THROW, don't swallow. This destructured only `data`, and
+  // fetchAllRowsResult returns `{ data: null, error }` when the first page
+  // fails — so a PostgREST fault (schema drift on any of the 14 columns in
+  // APP_EVENT_SELECT, a 400, a statement timeout) became `[]`, which becomes
+  // a confident `0` on the nav badge, the KPI strip, the triage queue AND the
+  // Errors tab at once. incident-count-agreement.test.ts then certifies those
+  // four agree — and they do, on zero. Every caller already renders inside a
+  // PanelBoundary that shows PanelStale on a throw, so failing loudly here is
+  // strictly better than a silent all-clear.
+  const { data, error } = await fetchAllRowsResult((from, to) => {
     let query = admin
       .from('admin_events')
       .select(APP_EVENT_SELECT)
@@ -191,7 +202,7 @@ export async function queryAppErrorEvents(
       .order('id', { ascending: true })
       .range(from, to);
 
-    if (filters.severity !== 'info') query = query.neq('severity', 'info');
+    if (filters.severity !== 'info') query = query.in('severity', INCIDENT_SEVERITIES);
     if (filters.sport) query = query.eq('sport', filters.sport);
     if (filters.severity) query = query.eq('severity', filters.severity);
     if (filters.source) query = query.eq('source', filters.source);
@@ -199,6 +210,10 @@ export async function queryAppErrorEvents(
 
     return query;
   });
+
+  if (error) {
+    throw new Error(`queryAppErrorEvents: ${error.message}`);
+  }
 
   return (data ?? []) as unknown as AppTriageEventRow[];
 }
@@ -250,6 +265,12 @@ export async function queryPriorResolutions(
       .from('admin_events')
       .select('fingerprint, resolved_at')
       .eq('resolved', true)
+      // A HUMAN must have resolved it for a later event to count as a
+      // regression. auto-resolve.ts:76 deliberately leaves resolved_by NULL on
+      // the nightly cron sweep, so without this every swept fingerprint that
+      // fired again looked like "a fix failed" — on 2026-08-05 all seven
+      // resolutions behind the badged rows were cron sweeps, i.e. 100% false.
+      .not('resolved_by', 'is', null)
       .in('fingerprint', Array.from(chunk))
       .gte('resolved_at', since)
       .order('resolved_at', { ascending: false });
@@ -336,3 +357,32 @@ export async function fetchIncidentFeed(
 
   return { incidents, appEvents, sentry, counts };
 }
+
+/**
+ * Per-request memoised DEFAULT-WINDOW feed — the one every unfiltered Bridge
+ * surface wants.
+ *
+ * One render of /admin asked for the identical 24h feed TWICE:
+ * `fetchOverviewSnapshot()` for the KPI strip and `fetchTriageQueue()` for the
+ * triage panel. Each ask is two Sentry round-trips (raw + filtered) plus a
+ * paginated `admin_events` scan plus a chunked `queryPriorResolutions()` —
+ * all of it duplicated for one screen.
+ *
+ * The wrapper takes a PRIMITIVE, and that is the entire point. React's
+ * `cache()` keys on argument REFERENCE identity, so two call sites each
+ * passing their own `{ windowHours: 24 }` object literal are two distinct keys
+ * and would miss the cache every single time — a memoisation that looks
+ * applied and does nothing. A number compares equal.
+ *
+ * Filtered callers (the Errors tab, `data/errors.ts`) deliberately keep
+ * calling `fetchIncidentFeed` directly: their filter object is exactly the
+ * shape that cannot be keyed this way, and their windows/filters vary per
+ * request anyway.
+ *
+ * Memoisation is per React request scope only — a route handler (the
+ * admin-digest cron calls `fetchTriageQueue`) gets a fresh fetch per call,
+ * which is what it wants.
+ */
+export const cachedIncidentFeed = cache((windowHours: number) =>
+  fetchIncidentFeed({ windowHours }),
+);
