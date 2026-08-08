@@ -117,13 +117,26 @@ async function completeTaskImpl(
     } else {
       // If no assignment exists but player is on the team, create one and mark complete
       // Verify player is an active member on the same team
-      const { data: membership } = await supabase
+      // .single() reports "no such row" as PGRST116 rather than null data, so
+      // the two cases have to be told apart explicitly here. Discarding the
+      // error meant any read failure — an RLS denial, a timeout — told a player
+      // who IS on the team that they are not assigned to this task, and their
+      // completion was thrown away.
+      const { data: membership, error: membershipError } = await supabase
         .from('golf_team_members')
         .select('id')
         .eq('player_id', player.id)
         .eq('team_id', task.team_id)
         .eq('status', 'active')
         .single();
+
+      if (membershipError && (membershipError as { code?: string }).code !== 'PGRST116') {
+        await logServerError(
+          `[completeTask] membership read failed — would have told a rostered player they are not assigned: ${describeError(membershipError)}`,
+          { action: 'tasks.completeTask', playerId: player.id },
+        );
+        return { success: false, error: "Couldn't check your team membership just now. Please try again." };
+      }
 
       if (!membership) {
         return { success: false, error: 'You are not assigned to this task' };
@@ -1348,6 +1361,37 @@ async function createTaskFromTemplateImpl(
       dueDate = date.toISOString().split('T')[0] ?? null;
     }
 
+    // Resolve WHO this task is for BEFORE creating it.
+    //
+    // This used to run AFTER the insert, and it discarded the roster read's
+    // error. supabase-js resolves failures as { data: null, error }, so a
+    // failed roster read produced an empty playerIds, the `playerIds.length > 0`
+    // guard skipped every assignment, and the function returned success —
+    // leaving a task that exists and is assigned to nobody. A coach applies a
+    // template to the whole team, sees it succeed, and no player ever sees it.
+    // Same defect, and the same shape, as the announcements roster read.
+    //
+    // Resolved up front, a failure costs nothing: we return before any write.
+    let playerIds = assignToPlayerIds || [];
+
+    if (playerIds.length === 0 && template.default_assignee_type === 'all_players') {
+      const { data: teamMembers, error: teamMembersError } = await supabase
+        .from('golf_team_members')
+        .select('player_id')
+        .eq('team_id', teamId)
+        .eq('status', 'active');
+
+      if (teamMembersError) {
+        await logServerError(
+          `[createTaskFromTemplate] roster read failed — refusing to create a task assigned to nobody: ${describeError(teamMembersError)}`,
+          { action: 'tasks.createTaskFromTemplate' },
+        );
+        return { success: false, error: "Couldn't load your roster, so nothing was created. Please try again." };
+      }
+
+      playerIds = (teamMembers || []).map(tm => tm.player_id);
+    }
+
     // Create the task
     const { data: task, error: taskError } = await supabase
       .from('golf_tasks')
@@ -1370,19 +1414,6 @@ async function createTaskFromTemplateImpl(
       return { success: false, error: 'Failed to create task' };
     }
 
-    // Handle assignments based on assignee type
-    let playerIds = assignToPlayerIds || [];
-
-    if (playerIds.length === 0 && template.default_assignee_type === 'all_players') {
-      // Get all active team players
-      const { data: teamMembers } = await supabase
-        .from('golf_team_members')
-        .select('player_id')
-        .eq('team_id', teamId)
-        .eq('status', 'active');
-
-      playerIds = (teamMembers || []).map(tm => tm.player_id);
-    }
 
     // Create assignments
     if (playerIds.length > 0) {
