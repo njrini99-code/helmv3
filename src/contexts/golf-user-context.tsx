@@ -65,3 +65,17 @@ export function useGolfUser(): GolfUserData {
   }
   return ctx;
 }
+
+/**
+ * Same data, but null outside the provider instead of throwing.
+ *
+ * For components that live under the dashboard layout in the real app but are
+ * legitimately rendered bare elsewhere — a test asserting a component's static
+ * command list, a Storybook entry — and that only need this data to refine
+ * behaviour, never to function. `useGolfUser` keeps throwing, because a
+ * component that genuinely depends on the user is better off failing loudly
+ * than rendering something wrong.
+ */
+export function useGolfUserOptional(): GolfUserData | null {
+  return useContext(GolfUserContext);
+}

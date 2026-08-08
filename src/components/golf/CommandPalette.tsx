@@ -19,7 +19,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useGolfUser } from '@/contexts/golf-user-context';
+import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import { cn } from '@/lib/utils';
@@ -56,7 +56,15 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   const [data, setData] = useState<CommandPaletteData | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
   const router = useRouter();
-  const { teamId } = useGolfUser();
+  // OPTIONAL on purpose. This component is rendered without a provider by
+  // surface-registry.test.ts, which reads its static command list to prove the
+  // palette's labels match the canonical registry — a test that has nothing to
+  // do with the signed-in user. Requiring the context here turned that
+  // assertion into `useGolfUser must be used within GolfUserProvider`.
+  //
+  // Outside a provider there is no active team, so the cache below simply never
+  // invalidates — which is correct: there is no team to switch away from.
+  const teamId = useGolfUserOptional()?.teamId;
 
   // The session cache below is keyed on the ACTIVE TEAM.
   //
