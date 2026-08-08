@@ -190,13 +190,23 @@ async function createFocusAreaImpl(
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (teamId) {
-      const { data: membership } = await supabase
+      const { data: membership, error: membershipError } = await supabase
         .from('golf_team_members')
         .select('id')
         .eq('team_id', teamId)
         .eq('player_id', data.player_id)
         .eq('status', 'active')
         .maybeSingle();
+
+      // Same shape: deny, but do not blame the roster for an outage. A
+      // discarded error told the coach this player is not on their team.
+      if (membershipError) {
+        await logServerError(
+          `[development] roster check failed — denying, but this is an outage not a roster fact: ${describeError(membershipError)}`,
+          { action: 'development.rosterCheck', featureArea: 'development', playerId: data.player_id },
+        );
+        return { success: false, error: "Couldn't confirm this player is on your team. Please try again." };
+      }
 
       if (!membership) {
         return { success: false, error: 'Player is not an active member on your team' };
@@ -730,11 +740,24 @@ async function updateFocusAreaProgressImpl(
 
   // Ownership guard: look up the focus area's player and verify either the
   // player-self or a staff coach is making the update.
-  const { data: focusArea } = await supabase
+  const { data: focusArea, error: focusAreaError } = await supabase
     .from('golf_player_focus_areas')
     .select('player_id, progress_notes, status')
     .eq('id', id)
     .maybeSingle();
+
+  // Failing closed here is right — an ownership check that could not run must
+  // never grant access. What was wrong is the REASON given: a discarded error
+  // fell into "Focus area not found", so an outage told a coach the focus area
+  // they are looking at does not exist. Absent and unreadable are different
+  // answers, and only one of them is "not found".
+  if (focusAreaError) {
+    await logServerError(
+      `[development] focus-area ownership read failed — denying, but this is an outage not a missing record: ${describeError(focusAreaError)}`,
+      { action: 'development.focusAreaOwnership', featureArea: 'development' },
+    );
+    return { success: false, error: "Couldn't load this focus area. Please try again." };
+  }
 
   if (!focusArea?.player_id) {
     return { success: false, error: 'Focus area not found' };
@@ -833,11 +856,21 @@ async function completeFocusAreaImpl(
     return { success: false, error: 'Not authenticated' };
   }
 
-  const { data: focusArea } = await supabase
+  const { data: focusArea, error: focusAreaError } = await supabase
     .from('golf_player_focus_areas')
     .select('player_id, status')
     .eq('id', focusAreaId)
     .maybeSingle();
+
+  // Same ownership guard, same reasoning as above: deny on a failed read, but
+  // do not call an outage "not found".
+  if (focusAreaError) {
+    await logServerError(
+      `[development] focus-area ownership read failed — denying, but this is an outage not a missing record: ${describeError(focusAreaError)}`,
+      { action: 'development.focusAreaOwnership', featureArea: 'development' },
+    );
+    return { success: false, error: "Couldn't load this focus area. Please try again." };
+  }
 
   if (!focusArea?.player_id) {
     return { success: false, error: 'Focus area not found' };
@@ -923,11 +956,21 @@ async function reactivateFocusAreaImpl(
     return { success: false, error: 'Not authenticated' };
   }
 
-  const { data: focusArea } = await supabase
+  const { data: focusArea, error: focusAreaError } = await supabase
     .from('golf_player_focus_areas')
     .select('player_id, status')
     .eq('id', focusAreaId)
     .maybeSingle();
+
+  // Same ownership guard, same reasoning as above: deny on a failed read, but
+  // do not call an outage "not found".
+  if (focusAreaError) {
+    await logServerError(
+      `[development] focus-area ownership read failed — denying, but this is an outage not a missing record: ${describeError(focusAreaError)}`,
+      { action: 'development.focusAreaOwnership', featureArea: 'development' },
+    );
+    return { success: false, error: "Couldn't load this focus area. Please try again." };
+  }
 
   if (!focusArea?.player_id) {
     return { success: false, error: 'Focus area not found' };
@@ -1528,11 +1571,21 @@ async function recordFocusAreaOutcomeImpl(
   // Look up the focus area: we need its player (for the ownership guard), its
   // status (for the lifecycle guard), and its originating insight (the row
   // whose outcome we credit).
-  const { data: focusArea } = await supabase
+  const { data: focusArea, error: focusAreaError } = await supabase
     .from('golf_player_focus_areas')
     .select('player_id, from_insight_id, status')
     .eq('id', focusAreaId)
     .maybeSingle();
+
+  // Same ownership guard, same reasoning as above: deny on a failed read, but
+  // do not call an outage "not found".
+  if (focusAreaError) {
+    await logServerError(
+      `[development] focus-area ownership read failed — denying, but this is an outage not a missing record: ${describeError(focusAreaError)}`,
+      { action: 'development.focusAreaOwnership', featureArea: 'development' },
+    );
+    return { success: false, error: "Couldn't load this focus area. Please try again." };
+  }
 
   if (!focusArea?.player_id) {
     return { success: false, error: 'Focus area not found' };
