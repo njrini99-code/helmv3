@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { describeError } from '@/lib/utils/describe-error';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -526,11 +527,26 @@ async function checkInBaseballPlayerImpl(
   if (!user) return { success: false, error: 'Not authenticated' };
 
   // Only coaches can check in players
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();
+
+  // Denying on a failed read is right and is kept — a coach check that could
+  // not run must never grant access. What was wrong is the reason: a discarded
+  // error told a coach standing at the field, checking players in, that they
+  // are "only coaches can…" — i.e. that they are not a coach.
+  //
+  // .single() reports no-row as PGRST116 rather than null data, so the genuine
+  // not-a-coach case is separated and still fires unchanged.
+  if (coachError && (coachError as { code?: string }).code !== 'PGRST116') {
+    await logServerError(
+      `[baseball calendar] coach lookup failed — denying, but this is an outage not a permissions problem: ${describeError(coachError)}`,
+      { action: 'baseball.calendar.coachGate', featureArea: 'calendar' },
+    );
+    return { success: false, error: "Couldn't confirm your coach access just now. Please try again." };
+  }
 
   if (!coach) return { success: false, error: 'Only coaches can check in players' };
 
@@ -566,11 +582,26 @@ async function uncheckInBaseballPlayerImpl(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Not authenticated' };
 
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();
+
+  // Denying on a failed read is right and is kept — a coach check that could
+  // not run must never grant access. What was wrong is the reason: a discarded
+  // error told a coach standing at the field, checking players in, that they
+  // are "only coaches can…" — i.e. that they are not a coach.
+  //
+  // .single() reports no-row as PGRST116 rather than null data, so the genuine
+  // not-a-coach case is separated and still fires unchanged.
+  if (coachError && (coachError as { code?: string }).code !== 'PGRST116') {
+    await logServerError(
+      `[baseball calendar] coach lookup failed — denying, but this is an outage not a permissions problem: ${describeError(coachError)}`,
+      { action: 'baseball.calendar.coachGate', featureArea: 'calendar' },
+    );
+    return { success: false, error: "Couldn't confirm your coach access just now. Please try again." };
+  }
 
   if (!coach) return { success: false, error: 'Only coaches can manage check-ins' };
 
