@@ -29,6 +29,32 @@ function getErrorMessage(error: string): string {
   return error;
 }
 
+
+/**
+ * One reload per tab. sessionStorage rather than component state, because the
+ * reload itself destroys state — without this the guard would reset on every
+ * pass and a genuinely broken deploy would loop the sign-in screen.
+ */
+const STALE_BUNDLE_RELOAD_KEY = 'golf.signin.staleBundleReloaded';
+
+function hasReloadedForStaleBundle(): boolean {
+  try {
+    return window.sessionStorage.getItem(STALE_BUNDLE_RELOAD_KEY) === '1';
+  } catch {
+    // Private mode / storage disabled — treat as "already reloaded" so we show
+    // the message rather than risk a loop we cannot track.
+    return true;
+  }
+}
+
+function markReloadedForStaleBundle(): void {
+  try {
+    window.sessionStorage.setItem(STALE_BUNDLE_RELOAD_KEY, '1');
+  } catch {
+    /* nothing to do — hasReloadedForStaleBundle() fails closed */
+  }
+}
+
 export function GolfSignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -177,12 +203,54 @@ export function GolfSignInForm() {
         router.push(`/golf/welcome?next=${encodeURIComponent(destination)}`);
       }
     } catch (err) {
+      // "An unexpected response was received from the server" is Next's message
+      // for a Server Action whose response it could not parse. It is NOT a
+      // login failure — nothing is wrong with the account or the password — but
+      // the screen said "An unexpected error occurred. Please try again.", and
+      // pressing the same button again reproduces it.
+      //
+      // Seen in production on 2026-08-07 at 17:35: a Guilford player on the iOS
+      // app (HelmSportsLabsApp), on a page load that transferred ZERO bytes,
+      // i.e. served entirely from cache.
+      //
+      // THE CAUSE IS NOT ESTABLISHED. The obvious candidate is deployment skew
+      // — Server Action ids change on every deploy — but Vercel Skew Protection
+      // IS enabled on this project at 7 days (verified against the authenticated
+      // API), so that should already be handled. Other candidates that produce
+      // the same message: a service worker answering the action POST with an
+      // HTML document, or the action returning a non-RSC response.
+      //
+      // What is true regardless of which it is: the client is holding something
+      // it cannot use, and one reload replaces it. That is why this recovers
+      // without claiming to know why it broke.
+      const message = err instanceof Error ? err.message : String(err);
+      const bundleIsStale =
+        /unexpected response was received from the server/i.test(message) ||
+        /failed to find server action/i.test(message);
+
+      if (bundleIsStale && !hasReloadedForStaleBundle()) {
+        markReloadedForStaleBundle();
+        logError(
+          err instanceof Error ? err : new Error(message),
+          { component: 'GolfSignInForm', action: 'loginAction.staleBundle', sport: 'golf' },
+          'low',
+        );
+        // Guarded by the session flag above so a genuinely broken deploy cannot
+        // put the sign-in screen into a reload loop.
+        window.location.reload();
+        return;
+      }
+
       logError(
         err instanceof Error ? err : new Error(String(err)),
         { component: 'GolfSignInForm', action: 'loginAction', sport: 'golf' },
         'high'
       );
-      setError('An unexpected error occurred. Please try again.');
+      setError(
+        bundleIsStale
+          ? 'The app updated in the background. Please try signing in once more.'
+          : 'An unexpected error occurred. Please try again.',
+      );
       setIsLoading(false);
     }
     // Note: We don't set isLoading to false on success because
