@@ -138,13 +138,30 @@ async function loadEventFacts(
   nowIso: string,
   horizonIso: string,
 ): Promise<FactEvent[]> {
-  const { data: events } = await db
+  // The header above says an empty source "degrades gracefully — the
+  // corresponding rules simply produce nothing". That is right for a source
+  // that is genuinely empty, and wrong for one that FAILED: supabase-js
+  // resolves errors as { data: null, error }, so a failed read produces the
+  // same empty array and a whole category of operational signal silently
+  // stops firing. The coach sees a quieter dashboard than reality and has no
+  // way to know a rule never got its facts.
+  //
+  // Degrading stays — one dead source must not take down the whole signals
+  // run — but it no longer degrades in silence.
+  const { data: events, error: eventsError } = await db
     .from('baseball_events')
     .select('id, title, event_type, start_time, is_mandatory')
     .eq('team_id', teamId)
     .eq('is_mandatory', true)
     .gte('start_time', nowIso)
     .lte('start_time', horizonIso);
+  if (eventsError) {
+    await logServerError(
+      `[operationalSignals] mandatory-event facts failed to load — those signals will not fire: ${describeError(eventsError)}`,
+      { action: 'baseball.operationalSignals.loadEventFacts', featureArea: 'coachhelm', teamId },
+    );
+    return [];
+  }
   const rows = (events ?? []) as Array<{
     id: string;
     title: string;
@@ -156,10 +173,20 @@ async function loadEventFacts(
 
   // Batch the ack rows for just these events.
   const ids = rows.map((e) => e.id);
-  const { data: acks } = await db
+  const { data: acks, error: acksError } = await db
     .from('baseball_event_acknowledgements')
     .select('event_id, user_id')
     .in('event_id', ids);
+  // A failed ack read is the more misleading of the two: every event then
+  // looks unacknowledged by everyone, which is a claim about the players
+  // rather than about the query.
+  if (acksError) {
+    await logServerError(
+      `[operationalSignals] acknowledgement facts failed to load — events will look unacknowledged: ${describeError(acksError)}`,
+      { action: 'baseball.operationalSignals.loadEventFacts', featureArea: 'coachhelm', teamId },
+    );
+    return [];
+  }
   const ackByEvent = new Map<string, string[]>();
   for (const a of (acks ?? []) as Array<{ event_id: string; user_id: string }>) {
     const arr = ackByEvent.get(a.event_id) ?? [];
