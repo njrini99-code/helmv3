@@ -6,8 +6,10 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import {
-  getUserBusyPeriods,
+  getUserBusyPeriodsWithStatus,
   findCommonAvailability,
   periodsOverlap,
   getStartOfWeek,
@@ -34,6 +36,17 @@ export interface ConflictResult {
     };
   }>;
   suggestedTimes: Array<{ start: Date; end: Date }>;
+  /**
+   * A read this answer depends on FAILED, so "no conflict" is not a finding —
+   * it is the absence of one. The UI must say the check could not run rather
+   * than showing an all-clear.
+   *
+   * This is the shortest path to a false all-clear in the whole scheduler: the
+   * attendee read below returned early with `hasConflict: false` before
+   * availability.ts was ever entered, so ONE failed query told a coach that
+   * EVERY attendee was free.
+   */
+  partial?: boolean;
 }
 
 interface ConflictCheckOptions {
@@ -69,11 +82,21 @@ export async function checkEventConflicts(
   const conflicts: ConflictResult['conflicts'] = [];
 
   // Get player details and user IDs
-  const { data: players } = await supabase
+  const { data: players, error: playersError } = await supabase
     .from('golf_players')
     .select('id, user_id, first_name, last_name, avatar_url')
     .in('id', attendeePlayerIds);
 
+  if (playersError) {
+    await logServerError(
+      `[conflicts] attendee read failed; the conflict check could not run: ${describeError(playersError)}`,
+      { action: 'calendar.checkEventConflicts', featureArea: 'calendar' },
+      'warning',
+    );
+    return { hasConflict: false, conflicts: [], suggestedTimes: [], partial: true };
+  }
+
+  // A genuinely empty attendee list is a real answer: nobody to conflict with.
   if (!players || players.length === 0) {
     return {
       hasConflict: false,
@@ -82,18 +105,21 @@ export async function checkEventConflicts(
     };
   }
 
+  let partial = false;
+
   const userIds = players.map(p => p.user_id).filter(Boolean) as string[];
 
   // Check each user for conflicts
   for (const player of players) {
     if (!player.user_id) continue;
 
-    const busyPeriods = await getUserBusyPeriods(
+    const { periods: busyPeriods, partial: playerPartial } = await getUserBusyPeriodsWithStatus(
       player.user_id,
       proposedStart,
       proposedEnd,
       supabase
     );
+    if (playerPartial) partial = true;
 
     // Filter out the event being edited
     const relevantPeriods = busyPeriods.filter(p => p.eventId !== excludeEventId);
@@ -163,6 +189,9 @@ export async function checkEventConflicts(
     hasConflict: conflicts.length > 0,
     conflicts,
     suggestedTimes,
+    // Only ever true when a read failed. A clean run omits it, so existing
+    // callers that never look at it behave exactly as before.
+    ...(partial ? { partial: true } : {}),
   };
 }
 
