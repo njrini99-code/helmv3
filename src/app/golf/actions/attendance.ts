@@ -442,12 +442,27 @@ async function bulkCheckInImpl(
 
     // Restrict the target set to active members of this event's team so a
     // coach of team A can't write attendance rows against team B's players.
-    const { data: teamPlayers } = await supabase
+    const { data: teamPlayers, error: teamPlayersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', authz.event.team_id)
       .eq('status', 'active')
       .in('player_id', playerIds);
+
+    // This read decides who may be written to, so an empty result correctly
+    // denies everyone — that part is kept. What was wrong is what a FAILED
+    // read then reported: `success: true` with every player counted as a
+    // failure, which reads to the coach as "none of these players are on your
+    // team" when the truth is that we could not check. A coach checking in the
+    // squad before a match would see nobody check in, and no reason why.
+    if (teamPlayersError) {
+      await logServerError(
+        `[bulkCheckIn] roster read failed — reported as though the players were not on the team: ${describeError(teamPlayersError)}`,
+        { action: 'attendance.bulkCheckIn', featureArea: 'calendar' },
+      );
+      return { success: false, error: "Couldn't confirm your roster, so nobody was checked in. Please try again." };
+    }
+
     const allowedPlayerIds = (teamPlayers ?? [])
       .map((m) => m.player_id)
       .filter((id): id is string => Boolean(id));
@@ -643,11 +658,20 @@ async function getAttendanceReportImpl(
         new Set((rows ?? []).map((r) => r.player_id).filter(Boolean)),
       );
       if (playerIds.length > 0) {
-        const { data: members } = await supabase
+        const { data: members, error: membersError } = await supabase
           .from('golf_team_members')
           .select('player_id, jersey_number')
           .eq('team_id', event.team_id)
           .in('player_id', playerIds);
+        // Cosmetic on its own — a failure just drops jersey numbers from the
+        // panel — so it does not take the page down, but it should not vanish
+        // without trace either.
+        if (membersError) {
+          await logServerError(
+            `[attendance] jersey lookup failed — numbers will be missing from the panel: ${describeError(membersError)}`,
+            { action: 'attendance.jerseyLookup', featureArea: 'calendar' },
+          );
+        }
         for (const m of members ?? []) {
           jerseyByPlayer.set(m.player_id as string, (m.jersey_number as number | null) ?? null);
         }
