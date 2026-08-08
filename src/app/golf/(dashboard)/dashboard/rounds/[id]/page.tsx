@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import { Metadata } from 'next';
@@ -89,7 +91,17 @@ export default async function RoundDetailPage({
     .eq('id', id)
     .maybeSingle();
 
-  if (error || !round) {
+  // `error || !round` collapsed two different answers into a 404. A round that
+  // does not exist is genuinely not found; a round we failed to READ is not.
+  if (error) {
+    await logServerError(
+      `[round detail] round read failed — would have 404'd a round that exists: ${describeError(error)}`,
+      { action: 'roundDetail.round', featureArea: 'round_tracking', roundId: id },
+    );
+    throw new Error("Couldn't load this round. Please try again.");
+  }
+
+  if (!round) {
     notFound();
   }
 
@@ -109,12 +121,26 @@ export default async function RoundDetailPage({
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (teamId) {
-      const { data: teamMembership } = await supabase
+      const { data: teamMembership, error: membershipError } = await supabase
         .from('golf_team_members')
         .select('id')
         .eq('team_id', teamId)
         .eq('player_id', roundData.player_id)
         .maybeSingle();
+
+      // This read is an ACCESS decision, so failing closed is correct and is
+      // kept — a failed check must never grant access. What was wrong is that
+      // it failed closed SILENTLY: `isCoach` stayed false and the coach was
+      // redirected to the dashboard with no explanation, for their own
+      // player's round. Deny, but say we could not check, and record it.
+      if (membershipError) {
+        await logServerError(
+          `[round detail] coach access check failed — denying access, but this is an outage and not a permission problem: ${describeError(membershipError)}`,
+          { action: 'roundDetail.coachAccessCheck', featureArea: 'round_tracking', roundId: id },
+        );
+        throw new Error("Couldn't verify your access to this round. Please try again.");
+      }
+
       isCoach = !!teamMembership;
     }
   }

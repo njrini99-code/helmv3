@@ -609,8 +609,16 @@ async function getPlayerStatsDirectActionImpl(
       }
     }
 
-    // Get all completed rounds
-    const { data: rounds } = await supabase
+    // Get all completed rounds.
+    //
+    // The early return below answers `success: true` with roundsPlayed: 0 and
+    // every average null — which is the correct answer for a player who has
+    // genuinely never posted a round, and a lie for one whose rounds we simply
+    // failed to read. supabase-js resolves errors as { data: null, error }, so
+    // those two produced the identical payload, and the stats page stated the
+    // second as confidently as the first. Coaches read scoring averages off
+    // this to set a lineup.
+    const { data: rounds, error: roundsError } = await supabase
       .from('golf_rounds')
       .select(`
         total_score,
@@ -624,6 +632,14 @@ async function getPlayerStatsDirectActionImpl(
       .eq('player_id', targetPlayerId)
       .eq('status', 'completed')
       .not('total_score', 'is', null);
+
+    if (roundsError) {
+      await logServerError(
+        `[getPlayerStatsDirect] rounds read failed — would have reported this player as having zero rounds: ${describeError(roundsError)}`,
+        { action: 'stats.getPlayerStatsDirect', featureArea: 'stats', playerId: targetPlayerId },
+      );
+      return { success: false, error: "Couldn't load these stats. Please try again." };
+    }
 
     if (!rounds || rounds.length === 0) {
       return {
