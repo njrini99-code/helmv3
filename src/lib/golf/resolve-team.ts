@@ -2,6 +2,35 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 
 /**
+ * Why this is `console`, and not the Bridge logger.
+ *
+ * `@/lib/server-error-logger` reaches `node:async_hooks`, and this module is
+ * genuinely part of the CLIENT bundle: the round-review page
+ * (dashboard/rounds/[id]/review/page.tsx, a 'use client' component) calls
+ * `resolveCoachTeamId` with a browser Supabase client. Importing the logger
+ * here fails the webpack build outright — which is exactly what happened, and
+ * what CI caught.
+ *
+ * So these failures land in the Vercel runtime log rather than in admin_events.
+ * That is a real downgrade in queryability and worth closing later — either by
+ * moving the client page off this resolver, or by returning a typed result and
+ * letting the server callers log. It is NOT a downgrade against what was here
+ * before, which was nothing at all: every one of these reads discarded its
+ * error in silence.
+ *
+ * Server-guarded so a browser console is never filled with server diagnostics.
+ */
+function noteResolveTeamFailure(message: string, error: unknown): void {
+  if (typeof window !== 'undefined') return;
+  const detail =
+    error && typeof error === 'object' && 'message' in error
+      ? String((error as { message?: unknown }).message)
+      : String(error);
+  console.warn(`[resolve-team] ${message}: ${detail}`);
+}
+
+
+/**
  * A typed Supabase client. Helpers in this module take an already-created client
  * as a parameter so they stay framework-neutral and reuse the caller's
  * request-scoped client. Both the server client (`createServerClient`) and the
@@ -53,21 +82,49 @@ export async function getCoachTeamSwitchContext(
   if (!coachId) return { teams: [], isHeadCoach: false, canSwitch: false };
 
   // 1. Canonical: golf_team_coach_staff (the source of truth for multi-team coaches).
-  const { data: staffRows } = await supabase
+  //
+  // EVERY read in this file binds its error, and none did before. This file has
+  // no logger of its own historically, so a failed read here produced no staff
+  // rows, no head_coach role, and a silent `canSwitch: false` — the Men's/
+  // Women's toggle simply vanished from the shell with nothing said. Worse, the
+  // empty result fell through to the ORG branch below, which lists teams the
+  // coach may not be staffed on, so the switcher could show teams that the
+  // write path would then refuse.
+  const { data: staffRows, error: staffRowsError } = await supabase
     .from('golf_team_coach_staff')
     .select('team_id, role')
     .eq('coach_id', coachId);
+
+  if (staffRowsError) {
+    noteResolveTeamFailure(
+      `staff read failed for coach ${coachId}; the team switcher will be hidden`,
+      staffRowsError,
+    );
+    // Hiding the switcher is the safe answer, but do NOT continue into the org
+    // fallback — "this coach has no staff rows" has not been established.
+    return { teams: [], isHeadCoach: false, canSwitch: false };
+  }
 
   const rows = staffRows ?? [];
   const staffTeamIds = [...new Set(rows.map((r) => r.team_id).filter(Boolean))] as string[];
   const isHeadCoach = rows.some((r) => r.role === 'head_coach');
 
   if (staffTeamIds.length > 0) {
-    const { data: teams } = await supabase
+    const { data: teams, error: teamsError } = await supabase
       .from('golf_teams')
       .select('id, name, gender')
       .in('id', staffTeamIds)
       .order('name', { ascending: true });
+
+    if (teamsError) {
+      // The coach IS staffed on these teams — only their names are missing. An
+      // empty list would hide a switcher we already know they are entitled to.
+      noteResolveTeamFailure(
+      `team list read failed for coach ${coachId}; the switcher will be hidden despite ${staffTeamIds.length} staffed teams`,
+      teamsError,
+    );
+    }
+
     const teamList = (teams ?? []) as CoachTeamOption[];
     return {
       teams: teamList,
@@ -79,11 +136,19 @@ export async function getCoachTeamSwitchContext(
   // 2. Fallback: org-based lookup (for coaches not yet in golf_team_coach_staff).
   //    Display-only — no staff rows means no head_coach role, so never switchable.
   if (organizationId) {
-    const { data: teams } = await supabase
+    const { data: teams, error: orgTeamsError } = await supabase
       .from('golf_teams')
       .select('id, name, gender')
       .eq('organization_id', organizationId)
       .order('name', { ascending: true });
+
+    if (orgTeamsError) {
+      noteResolveTeamFailure(
+      `org team list read failed for coach ${coachId}`,
+      orgTeamsError,
+    );
+    }
+
     return { teams: (teams ?? []) as CoachTeamOption[], isHeadCoach: false, canSwitch: false };
   }
 
@@ -129,31 +194,74 @@ export async function validateCoachTeamAccess(
   organizationId: string | null | undefined,
 ): Promise<boolean> {
   // 1. Canonical: explicit staff row for THIS team.
-  const { data: staffRow } = await supabase
+  const { data: staffRow, error: staffRowError } = await supabase
     .from('golf_team_coach_staff')
     .select('id')
     .eq('coach_id', coachId)
     .eq('team_id', teamId)
     .maybeSingle();
 
+  // Denying on a failed read is right — an authorization check that could not
+  // run must not pass. But it was also SILENT, and the consequence is not just
+  // a refusal: resolveCoachActiveTeamId treats `false` as "invalid cookie" and
+  // seats the coach on their default team instead. For a program head staffed
+  // on both squads that means the calendar, roster and every subsequent WRITE
+  // silently move to the other team, and RLS permits it because they really are
+  // staffed there. Nothing surfaced; nothing was logged.
+  if (staffRowError) {
+    noteResolveTeamFailure(
+      `staff check failed for coach ${coachId} on team ${teamId}; access denied and the coach will be moved to their default team`,
+      staffRowError,
+    );
+    return false;
+  }
+
   if (staffRow) return true;
 
   // 2. Legacy-only fallback — ONLY when the coach has zero staff rows anywhere.
   //    A staffed coach can never reach a non-staffed sibling team via the org,
   //    which is what keeps the men's/women's wall intact.
-  const { data: anyStaff } = await supabase
+  const { data: anyStaff, error: anyStaffError } = await supabase
     .from('golf_team_coach_staff')
     .select('id')
     .eq('coach_id', coachId)
     .limit(1);
 
+  // THIS ONE FAILED OPEN, and it is the only read in the file that did.
+  //
+  // The legacy branch exists for a pre-backfill coach who has NO staff rows
+  // anywhere; it accepts any team in their organization. A failed read left
+  // `anyStaff` null, which is indistinguishable from "no rows", so the branch
+  // ran for a fully-staffed coach — collapsing the men's/women's wall this
+  // function exists to enforce. A men's-only assistant carrying a stale or
+  // hand-edited cookie would have been granted the women's team.
+  //
+  // "The coach has no staff rows" is now something that must be READ, not
+  // something inferred from a failure.
+  if (anyStaffError) {
+    noteResolveTeamFailure(
+      `legacy staff check failed for coach ${coachId}; refusing rather than falling back to org-wide access`,
+      anyStaffError,
+    );
+    return false;
+  }
+
   if ((!anyStaff || anyStaff.length === 0) && organizationId) {
-    const { data: team } = await supabase
+    const { data: team, error: teamError } = await supabase
       .from('golf_teams')
       .select('id')
       .eq('id', teamId)
       .eq('organization_id', organizationId)
       .maybeSingle();
+
+    if (teamError) {
+      noteResolveTeamFailure(
+      `legacy org check failed for coach ${coachId} on team ${teamId}`,
+      teamError,
+    );
+      return false;
+    }
+
     if (team) return true;
   }
 
@@ -197,17 +305,35 @@ export async function resolveCoachActiveTeamId(
   // coach↔team relationship). is_primary first, then the oldest staff row
   // ("the coach's first team").
   if (coachId) {
-    const { data: staffRows } = await supabase
+    const { data: staffRows, error: staffRowsError } = await supabase
       .from('golf_team_coach_staff')
       .select('team_id, is_primary')
       .eq('coach_id', coachId)
       .order('is_primary', { ascending: false })
       .order('created_at', { ascending: true });
+
+    // A failed read here was indistinguishable from "this coach is staffed on
+    // nothing", so control fell to the ORG resolver — which ranks teams by
+    // active-player count. At Shenandoah that is 10 men over 6 women, so the
+    // women's head coach was silently seated on the men's team, saw the wrong
+    // roster and calendar stated as fact, and every create action wrote the
+    // men's team_id.
+    //
+    // Returning null instead sends them to the roster page, which is visible
+    // and recoverable. Guessing a team is neither.
+    if (staffRowsError) {
+      noteResolveTeamFailure(
+      `default team read failed for coach ${coachId}; refusing to guess a team rather than falling back to the org's member-ranked pick`,
+      staffRowsError,
+    );
+      return null;
+    }
+
     const staffTeamId = staffRows?.[0]?.team_id;
     if (staffTeamId) return staffTeamId;
   }
 
-  // No staff rows → original deterministic org-based resolution.
+  // Genuinely no staff rows → original deterministic org-based resolution.
   return resolveCoachTeamId(supabase, organizationId, coachId);
 }
 
