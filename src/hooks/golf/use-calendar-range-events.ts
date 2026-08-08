@@ -274,7 +274,9 @@ export function useCalendarRangeEvents({
   // Loaded interval bookkeeping lives in a ref — it never drives rendering
   // directly, only whether the next navigation needs a fetch.
   const loadedRef = useRef<LoadedInterval[] | null>(null);
-  if (loadedRef.current === null) {
+
+  /** The server-loaded window, as a fresh interval list. */
+  const freshLoadedWindow = (): LoadedInterval[] => {
     const now = Date.now();
     const start = loadedStart
       ? new Date(loadedStart).getTime()
@@ -282,7 +284,44 @@ export function useCalendarRangeEvents({
     const end = loadedEnd
       ? new Date(loadedEnd).getTime()
       : now + 3 * MONTH_MS - SERVER_WINDOW_MARGIN_MS;
-    loadedRef.current = [{ start, end }];
+    return [{ start, end }];
+  };
+
+  if (loadedRef.current === null) {
+    loadedRef.current = freshLoadedWindow();
+  }
+
+  // SWITCHING TEAMS HAS TO CLEAR BOTH PIECES OF STATE.
+  //
+  // Neither was reset, and they failed in two different directions:
+  //
+  //   `eventVersions` is a merge map keyed by event id, and the initialEvents
+  //   effect only ever ADDS. Toggling from the men's team to the women's kept
+  //   every men's event in the map, so the women's calendar rendered both
+  //   squads at once — no error, just a calendar quietly showing a program
+  //   that does not exist.
+  //
+  //   `loadedRef` initialised once, on first mount, and was never rebuilt. So
+  //   after the toggle the hook believed the new team's ±3-month window was
+  //   already loaded and SKIPPED the fetch. A month the coach had already
+  //   visited under the old team then rendered only the OLD team's events —
+  //   the worse of the two, because it looks like a complete answer.
+  //
+  // Reset during render rather than in an effect: an effect runs after paint,
+  // so the coach would see the other squad's schedule flash up first, on a
+  // surface they use to decide who travels.
+  const teamIdRef = useRef(teamId);
+  if (teamIdRef.current !== teamId) {
+    teamIdRef.current = teamId;
+    loadedRef.current = freshLoadedWindow();
+    // Any response still in flight belongs to the previous team.
+    fetchEpochRef.current += 1;
+    genRef.current += 1;
+    const gen = genRef.current;
+    const next = new Map<string, VersionedEvent>();
+    for (const ev of initialEvents) next.set(ev.id, { event: ev, gen });
+    appliedInitialEventsSignatureRef.current = signatureOfEvents(initialEvents);
+    setEventVersions(next);
   }
 
   const visibleStartMs = visibleStart.getTime();
