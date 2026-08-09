@@ -16,6 +16,7 @@ import noBannedColor from "./eslint-rules/no-banned-color.mjs";
 import noArbitraryRadius from "./eslint-rules/no-arbitrary-radius.mjs";
 import noArbitraryBgWhite from "./eslint-rules/no-arbitrary-bg-white.mjs";
 import noUncheckedSupabaseError from "./eslint-rules/no-unchecked-supabase-error.mjs";
+import noEmptyCollectionOnError from "./eslint-rules/no-empty-collection-on-error.mjs";
 
 // Downgrade every `error`-severity rule in a flat-config rules object to
 // `warn`. Used by W0 to ship the jsx-a11y recommended set + the six
@@ -67,6 +68,7 @@ export default tseslint.config(
           "no-arbitrary-radius": noArbitraryRadius,
           "no-arbitrary-bg-white": noArbitraryBgWhite,
           "no-unchecked-supabase-error": noUncheckedSupabaseError,
+          "no-empty-collection-on-error": noEmptyCollectionOnError,
         },
       },
     },
@@ -105,6 +107,9 @@ export default tseslint.config(
       // the existing 1,111 can be paid down directory by directory, and the
       // baseline lowered as they are. Flip this to "warn" once it reaches 0.
       "helm/no-unchecked-supabase-error": "off",
+      // Enforced by scripts/fail-open-audit.mjs, same reason as the rule above:
+      // turning it on here would fail Lint on every PR until the debt is paid.
+      "helm/no-empty-collection-on-error": "off",
     },
   },
   {
