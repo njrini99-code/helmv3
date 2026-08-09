@@ -38,12 +38,42 @@ export default function ResetPasswordPage() {
           return;
         }
 
-        if (!session) {
-          setError('Invalid or expired reset link. Please request a new one.');
-          setSessionValid(false);
-        } else {
+        if (session) {
           setSessionValid(true);
+          return;
         }
+
+        // Consume the `token_hash` the reset email now carries.
+        //
+        // This page previously relied ENTIRELY on getSession() — i.e. on
+        // supabase-js having auto-parsed a session out of a URL fragment. Under
+        // this project's PKCE browser client that fragment never arrives, which
+        // is why baseball resets failed the same way golf's did.
+        //
+        // A token_hash needs no PKCE code_verifier, which matters because the
+        // link is minted server-side by admin.generateLink() and the recipient's
+        // browser therefore has no verifier to exchange with. Mirrors the golf
+        // reset page's branch exactly.
+        const url = new URL(window.location.href);
+        const tokenHash = url.searchParams.get('token_hash');
+        const type = url.searchParams.get('type');
+
+        if (tokenHash && type === 'recovery') {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            type: 'recovery',
+            token_hash: tokenHash,
+          });
+          if (verifyError) {
+            setError('Invalid or expired reset link. Please request a new one.');
+            setSessionValid(false);
+          } else {
+            setSessionValid(true);
+          }
+          return;
+        }
+
+        setError('Invalid or expired reset link. Please request a new one.');
+        setSessionValid(false);
       } catch {
         setError('An unexpected error occurred. Please try again.');
         setSessionValid(false);
