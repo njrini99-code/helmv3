@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { redirect } from 'next/navigation';
 import { GolfJoinTeamClient } from './golf-join-team-client';
 
@@ -26,11 +28,28 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   // push them through player onboarding — that path calls ensurePlayerRecord()
   // and would create a stray golf_players row. Send coaches to their own home
   // instead (dashboard if onboarded, coach onboarding otherwise).
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, onboarding_completed')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  // The `error` is READ, and this one fails CLOSED. Discarded, a failed read
+  // left `coach` null, so the guard the comment above describes silently did
+  // not fire: a coach clicking a team invite was walked through PLAYER
+  // onboarding, which calls ensurePlayerRecord() and writes a golf_players row
+  // for someone who is not a player. That is a row written on the strength of a
+  // read that never succeeded, and it is not self-correcting.
+  //
+  // `.maybeSingle()` reports "this user has no coach row" as
+  // { data: null, error: null }, so a genuine non-coach is unaffected.
+  if (coachError) {
+    await logServerError(
+      `[golf join] coach identity read failed for user ${user.id}; refusing to route rather than risk creating a stray player record: ${describeError(coachError)}`,
+      { action: 'golf.join.resolveIdentity', featureArea: 'teams' },
+    );
+    throw new Error('Failed to resolve your account');
+  }
 
   if (coach) {
     redirect(coach.onboarding_completed ? '/golf/dashboard' : '/golf/coach');
@@ -61,11 +80,22 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   const team = Array.isArray(teamRows) ? teamRows[0] : teamRows;
 
   // Get golf player record
-  const { data: player } = await supabase
+  const { data: player, error: playerError } = await supabase
     .from('golf_players')
     .select('id, first_name, last_name, graduation_year, onboarding_completed')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  // Same class: a failed read made an EXISTING player look brand new and sent
+  // them back through onboarding. A genuine first-timer still arrives here with
+  // { data: null, error: null } and takes that path correctly.
+  if (playerError) {
+    await logServerError(
+      `[golf join] player identity read failed for user ${user.id}; refusing to route rather than send an existing player back through onboarding: ${describeError(playerError)}`,
+      { action: 'golf.join.resolveIdentity', featureArea: 'teams' },
+    );
+    throw new Error('Failed to resolve your account');
+  }
 
   if (teamError || !team) {
     return (
