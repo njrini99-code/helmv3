@@ -444,10 +444,29 @@ async function createEnrichedAnnouncementImpl(input: {
 
       if (targetPlayerIds.length > 0) {
         // Get user_ids for target players
-        const { data: playerRows } = await supabase
+        // The `error` is READ. Discarded, a failure left playerRows null, the
+        // guard below fell through, and the ENTIRE email + push block was
+        // skipped — announcement created, targeted players never told, coach
+        // saw success.
+        //
+        // The comment further down already documents a PREVIOUS instance of
+        // this exact class in this same block (a coach-scoped read of
+        // public.users returning [] and "silently starving BOTH the email loop
+        // and the push below"). This read, one step earlier, still had the hole.
+        //
+        // Stays fire-and-forget: the announcement is real and visible in-app
+        // either way, so this logs rather than failing the action.
+        const { data: playerRows, error: playerRowsError } = await supabase
           .from('golf_players')
           .select('user_id')
           .in('id', targetPlayerIds);
+
+        if (playerRowsError) {
+          await logServerError(
+            `[createAnnouncement] recipient lookup failed for announcement ${announcementId}; ${targetPlayerIds.length} targeted player(s) were NOT notified: ${describeError(playerRowsError)}`,
+            { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements' },
+          );
+        }
 
         if (playerRows && playerRows.length > 0) {
           const userIds = playerRows.map(p => p.user_id);
