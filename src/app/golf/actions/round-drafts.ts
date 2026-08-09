@@ -239,7 +239,7 @@ async function saveRoundDraftImpl(
       roundId = updated.id;
     } else {
       // Check for existing draft first (using status filter for in_progress rounds)
-      const { data: existingDraft } = await supabase
+      const { data: existingDraft, error: existingDraftError } = await supabase
         .from('golf_rounds')
         .select('id')
         .eq('player_id', player.id)
@@ -247,6 +247,27 @@ async function saveRoundDraftImpl(
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      // The `error` is READ, and this one REFUSES. Discarded, a failed read
+      // looked like "this player has no draft", so the else-branch below INSERTED
+      // a second in-progress round. On an autosave path that means a transient
+      // blip mid-round spawns a duplicate draft and later saves can land on the
+      // wrong one, stranding the shots already entered against the first.
+      //
+      // It also bypassed the hasTrackedRoundData() guard entirely — the very
+      // check that exists so the draft writer never overlays a round that the
+      // tracked-shot flow now owns.
+      //
+      // Refusing is safe here: the caller retries on the next autosave tick, and
+      // `.maybeSingle()` still reports a genuine "no draft yet" as
+      // { data: null, error: null }, so a player's FIRST save still creates one.
+      if (existingDraftError) {
+        await logServerError(
+          `saveRoundDraft: in-progress draft lookup failed for player ${player.id}; refusing rather than creating a duplicate draft: ${existingDraftError.message}`,
+          { action: 'saveRoundDraft', featureArea: 'round_draft', playerId: player.id, userId: user.id },
+        );
+        return { success: false, error: 'Could not save your round just now. It will retry automatically.' };
+      }
 
       if (existingDraft) {
         if (await hasTrackedRoundData(existingDraft.id)) {
