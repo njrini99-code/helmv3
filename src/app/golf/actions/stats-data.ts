@@ -2633,11 +2633,28 @@ async function getCoachRosterStatsImpl(teamId: string): Promise<CoachRosterPlaye
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { data: teamMembers } = await supabase
+  const { data: teamMembers, error: teamMembersError } = await supabase
     .from('golf_team_members')
     .select('player_id')
     .eq('team_id', teamId)
     .eq('status', 'active');
+
+  // This function's return type is a bare array, so `[]` is the only thing it
+  // can say — and it means both "this team has no active players" and "the
+  // roster read failed". The coach's roster-stats view then renders an empty
+  // squad as a finding about their team.
+  //
+  // Throwing is right here rather than degrading: unlike a side panel, this IS
+  // the page's content, and the caller has an error boundary that offers a
+  // retry. An empty roster offers nothing.
+  if (teamMembersError) {
+    await logServerError(
+      `coach roster stats: roster read failed for team ${teamId}: ${describeError(teamMembersError)}`,
+      { action: 'stats.getCoachRosterStats', featureArea: 'stats' },
+      'error',
+    );
+    throw new Error("Couldn't load your roster's stats. Please try again.");
+  }
 
   const playerIds = teamMembers?.map(tm => tm.player_id) || [];
   if (playerIds.length === 0) return [];
