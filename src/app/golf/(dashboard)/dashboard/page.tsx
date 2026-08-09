@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import {
     getCachedCoachDashboardData,
@@ -236,18 +238,33 @@ export default async function GolfDashboardPage({
     // ── Player dashboard ──
     if (player) {
         // Get team via membership
-        let teamId: string | null = null;
-        try {
-            const { data: teamMember } = await supabase
-                .from('golf_team_members')
-                .select('team_id')
-                .eq('player_id', player.id)
-                .eq('status', 'active')
-                .maybeSingle();
-            teamId = teamMember?.team_id ?? null;
-        } catch {
-            // Network failure — proceed with null teamId
+        // This read used to be swallowed TWICE: a `try { } catch { }` that
+        // discarded the exception, and only `.data` destructured — so the
+        // supabase-js failure, which RESOLVES as { data: null, error } rather
+        // than throwing, never reached the catch anyway. Either way teamId
+        // became null, the hub fetch below was skipped by the `teamId ?` guard,
+        // and the page rendered as though the player is on no team.
+        //
+        // That is precisely what the comment below forbids, so it now obeys it:
+        // the failure surfaces to the route error boundary. A genuine new player
+        // is unaffected — `.maybeSingle()` reports "no membership row" as
+        // { data: null, error: null }, which is a real answer, not a failure.
+        const { data: teamMember, error: teamMemberError } = await supabase
+            .from('golf_team_members')
+            .select('team_id')
+            .eq('player_id', player.id)
+            .eq('status', 'active')
+            .maybeSingle();
+
+        if (teamMemberError) {
+            await logServerError(
+                `[player dashboard] team membership read failed for player ${player.id}; the dashboard would render as though they are on no team: ${describeError(teamMemberError)}`,
+                { action: 'golf.playerDashboard.resolveTeam', featureArea: 'teams' },
+            );
+            throw new Error('Failed to load your dashboard');
         }
+
+        const teamId: string | null = teamMember?.team_id ?? null;
 
         // P002/P426: a real DB/network outage must SURFACE to the route
         // error.tsx (RouteErrorBoundary) instead of being swallowed into a
