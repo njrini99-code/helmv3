@@ -113,10 +113,23 @@ export default async function TeamSettingsPage() {
     //
     // Readable under RLS without elevation: golf_teams_select admits a coach
     // staffed on the team, and these are exactly the teams they staff.
-    const { data: staffRows } = await supabase
+    const { data: staffRows, error: staffError } = await supabase
       .from('golf_team_coach_staff')
       .select('team_id')
       .eq('coach_id', coachData.id);
+
+    // The `error` is READ. Discarded, a failed read collapsed staffedIds to [],
+    // the two-squad join-code disambiguation never rendered, and the safety
+    // affordance the comment above describes disappeared silently — leaving
+    // exactly the situation it exists to prevent: a program head copying one
+    // code for both squads, with nothing on screen to flag it.
+    if (staffError) {
+      await logServerError(
+        `[team page] staffed-teams read failed for coach ${coachData.id}; the join-code disambiguation would silently not render: ${describeError(staffError)}`,
+        { action: 'golf.teamPage.resolveStaffedTeams', featureArea: 'teams' },
+      );
+      throw new Error('Failed to load team');
+    }
 
     const staffedIds = [...new Set((staffRows ?? []).map((r) => r.team_id).filter(Boolean))] as string[];
     const { data: programTeamRows } = staffedIds.length > 1
@@ -259,21 +272,42 @@ export default async function TeamSettingsPage() {
 
   const rosterPlayerIds = (teamMembers || []).map(tm => tm.player_id);
 
-  const { data: roster } = rosterPlayerIds.length > 0
+  const { data: roster, error: rosterError } = rosterPlayerIds.length > 0
     ? await supabase
         .from('golf_players')
         .select('id, first_name, last_name, avatar_url, handicap')
         .in('id', rosterPlayerIds)
         .order('last_name')
-    : { data: [] };
+    : { data: [], error: null };
+
+  // The `error` is READ. A ternary, so the unchecked-read ratchet never counted
+  // it — but a failure renders a team with no teammates on it to a player who
+  // has them.
+  if (rosterError) {
+    await logServerError(
+      `[team page] roster read failed for team ${teamMember.team_id}; the page would show a team with no players: ${describeError(rosterError)}`,
+      { action: 'golf.teamPage.loadRoster', featureArea: 'teams' },
+    );
+    throw new Error('Failed to load team');
+  }
 
   // Get recent announcements - column is 'body' not 'content'
-  const { data: announcementsRaw } = await supabase
+  const { data: announcementsRaw, error: announcementsError } = await supabase
     .from('golf_announcements')
     .select('id, title, body, created_at')
     .eq('team_id', teamMember.team_id)
     .order('created_at', { ascending: false })
     .limit(5);
+
+  // A failure here renders a team that has said nothing, which is how a player
+  // decides there is nothing to catch up on.
+  if (announcementsError) {
+    await logServerError(
+      `[team page] announcements read failed for team ${teamMember.team_id}; the page would claim the team has said nothing: ${describeError(announcementsError)}`,
+      { action: 'golf.teamPage.loadAnnouncements', featureArea: 'teams' },
+    );
+    throw new Error('Failed to load team');
+  }
 
   // Map 'body' to 'content' for component compatibility
   const announcements = (announcementsRaw ?? []).map(a => ({
