@@ -6,6 +6,8 @@ import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayAnnouncements } from '@/components/fairway/pages/announcements';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
   title: 'Team Announcements | Helm Sports',
@@ -90,6 +92,24 @@ export default async function GolfAnnouncementsPage() {
           .order('created_at', { ascending: false })
           .limit(200),
       ]);
+
+      // These two fill the compose form's recipient picker and document
+      // attachments. `|| []` turns a failed read into an empty one, so a coach
+      // opens "New announcement" to an empty recipient list and concludes the
+      // roster is gone — or, worse, sends to "everyone" from a list that
+      // silently contains nobody. The picker still renders (the page is worth
+      // more than the pickers), but the failure is now recorded.
+      for (const [dataset, failed] of [
+        ['roster', membersResult.error],
+        ['documents', docsResult.error],
+      ] as const) {
+        if (!failed) continue;
+        void logServerError(
+          `[announcements] ${dataset} read failed for team ${teamId}; that picker will render empty: ${describeError(failed)}`,
+          { action: 'announcements.composeData', featureArea: 'announcements' },
+          'warning',
+        );
+      }
 
       players = (membersResult.data || [])
         .map((m: any) => m.player) // eslint-disable-line @typescript-eslint/no-explicit-any
