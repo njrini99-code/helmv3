@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
@@ -43,8 +45,21 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
       : Promise.resolve(null),
     player?.id
       ? supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).eq('status', 'active').maybeSingle()
-      : Promise.resolve({ data: null }),
+      : Promise.resolve({ data: null, error: null }),
   ]);
+
+  // The `error` is READ. Discarded, a failed membership read left playerTeamId
+  // null, so teamId was null and a rostered player got the "no team yet" empty
+  // state on the page that tells them how they are getting to the tournament.
+  // `.maybeSingle()` reports a genuine no-row as { data: null, error: null }, so
+  // a player truly on no team still reaches that same state below.
+  if (playerTeamResult.error) {
+    await logServerError(
+      `[travel page] team membership read failed for player ${player?.id}; the page would claim they have no team: ${describeError(playerTeamResult.error)}`,
+      { action: 'golf.travelPage.resolveTeam', featureArea: 'travel' },
+    );
+    throw new Error('Failed to load travel');
+  }
 
   const playerTeamId = playerTeamResult.data?.team_id || null;
   const isCoach = !!coach && !!coachTeamId;
@@ -87,7 +102,7 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
   // cap so every trip is available to the client; the secondary `.order('id')`
   // is a STABLE tiebreaker that keeps page boundaries deterministic without
   // changing the primary departure_date-ascending order both forks expect.
-  const { data: itinerariesRaw } = await fetchAllRowsResult((from, to) =>
+  const { data: itinerariesRaw, error: itinerariesError } = await fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_travel_itineraries')
       .select('*')
@@ -96,6 +111,19 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
       .order('id', { ascending: true })
       .range(from, to),
   );
+
+  // The `error` is READ — the same defect the baseball travel page had (#1404).
+  // fetchAllRowsResult returns { data, error } and only `data` was taken, so a
+  // failed read produced the identical `[]` an empty history produces and the
+  // page told a team with trips booked that it has none. A team that genuinely
+  // has no trips still renders the honest empty list.
+  if (itinerariesError) {
+    await logServerError(
+      `[travel page] itinerary read failed for team ${teamId}; the page would claim there are no trips: ${describeError(itinerariesError)}`,
+      { action: 'golf.travelPage.listItineraries', featureArea: 'travel' },
+    );
+    throw new Error('Failed to load travel');
+  }
 
   // Resolve titles for any linked golf_events so the Fairway detail panel can
   // surface "Linked to: <event>" without a second client-side fetch. event_id is
