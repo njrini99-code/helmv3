@@ -138,11 +138,26 @@ export function FairwayQualifierLeaderboard({
     const supabase = createClient();
 
     async function loadCommittedSelections() {
-      const { data: q } = await supabase
+      const { data: q, error: qError } = await supabase
         .from('golf_qualifiers')
         .select('selection_state')
         .eq('id', qualifierId)
         .maybeSingle();
+
+      // A failed read gives the same null as "this qualifier has not been
+      // committed yet", so `!== 'selected'` is true either way and the
+      // committed travel squad vanishes from the leaderboard. Coaches pick
+      // travel squads off this screen — a selection that silently disappears
+      // reads as one that was never made.
+      //
+      // The selections read below already does this correctly via
+      // deriveCommittedSelections; the state read above was the half that got
+      // missed.
+      if (qError) {
+        console.warn('[qualifier leaderboard] selection-state read failed:', qError.message);
+        if (!cancelled) setCommittedSelections(null);
+        return;
+      }
 
       if (q?.selection_state !== 'selected') {
         if (!cancelled) setCommittedSelections(null);
