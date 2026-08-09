@@ -147,11 +147,26 @@ async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) 
 
     // Verify user is a coach. The travel table's created_by column references
     // golf_coaches.id, so use the trusted row from auth instead of client input.
-    const { data: coach } = await supabase
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    // Refusing on a failed read is right; calling the person a
+    // non-coach is not. `.maybeSingle()` returns null data with a
+    // null error when there genuinely is no coach row, so an error
+    // here is the read falling over — and "Only coaches can manage
+    // travel itineraries" tells a coach they are not one, on the
+    // surface they use to book a trip.
+    if (coachError) {
+      await logServerError(
+        `travel coach lookup failed: ${describeError(coachError)}`,
+        { action: 'travel.resolveCoach', featureArea: 'travel' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't verify your coach access just now. Please try again." };
+    }
     if (!coach) {
       return { success: false, error: 'Only coaches can manage travel itineraries' };
     }
@@ -249,21 +264,48 @@ async function updateGolfTravelItineraryImpl(input: UpdateTravelItineraryInput) 
     }
 
     // Verify user is a coach
-    const { data: coach } = await supabase
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    // Refusing on a failed read is right; calling the person a
+    // non-coach is not. `.maybeSingle()` returns null data with a
+    // null error when there genuinely is no coach row, so an error
+    // here is the read falling over — and "Only coaches can manage
+    // travel itineraries" tells a coach they are not one, on the
+    // surface they use to book a trip.
+    if (coachError) {
+      await logServerError(
+        `travel coach lookup failed: ${describeError(coachError)}`,
+        { action: 'travel.resolveCoach', featureArea: 'travel' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't verify your coach access just now. Please try again." };
+    }
     if (!coach) {
       return { success: false, error: 'Only coaches can manage travel itineraries' };
     }
 
     // Verify itinerary belongs to coach's team
-    const { data: itineraryRecord } = await supabase
+    const { data: itineraryRecord, error: itineraryRecordError } = await supabase
       .from('golf_travel_itineraries')
       .select('team_id')
       .eq('id', validatedData.id)
       .maybeSingle();
+
+    // A failed read is not a deleted itinerary. Telling a coach the
+    // trip they are editing does not exist is the fastest way to make
+    // them rebuild one that already exists.
+    if (itineraryRecordError) {
+      await logServerError(
+        `travel itinerary read failed: ${describeError(itineraryRecordError)}`,
+        { action: 'travel.resolveItinerary', featureArea: 'travel' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't load that itinerary just now. Please try again." };
+    }
     if (!itineraryRecord) return { success: false, error: 'Itinerary not found' };
     // Staff-strict: the coach must be staffed on the itinerary's team (works for
     // a program head on both teams; not tied to the active toggle).
@@ -375,21 +417,48 @@ async function deleteGolfTravelItineraryImpl(itineraryId: string) {
   }
 
   // Verify user is a coach
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  // Refusing on a failed read is right; calling the person a
+  // non-coach is not. `.maybeSingle()` returns null data with a
+  // null error when there genuinely is no coach row, so an error
+  // here is the read falling over — and "Only coaches can manage
+  // travel itineraries" tells a coach they are not one, on the
+  // surface they use to book a trip.
+  if (coachError) {
+    await logServerError(
+      `travel coach lookup failed: ${describeError(coachError)}`,
+      { action: 'travel.resolveCoach', featureArea: 'travel' },
+      'warning',
+    );
+    return { success: false, error: "Couldn't verify your coach access just now. Please try again." };
+  }
   if (!coach) {
     return { success: false, error: 'Only coaches can manage travel itineraries' };
   }
 
   // Verify itinerary belongs to coach's team
-  const { data: itineraryRecord } = await supabase
+  const { data: itineraryRecord, error: itineraryRecordError } = await supabase
     .from('golf_travel_itineraries')
     .select('team_id')
     .eq('id', parsed.data)
     .maybeSingle();
+
+  // A failed read is not a deleted itinerary. Telling a coach the
+  // trip they are editing does not exist is the fastest way to make
+  // them rebuild one that already exists.
+  if (itineraryRecordError) {
+    await logServerError(
+      `travel itinerary read failed: ${describeError(itineraryRecordError)}`,
+      { action: 'travel.resolveItinerary', featureArea: 'travel' },
+      'warning',
+    );
+    return { success: false, error: "Couldn't load that itinerary just now. Please try again." };
+  }
   if (!itineraryRecord) return { success: false, error: 'Itinerary not found' };
   // Staff-strict: the coach must be staffed on the itinerary's team.
   if (!(await validateCoachTeamAccess(supabase, coach.id, itineraryRecord.team_id, coach.organization_id))) {
