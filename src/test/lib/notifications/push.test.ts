@@ -24,8 +24,13 @@ vi.mock('@/lib/notifications/email', () => ({
 }));
 
 const logServerEventMock = vi.fn(async (..._args: unknown[]) => {});
+const logServerErrorMock = vi.fn(async (..._args: unknown[]) => {});
 vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: (...args: unknown[]) => logServerEventMock(...args),
+  // sendPushNotification now records a delivery failure here. Without this
+  // export the mock throws, the outer catch swallows it, and every assertion
+  // below fails for a reason that has nothing to do with token pruning.
+  logServerError: (...args: unknown[]) => logServerErrorMock(...args),
 }));
 
 type TokenRow = { token: string; platform: string };
@@ -126,7 +131,10 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
     const { sendPushNotification } = await import('@/lib/notifications/push');
     const result = await sendPushNotification('task_reminder', 'user-1', { taskTitle: 'Log rounds' });
 
-    expect(result.success).toBe(true);
+    // Was `true` before: the function reported success even though the push
+    // was rejected. Deactivation behaviour below is unchanged; only the
+    // truthfulness of the return value is.
+    expect(result.success).toBe(false);
     expect(invokeMock).toHaveBeenCalledWith(
       'send-apns-push',
       expect.objectContaining({
@@ -171,7 +179,10 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
     const { sendPushNotification } = await import('@/lib/notifications/push');
     const result = await sendPushNotification('task_reminder', 'user-1', { taskTitle: 'Log rounds' });
 
-    expect(result.success).toBe(true);
+    // Was `true` before: the function reported success even though the push
+    // was rejected. Deactivation behaviour below is unchanged; only the
+    // truthfulness of the return value is.
+    expect(result.success).toBe(false);
     expect(updateSpy).toHaveBeenCalledTimes(1);
     const payload = updateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(payload).not.toHaveProperty('active');
@@ -194,7 +205,10 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
     const { sendPushNotification } = await import('@/lib/notifications/push');
     const result = await sendPushNotification('task_reminder', 'user-1', { taskTitle: 'Log rounds' });
 
-    expect(result.success).toBe(true);
+    // Was `true` before: the function reported success even though the push
+    // was rejected. Deactivation behaviour below is unchanged; only the
+    // truthfulness of the return value is.
+    expect(result.success).toBe(false);
     const payload = updateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(payload).not.toHaveProperty('active');
     expect(payload.failed_count).toBe(1);
@@ -226,7 +240,10 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
     const { sendPushNotification } = await import('@/lib/notifications/push');
     const result = await sendPushNotification('task_reminder', 'user-1', { taskTitle: 'Log rounds' });
 
-    expect(result.success).toBe(true);
+    // Was `true` before: the function reported success even though the push
+    // was rejected. Deactivation behaviour below is unchanged; only the
+    // truthfulness of the return value is.
+    expect(result.success).toBe(false);
     // The row is still asked to deactivate (the caller-side intent is
     // correct) — only the confirmation log is gated on the write succeeding,
     // so a token that silently fails to deactivate doesn't falsely claim to
@@ -294,6 +311,10 @@ describe('sendPushNotification — preference routing (coachhelm_insight / quiet
     const { sendPushNotification } = await import('@/lib/notifications/push');
     const result = await sendPushNotification('coachhelm_insight', 'user-1', { insightTitle: 'New pattern found' });
 
+    // A preference-gated non-send is a SUCCESS: the user opted out, so
+    // nothing was owed to them. This is the same honest-non-delivery case
+    // as a user with no registered devices, and is unaffected by the
+    // delivery-truthfulness change.
     expect(result.success).toBe(true);
     expect(fromMock).not.toHaveBeenCalled();
   });

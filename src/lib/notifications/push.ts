@@ -24,7 +24,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationType, NotificationPreferences } from './types';
 import { getUserNotificationPreferences } from './email';
 import { gatedDelivery, type DeliveryNotificationKey } from '@/lib/coachhelm/v3/notifications/types';
-import { logServerEvent } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 /**
  * Maps a notification type to the `push_*` preference key that gates it.
@@ -215,9 +215,23 @@ export async function sendPushNotification(
       .eq('user_id', userId)
       .eq('active', true) as { data: Array<{ token: string; platform: string }> | null; error: { message: string } | null };
 
-    if (tokenError || !tokens || tokens.length === 0) {
-      return { success: true }; // No tokens, not an error
+    // A FAILED READ is not "this user has no devices". Bundling them meant a
+    // dropped connection reported a delivered notification.
+    if (tokenError) {
+      await logServerError(
+        `[push] device-token read failed for user ${userId}; reporting non-delivery instead of a phantom send: ${tokenError.message}`,
+        { action: 'push.sendPushNotification.readTokens', featureArea: 'notifications', userId },
+      );
+      return { success: false, error: 'Could not read device tokens' };
     }
+
+    // Genuinely no registered devices: nothing was owed, so this is a success.
+    if (!tokens || tokens.length === 0) {
+      return { success: true };
+    }
+
+    // Counted so the return value reflects what actually happened.
+    let delivered = 0;
 
     const payload = generatePushPayload(type, data);
 
@@ -345,6 +359,7 @@ export async function sendPushNotification(
             );
           }
         } else {
+          delivered += 1;
           // Update last_push_at
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase as any)
@@ -355,6 +370,21 @@ export async function sendPushNotification(
       } catch (err) {
         console.error('Push send error:', err);
       }
+    }
+
+    // The loop used to swallow BOTH failure paths and return success anyway, so
+    // sendBulkPushNotification counted `sent++` for a user whose every device
+    // rejected the push. A coach assigning a task or posting an announcement got
+    // a confident "sent" for a notification nobody received.
+    //
+    // Partial delivery still counts as delivered — the person got it on at least
+    // one device, and the dead ones are already being pruned above.
+    if (delivered === 0) {
+      await logServerError(
+        `[push] no device accepted this ${type} for user ${userId} (${tokens.length} token(s) tried); previously reported as sent`,
+        { action: 'push.sendPushNotification.deliver', featureArea: 'notifications', userId },
+      );
+      return { success: false, error: 'No device accepted the notification' };
     }
 
     return { success: true };
