@@ -70,7 +70,10 @@ interface DiscoverTeamsResult {
 /**
  * Get all player IDs who are assigned to a discoverable team (HS / showcase / JUCO org).
  * Players with no team assignment are not surfaced in Discover — basic business rule.
- * Returns null only on DB error (caller should treat as "no filter" fallback).
+ *
+ * Returns null only on DB error, and null means REFUSE: callers must return an
+ * empty listing, never fall back to "no filter". This comment used to say the
+ * opposite, and the callers did what it said.
  */
 async function getDiscoverableTeamPlayerIds(
   supabase: Awaited<ReturnType<typeof createClient>>
@@ -118,7 +121,21 @@ async function getDiscoverableTeamPlayerIds(
     .select('player_id')
     .in('team_id', teamIds);
 
-  if (memberErr) return null;
+  // `null` means REFUSE, not "no constraint" — the same meaning it carries in
+  // the Compare surface's copy of this filter. It used to mean neither: callers
+  // tested `!== null && length === 0` for the early return and `ids && length > 0`
+  // for the `.in()`, so a failure here skipped BOTH and Discover returned every
+  // recruiting-activated non-college player in the database, cross-tenant,
+  // including players from programs that had turned their public profile off.
+  //
+  // Steps 1 and 2 above already fail closed. This one now agrees with them.
+  if (memberErr) {
+    await logServerError(
+      `discover: discoverable-team member read failed; refusing to list rather than drop the discoverable-team rule: ${describeError(memberErr)}`,
+      { action: 'discover.getDiscoverableTeamPlayerIds', featureArea: 'recruiting' },
+    );
+    return null;
+  }
 
   return [...new Set((members ?? []).map((m) => m.player_id).filter(Boolean))];
 }
@@ -165,8 +182,10 @@ async function getDiscoverPlayersImpl(
     getPrivatePlayerIds(supabase),
   ]);
 
-  // If no players are on any discoverable team, return early
-  if (discoverablePlayerIds !== null && discoverablePlayerIds.length === 0) {
+  // Empty means nobody is genuinely on a discoverable team; null means the read
+  // failed. Both must yield no listing — previously null fell through here AND
+  // past the `.in()` filter below, which removed the core rule entirely.
+  if (discoverablePlayerIds === null || discoverablePlayerIds.length === 0) {
     return { players: [], count: 0, pages: 0 };
   }
 
@@ -700,7 +719,7 @@ async function getStateCountsImpl(
       getPrivatePlayerIds(supabase),
     ]);
 
-    if (discoverablePlayerIds !== null && discoverablePlayerIds.length === 0) {
+    if (discoverablePlayerIds === null || discoverablePlayerIds.length === 0) {
       return {};
     }
 
