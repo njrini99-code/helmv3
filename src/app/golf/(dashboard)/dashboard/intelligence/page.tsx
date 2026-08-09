@@ -25,6 +25,8 @@ import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
 // METADATA
@@ -156,11 +158,25 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   // playerNameById, causalByPlayer, silentPostureByPlayer) are assembled
   // further below, once playerIds/coachIntents/goalsAndStandingPromise are
   // available. ───────────────────────────────────────────────────────────
-  const { data: teamMembers } = await supabase
+  const { data: teamMembers, error: teamMembersError } = await supabase
     .from('golf_team_members')
     .select('player_id')
     .eq('team_id', teamId)
     .eq('status', 'active');
+
+  // This roster read gates the entire Players view. `|| []` turns a failed
+  // read into an empty squad, and every drill below keys off activePlayerIds —
+  // so the coach's intelligence surface renders as a team with no players, no
+  // focus areas and no goals. That is not a degraded view of a real team, it is
+  // a different team, and nothing on the page says a read failed.
+  if (teamMembersError) {
+    void logServerError(
+      `[intelligence] roster read failed for team ${teamId}; the Players view will render as an empty squad: ${describeError(teamMembersError)}`,
+      { action: 'intelligence.loadRoster', featureArea: 'coachhelm' },
+      'error',
+    );
+  }
+
   const activePlayerIds = (teamMembers || []).map((tm) => tm.player_id);
 
   const { data: rawPlayers, error: playersError } =
@@ -222,6 +238,22 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       ? supabase.from('golf_round_reviews').select('id, round_id').in('id', reviewIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
+  // The "did the coaching land" outcome mix and the review back-links. Both
+  // read as absence — "no outcomes recorded", "no review attached" — which is a
+  // claim about the coaching rather than about the query, on the surface a
+  // coach uses to decide what to work on next.
+  for (const [dataset, failed] of [
+    ['insight outcome', insightOutcomesResult.error],
+    ['review back-link', reviewRowsResult.error],
+  ] as const) {
+    if (!failed) continue;
+    void logServerError(
+      `[intelligence] ${dataset} read failed for team ${teamId}; that panel will render as "none recorded": ${describeError(failed)}`,
+      { action: 'intelligence.loadOutcomes', featureArea: 'coachhelm' },
+      'warning',
+    );
+  }
+
   for (const row of insightOutcomesResult.data || []) {
       if (row.outcome_status) outcomeByInsightId[row.id] = row.outcome_status;
   }
