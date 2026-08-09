@@ -17,6 +17,7 @@ import noArbitraryRadius from "./eslint-rules/no-arbitrary-radius.mjs";
 import noArbitraryBgWhite from "./eslint-rules/no-arbitrary-bg-white.mjs";
 import noUncheckedSupabaseError from "./eslint-rules/no-unchecked-supabase-error.mjs";
 import noEmptyCollectionOnError from "./eslint-rules/no-empty-collection-on-error.mjs";
+import noUncheckedPaginatedRead from "./eslint-rules/no-unchecked-paginated-read.mjs";
 
 // Downgrade every `error`-severity rule in a flat-config rules object to
 // `warn`. Used by W0 to ship the jsx-a11y recommended set + the six
@@ -69,6 +70,7 @@ export default tseslint.config(
           "no-arbitrary-bg-white": noArbitraryBgWhite,
           "no-unchecked-supabase-error": noUncheckedSupabaseError,
           "no-empty-collection-on-error": noEmptyCollectionOnError,
+          "no-unchecked-paginated-read": noUncheckedPaginatedRead,
         },
       },
     },
@@ -110,6 +112,9 @@ export default tseslint.config(
       // Enforced by scripts/fail-open-audit.mjs, same reason as the rule above:
       // turning it on here would fail Lint on every PR until the debt is paid.
       "helm/no-empty-collection-on-error": "off",
+      // Off by default like its siblings: the audit script turns it on to take a
+      // census, so existing debt does not block every unrelated lint run.
+      "helm/no-unchecked-paginated-read": "off",
     },
   },
   {

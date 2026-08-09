@@ -62,7 +62,8 @@
     "check:row-caps": "node scripts/check-row-cap-limits.mjs",
     "check:env-secrets": "node scripts/check-env-secret-fallbacks.mjs",
     "audit:supabase-errors": "node scripts/supabase-error-audit.mjs",
-    "audit:fail-open": "node scripts/fail-open-audit.mjs"
+    "audit:fail-open": "node scripts/fail-open-audit.mjs",
+    "audit:paginated-reads": "node scripts/paginated-read-audit.mjs"
   },
   "keywords": [],
   "author": "",
