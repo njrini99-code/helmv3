@@ -2379,7 +2379,7 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
   }
 
   // Get all holes with their scores
-  const { data: holesData } = await fetchAllRowsResult((from, to) => supabase
+  const { data: holesData, error: holesError } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select(`
       id,
@@ -2400,6 +2400,13 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
     .order('hole_number')
     .order('id', { ascending: true })
     .range(from, to), undefined, { table: 'golf_holes', action: 'getWorstHoleAnalysis', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+
+  // The `error` is READ. Discarded, a failed hole read fell through to an empty
+  // analysis — and the catch below returns that SAME empty shape — so the screen
+  // told a player they have no worst holes, i.e. nothing to work on.
+  if (holesError) {
+    throw new Error(`worst-hole read failed for player ${playerId}: ${holesError.message}`);
+  }
 
   if (!holesData || holesData.length === 0) {
     return {
@@ -2511,7 +2518,12 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
       `[Stats] getWorstHoleAnalysis failed: ${describeError(error)}`,
       statsErrorContext('stats_data.getWorstHoleAnalysis', error),
     );
-    return { holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null };
+    // Rethrown, not swallowed into the empty shape. Returning the same response
+    // a player with no holes gets made a failure indistinguishable from "nothing
+    // to work on". stats-dashboard.ts wraps this call in settleWithin(), which
+    // turns a rejection into { ok: false, reason: 'failed' } and already has a
+    // failed-section shape for it — the honest state existed and was never fed.
+    throw error;
   }
 }
 
