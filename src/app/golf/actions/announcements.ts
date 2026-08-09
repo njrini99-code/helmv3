@@ -13,6 +13,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { z } from 'zod';
@@ -607,12 +608,31 @@ async function getAnnouncementsWithMetaImpl(
     // announcement — the ones a coach deliberately sent to a subset — read as
     // all-team and publish to the entire roster. A gate that fails open is not
     // a gate.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: allRecipients, error: recipientsError } = await (createAdminClient() as any)
-      .from('golf_announcement_recipients')
-      .select('announcement_id, player_id')
-      .in('announcement_id', announcementIds)
-      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; player_id: string }> | null; error: { message?: string } | null };
+    //
+    // PAGINATED, unlike the sibling fan-outs below. `.limit(1000)` does not
+    // lift PostgREST's cap — it caps the read, and the read comes back short
+    // with NO error. The filter below reads "no recipient rows" as "addressed
+    // to the whole team", so once a team accumulates more than 1000 recipient
+    // rows across its recent announcements, every announcement past the cut is
+    // republished to the entire roster. That needs no fault at all: nothing
+    // errors, so nothing is logged, and the fail-closed branch above never
+    // fires. The acks/tasks/docs fan-outs keep the bounded limit on purpose —
+    // they feed display counts, where truncation is a wrong number rather than
+    // a disclosure.
+    const { data: allRecipients, error: recipientsError } = await fetchAllRowsResult<{
+      announcement_id: string;
+      player_id: string;
+    }>((from, to) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (createAdminClient() as any)
+        .from('golf_announcement_recipients')
+        .select('announcement_id, player_id')
+        .in('announcement_id', announcementIds)
+        .range(from, to) as PromiseLike<{
+          data: Array<{ announcement_id: string; player_id: string }> | null;
+          error: { message: string; code?: string | null } | null;
+        }>,
+    );
 
     if (recipientsError) {
       await logServerError(
