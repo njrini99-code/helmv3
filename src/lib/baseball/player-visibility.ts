@@ -37,21 +37,31 @@ export const PRIVATE_PROFILE_VISIBILITY = 'private' as const;
  * (.not('id', 'in', ...)) so pagination/counts stay correct even when many
  * players are private.
  */
-export async function getPrivatePlayerIds(supabase: Supabase): Promise<Set<string>> {
+export async function getPrivatePlayerIds(supabase: Supabase): Promise<Set<string> | null> {
   const { data, error } = await supabase
     .from('baseball_player_settings')
     .select('player_id')
     .eq('profile_visibility', PRIVATE_PROFILE_VISIBILITY);
 
+  // NULL means REFUSE — the same meaning `getDiscoverableTeamPlayerIds` carries
+  // in discover.ts.
+  //
+  // This used to return an empty Set and call it "failing open, because the
+  // caller's other filters still apply". That reasoning does not hold: this set
+  // is the ONLY thing excluding private players, and every consumer treats an
+  // empty set as "nobody is private" — two skip the `.not('id','in',...)`
+  // exclusion entirely and one asks `.has(id)`. So a dropped connection put
+  // players who had explicitly set their profile to private straight into
+  // Discover listings, the org top-prospects strip, and the state counts.
+  //
+  // An empty set from a SUCCESSFUL read still means "nobody is private" and is
+  // still returned as such.
   if (error) {
     await logServerError(
-      `Error fetching private player settings: ${describeError(error)}`,
+      `Error fetching private player settings; refusing rather than listing players who opted out: ${describeError(error)}`,
       { action: 'player-visibility.getPrivatePlayerIds' },
     );
-    // Fail open here (matches getCoachRosterPlayerIds' pattern below): this
-    // side-query failing must not disable the caller's OTHER discoverability
-    // filters (own-team / discoverable-team) that are applied independently.
-    return new Set();
+    return null;
   }
 
   return new Set((data ?? []).map((s) => s.player_id).filter(Boolean));

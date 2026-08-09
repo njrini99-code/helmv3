@@ -151,3 +151,37 @@ describe('Discover — the honest behaviours are unchanged', () => {
     expect(result.count).toBe(0);
   });
 });
+
+/**
+ * getPrivatePlayerIds is the ONLY thing excluding players who set
+ * profile_visibility to 'private'. It used to return an empty Set on a failed
+ * read and call that "failing open, because the caller's other filters still
+ * apply" — but every consumer reads an empty set as "nobody is private": two
+ * skip the `.not('id','in',...)` exclusion entirely and one asks `.has(id)`.
+ *
+ * So a dropped connection put opted-out players straight into Discover.
+ *
+ * It now returns null and each caller refuses. An empty set from a SUCCESSFUL
+ * read still means nobody is private, and is still honoured.
+ */
+describe('Discover — an unreadable private-player set must not list opted-out players', () => {
+  it('returns no players when the private-visibility read failed', async () => {
+    outcomes.set('baseball_player_settings', fails('permission denied', '42501'));
+
+    const result = await discover();
+
+    // Pre-fix the outsider-style leak here was worse: a player who had
+    // explicitly opted out was listed.
+    expect(result.players).toEqual([]);
+    expect(result.count).toBe(0);
+  });
+
+  it('still lists normally when nobody is private (successful, empty read)', async () => {
+    outcomes.set('baseball_player_settings', ok([]));
+
+    const result = await discover();
+
+    expect(result.players.length).toBeGreaterThan(0);
+  });
+});
+
