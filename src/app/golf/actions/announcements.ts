@@ -496,11 +496,25 @@ async function createEnrichedAnnouncementImpl(input: {
             // Send push notifications
             const recipientUserIdsForPush = userRows.map(u => u.id);
             if (recipientUserIdsForPush.length > 0) {
-              await sendBulkPushNotification('team_announcement', recipientUserIdsForPush, {
-                title: validated.title,
-                content: validated.body,
-              });
-              pushSent = true;
+              // `pushSent` is PERSISTED to golf_announcements.send_push below, so
+              // setting it unconditionally recorded "push sent" in the database
+              // for an announcement no device accepted. sendBulkPushNotification
+              // now returns real counts (it used to report every user as sent
+              // regardless), so use them: at least one delivery is a send, zero
+              // is not, and zero is worth saying out loud.
+              const pushResult = await sendBulkPushNotification(
+                'team_announcement',
+                recipientUserIdsForPush,
+                { title: validated.title, content: validated.body },
+              );
+              pushSent = pushResult.sent > 0;
+              if (pushResult.failed > 0) {
+                await logServerError(
+                  `[createAnnouncement] push reached ${pushResult.sent}/${recipientUserIdsForPush.length} recipients (${pushResult.failed} failed) for announcement ${announcementId}`,
+                  { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements' },
+                  pushResult.sent === 0 ? 'error' : 'warning',
+                );
+              }
             }
           }
         }
