@@ -499,6 +499,22 @@ export function FairwaySettingsGeneral() {
             : Promise.resolve({ data: null }),
         ]);
 
+        // A failed profile read yields the same null as "this player has filled
+        // nothing in", and the form below is populated from it — so the player
+        // sees their handicap, hometown, graduation year and phone all blank.
+        // The danger is what they do next: hitting Save on a form that looks
+        // empty writes those blanks back over a profile that was fine.
+        //
+        // Recorded rather than thrown: the settings page has more on it than
+        // this card. But a silent blank form on a save surface is the one place
+        // "empty" is actively dangerous rather than merely wrong.
+        if (playerResult.error) {
+          console.warn('[settings] player profile read failed:', playerResult.error.message);
+        }
+        if (teamResult && 'error' in teamResult && teamResult.error) {
+          console.warn('[settings] team read failed:', teamResult.error.message);
+        }
+
         const player = playerResult.data;
         const team = teamResult.data;
 
