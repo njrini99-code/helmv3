@@ -85,8 +85,32 @@ export async function sendPasswordResetEmail(
     });
     // No account for this address is the common, harmless case — the caller
     // still returns its generic "if an account exists" response.
-    if (error || !data?.properties?.action_link) return 'no-account';
-    link = data.properties.action_link;
+    if (error || !data?.properties?.hashed_token) return 'no-account';
+
+    // Link straight to OUR reset page carrying the hashed token, instead of
+    // emailing Supabase's `action_link`.
+    //
+    // WHY THIS IS THE WHOLE BUG. `action_link` points at Supabase's
+    // /auth/v1/verify, which redirects to `redirectTo` in the flow the PROJECT
+    // is configured for. This link is minted SERVER-SIDE by the admin API, so
+    // the recipient's browser never stored a PKCE `code_verifier` — there is
+    // nothing for `exchangeCodeForSession()` to exchange against, and an
+    // implicit-flow redirect puts its tokens in the URL FRAGMENT, which the
+    // reset page (reading `?code=` / `?token_hash=` from the query string)
+    // cannot see either. Both paths land on "This reset link is invalid or has
+    // expired", deterministically, for every user.
+    //
+    // A `token_hash` needs no verifier: the page's existing
+    // verifyOtp({ type: 'recovery', token_hash }) branch — already written and
+    // already correct — handles it. It simply never received one.
+    //
+    // Measured, not assumed: sslate@guilford.edu was sent three of these
+    // (2026-08-07 x2, 2026-08-09), opened and clicked every one within seconds,
+    // and was still locked out. The emails were never the problem.
+    const resetUrl = new URL(redirectTo);
+    resetUrl.searchParams.set('token_hash', data.properties.hashed_token);
+    resetUrl.searchParams.set('type', 'recovery');
+    link = resetUrl.toString();
   } catch {
     return 'link-failed';
   }
