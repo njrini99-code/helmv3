@@ -211,6 +211,13 @@ jobs:
       - name: Unchecked Supabase reads (ratchet)
         run: npm run audit:supabase-errors
 
+      # Counts guards whose "the read failed" answer is the same value as their
+      # "allow" answer. Three of those shipped before this gate existed, and the
+      # unchecked-read ratchet above could not see any of them — all three bound
+      # their error correctly and then answered it permissively.
+      - name: Fail-open guards (ratchet)
+        run: npm run audit:fail-open
+
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest
