@@ -331,7 +331,7 @@ async function getPlayerShotAnalyticsImpl(
     const roundIds = rounds.map(r => r.id);
 
     // Get holes data
-    const { data: holesData } = await fetchAllRowsResult((from, to) => supabase
+    const { data: holesData, error: holesError } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_holes')
       .select(`
         id, round_id, hole_number, par, score, putts,
@@ -341,10 +341,29 @@ async function getPlayerShotAnalyticsImpl(
       .order('id', { ascending: true })
       .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerShotAnalytics', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
+    // The `error` is READ. Discarded, a failed read produced the same empty array
+    // an unplayed season produces, and the surface reported 0 drives / 0
+    // fairways hit as this player's actual game.
+    //
+    // A DISTINCT code, not the stable `no_rounds_in_period` above: that one is
+    // deliberately quiet because an expected empty state is not an incident.
+    // This one is.
+    if (holesError) {
+      await logServerError(
+        `[shot analytics] hole read failed for player ${playerId}; would have reported an empty game as fact: ${describeError(holesError)}`,
+        { action: 'getPlayerShotAnalytics', featureArea: 'stats_analytics' },
+      );
+      return {
+        success: false,
+        error: "Couldn't load your shot data. Please try again.",
+        code: 'analytics_read_failed',
+      };
+    }
+
     const holes = (holesData || []) as HoleRow[];
 
     // Get shot-level data
-    const { data: shotsData } = await fetchAllRowsResult((from, to) => supabase
+    const { data: shotsData, error: shotsError } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_shots')
       .select(`
         id, round_id, hole_number, shot_number, shot_type, club_type,
@@ -355,6 +374,18 @@ async function getPlayerShotAnalyticsImpl(
       .in('round_id', roundIds)
       .order('id', { ascending: true })
       .range(from, to), undefined, { table: 'golf_shots', action: 'getPlayerShotAnalytics', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+
+    if (shotsError) {
+      await logServerError(
+        `[shot analytics] shot read failed for player ${playerId}; would have reported an empty game as fact: ${describeError(shotsError)}`,
+        { action: 'getPlayerShotAnalytics', featureArea: 'stats_analytics' },
+      );
+      return {
+        success: false,
+        error: "Couldn't load your shot data. Please try again.",
+        code: 'analytics_read_failed',
+      };
+    }
 
     const shots = (shotsData || []) as ShotRow[];
 
