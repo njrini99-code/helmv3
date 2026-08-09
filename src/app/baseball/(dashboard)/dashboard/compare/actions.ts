@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { assertCoachCanRecruitPlayer } from '@/lib/baseball/recruitability';
 import type { CoachType } from '@/app/baseball/actions/discover';
 import type { Player } from '@/lib/types';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 interface SaveComparisonParams {
   name: string;
@@ -188,15 +190,40 @@ async function getActiveCoachForRecruiting(
   return { id: coach.id as string, coachType: coach.coach_type as CoachType };
 }
 
+/**
+ * Players who set `profile_visibility = 'private'`.
+ *
+ * THIS FAILED OPEN, on a privacy filter. The callers apply it as
+ * `!privateIds.has(player.id)`, so an EMPTY set filters nobody — and the
+ * function returned an empty set on a failed read, identical to "nobody has
+ * asked to be private". A dropped connection therefore surfaced players who
+ * explicitly opted out into a recruiting coach's Compare results.
+ *
+ * Returns null when privacy could not be established, so the caller can refuse
+ * rather than guess. Withholding results a coach could have seen is cheap and
+ * reversible; showing a player who asked not to be shown is neither.
+ *
+ * NO LIVE EXPOSURE TODAY: baseball_player_settings has 0 rows against 35
+ * players, so there is currently nobody marked private to leak. This is
+ * prevention — the defect becomes real the first time a player uses the
+ * setting, which is exactly when nobody will be looking for it.
+ */
 async function getPrivatePlayerIdsForCompare(
   supabase: Awaited<ReturnType<typeof createClient>>,
-): Promise<Set<string>> {
+): Promise<Set<string> | null> {
   const { data, error } = await supabase
     .from('baseball_player_settings')
     .select('player_id')
     .eq('profile_visibility', 'private');
 
-  if (error) return new Set();
+  if (error) {
+    await logServerError(
+      `compare: private-visibility read failed; refusing to return results rather than risk showing an opted-out player: ${describeError(error)}`,
+      { action: 'baseballCompare.privacyFilter', featureArea: 'recruiting' },
+      'warning',
+    );
+    return null;
+  }
   return new Set((data ?? []).map((s) => s.player_id).filter(Boolean));
 }
 
@@ -309,6 +336,10 @@ async function searchRecruitablePlayersImpl(
     return [];
   }
 
+  // Privacy could not be established — return nothing rather than a list that
+  // may contain someone who opted out.
+  if (privateIds === null) return [];
+
   return (data ?? [])
     .filter((player) =>
       discoverableIds.has(player.id) &&
@@ -352,6 +383,9 @@ async function getComparablePlayersImpl(ids: string[]): Promise<Player[]> {
     console.error('Error fetching comparable players:', error);
     return [];
   }
+
+  // Same refusal as the search path: no privacy set, no results.
+  if (privateIds === null) return [];
 
   return (data ?? []).filter((player) =>
     player.recruiting_activated &&
