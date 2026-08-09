@@ -90,11 +90,24 @@ export async function setCoachPick(
   }
 
   // Enforce the slot ceiling before inserting another coach_pick.
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('golf_qualifier_selections')
     .select('player_id')
     .eq('qualifier_id', args.qualifier_id)
     .eq('selection_type', 'coach_pick');
+
+  // The `error` is READ, and this guard fails CLOSED. Discarded, a failed read
+  // produced a null list, so `already` was false and the count read 0 — the
+  // ceiling check then passed unconditionally and the upsert below added a
+  // coach pick beyond the configured slots. The comment above says this exists
+  // to "enforce the slot ceiling"; a ceiling that a dropped connection lifts is
+  // not one.
+  //
+  // An empty list from a SUCCESSFUL read still means no picks yet, and still
+  // allows the first one.
+  if (existingError) {
+    return { ok: false, error: 'could not verify remaining coach-pick slots; please try again' };
+  }
 
   const already = (existing ?? []).some((s) => s.player_id === args.player_id);
   if (!already && (existing?.length ?? 0) >= q.selection_slots_coach_pick) {
