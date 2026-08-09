@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import type { GolfQualifier } from '@/lib/types/golf';
@@ -29,16 +31,30 @@ export default async function GolfQualifiersPage() {
   if (isCoach && coach?.organization_id) {
     teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   } else if (player?.id) {
-    const { data: teamMember } = await supabase
+    // The `error` is READ. Discarded, a failed membership read left teamId null,
+    // which skips the qualifier fetch below entirely — so a rostered player was
+    // shown "no qualifiers" because we could not tell what team they are on.
+    // `.maybeSingle()` reports a genuine no-row as { data: null, error: null },
+    // so a player truly on no team still falls through to the same empty page.
+    const { data: teamMember, error: teamMemberError } = await supabase
       .from('golf_team_members')
       .select('team_id')
       .eq('player_id', player.id)
       .maybeSingle();
+
+    if (teamMemberError) {
+      await logServerError(
+        `[qualifiers page] team membership read failed for player ${player.id}; the page would claim there are no qualifiers: ${describeError(teamMemberError)}`,
+        { action: 'golf.qualifiersPage.resolveTeam', featureArea: 'qualifiers' },
+      );
+      throw new Error('Failed to load qualifiers');
+    }
+
     teamId = teamMember?.team_id || null;
   }
 
   if (teamId) {
-    const { data: qualifiersData } = await supabase
+    const { data: qualifiersData, error: qualifiersError } = await supabase
       .from('golf_qualifiers')
       .select('*')
       .eq('team_id', teamId)
@@ -49,6 +65,18 @@ export default async function GolfQualifiersPage() {
       // silently truncated, and the Fairway list paginates the concluded
       // bucket client-side so the page stays scannable.
       .limit(1000);
+
+    // The `error` is READ. Discarded, a failed read produced the same `[]` an
+    // empty history produces, and the page told a team with a qualifier running
+    // that it has none — on the one screen a player checks to find out whether
+    // they are in it. A genuinely empty list still renders the empty state.
+    if (qualifiersError) {
+      await logServerError(
+        `[qualifiers page] qualifier list read failed for team ${teamId}; the page would claim there are none: ${describeError(qualifiersError)}`,
+        { action: 'golf.qualifiersPage.listQualifiers', featureArea: 'qualifiers' },
+      );
+      throw new Error('Failed to load qualifiers');
+    }
 
     qualifiers = qualifiersData || [];
   }
