@@ -37,6 +37,8 @@ let mockMembershipData: unknown = null;
 let mockTeamMembersData: unknown[] = [];
 let mockPlayersListData: unknown[] = [];
 let mockRoundsError: unknown = null;
+/** Lets a test fail ONLY the golf_holes read, the way PostgREST would. */
+let mockHolesError: unknown = null;
 const telemetryMocks = vi.hoisted(() => ({
   getUser: vi.fn(async () => ({
     data: { user: { id: 'user-1', email: 'player@example.com' } },
@@ -72,7 +74,8 @@ const mockFrom = vi.fn((table: string) => {
 
   return createChainableMock({
     data: mockRoundsData,
-    error: table === 'golf_rounds' ? mockRoundsError : null,
+    error:
+      table === 'golf_rounds' ? mockRoundsError : table === 'golf_holes' ? mockHolesError : null,
   });
 });
 
@@ -515,5 +518,50 @@ describe('2026-06-09 fix G — getCoachRosterStats paginates golf_rounds past 10
     expect(result[0]!.stats?.rounds_played).toBe(1500);
     expect(result[0]!.stats?.rounds_played_18).toBe(1500);
     expect(result[0]!.stats?.scoring_average).toBe(72);
+  });
+});
+
+/**
+ * getWorstHoleAnalysis answers "which holes are costing this player strokes".
+ *
+ * Its golf_holes read discarded the error, and its catch returned the SAME
+ * all-empty response it returns for a player with no holes recorded. So a
+ * failed read did not say "we could not measure" — it said the player has no
+ * worst holes, which on that screen reads as "nothing to work on".
+ *
+ * The catch logged, so this was never invisible in Bridge; it was only ever
+ * invisible to the person looking at the screen.
+ *
+ * It now rethrows. stats-dashboard.ts wraps this call in settleWithin(), which
+ * already converts a rejection into { ok: false, reason: 'failed' } and has a
+ * failedStatsBundle shape for it — so the honest failure state existed all
+ * along and simply never had anything routed into it.
+ */
+describe('getWorstHoleAnalysis — a failed hole read is not "no worst holes"', () => {
+  beforeEach(() => {
+    mockHolesError = null;
+    mockRoundsError = null;
+    mockRoundsData = [{ id: 'r1', player_id: 'player-1', status: 'completed' }];
+  });
+
+  afterEach(() => {
+    mockHolesError = null;
+  });
+
+  it('does not return an empty analysis when the hole read failed', async () => {
+    const { getWorstHoleAnalysis } = await import('../stats-data');
+    mockHolesError = { message: 'statement timeout', code: '57014' };
+
+    await expect(getWorstHoleAnalysis('player-1')).rejects.toThrow();
+  });
+
+  it('still returns the empty analysis when the player genuinely has no holes', async () => {
+    const { getWorstHoleAnalysis } = await import('../stats-data');
+    mockRoundsData = [];
+
+    const result = await getWorstHoleAnalysis('player-1');
+
+    expect(result.worstHoles).toEqual([]);
+    expect(result.par3Average).toBeNull();
   });
 });
