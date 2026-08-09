@@ -72,11 +72,35 @@ export async function isPlayerProfilePrivate(
   supabase: Supabase,
   playerId: string,
 ): Promise<boolean> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('baseball_player_settings')
     .select('profile_visibility')
     .eq('player_id', playerId)
     .maybeSingle();
+
+  // Fails CLOSED, unlike the bulk form above. This is the PII gate — the
+  // caller (assertCoachCanRecruitPlayer) turns `false` straight into
+  // `{ allowed: true }` and hands over the player's contact details. Only
+  // `data` was read here, so a dropped connection produced `false`, which does
+  // not mean "the read came back empty", it means "this profile is NOT
+  // private": a player who had explicitly opted out was exposed to a college
+  // coach, and nothing was recorded.
+  //
+  // Every other gate in that function already fails closed by construction (a
+  // failed player read leaves `player` null and denies; a failed
+  // discoverable-teams read leaves that Set empty and denies). This one was the
+  // outlier.
+  //
+  // The documented default is unchanged: `.maybeSingle()` returns
+  // `{ data: null, error: null }` when a player simply has no settings row, and
+  // that player is still public. A genuine miss is an answer. An error is not.
+  if (error) {
+    await logServerError(
+      `Error reading profile visibility for player ${playerId}; treating as private: ${describeError(error)}`,
+      { action: 'player-visibility.isPlayerProfilePrivate' },
+    );
+    return true;
+  }
 
   return data?.profile_visibility === PRIVATE_PROFILE_VISIBILITY;
 }
