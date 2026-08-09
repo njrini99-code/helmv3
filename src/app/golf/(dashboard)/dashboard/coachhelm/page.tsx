@@ -40,6 +40,8 @@ import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 // ── `standing` drill read — copied from my-standing/page.tsx (the
 // counterfactual baseline; the standing map itself is already fetched below). ─
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
   title: 'CoachHelm | GolfHelm',
@@ -338,10 +340,21 @@ export default async function PlayerCoachHelmPage() {
     );
     const roundIdByReviewId: Record<string, string> = {};
     if (reviewIds.length > 0) {
-      const { data: reviewRows } = await supabase
+      const { data: reviewRows, error: reviewRowsError } = await supabase
         .from('golf_round_reviews')
         .select('id, round_id')
         .in('id', reviewIds);
+
+      if (reviewRowsError) {
+        // These back-links are how a player jumps from a focus area to the
+        // round that produced it. A failed read drops every link silently, so
+        // the focus area looks like it came from nowhere.
+        void logServerError(
+          `[player coachhelm] review back-link read failed for player ${player.id}; focus areas will lose their round links: ${describeError(reviewRowsError)}`,
+          { action: 'playerCoachHelm.loadDevelopment', featureArea: 'coachhelm' },
+          'warning',
+        );
+      }
       for (const row of reviewRows || []) {
         if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
       }
@@ -372,6 +385,17 @@ export default async function PlayerCoachHelmPage() {
         .eq('player_id', player.id)
         .maybeSingle(),
     ]);
+    if (statsRow.error) {
+      // The player's own standing numbers. Absent renders as "not enough data
+      // yet", which is a statement about how much they have played rather than
+      // about a query that failed.
+      void logServerError(
+        `[player coachhelm] stats cache read failed for player ${player.id}; standing will render as insufficient data: ${describeError(statsRow.error)}`,
+        { action: 'playerCoachHelm.loadStanding', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
+
     const sr = statsRow.data;
     developmentPlayerStats = {
       rounds_played: sr?.rounds_played ?? 0,
