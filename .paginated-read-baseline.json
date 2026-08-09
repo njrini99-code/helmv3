@@ -1,7 +1,7 @@
 {
-  "total": 17,
+  "total": 16,
   "byArea": {
-    "app/golf/actions": 9,
+    "app/golf/actions": 8,
     "lib/coachhelm/v2": 4,
     "lib/coachhelm/v3": 2,
     "app/lifting/actions": 1,

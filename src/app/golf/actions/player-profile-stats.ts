@@ -158,7 +158,7 @@ async function getPlayerProfileStatsImpl(
     }
 
     // 4. Fetch hole info for the rounds
-    const { data: holesData } = await fetchAllRowsResult((from, to) => supabase
+    const { data: holesData, error: holesError } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_holes')
       // gir/score/sand_save are canonical inputs: without them the calculator
       // falls back to shot-count for score and re-derives GIR from shot results,
@@ -167,6 +167,21 @@ async function getPlayerProfileStatsImpl(
       .in('round_id', roundIdsToFetch)
       .order('id', { ascending: true })
       .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerProfileStats', feature: 'my_game_profile', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+
+    // The `error` is READ, matching the shots read above. Discarded, this one
+    // was worse than an empty list: the comment on the select right here says
+    // gir/score/sand_save are canonical inputs, and without them the calculator
+    // falls back to shot-count for score and re-derives GIR from shot results.
+    // So a failed read did not blank the profile — it produced a
+    // COMPLETE-LOOKING one built on a silent fallback, and a player reading
+    // their scrambling percentage off that screen had no way to tell.
+    if (holesError) {
+      await logServerError(
+        `[getPlayerProfileStats] Error fetching holes: ${describeError(holesError)}`,
+        { action: 'player_profile_stats.getPlayerProfileStats' },
+      );
+      return { success: false, error: 'Failed to fetch hole data', stats: null, rounds };
+    }
 
     // 5. Build data structures for calculator
     const selectedRounds = roundId === 'overall'
