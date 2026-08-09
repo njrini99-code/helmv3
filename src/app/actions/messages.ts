@@ -752,10 +752,29 @@ async function createGolfTeamBroadcastImpl({
       // participant writes.
       const reuseTarget = existingConvs[0];
       if (reuseTarget) {
-        const { data: existingParticipants } = await supabase
+        const { data: existingParticipants, error: existingParticipantsError } = await supabase
           .from('golf_conversation_participants')
           .select('user_id')
           .eq('conversation_id', reuseTarget.id);
+
+        // The `error` is READ. Discarded, a failure produced an EMPTY set of
+        // existing ids, so `missingIds` below became every desired recipient and
+        // the insert re-added people who were already in the conversation.
+        // golf_conversation_participants carries UNIQUE (conversation_id,
+        // user_id), so that insert raises 23505, the checked `syncError` throws,
+        // and the coach's team broadcast fails outright with "Failed to update
+        // broadcast recipients" — blaming their recipient list for a dropped
+        // read.
+        //
+        // Refuse honestly instead: if we cannot see who is already in the
+        // conversation, we cannot tell who is missing.
+        if (existingParticipantsError) {
+          await logServerError(
+            `[Broadcast] participant read failed on reuse of conversation ${reuseTarget.id}; refusing rather than re-adding every recipient into a unique-constraint failure: ${describeError(existingParticipantsError)}`,
+            { action: 'messages.createGolfTeamBroadcast' },
+          );
+          throw new Error('Could not confirm the current recipients. Please try again.');
+        }
 
         const existingIds = new Set((existingParticipants ?? []).map((p) => p.user_id));
         const missingIds = desiredParticipantIds.filter((id) => !existingIds.has(id));
