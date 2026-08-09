@@ -11,6 +11,8 @@ import { getPlayerSeasonStats } from '@/app/baseball/actions/games';
 import { resolveBaseballLiftingOrg, resolveBaseballAthleteIds } from '@/lib/lifting/resolve-baseball-context';
 import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract/contract-day';
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -57,30 +59,57 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   }
 
   type TeamInfo = { id: string; name: string };
-  const { data: team } = await supabase
+  const { data: team, error: teamError } = await supabase
     .from('baseball_teams')
     .select('id, name')
     .eq('id', teamId)
-    .maybeSingle() as { data: TeamInfo | null };
+    .maybeSingle() as { data: TeamInfo | null; error: { message?: string; code?: string } | null };
+
+  // Three reads decide this page, and each one fails into a different lie.
+  // A failed team read redirects the coach to /program as though their team
+  // were gone — off the player they clicked, with no error and no way back
+  // except to click the same player again.
+  if (teamError) {
+    void logServerError(
+      `[baseball player page] team read failed for ${teamId}; the coach will be redirected as if the team does not exist: ${describeError(teamError)}`,
+      { action: 'baseballPlayerPage.resolveTeam', featureArea: 'roster' },
+      'error',
+    );
+    throw new Error("Couldn't load your team. Please try again.");
+  }
 
   if (!team) {
     redirect('/baseball/dashboard/program');
   }
 
   // Verify player is on this team
-  const { data: membership } = await supabase
+  const { data: membership, error: membershipError } = await supabase
     .from('baseball_team_members')
     .select('player_id, jersey_number, position, status, joined_at')
     .eq('team_id', team.id)
     .eq('player_id', playerId)
     .single();
 
+  // `.single()` reports a genuine no-row as PGRST116 — that really is "this
+  // player is not on your team" and still 404s. Any other code is the read
+  // falling over, and a 404 for a player the coach just clicked on their own
+  // roster is the most confusing thing this page can do: the roster behind it
+  // still lists them.
+  if (membershipError && membershipError.code !== 'PGRST116') {
+    void logServerError(
+      `[baseball player page] membership read failed for ${playerId}: ${describeError(membershipError)}`,
+      { action: 'baseballPlayerPage.verifyMembership', featureArea: 'roster' },
+      'warning',
+    );
+    throw new Error("Couldn't confirm this player is on your team. Please try again.");
+  }
+
   if (!membership) {
     notFound();
   }
 
   // Get player info
-  const { data: player } = await supabase
+  const { data: player, error: playerError } = await supabase
     .from('baseball_players')
     .select(`
       id,
@@ -102,6 +131,17 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     `)
     .eq('id', playerId)
     .single();
+
+  // Membership already proved this player is on the team, so a failure here
+  // 404s someone we have just confirmed exists.
+  if (playerError) {
+    void logServerError(
+      `[baseball player page] player read failed for ${playerId} after membership was confirmed: ${describeError(playerError)}`,
+      { action: 'baseballPlayerPage.loadPlayer', featureArea: 'roster' },
+      'error',
+    );
+    throw new Error("Couldn't load this player. Please try again.");
+  }
 
   if (!player) {
     notFound();
