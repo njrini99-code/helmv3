@@ -28,6 +28,7 @@ import { Check, Users, Search } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { escapeLikePattern } from '@/lib/utils/escape-like';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Input } from '@/components/fairway/forms/Input';
@@ -102,8 +103,11 @@ export function FairwayNewMessageSheet({
       setLoading(true);
       const supabase = createClient();
 
-      // Escape SQL wildcards in user input to prevent unexpected matches.
-      const escapedQuery = query.replace(/%/g, '\\%').replace(/_/g, '\\_');
+      // Escape SQL wildcards AND the escape character itself. Escaping only
+      // `%`/`_` left a user-typed backslash in the pattern, where it re-armed
+      // the very wildcard it was meant to neutralise (CodeQL
+      // js/incomplete-sanitization).
+      const escapedQuery = escapeLikePattern(query);
       setSearchFailed(false);
 
       try {
