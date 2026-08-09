@@ -115,12 +115,20 @@ const addToWatchlistAction = withBaseballAction(
       return { success: false, message: 'This player is not available for recruiting' };
     }
 
-    const { data: existing } = await supabase
+    // Same shape as interests.ts: discarded, a failed read looked like "not on
+    // the watchlist", the insert below hit UNIQUE (coach_id, player_id) —
+    // verified against production — and the coach got a generic add failure
+    // instead of the accurate "already in watchlist".
+    const { data: existing, error: existingError } = await supabase
       .from('baseball_watchlists')
       .select('id')
       .eq('coach_id', activeCoachId)
       .eq('player_id', playerId)
       .maybeSingle();
+
+    if (existingError) {
+      return { success: false, message: 'Could not check your watchlist. Please try again.' };
+    }
 
     if (existing) {
       return { success: false, message: 'Player already in watchlist' };

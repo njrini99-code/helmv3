@@ -98,12 +98,23 @@ const addToInterestsAction = withBaseballAction(
       throw new BaseballActionError('Only college and JUCO programs can be added to interests');
     }
 
-    const { data: existing } = await supabase
+    // The `error` is READ. This dedup guard exists to make adding an interest
+    // IDEMPOTENT — the branch below deliberately returns success for a duplicate.
+    // Discarded, a failed read looked like "not on the list yet", the insert
+    // below then hit
+    // UNIQUE (player_id, organization_id) — verified against production — and the
+    // player got a hard failure for an interest they had already added. The
+    // friendly path was designed; a dropped read should not take it away.
+    const { data: existing, error: existingError } = await supabase
       .from('baseball_recruiting_interests')
       .select('id')
       .eq('player_id', playerId)
       .eq('organization_id', validated.organization_id)
       .maybeSingle();
+
+    if (existingError) {
+      throw new BaseballActionError('Could not check your current interests. Please try again.');
+    }
 
     if (existing) {
       return { success: true, alreadyExists: true };
