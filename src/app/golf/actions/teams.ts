@@ -1712,12 +1712,24 @@ async function addSecondTeamImpl(
 
   // Require the coach to already have a primary team — this action is for
   // program heads adding a SECOND team, not for the initial team creation.
-  const { data: primaryStaffRow } = await supabase
+  const { data: primaryStaffRow, error: primaryStaffError } = await supabase
     .from('golf_team_coach_staff')
     .select('id')
     .eq('coach_id', coach.id)
     .eq('is_primary', true)
     .maybeSingle();
+
+  // "You must have a primary team before adding a second team" is a statement
+  // about this coach's setup. A failed read produces the identical null, so a
+  // program head with a primary team is told they do not have one.
+  if (primaryStaffError) {
+    await logServerError(
+      `addSecondTeam: primary-team check failed for coach ${coach.id}: ${describeError(primaryStaffError)}`,
+      { action: 'teams.addSecondTeam', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: "Couldn't verify your current team. Please try again." };
+  }
 
   if (!primaryStaffRow) {
     return { success: false, error: 'You must have a primary team before adding a second team.' };
@@ -1725,18 +1737,48 @@ async function addSecondTeamImpl(
 
   // Prevent exact-duplicate gender: a coach should not have two teams with the
   // same gender. Fetch all teams in the org this coach staffs, check genders.
-  const { data: existingStaffTeams } = await supabase
+  const { data: existingStaffTeams, error: existingStaffError } = await supabase
     .from('golf_team_coach_staff')
     .select('team_id')
     .eq('coach_id', coach.id);
 
+  // THIS GUARD FAILED OPEN, and it is the only thing enforcing one men's and
+  // one women's team per program. Both reads feed `genderConflict`, and both
+  // degrade to `[]` — which reads as "no existing teams", so the conflict is
+  // never detected and the coach creates a SECOND team of the same gender.
+  //
+  // Two men's teams in one program is not a cosmetic problem: every downstream
+  // resolver picks a team by org and gender, and the roster, calendar and
+  // stats then split across two rows that should be one, with no way to merge
+  // them back from the UI.
+  //
+  // Refusing on a failed read is the right side to fail to — the coach can try
+  // again in a moment; an accidental duplicate team cannot be undone.
+  if (existingStaffError) {
+    await logServerError(
+      `addSecondTeam: staffed-teams read failed for coach ${coach.id}; refusing rather than risking a duplicate-gender team: ${describeError(existingStaffError)}`,
+      { action: 'teams.addSecondTeam', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: "Couldn't check your existing teams. Please try again." };
+  }
+
   if (existingStaffTeams && existingStaffTeams.length > 0) {
     const staffTeamIds = existingStaffTeams.map((s) => s.team_id);
-    const { data: existingTeams } = await supabase
+    const { data: existingTeams, error: existingTeamsError } = await supabase
       .from('golf_teams')
       .select('gender')
       .in('id', staffTeamIds)
       .eq('organization_id', coach.organization_id);
+
+    if (existingTeamsError) {
+      await logServerError(
+        `addSecondTeam: existing-team gender read failed for coach ${coach.id}; refusing rather than risking a duplicate-gender team: ${describeError(existingTeamsError)}`,
+        { action: 'teams.addSecondTeam', featureArea: 'teams' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't check your existing teams. Please try again." };
+    }
 
     const genderConflict = (existingTeams ?? []).some((t) => t.gender === gender);
     if (genderConflict) {
@@ -1898,24 +1940,54 @@ async function createStaffInviteImpl(
   if (userError || !user) return { success: false, error: 'Not authenticated' };
   if (role !== 'coach' && role !== 'admin') return { success: false, error: 'Unknown role' };
 
-  const { data: coach } = await supabase
+  // THIS IS THE ESCALATION GATE, so all three of its reads deny on failure —
+  // which is right, and unchanged. What was wrong is that each denial was
+  // phrased as a finding: "Coach profile not found" to a coach who has one,
+  // "Only a head coach of this team can invite staff" to the head coach, and
+  // "That team is not part of your program" about their own team. A head coach
+  // who cannot invite their assistant and is told they are not a head coach has
+  // no reason to try again.
+  const STAFF_INVITE_UNREADABLE =
+    "Couldn't verify your access to invite staff. Please try again.";
+
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  if (coachError) {
+    await logServerError(
+      `createStaffInvite: coach read failed: ${describeError(coachError)}`,
+      { action: 'teams.createStaffInvite', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: STAFF_INVITE_UNREADABLE };
+  }
+
   if (!coach?.organization_id) return { success: false, error: 'Coach profile not found' };
 
   // THE GATE. Only a HEAD COACH of this specific team may invite staff, and
   // therefore only a head coach can choose whether the invitee becomes another
   // head coach (program administrator). An assistant cannot escalate anyone —
   // including themselves, since they cannot mint a token at all.
-  const { data: staffRow } = await supabase
+  const { data: staffRow, error: staffRowError } = await supabase
     .from('golf_team_coach_staff')
     .select('id, role')
     .eq('team_id', teamId)
     .eq('coach_id', coach.id)
     .eq('role', 'head_coach')
     .maybeSingle();
+
+  if (staffRowError) {
+    await logServerError(
+      `createStaffInvite: head-coach check failed for team ${teamId}: ${describeError(staffRowError)}`,
+      { action: 'teams.createStaffInvite', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: STAFF_INVITE_UNREADABLE };
+  }
+
   if (!staffRow) {
     return { success: false, error: 'Only a head coach of this team can invite staff.' };
   }
@@ -1923,11 +1995,21 @@ async function createStaffInviteImpl(
   // The team must belong to the caller's own organization — an admin invite
   // grants head_coach across the whole org, so this is what stops a head coach
   // of program A minting one for program B.
-  const { data: team } = await supabase
+  const { data: team, error: teamError } = await supabase
     .from('golf_teams')
     .select('id, organization_id')
     .eq('id', teamId)
     .maybeSingle();
+
+  if (teamError) {
+    await logServerError(
+      `createStaffInvite: team read failed for ${teamId}: ${describeError(teamError)}`,
+      { action: 'teams.createStaffInvite', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: STAFF_INVITE_UNREADABLE };
+  }
+
   if (!team || team.organization_id !== coach.organization_id) {
     return { success: false, error: 'That team is not part of your program.' };
   }
