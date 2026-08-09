@@ -8,6 +8,8 @@ import type { Metadata } from 'next';
 import { resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
 import { computeUpcomingEventsSummary } from '@/lib/baseball/calendar/upcoming-events';
 import { resolveCalendarEmptyState } from '@/lib/baseball/calendar/empty-state';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
   title: 'Calendar | Helm Sports',
@@ -58,16 +60,40 @@ export default async function BaseballCalendarPage() {
         .eq('user_id', session.userId)
         .maybeSingle(),
     ]);
+    // TEAM RESOLUTION GATES THE WHOLE PAGE. A failed read yields the same null
+    // as "this coach has no team", and the `if (teamId)` block below is then
+    // skipped entirely — so the calendar renders with no events and no roster,
+    // identical to a brand-new program. The events read inside that block
+    // already reports its own failure; this one decided whether it ever ran.
+    if (teamResult.error || coachResult.error) {
+      void logServerError(
+        `[baseball calendar] coach team resolution failed; the calendar will render empty: ${describeError(teamResult.error ?? coachResult.error)}`,
+        { action: 'baseballCalendar.resolveTeam', featureArea: 'calendar' },
+        'error',
+      );
+    }
+
     teamId = teamResult.data?.id || null;
     currentUserId = coachResult.data?.id;
   } else if (!isCoach) {
     const playerId = session.player?.id;
     if (playerId) {
-      const { data: teamMember } = await supabase
+      const { data: teamMember, error: teamMemberError } = await supabase
         .from('baseball_team_members')
         .select('team_id')
         .eq('player_id', playerId)
         .maybeSingle();
+
+      // Same gate on the player side: a failed membership read renders the
+      // calendar as though this player is on no team.
+      if (teamMemberError) {
+        void logServerError(
+          `[baseball calendar] player membership read failed for ${playerId}; the calendar will render empty: ${describeError(teamMemberError)}`,
+          { action: 'baseballCalendar.resolveTeam', featureArea: 'calendar' },
+          'error',
+        );
+      }
+
       teamId = teamMember?.team_id || null;
     }
   }
@@ -182,6 +208,21 @@ export default async function BaseballCalendarPage() {
     // view (not the base table) so this player-reachable roster panel keeps
     // listing coaches after baseball_coaches RLS is narrowed away from blanket
     // read — a player is not a teammate of every org coach on the base table.
+    // These two are additive — the roster rail and the org lookup that names
+    // opponents. They degrade, but an empty rail on a team with players is
+    // worth a line in the log rather than looking like nobody has joined.
+    for (const [dataset, failed] of [
+      ['roster', membersResult.error],
+      ['team org', teamOrgResult.error],
+    ] as const) {
+      if (!failed) continue;
+      void logServerError(
+        `[baseball calendar] ${dataset} read failed for team ${teamId}; that panel will render empty: ${describeError(failed)}`,
+        { action: 'baseballCalendar.load', featureArea: 'calendar' },
+        'warning',
+      );
+    }
+
     const orgId = teamOrgResult.data?.organization_id;
     const coachesResult = orgId
       ? await supabase
