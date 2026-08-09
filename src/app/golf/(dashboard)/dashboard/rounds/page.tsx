@@ -99,10 +99,25 @@ export default async function RoundsPage() {
         .select('player_id')
         .eq('team_id', teamId)
         .eq('status', 'active');
+
+      // The `error` is READ. The try/catch only ever caught a THROWN failure,
+      // but supabase-js RESOLVES one as { data: null, error } — so the catch
+      // never ran, teamMembers came back null, teamPlayerIds was [], and the
+      // `if (teamPlayerIds.length > 0)` guard below skipped the protected fetch
+      // entirely. The coach got an empty rounds list for their whole team, which
+      // is precisely what the P425 comment below says must never happen; the
+      // throw-on-error it added never got the chance to fire.
+      if (result.error) {
+        throw new Error(`Failed to load team roster: ${result.error.message}`);
+      }
+
       teamMembers = result.data;
     } catch (error) {
       void logServerException(error, { action: 'rounds-teammembers-load', route: '/golf/dashboard/rounds', source: 'server_component', sport: 'golf' }, 'warning');
-      // Network failure
+      // Surfaced, not swallowed: an empty roster read must not masquerade as a
+      // team with no rounds. A team that genuinely has no active members still
+      // resolves to [] with no error and renders the honest empty list.
+      throw error;
     }
 
     const teamPlayerIds = teamMembers?.map(tm => tm.player_id) || [];
