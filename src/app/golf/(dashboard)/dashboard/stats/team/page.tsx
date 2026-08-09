@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -111,13 +113,36 @@ export default async function TeamStatsPage() {
     );
   }
 
-  // Get all team members first, then get their player data
-  const { data: teamMembers } = await supabase.from('golf_team_members').select('player_id').eq('team_id', teamId).eq('status', 'active');
+  // Get all team members first, then get their player data.
+  //
+  // The `error` is READ on both reads below. Discarded, a failed membership
+  // read left playerIds empty, which short-circuits the player read to
+  // `{ data: [] }`, and a failed player read left `players` null — both landing
+  // on the same `!players || players.length === 0` branch, which tells a coach
+  // their roster is empty and offers a CTA to add players they already have.
+  // This is the page they open to find where the team is leaking strokes.
+  const { data: teamMembers, error: teamMembersError } = await supabase.from('golf_team_members').select('player_id').eq('team_id', teamId).eq('status', 'active');
+
+  if (teamMembersError) {
+    await logServerError(
+      `[team stats] roster membership read failed for team ${teamId}; the page would claim the roster is empty: ${describeError(teamMembersError)}`,
+      { action: 'golf.teamStatsPage.resolveRoster', featureArea: 'stats' },
+    );
+    throw new Error('Failed to load team stats');
+  }
 
   const playerIds = (teamMembers || []).map((tm) => tm.player_id);
 
   // Get player data - use graduation_year (actual DB column name)
-  const { data: players } = playerIds.length > 0 ? await supabase.from('golf_players').select('id, first_name, last_name, avatar_url, graduation_year, handicap').in('id', playerIds).order('last_name') : { data: [] };
+  const { data: players, error: playersError } = playerIds.length > 0 ? await supabase.from('golf_players').select('id, first_name, last_name, avatar_url, graduation_year, handicap').in('id', playerIds).order('last_name') : { data: [], error: null };
+
+  if (playersError) {
+    await logServerError(
+      `[team stats] roster player read failed for team ${teamId}; the page would claim the roster is empty: ${describeError(playersError)}`,
+      { action: 'golf.teamStatsPage.loadPlayers', featureArea: 'stats' },
+    );
+    throw new Error('Failed to load team stats');
+  }
 
   if (!players || players.length === 0) {
     // A Fairway-styled empty state with a real next action (open the roster)
