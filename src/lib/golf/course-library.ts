@@ -59,10 +59,20 @@ export function courseImageExt(mime: string): string {
 }
 
 /** True only for a public URL we minted in our own course-images bucket. Guards
- *  against setting image_url to an arbitrary external URL. */
+ *  against setting image_url to an arbitrary external URL.
+ *
+ *  TRAILING SLASHES ARE NORMALISED ON BOTH SIDES. The URL being checked comes
+ *  from supabase-js `getPublicUrl()` in the BROWSER; the prefix is built here
+ *  from `NEXT_PUBLIC_SUPABASE_URL` as the SERVER sees it. Those are two
+ *  independent reads of the same setting, and a trailing slash on either — a
+ *  one-character difference nobody would notice in a dashboard — makes every
+ *  legitimate upload fail this check with "Invalid image URL" after the file
+ *  has already been stored. Comparing normalised values costs nothing and
+ *  removes a whole class of environment-shaped failure. */
 export function isCourseImagePublicUrl(url: string, supabaseUrl: string): boolean {
   if (!url || !supabaseUrl) return false;
-  return url.startsWith(`${supabaseUrl}/storage/v1/object/public/${COURSE_IMAGE_BUCKET}/`);
+  const base = supabaseUrl.replace(/\/+$/, '');
+  return url.startsWith(`${base}/storage/v1/object/public/${COURSE_IMAGE_BUCKET}/`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

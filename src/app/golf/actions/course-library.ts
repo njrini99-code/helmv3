@@ -1239,6 +1239,26 @@ async function setCourseImageUrlImpl(
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
   if (!isCourseImagePublicUrl(imageUrl, supabaseUrl)) {
+    // RECORD WHAT WAS REJECTED, AND WHAT WE EXPECTED.
+    //
+    // A real coach hit this in production on 2026-08-09 and the log said only
+    // "Invalid image URL" with `url: null` — so there was no way to tell
+    // whether the upload had produced a strange URL, whether the server's
+    // NEXT_PUBLIC_SUPABASE_URL differed from the browser's, or whether the env
+    // var was empty (which this predicate also answers false for). The file was
+    // already in the bucket by then: the upload succeeded, and only the check
+    // on the way back failed, so the coach saw a red toast for a photo that had
+    // in fact been stored.
+    //
+    // Neither value is a secret — the URL is public by construction and the
+    // project ref ships in the client bundle — so both are logged verbatim.
+    await logServerError(
+      `setCourseImageUrl rejected an image URL. received=${JSON.stringify(imageUrl)} ` +
+        `expectedPrefix=${JSON.stringify(`${supabaseUrl.replace(/\/+$/, '')}/storage/v1/object/public/course-images/`)} ` +
+        `envPresent=${Boolean(supabaseUrl)}`,
+      { action: 'courseLibrary.setCourseImageUrl', featureArea: 'course_library' },
+      'warning',
+    );
     return { success: false, error: 'Invalid image URL' };
   }
 
