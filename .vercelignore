@@ -30,3 +30,16 @@ playwright-report/
 coverage/
 .turbo/
 *.tsbuildinfo
+
+# Local-only tooling state — same .gitignore-is-ignored trap as the block
+# above, and the reason the 2026-08-09 deploy was rejected at 19,795 files:
+#
+#   .deepsec    26,425 files — per-repo security-scanner working directory
+#   .worktrees   7,004 files — git worktrees, i.e. a FULL SOURCE COPY of every
+#                              in-flight branch, uploaded alongside the branch
+#                              actually being deployed
+#
+# Both are in .gitignore and neither has ever been part of a build. Listing
+# them here is what makes .gitignore's intent apply to the upload too.
+.deepsec/
+.worktrees/
