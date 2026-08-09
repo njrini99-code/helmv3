@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
@@ -29,11 +31,25 @@ export default async function GolfDocumentsPage() {
   if (coach?.organization_id) {
     teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   } else if (player?.id) {
-    const { data: teamMember } = await supabase
+    // The `error` is READ. Discarded, a failed membership read left teamId null
+    // and a ROSTERED player was told "No Team Found — you must be on a team to
+    // access documents". `.maybeSingle()` reports a genuine no-row as
+    // { data: null, error: null }, so a player truly on no team still sees that
+    // gate, which is the right answer for them.
+    const { data: teamMember, error: teamMemberError } = await supabase
       .from('golf_team_members')
       .select('team_id')
       .eq('player_id', player.id)
       .maybeSingle();
+
+    if (teamMemberError) {
+      await logServerError(
+        `[documents page] team membership read failed for player ${player.id}; the page would claim they have no team: ${describeError(teamMemberError)}`,
+        { action: 'golf.documentsPage.resolveTeam', featureArea: 'documents' },
+      );
+      throw new Error('Failed to load documents');
+    }
+
     teamId = teamMember?.team_id || null;
   }
 
@@ -92,9 +108,21 @@ export default async function GolfDocumentsPage() {
     .order('created_at', { ascending: false });
 
   // Players can only see public documents
-  const { data: rawDocuments } = !isCoach
+  // The `error` is READ. This one is a ternary, which is why the unchecked-read
+  // ratchet never counted it — but it fails identically: a dropped connection
+  // rendered an empty shelf to a team whose waivers, itineraries and
+  // eligibility forms are all sitting there.
+  const { data: rawDocuments, error: documentsError } = !isCoach
     ? await baseQuery.eq('is_public', true)
     : await baseQuery;
+
+  if (documentsError) {
+    await logServerError(
+      `[documents page] document list read failed for team ${teamId}; the page would claim there are none: ${describeError(documentsError)}`,
+      { action: 'golf.documentsPage.listDocuments', featureArea: 'documents' },
+    );
+    throw new Error('Failed to load documents');
+  }
 
   // Cast to correct type (database has player_visible, not is_public)
   const documents = rawDocuments as unknown as DocumentRow[] | null;
