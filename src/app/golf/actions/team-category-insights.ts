@@ -527,7 +527,7 @@ async function getTeamOverviewImpl(
     // completed rounds in 90 days would otherwise silently lose roundIds,
     // truncating the downstream shot fetch, yardageCurve, deadZones, and the
     // hero's "toughest band" read. Uses the same helper as the shot batch below.
-    const { data: roundsData } = await fetchAllRowsResult<{ id: string }>((from, to) => supabase
+    const { data: roundsData, error: roundsError } = await fetchAllRowsResult<{ id: string }>((from, to) => supabase
       .from('golf_rounds')
       .select('id')
       .in('player_id', playerIds)
@@ -535,6 +535,16 @@ async function getTeamOverviewImpl(
       .gte('round_date', sinceDateStr)
       .order('id', { ascending: true })
       .range(from, to), undefined, { table: 'golf_rounds', action: 'getTeamOverview', feature: 'intelligence_dashboard', sport: 'golf' });
+
+    // The `error` is READ. Discarded, a failure left roundsData null, the whole
+    // `if (roundsData && length > 0)` block below was skipped, and the dashboard
+    // rendered NO dead zones and NO weaknesses — on the one screen whose job is
+    // to say where the team is losing strokes. That reads as "nothing to work
+    // on". The catch in this function already logs and returns
+    // { success: false }; it was simply never given anything to report.
+    if (roundsError) {
+      throw new Error(`team overview round-id read failed: ${roundsError.message}`);
+    }
 
     let yardageCurve: Array<{ rangeStart: number; rangeEnd: number; avgSG: number; shotCount: number }> = [];
     let deadZones: Array<{ rangeStart: number; rangeEnd: number; deficit: number }> = [];
@@ -549,7 +559,7 @@ async function getTeamOverviewImpl(
 
       for (let i = 0; i < roundIds.length; i += batchSize) {
         const batch = roundIds.slice(i, i + batchSize);
-        const { data: shotsData } = await fetchAllRowsResult((from, to) => supabase
+        const { data: shotsData, error: shotsError } = await fetchAllRowsResult((from, to) => supabase
           .from('golf_shots')
           .select('id, round_id, hole_number, shot_number, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, club_type, result')
           .in('round_id', batch)
@@ -561,6 +571,16 @@ async function getTeamOverviewImpl(
           // we paginate to fetch every row instead of silently truncating.
           .order('id', { ascending: true })
           .range(from, to), undefined, { table: 'golf_shots', action: 'getTeamOverview', feature: 'intelligence_dashboard', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+
+        // The `error` is READ. Discarded, a failed BATCH silently dropped that
+        // batch's shots and the analysis carried on — computing the yardage
+        // curve, dead zones and ranked weaknesses on PARTIAL data and
+        // presenting them as complete. That is worse than an empty dashboard:
+        // the "toughest band" a coach then trains against is derived from a
+        // subset nobody chose, and nothing on screen says so.
+        if (shotsError) {
+          throw new Error(`team overview shot batch read failed: ${shotsError.message}`);
+        }
         if (shotsData) {
           allShotsRaw.push(...(shotsData as unknown as Array<Record<string, unknown>>));
         }
