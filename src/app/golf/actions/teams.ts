@@ -2075,11 +2075,22 @@ async function redeemStaffInviteImpl(
 
   const admin = createAdminClient();
 
-  const { data: existingCoach } = await admin
+  // The `error` is READ. Discarded, a failed read looked like "this user has no
+  // coach row", so the insert below minted a SECOND coach profile for someone
+  // who already had one — a duplicate identity row, not a wrong message.
+  const { data: existingCoach, error: existingCoachError } = await admin
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
+
+  if (existingCoachError) {
+    await logServerError(
+      `[acceptStaffInvite] coach lookup failed for user ${user.id}; refusing rather than risk a duplicate coach profile: ${describeError(existingCoachError)}`,
+      { action: 'teams.acceptStaffInvite', featureArea: 'teams' },
+    );
+    return { success: false, error: 'Could not verify your account. Please try again.' };
+  }
 
   let coachId = existingCoach?.id ?? null;
 

@@ -175,11 +175,30 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
     // coach row, no staff-invite flow does either, and this action is the only
     // `golf_coaches` insert in the codebase — so this is hardening, not a live
     // bug fix. It costs one word and removes an unrecoverable dead end.
-    const { data: preExistingCoach } = await supabase
+    // The `error` is READ, and this one REFUSES. This value decides whether the
+    // rollback paths below may DELETE the coach row (`createdCoachId`). A
+    // discarded error made a failed read look like "no pre-existing coach", so
+    // the code would believe it had created a profile it had not — and a later
+    // failure would then delete a coach's REAL profile. That is precisely the
+    // data loss the comment above warns about, reached by a dropped connection
+    // rather than by logic.
+    //
+    // `.maybeSingle()` reports a genuine "no coach yet" as
+    // { data: null, error: null }, so first-time onboarding is unaffected.
+    const { data: preExistingCoach, error: preExistingCoachError } = await supabase
       .from('golf_coaches')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (preExistingCoachError) {
+      await logServerError(
+        `[Onboarding] pre-existing coach check failed for user ${user.id}; refusing rather than risk deleting a real coach profile on rollback: ${describeError(preExistingCoachError)}`,
+        { action: 'onboarding.completeCoachOnboarding' },
+      );
+      await supabase.from('organizations').delete().eq('id', org.id);
+      return { success: false, error: 'Could not verify your account. Please try again.' };
+    }
 
     const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
