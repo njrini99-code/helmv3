@@ -39,12 +39,27 @@ export default function TravelPageClient() {
     setLoadError(null);
 
     try {
-      // Check if coach
-      const { data: coach } = await supabase
+      // IDENTITY RESOLUTION DECIDES WHETHER ANYTHING LOADS AT ALL.
+      //
+      // `resolvedTeamId` stays null on any failed read, and the
+      // `if (resolvedTeamId)` block below is then skipped entirely — so the
+      // page finishes loading with no itineraries and NO loadError, because
+      // the only error path is inside a block that never ran. The coach sees a
+      // travel page with no trips on it and nothing saying why.
+      //
+      // These now set loadError, which the page already renders.
+      const { data: coach, error: coachError } = await supabase
         .from('baseball_coaches')
         .select('id, organization_id')
         .eq('user_id', user.id)
         .maybeSingle();
+
+      if (coachError) {
+        console.warn('[baseball travel] coach read failed:', coachError.message);
+        setItineraries([]);
+        setLoadError('Travel itineraries could not be loaded.');
+        return;
+      }
 
       let resolvedTeamId: string | null = null;
       let resolvedIsCoach = false;
@@ -55,27 +70,50 @@ export default function TravelPageClient() {
         if (selectedTeamId) {
           resolvedTeamId = selectedTeamId;
         } else if (coach.organization_id) {
-          const { data: orgTeam } = await supabase
+          const { data: orgTeam, error: orgTeamError } = await supabase
             .from('baseball_teams')
             .select('id')
             .eq('organization_id', coach.organization_id)
             .maybeSingle();
+
+          if (orgTeamError) {
+            console.warn('[baseball travel] team read failed:', orgTeamError.message);
+            setItineraries([]);
+            setLoadError('Travel itineraries could not be loaded.');
+            return;
+          }
+
           resolvedTeamId = orgTeam?.id || null;
         }
       } else {
         // Check if player
-        const { data: player } = await supabase
+        const { data: player, error: playerError } = await supabase
           .from('baseball_players')
           .select('id')
           .eq('user_id', user.id)
           .maybeSingle();
 
+        if (playerError) {
+          console.warn('[baseball travel] player read failed:', playerError.message);
+          setItineraries([]);
+          setLoadError('Travel itineraries could not be loaded.');
+          return;
+        }
+
         if (player) {
-          const { data: teamMember } = await supabase
+          const { data: teamMember, error: teamMemberError } = await supabase
             .from('baseball_team_members')
             .select('team_id')
             .eq('player_id', player.id)
             .maybeSingle();
+
+          if (teamMemberError) {
+            console.warn('[baseball travel] membership read failed:', teamMemberError.message);
+            setItineraries([]);
+            setLoadError('Travel itineraries could not be loaded.');
+            return;
+          }
+
           resolvedTeamId = teamMember?.team_id || null;
         }
       }

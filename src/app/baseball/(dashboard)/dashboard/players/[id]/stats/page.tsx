@@ -7,6 +7,8 @@ import { PlayerGameLog } from '@/components/baseball/season-stats/PlayerGameLog'
 import type { BaseballPlayerSeasonStats, BaseballBoxScoreBatting, BaseballBoxScorePitching, BaseballGame } from '@/lib/types';
 import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -19,11 +21,31 @@ export default async function PlayerStatsPage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/baseball/login');
 
-  const { data: coach } = await supabase
+  // FOUR READS, AND EVERY FAILURE IS A REDIRECT OR A 404.
+  //
+  // This page silently bounces the coach on any null: to command-center, to
+  // /program, or to a 404. A failed read produces the identical null, so a
+  // dropped connection walks the coach backwards through the product with no
+  // error shown and nothing to retry — and the roster they came from still
+  // lists the player they clicked.
+  const STATS_UNREADABLE = "Couldn't load this player's stats. Please try again.";
+
+  const { data: coach, error: coachError } = await supabase
     .from('baseball_coaches')
     .select('id, coach_type, organization_id')
     .eq('user_id', user.id)
     .single();
+
+  // `.single()` reports a genuine no-row as PGRST116 — that really is "not a
+  // coach" and still redirects.
+  if (coachError && coachError.code !== 'PGRST116') {
+    void logServerError(
+      `[baseball player stats] coach read failed: ${describeError(coachError)}`,
+      { action: 'baseballPlayerStats.resolveCoach', featureArea: 'stats' },
+      'warning',
+    );
+    throw new Error(STATS_UNREADABLE);
+  }
 
   if (!coach) redirect('/baseball/dashboard/command-center');
   if (!coach.organization_id) redirect('/baseball/dashboard/program');
@@ -32,29 +54,58 @@ export default async function PlayerStatsPage({ params }: PageProps) {
   const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   if (!teamId) redirect('/baseball/dashboard/program');
 
-  const { data: team } = await supabase
+  const { data: team, error: teamError } = await supabase
     .from('baseball_teams')
     .select('id, name')
     .eq('id', teamId)
-    .maybeSingle() as { data: { id: string; name: string } | null };
+    .maybeSingle() as { data: { id: string; name: string } | null; error: { message?: string; code?: string } | null };
+
+  if (teamError) {
+    void logServerError(
+      `[baseball player stats] team read failed for ${teamId}: ${describeError(teamError)}`,
+      { action: 'baseballPlayerStats.resolveTeam', featureArea: 'stats' },
+      'warning',
+    );
+    throw new Error(STATS_UNREADABLE);
+  }
 
   if (!team) redirect('/baseball/dashboard/program');
 
   // Verify player is on team
-  const { data: membership } = await supabase
+  const { data: membership, error: membershipError } = await supabase
     .from('baseball_team_members')
     .select('player_id, jersey_number')
     .eq('team_id', team.id)
     .eq('player_id', playerId)
     .single();
 
+  if (membershipError && membershipError.code !== 'PGRST116') {
+    void logServerError(
+      `[baseball player stats] membership read failed for ${playerId}: ${describeError(membershipError)}`,
+      { action: 'baseballPlayerStats.verifyMembership', featureArea: 'stats' },
+      'warning',
+    );
+    throw new Error(STATS_UNREADABLE);
+  }
+
   if (!membership) notFound();
 
-  const { data: player } = await supabase
+  const { data: player, error: playerError } = await supabase
     .from('baseball_players')
     .select('id, first_name, last_name, avatar_url, primary_position, secondary_position, grad_year')
     .eq('id', playerId)
     .single();
+
+  // Membership already proved this player is on the team, so a failure here
+  // 404s someone we just confirmed exists.
+  if (playerError && playerError.code !== 'PGRST116') {
+    void logServerError(
+      `[baseball player stats] player read failed for ${playerId} after membership was confirmed: ${describeError(playerError)}`,
+      { action: 'baseballPlayerStats.loadPlayer', featureArea: 'stats' },
+      'error',
+    );
+    throw new Error(STATS_UNREADABLE);
+  }
 
   if (!player) notFound();
 
