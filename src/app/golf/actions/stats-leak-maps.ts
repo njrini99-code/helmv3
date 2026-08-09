@@ -253,7 +253,7 @@ async function completedRoundIds(
   // Paginated: PostgREST caps each response at 1000 rows, so a roster's
   // season can silently truncate an unpaginated id fetch (rounds beyond the
   // first 1000 would vanish from every leak map).
-  const { data } = await fetchAllRowsResult((from, to) =>
+  const { data, error } = await fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_rounds')
       .select('id')
@@ -264,6 +264,11 @@ async function completedRoundIds(
     undefined,
     { table: 'golf_rounds', action: 'completedRoundIds', feature: 'stats_analytics', sport: 'golf' },
   );
+  // Empty here starves BOTH bucket builders, so a failure silently empties every
+  // leak map at once rather than one category.
+  if (error) {
+    throw new Error(`completed-round id read failed: ${error.message}`);
+  }
   return (data ?? [])
     .map((r) => (r as { id: string }).id)
     .filter((id): id is string => typeof id === 'string');
@@ -290,7 +295,7 @@ async function buildPuttBuckets(
   if (roundIds.length > 0) {
     // Paginated past the PostgREST 1000-row cap; MAX_SHOT_ROWS is enforced by
     // stopping page accumulation (a single `.limit()` silently capped at 1000).
-    const { data } = await fetchAllRowsResult<PuttRow>((from, to) => {
+    const { data, error } = await fetchAllRowsResult<PuttRow>((from, to) => {
       if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
       return supabase
         .from('golf_shots')
@@ -301,6 +306,10 @@ async function buildPuttBuckets(
         .order('id', { ascending: true })
         .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
     }, undefined, { table: 'golf_shots', action: 'buildPuttBuckets', feature: 'stats_analytics', sport: 'golf' });
+
+    if (error) {
+      throw new Error(`putting shot read failed: ${error.message}`);
+    }
 
     for (const row of data ?? []) {
       const ft = row.putt_distance_feet;
@@ -348,7 +357,7 @@ async function buildApproachBuckets(
   if (roundIds.length > 0) {
     // Paginated past the PostgREST 1000-row cap; MAX_SHOT_ROWS is enforced by
     // stopping page accumulation (a single `.limit()` silently capped at 1000).
-    const { data } = await fetchAllRowsResult<ApproachRow>((from, to) => {
+    const { data, error } = await fetchAllRowsResult<ApproachRow>((from, to) => {
       if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
       return supabase
         .from('golf_shots')
@@ -365,6 +374,10 @@ async function buildApproachBuckets(
         .order('id', { ascending: true })
         .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
     }, undefined, { table: 'golf_shots', action: 'buildApproachBuckets', feature: 'stats_analytics', sport: 'golf' });
+
+    if (error) {
+      throw new Error(`approach shot read failed: ${error.message}`);
+    }
 
     for (const row of data ?? []) {
       const beforeYd = row.distance_to_hole_before;
@@ -438,11 +451,23 @@ async function getTeamLeakMapsImpl(
       .maybeSingle();
     teamGender = (team as { gender?: string } | null)?.gender ?? null;
 
-    const { data: members } = await supabase
+    // The `error` is READ on this and the three paginated reads below. Every one
+    // of them failed to an EMPTY result, and an empty leak map does not read as
+    // "we could not measure" — it reads as a clean scorecard, on the one screen
+    // whose entire job is to say where the team is losing strokes.
+    //
+    // Thrown, not defaulted: the catch in this function already logs with
+    // context and returns { success: false }, so the honest report was wired up
+    // all along and simply never given anything to report.
+    const { data: members, error: membersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', resolvedTeamId)
       .eq('status', 'active');
+
+    if (membersError) {
+      throw new Error(`roster read failed for team ${resolvedTeamId}: ${membersError.message}`);
+    }
 
     const playerIds = (members ?? [])
       .map((m) => m.player_id)
