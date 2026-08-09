@@ -4,6 +4,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { escapeLikePattern } from '@/lib/utils/escape-like';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import {
@@ -1254,7 +1255,11 @@ async function searchGolfMessagesImpl(
     // Search messages using ilike for case-insensitive partial matching
     // Only within conversations the user is a participant of
     // Escape SQL wildcards in user input
-    const escapedQuery = trimmedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
+    // Escape SQL wildcards AND the escape character itself. Escaping only
+    // `%`/`_` left a user-typed backslash in the pattern, where it re-armed
+    // the very wildcard it was meant to neutralise (CodeQL
+    // js/incomplete-sanitization).
+    const escapedQuery = escapeLikePattern(trimmedQuery);
     const searchPattern = `%${escapedQuery}%`;
 
     let messagesQuery = supabase
