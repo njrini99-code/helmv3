@@ -252,7 +252,26 @@ async function listCoursesImpl(opts: ListCoursesOptions = {}): Promise<GolfCours
   }
 
   const { data, error } = await q;
-  if (error || !data) return [];
+
+  // This is the Cloud Course Library's own listing, and it is the FIRST thing a
+  // player sees when adding a course to a round. An empty array here reads as
+  // "no courses match" — or worse, on an unfiltered first load, as "the library
+  // is empty" — so a dropped connection sends someone off to type a course name
+  // by hand that we already have, creating the duplicate the library exists to
+  // prevent.
+  //
+  // Still lenient rather than throwing: this feeds a picker inside a larger
+  // form, and taking the round-entry flow down over it would be worse. But the
+  // failure is recorded now, which the sibling reads in this file already do.
+  if (error) {
+    await logServerError(
+      `[listCourses] course listing read failed — the library will look empty: ${describeError(error)}`,
+      { action: 'courseLibrary.listCourses', featureArea: 'course_library' },
+    );
+    return [];
+  }
+
+  if (!data) return [];
   return data.map(mapCourseRow);
 }
 
