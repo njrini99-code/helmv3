@@ -985,13 +985,29 @@ async function createCourseImpl(
   const normalized = normalizeName(name);
 
   // Dedup: return the existing active course rather than minting a duplicate.
-  const { data: existing } = await supabase
+  const { data: existing, error: dedupError } = await supabase
     .from('golf_courses')
     .select('*')
     .eq('normalized_name', normalized)
     .is('deleted_at', null)
     .limit(1)
     .maybeSingle();
+
+  // The `error` is READ, and this one REFUSES. Discarded, a failed read looked
+  // exactly like "no such course" and the insert below minted a DUPLICATE into
+  // the library every team shares — a bad row, not a bad message, and one
+  // nobody would notice until two Wolf Laurels showed up in the picker.
+  //
+  // `.maybeSingle()` reports a genuine miss as { data: null, error: null }, so a
+  // course that really is new still gets created.
+  if (dedupError) {
+    await logServerError(
+      `createCourse dedup read failed for "${name}"; refusing rather than risk a duplicate library course: ${dedupError.message}`,
+      { action: 'createCourse', featureArea: 'course-library' },
+    );
+    return { success: false, error: 'Could not check for an existing course. Please try again.' };
+  }
+
   if (existing) {
     return { success: true, data: { course: mapCourseRow(existing), deduped: true } };
   }
@@ -1488,11 +1504,22 @@ async function contributeCourseFromRoundImpl(
   //    (course_id, normalized_tee_name) unique guard would otherwise 23505).
   const teeName = (input.teeName ?? '').trim() || 'Default';
   const normTee = normalizeName(teeName);
-  const { data: existingTees } = await supabase
+  // The `error` is READ. Discarded, a failure looked like "no tees on this
+  // course", so the create below hit the (course_id, normalized_tee_name) unique
+  // guard and the coach got a failure for a tee that already existed.
+  const { data: existingTees, error: existingTeesError } = await supabase
     .from('golf_course_tees')
     .select('id, normalized_tee_name')
     .eq('course_id', courseId)
     .is('deleted_at', null);
+
+  if (existingTeesError) {
+    await logServerError(
+      `tee reuse read failed for course ${courseId}; refusing rather than collide with an existing tee: ${existingTeesError.message}`,
+      { action: 'createCourseWithTee', featureArea: 'course-library' },
+    );
+    return { success: false, error: 'Could not check existing tee sets. Please try again.' };
+  }
   const match = (existingTees ?? []).find((t) => (t.normalized_tee_name as string) === normTee);
   if (match) return { success: true, data: { courseId, teeId: match.id as string } };
 
@@ -1618,9 +1645,19 @@ async function updateTeeImpl(
     update.is_draft = !isTeeComplete(holesCount, nextRows);
   } else if (patch.holesCount !== undefined) {
     // holesCount changed without new holes — recompute draft from existing holes.
-    const { data: existingHoles } = await supabase
+    const { data: existingHoles, error: existingHolesError } = await supabase
       .from('golf_course_tee_holes').select('hole_number, par').eq('tee_id', teeId);
-    update.is_draft = !isTeeComplete(holesCount, (existingHoles ?? []) as { hole_number: number; par: number }[]);
+    // The `error` is READ. Discarded, a failure fell back to `[]`, isTeeComplete
+    // said "not complete", and a FINISHED tee set was silently flipped back to
+    // is_draft — where it drops out of pickers as an unfinished course.
+    if (existingHolesError) {
+      await logServerError(
+        `updateTee hole read failed for tee ${teeId}; leaving is_draft unchanged rather than marking a complete tee set a draft: ${existingHolesError.message}`,
+        { action: 'updateTee', featureArea: 'course-library' },
+      );
+    } else {
+      update.is_draft = !isTeeComplete(holesCount, (existingHoles ?? []) as { hole_number: number; par: number }[]);
+    }
   }
 
   const { data: after, error } = await supabase
@@ -1732,12 +1769,24 @@ async function saveTeamCourseImpl(
   const ctx = await getCoachTeam(supabase);
   if ('error' in ctx) return { success: false, error: ctx.error };
 
-  const { data: existing } = await supabase
+  // The `error` is READ. Discarded, a failed read looked like "nothing saved
+  // yet", and the upsert below then overwrote the team's default tee and pinned
+  // state with defaults and reassigned created_by_user_id. That is silent data
+  // loss on settings a coach chose, not a wrong message.
+  const { data: existing, error: existingError } = await supabase
     .from('golf_team_saved_courses')
     .select('*')
     .eq('team_id', ctx.teamId)
     .eq('course_id', courseId)
     .maybeSingle();
+
+  if (existingError) {
+    await logServerError(
+      `saveTeamCourse existing-row read failed for course ${courseId}; refusing rather than overwrite the team's saved tee/pin: ${existingError.message}`,
+      { action: 'saveTeamCourse', featureArea: 'course-library' },
+    );
+    return { success: false, error: 'Could not save this course. Please try again.' };
+  }
 
   const payload = {
     team_id: ctx.teamId,

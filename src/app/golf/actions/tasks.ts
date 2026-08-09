@@ -350,16 +350,40 @@ async function createTaskImpl(
           ? new Date(dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
           : null;
 
-        const { data: playerRows } = await supabase
+        // Both reads are CHECKED. Discarded, a failure left the list null, the
+        // guards below fell through, and NO notification went to anyone — while
+        // the task itself was created, so the coach saw success and reasonably
+        // believed their players had been told. The surrounding try/catch never
+        // fired for it either: supabase-js RESOLVES failures rather than
+        // throwing, so only a real exception ever reached it.
+        //
+        // Still fire-and-forget: the task is real and visible in-app either
+        // way, so this logs rather than failing the action. Only the silence
+        // changes.
+        const { data: playerRows, error: playerRowsError } = await supabase
           .from('golf_players')
           .select('user_id')
           .in('id', assignToPlayerIds);
 
+        if (playerRowsError) {
+          await logServerError(
+            `[createTask] notification recipient lookup failed for task ${task.id}; ${assignToPlayerIds.length} assignee(s) were NOT notified: ${describeError(playerRowsError)}`,
+            { action: 'tasks.createTask', featureArea: 'tasks' },
+          );
+        }
+
         if (playerRows?.length) {
-          const { data: userRows } = await supabase
+          const { data: userRows, error: userRowsError } = await supabase
             .from('users')
             .select('id, email')
             .in('id', playerRows.map(p => p.user_id));
+
+          if (userRowsError) {
+            await logServerError(
+              `[createTask] notification email lookup failed for task ${task.id}; ${playerRows.length} assignee(s) were NOT notified: ${describeError(userRowsError)}`,
+              { action: 'tasks.createTask', featureArea: 'tasks' },
+            );
+          }
 
           if (userRows) {
             await Promise.allSettled(
