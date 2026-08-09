@@ -82,6 +82,10 @@ export function FairwayNewMessageSheet({
   const [loading, setLoading] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [noTeamError, setNoTeamError] = React.useState(false);
+  // A failed lookup is not "nobody matches". Without this the sheet renders its
+  // ordinary empty state, so a coach searching their own full roster is told
+  // there is nobody to message — and stops looking.
+  const [searchFailed, setSearchFailed] = React.useState(false);
   const [creating, setCreating] = React.useState(false);
 
   // ── recipient search — VERBATIM logic from GolfNewMessageModal ──────────────
@@ -100,14 +104,22 @@ export function FairwayNewMessageSheet({
 
       // Escape SQL wildcards in user input to prevent unexpected matches.
       const escapedQuery = query.replace(/%/g, '\\%').replace(/_/g, '\\_');
+      setSearchFailed(false);
 
       try {
         if (currentUserRole === 'coach') {
           // Coach searching for players on THEIR team only.
-          const { data: teamMembers } = await supabase
+          const { data: teamMembers, error: membersError } = await supabase
             .from('golf_team_members')
             .select('player_id')
             .eq('team_id', teamId);
+
+          if (membersError) {
+            console.warn('[new message] roster read failed:', membersError.message);
+            setSearchFailed(true);
+            setResults([]);
+            return;
+          }
 
           const playerIds = teamMembers?.map((m) => m.player_id) ?? [];
 
@@ -152,11 +164,19 @@ export function FairwayNewMessageSheet({
             data: { user: currentUser },
           } = await supabase.auth.getUser();
 
-          const { data: team } = await supabase
+          const { data: team, error: teamError } = await supabase
             .from('golf_teams')
             .select('organization_id')
             .eq('id', teamId)
             .single();
+
+          // Without the org id no coach can be found, so the player is shown a
+          // list with no coaches on it — indistinguishable from a team that has
+          // none.
+          if (teamError) {
+            console.warn('[new message] team read failed:', teamError.message);
+            setSearchFailed(true);
+          }
 
           let coachResults: SearchResult[] = [];
 
@@ -184,10 +204,15 @@ export function FairwayNewMessageSheet({
               }));
           }
 
-          const { data: teamMembers } = await supabase
+          const { data: teamMembers, error: teammatesError } = await supabase
             .from('golf_team_members')
             .select('player_id')
             .eq('team_id', teamId);
+
+          if (teammatesError) {
+            console.warn('[new message] teammate read failed:', teammatesError.message);
+            setSearchFailed(true);
+          }
 
           const playerIds = (teamMembers ?? []).map((m) => m.player_id);
           let teammateResults: SearchResult[] = [];
@@ -234,7 +259,9 @@ export function FairwayNewMessageSheet({
 
           setResults(deduped);
         }
-      } catch {
+      } catch (error) {
+        console.warn('[new message] recipient search failed:', error);
+        setSearchFailed(true);
         setResults([]);
       } finally {
         setLoading(false);
@@ -402,14 +429,23 @@ export function FairwayNewMessageSheet({
                 variant="subtle"
                 icon={Users}
                 title={
-                  searchQuery.trim()
-                    ? `No ${noun}s found`
-                    : `No ${noun}s on your team yet`
+                  // A failed lookup renders here too, and the ordinary copy is
+                  // a claim about the team: "No players on your team yet" to a
+                  // coach whose roster is full, or "No players found" for a
+                  // name that is right there. Both read as an answer, and
+                  // neither suggests trying again.
+                  searchFailed
+                    ? `Couldn't load ${noun}s`
+                    : searchQuery.trim()
+                      ? `No ${noun}s found`
+                      : `No ${noun}s on your team yet`
                 }
                 description={
-                  searchQuery.trim()
-                    ? 'Try a different name or clear your search.'
-                    : 'Once your team grows, you can start a conversation with anyone here.'
+                  searchFailed
+                    ? 'Something went wrong looking that up. Please try again.'
+                    : searchQuery.trim()
+                      ? 'Try a different name or clear your search.'
+                      : 'Once your team grows, you can start a conversation with anyone here.'
                 }
               />
             )}
