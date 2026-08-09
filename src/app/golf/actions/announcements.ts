@@ -917,20 +917,41 @@ async function getAnnouncementDetailImpl(
     }));
 
     // Fetch documents
+    // Both document reads are CHECKED. Discarded, a failure on the junction read
+    // showed the announcement with NO attachments at all, and a failure on the
+    // detail read below showed the attachment slots with every document null.
+    // Either way a coach posts "sign the attached waiver" and the player sees an
+    // announcement whose waiver is simply not there — silently, with the
+    // announcement itself looking perfectly fine.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: annDocs } = await (supabase as any)
+    const { data: annDocs, error: annDocsError } = await (supabase as any)
       .from('golf_announcement_documents')
       .select('id, document_id, sort_order')
       .eq('announcement_id', announcementId)
-      .order('sort_order', { ascending: true }) as { data: Array<{ id: string; document_id: string; sort_order: number }> | null };
+      .order('sort_order', { ascending: true }) as { data: Array<{ id: string; document_id: string; sort_order: number }> | null; error: { message: string } | null };
+
+    if (annDocsError) {
+      await logServerError(
+        `[getAnnouncementDetail] attachment list read failed for announcement ${announcementId}; it will render with no attachments: ${describeError(annDocsError)}`,
+        { action: 'announcements.getAnnouncementDetail', featureArea: 'announcements' },
+      );
+    }
 
     const docIds = (annDocs || []).map(d => d.document_id);
     let docDetails: Array<{ id: string; title: string; file_url: string; file_type: string; file_size: number }> = [];
     if (docIds.length > 0) {
-      const { data } = await supabase
+      const { data, error: docDetailsError } = await supabase
         .from('golf_documents')
         .select('id, title, file_url, file_type, file_size')
         .in('id', docIds);
+
+      if (docDetailsError) {
+        await logServerError(
+          `[getAnnouncementDetail] attachment detail read failed for announcement ${announcementId}; ${docIds.length} attachment(s) will render blank: ${describeError(docDetailsError)}`,
+          { action: 'announcements.getAnnouncementDetail', featureArea: 'announcements' },
+        );
+      }
+
       docDetails = (data || []) as Array<{ id: string; title: string; file_url: string; file_type: string; file_size: number }>;
     }
 
