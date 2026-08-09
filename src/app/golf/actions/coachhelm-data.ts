@@ -850,12 +850,25 @@ async function getPlayerShotContextImpl(
     const resilience = analyzeSequenceEffects(shots, sgValues);
 
     // Fetch holes for scramble rate
-    const { data: holesData } = await fetchAllRowsResult((from, to) => supabase
+    const { data: holesData, error: holesError } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_holes')
       .select('hole_number, par, score, gir, putts, round_id')
       .in('round_id', roundIds)
       .order('id', { ascending: true })
       .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerShotContext', feature: 'intelligence_dashboard', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+
+    // The `error` is READ. Being precise about what this cost: on a failed read
+    // calculateScrambleRate([]) returns NULL, not a fabricated 0 — so no wrong
+    // percentage was shown. What was shown is "insufficient data", which a coach
+    // reads as "this player has not scrambled enough to measure", sitting beside
+    // weaknesses and dead zones that ARE real. A payload part measured and part
+    // unmeasurable, with nothing marking which is which.
+    //
+    // The catch below already logs and returns { success: false }, so raising
+    // this routes it somewhere honest instead.
+    if (holesError) {
+      throw new Error(`shot-context hole read failed for player ${playerId}: ${holesError.message}`);
+    }
 
     const scrambleHoles = (holesData ?? [])
       .filter((h): h is typeof h & { par: number; score: number; gir: boolean } =>
