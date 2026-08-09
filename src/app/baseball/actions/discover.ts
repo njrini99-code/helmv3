@@ -182,6 +182,13 @@ async function getDiscoverPlayersImpl(
     getPrivatePlayerIds(supabase),
   ]);
 
+  // privatePlayerIds is the ONLY thing excluding players who set their profile
+  // to private. null means that read failed, and listing them because we could
+  // not check is the one outcome this must never produce.
+  if (privatePlayerIds === null) {
+    return { players: [], count: 0, pages: 0 };
+  }
+
   // Empty means nobody is genuinely on a discoverable team; null means the read
   // failed. Both must yield no listing — previously null fell through here AND
   // past the `.in()` filter below, which removed the core rule entirely.
@@ -388,6 +395,12 @@ async function getDiscoverTeamsImpl(
     getOrgIdsWithNamedHeadCoach(supabase),
     getPrivatePlayerIds(supabase),
   ]);
+
+  // Same refusal as the player listing: the top-prospects strip below asks
+  // `!privatePlayerIds.has(...)`, so a null here would surface opted-out players.
+  if (privatePlayerIds === null) {
+    return { teams: [], count: 0, pages: 0 };
+  }
 
   if (orgIdsWithHeadCoach !== null && orgIdsWithHeadCoach.length === 0) {
     return { teams: [], count: 0, pages: 0 };
@@ -718,6 +731,12 @@ async function getStateCountsImpl(
       getDiscoverableTeamPlayerIds(supabase),
       getPrivatePlayerIds(supabase),
     ]);
+
+    // Same refusal as the two listings above — an unreadable private set here
+    // would count opted-out players into the per-state totals.
+    if (privatePlayerIds === null) {
+      return {};
+    }
 
     if (discoverablePlayerIds === null || discoverablePlayerIds.length === 0) {
       return {};
