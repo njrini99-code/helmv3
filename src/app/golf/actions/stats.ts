@@ -58,11 +58,24 @@ async function getPlayerStatsSummaryActionImpl(
 
     // If no player ID provided, get current user's player record
     if (!targetPlayerId) {
-      const { data: player } = await supabase
+      const { data: player, error: playerError } = await supabase
         .from('golf_players')
         .select('id')
         .eq('user_id', user.id)
         .single();
+
+      // PGRST116 is `.single()` reporting no row — a genuine "no profile".
+      // Any other code is a failed read, and answering "Player profile not
+      // found" to someone who has one sends them to support for a stats
+      // page that would have loaded on a retry.
+      if (playerError && playerError.code !== 'PGRST116') {
+        await logServerError(
+          `stats player lookup failed: ${describeError(playerError)}`,
+          { action: 'stats.resolvePlayer', featureArea: 'stats' },
+          'warning',
+        );
+        return { success: false, error: "Couldn't load your stats just now. Please try again." };
+      }
 
       if (!player) {
         return { success: false, error: 'Player profile not found' };
@@ -144,11 +157,24 @@ async function getFullPlayerStatsActionImpl(
     let targetPlayerId = playerId;
 
     if (!targetPlayerId) {
-      const { data: player } = await supabase
+      const { data: player, error: playerError } = await supabase
         .from('golf_players')
         .select('id')
         .eq('user_id', user.id)
         .single();
+
+      // PGRST116 is `.single()` reporting no row — a genuine "no profile".
+      // Any other code is a failed read, and answering "Player profile not
+      // found" to someone who has one sends them to support for a stats
+      // page that would have loaded on a retry.
+      if (playerError && playerError.code !== 'PGRST116') {
+        await logServerError(
+          `stats player lookup failed: ${describeError(playerError)}`,
+          { action: 'stats.resolvePlayer', featureArea: 'stats' },
+          'warning',
+        );
+        return { success: false, error: "Couldn't load your stats just now. Please try again." };
+      }
 
       if (!player) {
         return { success: false, error: 'Player profile not found' };
@@ -208,11 +234,24 @@ async function refreshStatsCacheActionImpl(
 
     // Get player ID if not provided
     if (!targetPlayerId) {
-      const { data: player } = await supabase
+      const { data: player, error: playerError } = await supabase
         .from('golf_players')
         .select('id')
         .eq('user_id', user.id)
         .single();
+
+      // PGRST116 is `.single()` reporting no row — a genuine "no profile".
+      // Any other code is a failed read, and answering "Player profile not
+      // found" to someone who has one sends them to support for a stats
+      // page that would have loaded on a retry.
+      if (playerError && playerError.code !== 'PGRST116') {
+        await logServerError(
+          `stats player lookup failed: ${describeError(playerError)}`,
+          { action: 'stats.resolvePlayer', featureArea: 'stats' },
+          'warning',
+        );
+        return { success: false, error: "Couldn't load your stats just now. Please try again." };
+      }
 
       if (!player) {
         return { success: false, error: 'Player profile not found' };
@@ -591,11 +630,24 @@ async function getPlayerStatsDirectActionImpl(
     let targetPlayerId = playerId;
 
     if (!targetPlayerId) {
-      const { data: player } = await supabase
+      const { data: player, error: playerError } = await supabase
         .from('golf_players')
         .select('id')
         .eq('user_id', user.id)
         .single();
+
+      // PGRST116 is `.single()` reporting no row — a genuine "no profile".
+      // Any other code is a failed read, and answering "Player profile not
+      // found" to someone who has one sends them to support for a stats
+      // page that would have loaded on a retry.
+      if (playerError && playerError.code !== 'PGRST116') {
+        await logServerError(
+          `stats player lookup failed: ${describeError(playerError)}`,
+          { action: 'stats.resolvePlayer', featureArea: 'stats' },
+          'warning',
+        );
+        return { success: false, error: "Couldn't load your stats just now. Please try again." };
+      }
 
       if (!player) {
         return { success: false, error: 'Player profile not found' };
