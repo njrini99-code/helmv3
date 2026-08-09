@@ -3505,26 +3505,62 @@ async function updateQualifierStatusImpl(
       return { success: false, error: 'You must be signed in to update qualifier status' };
     }
 
-    // Verify coach owns this qualifier's team
-    const { data: qualifier } = await supabase
+    // THREE READS, ONE VERDICT, AND EVERY FAILURE LOOKED LIKE A FINDING.
+    //
+    // The qualifier read said "Qualifier not found" for one the coach has
+    // open. The coach and team reads both feed a single `!coach ||
+    // !qualifierTeam || org mismatch` test, so a failure in either produced a
+    // bare "Unauthorized" — the least informative thing this surface can say,
+    // and one that reads as a statement about the coach's standing.
+    //
+    // Refusing when the check cannot run is right and is kept. `.single()`
+    // reports a genuine no-row as PGRST116, so a qualifier that really is gone
+    // still says so, and a coach who really is in another org is still
+    // refused.
+    const QUALIFIER_UNREADABLE =
+      "Couldn't verify your access to this qualifier. Please try again.";
+
+    const { data: qualifier, error: qualifierError } = await supabase
       .from('golf_qualifiers')
       .select('team_id')
       .eq('id', qualifierId)
       .single();
 
+    if (qualifierError && qualifierError.code !== 'PGRST116') {
+      await logServerError(
+        `qualifier gate: qualifier read failed for ${qualifierId}: ${describeError(qualifierError)}`,
+        { action: 'golf.qualifierGate', featureArea: 'qualifiers' },
+        'warning',
+      );
+      return { success: false, error: QUALIFIER_UNREADABLE };
+    }
+
     if (!qualifier) return { success: false, error: 'Qualifier not found' };
 
-    const { data: coach } = await supabase
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('organization_id')
       .eq('user_id', user.id)
       .single();
 
-    const { data: qualifierTeam } = await supabase
+    const { data: qualifierTeam, error: qualifierTeamError } = await supabase
       .from('golf_teams')
       .select('organization_id')
       .eq('id', qualifier.team_id)
       .single();
+
+    const gateReadFailed =
+      (coachError && coachError.code !== 'PGRST116') ||
+      (qualifierTeamError && qualifierTeamError.code !== 'PGRST116');
+
+    if (gateReadFailed) {
+      await logServerError(
+        `qualifier gate: authorization read failed for ${qualifierId}: ${describeError(coachError ?? qualifierTeamError)}`,
+        { action: 'golf.qualifierGate', featureArea: 'qualifiers' },
+        'warning',
+      );
+      return { success: false, error: QUALIFIER_UNREADABLE };
+    }
 
     if (!coach || !qualifierTeam || coach.organization_id !== qualifierTeam.organization_id) {
       return { success: false, error: 'Unauthorized' };
