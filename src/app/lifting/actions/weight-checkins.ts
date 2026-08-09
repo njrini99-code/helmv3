@@ -757,7 +757,7 @@ export const getCoachWeightDashboard = withLiftingAction(
       completed_at: string | null;
       schedule_id: string | null;
     }
-    const { data: requests } = await fetchAllRowsResult<WeightRequestQueryRow>((from, to) =>
+    const { data: requests, error: requestsError } = await fetchAllRowsResult<WeightRequestQueryRow>((from, to) =>
       fromUntyped(supabase, 'helm_lifting_weight_checkin_requests')
         .select('id, athlete_id, due_date, status, bodyweight_entry_id, completed_at, schedule_id, organization_id')
         .eq('organization_id', ctx.orgId)
@@ -765,6 +765,23 @@ export const getCoachWeightDashboard = withLiftingAction(
         .order('id', { ascending: true })
         .range(from, to),
     );
+
+    // The `error` is READ. Discarded, a failure left `requests` null, the guard
+    // below fired, and the board returned ALL-ZERO totals — completed 0,
+    // pending 0, missed 0, excused 0, every list empty. A coach opening the
+    // compliance screen saw "nothing outstanding" when the read had simply
+    // failed and any number of athletes might not have weighed in.
+    //
+    // withLiftingAction already captures an unexpected throw to admin_events
+    // with a fingerprint and rethrows a sanitized LiftingActionError, so this
+    // routes the failure somewhere honest instead of inventing a channel.
+    // A genuinely empty day still returns data: [] with no error and still
+    // shows the honest zeros below.
+    if (requestsError) {
+      throw new Error(
+        `weight check-in request read failed for org ${ctx.orgId} on ${date}: ${requestsError.message}`,
+      );
+    }
 
     if (!requests || requests.length === 0) {
       return {

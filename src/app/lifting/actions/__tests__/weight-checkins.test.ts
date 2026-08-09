@@ -232,3 +232,53 @@ describe('getCoachWeightDashboard pagination past the PostgREST 1000-row cap', (
     expect(dashboard.totals.completed).toBe(1001);
   });
 });
+
+/**
+ * The coach weight-check-in board reads today's requests, and that read
+ * discarded its error.
+ *
+ * A failure left `requests` null, the `if (!requests || requests.length === 0)`
+ * guard fired, and the board returned all-zero totals — completed 0, pending 0,
+ * missed 0, excused 0, every list empty. A coach opening the compliance screen
+ * therefore saw "nothing outstanding" when the read had simply failed and any
+ * number of athletes might not have weighed in.
+ *
+ * That is the same confident-wrong-answer shape as the golf leak maps rendering
+ * a clean scorecard: the honest zero and the unreadable one were the same
+ * screen.
+ *
+ * withLiftingAction already captures an unexpected throw to admin_events with a
+ * fingerprint and rethrows a sanitized LiftingActionError, so raising here
+ * routes the failure somewhere honest rather than inventing a new channel.
+ */
+// dashboardSchema requires a uuid orgId (the file's existing ORG_ID); without
+// it Zod throws and every assertion below passes or fails for a reason
+// unrelated to the read under test.
+describe('getCoachWeightDashboard — a failed request read is not an empty board', () => {
+  beforeEach(() => {
+    resetTables();
+    vi.clearAllMocks();
+    resetTables();
+  });
+
+  it('does not report an all-clear board when the request read failed', async () => {
+    const requestsBuilder = tableBuilders.helm_lifting_weight_checkin_requests;
+    requestsBuilder.range = vi.fn(() => ({
+      then: (resolve: (v: FinalResult) => void) =>
+        resolve({ data: null, error: { message: 'statement timeout', code: '57014' }, count: 0 }),
+    }));
+
+    await expect(
+      getCoachWeightDashboard({ orgId: ORG_ID, date: '2026-08-09' } as never),
+    ).rejects.toThrow();
+  });
+
+  it('still reports an honest empty board when nobody is due today', async () => {
+    // data: [] with no error — a real answer, and the board legitimately shows
+    // zeros for it.
+    const board = await getCoachWeightDashboard({ orgId: ORG_ID, date: '2026-08-09' } as never);
+
+    expect(board.totals).toEqual({ completed: 0, pending: 0, missed: 0, excused: 0 });
+  });
+});
+
