@@ -76,31 +76,68 @@ async function resolveTeamRole(
   // on both teams can access both; a single-team coach only their own. Note this
   // checks STAFFING, not the active-team toggle — a coach can access any team
   // they staff regardless of which one is currently selected.
-  const { data: coach } = await supabase
+  // EVERY READ BELOW CAN ONLY RETURN 'none' ON FAILURE.
+  //
+  // This resolver's answer is a role, and 'none' is what callers turn into
+  // "you don't have access to this team's documents". A failed read produces
+  // exactly the same 'none' as a genuine outsider — so a coach or a rostered
+  // player is locked out of their own team's documents by a dropped
+  // connection, with a message that says it is about who they are.
+  //
+  // Failing closed is right and is kept: a role that could not be established
+  // must not be granted. But the reads are now recorded, so a run of these is
+  // traceable to the query rather than looking like people poking at documents
+  // they have no business with.
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', userId)
     .maybeSingle();
+
+  if (coachError) {
+    await logServerError(
+      `documents: coach read failed while resolving team role: ${describeError(coachError)}`,
+      { action: 'documents.resolveTeamRole', featureArea: 'documents' },
+      'warning',
+    );
+  }
 
   if (coach) {
     if (await validateCoachTeamAccess(supabase, coach.id, teamId, coach.organization_id)) return 'coach';
   }
 
   // Check player path: player is an active member of the team
-  const { data: player } = await supabase
+  const { data: player, error: playerError } = await supabase
     .from('golf_players')
     .select('id')
     .eq('user_id', userId)
     .maybeSingle();
 
+  if (playerError) {
+    await logServerError(
+      `documents: player read failed while resolving team role: ${describeError(playerError)}`,
+      { action: 'documents.resolveTeamRole', featureArea: 'documents' },
+      'warning',
+    );
+  }
+
   if (player) {
-    const { data: membership } = await supabase
+    const { data: membership, error: membershipError } = await supabase
       .from('golf_team_members')
       .select('id')
       .eq('player_id', player.id)
       .eq('team_id', teamId)
       .eq('status', 'active')
       .maybeSingle();
+
+    if (membershipError) {
+      await logServerError(
+        `documents: membership read failed for player ${player.id} on team ${teamId}: ${describeError(membershipError)}`,
+        { action: 'documents.resolveTeamRole', featureArea: 'documents' },
+        'warning',
+      );
+    }
+
     if (membership) return 'player';
   }
 
