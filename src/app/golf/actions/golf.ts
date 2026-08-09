@@ -2576,11 +2576,25 @@ async function updateGolfEventImpl(
 
     // Try to get coach profile first
     // Note: golf_coaches doesn't have team_id - we look it up via organization_id
-    const { data: coach } = await supabase
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    // Denying on a failed read is right — a gate that could not run must not
+    // pass — but "Only coaches can update team events" and "Event not found"
+    // are statements about the caller and the event, not about the query. A
+    // coach told they are not a coach, or that the event open in front of them
+    // does not exist, has no reason to try again.
+    if (coachError) {
+      await logServerError(
+        `update event: coach read failed: ${describeError(coachError)}`,
+        { action: 'golf.updateGolfEvent', featureArea: 'calendar' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't verify your access to this event. Please try again." };
+    }
 
     // Only coaches can update team events (matches createGolfEvent behavior)
     if (!coach) {
@@ -2593,11 +2607,22 @@ async function updateGolfEventImpl(
     }
 
     // Verify event belongs to coach's team
-    const { data: existingEvent } = await supabase
+    const { data: existingEvent, error: existingEventError } = await supabase
       .from('golf_events')
       .select('team_id')
       .eq('id', eventId)
       .single();
+
+    // `.single()` reports a genuine no-row as PGRST116 — that one really is
+    // "event not found" and keeps its message.
+    if (existingEventError && existingEventError.code !== 'PGRST116') {
+      await logServerError(
+        `event lifecycle: event read failed for ${eventId}: ${describeError(existingEventError)}`,
+        { action: 'golf.eventLifecycle', featureArea: 'calendar' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't verify your access to this event. Please try again." };
+    }
 
     if (!existingEvent) {
       return { success: false, error: 'Event not found' };
@@ -2811,11 +2836,25 @@ async function deleteGolfEventImpl(
 
     // Try to get coach profile first
     // Note: golf_coaches doesn't have team_id - we look it up via organization_id
-    const { data: coach } = await supabase
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    // Denying on a failed read is right — a gate that could not run must not
+    // pass — but "Only coaches can update team events" and "Event not found"
+    // are statements about the caller and the event, not about the query. A
+    // coach told they are not a coach, or that the event open in front of them
+    // does not exist, has no reason to try again.
+    if (coachError) {
+      await logServerError(
+        `delete event: coach read failed: ${describeError(coachError)}`,
+        { action: 'golf.deleteGolfEvent', featureArea: 'calendar' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't verify your access to this event. Please try again." };
+    }
 
     // Only coaches can delete team events (matches createGolfEvent behavior)
     if (!coach) {
@@ -2828,11 +2867,22 @@ async function deleteGolfEventImpl(
     }
 
     // Verify event belongs to coach's team
-    const { data: existingEvent } = await supabase
+    const { data: existingEvent, error: existingEventError } = await supabase
       .from('golf_events')
       .select('team_id, title, status, start_time, location')
       .eq('id', eventId)
       .single();
+
+    // `.single()` reports a genuine no-row as PGRST116 — that one really is
+    // "event not found" and keeps its message.
+    if (existingEventError && existingEventError.code !== 'PGRST116') {
+      await logServerError(
+        `event lifecycle: event read failed for ${eventId}: ${describeError(existingEventError)}`,
+        { action: 'golf.eventLifecycle', featureArea: 'calendar' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't verify your access to this event. Please try again." };
+    }
 
     if (!existingEvent) {
       return { success: false, error: 'Event not found' };
