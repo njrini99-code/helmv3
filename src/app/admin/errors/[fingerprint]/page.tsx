@@ -8,6 +8,7 @@ import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
 import { CopyReportButton } from '../../_components/CopyReportButton';
+import { ResolveErrorButton } from '../../_components/ResolveErrorButton';
 import { SportBadge, type BridgeSport } from '../../_components/SportBadge';
 import { LocalTime } from '../../_components/LocalTime';
 
@@ -101,7 +102,11 @@ export default async function FingerprintDetailPage({
               : `${summary.totalCount} occurrence${summary.totalCount === 1 ? '' : 's'}`}
             {' · affected users link to Users & Teams'}
           </p>
-          <CopyReportButton report={report} label="Copy full report" size="md" />
+          <div className="flex flex-wrap items-center gap-2">
+            <CopyReportButton report={report} label="Copy full report" size="md" />
+            {/* The write this surface never had — see ResolveErrorButton. */}
+            <ResolveErrorButton fingerprint={fingerprint} />
+          </div>
         </div>
 
         {/* Rollup the data layer already computed but previously discarded —
