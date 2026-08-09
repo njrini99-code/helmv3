@@ -678,23 +678,54 @@ async function verifyRoundAccess(
   }
 
   // Get round and verify ownership
-  const { data: round } = await supabase
+  // EVERY READ IN THIS GATE DECIDES WHAT SOMEONE IS TOLD.
+  //
+  // Denying on a failed read is right — an authorization check that could not
+  // run must not pass — but each of these answered with a claim instead: the
+  // round "not found" when it exists, or "not authorized" to the player who
+  // owns it. Both read as verdicts and neither suggests trying again.
+  const UNREADABLE = "Couldn't verify your access to this round. Please try again.";
+
+  const { data: round, error: roundError } = await supabase
     .from('golf_rounds')
     .select('player_id')
     .eq('id', roundId)
     .single();
+
+  // `.single()` reports a genuine no-row as PGRST116 — that one really is
+  // "round not found" and keeps its message.
+  if (roundError && roundError.code !== 'PGRST116') {
+    await logServerError(
+      `verifyRoundAccess: round read failed for ${roundId}: ${describeError(roundError)}`,
+      { action: 'insights.verifyRoundAccess', featureArea: 'rounds' },
+      'warning',
+    );
+    return { authorized: false, error: UNREADABLE };
+  }
 
   if (!round) {
     return { authorized: false, error: 'Round not found' };
   }
 
   // Check if user owns the round via player
-  const { data: player } = await supabase
+  const { data: player, error: playerError } = await supabase
     .from('golf_players')
     .select('id')
     .eq('id', round.player_id)
     .eq('user_id', user.id)
     .single();
+
+  // A failure here is NOT "this user does not own the round". Falling through
+  // to the coach branch on a failed ownership check is how a player ends up
+  // denied access to their own round.
+  if (playerError && playerError.code !== 'PGRST116') {
+    await logServerError(
+      `verifyRoundAccess: ownership read failed for round ${roundId}: ${describeError(playerError)}`,
+      { action: 'insights.verifyRoundAccess', featureArea: 'rounds' },
+      'warning',
+    );
+    return { authorized: false, error: UNREADABLE };
+  }
 
   if (player) {
     return { authorized: true, userId: user.id, playerId: player.id };
@@ -703,21 +734,41 @@ async function verifyRoundAccess(
   // Check if user is a coach STAFFED on a team the round's player belongs to.
   // Staff-scoped (was a single arbitrary org team via .limit(1), which wrongly
   // denied access to half the players in a two-team program).
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
 
+  if (coachError) {
+    await logServerError(
+      `verifyRoundAccess: coach read failed: ${describeError(coachError)}`,
+      { action: 'insights.verifyRoundAccess', featureArea: 'rounds' },
+      'warning',
+    );
+    return { authorized: false, error: UNREADABLE };
+  }
+
   if (coach?.id) {
-    const { data: staffRows } = await supabase
+    const { data: staffRows, error: staffError } = await supabase
       .from('golf_team_coach_staff')
       .select('team_id')
       .eq('coach_id', coach.id);
+
+    // No staff rows read means no team can be matched, so the coach is denied
+    // for a reason that has nothing to do with their access.
+    if (staffError) {
+      await logServerError(
+        `verifyRoundAccess: staff read failed for coach ${coach.id}: ${describeError(staffError)}`,
+        { action: 'insights.verifyRoundAccess', featureArea: 'rounds' },
+        'warning',
+      );
+      return { authorized: false, error: UNREADABLE };
+    }
     const staffTeamIds = (staffRows ?? []).map((r) => r.team_id).filter(Boolean) as string[];
 
     if (staffTeamIds.length > 0) {
-      const { data: teamMember } = await supabase
+      const { data: teamMember, error: teamMemberError } = await supabase
         .from('golf_team_members')
         .select('id')
         .in('team_id', staffTeamIds)
@@ -725,6 +776,15 @@ async function verifyRoundAccess(
         .eq('status', 'active')
         .limit(1)
         .maybeSingle();
+
+      if (teamMemberError) {
+        await logServerError(
+          `verifyRoundAccess: membership read failed for player ${round.player_id}: ${describeError(teamMemberError)}`,
+          { action: 'insights.verifyRoundAccess', featureArea: 'rounds' },
+          'warning',
+        );
+        return { authorized: false, error: UNREADABLE };
+      }
 
       if (teamMember) {
         return { authorized: true, userId: user.id, playerId: round.player_id };
