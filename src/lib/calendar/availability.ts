@@ -124,6 +124,10 @@ export async function getUserBusyPeriodsWithStatus(
   const dateMin = timeMin.toISOString().split('T')[0];
   const dateMax = timeMax.toISOString().split('T')[0];
 
+  // Set when the identity reads below fail; folded into `partial` at its
+  // declaration so the incomplete answer can never be reported as complete.
+  let identityPartial = false;
+
   // 1. Get player/coach profile in parallel (optimization: query both at once)
   const [playerResult, coachResult] = await Promise.all([
     supabase
@@ -142,6 +146,27 @@ export async function getUserBusyPeriodsWithStatus(
   const coach = coachResult.data;
   const isCoach = !!coach;
 
+  // These two are the hole the `partial` flag below was built to close, left
+  // open at the very first step. Only `.data` was taken, so a failed identity
+  // read produced player = null AND coach = null: neither team branch runs,
+  // teamIds stays empty, the team-events query is skipped by the
+  // `teamIds.length > 0` gate, and the function returns no busy periods at all
+  // — while reporting `partial: false`, i.e. "this is the complete answer".
+  // The conflict checker then says everyone is free and a coach schedules a
+  // practice on top of an existing one.
+  //
+  // A user who is genuinely neither is unaffected: `.maybeSingle()` reports
+  // that as { data: null, error: null }, which stays a trusted answer.
+  const identityError = playerResult.error ?? coachResult.error;
+  if (identityError) {
+    identityPartial = true;
+    await logServerError(
+      `[availability] identity read failed for user ${userId}; busy periods will be reported as incomplete rather than free: ${describeError(identityError)}`,
+      { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+      'warning',
+    );
+  }
+
   // Resolve every team this user belongs to. Multi-team coaches and
   // multi-team players both need cross-team conflict surfacing — a coach who
   // runs two squads expects events on team B to count when scheduling on team
@@ -154,7 +179,7 @@ export async function getUserBusyPeriodsWithStatus(
   // is then skipped entirely by the `teamIds.length > 0` gate, and the coach
   // is told the whole squad is free. RLS returning an empty set is NOT this
   // case — that comes back with `error === null` and is a real answer.
-  let partial = false;
+  let partial = identityPartial;
   let teamIds: string[] = [];
   if (coach?.organization_id) {
     const { data: teams, error: teamsError } = await supabase
