@@ -263,18 +263,39 @@ async function createFocusAreaImpl(
 
   // Notify the player (fire-and-forget)
   try {
-    const { data: playerRow } = await supabase
+    // Both reads gate the "your coach assigned you a development plan" email.
+    // A failure in either skips the notification and the block returns
+    // normally, so the coach is told the plan was created and the player is
+    // never told anything — the plan sits there unread, and the coach reads
+    // that as the player ignoring it.
+    const { data: playerRow, error: playerRowError } = await supabase
       .from('golf_players')
       .select('user_id')
       .eq('id', data.player_id)
       .single();
 
+    if (playerRowError) {
+      await logServerError(
+        `development: player read failed for ${data.player_id}; the assignment email will not be sent: ${describeError(playerRowError)}`,
+        { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
+
     if (playerRow?.user_id) {
-      const { data: userRow } = await supabase
+      const { data: userRow, error: userRowError } = await supabase
         .from('users')
         .select('email')
         .eq('id', playerRow.user_id)
         .single();
+
+      if (userRowError) {
+        await logServerError(
+          `development: email read failed for user ${playerRow.user_id}; the assignment email will not be sent: ${describeError(userRowError)}`,
+          { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
+          'warning',
+        );
+      }
 
       if (userRow?.email) {
         await notifyDevPlanAssigned(

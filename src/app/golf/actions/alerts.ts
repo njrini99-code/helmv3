@@ -70,12 +70,25 @@ async function getCoachAlerts(
     return { success: false, error: 'Not authenticated' };
   }
 
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id')
     .eq('id', coachId)
     .eq('user_id', user.id)
     .single();
+
+  // `.single()` reports a genuine no-row as PGRST116 — that is the real "this
+  // coach id is not yours" and keeps its message. Any other code is the read
+  // falling over, and telling a coach they may not view their own alerts is a
+  // statement about their access rather than about the query.
+  if (coachError && coachError.code !== 'PGRST116') {
+    await logServerError(
+      `alerts: coach identity read failed for ${coachId}: ${describeError(coachError)}`,
+      { action: 'alerts.getAlerts', featureArea: 'coachhelm' },
+      'warning',
+    );
+    return { success: false, error: "Couldn't verify your access to these alerts. Please try again." };
+  }
 
   if (!coach) {
     return { success: false, error: 'Not authorized to view these alerts' };
@@ -201,12 +214,24 @@ async function getAlertCountsImpl(
     return { success: true, counts: EMPTY_ALERT_COUNTS, authExpired: true };
   }
 
-  const { data: coach } = await supabase
+  const { data: coach, error: countsCoachError } = await supabase
     .from('golf_coaches')
     .select('id')
     .eq('id', coachId)
     .eq('user_id', user.id)
     .single();
+
+  // This one returns EMPTY COUNTS with authExpired — so the alert badge reads
+  // zero and the coach is told their session lapsed. A failed read produced
+  // exactly that: a clean "nothing needs your attention" on a surface whose
+  // whole job is to say when something does.
+  if (countsCoachError && countsCoachError.code !== 'PGRST116') {
+    await logServerError(
+      `alerts: coach identity read failed while counting for ${coachId}; badge will read zero: ${describeError(countsCoachError)}`,
+      { action: 'alerts.getAlertCounts', featureArea: 'coachhelm' },
+      'warning',
+    );
+  }
 
   if (!coach) {
     return { success: true, counts: EMPTY_ALERT_COUNTS, authExpired: true };
