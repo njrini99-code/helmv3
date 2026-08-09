@@ -8,7 +8,8 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import type { Metadata } from 'next';
-import { logServerException } from '@/lib/server-error-logger';
+import { logServerError, logServerException } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
 
 // Code-split the Fairway calendar surface — it's the ONLY tree the route
@@ -194,6 +195,29 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
     playersData = (teamMembersResult.data ?? [])
       .map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player)
       .filter((p): p is NonNullable<typeof p> => p !== null);
+    // Both secondary reads now bind their error. Neither THROWS, deliberately:
+    // the primary events read above already does that, and null/empty are
+    // genuine states here — a team may simply not have set a timezone, and the
+    // classOwnersResolved guard below already fails closed on an empty roster.
+    // What was missing was any record that the degrade happened at all, so the
+    // guard could soften class ownership, or the day-grouping could fall back
+    // to a different zone, for a reason nobody could see.
+    if (teamMembersResult.error) {
+      await logServerError(
+        `[calendar] roster read failed for team ${teamId}; class ownership will degrade with no other signal: ${describeError(teamMembersResult.error)}`,
+        { action: 'golf.calendarPage.loadRoster', featureArea: 'calendar' },
+        'warning',
+      );
+    }
+
+    if (teamSettingsResult.error) {
+      await logServerError(
+        `[calendar] team settings read failed for team ${teamId}; timezone falls back and events can group onto the wrong day: ${describeError(teamSettingsResult.error)}`,
+        { action: 'golf.calendarPage.loadTeamSettings', featureArea: 'calendar' },
+        'warning',
+      );
+    }
+
     teamTimezone = teamSettingsResult.data?.timezone || null;
 
     // Only claim the ownership index is authoritative when the query actually
