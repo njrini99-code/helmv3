@@ -12,7 +12,7 @@
  * as fact.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // --- Mock the AI gateway. Each test queues the text(s) it wants back. ---
 const generateTextMock = vi.fn();
@@ -55,6 +55,13 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
+// --- Direct-Anthropic provider. Returns a marker object so the provider-
+//     selection tests below can tell which branch built the model argument. ---
+const anthropicMock = vi.fn((modelName: string) => ({ __direct: modelName }));
+vi.mock('@ai-sdk/anthropic', () => ({
+  anthropic: (modelName: string) => anthropicMock(modelName),
+}));
+
 import { compose } from './compose';
 import type { ComposeRequest } from './types';
 
@@ -76,6 +83,7 @@ function baseReq(overrides: Partial<ComposeRequest> = {}): ComposeRequest {
 beforeEach(() => {
   generateTextMock.mockReset();
   recordSpendMock.mockClear();
+  anthropicMock.mockClear();
   loggedRows.length = 0;
 });
 
@@ -129,5 +137,70 @@ describe('compose() citation grounding (P0-03)', () => {
     expect(result.used_llm).toBe(true);
     expect(result.citations_verified).toBe(true);
     expect(generateTextMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * Provider selection.
+ *
+ * compose() used to pass the bare 'anthropic/…' gateway string unconditionally,
+ * which routes on the Vercel project's OIDC token and bills the VERCEL AI
+ * Gateway balance — a different account from ANTHROPIC_API_KEY. That account
+ * was free-tier, so from 2026-07-29 every round review served its template
+ * while coach chat (which has always had this branch) kept working on the
+ * direct key and made the platform look healthy.
+ */
+describe('compose() provider selection', () => {
+  const groundedDraft = { text: 'You took 28 putts today.', usage: { inputTokens: 10, outputTokens: 8 } };
+
+  /** The `model` generateText was handed on the first call. Throws rather than
+   *  returning undefined, so a never-called mock fails loudly instead of
+   *  quietly comparing undefined to undefined. */
+  function firstModelArg(): unknown {
+    const call = generateTextMock.mock.calls[0];
+    if (!call) throw new Error('generateText was never called');
+    return (call as [{ model: unknown }])[0].model;
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('uses the direct Anthropic provider when ANTHROPIC_API_KEY is set', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test');
+    generateTextMock.mockResolvedValueOnce(groundedDraft);
+
+    await compose(baseReq(), FALLBACK);
+
+    // Prefix stripped: the direct provider names the model without 'anthropic/'.
+    expect(anthropicMock).toHaveBeenCalledWith('claude-haiku-4-5');
+    expect(firstModelArg()).toEqual({ __direct: 'claude-haiku-4-5' });
+  });
+
+  it('falls back to the bare gateway string when no Anthropic key is configured', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    generateTextMock.mockResolvedValueOnce(groundedDraft);
+
+    await compose(baseReq(), FALLBACK);
+
+    expect(anthropicMock).not.toHaveBeenCalled();
+    expect(firstModelArg()).toBe('anthropic/claude-haiku-4-5');
+  });
+
+  /**
+   * The logged model_id must stay gateway-prefixed on BOTH paths.
+   * MODEL_COST_USD_PER_MTOK, checkBudget and golf_coachhelm_llm_calls are all
+   * keyed by that id, and an unrecognised key bills at the Opus
+   * UNKNOWN_MODEL_RATE — so rewriting model_id alongside the provider would
+   * silently overcharge every round review by 15×.
+   */
+  it('logs the gateway-prefixed model_id regardless of which provider served the call', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test');
+    generateTextMock.mockResolvedValueOnce(groundedDraft);
+
+    await compose(baseReq(), FALLBACK);
+
+    expect(loggedRows[0]).toBeDefined();
+    expect(loggedRows[0]?.model_id).toBe('anthropic/claude-haiku-4-5');
   });
 });
