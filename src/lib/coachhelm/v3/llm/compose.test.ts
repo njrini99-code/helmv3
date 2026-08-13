@@ -56,7 +56,10 @@ vi.mock('@/lib/server-error-logger', () => ({
 }));
 
 // --- Direct-Anthropic provider. Returns a marker object so the provider-
-//     selection tests below can tell which branch built the model argument. ---
+//     selection tests below can tell which branch built the model argument.
+//     Mocked at @ai-sdk/anthropic rather than at resolveModelProvider so the
+//     real account-selection logic still runs — mocking the resolver itself
+//     would leave the branch these tests exist to pin completely untested. ---
 const anthropicMock = vi.fn((modelName: string) => ({ __direct: modelName }));
 vi.mock('@ai-sdk/anthropic', () => ({
   anthropic: (modelName: string) => anthropicMock(modelName),

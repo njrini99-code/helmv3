@@ -131,7 +131,17 @@ export default function GolfClassesPage() {
         // bounds the availability fallback for a class that never synced —
         // without it a weekly class reads as busy forever, including over the
         // summer, so the fallback has to refuse to expand.
-        semester: formData.semester || null,
+        //
+        // Resolved HERE rather than stored as null, because every read path
+        // falls back to `detectSemester('')` — a pure function of TODAY'S DATE.
+        // A null column therefore does not mean "no term", it means "re-guess
+        // the term on each edit", and the guess changes as the calendar moves:
+        // a class added in August resolves to Summer, and the same class edited
+        // in September resolves to Fall, silently re-dating the entire series
+        // out from under the player. 26 of the 30 synced class series in
+        // production carry a null semester for exactly this reason.
+        // Writing it once pins the window for good.
+        semester: formData.semester || detectSemester(''),
       })
       .select()
       .single();
@@ -197,7 +207,11 @@ export default function GolfClassesPage() {
         credits: formData.credits,
         color: formData.color,
         notes: formData.notes || null,
-        semester: formData.semester || null,
+        // Resolved, never null — see handleAddClass. An edit is the MOST
+        // dangerous place to leave this null: the sync below rebuilds the whole
+        // occurrence set, so a term re-guessed from today's date moves every
+        // meeting of a class the player only meant to rename.
+        semester: formData.semester || detectSemester(''),
       })
       .eq('id', formData.id)
       .eq('player_id', playerId);
@@ -311,7 +325,14 @@ export default function GolfClassesPage() {
           notes: null,
           // The vision parser derives the term from the screenshot — keep it
           // (see handleAddClass) instead of dropping it on the floor.
-          semester: cls.semester || null,
+          //
+          // The `|| detectSemester('')` half is what stops the row and its own
+          // calendar events from disagreeing: the sync call below already
+          // resolves an unparsed term this way to build the occurrence window,
+          // so storing null here left the row claiming no term while its events
+          // sat inside a very specific one. Same expression, same value, one
+          // source of truth.
+          semester: cls.semester || detectSemester(''),
         };
       });
       
@@ -615,7 +636,14 @@ export default function GolfClassesPage() {
             building: selectedClass.building || '',
             room: selectedClass.room || '',
             credits: selectedClass.credits,
-            semester: '', // Not stored in DB
+            // It IS stored in DB — `golf_player_classes.semester`, written by
+            // both save paths above. The comment that used to sit here repeated
+            // the same false belief that made the OTHER edit handler re-derive
+            // the current term and silently re-date whole class series; this
+            // call site was missed when that was fixed. An empty string here
+            // reaches syncClassToCalendar as an unparseable term, which returns
+            // "Could not determine semester dates" and writes no events.
+            semester: selectedClass.semester || detectSemester(''),
             color: selectedClass.color || 'var(--color-primary-600)',
             notes: selectedClass.notes || '',
           };

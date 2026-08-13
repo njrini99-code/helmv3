@@ -36,7 +36,7 @@ import {
   type LanguageModelUsage,
   type UIMessage,
 } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
+import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
@@ -274,9 +274,14 @@ export async function POST(req: NextRequest) {
   // Provider selection stays behind one abstraction: the coach's own Anthropic
   // key when present, else the gateway model string. No provider name appears
   // in tool or UI code.
-  const model = process.env.ANTHROPIC_API_KEY
-    ? anthropic('claude-sonnet-5')
-    : MODEL_FOR_TASK.coach_chat;
+  //
+  // Derived from MODEL_FOR_TASK rather than naming the model again. The two
+  // used to be written out separately — 'anthropic/claude-sonnet-5' here and
+  // 'claude-sonnet-5' there — so changing MODEL_FOR_TASK.coach_chat would have
+  // moved the gateway path and left the direct path on the old model, with
+  // nothing to catch the split. Everything downstream (cost estimate, telemetry,
+  // the slow-first-token log) already keys off MODEL_FOR_TASK.coach_chat.
+  const model = resolveModelProvider(MODEL_FOR_TASK.coach_chat);
 
   const startedAt = Date.now();
   let firstTokenMs: number | null = null;

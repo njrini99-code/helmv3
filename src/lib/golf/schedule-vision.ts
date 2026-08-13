@@ -20,6 +20,7 @@
  */
 import 'server-only';
 import { generateObject } from 'ai';
+import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { z } from 'zod';
 import { detectSemester, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -220,9 +221,15 @@ export async function extractScheduleFromImage(
   images: ScheduleImageInput[],
   playerId?: string | null,
 ): Promise<ScheduleExtraction> {
+  // Direct Anthropic when ANTHROPIC_API_KEY is set, else the bare gateway
+  // string this file has always passed. The comment on SCHEDULE_VISION_MODEL
+  // above records what that string cost: every import failing on the gateway
+  // account's free-tier rejection, which downgrading the model could not fix
+  // because the call never reached one. `model` stays the gateway id for the
+  // spend ledger and the fallback comparison below.
   const call = (model: string) =>
     generateObject({
-      model,
+      model: resolveModelProvider(model),
       schema: extractionSchema,
       messages: [
         {
@@ -343,7 +350,11 @@ async function reconcileDays(
 
   try {
     const verify = await generateObject({
-      model: SCHEDULE_VISION_FALLBACK_MODEL,
+      // Same account choice as the primary read. This one fails SILENTLY — the
+      // catch below returns the unverified extraction — so on the gateway
+      // account it degraded without a trace: days never got the second read
+      // that exists to blank the ones the two passes disagree about.
+      model: resolveModelProvider(SCHEDULE_VISION_FALLBACK_MODEL),
       schema: dayVerifySchema,
       messages: [
         {

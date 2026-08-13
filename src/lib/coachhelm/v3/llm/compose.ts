@@ -34,7 +34,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
+import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
@@ -276,43 +276,17 @@ interface LlmAttempt {
   verification: ReturnType<typeof verifyCitations>;
 }
 
-/**
- * Pick the provider for `model_id` — the coach's own Anthropic key when
- * present, else the bare gateway model string.
- *
- * This mirrors the selection `/api/coachhelm/v3/chat/stream` has always done.
- * Until 2026-08-13 compose() had NO such branch: it passed the gateway string
- * unconditionally, so `round_review` and `hero_narrative` were the only v3
- * tasks with a single provider and no way around it.
- *
- * That asymmetry hid a real outage for two weeks. A bare `'anthropic/…'` string
- * routes through the Vercel AI Gateway on the project's OIDC token (there is no
- * AI_GATEWAY_API_KEY set), billing the VERCEL team balance — a different account
- * from ANTHROPIC_API_KEY. The gateway account sat on the free tier and answered
- * every compose() call with "Free tier users do not have access to this model",
- * so every round review silently served its template. Coach chat kept working
- * the whole time on the direct key, which made the platform look healthy.
- *
- * `model_id` itself is deliberately NOT rewritten: MODEL_COST_USD_PER_MTOK,
- * checkBudget and the golf_coachhelm_llm_calls row are all keyed by the
- * gateway-prefixed id, and an unrecognised key silently bills at the Opus
- * UNKNOWN_MODEL_RATE. Only the object handed to generateText changes.
- */
-function resolveModel(model_id: string): Parameters<typeof generateText>[0]['model'] {
-  const prefix = 'anthropic/';
-  if (process.env.ANTHROPIC_API_KEY && model_id.startsWith(prefix)) {
-    return anthropic(model_id.slice(prefix.length));
-  }
-  return model_id;
-}
-
 async function runLlmAttempt(
   req: ComposeRequest,
   model_id: string,
   promptTokensEstimate: number,
 ): Promise<LlmAttempt> {
+  // Direct Anthropic when the key is set, else the gateway string. `model_id`
+  // stays gateway-prefixed everywhere else in this function — the cost table,
+  // checkBudget and the call-log row are all keyed by it. See
+  // @/lib/ai/model-provider for what these two accounts are.
   const res = await generateText({
-    model: resolveModel(model_id),
+    model: resolveModelProvider(model_id),
     prompt: req.prompt,
     maxOutputTokens: req.max_completion_tokens * 2,
   });
