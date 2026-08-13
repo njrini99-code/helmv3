@@ -311,6 +311,10 @@ describe('global tripwire', () => {
     // 435: createStaffInvite + redeemStaffInvite — coach-issued staff
     // invitations, replacing a join-code path that let any player
     // grant themselves program-administrator.
-    expect(total).toBe(435);
+    // 436 as of the stats round-scope picker (+1): getPlayerRoundOptions in
+    // src/app/golf/actions/stats-data.ts — lists a player's completed rounds
+    // so the ~75-stat panel can be scoped to one. withAdminObserved-wrapped
+    // and access-gated by verifyPlayerAccess like its siblings in that file.
+    expect(total).toBe(436);
   });
 });

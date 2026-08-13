@@ -25,12 +25,13 @@ import Link from 'next/link';
 import { RotateCw } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Surface, Button, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
+import { Surface, Button, EmptyState, InlineNotice, Skeleton, Select } from '@/components/fairway';
 import { StageRouter } from '@/components/fairway/modules';
 import type { StageView } from '@/components/fairway/modules';
 
 import { getPlayerStatsDashboardBundle } from '@/app/golf/actions/stats-dashboard';
-import type { TrendAnalysisResponse, SprayChartResponse, WorstHoleResponse } from '@/app/golf/actions/stats-data-types';
+import { getPlayerRoundOptions } from '@/app/golf/actions/stats-data';
+import type { TrendAnalysisResponse, SprayChartResponse, WorstHoleResponse, RoundOption } from '@/app/golf/actions/stats-data-types';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { PlayerLeakMaps, PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
@@ -85,13 +86,18 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const [patterns, setPatterns] = useState<CoachHelmPattern[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Round scope. 'overall' is the career aggregate this page has always shown;
+  // a round id narrows the detailed-stat block and the spray chart to that one
+  // round. See getPlayerStatsDashboardBundle for why only those two move.
+  const [roundOptions, setRoundOptions] = useState<RoundOption[]>([]);
+  const [scopeRoundId, setScopeRoundId] = useState<string>('overall');
 
-  const loadAll = useCallback(async (id: string) => {
+  const loadAll = useCallback(async (id: string, roundId: string) => {
     setLoading(true);
     setLoadError(null);
     setLeakError(false);
     try {
-      const bundle = await getPlayerStatsDashboardBundle(id);
+      const bundle = await getPlayerStatsDashboardBundle(id, roundId);
 
       if (bundle.detailed.ok) setDetailedStats(bundle.detailed.value);
       else setDetailedStats(null);
@@ -145,8 +151,50 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   }, []);
 
   useEffect(() => {
-    void loadAll(playerId);
-  }, [playerId, loadAll]);
+    void loadAll(playerId, scopeRoundId);
+  }, [playerId, scopeRoundId, loadAll]);
+
+  // Round list for the scope picker. Loaded once per player and independent of
+  // the stats bundle: a failure here costs the picker, never the page.
+  useEffect(() => {
+    let cancelled = false;
+    setScopeRoundId('overall');
+    void (async () => {
+      try {
+        const rounds = await getPlayerRoundOptions(playerId);
+        if (!cancelled) setRoundOptions(rounds);
+      } catch {
+        if (!cancelled) setRoundOptions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [playerId]);
+
+  const roundSelectOptions = useMemo(() => {
+    const fmt = (iso: string) => {
+      // round_date is a plain YYYY-MM-DD calendar date. Parsing it with `new
+      // Date()` resolves midnight UTC and then renders in the VIEWER's zone,
+      // which shows the previous day for anyone west of Greenwich. Split it.
+      const [y, m, d] = iso.slice(0, 10).split('-');
+      return y && m && d ? `${Number(m)}/${Number(d)}/${y.slice(2)}` : iso;
+    };
+    return [
+      { label: 'All rounds', value: 'overall' },
+      ...roundOptions.map((r) => ({
+        value: r.id,
+        label: [fmt(r.date), r.courseName, r.totalScore !== null ? `(${r.totalScore})` : null]
+          .filter(Boolean)
+          .join(' · '),
+      })),
+    ];
+  }, [roundOptions]);
+
+  const scopedRound = useMemo(
+    () => (scopeRoundId === 'overall' ? null : roundOptions.find((r) => r.id === scopeRoundId) ?? null),
+    [scopeRoundId, roundOptions],
+  );
 
   const standingByMetric = useMemo(() => {
     const map = new Map<string, PlayerStandingRow>();
@@ -213,13 +261,51 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const hasStanding = (standingRows?.length ?? 0) > 0;
   const hasLeak =
     !!leakMaps && (leakMaps.putting.some((b) => b.sample_n > 0) || leakMaps.approach.some((b) => b.sample_n > 0));
-  const isColdStart = !loading && !loadError && !hasStanding && roundsAnalyzed === 0 && !hasLeak;
+  // Scoped to ONE round, the cold-start screen would be a trap: it replaces the
+  // whole page — round picker included — so a round with no shot detail would
+  // leave no way back to "All rounds" but a browser reload. Cold start is a
+  // statement about the player's career, so only the career view may show it.
+  const isColdStart =
+    scopeRoundId === 'overall' && !loading && !loadError && !hasStanding && roundsAnalyzed === 0 && !hasLeak;
+
+  /**
+   * The round-scope picker.
+   *
+   * Rendered ABOVE the loading branch on purpose. Switching rounds re-fetches,
+   * and if the picker lived only in the loaded view it would vanish under the
+   * skeleton for the duration of its own interaction — the control disappearing
+   * the moment you use it. It stays mounted and disabled instead.
+   *
+   * Hidden entirely when the player has no completed rounds: a picker whose
+   * only entry is "All rounds" offers no choice.
+   */
+  const roundPicker =
+    roundOptions.length > 0 ? (
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor="stats-round-scope" className="text-fw-sm text-text-secondary">
+          Showing
+        </label>
+        <Select
+          id="stats-round-scope"
+          aria-label="Scope stats to a single round"
+          size="sm"
+          className="min-w-[16rem]"
+          value={scopeRoundId}
+          disabled={loading}
+          onValueChange={(v) => setScopeRoundId(v ?? 'overall')}
+          options={roundSelectOptions}
+        />
+      </div>
+    ) : null;
 
   if (loading) {
     return (
-      <div className={cn('flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr]', className)} aria-busy="true">
-        <Skeleton className="h-[480px] rounded-fw-lg" />
-        <Skeleton className="h-[480px] rounded-fw-lg" />
+      <div className={cn('flex flex-col gap-4', className)} aria-busy="true">
+        {roundPicker}
+        <div className="flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr]">
+          <Skeleton className="h-[480px] rounded-fw-lg" />
+          <Skeleton className="h-[480px] rounded-fw-lg" />
+        </div>
       </div>
     );
   }
@@ -231,7 +317,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           tone="danger"
           title="Couldn't load stats"
           action={
-            <Button variant="secondary" size="sm" busy={loading} leftIcon={<RotateCw className="h-4 w-4" aria-hidden />} onClick={() => void loadAll(playerId)}>
+            <Button variant="secondary" size="sm" busy={loading} leftIcon={<RotateCw className="h-4 w-4" aria-hidden />} onClick={() => void loadAll(playerId, scopeRoundId)}>
               Try again
             </Button>
           }
@@ -283,7 +369,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           standingByMetric={standingByMetric}
           weaknesses={weaknesses}
           leakError={leakError}
-          onRetryLeak={() => void loadAll(playerId)}
+          onRetryLeak={() => void loadAll(playerId, scopeRoundId)}
           retryingLeak={loading}
           patterns={patterns}
           trends={trendData?.trends}
@@ -309,7 +395,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           leakMaps={leakMaps}
           sprayData={sprayData}
           leakError={leakError}
-          onRetryLeak={() => void loadAll(playerId)}
+          onRetryLeak={() => void loadAll(playerId, scopeRoundId)}
           retryingLeak={loading}
           patterns={patterns}
           trends={trendData?.trends}
@@ -356,23 +442,38 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   ];
 
   return (
-    <div className={cn('flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start', className)}>
-      <StatsSpine
-        className="min-[940px]:sticky min-[940px]:top-20"
-        sgTotal={sgTotal}
-        scoringAverage={finite(detailedStats?.scoringAverage)}
-        verdict={verdict}
-        track={track}
-        priorities={priorities}
-        ledger={ledger}
-      />
-      <div className="flex min-w-0 flex-col gap-4">
-        {detailedStats?.truncated ? (
-          <InlineNotice tone="info" title="Stats cover your most recent 100 rounds">
-            Older rounds aren&apos;t included in the totals below.
-          </InlineNotice>
-        ) : null}
-        <StageRouter param="area" homeKey="home" views={views} />
+    <div className={cn('flex flex-col gap-4', className)}>
+      {roundPicker}
+      <div className="flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start">
+        <StatsSpine
+          className="min-[940px]:sticky min-[940px]:top-20"
+          sgTotal={sgTotal}
+          scoringAverage={finite(detailedStats?.scoringAverage)}
+          verdict={verdict}
+          track={track}
+          priorities={priorities}
+          ledger={ledger}
+        />
+        <div className="flex min-w-0 flex-col gap-4">
+          {/* Say plainly what the scope does and does not move. The spine's
+              standing, the trend windows and the leak maps are all cross-round
+              by construction and keep showing the career picture — without this
+              line a coach would read a team-relative rank as this round's. */}
+          {scopedRound ? (
+            <InlineNotice tone="info" title="Scoped to one round">
+              Every stat below is from this round alone
+              {scopedRound.courseName ? ` at ${scopedRound.courseName}` : ''}. Team standing, 30-day
+              trends and the leak maps still cover all rounds — one round is too small a sample to
+              rank or trend.
+            </InlineNotice>
+          ) : null}
+          {detailedStats?.truncated && !scopedRound ? (
+            <InlineNotice tone="info" title="Stats cover your most recent 100 rounds">
+              Older rounds aren&apos;t included in the totals below.
+            </InlineNotice>
+          ) : null}
+          <StageRouter param="area" homeKey="home" views={views} />
+        </div>
       </div>
     </div>
   );
