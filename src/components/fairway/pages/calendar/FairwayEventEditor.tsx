@@ -200,16 +200,18 @@ export function shiftStartTime(form: GolfEventFormData, nextStart: string | null
    * 23:30 and rejected the event with "End time must be after the start
    * time" — the helper written to prevent that error was causing it.
    *
-   * Only the wrap-shaped end date is managed here: added when the shift
-   * newly crosses midnight, removed when it no longer does. An end date the
-   * coach set further out is a real multi-day event and is left alone.
+   * ADD ONLY, never remove. Adding a date when the shift newly crosses
+   * midnight is unambiguous. Removing one is a guess: an endDate equal to
+   * startDate+1 could be the wrap-shaped date this helper added, or a date
+   * the coach chose deliberately for an overnight event, and nothing here can
+   * tell those apart. Clearing it would silently collapse a span the coach
+   * configured, so a no-longer-wrapping event keeps its end date — visible in
+   * the End date field and the span summary, and correctable — rather than
+   * being quietly shortened.
    */
-  const nextDay = form.startDate ? addOneDay(form.startDate) : null;
   let endDate = form.endDate;
-  if (endTotal >= 1440 && !endDate) {
-    endDate = nextDay;
-  } else if (endTotal < 1440 && endDate && nextDay && endDate === nextDay) {
-    endDate = null;
+  if (endTotal >= 1440 && !endDate && form.startDate) {
+    endDate = addOneDay(form.startDate);
   }
 
   return { ...form, startTime: nextStart, endTime: fromMinutes(endTotal), endDate };

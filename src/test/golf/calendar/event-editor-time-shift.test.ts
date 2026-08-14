@@ -71,11 +71,22 @@ describe('shiftStartTime', () => {
     expect(next.endDate).toBe('2026-08-15'); // day after startDate
   });
 
-  it('drops the wrap-shaped end date when the shift no longer crosses midnight', () => {
+  /**
+   * Never clears an end date. An endDate of startDate+1 is indistinguishable
+   * from one the coach chose for an overnight event, so removing it on a
+   * no-longer-wrapping shift would silently collapse a span they configured.
+   * The stale date stays visible in the End date field and the span summary.
+   */
+  it('keeps the end date when the shift no longer crosses midnight', () => {
     const wrapped = shiftStartTime(base, '23:30');
     const back = shiftStartTime(wrapped, '09:00');
     expect(back.endTime).toBe('11:00');
-    expect(back.endDate).toBeNull();
+    expect(back.endDate).toBe('2026-08-15');
+  });
+
+  it('never clears an end date the coach set deliberately', () => {
+    const overnight = { ...base, startTime: '23:00', endTime: '01:00', endDate: '2026-08-15' };
+    expect(shiftStartTime(overnight, '09:00').endDate).toBe('2026-08-15');
   });
 
   /** A real multi-day event's end date is the coach's, not the helper's. */
