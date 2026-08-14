@@ -655,3 +655,90 @@ describe('useCalendarRangeEvents — switching teams must not bleed the previous
     expect(queryLog.filter((q) => q.table === 'golf_events')).toHaveLength(0);
   });
 });
+
+/**
+ * Deleting an event must actually remove it from the calendar.
+ *
+ * The range-merge updater was append-only: `new Map(prev)` plus a `.set()` per
+ * returned row. An id present in `prev` and absent from the fresh payload was
+ * never removed, so a permanently deleted event survived every refetch and
+ * every realtime nudge — both funnel through that same updater — and only
+ * disappeared on a hard reload.
+ */
+describe('range merge evicts rows the refetch proves are gone', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const NOW = Date.now();
+
+  it('removes an event the server no longer returns inside the fetched window', async () => {
+    const FAR = NOW + 150 * DAY;
+    const aIso = new Date(FAR + DAY).toISOString();
+    const bIso = new Date(FAR + 2 * DAY).toISOString();
+
+    // First visit to the far month returns two events.
+    nextResults = [{ data: [makeRow('keep-me', aIso), makeRow('delete-me', bIso)], error: null }];
+
+    const { result } = renderHook(
+      ({ start, end }: { start: Date; end: Date }) =>
+        useCalendarRangeEvents({
+          teamId: 'team-1',
+          initialEvents: [],
+          visibleStart: start,
+          visibleEnd: end,
+          loadedStart: new Date(NOW - 90 * DAY).toISOString(),
+          loadedEnd: new Date(NOW + 90 * DAY).toISOString(),
+          viewer: { isCoach: true, playerId: null },
+        }),
+      { initialProps: { start: new Date(FAR), end: new Date(FAR + 6 * DAY) } },
+    );
+
+    await waitFor(() => {
+      expect(result.current.events.map((e) => e.id).sort()).toEqual(['delete-me', 'keep-me']);
+    });
+
+    // One is hard-deleted; the refetch now returns only the survivor.
+    nextResults = [{ data: [makeRow('keep-me', aIso)], error: null }];
+    act(() => {
+      result.current.refetchVisibleRange();
+    });
+
+    await waitFor(() => {
+      expect(result.current.events.map((e) => e.id)).toEqual(['keep-me']);
+    });
+  });
+
+  /**
+   * Non-vacuity guard. Absence is only evidence for rows the query actually
+   * asked about — an event outside the fetched window was never a candidate,
+   * so pruning it would blank out months the coach had already loaded.
+   */
+  it('keeps events OUTSIDE the fetched window even though they are absent', async () => {
+    const NEAR = NOW;
+    const FAR = NOW + 150 * DAY;
+    const nearEvent = makeEvent('near-keep', new Date(NEAR).toISOString());
+
+    const { result, rerender } = renderHook(
+      ({ start, end }: { start: Date; end: Date }) =>
+        useCalendarRangeEvents({
+          teamId: 'team-1',
+          initialEvents: [nearEvent],
+          visibleStart: start,
+          visibleEnd: end,
+          loadedStart: new Date(NOW - 90 * DAY).toISOString(),
+          loadedEnd: new Date(NOW + 90 * DAY).toISOString(),
+          viewer: { isCoach: true, playerId: null },
+        }),
+      { initialProps: { start: new Date(NEAR), end: new Date(NEAR + 6 * DAY) } },
+    );
+    await act(async () => {});
+    expect(result.current.events.map((e) => e.id)).toContain('near-keep');
+
+    // Navigate far away; that fetch returns nothing at all.
+    nextResults = [{ data: [], error: null }];
+    rerender({ start: new Date(FAR), end: new Date(FAR + 6 * DAY) });
+    await waitFor(() => expect(queryLog.some((q) => q.table === 'golf_events')).toBe(true));
+    await act(async () => {});
+
+    // The near event is far outside that window and must survive.
+    expect(result.current.events.map((e) => e.id)).toContain('near-keep');
+  });
+});
