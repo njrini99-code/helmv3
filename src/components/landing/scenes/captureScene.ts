@@ -110,7 +110,7 @@ export function captureScene({ root, reduced, compact }: SceneContext): void {
     scrollTrigger: {
       trigger: stage ?? root,
       start: compact ? 'top 88%' : 'top 82%',
-      end: compact ? 'bottom 62%' : 'bottom 58%',
+      end: compact ? 'bottom 48%' : 'bottom 40%',
       scrub: SCRUB.smooth,
       invalidateOnRefresh: true,
     },
