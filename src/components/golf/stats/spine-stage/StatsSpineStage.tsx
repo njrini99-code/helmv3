@@ -282,12 +282,22 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const roundPicker =
     roundOptions.length > 0 ? (
       <div className="flex flex-wrap items-center gap-2">
-        <label htmlFor="stats-round-scope" className="text-fw-sm text-text-secondary">
+        {/* A <label htmlFor> CANNOT be used here. Base UI's Select puts the
+            caller's `id` on its hidden proxy input — aria-hidden, tabindex=-1,
+            clipped to 1px — not on the real `role="combobox"` button, so the
+            association pointed at something unfocusable: clicking the word
+            "Showing" did nothing and the button shipped with no accessible
+            name. Verified in a browser, not inferred.
+            `aria-labelledby` is one of the three props Select explicitly
+            forwards to the Trigger (see its source — this is the same
+            `button-name` defect a previous axe audit found on /rounds), so
+            pointing it at this span names the button with the text the user
+            can actually see. */}
+        <span id="stats-round-scope-label" className="text-fw-sm text-text-secondary">
           Showing
-        </label>
+        </span>
         <Select
-          id="stats-round-scope"
-          aria-label="Scope stats to a single round"
+          aria-labelledby="stats-round-scope-label"
           size="sm"
           className="min-w-[16rem]"
           value={scopeRoundId}
