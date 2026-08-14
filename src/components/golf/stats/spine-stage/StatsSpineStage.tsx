@@ -90,6 +90,10 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   // a round id narrows the detailed-stat block and the spray chart to that one
   // round. See getPlayerStatsDashboardBundle for why only those two move.
   const [roundOptions, setRoundOptions] = useState<RoundOption[]>([]);
+  // Distinguishes "this player has no rounds" (hide the picker — nothing to
+  // pick) from "the round list failed to load" (say so). Same distinction
+  // `leakError` makes for the leak maps.
+  const [roundOptionsError, setRoundOptionsError] = useState(false);
   const [scopeRoundId, setScopeRoundId] = useState<string>('overall');
 
   const loadAll = useCallback(async (id: string, roundId: string) => {
@@ -159,12 +163,19 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   useEffect(() => {
     let cancelled = false;
     setScopeRoundId('overall');
+    setRoundOptionsError(false);
     void (async () => {
       try {
         const rounds = await getPlayerRoundOptions(playerId);
-        if (!cancelled) setRoundOptions(rounds);
+        if (cancelled) return;
+        // null means the read failed; [] means the player has no rounds.
+        setRoundOptions(rounds ?? []);
+        setRoundOptionsError(rounds === null);
       } catch {
-        if (!cancelled) setRoundOptions([]);
+        if (!cancelled) {
+          setRoundOptions([]);
+          setRoundOptionsError(true);
+        }
       }
     })();
     return () => {
@@ -279,8 +290,11 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
    * Hidden entirely when the player has no completed rounds: a picker whose
    * only entry is "All rounds" offers no choice.
    */
-  const roundPicker =
-    roundOptions.length > 0 ? (
+  const roundPicker = roundOptionsError ? (
+    <InlineNotice tone="warning" title="Couldn't load this player's rounds">
+      The stats below cover every round. Reload to try scoping to a single one.
+    </InlineNotice>
+  ) : roundOptions.length > 0 ? (
       <div className="flex flex-wrap items-center gap-2">
         {/* A <label htmlFor> CANNOT be used here. Base UI's Select puts the
             caller's `id` on its hidden proxy input — aria-hidden, tabindex=-1,

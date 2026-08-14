@@ -2243,11 +2243,20 @@ export async function getFilterOptions(playerId: string): Promise<FilterOptions>
  * Newest first, and capped: `getDetailedStats` recomputes strokes-gained from
  * raw shots, so this feeds a picker, not a report. A player two seasons in has
  * 80–150 rounds and the whole list is still one small query.
+ *
+ * Returns `null` when the list could not be READ, and `[]` only when the player
+ * genuinely has no completed rounds. Those are different answers and the caller
+ * renders them differently — `[]` hides the picker (there is nothing to pick),
+ * while `null` has to say so. Collapsing them was the first version of this
+ * function, and the repo's own fail-open ratchet caught it: an outage would
+ * have silently removed the control instead of reporting a failure.
  */
-async function getPlayerRoundOptionsImpl(playerId: string): Promise<RoundOption[]> {
+async function getPlayerRoundOptionsImpl(playerId: string): Promise<RoundOption[] | null> {
   try {
     const { supabase, user } = await requireAuth();
 
+    // Denied access is NOT a failed read — the caller is simply not allowed to
+    // see this player, and an empty list is the honest answer.
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) return [];
 
     const { data, error } = await supabase
@@ -2258,15 +2267,12 @@ async function getPlayerRoundOptionsImpl(playerId: string): Promise<RoundOption[
       .order('round_date', { ascending: false })
       .limit(200);
 
-    // A failed read must not render as "this player has no rounds" — that
-    // reads as a data problem the coach would then go hunting for. Refuse and
-    // let the caller show its error state.
     if (error) {
       await logServerError(
         `[Stats] getPlayerRoundOptions read failed: ${describeError(error)}`,
         { action: 'stats_data.getPlayerRoundOptions', playerId },
       );
-      return [];
+      return null;
     }
 
     return (data ?? []).map((r) => ({
@@ -2281,7 +2287,7 @@ async function getPlayerRoundOptionsImpl(playerId: string): Promise<RoundOption[
       `[Stats] getPlayerRoundOptions failed: ${describeError(error)}`,
       { action: 'stats_data.getPlayerRoundOptions' },
     );
-    return [];
+    return null;
   }
 }
 
@@ -2291,7 +2297,7 @@ const observedGetPlayerRoundOptions = withAdminObserved(
   getPlayerRoundOptionsImpl,
 );
 
-export async function getPlayerRoundOptions(playerId: string): Promise<RoundOption[]> {
+export async function getPlayerRoundOptions(playerId: string): Promise<RoundOption[] | null> {
   return observedGetPlayerRoundOptions(playerId);
 }
 

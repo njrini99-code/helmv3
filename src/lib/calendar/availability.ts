@@ -228,10 +228,24 @@ export async function getUserBusyPeriodsWithStatus(
       // blocks land in the runtime zone (the pre-existing behaviour), it does
       // not drop them. Marking the whole answer incomplete for that would
       // suppress real conflicts the rest of this function found correctly.
-      const { data: tzRows } = await supabase
+      //
+      // It is still LOGGED, because "no team carries a zone" and "the zone read
+      // failed" produce the same null here and have very different meanings.
+      // Falling back to the runtime zone silently would reinstate exactly the
+      // bug this timezone plumbing exists to fix — on Vercel the runtime zone
+      // is UTC, so a 09:05 class would block 05:05 Eastern again, with nothing
+      // in the logs to say why.
+      const { data: tzRows, error: tzError } = await supabase
         .from('golf_teams')
         .select('timezone')
         .in('id', teamIds);
+      if (tzError) {
+        await logServerError(
+          `[availability] team timezone read failed; class blocks fall back to the runtime zone: ${describeError(tzError)}`,
+          { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+          'warning',
+        );
+      }
       classTimeZone = (tzRows ?? [])
         .map((t) => (t as { timezone?: string | null }).timezone)
         .find((tz): tz is string => Boolean(tz)) ?? null;
