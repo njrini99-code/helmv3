@@ -57,6 +57,35 @@ describe('shiftStartTime', () => {
   });
 
   /**
+   * The END DATE has to travel with the wrap. Wrapping only the clock left
+   * endDate null, and the editor's pre-submit guard compares clock times alone
+   * when there is no end date — it read 01:30 <= 23:30 and rejected the event
+   * with "End time must be after the start time". The original version of this
+   * suite asserted the 01:30 wrap and never looked at endDate, so it passed
+   * while the flow was broken.
+   */
+  it('advances the end DATE when the shift crosses midnight', () => {
+    const next = shiftStartTime(base, '23:30');
+    expect(next.startTime).toBe('23:30');
+    expect(next.endTime).toBe('01:30');
+    expect(next.endDate).toBe('2026-08-15'); // day after startDate
+  });
+
+  it('drops the wrap-shaped end date when the shift no longer crosses midnight', () => {
+    const wrapped = shiftStartTime(base, '23:30');
+    const back = shiftStartTime(wrapped, '09:00');
+    expect(back.endTime).toBe('11:00');
+    expect(back.endDate).toBeNull();
+  });
+
+  /** A real multi-day event's end date is the coach's, not the helper's. */
+  it('leaves an explicit multi-day end date alone', () => {
+    const multi = { ...base, endDate: '2026-08-20' };
+    expect(shiftStartTime(multi, '14:00').endDate).toBe('2026-08-20');
+    expect(shiftStartTime(multi, '23:30').endDate).toBe('2026-08-20');
+  });
+
+  /**
    * An event already crossing midnight keeps its length rather than collapsing
    * to a negative span — duration is measured forward, modulo a day.
    */

@@ -155,6 +155,14 @@ function fromMinutes(total: number): string {
   return `${String(Math.floor(wrapped / 60)).padStart(2, '0')}:${String(wrapped % 60).padStart(2, '0')}`;
 }
 
+/** "2026-08-14" -> "2026-08-15", via local parts (new Date(iso) is UTC-midnight). */
+function addOneDay(iso: string): string | null {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const dt = new Date(y, m - 1, d + 1);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
 /**
  * Move the start time and carry the end time with it, preserving duration.
  *
@@ -182,7 +190,29 @@ export function shiftStartTime(form: GolfEventFormData, nextStart: string | null
   // Duration is measured forward, so an event already crossing midnight keeps
   // its length rather than collapsing to a negative span.
   const durationMin = (endMin - prevStartMin + 1440) % 1440;
-  return { ...form, startTime: nextStart, endTime: fromMinutes(nextStartMin + durationMin) };
+  const endTotal = nextStartMin + durationMin;
+
+  /**
+   * Wrapping the CLOCK is not enough — the end DATE has to move with it.
+   * Shifting a 9-11am practice to 11:30pm produced startTime 23:30 /
+   * endTime 01:30 with endDate still null, and the pre-submit guard below
+   * only compares clock times when there is no end date. It read 01:30 <=
+   * 23:30 and rejected the event with "End time must be after the start
+   * time" — the helper written to prevent that error was causing it.
+   *
+   * Only the wrap-shaped end date is managed here: added when the shift
+   * newly crosses midnight, removed when it no longer does. An end date the
+   * coach set further out is a real multi-day event and is left alone.
+   */
+  const nextDay = form.startDate ? addOneDay(form.startDate) : null;
+  let endDate = form.endDate;
+  if (endTotal >= 1440 && !endDate) {
+    endDate = nextDay;
+  } else if (endTotal < 1440 && endDate && nextDay && endDate === nextDay) {
+    endDate = null;
+  }
+
+  return { ...form, startTime: nextStart, endTime: fromMinutes(endTotal), endDate };
 }
 
 interface ConflictData {
@@ -379,6 +409,13 @@ export function FairwayEventEditor({
           const ids = result.data.summary.attendees.map((a) => a.playerId);
           setExistingAttendeeIds(ids);
           setFormData((prev) => ({ ...prev, attendeeIds: ids }));
+          // Hydration is not a coach edit. pristineRef was snapshotted when
+          // the editor opened, before these ids arrived, so without
+          // re-baselining, opening an event that HAS attendees and closing it
+          // untouched raised the discard-changes warning over nothing.
+          if (pristineRef.current) {
+            pristineRef.current = { ...pristineRef.current, attendeeIds: ids };
+          }
           setAttendeeHydration('loaded');
         } else {
           setAttendeeHydration('error');
@@ -400,7 +437,13 @@ export function FairwayEventEditor({
     if (!open || !isSeriesRoot || !event?.recurrence_rule) return;
     const rule = parseRecurrenceRule(event.recurrence_rule);
     if (rule) {
-      setFormData((prev) => ({ ...prev, ...recurrenceFieldsFromRule(rule), recurrenceRule: rule }));
+      const fields = recurrenceFieldsFromRule(rule);
+      setFormData((prev) => ({ ...prev, ...fields, recurrenceRule: rule }));
+      // Same re-baseline as the attendee hydration above: prefilling a stored
+      // pattern is not an edit the coach made.
+      if (pristineRef.current) {
+        pristineRef.current = { ...pristineRef.current, ...fields, recurrenceRule: rule };
+      }
     }
   }, [open, isSeriesRoot, event]);
 

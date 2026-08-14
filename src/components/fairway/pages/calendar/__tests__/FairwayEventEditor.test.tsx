@@ -158,6 +158,42 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
     expect(payload.removeAttendeeIds).toEqual([]);
   });
 
+  /**
+   * Opening an event and closing it WITHOUT touching anything must not warn
+   * about discarding changes.
+   *
+   * pristineRef is snapshotted when the editor opens, but the attendee
+   * hydration and stored-recurrence prefill both call setFormData afterwards.
+   * Those are the editor loading itself, not the coach editing — yet they made
+   * isDirty true, so every event that had attendees or a recurrence rule
+   * raised the discard guard over nothing.
+   *
+   * This can only be seen after a re-render: the first paint is clean and the
+   * false dirty state appears when hydration resolves.
+   */
+  it('does not warn about discarding when hydration was the only change', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult(['p1', 'p2']));
+    renderEditor();
+
+    await waitFor(() => expect(getEventRSVP).toHaveBeenCalledWith('evt-1'));
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+    // Hydration landed: the invitees really are selected.
+    await waitFor(() => expect(screen.getByText(/2 of/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /^Cancel$/ }));
+    expect(screen.queryAllByRole('heading', { name: /Discard this/i })).toHaveLength(0);
+  });
+
+  it('still warns about discarding once the coach actually edits', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult(['p1', 'p2']));
+    renderEditor();
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Changed' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Cancel$/ }));
+    expect(screen.getAllByRole('heading', { name: /Discard this/i }).length).toBeGreaterThan(0);
+  });
+
   it('computes adds and removes from explicit toggles and surfaces the save summary', async () => {
     getEventRSVP.mockResolvedValue(rsvpResult(['p1', 'p2']));
     const { onSave } = renderEditor();
