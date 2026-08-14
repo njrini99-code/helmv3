@@ -23,12 +23,12 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { Calendar as CalendarIcon, Clock, ChevronDown } from 'lucide-react';
+import { Clock, ChevronDown } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button as UiButton } from '@/components/ui/button';
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
-import { CalendarSurface } from '@/components/fairway/calendar/calendar-surface';
+import { DatePicker } from '@/components/fairway/calendar/date-picker';
 
 /** Minutes between offered times. 15 is the granularity every calendar app
  *  converged on: fine enough for a 45-minute lift, coarse enough to scan. */
@@ -102,11 +102,8 @@ export function DateChooser({
   label: string;
   disabled?: boolean;
   placeholder?: string;
-  /** Rendered inside the label. The well's convention puts the section icon in
-   *  the first column's label rather than beside the row. */
   labelIcon?: React.ReactNode;
 }) {
-  const [open, setOpen] = React.useState(false);
   const selected = React.useMemo(() => {
     if (!value) return undefined;
     const [y, m, d] = value.slice(0, 10).split('-').map(Number);
@@ -119,55 +116,29 @@ export function DateChooser({
         {labelIcon}
         {label}
       </span>
-      <PopoverPanel
-        open={open}
-        onOpenChange={setOpen}
-        side="bottom"
-        align="start"
-        trigger={
-          <UiButton variant="ghost" type="button" className={triggerCls} disabled={disabled} aria-label={label}>
-            <span className="flex min-w-0 items-center gap-2">
-              <CalendarIcon size={15} className="shrink-0 text-text-tertiary" aria-hidden />
-              <span className={cn('truncate', !value && 'text-text-tertiary')}>
-                {value ? formatDateLabel(value) : placeholder}
-              </span>
-            </span>
-            <ChevronDown size={15} className="shrink-0 text-text-tertiary" aria-hidden />
-          </UiButton>
-        }
-      >
-        <div className="p-1">
-          <CalendarSurface
-            mode="single"
-            selected={selected}
-            onSelect={(d: Date | undefined) => {
-              if (!d) {
-                onChange(null);
-              } else {
-                // Build the ISO date from LOCAL parts. toISOString() here would
-                // shift the day for anyone behind UTC.
-                onChange(
-                  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-                );
-              }
-              setOpen(false);
-            }}
-          />
-          {value ? (
-            <UiButton
-              variant="ghost"
-              type="button"
-              onClick={() => {
-                onChange(null);
-                setOpen(false);
-              }}
-              className="mt-1 h-auto w-full justify-start rounded-fw-sm px-2 py-1.5 text-left font-fw-sans text-caption text-text-tertiary transition-colors hover:bg-surface-sunken hover:text-text-secondary"
-            >
-              Clear
-            </UiButton>
-          ) : null}
-        </div>
-      </PopoverPanel>
+      {/* Fairway's own anchored date field — it already owns the glass popover,
+          focus trap, scroll-lock, Escape and ARIA wiring. Hand-rolling a second
+          one nested a card inside the popover's card and left a dead gutter. */}
+      <DatePicker
+        mode="single"
+        value={selected}
+        onValueChange={(d) => {
+          if (!d) {
+            onChange(null);
+            return;
+          }
+          // Built from LOCAL parts: toISOString() here shifts the day for
+          // anyone behind UTC.
+          onChange(
+            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+          );
+        }}
+        disabled={disabled}
+        placeholder={placeholder}
+        aria-label={label}
+        renderLabel={(v) => (v ? formatDateLabel(value) : placeholder)}
+        className={triggerCls}
+      />
     </div>
   );
 }
