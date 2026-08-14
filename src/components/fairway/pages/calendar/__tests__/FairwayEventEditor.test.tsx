@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 // ---------------------------------------------------------------------------
@@ -211,20 +211,35 @@ describe('FairwayEventEditor — series and recurrence', () => {
     expect(onSave.mock.calls[0]![0].editScope).toBe('this');
   });
 
-  it('create mode emits a structured recurrenceRule with weekdays and an end-by date', async () => {
+  /**
+   * The recurrence controls are all visible now — a pill row for the frequency
+   * and a Segmented for the end mode — so this drives them the way a coach
+   * does. The end DATE is a popover DateChooser; its until→rule mapping is
+   * pinned directly on the pure builder in event-form-helpers.test.ts
+   * ("uses until instead of count when end mode is until and a date is set"),
+   * so it isn't re-driven through the UI here.
+   */
+  it('create mode emits a structured recurrenceRule from the visible pattern controls', async () => {
     const { onSave } = renderEditor({ event: null });
 
     fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Morning practice' } });
-    fireEvent.change(screen.getByLabelText(/^Recurrence$/i), { target: { value: 'biweekly' } });
+    // Recurrence is a visible pill row, not a <select> — a coach can read the
+    // whole pattern without opening a menu.
+    const recurrence = screen.getByRole('group', { name: 'Recurrence' });
+    fireEvent.click(within(recurrence).getByRole('button', { name: 'Every 2 weeks' }));
     fireEvent.click(screen.getByRole('button', { name: 'Monday' }));
     fireEvent.click(screen.getByRole('button', { name: 'Friday' }));
-    fireEvent.change(screen.getByLabelText(/Series ends/i), { target: { value: 'until' } });
-    fireEvent.change(screen.getByLabelText(/Repeat until/i), { target: { value: '2026-08-15' } });
+    // Series-end mode is a Segmented (Radix ToggleGroup type="single" →
+    // radiogroup/radio), and the end date is a popover DateChooser.
+    fireEvent.click(screen.getByRole('radio', { name: 'On a date' }));
+    expect(screen.getByRole('radio', { name: 'On a date' })).toHaveAttribute('aria-checked', 'true');
+    // ...and back, so the emitted rule carries a count rather than a date.
+    fireEvent.click(screen.getByRole('radio', { name: 'After N events' }));
 
     fireEvent.click(screen.getByRole('button', { name: /create event/i }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     const payload = onSave.mock.calls[0]![0];
-    expect(payload.recurrenceRule).toEqual({ frequency: 'biweekly', weekdays: [1, 5], until: '2026-08-15' });
+    expect(payload.recurrenceRule).toEqual({ frequency: 'biweekly', weekdays: [1, 5], count: 10 });
   });
 
   it('a series root prefills its stored pattern for the series-extend affordance', async () => {
@@ -233,7 +248,11 @@ describe('FairwayEventEditor — series and recurrence', () => {
 
     expect(screen.getByText(/Series pattern/i)).toBeInTheDocument();
     await waitFor(() => {
-      expect((screen.getByLabelText(/^Recurrence$/i) as HTMLSelectElement).value).toBe('weekly');
+      expect(
+        within(screen.getByRole('group', { name: 'Recurrence' })).getByRole('button', {
+          name: 'Weekly',
+        }),
+      ).toHaveAttribute('aria-pressed', 'true');
     });
     expect(screen.getByRole('button', { name: 'Monday' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Wednesday' })).toHaveAttribute('aria-pressed', 'true');

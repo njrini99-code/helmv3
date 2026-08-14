@@ -442,6 +442,12 @@ export function FairwayCalendar({
               requiresRsvp: data.requiresRsvp,
               rsvpDeadline: data.rsvpDeadline || undefined,
               maxAttendees: data.maxAttendees || undefined,
+              // Both of these were silently dropped on the recurring path while
+              // the one-off branch below forwarded them. A coach who invited
+              // the squad to a weekly practice got a series nobody was on, and
+              // an all-day series came back as midnight-anchored timed events.
+              allDay: data.allDay,
+              attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
               timezoneOffset,
             });
             if (!result.success) throw new Error(result.error || 'Failed to create recurring event');
