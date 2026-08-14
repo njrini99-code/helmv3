@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { areHapticsEnabled } from './haptics-pref';
 // NOTE: `@capacitor/keyboard` is intentionally NOT statically imported.
 // Importing it on web triggers Capacitor's plugin-proxy registration and
 // surfaces "Keyboard plugin is not implemented on web" as an unhandled
@@ -53,9 +54,17 @@ export async function openExternalUrl(url: string): Promise<void> {
 /**
  * Trigger native haptic feedback.
  * Falls back silently on web.
+ *
+ * Honours the user's haptics preference. That check belongs HERE rather than in
+ * the callers: 164 of the app's 177 haptic call sites call this function
+ * directly, and only 13 go through `fwHaptic`, which had the only gate. The
+ * per-app off switch therefore used to silence about 7% of the buzzing and
+ * leave the rest — so the gate moved down to the function everything funnels
+ * through.
  */
 export async function triggerHaptic(style: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light'): Promise<void> {
   if (!isNativeApp()) return;
+  if (!areHapticsEnabled()) return;
   try {
     if (style === 'success' || style === 'warning' || style === 'error') {
       const typeMap: Record<string, HapticNotificationType> = {

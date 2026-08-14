@@ -417,6 +417,38 @@ export function useCalendarRangeEvents({
         const gen = genRef.current;
         setEventVersions((prev) => {
           const next = new Map(prev);
+
+          // PRUNE BEFORE MERGE. This updater used to be append-only — `new
+          // Map(prev)` plus a `.set()` per returned row — so an id that was in
+          // `prev` and is absent from the fresh payload was never removed. A
+          // permanently deleted event (FairwayCalendar's handlePermanentDelete
+          // -> deleteGolfEvent({ hard: true }), a real DELETE) therefore stayed
+          // on the calendar until a hard reload, and every realtime nudge and
+          // refetchVisibleRange funnels back through here, so nothing else
+          // could clear it either.
+          //
+          // Only ids INSIDE the window this query just asked about may be
+          // evicted. The query is bounded by `start_time` between fetchStart
+          // and fetchEnd, so absence is proof of deletion for those rows and
+          // proof of nothing at all for rows outside the range — dropping
+          // those would blank out months the user had already scrolled past.
+          const seen = new Set(rows.map((r) => r.id));
+          const windowStart = fetchStart.getTime();
+          const windowEnd = fetchEnd.getTime();
+          for (const [id, versioned] of prev) {
+            if (seen.has(id)) continue;
+            // A null start_time can never satisfy the query's own
+            // `.gte/.lte('start_time', …)` bounds, so such a row could not have
+            // been returned even if it still exists. Absence proves nothing
+            // about it — leave it alone rather than deleting it on no evidence.
+            const rawStart = versioned.event.start_time;
+            if (!rawStart) continue;
+            const startedAt = new Date(rawStart).getTime();
+            if (Number.isFinite(startedAt) && startedAt >= windowStart && startedAt <= windowEnd) {
+              next.delete(id);
+            }
+          }
+
           for (const row of rows) {
             next.set(row.id, { event: mapGolfEventRow(row), gen });
           }

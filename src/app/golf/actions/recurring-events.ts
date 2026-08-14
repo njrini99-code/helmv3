@@ -145,6 +145,13 @@ interface CreateRecurringEventInput {
   // golf_player ids invited onto every occurrence's attendance (roll-call).
   // Mirrors GolfEventInput.attendeeIds on the one-off create path.
   attendeeIds?: string[];
+  /**
+   * All-day series. The one-off create path has always persisted this; the
+   * recurring path never accepted it, so a coach who ticked "All day" and set
+   * the event to repeat got a series of MIDNIGHT-anchored timed events instead
+   * of all-day ones.
+   */
+  allDay?: boolean;
 }
 
 interface EditRecurringEventInput {
@@ -714,6 +721,7 @@ async function createRecurringEventImpl(
       requires_rsvp: input.requiresRsvp || false,
       rsvp_deadline: input.rsvpDeadline || null,
       max_attendees: input.maxAttendees || null,
+      all_day: input.allDay ?? false,
       recurrence_rule: input.recurrenceRule,
       parent_event_id: null,
     };
@@ -747,6 +755,7 @@ async function createRecurringEventImpl(
         requires_rsvp: input.requiresRsvp || false,
         rsvp_deadline: input.rsvpDeadline || null,
         max_attendees: input.maxAttendees || null,
+        all_day: input.allDay ?? false,
         recurrence_rule: null,
         parent_event_id: rootId,
       }));

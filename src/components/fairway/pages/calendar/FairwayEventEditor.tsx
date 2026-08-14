@@ -34,7 +34,6 @@ import {
   Clock,
   MapPin,
   AlignLeft,
-  ChevronDown,
   Repeat,
   AlertTriangle,
   Trash2,
@@ -44,11 +43,17 @@ import {
 
 import { cn } from '@/lib/utils';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { DiscardChangesModal } from '@/components/fairway/overlays/DiscardChangesModal';
 import { Button } from '@/components/fairway/controls/button';
 import { Button as UiButton } from '@/components/ui/button';
 import { Input as UiInput, Textarea as UiTextarea } from '@/components/ui/input';
-import { NativeSelect } from '@/components/ui/native-select';
 import { Switch } from '@/components/fairway/forms/Switch';
+import { Segmented } from '@/components/fairway/controls/segmented';
+import {
+  DateChooser,
+  TimeChooser,
+  SpanSummary,
+} from '@/components/fairway/pages/calendar/EventWhenFields';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type {
   GolfEventFormData,
@@ -128,15 +133,88 @@ const RECURRENCE_OPTIONS: ReadonlyArray<{ value: RecurrenceFrequency; label: str
 const fieldCls =
   'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2 font-fw-sans text-body-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25 disabled:opacity-50';
 const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
-// Native <select> styled to match Fairway inputs (P241): strip the OS chevron
-// (appearance-none, incl. legacy IE/FF) and reserve right padding for a custom
-// lucide ChevronDown overlay so it reads as tokenized as the rest of the form.
-const selectFieldCls =
-  'w-full appearance-none rounded-fw-md border border-border-subtle bg-surface-sunken py-2 pl-3 pr-9 font-fw-sans text-body-sm text-text-primary outline-none transition-colors focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25 disabled:opacity-50 [&::-ms-expand]:hidden';
 
 function getTodayDate(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** "HH:MM" -> minutes since midnight, or null if unparseable. */
+function toMinutes(hhmm: string | null): number | null {
+  if (!hhmm) return null;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(min) || h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function fromMinutes(total: number): string {
+  const wrapped = ((total % 1440) + 1440) % 1440;
+  return `${String(Math.floor(wrapped / 60)).padStart(2, '0')}:${String(wrapped % 60).padStart(2, '0')}`;
+}
+
+/** "2026-08-14" -> "2026-08-15", via local parts (new Date(iso) is UTC-midnight). */
+function addOneDay(iso: string): string | null {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const dt = new Date(y, m - 1, d + 1);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Move the start time and carry the end time with it, preserving duration.
+ *
+ * Start and end were two independent `<input type="time">`s: dragging a 9–11am
+ * practice to 2pm left the end at 11am, so the coach submitted an inverted
+ * window. Nothing client-side caught it — the first complaint came from the
+ * server (zod superRefine in golf.ts, with a 23514 CHECK behind it), surfaced
+ * as a banner at the top of the modal rather than on the field. This is
+ * standard calendar behaviour and removes the most common way to produce that
+ * error at all.
+ *
+ * Only shifts when BOTH times parse and a real duration exists. If the end is
+ * unset, unparseable, or the event is all-day, the start moves alone — guessing
+ * an end the coach never entered would be worse than leaving it blank.
+ */
+export function shiftStartTime(form: GolfEventFormData, nextStart: string | null): GolfEventFormData {
+  const prevStartMin = toMinutes(form.startTime);
+  const nextStartMin = toMinutes(nextStart);
+  const endMin = toMinutes(form.endTime);
+
+  if (form.allDay || prevStartMin === null || nextStartMin === null || endMin === null) {
+    return { ...form, startTime: nextStart };
+  }
+
+  // Duration is measured forward, so an event already crossing midnight keeps
+  // its length rather than collapsing to a negative span.
+  const durationMin = (endMin - prevStartMin + 1440) % 1440;
+  const endTotal = nextStartMin + durationMin;
+
+  /**
+   * Wrapping the CLOCK is not enough — the end DATE has to move with it.
+   * Shifting a 9-11am practice to 11:30pm produced startTime 23:30 /
+   * endTime 01:30 with endDate still null, and the pre-submit guard below
+   * only compares clock times when there is no end date. It read 01:30 <=
+   * 23:30 and rejected the event with "End time must be after the start
+   * time" — the helper written to prevent that error was causing it.
+   *
+   * ADD ONLY, never remove. Adding a date when the shift newly crosses
+   * midnight is unambiguous. Removing one is a guess: an endDate equal to
+   * startDate+1 could be the wrap-shaped date this helper added, or a date
+   * the coach chose deliberately for an overnight event, and nothing here can
+   * tell those apart. Clearing it would silently collapse a span the coach
+   * configured, so a no-longer-wrapping event keeps its end date — visible in
+   * the End date field and the span summary, and correctable — rather than
+   * being quietly shortened.
+   */
+  let endDate = form.endDate;
+  if (endTotal >= 1440 && !endDate && form.startDate) {
+    endDate = addOneDay(form.startDate);
+  }
+
+  return { ...form, startTime: nextStart, endTime: fromMinutes(endTotal), endDate };
 }
 
 interface ConflictData {
@@ -190,6 +268,7 @@ export function FairwayEventEditor({
   const isCreating = !event;
   const availablePlayers = teamPlayers.filter((p) => p.id !== currentUserId);
 
+
   const tzAbbrev = React.useMemo(() => {
     if (!timezone) return null;
     try {
@@ -203,6 +282,29 @@ export function FairwayEventEditor({
   }, [timezone]);
 
   const [formData, setFormData] = React.useState<GolfEventFormData>(DEFAULT_FORM);
+  // Roster filter. Only surfaced above 8 players (see the search box below);
+  // the state is unconditional so clearing it can't strand a stale filter.
+  const [attendeeQuery, setAttendeeQuery] = React.useState('');
+  const visiblePlayers = React.useMemo(() => {
+    const q = attendeeQuery.trim().toLowerCase();
+    if (!q) return availablePlayers;
+    return availablePlayers.filter((p) =>
+      `${p.first_name} ${p.last_name}`.toLowerCase().includes(q),
+    );
+  }, [availablePlayers, attendeeQuery]);
+  // "Select all" acts on what the coach can SEE — selecting filtered-out
+  // players would be an invisible side effect — and merges rather than
+  // replaces, so it can't drop someone already invited.
+  const allPlayersSelected =
+    visiblePlayers.length > 0 && visiblePlayers.every((p) => formData.attendeeIds.includes(p.id));
+  /**
+   * The form as it was when the editor opened. Closing used to call onClose()
+   * unconditionally from onOpenChange, so Escape, a scrim tap or the X silently
+   * destroyed a fully-filled event — and the prefill effect overwrites formData
+   * on the next open, so reopening could not recover it.
+   */
+  const pristineRef = React.useRef<GolfEventFormData | null>(null);
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [conflicts, setConflicts] = React.useState<ConflictData | null>(null);
   // Two DISTINCT destructive confirms, matching weight (a real ModalShell
@@ -248,7 +350,7 @@ export function FairwayEventEditor({
       // (the old toISOString prefill displayed UTC wall-time — audit #15).
       const rsvpDeadline = toDateTimeLocalValue(event.rsvp_deadline);
       const isAllDay = event.all_day ?? false;
-      setFormData({
+      const prefilled: GolfEventFormData = {
         title: event.title || '',
         eventType: (event.event_type as EventType) || 'practice',
         startDate,
@@ -269,9 +371,16 @@ export function FairwayEventEditor({
         recurrenceWeekdays: [],
         recurrenceEndMode: 'count',
         recurrenceUntil: null,
-      });
+      };
+      setFormData(prefilled);
+      // Snapshot the SAME object the form starts from. `isDirty` compares
+      // against this, so "dirty" means the coach changed something — not
+      // merely that the editor opened.
+      pristineRef.current = prefilled;
     } else {
-      setFormData({ ...DEFAULT_FORM, startDate: getTodayDate() });
+      const blank: GolfEventFormData = { ...DEFAULT_FORM, startDate: getTodayDate() };
+      setFormData(blank);
+      pristineRef.current = blank;
     }
     setError(null);
     setPendingCancelConfirm(false);
@@ -302,6 +411,13 @@ export function FairwayEventEditor({
           const ids = result.data.summary.attendees.map((a) => a.playerId);
           setExistingAttendeeIds(ids);
           setFormData((prev) => ({ ...prev, attendeeIds: ids }));
+          // Hydration is not a coach edit. pristineRef was snapshotted when
+          // the editor opened, before these ids arrived, so without
+          // re-baselining, opening an event that HAS attendees and closing it
+          // untouched raised the discard-changes warning over nothing.
+          if (pristineRef.current) {
+            pristineRef.current = { ...pristineRef.current, attendeeIds: ids };
+          }
           setAttendeeHydration('loaded');
         } else {
           setAttendeeHydration('error');
@@ -323,7 +439,13 @@ export function FairwayEventEditor({
     if (!open || !isSeriesRoot || !event?.recurrence_rule) return;
     const rule = parseRecurrenceRule(event.recurrence_rule);
     if (rule) {
-      setFormData((prev) => ({ ...prev, ...recurrenceFieldsFromRule(rule), recurrenceRule: rule }));
+      const fields = recurrenceFieldsFromRule(rule);
+      setFormData((prev) => ({ ...prev, ...fields, recurrenceRule: rule }));
+      // Same re-baseline as the attendee hydration above: prefilling a stored
+      // pattern is not an edit the coach made.
+      if (pristineRef.current) {
+        pristineRef.current = { ...pristineRef.current, ...fields, recurrenceRule: rule };
+      }
     }
   }, [open, isSeriesRoot, event]);
 
@@ -434,6 +556,20 @@ export function FairwayEventEditor({
       setError('Event title is required');
       return;
     }
+    // Catch an inverted window here rather than letting the server do it. The
+    // only previous check was zod's superRefine (golf.ts) with a 23514 CHECK
+    // behind it, so the coach filled the whole form, submitted, and got a
+    // top-of-modal banner back. Same-day only: an event that legitimately runs
+    // past midnight has an end DATE, and comparing clock times alone would
+    // reject it.
+    if (!formData.allDay && !formData.endDate) {
+      const startMin = toMinutes(formData.startTime);
+      const endMin = toMinutes(formData.endTime);
+      if (startMin !== null && endMin !== null && endMin <= startMin) {
+        setError('End time must be after the start time.');
+        return;
+      }
+    }
     if (isInSeries) {
       setPendingScopeAction('edit');
       return;
@@ -537,12 +673,39 @@ export function FairwayEventEditor({
   const locked = isSaving || isCancelled;
   const attendeesLoading = attendeeHydration === 'loading';
 
+  /**
+   * Has the coach actually changed anything since the editor opened?
+   *
+   * Structural compare against the prefill snapshot rather than a per-field
+   * check: GolfEventFormData is a flat bag of primitives plus two string
+   * arrays, so key order is stable across a spread and this cannot drift out
+   * of sync the way an enumerated field list would every time a field is added.
+   */
+  const isDirty = React.useMemo(() => {
+    if (!pristineRef.current) return false;
+    return JSON.stringify(formData) !== JSON.stringify(pristineRef.current);
+  }, [formData]);
+
+  /**
+   * Every close attempt funnels here — Escape, scrim tap, the X (all via
+   * ModalShell's onOpenChange) and the footer Cancel button. An untouched form
+   * closes immediately; a dirty one asks first.
+   */
+  function requestClose() {
+    if (isSaving) return;
+    if (isDirty) {
+      setConfirmDiscardOpen(true);
+      return;
+    }
+    onClose();
+  }
+
   return (
     <>
     <ModalShell
       open={open}
       onOpenChange={(o) => {
-        if (!o) onClose();
+        if (!o) requestClose();
       }}
       size="xl"
       title={isCreating ? 'New event' : isCancelled ? 'Cancelled event' : 'Edit event'}
@@ -717,68 +880,55 @@ export function FairwayEventEditor({
                 consistent grid. */}
             <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="ev-start-date" className={labelCls}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <CalendarIcon className="h-3.5 w-3.5 text-accent-700" /> Start date
-                    </span>
-                  </label>
-                  <UiInput
-                    id="ev-start-date"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    disabled={locked}
-                    className={cn(fieldCls, 'bg-surface')}
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="ev-end-date" className={labelCls}>End date</label>
-                  <UiInput
-                    id="ev-end-date"
-                    type="date"
-                    value={formData.endDate || ''}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
-                    disabled={locked}
-                    className={cn(fieldCls, 'bg-surface')}
-                  />
-                </div>
+                <DateChooser
+                  label="Start date"
+                  labelIcon={<CalendarIcon className="h-3.5 w-3.5 text-accent-700" />}
+                  value={formData.startDate || null}
+                  onChange={(iso) => setFormData({ ...formData, startDate: iso ?? '' })}
+                  disabled={locked}
+                />
+                <DateChooser
+                  label="End date"
+                  value={formData.endDate}
+                  onChange={(iso) => setFormData({ ...formData, endDate: iso })}
+                  disabled={locked}
+                  placeholder="Same day"
+                />
               </div>
 
               {!formData.allDay && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="ev-start-time" className={labelCls}>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5 text-accent-700" /> Start time
-                      </span>
-                    </label>
-                    <UiInput
-                      id="ev-start-time"
-                      type="time"
-                      value={formData.startTime || ''}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
-                      disabled={locked}
-                      className={cn(fieldCls, 'bg-surface')}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="ev-end-time" className={labelCls}>End time</label>
-                    <UiInput
-                      id="ev-end-time"
-                      type="time"
-                      value={formData.endTime || ''}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
-                      disabled={locked}
-                      className={cn(fieldCls, 'bg-surface')}
-                    />
-                  </div>
+                  <TimeChooser
+                    label="Start time"
+                    labelIcon={<Clock className="h-3.5 w-3.5 text-accent-700" />}
+                    value={formData.startTime}
+                    onChange={(hhmm) => setFormData(shiftStartTime(formData, hhmm))}
+                    disabled={locked}
+                  />
+                  {/* Duration-aware: every end option is labelled with its length
+                      from the chosen start, so picking an end IS picking a
+                      duration. */}
+                  <TimeChooser
+                    label="End time"
+                    value={formData.endTime}
+                    onChange={(hhmm) => setFormData({ ...formData, endTime: hhmm })}
+                    disabled={locked}
+                    durationFrom={formData.startTime}
+                  />
                 </div>
               )}
 
-              {tzAbbrev && !formData.allDay ? (
-                <p className="font-fw-sans text-caption text-text-tertiary">Times shown in {tzAbbrev}</p>
+              {/* The span itself, stated once. The editor previously showed only
+                  the fields the span was assembled from, never the result. */}
+              {formData.startDate ? (
+                <SpanSummary
+                  startDate={formData.startDate}
+                  endDate={formData.endDate}
+                  startTime={formData.startTime}
+                  endTime={formData.endTime}
+                  allDay={formData.allDay}
+                  timezoneLabel={!formData.allDay ? tzAbbrev : null}
+                />
               ) : null}
 
               <Switch
@@ -878,12 +1028,58 @@ export function FairwayEventEditor({
                       <Users className="h-3.5 w-3.5 text-accent-700" /> Invite players
                     </span>
                   </span>
-                  {formData.attendeeIds.length > 0 ? (
-                    <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
-                      {formData.attendeeIds.length} selected
-                    </span>
-                  ) : null}
+                  {/* Always show the count, not only once someone is picked —
+                      "0 of 14" is the honest starting state and tells the coach
+                      how big the roster is before they start tapping. */}
+                  <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
+                    {formData.attendeeIds.length} of {availablePlayers.length}
+                  </span>
                 </div>
+
+                {/* Select-all / clear. Inviting the whole team is the single
+                    most common case (practice, lift, study hall) and used to
+                    cost one tap per player. */}
+                <div className="mb-2 flex items-center gap-3">
+                  <UiButton
+                    variant="ghost"
+                    type="button"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        attendeeIds: Array.from(
+                          new Set([...formData.attendeeIds, ...visiblePlayers.map((p) => p.id)]),
+                        ),
+                      })
+                    }
+                    disabled={locked || attendeesLoading || allPlayersSelected}
+                    className="h-auto p-0 font-fw-sans text-caption font-medium text-accent-700 underline-offset-2 hover:underline disabled:no-underline disabled:opacity-40"
+                  >
+                    {attendeeQuery.trim() ? `Select ${visiblePlayers.length} shown` : 'Select all'}
+                  </UiButton>
+                  <UiButton
+                    variant="ghost"
+                    type="button"
+                    onClick={() => setFormData({ ...formData, attendeeIds: [] })}
+                    disabled={locked || attendeesLoading || formData.attendeeIds.length === 0}
+                    className="h-auto p-0 font-fw-sans text-caption font-medium text-text-secondary underline-offset-2 hover:underline disabled:no-underline disabled:opacity-40"
+                  >
+                    Clear
+                  </UiButton>
+                </div>
+
+                {/* Search appears only once the roster is long enough to need
+                    it — a filter box over eight names is clutter. */}
+                {availablePlayers.length > 8 ? (
+                  <UiInput
+                    type="search"
+                    value={attendeeQuery}
+                    onChange={(e) => setAttendeeQuery(e.target.value)}
+                    disabled={locked || attendeesLoading}
+                    placeholder="Search the roster…"
+                    aria-label="Search the roster"
+                    className={cn(fieldCls, 'mb-2 bg-surface')}
+                  />
+                ) : null}
 
                 {attendeesLoading ? (
                   <p role="status" className="mb-2 font-fw-sans text-caption text-text-tertiary">
@@ -901,7 +1097,7 @@ export function FairwayEventEditor({
                 ) : null}
 
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {availablePlayers.map((p) => {
+                  {visiblePlayers.map((p) => {
                     const selected = formData.attendeeIds.includes(p.id);
                     const tint = tintFor(p.id);
                     return (
@@ -1006,28 +1202,37 @@ export function FairwayEventEditor({
                     <Repeat className="h-3.5 w-3.5 text-accent-700" /> {isSeriesRoot ? 'Series pattern' : 'Repeat'}
                   </span>
                 </span>
-                <div className="relative">
-                  {/* A series root can't be flipped back to a one-off here —
-                      that's a delete-with-scope, not a pattern change.
-                      Native select on purpose: keeps mobile OS pickers and the
-                      aria-label/selectOptions contract the tests pin. */}
-                  <NativeSelect
-                    value={formData.recurrence}
-                    onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as RecurrenceFrequency })}
-                    disabled={locked}
-                    aria-label="Recurrence"
-                    className={cn(selectFieldCls, 'bg-surface')}
-                  >
-                    {RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => (
-                      <option key={o.value} value={o.value}>
+                {/* Visible chips, not a dropdown. The whole pattern is legible
+                    at a glance and it matches the two pill rows this modal
+                    already uses (event type above, weekdays below) — a coach
+                    shouldn't have to open a menu to see how a practice
+                    repeats. Wraps on mobile, where a 5-up segmented track
+                    would not fit.
+                    A series root can't be flipped back to a one-off here —
+                    that's a delete-with-scope, not a pattern change. */}
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Recurrence">
+                  {RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => {
+                    const active = formData.recurrence === o.value;
+                    return (
+                      <UiButton
+                        key={o.value}
+                        variant="ghost"
+                        type="button"
+                        onClick={() => setFormData({ ...formData, recurrence: o.value })}
+                        disabled={locked}
+                        aria-pressed={active}
+                        className={cn(
+                          'inline-flex items-center rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
+                          'focus-visible:ring-accent-500/40',
+                          active
+                            ? 'bg-accent-700 text-text-on-accent shadow-flat'
+                            : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
+                        )}
+                      >
                         {o.label}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                  <ChevronDown
-                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
-                    aria-hidden
-                  />
+                      </UiButton>
+                    );
+                  })}
                 </div>
 
                 {(formData.recurrence === 'weekly' || formData.recurrence === 'biweekly') && (
@@ -1067,25 +1272,26 @@ export function FairwayEventEditor({
 
                 {formData.recurrence !== 'none' && (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {/* Two mutually exclusive modes — a segmented track shows
+                        both at once where a dropdown hid one behind a click. */}
                     <div>
-                      <label htmlFor="ev-recurrence-end" className={labelCls}>Series ends</label>
-                      <div className="relative">
-                        <NativeSelect
-                          id="ev-recurrence-end"
-                          value={formData.recurrenceEndMode ?? 'count'}
-                          onChange={(e) =>
-                            setFormData({ ...formData, recurrenceEndMode: e.target.value as RecurrenceEndMode })
-                          }
-                          disabled={locked}
-                          className={cn(selectFieldCls, 'bg-surface')}
-                        >
-                          <option value="count">After a number of events</option>
-                          <option value="until">On a date</option>
-                        </NativeSelect>
-                        <ChevronDown
-                          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
-                          aria-hidden
-                        />
+                      <span className={labelCls}>Series ends</span>
+                      {/* Segmented takes no `disabled` — gate the wrapper so a
+                          cancelled event's pattern still reads clearly. */}
+                      <div className={cn(locked && 'pointer-events-none opacity-50')}>
+                      <Segmented
+                        value={formData.recurrenceEndMode ?? 'count'}
+                        onValueChange={(v) =>
+                          setFormData({ ...formData, recurrenceEndMode: v as RecurrenceEndMode })
+                        }
+                        size="sm"
+                        fullWidth
+                        aria-label="Series ends"
+                        options={[
+                          { value: 'count', label: 'After N events' },
+                          { value: 'until', label: 'On a date' },
+                        ]}
+                      />
                       </div>
                     </div>
                     {(formData.recurrenceEndMode ?? 'count') === 'count' ? (
@@ -1113,18 +1319,13 @@ export function FairwayEventEditor({
                         />
                       </div>
                     ) : (
-                      <div>
-                        <label htmlFor="ev-recurrence-until" className={labelCls}>Repeat until</label>
-                        <UiInput
-                          id="ev-recurrence-until"
-                          type="date"
-                          min={formData.startDate}
-                          value={formData.recurrenceUntil || ''}
-                          onChange={(e) => setFormData({ ...formData, recurrenceUntil: e.target.value || null })}
-                          disabled={locked}
-                          className={cn(fieldCls, 'bg-surface')}
-                        />
-                      </div>
+                      <DateChooser
+                        label="Repeat until"
+                        value={formData.recurrenceUntil ?? null}
+                        onChange={(iso) => setFormData({ ...formData, recurrenceUntil: iso })}
+                        disabled={locked}
+                        placeholder="Pick an end date"
+                      />
                     )}
                   </div>
                 )}
@@ -1160,7 +1361,7 @@ export function FairwayEventEditor({
                 {isInSeries ? 'Delete' : 'Cancel event'}
               </Button>
             ) : null}
-            <Button variant="secondary" type="button" onClick={onClose} disabled={isSaving}>
+            <Button variant="secondary" type="button" onClick={requestClose} disabled={isSaving}>
               {isCancelled ? 'Close' : 'Cancel'}
             </Button>
             {!isCancelled ? (
@@ -1241,6 +1442,18 @@ export function FairwayEventEditor({
           </ModalShell.Footer>
         </ModalShell>
       ) : null}
+
+      {/* Guards Escape, scrim tap, the X and the footer Cancel. Same primitive
+          and copy as FairwayCreateTaskModal so the two dialogs behave alike. */}
+      <DiscardChangesModal
+        open={confirmDiscardOpen}
+        onStay={() => setConfirmDiscardOpen(false)}
+        onDiscard={() => {
+          setConfirmDiscardOpen(false);
+          onClose();
+        }}
+        itemLabel="event"
+      />
     </>
   );
 }

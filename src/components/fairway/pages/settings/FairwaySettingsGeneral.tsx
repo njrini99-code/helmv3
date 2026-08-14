@@ -49,6 +49,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { cn } from '@/lib/utils';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
+import { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { usePushSubscription } from '@/hooks/golf/use-push-subscription';
@@ -80,6 +81,7 @@ import {
   IconSun,
   IconMoon,
   IconMonitor,
+  IconSparkles,
 } from '@/components/icons';
 import { useGolfTheme, type GolfTheme } from '@/lib/golf/theme';
 
@@ -686,6 +688,7 @@ export function FairwaySettingsGeneral() {
         {/* Preferences */}
         <AppearancePanel />
         <DistanceUnitsPanel />
+        <HapticsPanel />
         {/* Notifications — coach + player. Writes users.notification_preferences,
             the column the email/push delivery gate actually reads. */}
         <NotificationsPanel coachId={profile.role === 'coach' ? profile.coachId : undefined} />
@@ -1361,6 +1364,67 @@ export function AppearancePanel() {
 }
 
 /* ── Distance units ───────────────────────────────────────────────────────── */
+
+/**
+ * Haptics on/off.
+ *
+ * The haptics engine shipped fully built with no way to turn it off:
+ * `setHapticsEnabled` had zero callers anywhere in the app, and its own
+ * docblock called a per-app toggle "table stakes for a product people use for
+ * hours". This is that toggle.
+ *
+ * Native-only by design. The web build never calls the Taptic Engine, so
+ * rendering a switch there would be a control with nothing behind it — the
+ * exact failure this panel exists to correct.
+ */
+export function HapticsPanel() {
+  // Read once on mount rather than during render: the preference lives in
+  // localStorage, which does not exist during SSR, and reading it in the
+  // initial render would hydrate-mismatch.
+  const [enabled, setEnabled] = useState(true);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [native, setNative] = useState(false);
+
+  useEffect(() => {
+    setNative(isNativeApp());
+    setEnabled(areHapticsEnabled());
+  }, []);
+
+  if (!native) return null;
+
+  return (
+    <SectionCard
+      icon={<IconSparkles size={18} aria-hidden />}
+      title="Haptics"
+      description="Subtle taps when you toggle, submit, or pull to refresh. Saved on this device only — your phone's system-wide haptics setting still applies on top."
+      headerAction={<AutoSaveBadge savedAt={savedAt} />}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="font-fw-sans text-body text-text-primary">Haptic feedback</p>
+          <p className="font-fw-sans text-caption text-text-tertiary">
+            {enabled ? 'On for taps, toggles and confirmations.' : 'Off — the app stays silent.'}
+          </p>
+        </div>
+        <Switch
+          checked={enabled}
+          onCheckedChange={(next) => {
+            // Fire the confirmation BEFORE writing when turning off, so the
+            // last thing the user feels is the tap that acknowledged them —
+            // writing first would gate this very buzz and the switch would
+            // feel dead at exactly the moment it should confirm.
+            if (!next) void triggerHaptic('light');
+            setHapticsEnabled(next);
+            setEnabled(next);
+            if (next) void triggerHaptic('success');
+            setSavedAt(Date.now());
+          }}
+          aria-label="Haptic feedback"
+        />
+      </div>
+    </SectionCard>
+  );
+}
 
 /** Restores the legacy yd/m display preference (localStorage-backed).
  *  Exported for tests — B14: the Meters card's hint text must wrap, not
