@@ -44,6 +44,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { DiscardChangesModal } from '@/components/fairway/overlays/DiscardChangesModal';
 import { Button } from '@/components/fairway/controls/button';
 import { Button as UiButton } from '@/components/ui/button';
 import { Input as UiInput, Textarea as UiTextarea } from '@/components/ui/input';
@@ -139,6 +140,52 @@ function getTodayDate(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** "HH:MM" -> minutes since midnight, or null if unparseable. */
+function toMinutes(hhmm: string | null): number | null {
+  if (!hhmm) return null;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(min) || h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function fromMinutes(total: number): string {
+  const wrapped = ((total % 1440) + 1440) % 1440;
+  return `${String(Math.floor(wrapped / 60)).padStart(2, '0')}:${String(wrapped % 60).padStart(2, '0')}`;
+}
+
+/**
+ * Move the start time and carry the end time with it, preserving duration.
+ *
+ * Start and end were two independent `<input type="time">`s: dragging a 9–11am
+ * practice to 2pm left the end at 11am, so the coach submitted an inverted
+ * window. Nothing client-side caught it — the first complaint came from the
+ * server (zod superRefine in golf.ts, with a 23514 CHECK behind it), surfaced
+ * as a banner at the top of the modal rather than on the field. This is
+ * standard calendar behaviour and removes the most common way to produce that
+ * error at all.
+ *
+ * Only shifts when BOTH times parse and a real duration exists. If the end is
+ * unset, unparseable, or the event is all-day, the start moves alone — guessing
+ * an end the coach never entered would be worse than leaving it blank.
+ */
+export function shiftStartTime(form: GolfEventFormData, nextStart: string | null): GolfEventFormData {
+  const prevStartMin = toMinutes(form.startTime);
+  const nextStartMin = toMinutes(nextStart);
+  const endMin = toMinutes(form.endTime);
+
+  if (form.allDay || prevStartMin === null || nextStartMin === null || endMin === null) {
+    return { ...form, startTime: nextStart };
+  }
+
+  // Duration is measured forward, so an event already crossing midnight keeps
+  // its length rather than collapsing to a negative span.
+  const durationMin = (endMin - prevStartMin + 1440) % 1440;
+  return { ...form, startTime: nextStart, endTime: fromMinutes(nextStartMin + durationMin) };
+}
+
 interface ConflictData {
   hasConflict: boolean;
   conflicts: Array<{
@@ -203,6 +250,14 @@ export function FairwayEventEditor({
   }, [timezone]);
 
   const [formData, setFormData] = React.useState<GolfEventFormData>(DEFAULT_FORM);
+  /**
+   * The form as it was when the editor opened. Closing used to call onClose()
+   * unconditionally from onOpenChange, so Escape, a scrim tap or the X silently
+   * destroyed a fully-filled event — and the prefill effect overwrites formData
+   * on the next open, so reopening could not recover it.
+   */
+  const pristineRef = React.useRef<GolfEventFormData | null>(null);
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [conflicts, setConflicts] = React.useState<ConflictData | null>(null);
   // Two DISTINCT destructive confirms, matching weight (a real ModalShell
@@ -248,7 +303,7 @@ export function FairwayEventEditor({
       // (the old toISOString prefill displayed UTC wall-time — audit #15).
       const rsvpDeadline = toDateTimeLocalValue(event.rsvp_deadline);
       const isAllDay = event.all_day ?? false;
-      setFormData({
+      const prefilled: GolfEventFormData = {
         title: event.title || '',
         eventType: (event.event_type as EventType) || 'practice',
         startDate,
@@ -269,9 +324,16 @@ export function FairwayEventEditor({
         recurrenceWeekdays: [],
         recurrenceEndMode: 'count',
         recurrenceUntil: null,
-      });
+      };
+      setFormData(prefilled);
+      // Snapshot the SAME object the form starts from. `isDirty` compares
+      // against this, so "dirty" means the coach changed something — not
+      // merely that the editor opened.
+      pristineRef.current = prefilled;
     } else {
-      setFormData({ ...DEFAULT_FORM, startDate: getTodayDate() });
+      const blank: GolfEventFormData = { ...DEFAULT_FORM, startDate: getTodayDate() };
+      setFormData(blank);
+      pristineRef.current = blank;
     }
     setError(null);
     setPendingCancelConfirm(false);
@@ -434,6 +496,20 @@ export function FairwayEventEditor({
       setError('Event title is required');
       return;
     }
+    // Catch an inverted window here rather than letting the server do it. The
+    // only previous check was zod's superRefine (golf.ts) with a 23514 CHECK
+    // behind it, so the coach filled the whole form, submitted, and got a
+    // top-of-modal banner back. Same-day only: an event that legitimately runs
+    // past midnight has an end DATE, and comparing clock times alone would
+    // reject it.
+    if (!formData.allDay && !formData.endDate) {
+      const startMin = toMinutes(formData.startTime);
+      const endMin = toMinutes(formData.endTime);
+      if (startMin !== null && endMin !== null && endMin <= startMin) {
+        setError('End time must be after the start time.');
+        return;
+      }
+    }
     if (isInSeries) {
       setPendingScopeAction('edit');
       return;
@@ -537,12 +613,39 @@ export function FairwayEventEditor({
   const locked = isSaving || isCancelled;
   const attendeesLoading = attendeeHydration === 'loading';
 
+  /**
+   * Has the coach actually changed anything since the editor opened?
+   *
+   * Structural compare against the prefill snapshot rather than a per-field
+   * check: GolfEventFormData is a flat bag of primitives plus two string
+   * arrays, so key order is stable across a spread and this cannot drift out
+   * of sync the way an enumerated field list would every time a field is added.
+   */
+  const isDirty = React.useMemo(() => {
+    if (!pristineRef.current) return false;
+    return JSON.stringify(formData) !== JSON.stringify(pristineRef.current);
+  }, [formData]);
+
+  /**
+   * Every close attempt funnels here — Escape, scrim tap, the X (all via
+   * ModalShell's onOpenChange) and the footer Cancel button. An untouched form
+   * closes immediately; a dirty one asks first.
+   */
+  function requestClose() {
+    if (isSaving) return;
+    if (isDirty) {
+      setConfirmDiscardOpen(true);
+      return;
+    }
+    onClose();
+  }
+
   return (
     <>
     <ModalShell
       open={open}
       onOpenChange={(o) => {
-        if (!o) onClose();
+        if (!o) requestClose();
       }}
       size="xl"
       title={isCreating ? 'New event' : isCancelled ? 'Cancelled event' : 'Edit event'}
@@ -758,7 +861,7 @@ export function FairwayEventEditor({
                       id="ev-start-time"
                       type="time"
                       value={formData.startTime || ''}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
+                      onChange={(e) => setFormData(shiftStartTime(formData, e.target.value || null))}
                       disabled={locked}
                       className={cn(fieldCls, 'bg-surface')}
                     />
@@ -1160,7 +1263,7 @@ export function FairwayEventEditor({
                 {isInSeries ? 'Delete' : 'Cancel event'}
               </Button>
             ) : null}
-            <Button variant="secondary" type="button" onClick={onClose} disabled={isSaving}>
+            <Button variant="secondary" type="button" onClick={requestClose} disabled={isSaving}>
               {isCancelled ? 'Close' : 'Cancel'}
             </Button>
             {!isCancelled ? (
@@ -1241,6 +1344,18 @@ export function FairwayEventEditor({
           </ModalShell.Footer>
         </ModalShell>
       ) : null}
+
+      {/* Guards Escape, scrim tap, the X and the footer Cancel. Same primitive
+          and copy as FairwayCreateTaskModal so the two dialogs behave alike. */}
+      <DiscardChangesModal
+        open={confirmDiscardOpen}
+        onStay={() => setConfirmDiscardOpen(false)}
+        onDiscard={() => {
+          setConfirmDiscardOpen(false);
+          onClose();
+        }}
+        itemLabel="event"
+      />
     </>
   );
 }
