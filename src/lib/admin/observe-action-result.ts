@@ -4,6 +4,9 @@ import { isExpectedAuthNoise } from '@/lib/admin/data/triage';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import { EXPECTED_EMPTY_STATE_CODES } from '@/lib/view-state/expected-empty-states';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+// Dependency LEAF (no imports of its own) — safe to pull into this
+// 'server-only' module without dragging a graph behind it.
+import { classifyProviderFault } from '@/lib/admin/provider-fault';
 
 export type ActionSoftFailureContext = NonNullable<Parameters<typeof logServerError>[1]> & {
   action: string;
@@ -224,6 +227,29 @@ export function observeActionSoftFailure(
 
   const collapsedCount = drainCollapsedCount(throttleKey);
   const severity = severityForSoftFailure(failure.message, failure.code);
+
+  // A provider fault can reach this capture class through a RETURNED envelope
+  // rather than a throw, and arrive with no `code` — because for these the
+  // summary IS the payload. `schedule-image.ts` classifies the fault itself,
+  // logs `provider_vercel_ai_gateway_credit_exhausted`, then returns
+  // `{ success: false, error: <summary> }`; the withAdminObserved wrapper
+  // observes that envelope and filed the SAME outage a second time with
+  // errorCode null.
+  //
+  // The cost is not double-counting. `auto-resolve.ts` exempts a fingerprint
+  // from release-based resolution only via isOperatorGatedFaultCode(errorCode),
+  // so the unclassified copy is eligible to be auto-closed by the next deploy
+  // while the account behind it is still out of credit — and no deploy has ever
+  // topped up a billing account. Production, 2026-08-09: fingerprint 1ace6e9f
+  // carried the code, 737d7332 carried null, one outage.
+  //
+  // Recovering it from the message is sound because that message was PRODUCED
+  // by `summarise()` in provider-fault.ts, so it is the module's own wording
+  // being read back — not a guess at arbitrary prose. An envelope that already
+  // carries its own `code` keeps it: the impl's classification wins over ours.
+  const providerCode = failure.code
+    ? null
+    : (classifyProviderFault(failure.message)?.code ?? null);
   // 'info' (expected empty-state) and 'warning' (expected soft failure) are
   // both routine — never worth a Sentry capture. Only real 'error' outcomes
   // get sent.
@@ -233,7 +259,7 @@ export function observeActionSoftFailure(
     title: `[${context.action}] ${failure.message}`.slice(0, 500),
     handled: true,
     skipSentry,
-    errorCode: failure.code ?? undefined,
+    errorCode: failure.code ?? providerCode ?? undefined,
     fingerprint: ['server_action_soft', context.feature ?? context.featureArea ?? 'unknown', context.action],
     metadata: {
       ...(context.metadata ?? {}),

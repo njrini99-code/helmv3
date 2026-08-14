@@ -33,8 +33,21 @@ function getSignupErrorMessage(error: string): string {
   // events in three days, every one shown with remediation that could not work.
   // Adding characters never fixes a missing symbol, and nothing fixes a breached
   // password. That is an unwinnable loop at the first step of signup.
-  if (lower.includes('weak password')) {
-    return 'Password does not meet the requirements. Please use at least 8 characters.';
+  // Deliberately NOT rewritten. The narrowing above stopped this branch eating
+  // the server's good messages, but the replacement text it still returned gave
+  // advice the client had already disproved — the form enforces length >= 8
+  // before submitting, so "use at least 8 characters" can never be the real
+  // reason by the time this runs. Measured in production over 30 days, every
+  // password rejection came back already written for the end user and already
+  // actionable: "Please choose a stronger password — this one is too common or
+  // has appeared in a data breach" (9), "Password must contain at least one
+  // special character (!@#$%^&*...)" (8), "Password must contain at least one
+  // number" (1). Passing those through is strictly better than any string we
+  // could substitute; only a bare, unhelpful raw code gets a generic wrapper.
+  if (lower.includes('weak password') || lower.includes('weak_password')) {
+    return /[a-z]{4,}\s+[a-z]{4,}/i.test(error)
+      ? error // already a sentence written for the user — show it verbatim
+      : 'That password was rejected. Try a longer one with a mix of letters, numbers and symbols that you have not used elsewhere.';
   }
   if (lower.includes('network') || lower.includes('fetch')) {
     return 'Unable to reach the server. Please check your internet connection and try again.';

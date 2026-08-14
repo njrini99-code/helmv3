@@ -131,7 +131,13 @@ function parseCourseCode(text: string): string {
  * Also handles full day names separated by / or , (Mon/Wed/Fri, Monday, Wednesday)
  */
 const DAYS_INLINE_RE = /\b((?:M|Tu?|W|Th?|R|F|Sa?|Su?)(?:(?:M|Tu?|W|Th?|R|F|Sa?|Su?))*)\b/;
-const FULL_DAY_RE = /\b((?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)(?:\s*[/,&]\s*(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?))*)\b/i;
+// The separator alternation must include PLAIN WHITESPACE. It used to be only
+// `[/,&]`, which caught "Monday, Wednesday" and "Monday/Wednesday" but not the
+// equally common "Monday Wednesday Friday" — that matched just "Monday" and
+// stopped, so a MWF class was saved as Monday-only and silently lost two
+// thirds of its meetings. The alternation still requires the NEXT token to be
+// a day name, so "Monday Physics 200" does not over-match.
+const FULL_DAY_RE = /\b((?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)(?:(?:\s*[/,&]\s*|\s+)(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?))*)\b/i;
 
 function parseDays(daysStr: string): string[] {
   const normalized = daysStr.trim();
@@ -600,10 +606,25 @@ function inferColumnsFromContent(cols: string[], courseCodeIdx: number, classDat
       continue;
     }
 
-    // Single time value (might be start or end)
-    if (!classData.start_time && SINGLE_TIME_RE.test(col) && col.match(/\d{1,2}:\d{2}/)) {
-      classData.start_time = parseTime(col);
-      continue;
+    // Single time value. Delimited exports — tab, CSV, pipe — almost always put
+    // start and end in SEPARATE columns, and this branch used to be guarded on
+    // `!classData.start_time` alone. The first time column set the start; the
+    // second hit the same guard, now false, and was dropped on the floor. Every
+    // such schedule therefore produced a class with a start and NO end, which
+    // syncs as a calendar event with no duration.
+    if (SINGLE_TIME_RE.test(col) && col.match(/\d{1,2}:\d{2}/)) {
+      const t = parseTime(col);
+      if (!classData.start_time) {
+        classData.start_time = t;
+        continue;
+      }
+      // parseTime returns 24-hour "HH:MM", so a lexical compare orders it.
+      // Requiring end > start keeps an unrelated later time column (a due date,
+      // a second meeting slot) from being mistaken for this class's end.
+      if (!classData.end_time && t > classData.start_time) {
+        classData.end_time = t;
+        continue;
+      }
     }
 
     // Days pattern (short: MWF, TTh)
@@ -668,7 +689,13 @@ function parseMultiLineFormat(lines: string[], semester: string): ParsedClass[] 
         classes.push(fillDefaults(currentClass));
       }
 
-      currentClass = { course_code: courseCode };
+      // `semester` is the term detected from the WHOLE document — a "Fall 2026
+      // Schedule" heading, say. It was passed into this function and then never
+      // written onto the class, so every class built on this path came back
+      // with semester:'' and the caller fell back to detectSemester(''), which
+      // is a guess from today's date. A schedule that states its own term was
+      // having that term thrown away and replaced with a worse one.
+      currentClass = { course_code: courseCode, semester };
 
       // Extract course name (text after code, before time/days)
       const codeEndIdx = line.search(COURSE_CODE_RE);

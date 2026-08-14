@@ -13,6 +13,7 @@ import type { GolfEvent, GolfPlayerClass } from '@/lib/types/golf';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { classIdFromDescription } from '@/lib/calendar/class-events';
 import { parseSemesterDates } from '@/lib/golf/semester';
+import { wallClockInZone } from '@/lib/golf/timezone';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -181,10 +182,16 @@ export async function getUserBusyPeriodsWithStatus(
   // case — that comes back with `error === null` and is a real answer.
   let partial = identityPartial;
   let teamIds: string[] = [];
+  // IANA zone the players' class wall-clock times are written in. Read here
+  // because `expandRecurringClass` builds Date objects from `HH:MM` strings and
+  // the runtime zone on Vercel is UTC — see setTimeOnDate. All 10 production
+  // teams carry a timezone today; null degrades to the previous behaviour
+  // rather than guessing a zone.
+  let classTimeZone: string | null = null;
   if (coach?.organization_id) {
     const { data: teams, error: teamsError } = await supabase
       .from('golf_teams')
-      .select('id')
+      .select('id, timezone')
       .eq('organization_id', coach.organization_id);
     if (teamsError) {
       partial = true;
@@ -195,6 +202,9 @@ export async function getUserBusyPeriodsWithStatus(
       );
     }
     teamIds = (teams ?? []).map((t) => t.id);
+    classTimeZone = (teams ?? [])
+      .map((t) => (t as { timezone?: string | null }).timezone)
+      .find((tz): tz is string => Boolean(tz)) ?? null;
   } else if (player) {
     const { data: memberships, error: membershipsError } = await supabase
       .from('golf_team_members')
@@ -212,6 +222,34 @@ export async function getUserBusyPeriodsWithStatus(
     teamIds = (memberships ?? [])
       .map((m) => m.team_id)
       .filter((id): id is string => Boolean(id));
+
+    if (teamIds.length > 0) {
+      // Failure here is NOT folded into `partial`: an unknown zone makes class
+      // blocks land in the runtime zone (the pre-existing behaviour), it does
+      // not drop them. Marking the whole answer incomplete for that would
+      // suppress real conflicts the rest of this function found correctly.
+      //
+      // It is still LOGGED, because "no team carries a zone" and "the zone read
+      // failed" produce the same null here and have very different meanings.
+      // Falling back to the runtime zone silently would reinstate exactly the
+      // bug this timezone plumbing exists to fix — on Vercel the runtime zone
+      // is UTC, so a 09:05 class would block 05:05 Eastern again, with nothing
+      // in the logs to say why.
+      const { data: tzRows, error: tzError } = await supabase
+        .from('golf_teams')
+        .select('timezone')
+        .in('id', teamIds);
+      if (tzError) {
+        await logServerError(
+          `[availability] team timezone read failed; class blocks fall back to the runtime zone: ${describeError(tzError)}`,
+          { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+          'warning',
+        );
+      }
+      classTimeZone = (tzRows ?? [])
+        .map((t) => (t as { timezone?: string | null }).timezone)
+        .find((tz): tz is string => Boolean(tz)) ?? null;
+    }
   }
 
   // 2. Fetch all busy periods in parallel (major performance improvement).
@@ -392,7 +430,7 @@ export async function getUserBusyPeriodsWithStatus(
   if (classesResult.data) {
     for (const cls of classesResult.data as GolfPlayerClass[]) {
       if (classEventsByClassId.has(cls.id)) continue;
-      const classInstances = expandRecurringClass(cls, timeMin, timeMax);
+      const classInstances = expandRecurringClass(cls, timeMin, timeMax, classTimeZone);
       busyPeriods.push(...classInstances);
     }
   }
@@ -508,7 +546,11 @@ function weekdayIndex(dayCode: string): number | null {
 function expandRecurringClass(
   cls: GolfPlayerClass,
   timeMin: Date,
-  timeMax: Date
+  timeMax: Date,
+  /** IANA zone the class's wall-clock times are written in — the team's.
+   *  Null falls back to the runtime zone, which is right in a browser and
+   *  wrong (UTC) on Vercel; see setTimeOnDate. */
+  timeZone: string | null
 ): BusyPeriod[] {
   const periods: BusyPeriod[] = [];
 
@@ -544,8 +586,8 @@ function expandRecurringClass(
 
   while (current <= until) {
     if (daysOfWeek.has(current.getDay())) {
-      const start = setTimeOnDate(current, cls.start_time);
-      const end = setTimeOnDate(current, cls.end_time);
+      const start = setTimeOnDate(current, cls.start_time, timeZone);
+      const end = setTimeOnDate(current, cls.end_time, timeZone);
       // The walk starts on a partial first day, so a meeting can fall before
       // the window opens — keep only occurrences that actually overlap it.
       if (end > timeMin && start < timeMax) {
@@ -570,11 +612,12 @@ function expandRecurringClass(
  * @param date - Base date
  * @param time - Time string in HH:MM format
  */
-function setTimeOnDate(date: Date, time: string): Date {
-  const [hours, minutes] = time.split(':').map(Number);
-  const result = new Date(date);
-  result.setHours(hours ?? 0, minutes ?? 0, 0, 0);
-  return result;
+function setTimeOnDate(date: Date, time: string, timeZone?: string | null): Date {
+  // Delegates to the shared zone helper. `setHours` alone resolves in the
+  // RUNTIME's zone, which on Vercel is UTC — a 09:05 class became a busy block
+  // at 09:05 UTC (05:05 America/New_York, four hours early), so "find a time"
+  // reported the real class hour as free and let a coach book practice over it.
+  return wallClockInZone(date, time, timeZone);
 }
 
 /**

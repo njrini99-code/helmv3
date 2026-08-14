@@ -344,7 +344,10 @@ describe('FEATURE_REGISTRY completeness', () => {
     // 429: createStaffInvite + redeemStaffInvite — coach-issued staff
     // invitations, replacing a join-code path that let any player
     // grant themselves program-administrator.
-    expect(total).toBe(429);
+    // 430: getPlayerRoundOptions (stats-data.ts) — the round list behind the
+    // stats round-scope picker. stats-data.ts is already 'ALL'-mapped, so
+    // scanExports picks it up with no manifest edit needed.
+    expect(total).toBe(430);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

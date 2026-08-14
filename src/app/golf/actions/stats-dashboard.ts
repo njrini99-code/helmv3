@@ -52,7 +52,19 @@ function failedStatsBundle() {
  * enrichments are bounded and settle independently, so a slow leak map or
  * CoachHelm pattern read cannot leave the entire page on a blank skeleton.
  */
-async function getPlayerStatsDashboardBundleImpl(playerId: string) {
+/**
+ * `roundId` scopes the two panels that can honestly be read for a single round
+ * — the detailed ~75-stat block and the spray chart. Everything else in the
+ * bundle is cross-round BY CONSTRUCTION (trend compares 30-day windows,
+ * standing ranks against the team, leak maps and strengths/weaknesses need a
+ * sample, worst-holes aggregates repeat play) and stays on the career view.
+ * Scoping those to one round would not be a narrower answer, it would be a
+ * meaningless one, so they are deliberately left alone rather than threaded.
+ */
+async function getPlayerStatsDashboardBundleImpl(
+  playerId: string,
+  roundId?: string | 'overall',
+) {
   const supabase = await createClient();
   // The dashboard is latency-sensitive and already bounds each downstream
   // enrichment. Make exactly one remote Auth attempt here; the resilient
@@ -74,11 +86,11 @@ async function getPlayerStatsDashboardBundleImpl(playerId: string) {
     async () => {
       const [detailed, trend, standing, leak, spray, strengthsWeaknesses, worstHoles, patterns] =
         await Promise.all([
-          settleWithin(getDetailedStats(playerId, 'overall'), 15_000),
+          settleWithin(getDetailedStats(playerId, roundId ?? 'overall'), 15_000),
           settleWithin(getTrendAnalysis(playerId), 12_000),
           settleWithin(getPlayerStandingRows(playerId), 12_000),
           settleWithin(getPlayerLeakMaps(playerId), 10_000),
-          settleWithin(getSprayChartData(playerId, 'overall'), 10_000),
+          settleWithin(getSprayChartData(playerId, roundId ?? 'overall'), 10_000),
           settleWithin(getPlayerStrengthsWeaknesses(playerId), 10_000),
           settleWithin(getWorstHoleAnalysis(playerId), 10_000),
           settleWithin(getPlayerPatterns(playerId), 10_000),
@@ -99,6 +111,9 @@ const observedGetPlayerStatsDashboardBundle = withAdminObserved(
   getPlayerStatsDashboardBundleImpl,
 );
 
-export async function getPlayerStatsDashboardBundle(playerId: string) {
-  return observedGetPlayerStatsDashboardBundle(playerId);
+export async function getPlayerStatsDashboardBundle(
+  playerId: string,
+  roundId?: string | 'overall',
+) {
+  return observedGetPlayerStatsDashboardBundle(playerId, roundId);
 }

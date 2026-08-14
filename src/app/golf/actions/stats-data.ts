@@ -29,6 +29,7 @@ import type {
   TeamComparisonStats,
   TeamComparisonResponse,
   FilterOptions,
+  RoundOption,
   CourseStats,
   CourseBreakdownResponse,
   HoleAnalysis,
@@ -2234,6 +2235,70 @@ const observedGetFilterOptions = withAdminObserved(
 
 export async function getFilterOptions(playerId: string): Promise<FilterOptions> {
   return observedGetFilterOptions(playerId);
+}
+
+/**
+ * List a player's completed rounds so the stats panel can scope to one.
+ *
+ * Newest first, and capped: `getDetailedStats` recomputes strokes-gained from
+ * raw shots, so this feeds a picker, not a report. A player two seasons in has
+ * 80–150 rounds and the whole list is still one small query.
+ *
+ * Returns `null` when the list could not be READ, and `[]` only when the player
+ * genuinely has no completed rounds. Those are different answers and the caller
+ * renders them differently — `[]` hides the picker (there is nothing to pick),
+ * while `null` has to say so. Collapsing them was the first version of this
+ * function, and the repo's own fail-open ratchet caught it: an outage would
+ * have silently removed the control instead of reporting a failure.
+ */
+async function getPlayerRoundOptionsImpl(playerId: string): Promise<RoundOption[] | null> {
+  try {
+    const { supabase, user } = await requireAuth();
+
+    // Denied access is NOT a failed read — the caller is simply not allowed to
+    // see this player, and an empty list is the honest answer.
+    if (!(await verifyPlayerAccess(supabase, user.id, playerId))) return [];
+
+    const { data, error } = await supabase
+      .from('golf_rounds')
+      .select('id, round_date, course_name, total_score, round_type')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .limit(200);
+
+    if (error) {
+      await logServerError(
+        `[Stats] getPlayerRoundOptions read failed: ${describeError(error)}`,
+        { action: 'stats_data.getPlayerRoundOptions', playerId },
+      );
+      return null;
+    }
+
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      date: r.round_date,
+      courseName: r.course_name,
+      totalScore: r.total_score,
+      roundType: r.round_type ? roundTypeFromDb(r.round_type) : null,
+    }));
+  } catch (error) {
+    await logServerError(
+      `[Stats] getPlayerRoundOptions failed: ${describeError(error)}`,
+      { action: 'stats_data.getPlayerRoundOptions' },
+    );
+    return null;
+  }
+}
+
+const observedGetPlayerRoundOptions = withAdminObserved(
+  'getPlayerRoundOptions',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPlayerRoundOptionsImpl,
+);
+
+export async function getPlayerRoundOptions(playerId: string): Promise<RoundOption[] | null> {
+  return observedGetPlayerRoundOptions(playerId);
 }
 
 // ============================================================================

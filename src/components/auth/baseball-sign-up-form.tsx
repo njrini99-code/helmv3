@@ -27,8 +27,15 @@ function getSignupErrorMessage(error: string): string {
   // messages and replaced a precise, fixable reason ("missing a special
   // character", "appeared in a data breach") with generic advice the client
   // had already enforced.
-  if (lower.includes('weak password')) {
-    return 'Password does not meet the requirements. Use at least 8 characters with uppercase, lowercase, number, and special character.';
+  // Same rule as the golf form — see the note there. The server's password
+  // rejections are already written for the end user and name the actual
+  // problem; substituting a generic checklist told people to add characters
+  // when the real cause was a missing symbol or a breached password, which is
+  // an unwinnable loop at the first step of signup.
+  if (lower.includes('weak password') || lower.includes('weak_password')) {
+    return /[a-z]{4,}\s+[a-z]{4,}/i.test(error)
+      ? error
+      : 'That password was rejected. Try a longer one with a mix of letters, numbers and symbols that you have not used elsewhere.';
   }
   if (lower.includes('network') || lower.includes('fetch')) {
     return 'Unable to reach the server. Please check your internet connection and try again.';

@@ -34,6 +34,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateText } from 'ai';
+import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
@@ -280,8 +281,12 @@ async function runLlmAttempt(
   model_id: string,
   promptTokensEstimate: number,
 ): Promise<LlmAttempt> {
+  // Direct Anthropic when the key is set, else the gateway string. `model_id`
+  // stays gateway-prefixed everywhere else in this function — the cost table,
+  // checkBudget and the call-log row are all keyed by it. See
+  // @/lib/ai/model-provider for what these two accounts are.
   const res = await generateText({
-    model: model_id,
+    model: resolveModelProvider(model_id),
     prompt: req.prompt,
     maxOutputTokens: req.max_completion_tokens * 2,
   });

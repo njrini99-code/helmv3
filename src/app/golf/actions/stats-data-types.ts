@@ -25,6 +25,24 @@ export interface FilterOptions {
   roundTypes: string[];
 }
 
+/**
+ * One selectable round for the stats round-scope picker.
+ *
+ * `getDetailedStats` has always taken a `roundId`, and every branch inside it
+ * honours one — but until 2026-08-13 the only production caller passed the
+ * literal `'overall'`, so the full ~75-stat panel could only ever be read as a
+ * career aggregate. Coaches asked for the per-round view repeatedly; the math
+ * was already there, nothing offered them a round to name.
+ */
+export interface RoundOption {
+  id: string;
+  /** ISO date (round_date), for display and ordering. */
+  date: string;
+  courseName: string | null;
+  totalScore: number | null;
+  roundType: 'practice' | 'qualifier' | 'tournament' | null;
+}
+
 // ============================================================================
 // SUMMARY TYPES
 // ============================================================================
