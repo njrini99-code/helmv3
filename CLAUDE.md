@@ -96,15 +96,50 @@ Detail that used to live here now loads only when relevant, via `paths` frontmat
 
 | Rule | Loads when you touch |
 |---|---|
-| golf-feature-ownership | src/app/golf, src/lib/golf, src/components/golf |
+| golf-feature-ownership | src/app/golf, src/lib/golf, src/components/golf — *where* features live |
+| golf-review | same paths — *what to verify* on a golf change |
+| coachhelm-review | src/lib/coachhelm, round-review actions, api/coachhelm |
+| baseball-roles | src/app/baseball, src/lib/baseball |
+| baseball-review | same paths + src/lib/recruiting — recruiting/stats invariants |
 | design-system | any .tsx or .css |
 | code-patterns | src/app, src/lib TypeScript |
 | file-structure | anything under src/ |
-| baseball-roles | src/app/baseball, src/lib/baseball |
 | integrations | src/app/api, stripe/inngest/email/notifications libs |
+| database | supabase/migrations, any .sql, src/lib/supabase, scripts/db |
 | code-review-tooling | always (procedure) |
 
+The `-ownership` / `-roles` files map **where** code lives; the `-review` files
+say **what to check**. Both load on the same paths — that separation is
+deliberate, not duplication.
+
 Edit the rule file, not this one, when changing any of the above.
+This table must list every file in `.claude/rules/` — it silently omitted
+`database` until 2026-08-09.
+
+---
+
+## Agent config — the one invariant
+
+`.claude/README.md` documents how `.claude/` is wired. The rule that matters
+outside that file:
+
+> **One Supabase MCP server, one pre-approved write path.**
+
+Three registrations existed simultaneously until 2026-08-09, two of them with
+`execute_sql` and `apply_migration` pre-approved — two unprompted routes into
+the production database. `.mcp.json` is now the only one, the
+`supabase@claude-plugins-official` plugin is off, and
+`enableAllProjectMcpServers` was removed so a future `.mcp.json` addition
+cannot self-enable.
+
+`guard-sql.sh` matches on tool-name regex, so it guards any Supabase MCP
+server — but a second server is still drift. Collapse it before granting writes.
+
+**Never `vercel env pull` into the working tree and leave it.**
+`.vercel/.env.production.local` held 71 live production values —
+`SUPABASE_SERVICE_ROLE_KEY`, `VERCEL_API_TOKEN`, `GMAIL_SA_PRIVATE_KEY` — in
+plaintext for ~2 weeks. It is git-ignored, so this is not a leak, but agents
+read this tree constantly. Pull it, use it, delete it.
 ## Pre-Submit Checklist
 
 - [ ] Types from `@/lib/types` only

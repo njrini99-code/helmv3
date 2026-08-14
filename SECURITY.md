@@ -36,6 +36,13 @@ findings that require a compromised end-user device.
 
 - Secret scanning **and push protection** are enabled — committing a key is
   blocked at push time. Do not bypass it; rotate any credential that leaks.
+- **Push protection does not see git-ignored files.** `vercel env pull` writes
+  71 live production values — including `SUPABASE_SERVICE_ROLE_KEY`,
+  `VERCEL_API_TOKEN` and `GMAIL_SA_PRIVATE_KEY` — to
+  `.vercel/.env.production.local`. That path is ignored, so scanning never
+  inspects it and it can sit in the working tree indefinitely (it did, for
+  ~2 weeks, until 2026-08-09). Pull it, use it, delete it. The same applies to
+  any `.env*.local`.
 - Row-Level Security is enforced and tested with pgTAP suites under
   `supabase/tests/rls/`; anon access is revoked by default.
 - CodeQL, gitleaks, semgrep, and ast-grep run on every pull request.

@@ -6,7 +6,6 @@
     ]
   },
   "enabledPlugins": {
-    "supabase@claude-plugins-official": true,
     "performance-testing-review@claude-code-workflows": true,
     "database-migrations@claude-code-workflows": true,
     "data-validation-suite@claude-code-workflows": true,
@@ -31,31 +30,9 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(git stash*)",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
             "timeout": 10,
-            "statusMessage": "guard: git stash"
-          },
-          {
-            "type": "command",
-            "if": "Bash(rm *)",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
-            "timeout": 10,
-            "statusMessage": "guard: rm"
-          },
-          {
-            "type": "command",
-            "if": "Bash(npm *)",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
-            "timeout": 10,
-            "statusMessage": "guard: gate pipe"
-          },
-          {
-            "type": "command",
-            "if": "Bash(npx *)",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
-            "timeout": 10,
-            "statusMessage": "guard: gate pipe"
+            "statusMessage": "guard: bash"
           }
         ]
       },

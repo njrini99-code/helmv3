@@ -44,19 +44,60 @@
 
 ## Automated review
 
-PRs are reviewed by **two AI reviewers in parallel** on every push:
+**There are no AI reviewers on PRs.** CodeRabbit and Greptile were both
+dropped by founder decision on 2026-07-20 — CodeRabbit's credit quota had
+become the slowest step in shipping, and the deterministic Review Gate plus
+CodeQL cover the same hard rules. Do not expect either to catch anything.
 
-- **CodeRabbit** — line-level static analysis. Config at
-  `.coderabbit.yaml` plus `.coderabbit/ast-grep/` and
-  `.coderabbit/semgrep/helmv3.yml`. Path-specific instructions cover
-  `src/app/**`, `src/components/**`, `src/lib/supabase/**`,
-  `supabase/migrations/**`, `supabase/functions/**`, `ios/App/**`,
-  `tools/**`, `.github/workflows/**`, and `e2e/**`.
-- **Greptile** — whole-codebase view, catches drift from architecture
-  docs and duplicated logic. Config at `.greptile/rules.md`
-  (natural-language rules) and `.greptile/config.json` (ignores,
-  additional-context docs). Installed via GitHub App at
-  https://app.greptile.com.
+- `.coderabbit.yaml` is a **disable stub** (`auto_review.enabled: false`).
+  Full removal needs an owner to uninstall the GitHub App.
+- The **root** `.greptile/` is deleted. Roughly 26 docs still cite
+  `.greptile/rules.md` with line numbers (`:69-72`, `:80-81`, `:139-146`).
+  **Those citations cannot be resolved** — the file is gone and no surviving
+  fragment is long enough to contain those lines. The invariants themselves
+  are still real; see the redirect table below.
+
+### The orphaned `.greptile` rules are now live Claude rules
+
+Three per-directory fragments survived the Greptile removal, each opening
+"cascades onto the root `.greptile/rules.md`" — a parent that no longer exists.
+They held real invariants and **nothing loaded them**. On 2026-08-09 they were
+promoted to `.claude/rules/`, which loads by `paths` frontmatter:
+
+| Was | Now | Content |
+|---|---|---|
+| `src/app/golf/.greptile/rules.md` | `.claude/rules/golf-review.md` | SG cache coherence, round/qualifier integrity, coach-only controls |
+| `src/lib/coachhelm/.greptile/rules.md` | `.claude/rules/coachhelm-review.md` | server-side budget, citation-verify → regenerate → template, pure scorers |
+| `src/app/baseball/.greptile/rules.md` | `.claude/rules/baseball-review.md` | recruiting opt-in, 5-value pipeline enum, atomic box-score writes |
+
+They do **not** conflict with `golf-feature-ownership.md` / `baseball-roles.md`:
+those map *where* code lives, these say *what to verify*. Both load on the same
+paths by design.
+
+Every concrete claim was re-verified against the code before promotion. One was
+stale and got rewritten: the baseball rule called `contacted` / `campus_visit`
+in `src/lib/recruiting/stages.ts` a live bug, but they had already been removed.
+A rule that sends you to fix something already fixed is worse than no rule.
+
+The source `.greptile/` directories are quarantined. Copies under
+`.worktrees/fix-upload-timeout/` are worktree mirrors, not extra sources — they
+resolve when that branch rebases.
+
+### Where the cited invariants actually live now
+
+| Invariant, as cited | Enforced at |
+|---|---|
+| DELETE-then-INSERT ban (`rules.md:69-72`) | `.coderabbit/semgrep/helmv3.yml` — **live**, CI-enforced via Review Gate |
+| Coach↔team via `golf_team_coach_staff` (`:80-81`) | `memory/glossary.md`; RLS policies in `supabase/migrations/` |
+| Citation verification / regenerate once (`:139-146`) | `src/lib/coachhelm/v3/llm/compose.ts`, `round-review.ts`, covered by `compose.test.ts` |
+| `service-role-scope` (`.greptile/config.json`) | `.coderabbit/ast-grep/`; `src/lib/supabase/admin.ts` |
+- The custom rule packs under `.coderabbit/ast-grep/` and
+  `.coderabbit/semgrep/helmv3.yml` **remain and are live** — CI consumes them
+  directly via `.github/workflows/review-gate.yml`. Treat that directory name
+  as historical, not as evidence CodeRabbit runs.
+
+Review is therefore deterministic only: the Review Gate, CodeQL, and the
+four required status checks. Nothing reads your PR and reasons about it.
 
 CI runs across two platforms:
 

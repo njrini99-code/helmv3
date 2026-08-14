@@ -22,9 +22,31 @@ let shotRows: Array<Record<string, unknown>> = [];
 function createPagedQueryMock(rows: Array<Record<string, unknown>>) {
   let from = 0;
   let to = rows.length - 1;
+  // The `.in(col, values)` filters actually applied, so this stub MODELS the
+  // filter instead of ignoring it. Round-id reads are chunked (200 ids per
+  // request — `.in()` travels in the URL and the PostgREST edge rejects past
+  // ~585 uuids), and a stub that returns every row for every chunk multiplies
+  // the dataset by the chunk count. That is a harness artifact, not a real
+  // double-count: a shot carries ONE round_id and chunks partition the ids
+  // disjointly, so no row can match two chunks in production.
+  const inFilters: Array<{ column: string; values: unknown[] }> = [];
   const chain: Record<string, unknown> = {};
-  for (const method of ['select', 'eq', 'in', 'not', 'order', 'limit']) {
+  for (const method of ['select', 'eq', 'not', 'order', 'limit']) {
     chain[method] = vi.fn(() => chain);
+  }
+  chain.in = vi.fn((column: string, values: unknown[]) => {
+    if (Array.isArray(values)) inFilters.push({ column, values });
+    return chain;
+  });
+  function applyFilters(source: Array<Record<string, unknown>>) {
+    if (inFilters.length === 0) return source;
+    return source.filter((row) =>
+      inFilters.every(({ column, values }) =>
+        // Only constrain on columns the row actually carries; the production
+        // query also filters on shot_type/result, which these fixtures omit.
+        !(column in row) || values.includes(row[column])
+      ),
+    );
   }
   chain.range = vi.fn((f: number, t: number) => {
     from = f;
@@ -43,7 +65,7 @@ function createPagedQueryMock(rows: Array<Record<string, unknown>>) {
       data: Array<Record<string, unknown>>;
       error: null;
     }) => unknown,
-  ) => Promise.resolve({ data: rows.slice(from, to + 1), error: null }).then(resolve);
+  ) => Promise.resolve({ data: applyFilters(rows).slice(from, to + 1), error: null }).then(resolve);
   return chain;
 }
 

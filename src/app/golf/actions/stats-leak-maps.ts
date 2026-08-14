@@ -33,6 +33,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
@@ -295,23 +296,33 @@ async function buildPuttBuckets(
   if (roundIds.length > 0) {
     // Paginated past the PostgREST 1000-row cap; MAX_SHOT_ROWS is enforced by
     // stopping page accumulation (a single `.limit()` silently capped at 1000).
-    const { data, error } = await fetchAllRowsResult<PuttRow>((from, to) => {
-      if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
-      return supabase
-        .from('golf_shots')
-        .select('round_id, putt_distance_feet, putt_made')
-        .in('round_id', roundIds)
-        .eq('shot_type', 'putting')
-        .not('putt_distance_feet', 'is', null)
-        .order('id', { ascending: true })
-        .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
-    }, undefined, { table: 'golf_shots', action: 'buildPuttBuckets', feature: 'stats_analytics', sport: 'golf' });
+    // CHUNKED. `.in()` travels in the URL at ~39 bytes per uuid and the
+    // PostgREST edge rejects the request past ~585 with a bare 400 that reads
+    // like a query error. `completedRoundIds` is paginated and therefore
+    // UNBOUNDED — the biggest production team is at 93 completed rounds today,
+    // so this is roughly one or two full seasons away from breaking outright.
+    const data: PuttRow[] = [];
+    for (const batch of chunkIds(roundIds)) {
+      if (data.length >= MAX_SHOT_ROWS) break;
+      const { data: page, error } = await fetchAllRowsResult<PuttRow>((from, to) => {
+        if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
+        return supabase
+          .from('golf_shots')
+          .select('round_id, putt_distance_feet, putt_made')
+          .in('round_id', batch)
+          .eq('shot_type', 'putting')
+          .not('putt_distance_feet', 'is', null)
+          .order('id', { ascending: true })
+          .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
+      }, undefined, { table: 'golf_shots', action: 'buildPuttBuckets', feature: 'stats_analytics', sport: 'golf' });
 
-    if (error) {
-      throw new Error(`putting shot read failed: ${error.message}`);
+      if (error) {
+        throw new Error(`putting shot read failed: ${error.message}`);
+      }
+      data.push(...(page ?? []));
     }
 
-    for (const row of data ?? []) {
+    for (const row of data) {
       const ft = row.putt_distance_feet;
       if (ft === null || Number.isNaN(ft)) continue;
       const band = bandFor(PUTT_BANDS, ft);
@@ -357,12 +368,15 @@ async function buildApproachBuckets(
   if (roundIds.length > 0) {
     // Paginated past the PostgREST 1000-row cap; MAX_SHOT_ROWS is enforced by
     // stopping page accumulation (a single `.limit()` silently capped at 1000).
-    const { data, error } = await fetchAllRowsResult<ApproachRow>((from, to) => {
+    const data: ApproachRow[] = [];
+    for (const batch of chunkIds(roundIds)) {
+      if (data.length >= MAX_SHOT_ROWS) break;
+      const { data: page, error } = await fetchAllRowsResult<ApproachRow>((from, to) => {
       if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
       return supabase
         .from('golf_shots')
         .select('round_id, distance_to_hole_before, distance_to_hole_after, distance_unit_after, result')
-        .in('round_id', roundIds)
+        .in('round_id', batch)
         .eq('shot_type', 'approach')
         // ON-GREEN ONLY: proximity is a green-surface distance, so only approaches that
         // FOUND the green count. A missed approach finishes off-green (stored in YARDS);
@@ -373,13 +387,15 @@ async function buildApproachBuckets(
         .not('distance_to_hole_after', 'is', null)
         .order('id', { ascending: true })
         .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
-    }, undefined, { table: 'golf_shots', action: 'buildApproachBuckets', feature: 'stats_analytics', sport: 'golf' });
+      }, undefined, { table: 'golf_shots', action: 'buildApproachBuckets', feature: 'stats_analytics', sport: 'golf' });
 
-    if (error) {
-      throw new Error(`approach shot read failed: ${error.message}`);
+      if (error) {
+        throw new Error(`approach shot read failed: ${error.message}`);
+      }
+      data.push(...(page ?? []));
     }
 
-    for (const row of data ?? []) {
+    for (const row of data) {
       const beforeYd = row.distance_to_hole_before;
       const afterRaw = row.distance_to_hole_after;
       if (beforeYd === null || Number.isNaN(beforeYd)) continue;

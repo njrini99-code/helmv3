@@ -1,220 +1,71 @@
-# 🎯 Production Audit Commands for Claude Code
+# `.claude/` — how this directory is wired
 
-## ✅ SIMPLE 2-STEP PROCESS
+What each part does, so nothing here has to be re-derived by reading JSON.
+Project instructions live in `/CLAUDE.md` and `/AGENTS.md`, not here.
 
-### Step 1: Generate Agent Prompts
+## Layout
 
-```bash
-# For GolfHelm
-python3 .claude/run_audit.py audit-golf 1
+| Path | What it is |
+|---|---|
+| `settings.json` | **Committed.** Hooks, enabled plugins, and the two always-allowed git permissions. Shared by everyone on the repo. |
+| `settings.local.json` | **Git-ignored, per-machine.** Tool permissions and which `.mcp.json` servers are enabled. Never commit it. |
+| `rules/` | 8 scoped rule files, auto-loaded by the `paths` frontmatter when you touch matching code. See the table in `/CLAUDE.md`. |
+| `agents/` | 4 review subagents: `code-reviewer`, `security-reviewer`, `ui-polish-reviewer`, `db-migration-reviewer`. |
+| `commands/` | 5 slash commands: `/complete`, `/cleanup-db`, `/status`, `/db-audit`, `/gates`. |
+| `hooks/` | 4 shell hooks — see below. |
+| `skills/` | Vendored skill packs. |
+| `workflows/` | One-off multi-agent scripts kept for reference; not wired to anything automatic. |
+| `worktrees/`, `.cc-writes/`, `scheduled_tasks.lock` | Runtime state. Regenerated automatically — do not hand-edit or delete while a session is running. |
 
-# For BaseballHelm
-python3 .claude/run_audit.py audit-baseball 1
+## Hooks
 
-# For Both Platforms
-python3 .claude/run_audit.py audit-both 1
-```
+| Hook | Fires on | Purpose |
+|---|---|---|
+| `session-context.sh` | SessionStart | Injects repo/branch state at session start. |
+| `guard-bash.sh` | PreToolUse `Bash` | 5 guards: `git stash`, `rm .next`, gate-command-on-left-of-pipe (exit-code masking), force push, push to `main`. |
+| `guard-sql.sh` | PreToolUse `Write\|Edit\|MultiEdit` **and** `mcp__.*(apply_migration\|execute_sql)` | Blocks RLS-bypass and destructive SQL. |
+| `post-edit.sh` | PostToolUse `Write\|Edit\|MultiEdit` | `eslint --fix`. |
 
-This creates a file: `RUN_IN_CLAUDE_CODE.md`
+**Each hook is registered exactly once per matcher.** `guard-bash.sh` was
+registered four times on the same `Bash` matcher, each entry carrying an
+`"if": "Bash(npm *)"`-style key. `if` is **not a Claude Code hook field** — it
+was ignored, so the script ran four times on every Bash call. The labels were
+also wrong: there was no `if` for push-to-main even though the script guards it.
+The script does all its own filtering on `.tool_input.command`; one registration
+is correct. Do not re-add per-pattern entries.
 
-### Step 2: Copy & Paste Into Claude Code
+`guard-sql.sh` deliberately covers two routes: `.sql` files, and MCP calls whose
+payload is `.tool_input.query`. The MCP route hits **production** with
+`service_role` and never touches a file, so a file-only guard would miss it
+entirely. Its matcher is a regex over the tool name, so it holds for any
+Supabase MCP server, not just the one currently configured.
 
-```bash
-# Open the generated file
-open .production-team/GOLFHELM_AUDIT_ROUND_01/RUN_IN_CLAUDE_CODE.md
+## MCP topology — one Supabase, one write path
 
-# Copy the message
-# Paste into Claude Code
-# Done!
-```
+Reviewed and consolidated 2026-08-09. Three Supabase registrations existed at
+once, two of them with pre-approved `execute_sql` / `apply_migration`, i.e. two
+unprompted write paths into the production database.
 
----
+**The invariant now:**
 
-## 🎭 What Happens
+- `.mcp.json` declares exactly one Supabase server (`project_ref=qmnssrrolpinvwjjnufo`).
+  It is the only one with pre-approved writes.
+- The `supabase@claude-plugins-official` plugin is **off** — it only ever
+  surfaced auth stubs and duplicated the above.
+- `settings.local.json` sets `enabledMcpjsonServers: ["supabase"]` explicitly.
+  `enableAllProjectMcpServers` was removed on purpose: it would silently enable
+  any server later added to `.mcp.json` without review.
 
-### When You Run the Command:
+If a second Supabase or Vercel server shows up in the permission list, that is
+drift — collapse it back to one before granting it writes.
 
-1. **Loads ALL agent personalities** from `.production-team/`
-2. **Loads ALL agent memories** from `.production-team/memory/`
-3. **Applies platform scope** (Golf, Baseball, or Both)
-4. **Generates complete prompts** with full intelligence
-5. **Creates RUN_IN_CLAUDE_CODE.md** with everything Claude Code needs
+Permission entries naming a raw UUID (`mcp__7524981b-…__…`) are dead connector
+instances. They grant nothing and should be deleted, not kept "just in case".
 
-### The Three Genius Agents:
+## Not here any more
 
-**🛡️ Database Sentinel**
-- Full personality + methodology loaded
-- Memory from past rounds loaded
-- Scoped to platform (golf tables only, etc.)
-- Queries live database via Supabase MCP
-
-**🎯 Feature Maestro** ⭐ **(SUPER IMPORTANT)**
-- Full personality + methodology loaded
-- Memory from past rounds loaded
-- Tests all features with edge cases
-- Checks completeness systematically
-
-**✨ Experience Architect**
-- Full personality + methodology loaded
-- Memory from past rounds loaded
-- Enforces Da Vinci philosophy
-- Verifies glassmorphism + kelly green
-
----
-
-## 📁 Output Structure
-
-**After running `audit-golf`:**
-```
-.production-team/GOLFHELM_AUDIT_ROUND_01/
-├── PROMPT_DATABASE_SENTINEL.md .......... Full agent prompt
-├── PROMPT_FEATURE_MAESTRO.md ............ Full agent prompt
-├── PROMPT_EXPERIENCE_ARCHITECT.md ....... Full agent prompt
-├── RUN_IN_CLAUDE_CODE.md ................ Copy this into Claude Code
-├── 01_DATABASE_SENTINEL_FINDINGS.md ..... (Created by Claude Code)
-├── 02_FEATURE_MAESTRO_FINDINGS.md ....... (Created by Claude Code)
-├── 03_EXPERIENCE_ARCHITECT_FINDINGS.md .. (Created by Claude Code)
-├── 04_CROSS_AGENT_SYNTHESIS.md .......... (Created by Claude Code)
-└── 05_PRIORITY_ACTION_ITEMS.md .......... (Created by Claude Code)
-```
-
----
-
-## 🚀 Complete Workflow
-
-```bash
-# 1. Generate prompts for GolfHelm
-python3 .claude/run_audit.py audit-golf 1
-
-# 2. Open the instruction file
-cat .production-team/GOLFHELM_AUDIT_ROUND_01/RUN_IN_CLAUDE_CODE.md
-
-# 3. Copy the message from that file
-
-# 4. Open Claude Code (in Cursor or standalone)
-
-# 5. Paste the message
-
-# 6. Claude Code executes all 3 agents autonomously
-
-# 7. Review findings
-cat .production-team/GOLFHELM_AUDIT_ROUND_01/05_PRIORITY_ACTION_ITEMS.md
-
-# 8. Fix issues
-
-# 9. Run Round 2
-python3 .claude/run_audit.py audit-golf 2
-```
-
----
-
-## 💡 Why This Works
-
-### Before (Didn't Work):
-❌ You had to manually combine agent files  
-❌ No memory loaded  
-❌ Platform scope unclear  
-❌ Confusing to execute  
-
-### Now (Works Perfectly):
-✅ **One command** generates everything  
-✅ **Full agent intelligence** loaded  
-✅ **Memory automatically** loaded and applied  
-✅ **Platform scope** built-in  
-✅ **Simple copy/paste** into Claude Code  
-✅ **Agents run autonomously** with full capabilities  
-
----
-
-## 🎯 Available Commands
-
-```bash
-# GolfHelm only
-python3 .claude/run_audit.py audit-golf 1
-
-# BaseballHelm only
-python3 .claude/run_audit.py audit-baseball 1
-
-# Both platforms
-python3 .claude/run_audit.py audit-both 1
-
-# Round 2 (after fixes)
-python3 .claude/run_audit.py audit-golf 2
-```
-
----
-
-## 🧠 Memory System
-
-**First Run:**
-- Agents have no memory
-- Establish baseline findings
-- Create memory files
-
-**Second Run:**
-- Agents load memory from Round 1
-- Skip re-reporting fixed issues
-- Go deeper on edge cases
-- Update memory with new learnings
-
-**Round 3+:**
-- Agents have deep knowledge
-- Predict issues based on patterns
-- Expert-level auditing
-
----
-
-## 📊 Example Usage
-
-```bash
-$ python3 .claude/run_audit.py audit-golf 1
-
-======================================================================
-🎭 PRODUCTION AUDIT - GOLFHELM - ROUND 01
-======================================================================
-
-📁 Output: .production-team/GOLFHELM_AUDIT_ROUND_01
-
-🛡️ DATABASE SENTINEL
-──────────────────────────────────────────────────────────────────────
-✅ Generated prompt: .production-team/GOLFHELM_AUDIT_ROUND_01/PROMPT_DATABASE_SENTINEL.md
-   Memory loaded: No (first run)
-   Platform scope: GolfHelm
-
-🎯 FEATURE MAESTRO
-──────────────────────────────────────────────────────────────────────
-✅ Generated prompt: .production-team/GOLFHELM_AUDIT_ROUND_01/PROMPT_FEATURE_MAESTRO.md
-   Memory loaded: No (first run)
-   Platform scope: GolfHelm
-
-✨ EXPERIENCE ARCHITECT
-──────────────────────────────────────────────────────────────────────
-✅ Generated prompt: .production-team/GOLFHELM_AUDIT_ROUND_01/PROMPT_EXPERIENCE_ARCHITECT.md
-   Memory loaded: No (first run)
-   Platform scope: GolfHelm
-
-======================================================================
-✨ PROMPTS GENERATED!
-======================================================================
-
-📄 Next: Open and copy: .production-team/GOLFHELM_AUDIT_ROUND_01/RUN_IN_CLAUDE_CODE.md
-📋 Paste into Claude Code
-🚀 Agents will execute with full intelligence + memory
-```
-
-Then just:
-1. Open `RUN_IN_CLAUDE_CODE.md`
-2. Copy the message
-3. Paste into Claude Code
-4. Watch the genius agents work!
-
----
-
-## ✨ That's It!
-
-**One command. One copy/paste. Full intelligent agents with memory.**
-
-Start now:
-```bash
-python3 .claude/run_audit.py audit-golf 1
-```
+One-off audit reports and scratch docs (`AGENT_TASKS_REMAINING.md`,
+`*_REPORT.md`, `*_SCAN.md`, `START_HERE.md`, `HOW_IT_WORKS.md`, `REFERENCE.md`,
+`ALL_COMMANDS.md`) moved to `docs/archive/2026-08/claude-scratch/` on
+2026-08-09. The June 2026 audit had already flagged them as clutter. Put new
+one-off reports in `docs/`, not here — this directory is configuration.
