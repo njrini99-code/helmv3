@@ -97,29 +97,15 @@ const IMPACT_MAP = {
  * coaches run this on a bench all afternoon. Read lazily so this module stays
  * import-safe during SSR.
  */
-const PREF_KEY = 'helm-haptics-enabled';
-let prefCache: boolean | null = null;
+// The preference itself lives in lib/utils/haptics-pref.ts — a leaf module
+// both this file and capacitor.ts can import without closing a cycle (this
+// file already imports triggerHaptic from capacitor.ts). It used to be a
+// private copy here, which is why the off switch only governed fwHaptic's 13
+// call sites and missed the 164 that call triggerHaptic directly.
+// Re-exported so existing `@/lib/fairway/haptics` importers keep working.
+import { areHapticsEnabled } from '@/lib/utils/haptics-pref';
 
-function areHapticsEnabled(): boolean {
-  if (prefCache !== null) return prefCache;
-  if (typeof window === 'undefined') return true;
-  try {
-    prefCache = window.localStorage.getItem(PREF_KEY) !== 'false';
-  } catch {
-    prefCache = true;
-  }
-  return prefCache;
-}
-
-export function setHapticsEnabled(enabled: boolean): void {
-  prefCache = enabled;
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(PREF_KEY, String(enabled));
-  } catch {
-    // localStorage unavailable — in-memory cache still applies for this session.
-  }
-}
+export { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
 
 /**
  * Rate limit. A drag handler can fire dozens of times a second; feeding all of
