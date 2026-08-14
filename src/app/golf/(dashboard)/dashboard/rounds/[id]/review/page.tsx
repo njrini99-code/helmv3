@@ -29,7 +29,9 @@ import {
 } from '@/app/golf/actions/round-review-system';
 import { markReviewAsViewed } from '@/app/golf/actions/round-reviews';
 import { getRoundTakeawayInsight, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { getPlayerDisplayName } from '@/app/golf/actions/stats-data';
+import { getPlayerDisplayName, getDetailedStats } from '@/app/golf/actions/stats-data';
+import { RoundStatsPanel } from '@/components/golf/coachhelm/round-review/RoundStatsPanel';
+import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { IconSparkles, IconRefresh } from '@/components/icons';
 import {
   ViewHeader as FwViewHeader,
@@ -191,6 +193,14 @@ export default function RoundReviewPage() {
   // viewer). Mirrors FairwayPlayerStats.tsx's identical viewedPlayerName
   // pattern for a coach drilling into a teammate's stats.
   const [viewedPlayerName, setViewedPlayerName] = useState<string | null>(null);
+  // Full per-round stat breakdown. `getDetailedStats` has always accepted a
+  // roundId and honours it in every branch; nothing here was calling it with a
+  // real one, which is why Round Review showed a fraction of what the coach
+  // could see on the player's career page. Loaded separately from the review
+  // narrative so a stats failure never blanks the review, and vice versa.
+  const [roundStats, setRoundStats] = useState<GolfStats | null>(null);
+  const [loadingRoundStats, setLoadingRoundStats] = useState(true);
+  const [roundStatsError, setRoundStatsError] = useState(false);
   const [loadingRound, setLoadingRound] = useState(true);
   const [loadingStoredReview, setLoadingStoredReview] = useState(true);
   const [generatingReview, setGeneratingReview] = useState(false);
@@ -342,6 +352,38 @@ export default function RoundReviewPage() {
       cancelled = true;
     };
   }, [isCoachViewer, round?.player_id]);
+
+  /**
+   * Full per-round stat breakdown, scoped to THIS round.
+   *
+   * Deliberately its own effect and its own error flag rather than folded into
+   * the review fetch: the narrative and the numbers fail independently, and a
+   * stats outage must not blank a review that loaded fine. `null` from the
+   * action means the read failed; an empty stat object means the round has no
+   * logged shots, which is a different thing the panel says differently.
+   */
+  const loadRoundStats = useCallback(
+    async (playerId: string, id: string) => {
+      setLoadingRoundStats(true);
+      setRoundStatsError(false);
+      try {
+        const s = await getDetailedStats(playerId, id);
+        setRoundStats(s ?? null);
+        setRoundStatsError(!s);
+      } catch {
+        setRoundStats(null);
+        setRoundStatsError(true);
+      } finally {
+        setLoadingRoundStats(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!round?.player_id) return;
+    void loadRoundStats(round.player_id, roundId);
+  }, [round?.player_id, roundId, loadRoundStats]);
 
   // Fetch stored review + season standing. Resets `loadingStoredReview`
   // regardless of whether `round` resolved — previously an early
@@ -695,6 +737,18 @@ export default function RoundReviewPage() {
           }
         />
       )}
+
+      {/* The full stat breakdown renders regardless of whether a NARRATIVE
+          exists — the numbers come straight from the round's shots, so a round
+          with no generated review still has stats worth showing. */}
+      <RoundStatsPanel
+        stats={roundStats}
+        loading={loadingRoundStats}
+        error={roundStatsError}
+        onRetry={() => {
+          if (round?.player_id) void loadRoundStats(round.player_id, roundId);
+        }}
+      />
     </m.div>
   );
 
