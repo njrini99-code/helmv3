@@ -371,7 +371,7 @@ function MessageThreadPane({ messages, loading, currentUserId, participant, onSe
                       className={cn(
                         'max-w-[75%] rounded-fw-lg px-3.5 py-2',
                         isOwn
-                          ? 'rounded-br-sm bg-accent-700 text-text-on-accent'
+                          ? 'rounded-br-sm bg-accent-750 text-text-on-accent'
                           : 'rounded-bl-sm bg-surface-sunken text-text-primary',
                       )}
                     >
@@ -381,7 +381,7 @@ function MessageThreadPane({ messages, loading, currentUserId, participant, onSe
                       <p
                         className={cn(
                           'mt-1 flex items-center gap-1 font-fw-mono text-eyebrow tabular-nums',
-                          isOwn ? 'justify-end text-text-on-accent/80' : 'text-text-tertiary',
+                          isOwn ? 'justify-end text-ink-on-deep' : 'text-text-tertiary',
                         )}
                       >
                         {formatMessageTime(message.created_at)}
@@ -390,7 +390,7 @@ function MessageThreadPane({ messages, loading, currentUserId, participant, onSe
                             {message.read ? (
                               <IconCheckCheck size={12} aria-hidden="true" className="text-text-on-accent" />
                             ) : (
-                              <IconCheck size={12} aria-hidden="true" className="text-text-on-accent/70" />
+                              <IconCheck size={12} aria-hidden="true" className="text-ink-on-deep-soft" />
                             )}
                             <span className="sr-only">{message.read ? 'Read' : 'Sent'}</span>
                           </span>

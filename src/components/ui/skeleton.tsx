@@ -127,7 +127,10 @@ export function Skeleton({
       )}
     >
       {animate === 'shimmer' && (
-        <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+        // `bg-shimmer`, not a literal `via-white/40`: the specular is a
+        // theme-aware token, so this sweep stays a whisper on dark surfaces
+        // instead of dragging a 40% white bar across them.
+        <div className="absolute inset-0 -translate-x-full animate-shimmer bg-shimmer bg-[length:200%_100%]" />
       )}
     </div>
   );
