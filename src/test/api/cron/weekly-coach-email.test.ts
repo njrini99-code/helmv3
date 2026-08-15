@@ -49,9 +49,14 @@ const sendEmailMock = vi.mocked(sendEmail);
 
 // ── Supabase mock builder ───────────────────────────────────────────────────
 //
-// The route issues (per team): golf_teams (once) → golf_team_coach_staff
-// (primary coach) → golf_coach_philosophy (opt-out gate) → golf_coaches
-// (user_id) → users (email).
+// The route issues: golf_teams (once, paginated) → then per team:
+// golf_team_coach_staff (primary coach) → golf_teams again (offseason gate,
+// by id) → golf_coach_philosophy (opt-out gate) → golf_coaches (user_id) →
+// users (email).
+//
+// golf_teams is therefore read through TWO different builder shapes — the
+// paginated .select().order().range() sweep and a .select().eq().maybeSingle()
+// lookup — so its mock branches on whether .eq() was called.
 
 interface MockConfig {
   teamIds: string[];
@@ -59,6 +64,8 @@ interface MockConfig {
   philosophyByCoach: Record<string, { email_digest_enabled: boolean } | undefined>;
   userIdByCoach: Record<string, string | undefined>;
   emailByUser: Record<string, string | undefined>;
+  /** Absent means season_active=true — the column defaults to true in the DB. */
+  seasonActiveByTeam?: Record<string, boolean | undefined>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,15 +75,30 @@ function buildSupabase(cfg: MockConfig) {
   return {
     from: vi.fn((table: string): AnyBuilder => {
       if (table === 'golf_teams') {
-        // Mirrors the .range() idiom in dashboard-data.test.ts:68 — the route
-        // now paginates via fetchAllRowsResult, which awaits
-        // .select().order().range(from, to) directly rather than the
-        // builder itself. .range() is the terminal call and resolves
-        // { data, error } (sliced, so pagination truncation is exercised
-        // for real if a test ever exceeds one page).
+        // Two shapes on one table (see the note above buildSupabase):
+        //
+        // 1. The paginated sweep. Mirrors the .range() idiom in
+        //    dashboard-data.test.ts:68 — the route paginates via
+        //    fetchAllRowsResult, which awaits .select().order().range(from, to)
+        //    directly rather than the builder itself. .range() is the terminal
+        //    call and resolves { data, error } (sliced, so pagination
+        //    truncation is exercised for real if a test ever exceeds one page).
+        //
+        // 2. The offseason gate's per-team .eq('id', …).maybeSingle().
+        let idFilter: string | null = null;
         const builder: AnyBuilder = {
           select: vi.fn(() => builder),
           order: vi.fn(() => builder),
+          eq: vi.fn((col: string, val: string) => {
+            if (col === 'id') idFilter = val;
+            return builder;
+          }),
+          maybeSingle: vi.fn(() =>
+            Promise.resolve({
+              data: { season_active: cfg.seasonActiveByTeam?.[idFilter ?? ''] ?? true },
+              error: null,
+            }),
+          ),
           range: vi.fn((from: number, to: number) =>
             Promise.resolve({
               data: cfg.teamIds.slice(from, to + 1).map((id) => ({ id })),
@@ -205,6 +227,59 @@ describe('GET /api/cron/v3/weekly-coach-email — opt-out gate', () => {
     expect(body.skipped_opted_out).toBe(1);
     expect(buildRecapMock).not.toHaveBeenCalled();
     expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  // The offseason gate is what golf_teams.season_active exists for — its
+  // COMMENT in production says "suppresses scheduled email crons". Two teams
+  // were backfilled to false when the column was added and kept receiving
+  // digests anyway, because nothing read it.
+  it('does NOT send to a team in offseason, even when the coach is opted in', async () => {
+    createAdminMock.mockReturnValue(
+      buildSupabase({
+        teamIds: ['t1'],
+        primaryCoachByTeam: { t1: 'c1' },
+        philosophyByCoach: { c1: { email_digest_enabled: true } },
+        userIdByCoach: { c1: 'u1' },
+        emailByUser: { u1: 'c1@example.com' },
+        seasonActiveByTeam: { t1: false },
+      }),
+    );
+
+    const res = await GET(makeRequest());
+    const body = (await res.json()) as {
+      sent: number;
+      skipped_offseason: number;
+      skipped_opted_out: number;
+    };
+
+    expect(body.sent).toBe(0);
+    expect(body.skipped_offseason).toBe(1);
+    // The offseason gate sits BEFORE the opt-out gate, so an offseason team is
+    // not also counted as opted out — the two reasons stay distinguishable in
+    // the run summary.
+    expect(body.skipped_opted_out).toBe(0);
+    expect(buildRecapMock).not.toHaveBeenCalled();
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it('sends to an in-season team (season_active=true is the default when unset)', async () => {
+    createAdminMock.mockReturnValue(
+      buildSupabase({
+        teamIds: ['t1'],
+        primaryCoachByTeam: { t1: 'c1' },
+        philosophyByCoach: { c1: { email_digest_enabled: true } },
+        userIdByCoach: { c1: 'u1' },
+        emailByUser: { u1: 'c1@example.com' },
+        seasonActiveByTeam: { t1: true },
+      }),
+    );
+
+    const res = await GET(makeRequest());
+    const body = (await res.json()) as { sent: number; skipped_offseason: number };
+
+    expect(body.sent).toBe(1);
+    expect(body.skipped_offseason).toBe(0);
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
   });
 
   it('sends when the philosophy row is missing (default opted-in, mirrors coach-morning-digest)', async () => {

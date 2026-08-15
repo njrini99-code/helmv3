@@ -424,7 +424,7 @@ async function dispatchReminders(
     notification_type: kind,
     // Generated from the team's ACTUAL lead, not from the slot name — a team on
     // a 3-day early reminder must not be told "Tomorrow".
-    title: buildTitle(event, kind, leadByEventId.get(event.id) ?? 0),
+    title: buildTitle(event, kind, leadByEventId.get(event.id) ?? 0, now),
     message: buildMessage(event, kind),
     action_url: `/golf/dashboard/calendar?event=${event.id}`,
   }));
@@ -493,10 +493,22 @@ async function sendReminderToRecipient(
  * at the one lead where English has a better word for it; the LATE slot is
  * always imminent, so "Starting soon" holds at any legal late lead (15–720
  * minutes).
+ *
+ * When leadMinutes is 24h, check the actual event time to distinguish "Today"
+ * from "Tomorrow" — a same-day event should not say "Tomorrow".
  */
-function buildTitle(event: EventRow, kind: ReminderKind, leadMinutes: number): string {
+function buildTitle(event: EventRow, kind: ReminderKind, leadMinutes: number, now: Date): string {
   if (kind !== 'event_reminder_24h') return `Starting soon: ${event.title}`;
-  if (leadMinutes === 24 * 60) return `Tomorrow: ${event.title}`;
+  if (leadMinutes === 24 * 60) {
+    const eventDate = new Date(event.start_time);
+    const todayDate = new Date(now);
+    const eventDay = eventDate.toDateString();
+    const todayDay = todayDate.toDateString();
+    if (eventDay === todayDay) return `Today: ${event.title}`;
+    const tomorrowDate = new Date(todayDate);
+    tomorrowDate.setDate(todayDate.getDate() + 1);
+    if (eventDay === tomorrowDate.toDateString()) return `Tomorrow: ${event.title}`;
+  }
   return `In ${formatLead(leadMinutes)}: ${event.title}`;
 }
 

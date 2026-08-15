@@ -64,6 +64,8 @@ interface SendSummary {
   skipped_provider_unset: number;
   /** Coach has explicitly opted out of the CoachHelm email digest. */
   skipped_opted_out: number;
+  /** Team is in offseason (season_active=false). */
+  skipped_offseason: number;
   errors: number;
   duration_ms: number;
 }
@@ -88,6 +90,7 @@ async function handle(): Promise<NextResponse> {
     skipped_no_email: 0,
     skipped_provider_unset: 0,
     skipped_opted_out: 0,
+    skipped_offseason: 0,
     errors: 0,
     duration_ms: 0,
   };
@@ -134,6 +137,19 @@ async function handle(): Promise<NextResponse> {
         .limit(1)
         .maybeSingle();
       if (!staff?.coach_id) continue;
+
+      // Offseason gate: when a team is in offseason, suppress scheduled digests
+      // to prevent noise. Event-driven emails (reminders, cancellations) are not
+      // affected.
+      const { data: teamRow } = await sb
+        .from('golf_teams')
+        .select('season_active')
+        .eq('id', team_id)
+        .maybeSingle();
+      if (teamRow && teamRow.season_active === false) {
+        summary.skipped_offseason += 1;
+        continue;
+      }
 
       // Opt-out gate: there is no dedicated `email_weekly_recap` preference
       // column, so this recap (a CoachHelm digest email, same as the daily
