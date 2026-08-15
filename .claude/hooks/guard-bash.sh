@@ -48,40 +48,20 @@ Fix (keeps your filtering): prefix with 'set -o pipefail;' e.g.
 Or capture the code explicitly: npm test > /tmp/out 2>&1; echo \"exit=\$?\"; tail -40 /tmp/out"
 fi
 
-# 4. Direct push to main — production serves main in this repo, so `git push
-#    origin main` is a deploy, not a save. Force-pushing it can also destroy
-#    history other worktrees are built on.
+# 4. Force push. The ONLY push shape still blocked.
+#
+#    2026-08-15: rules 4b and 5 used to block EVERY push to main, on the
+#    premise "production serves main here, so this is a deploy." That premise
+#    died 2026-07-08 — vercel.json has carried
+#    "git": {"deploymentEnabled": {"*": false}} since #789/d29deea4, so no
+#    branch auto-deploys and production is an on-demand CLI promote. Pushing
+#    main ships nothing, and main is now the working branch by owner decision.
+#
+#    Force push matters MORE now: main has allow_force_pushes ENABLED and
+#    enforce_admins off, so this hook is the only guard on shared history.
 if printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+push.*(--force|-f)([[:space:]]|$)'; then
-  block "BLOCKED: force push. It rewrites remote history that other worktrees and open PRs are built on.
+  block "BLOCKED: force push. It rewrites remote history that other worktrees and open PRs are built on, and GitHub will NOT stop you — main has allow_force_pushes enabled and enforce_admins off.
 If you truly need it, use --force-with-lease and run it yourself."
-fi
-if printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+push([[:space:]]+[^|;&]*)?[[:space:]]+(origin[[:space:]]+)?main([[:space:]]|$)'; then
-  block "BLOCKED: pushing directly to main. Production serves main here, so this is a deploy — not a checkpoint.
-Push a branch and open a PR instead: git push -u origin <branch>"
-fi
-
-# 5. Implicit push of main. Rules above only catch an EXPLICIT "main" argument,
-#    so a bare `git push` (or `git push origin HEAD`) while checked out on main
-#    slipped straight through — the same deploy, just spelled differently.
-#    NOTE: POSIX ERE has no negative lookahead, so the target branch is parsed
-#    out and compared directly rather than pattern-excluded.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])git[[:space:]]+push([[:space:]]|$)'; then
-  CURBR=$(git branch --show-current 2>/dev/null || echo "")
-  if [ "$CURBR" = "main" ]; then
-    # what ref, if any, does the command name after the remote?
-    TARGET=$(printf '%s' "$CMD" \
-      | sed -E 's/.*git[[:space:]]+push[[:space:]]*//' \
-      | tr ' ' '\n' \
-      | grep -vE '^(-u|--set-upstream|--force-with-lease|--follow-tags|-f|--force|origin)$' \
-      | grep -v '^$' \
-      | head -1)
-    case "$TARGET" in
-      ""|HEAD|main|origin/main|refs/heads/main)
-        block "BLOCKED: you are ON main and this pushes it. Production serves main here, so this is a deploy — not a checkpoint.
-Branch first, then push the branch: git switch -c <branch> && git push -u origin <branch>"
-        ;;
-    esac
-  fi
 fi
 
 # 6. `supabase config push` — config.toml carries an explicit warning that this
