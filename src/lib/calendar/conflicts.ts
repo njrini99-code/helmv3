@@ -209,21 +209,13 @@ function isSameTimeSlot(a: TimeSlot, b: TimeSlot): boolean {
   );
 }
 
-/**
- * Format suggested time for display
+/*
+ * `formatSuggestedTime` was exported from here and had zero callers (removed
+ * 2026-08-15). `ConflictWarning.tsx` — the only surface that renders suggested
+ * times — carries its own private, functionally-equivalent copy and always has.
+ *
+ * The rest of this module is live: `checkEventConflicts` is reached from the
+ * event editor via `checkScheduleConflicts` (`src/app/golf/actions/golf.ts`,
+ * dynamic `await import` at :4363), and it calls `findCommonAvailability` twice.
  */
-export function formatSuggestedTime(slot: TimeSlot): string {
-  const sameDay = slot.start.toDateString() === slot.end.toDateString();
-
-  if (sameDay) {
-    const dayName = slot.start.toLocaleDateString('en-US', { weekday: 'short' });
-    const date = slot.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const startTime = slot.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    const endTime = slot.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-    return `${dayName}, ${date} • ${startTime} - ${endTime}`;
-  }
-
-  return `${slot.start.toLocaleDateString()} ${slot.start.toLocaleTimeString()} - ${slot.end.toLocaleDateString()} ${slot.end.toLocaleTimeString()}`;
-}
 

@@ -505,12 +505,14 @@ export {
   // The monolithic FairwayCoachHelmSignals was deleted 2026-07-22 (dead code
   // purge) — all three routes are permanent-redirect shims onto TriageDesk's
   // Signals drill (SignalQueue/SignalDossier). SignalsToolbar/ScanTeamControl
-  // remain live, reused elsewhere.
-  SignalsToolbar,
-  type SignalsToolbarProps,
-  type AppliedFilterChip,
-  ScanTeamControl,
-  type ScanTeamControlProps,
+  // followed on 2026-08-15 — the "remain live, reused elsewhere" note here had
+  // gone stale, the drill absorbed both. The adapter below is still live.
+  //
+  // Keep this comment free of semicolons. It sits INSIDE the multi-line
+  // `export { … } from './pages/coachhelm'` statement below, and
+  // route-reachability.test.ts matches that statement with `[^;]*?` — a `;`
+  // anywhere in here truncates the match, the barrel edge is never followed,
+  // and every component under pages/coachhelm/ is reported unreachable.
   insightToSignalRow,
   patternToSignalRow,
   insightsToSignalRows,
@@ -519,6 +521,9 @@ export {
   type SignalSource,
   type SignalEvidenceLine,
   // ── Player-path surfaces (phase 5 · the PLAYER shell variant) ──────────────
+  // FairwayPlayerCoachHelm is dead but RETAINED — see the note in
+  // ./pages/coachhelm/index.ts. It is the only importer of HeroNarrativeCard
+  // and FocusAreasGrid, so the three must be deleted together or not at all.
   FairwayPlayerCoachHelm,
   type FairwayPlayerCoachHelmProps,
   FairwayMyDevelopment,

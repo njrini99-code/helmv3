@@ -91,12 +91,40 @@ function resolveSpecifier(spec: string, fromFile: string): string | null {
  * VALUE import specifiers only. Strips `import type ...` / `export type ...`
  * statements before matching, so a type-only edge never marks a file reachable.
  */
-function valueImports(source: string): string[] {
+/**
+ * Drop comments before import-matching, preserving string literals.
+ *
+ * WHY (2026-08-15, the SECOND bug of this family — see the note in
+ * valueImports): the matchers below bound a statement with `[^;]*?`, which
+ * cannot cross a semicolon. A semicolon inside a COMMENT that sits within a
+ * multi-line `export { … } from '…'` block therefore severs that barrel edge,
+ * and every component reachable only through that barrel reports as an orphan.
+ *
+ * That is not hypothetical. During a dead-code pass a tombstone comment ending
+ * `…the drill absorbed both);` was added inside the coachhelm export block of
+ * fairway/index.ts, and this check reported EIGHT unreachable components —
+ * including GenomeCompareView, which genome/compare/page.tsx imports directly.
+ * It reads exactly like a real dead-code cascade and is entirely an artifact.
+ *
+ * Comments BETWEEN statements were always fine; only inside an unterminated one.
+ * The alternation keeps quoted strings intact first, so a `//` inside a
+ * specifier (or any URL in a string) is never mistaken for a line comment.
+ */
+function stripComments(source: string): string {
+  return source.replace(
+    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,
+    (_match, stringLiteral: string | undefined) => (stringLiteral ? stringLiteral : ' '),
+  );
+}
+
+function valueImports(rawSource: string): string[] {
   // NOTE: these patterns must tolerate NEWLINES inside a statement. A first cut
   // used `[^;\n]*?`, which silently missed every multi-line
   // `import {\n  A,\n  B,\n} from '...'` — the dominant style in this repo — and
   // the check then reported ~40 genuinely reachable files as orphans.
-  // `[^;]*?` allows newlines but still cannot run past the end of a statement.
+  // `[^;]*?` allows newlines but still cannot run past the end of a statement —
+  // which is why comments must be stripped first (see stripComments).
+  const source = stripComments(rawSource);
   const withoutTypeOnly = source
     .replace(/(?:^|\n)\s*import\s+type\b[^;]*?from\s*['"][^'"]*['"];?/g, '')
     .replace(/(?:^|\n)\s*export\s+type\b[^;]*?from\s*['"][^'"]*['"];?/g, '');

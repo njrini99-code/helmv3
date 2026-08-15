@@ -104,15 +104,14 @@ export type { FairwayEffectivenessProps } from './FairwayEffectiveness';
 // The monolithic FairwayCoachHelmSignals (alerts/insights/patterns discriminated
 // union) was deleted 2026-07-22 (dead code purge) — all three routes are
 // permanent-redirect shims onto the Signals drill of TriageDesk, which is fed
-// by SignalQueue/SignalDossier instead. SignalsToolbar/ScanTeamControl/the
-// patternToInsightVocabulary adapter below remain live, reused elsewhere.
-export { SignalsToolbar } from './signals/SignalsToolbar';
-export type {
-  SignalsToolbarProps,
-  AppliedFilterChip,
-} from './signals/SignalsToolbar';
-export { ScanTeamControl } from './signals/ScanTeamControl';
-export type { ScanTeamControlProps } from './signals/ScanTeamControl';
+// by SignalQueue/SignalDossier instead.
+//
+// SignalsToolbar and ScanTeamControl followed on 2026-08-15: the claim above
+// that they "remain live, reused elsewhere" had gone stale — SignalQueue and
+// SignalDossier absorbed both, leaving barrel re-exports as their only
+// referents. `AppliedFilterChip` went with SignalsToolbar (it was declared in
+// that file and had no consumer outside it). The patternToInsightVocabulary
+// adapter below IS still live.
 export {
   insightToSignalRow,
   patternToSignalRow,
@@ -126,15 +125,13 @@ export type {
 } from './signals/patternToInsightVocabulary';
 
 // ── Player-path surfaces (phase 5 · the PLAYER shell variant) ────────────────
-//   • FairwayPlayerCoachHelm — the player front door over /golf/dashboard/coachhelm.
-//     Renders CoachHelmShell role="player" (sub-nav = Brief + My Development),
-//     ONE GlassSurface hero (top insight + preserved LLM narrative), a MetricCard
-//     row, secondary insights that EXPAND IN PLACE via InsightPanel (kills the
-//     "View N more" dead-end), honest InsufficientData for null V3 panels, and a
-//     RESERVED/disabled "Ask CoachHelm about this insight" entry (no gate lift).
-//     Consumes getPlayerCoachHelmDashboard / getPlayerShotAnalytics /
-//     getTopInsightForPlayer / getInsightsForPlayer / getPlayer{Profile,Trend,
-//     ShotContext,WhatIf} / rateInsightAsPlayer UNCHANGED (props in; no fetch).
+//   • FairwayPlayerCoachHelm — the player front door over
+//     /golf/dashboard/coachhelm. DEAD but deliberately RETAINED (2026-08-15).
+//     `PlayerCoachHelmHome` superseded it and it has zero non-test importers,
+//     so it was slated for deletion — but it is the ONLY value-importer of
+//     `HeroNarrativeCard` (:110) and `FocusAreasGrid` (:111), so deleting it
+//     alone orphans both and turns route-reachability.test.ts red. The three
+//     are one cluster and need one decision, which is above this pass's remit.
 //   • FairwayMyDevelopment   — the player My Development list over
 //     /golf/dashboard/my-development. Renders the player CoachHelmShell variant,
 //     a FocusAreaCard list (active/completed partition preserved) with REAL

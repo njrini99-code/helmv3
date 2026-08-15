@@ -30,8 +30,6 @@ import { useRouter } from 'next/navigation';
 import {
   Plane,
   MapPin,
-  CalendarClock,
-  Clock,
   Check,
   ChevronRight,
   Bell,
@@ -162,10 +160,6 @@ function formatTime(timeStr: string): string {
   const ampm = hour >= 12 ? 'PM' : 'AM';
   const h12 = hour % 12 || 12;
   return `${h12}:${min} ${ampm}`;
-}
-
-function formatEventTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
 function formatRelativeDate(dateStr: string, now: Date | null): string {
@@ -482,123 +476,6 @@ export function TaskRow({
         </div>
       </div>
     </Inset>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
- * RSVPRow — matte Surface row with the three RSVP actions. Calls the onRSVP
- * callback (the legacy optimistic respondToEvent path, unchanged).
- * ──────────────────────────────────────────────────────────────────────── */
-
-export function RSVPRow({
-  event,
-  now,
-  onRSVP,
-}: {
-  event: EventInvite;
-  now: Date | null;
-  onRSVP: (status: 'accepted' | 'declined' | 'tentative') => Promise<void> | void;
-}) {
-  const fmtDate = useFormatDate();
-  const [submitting, setSubmitting] = useState<string | null>(null);
-  const eventDate = new Date(event.start_time);
-  const isToday = now ? now.toDateString() === eventDate.toDateString() : false;
-  const isPast = now ? eventDate < now : false;
-
-  const handleRSVP = useCallback(
-    async (status: 'accepted' | 'declined' | 'tentative') => {
-      setSubmitting(status);
-      try {
-        await onRSVP(status);
-      } finally {
-        setSubmitting(null);
-      }
-    },
-    [onRSVP],
-  );
-
-  return (
-    <Surface padding="sm" className={cn('flex flex-col gap-3', isPast && 'opacity-60')}>
-      <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-fw-md bg-surface-sunken text-text-tertiary">
-          <CalendarClock aria-hidden className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-              {event.title}
-            </p>
-            {event.is_mandatory ? (
-              <Badge tone="danger" size="sm">
-                Required
-              </Badge>
-            ) : null}
-          </div>
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-fw-sans text-caption text-text-tertiary">
-            <span className={cn('inline-flex items-center gap-1', isToday && 'text-accent-700')}>
-              <Clock aria-hidden className="h-3.5 w-3.5" />
-              {isToday ? 'Today' : fmtDate(event.start_time)} · {formatEventTime(event.start_time)}
-            </span>
-            {event.location ? (
-              <span className="inline-flex items-center gap-1">
-                <MapPin aria-hidden className="h-3.5 w-3.5" />
-                <span className="truncate">{event.location}</span>
-              </span>
-            ) : null}
-          </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <Badge tone="accent" size="sm" numeric>
-              {event.going_count} going
-            </Badge>
-            {event.maybe_count > 0 ? (
-              <Badge tone="warning" size="sm" numeric>
-                {event.maybe_count} maybe
-              </Badge>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      {!isPast ? (
-        // 3-up grid (not a flex row) so the three pills get equal width, never
-        // crowd/truncate, and never trigger horizontal scroll at 320px. Each
-        // Button is fullWidth in its cell; size="sm" already expands to a 44px
-        // min-height on coarse (touch) pointers via the Button primitive.
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            variant={event.rsvp_status === 'accepted' ? 'primary' : 'secondary'}
-            size="sm"
-            fullWidth
-            busy={submitting === 'accepted'}
-            disabled={submitting !== null}
-            onClick={() => handleRSVP('accepted')}
-            leftIcon={event.rsvp_status === 'accepted' ? <Check className="h-3.5 w-3.5" /> : undefined}
-          >
-            Going
-          </Button>
-          <Button
-            variant={event.rsvp_status === 'tentative' ? 'primary' : 'ghost'}
-            size="sm"
-            fullWidth
-            busy={submitting === 'tentative'}
-            disabled={submitting !== null}
-            onClick={() => handleRSVP('tentative')}
-          >
-            Maybe
-          </Button>
-          <Button
-            variant={event.rsvp_status === 'declined' ? 'primary' : 'ghost'}
-            size="sm"
-            fullWidth
-            busy={submitting === 'declined'}
-            disabled={submitting !== null}
-            onClick={() => handleRSVP('declined')}
-          >
-            Can&apos;t go
-          </Button>
-        </div>
-      ) : null}
-    </Surface>
   );
 }
 
