@@ -106,19 +106,24 @@ export function AvatarUpload({
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
 
-      // An ABORTED upload is the browser, not a defect. There is no
-      // AbortSignal.timeout anywhere in this path, so "Fetch is aborted" here
-      // can only mean the request was cut off from the outside: the user
-      // navigated away, closed the tab, picked a different file, or the
-      // connection dropped mid-transfer. Nothing failed that anyone can fix.
+      // An ABORTED upload is the connection, not a defect: the user navigated
+      // away, closed the tab, picked a different file, the connection dropped
+      // mid-transfer — or the browser client's own abort budget fired.
+      //
+      // That last one used to be the common case. lib/supabase/client.ts
+      // applied a flat 10s abort to EVERY browser request, which is right for
+      // PostgREST but wrong for Storage, where duration is set by the uplink.
+      // It now gives Storage its own budget (see timeoutForRequest), so a
+      // healthy upload on a slow connection is no longer cut off. An abort
+      // reaching here is a genuinely interrupted transfer.
       //
       // It was logged at 'high' like any other upload failure, so a coach
       // wandering off mid-upload opened a high-severity incident with a
       // scary-looking red banner. (The global transient-network matcher in
       // lib/error-logging.ts deliberately does NOT match AbortError, on the
       // reasoning that aborts are our own timeouts firing — a budget worth
-      // knowing about. That reasoning is sound and is left alone; it simply
-      // does not apply to this call site, which sets no timeout.)
+      // knowing about. That reasoning is sound and is left alone; an
+      // interrupted upload is still not something an operator can act on.)
       const wasAborted =
         (err instanceof Error && err.name === 'AbortError') ||
         /\babort(ed)?\b/i.test(message);
