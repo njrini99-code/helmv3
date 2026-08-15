@@ -110,7 +110,22 @@ async function login(page, email, password) {
   await page.fill('input[type="email"]', email);
   await page.fill('input[type="password"]', password);
   await Promise.all([
-    page.waitForURL('**/golf/**', { timeout: settle }).catch(() => {}),
+    // Wait for the URL to stop being the LOGIN page — not merely to be
+    // somewhere under /golf.
+    //
+    // This was `waitForURL('**/golf/**')`, which is vacuous: `/golf/login`
+    // itself matches it, so the wait resolved instantly and gated nothing. The
+    // only real settle was the fixed timeout below, and a measured prod login
+    // takes 2548-3358ms against a 2500ms budget — so authentication was a coin
+    // flip. On the 2026-08-15 post-deploy run, 2 of 4 persona/viewport contexts
+    // silently failed to log in (coach/desktop and player/mobile), and the
+    // earlier "coach only" baseline was almost certainly the same bug.
+    //
+    // A failed login is not a loud error either: the run continues and every
+    // route reports as a login-redirect, which reads as broken auth rather than
+    // as a broken harness.
+    page.waitForURL((u) => !u.pathname.includes('/login'), { timeout: settle })
+      .catch(() => {}),
     page.click('button[type="submit"]'),
   ]);
   await page.waitForTimeout(IS_LOCAL ? 6000 : 2500);
