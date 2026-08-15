@@ -287,23 +287,33 @@ export function FairwayAgendaView({
         own header while keeping every past event one tap away.
       */}
       {mode === 'range' && pastBuckets.length > 0 ? (
-        <div>
+        // Centered, intrinsic-width control — matches the "Show N more" convention
+        // used elsewhere in Fairway (FairwayQualifiers' concluded-list expander:
+        // `<div className="flex justify-center ..."><Button variant="secondary">`).
+        //
+        // `secondary`, not `ghost` — a `ghost` Button is transparent at rest by
+        // design, and the `bg-surface-sunken` override this used to carry RECEDES
+        // below canvas in dark theme (a "well" cue that only reads correctly
+        // nested inside a lighter Surface). `secondary` is the Fairway "matte
+        // surface + warm hairline + shadow" recipe: bg-surface LIFTS off canvas
+        // in both themes (dark: surface L=0.228 vs canvas L=0.188; light:
+        // surface L=0.984 vs canvas L=0.953 — checked in design-tokens.css).
+        //
+        // That alone wasn't enough, though: this row previously stretched
+        // `w-full` across the ~1130px content column with a squared-off
+        // `rounded-fw-sm` corner radius. No other button in the app spans full
+        // content width, so at that width even a bordered/shadowed fill reads as
+        // a divider bar, not a control — regardless of variant. Letting the
+        // Button size to its own content (default `rounded-full` pill, no
+        // `w-full`) and centering it in a `flex justify-center` wrapper is what
+        // actually restores the button affordance.
+        <div className="flex justify-center">
           <Button
             type="button"
-            // `secondary`, not `ghost` — a `ghost` Button is transparent at
-            // rest by design, and the `bg-surface-sunken` override this used
-            // to carry RECEDES below canvas in dark theme (a "well" cue that
-            // only reads correctly nested inside a lighter Surface). With no
-            // surrounding card here, the sunken fill was ~indistinguishable
-            // from the page background and the border was a barely-visible
-            // hairline, so the control read as a plain caption with no
-            // button affordance. `secondary` is the Fairway "matte surface +
-            // warm hairline + shadow" recipe made for exactly this: a real
-            // chip that visibly LIFTS off the canvas in both themes.
             variant="secondary"
+            size="sm"
             onClick={() => setShowPast((v) => !v)}
             aria-expanded={showPast}
-            className="h-auto min-h-[44px] w-full justify-center gap-2 rounded-fw-sm px-4 font-fw-sans text-body-sm font-medium"
           >
             {showPast
               ? 'Hide earlier events'
