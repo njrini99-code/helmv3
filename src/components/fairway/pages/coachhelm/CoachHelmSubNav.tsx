@@ -92,6 +92,26 @@ const COACH_TABS: readonly TabDef[] = [
     // and its `?view=`/`?filter=` stage drills all share that SAME pathname.
     matchPrefixes: [],
   },
+  {
+    /**
+     * Ask is NOT one of the tabs Spine & Stage retired.
+     *
+     * Signals, Players and Effectiveness were folded into `?view=` drills of
+     * the Brief and are marked `legacy: true, hidden: true` in
+     * `surface-registry.ts` to say so. `ask` carries neither flag — it is a
+     * live `group: 'coachhelm-tab'` surface on its own route — but it was
+     * dropped from this strip along with them. The cost was not cosmetic: the
+     * only remaining way into the chat was the floating FAB, while the
+     * breadcrumb (which reads the registry) kept printing
+     * `CoachHelm AI / Ask`, advertising a tab the strip declined to draw.
+     */
+    tab: 'ask',
+    label: surfaceName('ask'),
+    href: '/golf/dashboard/coachhelm/chat',
+    // `/coachhelm/chat?c=<id>` is the same surface with a conversation
+    // adopted into the URL, and it must not fall back to the Brief tab.
+    matchPrefixes: ['/golf/dashboard/coachhelm/chat'],
+  },
 ] as const;
 
 /**

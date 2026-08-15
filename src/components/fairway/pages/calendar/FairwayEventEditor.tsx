@@ -493,6 +493,18 @@ export function FairwayEventEditor({
           formData.endDate || formData.startDate,
           formData.endTime,
           conflictCheckIds,
+          undefined,
+          /**
+           * Anchor the proposed window to the coach's wall clock.
+           *
+           * The action's last parameter exists for exactly this (audit finding
+           * #7) and defaults to UTC when omitted — which this call site did.
+           * A coach in EDT picking 9:00 AM had the window compared as 09:00
+           * UTC, i.e. 5:00 AM their time, so conflicts were computed against a
+           * window four hours off the one on screen: real clashes missed, and
+           * clashes reported against a slot the coach never chose.
+           */
+          new Date().getTimezoneOffset(),
         );
         if (!cancelled && result.success && result.data) setConflicts(result.data as ConflictData);
       } catch {
