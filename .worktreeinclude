@@ -1,0 +1,19 @@
+# Files that are gitignored but must exist in a worktree for it to build and
+# run. Without these, an isolated agent gets a checkout that cannot compile,
+# and burns turns rediscovering why.
+#
+# DELIBERATELY ABSENT: .env.local, .env.production.local, .env.development.local.
+# Those hold SUPABASE_SERVICE_ROLE_KEY, HELM_PROD_POSTGRES_PASSWORD and
+# HELM_PROD_DB_URL_DIRECT — live credentials for the SHARED production
+# database. Copying them into every parallel worktree multiplies the number of
+# places a live prod secret sits on disk by the number of agents you run. If a
+# worktree genuinely needs to reach a database, give it scoped credentials
+# explicitly rather than inheriting the founder's.
+
+# Node version pin — the repo auto-switches via fnm; without it a worktree
+# lands on the machine default (v26) while all 24 CI workflows pin 22.
+.node-version
+
+# Local editor/tooling config that is ignored but harmless and useful.
+.vscode/settings.json
+.vscode/extensions.json

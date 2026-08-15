@@ -106,17 +106,32 @@ fi
 #     suspended by allow rules, which is what makes this the right layer.
 #     Scope recursive deletes to paths that belong to the work: the project
 #     itself and the OS temp dirs (where the scratchpad lives).
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])rm[[:space:]]' \
-   && printf '%s' "$CMD" | grep -Eq '(^|[[:space:]])(-[a-zA-Z]*[rR][a-zA-Z]*|--recursive)([[:space:]]|$)'; then
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])rm[[:space:]]'; then
   PROJ=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && pwd -P) || PROJ=""
-  # Targets = every token after `rm` that is not a flag. Quotes stripped so a
-  # quoted path is still inspected rather than silently treated as opaque.
-  TARGETS=$(printf '%s' "$CMD" \
+
+  # Isolate the rm invocation BEFORE looking at flags. Reading flags from the
+  # whole command line was a real false-positive: any `-r` belonging to another
+  # command on the same line (`jq -r`, `sort -r`, `grep -R`, `head -r`) made a
+  # harmless `rm -f` look recursive, and the target parser then blamed whatever
+  # token it found first. A guard that cries wolf is a guard you learn to
+  # ignore, so this must stay scoped to rm's own segment.
+  RM_SEG=$(printf '%s' "$CMD" \
     | sed -E 's/.*(^|[;&|[:space:]])rm[[:space:]]+//' \
-    | sed -E 's/[[:space:]]*(\||;|&&).*$//' \
+    | sed -E 's/[[:space:]]*(\||;|&&|>>?).*$//')
+
+  IS_RECURSIVE=0
+  printf '%s' "$RM_SEG" \
+    | grep -Eq '(^|[[:space:]])(-[a-zA-Z]*[rR][a-zA-Z]*|--recursive)([[:space:]]|$)' \
+    && IS_RECURSIVE=1
+
+  # Targets = every token in that segment that is not a flag. Quotes stripped
+  # so a quoted path is inspected rather than treated as opaque.
+  TARGETS=$(printf '%s' "$RM_SEG" \
     | tr ' ' '\n' \
     | sed -E 's/^["'"'"']//; s/["'"'"']$//' \
     | grep -vE '^-' | grep -v '^$')
+
+  [ "$IS_RECURSIVE" -eq 1 ] || TARGETS=""
 
   for T in $TARGETS; do
     # Catastrophic literals — never legitimate from an agent, at any depth.
