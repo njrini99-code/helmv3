@@ -201,3 +201,12 @@ android/keystore.properties
 .ultracode/
 .claude/*.bak-*
 SECURITY_REVIEW_*.json
+
+# Per-machine Claude Code settings. This lived only in ~/.config/git/ignore,
+# which does not travel with the repo — so a fresh clone, a worktree, or CI
+# had no rule at all. That gap is how a 93-entry shell allowlist
+# (.claude/settings.local.json.bak-bbcc) reached this public repo and stayed
+# tracked for weeks: the .bak-* rule above was added later, and gitignore
+# never untracks a file that is already tracked.
+.claude/settings.local.json
+.claude/settings.local.json.*

@@ -63,6 +63,28 @@ These are embedded here for speed — the things you'll need on every task:
 
 ## CRITICAL RULES
 
+### 0. Branch & deploy — `main` is the working branch
+
+Work directly on `main`. Owner decision, 2026-08-15.
+
+**A push to `main` ships nothing.** `vercel.json` has carried
+`"git": {"deploymentEnabled": {"*": false}}` since 2026-07-08 (#789 /
+`d29deea4`), so no branch auto-deploys and production is an on-demand CLI
+promote. Any doc, hook, or comment claiming "production serves main" is
+stale — that premise died five weeks before it was noticed, and it is what
+made the old branch-first workflow feel mandatory.
+
+Branch protection on `main`: 0 required reviews, `enforce_admins` off,
+linear history, 3 required checks (`CodeQL`, `all`, `Smoke checks`). Direct
+push is permitted for the owner. Note `all` is ambiguous — both `ci.yml` and
+`review-gate.yml` emit a job by that name; see `.github/branch-protection.md`.
+
+Still blocked by `.claude/hooks/guard-bash.sh`, deliberately:
+- **force push** — `main` has `allow_force_pushes` ENABLED on GitHub, so this
+  hook is the only thing preventing a rewrite of shared history.
+- `git stash`, `git clean -f`, recursive `rm` outside the project — all
+  destroy work that exists nowhere else.
+
 ### 1. Type Imports
 ```typescript
 import type { Player, Coach, Organization } from '@/lib/types';
@@ -96,13 +118,22 @@ Detail that used to live here now loads only when relevant, via `paths` frontmat
 
 | Rule | Loads when you touch |
 |---|---|
-| golf-feature-ownership | src/app/golf, src/lib/golf, src/components/golf |
+| autonomy | always (how to work here — finish the job, don't stop to ask) |
+| code-review-tooling | always (procedure) |
+| golf-feature-ownership | src/app/golf, src/lib/golf, src/components/golf, src/app/api/golf |
+| golf-review | same paths as golf-feature-ownership (review checklist) |
+| coachhelm-review | src/lib/coachhelm, golf round-review actions, api/coachhelm |
+| baseball-roles | src/app/baseball, src/lib/baseball, src/components/baseball |
+| baseball-review | those plus src/lib/recruiting, api/baseball (review checklist) |
+| database | supabase/migrations, any .sql, src/lib/supabase, scripts/db |
 | design-system | any .tsx or .css |
 | code-patterns | src/app, src/lib TypeScript |
 | file-structure | anything under src/ |
-| baseball-roles | src/app/baseball, src/lib/baseball |
 | integrations | src/app/api, stripe/inngest/email/notifications libs |
-| code-review-tooling | always (procedure) |
+
+A rule with no `paths:` frontmatter loads on every session. This table was
+missing four rules that exist on disk (golf-review, coachhelm-review,
+baseball-review, database) — if you add a rule file, add its row here.
 
 Edit the rule file, not this one, when changing any of the above.
 ## Pre-Submit Checklist

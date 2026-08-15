@@ -25,7 +25,8 @@
 
 ## Mobile UI rules
 
-- Use the `mobile-app-consistency-system` skill for mobile web screens, responsive app UI, navigation, headers, cards, tabs, filters, buttons, chips, empty states, and layout refactors.
+- Use the `modern-saas-ui` skill for mobile web screens, responsive app UI, navigation, headers, cards, tabs, filters, buttons, chips, empty states, and layout refactors — it encodes the Fairway tokens and component idioms this repo has actually shipped. For technical layout bugs (overlays, jitter, breakpoint failures, z-index) use `ui-stability-debugger-v2` instead; it targets defects rather than aesthetics.
+  (This line previously pointed at a `mobile-app-consistency-system` skill that does not exist anywhere — not in `.claude/skills/`, `~/.claude/skills/`, or any plugin cache — which made every rule below it unreachable. Verify a skill resolves before citing it here.)
 - All mobile screens must use the shared app shell with consistent safe-area handling, page padding, section spacing, and bottom-nav clearance.
 - All mobile headers must use either a Standard header or an Action header pattern.
 - Standard header: leading nav control, title, optional subtitle or meta, and at most one visible trailing action.
@@ -44,19 +45,25 @@
 
 ## Automated review
 
-PRs are reviewed by **two AI reviewers in parallel** on every push:
+There are **no AI reviewers on PRs.** CodeRabbit and Greptile were dropped
+2026-07-20 by founder decision — CodeRabbit's credit quota had become the
+slowest step in shipping, and the Review Gate + CodeQL cover the same hard
+rules deterministically. Do not wait for a review comment that is never
+coming, and do not treat their absence as a check still pending.
 
-- **CodeRabbit** — line-level static analysis. Config at
-  `.coderabbit.yaml` plus `.coderabbit/ast-grep/` and
-  `.coderabbit/semgrep/helmv3.yml`. Path-specific instructions cover
-  `src/app/**`, `src/components/**`, `src/lib/supabase/**`,
-  `supabase/migrations/**`, `supabase/functions/**`, `ios/App/**`,
-  `tools/**`, `.github/workflows/**`, and `e2e/**`.
-- **Greptile** — whole-codebase view, catches drift from architecture
-  docs and duplicated logic. Config at `.greptile/rules.md`
-  (natural-language rules) and `.greptile/config.json` (ignores,
-  additional-context docs). Installed via GitHub App at
-  https://app.greptile.com.
+What that leaves:
+
+- `.greptile/` is **deleted**. Any reference to `.greptile/rules.md` or
+  `.greptile/config.json` is stale.
+- `.coderabbit.yaml` is a **disable stub** (`auto_review.enabled: false`),
+  not live path-instruction config.
+- The custom rule packs under `.coderabbit/ast-grep/` and
+  `.coderabbit/semgrep/helmv3.yml` **remain and are load-bearing** — CI
+  consumes them directly from `review-gate.yml`. Treat that directory name
+  as historical; they are CI assets now, not CodeRabbit assets.
+
+`.claude/rules/code-review-tooling.md` is the authority here; keep the two
+in step.
 
 CI runs across two platforms:
 

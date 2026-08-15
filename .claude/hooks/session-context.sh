@@ -36,10 +36,15 @@ if [ "${WT:-1}" -gt 1 ]; then
 - worktrees: ${WT} (work may be happening in another checkout of this repo)"
 fi
 
-# Production serves main in this repo, so working directly on it is a footgun.
-if [ "$BRANCH" = "main" ]; then
+# main is the working branch here by owner decision (2026-08-15). It does NOT
+# deploy — vercel.json has carried "git": {"deploymentEnabled": {"*": false}}
+# since 2026-07-08, so production is an on-demand CLI promote and a push to
+# main ships nothing. The old "you are on main, branch before editing" warning
+# was guarding a fact that had been false for five weeks.
+if [ "$BRANCH" != "main" ]; then
   CTX="${CTX}
-- WARNING: you are on main, which is what production serves. Branch before editing."
+- NOTE: you are on '${BRANCH}', not main. main is the working branch in this
+  repo — check this is deliberate before building on it."
 fi
 
 jq -nc --arg ctx "$CTX" \

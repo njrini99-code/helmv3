@@ -79,11 +79,17 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 
 Don't treat a check as "stuck" before its normal window has passed:
 
-- **Vercel production** — only `main` builds automatically (`vercel.json`
-  `ignoreCommand` + `git.deploymentEnabled`). Non-main branches skip preview
-  deploys; CircleCI Lighthouse usually skips when no preview URL exists.
-- **CodeRabbit / Greptile** — both re-queue automatically on every new
-  commit; expect a short pending window while the new review is generated.
+- **Vercel** — **nothing** builds automatically, `main` included. `vercel.json`
+  has carried `"git": {"deploymentEnabled": {"*": false}}` since 2026-07-08
+  (#789 / `d29deea4`); production is an on-demand CLI promote. Do not wait on a
+  Vercel check that is never coming, and do not read a merge to `main` as a
+  ship. CircleCI Lighthouse skips accordingly, since no preview URL exists.
+  (This bullet said "only `main` builds automatically" until 2026-08-15 —
+  five weeks after that stopped being true.)
+- **CodeRabbit / Greptile** — gone. Dropped 2026-07-20 by founder decision;
+  see `.claude/rules/code-review-tooling.md`. There is no AI review on a PR,
+  so their absence is never a pending check. The Review Gate + CodeQL cover
+  the same hard rules deterministically.
 - **PR smoke** (`pr-smoke.yml`) — `Smoke checks` build ~15 min; optional
   `Playwright PR smoke (a11y)` ~12 min when frontend/e2e paths change.
 - **Full Playwright** (`playwright.yml`, main + manual only) — `e2e` job
@@ -133,12 +139,13 @@ pending check has hung — then rerun (see below) rather than waiting longer.
   previews disabled it usually skips gracefully. Rerun only when a manual
   preview deploy exists and you need Lighthouse against it.
 
-### Vercel / CodeRabbit / Greptile
+### Vercel
 
-- These re-trigger on new commits, not via a GHA-style "rerun" button.
-  Use their own dashboards (Vercel: redeploy; CodeRabbit/Greptile: request a
-  fresh review per `docs/operations/coderabbit-review-workflow.md`) if you
-  need to force one without pushing a commit.
+- Not a GHA-style "rerun" button — redeploy from the Vercel dashboard, or
+  promote from the CLI. Since `git.deploymentEnabled` is `{"*": false}`, there
+  is no git-triggered deploy to rerun in the first place.
+- CodeRabbit and Greptile used to be listed here. Both were dropped
+  2026-07-20 — there is nothing to re-request.
 
 ## 4. Inherited failures from `main`
 
@@ -174,7 +181,10 @@ See also:
 
 - [`docs/operations/COST_CONTROLS.md`](operations/COST_CONTROLS.md) — Vercel
   preview policy, PR vs main Playwright, manual full E2E, spend alerts
-- [`docs/operations/coderabbit-review-workflow.md`](operations/coderabbit-review-workflow.md)
-  — clearing a stale CodeRabbit review decision
+- [`.claude/rules/code-review-tooling.md`](../.claude/rules/code-review-tooling.md)
+  — the authority on what reviews this repo actually runs
 - [`.github/branch-protection.md`](../.github/branch-protection.md) — required
   checks enforcement policy
+
+`docs/operations/coderabbit-review-workflow.md` still exists but describes a
+tool dropped 2026-07-20. It is history, not procedure — do not follow it.
