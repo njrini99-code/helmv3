@@ -46,7 +46,7 @@ const trackBase = cn(
   // card and 2.67:1 on canvas, so "on" read as a washed-out mint rather than a
   // decisive state. accent-700 is 5.70:1, and matches what H10 already did to
   // the primary Button (2026-07-25).
-  "data-[checked]:border-accent-700 data-[checked]:bg-accent-700",
+  "data-[checked]:border-accent-700 data-[checked]:bg-accent-750",
   "outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
   "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
 );

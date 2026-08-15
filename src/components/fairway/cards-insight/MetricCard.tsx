@@ -151,8 +151,16 @@ export interface MetricCardProps
   /** Message shown in the empty state. Default "Not enough data yet". */
   emptyMessage?: string;
   /**
-   * Value-face tone. `'accent'` (default) paints the figure in the brand green
-   * so KPI cards read as a cohesive scoreboard; `'neutral'` keeps the dark ink.
+   * Value-face tone. `'accent'` (default) paints the figure with
+   * `--fw-color-metric-face` so KPI cards read as a cohesive scoreboard;
+   * `'neutral'` keeps the plain primary ink.
+   *
+   * That face is THEME-DEPENDENT by design: brand green on the light cream
+   * card, near-white on the dark one. Green numerals that look composed on
+   * cream become a wall of mint on near-black, and since this tone is the
+   * default it applied to every metric tile in the product at once. Accent
+   * still appears on these cards — via the delta chip — which is where a
+   * scoreboard's colour should be spent.
    */
   tone?: 'accent' | 'neutral';
 }
@@ -350,7 +358,11 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
             {label}
           </span>
           {icon ? (
-            <span className="shrink-0 text-text-tertiary [&_svg]:h-5 [&_svg]:w-5">
+            // DARK-ONLY accent. Now that the figure itself is near-white, the
+            // metric icon is the card's green note — four of them across a KPI
+            // row tie the grid together without putting colour back on the data.
+            // `dark:` rather than a token so the light card is untouched.
+            <span className="shrink-0 text-text-tertiary dark:text-accent-500 [&_svg]:h-5 [&_svg]:w-5">
               {icon}
             </span>
           ) : null}
@@ -380,7 +392,11 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
               // reaches NumberFlow's shadow-DOM digits (which inherit `color`).
               style={{
                 fontFeatureSettings: '"tnum" 1, "lnum" 1',
-                ...(tone === 'accent' ? { color: 'var(--fw-color-accent-700)' } : null),
+                // --fw-color-metric-face, NOT accent-700 directly: the face is
+                // the brand green on cream but near-white on espresso. accent-700
+                // is theme-flipped to a light mint, so hardcoding it here painted
+                // every KPI figure in the product bright mint at night.
+                ...(tone === 'accent' ? { color: 'var(--fw-color-metric-face)' } : null),
               }}
             >
               <NumberFlow

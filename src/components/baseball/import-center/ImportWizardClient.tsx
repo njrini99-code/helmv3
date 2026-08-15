@@ -1386,7 +1386,7 @@ export function ImportWizardClient({
                     <p className="text-body-sm font-semibold text-text-primary">
                       This exact file was already imported
                       {duplicateFileRun.committedAt
-                        ? ` on ${new Date(duplicateFileRun.committedAt).toLocaleDateString()}`
+                        ? ` on ${new Date(duplicateFileRun.committedAt).toLocaleDateString('en-US')}`
                         : ''}
                       .
                     </p>
@@ -1743,7 +1743,7 @@ export function ImportWizardClient({
                         <LegacyUploadStatus status={u.status} />
                       </td>
                       <td className="px-4 py-2 text-text-secondary" suppressHydrationWarning>
-                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString('en-US') : '—'}
                       </td>
                     </tr>
                   ))}

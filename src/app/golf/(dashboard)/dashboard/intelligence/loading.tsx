@@ -2,30 +2,100 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 
 /**
- * Route Suspense fallback for the CoachHelm Triage Desk (/dashboard/intelligence).
+ * Route Suspense fallback for the CoachHelm Brief (/dashboard/intelligence).
  *
- * The Triage Desk rebuild replaced the Spine + Bento chassis entirely (a
- * horizontal `BriefBand` + `ViewSwitch` + Signals two-pane master-detail —
- * see `TriageDesk.tsx`), so this fallback reproduces THAT shape instead of
- * the retired left-rail/bento one: the dark accent-900→accent-800 gradient
- * band (matches `BriefBand`'s `rounded-fw-lg border-accent-700
- * bg-gradient-to-r ... shadow-raise`), a segmented-control-shaped bar, and
- * the `380px 1fr` queue|dossier grid `TriageDesk` renders at >=940px. This
- * route is `force-dynamic` and awaits several sequential DB reads before it
- * can render at all, so this fallback is what actually paints first on every
- * navigation here.
+ * The live page is `CoachIntelligenceHome`: the AI-first `CommandOpening`
+ * (greeting h1 + status line, quick-action chip row, the prompt composer,
+ * then the "Program pulse" panel) ABOVE the existing `TriageDesk`, which
+ * itself now opens with `TeamCategoryLeakBand` ("Where the team is bleeding
+ * strokes" — a 5-category grid with a team-health ring) BEFORE its own
+ * `BriefBand` masthead, `ViewSwitch` segmented control, and (on the default
+ * Signals view) the team-diagnostics disclosure + `TeamSignalSummary`
+ * pressure map + `SignalQueue`/`SignalDossier` two-pane grid.
+ *
+ * This fallback used to open directly on a `BriefBand`-shaped dark banner —
+ * the shape of an EARLIER Triage Desk revision that no longer exists as the
+ * page's first paint now that CommandOpening + TeamCategoryLeakBand sit
+ * above it. That mismatch caused a visible re-layout jump the moment data
+ * landed (live evidence, 2026-08). Ordering below matches the real DOM order
+ * top to bottom so nothing above the fold moves once data resolves.
  */
 
-const DARK_BAR = 'bg-accent-700/40';
+const DARK_BAR = 'bg-text-on-accent/12';
 
 export default function IntelligenceLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans')}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
-        <div role="status" aria-busy="true" aria-live="polite" className="flex flex-col gap-6">
+        <div role="status" aria-busy="true" aria-live="polite" className="flex flex-col gap-8">
           <span className="sr-only">Loading the CoachHelm brief…</span>
 
-          {/* Brief band — identical footprint to the live CoachHelm masthead. */}
+          {/* ── CommandOpening: greeting h1 + status line, quick-action chip
+              row, the composer frame, then the Program pulse panel. ── */}
+          <div className="flex flex-col gap-5">
+            <div>
+              <Skeleton className="h-9 w-72 max-w-full rounded-fw-sm" />
+              <Skeleton className="mt-2 h-4 w-64 max-w-full rounded-fw-sm" />
+            </div>
+
+            <div>
+              <div className="-mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+                {[88, 148, 132, 176, 168].map((w, i) => (
+                  <Skeleton key={i} className="h-10 shrink-0 rounded-full" style={{ width: w }} />
+                ))}
+              </div>
+              <div className="flex items-end gap-2 rounded-fw-lg border border-border-subtle bg-surface p-2">
+                <Skeleton className="h-11 w-11 shrink-0 rounded-fw-md" />
+                <Skeleton className="h-11 flex-1 rounded-fw-sm" />
+                <Skeleton className="h-11 w-11 shrink-0 rounded-fw-md" />
+              </div>
+            </div>
+
+            <div className="rounded-card border border-border-subtle bg-surface">
+              <div className="border-b border-border-subtle px-4 py-2.5">
+                <Skeleton className="h-2.5 w-28" />
+              </div>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-start gap-3 border-b border-border-subtle px-4 py-3 last:border-0">
+                  <Skeleton circle className="mt-1.5 h-1.5 w-1.5 shrink-0" />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <Skeleton className="h-3.5 w-3/4" />
+                    <Skeleton className="h-3 w-full max-w-sm" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── TeamCategoryLeakBand: "Where the team is bleeding strokes" —
+              eyebrow + header + team-health ring readout, 5-category grid. ── */}
+          <div className="rounded-card border border-border-subtle bg-surface p-6">
+            <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div className="space-y-1">
+                <Skeleton className="h-2.5 w-28" />
+                <Skeleton className="h-5 w-64 max-w-full" />
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Skeleton circle className="h-11 w-11" />
+                <Skeleton className="h-2.5 w-16" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex h-full flex-col gap-3 rounded-card border border-border-subtle bg-surface p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <Skeleton className="h-2.5 w-16" />
+                    <Skeleton className="h-3 w-3" />
+                  </div>
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-1.5 w-full rounded-full" />
+                  <Skeleton className="h-4 w-20 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── BriefBand — the dark accent-900→accent-800 masthead. ── */}
           <div
             aria-hidden="true"
             className="flex flex-col gap-4 rounded-fw-lg border border-accent-700 bg-gradient-to-r from-accent-900 via-accent-800 to-accent-800 p-5 shadow-raise sm:flex-row sm:items-center sm:justify-between sm:p-6"
@@ -48,12 +118,38 @@ export default function IntelligenceLoading() {
             </div>
           </div>
 
-          {/* View switch — full-width on the real desk. */}
-          <Skeleton className="h-11 w-full rounded-fw-sm" />
+          {/* ── ViewSwitch — Signals / Players / Effectiveness segmented pill. ── */}
+          <div
+            aria-hidden="true"
+            className="inline-flex w-fit items-center gap-1 rounded-full border border-border-subtle bg-surface-sunken p-1"
+          >
+            {[72, 72, 118].map((w, i) => (
+              <Skeleton key={i} className="h-9 rounded-full" style={{ width: w }} />
+            ))}
+          </div>
 
-          {/* Team command map. This deliberately mirrors the finished
-              pressure-map/category/priority composition so route transitions
-              never flash the retired empty queue shell. */}
+          {/* ── Team diagnostics disclosure + TeamShotWeaknessesPanel body
+              (open by default on first paint). ── */}
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-11 w-full rounded-fw-sm" />
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center justify-between rounded-fw-md border border-border-subtle bg-surface-sunken p-3">
+                  <div className="min-w-0 space-y-1.5">
+                    <Skeleton className="h-3.5 w-40" />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
+                  <div className="ml-3 shrink-0 space-y-1.5 text-right">
+                    <Skeleton className="ml-auto h-3.5 w-10" />
+                    <Skeleton className="ml-auto h-3 w-14" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── TeamSignalSummary — "Game pressure map" + Priority roster /
+              Signal velocity panels. ── */}
           <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
             <div className="overflow-hidden rounded-fw-lg border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]">
               <div className="flex items-start justify-between gap-4 border-b border-border-subtle px-5 py-4">
@@ -97,7 +193,8 @@ export default function IntelligenceLoading() {
             </div>
           </div>
 
-          {/* Signals two-pane — same bounded equal-height frame as the live desk. */}
+          {/* ── SignalQueue / SignalDossier two-pane — same bounded
+              equal-height frame as the live desk. ── */}
           <div className="grid grid-cols-1 gap-4 min-[940px]:h-[min(760px,calc(100vh-180px))] min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
             <div className="flex min-h-0 flex-col gap-3">
               <div className="flex flex-wrap gap-2">

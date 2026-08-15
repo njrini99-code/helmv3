@@ -335,7 +335,7 @@ export function ScheduleEventModal({
                       >
                         <span className={cn(
                           'px-2 py-1 rounded text-xs font-bold',
-                          c.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-accent-800'
+                          c.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-fw-success-ink'
                         )}>
                           {c.division}
                         </span>
@@ -356,7 +356,7 @@ export function ScheduleEventModal({
             <div className="flex items-center gap-3 p-3 bg-surface-sunken rounded-fw-md">
               <span className={cn(
                 'px-2 py-1 rounded text-xs font-bold',
-                selectedCoach.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-accent-800'
+                selectedCoach.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-fw-success-ink'
               )}>
                 {selectedCoach.division}
               </span>
@@ -553,7 +553,7 @@ export function ScheduleEventModal({
             <Button variant="primary"
               onClick={handleSubmit}
               disabled={submitting || !form.title || !form.date || !form.time}
-              className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-accent-650 hover:bg-accent-750 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Schedule'}
             </Button>

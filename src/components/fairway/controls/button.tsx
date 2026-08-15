@@ -79,15 +79,22 @@ const variantStyles: Record<FwButtonVariant, string> = {
   // AA with cream copy — 4.69:1, or 4.77:1 against pure white.
   //
   // It also fixes a dark-mode bug: accent-700 is redefined light in the dark
-  // block (it doubles as text on deep-green washes), so `bg-accent-700` rendered
+  // block (it doubles as text on deep-green washes), so the 700 fill rendered
   // a LIGHT green fill under cream copy at night. accent-650 is deliberately not
   // flipped, so the button is one solid green in both themes.
+  //
+  // That fix only ever covered the RESTING state, though — hover and active
+  // still pointed at the flipped 700, so in dark mode the button was a correct
+  // green until you touched it and then went mint (1.75:1) under the cursor.
+  // accent-750 is the not-flipped hover/pressed partner to 650 (same value 700
+  // has in light, so light mode is unchanged); hover now darkens the fill in
+  // both themes instead of inverting direction at night.
   //
   // accent-500 remains the brand green for decorative fills, strokes and dots.
   primary: cn(
     'border-transparent bg-accent-650 text-text-on-accent shadow-flat',
-    'hover:bg-accent-700 hover:shadow-soft hover:-translate-y-px',
-    'active:bg-accent-700 active:shadow-flat active:-translate-y-0',
+    'hover:bg-accent-750 hover:shadow-soft hover:-translate-y-px',
+    'active:bg-accent-750 active:shadow-flat active:-translate-y-0',
   ),
   // Matte surface with a warm hairline (border OR shadow at rest — border here).
   secondary: cn(
@@ -239,7 +246,7 @@ const iconVariantStyles: Record<FwIconButtonVariant, string> = {
   // exists to hold. See the Button primary note above for the full reasoning.
   primary: cn(
     'border-transparent bg-accent-650 text-text-on-accent',
-    'hover:bg-accent-700 hover:shadow-soft',
+    'hover:bg-accent-750 hover:shadow-soft',
   ),
   secondary: cn(
     'border-border-subtle bg-surface text-text-primary',

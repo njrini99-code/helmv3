@@ -147,7 +147,7 @@ export function segmentedTabClass(isActive: boolean): string {
   return [
     'flex items-center gap-1.5 min-h-11 px-3 py-1.5 rounded-fw-sm border text-sm font-medium whitespace-nowrap transition-[background-color,color,border-color,box-shadow,transform] duration-200 active:scale-[0.98]',
     isActive
-      ? 'border-accent-200 bg-accent-50 text-accent-800 shadow-flat'
+      ? 'border-accent-200 bg-accent-50 text-fw-success-ink shadow-flat'
       : 'border-transparent text-text-tertiary hover:bg-elevated hover:text-text-primary',
   ].join(' ');
 }
@@ -157,10 +157,10 @@ export function segmentedTabIconClass(isActive: boolean): string {
 }
 
 export const CRM_RADIX_TAB_CLASS =
-  'min-h-11 rounded-fw-sm border px-3 py-1.5 text-sm font-medium whitespace-nowrap before:hidden data-[state=active]:border-accent-200 data-[state=active]:bg-accent-50 data-[state=active]:text-accent-800 data-[state=active]:shadow-flat data-[state=inactive]:border-transparent data-[state=inactive]:text-text-tertiary data-[state=inactive]:hover:bg-elevated data-[state=inactive]:hover:text-text-primary';
+  'min-h-11 rounded-fw-sm border px-3 py-1.5 text-sm font-medium whitespace-nowrap before:hidden data-[state=active]:border-accent-200 data-[state=active]:bg-accent-50 data-[state=active]:text-fw-success-ink data-[state=active]:shadow-flat data-[state=inactive]:border-transparent data-[state=inactive]:text-text-tertiary data-[state=inactive]:hover:bg-elevated data-[state=inactive]:hover:text-text-primary';
 
 export const CRM_PRIMARY_ACTION_CLASS =
-  'min-h-11 rounded-fw-md bg-accent-650 px-4 text-sm font-semibold text-text-on-accent shadow-soft hover:bg-accent-700 hover:shadow-raise focus-visible:ring-border-focus';
+  'min-h-11 rounded-fw-md bg-accent-650 px-4 text-sm font-semibold text-text-on-accent shadow-soft hover:bg-accent-750 hover:shadow-raise focus-visible:ring-border-focus';
 
 export const CRM_SECONDARY_ACTION_CLASS =
   'min-h-11 rounded-fw-md border border-border-subtle bg-elevated px-4 text-sm font-medium text-text-secondary shadow-flat hover:border-border-strong hover:bg-surface-tint hover:text-text-primary';
@@ -181,13 +181,13 @@ export function crmChoiceClass(isActive: boolean): string {
   return [
     'min-h-10 rounded-fw-sm border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-[background-color,color,border-color,transform] duration-200 active:scale-[0.98]',
     isActive
-      ? 'border-accent-200 bg-accent-50 text-accent-800'
+      ? 'border-accent-200 bg-accent-50 text-fw-success-ink'
       : 'border-transparent text-text-tertiary hover:bg-elevated hover:text-text-primary',
   ].join(' ');
 }
 
 export const CRM_RADIX_CHOICE_CLASS =
-  'min-h-10 rounded-fw-sm border px-3 py-1.5 text-xs font-medium whitespace-nowrap data-[state=on]:border-accent-200 data-[state=on]:bg-accent-50 data-[state=on]:text-accent-800 data-[state=off]:border-transparent data-[state=off]:text-text-tertiary data-[state=off]:hover:bg-elevated data-[state=off]:hover:text-text-primary';
+  'min-h-10 rounded-fw-sm border px-3 py-1.5 text-xs font-medium whitespace-nowrap data-[state=on]:border-accent-200 data-[state=on]:bg-accent-50 data-[state=on]:text-fw-success-ink data-[state=off]:border-transparent data-[state=off]:text-text-tertiary data-[state=off]:hover:bg-elevated data-[state=off]:hover:text-text-primary';
 
 // Email statuses that must never receive a manual Gmail send. Mirrors the
 // email_status/suppression gate that already exists server-side for the

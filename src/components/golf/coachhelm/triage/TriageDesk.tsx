@@ -27,9 +27,11 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 import { Button, fairwayToast, InlineNotice, PlayersGridView } from '@/components/fairway';
+import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
 import type { PlayersGridViewProps, FairwayEffectivenessProps, PlayersGridStats } from '@/components/fairway';
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
 import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
@@ -453,11 +455,40 @@ export function TriageDesk({
         onScan={handleScan}
       />
 
-      <ViewSwitch
-        view={view}
-        hrefFor={(next) => hrefFor({ view: next, signal: null })}
-        onSelect={(next) => navigate({ view: next, signal: null })}
-      />
+      {/*
+        Ask sits BESIDE the view switcher, not inside it.
+
+        `surface-registry.ts` has always declared Ask as a live
+        `group: 'coachhelm-tab'` surface — it carries neither `legacy` nor
+        `hidden`, unlike the three tabs Spine & Stage genuinely retired. But
+        the strip that was supposed to render it, `CoachHelmSubNav`, is not
+        mounted by any live page: every non-test reference to it is a comment
+        or a `loading.tsx` skeleton drawing a tab strip the real page never
+        shows. So the only route into the chat was the floating FAB, while the
+        breadcrumb kept printing `CoachHelm AI / Ask`.
+
+        It does NOT belong in `ViewSwitch`: that control is typed to the
+        `?view=` drills of this same page (`signals | players | effectiveness`)
+        and Ask is a separate route. Putting a route inside a view-switcher
+        would break the one thing that control means.
+
+        Name and href come from the registry rather than being written here,
+        so this cannot drift from the breadcrumb and page title that already
+        read from it.
+      */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ViewSwitch
+          view={view}
+          hrefFor={(next) => hrefFor({ view: next, signal: null })}
+          onSelect={(next) => navigate({ view: next, signal: null })}
+        />
+        <Button asChild variant="secondary" size="sm">
+          <Link href={surfaceHref('ask')}>
+            <MessageCircle aria-hidden className="h-3.5 w-3.5" />
+            {surfaceName('ask')}
+          </Link>
+        </Button>
+      </div>
 
       {view === 'signals' ? (
         groupsError ? (

@@ -6,12 +6,39 @@ import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
 import { CalendarSyncButton } from './CalendarSyncButton';
 import { Button, IconButton } from '@/components/ui/button';
+import { safeInitial } from '@/lib/types/calendar';
 
+/**
+ * THE canonical `first_name`/`last_name`-shaped team-member type for the
+ * legacy (non-Fairway) calendar UI. Previously declared a second, identical
+ * time in `PremiumCalendarClient.tsx` — which is how `role` below ended up
+ * hand-added to both copies instead of once. `PremiumCalendarClient.tsx` now
+ * re-exports this declaration instead of duplicating it; that file, plus
+ * `AvailabilityDayView.tsx` and the Fairway calendar surface, all import
+ * `TeamMember` from one of these two paths and get the SAME type.
+ *
+ * `first_name`/`last_name` are a lossy, best-effort split of a single
+ * `full_name` column (see `splitDisplayName` in `@/lib/types/calendar`) —
+ * `last_name` is not guaranteed to be a clean surname (e.g. "(Demo)" for a
+ * coach stored as "Coach (Demo)"). Never index `last_name[0]` directly for
+ * an abbreviation; use `safeInitial()` from the same module, imported above.
+ */
 export interface TeamMember {
   id: string;
   first_name: string;
   last_name: string;
   avatar_url?: string;
+  /**
+   * Which side of the roster/coach merge this row came from.
+   *
+   * The calendar page builds this list by concatenating the team's players
+   * with the ORGANISATION's coaches, and without this tag the two are
+   * structurally indistinguishable — which is how every coach in the org ended
+   * up listed in a control that filters the calendar by player. Optional
+   * because not every caller tags (the event editor's invite grid wants staff
+   * included); surfaces that mean *players* filter on it.
+   */
+  role?: 'coach' | 'player';
 }
 
 // Color palette for multi-player selection — intentional hardcoded hex values.
@@ -97,7 +124,10 @@ export function CalendarAvatarSidebar({
   };
 
   const getInitials = (member: TeamMember) => {
-    return `${member.first_name?.[0] || ''}${member.last_name?.[0] || ''}`.toUpperCase();
+    // safeInitial (not a raw `[0]` index) — `last_name` can be a punctuation
+    // fragment like "(Demo)" from a lossy full_name split, and indexing it
+    // directly is what previously rendered a coach's name as "Coach (.".
+    return `${safeInitial(member.first_name)}${safeInitial(member.last_name)}`;
   };
 
   const getFullName = (member: TeamMember) => {

@@ -19,7 +19,8 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { CalendarHeader, type CalendarView } from '@/components/golf/calendar/CalendarHeader';
-import { CalendarAvatarSidebar, PLAYER_COLORS } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import { CalendarAvatarSidebar, PLAYER_COLORS, type TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import { safeInitial } from '@/lib/types/calendar';
 import { EventCard } from '@/components/golf/calendar/EventCard';
 import type { GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
 import { NotificationCenter } from '@/components/golf/calendar/NotificationCenter';
@@ -108,12 +109,15 @@ const QuickAddEventFAB = dynamic(
   () => import('@/components/golf/calendar/QuickAddEventFAB').then((mod) => mod.QuickAddEventFAB),
 );
 
-export interface TeamMember {
-  id: string;
-  first_name: string;
-  last_name: string;
-  avatar_url?: string;
-}
+// `TeamMember` used to be declared here AND in `CalendarAvatarSidebar.tsx` —
+// two verbatim-identical interfaces, which is how the `role` field ended up
+// hand-added to both instead of once. This file now imports the single
+// canonical declaration (see the `type TeamMember` import above) and
+// re-exports it under this path, so both `@/components/golf/calendar/
+// CalendarAvatarSidebar` and `@/components/golf/calendar/PremiumCalendarClient`
+// resolve to the exact same type — including for the Fairway calendar
+// surface, which imports `TeamMember` from this file specifically.
+export type { TeamMember };
 
 type CalendarActionResult<T = unknown> = Promise<{ success: boolean; error?: string; data?: T }>;
 
@@ -1177,6 +1181,11 @@ export function PremiumCalendarClient({
                     const isSelected = selectedPlayerIds.includes(member.id);
                     const colorIndex = selectedPlayerIds.indexOf(member.id);
                     const color = colorIndex >= 0 ? PLAYER_COLORS[colorIndex % PLAYER_COLORS.length] : null;
+                    // safeInitial (not a raw `[0]` index): `last_name` can be
+                    // a punctuation fragment like "(Demo)" from a lossy
+                    // full_name split, and indexing it directly is what
+                    // previously rendered a coach's name as "Coach (.".
+                    const lastInitial = safeInitial(member.last_name);
                     return (
                       <Button variant="ghost"
                         key={member.id}
@@ -1202,12 +1211,12 @@ export function PremiumCalendarClient({
                         ) : (
                           <div className="w-6 h-6 rounded-full bg-warm-300 flex items-center justify-center">
                             <span className="text-xs font-medium text-warm-600">
-                              {member.first_name[0]}{member.last_name[0]}
+                              {safeInitial(member.first_name)}{lastInitial}
                             </span>
                           </div>
                         )}
                         <span className="text-sm font-medium">
-                          {member.first_name} {member.last_name[0]}
+                          {member.first_name}{lastInitial ? ` ${lastInitial}` : ''}
                         </span>
                       </Button>
                     );

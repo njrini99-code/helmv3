@@ -297,7 +297,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 <Button variant="primary"
                   type="submit"
                   disabled={submitting}
-                  className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+                  className="bg-accent-650 hover:bg-accent-750 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Save Log'}
                 </Button>

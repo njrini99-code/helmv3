@@ -241,7 +241,7 @@ export function FairwayExpenseList({ expenses, onEdit, onRefresh, isCoach }: Fai
                             size="sm"
                             onClick={() => openReceipt(expense.receipt_url)}
                             leftIcon={<IconEye size={14} />}
-                            className="-ml-2 h-auto min-h-0 px-2 py-1 text-accent-700 hover:text-accent-800"
+                            className="-ml-2 h-auto min-h-0 px-2 py-1 text-accent-700 hover:text-fw-success-ink"
                           >
                             View
                           </Button>
@@ -332,7 +332,7 @@ export function FairwayExpenseList({ expenses, onEdit, onRefresh, isCoach }: Fai
                   href={viewingReceipt}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-fw-sans text-caption font-medium text-accent-700 underline underline-offset-2 hover:text-accent-800"
+                  className="font-fw-sans text-caption font-medium text-accent-700 underline underline-offset-2 hover:text-fw-success-ink"
                 >
                   Open in new tab
                 </a>

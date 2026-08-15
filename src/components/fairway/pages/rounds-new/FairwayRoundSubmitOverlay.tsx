@@ -273,7 +273,7 @@ export function FairwayRoundSubmitOverlay({
                     <span
                       className={cn(
                         'font-fw-sans text-body-lg font-medium',
-                        toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-accent-100' : 'text-fw-warning-ink',
+                        toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-accent-300' : 'text-fw-warning-ink',
                       )}
                     >
                       ({toParLabel})

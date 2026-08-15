@@ -134,7 +134,7 @@ export function ActionProposalCard({
               onClick={onApprove}
               disabled={busy}
               className={cn(
-                'inline-flex min-h-[44px] items-center gap-2 rounded-fw-md bg-accent-700 px-4 font-fw-sans text-body-sm font-medium text-text-on-accent',
+                'inline-flex min-h-[44px] items-center gap-2 rounded-fw-md bg-accent-750 px-4 font-fw-sans text-body-sm font-medium text-text-on-accent',
                 'transition-colors hover:bg-accent-800 disabled:opacity-60',
                 'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               )}

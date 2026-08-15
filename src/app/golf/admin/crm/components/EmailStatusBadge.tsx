@@ -91,7 +91,7 @@ const EVENT_TONES: Record<LastEmailEventType, EmailTone> = {
     tone: 'accent',
     override: 'bg-accent-650 text-text-on-accent border-accent-700',
   },
-  opened: { label: 'Opened', tone: 'accent', override: 'bg-accent-100 text-accent-800 border-accent-300' },
+  opened: { label: 'Opened', tone: 'accent', override: 'bg-accent-100 text-fw-success-ink border-accent-300' },
   delivered: { label: 'Delivered', tone: 'accent' },
   delivery_delayed: { label: 'Delayed', tone: 'warning' },
   sent: { label: 'Sent', tone: 'neutral' },

@@ -519,7 +519,7 @@ export function CourseDetailDrawer({
 
               {course?.last_edited_at && (
                 <p className="text-caption text-text-tertiary">
-                  Last edited {new Date(course.last_edited_at).toLocaleDateString()}
+                  Last edited {new Date(course.last_edited_at).toLocaleDateString('en-US')}
                 </p>
               )}
               </>
@@ -614,7 +614,7 @@ function TeeRow({
   const partialSuffix = tee.is_draft ? ' (partial)' : '';
   const facts = [
     typeof tee.total_par === 'number' ? `Par ${tee.total_par}${partialSuffix}` : null,
-    typeof tee.total_yards === 'number' ? `${tee.total_yards.toLocaleString()} yds${partialSuffix}` : null,
+    typeof tee.total_yards === 'number' ? `${tee.total_yards.toLocaleString('en-US')} yds${partialSuffix}` : null,
     typeof tee.course_rating === 'number' && typeof tee.slope_rating === 'number'
       ? `${tee.course_rating}/${tee.slope_rating}` : null,
   ].filter(Boolean);

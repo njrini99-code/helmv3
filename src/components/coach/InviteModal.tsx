@@ -139,7 +139,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
                 className="w-full"
               />
               <p className="text-xs text-warm-500 mt-1">
-                Link will expire on {new Date(Date.now() + expiresIn * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                Link will expire on {new Date(Date.now() + expiresIn * 24 * 60 * 60 * 1000).toLocaleDateString('en-US')}
               </p>
             </div>
 

@@ -470,7 +470,7 @@ export function IntegrationsClient({ teamName, canManage, integrations }: Props)
                         </p>
                         {i.last_synced_at && (
                           <p className="mt-1 text-xs text-text-tertiary">
-                            Last sync: {new Date(i.last_synced_at).toLocaleString()}
+                            Last sync: {new Date(i.last_synced_at).toLocaleString('en-US')}
                             {i.last_sync_status ? ` · ${i.last_sync_status}` : ''}
                           </p>
                         )}

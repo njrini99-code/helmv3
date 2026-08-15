@@ -159,12 +159,12 @@ describe('ShortGameDrill', () => {
 
       // Row 1 (0-10 yds), Overall column: 2.10 strokes -> best band (band 4).
       expect(cells[0]!.textContent).toContain('2.10');
-      expect(cells[0]!.className).toContain('bg-accent-700');
+      expect(cells[0]!.className).toContain('bg-ramp-4');
 
       // Row 3 (20+ yds), Overall column: 3.00 strokes -> worst band (band 1).
       // 4 cols per row (Overall/Fairway/Rough/Sand) -> row 3's Overall cell is index 8.
       expect(cells[8]!.textContent).toContain('3.00');
-      expect(cells[8]!.className).toContain('bg-accent-100');
+      expect(cells[8]!.className).toContain('bg-ramp-1');
     });
 
     it('shows an honest em-dash + sunken band for a cell with no data', () => {
@@ -194,10 +194,10 @@ describe('ShortGameDrill', () => {
       // Short: 70% pct, n=10 -> band 4 (>=65).
       expect(missDirCells[0]!.textContent).toContain('70%');
       expect(missDirCells[0]!.textContent).toContain('n=10');
-      expect(missDirCells[0]!.className).toContain('bg-accent-700');
+      expect(missDirCells[0]!.className).toContain('bg-ramp-4');
       // Long: 33% pct, n=6 -> band 1 (<35).
       expect(missDirCells[1]!.textContent).toContain('33%');
-      expect(missDirCells[1]!.className).toContain('bg-accent-100');
+      expect(missDirCells[1]!.className).toContain('bg-ramp-1');
       // Left/Right never happened -> omitted, honest em-dash + band 0 (no badge).
       expect(missDirCells[2]!.textContent).toContain('—');
       expect(missDirCells[2]!.textContent).not.toContain('n=');
@@ -233,7 +233,7 @@ describe('ShortGameDrill', () => {
       // Fringe (4th column) 20% n=4 -> band 1 (<35).
       expect(cells[3]!.textContent).toContain('20%');
       expect(cells[3]!.textContent).toContain('n=4');
-      expect(cells[3]!.className).toContain('bg-accent-100');
+      expect(cells[3]!.className).toContain('bg-ramp-1');
     });
 
     it('renders average chip proximity overall and by lie', () => {

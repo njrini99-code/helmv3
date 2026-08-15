@@ -137,7 +137,7 @@ export function SectionTitle({
           className={cn(
             'group h-auto min-h-0 shrink-0 items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700',
             'rounded-full px-1 py-0.5 transition-colors duration-base',
-            'hover:bg-transparent hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+            'hover:bg-transparent hover:text-fw-success-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           )}
         >
           {action.label}
@@ -428,7 +428,7 @@ export function TaskRow({
             'grid h-7 w-7 place-items-center rounded-fw-md border',
             'transition-[background-color,border-color] duration-base',
             isCompleted
-              ? 'border-transparent bg-accent-700 text-text-on-accent'
+              ? 'border-transparent bg-accent-750 text-text-on-accent'
               : 'border-border-strong bg-surface text-transparent group-hover:border-accent-500 group-hover:bg-accent-50',
             completing && 'animate-pulse',
           )}

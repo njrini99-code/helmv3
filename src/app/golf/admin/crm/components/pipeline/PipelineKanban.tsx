@@ -82,9 +82,9 @@ const COLUMNS: ColumnSpec[] = [
     label: 'Engaged',
     description: 'Two-way conversation',
     headerBg: 'bg-accent-50/80',
-    headerText: 'text-accent-800',
+    headerText: 'text-fw-success-ink',
     countBg: 'bg-accent-100',
-    countText: 'text-accent-800',
+    countText: 'text-fw-success-ink',
     dotColor: 'bg-accent-400',
     promptsReason: false,
   },
@@ -128,10 +128,10 @@ const COLUMNS: ColumnSpec[] = [
     // Deeper primary tint than `won` (not a second green hue) — keeps the
     // two "closed" columns visually distinct while staying in one family.
     headerBg: 'bg-accent-100/80',
-    headerText: 'text-accent-800',
+    headerText: 'text-fw-success-ink',
     countBg: 'bg-accent-200',
-    countText: 'text-accent-800',
-    dotColor: 'bg-accent-700',
+    countText: 'text-fw-success-ink',
+    dotColor: 'bg-accent-750',
     promptsReason: true,
   },
 ];

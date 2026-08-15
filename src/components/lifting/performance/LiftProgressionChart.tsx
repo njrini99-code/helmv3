@@ -82,7 +82,7 @@ function fmtValue(v: number | null | undefined, metric: MetricKey): string {
   switch (metric) {
     case 'est1RM':
     case 'loadLbs': return `${v} lbs`;
-    case 'volume':  return `${v.toLocaleString()} lbs`;
+    case 'volume':  return `${v.toLocaleString('en-US')} lbs`;
     case 'rpe':     return `${v} RPE`;
     default:        return String(v);
   }

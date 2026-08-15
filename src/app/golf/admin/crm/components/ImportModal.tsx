@@ -395,7 +395,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                   <Button variant="primary"
                     onClick={parseCSV}
                     disabled={!csvText.trim()}
-                    className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+                    className="bg-accent-650 hover:bg-accent-750 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                   >
                     Parse & Preview
                   </Button>
@@ -417,7 +417,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 </p>
                 <span className={cn(
                   'px-2 py-1 rounded text-xs font-medium',
-                  division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-accent-800'
+                  division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-fw-success-ink'
                 )}>
                   Default: {division}
                 </span>
@@ -489,7 +489,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 <Button variant="primary"
                   onClick={handleImport}
                   disabled={parsedData.filter(c => !c.isDuplicate).length === 0}
-                  className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+                  className="bg-accent-650 hover:bg-accent-750 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   Import {parsedData.filter(c => !c.isDuplicate).length} Coaches
                 </Button>
@@ -555,7 +555,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
               <Button variant="primary"
                 onClick={onSuccess}
-                className="mt-6 bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors"
+                className="mt-6 bg-accent-650 hover:bg-accent-750 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors"
               >
                 Done
               </Button>

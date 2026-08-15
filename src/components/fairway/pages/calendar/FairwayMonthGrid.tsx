@@ -205,7 +205,7 @@ export function FairwayMonthGrid({
                   className={cn(
                     'flex h-6 w-6 items-center justify-center rounded-full font-fw-mono text-caption font-medium tabular-nums transition-colors',
                     isToday
-                      ? 'bg-accent-700 text-text-on-accent'
+                      ? 'bg-accent-750 text-text-on-accent'
                       : inMonth
                         ? 'text-text-secondary group-hover:bg-surface-tint group-active:bg-surface-tint'
                         : 'text-text-tertiary group-hover:bg-surface-tint group-active:bg-surface-tint',

@@ -315,7 +315,7 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
                 aria-label={`Sample size ${sample.size} ${sample.unitLabel}`}
               >
                 <IconDatabase size={12} aria-hidden />
-                {sample.size.toLocaleString()} {sample.unitLabel}
+                {sample.size.toLocaleString('en-US')} {sample.unitLabel}
               </span>
             ) : null}
 
@@ -484,7 +484,7 @@ function StateSurface({
   // Insufficient-data carries the concrete shortfall so the coach knows the bar.
   const detail =
     state === 'insufficient-data' && sample?.minForRead
-      ? `${sample.size.toLocaleString()} of ${sample.minForRead.toLocaleString()} ${sample.unitLabel} captured. More appears here as it lands.`
+      ? `${sample.size.toLocaleString('en-US')} of ${sample.minForRead.toLocaleString('en-US')} ${sample.unitLabel} captured. More appears here as it lands.`
       : state === 'error'
         ? 'Try again, or check the source coverage board for a gap.'
         : 'Data appears here once it’s captured from a connected source.';

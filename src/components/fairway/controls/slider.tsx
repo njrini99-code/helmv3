@@ -208,7 +208,7 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(function S
             lighter green failed contrast as a UI boundary (audit H10/P-26). */}
         <div
           aria-hidden="true"
-          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-accent-700"
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-accent-750"
           style={{ left: 0, width: railOffset(pct) }}
         />
         {/* Thumb — painted, not the native one. The native thumb is made
@@ -218,7 +218,7 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(function S
           aria-hidden="true"
           className={cn(
             'pointer-events-none absolute top-1/2 h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full',
-            'border-[3px] border-surface bg-accent-700 shadow-soft',
+            'border-[3px] border-surface bg-accent-750 shadow-soft',
             'transition-transform duration-fast motion-reduce:transition-none',
             'peer-active/input:scale-110 peer-focus-visible/input:ring-2 peer-focus-visible/input:ring-border-focus peer-focus-visible/input:ring-offset-2 peer-focus-visible/input:ring-offset-surface',
           )}

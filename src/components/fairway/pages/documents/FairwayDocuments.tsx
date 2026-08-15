@@ -1613,7 +1613,7 @@ function DocumentCard({
       }}
       className="group flex flex-col"
     >
-      <div className="flex flex-col gap-4 p-5">
+      <div className="flex flex-1 flex-col gap-4 p-5">
         {/* Top row: icon + version badge + actions */}
         <div className="flex items-start justify-between gap-3">
           <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-fw-md bg-surface-sunken text-text-secondary">

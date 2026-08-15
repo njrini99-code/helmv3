@@ -99,6 +99,15 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  // Emits <meta name="color-scheme" content="light dark"> — tells the UA
+  // up front (before any CSS/JS has run) that this document supports both
+  // schemes, so a dark-OS user isn't defaulted to a white canvas while the
+  // page loads. ThemeScript (below, in <head>) then pins the ACTUAL
+  // resolved choice (which can differ from the OS) via the `.dark` class +
+  // the paired `color-scheme: light`/`dark` CSS declarations in
+  // design-tokens.css, before body paints. Without this meta tag the UA has
+  // to guess from the OS alone for the brief window before that class lands.
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

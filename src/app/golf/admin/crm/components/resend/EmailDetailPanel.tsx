@@ -470,7 +470,7 @@ function ClicksSection({
                     target="_blank"
                     rel="noreferrer"
                     title={click.clicked_url}
-                    className="inline-flex items-center gap-1 text-xs text-accent-700 hover:text-accent-800 truncate flex-1 min-w-0"
+                    className="inline-flex items-center gap-1 text-xs text-accent-700 hover:text-fw-success-ink truncate flex-1 min-w-0"
                   >
                     <IconExternalLink size={12} className="shrink-0" />
                     <span className="truncate">{click.clicked_url}</span>

@@ -192,15 +192,14 @@ export function FairwayAnnouncements({
     setWeekOnly(false);
   }
 
-  // ── Masthead description (mirrors the legacy subtitle logic) ───────────────
-  const description =
-    total === 0
-      ? isCoach
-        ? 'Share schedule changes, news, and important updates with your team.'
-        : 'The latest from the coaching staff.'
-      : recentCount > 0
-        ? `${recentCount} this week · ${total} total.`
-        : `${total} posted.`;
+  // ── Masthead description — static purpose copy (DESIGN-SYSTEM convention:
+  // `description` explains what the page IS; `meta` below carries the live
+  // counts. Documents/Qualifiers/Roster all follow this split — Announcements
+  // previously duplicated the count in both slots ("5 posted." directly above
+  // a "5 total" chip). ─────────────────────────────────────────────────────
+  const description = isCoach
+    ? 'Share schedule changes, news, and important updates with your team.'
+    : 'The latest from the coaching staff.';
 
   // Honest count chips — only when there's something real to show.
   const meta =

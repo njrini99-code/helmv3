@@ -175,7 +175,17 @@ export function CourseImage({
             fill
             sizes={sizes}
             priority={priority}
-            className={cn('object-cover transition-opacity duration-300', loaded ? 'opacity-100' : 'opacity-0')}
+            className={cn(
+              'object-cover transition-opacity duration-300',
+              // Course photos are the only full-bleed daylight imagery in the
+              // product. Against the near-black dark shell they are a huge
+              // luminance jump — a grid of them reads as a lightbox rather than
+              // as cards on a page, and the eye lands on sky and sand before any
+              // course name. Knocking brightness/contrast back ~12% in dark seats
+              // them into the surface without washing out the photo itself.
+              'dark:brightness-[0.88] dark:contrast-[0.96]',
+              loaded ? 'opacity-100' : 'opacity-0',
+            )}
             onLoad={() => setLoaded(true)}
             onError={() => {
               // Degrade one tier: uploaded → bundled → gradient.

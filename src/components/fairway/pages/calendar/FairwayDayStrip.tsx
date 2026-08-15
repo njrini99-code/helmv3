@@ -171,7 +171,7 @@ export function FairwayDayStrip({
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               'motion-reduce:transition-none',
               // Selected — the green CTA fill (overrides everything else).
-              dayIsSelected && 'bg-accent-700 text-text-on-accent shadow-soft hover:bg-accent-800',
+              dayIsSelected && 'bg-accent-750 text-text-on-accent shadow-soft hover:bg-accent-800',
               // Today (not selected) — quiet accent ring on a toasted well.
               !dayIsSelected && dayIsToday && 'bg-inset ring-2 ring-accent-300',
               // Resting / past — toasted-cream well with a subtle hover.
@@ -190,9 +190,13 @@ export function FairwayDayStrip({
                     ? 'text-text-on-accent/85'
                     : dayIsToday
                       ? 'text-accent-700'
-                      : dayIsPast
-                        ? 'text-text-tertiary/60'
-                        : 'text-text-tertiary',
+                      : // PAST: quieted by ROLE, not by alpha. `text-text-tertiary/60`
+                        // resolved to #5b5854 on the sunken well — 2.72:1, well under
+                        // AA. text-tertiary is already the dimmest AA-safe ink token
+                        // (≥4.5:1 on canvas/surface/sunken by construction), so
+                        // fading it further just breaks it; past days now read one
+                        // role quieter than upcoming ones instead.
+                        'text-text-tertiary',
                 )}
               >
                 {format(day, 'EEE')}
@@ -205,7 +209,13 @@ export function FairwayDayStrip({
                   dayIsSelected
                     ? 'text-text-on-accent'
                     : dayIsPast
-                      ? 'text-text-tertiary/70'
+                      ? // The DATE is the data in this cell, so it must outrank its
+                        // own weekday label. At tertiary/70 (3.43:1) it was landing
+                        // within a hair of the /60 label above it — two equally dim
+                        // greys, no hierarchy. Secondary keeps past days recessive
+                        // relative to upcoming (text-primary) while restoring the
+                        // number-over-label order.
+                        'text-text-secondary'
                       : 'text-text-primary',
                 )}
               >

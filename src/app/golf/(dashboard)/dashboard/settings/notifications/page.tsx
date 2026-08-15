@@ -25,6 +25,18 @@
  * route, same request, nothing new to fetch — and the W4 intent is better
  * served than before: the coach now gets a stated reason AND a one-click CTA
  * to the Settings page that holds their real control, instead of a silent hop.
+ *
+ * #1318 — the CTA copy used to just say "the general Settings page" / "Open
+ * Settings". That reads as a dead end of its own: this route's own breadcrumb
+ * and sidebar both already say "Settings" (the top-bar breadcrumb only ever
+ * shows the FIRST path segment as the second crumb — see `buildBreadcrumbs` in
+ * `FairwayDashboardShell.tsx` — so `/settings/notifications` renders exactly
+ * the same "Dashboard / Settings" trail as `/settings` itself, and the rail's
+ * Settings link highlights on any `/settings*` path). Telling a coach who
+ * already appears to be "at Settings" to go to Settings reads as a loop, not
+ * a hand-off. The copy now names the specific place inside Settings the
+ * control lives (the Notifications section) instead of repeating the same
+ * word the chrome is already showing.
  */
 
 import { redirect } from 'next/navigation';
@@ -44,16 +56,23 @@ export default async function NotificationPrefsPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
   if (!session.player) {
-    return (
+    // Two different visitors land here with no player profile, and they need
+    // two different next steps — see the file header (#1318) for why the
+    // coach copy specifically avoids saying "Settings" as if that were new
+    // information.
+    return session.coach ? (
       <FeatureUnavailable
         title="Notification preferences"
-        message={
-          session.coach
-            ? 'Per-category notification preferences are a player surface. Your delivery preferences live on the general Settings page.'
-            : 'No coach or player profile found. Please complete onboarding.'
-        }
+        message="This per-category matrix is a player-only control — coach accounts don't have one. Your own alert preferences (push, email, in-app) live in the Notifications section, further down the Settings page."
         actionHref="/golf/dashboard/settings"
-        actionLabel="Open Settings"
+        actionLabel="Manage your notifications"
+      />
+    ) : (
+      <FeatureUnavailable
+        title="Notification preferences"
+        message="No coach or player profile is linked to this account yet. Finish onboarding to start managing your preferences."
+        actionHref="/golf/player"
+        actionLabel="Finish onboarding"
       />
     );
   }

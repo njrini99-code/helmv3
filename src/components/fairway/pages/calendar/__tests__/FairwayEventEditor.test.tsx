@@ -199,8 +199,8 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
     const { onSave } = renderEditor();
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
-    fireEvent.click(playerToggle(/Ben R\./)); // deselect existing
-    fireEvent.click(playerToggle(/Cam K\./)); // select new
+    fireEvent.click(playerToggle(/Ben Reed/)); // deselect existing
+    fireEvent.click(playerToggle(/Cam Knox/)); // select new
 
     expect(screen.getByText(/1 player added · 1 player removed/)).toBeInTheDocument();
 
@@ -217,7 +217,7 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
 
     await waitFor(() => expect(screen.getByText(/Couldn't load the current invitees/i)).toBeInTheDocument());
 
-    fireEvent.click(playerToggle(/Cam K\./));
+    fireEvent.click(playerToggle(/Cam Knox/));
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -330,5 +330,75 @@ describe('FairwayEventEditor — cancelled events', () => {
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
     expect(screen.getByRole('button', { name: /cancel event/i })).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Primary button validity — the event-name input carries a DOM `required`
+// attribute but this form has no enclosing <form>, so nothing ever enforced
+// it: the primary button stayed clickable against an empty title. This
+// mirrors the Settings-page precedent (primary stays disabled until the form
+// is submittable) without touching handleSubmit's own guard.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — primary button validity', () => {
+  it('disables Create event while the title is empty, and enables it once filled', async () => {
+    const { onSave } = renderEditor({ event: null });
+
+    const createButton = screen.getByRole('button', { name: /create event/i });
+    expect(createButton).toBeDisabled();
+
+    fireEvent.click(createButton);
+    expect(onSave).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Morning practice' } });
+    expect(createButton).toBeEnabled();
+
+    fireEvent.click(createButton);
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+  });
+
+  it('disables Save changes if an existing title is cleared out', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    renderEditor();
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+
+    const saveButton = screen.getByRole('button', { name: /save changes/i });
+    expect(saveButton).toBeEnabled();
+
+    fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: '   ' } });
+    expect(saveButton).toBeDisabled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Invite-grid name display — chips used to truncate to "First L." (last
+// name's first letter + a period), which both threw away a name that already
+// fit the chip and, on a name like "(Nick Rini)", built the string "(." —
+// the "Coach (." bug reported from production.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — invite grid name display', () => {
+  it('renders full names in the invite grid instead of truncated initials', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    renderEditor();
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+
+    expect(screen.getByRole('button', { name: /Ava Stone/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Ben Reed/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Cam Knox/ })).toBeInTheDocument();
+    // None of the old truncated "First L." forms should be present.
+    expect(screen.queryByRole('button', { name: /^Ava S\.$/ })).not.toBeInTheDocument();
+  });
+
+  it('cannot reproduce the "Coach (." mangling for a parenthetical placeholder name', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    renderEditor({
+      teamPlayers: [{ id: 'coach-1', first_name: 'Coach', last_name: '(Nick Rini)' }],
+    });
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+
+    expect(screen.getByRole('button', { name: /Coach \(Nick Rini\)/ })).toBeInTheDocument();
+    expect(screen.queryByText('Coach (.')).not.toBeInTheDocument();
   });
 });

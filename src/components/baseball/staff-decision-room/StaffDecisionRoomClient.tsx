@@ -113,7 +113,7 @@ export function StaffDecisionRoomClient({ data }: StaffDecisionRoomClientProps) 
   function exportSummary() {
     const lines: string[] = [];
     lines.push('STAFF DECISION ROOM — MEETING SUMMARY');
-    lines.push(new Date().toLocaleString());
+    lines.push(new Date().toLocaleString('en-US'));
     lines.push('');
     lines.push(`Open agenda items: ${data.openAgendaCount}`);
     lines.push(`Decisions recorded: ${data.decisionCount}`);

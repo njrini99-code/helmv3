@@ -68,7 +68,7 @@ export function FairwayTripCard({ itinerary, selected, now, onSelect }: FairwayT
             <span
               className={cn(
                 'truncate font-fw-sans text-body-sm font-medium',
-                selected ? 'text-accent-800' : 'text-text-primary',
+                selected ? 'text-fw-success-ink' : 'text-text-primary',
               )}
             >
               {itinerary.event_name || 'Trip'}

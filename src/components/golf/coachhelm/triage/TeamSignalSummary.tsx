@@ -166,7 +166,7 @@ export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSign
                   }}
                   className="group flex min-h-14 items-center gap-3 rounded-fw-md border border-border-subtle bg-surface-raised px-3 py-3 outline-none transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-accent-200 hover:[box-shadow:var(--fw-shadow-soft)] focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0"
                 >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-50 font-fw-mono text-caption font-semibold text-accent-800">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-50 font-fw-mono text-caption font-semibold text-fw-success-ink">
                     {String(index + 1).padStart(2, '0')}
                   </span>
                   <div className="min-w-0 flex-1">

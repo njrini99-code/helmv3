@@ -283,7 +283,7 @@ export function StatCard({ className, label, value, trend, icon, suffix, ...prop
             {label}
           </p>
           <p className="text-3xl font-bold text-warm-900 tabular-nums">
-            {typeof value === 'number' ? value.toLocaleString() : value}
+            {typeof value === 'number' ? value.toLocaleString('en-US') : value}
             {suffix && <span className="text-lg font-normal text-warm-400 ml-1">{suffix}</span>}
           </p>
           {resolvedTrend && (

@@ -51,7 +51,7 @@ export interface ChartTooltipProps
 }
 
 const defaultFormatter = (value: number): string =>
-  Number.isFinite(value) ? value.toLocaleString() : String(value);
+  Number.isFinite(value) ? value.toLocaleString('en-US') : String(value);
 
 export function ChartTooltip({
   label,

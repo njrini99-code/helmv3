@@ -124,15 +124,22 @@ describe('surface-registry — rail resolves the registry canonical name', () =>
 });
 
 describe('surface-registry — CoachHelmSubNav resolves the registry canonical name', () => {
-  it('coach strip renders the single consolidated Brief tab exactly as the registry names it', () => {
+  it('coach strip renders Brief and Ask exactly as the registry names them', () => {
     // Spine & Stage (2026-07-19, plan Task 9): Signals / Players / Effectiveness
     // are legacy+hidden `?view=` drills of the Brief home now — the strip no
     // longer carries their tabs (mirroring the player strip's consolidation).
+    //
+    // Ask is NOT one of those. It carries neither `legacy` nor `hidden` and
+    // owns its own route (`/golf/dashboard/coachhelm/chat`), but it was dropped
+    // from the strip along with them — which left the floating FAB as the only
+    // way into the chat while the breadcrumb kept printing "CoachHelm AI / Ask".
+    // This assertion is the registry↔renderer contract that let that drift
+    // through, so it now pins BOTH live tabs rather than just the first.
     render(createElement(CoachHelmSubNav, { active: 'brief', role: 'coach' }));
     const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
     const labels = within(nav).getAllByRole('link').map((a) => a.textContent);
 
-    expect(labels).toEqual([surfaceName('brief')]);
+    expect(labels).toEqual([surfaceName('brief'), surfaceName('ask')]);
   });
 
   it('player strip renders the single consolidated Overview tab exactly as the registry names it', () => {

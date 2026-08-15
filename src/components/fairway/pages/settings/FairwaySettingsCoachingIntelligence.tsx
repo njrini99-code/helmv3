@@ -105,9 +105,16 @@ function CoachingIntelligenceFrame({
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
       {/* P083 — explicit back affordance to the settings index (Nielsen #3
-          user-control/freedom + #4 consistency). The eyebrow "Settings" below is
-          decorative; this is the real escape on a deep sub-page. Present on every
-          state (loading / error / loaded) since it lives in the shared frame. */}
+          user-control/freedom + #4 consistency). This is the real escape on a
+          deep sub-page. Present on every state (loading / error / loaded)
+          since it lives in the shared frame.
+          #1318 — the ViewHeader used to carry its own `eyebrow="Settings"`
+          directly above this back link's own "Settings" label, with the
+          top-bar breadcrumb ALSO reading "…/ Settings" above both of them —
+          the literal word rendered three times before the h1 ever did. The
+          eyebrow was purely decorative (this back link was always the real
+          nav), so it's dropped rather than the functional breadcrumb or back
+          link — no navigation lost, just the redundant third copy. */}
       <Button
         asChild
         variant="ghost"
@@ -118,7 +125,6 @@ function CoachingIntelligenceFrame({
         <Link href="/golf/dashboard/settings">Settings</Link>
       </Button>
       <ViewHeader
-        eyebrow="Settings"
         title="Coaching Intelligence"
         description="Configure how CoachHelm analyzes your team. These settings control insight generation, alert sensitivity, and how players are ranked against your coaching priorities."
         meta={meta}
@@ -584,7 +590,7 @@ function CoachingIntelligenceBody({
               <p className="border-t border-border-subtle pt-4 font-fw-sans text-caption text-text-tertiary">
                 CoachHelm is paused for this team.
                 {teamSettings.disabled_at
-                  ? ` Disabled ${new Date(teamSettings.disabled_at).toLocaleDateString()}.`
+                  ? ` Disabled ${new Date(teamSettings.disabled_at).toLocaleDateString('en-US')}.`
                   : null}
               </p>
             ) : null}
@@ -748,7 +754,7 @@ function CoachingIntelligenceBody({
                         'transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]',
                         'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                         active
-                          ? 'bg-accent-700 text-text-on-accent'
+                          ? 'bg-accent-750 text-text-on-accent'
                           : 'bg-surface-sunken text-text-secondary hover:bg-inset',
                       ].join(' ')}
                     >

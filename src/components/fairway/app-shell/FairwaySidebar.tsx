@@ -135,9 +135,14 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
         className={cn(
           navRowBase,
           collapsed ? 'justify-center px-2 py-2.5' : 'px-3.5 py-2.5',
+          // Active row carries the BRAND, not just a lighter grey. On the black
+          // rail a neutral pill reads as "slightly less off" rather than as
+          // "you are here"; a green-tinted well plus a green ring makes the
+          // single most-looked-at piece of chrome in the app the place the
+          // black-and-green identity actually shows up.
           active
-            ? 'bg-nav-surface text-nav-text ring-1 ring-white/[0.08] [box-shadow:inset_0_1px_0_0_rgba(255,255,255,0.05)]'
-            : 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text',
+            ? 'bg-nav-surface text-nav-text ring-1 ring-nav-accent/25 [box-shadow:inset_0_1px_0_0_rgba(255,255,255,0.06)]'
+            : 'text-nav-text-dim hover:bg-nav-surface/50 hover:text-nav-text',
         )}
       >
         <Icon
@@ -166,7 +171,7 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
           </span>
         ) : null}
         {typeof item.badge === 'number' && item.badge > 0 && !collapsed && (
-          <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-700 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
+          <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-750 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
             {item.badge > 99 ? '99+' : item.badge}
           </span>
         )}

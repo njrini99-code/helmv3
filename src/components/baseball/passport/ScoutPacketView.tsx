@@ -375,7 +375,7 @@ export function ScoutPacketView({
                     <div className="flex flex-wrap items-center gap-x-2">
                       <p className="text-sm font-medium text-warm-900">{n.title}</p>
                       <span className="text-eyebrow text-warm-400">
-                        {new Date(n.occurredAt).toLocaleDateString()}
+                        {new Date(n.occurredAt).toLocaleDateString('en-US')}
                       </span>
                     </div>
                     <div className="mt-1">

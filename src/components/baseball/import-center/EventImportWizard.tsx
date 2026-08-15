@@ -560,7 +560,7 @@ export function EventImportWizard({ teamId, teamName, players, eventSources }: P
                     <p className="mt-1 text-body-sm text-text-secondary">
                       This exact file
                       {result.duplicateFileRun.committedAt
-                        ? ` was committed on ${new Date(result.duplicateFileRun.committedAt).toLocaleDateString()}`
+                        ? ` was committed on ${new Date(result.duplicateFileRun.committedAt).toLocaleDateString('en-US')}`
                         : ' was already committed'}
                       , so nothing was written. Re-import the identical file only if you mean to.
                     </p>

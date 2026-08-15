@@ -52,13 +52,19 @@ export interface BandHistogramProps {
  * Pure helpers — exported for the colocated unit tests.
  * ------------------------------------------------------------------------- */
 
-/** Local accent-ramp classes — mirrors RampMatrix's 0 (no data) .. 4 (strongest). */
+/** Local accent-ramp classes — mirrors RampMatrix's 0 (no data) .. 4 (strongest).
+ *
+ * Uses the shared `--fw-ramp-*` tokens so the scale reads correctly in both
+ * themes (it runs light→dark on cream and dark→light on espresso). The old
+ * hardcoded ramp opened on accent-100, which flips from L 0.939 to L 0.352 in
+ * dark — so at night band 1 (weakest) rendered darker than bands 2-4 and the
+ * scale inverted at its low end. */
 const BAND_HISTOGRAM_RAMP_CLASSES: Record<0 | 1 | 2 | 3 | 4, string> = {
   0: 'bg-surface-sunken',
-  1: 'bg-accent-100',
-  2: 'bg-accent-300',
-  3: 'bg-accent-500',
-  4: 'bg-accent-700',
+  1: 'bg-ramp-1',
+  2: 'bg-ramp-2',
+  3: 'bg-ramp-3',
+  4: 'bg-ramp-4',
 };
 
 /** pct (0-100) → ramp band. `null`/NaN → 0 (no data — distinct from a real 0%). */

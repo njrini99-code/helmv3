@@ -14,13 +14,26 @@
 import { cn } from '@/lib/utils';
 import type { RampMatrixProps } from './types';
 
-/** Ramp band → Tailwind class map. 0 = no data (sunken) … 4 = strongest. */
+/** Ramp band → Tailwind class map. 0 = no data (sunken) … 4 = strongest.
+ *
+ * Every step is a `--fw-ramp-*` token (design-tokens.css), never a hand-picked
+ * accent step, because the scale has to run in OPPOSITE directions per theme:
+ * darkening as it strengthens on cream, brightening as it strengthens on
+ * espresso. Hardcoding accent steps is what broke this before — band 1 was
+ * `bg-accent-100 text-accent-900`, and accent-100 flips to a deep green in dark
+ * (L 0.939 → 0.352) while accent-900 stays deep (L 0.357), so ink and fill
+ * landed on the same colour and the cell simply went blank at night.
+ * The ink tokens swap with the fills, so contrast holds at both ends. */
 export const RAMP_CLASSES: Record<0 | 1 | 2 | 3 | 4, string> = {
   0: 'bg-surface-sunken text-text-tertiary',
-  1: 'bg-accent-100 text-accent-900',
-  2: 'bg-accent-300 text-accent-900',
-  3: 'bg-accent-700 text-text-on-accent',
-  4: 'bg-accent-700 text-text-on-accent',
+  1: 'bg-ramp-1 text-ramp-lo-ink',
+  2: 'bg-ramp-2 text-ramp-lo-ink',
+  // 3 and 4 deliberately share the top step, matching this matrix's existing
+  // light-mode ramp (both were accent-700). BandHistogram, which carries no
+  // text on its bars, uses the distinct `ramp-3` — cream copy on that step
+  // measures 3.24:1, so it is not available to a cell that has a label in it.
+  3: 'bg-ramp-4 text-ramp-hi-ink',
+  4: 'bg-ramp-4 text-ramp-hi-ink',
 };
 
 export function RampMatrix({ cols, rows, legend }: RampMatrixProps) {

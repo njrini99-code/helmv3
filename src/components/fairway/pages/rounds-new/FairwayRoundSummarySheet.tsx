@@ -120,13 +120,13 @@ export function FairwayRoundSummarySheet({
                   transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.35 }}
                   className={cn(
                     'font-fw-sans text-body-lg font-medium',
-                    toPar === 0 ? 'text-text-on-accent/70' : toPar < 0 ? 'text-accent-100' : 'text-fw-warning-ink',
+                    toPar === 0 ? 'text-ink-on-deep-soft' : toPar < 0 ? 'text-accent-300' : 'text-fw-warning-ink',
                   )}
                 >
                   ({toParLabel})
                 </m.span>
               </div>
-              <p className="mt-1 font-fw-sans text-body-sm text-text-on-accent/70">{courseName}</p>
+              <p className="mt-1 font-fw-sans text-body-sm text-ink-on-deep-soft">{courseName}</p>
             </m.div>
           </div>
 

@@ -174,7 +174,7 @@ const STATUS_ICON_CONFIG: Record<string, { icon: React.ReactNode; color: string;
   sent:      { icon: <IconClock size={14} />,          color: 'text-text-tertiary', label: 'Sent' },
   delivered: { icon: <IconCheckCircle2 size={14} />,   color: 'text-accent-500',    label: 'Delivered' },
   opened:    { icon: <IconEye size={14} />,            color: 'text-accent-600',    label: 'Opened' },
-  clicked:   { icon: <MousePointerClick size={14} />,  color: 'text-accent-800',    label: 'Clicked' },
+  clicked:   { icon: <MousePointerClick size={14} />,  color: 'text-fw-success-ink',    label: 'Clicked' },
   bounced:   { icon: <Ban size={14} />,                color: 'text-fw-danger',     label: 'Bounced' },
 };
 
@@ -182,7 +182,7 @@ const EVENT_TIMELINE_CONFIG: Record<string, { label: string; color: string; dotC
   'email.sent':      { label: 'Sent',       color: 'text-text-secondary', dotColor: 'bg-text-tertiary' },
   'email.delivered': { label: 'Delivered',  color: 'text-accent-700',     dotColor: 'bg-accent-300' },
   'email.opened':    { label: 'Opened',     color: 'text-accent-700',     dotColor: 'bg-accent-500' },
-  'email.clicked':   { label: 'Clicked',    color: 'text-accent-800',     dotColor: 'bg-accent-700' },
+  'email.clicked':   { label: 'Clicked',    color: 'text-fw-success-ink',     dotColor: 'bg-accent-650' },
   'email.bounced':   { label: 'Bounced',    color: 'text-fw-danger-ink',  dotColor: 'bg-fw-danger' },
   'email.complained':{ label: 'Complained', color: 'text-fw-danger-ink',  dotColor: 'bg-fw-danger' },
 };
@@ -441,7 +441,7 @@ export function EmailTrackingView() {
           <p className="text-sm text-text-tertiary max-w-md mx-auto leading-relaxed mb-6">{fetchError}</p>
           <Button variant="primary"
             onClick={() => fetchData()}
-            className="px-6 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md hover:bg-accent-700 font-medium transition-all duration-200 shadow-flat"
+            className="px-6 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md hover:bg-accent-750 font-medium transition-all duration-200 shadow-flat"
           >
             Try Again
           </Button>
@@ -520,7 +520,7 @@ export function EmailTrackingView() {
             Coach-level contact history across Helm and Gmail. For full deliverability analytics, see{' '}
             <a
               href="/golf/admin/crm?tab=outreach&outreach=resend"
-              className="inline-flex items-center gap-1 text-accent-700 hover:text-accent-800 font-medium underline-offset-2 hover:underline transition-colors"
+              className="inline-flex items-center gap-1 text-accent-700 hover:text-fw-success-ink font-medium underline-offset-2 hover:underline transition-colors"
             >
               Resend activity
               <IconExternalLink size={11} aria-hidden="true" />
@@ -550,7 +550,7 @@ export function EmailTrackingView() {
         <StatCard
           icon={<IconEye size={20} />}
           iconBg="bg-accent-100"
-          iconColor="text-accent-800"
+          iconColor="text-fw-success-ink"
           label="Open Rate"
           value={stats.total_sent > 0 ? `${openRate}%` : '\u2014'}
           subtitle={stats.total_sent > 0 ? `${stats.opened} of ${stats.total_sent} Helm emails` : 'Helm emails only'}
@@ -952,7 +952,7 @@ function CrossRefBanner({
         {text}{' '}
         <a
           href="/golf/admin/crm?tab=outreach&outreach=resend"
-          className="inline-flex items-center gap-1 text-accent-700 hover:text-accent-800 font-semibold underline-offset-2 hover:underline transition-colors"
+          className="inline-flex items-center gap-1 text-accent-700 hover:text-fw-success-ink font-semibold underline-offset-2 hover:underline transition-colors"
         >
           {linkLabel}
           <IconExternalLink size={10} aria-hidden="true" />

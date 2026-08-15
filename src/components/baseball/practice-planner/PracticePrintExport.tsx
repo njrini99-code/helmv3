@@ -79,7 +79,7 @@ export function PracticePrintExport({ practice }: Props) {
           ].join('');
         }).join('');
 
-    const printDate = new Date().toLocaleDateString();
+    const printDate = new Date().toLocaleDateString('en-US');
 
     // Build the complete HTML document as a string. All variable content has
     // been escaped above — this template only interpolates the already-escaped

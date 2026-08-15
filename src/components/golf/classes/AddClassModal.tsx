@@ -416,7 +416,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'w-10 h-10 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
-                      ? 'bg-accent-700 text-text-on-accent'
+                      ? 'bg-accent-750 text-text-on-accent'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
                   )}
                 >
@@ -433,7 +433,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'px-3 py-1 text-xs font-medium rounded-full transition-all',
                     JSON.stringify(formData.days) === JSON.stringify(pattern.days)
-                      ? 'bg-accent-500/15 text-accent-800'
+                      ? 'bg-accent-500/15 text-fw-success-ink'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
                   )}
                 >

@@ -4369,14 +4369,25 @@ async function checkScheduleConflictsImpl(
       { excludeEventId }
     );
 
-    // Serialize Date objects in suggestions to ISO strings for client transport
-    const serialized: ConflictResult = {
-      ...result as unknown as ConflictResult,
-      suggestions: ((result as unknown as ConflictResult).suggestions || []).map(s => ({
+    /**
+     * Serialize Date objects to ISO strings for client transport.
+     *
+     * `checkEventConflicts` returns the alternative slots as `suggestedTimes`.
+     * This action's client contract calls the same field `suggestions`, and the
+     * mapping below used to READ `.suggestions` off the library result — a key
+     * that type never had. It was therefore always `undefined || []`, so the
+     * editor's suggested-time chips (which render from `conflicts.suggestions`)
+     * could not appear even when the engine had found slots. The whole
+     * "find a time" path was dead on a one-word mismatch, and the
+     * `as unknown as` double cast is what stopped the compiler saying so.
+     */
+    const serialized = {
+      ...(result as unknown as ConflictResult),
+      suggestions: (result.suggestedTimes ?? []).map((s) => ({
         start: s.start instanceof Date ? s.start.toISOString() : s.start,
         end: s.end instanceof Date ? s.end.toISOString() : s.end,
       })),
-    };
+    } as unknown as ConflictResult;
     return { success: true, data: serialized };
 
   } catch {

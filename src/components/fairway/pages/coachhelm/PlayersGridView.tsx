@@ -460,7 +460,7 @@ export function PlayersGridView({
       return;
     }
     if (logValue > LOG_VALUE_MAX) {
-      setLogValueError(`That looks too large — enter a value up to ${LOG_VALUE_MAX.toLocaleString()}.`);
+      setLogValueError(`That looks too large — enter a value up to ${LOG_VALUE_MAX.toLocaleString('en-US')}.`);
       return;
     }
     setLogValueError(null);

@@ -185,7 +185,7 @@ export function ReminderPicker({
             <div className="flex items-center gap-2 p-2 bg-primary-50 rounded-lg">
               <IconBell size={14} className="text-primary-600" />
               <span className="text-xs text-primary-700">
-                Reminder set for {new Date(value).toLocaleString()}
+                Reminder set for {new Date(value).toLocaleString('en-US')}
               </span>
             </div>
           )}

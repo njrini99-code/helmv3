@@ -49,7 +49,7 @@ function formatSuggestedTime(slot: SuggestedTime): string {
     return `${dayName}, ${date} • ${startTime} - ${endTime}`;
   }
 
-  return `${slot.start.toLocaleDateString()} ${slot.start.toLocaleTimeString()} - ${slot.end.toLocaleDateString()} ${slot.end.toLocaleTimeString()}`;
+  return `${slot.start.toLocaleDateString('en-US')} ${slot.start.toLocaleTimeString('en-US')} - ${slot.end.toLocaleDateString('en-US')} ${slot.end.toLocaleTimeString('en-US')}`;
 }
 
 function formatConflictTime(start: string, end: string): string {

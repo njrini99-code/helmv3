@@ -118,7 +118,7 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
         size="sm"
         aria-label={`Remove ${label} filter`}
         onClick={onRemove}
-        className="h-5 w-5 min-h-0 rounded-full text-accent-600 hover:text-accent-800 hover:bg-accent-100"
+        className="h-5 w-5 min-h-0 rounded-full text-accent-600 hover:text-fw-success-ink hover:bg-accent-100"
       >
         <IconX size={12} />
       </IconButton>

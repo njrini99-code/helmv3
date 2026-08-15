@@ -53,7 +53,7 @@ const TONES: Record<CoachTemperature, {
     Icon: IconFlame,
     iconClass: 'text-text-on-accent',
     pillClass: 'bg-accent-650 text-text-on-accent border-accent-700',
-    scoreClass: 'text-accent-800',
+    scoreClass: 'text-fw-success-ink',
   },
   warm: {
     label: 'Warm',
@@ -87,7 +87,7 @@ const EMAIL_EVENT_TONE: Record<string, string> = {
   // Escalating accent ramp (see resend/shared.tsx STATUS_CONFIG for the rule).
   sent: 'bg-surface-sunken text-text-secondary border-border-subtle',
   delivered: 'bg-accent-50 text-accent-700 border-accent-200',
-  opened: 'bg-accent-100 text-accent-800 border-accent-300',
+  opened: 'bg-accent-100 text-fw-success-ink border-accent-300',
   clicked: 'bg-accent-650 text-text-on-accent border-accent-700',
   bounced: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25',
   complained: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25',

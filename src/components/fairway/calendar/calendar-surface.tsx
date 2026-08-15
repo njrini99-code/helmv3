@@ -250,7 +250,7 @@ export const CalendarSurface = React.forwardRef<
             // ---- selection states ----
             selected: cn(
               defaults.selected,
-              '[&>button]:bg-accent-700 [&>button]:text-text-on-accent [&>button]:shadow-soft',
+              '[&>button]:bg-accent-750 [&>button]:text-text-on-accent [&>button]:shadow-soft',
               '[&>button]:hover:bg-accent-600 [&>button]:hover:text-text-on-accent',
             ),
             range_start: cn(defaults.range_start, styles.rangeStart),

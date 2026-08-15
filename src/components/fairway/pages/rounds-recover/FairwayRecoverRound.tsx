@@ -521,7 +521,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
                   </div>
 
                   <p className="font-fw-sans text-caption text-text-tertiary">
-                    Last saved {savedAt.toLocaleString()}
+                    Last saved {savedAt.toLocaleString('en-US')}
                   </p>
 
                   {/* Action — recover this draft */}

@@ -229,7 +229,7 @@ function LogProgressDrawer({
       return;
     }
     if (parsed > MAX_REASONABLE) {
-      setValueError(`That looks too large — enter a value up to ${MAX_REASONABLE.toLocaleString()}.`);
+      setValueError(`That looks too large — enter a value up to ${MAX_REASONABLE.toLocaleString('en-US')}.`);
       return;
     }
     setValueError(null);

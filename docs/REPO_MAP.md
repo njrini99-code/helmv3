@@ -8,6 +8,12 @@ routing table. This doc does not auto-regenerate; if a route count or
 file:line anchor looks wrong, trust the source file over this doc and flag
 the drift.
 
+**Facts re-verified 2026-08-15** against the tree at `main` (`a5d03ddd8`).
+The previous pass was 2026-07-14, and 364 commits to `src/**` had landed in
+between — every count below drifted. Re-verify with:
+`find src/app/<product> -name page.tsx | wc -l`, `find src -name error.tsx | wc -l`,
+`wc -l <anchor-file>`.
+
 Scope: `src/app/**` route trees for BaseballHelm, GolfHelm, Lift Lab, and
 Admin/Helm Bridge; the canonical action-wrapper / toast / data-access /
 design-token / nav-registry / error-boundary idioms; the 7 traps found by a
@@ -21,7 +27,7 @@ Route groups (`(auth)`, `(dashboard)`, etc.) resolve away — they don't add a
 URL segment, they only partition intent/layout. Listed below with groups
 resolved to the actual path.
 
-### BaseballHelm — `src/app/baseball/**` (106 `page.tsx`, 85 with a sibling `error.tsx`)
+### BaseballHelm — `src/app/baseball/**` (107 `page.tsx`, 93 with a sibling `error.tsx`)
 
 - **`(auth)`** — `/baseball/login`, `/signup`, `/forgot-password`,
   `/reset-password`, `/demo`, `/complete-signup`
@@ -47,7 +53,7 @@ resolved to the actual path.
 - **Misc top-level** — `/baseball/admin/demo-sessions`,
   `/baseball/join/[code]`, `/baseball/staff/join/[code]`
 
-### GolfHelm — `src/app/golf/**` (64 `page.tsx`, 65 `error.tsx` — near 1:1)
+### GolfHelm — `src/app/golf/**` (66 `page.tsx`, 65 `error.tsx` — near 1:1)
 
 - **`(auth)`** — `/golf/login`, `/signup`, `/forgot-password`,
   `/reset-password`, `/demo`, `/welcome`
@@ -80,11 +86,12 @@ resolved to the actual path.
 - **Join** — `/lifting/join/[token]`
 - **Gap**: only 2 `error.tsx` files exist for the whole product
   (`dashboard/error.tsx`, `dashboard/programs/[programId]/error.tsx`) vs.
-  baseball's 85 and golf's 65. Adding a new lifting route should add its own
+  baseball's 93 and golf's 65 — the gap WIDENED since 2026-07 (baseball added
+  8 boundaries, lifting added none). Adding a new lifting route should add its own
   `error.tsx` to close this gap, matching baseball/golf convention — see
   checklist item below.
 
-### Admin / Helm Bridge — `src/app/admin/**` (17 `page.tsx`, flat — no route groups)
+### Admin / Helm Bridge — `src/app/admin/**` (22 `page.tsx`, flat — no route groups)
 
 `/admin` (root/overview), `/activity`, `/auth`, `/baseball`, `/ben-leah`,
 `/deploys`, `/errors[+/[fingerprint]]`, `/golf[+/tracer]`, `/health`,
@@ -139,9 +146,9 @@ wrapped in `withBaseballAction`/`withLiftingAction` — purely to add
 | Primitive | Location | Usage | Rule |
 |---|---|---|---|
 | `fromUntyped(client, table)` | `src/lib/supabase/untyped.ts:69` (`UntypedTable` allowlist union, lines 15-61) | 159 sites | Centralizes the `as any` escape hatch for tables not yet in generated `database.ts` types. Extend the `UntypedTable` union when adding a new hand-typed table module — don't scatter raw `as any` casts. Graduate a table off this list once `db:types` regen picks it up. |
-| `createAdminClient()` | `src/lib/supabase/admin.ts:4` | 200 sites — most-used data-access primitive in the repo | Throws if `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing/placeholder; returns a service-role client (`autoRefreshToken:false, persistSession:false`) that **bypasses RLS**. Greptile rule `service-role-scope` (`.greptile/config.json`, severity high) hard-blocks any use outside `src/lib/supabase/admin*` and `src/app/api/**/admin/**` as a security incident — not a style nit. |
+| `createAdminClient()` | `src/lib/supabase/admin.ts:4` | 200 sites — most-used data-access primitive in the repo | Throws if `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing/placeholder; returns a service-role client (`autoRefreshToken:false, persistSession:false`) that **bypasses RLS**. The `service-role-scope` hard rule blocks any use outside `src/lib/supabase/admin*` and `src/app/api/**/admin/**` as a security incident — not a style nit. **2026-08-15:** this rule no longer lives in Greptile — Greptile and CodeRabbit were dropped 2026-07-20 and `.greptile/` is deleted. It is now enforced deterministically by the **Review Gate** (`.github/workflows/review-gate.yml`, aggregate check `Review Gate / all`) via the custom packs under `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` — that directory name is historical, CI still consumes it. See `.claude/rules/code-review-tooling.md`. |
 | `fetchAllRows` / `fetchAllRowsResult` | `src/lib/supabase/fetch-all-rows.ts` — `fetchAllRows` (line 60, throws on error), `fetchAllRowsResult` (line 103, `{data,error}` shape) | 69 sites | `DEFAULT_PAGE_SIZE=1000` (line 34), loop bounded at 1000 pages as a circuit-breaker (line 74). Caller **must** supply a stable `.order()` on a unique column (lines 10-19) or page boundaries drift. Optional `rlsCtx` threads into `maybeCaptureRlsDenial` (lines 22-29). This is the fix for the PostgREST 1000-row-cap trap below — treat the two as one unit. |
-| `todayIsoInTz(tz, now)` / `resolveTeamTimezone(...)` | `src/lib/baseball/daily-contract/contract-day.ts:57` and `:193` | — | Canonical timezone-resolution primitives for any calendar/today/streak feature. Part of the "daily contract" module backing Greptile rule `calendar-timezone-safety` (store UTC, display in team/user timezone, no naive `new Date()` day-boundaries). Don't hand-roll `new Date()` day-boundary math. |
+| `todayIsoInTz(tz, now)` / `resolveTeamTimezone(...)` | `src/lib/baseball/daily-contract/contract-day.ts:57` and `:193` | — | Canonical timezone-resolution primitives for any calendar/today/streak feature. Part of the "daily contract" module backing the `calendar-timezone-safety` rule (store UTC, display in team/user timezone, no naive `new Date()` day-boundaries) — now a Review Gate pack rule, not Greptile. Don't hand-roll `new Date()` day-boundary math. |
 | `getAppBaseUrl()` | `src/lib/app-base-url.ts:32` | — | Canonical way to resolve the app's own base URL (email links, share links) instead of hardcoding a host or reading `NEXT_PUBLIC_SITE_URL` directly at each call site. |
 
 ### Design tokens
@@ -181,8 +188,14 @@ recolor-scoped auth/onboarding surfaces.
 **GolfHelm — Fairway `fw-*` tokens (`src/styles/design-tokens.css`)**
 
 Header comment (line 20): "All design-system properties are prefixed
-`--fw-` so they can NEVER collide." Ramps: `--fw-color-accent-50..900`
-(helm green, `#16A34A` = accent-500), `--fw-color-team-mens/womens`,
+`--fw-` so they can NEVER collide." Ramps: `--fw-color-accent-50..900` **plus the off-ramp pair
+`--fw-color-accent-650` / `--fw-color-accent-750`** added 2026-08 (helm green,
+`oklch(0.648 0.149 149.6)` = `#16A34A` = accent-500, locked). The 650/750 pair
+exists because dark mode *flips* the ramp: `accent-700` doubles as text on
+deep-green washes, so hover/active on a 700 fill inverted to a 1.75:1 mint at
+night. 650/750 are the not-flipped hover/pressed partners, so interaction
+darkens the fill in **both** themes. Use 650/750 for hover/pressed on accent
+fills — never re-point them at 700 "for consistency", `--fw-color-team-mens/womens`,
 `--fw-color-warm-50..950`, surface tier (`canvas/surface/surface-tint/surface-sunken/elevated`),
 text (`text-primary/secondary/tertiary/on-accent/on-dark` — tertiary
 darkened per a WCAG P422 fix, line 87, to clear 4.5:1 AA),
@@ -201,8 +214,8 @@ asymmetry, not an oversight to "fix" by inventing a lifting registry.
 
 | Product | Location | Shape |
 |---|---|---|
-| Baseball | `src/lib/baseball/nav-registry.ts` (1278 lines) | `BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[]` (line 330) + role/visibility helpers `isBaseballNavEntryVisible`/`getVisibleBaseballNav`/`getPrimaryBaseballNav`/`getSecondaryBaseballNav`/`getBaseballNavEntry`/`getBaseballDefaultLandingHref`/`getBaseballTerminology` (lines 1109-1276). |
-| Golf | `src/lib/golf/nav-registry.ts` (460 lines) | `GOLF_COACH_HUBS`/`GOLF_PLAYER_HUBS` (lines 201, 231) + `buildCoachRailSections`/`buildPlayerRailSections`/`buildCoachBottomNavItems`/`buildPlayerBottomNavItems` (lines 304-460) + `resolveActiveGolfHub` + `COACHHELM_COACH_CLUSTER_PREFIXES`/`COACHHELM_PLAYER_CLUSTER_PREFIXES` (lines 125-152). |
+| Baseball | `src/lib/baseball/nav-registry.ts` (1366 lines) | `BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[]` (line 330) + role/visibility helpers `isBaseballNavEntryVisible`/`getVisibleBaseballNav`/`getPrimaryBaseballNav`/`getSecondaryBaseballNav`/`getBaseballNavEntry`/`getBaseballDefaultLandingHref`/`getBaseballTerminology` (lines 1109-1276). |
+| Golf | `src/lib/golf/nav-registry.ts` (579 lines) | `GOLF_COACH_HUBS`/`GOLF_PLAYER_HUBS` (lines 201, 231) + `buildCoachRailSections`/`buildPlayerRailSections`/`buildCoachBottomNavItems`/`buildPlayerBottomNavItems` (lines 304-460) + `resolveActiveGolfHub` + `COACHHELM_COACH_CLUSTER_PREFIXES`/`COACHHELM_PLAYER_CLUSTER_PREFIXES` (lines 125-152). |
 | Lift Lab | `src/components/lifting/shell/LabNav.tsx` | Component-inline. **No `LIFTING_NAV_REGISTRY` module exists** — a new lifting route edits `LabNav.tsx` directly. |
 | Admin | `src/app/admin/_components/admin-nav.ts` (+ `admin-nav.test.ts`) | Own small registry + test, separate from baseball/golf's. |
 
@@ -215,7 +228,7 @@ errors (via `isStaleServerActionError`/`softReloadForStaleServerAction`
 shared with `src/lib/error-logging` so global `unhandledrejection`
 handlers and this boundary share one regex + one reload-once-per-session
 guard), and transient/retryable errors (`isTransientError`, 503/502/504)
-with optional auto-retry. 157 route-level `error.tsx` files repo-wide, each
+with optional auto-retry. 162 route-level `error.tsx` files repo-wide, each
 a thin `'use client'` wrapper importing `RouteErrorBoundary` and passing
 `{route, component, title, message, homePath}`. Root tier: `src/app/error.tsx`,
 `src/app/global-error.tsx`. New routes should add a 4-line `error.tsx`
@@ -245,7 +258,7 @@ Fairway-tokened boundary per its own comment), but:
 
 ## 3. Traps
 
-Seven traps found with concrete repo evidence (not assumed from memory).
+Eight traps found with concrete repo evidence (not assumed from memory).
 
 1. **Schema-drift — migration recorded-but-not-applied.**
    `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md:128`: Supabase's
@@ -336,10 +349,33 @@ Seven traps found with concrete repo evidence (not assumed from memory).
    guard. Do not silently swap in `?? someDefault` — that masks a real
    off-by-one/empty-array bug instead of surfacing it as a thrown error.
 
+8. **Scratchpad-worktree drift — the checkout you are in may not be the
+   work.** Agent sessions create git worktrees under
+   `/private/tmp/claude-501/<repo>/<session-uuid>/scratchpad/wt-*`; 45 distinct
+   ones have existed for this repo. Work committed there lands on a *different
+   branch*, invisible from `~/Downloads/helmv3`, and `/private/tmp` is
+   ephemeral — one cleanup pass deleted 7.6 GB of it, including 9 uncommitted
+   files that had to be rescued first. On **2026-08-15** this repo's working
+   checkout sat on `feat/ask-nav-and-opening`, **131 commits behind `main` for
+   8 days**, while current work happened on the near-identically-named
+   `feat/ask-nav-and-scheduling` inside a scratchpad worktree. Every session in
+   the real folder was reading 8-day-stale code and had no way to know: the
+   SessionStart hook reported *ahead-of-upstream* but never *behind-main*
+   (fixed — `.claude/hooks/session-context.sh` now prints behind-main and the
+   worktree count). **Before trusting anything about project state, run:**
+   `git worktree list && git rev-list --count HEAD..main && git branch --sort=-committerdate | head`.
+   A non-zero behind-count means the code you are reading is not the code that
+   ships. Near-duplicate branch names are the tell.
+
 ---
 
 ## 4. Before you write code — checklist
 
+- [ ] **Verify you are in the current checkout.** `git rev-list --count
+      HEAD..main` must be 0 (or explained). `git worktree list` — if there is
+      more than one, work may be happening in another checkout of this repo
+      (trap 8). This is the cheapest check here and the one whose absence cost
+      8 days.
 - [ ] **Feature awareness first.** Run `npm run knowledge:map -- --files
       <paths...>` and read the mapped `memory/context/*.md` /
       `memory/features/*.md` docs before touching mapped code (per
@@ -360,7 +396,7 @@ Seven traps found with concrete repo evidence (not assumed from memory).
 - [ ] **Data access.** New hand-typed table → extend `UntypedTable` in
       `src/lib/supabase/untyped.ts`, don't scatter `as any`.
       `createAdminClient()` only inside `src/lib/supabase/admin*` or
-      `src/app/api/**/admin/**` — anywhere else is a Greptile-blocked
+      `src/app/api/**/admin/**` — anywhere else is a Review Gate-blocked
       security finding. Any query that can exceed 1000 rows over a season
       → `fetchAllRowsResult` with a stable `.order()`, never a bare
       `.select()`/`.in()`. Day-boundary logic → `todayIsoInTz`/

@@ -77,7 +77,7 @@ export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBa
         variant === 'imminent' && 'animate-pulse',
         className
       )}
-      title={`Reminder: ${reminderDate.toLocaleString()}`}
+      title={`Reminder: ${reminderDate.toLocaleString('en-US')}`}
     >
       <span>{label}</span>
     </Badge>

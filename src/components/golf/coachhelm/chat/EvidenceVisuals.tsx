@@ -656,12 +656,39 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
                 const m = find(p, metric);
                 return (
                   <td key={p} className="px-4 py-2.5 text-right">
-                    <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
-                      {m ? formatValue(m.value, m.unit) : '—'}
-                    </span>
+                    {/*
+                      Strokes gained is a signed delta from a baseline (0 =
+                      expectation): positive is a gain, negative is a loss. A
+                      bare "+0.46"/"-3.92" carried no baseline, unit, or
+                      direction cue — the product owner himself misread the
+                      sign reading this exact table, so a coach would too.
+                      TrendChip's documented "signed magnitude" mode (see its
+                      `label` prop doc) reads the EXISTING value's own sign
+                      against the metric's own `direction` — never assumed —
+                      and paints it with the same fw-success/fw-warning tokens
+                      the rest of the app uses for this. No fabricated
+                      benchmark, just the number made legible.
+                    */}
+                    {m && m.unit === 'strokes' && m.value !== null ? (
+                      <TrendChip
+                        delta={m.value}
+                        goodDirection={goodDirectionOf(m.direction)}
+                        label={formatValue(m.value, m.unit)}
+                        numeric
+                        size="sm"
+                      />
+                    ) : (
+                      <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
+                        {m ? formatValue(m.value, m.unit) : '—'}
+                      </span>
+                    )}
+                    {/* Plain-language sample size, same vocabulary as
+                        `provenanceText()`/`ProvenanceLine` elsewhere in this
+                        file (e.g. "11 rounds") — "n=11" is unexplained jargon
+                        for a golf coach. */}
                     {m && m.sample_size > 0 && (
                       <span className="ml-1.5 font-fw-sans text-caption text-text-tertiary">
-                        n={m.sample_size}
+                        {m.sample_size} {m.sample_unit}
                       </span>
                     )}
                   </td>

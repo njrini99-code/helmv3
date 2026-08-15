@@ -51,20 +51,21 @@ function fullName(m: TeamMember): string {
 // Soft, warm-friendly tints for the initials fallback so unselected avatars
 // read like real profile avatars (not flat gray) when a member has no photo.
 // Deterministic per member id, so a person keeps the same color every render.
-const AVATAR_TINTS: ReadonlyArray<{ bg: string; text: string }> = [
-  { bg: '#E7F0E7', text: '#3C6B4B' }, // sage
-  { bg: '#E6EEF7', text: '#3A5B7C' }, // blue
-  { bg: '#F6EEDF', text: '#876733' }, // tan
-  { bg: '#F4E7EC', text: '#8A3B5C' }, // rose
-  { bg: '#ECE6F3', text: '#5B3B7C' }, // violet
-  { bg: '#DFF0EE', text: '#2E6A65' }, // teal
-  { bg: '#F7E9DF', text: '#8A4E2D' }, // clay
-  { bg: '#E5F1F4', text: '#2E6377' }, // cyan
-];
+//
+// THEME-AWARE BY INDIRECTION. These were hex literals, and because every
+// consumer applies them as an INLINE style (`style={{ backgroundColor:
+// tint.bg }}`) no `.dark` rule could reach them — the light pastels carried
+// straight into dark mode and turned the calendar filter rail into a strip of
+// near-white circles that outshone the agenda beneath it. Returning `var()`
+// references instead lets design-tokens.css flip the palette (dark fill +
+// light ink, same hue per person) with no change at any call site. Keep them
+// as var() references: a literal here silently reintroduces the bug.
+const AVATAR_TINT_COUNT = 8;
 export function tintFor(seed: string): { bg: string; text: string } {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return AVATAR_TINTS[h % AVATAR_TINTS.length]!;
+  const i = (h % AVATAR_TINT_COUNT) + 1;
+  return { bg: `var(--fw-tint-${i}-bg)`, text: `var(--fw-tint-${i}-ink)` };
 }
 
 export function FairwayCalendarMemberRail({
@@ -139,6 +140,8 @@ export function FairwayCalendarMemberRail({
         ) : null}
         <div
           ref={scrollerRef}
+          role="group"
+          aria-label="Filter calendar by team member"
           className={cn(
             'flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5',
             // Reserve the chevron's own 28px gutter, and only while that
@@ -164,7 +167,7 @@ export function FairwayCalendarMemberRail({
             className={cn(
               'flex h-9 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
               allSelected
-                ? 'bg-accent-700 text-text-on-accent shadow-flat'
+                ? 'bg-accent-750 text-text-on-accent shadow-flat'
                 : 'border border-border-subtle bg-surface-sunken text-text-secondary group-hover:bg-surface-tint',
             )}
           >
@@ -229,7 +232,7 @@ export function FairwayCalendarMemberRail({
       </div>
 
       {/* Legend / clear */}
-      {!allSelected && (
+      {!allSelected ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
             Viewing
@@ -250,10 +253,29 @@ export function FairwayCalendarMemberRail({
             variant="ghost"
             haptic="none"
             onClick={() => onSelect([])}
-            className="ml-auto h-auto min-h-0 w-auto p-0 font-fw-sans text-caption font-medium text-accent-700 transition-colors hover:bg-transparent hover:text-accent-800"
+            className="ml-auto h-auto min-h-0 w-auto p-0 font-fw-sans text-caption font-medium text-accent-700 transition-colors hover:bg-transparent hover:text-fw-success-ink"
           >
             Clear
           </Button>
+        </div>
+      ) : (
+        // DEFAULT (nothing selected) — the row above is otherwise nine
+        // unlabelled two-letter chips: an accessible name + `title` tooltip
+        // exist per-chip (finding: "unlabelled initials"), but neither is
+        // visible at rest, and `title` never fires on touch (no hover). This
+        // quiet key uses the SAME tint each avatar already renders with
+        // (tintFor) so identifying a chip doesn't require hovering or
+        // selecting it first.
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {teamMembers.map((m) => {
+            const tint = tintFor(m.id);
+            return (
+              <span key={m.id} className="flex items-center gap-1.5">
+                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tint.text }} />
+                <span className="font-fw-sans text-caption text-text-tertiary">{m.first_name}</span>
+              </span>
+            );
+          })}
         </div>
       )}
     </div>

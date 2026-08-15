@@ -220,7 +220,7 @@ function StoryEventRow({ event, index }: { event: PassportStoryEvent; index: num
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <p className="font-annual text-body-sm font-medium text-text-primary">{event.title}</p>
             <span className="text-eyebrow tabular-nums text-text-tertiary">
-              {new Date(event.occurredAt).toLocaleDateString()}
+              {new Date(event.occurredAt).toLocaleDateString('en-US')}
             </span>
           </div>
           {event.body ? (
@@ -345,7 +345,7 @@ function GameLogRow({ row }: { row: PassportGameLogRow }) {
     <tr>
       <td className="px-3 py-2.5 font-annual text-body-sm text-text-primary">
         <span className="font-medium">
-          {row.gameDate ? new Date(row.gameDate).toLocaleDateString() : '—'}
+          {row.gameDate ? new Date(row.gameDate).toLocaleDateString('en-US') : '—'}
         </span>
         {row.gameType === 'scrimmage' ? (
           <InkBadge label="Scrimmage" tone="neutral" className="ml-2 align-middle" />

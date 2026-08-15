@@ -64,7 +64,7 @@ export function SectionTitle({
           className={cn(
             'group inline-flex shrink-0 items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700',
             'rounded-full px-1 py-0.5 transition-colors duration-base',
-            'hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+            'hover:text-fw-success-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           )}
         >
           {action.label}

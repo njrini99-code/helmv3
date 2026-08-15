@@ -98,7 +98,7 @@ const COUNTER_THRESHOLD = 0.9;
 function charsLeftHelp(value: string, max: number): string | undefined {
   if (value.length < max * COUNTER_THRESHOLD) return undefined;
   const left = max - value.length;
-  return `${left.toLocaleString()} character${left === 1 ? '' : 's'} left`;
+  return `${left.toLocaleString('en-US')} character${left === 1 ? '' : 's'} left`;
 }
 
 /* ─── Urgency → RadioGroup options + tone (low/normal/high/urgent →

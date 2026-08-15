@@ -125,7 +125,7 @@ export const USStateMap = memo(function USStateMap({
                 {singleSelectedLabel ?? `${selectedStates.length} states`}
               </p>
               <p className="text-primary-100 text-sm">
-                {selectedCount.toLocaleString()} {itemLabelPlural}
+                {selectedCount.toLocaleString('en-US')} {itemLabelPlural}
               </p>
             </div>
 
@@ -407,7 +407,7 @@ export const USStateMap = memo(function USStateMap({
                 </p>
                 <p className="text-warm-300 text-sm mt-0.5">
                   <span className="font-semibold text-white tabular-nums">
-                    {(playersByState[hoveredState] || 0).toLocaleString()}
+                    {(playersByState[hoveredState] || 0).toLocaleString('en-US')}
                   </span>
                   {' '}{playersByState[hoveredState] !== 1 ? itemLabelPlural : itemLabel}
                 </p>
@@ -455,7 +455,7 @@ export const USStateMap = memo(function USStateMap({
               {itemLabelCapital}
             </span>
             <span className="text-xs font-semibold text-warm-500 tabular-nums">
-              {totalPlayers.toLocaleString()} total
+              {totalPlayers.toLocaleString('en-US')} total
             </span>
           </div>
 

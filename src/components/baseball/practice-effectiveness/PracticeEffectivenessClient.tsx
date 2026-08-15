@@ -137,7 +137,7 @@ function relativeTime(iso: string | null): string {
   if (diff < 3_600_000) return 'just now';
   if (diff < day) return `${Math.floor(diff / 3_600_000)}h ago`;
   if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString('en-US');
 }
 
 // -----------------------------------------------------------------------------

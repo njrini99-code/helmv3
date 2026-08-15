@@ -289,7 +289,7 @@ export function PlayerComparison({
       // Add header/footer
       pdf.setFontSize(8);
       pdf.setTextColor(128, 128, 128);
-      pdf.text(`Generated on ${new Date().toLocaleDateString()}`, 10, pageHeight - 5);
+      pdf.text(`Generated on ${new Date().toLocaleDateString('en-US')}`, 10, pageHeight - 5);
 
       // Generate filename with player names (sanitized)
       const playerNames = players

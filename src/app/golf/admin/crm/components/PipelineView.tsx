@@ -282,7 +282,7 @@ export function PipelineView({
               type="button"
               onClick={() => handleResearchNext(10)}
               disabled={processing}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-650 text-text-on-accent rounded-fw-md font-medium hover:bg-accent-700 transition-colors text-sm shadow-soft disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-650 text-text-on-accent rounded-fw-md font-medium hover:bg-accent-750 transition-colors text-sm shadow-soft disabled:opacity-50"
             >
               <IconZap size={14} /> Research Top 10
             </Button>

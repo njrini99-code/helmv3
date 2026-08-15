@@ -29,17 +29,55 @@
  * `surface-tint` band (DESIGN-SYSTEM §4.1 "warm plinth", ONE per large-title
  * page) — matte, never glass.
  *
- * Motion: a slow cinematic reveal (opacity + small upward drift) via
- * framer-motion, honoring `prefers-reduced-motion` (§7). Title/eyebrow/meta
- * stagger in. No layout shift.
+ * Motion: a slow cinematic reveal (opacity + small upward drift) via a pure
+ * CSS entrance animation (`.animate-fade-in-up`, no framer-motion, no client
+ * JS dependency — see "Motion is pure CSS" below), honoring
+ * `prefers-reduced-motion` (§7). Title/eyebrow/meta stagger in via a small
+ * per-item `animation-delay`. No layout shift.
  *
  * Styled to render correctly inside a `.fairway-ds` scope on a `bg-canvas`
  * page; uses ONLY Fairway token utilities + the §3 type scale. ADDITIVE.
+ *
+ * ── Motion is pure CSS, not framer-motion (#P-ask-nav invisible-header fix) ──
+ * Previously the reveal was a framer-motion `motion.header`/`motion.div` tree:
+ * `initial="hidden"` computes its inline `opacity:0; transform:translateY(8px)`
+ * on the SERVER (that's what framer's SSR-safe initial-style calculation is
+ * for), so the SSR'd HTML already had every eyebrow/title/description/meta
+ * node sitting at `opacity: 0` before a single byte of client JS ran. The
+ * hidden→visible transition only ever fires from framer-motion's own
+ * client-side mount effect — if that effect never runs for ANY reason
+ * (client JS erroring elsewhere in the page's component tree, a hydration
+ * mismatch upstream causing React to abandon the subtree, a stalled/slow
+ * bundle), there is no fallback: the header sits frozen at `opacity: 0`
+ * forever, which is exactly the "eyebrow/H1/subhead present in the DOM but
+ * invisible" failure reported on `/golf/dashboard/documents`,
+ * `/golf/dashboard/announcements`, and `/golf/dashboard/whats-new` (all
+ * reproduced identically on production, i.e. real client JS, not a test
+ * artifact). Two isolated reproductions of the framer-motion path itself —
+ * a plain client render AND a faithful two-bundle SSR→hydrate simulation
+ * (separate module instances, exactly like Next.js's separate server/client
+ * webpack builds) — both completed the hidden→visible transition correctly,
+ * so the variant/stagger wiring was not itself broken; the risk is
+ * architectural: ANY JS-driven inline-style reveal has no guaranteed
+ * terminal state if the JS never runs, on ANY page, for ANY reason. This
+ * codebase already hit and fixed the identical symptom class in
+ * `AnimatedPage`/`AnimatedItem` (`src/components/golf/layout/AnimatedPage.tsx`,
+ * audit W1 "shot-blank") by moving the reveal to a pure-CSS `@keyframes`
+ * animation with `animation-fill-mode: forwards` — it starts painting on the
+ * very first frame with zero JS dependency, so there is nothing left to get
+ * stuck on. ViewHeader now reuses that SAME proven, already-shipped utility
+ * (`.animate-fade-in-up`, globals.css) instead of framer-motion, with a
+ * per-item `animation-delay` standing in for the old `staggerChildren`. This
+ * also removes the file's only `useReducedMotion()` call (a raw framer-motion
+ * hook returns `null` pre-hydration, which the design-system rule bans in
+ * favor of `useReducedMotionGuard()`) — reduced-motion is now handled purely
+ * by CSS (`motion-reduce:animate-none` + globals.css's
+ * `@media (prefers-reduced-motion: reduce)` block collapsing the animation to
+ * 1ms), so it is correct even before hydration and needs no JS gating at all.
  * ========================================================================== */
 
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { useScrollFade } from "@/lib/fairway/use-scroll-fade";
@@ -123,22 +161,14 @@ export interface ViewHeaderProps
   disableAnimation?: boolean;
 }
 
-const containerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.06, delayChildren: 0.02 },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    // --dur-base (0.28s) with --ease-soft; slow + settled, never snappy (§7.1)
-    transition: { duration: 0.28, ease: [0.22, 0.61, 0.36, 1] },
-  },
-};
+// Stand-in for framer-motion's old `staggerChildren`/`delayChildren`: a
+// per-item `animation-delay`, computed as items are encountered during
+// render (same effective order framer-motion's tree-order stagger used —
+// eyebrow, title, description, meta, actions, segments — skipping whichever
+// are absent for this render). 20ms head start + 60ms per item matches the
+// previous `delayChildren: 0.02` / `staggerChildren: 0.06`.
+const STAGGER_DELAY_START_MS = 20;
+const STAGGER_STEP_MS = 60;
 
 export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
   function ViewHeader(
@@ -166,8 +196,6 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
     },
     ref,
   ) {
-    const reduceMotion = useReducedMotion();
-    const animate = !disableAnimation && !reduceMotion;
     const compact = size === "compact";
     const hasSegments = Array.isArray(segments) && segments.length > 0;
     const showDivider = divider ?? hasSegments;
@@ -178,16 +206,39 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
     const TitleTag = titleAs;
     const PrimarySlot = asPrimaryActionChild ? Slot : "div";
 
-    const motionItem = (key: string, children: React.ReactNode, cls?: string) =>
-      animate ? (
-        <motion.div key={key} variants={itemVariants} className={cls}>
-          {children}
-        </motion.div>
-      ) : (
-        <div key={key} className={cls}>
+    // Monotonic per-render counter driving the stagger delay below. Reset on
+    // every render (plain closure var, not state) — deterministic and cheap,
+    // exactly mirroring framer-motion's old tree-order stagger index.
+    let staggerIndex = 0;
+
+    const motionItem = (key: string, children: React.ReactNode, cls?: string) => {
+      if (disableAnimation) {
+        return (
+          <div key={key} className={cls}>
+            {children}
+          </div>
+        );
+      }
+      const delayMs = STAGGER_DELAY_START_MS + staggerIndex * STAGGER_STEP_MS;
+      staggerIndex += 1;
+      return (
+        <div
+          key={key}
+          className={cn("animate-fade-in-up motion-reduce:animate-none", cls)}
+          // `.animate-fade-in-up` (globals.css) ships with `fill-mode: forwards`
+          // only — during a delay period THAT alone would leave the item at its
+          // normal (visible) style until the delay elapses, then snap to the
+          // "from" keyframe (opacity:0) right as the animation starts, i.e. a
+          // flash-then-hide-then-reveal glitch. `both` (inline, overriding just
+          // this one longhand) applies the "from" keyframe for the delay too,
+          // so staggered items start hidden immediately, exactly like the old
+          // framer-motion stagger did.
+          style={{ animationDelay: `${delayMs}ms`, animationFillMode: "both" }}
+        >
           {children}
         </div>
       );
+    };
 
     const rootClassName = cn(
       "flex w-full flex-col",
@@ -345,27 +396,9 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
       </>
     );
 
-    // Render an animated `motion.header` only when animating; otherwise a plain
-    // `header`. Splitting the two roots keeps consumer-facing props typed as
-    // `React.HTMLAttributes<HTMLElement>` (clean ergonomics) without colliding
-    // with framer-motion's incompatible drag/animation handler signatures.
-    if (animate) {
-      return (
-        <motion.header
-          ref={ref}
-          data-slot="view-header"
-          data-size={size}
-          className={rootClassName}
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          {...(rest as React.ComponentPropsWithoutRef<typeof motion.header>)}
-        >
-          {content}
-        </motion.header>
-      );
-    }
-
+    // Always a plain `<header>` — the entrance reveal is pure CSS on the
+    // children (see `motionItem` above), so there is no longer a second,
+    // framer-motion-backed root to conditionally render.
     return (
       <header
         ref={ref}

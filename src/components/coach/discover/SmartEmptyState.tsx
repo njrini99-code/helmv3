@@ -350,7 +350,7 @@ export function SmartEmptyState({
           Clear all filters
           {totalPlayersUnfiltered > 0 && (
             <span className="text-warm-400 font-normal">
-              ({totalPlayersUnfiltered.toLocaleString()} total)
+              ({totalPlayersUnfiltered.toLocaleString('en-US')} total)
             </span>
           )}
         </Button>

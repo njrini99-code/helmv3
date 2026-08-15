@@ -277,7 +277,7 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
             type="button"
             variant="ghost"
             onClick={handleRetry}
-            className="text-xs font-medium text-accent-700 hover:text-accent-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded h-auto p-0"
+            className="text-xs font-medium text-accent-700 hover:text-fw-success-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded h-auto p-0"
           >
             Try again
           </Button>

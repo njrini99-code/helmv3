@@ -547,7 +547,7 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
                         {inv.isExpired ? (
                           <InkBadge label="Expired" tone="neutral" />
                         ) : (
-                          <>Expires {new Date(inv.expiresAt).toLocaleDateString()}</>
+                          <>Expires {new Date(inv.expiresAt).toLocaleDateString('en-US')}</>
                         )}
                         {inv.role && <span>· {inv.role}</span>}
                       </p>

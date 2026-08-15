@@ -60,6 +60,19 @@ export interface FairwayWhatsNewProps {
   items?: WhatsNewItem[];
   /** True when the feed may be incomplete (a category hit its row ceiling). */
   truncated?: boolean;
+  /**
+   * The team's IANA zone, from the server. Pins BOTH renders to one zone so
+   * hydration agrees; undefined falls back to the viewer's zone, which is
+   * applied identically on both sides.
+   */
+  timeZone?: string | null;
+  /**
+   * The server's render timestamp (ISO). Both freshness clocks seed from this
+   * so the first client render reproduces the server markup exactly — a
+   * `Date.now()` initialiser runs on both sides and cannot agree, which is
+   * what threw React #418 here.
+   */
+  serverNowIso?: string | null;
 }
 
 interface TypeDescriptor {
@@ -126,26 +139,58 @@ function dayBucketKey(d: Date): string {
   return startOfDay(d).toISOString();
 }
 
-function dayBucketLabel(bucketIso: string, todayKey: string, yesterdayKey: string): string {
+/**
+ * Every formatter below takes an explicit locale and an explicit zone.
+ *
+ * They used to pass `undefined` as the locale, which means "whatever the
+ * runtime default is" — Node's on the server, the browser's on the client.
+ * This component carries `'use client'`, but Next server-renders it anyway, so
+ * the two renders produced different strings for the same timestamp and React
+ * threw #418 (text content mismatch) on this route in production. A time is
+ * the worst case: any server/viewer zone difference changes it, which for a
+ * function in `iad1` serving a coach anywhere is always.
+ *
+ * `'en-US'` pins the locale; `timeZone` (the team's, from the server) pins the
+ * zone. When the team has not set one, `undefined` falls back to the viewer's
+ * zone — still deterministic, because the same value is used on both sides of
+ * hydration.
+ */
+const LOCALE = 'en-US';
+
+function dayBucketLabel(
+  bucketIso: string,
+  todayKey: string,
+  yesterdayKey: string,
+  timeZone?: string,
+): string {
   if (bucketIso === todayKey) return 'Today';
   if (bucketIso === yesterdayKey) return 'Yesterday';
-  return new Date(bucketIso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(bucketIso).toLocaleDateString(LOCALE, {
+    month: 'short',
+    day: 'numeric',
+    timeZone,
+  });
 }
 
-function timeOfDay(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+function timeOfDay(iso: string, timeZone?: string): string {
+  return new Date(iso).toLocaleTimeString(LOCALE, {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone,
+  });
 }
 
 // Full localized date+time for the <time> title/aria-label (P391) — disambiguates
 // a bare time-of-day under a day-only header for assistive tech and on hover.
-function fullDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+function fullDateTime(iso: string, timeZone?: string): string {
+  return new Date(iso).toLocaleString(LOCALE, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZone,
   });
 }
 
@@ -186,7 +231,8 @@ function hrefForItem(item: WhatsNewItem): string {
   return `/golf/dashboard/players/${item.playerId}/game?tab=scouting`;
 }
 
-export function FairwayWhatsNew({ success, error, items, truncated }: FairwayWhatsNewProps) {
+export function FairwayWhatsNew({ success, error, items, truncated, timeZone, serverNowIso }: FairwayWhatsNewProps) {
+  const tz = timeZone ?? undefined;
   const router = useRouter();
   const [isRefreshing, startRefresh] = useTransition();
   const todayKey = dayBucketKey(new Date());
@@ -203,8 +249,34 @@ export function FairwayWhatsNew({ success, error, items, truncated }: FairwayWha
     () => `${items?.length ?? 0}:${items?.[0]?.occurredAt ?? ''}:${items?.[items.length - 1]?.occurredAt ?? ''}`,
     [items],
   );
-  const [dataAtMs, setDataAtMs] = useState<number>(() => Date.now());
-  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  /**
+   * Both clocks start from the SERVER's timestamp, not `Date.now()`.
+   *
+   * This is what actually threw React #418 on this route. `Date.now()` in a
+   * `useState` initialiser runs twice — once when the server renders, once
+   * when the client hydrates — and the two values differ by however long the
+   * response took. The dev overlay shows it exactly:
+   *
+   *     <time
+   *     +   dateTime="2026-08-15T15:02:18.708Z"   ← client
+   *     -   dateTime="2026-08-15T15:02:02.726Z"   ← server
+   *
+   * Sixteen seconds apart, so the markup could not match and React discarded
+   * the tree. Note this is NOT the timezone problem fixed alongside it: the
+   * formatters now take an explicit zone and were never the cause of THIS
+   * mismatch. Two separate defects on one line of output.
+   *
+   * `serverNowIso` is stamped once, on the server, and sent down — so the
+   * first client render reproduces the server's markup byte for byte. The
+   * ticking below then starts from that agreed value and only ever moves
+   * forward AFTER hydration, where divergence is expected and fine.
+   */
+  const serverNowMs = useMemo(
+    () => (serverNowIso ? Date.parse(serverNowIso) : 0),
+    [serverNowIso],
+  );
+  const [dataAtMs, setDataAtMs] = useState<number>(serverNowMs);
+  const [nowMs, setNowMs] = useState<number>(serverNowMs);
   useEffect(() => {
     setDataAtMs(Date.now());
     setNowMs(Date.now());
@@ -331,7 +403,7 @@ export function FairwayWhatsNew({ success, error, items, truncated }: FairwayWha
           <span aria-hidden>·</span>
           <span>
             Updated{' '}
-            <time dateTime={new Date(dataAtMs).toISOString()} title={fullDateTime(new Date(dataAtMs).toISOString())}>
+            <time dateTime={new Date(dataAtMs).toISOString()} title={fullDateTime(new Date(dataAtMs).toISOString(), tz)}>
               {timeAgo(dataAtMs, nowMs)}
             </time>
           </span>
@@ -411,7 +483,7 @@ export function FairwayWhatsNew({ success, error, items, truncated }: FairwayWha
           <>
             {dayKeys.map((key) => {
               const dayItems = grouped.get(key) ?? [];
-              const label = dayBucketLabel(key, todayKey, yesterdayKey);
+              const label = dayBucketLabel(key, todayKey, yesterdayKey, tz);
               return (
                 <section
                   key={key}
@@ -438,6 +510,7 @@ export function FairwayWhatsNew({ success, error, items, truncated }: FairwayWha
                           key={`${item.type}-${item.insightId ?? item.patternId ?? item.focusAreaId ?? idx}-${item.occurredAt}`}
                           item={item}
                           isNew={isNew(item)}
+                          tz={tz}
                         />
                       ))}
                     </ul>
@@ -459,7 +532,7 @@ export function FairwayWhatsNew({ success, error, items, truncated }: FairwayWha
   );
 }
 
-function FeedRow({ item, isNew }: { item: WhatsNewItem; isNew: boolean }) {
+function FeedRow({ item, isNew, tz }: { item: WhatsNewItem; isNew: boolean; tz?: string }) {
   const descriptor = TYPE_DESCRIPTORS[item.type];
   const { Icon } = descriptor;
   const href = hrefForItem(item);
@@ -498,11 +571,11 @@ function FeedRow({ item, isNew }: { item: WhatsNewItem; isNew: boolean }) {
                 is never ambiguous (for sighted hover and assistive tech alike). */}
             <time
               dateTime={item.occurredAt}
-              title={fullDateTime(item.occurredAt)}
-              aria-label={fullDateTime(item.occurredAt)}
+              title={fullDateTime(item.occurredAt, tz)}
+              aria-label={fullDateTime(item.occurredAt, tz)}
               className="ml-auto font-fw-sans text-caption tabular-nums text-text-tertiary"
             >
-              {timeOfDay(item.occurredAt)}
+              {timeOfDay(item.occurredAt, tz)}
             </time>
           </div>
           <p className="mt-0.5 flex items-center gap-1 font-fw-sans text-body-sm font-medium text-text-primary">

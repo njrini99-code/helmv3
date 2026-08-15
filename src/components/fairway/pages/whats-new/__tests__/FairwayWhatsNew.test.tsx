@@ -143,6 +143,69 @@ beforeEach(() => {
   }
 });
 
+/**
+ * Regression guard for the React #418 hydration error this feed threw in
+ * production on every load.
+ *
+ * The component carries 'use client' — which Next server-renders anyway — and
+ * formatted every timestamp with `toLocale*(undefined)`, i.e. "whatever locale
+ * and timezone the runtime happens to have". That is Node's on the server and
+ * the browser's on the client, so the same instant rendered as two different
+ * strings and React tore the subtree down (#418, text content mismatch).
+ *
+ * The property that makes hydration agree is that the rendered time is a pure
+ * function of (instant, timeZone prop) and owes NOTHING to the ambient runtime
+ * zone. These tests pin exactly that: one fixed UTC instant, rendered under two
+ * explicit zones, must produce the two correct — and different — wall clocks.
+ * If someone reinstates a runtime-default formatter, both cases collapse to the
+ * same string and these fail.
+ */
+describe('FairwayWhatsNew — timestamps are a pure function of the timeZone prop (#418)', () => {
+  // 15:42 UTC is 11:42 in New York (EDT, UTC-4) and 00:42 the NEXT DAY in
+  // Tokyo (UTC+9) — a zone difference big enough to cross the date line, so a
+  // regression cannot pass by coincidence.
+  const occurredAt = '2026-06-18T15:42:00.000Z';
+
+  it('formats against the supplied zone, not the runtime default', () => {
+    const { unmount } = render(
+      <FairwayWhatsNew
+        success
+        items={[item({ occurredAt, title: 'Insight detected' })]}
+        timeZone="America/New_York"
+      />,
+    );
+    const ny = document.querySelector('time[datetime="2026-06-18T15:42:00.000Z"]');
+    expect(ny?.textContent).toContain('11:42');
+    // The full date carried for AT/hover must follow the same zone.
+    expect(ny?.getAttribute('aria-label') ?? '').toContain('Jun 18');
+    unmount();
+
+    render(
+      <FairwayWhatsNew
+        success
+        items={[item({ occurredAt, title: 'Insight detected' })]}
+        timeZone="Asia/Tokyo"
+      />,
+    );
+    const tokyo = document.querySelector('time[datetime="2026-06-18T15:42:00.000Z"]');
+    expect(tokyo?.textContent).toContain('12:42');
+    // Tokyo is a day ahead at this instant — proves the DATE follows the zone
+    // too, not just the clock.
+    expect(tokyo?.getAttribute('aria-label') ?? '').toContain('Jun 19');
+  });
+
+  it('falls back to one consistent zone when the team has not set one', () => {
+    // No `timeZone` prop: the formatters pass `undefined` through, which resolves
+    // to the viewer's own zone. That is still deterministic ACROSS hydration,
+    // because server and client each receive the same (absent) value — what must
+    // never come back is a formatter that ignores the prop entirely.
+    render(<FairwayWhatsNew success items={[item({ occurredAt, title: 'Insight detected' })]} />);
+    const el = document.querySelector('time[datetime="2026-06-18T15:42:00.000Z"]');
+    expect(el).not.toBeNull();
+    expect(el?.textContent ?? '').toMatch(/\d{1,2}:\d{2}/);
+  });
+});
+
 describe('FairwayWhatsNew', () => {
   it('P391: renders each timestamp as a <time dateTime> with a full-date title/aria-label', () => {
     const occurredAt = '2026-06-18T15:42:00.000Z';

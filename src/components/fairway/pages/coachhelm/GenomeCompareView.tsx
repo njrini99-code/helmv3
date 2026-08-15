@@ -438,7 +438,7 @@ function ComparePicker({
                       'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                       'motion-reduce:transition-none',
                       selected
-                        ? 'bg-accent-50 text-accent-800'
+                        ? 'bg-accent-50 text-fw-success-ink'
                         : 'text-text-secondary hover:bg-surface-sunken hover:text-text-primary',
                     )}
                   >

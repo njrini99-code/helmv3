@@ -69,7 +69,7 @@ export function ConfirmDialog({
       icon: 'bg-surface-sunken text-text-secondary',
       // Brand light green (#16A34A = accent-500), matching the Fairway primary
       // button. Intentional brand decision — do NOT re-darken to accent-700.
-      button: 'bg-accent-700 hover:bg-accent-800 text-text-on-accent',
+      button: 'bg-accent-750 hover:bg-accent-800 text-text-on-accent',
       cancelVariant: 'secondary' as const,
     },
   };

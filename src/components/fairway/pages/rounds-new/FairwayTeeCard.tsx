@@ -209,7 +209,7 @@ export function FairwayTeeCard({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={`Play the ${tee.tee_name} tees${yards ? `, ${yards.toLocaleString()} yards` : ''}`}
+      aria-label={`Play the ${tee.tee_name} tees${yards ? `, ${yards.toLocaleString('en-US')} yards` : ''}`}
       className={cn(
         'group flex w-full flex-col gap-3 rounded-card border border-border-subtle bg-surface p-4 text-left',
         'transition-[border-color,background-color,transform] [transition-duration:var(--fw-dur-fast)]',
@@ -256,7 +256,7 @@ export function FairwayTeeCard({
           {yards !== null ? (
             <>
               <span className="font-fw-mono text-h3 font-semibold tabular-nums leading-none text-text-primary">
-                {yards.toLocaleString()}
+                {yards.toLocaleString('en-US')}
               </span>
               <span className="font-fw-sans text-caption text-text-tertiary">yds</span>
             </>
@@ -279,7 +279,7 @@ export function FairwayTeeCard({
             />
           </span>
           <span className="shrink-0 font-fw-sans text-caption text-text-tertiary">
-            {shortfall === 0 ? 'Longest' : `−${shortfall.toLocaleString()} yds`}
+            {shortfall === 0 ? 'Longest' : `−${shortfall.toLocaleString('en-US')} yds`}
           </span>
         </div>
       )}

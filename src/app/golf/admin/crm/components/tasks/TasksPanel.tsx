@@ -123,7 +123,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
         <Button variant="primary"
           type="button"
           onClick={openCreate}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-fw-sm bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors"
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-fw-sm bg-accent-650 text-text-on-accent hover:bg-accent-750 transition-colors"
         >
           <IconPlus size={12} /> New task
         </Button>

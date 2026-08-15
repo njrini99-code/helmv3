@@ -178,7 +178,7 @@ function ComparisonCell({
       <strong
         className={
           emphasis
-            ? 'mt-0.5 block truncate font-fw-mono text-body-lg font-semibold text-accent-800 tabular-nums'
+            ? 'mt-0.5 block truncate font-fw-mono text-body-lg font-semibold text-fw-success-ink tabular-nums'
             : 'mt-0.5 block truncate font-fw-mono text-body font-medium text-text-primary tabular-nums'
         }
       >

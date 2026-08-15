@@ -133,10 +133,23 @@ export default async function GolfDashboardLayout({
     const supabase = await createClient();
 
     // Parallel fetch: active team id + switch context (teams + canSwitch gate).
-    const cookieTeamId = await getActiveTeamCookie();
+    //
+    // `getActiveTeamCookie()` does no I/O (it's a `cookies()` lookup), but it
+    // was previously `await`ed to completion BEFORE `getCoachTeamSwitchContext`
+    // was even called — so that query's first Supabase round trip couldn't be
+    // dispatched until the cookie's microtask hop (through the server-action
+    // wrapper) had fully unwound. `resolveCoachActiveTeamId` genuinely needs
+    // the resolved cookie VALUE (its signature takes a string, not a promise),
+    // so it can't start any earlier than this — but `getCoachTeamSwitchContext`
+    // has no such dependency. Calling it here, before awaiting the cookie,
+    // dispatches its `golf_team_coach_staff` read in the same tick as the
+    // cookie read instead of after it.
+    const cookiePromise = getActiveTeamCookie();
+    const switchContextPromise = getCoachTeamSwitchContext(supabase, coach.id, coach.organization_id);
+    const cookieTeamId = await cookiePromise;
     const [resolvedTeamId, switchContext] = await Promise.all([
       resolveCoachActiveTeamId(supabase, coach.organization_id, coach.id, cookieTeamId),
-      getCoachTeamSwitchContext(supabase, coach.id, coach.organization_id),
+      switchContextPromise,
     ]);
     const coachTeams = switchContext.teams;
 

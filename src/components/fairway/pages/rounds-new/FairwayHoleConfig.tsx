@@ -174,7 +174,7 @@ export function FairwayHoleConfig({
             aria-label={courseName ? `Scorecard summary for ${courseName}` : 'Scorecard summary'}
           >
             {stat('Total Par', String(totalPar), true)}
-            {stat('Total Yards', totalYards.toLocaleString())}
+            {stat('Total Yards', totalYards.toLocaleString('en-US'))}
             {stat('Holes', String(holesPerRound))}
           </div>
         </Surface>
@@ -238,7 +238,7 @@ export function FairwayHoleConfig({
                         className={cn(
                           'h-9 w-9 rounded-fw-md font-fw-mono text-body-sm font-semibold tabular-nums transition-colors',
                           selected
-                            ? 'bg-accent-700 text-text-on-accent shadow-flat'
+                            ? 'bg-accent-750 text-text-on-accent shadow-flat'
                             : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
                         )}
                       >
@@ -272,7 +272,7 @@ export function FairwayHoleConfig({
                 {footerPar}
               </div>
               <div className="px-3 py-3 text-center font-fw-mono text-body-sm font-semibold tabular-nums text-accent-700">
-                {footerYards.toLocaleString()}
+                {footerYards.toLocaleString('en-US')}
               </div>
             </div>
           </div>

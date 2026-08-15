@@ -201,7 +201,7 @@ export function PromptComposer({
         <ul className="mb-2 flex flex-wrap gap-1.5">
           {context.map((chip) => (
             <li key={chip.id}>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 py-1 pl-2.5 pr-1 font-fw-sans text-caption text-accent-800">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 py-1 pl-2.5 pr-1 font-fw-sans text-caption text-fw-success-ink">
                 {chip.label}
                 {/* eslint-disable-next-line helm/no-raw-button -- inline chip dismiss inside a context pill */}
                 <button
@@ -339,7 +339,7 @@ export function PromptComposer({
             aria-label="Send"
             className={cn(
               'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-fw-md',
-              'bg-accent-700 text-text-on-accent transition-colors hover:bg-accent-800',
+              'bg-accent-750 text-text-on-accent transition-colors hover:bg-accent-800',
               'disabled:bg-surface-sunken disabled:text-text-tertiary',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
             )}
@@ -391,7 +391,7 @@ function PlayerMenu({
                 onClick={() => onPick(p)}
                 className={cn(
                   'flex min-h-[44px] w-full items-center px-3 text-left font-fw-sans text-body-sm',
-                  i === active ? 'bg-accent-50 text-accent-800' : 'text-text-primary',
+                  i === active ? 'bg-accent-50 text-fw-success-ink' : 'text-text-primary',
                 )}
               >
                 {p.name}

@@ -77,9 +77,9 @@ export const TIMELINE_CONFIG: Record<TimelineSource, TimelineSourceConfig> = {
   // in the accent ramp — a coach replying is the event a rep most needs to spot
   // while scanning. Stays inside the one accent language (no rainbow).
   reply: {
-    color: 'text-accent-800',
+    color: 'text-fw-success-ink',
     ringColor: 'ring-accent-300',
-    bgColor: 'bg-accent-650',
+    bgColor: 'bg-accent-750',
     iconKey: 'IconMessage',
     label: 'Reply',
   },
@@ -90,7 +90,7 @@ export const TIMELINE_CONFIG: Record<TimelineSource, TimelineSourceConfig> = {
   demo_session: {
     color: 'text-accent-900',
     ringColor: 'ring-accent-400',
-    bgColor: 'bg-accent-700',
+    bgColor: 'bg-accent-750',
     iconKey: 'IconMonitor',
     label: 'Demo',
   },

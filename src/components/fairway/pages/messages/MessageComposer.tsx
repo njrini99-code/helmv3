@@ -44,7 +44,7 @@ const COUNTER_THRESHOLD = 0.9;
 function charsLeftHelp(value: string, max: number): string | undefined {
   if (value.length < max * COUNTER_THRESHOLD) return undefined;
   const left = max - value.length;
-  return `${left.toLocaleString()} character${left === 1 ? '' : 's'} left`;
+  return `${left.toLocaleString('en-US')} character${left === 1 ? '' : 's'} left`;
 }
 
 export interface MessageComposerProps {
@@ -237,7 +237,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
             'active:scale-95 motion-reduce:active:scale-100',
             canSend
-              ? 'bg-accent-700 text-text-on-accent shadow-flat hover:bg-accent-600 hover:shadow-soft'
+              ? 'bg-accent-750 text-text-on-accent shadow-flat hover:bg-accent-600 hover:shadow-soft'
               : 'cursor-not-allowed bg-surface-sunken text-text-tertiary',
           )}
         >

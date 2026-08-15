@@ -251,7 +251,7 @@ export function NoteCard({
                 type="button"
                 onClick={handleSave}
                 disabled={busy || !draft.trim()}
-                className="px-3 py-1 text-xs font-semibold rounded-fw-sm bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 text-xs font-semibold rounded-fw-sm bg-accent-650 text-text-on-accent hover:bg-accent-750 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {busy ? 'Saving...' : 'Save'}
               </Button>
@@ -265,7 +265,7 @@ export function NoteCard({
             <Button variant="ghost"
               type="button"
               onClick={() => setShowFull(true)}
-              className="ml-1 text-xs text-accent-700 hover:text-accent-800 font-medium"
+              className="ml-1 text-xs text-accent-700 hover:text-fw-success-ink font-medium"
             >
               Show more
             </Button>
@@ -274,7 +274,7 @@ export function NoteCard({
             <Button variant="ghost"
               type="button"
               onClick={() => setShowFull(false)}
-              className="ml-1 text-xs text-accent-700 hover:text-accent-800 font-medium"
+              className="ml-1 text-xs text-accent-700 hover:text-fw-success-ink font-medium"
             >
               Show less
             </Button>

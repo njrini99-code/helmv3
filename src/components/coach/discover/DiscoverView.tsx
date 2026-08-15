@@ -546,7 +546,7 @@ export function DiscoverView({
       {!hasActiveFilters && (
         <p className="text-sm text-warm-500">
           <span className="font-semibold text-warm-900">
-            {totalCount.toLocaleString()}
+            {totalCount.toLocaleString('en-US')}
           </span>{' '}
           {mode === 'players' ? 'players' : 'teams'} found
         </p>

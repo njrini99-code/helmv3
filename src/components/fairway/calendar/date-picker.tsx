@@ -286,6 +286,23 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
             // matte under reduced-transparency via the shared glass module.
             glass.glass,
             'z-modal rounded-lg p-1 outline-none',
+            /*
+             * Fit the space that actually exists, and scroll if it does not.
+             *
+             * `collisionPadding` alone cannot save a panel that is taller than
+             * BOTH gaps around its trigger. Opened from the "Start date" field
+             * inside the event editor's ModalShell, the month grid is ~376px
+             * with 371px above the trigger and 311px below — neither side fits,
+             * so Radix picks the larger gap and clamps, landing the panel at
+             * `top: -12` (exactly -collisionPadding) with the first week row
+             * cut off above the viewport. Measured, not inferred.
+             *
+             * `--radix-popover-content-available-height` is the space Radix has
+             * already computed for the chosen side, so capping to it makes the
+             * panel shrink instead of overflow, and `overflow-y-auto` keeps the
+             * clipped weeks reachable rather than lost.
+             */
+            'max-h-[var(--radix-popover-content-available-height)] overflow-y-auto',
             // cinematic materialize: opacity + scale + slight directional drift
             'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',

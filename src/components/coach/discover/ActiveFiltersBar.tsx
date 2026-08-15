@@ -119,7 +119,7 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
       className
     )}>
       <span className="text-sm text-warm-500 font-medium whitespace-nowrap">
-        <span className="font-semibold text-warm-900">{totalCount.toLocaleString()}</span>
+        <span className="font-semibold text-warm-900">{totalCount.toLocaleString('en-US')}</span>
         {' '}{totalCount === 1 ? 'player' : 'players'}
       </span>
       

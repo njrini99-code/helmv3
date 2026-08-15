@@ -228,7 +228,7 @@ function Mentions({
           className={cn(
             'font-medium text-text-primary underline decoration-border-strong',
             'underline-offset-[3px] decoration-1',
-            'transition-colors hover:text-accent-800 hover:decoration-accent-600',
+            'transition-colors hover:text-fw-success-ink hover:decoration-accent-600',
             'rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
           )}
         >

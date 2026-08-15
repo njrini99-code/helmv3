@@ -89,13 +89,13 @@ export function PlanDetail({ plan, onComplete, onUncomplete, pendingGoalId }: Pl
             {plan.start_date && (
               <span className="flex items-center gap-1">
                 <IconCalendar size={12} />
-                Starts {new Date(plan.start_date).toLocaleDateString()}
+                Starts {new Date(plan.start_date).toLocaleDateString('en-US')}
               </span>
             )}
             {plan.end_date && (
               <span className="flex items-center gap-1">
                 <IconClock size={12} />
-                Ends {new Date(plan.end_date).toLocaleDateString()}
+                Ends {new Date(plan.end_date).toLocaleDateString('en-US')}
               </span>
             )}
           </div>
@@ -145,7 +145,7 @@ export function PlanDetail({ plan, onComplete, onUncomplete, pendingGoalId }: Pl
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                       {goal.target_date ? (
                         <p className="font-annual text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
-                          Target: {parseDateOnly(goal.target_date).toLocaleDateString()}
+                          Target: {parseDateOnly(goal.target_date).toLocaleDateString('en-US')}
                         </p>
                       ) : (
                         <span />

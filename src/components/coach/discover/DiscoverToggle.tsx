@@ -139,7 +139,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
                         : 'bg-warm-200/80 text-warm-500'
                     )}
                   >
-                    {option.count.toLocaleString()}
+                    {option.count.toLocaleString('en-US')}
                   </motion.span>
                 )}
               </AnimatePresence>

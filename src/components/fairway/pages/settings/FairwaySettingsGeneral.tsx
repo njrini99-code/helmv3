@@ -610,7 +610,12 @@ export function FairwaySettingsGeneral() {
   if (loadError && !profile) {
     return (
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
-        <ViewHeader eyebrow="Settings" title="Settings" />
+        {/* #1318 — no `eyebrow` here: an eyebrow reading "Settings" directly
+            above an h1 reading "Settings" said nothing the h1 didn't already
+            say, and the top-bar breadcrumb (real nav) already reads
+            "… / Settings" above both. Dropping the decorative echo, not the
+            breadcrumb or the h1. */}
+        <ViewHeader title="Settings" />
         <Surface elevation="border" padding="lg" className="mt-8 flex flex-col items-start gap-3">
           <h2 className="font-fw-display text-h2 text-text-primary">Couldn&rsquo;t load settings</h2>
           <p className="font-fw-sans text-body-sm text-text-secondary">
@@ -632,7 +637,12 @@ export function FairwaySettingsGeneral() {
   if (!profile) {
     return (
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
-        <ViewHeader eyebrow="Settings" title="Settings" />
+        {/* #1318 — no `eyebrow` here: an eyebrow reading "Settings" directly
+            above an h1 reading "Settings" said nothing the h1 didn't already
+            say, and the top-bar breadcrumb (real nav) already reads
+            "… / Settings" above both. Dropping the decorative echo, not the
+            breadcrumb or the h1. */}
+        <ViewHeader title="Settings" />
         <div className="mt-8 flex flex-col gap-7" role="status" aria-busy="true" aria-live="polite">
           <span className="sr-only">Loading settings…</span>
           {[1, 2, 3].map((i) => (
@@ -649,8 +659,10 @@ export function FairwaySettingsGeneral() {
   return (
     <UnsavedChangesGuard>
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
+      {/* #1318 — no `eyebrow` here either, for the same reason as the
+          loading/error states above: it repeated the h1's own word with the
+          breadcrumb already saying it too. */}
       <ViewHeader
-        eyebrow="Settings"
         title="Settings"
         description="Manage your account and preferences."
         meta={

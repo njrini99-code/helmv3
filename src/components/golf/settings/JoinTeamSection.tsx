@@ -163,7 +163,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
     const date = new Date(dateStr);
     if (!now) {
       // Pre-hydration: render absolute date so SSR + first paint match.
-      return date.toLocaleDateString();
+      return date.toLocaleDateString('en-US');
     }
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -174,7 +174,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-US');
   }
 
   return (
@@ -194,7 +194,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
         <div className="mb-6">
           <div className="flex items-center justify-between gap-3 rounded-fw-md border border-accent-500/40 bg-accent-50 p-4">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-sm bg-accent-700 text-text-on-accent">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-sm bg-accent-750 text-text-on-accent">
                 <IconCheck size={20} aria-hidden />
               </span>
               <div className="min-w-0">

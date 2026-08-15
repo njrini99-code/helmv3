@@ -65,7 +65,7 @@ function expiryLabel(link: PassportShareLinkView): string {
   if (link.expiresAt) {
     const t = new Date(link.expiresAt).getTime();
     if (t <= Date.now()) return 'Expired';
-    return `Expires ${new Date(link.expiresAt).toLocaleDateString()}`;
+    return `Expires ${new Date(link.expiresAt).toLocaleDateString('en-US')}`;
   }
   return 'No expiry';
 }
@@ -351,7 +351,7 @@ export function ScoutPacketManager({
                         {expiryLabel(link)} · {link.viewCount} view
                         {link.viewCount === 1 ? '' : 's'}
                         {link.lastViewedAt
-                          ? ` · last ${new Date(link.lastViewedAt).toLocaleDateString()}`
+                          ? ` · last ${new Date(link.lastViewedAt).toLocaleDateString('en-US')}`
                           : ''}
                       </p>
                     </div>

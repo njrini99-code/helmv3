@@ -36,6 +36,7 @@ import {
   IconTrash,
   IconFile,
   IconCheck,
+  IconCheckCircle2,
   IconUsers,
   IconClock,
   IconClipboardList,
@@ -192,10 +193,22 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
                   : 'All team'}
             </span>
 
-            {/* Ack progress + avatar stack — honest: only with a real
-                denominator, else an em-dash (P273), matching the task counter. */}
+            {/* Ack progress + avatar stack. Only announcements the coach opted
+                into acknowledgement-tracking for (`requires_acknowledgement`,
+                set per-announcement in the create flow) show this — it's a
+                genuine difference in kind, not missing data, so a card
+                without it correctly shows nothing rather than a fake ratio.
+                The leading icon (matching the Users/File/ClipboardList icons
+                on the other meta chips in this row) is what makes that
+                honest omission legible instead of looking arbitrary. Honest:
+                only a real denominator, else an em-dash (P273), matching the
+                task counter. */}
             {ann.requires_acknowledgement && (
-              <span className="inline-flex items-center gap-1.5">
+              <span
+                className="inline-flex items-center gap-1.5"
+                title="Acknowledgement progress"
+              >
+                <IconCheckCircle2 size={12} className="text-text-tertiary" aria-hidden />
                 {ann.acknowledged_players && ann.acknowledged_players.length > 0 && (
                   <AvatarGroup size="xs" max={5}>
                     {ann.acknowledged_players.map((p) => (
