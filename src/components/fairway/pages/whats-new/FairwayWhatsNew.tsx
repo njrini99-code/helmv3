@@ -66,6 +66,13 @@ export interface FairwayWhatsNewProps {
    * applied identically on both sides.
    */
   timeZone?: string | null;
+  /**
+   * The server's render timestamp (ISO). Both freshness clocks seed from this
+   * so the first client render reproduces the server markup exactly — a
+   * `Date.now()` initialiser runs on both sides and cannot agree, which is
+   * what threw React #418 here.
+   */
+  serverNowIso?: string | null;
 }
 
 interface TypeDescriptor {
@@ -224,7 +231,7 @@ function hrefForItem(item: WhatsNewItem): string {
   return `/golf/dashboard/players/${item.playerId}/game?tab=scouting`;
 }
 
-export function FairwayWhatsNew({ success, error, items, truncated, timeZone }: FairwayWhatsNewProps) {
+export function FairwayWhatsNew({ success, error, items, truncated, timeZone, serverNowIso }: FairwayWhatsNewProps) {
   const tz = timeZone ?? undefined;
   const router = useRouter();
   const [isRefreshing, startRefresh] = useTransition();
@@ -242,8 +249,34 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone }: 
     () => `${items?.length ?? 0}:${items?.[0]?.occurredAt ?? ''}:${items?.[items.length - 1]?.occurredAt ?? ''}`,
     [items],
   );
-  const [dataAtMs, setDataAtMs] = useState<number>(() => Date.now());
-  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  /**
+   * Both clocks start from the SERVER's timestamp, not `Date.now()`.
+   *
+   * This is what actually threw React #418 on this route. `Date.now()` in a
+   * `useState` initialiser runs twice — once when the server renders, once
+   * when the client hydrates — and the two values differ by however long the
+   * response took. The dev overlay shows it exactly:
+   *
+   *     <time
+   *     +   dateTime="2026-08-15T15:02:18.708Z"   ← client
+   *     -   dateTime="2026-08-15T15:02:02.726Z"   ← server
+   *
+   * Sixteen seconds apart, so the markup could not match and React discarded
+   * the tree. Note this is NOT the timezone problem fixed alongside it: the
+   * formatters now take an explicit zone and were never the cause of THIS
+   * mismatch. Two separate defects on one line of output.
+   *
+   * `serverNowIso` is stamped once, on the server, and sent down — so the
+   * first client render reproduces the server's markup byte for byte. The
+   * ticking below then starts from that agreed value and only ever moves
+   * forward AFTER hydration, where divergence is expected and fine.
+   */
+  const serverNowMs = useMemo(
+    () => (serverNowIso ? Date.parse(serverNowIso) : 0),
+    [serverNowIso],
+  );
+  const [dataAtMs, setDataAtMs] = useState<number>(serverNowMs);
+  const [nowMs, setNowMs] = useState<number>(serverNowMs);
   useEffect(() => {
     setDataAtMs(Date.now());
     setNowMs(Date.now());

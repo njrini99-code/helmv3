@@ -65,6 +65,9 @@ export default async function WhatsNewPage() {
         // Without it each side used its own runtime default and the feed threw
         // React #418 (text mismatch) on every load.
         timeZone={result.timeZone}
+        // Stamped once on the server; the client seeds both freshness clocks
+        // from it so hydration markup matches. See the component's note.
+        serverNowIso={new Date().toISOString()}
       />
     </div>
   );
