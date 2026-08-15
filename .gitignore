@@ -196,3 +196,8 @@ android/keystore.properties
 # scattered across the top level.
 .dev-screenshots/
 .dev-assets/
+
+# session/tool artifacts (added 2026-08-15)
+.ultracode/
+.claude/*.bak-*
+SECURITY_REVIEW_*.json
