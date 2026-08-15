@@ -285,7 +285,7 @@ export function DayScheduleSwipe({
                   className={cn(
                     'flex min-h-11 flex-1 shrink-0 basis-0 flex-col items-center justify-center gap-1 rounded-fw-sm px-1 py-1.5 transition-colors',
                     selected
-                      ? 'bg-accent-700 text-text-on-accent'
+                      ? 'bg-accent-750 text-text-on-accent'
                       : 'text-text-tertiary hover:bg-surface-sunken',
                   )}
                 >

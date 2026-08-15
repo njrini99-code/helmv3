@@ -1063,7 +1063,7 @@ export function FairwayCoachDashboard({
                             className={cn(
                               'grid h-6 w-6 shrink-0 place-items-center rounded-full font-fw-mono text-caption font-medium tabular-nums',
                               i === 0
-                                ? 'bg-accent-700 text-text-on-accent'
+                                ? 'bg-accent-750 text-text-on-accent'
                                 : 'bg-surface text-text-tertiary',
                             )}
                           >

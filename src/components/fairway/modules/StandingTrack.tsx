@@ -188,7 +188,7 @@ export function StandingTrack({
           legible-content fix; this is the last-resort net. */}
       <div
         data-slot="standing-track-labels"
-        className="relative mt-[7px] h-[15px] overflow-clip font-fw-sans text-caption text-accent-200"
+        className="relative mt-[7px] h-[15px] overflow-clip font-fw-sans text-caption text-ink-on-deep-soft"
       >
         {labelPositions.map((pos) => {
           const isSubject = pos.key === STANDING_TRACK_SUBJECT_KEY;

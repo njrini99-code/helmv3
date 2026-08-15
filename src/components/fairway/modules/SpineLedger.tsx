@@ -41,7 +41,7 @@ export function SpineLedger({ rows, className }: SpineLedgerProps) {
   return (
     <dl data-slot="spine-ledger" className={cn('grid gap-1.5', className)}>
       {rows.map((row) => (
-        <div key={row.label} className="flex items-center justify-between gap-3 font-fw-sans text-caption text-accent-100">
+        <div key={row.label} className="flex items-center justify-between gap-3 font-fw-sans text-caption text-ink-on-deep">
           <dt className="min-w-0 truncate">{row.label}</dt>
           <dd
             style={TABULAR_NUMS}

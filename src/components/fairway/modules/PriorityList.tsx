@@ -34,7 +34,7 @@ export function PriorityList({ items, className }: PriorityListProps) {
           </span>
           <span
             style={TABULAR_NUMS}
-            className="font-fw-mono text-caption tabular-nums text-accent-200"
+            className="font-fw-mono text-caption tabular-nums text-ink-on-deep-soft"
           >
             {item.value}
           </span>

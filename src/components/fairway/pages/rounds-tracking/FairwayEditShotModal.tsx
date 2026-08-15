@@ -54,7 +54,7 @@ function gridBtn(selected: boolean): string {
     'min-h-[48px] rounded-fw-md py-3 font-fw-sans text-sm font-medium transition-colors',
     'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
     selected
-      ? 'bg-accent-700 text-text-on-accent shadow-flat ring-1 ring-accent-600'
+      ? 'bg-accent-750 text-text-on-accent shadow-flat ring-1 ring-accent-600'
       : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:ring-border-strong',
   );
 }
@@ -286,7 +286,7 @@ export function FairwayEditShotModal({
                               'min-h-[44px] rounded-fw-md py-2 font-fw-sans text-eyebrow font-medium transition-colors',
                               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                               editFormData.distanceToHoleAfter === String(ft) && editFormData.distanceUnitAfter === 'feet'
-                                ? 'bg-accent-700 text-text-on-accent shadow-flat'
+                                ? 'bg-accent-750 text-text-on-accent shadow-flat'
                                 : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:ring-border-strong',
                             )}
                           >
@@ -305,7 +305,7 @@ export function FairwayEditShotModal({
                               'rounded-fw-md py-2 font-fw-sans text-eyebrow font-medium transition-colors',
                               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                               editFormData.distanceToHoleAfter === String(yds) && editFormData.distanceUnitAfter === 'yards'
-                                ? 'bg-accent-700 text-text-on-accent shadow-flat'
+                                ? 'bg-accent-750 text-text-on-accent shadow-flat'
                                 : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:ring-border-strong',
                             )}
                           >

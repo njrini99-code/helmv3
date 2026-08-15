@@ -595,7 +595,7 @@ export function FocusAreaModal({
                         <span
                           className={cn(
                             'font-fw-sans text-body-sm font-medium',
-                            active ? 'text-accent-800' : 'text-text-primary',
+                            active ? 'text-fw-success-ink' : 'text-text-primary',
                           )}
                         >
                           {m.label}
@@ -624,7 +624,7 @@ export function FocusAreaModal({
                       'flex items-center justify-center rounded-fw-md border border-dashed px-3 py-2.5 text-left',
                       'font-fw-sans text-body-sm transition-all duration-200',
                       showCustom
-                        ? 'border-accent-400 bg-accent-50 text-accent-800'
+                        ? 'border-accent-400 bg-accent-50 text-fw-success-ink'
                         : 'border-border-subtle bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-tint',
                     )}
                   >

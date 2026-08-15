@@ -54,21 +54,41 @@ describe('CoachHelmSubNav — player consolidation', () => {
   // are now `?view=` drills of the Brief home — the stage IS the coach nav for
   // that content, so the strip collapses to the single Brief tab (same shape
   // as the player Overview consolidation above).
-  it('renders the single consolidated Brief tab with its canonical route', () => {
+  it('renders the consolidated Brief tab and Ask with their canonical routes', () => {
     render(createElement(CoachHelmSubNav, { active: 'brief', role: 'coach' }));
 
     const brief = screen.getByRole('link', { name: 'Brief' });
     expect(brief.getAttribute('href')).toBe('/golf/dashboard/intelligence');
     expect(brief.getAttribute('aria-current')).toBe('page');
 
-    // Exactly one coach tab — the retired Signals / Players / Effectiveness
-    // tabs (now legacy+hidden in the registry) must NOT render.
+    /**
+     * Ask is a tab, and the collapse above never applied to it.
+     *
+     * Signals / Players / Effectiveness became `?view=` drills of the Brief
+     * and are marked `legacy: true, hidden: true` in `surface-registry.ts`.
+     * `ask` carries neither flag — it is a live `group: 'coachhelm-tab'`
+     * surface on its own route — but it was dropped from the strip with them,
+     * which left the floating FAB as the only way into the chat while the
+     * breadcrumb kept printing `CoachHelm AI / Ask`.
+     */
+    const ask = screen.getByRole('link', { name: 'Ask' });
+    expect(ask.getAttribute('href')).toBe('/golf/dashboard/coachhelm/chat');
+
+    // Two coach tabs — the retired Signals / Players / Effectiveness tabs must
+    // still NOT render.
     const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
-    expect(within(nav).getAllByRole('link')).toHaveLength(1);
+    expect(within(nav).getAllByRole('link')).toHaveLength(2);
     expect(screen.queryByRole('link', { name: 'Signals' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Players' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Effectiveness' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Ask' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Standing' })).toBeNull();
+  });
+
+  it('marks Ask active on the chat route, including with a conversation in the URL', () => {
+    render(createElement(CoachHelmSubNav, { active: 'ask', role: 'coach' }));
+
+    const ask = screen.getByRole('link', { name: 'Ask' });
+    expect(ask.getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('link', { name: 'Brief' }).getAttribute('aria-current')).toBeNull();
   });
 });

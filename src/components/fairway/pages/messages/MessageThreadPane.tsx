@@ -197,7 +197,7 @@ function MessageAttachments({
             <FileText
               size={16}
               aria-hidden="true"
-              className={cn('flex-shrink-0', isOwn ? 'text-text-on-accent/80' : 'text-text-tertiary')}
+              className={cn('flex-shrink-0', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}
             />
             <span className="min-w-0 flex-1">
               <span
@@ -211,7 +211,7 @@ function MessageAttachments({
               <span
                 className={cn(
                   'block font-fw-mono text-eyebrow tabular-nums',
-                  isOwn ? 'text-text-on-accent/70' : 'text-text-tertiary',
+                  isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary',
                 )}
               >
                 {formatFileSize(att.fileSize)}
@@ -221,7 +221,7 @@ function MessageAttachments({
               <Download
                 size={14}
                 aria-hidden="true"
-                className={cn('flex-shrink-0', isOwn ? 'text-text-on-accent/80' : 'text-text-tertiary')}
+                className={cn('flex-shrink-0', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}
               />
             ) : null}
           </span>
@@ -666,7 +666,7 @@ export function MessageThreadPane({
                         className={cn(
                           'px-4 py-2.5',
                           isOwn
-                            ? 'bg-accent-700 text-text-on-accent'
+                            ? 'bg-accent-750 text-text-on-accent'
                             : 'bg-surface-sunken text-text-primary',
                           isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-br-sm' : 'rounded-fw-lg rounded-bl-sm'),
                           isFirstInGroup && !isLastInGroup && 'rounded-fw-lg',
@@ -707,7 +707,7 @@ export function MessageThreadPane({
                               Couldn’t load attachment — tap to retry
                             </Button>
                           ) : (
-                            <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-text-on-accent/80' : 'text-text-tertiary')}>
+                            <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}>
                               <Paperclip size={12} aria-hidden="true" />
                               Attachment
                             </span>
@@ -715,7 +715,7 @@ export function MessageThreadPane({
                         ) : null}
                         {/* Edited badge — DORMANT unless edited_at. */}
                         {editedAt ? (
-                          <span className={cn('mt-1 block font-fw-sans text-eyebrow', isOwn ? 'text-text-on-accent/70' : 'text-text-tertiary')}>
+                          <span className={cn('mt-1 block font-fw-sans text-eyebrow', isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary')}>
                             edited
                           </span>
                         ) : null}

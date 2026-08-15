@@ -696,7 +696,7 @@ export function FairwayEventEditor({
                       'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
                       'focus-visible:ring-accent-500/40',
                       active
-                        ? 'bg-accent-700 text-text-on-accent shadow-flat'
+                        ? 'bg-accent-750 text-text-on-accent shadow-flat'
                         : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
                     )}
                   >
@@ -1048,7 +1048,7 @@ export function FairwayEventEditor({
                               'grid h-8 w-8 place-items-center rounded-full font-fw-sans text-caption font-medium transition-colors disabled:opacity-50',
                               'focus-visible:ring-accent-500/40',
                               selected
-                                ? 'bg-accent-700 text-text-on-accent shadow-flat'
+                                ? 'bg-accent-750 text-text-on-accent shadow-flat'
                                 : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
                             )}
                           >

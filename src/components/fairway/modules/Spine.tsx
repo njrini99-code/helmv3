@@ -82,7 +82,7 @@ export function Spine({
         ) : null}
       </p>
 
-      <p className="mt-2.5 font-fw-sans text-body-sm text-accent-100">{verdict}</p>
+      <p className="mt-2.5 font-fw-sans text-body-sm text-ink-on-deep">{verdict}</p>
 
       {track ? (
         <>
