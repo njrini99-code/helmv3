@@ -79,15 +79,41 @@ const VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 }, // iPhone 14 — the 390px the rep uses
 ];
 
+/**
+ * A dev server compiles a route the first time it is asked for one.
+ *
+ * Against prod every route is prebuilt and the login flow is a couple of
+ * seconds. Against `--base=http://localhost:*` the FIRST request to
+ * `/golf/login` cost 7.3s of compile, and the redirect target has to compile
+ * too — which outran the post-submit wait, so the run authenticated nothing
+ * and walked zero routes while still exiting 0. A pass that proves nothing but
+ * looks like a pass is worse than a failure.
+ *
+ * So: against a local base, pay the compile cost up front on both sides of the
+ * redirect, and give the login itself a much longer leash. No effect on prod
+ * runs, which skip this entirely.
+ */
+const IS_LOCAL = /localhost|127\.0\.0\.1/.test(BASE);
+
+async function warm(page, routes) {
+  for (const r of routes) {
+    try {
+      await page.goto(BASE + r, { waitUntil: 'domcontentloaded', timeout: 180000 });
+    } catch { /* a warm-up miss is not a finding — the real pass will report it */ }
+  }
+}
+
 async function login(page, email, password) {
-  await page.goto(`${BASE}/golf/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  if (IS_LOCAL) await warm(page, ['/golf/login', '/golf/dashboard']);
+  const settle = IS_LOCAL ? 180000 : 45000;
+  await page.goto(`${BASE}/golf/login`, { waitUntil: 'domcontentloaded', timeout: settle });
   await page.fill('input[type="email"]', email);
   await page.fill('input[type="password"]', password);
   await Promise.all([
-    page.waitForURL('**/golf/**', { timeout: 45000 }).catch(() => {}),
+    page.waitForURL('**/golf/**', { timeout: settle }).catch(() => {}),
     page.click('button[type="submit"]'),
   ]);
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(IS_LOCAL ? 6000 : 2500);
   return !page.url().includes('/login');
 }
 
