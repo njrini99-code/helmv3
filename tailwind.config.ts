@@ -72,6 +72,12 @@ const config: Config = {
           // The solid-button fill — brightest green that carries cream copy at
           // AA. See the token comment in design-tokens.css before changing it.
           650: tokenColor('--fw-color-accent-650'),
+          // Its hover/pressed partner. Use `hover:bg-accent-750`, NEVER
+          // `hover:bg-accent-700` — 700 is theme-flipped (light green in dark)
+          // and turns the hovered button into a mint slab under cream copy.
+          750: tokenColor('--fw-color-accent-750'),
+          // FLIPPED BY THEME — light green on dark. This is green INK
+          // (`text-accent-700`), not a fill. Do not use it as `bg-`/`from-`.
           700: tokenColor('--fw-color-accent-700'),
           800: tokenColor('--fw-color-accent-800'),
           900: tokenColor('--fw-color-accent-900'),
@@ -81,6 +87,18 @@ const config: Config = {
         'text-secondary': tokenColor('--fw-color-text-secondary'),
         'text-tertiary':  tokenColor('--fw-color-text-tertiary'),
         'text-on-accent': tokenColor('--fw-color-text-on-accent'),
+        // Accent ramp (heatmap / band histogram). Runs light→dark in the light
+        // theme and dark→light in the dark one, so ALWAYS reach for these
+        // instead of hand-picking accent steps for a scale.
+        'ramp-1':      tokenColor('--fw-ramp-1'),
+        'ramp-2':      tokenColor('--fw-ramp-2'),
+        'ramp-3':      tokenColor('--fw-ramp-3'),
+        'ramp-4':      tokenColor('--fw-ramp-4'),
+        'ramp-lo-ink': tokenColor('--fw-ramp-lo-ink'),
+        'ramp-hi-ink': tokenColor('--fw-ramp-hi-ink'),
+        // Dimmed ink for copy sitting ON an always-deep-green band.
+        'ink-on-deep':      tokenColor('--fw-color-ink-on-deep'),
+        'ink-on-deep-soft': tokenColor('--fw-color-ink-on-deep-soft'),
         'text-on-dark':   tokenColor('--fw-color-text-on-dark'),
         'border-subtle':  tokenColor('--fw-color-border-subtle'),
         'border-strong':  tokenColor('--fw-color-border-strong'),
@@ -522,7 +540,10 @@ const config: Config = {
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
         'mesh': 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%2316a34a\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
         'glass-gradient': 'linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3))',
-        'shimmer': 'linear-gradient(90deg, transparent, rgba(255, 248, 233, 0.55), transparent)',
+        // Specular is a THEME-AWARE token (design-tokens.css) — a 55% cream
+        // highlight is right on a light card and a bright flashing bar on a
+        // dark one. Never inline a literal colour back into this gradient.
+        'shimmer': 'linear-gradient(90deg, transparent, var(--fw-shimmer-specular), transparent)',
         'aurora': 'linear-gradient(to bottom, #0f172a, #020617)',
         'aurora-gradient': 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(22, 163, 74, 0.15), transparent)',
         'gradient-green': 'linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%)',

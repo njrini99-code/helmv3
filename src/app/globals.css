@@ -218,6 +218,71 @@
     /* Remove tap highlight on mobile */
   }
 
+  /* DARK: the light linen gradient above is unconditional, so before this
+     rule existed the only full-bleed painted layer in dark mode was a CREAM
+     body — the dark appearance came entirely from opaque child panels
+     covering it. That leaked cream on macOS overscroll bounce, during route
+     transitions before the panel mounts, on print/PDF, and on any short page
+     whose panels don't reach the fold.
+
+     Repainted from the Fairway dark canvas tokens (design-tokens.css `.dark`)
+     rather than a fixed hex, so the body and the app shell can never drift
+     apart: --fw-color-canvas is the flat ground (what overscroll exposes) and
+     --fw-gradient-canvas is the same warm espresso dusk wash the shell paints.
+     Keep both — the color is the fallback the gradient sits on. */
+  .dark body,
+  [data-theme='dark'] body {
+    background-color: var(--fw-color-canvas);
+    background-image: var(--fw-gradient-canvas);
+  }
+
+  /* ===== THEME SWAP — an eased cross-fade, not a cut =====
+     Driven by `applyThemeAnimated` in src/lib/golf/theme.ts. Flipping the whole
+     token set repaints every surface on one frame, which reads as a flash; both
+     mechanisms below spread that over ~360ms on the same cinematic easing the
+     rest of the system uses. */
+
+  /* 1. View Transitions path (Chrome/Edge/Safari 18+). The two snapshots are
+        cross-dissolved, which is what lets gradients, shadows and SVG fills
+        ease too — CSS transitions cannot reach those. Both layers are painted
+        at once, so `mix-blend-mode: normal` + matching durations avoid the
+        double-darkening you get from the default cross-fade on dark grounds. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 360ms;
+    animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+    mix-blend-mode: normal;
+  }
+  ::view-transition-old(root) { animation-name: fw-theme-out; }
+  ::view-transition-new(root) { animation-name: fw-theme-in; }
+
+  @keyframes fw-theme-out { from { opacity: 1 } to { opacity: 0 } }
+  @keyframes fw-theme-in  { from { opacity: 0 } to { opacity: 1 } }
+
+  /* 2. Fallback for engines without View Transitions. Scoped to the swap window
+        via the attribute — a permanent global colour transition would make
+        every hover and selection feel laggy, which is why this is not just
+        `* { transition: background-color … }`. */
+  html[data-fw-theme-anim],
+  html[data-fw-theme-anim] body,
+  html[data-fw-theme-anim] *:not(svg):not(path) {
+    transition:
+      background-color 360ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 360ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      color 360ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      fill 360ms cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+  }
+
+  /* A full-screen dissolve is exactly the large-area motion this setting exists
+     to suppress — the JS also short-circuits, this is belt-and-braces. */
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) { animation: none !important; }
+    html[data-fw-theme-anim],
+    html[data-fw-theme-anim] body,
+    html[data-fw-theme-anim] *:not(svg):not(path) { transition: none !important; }
+  }
+
   /* ===== iOS NATIVE FEEL LAYER =====
      When the app is running inside the Capacitor iOS webview (body.capacitor
      class is added by Capacitor automatically), swap to the system font and

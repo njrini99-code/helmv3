@@ -31,8 +31,39 @@ export const DEFAULT_THEME: GolfTheme = 'system';
 
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
+/**
+ * Mobile browser-chrome colour, kept in lockstep with the canvas the shell
+ * actually paints (`--fw-color-canvas` in design-tokens.css): #0e0e10 is
+ * oklch(0.148 0.003 250), #f7efdf is oklch(0.953 0.022 83). Without these the
+ * address bar / status bar stayed at the UA default and framed a dark page in
+ * white on iOS and Android.
+ *
+ * NOT expressed as a Next `viewport.themeColor` media query: that can only key
+ * off the OS `prefers-color-scheme`, so an explicit light/dark choice held in
+ * localStorage (which is the whole point of the picker) would disagree with the
+ * chrome. Driving it from `applyTheme` means the meta always tracks the theme
+ * the app actually resolved, however it was chosen.
+ */
+const THEME_COLOR = { dark: '#0e0e10', light: '#f7efdf' } as const;
+
 function isTheme(v: unknown): v is GolfTheme {
   return v === 'light' || v === 'dark' || v === 'system';
+}
+
+/**
+ * Point `<meta name="theme-color">` at the resolved canvas.
+ * Tagged `data-fw-theme-color` so we only ever rewrite the tag we own and never
+ * clobber one a framework/route added with its own `media` attribute.
+ */
+function applyThemeColorMeta(dark: boolean): void {
+  let meta = document.head.querySelector<HTMLMetaElement>('meta[data-fw-theme-color]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.setAttribute('data-fw-theme-color', '');
+    document.head.appendChild(meta);
+  }
+  meta.content = dark ? THEME_COLOR.dark : THEME_COLOR.light;
 }
 
 /** The stored choice, or the default when unset/unreadable. */
@@ -59,13 +90,64 @@ export function resolveIsDark(theme: GolfTheme): boolean {
   return systemPrefersDark();
 }
 
-/** Toggle the `.dark` class + `data-fw-theme` on <html> to match `theme`. */
+/**
+ * Toggle the `.dark` class + `data-fw-theme` on <html> to match `theme`, and
+ * keep the mobile browser-chrome colour in step. Single funnel: every runtime
+ * path (picker, OS flip while on `system`, cross-tab sync, hydrate) goes
+ * through here, so the chrome can't drift from the painted canvas.
+ */
 export function applyTheme(theme: GolfTheme): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   const dark = resolveIsDark(theme);
   root.classList.toggle('dark', dark);
   root.setAttribute('data-fw-theme', dark ? 'dark' : 'light');
+  applyThemeColorMeta(dark);
+}
+
+/**
+ * Swap themes as an eased cross-fade instead of a hard cut.
+ *
+ * Flipping ~40 custom properties at once repaints every surface on the same
+ * frame, which reads as a camera flash — the jarring part is that background,
+ * text, borders and shadows all arrive instantly and together. Two mechanisms,
+ * best-first:
+ *
+ *  1. View Transitions API — snapshots the old frame and cross-dissolves the
+ *     whole document to the new one. This is the only approach that can also
+ *     ease things CSS transitions cannot reach (box-shadow colour stops,
+ *     gradients, SVG fills), so the entire UI moves as one piece.
+ *  2. Fallback — a `data-fw-theme-anim` attribute for the duration of the swap;
+ *     globals.css uses it to transition background/border/text colour. Coarser
+ *     (gradients still cut) but far better than nothing.
+ *
+ * Reduced-motion callers get the instant path: a full-screen dissolve is exactly
+ * the kind of large-area motion that setting exists to suppress.
+ */
+export function applyThemeAnimated(theme: GolfTheme): void {
+  if (typeof document === 'undefined') return;
+
+  const reduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  type WithVT = Document & { startViewTransition?: (cb: () => void) => unknown };
+  const doc = document as WithVT;
+
+  if (reduced) {
+    applyTheme(theme);
+    return;
+  }
+
+  if (typeof doc.startViewTransition === 'function') {
+    doc.startViewTransition(() => applyTheme(theme));
+    return;
+  }
+
+  const root = document.documentElement;
+  root.setAttribute('data-fw-theme-anim', '');
+  applyTheme(theme);
+  window.setTimeout(() => root.removeAttribute('data-fw-theme-anim'), 420);
 }
 
 // ---------- External store (cross-component sync, like appearance prefs) ----------
@@ -146,7 +228,11 @@ export function useGolfTheme() {
     } catch {
       // ignore — device-local, non-critical
     }
-    applyTheme(next);
+    // Animated only on a DELIBERATE user swap. The other callers of applyTheme
+    // (hydrate, OS flip, cross-tab sync) stay instant on purpose: cross-fading
+    // a theme the user did not just click reads as a glitch, and animating on
+    // hydrate would dissolve the page on every hard load.
+    applyThemeAnimated(next);
     notify();
   }, []);
 

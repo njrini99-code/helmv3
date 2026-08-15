@@ -62,6 +62,26 @@
    * one solid mid-green in both themes, at the same 4.69:1 either way. If you
    * ever add a dark override for this token, you reintroduce that bug. */
   --fw-color-accent-650: oklch(0.540 0.132 149.7);
+  /* THE SOLID-BUTTON HOVER/PRESSED FILL — the partner to accent-650, and
+   * DELIBERATELY NOT FLIPPED IN THE DARK BLOCK for exactly the reason spelled
+   * out above it.
+   *
+   * Every solid green button was written `bg-accent-650 hover:bg-accent-700`.
+   * accent-700 IS flipped in dark (to a light green, for green *ink* on a deep
+   * wash), so in dark mode hovering any primary button turned it into a #86d396
+   * mint slab under cream copy — 1.75:1, unreadable — on ~50 call sites. The
+   * resting state was safe only because 650 exists; the hover step had no such
+   * partner until this token.
+   *
+   * Value is byte-identical to accent-700's :root value, so LIGHT MODE IS
+   * UNCHANGED. In dark it now stays a deep green: hover DARKENS the fill rather
+   * than lightening it, which on a dark ground reads correctly as "pressed" and
+   * raises the cream label's contrast (4.69:1 → 5.9:1) instead of destroying it.
+   * There is no room to brighten instead — 650 at 4.69:1 is already the
+   * brightest green that carries cream text at AA. */
+  --fw-color-accent-750: oklch(0.488 0.124 150);
+  /* GREEN INK, NOT A FILL. Flipped light in the dark block so `text-accent-700`
+   * stays legible on a dark surface. Never `bg-accent-700` — use 650/750. */
   --fw-color-accent-700: oklch(0.488 0.124 150);
   --fw-color-accent-800: oklch(0.415 0.103 150);
   --fw-color-accent-900: oklch(0.357 0.083 150);
@@ -249,6 +269,57 @@
   --fw-glass-highlight:   rgb(255 249 235 / 0.55);           /* WARM cream inner specular line (not white) */
   --fw-glass-accent-ring: oklch(0.648 0.149 149.6 / 0.16);   /* green breath on the focal instrument */
 
+  /* ---- The 4-step accent RAMP (heatmap cells, band histograms) ----
+     Light values are byte-identical to the hardcoded scale these replaced, so
+     LIGHT MODE IS UNCHANGED. They exist as tokens because the ramp has to run
+     in OPPOSITE directions per theme — see the dark block. `lo-ink` is the ink
+     on the two weak bands, `hi-ink` the ink on the two strong ones. */
+  --fw-ramp-1: var(--fw-color-accent-100);
+  --fw-ramp-2: var(--fw-color-accent-300);
+  --fw-ramp-3: var(--fw-color-accent-500);
+  --fw-ramp-4: var(--fw-color-accent-750);
+  --fw-ramp-lo-ink: var(--fw-color-accent-900);
+  --fw-ramp-hi-ink: var(--fw-color-text-on-accent);
+
+  /* ---- Ink on the always-deep-green bands (Spine, BriefBand, ReviewHero) ----
+     Light values are the accent washes these replaced, byte-identical. They
+     need tokens because accent-100/200 flip to DEEP green in dark, which turned
+     dimmed copy on a deep-green band into green-on-green. */
+  --fw-color-ink-on-deep:      var(--fw-color-accent-100);
+  --fw-color-ink-on-deep-soft: var(--fw-color-accent-200);
+
+  /* ---- The MetricCard value face (the big KPI numeral) ----
+     In LIGHT this is the brand green on cream — a deliberate, tuned look, and
+     the reason this token exists rather than a flat colour swap. See the dark
+     block for why it cannot stay green after dusk. */
+  --fw-color-metric-face: var(--fw-color-accent-700);
+
+  /* ---- Per-person identity tints (avatar fallbacks, owner chips) ----
+     Consumed by `tintFor()` in FairwayCalendarMemberRail, which feeds INLINE
+     styles at ~14 call sites (roster cards, calendar owner chips, join
+     requests, team info). Inline styles can't be re-skinned by a `.dark`
+     rule, so the values must arrive as custom properties — that is the whole
+     reason these are tokens and not hex literals in the TS file.
+     Light values are byte-identical to the previous hardcoded palette. */
+  --fw-tint-1-bg: #E7F0E7; --fw-tint-1-ink: #3C6B4B;  /* sage   */
+  --fw-tint-2-bg: #E6EEF7; --fw-tint-2-ink: #3A5B7C;  /* blue   */
+  --fw-tint-3-bg: #F6EEDF; --fw-tint-3-ink: #876733;  /* tan    */
+  --fw-tint-4-bg: #F4E7EC; --fw-tint-4-ink: #8A3B5C;  /* rose   */
+  --fw-tint-5-bg: #ECE6F3; --fw-tint-5-ink: #5B3B7C;  /* violet */
+  --fw-tint-6-bg: #DFF0EE; --fw-tint-6-ink: #2E6A65;  /* teal   */
+  --fw-tint-7-bg: #F7E9DF; --fw-tint-7-ink: #8A4E2D;  /* clay   */
+  --fw-tint-8-bg: #E5F1F4; --fw-tint-8-ink: #2E6377;  /* cyan   */
+
+  /* ---- Skeleton specular sweep ----
+     The moving highlight in the `bg-shimmer` gradient (tailwind.config.ts),
+     which every Skeleton and every `loading.tsx` rides. Tokenized because it
+     was a hardcoded `rgba(255,248,233,0.55)` cream: correct on a light card,
+     but on a dark one that same 55% cream swept a ~#938f86 bar across a
+     #100e0b block — brighter than the real content it stands in for, so a
+     skeleton read as a FILLED element and every page load flashed. The dark
+     value is a whisper (7%) instead: visible as motion, never as a bright bar. */
+  --fw-shimmer-specular: rgb(255 248 233 / 0.55);
+
   /* ---- Viz scales (tokenized once) ---- */
   --fw-viz-seq-0: oklch(0.985 0.01 95);     /* sequential: near-cream, coldest */
   --fw-viz-seq-1: oklch(0.92 0.05 140);
@@ -327,41 +398,114 @@
   /* ---- Surfaces — warm espresso, layered so cards LIFT off the page ----
           Each tier is ~0.03-0.04 L apart (the same premium separation the
           light theme uses), warm hue ~70, very low chroma. */
-  --fw-color-canvas:         oklch(0.188 0.007 71);  /* deep warm espresso page base */
-  --fw-color-surface:        oklch(0.228 0.008 73);  /* THE card — toasted walnut, lifts off canvas */
-  --fw-color-surface-tint:   oklch(0.250 0.010 74);  /* hero plinth — a touch warmer/lighter */
-  --fw-color-surface-sunken: oklch(0.164 0.006 69);  /* wells / insets / input tracks — recede below canvas */
-  --fw-color-elevated:       oklch(0.268 0.010 75);  /* menus / popovers / modal body — brightest, most lifted */
+  /* On a dark ground, luminance separation is the ONLY depth cue that reads —
+     warm shadows disappear against espresso, so a card that is only 1.09:1 off
+     the page has no elevation at all and stacked rows (twelve agenda items,
+     a roster grid) fuse into one undifferentiated stripe. Measured live:
+     canvas 0.0066 vs card 0.0119 relative luminance = 1.09:1.
+     The card tier is raised ~0.03 L (1.09:1 → 1.19:1) and the tint/elevated
+     tiers move with it to preserve the ramp. Text is unaffected: on the lifted
+     card, primary/secondary/tertiary still measure 13.7 / 8.0 / 5.1:1, all
+     clear of AA. Order must stay sunken < canvas < surface < tint < elevated. */
+  /* NEUTRAL, not warm-brown. This is the single change that separates a dark
+     theme that reads "premium" from one that reads "muddy", and it is worth
+     spelling out because it contradicts the light theme's warm rule ON PURPOSE.
+     The California-modern brief ("stone family only, never slate/zinc") is a
+     LIGHT-mode instruction: on cream, a warm neutral is what stops the page
+     looking clinical. Carried into dark it inverts — a warm-tinted black is
+     literally brown (the card measured rgb(39,36,32), R over B by 7 points),
+     and brown-black reads dated and dirty next to every dark UI people rate as
+     premium, all of which sit neutral-to-cool: #0A0A0A, #121212, #151515.
+     Chroma 0.003 at hue 250 keeps the faintest cool cast — enough to stop the
+     greys going flat-dead, far too little to read as "blue". The warmth the
+     brand needs now comes from the green accent doing its job against a clean
+     ground, which is also what makes black-and-green finally look deliberate. */
+  /* oklch→sRGB compresses hard down here: 0.148 already lands on #0a0b0c and
+     0.104 collapsed the sidebar to #030404, which is pure black in practice —
+     it bands on OLED and reads cheap. The base sits in the #0A0A0A–#121212
+     band every reference dark UI uses, and nothing goes below the sidebar. */
+  --fw-color-canvas:         oklch(0.175 0.003 150);  /* deep neutral page base */
+  --fw-color-surface:        oklch(0.278 0.004 150);  /* THE card — lifts off canvas */
+  --fw-color-surface-tint:   oklch(0.308 0.005 150);  /* hero plinth — a touch lighter */
+  --fw-color-surface-sunken: oklch(0.140 0.003 150);  /* wells / insets / input tracks — recede below canvas */
+  --fw-color-elevated:       oklch(0.338 0.006 150);  /* menus / popovers / modal body — brightest, most lifted */
 
   /* ---- The page wash: a warm espresso gradient (afternoon → dusk), never a
           flat black fill. Faint warm lift at the top, deepening to near-black
           espresso at the foot — the dark twin of the sunlit cream canvas. ---- */
+  /* Three layers, top to bottom:
+       1. a GREEN ambient bloom at the top of the column — the signature. It is
+          the one place the brand hue touches the page itself, so black-and-green
+          reads as a deliberate identity rather than "grey app, green buttons".
+          Kept at chroma 0.030 and only ~0.05 L above the base: at this strength
+          it is felt more than seen, which is the point — push the chroma and it
+          turns olive against the warm base.
+       2. the original warm espresso bloom, offset to the right so the two
+          washes cross rather than stack into mud.
+       3. the warm espresso column itself, deepening toward the foot. */
   --fw-gradient-canvas:
-    radial-gradient(132% 92% at 50% -15%,
-      oklch(0.238 0.011 74) 0%,
-      oklch(0.205 0.009 72) 44%,
-      transparent 78%),
+    radial-gradient(120% 66% at 50% -14%,
+      oklch(0.225 0.028 152) 0%,
+      oklch(0.186 0.010 165) 40%,
+      transparent 74%),
     linear-gradient(180deg,
-      oklch(0.212 0.009 73) 0%,
-      oklch(0.188 0.007 71) 52%,
-      oklch(0.168 0.006 69) 100%);
+      oklch(0.198 0.004 150) 0%,
+      oklch(0.175 0.003 150) 55%,
+      oklch(0.158 0.003 150) 100%);
 
   /* ---- Text — warm creams (never pure white) ---- */
-  --fw-color-text-primary:   oklch(0.955 0.006 90);  /* warm near-white ink */
-  --fw-color-text-secondary: oklch(0.788 0.009 82);  /* ≈7:1 on card — labels / secondary copy */
-  --fw-color-text-tertiary:  oklch(0.665 0.011 76);  /* ≥4.5:1 on canvas/surface/sunken — meta / hints */
+  /* Off-white, neutral — the #F5F5F5–#E4E4E7 band every premium dark UI uses.
+     Warm cream ink on a neutral ground reads as a yellow cast, which is the
+     same "dirty" tell as the brown surfaces above. */
+  --fw-color-text-primary:   oklch(0.962 0.002 150);  /* near-white ink */
+  --fw-color-text-secondary: oklch(0.800 0.003 150);  /* ≈7:1 on card — labels / secondary copy */
+  --fw-color-text-tertiary:  oklch(0.672 0.004 150);  /* ≥4.5:1 on canvas/surface/sunken — meta / hints */
   --fw-color-text-on-accent: oklch(0.994 0.006 95);  /* cream text on green (unchanged) */
-  --fw-color-text-on-dark:   oklch(0.955 0.006 90);  /* sidebar text */
+  --fw-color-text-on-dark:   oklch(0.962 0.002 150); /* sidebar text */
 
   /* ---- Borders — light warm hairlines on dark (the light-theme logic inverted) ---- */
-  --fw-color-border-subtle: oklch(0.44 0.008 74 / 0.55);  /* visible warm hairline — card edges read off canvas */
-  --fw-color-border-strong: oklch(0.52 0.010 74);         /* emphasis / table head */
+  /* Crisper card definition. At 0.44/0.55 the hairline composited to 1.44:1
+     against the card — technically present, visually absent, so cards had no
+     edge and the whole page read as one soft smudge. 0.52/0.70 lands at
+     2.06:1: still a hairline, but one you can actually see. On a dark ground
+     the edge does the work the drop shadow cannot. */
+  /* TRANSLUCENT WHITE, not a solid grey line. Sampled from the dark UIs people
+     actually rate as premium, this is the most consistent technique of the lot:
+     Linear paints `#ffffff a0.05`–`a0.08`, Supabase `#f2f2f2 a0.07` on 40
+     separate elements. A solid mid-grey stroke (what this was — #4b4d4f) sits
+     ON the surface as a drawn line; white at 7% behaves like light catching the
+     panel edge, so it reads as a lit boundary and it self-adjusts over any
+     surface in the ladder instead of being tuned for exactly one of them.
+     This — not a big luminance jump — is where the crispness comes from. */
+  --fw-color-border-subtle: rgb(255 255 255 / 0.07);      /* lit hairline — card edges read off canvas */
+  --fw-color-border-strong: rgb(255 255 255 / 0.14);      /* emphasis / table head */
   --fw-color-border-focus:  var(--fw-color-accent-500);
 
-  /* ---- Accent WASHES flip to deep-green tints (fills accent-500/600 stay) ---- */
+  /* ---- Accent WASHES flip to deep-green tints ---- */
   --fw-color-accent-50:  oklch(0.305 0.052 150);  /* selection / success wash on dark */
   --fw-color-accent-100: oklch(0.352 0.070 150);
   --fw-color-accent-200: oklch(0.410 0.090 150);
+
+  /* ---- The DECORATIVE brand greens are re-tuned for a dark ground ----
+     These are the dots, rings, focus outlines, active markers, status pips,
+     chart strokes and hairlines — everywhere the brand shows up WITHOUT text
+     on top. They previously inherited the light-mode values unchanged, and
+     #16A34A-family green is mixed for a cream page but goes muddy against
+     espresso: at 6.06:1 on canvas it read as a dull olive smudge rather than
+     as the brand, which is why the product looked like it had "lost its green"
+     at night even though green was technically everywhere.
+
+     Two moves, both straight out of dark-theme practice:
+       • LIFT lightness — on a dark ground it is L, not chroma, that creates
+         presence. 500 goes 0.648 → 0.720 (6.06:1 → 7.87:1 on canvas).
+       • TRIM chroma ~15% — highly saturated hues optically vibrate against
+         dark backgrounds and cause eye strain. Lifting L while cutting C is
+         what makes the green read as vivid-but-calm instead of neon.
+     Fills that carry cream copy (650/750) are deliberately NOT touched: their
+     value is pinned by the AA math on the label, not by taste. */
+  --fw-color-accent-400: oklch(0.820 0.140 150);  /* active marker on the black rail */
+  --fw-color-accent-500: oklch(0.760 0.150 150);  /* THE decorative brand green on dark */
+  --fw-color-accent-600: oklch(0.690 0.145 149.6); /* its hover / pressed partner */
   --fw-color-accent-700: oklch(0.800 0.115 150);  /* light green — TEXT/icon ON the deep-green wash */
   /* accent-800/900 are intentionally NOT flipped: they stay deep (from :root) so
      decorative dark-green FILLS — the Brief "spotlight" hero band
@@ -385,10 +529,17 @@
 
   /* ---- Dark chrome (sidebar) — make it the DARKEST layer so it still reads as
           distinct chrome against the (now dark) canvas, not one flat black. ---- */
-  --fw-color-nav-bg:       oklch(0.145 0.006 68);   /* near-black warm — below canvas */
-  --fw-color-nav-surface:  oklch(0.225 0.009 72);   /* hovered/active nav row */
+  --fw-color-nav-bg:       oklch(0.142 0.003 150);  /* near-black neutral — below canvas */
+  /* The active nav row is a GREEN-TINTED well, not a grey one — this is the
+     single most-looked-at piece of chrome in the product, so it is where the
+     brand should live. Low chroma keeps it a tint, not a slab. */
+  --fw-color-nav-surface:  oklch(0.255 0.045 150);  /* hovered/active nav row */
   --fw-color-nav-text:     var(--fw-color-text-on-dark);
-  --fw-color-nav-text-dim: oklch(0.60 0.008 66);
+  /* Inactive sidebar labels. Was 0.60 → #847f7b → 5.01:1 on nav-bg: technically
+     over the AA floor, but it sat so close to it that EVERY inactive nav item
+     read as disabled rather than merely unselected. 0.70 (#a29d99, 7.40:1) lets
+     the active pill carry selection state instead of contrast doing it. */
+  --fw-color-nav-text-dim: oklch(0.70 0.004 150);
   --fw-color-nav-accent:   var(--fw-color-accent-400);
 
   /* ---- Elevation — on dark, depth comes from the surface L-gaps + hairline +
@@ -400,7 +551,9 @@
                      0 10px 28px oklch(0 0 0 / 0.46);
   --fw-shadow-raise: 0 2px 4px   oklch(0 0 0 / 0.38),
                      0 18px 44px oklch(0 0 0 / 0.52);
-  --fw-shadow-card:  inset 0 1px 0 oklch(1 0 0 / 0.05),
+  /* The lit top edge does the work shadows can't on a dark ground — it is what
+     makes the raised card read as a lifted plane rather than a lighter patch. */
+  --fw-shadow-card:  inset 0 1px 0 oklch(1 0 0 / 0.07),
                      0 1px 2px oklch(0 0 0 / 0.30),
                      0 4px 10px oklch(0 0 0 / 0.38);
   --fw-shadow-pop:   0 2px 4px   oklch(0 0 0 / 0.34),
@@ -411,7 +564,7 @@
                      0 2px 12px oklch(0.648 0.149 149.6 / 0.30);
 
   /* ---- Liquid Glass — warm dark espresso tint (was champagne cream) ---- */
-  --fw-glass-tint:        44 39 32;                          /* warm espresso, not black */
+  --fw-glass-tint:        35 38 36;                          /* neutral graphite, not black */
   --fw-glass-bg:          rgb(var(--fw-glass-tint) / 0.62);
   --fw-glass-bg-strong:   rgb(var(--fw-glass-tint) / 0.80);
   --fw-glass-saturate:    150%;
@@ -419,6 +572,68 @@
   --fw-glass-border-bot:  oklch(0 0 0 / 0.35);               /* deep bottom edge */
   --fw-glass-highlight:   rgb(255 250 240 / 0.07);           /* whisper inner specular */
   --fw-glass-accent-ring: oklch(0.648 0.149 149.6 / 0.24);
+
+  /* ---- The RAMP RUNS THE OTHER WAY after dusk ----
+          On cream, "more" = more ink, so the light ramp darkens as it
+          strengthens. On espresso that logic inverts: the strongest cell must
+          be the BRIGHTEST, because luminance is what advances on a dark ground.
+          Carrying the light ramp over unchanged did the opposite — it opened on
+          accent-100, which flips from L 0.939 to L 0.352 in dark, so the WEAKEST
+          band rendered darkest-but-one while band 2 rendered lightest: the scale
+          folded in on itself and stopped encoding anything.
+          Now ascending 0.300 → 0.420 → 0.560 → 0.720, which also puts the
+          brand green at the top of every heatmap — the black-and-green contrast
+          doing actual work rather than decoration.
+          The two ink tokens swap with it: weak bands are dark here so they take
+          LIGHT ink, strong bands are bright so they take DEEP ink — the exact
+          mirror of light mode. ---- */
+  --fw-ramp-1: oklch(0.300 0.050 150);
+  --fw-ramp-2: oklch(0.420 0.085 150);
+  --fw-ramp-3: oklch(0.560 0.115 150);
+  --fw-ramp-4: oklch(0.720 0.128 150);
+  --fw-ramp-lo-ink: oklch(0.880 0.055 150);
+  --fw-ramp-hi-ink: oklch(0.200 0.030 150);
+
+  /* ---- Ink on the deep-green bands: light greens, since accent-100/200 are
+          deep-green WASHES after dusk and would sit on their own band. ---- */
+  --fw-color-ink-on-deep:      oklch(0.880 0.050 150);
+  --fw-color-ink-on-deep-soft: oklch(0.810 0.060 150);
+
+  /* ---- The KPI numeral goes NEAR-WHITE after dusk, and this is the single
+          highest-leverage "let the green mean something again" change.
+          `tone='accent'` is MetricCard's DEFAULT, so every metric tile in the
+          product painted its figure with accent-700 — which flips to the light
+          mint #86d396 in dark. A dashboard of giant mint numerals on near-black
+          reads as terminal output rather than a premium instrument, and it spent
+          the accent on the one element that needs no emphasis (the number is
+          already the largest thing on the card).
+          Green is not removed, it is RESERVED: the delta/trend chips and the one
+          primary action stay green, so the eye now reads movement instead of a
+          uniform green field. Light mode keeps the deep-green face — on cream
+          that is a tuned brand look, not a shout. ---- */
+  --fw-color-metric-face: var(--fw-color-text-primary);
+
+  /* ---- Identity tints INVERTED for dark: dark tinted fill + light tinted ink,
+          same hue per person so the colour coding still identifies who owns a
+          card. The light palette carried straight through before this, which
+          made a rail of near-white circles the brightest thing on the page —
+          above the agenda they were supposed to be labelling. Each fill now
+          sits ~1.27:1 off the card (present, not glaring) while its ink reads
+          8.6-8.9:1 on that fill. Hue is preserved from the light ink at
+          L 0.305 / C 0.048 (fill) and L 0.860 / C 0.085 (ink). ---- */
+  --fw-tint-1-bg: #1a3623; --fw-tint-1-ink: #a6e2b7;  /* sage   */
+  --fw-tint-2-bg: #1b3146; --fw-tint-2-ink: #a6d6ff;  /* blue   */
+  --fw-tint-3-bg: #3c2c10; --fw-tint-3-ink: #f0cb91;  /* tan    */
+  --fw-tint-4-bg: #422430; --fw-tint-4-ink: #ffbad2;  /* rose   */
+  --fw-tint-5-bg: #352943; --fw-tint-5-ink: #dec3fe;  /* violet */
+  --fw-tint-6-bg: #083733; --fw-tint-6-ink: #8de3db;  /* teal   */
+  --fw-tint-7-bg: #432719; --fw-tint-7-ink: #ffc1a0;  /* clay   */
+  --fw-tint-8-bg: #0e3441; --fw-tint-8-ink: #92ddfb;  /* cyan   */
+
+  /* ---- Skeleton specular — a whisper on dark, not the light theme's 55% cream.
+          Lands the swept block at ≈#221f1c over the #100e0b sunken base: reads
+          as motion, stays below the real content's luminance. ---- */
+  --fw-shimmer-specular: rgb(250 250 255 / 0.07);
 
   /* ---- Viz — sequential/diverging read on dark; only the coldest cream anchor
           darkens so it sits on the dark ground instead of glowing. ---- */
@@ -432,12 +647,16 @@
           all go dark. primary keeps its brand fills (500/600) + bright mids
           (300/400), flips its washes (50-200 → deep green ground) and its
           dark-green text shades (700-900 → light green). ---- */
-  --c-warm-50: 36 33 28;    --c-warm-100: 44 40 34;    --c-warm-200: 58 53 46;
-  --c-warm-300: 74 68 60;   --c-warm-400: 122 115 106; --c-warm-500: 156 148 137;
-  --c-warm-600: 190 182 170;--c-warm-700: 214 207 196; --c-warm-800: 232 226 216;
-  --c-warm-900: 244 240 232;
-  --c-cream-50: 42 38 32;   --c-cream-100: 36 33 28;    --c-cream-200: 46 42 35;
-  --c-cream-300: 58 53 45;  --c-cream-400: 74 67 58;
+  /* Neutralised to match the surfaces above. These back ~1800 raw call sites
+     (`text-warm-900`, `bg-cream-100`, …), so leaving them warm while the --fw-*
+     surfaces went neutral would have put brown panels and yellow-cast text back
+     on top of a clean grey ground — a worse mismatch than either alone. */
+  --c-warm-50: 30 30 32;    --c-warm-100: 38 38 41;    --c-warm-200: 52 52 56;
+  --c-warm-300: 68 68 73;   --c-warm-400: 116 116 122; --c-warm-500: 150 150 156;
+  --c-warm-600: 184 184 190;--c-warm-700: 209 209 214; --c-warm-800: 228 228 233;
+  --c-warm-900: 242 242 246;
+  --c-cream-50: 36 36 39;   --c-cream-100: 30 30 32;    --c-cream-200: 40 40 43;
+  --c-cream-300: 52 52 56;  --c-cream-400: 68 68 73;
   --c-primary-50: 28 46 34;    --c-primary-100: 32 58 41;   --c-primary-200: 40 78 52;
   --c-primary-300: 134 239 172;--c-primary-400: 74 222 128; --c-primary-500: 34 197 94;
   /* 700-900 kept DEEP so decorative dark-green FILLS (the Brief "spotlight" hero
