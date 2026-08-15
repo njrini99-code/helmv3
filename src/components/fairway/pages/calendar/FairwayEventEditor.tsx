@@ -48,6 +48,7 @@ import { Button } from '@/components/fairway/controls/button';
 import { Button as UiButton } from '@/components/ui/button';
 import { Input as UiInput, Textarea as UiTextarea } from '@/components/ui/input';
 import { Switch } from '@/components/fairway/forms/Switch';
+import { FormSection } from '@/components/fairway/forms/FormSection';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import {
   DateChooser,
@@ -686,6 +687,19 @@ export function FairwayEventEditor({
   const attendeesLoading = attendeeHydration === 'loading';
 
   /**
+   * The event-name input carries a DOM `required` attribute, but this form has
+   * no enclosing <form> to submit, so that attribute was purely decorative —
+   * the primary button stayed clickable (`disabled: false`) against an empty
+   * title, matching the Settings-page precedent's OPPOSITE of how a primary
+   * action should behave (Save/Create stays disabled until the form is
+   * actually submittable — see FairwaySettingsGeneral's `disabled={!isDirty}`
+   * SaveRow gating). This mirrors that: the button reflects validity, not just
+   * clickability. handleSubmit's own `if (!formData.title.trim())` guard is
+   * UNCHANGED below — this is an added layer, not a replacement for it.
+   */
+  const isTitleValid = formData.title.trim().length > 0;
+
+  /**
    * Has the coach actually changed anything since the editor opened?
    *
    * Structural compare against the prefill snapshot rather than a per-field
@@ -890,7 +904,7 @@ export function FairwayEventEditor({
                 same well and had a narrower column than its own End-date
                 partner — this keeps every two-column row in the modal on one
                 consistent grid. */}
-            <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
+            <FormSection title="When">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <DateChooser
                   label="Start date"
@@ -949,15 +963,22 @@ export function FairwayEventEditor({
                 onCheckedChange={(checked) => setFormData({ ...formData, allDay: checked })}
                 disabled={locked}
               />
-            </div>
+            </FormSection>
 
-            {/* Location */}
-            <div>
-              <label htmlFor="ev-location" className={labelCls}>
+            {/* Location — one FormSection per field-group, same primitive as
+                every other section below (finding: this form used to mix four
+                different section treatments — label-above-input here, a
+                tinted no-header panel for RSVP, a header+count row for
+                invitees, and a tinted panel WITH a header for Repeat — with no
+                rule for which earned a tint. FormSection (already the modal
+                section primitive — see FocusAreaModal) replaces all four. */}
+            <FormSection
+              title={
                 <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-accent-700" /> Location
+                  <MapPin className="h-4 w-4 text-accent-700" /> Location
                 </span>
-              </label>
+              }
+            >
               <UiInput
                 id="ev-location"
                 type="text"
@@ -965,17 +986,19 @@ export function FairwayEventEditor({
                 onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
                 disabled={locked}
                 placeholder="Course, facility, or address"
+                aria-label="Location"
                 className={fieldCls}
               />
-            </div>
+            </FormSection>
 
-            {/* Description */}
-            <div>
-              <label htmlFor="ev-desc" className={labelCls}>
+            {/* Notes */}
+            <FormSection
+              title={
                 <span className="inline-flex items-center gap-1.5">
-                  <AlignLeft className="h-3.5 w-3.5 text-accent-700" /> Notes
+                  <AlignLeft className="h-4 w-4 text-accent-700" /> Notes
                 </span>
-              </label>
+              }
+            >
               <UiTextarea
                 id="ev-desc"
                 value={formData.description || ''}
@@ -983,12 +1006,13 @@ export function FairwayEventEditor({
                 disabled={locked}
                 rows={2}
                 placeholder="Details for the team…"
+                aria-label="Notes"
                 className={cn(fieldCls, 'resize-none')}
               />
-            </div>
+            </FormSection>
 
             {/* RSVP */}
-            <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
+            <FormSection title="RSVP">
               <Switch
                 label="Require RSVP"
                 description="Players respond Going / Maybe / Decline"
@@ -1029,29 +1053,32 @@ export function FairwayEventEditor({
                   </div>
                 </div>
               )}
-            </div>
+            </FormSection>
 
             {/* Attendees — colored-avatar toggle grid */}
             {availablePlayers.length > 0 && (
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className={cn(labelCls, 'mb-0')}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 text-accent-700" /> Invite players
-                    </span>
+              <FormSection
+                title={
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="h-4 w-4 text-accent-700" /> Invite players
                   </span>
-                  {/* Always show the count, not only once someone is picked —
-                      "0 of 14" is the honest starting state and tells the coach
-                      how big the roster is before they start tapping. */}
+                }
+                // Always show the count, not only once someone is picked —
+                // "0 of 14" is the honest starting state and tells the coach
+                // how big the roster is before they start tapping. The
+                // `action` slot is FormSection's own right-aligned cluster —
+                // exactly what this count needed instead of a hand-rolled
+                // header row.
+                action={
                   <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
                     {formData.attendeeIds.length} of {availablePlayers.length}
                   </span>
-                </div>
-
+                }
+              >
                 {/* Select-all / clear. Inviting the whole team is the single
                     most common case (practice, lift, study hall) and used to
                     cost one tap per player. */}
-                <div className="mb-2 flex items-center gap-3">
+                <div className="flex items-center gap-3">
                   <UiButton
                     variant="ghost"
                     type="button"
@@ -1089,12 +1116,12 @@ export function FairwayEventEditor({
                     disabled={locked || attendeesLoading}
                     placeholder="Search the roster…"
                     aria-label="Search the roster"
-                    className={cn(fieldCls, 'mb-2 bg-surface')}
+                    className={cn(fieldCls, 'bg-surface')}
                   />
                 ) : null}
 
                 {attendeesLoading ? (
-                  <p role="status" className="mb-2 font-fw-sans text-caption text-text-tertiary">
+                  <p role="status" className="font-fw-sans text-caption text-text-tertiary">
                     Loading current invitees...
                   </p>
                 ) : null}
@@ -1102,7 +1129,7 @@ export function FairwayEventEditor({
                 {attendeeHydration === 'error' ? (
                   <p
                     role="status"
-                    className="mb-2 rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg px-3 py-2 font-fw-sans text-caption text-fw-warning-ink"
+                    className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg px-3 py-2 font-fw-sans text-caption text-fw-warning-ink"
                   >
                     Couldn&apos;t load the current invitees. You can still add players — existing invites won&apos;t be changed.
                   </p>
@@ -1143,8 +1170,19 @@ export function FairwayEventEditor({
                             </span>
                           ) : null}
                         </span>
+                        {/* Full name, not a truncated "Last I." — the chip has
+                            room to spare (filter chips show "CB", the agenda
+                            shows "Cole Bennett"; this was the odd one out).
+                            Truncating to the last name's FIRST CHARACTER is
+                            also what turned a coach's placeholder profile name
+                            into "Coach (." in the live app: last_name[0] on a
+                            name like "(Nick Rini)" reads as "(", and the old
+                            `${last_name[0]}.` built "(." from it. A full name
+                            can't mangle that way — the worst case is just
+                            longer, and `truncate` above already ellipsizes
+                            anything that doesn't fit. */}
                         <span className="min-w-0 flex-1 truncate font-fw-sans text-caption font-medium text-text-primary">
-                          {p.first_name} {p.last_name?.[0] ? `${p.last_name[0]}.` : ''}
+                          {p.last_name ? `${p.first_name} ${p.last_name}` : p.first_name}
                         </span>
                       </UiButton>
                     );
@@ -1158,7 +1196,7 @@ export function FairwayEventEditor({
                   <p
                     role="status"
                     className={cn(
-                      'mt-3 rounded-fw-md border px-3 py-2 font-fw-sans text-caption',
+                      'rounded-fw-md border px-3 py-2 font-fw-sans text-caption',
                       (attendeeChanges?.removeAttendeeIds.length ?? 0) > 0
                         ? 'border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink'
                         : 'border-accent-100 bg-accent-50 text-accent-700',
@@ -1170,7 +1208,7 @@ export function FairwayEventEditor({
 
                 {/* Conflict notice */}
                 {conflicts?.hasConflict ? (
-                  <div className="mt-3 rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3">
+                  <div className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3">
                     <p className="flex items-center gap-1.5 font-fw-sans text-caption font-semibold text-fw-warning-ink">
                       <AlertTriangle className="h-3.5 w-3.5 text-fw-warning-ink" />
                       Schedule conflict
@@ -1199,7 +1237,7 @@ export function FairwayEventEditor({
                     ) : null}
                   </div>
                 ) : null}
-              </div>
+              </FormSection>
             )}
 
             {/* Recurrence pattern — on create, and on series-root edit (the
@@ -1208,12 +1246,13 @@ export function FairwayEventEditor({
                 occurrences don't carry the pattern; their edits go through
                 the scope picker instead. */}
             {!isCancelled && (isCreating || isSeriesRoot) && (
-              <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
-                <span className={cn(labelCls, 'mb-0')}>
+              <FormSection
+                title={
                   <span className="inline-flex items-center gap-1.5">
-                    <Repeat className="h-3.5 w-3.5 text-accent-700" /> {isSeriesRoot ? 'Series pattern' : 'Repeat'}
+                    <Repeat className="h-4 w-4 text-accent-700" /> {isSeriesRoot ? 'Series pattern' : 'Repeat'}
                   </span>
-                </span>
+                }
+              >
                 {/* Visible chips, not a dropdown. The whole pattern is legible
                     at a glance and it matches the two pill rows this modal
                     already uses (event type above, weekdays below) — a coach
@@ -1351,7 +1390,7 @@ export function FairwayEventEditor({
                     Raising the count or pushing the end date later extends this series with new occurrences.
                   </p>
                 ) : null}
-              </div>
+              </FormSection>
             )}
           </ModalShell.Body>
 
@@ -1377,7 +1416,13 @@ export function FairwayEventEditor({
               {isCancelled ? 'Close' : 'Cancel'}
             </Button>
             {!isCancelled ? (
-              <Button variant="primary" type="button" onClick={handleSubmit} busy={isSaving} disabled={isSaving}>
+              <Button
+                variant="primary"
+                type="button"
+                onClick={handleSubmit}
+                busy={isSaving}
+                disabled={isSaving || !isTitleValid}
+              >
                 {isCreating ? 'Create event' : 'Save changes'}
               </Button>
             ) : null}

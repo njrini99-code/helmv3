@@ -290,10 +290,20 @@ export function FairwayAgendaView({
         <div>
           <Button
             type="button"
-            variant="ghost"
+            // `secondary`, not `ghost` — a `ghost` Button is transparent at
+            // rest by design, and the `bg-surface-sunken` override this used
+            // to carry RECEDES below canvas in dark theme (a "well" cue that
+            // only reads correctly nested inside a lighter Surface). With no
+            // surrounding card here, the sunken fill was ~indistinguishable
+            // from the page background and the border was a barely-visible
+            // hairline, so the control read as a plain caption with no
+            // button affordance. `secondary` is the Fairway "matte surface +
+            // warm hairline + shadow" recipe made for exactly this: a real
+            // chip that visibly LIFTS off the canvas in both themes.
+            variant="secondary"
             onClick={() => setShowPast((v) => !v)}
             aria-expanded={showPast}
-            className="h-auto min-h-[44px] w-full justify-center gap-2 rounded-fw-sm border border-border-subtle bg-surface-sunken px-4 font-fw-sans text-body-sm font-medium text-text-secondary hover:bg-inset hover:text-text-primary"
+            className="h-auto min-h-[44px] w-full justify-center gap-2 rounded-fw-sm px-4 font-fw-sans text-body-sm font-medium"
           >
             {showPast
               ? 'Hide earlier events'

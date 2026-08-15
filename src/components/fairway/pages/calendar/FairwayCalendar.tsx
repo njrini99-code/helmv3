@@ -307,6 +307,21 @@ export function FairwayCalendar({
   >(new Map());
   const availabilityMode = isCoach && selectedPlayerIds.length > 0;
 
+  // The viewing coach's OWN row must not appear inside their own "view a
+  // player's schedule" filter — `teamMembers` is the page's combined
+  // coaches+players roster (see page.tsx), so without this the signed-in
+  // coach shows up as a selectable chip in a control whose entire purpose is
+  // overlaying SOMEONE ELSE's schedule on top of their own. Mirrors the same
+  // `id !== currentUserId` exclusion FairwayEventEditor's attendee picker
+  // already applies to this identical `teamMembers` array (line ~270 there).
+  // NOTE: `teamMembers` still mixes in every OTHER coach in the org (page.tsx
+  // merges `coachList` with no role tag) — this only removes the viewer's own
+  // row, not teammates' fellow coaches; see FairwayCalendar's prop doc.
+  const memberRailTeamMembers = React.useMemo(
+    () => (currentUserId ? teamMembers.filter((m) => m.id !== currentUserId) : teamMembers),
+    [teamMembers, currentUserId],
+  );
+
   // SWITCHING TEAMS CLEARS THE OVERLAY SELECTION.
   //
   // `selectedPlayerIds` is component state and this component is not remounted
@@ -1028,7 +1043,7 @@ export function FairwayCalendar({
           is shown for coaches across all lenses. */}
       {isCoach ? (
         <FairwayCalendarMemberRail
-          teamMembers={teamMembers}
+          teamMembers={memberRailTeamMembers}
           selectedPlayerIds={selectedPlayerIds}
           onSelect={setSelectedPlayerIds}
         />

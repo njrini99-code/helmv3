@@ -139,6 +139,8 @@ export function FairwayCalendarMemberRail({
         ) : null}
         <div
           ref={scrollerRef}
+          role="group"
+          aria-label="Filter calendar by team member"
           className={cn(
             'flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5',
             // Reserve the chevron's own 28px gutter, and only while that
@@ -229,7 +231,7 @@ export function FairwayCalendarMemberRail({
       </div>
 
       {/* Legend / clear */}
-      {!allSelected && (
+      {!allSelected ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
             Viewing
@@ -254,6 +256,25 @@ export function FairwayCalendarMemberRail({
           >
             Clear
           </Button>
+        </div>
+      ) : (
+        // DEFAULT (nothing selected) — the row above is otherwise nine
+        // unlabelled two-letter chips: an accessible name + `title` tooltip
+        // exist per-chip (finding: "unlabelled initials"), but neither is
+        // visible at rest, and `title` never fires on touch (no hover). This
+        // quiet key uses the SAME tint each avatar already renders with
+        // (tintFor) so identifying a chip doesn't require hovering or
+        // selecting it first.
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {teamMembers.map((m) => {
+            const tint = tintFor(m.id);
+            return (
+              <span key={m.id} className="flex items-center gap-1.5">
+                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tint.text }} />
+                <span className="font-fw-sans text-caption text-text-tertiary">{m.first_name}</span>
+              </span>
+            );
+          })}
         </div>
       )}
     </div>

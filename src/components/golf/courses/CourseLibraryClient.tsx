@@ -117,8 +117,15 @@ export function CourseLibraryClient({
       {/* ── Header ───────────────────────────────────────────── */}
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-fw-display text-title-1 font-semibold tracking-tight text-text-primary">
+          {/* Every other masthead in the app (Team, Settings, Qualifiers,
+              Documents, Announcements) leads with a small-caps eyebrow via
+              the Fairway `ViewHeader` primitive; this page predates that and
+              had none. Matches `ViewHeader`'s eyebrow styling exactly. */}
+          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
             Courses
+          </p>
+          <h1 className="font-fw-display text-title-1 font-semibold tracking-tight text-text-primary">
+            Course library.
           </h1>
           <p className="mt-1 text-body-sm text-text-secondary">
             {courses.length} {courses.length === 1 ? 'course' : 'courses'} in the cloud library

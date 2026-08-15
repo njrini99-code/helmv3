@@ -105,9 +105,16 @@ function CoachingIntelligenceFrame({
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8 pb-24">
       {/* P083 — explicit back affordance to the settings index (Nielsen #3
-          user-control/freedom + #4 consistency). The eyebrow "Settings" below is
-          decorative; this is the real escape on a deep sub-page. Present on every
-          state (loading / error / loaded) since it lives in the shared frame. */}
+          user-control/freedom + #4 consistency). This is the real escape on a
+          deep sub-page. Present on every state (loading / error / loaded)
+          since it lives in the shared frame.
+          #1318 — the ViewHeader used to carry its own `eyebrow="Settings"`
+          directly above this back link's own "Settings" label, with the
+          top-bar breadcrumb ALSO reading "…/ Settings" above both of them —
+          the literal word rendered three times before the h1 ever did. The
+          eyebrow was purely decorative (this back link was always the real
+          nav), so it's dropped rather than the functional breadcrumb or back
+          link — no navigation lost, just the redundant third copy. */}
       <Button
         asChild
         variant="ghost"
@@ -118,7 +125,6 @@ function CoachingIntelligenceFrame({
         <Link href="/golf/dashboard/settings">Settings</Link>
       </Button>
       <ViewHeader
-        eyebrow="Settings"
         title="Coaching Intelligence"
         description="Configure how CoachHelm analyzes your team. These settings control insight generation, alert sensitivity, and how players are ranked against your coaching priorities."
         meta={meta}

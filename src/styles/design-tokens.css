@@ -22,6 +22,20 @@
  * ========================================================================== */
 
 :root {
+  /* ---- Color scheme pin (no-FOUC pair with the `.dark` block below) ----
+          Without this, `color-scheme` stays at its initial value ("normal"),
+          which does not commit the document to light — so before this
+          stylesheet's cascade is attributed to the painted frame (or on any
+          request where the resolved theme is light but the OS is dark), the
+          UA has no signal to paint the canvas / native controls / scrollbars
+          light rather than guessing from the OS preference. Paired with
+          ThemeScript (root layout <head>, sets `.dark` synchronously before
+          body paints) and the `viewport.colorScheme: 'light dark'` meta tag
+          (root layout, tells the UA up front that this document supports
+          both and to pick from the OS until told otherwise) so first paint
+          is pinned correctly in EITHER direction, not just this one. ---- */
+  color-scheme: light;
+
   /* ---- Brand / accent scale (helm green — recolor never to blue/violet) ---- */
   --fw-color-accent-50:  oklch(0.971 0.024 150);   /* success / selection wash */
   --fw-color-accent-100: oklch(0.939 0.045 150);

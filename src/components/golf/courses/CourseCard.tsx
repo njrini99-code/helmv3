@@ -67,7 +67,13 @@ export function CourseCard({
           className,
         )}
       >
-        <div className="relative aspect-[3/2] w-full">
+        {/* Was `aspect-[3/2]` at full container width — on a ~1100px desktop
+            container that renders ~730px tall, so the hero (plus header +
+            search above it) fills the viewport and the 45-course library
+            below never appears above the fold. A shorter banner ratio (with
+            a hard cap for very wide screens) keeps the cinematic photo while
+            leaving room for the grid on the same screen. */}
+        <div className="relative aspect-[16/9] max-h-[340px] w-full sm:aspect-[21/9]">
           <CourseImage
             name={course.name}
             imageUrl={course.image_url}
@@ -85,10 +91,22 @@ export function CourseCard({
             </span>
           )}
 
-          {/* Glass "go" affordance (top-right) — signals the whole card is tappable */}
+          {/* "Open course" affordance (top-right) — signals the whole card is
+              tappable. Decorative: the card is a single `<button>` that already
+              carries the accessible name (`aria-label="Open {course}"` below),
+              so this stays `aria-hidden` rather than being a second control.
+              Was `glass-prominent` — a ~92%-opaque LIGHT cream fill meant for
+              panels on a light background (chart tooltips, modals) — paired
+              with a white icon. Sitting over the un-scrimmed top of a photo,
+              that rendered as a blank near-white circle with an invisible
+              icon. Swapped for the dark glass-over-photo treatment already
+              used for every other overlay control in this same course-photo
+              context (`CourseDetailDrawer`'s close/upload/remove buttons and
+              the "Pinned" badge on this very card), which is actually legible
+              against a photo. */}
           <span
             aria-hidden
-            className="absolute right-3.5 top-3.5 grid h-9 w-9 place-items-center rounded-full glass-prominent text-white ring-1 ring-white/25 transition-[transform,background-color] [transition-duration:var(--fw-dur-fast)] group-hover:scale-110 group-hover:bg-cream-50/40 motion-reduce:group-hover:scale-100"
+            className="absolute right-3.5 top-3.5 grid h-9 w-9 place-items-center rounded-full bg-black/35 text-white ring-1 ring-white/25 backdrop-blur-sm transition-[transform,background-color] [transition-duration:var(--fw-dur-fast)] group-hover:scale-110 group-hover:bg-black/50 motion-reduce:group-hover:scale-100"
           >
             <IconArrowRight size={16} aria-hidden />
           </span>
