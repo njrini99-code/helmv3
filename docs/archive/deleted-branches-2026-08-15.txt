@@ -4,6 +4,26 @@ them (only origin/main remains), and main is newer than the branch on
 every file each one touches. Recover any of them with:
     git branch <name> <sha>
 
+NOTE ON DURABILITY: the SHAs below are reachable via reflog, which expires
+(90 days by default). Two branches held something worth keeping permanently,
+so they were preserved as ANNOTATED TAGS instead and pushed to origin — tags
+do not expire and do not clutter the branch list. This matches the repo's
+existing convention (see archive/entry-world-landing-20260702):
+
+    archive/opening-pre-merge-20260815        was backup/opening-pre-merge-20260815
+        The pre-squash history of 2a6846381, the 216-file commit whose message
+        describes only its locale changes. This is the unsquashed record of
+        what actually went in. Its content IS on main.
+
+    archive/coachhelm-premium-wip-2026-07-21  was recovery/coachhelm-premium-wip-2026-07-21
+        2,079 lines of parked CoachHelm premium WIP, including TeamSignalSummary
+        (374 lines) and StatCategoryBrief (145) which exist nowhere else in the
+        repo. Its own commit message says it was superseded by PRs #1009-#1012
+        and preserved under the no-destructive-writes policy. NOT merged.
+
+    git checkout archive/coachhelm-premium-wip-2026-07-21   # to look at it
+    git branch <newname> archive/...                        # to resume it
+
 BRANCH                                         SHA
 chore/paginated-read-ratchet                   736d7d51a1a14f47ddb7a9006a5563d2bfd58a2e
 feat/ask-nav-and-opening                       a5d03ddd823ab9ef346aa910d2dd636566d6d079
