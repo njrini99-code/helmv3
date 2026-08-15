@@ -1,7 +1,7 @@
 # GolfHelm premium UI pass — 2026-08-15
 
 **Target:** https://helmsportslabs.com · **Personas:** coach, player · **Viewports:** 1440x900, 390x844
-**Routes walked:** 47 persona-routes · **Findings:** 105
+**Routes walked:** 31 persona-routes · **Findings:** 70
 **Screenshots:** `docs/ui-audits/shots-2026-08-15`
 
 ## Re-running
@@ -15,29 +15,18 @@ Credentials come from .env.local and are never written here.
 
 | sev | route | viewport | what |
 |---|---|---|---|
+| P0 | `/golf/dashboard/whats-new` | mobile | console error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors a |
 | P1 | `/golf/dashboard` | desktop | text clipped: View as table |
 | P1 | `/golf/dashboard` | mobile | text clipped: Golden Horseshoe Gold Course · Jul 13 | Golden Horseshoe Gold Course · Jul 13 |
-| P1 | `/golf/dashboard` | desktop | text clipped: View as table | View as table |
-| P1 | `/golf/dashboard` | mobile | text clipped: View as table | View as table |
 | P1 | `/golf/dashboard/analytics/coachhelm` | desktop | text clipped: View as table |
 | P1 | `/golf/dashboard/analytics/coachhelm` | mobile | text clipped: View as table |
-| P1 | `/golf/dashboard/announcements` | mobile | text clipped: Spring Preview Tournament — Final Logist | Tournament Conduct & Uniform Policy Remi |
-| P1 | `/golf/dashboard/calendar` | mobile | text clipped: Pinehurst No. 9 — Pinehurst, NC | University Ballroom — Student Union |
 | P1 | `/golf/dashboard/calendar` | mobile | text clipped: Pinehurst No. 9 — Pinehurst, NC | University Ballroom — Student Union |
 | P1 | `/golf/dashboard/documents` | mobile | 1 control(s) with no accessible name |
 | P1 | `/golf/dashboard/hub` | desktop | text clipped: View as table |
 | P1 | `/golf/dashboard/hub` | mobile | text clipped: Golden Horseshoe Gold Course · Jul 13 | Golden Horseshoe Gold Course · Jul 13 |
-| P1 | `/golf/dashboard/messages` | desktop | text clipped: Demo University Golf — Team Channel | Looking forward to Thursday. Also finish |
-| P1 | `/golf/dashboard/my-development` | mobile | text clipped: Not started — baseline captured | Scrambling % Sand |
-| P1 | `/golf/dashboard/my-game-profile` | desktop | 18 control(s) with no accessible name |
-| P1 | `/golf/dashboard/my-game-profile` | desktop | text clipped: 287 yd · Avg distance | 33% · Up-and-down |
-| P1 | `/golf/dashboard/my-game-profile` | mobile | 18 control(s) with no accessible name |
-| P1 | `/golf/dashboard/my-game-profile` | mobile | text clipped: 287 yd · Avg distance | 33.8 · Putts / round |
-| P1 | `/golf/dashboard/my-insights` | mobile | text clipped: Par-3 proficiency |
 | P1 | `/golf/dashboard/roster` | desktop | text clipped: Top quartile on your team |
 | P1 | `/golf/dashboard/roster` | mobile | text clipped: Top of your team | Top quartile on your team |
 | P1 | `/golf/dashboard/rounds` | mobile | text clipped: Pebble Beach Golf Club | Pebble Beach Golf Club |
-| P1 | `/golf/dashboard/rounds` | mobile | text clipped: Pebble Beach, CA | Pebble Beach Golf Club |
 | P1 | `/golf/dashboard/settings` | mobile | text clipped: https://helmsportslabs.com/golf/join/DEM |
 | P1 | `/golf/dashboard/settings/coaching-intelligence` | mobile | text clipped: Conservative |
 | P1 | `/golf/dashboard/stats/team` | desktop | text clipped: View as table | View as table |
@@ -46,56 +35,36 @@ Credentials come from .env.local and are never written here.
 | P1 | `/golf/dashboard/travel` | mobile | text clipped: Palmetto Qualifier — Greenville | Spring Preview Tournament — Columbia |
 | P2 | `/golf/dashboard` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard` | mobile | 8 tap targets under 44px, e.g. "Schedule" 110x36, "Qualifiers" 111x36 |
-| P2 | `/golf/dashboard` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard` | mobile | 23 tap targets under 44px, e.g. "Back to today" 100x36, "Previous day" 36x36 |
 | P2 | `/golf/dashboard/alerts` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/alerts` | mobile | 27 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
+| P2 | `/golf/dashboard/alerts` | mobile | 26 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
 | P2 | `/golf/dashboard/analytics/coachhelm` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/analytics/coachhelm` | mobile | 14 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
+| P2 | `/golf/dashboard/analytics/coachhelm` | mobile | 13 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
 | P2 | `/golf/dashboard/announcements` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/announcements` | mobile | 5 tap targets under 44px, e.g. "Urgent" 85x30, "Has tasks" 101x30 |
-| P2 | `/golf/dashboard/announcements` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/announcements` | mobile | 6 tap targets under 44px, e.g. "Urgent" 85x30, "Has tasks" 101x30 |
 | P2 | `/golf/dashboard/calendar` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/calendar` | mobile | 9 tap targets under 44px, e.g. "SUN
+| P2 | `/golf/dashboard/calendar` | mobile | 8 tap targets under 44px, e.g. "SUN
 9" 37x98, "MON
 10" 37x98 |
-| P2 | `/golf/dashboard/calendar` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/calendar` | mobile | 10 tap targets under 44px, e.g. "Today" 66x36, "SUN
-9" 37x98 |
 | P2 | `/golf/dashboard/classes` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/coachhelm` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/coachhelm/chat` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/coachhelm/chat` | mobile | 3 tap targets under 44px, e.g. "Show conversation history" 36x40, "New" 74x40 |
 | P2 | `/golf/dashboard/courses` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/courses` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/development` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/development` | mobile | 49 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
+| P2 | `/golf/dashboard/development` | mobile | 48 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
 | P2 | `/golf/dashboard/documents` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/documents` | mobile | 21 tap targets under 44px, e.g. "Schedule
 1" 106x30, "Tournament
 1" 121x30 |
-| P2 | `/golf/dashboard/documents` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/documents` | mobile | 4 tap targets under 44px, e.g. "Other
-1" 86x30, "Newest first" 358x34 |
 | P2 | `/golf/dashboard/hub` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/hub` | mobile | 8 tap targets under 44px, e.g. "Schedule" 110x36, "Qualifiers" 111x36 |
 | P2 | `/golf/dashboard/insights` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/insights` | mobile | 32 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
+| P2 | `/golf/dashboard/insights` | mobile | 31 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
 | P2 | `/golf/dashboard/intelligence` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/intelligence` | mobile | 32 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
+| P2 | `/golf/dashboard/intelligence` | mobile | 31 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
 | P2 | `/golf/dashboard/messages` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/messages` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/my-development` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/my-development` | mobile | 3 tap targets under 44px, e.g. "Log round" 86x36, "From a CoachHelm insight" 247x34 |
-| P2 | `/golf/dashboard/my-game-profile` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/my-game-profile` | mobile | 42 tap targets under 44px, e.g. "Log round" 86x36, "Game Fingerprint" 139x36 |
-| P2 | `/golf/dashboard/my-insights` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/my-insights` | mobile | 4 tap targets under 44px, e.g. "Log round" 86x36, "Helpful" 73x36 |
-| P2 | `/golf/dashboard/my-qualifiers` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/my-standing` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/patterns` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/patterns` | mobile | 29 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
+| P2 | `/golf/dashboard/patterns` | mobile | 28 tap targets under 44px, e.g. "Brief me" 89x40, "Analyze a player" 145x40 |
 | P2 | `/golf/dashboard/qualifiers` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/qualifiers` | mobile | 3 tap targets under 44px, e.g. "All
 2" 73x36, "Active
@@ -110,16 +79,11 @@ Credentials come from .env.local and are never written here.
 | P2 | `/golf/dashboard/rounds` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/rounds` | mobile | 7 tap targets under 44px, e.g. "All players" 358x34, "All
 93" 71x30 |
-| P2 | `/golf/dashboard/rounds` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/rounds` | mobile | 8 tap targets under 44px, e.g. "Discard" 76x36, "Continue" 108x36 |
-| P2 | `/golf/dashboard/rounds/new` | mobile | 5 tap targets under 44px, e.g. "Saved" 62x30, "New" 51x30 |
 | P2 | `/golf/dashboard/settings` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/settings` | mobile | 9 tap targets under 44px, e.g. "Upload Photo" 136x36, "Save changes" 114x36 |
-| P2 | `/golf/dashboard/settings` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/settings/coaching-intelligence` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/settings/coaching-intelligence` | mobile | 8 tap targets under 44px, e.g. "Settings" 80x36, "Immediate" 97x36 |
 | P2 | `/golf/dashboard/settings/notifications` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/stats` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/stats` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/stats/team` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/stats/team` | mobile | 3 tap targets under 44px, e.g. "View as table" 116x28, "View as table" 116x28 |
@@ -129,7 +93,6 @@ Credentials come from .env.local and are never written here.
 | P2 | `/golf/dashboard/team` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/team-hub` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/travel` | desktop | 1 image(s) with no alt text |
-| P2 | `/golf/dashboard/whats-new` | desktop | 1 image(s) with no alt text |
 | P2 | `/golf/dashboard/whats-new` | desktop | 1 image(s) with no alt text |
 
 ## Routes covered
@@ -165,19 +128,18 @@ Credentials come from .env.local and are never written here.
 - coach /golf/dashboard/team-hub
 - coach /golf/dashboard/travel
 - coach /golf/dashboard/whats-new
-- player /golf/dashboard
-- player /golf/dashboard/announcements
-- player /golf/dashboard/calendar
-- player /golf/dashboard/courses
-- player /golf/dashboard/documents
-- player /golf/dashboard/messages
-- player /golf/dashboard/my-development
-- player /golf/dashboard/my-game-profile
-- player /golf/dashboard/my-insights
-- player /golf/dashboard/my-qualifiers
-- player /golf/dashboard/my-standing
-- player /golf/dashboard/rounds
-- player /golf/dashboard/rounds/new
-- player /golf/dashboard/settings
-- player /golf/dashboard/stats
-- player /golf/dashboard/whats-new
+
+
+---
+
+## Appendix — parallel localhost run (same date)
+
+A second audit ran against `http://localhost:3010` from the
+`feat/ask-nav-and-scheduling` worktree. Preserved here so the merge
+does not drop it; the production run above is the fuller one.
+
+**Target:** http://localhost:3010 · **Personas:** coach, player · **Viewports:** 1440x900, 390x844
+**Routes walked:** 0 persona-routes · **Findings:** 2
+| P0 | `/golf/login` | desktop | coach: login failed — still on the login page |
+| P0 | `/golf/login` | mobile | coach: login failed — still on the login page |
+## Routes covered
