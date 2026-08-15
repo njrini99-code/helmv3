@@ -827,7 +827,18 @@ export function FairwayDocuments({
         primaryAction={uploadCta}
         secondaryActions={
           isCoach && !inFolder ? (
-            <Button variant="secondary" onClick={() => setShowNewFolderModal(true)}>
+            // aria-label, because the visible label is the ONLY name this
+            // button has and `hidden` removes it from the accessibility tree
+            // (unlike `sr-only`, which keeps it). Below `sm` this was a bare
+            // icon button with no accessible name at all:
+            //   [390px]  getByRole('button', { name: 'New folder' }) -> 0
+            //   [1440px] getByRole('button', { name: 'New folder' }) -> 1
+            // A screen-reader user on a phone could not tell what it did.
+            <Button
+              variant="secondary"
+              aria-label="New folder"
+              onClick={() => setShowNewFolderModal(true)}
+            >
               <IconFolderPlus size={16} />
               <span className="hidden sm:inline">New folder</span>
             </Button>
