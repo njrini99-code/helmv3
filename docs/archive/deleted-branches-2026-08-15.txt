@@ -1,0 +1,39 @@
+Local branches deleted 2026-08-15 during the main consolidation.
+All were verified superseded: origin had already deleted every one of
+them (only origin/main remains), and main is newer than the branch on
+every file each one touches. Recover any of them with:
+    git branch <name> <sha>
+
+BRANCH                                         SHA
+chore/paginated-read-ratchet                   736d7d51a1a14f47ddb7a9006a5563d2bfd58a2e
+feat/ask-nav-and-opening                       a5d03ddd823ab9ef346aa910d2dd636566d6d079
+feat/ask-nav-and-scheduling                    6e03e212a951047a5fff24fdd008c1ca96a9484a
+feat/email-redesign                            d3fefb5fee6d500fca6f4873013b58fbece199bd
+feat/fairway-accent-contrast                   37f7e10ece99ccb03d03f58a8d24fa16f9f02032
+fix/analytics-zero-from-unread-roster          aa057cb9394a5166e743e4a50e670c1a1c41d0a5
+fix/baseball-coaches-narrow-select             ab5d04efb5ab6bf6e01065e60b91cc70f3dd94c5
+fix/calendar-page-reads                        5f9cac7b6b015417676cbf79a6ceb72e05226614
+fix/course-library-write-guards                b9370360ad30990a64936f0a7fa18de5ce595d5e
+fix/event-lifecycle-honest                     bbb27dd213c5bf1bd6fce9e4814b92241712c576
+fix/genome-page-read-failures                  4939bd7f42c7d64527ab85fd99629e0174e0c4d9
+fix/golf-travel-empty-vs-error                 af96b1598e781703871cd7bea6e10230a5718944
+fix/inngest-diagnose-clock-vs-key              860bd3cea027f7cdd516c47d0d1f03802ce2bd29
+fix/join-identity-fail-closed                  c4c8a502f3204cfeb11f01f3f219534871d4edab
+fix/join-request-rls-and-onboarding-email      b8bb8714a442e036373522330683acdb2d4b5f70
+fix/layout-remaining-reads                     05f0e9d9956e142ee40371a6ee91f5ef23184d25
+fix/p0-join-idempotency-calendar-terms         148e36763afa2efab6ce2ae71b529d9b42169f7c
+fix/password-reset-link-unusable               067c15bb2d5663be9f27f92242cff1a153e981d4
+fix/player-privacy-fail-closed                 c91713cc96f8dcf0f8eb6276a4c37707825d2fb9
+fix/provider-fault-code-through-soft-failure   77b611316adac795a6058cd8e90aeed399e59231
+fix/push-token-survives-login                  682cbf244b0d072334c4d03aa9170b6b9523d2a7
+fix/qualifiers-empty-vs-error                  6cfb5184c07d1f95ac1f4358e11fb6b4c6843e35
+fix/read-failure-vs-empty-batch2               82d2e8c9c6b4cea85f55a530e3d2cf970520be1c
+fix/restore-reverted-read-guards               c2543f697390efb60255729e73e3c382c030ecce
+fix/round-detail-read-failures                 9e7ff381433da6cecdfb0abad4e3c25d2bfff6a2
+fix/shot-analytics-empty-vs-error              a1353fcb2e55fe7b060706c6f7c974b0c9fa5649
+fix/stale-bundle-login-recovery                8dc7b493bbdd677c0b2b4b3d95628ed76f6994f1
+fix/storage-upload-timeout                     1a6198d315a3a6e3ce0914288574e963fcc583bb
+fix/task-notify-recipients                     ee13752b42260152bb130381320fc4dad1ad245f
+fix/team-page-silent-redirect                  fe66b2f5f636b0fd697716fb43cbca1fbba7829c
+fix/travel-authz-read-failure                  1987026c5574e49ed1d1b9353bca90c79608f9f9
+perf/golf-shot-detail-rls                      3209af60c5aa77b33a7ea2be28ba6cc4af2c41bd

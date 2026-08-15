@@ -1,123 +1,47 @@
-import { Skeleton, InstrumentPanel, InstrumentCluster } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
 /**
- * Route Suspense fallback for /golf/dashboard/analytics/coachhelm.
+ * Route Suspense fallback for `/golf/dashboard/analytics/coachhelm`.
  *
- * Shape-matches FairwayEffectiveness's INSTRUMENT COCKPIT (CoachHelmShell's
- * masthead + persistent sub-nav strip, then a raised focal Readout+Ribbon hero,
- * a secondary rail of two base instruments — Outcomes / Calibration — a
- * tertiary 3-up micro-readout row, the pattern-impact + error-mix decks below,
- * and the "Go deeper" drill-down row) on `fairwayScope` `bg-canvas`. Replaces
- * the legacy `glass-standard` header + `Shimmer`/`ShimmerCard` tab UI, which
- * matched neither the redesigned cockpit layout nor its tokens (CLS + a
- * wrong-chrome flash on mount).
+ * DELIBERATELY EMPTY — this route renders nothing.
  *
- * #947 fix: eyebrow + h1 are real static text (matching
- * `FairwayEffectiveness.tsx`'s `CoachHelmShell` call — default eyebrow
- * "CoachHelm AI", `title="Is CoachHelm helping?"`), not `<Skeleton>` blocks.
- * The description (`Last ${days} days…`) stays a Skeleton — it's the one
- * piece that varies with the selected date range.
+ * `page.tsx` here is a pure `permanentRedirect('/golf/dashboard/intelligence?view=effectiveness')`
+ * shim. Effectiveness stopped being a standalone surface on 2026-07-19 (Spine &
+ * Stage, plan Task 9): it is now the `effectiveness` drill of the coach
+ * Intelligence home, and this path survives only because `drills.ts` still calls
+ * `revalidatePath()` on it. `surface-registry.ts` marks the `effectiveness`
+ * entry `legacy: true, hidden: true`. `next.config.mjs` (`redirects()`, the
+ * `/golf/dashboard/analytics/coachhelm` source) additionally intercepts the URL
+ * at the framework routing layer, before this segment renders at all.
+ *
+ * What this file used to be: a 120-line reconstruction of `FairwayEffectiveness`'s
+ * instrument cockpit — a raised Readout+Ribbon hero, an Outcomes/Calibration
+ * rail, a 3-up micro-readout row, the pattern-impact and error-mix decks, a "Go
+ * deeper" row, a five-tab `CoachHelmSubNav` strip (the coach strip has had two
+ * tabs, Brief + Ask, since that same 2026-07-19 change), and a REAL, non-skeleton
+ * `<h1>Is CoachHelm helping?</h1>`. It was written against the surface this route
+ * mounted before the redesign and was never revisited when the page became a
+ * redirect. Every pixel of it was a promise about a page that no longer exists —
+ * and the `<h1>` meant a screen reader could announce a heading for a surface
+ * the user was in the act of being redirected away from.
+ *
+ * A skeleton's contract in this repo is to shape-match its page's real Fairway
+ * first paint. This page's real first paint is nothing, so this fallback draws
+ * nothing. It is not deleted, because deleting it would let the ancestor
+ * `dashboard/loading.tsx` — a full `FairwayDashboardSkeleton` — claim the
+ * segment instead, which is a larger fabrication than the one being removed.
+ * `bg-canvas` alone keeps the warm ground continuous if the redirect is ever
+ * slow enough to paint.
  */
 export default function Loading() {
   return (
-    <div className={fairwayScope('min-h-full bg-canvas')}>
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 pt-2 md:px-6">
-        {/* Masthead — ViewHeader silhouette (eyebrow + title + description + actions) */}
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex flex-col gap-2">
-            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
-              CoachHelm AI
-            </p>
-            <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">
-              Is CoachHelm helping?
-            </h1>
-            <Skeleton className="h-4 w-56 max-w-full" />
-          </div>
-          {/* range Segmented + Refresh action cluster */}
-          <Skeleton className="h-9 w-64 max-w-full rounded-full" />
-        </div>
-
-        {/* CoachHelmSubNav strip — Brief · Signals · Players · Effectiveness · Ask */}
-        <nav
-          aria-hidden="true"
-          className="flex w-full items-center gap-1 border-b border-border-subtle"
-        >
-          {[48, 60, 56, 84, 40].map((w, i) => (
-            <div key={i} className="px-3.5 pb-3 pt-2.5">
-              <Skeleton className="h-4" style={{ width: w }} />
-            </div>
-          ))}
-        </nav>
-      </div>
-
-      <div
-        role="status"
-        aria-busy="true"
-        aria-live="polite"
-        className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6 md:px-6"
-      >
-        <span className="sr-only">Loading effectiveness…</span>
-
-        {/* The instrument cluster — focal hero, outcomes + calibration rail, tertiary row */}
-        <InstrumentCluster
-          ariaLabel="CoachHelm effectiveness instrument cluster (loading)"
-          tertiaryColumns={3}
-          primary={
-            <InstrumentPanel depth="raised" padding="lg" className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <Skeleton className="h-3 w-48" />
-                <Skeleton className="h-16 w-40" />
-              </div>
-              <Skeleton className="h-44 w-full rounded-fw-md" />
-            </InstrumentPanel>
-          }
-          secondary={[
-            <InstrumentPanel key="outcomes" depth="base" className="flex h-full flex-col gap-4">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-8 w-full rounded-full" />
-              <Skeleton className="h-4 w-32" />
-            </InstrumentPanel>,
-            <InstrumentPanel key="calibration" depth="base" className="flex h-full flex-col gap-4">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-10 w-20" />
-              <InstrumentPanel depth="inset" padding="sm" className="w-full">
-                <Skeleton className="h-6 w-16" />
-              </InstrumentPanel>
-            </InstrumentPanel>,
-          ]}
-          tertiary={[
-            <InstrumentPanel key="surfaced" depth="base" padding="md" className="h-full">
-              <Skeleton className="h-8 w-16" />
-            </InstrumentPanel>,
-            <InstrumentPanel key="mae" depth="base" padding="md" className="h-full">
-              <Skeleton className="h-8 w-16" />
-            </InstrumentPanel>,
-            <InstrumentPanel key="resolved" depth="base" padding="md" className="h-full">
-              <Skeleton className="h-8 w-16" />
-            </InstrumentPanel>,
-          ]}
-        />
-
-        {/* Pattern impact — diverging tornado deck */}
-        <InstrumentPanel depth="base" padding="lg" className="flex flex-col gap-4">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-40 w-full rounded-fw-md" />
-        </InstrumentPanel>
-
-        {/* Error mix — compact matte read */}
-        <InstrumentPanel depth="base" padding="md" className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-24 w-full rounded-fw-md" />
-        </InstrumentPanel>
-
-        {/* "Go deeper" — quiet secondary drill-down switch */}
-        <div className="flex flex-wrap items-center gap-3 border-t border-border-subtle pt-5">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-8 w-64 max-w-full rounded-full" />
-        </div>
-      </div>
+    <div
+      className={fairwayScope('min-h-full bg-canvas')}
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <span className="sr-only">Redirecting…</span>
     </div>
   );
 }

@@ -1,8 +1,22 @@
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
-/** CoachHelmSubNav collapsed to its single "Brief" front-door tab (coach role). */
-const SUBNAV_TAB_WIDTH = 44;
+/**
+ * CoachHelmSubNav's COACH strip — two tabs, "Brief" and "Ask" (`COACH_TABS` in
+ * CoachHelmSubNav.tsx; labels are the `brief`/`ask` canonicalNames from
+ * surface-registry.ts). Width-approximated so the strip's footprint matches the
+ * real component before hydration.
+ *
+ * This file drew ONE tab, on the premise that Spine & Stage (2026-07-19) had
+ * collapsed the coach strip to a single Brief front door. It collapsed it to
+ * two: `ask` carries neither `legacy` nor `hidden` and was restored to
+ * COACH_TABS — only Signals/Players/Effectiveness were folded into `?view=`
+ * drills. So the strip grew a second tab on hydrate and the cockpit below it
+ * shifted. The single-tab shape is the PLAYER strip (`PLAYER_TABS`, one
+ * "Overview" tab) — and GenomeCompareView mounts CoachHelmShell with
+ * `role="coach"` and no `embedded`, so the coach set is what paints here.
+ */
+const SUBNAV_TAB_WIDTHS = [44, 28] as const;
 
 /**
  * Route Suspense fallback for /golf/dashboard/coachhelm/genome/compare.
@@ -41,14 +55,16 @@ export default function GenomeCompareLoading() {
               <Skeleton className="h-3 w-14" />
             </div>
 
-            {/* CoachHelmSubNav strip — single "Brief" front-door tab. */}
+            {/* CoachHelmSubNav strip — the coach's "Brief" + "Ask" tabs. */}
             <nav
               aria-hidden="true"
               className="flex w-full items-center gap-1 border-b border-border-subtle"
             >
-              <div className="px-3.5 pb-3 pt-2.5">
-                <Skeleton className="h-4" style={{ width: SUBNAV_TAB_WIDTH }} />
-              </div>
+              {SUBNAV_TAB_WIDTHS.map((w) => (
+                <div key={w} className="px-3.5 pb-3 pt-2.5">
+                  <Skeleton className="h-4" style={{ width: w }} />
+                </div>
+              ))}
             </nav>
           </div>
 
