@@ -46,23 +46,69 @@
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 
+import { pgaReferenceValue, type PgaStandard } from './pga-standards';
 import type { PlayerStanding } from './types';
 
 /**
- * Apply the gender-correct Tour/cohort anchor to a single standing row.
+ * The real LPGA rows, keyed by metric. Pass `loadStandardsForTour('lpga')`.
+ *
+ * MUST be LPGA-ONLY — do not pass `loadStandardsForGender('womens')` here.
+ * That helper merges PGA in as a per-metric fallback, which is right for
+ * surfaces that just need "the best available number", and wrong here: a
+ * missing LPGA row must fall through to the estimate table and then to
+ * OMISSION, never to the men's value. See the resolution order below.
+ */
+export type LpgaStandards = ReadonlyMap<MetricId, PgaStandard>;
+
+/**
+ * Apply the gender-correct Tour anchor to a single standing row.
  *
  * Pure — no IO, no throw. The cohort gender is resolved by the caller
- * (loadPlayerCohort, the same path the generators use).
+ * (loadPlayerCohort, the same path the generators use), and the LPGA standards
+ * map is loaded once per read by the caller and threaded in, so this stays
+ * synchronous and its callers can keep applying it inside a loop.
+ *
+ * WOMEN'S RESOLUTION ORDER (owner decision 2026-08-15: PGA for men, LPGA for
+ * women — both anchored to their own professional tour, symmetric):
+ *   1. the real LPGA row from golf_pga_standards, when `lpga` is supplied
+ *   2. the hand-authored estimate in cohort-baselines.ts
+ *   3. omission (`pga_omitted: true`) — never the men's value
+ *
+ * Step 2 is retained deliberately, not as dead weight: it is what runs when a
+ * caller supplies no map (every existing 2-arg call site, including the older
+ * tests), so behaviour is unchanged for anyone who has not opted in.
  */
 export function applyGenderAnchor(
   standing: PlayerStanding,
   gender: CohortGender,
+  lpga?: LpgaStandards | null,
 ): PlayerStanding {
   // Men's / unknown: exact DB value, no override, marker always renders.
   if (gender !== 'womens') {
     return standing;
   }
 
+  // 1. Real LPGA row. This is the case the estimate table was standing in for.
+  //    It also FIXES A UNIT BUG the estimates carry: cohort-baselines.ts stores
+  //    approach_proximity_* as a green-hit PERCENT (80/70), but the registry
+  //    types those metrics `lower_better` and the DB stores them as PROXIMITY
+  //    IN FEET (PGA 18ft, LPGA 26ft). A woman at 25ft was being measured
+  //    against "70" read as feet — scoring her 45ft better than tour on a
+  //    metric where she was actually behind. Reading the same table and column
+  //    the men's path reads removes the whole class of mismatch.
+  const lpgaRow = lpga?.get(standing.metric_id);
+  const lpgaAnchor = lpgaRow ? pgaReferenceValue(lpgaRow) : null;
+  if (lpgaAnchor !== null) {
+    return {
+      ...standing,
+      pga_value: lpgaAnchor,
+      pga_delta: standing.player_value - lpgaAnchor,
+      pga_omitted: false,
+      is_womens: true,
+    };
+  }
+
+  // 2. Fall back to the hand-authored estimate.
   const womensAnchor = cohortAnchor(standing.metric_id, 'womens');
 
   // Women's anchor exists → override pga_value + recompute the signed delta
@@ -98,11 +144,12 @@ export function applyGenderAnchor(
 export function applyGenderAnchorToMap(
   map: Map<MetricId, PlayerStanding>,
   gender: CohortGender,
+  lpga?: LpgaStandards | null,
 ): Map<MetricId, PlayerStanding> {
   if (gender !== 'womens') return map;
   const out = new Map<MetricId, PlayerStanding>();
   for (const [metric, standing] of map) {
-    out.set(metric, applyGenderAnchor(standing, gender));
+    out.set(metric, applyGenderAnchor(standing, gender, lpga));
   }
   return out;
 }

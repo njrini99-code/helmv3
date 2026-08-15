@@ -16,8 +16,24 @@ import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 
-import { applyGenderAnchor } from './gender-anchor';
+import { applyGenderAnchor, type LpgaStandards } from './gender-anchor';
+import { loadStandardsForTour } from './pga-standards';
 import type { PlayerStanding } from './types';
+
+/**
+ * Load the real LPGA rows, but only for a women's-cohort read.
+ *
+ * Men's and unknown cohorts never reach golf_pga_standards from here — their
+ * anchor is the DB pga_value already on the standing row, unchanged. So this
+ * adds exactly one reference-table read to a women's-team page load and zero
+ * to a men's.
+ */
+async function loadLpgaIfWomens(
+  gender: Awaited<ReturnType<typeof loadPlayerCohort>>['gender'],
+): Promise<LpgaStandards | null> {
+  if (gender !== 'womens') return null;
+  return loadStandardsForTour('lpga');
+}
 
 const SELECT_FIELDS =
   'player_id, metric_id, player_value, team_avg, team_n, team_pct, ' +
@@ -78,7 +94,8 @@ export async function loadStandingForMetric(
   const standing = toStanding(data);
   if (!standing) return null;
   const cohort = await loadPlayerCohort(playerId);
-  return applyGenderAnchor(standing, cohort.gender);
+  const lpga = await loadLpgaIfWomens(cohort.gender);
+  return applyGenderAnchor(standing, cohort.gender, lpga);
 }
 
 /**
@@ -105,10 +122,11 @@ export async function loadPlayerStandingMap(
     throw new Error(`loadPlayerStandingMap(${playerId}): ${error.message}`);
   }
   const cohort = await loadPlayerCohort(playerId);
+  const lpga = await loadLpgaIfWomens(cohort.gender);
   const map = new Map<MetricId, PlayerStanding>();
   for (const row of data ?? []) {
     const s = toStanding(row);
-    if (s) map.set(s.metric_id, applyGenderAnchor(s, cohort.gender));
+    if (s) map.set(s.metric_id, applyGenderAnchor(s, cohort.gender, lpga));
   }
   return map;
 }
@@ -171,6 +189,11 @@ export async function loadPlayersStandingMap(
     }),
   );
 
+  // One LPGA read for the whole roster, and only when it can be used — a
+  // men's-only team never touches golf_pga_standards here.
+  const anyWomens = [...cohortByPlayer.values()].some((c) => c?.gender === 'womens');
+  const lpga = anyWomens ? await loadStandardsForTour('lpga') : null;
+
   for (const row of rows) {
     const s = toStanding(row);
     if (!s) continue;
@@ -182,7 +205,7 @@ export async function loadPlayersStandingMap(
       map = new Map();
       result.set(row.player_id, map);
     }
-    map.set(s.metric_id, applyGenderAnchor(s, gender));
+    map.set(s.metric_id, applyGenderAnchor(s, gender, lpga));
   }
 
   return result;
