@@ -134,6 +134,22 @@ async function getWhatsNewForCoachImpl(): Promise<{
    * "showing latest N" instead of presenting the count as the definitive total.
    */
   truncated?: boolean;
+  /**
+   * The team's IANA timezone, so the feed can format its timestamps
+   * DETERMINISTICALLY.
+   *
+   * `FairwayWhatsNew` is a client component, which Next also server-renders,
+   * and it formatted every time with `toLocale*(undefined)` — "whatever the
+   * runtime default is". That is Node's locale and zone on the server and the
+   * browser's on the client, so the two renders disagreed and React threw
+   * #418 (text content mismatch) on this route in production. Formatting
+   * against one explicit zone on both sides removes the disagreement at its
+   * source rather than silencing the warning.
+   *
+   * Null when the team has not set one — the UI then falls back to the
+   * viewer's own zone, applied identically on both sides.
+   */
+  timeZone?: string | null;
   error?: string;
 }> {
   const session = await getGolfSessionProfile();
@@ -160,6 +176,17 @@ async function getWhatsNewForCoachImpl(): Promise<{
     if (!teamId) {
       return { success: true, items: [], truncated: false };
     }
+
+    // The team's zone, read alongside everything else this action already
+    // fetches for `teamId`. A miss here is not a finding — the feed falls back
+    // to the viewer's own zone, which both renders then apply identically, so
+    // hydration still agrees.
+    const { data: teamRow } = await supabase
+      .from('golf_teams')
+      .select('timezone')
+      .eq('id', teamId)
+      .maybeSingle();
+    const timeZone: string | null = teamRow?.timezone ?? null;
 
     // Roster — used to scope pattern_validated to team players
     const { data: rosterRows } = await supabase
@@ -413,7 +440,7 @@ async function getWhatsNewForCoachImpl(): Promise<{
     // No global cap: the 7-day window already bounds the feed, so returning every
     // assembled item keeps the UI's counts honest (B4). `truncated` carries the
     // one remaining honesty caveat (a single category hitting PER_QUERY_LIMIT).
-    return { success: true, items, truncated };
+    return { success: true, items, truncated, timeZone };
   } catch (error) {
     await logServerError(
       `getWhatsNewForCoach failed: ${describeError(error)}`,
@@ -437,6 +464,9 @@ export async function getWhatsNewForCoach(): Promise<{
   success: boolean;
   items?: WhatsNewItem[];
   truncated?: boolean;
+  /** Team IANA zone — pins server and client formatting to one zone so the
+   *  feed does not throw React #418 on hydration. See the impl's doc. */
+  timeZone?: string | null;
   error?: string;
 }> {
   return observedGetWhatsNewForCoach();

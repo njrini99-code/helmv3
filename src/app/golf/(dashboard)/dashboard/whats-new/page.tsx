@@ -61,6 +61,10 @@ export default async function WhatsNewPage() {
         error={result.error}
         items={result.items}
         truncated={result.truncated}
+        // Pins both the server render and the client hydration to ONE zone.
+        // Without it each side used its own runtime default and the feed threw
+        // React #418 (text mismatch) on every load.
+        timeZone={result.timeZone}
       />
     </div>
   );
