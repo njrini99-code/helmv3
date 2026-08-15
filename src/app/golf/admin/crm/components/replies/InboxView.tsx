@@ -136,7 +136,7 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
           })}
         </div>
         {unreadCount > 0 && section === 'replies' && (
-          <span className="rounded-fw-sm border border-accent-200 bg-accent-50 px-2.5 py-1.5 text-xs font-semibold text-accent-800">
+          <span className="rounded-fw-sm border border-accent-200 bg-accent-50 px-2.5 py-1.5 text-xs font-semibold text-fw-success-ink">
             {unreadCount} unread
           </span>
         )}
@@ -254,7 +254,7 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
                     <Button variant="primary"
                       type="button"
                       onClick={() => handleCompleteTask(selection.task)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-fw-sm bg-accent-650 text-text-on-accent text-xs font-semibold hover:bg-accent-700 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-fw-sm bg-accent-650 text-text-on-accent text-xs font-semibold hover:bg-accent-750 transition-colors"
                     >
                       <IconCheckCircle2 size={12} /> Complete
                     </Button>

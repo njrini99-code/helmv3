@@ -183,8 +183,8 @@ describe('ScoringDrill', () => {
     // RankCell renders an accessible "Rank N of M" label per chip, one per
     // ranked hole — the worst (rank 1 of 5) gets the darkest band.
     const worstChip = screen.getByLabelText('Rank 1 of 5');
-    expect(worstChip.className).toContain('bg-accent-700');
+    expect(worstChip.className).toContain('bg-ramp-4');
     const leastBadChip = screen.getByLabelText('Rank 5 of 5');
-    expect(leastBadChip.className).not.toContain('bg-accent-700');
+    expect(leastBadChip.className).not.toContain('bg-ramp-4');
   });
 });

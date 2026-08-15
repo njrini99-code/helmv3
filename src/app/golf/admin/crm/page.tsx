@@ -1385,7 +1385,7 @@ export default function CRMPage() {
             variant="primary"
             aria-label="Add coach"
             onClick={() => setShowAddModal(true)}
-            className="min-h-10 flex-shrink-0 gap-1.5 rounded-fw-md bg-accent-650 px-3 text-sm font-semibold text-text-on-accent hover:bg-accent-700 focus-visible:ring-2 focus-visible:ring-nav-accent"
+            className="min-h-10 flex-shrink-0 gap-1.5 rounded-fw-md bg-accent-650 px-3 text-sm font-semibold text-text-on-accent hover:bg-accent-750 focus-visible:ring-2 focus-visible:ring-nav-accent"
           >
             <IconPlus size={16} />
             Add
@@ -1495,7 +1495,7 @@ export default function CRMPage() {
             title={sidebarCollapsed ? 'Add coach' : undefined}
             className={cn(
               'w-full flex items-center justify-center gap-2 py-2.5 rounded-fw-sm font-medium transition-all duration-200',
-              'bg-accent-650 text-text-on-accent hover:bg-accent-700'
+              'bg-accent-650 text-text-on-accent hover:bg-accent-750'
             )}
           >
             <IconPlus size={16} className="flex-shrink-0" />
@@ -2345,7 +2345,7 @@ function ManualGmailTemplateBar({
               onClick={onSendBatch}
               disabled={batchSending}
               aria-label="Send the next 10 cold emails via Gmail"
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-fw-md text-xs font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-fw-md text-xs font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-750 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
               <IconSend size={14} /> {batchSending ? 'Sending…' : 'Send next 10'}
             </Button>

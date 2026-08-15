@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/fairway/feedback/Skeleton';
  * navigation here.
  */
 
-const DARK_BAR = 'bg-accent-700/40';
+const DARK_BAR = 'bg-text-on-accent/12';
 
 export default function IntelligenceLoading() {
   return (

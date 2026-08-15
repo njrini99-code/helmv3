@@ -24,10 +24,12 @@ import { Skeleton } from '@/components/fairway/feedback';
  *    hero figure → verdict → `StandingTrack` (rail + you/team labels) →
  *    `PriorityList` (3 ranked rows) → `SpineLedger` (4 rows: Rounds/
  *    Fairways/Greens/Putts) → the pill CTA, in the same order Spine.tsx
- *    renders them. Bars use `bg-accent-700/40` (a lighter tint of the
- *    spine's own accent scale) so they read as "on-dark" content, not a
+ *    renders them. Bars use `bg-text-on-accent/12` — a cream whisper on the
+ *    spine's own deep-green band — so they read as "on-dark" content, not a
  *    mismatched light-surface skeleton; hairlines reuse Spine's own
- *    `oklch(1 0 0 / 0.14)` divider color.
+ *    `oklch(1 0 0 / 0.14)` divider color. (Was `bg-accent-700/40`: accent-700
+ *    is theme-flipped, so in dark mode those bars inverted from a darker tint
+ *    to a light mint one on the same band.)
  *  - Stage — `PlayerHomeBento` (Bento.tsx + BentoCell.tsx) is a gapless
  *    `grid-cols-2 min-[940px]:grid-cols-4 auto-rows-[minmax(7.375rem,auto)]`
  *    shell with `gap-px` hairline seams. This fallback reproduces that exact
@@ -40,7 +42,7 @@ import { Skeleton } from '@/components/fairway/feedback';
  * ========================================================================== */
 
 const HAIRLINE_COLOR = 'oklch(1 0 0 / 0.14)';
-const SPINE_BAR = 'bg-accent-700/40';
+const SPINE_BAR = 'bg-text-on-accent/12';
 
 export default function CoachHelmLoading() {
   return (

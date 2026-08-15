@@ -320,7 +320,7 @@ export function AutomationEditor({
                   <Button variant="ghost"
                     type="button"
                     onClick={addCondition}
-                    className="flex items-center gap-1 text-xs font-medium text-accent-700 hover:text-accent-800 transition-colors"
+                    className="flex items-center gap-1 text-xs font-medium text-accent-700 hover:text-fw-success-ink transition-colors"
                   >
                     <IconPlus size={12} /> Add condition
                   </Button>
@@ -385,7 +385,7 @@ export function AutomationEditor({
                   <Button variant="ghost"
                     type="button"
                     onClick={addAction}
-                    className="flex items-center gap-1 text-xs font-medium text-accent-700 hover:text-accent-800 transition-colors"
+                    className="flex items-center gap-1 text-xs font-medium text-accent-700 hover:text-fw-success-ink transition-colors"
                   >
                     <IconPlus size={12} /> Add action
                   </Button>
@@ -478,7 +478,7 @@ export function AutomationEditor({
                 disabled={submitting || !name.trim()}
                 className={cn(
                   'px-4 py-1.5 text-sm font-semibold rounded-fw-md shadow-flat transition-colors',
-                  'bg-accent-650 text-text-on-accent hover:bg-accent-700',
+                  'bg-accent-650 text-text-on-accent hover:bg-accent-750',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >

@@ -94,7 +94,7 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
     dotColor: 'bg-accent-500',
     softBg: 'bg-accent-50',
     pillBg: 'bg-accent-50 border border-accent-200/60',
-    pillText: 'text-accent-800',
+    pillText: 'text-fw-success-ink',
   },
   email_reminder: {
     label: 'Email',

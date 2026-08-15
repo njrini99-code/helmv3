@@ -44,7 +44,7 @@ export function PlayerSpine({ hero, verdict, track, priorities, ledger, classNam
               {hero.value}
               {hero.unit ? <span className="font-fw-sans text-caption font-normal tracking-normal text-accent-300">{hero.unit}</span> : null}
             </p>
-            <p className="mt-2 line-clamp-2 font-fw-sans text-caption leading-relaxed text-accent-100">{verdict}</p>
+            <p className="mt-2 line-clamp-2 font-fw-sans text-caption leading-relaxed text-ink-on-deep">{verdict}</p>
           </div>
           <Link href="/golf/dashboard/rounds/new" className="shrink-0 rounded-full border border-white/25 px-3 py-2 text-caption font-semibold text-text-on-accent transition-opacity duration-150 hover:opacity-80">
             Log round
@@ -60,12 +60,12 @@ export function PlayerSpine({ hero, verdict, track, priorities, ledger, classNam
              chips; wrapping costs one line and shows all of them. */
           <div className="mt-3 flex min-w-0 flex-wrap gap-2 border-t border-white/15 pt-3 lg:flex-nowrap lg:overflow-x-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden">
             {priorities.map((item) => (
-              <span key={`${item.rank}-${item.title}`} className="shrink-0 rounded-full bg-accent-700 px-3 py-1.5 font-fw-sans text-caption text-accent-100">
+              <span key={`${item.rank}-${item.title}`} className="shrink-0 rounded-full bg-accent-650 px-3 py-1.5 font-fw-sans text-caption text-ink-on-deep">
                 {item.title} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
               </span>
             ))}
             {ledger.map((item) => (
-              <span key={item.label} className="shrink-0 rounded-full bg-accent-700 px-3 py-1.5 font-fw-sans text-caption text-accent-100">
+              <span key={item.label} className="shrink-0 rounded-full bg-accent-650 px-3 py-1.5 font-fw-sans text-caption text-ink-on-deep">
                 {item.label} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
               </span>
             ))}

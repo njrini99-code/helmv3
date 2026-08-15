@@ -98,7 +98,7 @@ function StrokesGainedInstrument({
               <span
                 className={cn(
                   'truncate font-fw-sans text-body-sm',
-                  isTotal ? 'font-semibold text-text-on-accent' : 'text-accent-100',
+                  isTotal ? 'font-semibold text-text-on-accent' : 'text-ink-on-deep',
                 )}
               >
                 {cfg.display_label}

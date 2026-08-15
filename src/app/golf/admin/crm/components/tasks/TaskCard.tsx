@@ -64,7 +64,7 @@ const KIND_TONE: Record<TaskKind, string> = {
   general: 'bg-surface-sunken text-text-secondary border-border-subtle',
   follow_up: 'bg-surface-sunken text-text-secondary border-border-subtle',
   call: 'bg-accent-50 text-accent-700 border-accent-200',
-  demo: 'bg-accent-50 text-accent-800 border-accent-200',
+  demo: 'bg-accent-50 text-fw-success-ink border-accent-200',
   email: 'bg-surface-sunken text-text-secondary border-border-subtle',
   research: 'bg-fw-warning-bg text-fw-warning-ink border-fw-warning-ring',
 };

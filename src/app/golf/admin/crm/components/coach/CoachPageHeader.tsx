@@ -152,7 +152,7 @@ export function CoachPageHeader({
           {coach.email ? (
             <a
               href={`mailto:${coach.email}`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-fw-md bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors shadow-flat"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-fw-md bg-accent-650 text-text-on-accent hover:bg-accent-750 transition-colors shadow-flat"
             >
               <IconMail size={14} /> Email
             </a>

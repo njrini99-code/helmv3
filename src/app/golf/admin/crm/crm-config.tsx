@@ -171,13 +171,13 @@ export const STATUS_CONFIG: Record<CoachStatus, {
 }> = {
   new_lead:  { label: 'New Lead',   color: 'text-text-secondary',    bgColor: 'bg-surface-sunken',    ringColor: 'ring-border-strong',    icon: <Inbox size={14} />,         iconLabel: <Inbox size={14} className="text-text-secondary" />, order: 1, gradient: 'bg-text-tertiary',       stage: 'new' },
   contacted: { label: 'Contacted',  color: 'text-accent-700',  bgColor: 'bg-accent-50',   ringColor: 'ring-accent-200',  icon: <PhoneOutgoing size={14} />, iconLabel: <PhoneOutgoing size={14} className="text-accent-600" />, order: 2, gradient: 'bg-accent-400', stage: 'active' },
-  engaged:   { label: 'Engaged',    color: 'text-accent-800',  bgColor: 'bg-accent-100',  ringColor: 'ring-accent-300',  icon: <IconSparkles size={14} />,  iconLabel: <IconSparkles size={14} className="text-accent-700" />, order: 3, gradient: 'bg-accent-600', stage: 'active' },
+  engaged:   { label: 'Engaged',    color: 'text-fw-success-ink',  bgColor: 'bg-accent-100',  ringColor: 'ring-accent-300',  icon: <IconSparkles size={14} />,  iconLabel: <IconSparkles size={14} className="text-accent-700" />, order: 3, gradient: 'bg-accent-600', stage: 'active' },
   proposal:  { label: 'Proposal',   color: 'text-fw-warning-ink', bgColor: 'bg-fw-warning-bg', ringColor: 'ring-fw-warning-ring', icon: <FileCheck size={14} />, iconLabel: <FileCheck size={14} className="text-fw-warning-ink" />, order: 4, gradient: 'bg-fw-warning', stage: 'closing' },
   won:       { label: 'Customer',   color: 'text-accent-700', bgColor: 'bg-accent-50',  ringColor: 'ring-accent-400', icon: <Trophy size={14} />,        iconLabel: <Trophy size={14} className="text-accent-700" />, order: 5, gradient: 'bg-accent-500', stage: 'closed' },
   lost:      { label: 'Lost',       color: 'text-fw-danger-ink', bgColor: 'bg-fw-danger-bg', ringColor: 'ring-fw-danger', icon: <CircleX size={14} />, iconLabel: <CircleX size={14} className="text-fw-danger-ink" />, order: 6, gradient: 'bg-fw-danger', stage: 'closed' },
   // Deeper primary tint than `won` (not a second green hue) — keeps the two
   // "closed" stages visually distinct while staying inside the primary family.
-  nurture:   { label: 'Nurture',    color: 'text-accent-800', bgColor: 'bg-accent-100', ringColor: 'ring-accent-600', icon: <Sprout size={14} />,        iconLabel: <Sprout size={14} className="text-accent-700" />, order: 7, gradient: 'bg-accent-700', stage: 'closed' },
+  nurture:   { label: 'Nurture',    color: 'text-fw-success-ink', bgColor: 'bg-accent-100', ringColor: 'ring-accent-600', icon: <Sprout size={14} />,        iconLabel: <Sprout size={14} className="text-accent-700" />, order: 7, gradient: 'bg-accent-650', stage: 'closed' },
 };
 
 // ============================================================================
@@ -186,11 +186,11 @@ export const STATUS_CONFIG: Record<CoachStatus, {
 export const STATUS_COLORS: Record<CoachStatus, { bg: string; text: string; border: string; dot: string }> = {
   new_lead:  { bg: 'bg-surface-sunken',    text: 'text-text-secondary',    border: 'border-border-subtle',    dot: 'bg-text-tertiary' },
   contacted: { bg: 'bg-accent-50',  text: 'text-accent-700',  border: 'border-accent-200',  dot: 'bg-accent-400' },
-  engaged:   { bg: 'bg-accent-100', text: 'text-accent-800',  border: 'border-accent-300',  dot: 'bg-accent-600' },
+  engaged:   { bg: 'bg-accent-100', text: 'text-fw-success-ink',  border: 'border-accent-300',  dot: 'bg-accent-600' },
   proposal:  { bg: 'bg-fw-warning-bg', text: 'text-fw-warning-ink', border: 'border-fw-warning-ring', dot: 'bg-fw-warning' },
   won:       { bg: 'bg-accent-50', text: 'text-accent-700', border: 'border-accent-200', dot: 'bg-accent-500' },
   lost:      { bg: 'bg-fw-danger-bg', text: 'text-fw-danger-ink', border: 'border-fw-danger', dot: 'bg-fw-danger' },
-  nurture:   { bg: 'bg-accent-100', text: 'text-accent-800', border: 'border-accent-300', dot: 'bg-accent-700' },
+  nurture:   { bg: 'bg-accent-100', text: 'text-fw-success-ink', border: 'border-accent-300', dot: 'bg-accent-650' },
 };
 
 // ============================================================================

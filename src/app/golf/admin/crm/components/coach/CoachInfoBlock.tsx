@@ -64,7 +64,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
           {coach.phone ? (
             <a
               href={`tel:${coach.phone}`}
-              className="text-accent-700 hover:text-accent-800"
+              className="text-accent-700 hover:text-fw-success-ink"
             >
               {coach.phone}
             </a>

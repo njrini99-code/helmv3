@@ -289,7 +289,7 @@ function DomainFavicon({ domain }: { domain: string }) {
   const bgClasses = [
     'bg-surface-sunken text-text-secondary',
     'bg-accent-100 text-accent-700',
-    'bg-accent-100 text-accent-800',
+    'bg-accent-100 text-fw-success-ink',
     'bg-fw-warning-bg text-fw-warning-ink',
     'bg-fw-danger-bg text-fw-danger-ink',
     'bg-surface-sunken text-text-secondary',

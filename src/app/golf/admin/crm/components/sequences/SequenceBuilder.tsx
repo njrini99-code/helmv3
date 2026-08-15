@@ -321,7 +321,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
             disabled={adding}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium',
-              'bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors',
+              'bg-accent-650 text-text-on-accent hover:bg-accent-750 transition-colors',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >
@@ -508,7 +508,7 @@ function StatCard({
       <p
         className={cn(
           'text-2xl font-bold tabular-nums mt-1',
-          tone === 'primary' ? 'text-accent-800' : 'text-text-primary',
+          tone === 'primary' ? 'text-fw-success-ink' : 'text-text-primary',
         )}
       >
         {value}

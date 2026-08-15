@@ -528,7 +528,7 @@ export function QuickActionsPanel({
               <Button variant="primary"
                 onClick={handleSchedule}
                 disabled={submitting || !scheduleForm.date || !scheduleForm.time}
-                className="w-full py-3 bg-accent-650 text-text-on-accent rounded-fw-md font-bold text-lg shadow-soft hover:bg-accent-700 hover:shadow-raise transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3 bg-accent-650 text-text-on-accent rounded-fw-md font-bold text-lg shadow-soft hover:bg-accent-750 hover:shadow-raise transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <IconCalendar size={18} />
                 {submitting ? 'Scheduling...' : 'Schedule Event'}
@@ -619,7 +619,7 @@ export function QuickActionsPanel({
               <Button variant="primary"
                 onClick={handleLogContact}
                 disabled={submitting}
-                className="w-full py-3 bg-accent-650 text-text-on-accent rounded-fw-md font-bold text-lg shadow-soft hover:bg-accent-700 hover:shadow-raise transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-accent-650 text-text-on-accent rounded-fw-md font-bold text-lg shadow-soft hover:bg-accent-750 hover:shadow-raise transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <IconCheck size={18} />
                 {submitting ? 'Saving...' : 'Log Contact'}

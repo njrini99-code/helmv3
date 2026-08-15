@@ -204,7 +204,7 @@ export function AddNoteDialog({
                 disabled={submitting || !body.trim()}
                 className={cn(
                   'px-4 py-1.5 text-sm font-semibold rounded-fw-md shadow-flat transition-colors',
-                  'bg-accent-650 text-text-on-accent hover:bg-accent-700',
+                  'bg-accent-650 text-text-on-accent hover:bg-accent-750',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >

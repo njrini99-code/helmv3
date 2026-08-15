@@ -60,7 +60,7 @@ export const STATUS_CONFIG: Record<
   pending:    { label: 'Pending',    color: 'text-text-tertiary',  bgColor: 'bg-surface-sunken', icon: <IconClock size={14} /> },
   delayed:    { label: 'Delayed',    color: 'text-fw-warning-ink', bgColor: 'bg-fw-warning-bg',  icon: <IconWarning size={14} /> },
   delivered:  { label: 'Delivered',  color: 'text-accent-700',     bgColor: 'bg-accent-50',      icon: <IconCheckCircle2 size={14} /> },
-  opened:     { label: 'Opened',     color: 'text-accent-800',     bgColor: 'bg-accent-100',     icon: <IconEye size={14} /> },
+  opened:     { label: 'Opened',     color: 'text-fw-success-ink',     bgColor: 'bg-accent-100',     icon: <IconEye size={14} /> },
   clicked:    { label: 'Clicked',    color: 'text-text-on-accent', bgColor: 'bg-accent-650',     icon: <MousePointerClick size={14} /> },
   bounced:    { label: 'Bounced',    color: 'text-fw-danger-ink',  bgColor: 'bg-fw-danger-bg',   icon: <Ban size={14} /> },
   complained: { label: 'Complained', color: 'text-fw-danger-ink',  bgColor: 'bg-fw-danger-bg',   icon: <ShieldAlert size={14} /> },
@@ -76,7 +76,7 @@ export const EVENT_CONFIG: Record<
   'email.delivered':        { label: 'Delivered',  color: 'text-accent-700',     dotColor: 'bg-accent-300',    icon: <IconCheckCircle2 size={12} /> },
   'email.delivery_delayed': { label: 'Delayed',    color: 'text-fw-warning-ink', dotColor: 'bg-fw-warning',    icon: <IconWarning size={12} /> },
   'email.opened':           { label: 'Opened',     color: 'text-accent-700',     dotColor: 'bg-accent-500',    icon: <IconEye size={12} /> },
-  'email.clicked':          { label: 'Clicked',    color: 'text-accent-800',     dotColor: 'bg-accent-700',    icon: <MousePointerClick size={12} /> },
+  'email.clicked':          { label: 'Clicked',    color: 'text-fw-success-ink',     dotColor: 'bg-accent-650',    icon: <MousePointerClick size={12} /> },
   'email.bounced':          { label: 'Bounced',    color: 'text-fw-danger-ink',  dotColor: 'bg-fw-danger',     icon: <Ban size={12} /> },
   'email.complained':       { label: 'Complained', color: 'text-fw-danger-ink',  dotColor: 'bg-fw-danger',     icon: <ShieldAlert size={12} /> },
 };

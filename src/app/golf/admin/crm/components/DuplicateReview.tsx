@@ -272,7 +272,7 @@ export function DuplicateReview({ onClose, onMerged }: DuplicateReviewProps) {
                         variant="primary"
                         onClick={() => handleMerge(group)}
                         disabled={isMerging || !keepId}
-                        className="inline-flex items-center gap-1.5 bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 bg-accent-650 hover:bg-accent-750 text-text-on-accent rounded-fw-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
                       >
                         <IconLayers3 size={14} />
                         {isMerging

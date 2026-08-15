@@ -102,7 +102,7 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
             // tab bar, and CoachHelm already has a nav destination there.
             className={cn(
               'fixed bottom-6 right-6 z-[var(--fw-z-nav,40)] hidden h-14 w-14 items-center justify-center md:flex',
-              'rounded-full bg-accent-700 text-text-on-accent shadow-soft',
+              'rounded-full bg-accent-750 text-text-on-accent shadow-soft',
               'transition-colors hover:bg-accent-800',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
             )}

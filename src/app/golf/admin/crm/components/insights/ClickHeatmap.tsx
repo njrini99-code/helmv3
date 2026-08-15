@@ -97,7 +97,7 @@ export function ClickHeatmap({ rows, loading, title }: ClickHeatmapProps) {
                     href={row.clicked_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium text-text-primary hover:text-accent-800 truncate flex items-center gap-1.5 group min-w-0"
+                    className="text-sm font-medium text-text-primary hover:text-fw-success-ink truncate flex items-center gap-1.5 group min-w-0"
                     title={row.clicked_url}
                   >
                     <span className="truncate">{host}</span>

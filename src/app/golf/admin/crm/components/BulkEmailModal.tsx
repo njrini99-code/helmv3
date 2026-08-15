@@ -710,7 +710,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 <Button variant="ghost"
                   type="button"
                   onClick={() => { setMode('helm'); setError(null); setHelmResult(null); }}
-                  className="shrink-0 text-xs text-accent-600 hover:text-accent-800 font-medium transition-colors underline"
+                  className="shrink-0 text-xs text-accent-600 hover:text-fw-success-ink font-medium transition-colors underline"
                 >
                   <span className="sm:hidden">Back to Helm</span>
                   <span className="hidden sm:inline">Back to Send from Helm</span>
@@ -813,7 +813,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                     type="button"
                     onClick={coachesWithEmail.length === 1 ? handlePersonalize : handlePersonalizeBulk}
                     disabled={personalizing || !body.trim()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-fw-md text-sm font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-700 disabled:opacity-50 transition-all shadow-flat"
+                    className="flex items-center gap-2 px-4 py-2 rounded-fw-md text-sm font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-750 disabled:opacity-50 transition-all shadow-flat"
                   >
                     {personalizing ? (
                       <>
@@ -875,7 +875,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                         key={tag.value}
                         type="button"
                         onClick={() => insertMergeTag(tag.value)}
-                        className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 cursor-pointer transition-colors"
+                        className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium bg-accent-50 text-fw-success-ink border border-accent-200 hover:bg-accent-100 cursor-pointer transition-colors"
                       >
                         {tag.label}
                       </Button>
@@ -958,7 +958,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               {personalizing && sendProgress && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-accent-800 font-medium">
+                    <span className="text-fw-success-ink font-medium">
                       Personalizing {sendProgress.current} of {sendProgress.total}...
                     </span>
                     <span className="text-text-tertiary text-xs">
@@ -1214,7 +1214,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 disabled={suppressionsLoading || coachesWithEmail.length === 0}
                 className={cn(
                   'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-fw-md text-sm font-semibold transition-all shadow-flat',
-                  'bg-accent-650 text-text-on-accent hover:bg-accent-700',
+                  'bg-accent-650 text-text-on-accent hover:bg-accent-750',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
@@ -1237,7 +1237,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 disabled={sending || suppressionsLoading || coachesWithEmail.length === 0 || !!helmResult}
                 className={cn(
                   'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-fw-md text-sm font-semibold transition-all shadow-flat',
-                  'bg-accent-650 text-text-on-accent hover:bg-accent-700',
+                  'bg-accent-650 text-text-on-accent hover:bg-accent-750',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >

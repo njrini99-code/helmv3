@@ -158,10 +158,10 @@ describe('ApproachDrill', () => {
     expect(matrix).not.toBeNull();
     // Fairway @ 30-75yds = 2.2 strokes, well under the 2.3 "good" cutoff → band 4 (darkest).
     const bestCell = within(matrix as HTMLElement).getByText('2.20');
-    expect(bestCell.closest('td')?.className).toContain('accent-700');
+    expect(bestCell.closest('td')?.className).toContain('ramp-4');
     // Rough @ 30-75yds = 3.6 strokes, well past the 2.85 "poor" cutoff → band 1 (lightest colored).
     const worstCell = within(matrix as HTMLElement).getByText('3.60');
-    expect(worstCell.closest('td')?.className).toContain('accent-100');
+    expect(worstCell.closest('td')?.className).toContain('ramp-1');
   });
 
   it('bands the Misses table with RampMatrix (n column + direction legend)', async () => {

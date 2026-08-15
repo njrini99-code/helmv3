@@ -267,7 +267,7 @@ function PulseRow({ item, onAsk }: { item: PulseItem; onAsk: (text: string) => v
                   href={item.action.href}
                   className={cn(
                     'inline-flex min-h-[36px] items-center gap-1 rounded-full px-1',
-                    'font-fw-sans text-caption text-accent-700 transition-colors hover:text-accent-800',
+                    'font-fw-sans text-caption text-accent-700 transition-colors hover:text-fw-success-ink',
                     'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                   )}
                 >

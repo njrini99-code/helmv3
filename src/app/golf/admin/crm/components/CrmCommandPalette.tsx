@@ -99,7 +99,7 @@ export function CrmCommandPalette({
   const itemClass = cn(
     'flex items-center gap-3 min-h-[44px] px-3 py-2.5 rounded-fw-md cursor-pointer outline-none',
     'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-    'text-text-secondary data-[selected=true]:bg-accent-50 data-[selected=true]:text-accent-800',
+    'text-text-secondary data-[selected=true]:bg-accent-50 data-[selected=true]:text-fw-success-ink',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/40',
   );
 

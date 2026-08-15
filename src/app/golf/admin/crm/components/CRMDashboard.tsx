@@ -175,7 +175,7 @@ export function CRMDashboard({
         <KPICard
           icon={<IconMessageSquare size={20} />}
           iconBg="bg-accent-100"
-          iconColor="text-accent-800"
+          iconColor="text-fw-success-ink"
           label="Contacted"
           value={stats.contacted}
           detail={`${stats.total > 0 ? Math.round((stats.contacted / stats.total) * 100) : 0}% contact rate`}
@@ -214,7 +214,7 @@ export function CRMDashboard({
             <Button variant="primary"
               onClick={() => handleResearchNext(10)}
               disabled={processing === 'research'}
-              className="w-full sm:w-auto px-5 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md font-medium hover:bg-accent-700 transition-all duration-200 text-sm shadow-soft disabled:opacity-50 hover:shadow-soft"
+              className="w-full sm:w-auto px-5 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md font-medium hover:bg-accent-750 transition-all duration-200 text-sm shadow-soft disabled:opacity-50 hover:shadow-soft"
             >
               <span className="flex items-center justify-center gap-2">
                 <IconArrowRight size={16} />
@@ -257,7 +257,7 @@ export function CRMDashboard({
             </div>
             <Button variant="ghost"
               onClick={() => onNavigate('list', 'board')}
-              className="text-xs font-medium text-accent-700 hover:text-accent-800 flex items-center gap-1 transition-colors"
+              className="text-xs font-medium text-accent-700 hover:text-fw-success-ink flex items-center gap-1 transition-colors"
             >
               View board <IconArrowRight size={12} />
             </Button>
@@ -428,7 +428,7 @@ export function CRMDashboard({
                 <Button variant="primary"
                   onClick={() => handleResearchNext(10)}
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-fw-md font-medium text-sm bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-all duration-200 shadow-soft disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-soft flex-1 sm:flex-initial"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-fw-md font-medium text-sm bg-accent-650 text-text-on-accent hover:bg-accent-750 transition-all duration-200 shadow-soft disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-soft flex-1 sm:flex-initial"
                 >
                   <IconArrowRight size={16} /> Move to Pipeline
                 </Button>
@@ -521,7 +521,7 @@ function DivisionCard({ label, count, total }: { label: string; count: number; t
   return (
     <div className="flex items-center gap-4 p-4 rounded-fw-md border border-border-subtle bg-surface-tint/60">
       <div className="w-12 h-12 rounded-fw-md flex items-center justify-center bg-accent-50">
-        <span className="text-lg font-bold text-accent-800">
+        <span className="text-lg font-bold text-fw-success-ink">
           {label}
         </span>
       </div>

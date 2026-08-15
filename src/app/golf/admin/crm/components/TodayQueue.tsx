@@ -153,7 +153,7 @@ function isBetterContact(cand: Coach, cur: Coach): boolean {
 const DIVISION_CHIP: Record<string, string> = {
   D1: 'bg-surface-tint text-text-secondary ring-border-subtle',
   D2: 'bg-surface-tint text-text-secondary ring-border-subtle',
-  D3: 'bg-accent-50 text-accent-800 ring-accent-200',
+  D3: 'bg-accent-50 text-fw-success-ink ring-accent-200',
   NAIA: 'bg-surface-tint text-text-secondary ring-border-subtle',
   JUCO: 'bg-surface-tint text-text-secondary ring-border-subtle',
 };
@@ -350,7 +350,7 @@ export function TodayQueue({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="truncate font-semibold text-text-primary group-hover:text-accent-800">
+                      <span className="truncate font-semibold text-text-primary group-hover:text-fw-success-ink">
                         {coach.name}
                       </span>
                       <span
@@ -395,7 +395,7 @@ export function TodayQueue({
                           title={armed ? 'Send via Gmail' : 'Arm a Gmail template first'}
                           className={cn(
                             'inline-flex min-h-[44px] items-center gap-1.5 rounded-fw-md px-3 py-1.5 text-xs font-semibold transition-colors',
-                            armed ? 'bg-accent-650 text-text-on-accent hover:bg-accent-700' : 'bg-surface text-text-tertiary',
+                            armed ? 'bg-accent-650 text-text-on-accent hover:bg-accent-750' : 'bg-surface text-text-tertiary',
                           )}
                         >
                           <IconSend size={14} /> Send

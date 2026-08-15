@@ -107,7 +107,7 @@ function RowContactHeader({ coach }: { coach: Coach }) {
 const ASSIGNEE_TINT: Record<string, string> = {
   Nick: 'bg-accent-50 text-accent-700 ring-1 ring-accent-200',
   Ben: 'bg-surface-sunken text-text-secondary ring-1 ring-border-subtle',
-  Leah: 'bg-accent-50 text-accent-800 ring-1 ring-accent-200',
+  Leah: 'bg-accent-50 text-fw-success-ink ring-1 ring-accent-200',
 };
 
 // Small tinted badge shown in the row / card when a coach has been assigned to
@@ -1281,7 +1281,7 @@ function SchoolGroupView({
                       onClick={(e) => { e.stopPropagation(); onGmailTouch?.(main); }}
                       aria-label={`Send Gmail to ${main.name} (${roleLabel}) at ${group.school}`}
                       title={`Send to ${main.name} — ${roleLabel}`}
-                      className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-fw-sm px-2.5 py-1.5 text-xs font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30"
+                      className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-fw-sm px-2.5 py-1.5 text-xs font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-750 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30"
                     >
                       <IconSend size={13} aria-hidden="true" /> Send
                     </Button>
@@ -1721,7 +1721,7 @@ export function CoachTable({
       {/* Select-all-filtered banner — act on every coach matching the current
           filter/search, not just the current page. Feeds the bulk Email action. */}
       {pageAllSelected && sortedCoaches.length > paginatedCoaches.length && (
-        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-2 bg-accent-50/70 border-b border-accent-100 text-sm text-accent-800">
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-2 bg-accent-50/70 border-b border-accent-100 text-sm text-fw-success-ink">
           {allFilteredSelected ? (
             <>
               <span>All <strong className="tabular-nums">{sortedCoaches.length}</strong> coaches matching this filter are selected.</span>

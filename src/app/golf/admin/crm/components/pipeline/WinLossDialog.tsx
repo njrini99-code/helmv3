@@ -72,7 +72,7 @@ const STATUS_META: Record<'won' | 'lost' | 'nurture', { title: string; descripti
     iconBg: 'bg-accent-50',
     iconColor: 'text-accent-700',
     submitLabel: 'Mark won',
-    submitClass: 'bg-accent-650 hover:bg-accent-700',
+    submitClass: 'bg-accent-650 hover:bg-accent-750',
   },
   lost:    {
     title: 'Mark as Lost',
@@ -92,7 +92,7 @@ const STATUS_META: Record<'won' | 'lost' | 'nurture', { title: string; descripti
     iconBg: 'bg-accent-100',
     iconColor: 'text-accent-700',
     submitLabel: 'Move to nurture',
-    submitClass: 'bg-accent-700 hover:bg-accent-800',
+    submitClass: 'bg-accent-750 hover:bg-accent-800',
   },
 };
 

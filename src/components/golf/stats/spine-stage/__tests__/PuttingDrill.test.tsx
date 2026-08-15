@@ -198,7 +198,7 @@ describe('PuttingDrill', () => {
     // — RampMatrix's own `RAMP_CLASSES[4]` — the SAME color language as the
     // Breaks tab's matrix, not an independently-invented one.
     const badge = screen.getByText('95%');
-    expect(badge.className).toContain('bg-accent-700');
+    expect(badge.className).toContain('bg-ramp-4');
     // The exact top-level attempt count (`puttMakeCount0_3`) backs the n=
     // badge under it, same n the hero MakeCurve reads.
     expect(screen.getByText('n=20')).toBeInTheDocument();

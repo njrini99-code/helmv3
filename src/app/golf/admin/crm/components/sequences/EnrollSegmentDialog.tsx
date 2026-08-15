@@ -182,7 +182,7 @@ export function EnrollSegmentDialog({
               disabled={!selectedSegmentId || submitting}
               className={cn(
                 'flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-fw-md shadow-flat',
-                'bg-accent-650 text-text-on-accent hover:bg-accent-700 transition-colors',
+                'bg-accent-650 text-text-on-accent hover:bg-accent-750 transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >

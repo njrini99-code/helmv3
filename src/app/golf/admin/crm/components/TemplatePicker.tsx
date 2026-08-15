@@ -52,14 +52,14 @@ interface TemplatePickerProps {
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   intro: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
   follow_up: { bg: 'bg-fw-warning-bg', text: 'text-fw-warning-ink' },
-  demo_invite: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  demo_invite: { bg: 'bg-accent-50', text: 'text-fw-success-ink' },
   proposal: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
-  check_in: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  check_in: { bg: 'bg-accent-50', text: 'text-fw-success-ink' },
   general: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
   cold_outreach: { bg: 'bg-surface-tint', text: 'text-text-secondary' },
-  active_conversation: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  active_conversation: { bg: 'bg-accent-50', text: 'text-fw-success-ink' },
   re_engage: { bg: 'bg-fw-warning-bg', text: 'text-fw-warning-ink' },
-  close: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  close: { bg: 'bg-accent-50', text: 'text-fw-success-ink' },
   post_close: { bg: 'bg-fw-success-bg', text: 'text-fw-success-ink' },
 };
 

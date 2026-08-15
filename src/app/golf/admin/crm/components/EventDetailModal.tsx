@@ -287,7 +287,7 @@ export function EventDetailModal({
           {/* Outcome Form (when completing) */}
           {showOutcomeForm && (
             <div className="p-4 bg-accent-50 rounded-fw-md border border-accent-200 space-y-3">
-              <h4 className="font-semibold text-accent-800 flex items-center gap-1.5">
+              <h4 className="font-semibold text-fw-success-ink flex items-center gap-1.5">
                 <IconCheck size={16} className="text-accent-700" />
                 Mark as Completed
               </h4>
@@ -312,7 +312,7 @@ export function EventDetailModal({
                 <Button variant="primary"
                   onClick={handleComplete}
                   disabled={submitting}
-                  className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+                  className="bg-accent-650 hover:bg-accent-750 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Complete'}
                 </Button>
@@ -344,7 +344,7 @@ export function EventDetailModal({
 
           <Button variant="primary"
             onClick={onEdit}
-            className="bg-accent-650 hover:bg-accent-700 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-1.5"
+            className="bg-accent-650 hover:bg-accent-750 text-text-on-accent rounded-fw-md px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-1.5"
           >
             <IconEdit size={14} />
             Edit

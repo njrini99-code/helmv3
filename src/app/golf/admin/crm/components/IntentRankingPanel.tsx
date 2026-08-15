@@ -183,7 +183,7 @@ function IntentStat({ icon, value, label, dominant }: { icon: ReactNode; value: 
       className={cn(
         'inline-flex items-center gap-1 rounded-full tabular-nums',
         dominant
-          ? cn('px-2 py-1 text-body-sm font-bold', hasValue ? 'bg-accent-50 text-accent-800' : 'bg-surface-sunken text-text-tertiary')
+          ? cn('px-2 py-1 text-body-sm font-bold', hasValue ? 'bg-accent-50 text-fw-success-ink' : 'bg-surface-sunken text-text-tertiary')
           : 'px-2 py-0.5 text-micro font-medium text-text-tertiary',
       )}
     >

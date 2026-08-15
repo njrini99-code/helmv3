@@ -302,7 +302,7 @@ function SingleCoachQuickAction({
             <Button variant="primary"
               onClick={handleLogContact}
               disabled={submitting}
-              className="flex-1 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md text-sm font-bold hover:bg-accent-700 transition-colors disabled:opacity-50 shadow-flat flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md text-sm font-bold hover:bg-accent-750 transition-colors disabled:opacity-50 shadow-flat flex items-center justify-center gap-1.5"
             >
               <IconCheck size={14} />
               {submitting ? 'Saving...' : 'Log Contact'}

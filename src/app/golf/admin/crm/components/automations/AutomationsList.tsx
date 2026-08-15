@@ -281,7 +281,7 @@ export function AutomationsList() {
                                 {a.name}
                               </span>
                               {seeded && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-accent-200 bg-accent-50 text-eyebrow font-medium text-accent-800">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-accent-200 bg-accent-50 text-eyebrow font-medium text-fw-success-ink">
                                   <IconCheckCircle2 size={10} /> Seeded
                                 </span>
                               )}

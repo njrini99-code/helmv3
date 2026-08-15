@@ -91,6 +91,24 @@ export function ProgramOpening({
   const shown = items.slice(0, VISIBLE_FINDINGS);
   const remaining = items.length - shown.length;
 
+  /**
+   * The top-weighted finding is pulled out and set at display weight; the rest
+   * stay as the dense hairline rows below.
+   *
+   * `items` arrives ranked by `weight`, and the cap above exists specifically
+   * to keep that ranking legible — but every row used to render identically
+   * (same 13px headline, same 12px evidence, same 6px dot), so the ranking
+   * lived in the data and was invisible on screen. A screen where the first
+   * and fifth finding look the same has not decided what matters, and reads as
+   * a list rather than a briefing.
+   *
+   * One large statement over four quiet rows is the whole hierarchy: the coach
+   * reads the lead from across the room, and the remainder stays scannable
+   * without competing. No new data is needed to do this — `weight` already
+   * said which one it is.
+   */
+  const [lead, ...rest] = shown;
+
   return (
     <section className={cn('mt-6', className)} aria-labelledby="program-opening-heading">
       <div className="flex items-baseline justify-between gap-4">
@@ -107,8 +125,10 @@ export function ProgramOpening({
         )}
       </div>
 
-      <ul className="mt-2.5">
-        {shown.map((item, i) => (
+      {lead && <LeadFinding item={lead} onAsk={onAsk} />}
+
+      <ul className={cn(rest.length > 0 && 'mt-1')}>
+        {rest.map((item, i) => (
           <li
             key={item.id}
             className={cn(
@@ -153,7 +173,7 @@ export function ProgramOpening({
             href="/golf/dashboard/intelligence"
             className={cn(
               'inline-flex items-center gap-1 rounded-fw-md font-fw-sans text-caption',
-              'text-accent-700 transition-colors hover:text-accent-800',
+              'text-accent-700 transition-colors hover:text-fw-success-ink',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
             )}
           >
@@ -163,6 +183,91 @@ export function ProgramOpening({
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * The lead finding — the same data as a row, given the room to be read first.
+ *
+ * Type does the work, not colour or ornament: the headline steps from
+ * `body-sm` (13px) to `h3`/`h2` (18/24px), which is the first time anything on
+ * this surface leaves the 11–15px band the rest of the opening lives in. The
+ * standing tone rule still holds — the dot carries urgency, the headline is
+ * never tinted — so this reads as emphasis, not as an alert.
+ */
+function LeadFinding({ item, onAsk }: { item: PulseItem; onAsk: (text: string) => void }) {
+  const headline = (
+    <>
+      <span className="sr-only">{TONE_LABEL[item.tone]}. </span>
+      <span className="block text-balance font-fw-sans text-h3 text-text-primary sm:text-h2">
+        {item.headline}
+      </span>
+      <span className="mt-1.5 block font-fw-sans text-body-sm text-text-secondary">
+        {item.evidence}
+      </span>
+    </>
+  );
+
+  return (
+    <div
+      className={cn(
+        'flex items-start gap-3 py-4 motion-safe:animate-fade-up',
+        // A rule under the lead, not around it — the opening is a briefing on
+        // the page, not a card floating on it.
+        'border-b border-border-subtle',
+      )}
+      style={{ animationFillMode: 'backwards' }}
+    >
+      {/* Scaled with the type it sits beside; still a dot, still the only tone carrier. */}
+      <span
+        aria-hidden
+        className={cn('mt-2.5 h-2 w-2 shrink-0 rounded-full sm:mt-3.5', TONE_DOT[item.tone])}
+      />
+
+      <div className="min-w-0 flex-1">
+        {item.ask ? (
+          // eslint-disable-next-line helm/no-raw-button -- a finding, not a <Button> pill
+          <button
+            type="button"
+            onClick={() => onAsk(item.ask!)}
+            className={cn(
+              'group/lead -my-1 block w-full rounded-fw-md py-1 text-left',
+              'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+            )}
+          >
+            {headline}
+            <span
+              className={cn(
+                'mt-2.5 inline-flex items-start gap-1.5 font-fw-sans text-body-sm',
+                'text-text-secondary transition-colors',
+                'group-hover/lead:text-accent-700 group-focus-visible/lead:text-accent-700',
+              )}
+            >
+              <CornerDownLeft aria-hidden className="mt-[5px] h-3.5 w-3.5 shrink-0" />
+              {item.ask}
+            </span>
+          </button>
+        ) : (
+          headline
+        )}
+      </div>
+
+      {/* Sibling of the button, never nested — a link inside a button is a hydration crash. */}
+      {item.action && (
+        <Link
+          href={item.action.href}
+          className={cn(
+            'mt-1 hidden shrink-0 items-center gap-1 rounded-fw-md px-2 py-1.5 sm:inline-flex',
+            'font-fw-sans text-caption text-text-secondary transition-colors',
+            'hover:bg-surface-sunken hover:text-text-primary',
+            'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+          )}
+        >
+          {item.action.label}
+          <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
+        </Link>
+      )}
+    </div>
   );
 }
 

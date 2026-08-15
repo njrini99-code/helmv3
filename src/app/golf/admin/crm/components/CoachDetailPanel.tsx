@@ -623,7 +623,7 @@ function CoachDetailPanelInner({
         {!editingContact && (
           <div className="flex items-center gap-2 px-5 py-2.5 border-b border-border-subtle/30 border border-border-subtle bg-surface-tint flex-shrink-0 flex-wrap">
             {coach.email ? (
-              <a href={`mailto:${coach.email}`} className="flex min-h-11 items-center gap-1.5 rounded-fw-md bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-800 transition-colors hover:bg-accent-100">
+              <a href={`mailto:${coach.email}`} className="flex min-h-11 items-center gap-1.5 rounded-fw-md bg-accent-50 px-3 py-1.5 text-xs font-medium text-fw-success-ink transition-colors hover:bg-accent-100">
                 <IconMail size={12} /> {coach.email}
               </a>
             ) : (
@@ -730,7 +730,7 @@ function CoachDetailPanelInner({
                   </div>
                 ) : (
                   <Button variant="danger" onClick={() => setEditingFollowUp(true)}
-                    className={cn('text-xs font-medium', isOverdue ? 'text-fw-danger-ink' : coach.next_follow_up_at ? 'text-text-secondary' : 'text-accent-700 hover:text-accent-800')}>
+                    className={cn('text-xs font-medium', isOverdue ? 'text-fw-danger-ink' : coach.next_follow_up_at ? 'text-text-secondary' : 'text-accent-700 hover:text-fw-success-ink')}>
                     {coach.next_follow_up_at ? formatShort(coach.next_follow_up_at) : '+ Set date'}
                   </Button>
                 )}
@@ -787,7 +787,7 @@ function CoachDetailPanelInner({
               <Activity size={13} className="text-text-tertiary" /> Timeline
             </h3>
             <Button variant="ghost" onClick={() => setShowContactForm(!showContactForm)}
-              className="text-xs text-accent-700 hover:text-accent-800 font-semibold flex items-center gap-1">
+              className="text-xs text-accent-700 hover:text-fw-success-ink font-semibold flex items-center gap-1">
               <IconPlus size={12} /> Log
             </Button>
           </div>

@@ -378,11 +378,11 @@ export function ReviewHero({
           </span>
         </p>
         {courseDateLine ? (
-          <p className="mt-1.5 font-fw-sans text-body-sm text-accent-100">{courseDateLine}</p>
+          <p className="mt-1.5 font-fw-sans text-body-sm text-ink-on-deep">{courseDateLine}</p>
         ) : null}
         <GradeDots score={grade.score} label={grade.label} onGreen />
         {mixLine ? (
-          <p className="mt-4 font-fw-sans text-caption text-accent-100">
+          <p className="mt-4 font-fw-sans text-caption text-ink-on-deep">
             Mix: <span className="font-fw-mono font-normal text-text-on-accent">{mixLine}</span>
           </p>
         ) : null}
@@ -405,7 +405,7 @@ export function ReviewHero({
                 <PressTarget
                   onClick={toggleShotPath}
                   aria-expanded={openHole === activeHole}
-                  className="mt-2 font-fw-sans text-caption font-semibold text-accent-700 transition-colors duration-150 hover:text-accent-800"
+                  className="mt-2 font-fw-sans text-caption font-semibold text-accent-700 transition-colors duration-150 hover:text-fw-success-ink"
                 >
                   {openHole === activeHole ? 'Hide shot path' : 'Show shot path'}
                 </PressTarget>

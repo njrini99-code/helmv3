@@ -36,7 +36,12 @@
 // on that path and light on a hard load. This makes the two agree. The prefix
 // test is `p.indexOf('/admin/')!==0` plus an exact `/admin`, so a future
 // `/administration`-style route is NOT swept in.
-const BOOT = `(function(){try{var p=location.pathname;if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0&&p!='/golf/welcome'&&p!='/admin'&&p.indexOf('/admin/')!==0)return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}}catch(e){}})();`;
+// It also stamps `<meta name="theme-color">` so the mobile browser/status bar
+// is already the right colour on the first frame instead of framing a dark page
+// in the UA-default white. Values mirror THEME_COLOR in src/lib/golf/theme.ts
+// (= --fw-color-canvas per theme); `applyTheme` rewrites this same tag — matched
+// on `data-fw-theme-color` — on every runtime theme change.
+const BOOT = `(function(){try{var p=location.pathname;if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0&&p!='/golf/welcome'&&p!='/admin'&&p.indexOf('/admin/')!==0)return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}var m=document.head.querySelector('meta[data-fw-theme-color]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');m.setAttribute('data-fw-theme-color','');document.head.appendChild(m);}m.setAttribute('content',d?'#0e0e10':'#f7efdf');}catch(e){}})();`;
 
 export function ThemeScript() {
   return <script dangerouslySetInnerHTML={{ __html: BOOT }} suppressHydrationWarning />;
