@@ -1,0 +1,1772 @@
+diff --git a/src/components/fairway/index.ts b/src/components/fairway/index.ts
+index 6e3817c6d..ccb97ab10 100644
+--- a/src/components/fairway/index.ts
++++ b/src/components/fairway/index.ts
+@@ -505,12 +505,14 @@ export {
+   // The monolithic FairwayCoachHelmSignals was deleted 2026-07-22 (dead code
+   // purge) — all three routes are permanent-redirect shims onto TriageDesk's
+   // Signals drill (SignalQueue/SignalDossier). SignalsToolbar/ScanTeamControl
+-  // remain live, reused elsewhere.
+-  SignalsToolbar,
+-  type SignalsToolbarProps,
+-  type AppliedFilterChip,
+-  ScanTeamControl,
+-  type ScanTeamControlProps,
++  // followed on 2026-08-15 — the "remain live, reused elsewhere" note here had
++  // gone stale, the drill absorbed both. The adapter below is still live.
++  //
++  // Keep this comment free of semicolons. It sits INSIDE the multi-line
++  // `export { … } from './pages/coachhelm'` statement below, and
++  // route-reachability.test.ts matches that statement with `[^;]*?` — a `;`
++  // anywhere in here truncates the match, the barrel edge is never followed,
++  // and every component under pages/coachhelm/ is reported unreachable.
+   insightToSignalRow,
+   patternToSignalRow,
+   insightsToSignalRows,
+@@ -519,6 +521,9 @@ export {
+   type SignalSource,
+   type SignalEvidenceLine,
+   // ── Player-path surfaces (phase 5 · the PLAYER shell variant) ──────────────
++  // FairwayPlayerCoachHelm is dead but RETAINED — see the note in
++  // ./pages/coachhelm/index.ts. It is the only importer of HeroNarrativeCard
++  // and FocusAreasGrid, so the three must be deleted together or not at all.
+   FairwayPlayerCoachHelm,
+   type FairwayPlayerCoachHelmProps,
+   FairwayMyDevelopment,
+diff --git a/src/components/fairway/pages/coachhelm/index.ts b/src/components/fairway/pages/coachhelm/index.ts
+index 5ac92412d..465679470 100644
+--- a/src/components/fairway/pages/coachhelm/index.ts
++++ b/src/components/fairway/pages/coachhelm/index.ts
+@@ -104,15 +104,14 @@ export type { FairwayEffectivenessProps } from './FairwayEffectiveness';
+ // The monolithic FairwayCoachHelmSignals (alerts/insights/patterns discriminated
+ // union) was deleted 2026-07-22 (dead code purge) — all three routes are
+ // permanent-redirect shims onto the Signals drill of TriageDesk, which is fed
+-// by SignalQueue/SignalDossier instead. SignalsToolbar/ScanTeamControl/the
+-// patternToInsightVocabulary adapter below remain live, reused elsewhere.
+-export { SignalsToolbar } from './signals/SignalsToolbar';
+-export type {
+-  SignalsToolbarProps,
+-  AppliedFilterChip,
+-} from './signals/SignalsToolbar';
+-export { ScanTeamControl } from './signals/ScanTeamControl';
+-export type { ScanTeamControlProps } from './signals/ScanTeamControl';
++// by SignalQueue/SignalDossier instead.
++//
++// SignalsToolbar and ScanTeamControl followed on 2026-08-15: the claim above
++// that they "remain live, reused elsewhere" had gone stale — SignalQueue and
++// SignalDossier absorbed both, leaving barrel re-exports as their only
++// referents. `AppliedFilterChip` went with SignalsToolbar (it was declared in
++// that file and had no consumer outside it). The patternToInsightVocabulary
++// adapter below IS still live.
+ export {
+   insightToSignalRow,
+   patternToSignalRow,
+@@ -126,15 +125,13 @@ export type {
+ } from './signals/patternToInsightVocabulary';
+ 
+ // ── Player-path surfaces (phase 5 · the PLAYER shell variant) ────────────────
+-//   • FairwayPlayerCoachHelm — the player front door over /golf/dashboard/coachhelm.
+-//     Renders CoachHelmShell role="player" (sub-nav = Brief + My Development),
+-//     ONE GlassSurface hero (top insight + preserved LLM narrative), a MetricCard
+-//     row, secondary insights that EXPAND IN PLACE via InsightPanel (kills the
+-//     "View N more" dead-end), honest InsufficientData for null V3 panels, and a
+-//     RESERVED/disabled "Ask CoachHelm about this insight" entry (no gate lift).
+-//     Consumes getPlayerCoachHelmDashboard / getPlayerShotAnalytics /
+-//     getTopInsightForPlayer / getInsightsForPlayer / getPlayer{Profile,Trend,
+-//     ShotContext,WhatIf} / rateInsightAsPlayer UNCHANGED (props in; no fetch).
++//   • FairwayPlayerCoachHelm — the player front door over
++//     /golf/dashboard/coachhelm. DEAD but deliberately RETAINED (2026-08-15).
++//     `PlayerCoachHelmHome` superseded it and it has zero non-test importers,
++//     so it was slated for deletion — but it is the ONLY value-importer of
++//     `HeroNarrativeCard` (:110) and `FocusAreasGrid` (:111), so deleting it
++//     alone orphans both and turns route-reachability.test.ts red. The three
++//     are one cluster and need one decision, which is above this pass's remit.
+ //   • FairwayMyDevelopment   — the player My Development list over
+ //     /golf/dashboard/my-development. Renders the player CoachHelmShell variant,
+ //     a FocusAreaCard list (active/completed partition preserved) with REAL
+diff --git a/src/components/fairway/pages/coachhelm/signals/ScanTeamControl.tsx b/src/components/fairway/pages/coachhelm/signals/ScanTeamControl.tsx
+deleted file mode 100644
+index f138a761f..000000000
+--- a/src/components/fairway/pages/coachhelm/signals/ScanTeamControl.tsx
++++ /dev/null
+@@ -1,135 +0,0 @@
+-'use client';
+-
+-/**
+- * ============================================================================
+- * Fairway · CoachHelm · Signals · ScanTeamControl (helper)
+- * ----------------------------------------------------------------------------
+- * The "Scan Team" trigger, re-skinned per the Alerts mustFix
+- *   "replace the Scan Team animate-spin with a determinate progress affordance"
+- * WITHOUT touching the engine: it calls the EXISTING, preserved
+- * `generateAlerts(coachId, teamId)` server action UNCHANGED (the per-player
+- * `analyzePlayer` pipeline behind it is never rewritten) and then asks the
+- * parent to re-read the canonical `getInsightsForCoach` source via `onScanned`.
+- *
+- * Because `generateAlerts` is a single awaited round-trip with no per-player
+- * progress channel, we render an HONEST indeterminate→settle treatment that is
+- * still NOT the banned infinite spinner: a quiet determinate-style track that
+- * sweeps while in flight and snaps to a check on success (respecting
+- * prefers-reduced-motion). The button stays a real ≥44px control with a
+- * busy state + aria-live status, never an indefinite icon rotation.
+- *
+- * Presentation + the preserved call only — no new chat/alert plumbing.
+- * ========================================================================== */
+-
+-import { useState, useTransition } from 'react';
+-import { motion, useReducedMotion } from 'framer-motion';
+-import { Sparkles, Check } from 'lucide-react';
+-import { Button } from '@/components/fairway/controls/button';
+-import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+-import { generateAlerts } from '@/app/golf/actions/alerts';
+-
+-export interface ScanTeamControlProps {
+-  coachId: string;
+-  teamId: string;
+-  /**
+-   * Called after a successful scan so the parent can re-read the single source
+-   * of truth (`getInsightsForCoach`). Kept async-agnostic.
+-   */
+-  onScanned?: () => void | Promise<void>;
+-  /** Surfaces a scan failure to the parent (which renders an InlineNotice). */
+-  onError?: (message: string) => void;
+-  size?: 'sm' | 'md';
+-}
+-
+-export function ScanTeamControl({
+-  coachId,
+-  teamId,
+-  onScanned,
+-  onError,
+-  size = 'sm',
+-}: ScanTeamControlProps) {
+-  const reduceMotion = useReducedMotion();
+-  const [isPending, startTransition] = useTransition();
+-  const [justScanned, setJustScanned] = useState(false);
+-
+-  const handleScan = () => {
+-    setJustScanned(false);
+-    startTransition(async () => {
+-      try {
+-        // PRESERVED ENGINE — generateAlerts runs the per-player analyzePlayer
+-        // pipeline server-side; we only re-skin the trigger + progress.
+-        const res = await generateAlerts(coachId, teamId);
+-        if (!res.success) {
+-          onError?.(res.error ?? 'Could not scan the team. Try again.');
+-          return;
+-        }
+-        await onScanned?.();
+-        setJustScanned(true);
+-        // P2-14: report the HONEST count — the visible delta the canonical feed
+-        // gained (`res.generated`), never the raw insert count. The action
+-        // returns `undefined` when the count read failed, so we only name a
+-        // number when we actually have one; otherwise we confirm completion
+-        // without claiming a figure the feed can't back up.
+-        const delta = res.generated;
+-        if (typeof delta === 'number') {
+-          fairwayToast.success(
+-            delta > 0
+-              ? `Scan complete — ${delta} new signal${delta === 1 ? '' : 's'}.`
+-              : 'Scan complete — no new signals.',
+-          );
+-        } else {
+-          fairwayToast.success('Scan complete.');
+-        }
+-        // Clear the "scanned" check after a beat so the control resets quietly.
+-        window.setTimeout(() => setJustScanned(false), 2200);
+-      } catch {
+-        onError?.('Could not scan the team. Try again.');
+-      }
+-    });
+-  };
+-
+-  return (
+-    <div className="relative flex flex-col items-end gap-1">
+-      <Button
+-        variant="primary"
+-        size={size}
+-        busy={isPending}
+-        onClick={handleScan}
+-        leftIcon={
+-          justScanned && !isPending ? (
+-            <Check className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+-          ) : (
+-            <Sparkles className="h-4 w-4" strokeWidth={2} aria-hidden />
+-          )
+-        }
+-        aria-label={isPending ? 'Scanning team for new signals' : 'Scan team for new signals'}
+-      >
+-        <span className="hidden sm:inline">
+-          {isPending ? 'Scanning…' : justScanned ? 'Scanned' : 'Scan Team'}
+-        </span>
+-      </Button>
+-
+-      {/* Determinate-style progress track (NOT an infinite icon spin). It
+-          sweeps once while the single round-trip is in flight, then unmounts. */}
+-      {isPending ? (
+-        <div
+-          role="status"
+-          aria-live="polite"
+-          className="h-1 w-24 overflow-hidden rounded-full bg-surface-sunken"
+-        >
+-          <span className="sr-only">Scanning the team for new signals…</span>
+-          <motion.span
+-            className="block h-full rounded-full bg-accent-400"
+-            initial={reduceMotion ? { width: '40%' } : { width: '8%' }}
+-            animate={reduceMotion ? { width: '40%' } : { width: ['8%', '72%', '92%'] }}
+-            transition={
+-              reduceMotion
+-                ? { duration: 0 }
+-                : { duration: 2.4, ease: [0.16, 1, 0.3, 1], times: [0, 0.6, 1] }
+-            }
+-          />
+-        </div>
+-      ) : null}
+-    </div>
+-  );
+-}
+diff --git a/src/components/fairway/pages/coachhelm/signals/SignalsToolbar.tsx b/src/components/fairway/pages/coachhelm/signals/SignalsToolbar.tsx
+deleted file mode 100644
+index 35ef02c38..000000000
+--- a/src/components/fairway/pages/coachhelm/signals/SignalsToolbar.tsx
++++ /dev/null
+@@ -1,215 +0,0 @@
+-'use client';
+-
+-/**
+- * ============================================================================
+- * Fairway · CoachHelm · Signals · SignalsToolbar (helper)
+- * ----------------------------------------------------------------------------
+- * The ONE quiet triage row for the Signals surface — composes the shared
+- * `Toolbar` primitive (search + filters + view-toggle + primary action +
+- * bulk-action slot) so alerts / insights / patterns finally share ONE filter
+- * system instead of the three competing mechanisms the legacy Insights page
+- * stacked (lifecycle chips + category chips + a filters panel).
+- *
+- * It composes EXISTING Fairway primitives only — `Toolbar`, `SearchField`,
+- * `Toolbar.FilterMenu` (PopoverPanel-backed), `Toolbar.ViewToggle` (Segmented),
+- * `Button` — and owns NO data: every value is controlled by the parent
+- * `FairwayCoachHelmSignals`, which holds the URL-as-state model ported from
+- * `InsightsPageContent`. The `bulkActions` slot is where the parent wires the
+- * (previously dead-coded) alerts.ts bulk actions; the toolbar simply swaps in
+- * the floating "N selected" bar when `selectedCount > 0`.
+- *
+- * Presentation only — no server action import here.
+- * ========================================================================== */
+-
+-import { type ReactNode } from 'react';
+-import { Download } from 'lucide-react';
+-import {
+-  Toolbar,
+-  type ToolbarFilterOption,
+-} from '@/components/fairway/controls/Toolbar';
+-import { SearchField } from '@/components/fairway/command/search-field';
+-import { Button } from '@/components/fairway/controls/button';
+-import { Chip } from '@/components/fairway/controls/badge';
+-import type { SegmentedOption } from '@/components/fairway/controls/segmented';
+-
+-/** A single applied-filter recall chip (label + the value that clears it). */
+-export interface AppliedFilterChip {
+-  key: string;
+-  label: string;
+-  onRemove: () => void;
+-}
+-
+-export interface SignalsToolbarProps<V extends string = string> {
+-  /* search */
+-  query: string;
+-  onQueryChange: (q: string) => void;
+-  searchPlaceholder?: string;
+-
+-  /* severity (priority) — multi-select pills behind one "Severity" menu */
+-  severityOptions: ReadonlyArray<ToolbarFilterOption>;
+-  selectedSeverity: ReadonlyArray<string>;
+-  onToggleSeverity: (value: string) => void;
+-  onClearSeverity?: () => void;
+-
+-  /* lifecycle / status — multi-select behind one "Status" menu */
+-  statusOptions: ReadonlyArray<ToolbarFilterOption>;
+-  selectedStatus: ReadonlyArray<string>;
+-  onToggleStatus: (value: string) => void;
+-  onClearStatus?: () => void;
+-
+-  /* category / type — multi-select behind one "Category" menu (optional) */
+-  categoryOptions?: ReadonlyArray<ToolbarFilterOption>;
+-  selectedCategory?: ReadonlyArray<string>;
+-  onToggleCategory?: (value: string) => void;
+-  onClearCategory?: () => void;
+-
+-  /* view toggle (feed | table | grouped) */
+-  viewOptions?: ReadonlyArray<SegmentedOption<V>>;
+-  view?: V;
+-  onViewChange?: (v: V) => void;
+-
+-  /* applied-filter recall chips (quiet line below the row) */
+-  appliedChips?: AppliedFilterChip[];
+-
+-  /* primary action — e.g. the ScanTeamControl, passed by the parent */
+-  primaryAction?: ReactNode;
+-
+-  /* export — wires insight-management.ts#exportInsights via the parent */
+-  onExport?: () => void;
+-
+-  /* bulk-action bar (swaps in when a selection exists) */
+-  selectedCount?: number;
+-  bulkActions?: ReactNode;
+-  onClearSelection?: () => void;
+-
+-  /** Sticky toolbar that earns the cream glass once content scrolls under. */
+-  sticky?: boolean;
+-  /**
+-   * Top offset (px) when sticky. Defaults to 64 — the Fairway glass top bar
+-   * (FairwayTopBar) is 64px (4rem) tall, and this toolbar only ever renders
+-   * inside the redesign shell, so it must pin BELOW that bar instead of at
+-   * top:0 (where it would collide with / hide behind the glass chrome).
+-   */
+-  stickyTop?: number;
+-}
+-
+-export function SignalsToolbar<V extends string = string>({
+-  query,
+-  onQueryChange,
+-  searchPlaceholder = 'Search signals by title or detail…',
+-  severityOptions,
+-  selectedSeverity,
+-  onToggleSeverity,
+-  onClearSeverity,
+-  statusOptions,
+-  selectedStatus,
+-  onToggleStatus,
+-  onClearStatus,
+-  categoryOptions,
+-  selectedCategory,
+-  onToggleCategory,
+-  onClearCategory,
+-  viewOptions,
+-  view,
+-  onViewChange,
+-  appliedChips,
+-  primaryAction,
+-  onExport,
+-  selectedCount = 0,
+-  bulkActions,
+-  onClearSelection,
+-  sticky = true,
+-  // 64px = the height of the sticky Fairway glass top bar (4rem). Pinning here
+-  // (rather than top:0) keeps this triage row from colliding with that chrome.
+-  stickyTop = 64,
+-}: SignalsToolbarProps<V>) {
+-  const filters = (
+-    <>
+-      <Toolbar.FilterMenu
+-        label="Severity"
+-        heading="Severity"
+-        options={severityOptions}
+-        selected={selectedSeverity}
+-        onToggle={onToggleSeverity}
+-        onClear={onClearSeverity}
+-      />
+-      <Toolbar.FilterMenu
+-        label="Status"
+-        heading="Status"
+-        options={statusOptions}
+-        selected={selectedStatus}
+-        onToggle={onToggleStatus}
+-        onClear={onClearStatus}
+-      />
+-      {categoryOptions && categoryOptions.length > 0 && onToggleCategory ? (
+-        <Toolbar.FilterMenu
+-          label="Category"
+-          heading="Category"
+-          options={categoryOptions}
+-          selected={selectedCategory ?? []}
+-          onToggle={onToggleCategory}
+-          onClear={onClearCategory}
+-        />
+-      ) : null}
+-    </>
+-  );
+-
+-  const trailing = (
+-    <>
+-      {onExport ? (
+-        <Button
+-          variant="ghost"
+-          size="sm"
+-          leftIcon={<Download className="h-4 w-4" strokeWidth={2} aria-hidden />}
+-          onClick={onExport}
+-        >
+-          <span className="hidden sm:inline">Export</span>
+-        </Button>
+-      ) : null}
+-      {primaryAction}
+-    </>
+-  );
+-
+-  return (
+-    <Toolbar
+-      aria-label="Signal triage filters and actions"
+-      sticky={sticky}
+-      stickyTop={stickyTop}
+-      search={
+-        <SearchField
+-          size="sm"
+-          value={query}
+-          onChange={(e) => onQueryChange(e.currentTarget.value)}
+-          onClear={() => onQueryChange('')}
+-          placeholder={searchPlaceholder}
+-          aria-label="Search signals"
+-        />
+-      }
+-      filters={filters}
+-      viewToggle={
+-        viewOptions && view && onViewChange ? (
+-          <Toolbar.ViewToggle<V>
+-            options={viewOptions}
+-            value={view}
+-            onValueChange={onViewChange}
+-            aria-label="Signal view"
+-          />
+-        ) : undefined
+-      }
+-      primaryAction={trailing}
+-      appliedChips={
+-        appliedChips && appliedChips.length > 0
+-          ? appliedChips.map((c) => (
+-              <Chip key={c.key} size="sm" tone="accent" onRemove={c.onRemove}>
+-                {c.label}
+-              </Chip>
+-            ))
+-          : undefined
+-      }
+-      selectedCount={selectedCount}
+-      selectionNoun="signal"
+-      bulkActions={bulkActions}
+-      onClearSelection={onClearSelection}
+-    />
+-  );
+-}
+diff --git a/src/components/fairway/pages/hub/hub-parts.tsx b/src/components/fairway/pages/hub/hub-parts.tsx
+index f12cebf88..63006d4bf 100644
+--- a/src/components/fairway/pages/hub/hub-parts.tsx
++++ b/src/components/fairway/pages/hub/hub-parts.tsx
+@@ -30,8 +30,6 @@ import { useRouter } from 'next/navigation';
+ import {
+   Plane,
+   MapPin,
+-  CalendarClock,
+-  Clock,
+   Check,
+   ChevronRight,
+   Bell,
+@@ -164,10 +162,6 @@ function formatTime(timeStr: string): string {
+   return `${h12}:${min} ${ampm}`;
+ }
+ 
+-function formatEventTime(dateStr: string): string {
+-  return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+-}
+-
+ function formatRelativeDate(dateStr: string, now: Date | null): string {
+   const date = new Date(dateStr);
+   if (!now) return '';
+@@ -485,123 +479,6 @@ export function TaskRow({
+   );
+ }
+ 
+-/* ─────────────────────────────────────────────────────────────────────────
+- * RSVPRow — matte Surface row with the three RSVP actions. Calls the onRSVP
+- * callback (the legacy optimistic respondToEvent path, unchanged).
+- * ──────────────────────────────────────────────────────────────────────── */
+-
+-export function RSVPRow({
+-  event,
+-  now,
+-  onRSVP,
+-}: {
+-  event: EventInvite;
+-  now: Date | null;
+-  onRSVP: (status: 'accepted' | 'declined' | 'tentative') => Promise<void> | void;
+-}) {
+-  const fmtDate = useFormatDate();
+-  const [submitting, setSubmitting] = useState<string | null>(null);
+-  const eventDate = new Date(event.start_time);
+-  const isToday = now ? now.toDateString() === eventDate.toDateString() : false;
+-  const isPast = now ? eventDate < now : false;
+-
+-  const handleRSVP = useCallback(
+-    async (status: 'accepted' | 'declined' | 'tentative') => {
+-      setSubmitting(status);
+-      try {
+-        await onRSVP(status);
+-      } finally {
+-        setSubmitting(null);
+-      }
+-    },
+-    [onRSVP],
+-  );
+-
+-  return (
+-    <Surface padding="sm" className={cn('flex flex-col gap-3', isPast && 'opacity-60')}>
+-      <div className="flex items-start gap-3">
+-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-fw-md bg-surface-sunken text-text-tertiary">
+-          <CalendarClock aria-hidden className="h-4 w-4" />
+-        </span>
+-        <div className="min-w-0 flex-1">
+-          <div className="flex items-center gap-2">
+-            <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+-              {event.title}
+-            </p>
+-            {event.is_mandatory ? (
+-              <Badge tone="danger" size="sm">
+-                Required
+-              </Badge>
+-            ) : null}
+-          </div>
+-          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-fw-sans text-caption text-text-tertiary">
+-            <span className={cn('inline-flex items-center gap-1', isToday && 'text-accent-700')}>
+-              <Clock aria-hidden className="h-3.5 w-3.5" />
+-              {isToday ? 'Today' : fmtDate(event.start_time)} · {formatEventTime(event.start_time)}
+-            </span>
+-            {event.location ? (
+-              <span className="inline-flex items-center gap-1">
+-                <MapPin aria-hidden className="h-3.5 w-3.5" />
+-                <span className="truncate">{event.location}</span>
+-              </span>
+-            ) : null}
+-          </p>
+-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+-            <Badge tone="accent" size="sm" numeric>
+-              {event.going_count} going
+-            </Badge>
+-            {event.maybe_count > 0 ? (
+-              <Badge tone="warning" size="sm" numeric>
+-                {event.maybe_count} maybe
+-              </Badge>
+-            ) : null}
+-          </div>
+-        </div>
+-      </div>
+-
+-      {!isPast ? (
+-        // 3-up grid (not a flex row) so the three pills get equal width, never
+-        // crowd/truncate, and never trigger horizontal scroll at 320px. Each
+-        // Button is fullWidth in its cell; size="sm" already expands to a 44px
+-        // min-height on coarse (touch) pointers via the Button primitive.
+-        <div className="grid grid-cols-3 gap-2">
+-          <Button
+-            variant={event.rsvp_status === 'accepted' ? 'primary' : 'secondary'}
+-            size="sm"
+-            fullWidth
+-            busy={submitting === 'accepted'}
+-            disabled={submitting !== null}
+-            onClick={() => handleRSVP('accepted')}
+-            leftIcon={event.rsvp_status === 'accepted' ? <Check className="h-3.5 w-3.5" /> : undefined}
+-          >
+-            Going
+-          </Button>
+-          <Button
+-            variant={event.rsvp_status === 'tentative' ? 'primary' : 'ghost'}
+-            size="sm"
+-            fullWidth
+-            busy={submitting === 'tentative'}
+-            disabled={submitting !== null}
+-            onClick={() => handleRSVP('tentative')}
+-          >
+-            Maybe
+-          </Button>
+-          <Button
+-            variant={event.rsvp_status === 'declined' ? 'primary' : 'ghost'}
+-            size="sm"
+-            fullWidth
+-            busy={submitting === 'declined'}
+-            disabled={submitting !== null}
+-            onClick={() => handleRSVP('declined')}
+-          >
+-            Can&apos;t go
+-          </Button>
+-        </div>
+-      ) : null}
+-    </Surface>
+-  );
+-}
+-
+ /* ─────────────────────────────────────────────────────────────────────────
+  * AnnouncementsList — Fairway-native rebuild of PlayerHubAnnouncementsSection.
+  * Owns its own acknowledge path: it calls the UNCHANGED `acknowledgeAnnouncement`
+diff --git a/src/components/golf/coachhelm/insights/InsightListView.tsx b/src/components/golf/coachhelm/insights/InsightListView.tsx
+deleted file mode 100644
+index be84bc2bf..000000000
+--- a/src/components/golf/coachhelm/insights/InsightListView.tsx
++++ /dev/null
+@@ -1,368 +0,0 @@
+-'use client';
+-
+-/**
+- * InsightListView — coach surface for `/dashboard/insights`. Migrated under
+- * Wave 1A of the Insight Delivery phase: the per-row renderer is now the
+- * unified `InsightCard` primitive (audience='coach', density='default').
+- *
+- * Selection, sorting, and pagination stay the same — only the row visual
+- * changed. The selection checkbox is rendered beside the primitive rather
+- * than inside it to avoid touching the primitive's API surface.
+- */
+-import { motion, AnimatePresence } from 'framer-motion';
+-import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+-import { cn } from '@/lib/utils';
+-import { Card } from '@/components/ui/card';
+-import { EmptyState } from '@/components/ui/empty-state';
+-import { Shimmer } from '@/components/ui/shimmer';
+-import {
+-  IconChevronDown,
+-  IconChevronUp,
+-  IconCheck,
+-  IconSparkles,
+-  IconChevronLeft,
+-  IconChevronRight,
+-} from '@/components/icons';
+-import {
+-  InsightCard,
+-  type InsightAction,
+-} from '@/components/golf/coachhelm/insight-card';
+-import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+-import { Button, IconButton } from '@/components/ui/button';
+-
+-// ============================================================================
+-// TYPES
+-// ============================================================================
+-
+-type SortBy = 'priority' | 'created_at' | 'player_name';
+-type SortOrder = 'asc' | 'desc';
+-
+-interface InsightListViewProps {
+-  insights: EvidenceInsight[];
+-  selectedIds: Set<string>;
+-  onSelectionChange: (ids: Set<string>) => void;
+-  sortBy: SortBy;
+-  sortOrder: SortOrder;
+-  onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
+-  page: number;
+-  pageSize: number;
+-  totalCount: number;
+-  totalPages: number;
+-  onPageChange: (page: number) => void;
+-  onAction: (action: InsightAction, insightId: string) => void;
+-  isLoading?: boolean;
+-}
+-
+-// ============================================================================
+-// SORT BUTTON COMPONENT
+-// ============================================================================
+-
+-interface SortButtonProps {
+-  label: string;
+-  sortKey: SortBy;
+-  currentSort: SortBy;
+-  currentOrder: SortOrder;
+-  onClick: (key: SortBy) => void;
+-}
+-
+-function SortButton({ label, sortKey, currentSort, currentOrder, onClick }: SortButtonProps) {
+-  const isActive = currentSort === sortKey;
+-
+-  return (
+-    <Button variant="primary"
+-      type="button"
+-      onClick={() => onClick(sortKey)}
+-      className={cn(
+-        'flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
+-        isActive
+-          ? 'bg-primary-100 text-primary-700'
+-          : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200'
+-      )}
+-    >
+-      {label}
+-      {isActive && (
+-        currentOrder === 'asc' ? (
+-          <IconChevronUp size={12} />
+-        ) : (
+-          <IconChevronDown size={12} />
+-        )
+-      )}
+-    </Button>
+-  );
+-}
+-
+-// ============================================================================
+-// INSIGHT ROW — thin wrapper that pairs the selection checkbox with the
+-// unified InsightCard primitive. The primitive owns expansion, drills,
+-// evidence, and action rendering; this row only contributes selection state.
+-// ============================================================================
+-
+-interface InsightRowProps {
+-  insight: EvidenceInsight;
+-  isSelected: boolean;
+-  onToggleSelect: () => void;
+-  onAction: (action: InsightAction, insightId: string) => void;
+-}
+-
+-function InsightRow({ insight, isSelected, onToggleSelect, onAction }: InsightRowProps) {
+-  const prefersReducedMotion = useReducedMotionGuard();
+-  return (
+-    <motion.div
+-      layout
+-      initial={prefersReducedMotion ? false : ({ opacity: 0, y: 10 })}
+-      animate={{ opacity: 1, y: 0 }}
+-      exit={{ opacity: 0, y: -10 }}
+-      className={cn(
+-        'relative transition-all duration-200',
+-        isSelected && 'ring-2 ring-primary-500/30 rounded-2xl',
+-      )}
+-    >
+-      {/* Selection checkbox overlay — positioned absolute so it doesn't
+-          interfere with the primitive's internal layout. */}
+-      <Button variant="primary"
+-        type="button"
+-        onClick={(e) => {
+-          e.stopPropagation();
+-          onToggleSelect();
+-        }}
+-        aria-label={isSelected ? 'Deselect insight' : 'Select insight'}
+-        className={cn(
+-          'absolute top-3 left-3 z-10 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
+-          isSelected
+-            ? 'bg-accent-650 border-accent-650 text-text-on-accent'
+-            : 'bg-cream-100/82 border-warm-300 hover:border-warm-400',
+-        )}
+-      >
+-        {isSelected && <IconCheck size={12} />}
+-      </Button>
+-
+-      {/* Slight left inset to leave room for the checkbox. */}
+-      <div className="pl-8">
+-        <InsightCard
+-          insight={insight}
+-          density="default"
+-          audience="coach"
+-          showActions
+-          onAction={onAction}
+-        />
+-      </div>
+-    </motion.div>
+-  );
+-}
+-
+-// ============================================================================
+-// PAGINATION COMPONENT
+-// ============================================================================
+-
+-interface PaginationProps {
+-  page: number;
+-  totalPages: number;
+-  totalCount: number;
+-  pageSize: number;
+-  onPageChange: (page: number) => void;
+-}
+-
+-function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: PaginationProps) {
+-  if (totalPages <= 1) return null;
+-
+-  const startItem = (page - 1) * pageSize + 1;
+-  const endItem = Math.min(page * pageSize, totalCount);
+-
+-  return (
+-    <div className="flex items-center justify-between px-4 py-3 border-t border-warm-200">
+-      <div className="text-sm text-warm-500">
+-        Showing {startItem}-{endItem} of {totalCount}
+-      </div>
+-      <div className="flex items-center gap-2">
+-        <IconButton variant="default" aria-label="Previous"
+-          type="button"
+-          onClick={() => onPageChange(page - 1)}
+-          disabled={page <= 1}
+-          className={cn(
+-            'p-2 rounded-lg transition-colors',
+-            page <= 1
+-              ? 'text-warm-300 cursor-not-allowed'
+-              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200'
+-          )}
+-        >
+-          <IconChevronLeft size={18} />
+-        </IconButton>
+-
+-        <div className="flex items-center gap-1">
+-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+-            let pageNum: number;
+-            if (totalPages <= 5) {
+-              pageNum = i + 1;
+-            } else if (page <= 3) {
+-              pageNum = i + 1;
+-            } else if (page >= totalPages - 2) {
+-              pageNum = totalPages - 4 + i;
+-            } else {
+-              pageNum = page - 2 + i;
+-            }
+-
+-            return (
+-              <Button variant="primary"
+-                key={pageNum}
+-                type="button"
+-                onClick={() => onPageChange(pageNum)}
+-                className={cn(
+-                  'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
+-                  pageNum === page
+-                    ? 'bg-accent-650 text-text-on-accent'
+-                    : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
+-                )}
+-              >
+-                {pageNum}
+-              </Button>
+-            );
+-          })}
+-        </div>
+-
+-        <IconButton variant="default" aria-label="Next"
+-          type="button"
+-          onClick={() => onPageChange(page + 1)}
+-          disabled={page >= totalPages}
+-          className={cn(
+-            'p-2 rounded-lg transition-colors',
+-            page >= totalPages
+-              ? 'text-warm-300 cursor-not-allowed'
+-              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200'
+-          )}
+-        >
+-          <IconChevronRight size={18} />
+-        </IconButton>
+-      </div>
+-    </div>
+-  );
+-}
+-
+-// ============================================================================
+-// MAIN COMPONENT
+-// ============================================================================
+-
+-export function InsightListView({
+-  insights,
+-  selectedIds,
+-  onSelectionChange,
+-  sortBy,
+-  sortOrder,
+-  onSortChange,
+-  page,
+-  pageSize,
+-  totalCount,
+-  totalPages,
+-  onPageChange,
+-  onAction,
+-  isLoading,
+-}: InsightListViewProps) {
+-  const handleToggleSelect = (id: string) => {
+-    const newSelection = new Set(selectedIds);
+-    if (newSelection.has(id)) {
+-      newSelection.delete(id);
+-    } else {
+-      newSelection.add(id);
+-    }
+-    onSelectionChange(newSelection);
+-  };
+-
+-  const handleSortClick = (key: SortBy) => {
+-    if (sortBy === key) {
+-      onSortChange(key, sortOrder === 'asc' ? 'desc' : 'asc');
+-    } else {
+-      onSortChange(key, 'desc');
+-    }
+-  };
+-
+-  // Loading skeleton
+-  if (isLoading) {
+-    return (
+-      <Card variant="overlay" padding="none" hover={false}>
+-        <div className="p-6 space-y-4">
+-          {Array.from({ length: 5 }).map((_, i) => (
+-            <div key={i} className="flex items-center gap-4">
+-              <Shimmer staggerIndex={i} className="w-5 h-5" />
+-              <Shimmer staggerIndex={i} className="w-10 h-10 rounded-xl" />
+-              <div className="flex-1 space-y-2">
+-                <Shimmer staggerIndex={i} className="h-4 w-2/3" />
+-                <Shimmer staggerIndex={i} variant="line" className="w-1/2" />
+-              </div>
+-            </div>
+-          ))}
+-        </div>
+-      </Card>
+-    );
+-  }
+-
+-  if (insights.length === 0) {
+-    return (
+-      <Card variant="overlay" padding="md" hover={false}>
+-        <EmptyState
+-          variant="compact"
+-          icon={<IconSparkles size={32} />}
+-          title="No insights found"
+-          description="Try adjusting your search or filters to find what you're looking for."
+-        />
+-      </Card>
+-    );
+-  }
+-
+-  return (
+-    <Card variant="overlay" padding="none" hover={false}>
+-      {/* Header with Sort Options */}
+-      <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200">
+-        <div className="text-sm text-warm-500">
+-          {totalCount} insight{totalCount !== 1 ? 's' : ''}
+-        </div>
+-        <div className="flex items-center gap-2">
+-          <span className="text-xs text-warm-400 mr-1">Sort by:</span>
+-          <SortButton
+-            label="Priority"
+-            sortKey="priority"
+-            currentSort={sortBy}
+-            currentOrder={sortOrder}
+-            onClick={handleSortClick}
+-          />
+-          <SortButton
+-            label="Date"
+-            sortKey="created_at"
+-            currentSort={sortBy}
+-            currentOrder={sortOrder}
+-            onClick={handleSortClick}
+-          />
+-          <SortButton
+-            label="Player"
+-            sortKey="player_name"
+-            currentSort={sortBy}
+-            currentOrder={sortOrder}
+-            onClick={handleSortClick}
+-          />
+-        </div>
+-      </div>
+-
+-      {/* Insight List */}
+-      <div className="p-4 space-y-3" data-testid="insight-list">
+-        <AnimatePresence initial={false}>
+-          {insights.map((insight) => (
+-            <InsightRow
+-              key={insight.id}
+-              insight={insight}
+-              isSelected={selectedIds.has(insight.id)}
+-              onToggleSelect={() => handleToggleSelect(insight.id)}
+-              onAction={onAction}
+-            />
+-          ))}
+-        </AnimatePresence>
+-      </div>
+-
+-      {/* Pagination */}
+-      <Pagination
+-        page={page}
+-        totalPages={totalPages}
+-        totalCount={totalCount}
+-        pageSize={pageSize}
+-        onPageChange={onPageChange}
+-      />
+-    </Card>
+-  );
+-}
+diff --git a/src/components/golf/coachhelm/insights/index.ts b/src/components/golf/coachhelm/insights/index.ts
+index 4d3e7f9fb..eca6d9adf 100644
+--- a/src/components/golf/coachhelm/insights/index.ts
++++ b/src/components/golf/coachhelm/insights/index.ts
+@@ -2,8 +2,11 @@
+ //
+ // Wave 1A: the legacy `InsightCard` (coach) has been removed; consumers
+ // should import the unified primitive from
+-// `@/components/golf/coachhelm/insight-card`. `InsightsFeed` + `InsightListView`
+-// remain as coach-surface wrappers that render through the new primitive.
++// `@/components/golf/coachhelm/insight-card`. `InsightsFeed` remains as a
++// coach-surface wrapper that renders through the new primitive.
++//
++// `InsightListView` removed 2026-08-15 — the /dashboard/insights coach surface
++// it served is now a permanent redirect onto the consolidated
++// `?view=signals&filter=insights` drill.
+ export { PlayerFocusAreas } from './PlayerFocusAreas';
+ export { InsightsFeed } from './InsightsFeed';
+-export { InsightListView } from './InsightListView';
+diff --git a/src/components/golf/coachhelm/player/PerformancePrediction.tsx b/src/components/golf/coachhelm/player/PerformancePrediction.tsx
+deleted file mode 100644
+index 4177c4099..000000000
+--- a/src/components/golf/coachhelm/player/PerformancePrediction.tsx
++++ /dev/null
+@@ -1,236 +0,0 @@
+-'use client';
+-
+-import { m } from 'framer-motion';
+-import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+-import { cn } from '@/lib/utils';
+-import { Card } from '@/components/ui/card';
+-import { EmptyState } from '@/components/ui/empty-state';
+-import {
+-  IconTarget,
+-  IconTrendingUp,
+-  IconTrendingDown,
+-  IconSparkles,
+-  IconInfo,
+-} from '@/components/icons';
+-import type { PerformancePrediction as PerformancePredictionType, TailRiskProbabilities } from '@/lib/coachhelm/v2/types';
+-
+-interface PerformancePredictionProps {
+-  prediction: PerformancePredictionType | null;
+-  playerState: 'improving' | 'stable' | 'struggling' | 'unknown';
+-}
+-
+-export function PerformancePrediction({ prediction, playerState }: PerformancePredictionProps) {
+-  const prefersReducedMotion = useReducedMotionGuard();
+-  // Empty state when no prediction available
+-  if (!prediction) {
+-    return (
+-      <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
+-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+-
+-        <div className="flex items-center gap-3 mb-4">
+-          <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+-            <IconSparkles size={20} className="text-primary-600" />
+-          </div>
+-          <div>
+-            <h3 className="font-medium text-warm-900">Performance Prediction</h3>
+-            <p className="text-xs text-warm-500">Powered by CoachHelm AI</p>
+-          </div>
+-        </div>
+-
+-        <EmptyState
+-          variant="minimal"
+-          icon={<IconTarget size={20} />}
+-          description="Not enough data yet. Complete more rounds to unlock AI predictions."
+-        />
+-      </Card>
+-    );
+-  }
+-
+-  const predictedValue = prediction.predictedValue != null ? Number(prediction.predictedValue) : 0;
+-  const isPositive = predictedValue < 0;
+-  const isNeutral = Math.abs(predictedValue) < 0.5;
+-  const confidencePercent = Math.round(Number(prediction.calibratedConfidence ?? prediction.confidence ?? 0) * 100);
+-
+-  const rangeLow = prediction.predictionRange?.low ?? prediction.predictedRangeLow;
+-  const rangeHigh = prediction.predictionRange?.high ?? prediction.predictedRangeHigh;
+-  const hasRange = Number.isFinite(rangeLow) && Number.isFinite(rangeHigh);
+-  const factors = prediction.factors ?? prediction.keyFactors ?? [];
+-
+-  // Type guard for TailRiskProbabilities
+-  const isTailRiskProbabilities = (
+-    risks: typeof prediction.tailRisks
+-  ): risks is TailRiskProbabilities => {
+-    return risks !== undefined && !Array.isArray(risks) && 'blowupProbability' in risks;
+-  };
+-
+-  const getTrendIcon = () => {
+-    if (isNeutral) return <IconTarget size={24} className="text-warm-400" />;
+-    if (isPositive) return <IconTrendingUp size={24} className="text-primary-500" />;
+-    return <IconTrendingDown size={24} className="text-red-500" />;
+-  };
+-
+-  const formatScore = (value: number | string | undefined | null) => {
+-    if (value == null) return '--';
+-    const num = Number(value);
+-    if (isNaN(num)) return '--';
+-    if (num === 0) return 'E';
+-    return num > 0 ? `+${num.toFixed(1)}` : num.toFixed(1);
+-  };
+-
+-  const getStateMessage = () => {
+-    switch (playerState) {
+-      case 'improving':
+-        return { text: 'Your game is trending upward', icon: IconTrendingUp, color: 'text-primary-600' };
+-      case 'struggling':
+-        return { text: 'Focus on fundamentals to get back on track', icon: IconTrendingDown, color: 'text-amber-600' };
+-      case 'stable':
+-        return { text: 'Your game is consistent', icon: IconTarget, color: 'text-warm-600' };
+-      default:
+-        return null;
+-    }
+-  };
+-
+-  const stateMessage = getStateMessage();
+-
+-  return (
+-    <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="green">
+-      {/* Top accent bar */}
+-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+-
+-      {/* Header */}
+-      <div className="flex items-center justify-between mb-6">
+-        <div className="flex items-center gap-3">
+-          <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+-            <IconSparkles size={20} className="text-primary-600" />
+-          </div>
+-          <div>
+-            <h3 className="font-medium text-warm-900">Performance Prediction</h3>
+-            <p className="text-xs text-warm-500">Your projected next round</p>
+-          </div>
+-        </div>
+-        <div className="text-right">
+-          <span className="text-xs text-warm-400 flex items-center gap-1">
+-            <IconInfo size={12} />
+-            {confidencePercent}% confidence
+-          </span>
+-        </div>
+-      </div>
+-
+-      {/* Main Prediction */}
+-      <div className="flex items-center justify-center gap-6 mb-6">
+-        <m.div
+-          initial={{ scale: 0.9, opacity: 0 }}
+-          animate={{ scale: 1, opacity: 1 }}
+-          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3 })}
+-          className="text-center"
+-        >
+-          <p className="text-xs text-warm-500 uppercase tracking-wide mb-1">Estimated Score</p>
+-          <div className="flex items-center justify-center gap-3">
+-            <span className={cn(
+-              'text-display font-light tabular-nums tracking-[-0.025em]',
+-              isPositive ? 'text-primary-700' : isNeutral ? 'text-warm-800' : 'text-red-600'
+-            )}>
+-              {formatScore(predictedValue)}
+-            </span>
+-            {getTrendIcon()}
+-          </div>
+-        </m.div>
+-      </div>
+-
+-      {/* Confidence Range Bar */}
+-      {hasRange && (
+-        <div className="mb-6">
+-          <div className="flex items-center justify-between text-xs text-warm-500 mb-2">
+-            <span>Likely Range</span>
+-            <span className="font-medium">{formatScore(rangeLow)} to {formatScore(rangeHigh)}</span>
+-          </div>
+-          <div className="relative h-3 bg-warm-100 rounded-full overflow-hidden">
+-            {/* Background gradient */}
+-            <div className="absolute inset-0 bg-gradient-to-r from-primary-200 via-warm-200 to-red-200 opacity-50" />
+-
+-            {/* Confidence fill */}
+-            <m.div
+-              initial={{ width: 0 }}
+-              animate={{ width: `${confidencePercent}%` }}
+-              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, delay: 0.2, ease: 'easeOut' })}
+-              className="absolute inset-y-0 left-0 bg-primary-500 rounded-full"
+-            />
+-
+-            {/* Predicted value marker */}
+-            <m.div
+-              initial={{ opacity: 0, scale: 0 }}
+-              animate={{ opacity: 1, scale: 1 }}
+-              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, delay: 0.5 })}
+-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-surface border-2 border-primary-600 rounded-full shadow-md"
+-              style={{
+-                left: `${Math.min(Math.max(((Number(rangeHigh) - Number(rangeLow)) > 0 ? ((predictedValue - Number(rangeLow)) / (Number(rangeHigh) - Number(rangeLow))) * 100 : 50), 5), 95)}%`,
+-                transform: 'translate(-50%, -50%)',
+-              }}
+-            />
+-          </div>
+-        </div>
+-      )}
+-
+-      {/* Key Factors */}
+-      {factors.length > 0 && (
+-        <div className="mb-4">
+-          <h4 className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
+-            Key Factors
+-          </h4>
+-          <div className="space-y-2">
+-            {factors.slice(0, 3).map((factor, i) => (
+-              <m.div
+-                key={i}
+-                initial={{ opacity: 0, x: -10 }}
+-                animate={{ opacity: 1, x: 0 }}
+-                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, delay: 0.1 * i })}
+-                className="flex items-center justify-between text-sm bg-surface-sunken rounded-lg px-3 py-2"
+-              >
+-                <span className="text-warm-600">{factor.name}</span>
+-                <span className={cn(
+-                  'font-medium tabular-nums',
+-                  Number(factor.contribution ?? 0) > 0 ? 'text-red-500' : 'text-primary-500'
+-                )}>
+-                  {Number(factor.contribution ?? 0) > 0 ? '+' : ''}{Number(factor.contribution ?? 0).toFixed(1)}
+-                </span>
+-              </m.div>
+-            ))}
+-          </div>
+-        </div>
+-      )}
+-
+-      {/* Tail Risks */}
+-      {isTailRiskProbabilities(prediction.tailRisks) && (
+-        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border-subtle">
+-          <div className="text-center p-3 bg-red-50/50 rounded-lg">
+-            <p className="text-xs text-warm-500 mb-1">Rough Round Risk</p>
+-            <p className="text-body-lg font-medium tracking-[-0.005em] text-red-500">
+-              {Math.round(Number(prediction.tailRisks.blowupProbability ?? 0) * 100)}%
+-            </p>
+-          </div>
+-          <div className="text-center p-3 bg-primary-50/50 rounded-lg">
+-            <p className="text-xs text-warm-500 mb-1">Great Round Chance</p>
+-            <p className="text-body-lg font-medium tracking-[-0.005em] text-primary-500">
+-              {Math.round(Number(prediction.tailRisks.greatRoundProbability ?? 0) * 100)}%
+-            </p>
+-          </div>
+-        </div>
+-      )}
+-
+-      {/* State Message */}
+-      {stateMessage && (
+-        <m.div
+-          initial={{ opacity: 0, y: 10 }}
+-          animate={{ opacity: 1, y: 0 }}
+-          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 })}
+-          className="mt-4 pt-4 border-t border-border-subtle flex items-center gap-2"
+-        >
+-          <stateMessage.icon size={16} className={stateMessage.color} />
+-          <span className={cn('text-sm font-medium', stateMessage.color)}>
+-            {stateMessage.text}
+-          </span>
+-        </m.div>
+-      )}
+-    </Card>
+-  );
+-}
+diff --git a/src/components/golf/coachhelm/player/TrendDashboard.tsx b/src/components/golf/coachhelm/player/TrendDashboard.tsx
+deleted file mode 100644
+index 7afe22949..000000000
+--- a/src/components/golf/coachhelm/player/TrendDashboard.tsx
++++ /dev/null
+@@ -1,245 +0,0 @@
+-'use client';
+-
+-import { m } from 'framer-motion';
+-import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+-import { cn, formatMetricLabel } from '@/lib/utils';
+-import { Card } from '@/components/ui/card';
+-import { EmptyState } from '@/components/ui/empty-state';
+-import {
+-  IconTrendingUp,
+-  IconTrendingDown,
+-  IconMinus,
+-  IconFlame,
+-  IconWarning,
+-  IconActivity,
+-} from '@/components/icons';
+-
+-interface TrendDashboardProps {
+-  // Typed props (used when data is pre-parsed)
+-  trends?: {
+-    metric: string;
+-    windows: Array<{
+-      name: 'fast' | 'medium' | 'slow';
+-      direction: 'improving' | 'stable' | 'declining';
+-      magnitude: number;
+-      confidence: number;
+-    }>;
+-    signal: string;
+-    description: string;
+-  };
+-  streaks?: Array<{
+-    type: 'hot' | 'cold';
+-    length: number;
+-    magnitude: number;
+-    isOngoing: boolean;
+-  }>;
+-  volatility?: { current: number; historical: number; isElevated: boolean };
+-  // Raw data prop (from server action — parsed internally)
+-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-  trendData?: Record<string, any>;
+-  playerState?: string;
+-}
+-
+-const windowLabels: Record<string, { label: string; rounds: string }> = {
+-  fast: { label: 'Fast', rounds: '5 rounds' },
+-  medium: { label: 'Medium', rounds: '12 rounds' },
+-  slow: { label: 'Slow', rounds: '25 rounds' },
+-};
+-
+-const directionConfig = {
+-  improving: {
+-    icon: IconTrendingUp,
+-    color: 'text-primary-600',
+-    barColor: 'bg-primary-500',
+-    barBg: 'bg-primary-100',
+-    label: 'Improving',
+-  },
+-  stable: {
+-    icon: IconMinus,
+-    color: 'text-warm-400',
+-    barColor: 'bg-warm-400',
+-    barBg: 'bg-warm-100',
+-    label: 'Stable',
+-  },
+-  declining: {
+-    icon: IconTrendingDown,
+-    color: 'text-red-500',
+-    barColor: 'bg-red-500',
+-    barBg: 'bg-red-100',
+-    label: 'Declining',
+-  },
+-};
+-
+-const signalLabels: Record<string, string> = {
+-  strong_improving: 'Strongly Improving',
+-  strong_declining: 'Strongly Declining',
+-  short_term_dip: 'Short-Term Dip',
+-  short_term_spike: 'Short-Term Spike',
+-  trajectory_change: 'Trajectory Change',
+-  mixed: 'Mixed Signals',
+-  stable: 'Stable',
+-};
+-
+-function formatSignalLabel(signal: string): string {
+-  return signalLabels[signal] ?? signal.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+-}
+-
+-function getSignalBadgeStyle(signal: string): string {
+-  const lower = signal.toLowerCase();
+-  if (lower.includes('strong') && lower.includes('improv')) {
+-    return 'bg-primary-100 text-primary-700 border-primary-200';
+-  }
+-  if (lower.includes('dip') || lower.includes('decline')) {
+-    return 'bg-red-50 text-red-700 border-red-200';
+-  }
+-  if (lower.includes('change') || lower.includes('shift')) {
+-    return 'bg-amber-50 text-amber-700 border-amber-200';
+-  }
+-  return 'bg-warm-100 text-warm-700 border-warm-200';
+-}
+-
+-export function TrendDashboard({ trends, streaks, volatility, trendData, playerState: _playerState }: TrendDashboardProps) {
+-  const prefersReducedMotion = useReducedMotionGuard();
+-  // Resolve props: prefer typed props, fall back to parsing from trendData
+-  const resolvedTrends = trends ?? (trendData?.trends as typeof trends | undefined) ?? { metric: '', windows: [], signal: '', description: '' };
+-  const resolvedStreaks = streaks ?? (trendData?.streaks as typeof streaks | undefined) ?? [];
+-  const resolvedVolatility = volatility ?? (trendData?.volatility as typeof volatility | undefined);
+-
+-  if (!resolvedTrends.windows.length) {
+-    return (
+-      <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
+-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+-        <EmptyState
+-          variant="minimal"
+-          icon={<IconActivity size={20} />}
+-          description="Not enough data for trend analysis yet. Play more rounds to unlock trend insights."
+-        />
+-      </Card>
+-    );
+-  }
+-
+-  const ongoingStreaks = resolvedStreaks.filter((s) => s.isOngoing);
+-
+-  return (
+-    <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
+-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+-
+-      <div className="space-y-5">
+-        {/* Header with signal badge */}
+-        <div className="flex items-center justify-between gap-3">
+-          <div className="flex items-center gap-3">
+-            <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+-              <IconActivity size={20} className="text-primary-600" />
+-            </div>
+-            <div>
+-              <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Trend Analysis</h3>
+-              <p className="text-sm text-warm-500">{formatMetricLabel(resolvedTrends.metric)}</p>
+-            </div>
+-          </div>
+-          <span
+-            className={cn(
+-              'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border',
+-              getSignalBadgeStyle(resolvedTrends.signal)
+-            )}
+-          >
+-            {formatSignalLabel(resolvedTrends.signal)}
+-          </span>
+-        </div>
+-
+-        {/* Description */}
+-        <p className="text-sm text-warm-600">{resolvedTrends.description}</p>
+-
+-        {/* Trend windows */}
+-        <div className="space-y-3">
+-          {resolvedTrends.windows.map((window, i) => {
+-            const config = directionConfig[window.direction];
+-            const DirectionIcon = config.icon;
+-            const meta = windowLabels[window.name];
+-            if (!meta) return null;
+-
+-            return (
+-              <m.div
+-                key={window.name}
+-                className="flex items-center gap-3"
+-                initial={{ opacity: 0, x: -12 }}
+-                animate={{ opacity: 1, x: 0 }}
+-                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.1 })}
+-              >
+-                <div className="w-20 shrink-0">
+-                  <p className="text-sm font-medium text-warm-700">{meta.label}</p>
+-                  <p className="text-xs text-warm-400">{meta.rounds}</p>
+-                </div>
+-
+-                <div className={cn('flex-1 h-3 rounded-full overflow-hidden', config.barBg)}>
+-                  <m.div
+-                    className={cn('h-full rounded-full', config.barColor)}
+-                    initial={{ width: 0 }}
+-                    animate={{ width: `${Math.min(Number(window.magnitude ?? 0) * 100, 100)}%` }}
+-                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, delay: 0.2 + i * 0.1, ease: 'easeOut' })}
+-                  />
+-                </div>
+-
+-                <div className={cn('flex items-center gap-1 shrink-0', config.color)}>
+-                  <DirectionIcon size={14} />
+-                  <span className="text-xs font-medium">{config.label}</span>
+-                </div>
+-
+-                <span className="text-xs text-warm-400 tabular-nums w-10 text-right shrink-0">
+-                  {Math.round(Number(window.confidence ?? 0) * 100)}%
+-                </span>
+-              </m.div>
+-            );
+-          })}
+-        </div>
+-
+-        {/* Streaks */}
+-        {ongoingStreaks.length > 0 && (
+-          <div className="space-y-2 pt-2 border-t border-white/10">
+-            {ongoingStreaks.map((streak, i) => (
+-              <m.div
+-                key={i}
+-                className={cn(
+-                  'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
+-                  streak.type === 'hot'
+-                    ? 'bg-amber-50 text-amber-700'
+-                    : 'bg-blue-50 text-blue-700'
+-                )}
+-                initial={{ opacity: 0, scale: 0.95 }}
+-                animate={{ opacity: 1, scale: 1 }}
+-                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5 + i * 0.1 })}
+-              >
+-                {streak.type === 'hot' ? (
+-                  <IconFlame size={16} className="text-amber-500" />
+-                ) : (
+-                  <span className="text-base leading-none">*</span>
+-                )}
+-                <span>
+-                  {streak.length}-round {streak.type} streak
+-                </span>
+-                <span className="text-xs opacity-70 tabular-nums">
+-                  ({Math.abs(Number(streak.magnitude ?? 0)).toFixed(1)} strokes {streak.type === 'hot' ? 'below' : 'above'} avg)
+-                </span>
+-              </m.div>
+-            ))}
+-          </div>
+-        )}
+-
+-        {/* Volatility warning */}
+-        {resolvedVolatility?.isElevated && (
+-          <m.div
+-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-700"
+-            initial={{ opacity: 0, y: 8 }}
+-            animate={{ opacity: 1, y: 0 }}
+-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.7 })}
+-          >
+-            <IconWarning size={16} className="text-amber-500 shrink-0" />
+-            <span>Performance volatility is elevated</span>
+-            <span className="text-xs opacity-70 tabular-nums ml-auto">
+-              {Number(resolvedVolatility.current ?? 0).toFixed(1)} vs {Number(resolvedVolatility.historical ?? 0).toFixed(1)} avg
+-            </span>
+-          </m.div>
+-        )}
+-      </div>
+-    </Card>
+-  );
+-}
+diff --git a/src/components/golf/coachhelm/player/index.ts b/src/components/golf/coachhelm/player/index.ts
+index a5e352d7b..ad2e6825a 100644
+--- a/src/components/golf/coachhelm/player/index.ts
++++ b/src/components/golf/coachhelm/player/index.ts
+@@ -1,9 +1,14 @@
+-export { PerformancePrediction } from './PerformancePrediction';
++// `PerformancePrediction` removed 2026-08-15 — PlayerCoachHelmHome renders the
++// prediction inline via buildPredictionVerdict/formatPredictionHero. NOTE: the
++// deleted card also showed tail-risk probabilities and itemized key factors,
++// which the inline rendering does NOT reproduce; that detail now exists nowhere
++// in the UI. Recoverable from git history if it's wanted back.
+ // `AIInsightsPanel` removed in the 2026-04-22 Insight Delivery refactor — the
+ // CoachHelm dashboard now composes HeroInsightCard + InsightCard (default)
+ // from `@/components/golf/coachhelm/insight-card` instead.
+ export { FocusAreasGrid } from './FocusAreasGrid';
+ export { CompositeRatingCard } from './CompositeRatingCard';
+-export { TrendDashboard } from './TrendDashboard';
++// `TrendDashboard` removed 2026-08-15 — superseded by FairwayTrendBrain, which
++// was built as a drop-in (same trends/streaks/volatility props).
+ export { ShotAnalysisCard } from './ShotAnalysisCard';
+ export { WhatIfPanel } from './WhatIfPanel';
+diff --git a/src/components/golf/coachhelm/settings/ThresholdSlider.tsx b/src/components/golf/coachhelm/settings/ThresholdSlider.tsx
+deleted file mode 100644
+index d2a7baee3..000000000
+--- a/src/components/golf/coachhelm/settings/ThresholdSlider.tsx
++++ /dev/null
+@@ -1,92 +0,0 @@
+-'use client';
+-
+-import { useId } from 'react';
+-
+-interface ThresholdSliderProps {
+-    label: string;
+-    description: string;
+-    value: number;
+-    onChange: (value: number) => void;
+-    min: number;
+-    max: number;
+-    step: number;
+-    unit: string;
+-}
+-
+-export function ThresholdSlider({
+-    label,
+-    description,
+-    value,
+-    onChange,
+-    min,
+-    max,
+-    step,
+-    unit,
+-}: ThresholdSliderProps) {
+-    const id = useId();
+-    const percentage = ((value - min) / (max - min)) * 100;
+-
+-    // Generate mark values for visual reference
+-    const marks: number[] = [];
+-    const range = max - min;
+-    const interval = range <= 1 ? 0.5 : 1;
+-    for (let v = min; v <= max; v += interval) {
+-        marks.push(v);
+-    }
+-
+-    return (
+-        <div className="space-y-3">
+-            {/* Header */}
+-            <div className="flex items-start justify-between gap-4">
+-                <div>
+-                    <label htmlFor={id} className="text-sm font-medium text-text-primary">
+-                        {label}
+-                    </label>
+-                    <p className="text-xs text-text-secondary mt-0.5">{description}</p>
+-                </div>
+-                <div className="text-right">
+-                    <span className="text-body-lg font-medium text-text-primary tracking-[-0.012em] tabular-nums">
+-                        {value.toFixed(1)}
+-                    </span>
+-                    <span className="text-sm text-text-secondary ml-1">{unit}</span>
+-                </div>
+-            </div>
+-
+-            {/* Slider track */}
+-            <div className="relative pt-1">
+-                <input
+-                    id={id}
+-                    type="range"
+-                    min={min}
+-                    max={max}
+-                    step={step}
+-                    value={value}
+-                    // Announce the value WITH its unit to assistive tech (the visible
+-                    // unit badge is a separate span); without this a screen reader
+-                    // reads a bare number (WCAG 2.2 4.1.2 name/role/value).
+-                    aria-valuetext={`${value.toFixed(1)} ${unit}`}
+-                    onChange={(e) => onChange(parseFloat(e.target.value))}
+-                    className="w-full h-2 bg-transparent cursor-pointer appearance-none z-10 relative [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-surface [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent-500 [&::-webkit-slider-thumb]:shadow-soft [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 motion-reduce:[&::-webkit-slider-thumb]:transition-none motion-reduce:[&::-webkit-slider-thumb]:hover:scale-100"
+-                />
+-
+-                {/* Background Track */}
+-                <div className="absolute top-1 left-0 right-0 h-2 bg-surface-sunken rounded-full" />
+-
+-                {/* Fill overlay */}
+-                <div
+-                    className="absolute top-1 left-0 h-2 bg-accent-500 rounded-full pointer-events-none"
+-                    style={{ width: `${percentage}%` }}
+-                />
+-            </div>
+-
+-            {/* Marks */}
+-            <div className="flex justify-between px-1">
+-                {marks.map((mark) => (
+-                    <span key={mark} className="text-xs text-text-tertiary">
+-                        {mark}
+-                    </span>
+-                ))}
+-            </div>
+-        </div>
+-    );
+-}
+diff --git a/src/components/golf/coachhelm/settings/index.ts b/src/components/golf/coachhelm/settings/index.ts
+index be57f1dfa..f9271324b 100644
+--- a/src/components/golf/coachhelm/settings/index.ts
++++ b/src/components/golf/coachhelm/settings/index.ts
+@@ -1,5 +1,6 @@
+ export * from './PriorityRanker';
+ export * from './SensitivitySlider';
+-export * from './ThresholdSlider';
++// `ThresholdSlider` removed 2026-08-15 — FairwaySettingsCoachingIntelligence
++// uses the Fairway `<Slider>` primitive, which replaced the hand-rolled one.
+ export * from './WeightDistributor';
+ export * from './AlertTypeToggles';
+diff --git a/src/components/golf/roster/RosterToolbar.tsx b/src/components/golf/roster/RosterToolbar.tsx
+index 509389cf1..335fac890 100644
+--- a/src/components/golf/roster/RosterToolbar.tsx
++++ b/src/components/golf/roster/RosterToolbar.tsx
+@@ -1,106 +1,19 @@
+ 'use client';
+ 
+-import { useState, memo } from 'react';
+-import { cn } from '@/lib/utils';
+-import { IconDownload, IconFilter, IconChevronDown } from '@/components/icons';
+-import { triggerHaptic } from '@/lib/utils/capacitor';
+-import { Button } from '@/components/ui/button';
+-import {
+-  DropdownMenu,
+-  DropdownMenuContent,
+-  DropdownMenuItem,
+-  DropdownMenuTrigger,
+-} from '@/components/ui/dropdown-menu';
+-
+-type SortField = 'name' | 'handicap' | 'rounds' | 'avg_score';
+-type SortDirection = 'asc' | 'desc';
+-
+-interface RosterToolbarProps {
+-  playerCount: number;
+-  onSortChange?: (field: SortField, direction: SortDirection) => void;
+-  onExport?: () => void;
+-}
+-
+-const SORT_OPTIONS: { value: SortField; label: string }[] = [
+-  { value: 'name', label: 'Name' },
+-  { value: 'handicap', label: 'Handicap' },
+-  { value: 'rounds', label: 'Rounds Played' },
+-  { value: 'avg_score', label: 'Avg Score' },
+-];
+-
+-export const RosterToolbar = memo(function RosterToolbar({
+-  playerCount,
+-  onSortChange,
+-  onExport,
+-}: RosterToolbarProps) {
+-  const [sortField, setSortField] = useState<SortField>('name');
+-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+-  const [showSortMenu, setShowSortMenu] = useState(false);
+-
+-  const handleSortChange = (field: SortField) => {
+-    void triggerHaptic('light');
+-    const newDirection = field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
+-    setSortField(field);
+-    setSortDirection(newDirection);
+-    setShowSortMenu(false);
+-    onSortChange?.(field, newDirection);
+-  };
+-
+-  const handleToggleMenu = () => {
+-    void triggerHaptic('light');
+-    setShowSortMenu((v) => !v);
+-  };
+-
+-  const selectedSort = SORT_OPTIONS.find(o => o.value === sortField);
+-
+-  return (
+-    <div className="flex items-center justify-between gap-3 mb-5">
+-      <DropdownMenu open={showSortMenu} onOpenChange={setShowSortMenu}>
+-        <DropdownMenuTrigger asChild>
+-          <Button variant="ghost"
+-            onClick={handleToggleMenu}
+-            className="pill-soft"
+-            aria-label="Sort roster"
+-          >
+-            <IconFilter size={13} className="text-warm-400" />
+-            <span>Sort: {selectedSort?.label}</span>
+-            <span className="text-warm-400">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
+-            <IconChevronDown size={13} className={cn('text-warm-400 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]', showSortMenu && 'rotate-180')} />
+-          </Button>
+-        </DropdownMenuTrigger>
+-        <DropdownMenuContent align="start" className="min-w-[220px]">
+-          {SORT_OPTIONS.map((option) => (
+-            <DropdownMenuItem
+-              key={option.value}
+-              onSelect={() => handleSortChange(option.value)}
+-              selected={option.value === sortField}
+-              className="flex items-center justify-between"
+-            >
+-              <span>{option.label}</span>
+-              {option.value === sortField && (
+-                <span className="text-primary-500 text-body-sm">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
+-              )}
+-            </DropdownMenuItem>
+-          ))}
+-        </DropdownMenuContent>
+-      </DropdownMenu>
+-
+-      {onExport && (
+-        <Button variant="ghost"
+-          onClick={() => {
+-            void triggerHaptic('light');
+-            onExport();
+-          }}
+-          className="pill-soft"
+-          aria-label={`Export ${playerCount} players as CSV`}
+-        >
+-          <IconDownload size={13} />
+-          <span className="hidden sm:inline">Export</span>
+-        </Button>
+-      )}
+-    </div>
+-  );
+-});
++/**
++ * Roster CSV export.
++ *
++ * This file used to also export a `RosterToolbar` component — a sort dropdown +
++ * export button strip. `FairwayCoachRoster.tsx` replaced it with its own inline
++ * `Segmented<SortField>` sort control and export button, and the component was
++ * left behind with zero callers (verified 2026-08-15: the only import of this
++ * module anywhere is `FairwayCoachRoster.tsx:17`, and it imports
++ * `exportRosterCSV` alone).
++ *
++ * The filename is now wider than its contents. It is kept as-is deliberately:
++ * renaming the module would churn the one live import for no behavioural gain,
++ * and this is a deletion pass, not a refactor.
++ */
+ 
+ /**
+  * Escape a single CSV cell to RFC-4180 and defuse spreadsheet formula injection.
+diff --git a/src/lib/calendar/conflicts.ts b/src/lib/calendar/conflicts.ts
+index a8feaa52e..820c3e893 100644
+--- a/src/lib/calendar/conflicts.ts
++++ b/src/lib/calendar/conflicts.ts
+@@ -209,21 +209,13 @@ function isSameTimeSlot(a: TimeSlot, b: TimeSlot): boolean {
+   );
+ }
+ 
+-/**
+- * Format suggested time for display
++/*
++ * `formatSuggestedTime` was exported from here and had zero callers (removed
++ * 2026-08-15). `ConflictWarning.tsx` — the only surface that renders suggested
++ * times — carries its own private, functionally-equivalent copy and always has.
++ *
++ * The rest of this module is live: `checkEventConflicts` is reached from the
++ * event editor via `checkScheduleConflicts` (`src/app/golf/actions/golf.ts`,
++ * dynamic `await import` at :4363), and it calls `findCommonAvailability` twice.
+  */
+-export function formatSuggestedTime(slot: TimeSlot): string {
+-  const sameDay = slot.start.toDateString() === slot.end.toDateString();
+-
+-  if (sameDay) {
+-    const dayName = slot.start.toLocaleDateString('en-US', { weekday: 'short' });
+-    const date = slot.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+-    const startTime = slot.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+-    const endTime = slot.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+-
+-    return `${dayName}, ${date} • ${startTime} - ${endTime}`;
+-  }
+-
+-  return `${slot.start.toLocaleDateString()} ${slot.start.toLocaleTimeString()} - ${slot.end.toLocaleDateString()} ${slot.end.toLocaleTimeString()}`;
+-}
+ 
