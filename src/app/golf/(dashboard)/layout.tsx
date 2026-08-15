@@ -83,10 +83,21 @@ export default async function GolfDashboardLayout({
       ? userData.role
       : null;
 
-    // Brief wait for eventual consistency after onboarding write
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    const [retryCoachResult, retryPlayerResult] = await Promise.all([
+    // Re-read the profiles, waiting for eventual consistency ONLY if needed.
+    //
+    // This used to `await setTimeout(300)` unconditionally before reading. The
+    // wait is real protection — a just-completed onboarding write may not be
+    // visible yet — but it was paid by every request that reaches this branch,
+    // including the ones where the row was already there. Reading FIRST and
+    // sleeping only on a miss keeps the protection and skips the 300ms whenever
+    // the data has already landed, which is the common case even here.
+    //
+    // This is strictly no less tolerant than the old shape: when the row really
+    // is late, the deciding read now happens at ~300ms PLUS the first read's
+    // duration, i.e. marginally later than the old fixed 300ms — never earlier.
+    // The cost is one extra query on the genuine-miss path, which is the rare
+    // case inside an already-rare branch.
+    const readProfiles = () => Promise.all([
       supabase
         .from('golf_coaches')
         .select('id, user_id, full_name, avatar_url, organization_id, onboarding_completed')
@@ -98,6 +109,13 @@ export default async function GolfDashboardLayout({
         .eq('user_id', session.userId)
         .maybeSingle(),
     ]);
+
+    let [retryCoachResult, retryPlayerResult] = await readProfiles();
+
+    if (!retryCoachResult.data && !retryPlayerResult.data) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      [retryCoachResult, retryPlayerResult] = await readProfiles();
+    }
 
     if (retryCoachResult.data) coach = { ...coach, ...retryCoachResult.data } as typeof coach;
     if (retryPlayerResult.data) player = { ...player, ...retryPlayerResult.data } as typeof player;
