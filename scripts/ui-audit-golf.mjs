@@ -115,6 +115,28 @@ const PROBE = () => {
              ? '.' + worst.className.split(/\s+/).filter(Boolean).slice(0,2).join('.') : '')) : '?',
     };
   }
+  /**
+   * Is this element deliberately hidden from sighted users (`sr-only`)?
+   *
+   * The visually-hidden recipe IS a 1px box with `clip-path: inset(50%)` and
+   * `overflow: hidden` — so a naive "scrollWidth > clientWidth" clipped-text
+   * check flags every skip link on every route, and a naive tap-target check
+   * reports it as a 32x16 control. The first run of this script produced 31
+   * identical "text clipped: Skip to main content" P1s and put the same string
+   * at the head of nearly every tap-target list: one accessibility feature
+   * working correctly, reported 50+ times as a defect. Findings a reader
+   * learns to scroll past are worse than no findings.
+   */
+  const srOnly = (el) => {
+    const cs = getComputedStyle(el);
+    if (cs.clipPath && cs.clipPath.includes('inset(50%)')) return true;
+    if (cs.clip === 'rect(0px, 0px, 0px, 0px)') return true;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 1 || r.height <= 1) return true;
+    // the other common recipe: pushed off-canvas rather than clipped
+    if (r.right < 0 || r.bottom < 0) return true;
+    return false;
+  };
   const named = (el) =>
     (el.innerText || '').trim() || el.getAttribute('aria-label') ||
     el.getAttribute('title') || (el.querySelector('img') || {}).alt || '';
@@ -122,12 +144,15 @@ const PROBE = () => {
     const r = el.getBoundingClientRect();
     if (r.width === 0 && r.height === 0) return;
     if (!named(el)) out.noName.push(el.tagName.toLowerCase() + (el.className || '').toString().slice(0, 40));
+    // A skip link is not a tap target — it is never pointed at.
+    if (srOnly(el)) return;
     if ((r.width < 44 || r.height < 44) && r.width > 0)
       out.tiny.push({ t: named(el).slice(0, 28), w: Math.round(r.width), h: Math.round(r.height) });
   });
   document.querySelectorAll('img').forEach((i) => { if (!i.alt) out.noAlt++; });
   document.querySelectorAll('h1,h2,h3,p,span,div,button,a').forEach((el) => {
     if (el.children.length) return;
+    if (srOnly(el)) return; // clipping is the POINT of a visually-hidden element
     if (el.scrollWidth > el.clientWidth + 4 && el.clientWidth > 0 && (el.innerText || '').trim())
       out.clipped.push((el.innerText || '').trim().slice(0, 40));
   });
