@@ -1,5 +1,36 @@
 # Finished-But-Unreachable Capability Audit — GolfHelm
 
+> **CORRECTION 2026-08-15 06:05 — finding #1 (`pga-standards.ts`) is real, but
+> its framing is wrong, and acting on the framing would produce the wrong fix.**
+>
+> Re-verified independently. The module IS unimported: zero non-test callers for
+> all five exports (`loadStandardsForTour`, `loadPgaStandards`,
+> `loadStandardsForGender`, `pgaReferenceValue`, `cohortBaselineValue`), and no
+> import of the module path anywhere, static or dynamic. That part stands.
+>
+> But "real LPGA data sits unused in the DB" does **not** follow.
+> `stats-leak-maps.ts` — the very consumer this module's own header claims —
+> queries `golf_pga_standards` DIRECTLY (`:192`), including the
+> LPGA-rows-first-with-PGA-fallback gender routing. The table is read. What
+> nothing uses is the *loader module*, because a second hand-rolled
+> implementation of the same job already exists beside it.
+>
+> So the real shape is **two parallel answers to "what is the tour benchmark"**:
+>   1. DB-backed — `stats-leak-maps.ts`'s inline query (live), plus this unused
+>      loader that duplicates it.
+>   2. Hardcoded — `cohortAnchor` in `v3/counterfactual/cohort-baselines.ts`,
+>      with **10 non-test call sites** across the v3 generators
+>      (`scrambling.ts`, `putt-distance.ts`, …), which never touch the table.
+>
+> The approximation problem is real but it lives in the GENERATORS, not the leak
+> maps. And "wire the loader" is the wrong instruction: the loader is async and
+> the generator pipeline is synchronous, so this is an architectural change
+> (preload standards, thread them through) — plus a domain decision about which
+> cohort a college roster should be measured against. `CohortTier` already
+> offers `d1`/`d2`/`d3`, and measuring a college player against `pga` is a large
+> part of why every number reads catastrophic. Both are owner judgment calls,
+> not a mechanical rewire.
+
 **Date:** 2026-08-15
 **Scope:** `src/lib/golf`, `src/lib/calendar`, `src/lib/coachhelm`, `src/app/golf`, `src/components/golf`, `src/components/fairway`
 **Method:** `npx knip` as a starting point, then hand verification of every candidate with `grep`, dynamic-import checks, and direct file reads. Read-only audit — no code was changed.
