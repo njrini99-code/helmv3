@@ -121,7 +121,15 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   }
 
   let events: CalendarEvent[] = [];
-  let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
+  let teamMembers: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    avatar_url?: string;
+    /** Which side of the merge below this row came from. Optional so existing
+     *  consumers are unaffected; surfaces that mean *players* filter on it. */
+    role?: 'coach' | 'player';
+  }[] = [];
 
   // Fetch events (scoped to +/- 3 months), players, and team settings in parallel
   const threeMonthsAgo = new Date();
@@ -297,9 +305,28 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   });
 
   // Combine players and coaches for team members display (data already fetched in parallel above)
+  //
+  // Both kinds go into ONE array, and until now nothing in it said which was
+  // which. The calendar's "filter by player" rail therefore listed the coaches
+  // too — the signed-in coach AND every other coach in the organisation, since
+  // `coachList` is scoped to `organization_id`, not to this team. A control
+  // whose entire purpose is "show me one player's schedule" offered `NR` (you)
+  // and `C` (Coach (Demo)) as options. Downstream could not fix it: the
+  // entries are structurally identical, so the rail was reduced to guessing by
+  // id, which only ever caught the current user.
+  //
+  // Tagging the origin here is the fix. `role` is optional so existing
+  // consumers (the event editor's invite grid, which legitimately wants staff)
+  // are unaffected; only the surfaces that mean *players* filter on it.
   if (teamId && (playersData.length > 0 || coachList.length > 0)) {
     teamMembers = [
-      // Parse coach full_name into first/last name parts
+      // Parse coach full_name into first/last name parts.
+      //
+      // NOTE: this split is also why the invite grid rendered "Coach (." — a
+      // coach stored as "Coach (Demo)" yields last_name "(Demo)", and a
+      // consumer abbreviating to a first initial printed the bracket. The
+      // display side now renders full names; this remains a lossy parse of a
+      // single `full_name` column and is the right place for a real fix later.
       ...coachList.map(c => {
         const nameParts = (c.full_name || 'Coach').split(' ');
         return {
@@ -307,6 +334,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
           first_name: nameParts[0] || 'Coach',
           last_name: nameParts.slice(1).join(' ') || '',
           avatar_url: c.avatar_url || undefined,
+          role: 'coach' as const,
         };
       }),
       // Players already have first_name/last_name
@@ -315,6 +343,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
         first_name: p.first_name || 'Player',
         last_name: p.last_name || '',
         avatar_url: p.avatar_url || undefined,
+        role: 'player' as const,
       })),
     ];
   }

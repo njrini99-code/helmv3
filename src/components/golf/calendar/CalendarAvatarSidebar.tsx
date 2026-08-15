@@ -12,6 +12,17 @@ export interface TeamMember {
   first_name: string;
   last_name: string;
   avatar_url?: string;
+  /**
+   * Which side of the roster/coach merge this row came from.
+   *
+   * The calendar page builds this list by concatenating the team's players
+   * with the ORGANISATION's coaches, and without this tag the two are
+   * structurally indistinguishable — which is how every coach in the org ended
+   * up listed in a control that filters the calendar by player. Optional
+   * because not every caller tags (the event editor's invite grid wants staff
+   * included); surfaces that mean *players* filter on it.
+   */
+  role?: 'coach' | 'player';
 }
 
 // Color palette for multi-player selection — intentional hardcoded hex values.

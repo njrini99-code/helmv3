@@ -113,6 +113,20 @@ export interface TeamMember {
   first_name: string;
   last_name: string;
   avatar_url?: string;
+  /**
+   * Which side of the roster/coach merge this row came from (set by
+   * `calendar/page.tsx`). Without it the team's players and the
+   * ORGANISATION's coaches are structurally identical, which is how every
+   * coach in the org ended up offered inside a filter-by-player control.
+   * Optional — the event editor's invite grid legitimately wants staff, so
+   * only surfaces that mean *players* filter on it.
+   *
+   * NOTE: this interface is duplicated verbatim in
+   * `CalendarAvatarSidebar.tsx`. Two structurally identical `TeamMember`
+   * types in one feature is why a field like this has to be added twice;
+   * worth collapsing to one exported type.
+   */
+  role?: 'coach' | 'player';
 }
 
 type CalendarActionResult<T = unknown> = Promise<{ success: boolean; error?: string; data?: T }>;

@@ -317,8 +317,24 @@ export function FairwayCalendar({
   // NOTE: `teamMembers` still mixes in every OTHER coach in the org (page.tsx
   // merges `coachList` with no role tag) — this only removes the viewer's own
   // row, not teammates' fellow coaches; see FairwayCalendar's prop doc.
+  /**
+   * The rail filters a calendar by PLAYER, so it must contain only players.
+   *
+   * `teamMembers` is a merge of the roster and the organisation's coaches, and
+   * dropping `currentUserId` was the best this could do while the two were
+   * structurally identical — it removed the signed-in coach and left every
+   * OTHER coach in the org listed as though they were on the squad (`C` =
+   * "Coach (Demo)", beside the real players).
+   *
+   * The merge now tags `role`, so this filters on what a row actually IS
+   * rather than on whether it happens to be you. The id check stays as the
+   * fallback for any caller still passing untagged rows.
+   */
   const memberRailTeamMembers = React.useMemo(
-    () => (currentUserId ? teamMembers.filter((m) => m.id !== currentUserId) : teamMembers),
+    () =>
+      teamMembers.filter(
+        (m) => m.role !== 'coach' && (currentUserId ? m.id !== currentUserId : true),
+      ),
     [teamMembers, currentUserId],
   );
 
