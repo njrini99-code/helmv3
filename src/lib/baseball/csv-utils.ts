@@ -218,16 +218,76 @@ export const HEADER_MAPPINGS: Record<string, string[]> = {
 };
 
 /**
- * Find the CSV column header that maps to our field
+ * A header/alias string is only eligible for the FUZZY (substring) match
+ * tier once both sides are at least this long. Every canonical short code in
+ * HEADER_MAPPINGS ('r','h','hr','er','so','sb','cs','rbi','hbp',...) is
+ * shorter than this, and so is every plain single-letter header a real
+ * box-score export uses for the same stats. That is deliberate: at 1-3
+ * characters, "hr" is a substring of "er"/"hra" is unrelated, but "hr" is
+ * also literally contained in unrelated words like "triple" ('t-r-i-p-l-e'
+ * contains 'r'), so short strings collide constantly under substring
+ * containment. Gating fuzzy matching to length >= 4 removes every short-code
+ * collision while still resolving descriptive/compound headers like
+ * "Player Name" or "Home Runs" against their long-form aliases.
  */
-export function findColumnMapping(headers: string[], field: string): string | null {
-  const fieldMappings = HEADER_MAPPINGS[field] || [field];
+const MIN_FUZZY_MATCH_LENGTH = 4;
 
-  for (const header of headers) {
-    const normalized = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-    for (const mapping of fieldMappings) {
-      if (normalized.includes(mapping) || mapping.includes(normalized)) {
-        return header;
+function normalizeHeaderText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Find the CSV column header that maps to our field.
+ *
+ * Two-tier match, EXACT before FUZZY, so a short canonical code (e.g. "hr")
+ * can never be satisfied by an unrelated header via substring containment:
+ *   1. EXACT — normalized header === normalized alias, aliases tried in the
+ *      field's declared order (its most specific/canonical alias first).
+ *   2. FUZZY — bidirectional substring containment, but ONLY between an
+ *      alias and a header that are both >= MIN_FUZZY_MATCH_LENGTH, so this
+ *      tier only ever resolves descriptive/compound headers, never a
+ *      collision between two short codes.
+ *
+ * `excludeHeaders`, when passed, removes headers already claimed by another
+ * field in this same detection pass (see autoDetectColumnMapping) — a header
+ * may satisfy more than one field's alias list (HEADER_MAPPINGS deliberately
+ * shares 'h'/'r' between e.g. hits/hits_allowed, since which one is meant
+ * depends on whether the file is a batting or pitching export), but within
+ * one mapping pass each header must bind to exactly one field.
+ */
+export function findColumnMapping(
+  headers: string[],
+  field: string,
+  excludeHeaders?: ReadonlySet<string>,
+): string | null {
+  const fieldMappings = HEADER_MAPPINGS[field] || [field];
+  const candidates = excludeHeaders
+    ? headers.filter((h) => !excludeHeaders.has(h))
+    : headers;
+  const normalizedCandidates = candidates.map((header) => ({
+    header,
+    normalized: normalizeHeaderText(header),
+  }));
+
+  // Tier 1: exact match. Aliases-outer so the field's own declared order
+  // (canonical short code first) wins when more than one alias could match.
+  for (const mapping of fieldMappings) {
+    const normalizedMapping = normalizeHeaderText(mapping);
+    const hit = normalizedCandidates.find((c) => c.normalized === normalizedMapping);
+    if (hit) return hit.header;
+  }
+
+  // Tier 2: fuzzy (substring) match, length-gated both sides.
+  for (const mapping of fieldMappings) {
+    const normalizedMapping = normalizeHeaderText(mapping);
+    if (normalizedMapping.length < MIN_FUZZY_MATCH_LENGTH) continue;
+    for (const candidate of normalizedCandidates) {
+      if (candidate.normalized.length < MIN_FUZZY_MATCH_LENGTH) continue;
+      if (
+        candidate.normalized.includes(normalizedMapping) ||
+        normalizedMapping.includes(candidate.normalized)
+      ) {
+        return candidate.header;
       }
     }
   }
@@ -310,14 +370,30 @@ const NUMERIC_FIELDS: readonly string[] = IMPORTABLE_FIELDS.filter(
  * Auto-map every importable field to the best-matching CSV header. The client
  * may override any entry before commit; unmatched fields are simply absent from
  * the returned mapping. Pure — derives only from the header strings.
+ *
+ * A header can bind to at most ONE field: fields are claimed in
+ * IMPORTABLE_FIELDS declaration order (batting fields — e.g. `hits`,
+ * `runs` — precede their pitching counterparts — `hits_allowed`,
+ * `runs_allowed`), and each match removes that header from consideration for
+ * every field after it. Without this, a standard batting header's 'h'/'r'
+ * columns would ALSO satisfy hits_allowed/runs_allowed (HEADER_MAPPINGS
+ * shares those short codes between the batting/pitching pair on purpose,
+ * since which side is meant depends on the file), producing non-null
+ * pitching-only fields for a pure batting row — which downstream import
+ * logic (imports.ts hasAny(v, PITCHING_ONLY_FIELDS)) reads as "this player
+ * pitched" and writes a phantom pitching box-score line.
  */
 export function autoDetectColumnMapping(
   headers: string[],
 ): BaseballImportColumnMapping {
   const mapping: BaseballImportColumnMapping = {};
+  const usedHeaders = new Set<string>();
   for (const field of IMPORTABLE_FIELDS) {
-    const header = findColumnMapping(headers, field);
-    if (header) mapping[field] = header;
+    const header = findColumnMapping(headers, field, usedHeaders);
+    if (header) {
+      mapping[field] = header;
+      usedHeaders.add(header);
+    }
   }
   return mapping;
 }
