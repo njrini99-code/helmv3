@@ -26,6 +26,7 @@
  */
 
 import { compose } from './compose';
+import { extractNumericTokens } from './citations';
 import type { ComposeResult, EvidenceClaim } from './types';
 
 /**
@@ -291,9 +292,39 @@ function buildEvidence(input: RoundReviewInput): EvidenceClaim[] {
   // Note: SG values are intentionally NOT added as numeric evidence —
   // the prompt instructs the model to use directional words only, so
   // any raw SG decimal that slips through will (correctly) trip the
-  // verifier as a fabricated number. Composite titles, persona label,
-  // and goal display are non-numeric and naturally pass the verifier's
-  // numeric-token regex, so they don't need explicit claims either.
+  // verifier as a fabricated number.
+  //
+  // CORRECTED 2026-08-16. This note used to continue "Composite titles,
+  // persona label, and goal display are non-numeric and naturally pass the
+  // verifier's numeric-token regex, so they don't need explicit claims
+  // either." Composite titles are emphatically NOT non-numeric. Sampled from
+  // production `golf_coach_insights`:
+  //
+  //   "3-5 ft putting: 47%"
+  //   "175+ yd approach: 33% greens hit · 25 ft when you do"
+  //   "Par 4 scoring: 4.24 (+0.24 vs par)"
+  //   "Double bogey-or-worse rate: 4.5%"
+  //   "10-15 ft putting: 21%"
+  //
+  // `buildCompositeBlock` injects those verbatim, so the prompt SHOWS the model
+  // a figure the verifier would then reject — and compose() discards the entire
+  // review over one such token. A number we handed the model is not a
+  // fabrication, so it is registered rather than the verifier being loosened.
+  //
+  // Uses the verifier's own scanner (`extractNumericTokens`) so the set we
+  // register and the set it judges cannot drift apart.
+  //
+  // Persona label and goal display are left alone: the persona is a word, and
+  // the prompt already instructs "name the metric only; do NOT quote the target
+  // number or date" for goals, so a goal figure SHOULD still trip the verifier.
+  const titleFigures = new Set<string>();
+  for (const title of input.composite_insight_titles ?? []) {
+    for (const tok of extractNumericTokens(title)) titleFigures.add(tok);
+  }
+  for (const tok of titleFigures) {
+    claims.push({ field: 'composite_title_figure', value: tok });
+  }
+
   return claims;
 }
 

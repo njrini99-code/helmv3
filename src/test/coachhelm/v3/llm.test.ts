@@ -341,6 +341,53 @@ describe('composeRoundReview prompt enrichment', () => {
     expect(zeroTotal.find((e) => e.field === 'fairways_pct')).toBeUndefined();
   });
 
+  /**
+   * A number we PUT IN THE PROMPT must be citable.
+   *
+   * `buildCompositeBlock` injects `composite_insight_titles` verbatim
+   * ("  - {title}"), and production titles are dense with figures:
+   *   "3-5 ft putting: 47%"
+   *   "175+ yd approach: 33% greens hit · 25 ft when you do"
+   *   "Par 4 scoring: 4.24 (+0.24 vs par)"
+   *   "Double bogey-or-worse rate: 4.5%"
+   *
+   * `buildEvidence` declined to register them on the stated grounds that
+   * "composite titles ... are non-numeric". They are not. So the prompt showed
+   * the model a figure and the verifier then classified it as a fabricated
+   * cite — a false positive by construction, and compose() discards the whole
+   * review over it.
+   *
+   * These figures are not inventions: the insight generators computed them
+   * from this player's own data. Registering them is the same principle as the
+   * derived percentages above — supply the value, never loosen the verifier.
+   */
+  it('registers figures that appear in the composite-insight titles it injects', () => {
+    const evidence = roundReviewInternals.buildEvidence({
+      ...BASE_INPUT,
+      composite_insight_titles: ['3-5 ft putting: 47%'],
+    });
+    expect(verifyCitations('Your 3-5 ft putting sat at 47%.', evidence).verified).toBe(true);
+  });
+
+  it('registers every figure in a multi-number title', () => {
+    const evidence = roundReviewInternals.buildEvidence({
+      ...BASE_INPUT,
+      composite_insight_titles: ['175+ yd approach: 33% greens hit · 25 ft when you do'],
+    });
+    expect(verifyCitations('You hit 33% of those greens.', evidence).verified).toBe(true);
+    expect(verifyCitations('You finished 25 ft away.', evidence).verified).toBe(true);
+  });
+
+  it('does NOT register a figure from a title that was never injected', () => {
+    // The guard keeps its teeth: only titles actually placed in the prompt
+    // become citable. 91% appears nowhere.
+    const evidence = roundReviewInternals.buildEvidence({
+      ...BASE_INPUT,
+      composite_insight_titles: ['3-5 ft putting: 47%'],
+    });
+    expect(verifyCitations('Your 3-5 ft putting sat at 91%.', evidence).verified).toBe(false);
+  });
+
   it('keeps headline stat claims intact alongside the new optional fields', () => {
     const evidence = roundReviewInternals.buildEvidence({
       ...BASE_INPUT,
