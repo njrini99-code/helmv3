@@ -28,10 +28,57 @@ import { applyUnsubTag } from '@/lib/crm/unsubscribe-token';
 import { buildListUnsubscribeHeaders } from '@/lib/crm/outreach-headers';
 import { describeError } from '@/lib/utils/describe-error';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
+import { wallClockInZone } from '@/lib/golf/timezone';
 
 const CRM_REVALIDATE_PATH = '/golf/admin/crm';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any;
+
+/**
+ * IANA zone the Gmail direct-send daily cap's day-boundary is anchored to.
+ *
+ * A single named constant, deliberately: the CRM is single-admin /
+ * single-org (unlike the multi-team calendar in
+ * src/lib/calendar/availability.ts), so there is no per-team timezone
+ * lookup at this call site to fall back on — this stays a constant until
+ * the CRM itself becomes team-scoped.
+ *
+ * `start.setHours(0, 0, 0, 0)` resolved in the RUNTIME's zone, which on
+ * Vercel is UTC — so the daily-cap window effectively reset around 8pm
+ * Eastern instead of midnight, on a reputation-sensitive cold-outreach
+ * mailbox. See countSentToday below.
+ */
+const CRM_ORG_TIMEZONE = 'America/New_York';
+
+/**
+ * A Date carrying today's (y, m, d) AS SEEN in `timeZone`, encoded via the
+ * LOCAL Date constructor. Self-consistent within this process regardless of
+ * the process's own runtime zone: wallClockInZone reads the same fields
+ * back with the same local getters this was built with.
+ */
+function orgDayAnchor(now: Date, timeZone: string): Date {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+    .format(now)
+    .split('-')
+    .map(Number);
+  const [year, month, day] = parts;
+  return new Date(year ?? now.getFullYear(), (month ?? 1) - 1, day ?? 1);
+}
+
+/**
+ * Start-of-day (00:00:00.000) for "today" in `timeZone`, expressed as the
+ * equivalent UTC instant. Delegates the wall-clock -> instant conversion to
+ * wallClockInZone (shared with the calendar's availability engine,
+ * src/lib/golf/timezone.ts) rather than reimplementing offset math here.
+ */
+function startOfOrgDayUtc(now: Date, timeZone: string): Date {
+  return wallClockInZone(orgDayAnchor(now, timeZone), '00:00', timeZone);
+}
 
 const DEFAULT_DAILY_CAP = Number(process.env.GMAIL_DAILY_CAP ?? '50');
 const MAX_PER_CALL = 15; // serverless-timeout-safe with pacing
@@ -108,8 +155,7 @@ export async function getDomainAuthStatus(): Promise<{ checked: boolean; result?
 
 // Count of today's Gmail-API sends, for the daily cap.
 async function countSentToday(client: AnySupabase): Promise<number> {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const start = startOfOrgDayUtc(new Date(), CRM_ORG_TIMEZONE);
   const { count } = await client
     .from('crm_contact_log')
     .select('id', { count: 'exact', head: true })

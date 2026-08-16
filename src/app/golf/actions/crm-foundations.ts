@@ -20,6 +20,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { logServerException } from '@/lib/server-error-logger';
+import { wallClockInZone } from '@/lib/golf/timezone';
 import type {
   CrmNote,
   CrmSegment,
@@ -33,6 +34,60 @@ import type {
 // ============================================================================
 // Internal helpers
 // ============================================================================
+
+/**
+ * IANA zone the CRM's "due today" boundary is anchored to.
+ *
+ * A single named constant, deliberately: the CRM is single-admin /
+ * single-org (unlike the multi-team calendar in
+ * src/lib/calendar/availability.ts), so there is no per-team timezone
+ * lookup at this call site to fall back on — this stays a constant until
+ * the CRM itself becomes team-scoped.
+ *
+ * `eod.setHours(23, 59, 59, 999)` resolved in the RUNTIME's zone, which on
+ * Vercel is UTC — landing "end of day" around 8pm Eastern and silently
+ * dropping same-day evening tasks from listMyDueTasks({ byEod: true }),
+ * which feeds the "Tasks due today" panel on /golf/admin/crm.
+ */
+const CRM_ORG_TIMEZONE = 'America/New_York';
+
+/**
+ * A Date carrying today's (y, m, d) AS SEEN in `timeZone`, encoded via the
+ * LOCAL Date constructor. Self-consistent within this process regardless of
+ * the process's own runtime zone: wallClockInZone reads the same fields
+ * back with the same local getters this was built with.
+ */
+function orgDayAnchor(now: Date, timeZone: string): Date {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+    .format(now)
+    .split('-')
+    .map(Number);
+  const [year, month, day] = parts;
+  return new Date(year ?? now.getFullYear(), (month ?? 1) - 1, day ?? 1);
+}
+
+/**
+ * End-of-day (23:59:59.999) for "today" in `timeZone`, expressed as the
+ * equivalent UTC instant.
+ *
+ * Computed as "1ms before tomorrow's midnight" rather than "today's
+ * midnight + 24h" so it stays correct across a DST transition — each
+ * midnight is resolved independently via wallClockInZone's own offset
+ * lookup (shared with the calendar's availability engine), not by adding a
+ * flat duration across the boundary.
+ */
+function endOfOrgDayUtc(now: Date, timeZone: string): Date {
+  const tomorrow = orgDayAnchor(now, timeZone);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const startOfTomorrow = wallClockInZone(tomorrow, '00:00', timeZone);
+  return new Date(startOfTomorrow.getTime() - 1);
+}
+
 async function getAuthedClient() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -328,8 +383,7 @@ export async function listMyDueTasks(
       .in('status', ['pending', 'in_progress']);
 
     if (opts?.byEod) {
-      const eod = new Date();
-      eod.setHours(23, 59, 59, 999);
+      const eod = endOfOrgDayUtc(new Date(), CRM_ORG_TIMEZONE);
       query = query.lte('due_at', eod.toISOString());
     }
 
