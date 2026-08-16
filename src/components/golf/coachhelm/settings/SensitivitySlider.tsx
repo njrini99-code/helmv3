@@ -53,6 +53,17 @@ export function SensitivitySlider({ value, onChange }: SensitivitySliderProps) {
                             key={option.value}
                             onClick={() => onChange(option.value)}
                             className={cn(
+                                // `min-w-0 px-2` — these are three flex-1 segments in a
+                                // fixed track, so the segment width comes from flex, not
+                                // from padding. The Button default (`size="md"` -> px-5)
+                                // spent 40px per segment on padding, and `ui/button.tsx`
+                                // applies BOTH `whitespace-nowrap` and `overflow-hidden`
+                                // (:75-76) — so at 390px the longest FIXED label,
+                                // "Conservative", hard-clipped with no ellipsis to signal
+                                // it. Same shape as the "View as table" toggle fixed in
+                                // 9826bdd30: a constant string cut by a compressing flex
+                                // row, not user data truncating gracefully.
+                                'min-w-0 px-2',
                                 'flex-1 flex items-center justify-center rounded-full text-sm font-medium transition-colors duration-150 z-10',
                                 value === option.value ? 'text-text-primary' : 'text-text-tertiary hover:text-text-secondary'
                             )}
