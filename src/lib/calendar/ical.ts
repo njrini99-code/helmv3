@@ -271,7 +271,24 @@ export function convertToICalEvent(dbEvent: CalendarEventRow): ICalEvent {
   if (dbEvent.end_date) {
     endDate = parseISO(dbEvent.end_date);
   } else if (dbEvent.start_time && dbEvent.end_time) {
-    // Same day event with start/end times
+    // LANDMINE — READ BEFORE WIRING A NEW CALLER.
+    //
+    // `setHours` resolves in the RUNTIME zone, and `formatDateTime` below emits
+    // `yyyyMMdd'T'HHmmss'Z'` — a UTC instant. Local getter, UTC consumer, in one
+    // path: a 09:00 event would be published to the subscriber's calendar as
+    // 09:00Z, which is 05:00 Eastern.
+    //
+    // This branch is UNREACHABLE today, which is the only reason it is not a
+    // live bug. Its single caller — the coach feed at
+    // `api/calendar/coach/[token]/route.ts` — passes `start_time: null` and
+    // `end_time: null`, so the guard above always takes the `parseISO(end_date)`
+    // path, which IS zone-correct. The player feed does not call this function
+    // at all.
+    //
+    // A caller that populates start_time/end_time silently ships wrong times to
+    // every subscribed calendar. Fix it with `wallClockInZone` from
+    // `@/lib/golf/timezone` and the team's zone (see `availability.ts`) BEFORE
+    // wiring one, not after.
     const [startHour, startMin] = (dbEvent.start_time || '00:00').split(':');
     const [endHour, endMin] = (dbEvent.end_time || '00:00').split(':');
 

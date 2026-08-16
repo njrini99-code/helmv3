@@ -29,6 +29,32 @@ interface HistoricalPoint {
 /**
  * Trajectory Forecaster class for long-term predictions
  */
+/**
+ * Seasonal score adjustment for a projection point, in strokes.
+ *
+ * Golf's shape: May–Sept is peak season (more play, better scores, so a
+ * NEGATIVE score-to-par adjustment); Nov–Mar is off season; April and October
+ * are shoulder months with no adjustment.
+ *
+ * READS THE DATE IN UTC, deliberately. `point.date` is produced by
+ * `futureDate.toISOString().split('T')[0]` — a UTC calendar day. Reading it
+ * back with `new Date(s).getMonth()` parses at UTC midnight and then answers in
+ * the RUNTIME zone, so anywhere west of UTC every 1st-of-month resolved to the
+ * PREVIOUS month. On Vercel (UTC) it happened to be right; in a browser in
+ * Eastern it was not, and the two disagreed about 1 May, 1 Oct and 1 Nov —
+ * each a bucket boundary, so the adjustment flipped by a full 0.3–0.4 strokes.
+ *
+ * Exported so the boundaries are testable without reaching through the class;
+ * `seasonalProjection` is private and had no coverage of any kind.
+ */
+export function seasonalAdjustmentFor(isoDate: string): number {
+  const month = new Date(`${isoDate}T00:00:00Z`).getUTCMonth();
+  if (Number.isNaN(month)) return 0;
+  if (month >= 4 && month <= 8) return -0.3; // May-Sept: peak season
+  if (month >= 10 || month <= 2) return 0.4; // Nov-Mar: off season
+  return 0; // April, October: shoulder
+}
+
 export class TrajectoryForecaster {
   private playerId: string;
   private features: ExtractedFeatures | null = null;
@@ -208,18 +234,7 @@ export class TrajectoryForecaster {
     const points = this.linearProjection(horizonDays);
 
     return points.map((point) => {
-      const pointDate = new Date(point.date);
-      const month = pointDate.getMonth();
-
-      // Seasonal adjustment
-      let seasonalAdj = 0;
-      if (month >= 4 && month <= 8) {
-        // May-Sept: peak season
-        seasonalAdj = -0.3;
-      } else if (month >= 10 || month <= 2) {
-        // Nov-Mar: off season
-        seasonalAdj = 0.4;
-      }
+      const seasonalAdj = seasonalAdjustmentFor(point.date);
 
       return {
         ...point,
