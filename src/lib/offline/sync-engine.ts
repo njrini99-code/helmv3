@@ -27,6 +27,9 @@ import {
   updateOfflineRound,
   updateOfflineHole,
   updateOfflineShot,
+  getFailedRounds,
+  getFailedHoles,
+  getFailedShots,
   setSyncMetadata,
   getSyncMetadata,
   clearSyncedData,
@@ -282,26 +285,34 @@ class SyncEngine {
    * Retry failed items
    */
   async retryFailed(): Promise<SyncResult> {
-    // Reset failed items to pending status
-    const rounds = await getPendingRounds();
-    const holes = await getPendingHoles();
-    const shots = await getPendingShots();
+    // Read the FAILED items. This used to call getPending*(), which query
+    // `index.getAll('pending')` — so the `_sync_status === 'failed'` filter
+    // below could never match and nothing was ever requeued. Since
+    // markRoundFailed flips status to 'failed' and the pending queries exclude
+    // it, one failed sync stranded a round permanently and the player's
+    // "Retry sync" control was a no-op. See retry-failed.test.ts.
+    const rounds = await getFailedRounds();
+    const holes = await getFailedHoles();
+    const shots = await getFailedShots();
 
-    // Find and reset failed items
+    // Reset to 'pending' so the sync pass below picks them up. The status check
+    // is now redundant (the query guarantees it), so only the backoff/budget
+    // decision remains — an item past MAX_RETRY_COUNT stays failed rather than
+    // looping forever.
     for (const round of rounds) {
-      if (round._sync_status === 'failed' && shouldRetry(round._retry_count, round._last_retry)) {
+      if (shouldRetry(round._retry_count, round._last_retry)) {
         await updateOfflineRound(round._offline_id, { _sync_status: 'pending' });
       }
     }
 
     for (const hole of holes) {
-      if (hole._sync_status === 'failed' && shouldRetry(hole._retry_count, hole._last_retry)) {
+      if (shouldRetry(hole._retry_count, hole._last_retry)) {
         await updateOfflineHole(hole._offline_id, { _sync_status: 'pending' });
       }
     }
 
     for (const shot of shots) {
-      if (shot._sync_status === 'failed' && shouldRetry(shot._retry_count, shot._last_retry)) {
+      if (shouldRetry(shot._retry_count, shot._last_retry)) {
         await updateOfflineShot(shot._offline_id, { _sync_status: 'pending' });
       }
     }
