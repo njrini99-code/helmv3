@@ -22,6 +22,8 @@ import {
   getOfflineShotsForRound,
   getPendingShots,
   getPendingRounds,
+  getFailedShots,
+  getFailedRounds,
   updateShotSyncStatus,
   updateRoundSyncStatus,
   removeSyncQueueItem,
@@ -439,18 +441,26 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
   }, [performSync]);
 
   const retryFailedSync = useCallback(async () => {
-    // Reset failed items to pending
-    const pendingRounds = await getPendingRounds();
-    for (const round of pendingRounds) {
-      if (round.syncStatus === 'failed' && round.syncAttempts < MAX_SYNC_ATTEMPTS + 2) {
-        // Give a few more attempts
+    // Read the FAILED rows. This used to call getPendingRounds/getPendingShots,
+    // which query `index.getAll('pending')` — so every row they return is
+    // 'pending' by construction and the `syncStatus === 'failed'` test below
+    // could never match. Nothing was ever requeued, which made this Retry
+    // control (wired to the player's "Retry sync" button on the continue-round
+    // screen) a silent no-op, and left a round whose first sync attempt failed
+    // unreachable by every code path in the app. Same defect as the v2
+    // SyncEngine.retryFailed() bug fixed in #1464. See v1-retry-failed.test.ts.
+    const failedRounds = await getFailedRounds();
+    for (const round of failedRounds) {
+      // The status check is now redundant (the query guarantees it); only the
+      // attempt budget still gates, so a round cannot retry forever.
+      if (round.syncAttempts < MAX_SYNC_ATTEMPTS + 2) {
         await updateRoundSyncStatus(round.id, 'pending');
       }
     }
 
-    const pendingShots = await getPendingShots();
-    for (const shot of pendingShots) {
-      if (shot.syncStatus === 'failed' && shot.syncAttempts < MAX_SYNC_ATTEMPTS + 2) {
+    const failedShots = await getFailedShots();
+    for (const shot of failedShots) {
+      if (shot.syncAttempts < MAX_SYNC_ATTEMPTS + 2) {
         await updateShotSyncStatus(shot.id, 'pending');
       }
     }
