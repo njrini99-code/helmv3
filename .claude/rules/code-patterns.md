@@ -3,6 +3,7 @@ paths:
   - "src/app/**/*.ts"
   - "src/app/**/*.tsx"
   - "src/lib/**/*.ts"
+verified: unverified  # never re-checked against code — do not trust without grepping first
 ---
 
 ## Code Patterns

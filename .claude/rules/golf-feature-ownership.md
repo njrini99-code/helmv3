@@ -4,6 +4,7 @@ paths:
   - "src/lib/golf/**"
   - "src/components/golf/**"
   - "src/app/api/golf/**"
+verified: unverified  # never re-checked against code — do not trust without grepping first
 ---
 
 ## COACH vs PLAYER vs TEAM — Feature Ownership

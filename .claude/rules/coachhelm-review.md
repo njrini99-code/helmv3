@@ -3,6 +3,7 @@ paths:
   - "src/lib/coachhelm/**"
   - "src/app/golf/actions/round-review*"
   - "src/app/api/coachhelm/**"
+verified: 2026-08-16  # re-checked against code this date
 ---
 
 # CoachHelm review checklist

@@ -4,6 +4,7 @@ paths:
   - "**/*.sql"
   - "src/lib/supabase/**"
   - "scripts/db/**"
+verified: unverified  # never re-checked against code — do not trust without grepping first
 ---
 
 # Database rules

@@ -1,3 +1,7 @@
+---
+verified: 2026-08-16  # working-style guidance, not code claims — nothing here to grep
+---
+
 ## Autonomy — finish the work, don't narrate it
 
 No `paths:` frontmatter, so this loads on every session in this repo. That is
@@ -24,6 +28,46 @@ that were implied rather than listed.
   stated assumption. Raising a concern is not a reason to stop.
 - If part of the job is genuinely blocked, finish every other part in full and
   say what you left out and why. Do not let one blocked item stall the rest.
+
+### Parallel agents share ONE working tree
+
+Dispatching several agents at once is the right instinct, and the trap is that
+they are not isolated the way they look. Every agent spawned into this repo
+shares a single checkout, which means a single `HEAD`, a single index, and a
+single set of files on disk.
+
+Observed 2026-08-16: two agents were dispatched in parallel and each was told to
+`git checkout -b`. The second checkout moved `HEAD` out from under the first,
+which was mid-edit. Nothing errored — the work simply landed on the wrong
+branch. `git add -A` then made it worse by sweeping in the other agent's
+half-finished files.
+
+Pick one of these before dispatching, never neither:
+
+- **Serialize** — agent 1 finishes and commits, *then* agent 2 starts. Simplest,
+  and correct when the work is small or the agents touch the same files.
+- **Give each agent its own worktree** — real isolation, real parallelism:
+
+  ```bash
+  git worktree add ../helmv3-wt-1 -b agent/task-one
+  git worktree add ../helmv3-wt-2 -b agent/task-two
+  # ...agents work in ../helmv3-wt-1 and ../helmv3-wt-2, each with its own HEAD
+  git worktree remove ../helmv3-wt-1   # when merged
+  git worktree list                    # what's still checked out
+  ```
+
+  Worktrees share the object store, so branches and commits are visible from the
+  main checkout immediately — no pushing between them.
+
+Two rules that hold either way:
+
+- **`git add <explicit paths>`, never `git add -A`.** In a shared tree `-A`
+  stages whatever another agent happens to have written.
+- **Never assume a `git checkout -b` succeeded.** The fsmonitor daemon in this
+  repo intermittently fails with `fsmonitor_ipc__send_query: unspecified error`
+  and can leave a checkout half-applied. Re-run with
+  `git -c core.fsmonitor=false checkout -b <name>` and confirm with
+  `git rev-parse --abbrev-ref HEAD` before editing anything.
 
 ### When asking IS right
 

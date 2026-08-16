@@ -1,6 +1,7 @@
 ---
 paths:
   - "src/**/*"
+verified: unverified  # never re-checked against code — do not trust without grepping first
 ---
 
 ## File Structure (Key Paths)

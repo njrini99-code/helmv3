@@ -3,6 +3,7 @@ paths:
   - "src/app/baseball/**"
   - "src/lib/baseball/**"
   - "src/components/baseball/**"
+verified: unverified  # never re-checked against code — do not trust without grepping first
 ---
 
 ## Baseball Product: User Types & Roles
