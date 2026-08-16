@@ -313,7 +313,16 @@ export function GenomeDetailView({
     </div>
   );
 
-  const activeAreas = focusAreas.filter((fa) => fa.status !== 'completed');
+  // #1290: a completed area with no recorded verdict still belongs on this
+  // panel — its own collapsed row is where the "How did it go?" capture
+  // prompt now lives (FocusAreaCard), and the genome view is exactly where a
+  // coach reviewing this player would naturally close that loop. A completed
+  // area whose outcome IS already recorded stays off this list (it reads as
+  // done, and belongs in the roster board's dedicated Completed section, not
+  // repeated here).
+  const displayAreas = focusAreas.filter(
+    (fa) => fa.status !== 'completed' || !fa.outcome_status,
+  );
 
   return (
     <CoachHelmShell
@@ -399,9 +408,9 @@ export function GenomeDetailView({
                 </Button>
               }
             >
-              {activeAreas.length > 0 ? (
+              {displayAreas.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {activeAreas.map((fa, i) => (
+                  {displayAreas.map((fa, i) => (
                     <FocusAreaCard
                       key={fa.id}
                       focusArea={fa}

@@ -37,6 +37,12 @@ import {
 import { GoalsSection, type GoalSuggestionView } from '@/components/fairway/pages/coachhelm/GoalsSection';
 import { CausalWhyPanel } from '@/components/fairway/pages/coachhelm/CausalWhyPanel';
 import { FocusAreaModal, type FocusAreaModalSubmit } from '@/components/fairway/pages/coachhelm/FocusAreaModal';
+// SourceChip — the same REAL "From a round review / From a CoachHelm insight"
+// link FocusAreaCard renders for active areas. A prescribed-but-not-yet-
+// accepted area is exactly where a player most needs that context: it's the
+// one moment they're deciding whether to accept, and until now the card gave
+// them zero evidence of WHY the coach flagged this (#1290 UX audit).
+import { SourceChip } from '@/components/fairway/pages/coachhelm/FocusAreaCard';
 import { getAreaType, formatTargetMetricLabel, type AreaAutoFillStats } from '@/components/fairway/pages/coachhelm/areaTypes';
 import { IconPlus } from '@/components/icons';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
@@ -238,6 +244,18 @@ function ProposedAreaCard({
           <p className="font-fw-sans text-body font-semibold text-text-primary">{focusArea.title || area.label}</p>
           {focusArea.description ? (
             <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">{focusArea.description}</p>
+          ) : null}
+          {focusArea.from_review_id || focusArea.from_insight_id ? (
+            <div className="mt-1.5">
+              <SourceChip
+                reviewId={focusArea.from_review_id}
+                reviewRoundId={focusArea.from_review_round_id}
+                insightId={focusArea.from_insight_id}
+                context={focusArea.review_context}
+                // eslint-disable-next-line jsx-a11y/aria-role -- SourceChip's own viewer-role prop, not an ARIA role
+                role="player"
+              />
+            </div>
           ) : null}
           {hasTarget ? (
             <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">

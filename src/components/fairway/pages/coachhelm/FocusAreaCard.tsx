@@ -43,6 +43,15 @@
  *   - role="player" → Log progress + Mark complete (the player's own actions);
  *     no outcome capture (coach-only).
  *
+ * OUTCOME-CAPTURE VISIBILITY (#1290 — prod shows outcome_status NULL on 594 of
+ * 596 insights): the capture control used to disappear the instant a coach hit
+ * "Mark complete" — exactly the moment a verdict is most natural to record, and
+ * the LAST chance before the card collapses to its quiet completed row forever.
+ * It now ALSO renders on the completed row (role="coach", `onRecordOutcome`
+ * wired, no verdict recorded yet) as a second, "How did it go?" line beneath
+ * the collapsed summary — closing the loop right where completion happens,
+ * instead of asking a coach to remember to come back for it.
+ *
  * NAMING: lives ONLY under fairway/. The legacy
  * src/components/golf/coachhelm/insights/FocusAreaCard.tsx is NEVER touched.
  *
@@ -300,7 +309,7 @@ function isActionableStatus(status: string | null | undefined): boolean {
  * Source chip — a REAL <Link> to the origin (review or insight)
  * ------------------------------------------------------------------------- */
 
-function SourceChip({
+export function SourceChip({
   reviewId,
   reviewRoundId,
   insightId,
@@ -504,11 +513,15 @@ function OutcomeCapture({
   focusArea,
   onRecordOutcome,
   recordedOutcome,
+  prompt = 'Record outcome',
 }: {
   focusArea: FocusAreaCardData;
   onRecordOutcome: NonNullable<FocusAreaCardProps['onRecordOutcome']>;
   /** A server-recorded verdict, if any (short-circuits to read-only). */
   recordedOutcome: string | null | undefined;
+  /** Label above the choice buttons — the completed row asks a more natural
+   *  "How did it go?" instead of the mid-flight "Record outcome" eyebrow. */
+  prompt?: string;
 }): ReactNode {
   // Optimistic local verdict + which choice is mid-flight.
   const [optimistic, setOptimistic] = useState<FocusAreaOutcome | null>(null);
@@ -561,7 +574,7 @@ function OutcomeCapture({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
-        Record outcome
+        {prompt}
       </span>
       <div className="flex flex-wrap items-center gap-1.5">
         {OUTCOME_ORDER.map((outcome) => {
@@ -675,6 +688,15 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
 
     /* ---- COMPLETED: a quiet collapsed row (never an authoritative meter) ---- */
     if (isCompleted) {
+      // #1290: completion used to be the LAST moment a coach could record an
+      // effectiveness verdict — the capture control only lived on the active
+      // card, and vanished the instant "Mark complete" fired. That is exactly
+      // backwards: "did it work?" is most answerable once the area is done,
+      // not mid-flight. Surface it here too, as a second row, until a verdict
+      // exists — never for a player (coach-only) and never once one is on
+      // record (the read-only pill above already speaks for it).
+      const showOutcomeCapture =
+        role === 'coach' && typeof onRecordOutcome === 'function' && !recordedOutcome;
       return (
         <motion.div
           ref={ref}
@@ -686,51 +708,63 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
           <Surface
             padding="sm"
             elevation="border"
-            className={cn('flex items-center gap-4', className)}
+            className={cn('flex flex-col gap-3', className)}
           >
-            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-fw-md bg-surface-sunken text-text-tertiary">
-              <AreaIcon size={18} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-fw-sans font-medium text-text-secondary">
-                {focusArea.title || 'Untitled'}
-              </p>
-              {areaLabel ? (
-                <p className="font-fw-sans text-eyebrow text-text-tertiary">{areaLabel}</p>
+            <div className="flex items-center gap-4">
+              <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-fw-md bg-surface-sunken text-text-tertiary">
+                <AreaIcon size={18} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-fw-sans font-medium text-text-secondary">
+                  {focusArea.title || 'Untitled'}
+                </p>
+                {areaLabel ? (
+                  <p className="font-fw-sans text-eyebrow text-text-tertiary">{areaLabel}</p>
+                ) : null}
+              </div>
+              {recordedOutcome ? (
+                <StatusPill tone={recordedOutcome.tone} size="sm">
+                  Outcome: {recordedOutcome.label}
+                </StatusPill>
+              ) : null}
+              <StatusPill tone="success" size="sm">
+                <IconCheck size={12} className="mr-0.5" />
+                Complete
+              </StatusPill>
+              {focusArea.completed_at ? (
+                <span className="hidden font-fw-mono text-eyebrow tabular-nums text-text-tertiary sm:inline">
+                  {new Date(focusArea.completed_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              ) : null}
+              {/* Reopen — recovers from an accidental / premature completion. Quiet
+                  ghost so it never competes with the "Complete" status pill. */}
+              {typeof onReopen === 'function' ? (
+                // Touch target: md (44px min-height) unconditionally — not sm,
+                // which is only 44px behind a `(pointer: coarse)` media query
+                // (mustFix #194).
+                <Button
+                  variant="ghost"
+                  busy={reopening}
+                  leftIcon={<IconRotateCcw size={14} />}
+                  onClick={() => onReopen(focusArea)}
+                  className="flex-shrink-0"
+                >
+                  Reopen
+                </Button>
               ) : null}
             </div>
-            {recordedOutcome ? (
-              <StatusPill tone={recordedOutcome.tone} size="sm">
-                Outcome: {recordedOutcome.label}
-              </StatusPill>
-            ) : null}
-            <StatusPill tone="success" size="sm">
-              <IconCheck size={12} className="mr-0.5" />
-              Complete
-            </StatusPill>
-            {focusArea.completed_at ? (
-              <span className="hidden font-fw-mono text-eyebrow tabular-nums text-text-tertiary sm:inline">
-                {new Date(focusArea.completed_at).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </span>
-            ) : null}
-            {/* Reopen — recovers from an accidental / premature completion. Quiet
-                ghost so it never competes with the "Complete" status pill. */}
-            {typeof onReopen === 'function' ? (
-              // Touch target: md (44px min-height) unconditionally — not sm,
-              // which is only 44px behind a `(pointer: coarse)` media query
-              // (mustFix #194).
-              <Button
-                variant="ghost"
-                busy={reopening}
-                leftIcon={<IconRotateCcw size={14} />}
-                onClick={() => onReopen(focusArea)}
-                className="flex-shrink-0"
-              >
-                Reopen
-              </Button>
+            {showOutcomeCapture ? (
+              <div className="border-t border-border-subtle pt-3">
+                <OutcomeCapture
+                  focusArea={focusArea}
+                  onRecordOutcome={onRecordOutcome!}
+                  recordedOutcome={focusArea.outcome_status}
+                  prompt="How did it go?"
+                />
+              </div>
             ) : null}
           </Surface>
         </motion.div>
