@@ -23,14 +23,64 @@ function approachProximityFeet(i: EvidenceInsight): number {
   return typeof prox === 'number' && Number.isFinite(prox) ? prox : NaN;
 }
 
+/**
+ * "Weak" on-green proximity from 175+ yd, in FEET.
+ *
+ * EMPIRICAL, not a Tour benchmark — and the distinction is the whole point.
+ *
+ * This gate used to read `> 50`, justified as "Tour ~45 ft from 175+ yd; > 50
+ * is weak". That comparison is invalid. The PGA Tour ~45 ft figure (research
+ * doc §2, "200+ yds: ~45+ ft") is Proximity to Hole over ALL approaches from
+ * the range, misses included. `proximity_when_hit_feet` is averaged over
+ * GREEN-FINDING SHOTS ONLY (approach-miss.ts:173) — conditioning on hitting
+ * the green removes every long miss, so the conditional mean is necessarily far
+ * smaller. Gating a conditional measure on an unconditional benchmark made this
+ * rule unfireable.
+ *
+ * Measured over all 29 production `approach_miss:175_plus` insights carrying a
+ * proximity: min 14.0, p25 22.7, median 24.8, p75 31.0, p90 33.3, max 36.3 ft.
+ * ZERO exceeded 50. The rule has never fired.
+ *
+ * WHY THE SIBLING RULE IS FINE AND MUST NOT BE "FIXED" BY ANALOGY.
+ * `short_approach_proximity_gap` gates the 50-125 yd bucket at `> 22` against a
+ * Tour anchor of ~18 ft — formally the same conditional/unconditional mismatch,
+ * but harmless, because the size of that mismatch SCALES WITH MISS RATE. From
+ * 50-125 yd the green-hit rate is ~75-80%, so conditioning discards few shots
+ * and the conditional mean lands near the unconditional anchor (production
+ * median 18.3 vs anchor 18); that gate passes 6 of 36 rows — alive and
+ * selective. From 175+ yd the green-hit rate is ~50%, so conditioning discards
+ * half the sample — precisely the worst half — and the anchor stops meaning
+ * anything. Measured: 50-125 median 18.3 / max 25.9; 175+ median 24.8 /
+ * max 36.3.
+ *
+ * HOW THE 50 GOT HERE (it was never a feet threshold). Per the 2026-06-05
+ * engine audit, this gate originally read `evidence.your_value > 50` where
+ * your_value is the green-hit PERCENT — so it fired BACKWARDS, selecting the
+ * best reachers. The redesign correctly repointed it at a real proximity in
+ * feet but CARRIED THE 50 ACROSS and justified it after the fact as "Tour 45,
+ * +5". At the same time the unit fix (off-green misses in YARDS were being ×3'd
+ * into fake feet, the documented "175+ → 63 ft" artifact) dropped real
+ * proximity from ~60 ft to ~26 ft. A threshold calibrated against inflated
+ * values, applied to corrected ones, silently stops matching anything — and the
+ * 60 ft test fixture is a fossil of that same era.
+ *
+ * 31 ft is the production p75 — the worst quartile of long-approach dial-in.
+ * It is deliberately a PERCENTILE and not a benchmark: no sourced on-green
+ * proximity standard exists for this bucket, and inventing one is what broke
+ * this rule the first time. Revisit once `approach_miss` carries standing
+ * (today 0 of 117 production rows do, vs 110/110 for putt_distance), at which
+ * point this should become a cohort-relative gate like `isWeakMidPutt`.
+ */
+const WEAK_ON_GREEN_PROXIMITY_FT = 31;
+
 function isWeakLongApproach(i: EvidenceInsight): boolean {
   return (
     i.insight_type === 'approach_miss' &&
     i.signature.includes('175_plus_ft') &&
     // Dial-in leak: finishing far from the hole WHEN the green is found.
-    // Tour ~45 ft from 175+ yd; > 50 ft is weak. Requires a real proximity
-    // (≥ MIN_GREENS hit) — without one we can't claim a 3-putt cascade.
-    approachProximityFeet(i) > 50
+    // Requires a real proximity (≥ MIN_GREENS hit) — without one we can't
+    // claim a 3-putt cascade.
+    approachProximityFeet(i) > WEAK_ON_GREEN_PROXIMITY_FT
   );
 }
 

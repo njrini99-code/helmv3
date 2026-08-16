@@ -246,6 +246,42 @@ describe('long_approach_3putt_cascade', () => {
     expect(composed.content).toContain('22%');
   });
 
+  it('fires at a proximity that actually OCCURS in production', () => {
+    // The rest of this block exercises 60 ft and 42 ft. Neither value exists.
+    // Measured over all 29 production approach_miss:175_plus insights carrying
+    // a proximity: min 14.0, p25 22.7, median 24.8, p75 31.0, p90 33.3, max
+    // 36.3 ft. The old gate was `> 50`, so ZERO of 29 could pass and the rule
+    // was dead — green in CI purely because every fixture used a number no
+    // player has ever produced.
+    //
+    // 33.3 ft is the production p90: a genuinely poor long-approach dial-in.
+    const insights: EvidenceInsight[] = [
+      makeInsight({
+        type: 'approach_miss',
+        signature: 'v3:approach_miss:175_plus_ft',
+        your_value: 45,
+        proximity_feet: 33.3,
+      }),
+      makeInsight({ type: 'putt_distance', signature: 'v3:putt_distance:10_15ft', your_value: 22, team_pct: 30 }),
+    ];
+    expect(longApproach3Putt.detect(insights)).not.toBeNull();
+  });
+
+  it('does NOT fire at a typical production proximity', () => {
+    // The production MEDIAN (24.8 ft). A gate that fires here would fire for
+    // half the roster and stop being a signal.
+    const insights: EvidenceInsight[] = [
+      makeInsight({
+        type: 'approach_miss',
+        signature: 'v3:approach_miss:175_plus_ft',
+        your_value: 55,
+        proximity_feet: 24.8,
+      }),
+      makeInsight({ type: 'putt_distance', signature: 'v3:putt_distance:10_15ft', your_value: 22, team_pct: 30 }),
+    ];
+    expect(longApproach3Putt.detect(insights)).toBeNull();
+  });
+
   it('does NOT fire on a GOOD ball-striker (high green-hit %, no recorded proximity)', () => {
     const insights: EvidenceInsight[] = [
       // 70% greens hit, proximity null (the old bug fired here because >50 matched the percent).
@@ -260,13 +296,18 @@ describe('long_approach_3putt_cascade', () => {
     expect(longApproach3Putt.detect(insights)).toBeNull();
   });
 
-  it('does NOT fire when on-green proximity is good (≤ 50 ft)', () => {
+  it('does NOT fire when on-green proximity is good', () => {
+    // Re-anchored from 42 ft to 22.7 ft (the production p25). 42 was chosen to
+    // sit under the old `> 50` gate, but no player has ever recorded it — the
+    // observed maximum across all 29 production rows is 36.3 ft. A "good
+    // proximity" fixture has to be a proximity that is actually good AND
+    // actually occurs, or it tests nothing.
     const insights: EvidenceInsight[] = [
       makeInsight({
         type: 'approach_miss',
         signature: 'v3:approach_miss:175_plus_ft',
         your_value: 55,
-        proximity_feet: 42,
+        proximity_feet: 22.7,
       }),
       makeInsight({ type: 'putt_distance', signature: 'v3:putt_distance:10_15ft', your_value: 22, team_pct: 30 }),
     ];
