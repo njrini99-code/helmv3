@@ -42,6 +42,19 @@ export function InstrumentTableToggle({ show, onToggle }: InstrumentTableToggleP
         'inline-flex h-7 min-w-[24px] items-center gap-1.5 rounded-fw-sm px-2.5',
         // 28px visual chip, 44px tap target via invisible hit-slop (audit M10).
         "relative before:absolute before:-inset-2 before:content-['']",
+        // shrink-0 + nowrap belong HERE, not at each call site. Every caller
+        // puts this in a flex row beside a title, and a flex item defaults to
+        // shrink:1 — so the row compressed the toggle and "View as table"
+        // (a FIXED 13-character label, not user data) hard-clipped 8px past a
+        // 116px box, with `text-overflow: clip` so there wasn't even an
+        // ellipsis to signal it. EvidenceVisuals had already discovered this
+        // and wrapped its own instance in `shrink-0 whitespace-nowrap`; the
+        // three chart primitives that render on /dashboard, /hub,
+        // /analytics/coachhelm and /stats/team — Ribbon, SegmentBar,
+        // RadialGauge — had not, which is exactly the 8 clipped rows the
+        // 2026-08-15 audit found. Fixing the shared control fixes all of them
+        // and makes the local wrapper redundant rather than load-bearing.
+        'shrink-0 whitespace-nowrap',
         'font-fw-sans text-caption font-medium text-text-secondary',
         'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'hover:bg-surface hover:text-text-primary',

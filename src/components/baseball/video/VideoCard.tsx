@@ -291,29 +291,36 @@ export function VideoCard(props: VideoCardProps) {
                 </div>
               </div>
 
-              {/* Owner actions */}
+              {/* Owner actions.
+                  aria-label on all four: the visible label is each button's
+                  ONLY name, and `hidden` removes it from the accessibility
+                  tree (unlike `sr-only`, which keeps it). Every icon here is
+                  already `aria-hidden`, so below `sm` these were four bare
+                  icon buttons with no accessible name at all — including
+                  Delete, a destructive action. Same defect as the /documents
+                  "New folder" button fixed in bb62996e6. */}
               {isOwner && (
                 <div className="flex flex-wrap items-center gap-1.5 border-t border-[color:var(--hairline)] pt-1">
                   {onEdit && (
-                    <Button variant="secondary" size="sm" onClick={onEdit} className="h-8 px-2.5 text-xs">
+                    <Button variant="secondary" size="sm" aria-label="Edit" onClick={onEdit} className="h-8 px-2.5 text-xs">
                       <IconEdit size={13} aria-hidden />
                       <span className="ml-1 hidden sm:inline">Edit</span>
                     </Button>
                   )}
                   {onSetPrimary && !video.is_primary && (
-                    <Button variant="secondary" size="sm" onClick={onSetPrimary} className="h-8 px-2.5 text-xs">
+                    <Button variant="secondary" size="sm" aria-label="Set Primary" onClick={onSetPrimary} className="h-8 px-2.5 text-xs">
                       <IconStar size={13} aria-hidden />
                       <span className="ml-1 hidden sm:inline">Set Primary</span>
                     </Button>
                   )}
                   {onShare && video.url && (
-                    <Button variant="secondary" size="sm" onClick={onShare} className="h-8 px-2.5 text-xs">
+                    <Button variant="secondary" size="sm" aria-label="Share" onClick={onShare} className="h-8 px-2.5 text-xs">
                       <IconLink size={13} aria-hidden />
                       <span className="ml-1 hidden sm:inline">Share</span>
                     </Button>
                   )}
                   {onDelete && (
-                    <Button variant="danger" size="sm" onClick={onDelete} className="h-8 px-2.5 text-xs">
+                    <Button variant="danger" size="sm" aria-label="Delete" onClick={onDelete} className="h-8 px-2.5 text-xs">
                       <IconTrash size={13} aria-hidden />
                       <span className="ml-1 hidden sm:inline">Delete</span>
                     </Button>

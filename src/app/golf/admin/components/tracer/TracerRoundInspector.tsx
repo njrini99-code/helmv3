@@ -535,7 +535,13 @@ function RoundRow({
 
         {/* Actions */}
         <td className="px-4 py-3.5 text-center">
+          {/* aria-label: the visible label is this button's ONLY name, and
+              `hidden` removes it from the accessibility tree (unlike `sr-only`,
+              which keeps it). Below `sm` this was a bare icon button with no
+              accessible name at all. Same defect as the /documents "New folder"
+              button fixed in bb62996e6. */}
           <Button variant="ghost"
+            aria-label="Diagnose"
             onClick={(e) => {
               e.stopPropagation();
               onDiagnose();
