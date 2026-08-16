@@ -444,7 +444,32 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
                 <WhyPopover insight={insight} />
               </div>
 
-              <p className="text-body-sm text-warm-600 mt-1.5 line-clamp-2 leading-relaxed">{content}</p>
+              {/* The clamp lifts on expand. Collapsed, two lines keep the feed
+                  scannable — priority skews heavily to `low`, so every card
+                  shouting its full paragraph would flatten the hierarchy that
+                  makes an urgent one read as urgent.
+
+                  But `line-clamp-2` was UNCONDITIONAL, and this is the only
+                  place `content` renders at this density (hero renders it in
+                  full at :608; the expanded block below renders EvidencePanel
+                  and actions, not the prose). So the tail of every long insight
+                  was unreachable — not "behind a click", genuinely unreachable.
+                  Measured against production 2026-08-16: content averages 377
+                  chars for approach_miss (117 rows, the largest type) and 427
+                  for course_management, against roughly 100-140 chars visible
+                  in two lines. These insights are built to close on the
+                  prescription — "Work an alignment-stick start line gate and
+                  favor the left edge so the miss stays on the green" — which is
+                  the last sentence, and therefore the part that was always cut.
+                  The coach saw the diagnosis and never the drill. */}
+              <p
+                className={cn(
+                  'text-body-sm text-warm-600 mt-1.5 leading-relaxed',
+                  !expanded && 'line-clamp-2',
+                )}
+              >
+                {content}
+              </p>
 
               <MovementPill insight={insight} className="mt-2" />
 

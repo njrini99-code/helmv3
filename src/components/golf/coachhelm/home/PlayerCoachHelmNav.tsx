@@ -7,13 +7,30 @@ import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { replaceStageUrl } from '@/components/fairway/modules/StageRouter';
 
+/**
+ * Tab labels. These MUST match `src/lib/golf/surface-registry.ts`, which is the
+ * single source of truth for the name of every CoachHelm surface — the command
+ * palette, breadcrumb and page titles all read from it, so a label written by
+ * hand here drifts away from the same surface's name everywhere else.
+ *
+ * `profile` read "Game profile" while the registry's canonical name is
+ * "Game Profile" (`my-game-profile-tab`, surface-registry.ts:142), so the tab
+ * and the palette disagreed on the name of the same destination.
+ *
+ * NOT imported programmatically, deliberately: the registry has no
+ * `coachhelm-tab` entry for `?view=insights` or `?view=deep-dive`, so only four
+ * of these six could be resolved from it. Half-derived and half-literal is
+ * harder to keep honest than six literals with this note. Adding the two
+ * missing registry entries is the real fix and belongs to whoever owns
+ * `src/lib/golf/` — reported rather than reached for.
+ */
 const SECTIONS = [
-  { key: 'home', label: 'Overview' },
-  { key: 'development', label: 'Development' },
-  { key: 'profile', label: 'Game profile' },
-  { key: 'standing', label: 'Standing' },
-  { key: 'insights', label: 'Insights' },
-  { key: 'deep-dive', label: 'Deep dive' },
+  { key: 'home', label: 'Overview' },            // registry: overview
+  { key: 'development', label: 'Development' },  // registry: my-development-tab
+  { key: 'profile', label: 'Game Profile' },     // registry: my-game-profile-tab
+  { key: 'standing', label: 'Standing' },        // registry: my-standing-tab
+  { key: 'insights', label: 'Insights' },        // NOT in registry — see above
+  { key: 'deep-dive', label: 'Deep dive' },      // NOT in registry — see above
 ] as const;
 
 const SECTION_KEYS = new Set<string>(SECTIONS.map((section) => section.key));
