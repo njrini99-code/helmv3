@@ -1405,6 +1405,11 @@ function FocusAreaBoard({
                 playerName={showPlayerName ? playerName(byId.get(fa.player_id)) : undefined}
                 onReopen={onReopen}
                 reopening={reopeningId === fa.id}
+                // #1290 — completion is the natural moment to ask "did it
+                // work?"; wiring this here is what lets the card's own
+                // completed-row prompt actually fire instead of the verdict
+                // silently going uncaptured forever.
+                onRecordOutcome={onRecordOutcome}
               />
             ))}
           </div>

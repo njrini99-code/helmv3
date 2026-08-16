@@ -278,6 +278,38 @@ export async function getPendingShots(): Promise<OfflineShot[]> {
 }
 
 /**
+ * Get all FAILED shots — the retry candidates.
+ *
+ * Exists because `retryFailedSync` (use-offline-sync.ts) used to call
+ * `getPendingShots()` and then filter for `syncStatus === 'failed'`. That query
+ * is `index.getAll('pending')`, so every row it returns is 'pending' by
+ * construction and the filter could never match — the Retry control was a
+ * no-op. With no failed-side reader in v1 at all, a shot whose first sync
+ * attempt failed was unreachable by every code path. Same defect as the v2
+ * `SyncEngine.retryFailed()` bug fixed in #1464. See v1-retry-failed.test.ts.
+ */
+export async function getFailedShots(): Promise<OfflineShot[]> {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(SHOTS_STORE, 'readonly');
+    const store = transaction.objectStore(SHOTS_STORE);
+    const index = store.index('syncStatus');
+    const request = index.getAll('failed');
+
+    request.onsuccess = () => {
+      const shots = request.result as OfflineShot[];
+      shots.sort((a, b) => a.timestamp - b.timestamp);
+      resolve(shots);
+    };
+
+    request.onerror = () => {
+      reject(new Error('Failed to get failed shots'));
+    };
+  });
+}
+
+/**
  * Update shot sync status
  */
 export async function updateShotSyncStatus(
@@ -414,6 +446,36 @@ export async function getPendingRounds(): Promise<OfflineRound[]> {
 
     request.onerror = () => {
       reject(new Error('Failed to get pending rounds'));
+    };
+  });
+}
+
+/**
+ * Get all FAILED rounds — the retry candidates.
+ *
+ * See `getFailedShots` above for why this exists. A round whose first sync
+ * attempt failed was previously readable by NOTHING: the hook's Retry button,
+ * the global sync engine's requeue (v2-only), and the manual "Recover Round"
+ * page all read the 'pending' index exclusively, so a completed round could sit
+ * in IndexedDB permanently with no in-app way to get it to the server.
+ */
+export async function getFailedRounds(): Promise<OfflineRound[]> {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(ROUNDS_STORE, 'readonly');
+    const store = transaction.objectStore(ROUNDS_STORE);
+    const index = store.index('syncStatus');
+    const request = index.getAll('failed');
+
+    request.onsuccess = () => {
+      const rounds = request.result as OfflineRound[];
+      rounds.sort((a, b) => a.timestamp - b.timestamp); // FIFO
+      resolve(rounds);
+    };
+
+    request.onerror = () => {
+      reject(new Error('Failed to get failed rounds'));
     };
   });
 }

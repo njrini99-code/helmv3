@@ -897,19 +897,56 @@ export class PatternMiner {
    */
   private generateRecommendation(
     conditions: PatternCondition[],
-     
+
     _outcome: PatternOutcome
   ): string {
-    // Simple rule-based recommendations
+    // Grounded in the condition vocabulary that ACTUALLY occurs in production
+    // (golf_patterns_v2, measured 2026-08-16), not invented cases:
+    //   days_since_last lte 1  "Back-to-back rounds"   19
+    //   round_type  eq tournament "In tournament"      10
+    //   days_since_last gte 7  "After 7+ days off"      6
+    //   days_since_last gte 5  "After 5+ days off"      3
+    //   lie / distance_range (shot-level)              503 each
+    //
+    // Only `days_since_last >= 7` used to be handled; every other condition —
+    // including the single most common one — fell through to a fixed sentence
+    // with no evidence and no action in it. That fallback is why 27 of 596 live
+    // insights carry the identical content "Monitor this pattern and discuss
+    // with your coach." A recommendation that names no cause and no next rep is
+    // not coaching, and it is what makes the pattern feed read as filler next to
+    // the approach/composite insights, which cite sample size and prescribe a drill.
     for (const condition of conditions) {
-      if (condition.field === 'days_since_last' && condition.operator === 'gte') {
-        if ((condition.value as number) >= 7) {
+      if (condition.field === 'days_since_last') {
+        const days = Number(condition.value);
+
+        if (condition.operator === 'gte' && days >= 7) {
           return 'Consider a practice round before important events after extended breaks.';
         }
+
+        if (condition.operator === 'gte' && days >= 3) {
+          return 'Get a short range session into the 48 hours before you play again — at this gap the rust shows up in your scoring, not just in your warm-up.';
+        }
+
+        if (condition.operator === 'lte' && days <= 1) {
+          return 'This is a recovery pattern, not a swing pattern: on the second of back-to-back rounds cut warm-up volume, eat and hydrate between rounds, and move full-swing practice to a rest day.';
+        }
+      }
+
+      if (condition.field === 'round_type' && condition.value === 'tournament') {
+        return 'The gap only appears in competition, so more range volume will not close it — rehearse the pre-shot routine under pressure in qualifiers and money games until the tournament rep feels like the practice rep.';
       }
     }
 
-    return 'Monitor this pattern and discuss with your coach.';
+    // No rule matched. Say something honest and specific instead of filler:
+    // name the condition back to the reader so the pattern is at least legible,
+    // and be explicit that it is a tendency to confirm rather than a diagnosis.
+    const conditionText = joinConditionLabels(conditions);
+    if (conditionText) {
+      const lowered = `${conditionText.charAt(0).toLowerCase()}${conditionText.slice(1)}`;
+      return `Watch this over your next few rounds — if ${lowered} keeps producing the same gap, it is a tendency worth a dedicated practice block rather than variance.`;
+    }
+
+    return 'Watch this over your next few rounds to confirm it is a real tendency rather than variance before building practice around it.';
   }
 
   /**
