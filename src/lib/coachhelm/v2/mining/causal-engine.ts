@@ -52,15 +52,30 @@ export class CausalEngine {
       .select('id, score_to_par, round_date, total_putts, total_fairways_hit, total_gir')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
-      .order('round_date', { ascending: true })
+      // DESCENDING + limit(100) = the player's most RECENT 100 rounds.
+      //
+      // This was `ascending: true`, which took the OLDEST 100: the moment a
+      // player crossed 100 completed rounds their causal analysis froze on
+      // their earliest data and never moved again, while the engine kept
+      // running and kept writing rows — stale, not obviously broken.
+      .order('round_date', { ascending: false })
       .limit(100);
 
     if (error || !rounds || rounds.length < 10) {
       return [];
     }
 
+    // ...then back to CHRONOLOGICAL before anything reads it.
+    // `computeDaysSinceLast` treats `rounds[index - 1]` as the PREVIOUS round
+    // and computes `curr - prev`, so a descending array yields a negative gap
+    // for every round. That value feeds the causal-strength maths, so flipping
+    // the sort WITHOUT this reverse would trade a visible staleness bug for a
+    // silent correctness one. Selection order and processing order are two
+    // different requirements; this is the seam where they meet.
+    const chronological = [...rounds].reverse();
+
     this.rounds = this.computeDaysSinceLast(
-      rounds.map((r) => ({
+      chronological.map((r) => ({
         id: r.id,
         score_to_par: r.score_to_par ?? 0,
         round_date: r.round_date,
