@@ -18,9 +18,25 @@ routine backend plumbing. Business context:
 - **Budget enforcement is server-side and mandatory.** Every LLM call routes
   through `checkBudget()` / `recordSpend()` in
   `src/lib/coachhelm/v3/llm/budget.ts` before `compose()`. Never hardcode
-  $/token math outside that module. The resolved default budget for a
-  coach/team with no settings row is `0` (safe) — do not "fix" it to a nonzero
-  fallback.
+  $/token math outside that module.
+
+  > CORRECTED 2026-08-16. This rule used to read: "The resolved default budget
+  > for a coach/team with no settings row is `0` (safe) — do not 'fix' it to a
+  > nonzero fallback." **That is no longer true, and following it would revert a
+  > deliberate fix.** An unconfigured team now resolves to
+  > `PLATFORM_DEFAULT_DAILY_BUDGET_USD` (env-overridable, default **$3**) plus a
+  > `v3.llm.budget.platform_default` log line. The rationale is in
+  > `resolveDefaultBudgetForCoach`: a bare `0` returned for FOUR different
+  > situations — no team, failed read, no settings row, and a deliberate zero —
+  > so an unconfigured team was indistinguishable from a switched-off one. In
+  > production that was **eight of thirteen teams**: every coach on them opened
+  > CoachHelm, asked a question, and was told analysis was unavailable, with
+  > nothing anywhere naming the cause.
+  >
+  > Only the two states we genuinely cannot serve — a deliberate zero and a
+  > failed lookup — still return 0. THAT is the invariant to protect: a
+  > deliberate zero must never be "fixed" into a spend, and a failed lookup must
+  > fail closed rather than guess.
 - **Citation-verify → regenerate once → template fallback.** `composeRoundReview`,
   `composeHeroNarrative`, `composeCoachChat` must verify citations against real
   data, regenerate once on failure, then fall back to a deterministic template.
