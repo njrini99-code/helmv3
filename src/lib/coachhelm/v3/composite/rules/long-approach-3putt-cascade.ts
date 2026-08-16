@@ -41,6 +41,29 @@ function approachProximityFeet(i: EvidenceInsight): number {
  * proximity: min 14.0, p25 22.7, median 24.8, p75 31.0, p90 33.3, max 36.3 ft.
  * ZERO exceeded 50. The rule has never fired.
  *
+ * WHY THE SIBLING RULE IS FINE AND MUST NOT BE "FIXED" BY ANALOGY.
+ * `short_approach_proximity_gap` gates the 50-125 yd bucket at `> 22` against a
+ * Tour anchor of ~18 ft — formally the same conditional/unconditional mismatch,
+ * but harmless, because the size of that mismatch SCALES WITH MISS RATE. From
+ * 50-125 yd the green-hit rate is ~75-80%, so conditioning discards few shots
+ * and the conditional mean lands near the unconditional anchor (production
+ * median 18.3 vs anchor 18); that gate passes 6 of 36 rows — alive and
+ * selective. From 175+ yd the green-hit rate is ~50%, so conditioning discards
+ * half the sample — precisely the worst half — and the anchor stops meaning
+ * anything. Measured: 50-125 median 18.3 / max 25.9; 175+ median 24.8 /
+ * max 36.3.
+ *
+ * HOW THE 50 GOT HERE (it was never a feet threshold). Per the 2026-06-05
+ * engine audit, this gate originally read `evidence.your_value > 50` where
+ * your_value is the green-hit PERCENT — so it fired BACKWARDS, selecting the
+ * best reachers. The redesign correctly repointed it at a real proximity in
+ * feet but CARRIED THE 50 ACROSS and justified it after the fact as "Tour 45,
+ * +5". At the same time the unit fix (off-green misses in YARDS were being ×3'd
+ * into fake feet, the documented "175+ → 63 ft" artifact) dropped real
+ * proximity from ~60 ft to ~26 ft. A threshold calibrated against inflated
+ * values, applied to corrected ones, silently stops matching anything — and the
+ * 60 ft test fixture is a fossil of that same era.
+ *
  * 31 ft is the production p75 — the worst quartile of long-approach dial-in.
  * It is deliberately a PERCENTILE and not a benchmark: no sourced on-green
  * proximity standard exists for this bucket, and inventing one is what broke
