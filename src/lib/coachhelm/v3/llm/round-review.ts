@@ -152,13 +152,19 @@ function buildPrompt(input: RoundReviewInput): string {
 
   const courseClause = input.course_name ? `at ${input.course_name}` : '';
 
+  // The percentage is stated, not left to be derived. Prose about a
+  // "9/14 fairways" fact naturally reaches for "64.3%", and until 2026-08-16
+  // that derivation was rejected by the citation verifier as a fabricated
+  // number — see pushDerivedPct() below for the measured impact. Quoting a
+  // supplied figure is also one less arithmetic step for the model to get
+  // wrong than computing one.
   const stats: string[] = [];
   if (input.total_putts !== null) stats.push(`${input.total_putts} putts`);
   if (input.fairways_hit !== null && input.fairways_total !== null) {
-    stats.push(`${input.fairways_hit}/${input.fairways_total} fairways`);
+    stats.push(`${input.fairways_hit}/${input.fairways_total} fairways${pctSuffix(input.fairways_hit, input.fairways_total)}`);
   }
   if (input.gir !== null && input.gir_total !== null) {
-    stats.push(`${input.gir}/${input.gir_total} greens`);
+    stats.push(`${input.gir}/${input.gir_total} greens${pctSuffix(input.gir, input.gir_total)}`);
   }
   const statsClause = stats.length > 0 ? stats.join(', ') : '';
 
@@ -208,6 +214,44 @@ function buildPrompt(input: RoundReviewInput): string {
     .join('\n');
 }
 
+/** " (64.3%)" for a usable denominator, "" otherwise. Must agree exactly with
+ *  the 1-dp value `pushDerivedPct` registers, or the prompt would quote a
+ *  figure the verifier rejects. */
+function pctSuffix(made: number | null, total: number | null): string {
+  if (made === null || total === null || total <= 0) return '';
+  const pct = (made / total) * 100;
+  if (!Number.isFinite(pct)) return '';
+  return ` (${Number(pct.toFixed(1))}%)`;
+}
+
+/**
+ * Register `made/total` as a citable percentage, in both the renderings the
+ * model actually produces.
+ *
+ * Silent no-op when the denominator is missing or zero — a null `gir_total`
+ * must not register `NaN` or `Infinity` as a citable fact.
+ */
+function pushDerivedPct(
+  claims: EvidenceClaim[],
+  field: string,
+  made: number | null,
+  total: number | null,
+): void {
+  if (made === null || total === null || total <= 0) return;
+  const pct = (made / total) * 100;
+  if (!Number.isFinite(pct)) return;
+
+  const oneDp = Number(pct.toFixed(1));
+  claims.push({ field: `${field}_pct`, value: oneDp });
+
+  // "56%" and "55.6%" are the same true fact. Only add the second claim when
+  // it differs, so an exact figure like 50% doesn't get a duplicate row.
+  const rounded = Math.round(pct);
+  if (rounded !== oneDp) {
+    claims.push({ field: `${field}_pct_rounded`, value: rounded });
+  }
+}
+
 function buildEvidence(input: RoundReviewInput): EvidenceClaim[] {
   const claims: EvidenceClaim[] = [
     { field: 'total_score', value: input.total_score },
@@ -219,6 +263,31 @@ function buildEvidence(input: RoundReviewInput): EvidenceClaim[] {
   if (input.fairways_total !== null) claims.push({ field: 'fairways_total', value: input.fairways_total });
   if (input.gir !== null) claims.push({ field: 'gir', value: input.gir });
   if (input.gir_total !== null) claims.push({ field: 'gir_total', value: input.gir_total });
+
+  // The percentages the model will DERIVE from the counts above.
+  //
+  // Measured in production 2026-08-16: 19 of 107 round_review compose() calls
+  // (17.8%) were discarded for failed citation verification — and every
+  // discard in `golf_coachhelm_llm_calls` is a round review. The unmatched
+  // tokens were not hallucinations, they were correct arithmetic:
+  //
+  //   55.6 = 10/18   72.2 = 13/18   27.8 = 5/18   44.4 = 8/18
+  //   64.3 = 9/14    71.4 = 10/14   57.1 = 8/14   53.8 = 7/13
+  //
+  // We hand the model COUNTS and ask for prose about them, so "you hit 55.6%
+  // of greens" is exactly what a good narrative says. The verifier requires
+  // every numeric token to appear verbatim in this evidence set, so it read a
+  // correct derivation as a fabricated cite and compose() threw the WHOLE
+  // review away — one in five players silently got the deterministic template
+  // instead of the feature.
+  //
+  // Fixed by SUPPLYING the derived value, never by loosening the verifier: a
+  // percentage that does not follow from these counts is still rejected. Both
+  // the 1-dp and the rounded rendering are registered because the model uses
+  // either ("55.6%" and "56%" are the same true fact, and which one it picks
+  // is not something we should be discarding a review over).
+  pushDerivedPct(claims, 'gir', input.gir, input.gir_total);
+  pushDerivedPct(claims, 'fairways', input.fairways_hit, input.fairways_total);
   // Note: SG values are intentionally NOT added as numeric evidence —
   // the prompt instructs the model to use directional words only, so
   // any raw SG decimal that slips through will (correctly) trip the
