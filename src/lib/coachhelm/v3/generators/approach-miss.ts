@@ -65,13 +65,27 @@ const BUCKET_LABEL: Record<ApproachBucket, string> = {
   '175_plus_ft': '175+ yd',
 };
 
-/** Proximity-WHEN-ON-GREEN Tour anchors (feet), Research doc §2. Used for the dial-in
- *  comparison — only meaningful for shots that actually found the green. */
-const TOUR_PROXIMITY_FEET: Record<ApproachBucket, number> = {
-  '50_125ft':    18,
-  '125_175ft':   30,
-  '175_plus_ft': 45,
-};
+/*
+ * REMOVED 2026-08-16: `TOUR_PROXIMITY_FEET` = { 50_125ft: 18, 125_175ft: 30,
+ * 175_plus_ft: 45 }, described here as "Proximity-WHEN-ON-GREEN Tour anchors".
+ *
+ * That description was wrong and the numbers are not comparable to ours. The
+ * research doc §2 figures ("100-125 yds: ~20 ft", "200+ yds: ~45+ ft") are PGA
+ * Tour *Proximity to Hole* — measured over ALL approaches from the range,
+ * misses included; the same section quotes a 75.4% GIR alongside them, which is
+ * only coherent if misses are in the average. Our `proximity_when_hit_feet` is
+ * averaged over GREEN-FINDING SHOTS ONLY, so conditioning strips out every long
+ * miss and the two quantities differ by construction.
+ *
+ * Printing them side by side told coaches their players out-dial the Tour from
+ * 175+ yd (production mean 26 ft vs "Tour 45 ft"). It also made
+ * `long_approach_3putt_cascade` unfireable: its gate was Tour-45-plus-5, and
+ * ZERO of 29 production insights exceeded 50 ft (observed max 36.3).
+ *
+ * Do not reintroduce these as a dial-in benchmark. They become usable only if
+ * an UNCONDITIONAL proximity is computed — which needs the off-green misses,
+ * recorded in YARDS and previously ×3'd into a fake proximity (see aggregate()).
+ */
 
 /** APPROXIMATE PGA green-hit % by approach band (no sourced per-band table yet — see
  *  Research doc §2 ranges 75-85 / 60-70 / 45-55%). Flagged "approx" in the prose. */
@@ -224,7 +238,6 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     const tourGreenHit =
       cohortAnchor(this.metricId, agg.cohort_gender) ?? TOUR_GREEN_HIT_PCT[agg.bucket];
     const tourLabel = agg.cohort_gender === 'womens' ? "women's college" : 'PGA Tour';
-    const tourProx = TOUR_PROXIMITY_FEET[agg.bucket];
     const ghDisp = `${agg.green_hit_pct.toFixed(0)}%`;
     const prox = agg.proximity_when_hit_feet;
 
@@ -239,10 +252,19 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     const reachSentence =
       `Across your last ${agg.attempts} approaches from ${label} you found the green ` +
       `${ghDisp} of the time (${tourLabel} ~${tourGreenHit}%, approximate).`;
+    // NO TOUR COMPARISON HERE, deliberately. `prox` is averaged over
+    // GREEN-FINDING SHOTS ONLY (see aggregate()), while the Tour proximity
+    // figure (research doc §2, "200+ yds: ~45+ ft") is Proximity to Hole over
+    // ALL approaches from the range, misses included. Conditioning on hitting
+    // the green strips out every long miss, so the two are not the same
+    // quantity. Printing "you 26 ft (Tour ~45 ft)" told a coach their player
+    // out-dials the Tour from 175+ yards — flattering and false. The reach
+    // sentence above still carries a like-for-like comparison (green-hit % vs
+    // Tour green-hit %), which is where the honest benchmark lives.
     const dialInSentence =
       prox != null
         ? ` When you do reach it you finish ${prox.toFixed(0)} ft from the hole ` +
-          `(Tour ~${tourProx} ft, over ${agg.green_hit_n} greens) — that's the dial-in once you're on.`
+          `(over ${agg.green_hit_n} greens) — that's the dial-in once you're on.`
         : ` Too few greens hit from here (${agg.green_hit_n}) to read a reliable proximity yet — the gap is ` +
           `finding the green, not distance control on it.`;
     const penaltySentence =
