@@ -158,6 +158,28 @@ async function handle(): Promise<NextResponse> {
       // column /api/cron/coach-morning-digest already honors. Missing row →
       // opted-in by default (mirrors that cron's convention: the flag only
       // records explicit opt-outs).
+      //
+      // ── PRECONDITION BEFORE RE-SCHEDULING THIS ROUTE ────────────────────
+      // c34eae2a7 unscheduled this cron on owner instruction (2026-07-30:
+      // "stop the automated emails coaches receive") and describes re-enabling
+      // as "a four-line revert". Re-adding the vercel.json entry ALONE is not
+      // enough — it would mail coaches the owner asked to stop mailing.
+      //
+      // Measured 2026-08-16: `golf_coach_philosophy.email_digest_enabled` has
+      // column DEFAULT `true`, NOT NULL. Combined with the opt-OUT gate below,
+      // BOTH uncovered paths send:
+      //   - a new coach's row is created from the default (true)  -> sends
+      //   - a coach with no philosophy row at all                 -> sends
+      //     (the `philosophyRow &&` guard falls through; asserted deliberately
+      //      by the test "sends when the philosophy row is missing")
+      // Today that is inert only because the schedule is gone and all 14
+      // existing rows happen to be false — the same data coincidence
+      // c34eae2a7 called out, still one INSERT from mattering.
+      //
+      // So re-enabling requires a DECISION first, not just a revert: either
+      // flip the column default to false, or invert this gate to send only on
+      // an explicit `=== true`. Both are fail-closed; which one is right is a
+      // product call about opt-in vs opt-out, deliberately left to the owner.
       const { data: philosophyRow } = await sb
         .from('golf_coach_philosophy')
         .select('email_digest_enabled')
