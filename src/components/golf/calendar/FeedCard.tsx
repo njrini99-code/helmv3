@@ -153,10 +153,18 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
           </div>
         </div>
 
-        {/* Feed URL */}
+        {/* Feed URL — a tappable webcal:// link so iOS/macOS can trigger the
+            native "Add Calendar Subscription" flow directly instead of
+            forcing everyone through copy → switch apps → paste. Copy stays
+            as the fallback for platforms that don't handle webcal:// links. */}
         <div className="mt-3 flex items-center gap-2">
           <Inset padding="sm" className="min-w-0 flex-1">
-            <code className="block truncate font-mono text-caption text-text-secondary">{feed.url}</code>
+            <a
+              href={feed.url.replace(/^https?:\/\//, 'webcal://')}
+              className="block truncate font-mono text-caption text-text-secondary underline-offset-2 hover:text-text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1 focus-visible:ring-offset-elevated"
+            >
+              {feed.url}
+            </a>
           </Inset>
 
           <IconButton

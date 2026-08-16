@@ -81,11 +81,16 @@ export function formatDateLabel(iso: string | null): string {
   return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+// `focus-visible:ring-offset-canvas` overrides UiButton's base
+// `ring-offset-white` (src/components/ui/button.tsx) — twMerge only dedupes
+// within the same ring-offset-* group, so without an explicit override here
+// a bright white square flashes around the ring in dark mode. Matches
+// FairwayDayStrip / FairwayEventCard's own convention.
 const triggerCls =
   'inline-flex w-full items-center justify-between gap-2 rounded-fw-md border border-border-subtle ' +
   'bg-surface-sunken px-3 py-2 font-fw-sans text-body-sm text-text-primary transition-colors ' +
   'hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/30 ' +
-  'disabled:cursor-not-allowed disabled:opacity-50';
+  'focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50';
 
 // ---------------------------------------------------------------------------
 
@@ -237,6 +242,12 @@ export function TimeChooser({
                 }}
                 className={cn(
                   'flex h-auto w-full items-baseline justify-between gap-3 rounded-fw-sm px-2.5 py-1.5 text-left font-fw-sans text-body-sm transition-colors',
+                  // Base UiButton ring is primary-500/ring-offset-white (see
+                  // triggerCls comment above) — this list otherwise never
+                  // sets its own ring color, so a 96-row keyboard-navigable
+                  // listbox loses the accent focus styling every other
+                  // Fairway control in this modal uses.
+                  'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                   isSelected
                     ? 'bg-accent-500/12 font-medium text-text-primary'
                     : 'text-text-secondary hover:bg-surface-sunken hover:text-text-primary',

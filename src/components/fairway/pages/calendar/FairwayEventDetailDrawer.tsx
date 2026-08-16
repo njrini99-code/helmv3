@@ -384,10 +384,14 @@ export function FairwayEventDetailDrawer({
             </div>
           ) : null}
 
-          {/* Coach roll-call — full invitee roster with RSVP + check-in marks.
+          {/* Roll-call. Coach: full invitee roster with RSVP + check-in marks.
+              Player: read-only "your attendance" card — AttendancePanel
+              already branches on `canManage` for this (PlayerSelfView), but
+              was previously mounted for coaches only, so a player standing
+              on the range had no way to see whether they'd been checked in.
               (AttendancePanel contract: { eventId, teamId, canManage }.) */}
-          {isCoach && event.team_id ? (
-            <AttendancePanel eventId={event.id} teamId={event.team_id} canManage />
+          {event.team_id ? (
+            <AttendancePanel eventId={event.id} teamId={event.team_id} canManage={isCoach} />
           ) : null}
 
           {/* Player RSVP — 3 Fairway Buttons wired to the existing respondToEvent.
@@ -442,6 +446,12 @@ export function FairwayEventDetailDrawer({
                 ) : null}
               </div>
             )
+          ) : !isCoach && !requiresRsvp ? (
+            // No response required — say so explicitly rather than leaving a
+            // silent gap where the RSVP section would otherwise sit.
+            <p className="font-fw-sans text-caption text-text-tertiary">
+              No response needed for this event.
+            </p>
           ) : null}
         </Sheet.Body>
       ) : null}

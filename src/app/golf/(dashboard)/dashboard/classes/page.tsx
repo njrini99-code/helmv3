@@ -47,6 +47,24 @@ export default function GolfClassesPage() {
   const golfUser = useGolfUser();
   const { showToast } = useToast();
   const [classes, setClasses] = useState<PlayerClass[]>([]);
+  // Class ids whose LAST sync attempt failed. The toast reporting this is
+  // transient (a player who doesn't catch it, or who closes the app, had no
+  // way to ever discover which classes aren't actually on the shared team
+  // calendar) — this keeps the signal visible on the card until a later
+  // successful sync (edit, or a retried import) clears it, or the class is
+  // deleted. Client-side only, not persisted — `golf_player_classes` has no
+  // sync-status column and this doesn't need one; refetching classes never
+  // touches this set.
+  const [failedSyncIds, setFailedSyncIds] = useState<Set<string>>(new Set());
+  const markSyncFailed = (id: string) =>
+    setFailedSyncIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+  const clearSyncFailed = (id: string) =>
+    setFailedSyncIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   const [loading, setLoading] = useState(true);
 
   // Use IDs from context
@@ -72,12 +90,17 @@ export default function GolfClassesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchClasses = async () => {
+  // `silent` skips the loading flag — used for the refetch after a mutation
+  // (add/update/import/delete), where the player is looking at their real
+  // schedule and a full-page skeleton swap would blank it out and reflow the
+  // page a moment later for every single edit. The true first load (the
+  // effect below) stays non-silent so the real skeleton still covers it.
+  const fetchClasses = async (options?: { silent?: boolean }) => {
     if (!playerId) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!options?.silent) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('golf_player_classes')
@@ -169,10 +192,13 @@ export default function GolfClassesPage() {
       );
       if (!syncResult?.success) {
         syncFailure = syncResult?.error ?? 'Unknown error';
+        markSyncFailed(newClass.id);
+      } else {
+        clearSyncFailed(newClass.id);
       }
     }
 
-    await fetchClasses();
+    await fetchClasses({ silent: true });
     setShowAddModal(false);
     setEditingClass(null);
     if (syncFailure) {
@@ -229,7 +255,13 @@ export default function GolfClassesPage() {
       formData.id, playerId, teamId,
     );
 
-    await fetchClasses();
+    if (!syncResult?.success) {
+      markSyncFailed(formData.id);
+    } else {
+      clearSyncFailed(formData.id);
+    }
+
+    await fetchClasses({ silent: true });
     setShowAddModal(false);
     setEditingClass(null);
     setShowDetailModal(false);
@@ -281,7 +313,8 @@ export default function GolfClassesPage() {
       throw error;
     }
 
-    await fetchClasses();
+    clearSyncFailed(selectedClass.id);
+    await fetchClasses({ silent: true });
     setShowDetailModal(false);
     setSelectedClass(null);
     fairwayToast.success('Class deleted', { description: 'Removed from your schedule and calendar.' });
@@ -440,10 +473,13 @@ export default function GolfClassesPage() {
           if (!result) return;
           const source = freshPairs[i]?.source;
           const label = source?.course_code || source?.course_name || 'A class';
+          const insertedId = data[i]?.id;
           if (!result.success) {
             syncFailures.push(`${label}: ${result.error ?? 'Unknown error'}`);
+            if (insertedId) markSyncFailed(insertedId);
             return;
           }
+          if (insertedId) clearSyncFailed(insertedId);
           // A sync that succeeded and wrote NOTHING is the failure mode that
           // makes every other defect in this importer silent: the class row
           // exists, no error is raised, and the calendar stays empty. Counted
@@ -451,6 +487,7 @@ export default function GolfClassesPage() {
           // invisible otherwise.
           if (result.noMeetings) {
             syncFailures.push(`${label}: ${result.noMeetingsReason ?? 'no meetings were scheduled'}`);
+            if (insertedId) markSyncFailed(insertedId);
           }
         });
       }
@@ -461,7 +498,7 @@ export default function GolfClassesPage() {
       const skippedNote = duplicateNames.length > 0
         ? `${duplicateNames.length} already on your schedule and skipped.`
         : null;
-      await fetchClasses();
+      await fetchClasses({ silent: true });
       setShowConfirmModal(false);
       setParsedClasses([]);
 
@@ -563,7 +600,8 @@ export default function GolfClassesPage() {
         if (error) throw error;
       }
 
-      await fetchClasses();
+      removed.forEach(clearSyncFailed);
+      await fetchClasses({ silent: true });
       setShowDeleteAllConfirm(false);
 
       if (failed.length > 0) {
@@ -643,6 +681,7 @@ export default function GolfClassesPage() {
         onImportSchedule={() => setShowUploadModal(true)}
         onClassClick={handleClassClick}
         onDeleteAll={handleDeleteAllClasses}
+        failedSyncIds={failedSyncIds}
       />
 
       <AddClassModal

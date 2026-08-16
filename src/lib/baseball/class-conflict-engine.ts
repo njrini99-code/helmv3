@@ -187,42 +187,67 @@ function normalizeDays(raw: string[]): Weekday[] {
   return WEEKDAYS.filter((d) => out.has(d));
 }
 
-/** Weekday of an ISO timestamp in a given IANA tz (defaults to local). */
-function weekdayOf(iso: string, timeZone?: string): Weekday | null {
+/**
+ * Weekday of an ISO timestamp in a given IANA tz.
+ *
+ * HONESTY: a class's day/time is stored as program-local wall-clock; an
+ * obligation is a UTC instant. Reading the obligation's weekday WITHOUT a
+ * known program timezone previously fell back to `d.getDay()` — the
+ * process's runtime zone, which is UTC in production (Vercel, no TZ
+ * override anywhere in the repo). That silently substitutes "the server
+ * happens to run in UTC" for "we know the program's zone", which can flip
+ * the weekday for an obligation near local midnight and is exactly the kind
+ * of fabricated inference this engine's honesty invariants forbid. A
+ * missing or invalid timeZone now yields `null` (not derivable) — same as a
+ * missing time — never a guess.
+ */
+function weekdayOf(iso: string, timeZone: string | null | undefined): Weekday | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  let idx: number;
-  if (timeZone) {
+  const tz = timeZone?.trim();
+  if (!tz) return null;
+  try {
     // Use Intl to get the weekday in the team's tz, then map to index.
     const wd = new Intl.DateTimeFormat('en-US', {
       weekday: 'short',
-      timeZone,
+      timeZone: tz,
     }).format(d);
-    idx = WEEKDAYS.indexOf(wd as Weekday);
+    const idx = WEEKDAYS.indexOf(wd as Weekday);
     if (idx < 0) return null;
-  } else {
-    idx = d.getDay();
+    return WEEKDAYS[idx] ?? null;
+  } catch {
+    // An invalid/malformed IANA string (e.g. corrupt settings data) must
+    // degrade honestly, never throw and never silently fall back to the
+    // server's zone.
+    return null;
   }
-  return WEEKDAYS[idx] ?? null;
 }
 
-/** Local wall-clock minutes-since-midnight of an ISO ts (optionally in a tz). */
-function clockMinutesOf(iso: string, timeZone?: string): number | null {
+/**
+ * Program-local wall-clock minutes-since-midnight of an ISO ts.
+ *
+ * Same honesty rule as weekdayOf: no known program timezone => not
+ * derivable => null, never the server's runtime clock.
+ */
+function clockMinutesOf(iso: string, timeZone: string | null | undefined): number | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  if (timeZone) {
+  const tz = timeZone?.trim();
+  if (!tz) return null;
+  try {
     const parts = new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
-      timeZone,
+      timeZone: tz,
     }).formatToParts(d);
     const h = Number(parts.find((p) => p.type === 'hour')?.value ?? 'NaN');
     const m = Number(parts.find((p) => p.type === 'minute')?.value ?? 'NaN');
     if (Number.isNaN(h) || Number.isNaN(m)) return null;
     return (h % 24) * 60 + m;
+  } catch {
+    return null;
   }
-  return d.getHours() * 60 + d.getMinutes();
 }
 
 /** Overlap (minutes) of two [start,end) wall-clock intervals; 0 if disjoint. */
@@ -301,8 +326,17 @@ export function detectClassConflictsForPlayer(
   opts: DetectConflictsOptions = {},
 ): DerivedConflict[] {
   const cfg = { ...DEFAULTS, ...opts };
-  const tz = opts.timeZone;
+  const tz = opts.timeZone?.trim() || null;
   const out: DerivedConflict[] = [];
+
+  // HONESTY: without a known program timezone we cannot honestly place an
+  // obligation's UTC instant on the same clock as a class's local wall-clock
+  // day/time. Silently computing against the server's runtime zone would
+  // fabricate a conflict (or miss a real one) from data we don't have —
+  // never emit a false high from missing data (file header). Surface this
+  // upstream as a data-quality gap (no program timezone configured), not an
+  // academic-conflict signal.
+  if (!tz) return out;
 
   for (const cls of classes) {
     const cStart = parseClockToMinutes(cls.startTime);

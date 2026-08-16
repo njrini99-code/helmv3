@@ -883,7 +883,14 @@ export function FairwayEventEditor({
                     aria-pressed={active}
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
-                      'focus-visible:ring-accent-500/40',
+                      // UiButton's base style hardcodes `ring-offset-white`
+                      // (src/components/ui/button.tsx); twMerge only dedupes
+                      // within the same ring-offset-* group, so the color
+                      // override below doesn't touch it — a bright white
+                      // square flashes around the ring in dark mode without
+                      // this explicit override, matching FairwayDayStrip /
+                      // FairwayEventCard's own `ring-offset-canvas` convention.
+                      'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                       active
                         ? 'bg-accent-750 text-text-on-accent shadow-flat'
                         : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
@@ -1091,7 +1098,7 @@ export function FairwayEventEditor({
                       })
                     }
                     disabled={locked || attendeesLoading || allPlayersSelected}
-                    className="h-auto p-0 font-fw-sans text-caption font-medium text-accent-700 underline-offset-2 hover:underline disabled:no-underline disabled:opacity-40"
+                    className="h-auto p-0 font-fw-sans text-caption font-medium text-accent-700 underline-offset-2 hover:underline focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas disabled:no-underline disabled:opacity-40"
                   >
                     {attendeeQuery.trim() ? `Select ${visiblePlayers.length} shown` : 'Select all'}
                   </UiButton>
@@ -1100,7 +1107,7 @@ export function FairwayEventEditor({
                     type="button"
                     onClick={() => setFormData({ ...formData, attendeeIds: [] })}
                     disabled={locked || attendeesLoading || formData.attendeeIds.length === 0}
-                    className="h-auto p-0 font-fw-sans text-caption font-medium text-text-secondary underline-offset-2 hover:underline disabled:no-underline disabled:opacity-40"
+                    className="h-auto p-0 font-fw-sans text-caption font-medium text-text-secondary underline-offset-2 hover:underline focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas disabled:no-underline disabled:opacity-40"
                   >
                     Clear
                   </UiButton>
@@ -1149,7 +1156,7 @@ export function FairwayEventEditor({
                         aria-pressed={selected}
                         className={cn(
                           'flex items-center gap-2.5 rounded-fw-md border p-2 text-left transition-colors',
-                          'focus-visible:ring-accent-500/40',
+                          'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                           selected
                             ? 'border-accent-500 bg-accent-50'
                             : 'border-border-subtle bg-surface hover:bg-surface-tint',
@@ -1217,6 +1224,11 @@ export function FairwayEventEditor({
                       {conflicts.conflicts.slice(0, 4).map((c, i) => (
                         <li key={`${c.userId}-${i}`} className="font-fw-sans text-caption text-fw-warning-ink">
                           {c.userName} — {c.conflictingEvent.title}
+                          {c.conflictingEvent.type === 'class' ? (
+                            <span className="ml-1 text-fw-warning-ink/70">(class)</span>
+                          ) : c.conflictingEvent.type === 'blocked' ? (
+                            <span className="ml-1 text-fw-warning-ink/70">(blocked time)</span>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
@@ -1228,7 +1240,7 @@ export function FairwayEventEditor({
                             variant="ghost"
                             type="button"
                             onClick={() => selectSuggestedTime(s)}
-                            className="rounded-full border border-border-subtle bg-surface px-2.5 py-1 font-fw-mono text-caption tabular-nums text-text-secondary transition-colors hover:bg-surface-tint focus-visible:ring-accent-500/40"
+                            className="rounded-full border border-border-subtle bg-surface px-2.5 py-1 font-fw-mono text-caption tabular-nums text-text-secondary transition-colors hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
                           >
                             {s.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                           </UiButton>
@@ -1274,7 +1286,7 @@ export function FairwayEventEditor({
                         aria-pressed={active}
                         className={cn(
                           'inline-flex items-center rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
-                          'focus-visible:ring-accent-500/40',
+                          'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                           active
                             ? 'bg-accent-700 text-text-on-accent shadow-flat'
                             : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
@@ -1301,8 +1313,13 @@ export function FairwayEventEditor({
                             aria-pressed={selected}
                             aria-label={day.long}
                             className={cn(
-                              'grid h-8 w-8 place-items-center rounded-full font-fw-sans text-caption font-medium transition-colors disabled:opacity-50',
-                              'focus-visible:ring-accent-500/40',
+                              'relative grid h-8 w-8 place-items-center rounded-full font-fw-sans text-caption font-medium transition-colors disabled:opacity-50',
+                              // Invisible hit-slop expands the 32px visual chip to the
+                              // 44px WCAG 2.2 AA touch-target floor without growing seven
+                              // circles past the modal's mobile content width — same
+                              // technique as ModalShell's close button (CLOSE_BUTTON_CLASS).
+                              "before:absolute before:-inset-1.5 before:content-['']",
+                              'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                               selected
                                 ? 'bg-accent-750 text-text-on-accent shadow-flat'
                                 : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',

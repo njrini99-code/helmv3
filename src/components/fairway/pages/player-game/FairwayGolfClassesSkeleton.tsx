@@ -46,8 +46,13 @@ export function FairwayGolfClassesSkeleton() {
               <Skeleton className="h-9 w-72 max-w-full" />
               <Skeleton className="h-4 w-64 max-w-full" />
             </div>
+            {/* Only "Add class" + "Import" — guaranteed to render on every
+                load. "Delete all" is conditional on the player already
+                having classes, which this route-level skeleton (fetched
+                client-side, before any data exists) cannot know in advance;
+                promising a 3rd button that may not appear is worse than
+                omitting one that then pops in. */}
             <div className="flex shrink-0 items-center gap-2 sm:ml-auto sm:justify-end">
-              <Skeleton className="h-8 w-24 rounded-fw-md" />
               <Skeleton className="h-8 w-20 rounded-fw-md" />
               <Skeleton className="h-9 w-28 rounded-fw-md" />
             </div>
@@ -68,10 +73,19 @@ export function FairwayGolfClassesSkeleton() {
             </div>
           </div>
 
-          {/* ════════════ 3 · WEEK TIMELINE (time-axis grid) ═════════ */}
+          {/* ════════════ 3 · WEEK TIMELINE (time-axis grid) ═════════
+              Desktop is a ~560px grid; mobile swaps to a day-picker + a short
+              list of time-railed rows — a single flat block matched neither
+              shape (undershot the desktop grid, looked nothing like mobile). */}
           <section className="flex flex-col gap-3">
             <Skeleton className="ml-1 h-3 w-24" />
-            <Skeleton className="h-[420px] w-full rounded-card" />
+            <Skeleton className="hidden h-[560px] w-full rounded-card md:block" />
+            <div className="flex flex-col gap-3 md:hidden">
+              <Skeleton className="h-9 w-full rounded-fw-md" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-[60px] w-full rounded-fw-md" />
+              ))}
+            </div>
           </section>
 
           {/* ════════════ 4 · ALL CLASSES (2-col roster) ══════════════ */}

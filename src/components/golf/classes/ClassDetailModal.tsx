@@ -73,9 +73,12 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         aria-labelledby="class-detail-title"
       >
         {/* Color header */}
+        {/* `--fw-color-accent-500` (NOT `--color-primary-600`, which has no
+            dark-mode override and stays the flat light-mode green under dark
+            theme) — matches FairwayGolfClasses.tsx's own DOT_FALLBACK. */}
         <div
           className="h-3"
-          style={{ backgroundColor: classData.color || 'var(--color-primary-600)' }}
+          style={{ backgroundColor: classData.color || 'var(--fw-color-accent-500)' }}
         />
 
         {/* Header */}
