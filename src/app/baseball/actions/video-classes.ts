@@ -41,6 +41,7 @@ import {
   withBaseballAction,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import { resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
 import { appendTimelineEvent } from '@/lib/baseball/timeline-writer';
 import { normalizeConfidence } from '@/lib/baseball/source-record';
 import {
@@ -647,6 +648,15 @@ export const runClassConflictDetection = withBaseballAction(
     }
     const teamHasTravel = obligations.some((o) => o.kind === 'travel');
 
+    // --- Resolve the program timezone ---------------------------------------
+    // Classes store program-local wall-clock time; baseball_events.start_time
+    // is UTC. The engine needs a real IANA timezone to compare them honestly
+    // — it refuses to guess (see class-conflict-engine.ts). `input.timeZone`
+    // lets a caller override for testing; production always resolves the
+    // team's configured zone (baseball_teams.timezone, the same source
+    // contract-day.ts uses — "This mirrors class-conflict-engine.ts").
+    const timeZone = input?.timeZone ?? (await resolveTeamTimezone(supabase, teamId));
+
     // --- Run the pure engine per player ------------------------------------
     const byPlayer = new Map<string, typeof classes>();
     for (const c of classes) {
@@ -679,7 +689,7 @@ export const runClassConflictDetection = withBaseballAction(
         classInputs,
         obligations,
         playerCtx,
-        { timeZone: input?.timeZone },
+        { timeZone },
       );
       allConflicts.push(...conflicts);
     }
