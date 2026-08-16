@@ -5,6 +5,7 @@ paths:
   - "src/lib/inngest/**"
   - "src/lib/email/**"
   - "src/lib/notifications/**"
+verified: unverified  # never re-checked against code — do not trust without grepping first
 ---
 
 ## Product integrations

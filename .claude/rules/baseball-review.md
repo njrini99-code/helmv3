@@ -5,6 +5,7 @@ paths:
   - "src/lib/recruiting/**"
   - "src/components/baseball/**"
   - "src/app/api/baseball/**"
+verified: unverified  # never re-checked against code — do not trust without grepping first
 ---
 
 # BaseballHelm review checklist

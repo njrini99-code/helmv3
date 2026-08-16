@@ -229,6 +229,48 @@ ALL golf tables use the `golf_` prefix. Never query without it.
 
 ---
 
+## `created_at` is NOT freshness — read this before querying a timestamp
+
+*Measured against production 2026-08-16.*
+
+Several tables **UPDATE a row in place** when the engine re-derives it, and only
+INSERT a genuinely new one. On those tables `created_at` means **"first ever
+detected"** and never moves again. `updated_at` is the only honest freshness
+signal.
+
+| table | rows | rows where `updated_at > created_at` |
+|---|---|---|
+| `golf_causal_relationships` | 5,641 | **5,518 (97.8%)** |
+| `golf_coach_insights` | 596 | **588 (98.7%)** |
+| `golf_patterns_v2` | 538 | 308 (57%) |
+| `golf_insight_effectiveness` | 5,587 | 102 |
+| `golf_player_focus_areas` | 25 | 10 |
+
+**This has produced two real production bugs and two false alarms:**
+
+- The Triage Desk ranked and aged insights on `created_at`, so every genuinely
+  fresh insight scored zero and the desk showed "0 NEW THIS WEEK" on a day 188
+  rows had changed. Fixed in #1449.
+- `causal-relationships.ts` ordered by `created_at`, which decides **which
+  duplicate survives dedup** — so the surviving row could be one the engine had
+  stopped confirming weeks earlier. Fixed in #1460.
+- Twice, `SELECT max(created_at)` was used to check "is this engine still
+  running?" and returned a date weeks old while the engine had run **minutes**
+  earlier. Both times the conclusion "the engine is dead" was wrong.
+
+**Rules of thumb**
+
+- Freshness, recency ranking, staleness checks, "is this still running?" →
+  **`updated_at`**.
+- `created_at` answers exactly one question: when did this first appear.
+- Before drawing any conclusion from a timestamp, check whether the writer
+  UPDATES in place. `grep -n "\.update(" <writer>` is the whole check.
+- `ORDER BY updated_at DESC` puts NULLs first in Postgres. On the tables above
+  `updated_at` is `NOT NULL DEFAULT now()`, so this is currently safe — verify
+  before relying on it elsewhere.
+
+---
+
 ## Auto-generated inventory: tables
 
 <!-- AUTOGEN:tables:start -->

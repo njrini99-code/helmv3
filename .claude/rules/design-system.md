@@ -2,6 +2,7 @@
 paths:
   - "**/*.tsx"
   - "**/*.css"
+verified: 2026-08-16  # re-checked against code this date
 ---
 
 ## Design System

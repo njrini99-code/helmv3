@@ -1,3 +1,7 @@
+---
+verified: unverified  # never re-checked against code — do not trust without grepping first
+---
+
 ## Code Review Tooling
 
 > 2026-07-20: the external AI reviewers (CodeRabbit, Greptile) were
