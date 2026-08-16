@@ -27,6 +27,62 @@
 //   - buttons/links with no accessible name (screen-reader dead ends)
 //   - images with no alt text
 //   - tap targets under 44px (Apple HIG minimum)
+//
+// ---------------------------------------------------------------------------
+// WHAT THIS HARNESS USED TO GET WRONG (all fixed 2026-08-15; read before
+// trusting any pre-2026-08-15 report in docs/ui-audits/)
+// ---------------------------------------------------------------------------
+// The 2026-08-15 post-deploy run produced 105 findings. Roughly 94 of them were
+// artifacts of the harness, not defects in the app. Six separate bugs, each of
+// which made a CORRECT implementation look broken — the worst failure mode a
+// checker can have, because it trains people to ignore it:
+//
+//  1. TOUCH NEVER EMULATED. The mobile context set only a 390px viewport, so
+//     `pointer: fine` still matched and every `[@media(pointer:coarse)]` rule
+//     was inert. Fairway's Button already grows 36px→44px on coarse pointers,
+//     so the harness measured the mouse size and filed 30 tap-target defects
+//     against code that was already right. Now `hasTouch: true, isMobile: true`.
+//
+//  2. ACCESSIBLE NAME FROM `innerText`. `innerText` is layout-dependent and
+//     returns '' for content that is present but not currently rendered — e.g.
+//     inside a collapsed <details>. That filed 18 correctly-labelled buttons on
+//     /my-game-profile as unnamed. Now derived from aria-label →
+//     aria-labelledby → visible descendant text → title → img alt → svg title.
+//
+//  3. `alt=""` COUNTED AS MISSING. The check was `!i.alt`, and the empty string
+//     is falsy — but `alt=""` is the CORRECT marking for a decorative image.
+//     The app-header logo (correctly `alt=""` inside a Link that carries
+//     aria-label="GolfHelm home") generated 46 findings, one per route, that no
+//     product change could ever clear. Now `getAttribute('alt') === null`.
+//
+//  4. SCREENSHOT FILENAME COLLISION. The slug was route__viewport with no
+//     persona, and 10 routes are walked by BOTH personas — so the player
+//     capture overwrote the coach one and a 94-visit run yielded 74 images.
+//     Now persona__route__viewport.
+//
+//  5. CLIPPED-TEXT DETECTOR SELECTED FOR CORRECT BEHAVIOUR.
+//     `scrollWidth > clientWidth` is true BY DEFINITION of `truncate` — content
+//     overflowing its box is what `text-overflow: ellipsis` is FOR. So the
+//     check fired preferentially on elements truncating on purpose. Now split
+//     three ways: `text-overflow: clip` on a fixed label is a real hard clip
+//     (P1); ellipsis WITH a title/aria-label carrying the full string is
+//     designed and dropped; ellipsis WITHOUT one is reported at P2.
+//
+//  6. TAP TARGETS MEASURED THE PAINTED BOX, NOT THE HIT AREA.
+//     The house idiom for a small chip with a full-size touch target is an
+//     absolutely-positioned `::before` with negative insets (`before:-inset-2`
+//     = 8px a side). `getBoundingClientRect()` cannot see a pseudo-element, so
+//     InstrumentTableToggle — 28px painted, 44px tappable, and commented as
+//     such — reported as a 28px violation. Now the ::before insets are added
+//     before the 44px test.
+//
+// The lesson the six share: a green check and a red check are equally useless
+// if the harness cannot reproduce the condition the code responds to. Before
+// filing anything from this script as a defect, ask what the probe can actually
+// see. Two checks it still CANNOT see, by construction:
+//   - anything that only manifests under prefers-reduced-motion (screenshots
+//     are taken ~2200ms in, after any reveal animation has run)
+//   - transient two-stage layout flashes (same settle delay erases them)
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -140,7 +196,7 @@ async function login(page, email, password) {
 // serialisable, so evaluate() resolves to `undefined` and every probe field
 // reads off nothing. That cost this script its first working run.
 const PROBE = () => {
-  const out = { overflow: null, noName: [], noAlt: 0, tiny: [], clipped: [], empty: false, counts: {} };
+  const out = { overflow: null, noName: [], noAlt: 0, tiny: [], clipped: [], truncated: [], empty: false, counts: {} };
   const de = document.documentElement;
   if (de.scrollWidth > de.clientWidth + 2) {
     // name the widest offender — "the page overflows" is useless without it
@@ -178,24 +234,144 @@ const PROBE = () => {
     if (r.right < 0 || r.bottom < 0) return true;
     return false;
   };
-  const named = (el) =>
-    (el.innerText || '').trim() || el.getAttribute('aria-label') ||
-    el.getAttribute('title') || (el.querySelector('img') || {}).alt || '';
+  /**
+   * The control's accessible name, approximating what a screen reader computes.
+   *
+   * This was `el.innerText || aria-label || title || img.alt`. `innerText` is
+   * LAYOUT-dependent: it returns '' for anything not currently rendered, even
+   * when the element is present, named and reachable. On /my-game-profile that
+   * reported 18 correctly-labelled buttons ("Make focus area" / "Acknowledge" /
+   * "Dismiss", 6 cards x 3) as unnamed, purely because they sit inside a
+   * COLLAPSED <details>. `getByRole('button', { name })` finds all 18.
+   *
+   * The fix must not overshoot into `textContent`, which would swing the other
+   * way and hide a real defect: on /documents the "New folder" label lives in
+   * `<span class="hidden sm:inline">`, and at 390px that span is `display:none`
+   * — genuinely excluded from the accessible name, leaving a bare icon button
+   * (`getByRole` finds 0 at mobile, 1 at desktop). That one MUST keep failing.
+   *
+   * So: walk the subtree and take text only from descendants that are not
+   * themselves hidden. A closed <details> does not set `display:none` on its
+   * descendants, so their text is collected; a `hidden sm:inline` span does,
+   * so its text is not. That single distinction separates the two cases.
+   *
+   * Deliberately does NOT consult srOnly(): the visually-hidden recipe
+   * (1px box / clip-path) is the CANONICAL way to label an icon button, and
+   * that text must count as a name.
+   */
+  const visibleText = (node) => {
+    if (node.nodeType === 3) return node.nodeValue || '';
+    if (node.nodeType !== 1) return '';
+    const cs = getComputedStyle(node);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return '';
+    if (node.getAttribute('aria-hidden') === 'true') return '';
+    let s = '';
+    node.childNodes.forEach((ch) => { s += visibleText(ch); });
+    return s;
+  };
+  const named = (el) => {
+    const aria = (el.getAttribute('aria-label') || '').trim();
+    if (aria) return aria;
+    const labelledBy = el.getAttribute('aria-labelledby');
+    if (labelledBy) {
+      const txt = labelledBy.split(/\s+/)
+        .map((id) => document.getElementById(id))
+        .filter(Boolean)
+        .map((n) => (n.textContent || '').trim())
+        .join(' ').trim();
+      if (txt) return txt;
+    }
+    const txt = visibleText(el).replace(/\s+/g, ' ').trim();
+    if (txt) return txt;
+    const title = (el.getAttribute('title') || '').trim();
+    if (title) return title;
+    const imgAlt = ((el.querySelector('img') || {}).alt || '').trim();
+    if (imgAlt) return imgAlt;
+    const svgTitle = (el.querySelector('svg title')?.textContent || '').trim();
+    return svgTitle || '';
+  };
   document.querySelectorAll('button, a[href], [role="button"], [role="tab"]').forEach((el) => {
     const r = el.getBoundingClientRect();
     if (r.width === 0 && r.height === 0) return;
     if (!named(el)) out.noName.push(el.tagName.toLowerCase() + (el.className || '').toString().slice(0, 40));
     // A skip link is not a tap target — it is never pointed at.
     if (srOnly(el)) return;
-    if ((r.width < 44 || r.height < 44) && r.width > 0)
-      out.tiny.push({ t: named(el).slice(0, 28), w: Math.round(r.width), h: Math.round(r.height) });
+    // Measure the HIT AREA, not the painted box.
+    //
+    // This repo's idiom for "small visual chip, full-size touch target" is an
+    // absolutely-positioned `::before` with negative insets — e.g.
+    // InstrumentTableToggle is `h-7` (28px) plus
+    // `before:absolute before:-inset-2` (8px every side) = a 44px hit area, and
+    // the source comment says exactly that. `getBoundingClientRect()` returns
+    // the element box and can never see a pseudo-element, so the documented,
+    // deliberate 44px idiom reported as a 28px violation. Same pattern in
+    // ChartFrame, PrivacySettingsForm and DocumentCard.
+    const slop = { x: 0, y: 0 };
+    try {
+      const pb = getComputedStyle(el, '::before');
+      const px = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+      if (pb && pb.content && pb.content !== 'none' && pb.content !== 'normal' && pb.position === 'absolute') {
+        slop.x = Math.max(0, -px(pb.left)) + Math.max(0, -px(pb.right));
+        slop.y = Math.max(0, -px(pb.top)) + Math.max(0, -px(pb.bottom));
+      }
+    } catch { /* pseudo-element unreadable — fall through to the class check */ }
+    // Belt and braces: if the computed pseudo-element could not be read, honour
+    // the Tailwind class that declares the intent.
+    if (!slop.x && !slop.y && /before:-inset-/.test((el.className || '').toString())) {
+      const m = (el.className || '').toString().match(/before:-inset-([\d.]+)/);
+      const rem = m ? parseFloat(m[1]) * 4 : 0; // tailwind spacing unit = 4px
+      slop.x = rem * 2; slop.y = rem * 2;
+    }
+    const hitW = r.width + slop.x, hitH = r.height + slop.y;
+    if ((hitW < 44 || hitH < 44) && r.width > 0)
+      out.tiny.push({ t: named(el).slice(0, 28), w: Math.round(hitW), h: Math.round(hitH) });
   });
-  document.querySelectorAll('img').forEach((i) => { if (!i.alt) out.noAlt++; });
+  // MISSING alt is a defect; `alt=""` is not — it is the CORRECT way to mark an
+  // image decorative. This was `!i.alt`, and the empty string is falsy, so every
+  // correctly-decorative image counted: the app-header logo
+  // (FairwayDashboardShell.tsx:205, `alt=""` inside a Link that already carries
+  // aria-label="GolfHelm home") produced 46 findings on the 2026-08-15 run,
+  // one per route. The right fix was already in the code and the check could
+  // never go green, which is how a check teaches people to ignore it.
+  document.querySelectorAll('img').forEach((i) => {
+    if (i.getAttribute('alt') === null) out.noAlt++;
+  });
+  /**
+   * Clipped text — but only where clipping is NOT the intended behaviour.
+   *
+   * `scrollWidth > clientWidth` is true BY DEFINITION for every element using
+   * `truncate`: content overflowing its box is exactly what `text-overflow:
+   * ellipsis` exists to handle. So the bare condition selects preferentially
+   * for elements that are truncating on purpose, and it reported 26 rows of
+   * which only a handful were defects.
+   *
+   * Split by whether the design provided an affordance:
+   *   - `text-overflow: clip`  -> HARD clip, no ellipsis, no way to read the
+   *     rest. On a label that never varies ("View as table") the container is
+   *     simply too small. Real defect -> `hard`.
+   *   - `ellipsis` + a title/aria-label carrying the full string -> the text
+   *     stays reachable. Working as designed -> dropped entirely.
+   *   - `ellipsis` with NO such affordance -> truncated and unreachable. Milder,
+   *     usually long user data -> `soft`, reported at P2.
+   */
+  const fullTextAffordance = (el) => {
+    let n = el;
+    for (let i = 0; i < 3 && n; i++) {
+      if ((n.getAttribute('title') || '').trim()) return true;
+      if ((n.getAttribute('aria-label') || '').trim()) return true;
+      n = n.parentElement;
+    }
+    return false;
+  };
   document.querySelectorAll('h1,h2,h3,p,span,div,button,a').forEach((el) => {
     if (el.children.length) return;
     if (srOnly(el)) return; // clipping is the POINT of a visually-hidden element
-    if (el.scrollWidth > el.clientWidth + 4 && el.clientWidth > 0 && (el.innerText || '').trim())
-      out.clipped.push((el.innerText || '').trim().slice(0, 40));
+    if (!(el.scrollWidth > el.clientWidth + 4 && el.clientWidth > 0)) return;
+    const text = (el.innerText || '').trim();
+    if (!text) return;
+    const ellipsis = getComputedStyle(el).textOverflow === 'ellipsis';
+    if (ellipsis && fullTextAffordance(el)) return; // designed truncation, full string reachable
+    (ellipsis ? out.truncated : out.clipped).push(text.slice(0, 40));
   });
   const t = (document.body.innerText || '').trim();
   out.empty = t.length < 40;
@@ -209,7 +385,7 @@ const PROBE = () => {
   return out;
 };
 
-async function auditRoute(page, route, vp, findings) {
+async function auditRoute(page, route, vp, findings, persona) {
   const errs = [];
   const net = [];
   const onErr = (e) => errs.push(String(e.message || e).slice(0, 160));
@@ -252,14 +428,26 @@ async function auditRoute(page, route, vp, findings) {
     findings.push({ route, vp: vp.name, sev: 'P1', what: `horizontal overflow by ${probe.overflow.by}px — widest: ${probe.overflow.el}` });
   if (probe.noName?.length)
     findings.push({ route, vp: vp.name, sev: 'P1', what: `${probe.noName.length} control(s) with no accessible name` });
+  // HARD clip (no ellipsis) is a defect: on a label that never varies the
+  // container is simply too small and the rest is unreadable.
   if (probe.clipped?.length)
-    findings.push({ route, vp: vp.name, sev: 'P1', what: `text clipped: ${probe.clipped.slice(0, 2).join(' | ')}` });
+    findings.push({ route, vp: vp.name, sev: 'P1', what: `text hard-clipped (no ellipsis): ${probe.clipped.slice(0, 2).join(' | ')}` });
+  // Ellipsis WITHOUT a title/aria-label carrying the full string: the text is
+  // unreachable, but it degrades gracefully. Reported, not alarmed about.
+  if (probe.truncated?.length)
+    findings.push({ route, vp: vp.name, sev: 'P2', what: `${probe.truncated.length} truncated with no full-text affordance, e.g. ${probe.truncated.slice(0, 2).join(' | ')}` });
   if (vp.name === 'mobile' && probe.tiny?.length > 2)
     findings.push({ route, vp: vp.name, sev: 'P2', what: `${probe.tiny.length} tap targets under 44px, e.g. ${probe.tiny.slice(0, 2).map((t) => `"${t.t}" ${t.w}x${t.h}`).join(', ')}` });
   if (probe.noAlt) findings.push({ route, vp: vp.name, sev: 'P2', what: `${probe.noAlt} image(s) with no alt text` });
 
   fs.mkdirSync(SHOTS, { recursive: true });
-  const slug = route.replace(/\//g, '_').replace(/^_/, '') + '__' + vp.name;
+  // Persona belongs in the filename. Without it the slug was route__viewport,
+  // and 10 routes are walked by BOTH personas — so the player capture silently
+  // overwrote the coach one and a 94-visit run produced 74 images. The coach's
+  // view of /dashboard, /rounds, /stats, /calendar, /messages, /announcements,
+  // /documents, /courses, /settings and /whats-new never reached disk, which is
+  // precisely where "same route, wrong persona's UI" bugs live.
+  const slug = persona + '__' + route.replace(/\//g, '_').replace(/^_/, '') + '__' + vp.name;
   try { await page.screenshot({ path: path.join(SHOTS, slug + '.png'), fullPage: false }); } catch {}
   return probe;
 }
@@ -270,7 +458,24 @@ async function runPersona(browser, name, email, password, routes, findings, cove
     return;
   }
   for (const vp of VIEWPORTS) {
-    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+    // The mobile context must emulate TOUCH, not merely a narrow window.
+    //
+    // Without `hasTouch`, a 390px-wide context still reports `pointer: fine`,
+    // so every `[@media(pointer:coarse)]` rule is inert. The Fairway Button
+    // primitive already does the right thing — `min-h-[36px]` for a mouse and
+    // `[@media(pointer:coarse)]:min-h-[44px]` for touch
+    // (controls/button.tsx:124, and h-9→h-11 for icon buttons at :268) — so the
+    // harness was measuring the MOUSE size and reporting it as a mobile
+    // tap-target defect. That produced 30 findings against code that was
+    // already correct.
+    //
+    // `isMobile` additionally sets a mobile UA + meta-viewport handling, which
+    // is the more faithful emulation; `hasTouch` alone is what flips
+    // `pointer: coarse` if isMobile ever proves troublesome on chromium.
+    const ctx = await browser.newContext({
+      viewport: { width: vp.width, height: vp.height },
+      ...(vp.name === 'mobile' ? { hasTouch: true, isMobile: true } : {}),
+    });
     const page = await ctx.newPage();
     const ok = await login(page, email, password);
     if (!ok) {
@@ -280,7 +485,7 @@ async function runPersona(browser, name, email, password, routes, findings, cove
     }
     console.log(`  ${name}/${vp.name}: logged in`);
     for (const r of routes) {
-      const p = await auditRoute(page, r, vp, findings);
+      const p = await auditRoute(page, r, vp, findings, name);
       covered.add(`${name} ${r}`);
       process.stdout.write(`    ${vp.name} ${r} ${p?.counts ? `(${p.counts.buttons}b/${p.counts.tabs}t)` : ''}\n`);
     }

@@ -137,6 +137,11 @@ export default defineConfig({
             // green run here is evidence the detector works, not just that it
             // found nothing.
             'scripts/__tests__/icon-only-button-aria-label.test.mjs',
+            // Guards the accessible-name derivation inside ui-audit-golf.mjs's
+            // PROBE. It has to fail in BOTH directions: too permissive loses the
+            // real /documents dead end, too strict resurrects the 18 phantom
+            // findings that a collapsed <details> produced on 2026-08-15.
+            'scripts/__tests__/ui-audit-accname.test.mjs',
             // Promoted 2026-08 (issue #1194) — the second wave of
             // previously-dead `node --test` guards, all verified passing
             // before promotion. Named individually rather than swept in by
