@@ -28,13 +28,32 @@ export interface CitationVerification {
   unmatched_tokens: string[];
 }
 
+/**
+ * Every numeric token this verifier would find in `text`.
+ *
+ * Exported so a caller can register the figures it puts IN FRONT of the model
+ * using the exact same scanner that will later judge them. A prompt is allowed
+ * to contain numbers — the round review injects composite-insight titles like
+ * "3-5 ft putting: 47%" verbatim — and any figure shown to the model but absent
+ * from the evidence set is a false positive by construction: the model is
+ * punished for using what it was handed.
+ *
+ * Sharing this function is the point. Two independent regexes drifting apart is
+ * exactly how a number becomes registerable-but-unverifiable, or vice versa.
+ */
+export function extractNumericTokens(text: string): string[] {
+  const out: string[] = [];
+  for (const match of text.matchAll(NUMERIC_RE)) {
+    if (match[1]) out.push(match[1]);
+  }
+  return out;
+}
+
 export function verifyCitations(text: string, evidence: EvidenceClaim[]): CitationVerification {
   const allowedValues = new Set(evidence.map((e) => normalize(String(e.value))));
 
   const unmatched: string[] = [];
-  for (const match of text.matchAll(NUMERIC_RE)) {
-    const tok = match[1];
-    if (!tok) continue;
+  for (const tok of extractNumericTokens(text)) {
     const normalized = normalize(tok);
     if (!allowedValues.has(normalized)) {
       unmatched.push(tok);
