@@ -546,6 +546,59 @@ export async function getPendingRounds(): Promise<OfflineRound[]> {
 }
 
 /**
+ * Rows in `store` whose `_sync_status` equals `status`, oldest-first.
+ *
+ * The `getPending*` readers above are the 'pending' case, written out
+ * longhand. This backs the `getFailed*` readers below.
+ *
+ * WHY getFailed* EXISTS: `SyncEngine.retryFailed()` — the only path that can
+ * resurrect an item whose sync failed — used to call `getPending*()` and then
+ * filter for `_sync_status === 'failed'`. Every row those readers return is
+ * 'pending' by construction (they query `index.getAll('pending')`), so that
+ * predicate could never match and NOTHING was ever requeued. Because
+ * `markRoundFailed` flips status to 'failed', and the pending queries exclude
+ * 'failed', one failed sync stranded a round in IndexedDB permanently and the
+ * player's "Retry sync" button did nothing. See retry-failed.test.ts.
+ */
+async function getByStatus<T extends OfflineMetadata>(
+  store: string,
+  status: SyncStatus
+): Promise<T[]> {
+  const transaction = await openShotTransaction(store, 'readonly');
+
+  return new Promise((resolve, reject) => {
+    const objectStore = transaction.objectStore(store);
+    const index = objectStore.index('_sync_status');
+    const request = index.getAll(status);
+
+    request.onsuccess = () => {
+      const rows = request.result as T[];
+      rows.sort((a, b) =>
+        new Date(a._created_offline).getTime() - new Date(b._created_offline).getTime()
+      );
+      resolve(rows);
+    };
+
+    request.onerror = () => reject(new Error(`Failed to get ${status} rows from ${store}: ${request.error?.message || 'unknown error'}`));
+  });
+}
+
+/** Rounds whose last sync attempt failed — the retry candidates. */
+export async function getFailedRounds(): Promise<OfflineRound[]> {
+  return getByStatus<OfflineRound>(ROUNDS_STORE, 'failed');
+}
+
+/** Holes whose last sync attempt failed — the retry candidates. */
+export async function getFailedHoles(): Promise<OfflineHole[]> {
+  return getByStatus<OfflineHole>(HOLES_STORE, 'failed');
+}
+
+/** Shots whose last sync attempt failed — the retry candidates. */
+export async function getFailedShots(): Promise<OfflineShot[]> {
+  return getByStatus<OfflineShot>(SHOTS_STORE, 'failed');
+}
+
+/**
  * Mark a round as synced
  */
 export async function markRoundSynced(offlineId: string, serverId?: string): Promise<void> {
