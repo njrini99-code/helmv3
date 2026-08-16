@@ -162,10 +162,46 @@ describe('attentionScore', () => {
     expect(two).toBe(one + 1);
   });
 
-  it('rewards recency via the freshest signal in the group', () => {
+  // REPLACES 'rewards recency via the freshest signal in the group', which
+  // asserted `fresh > stale`. That contract was removed deliberately, and the
+  // old test is kept in spirit — inverted — rather than deleted, so the
+  // decision is pinned instead of merely disappearing from the suite.
+  //
+  // WHY: `ageDays` is derived from `created_at`, which is the row's INSERT
+  // BATCH, not when its content was computed. Insights upsert by signature, so
+  // a row created in June and recomputed this morning still reports ~55 days
+  // old. 68% of live rows were born in June.
+  //
+  // The consequence was the opposite of the test's name: every genuinely fresh
+  // insight scored ZERO recency bonus, so the term systematically demoted new
+  // content. The same column also printed "0 NEW THIS WEEK" on the Triage Desk
+  // while 188 rows had changed in 36 hours.
+  //
+  // `updated_at` is NOT the fix — a DB trigger bumps it on any row update,
+  // including a coach dismissing the insight, so ranking by it would promote
+  // an insight for being dismissed. Until an explicit `content_generated_at`
+  // exists there is no trustworthy freshness signal, and a uniform 0 is the
+  // honest answer.
+  it('does NOT reward recency — created_at is an insert batch, not content age', () => {
     const fresh = attentionScore({ worstSeverity: 'medium', signals: [signal({ ageDays: 0 })] });
     const stale = attentionScore({ worstSeverity: 'medium', signals: [signal({ ageDays: 30 })] });
-    expect(fresh).toBeGreaterThan(stale);
+    expect(fresh).toBe(stale);
+  });
+
+  it('scores only on severity and volume while no freshness signal is trusted', () => {
+    // Pins the whole contract, so restoring a recency term is a deliberate act
+    // that breaks this test rather than a silent regression.
+    const base = attentionScore({ worstSeverity: 'medium', signals: [signal({ ageDays: 0 })] });
+    const olderSameShape = attentionScore({
+      worstSeverity: 'medium',
+      signals: [signal({ ageDays: 365 })],
+    });
+    const extraSignal = attentionScore({
+      worstSeverity: 'medium',
+      signals: [signal({ id: 'a', ageDays: 0 }), signal({ id: 'b', ageDays: 365 })],
+    });
+    expect(olderSameShape).toBe(base);
+    expect(extraSignal).toBe(base + 1);
   });
 
   it('is deterministic for the same inputs', () => {

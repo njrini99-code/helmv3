@@ -47,7 +47,9 @@ export function BriefBand({ verdict, counts, lastScanLabel, scanning, onScan }: 
         <p className="max-w-2xl font-fw-sans text-body-lg text-text-on-accent">{verdict}</p>
         <div className="flex flex-wrap items-center gap-5 pt-0.5">
           <CountChip label="Urgent" value={counts.urgent} />
-          <CountChip label="New this week" value={counts.newThisWeek} />
+          {/* "New this week" removed: it counted `created_at <= 7d`, so it read
+              0 on a day 188 rows were recomputed. A confident zero is worse
+              than no counter. Restore with `content_generated_at`. */}
           <CountChip label="Players flagged" value={counts.playersFlagged} />
         </div>
       </div>

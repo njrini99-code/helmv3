@@ -22,6 +22,14 @@ export interface GroupedSignal {
   strokeImpact: number | null;
   playerId: string | null;
   supersededCount: number;
+  /**
+   * The insight's `evidence` JSON, so the Triage Desk can show the SAME
+   * sample/window/benchmark block every other insight surface shows. Untyped
+   * here on purpose: this module is the frozen grouping contract and must not
+   * depend on the render layer's `InsightEvidence` shape. `null` for patterns,
+   * which have no evidence blob, and for v2-era insights minted before it.
+   */
+  evidence?: unknown | null;
 }
 
 export interface SignalGroup {
@@ -136,10 +144,26 @@ export function collapseDuplicates(signals: GroupedSignal[]): GroupedSignal[] {
 // Scoring
 // ---------------------------------------------------------------------------
 
-function recencyBonus(ageDays: number): number {
-  if (ageDays <= 1) return 3;
-  if (ageDays <= 3) return 2;
-  if (ageDays <= 7) return 1;
+/**
+ * NEUTRALISED — every signal scores the same recency term, on purpose.
+ *
+ * This awarded +3/+2/+1 for `ageDays` ≤1/≤3/≤7, and `ageDays` comes from
+ * `golf_coach_insights.created_at`. Insights upsert by `signature`, so
+ * `created_at` is the INSERT-batch date and never moves — 68% of live rows are
+ * June-born. The effect was the exact inverse of the intent: a genuinely fresh
+ * insight, recomputed this morning into a June-born row, scored **zero**
+ * recency bonus, while nothing could ever score above zero because no row is
+ * younger than its batch. Freshness wasn't merely ignored in `attentionScore`;
+ * it was unreachable.
+ *
+ * NOT re-pointed at `updated_at`: a trigger bumps that column on any write,
+ * including dismissal and acknowledgement, so it would rank an insight highest
+ * because a coach just dismissed it.
+ *
+ * A uniform 0 is truthful; +3 for an insert batch is not. Restore a real bonus
+ * when `content_generated_at` exists and pass THAT through as `ageDays`.
+ */
+function recencyBonus(_ageDays: number): number {
   return 0;
 }
 

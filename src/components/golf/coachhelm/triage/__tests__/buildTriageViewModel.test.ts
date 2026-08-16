@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import {
+  BASE_QUEUE_FILTERS,
   resolveTriageView,
   resolveQueueFilter,
   filterGroupSignals,
@@ -13,7 +14,6 @@ import {
   formatRelativeScanTime,
   formatCategoryLabel,
   severityLabel,
-  formatAgeDays,
 } from '../buildTriageViewModel';
 
 function signal(overrides: Partial<GroupedSignal> = {}): GroupedSignal {
@@ -68,10 +68,15 @@ describe('resolveQueueFilter', () => {
     expect(resolveQueueFilter('patterns')).toBe('patterns');
   });
 
+  it('degrades a bookmarked ?filter=new to the full queue', () => {
+    // The New chip was removed (it filtered on `created_at`). An old link must
+    // land on everything rather than on an empty queue.
+    expect(resolveQueueFilter('new')).toBe('all');
+  });
+
   it('passes native chip keys through unchanged', () => {
     expect(resolveQueueFilter('all')).toBe('all');
     expect(resolveQueueFilter('urgent')).toBe('urgent');
-    expect(resolveQueueFilter('new')).toBe('new');
   });
 
   it('passes a well-formed category: token through', () => {
@@ -106,11 +111,11 @@ describe('filterGroupSignals', () => {
     expect(result[0]!.signals.map((s) => s.id)).toEqual(['u']);
   });
 
-  it('"new" keeps signals aged 7 days or less', () => {
-    const fresh = signal({ id: 'fresh', ageDays: 3 });
-    const stale = signal({ id: 'stale', ageDays: 30 });
-    const result = filterGroupSignals([group({ signals: [fresh, stale] })], 'new');
-    expect(result[0]!.signals.map((s) => s.id)).toEqual(['fresh']);
+  it('offers no "new" chip — ageDays is the insert batch, not freshness', () => {
+    // Removed rather than fixed: `ageDays` comes from `created_at`, frozen by
+    // upsert-by-signature, so the chip hid current work while claiming to show
+    // the newest. Pinned as absent so a restore has to confront the reason.
+    expect(BASE_QUEUE_FILTERS.map((f) => f.key)).not.toContain('new');
   });
 
   it('"patterns" keeps only pattern-kind signals', () => {
@@ -128,9 +133,11 @@ describe('filterGroupSignals', () => {
   });
 
   it('re-derives worstSeverity from what is actually left after filtering', () => {
-    const high = signal({ id: 'h', severity: 'high', ageDays: 30 });
-    const low = signal({ id: 'l', severity: 'low', ageDays: 1 });
-    const result = filterGroupSignals([group({ worstSeverity: 'high', signals: [high, low] })], 'new');
+    // Filters on `kind` rather than the retired age chip; the behaviour under
+    // test is the re-derivation, not which chip triggered it.
+    const high = signal({ id: 'h', severity: 'high', kind: 'insight' });
+    const low = signal({ id: 'l', severity: 'low', kind: 'pattern' });
+    const result = filterGroupSignals([group({ worstSeverity: 'high', signals: [high, low] })], 'patterns');
     expect(result[0]!.signals.map((s) => s.id)).toEqual(['l']);
     expect(result[0]!.worstSeverity).toBe('low');
   });
@@ -225,32 +232,35 @@ describe('computeBriefCounts', () => {
     ];
     const counts = computeBriefCounts(groups);
     expect(counts.urgent).toBe(2);
-    expect(counts.newThisWeek).toBe(2);
     expect(counts.playersFlagged).toBe(2); // Team (playerId null) never counts as a "player"
+    // No `newThisWeek`. It counted `ageDays <= 7`, and ageDays is `created_at`
+    // — the insert batch — so it read 0 on a day 188 rows were recomputed.
+    // Asserted as ABSENT so a well-meaning restore has to confront the reason.
+    expect('newThisWeek' in counts).toBe(false);
   });
 
   it('returns all zeros for an empty queue', () => {
-    expect(computeBriefCounts([])).toEqual({ urgent: 0, newThisWeek: 0, playersFlagged: 0 });
+    expect(computeBriefCounts([])).toEqual({ urgent: 0, playersFlagged: 0 });
   });
 });
 
 describe('buildBriefVerdict', () => {
   it('reports an honest all-clear when there are no groups', () => {
-    expect(buildBriefVerdict([], { urgent: 0, newThisWeek: 0, playersFlagged: 0 })).toBe(
+    expect(buildBriefVerdict([], { urgent: 0, playersFlagged: 0 })).toBe(
       'All clear — no open signals right now.',
     );
   });
 
   it('names the top flagged player when urgent signals exist', () => {
     const groups = [group({ playerId: 'p1', playerName: 'Alex Rivera', signals: [signal({ severity: 'urgent' })] })];
-    const verdict = buildBriefVerdict(groups, { urgent: 1, newThisWeek: 1, playersFlagged: 1 });
+    const verdict = buildBriefVerdict(groups, { urgent: 1, playersFlagged: 1 });
     expect(verdict).toContain('1 urgent signal needs review');
     expect(verdict).toContain('Alex Rivera needs the most attention right now.');
   });
 
   it('reports a calm sentence when nothing is urgent but signals exist', () => {
     const groups = [group({ playerId: 'p1', playerName: 'Alex Rivera', signals: [signal({ severity: 'low' })] })];
-    const verdict = buildBriefVerdict(groups, { urgent: 0, newThisWeek: 0, playersFlagged: 1 });
+    const verdict = buildBriefVerdict(groups, { urgent: 0, playersFlagged: 1 });
     expect(verdict).toBe('Nothing urgent — Alex Rivera has the highest-priority open signal.');
   });
 });
@@ -287,10 +297,14 @@ describe('severityLabel', () => {
   });
 });
 
-describe('formatAgeDays', () => {
-  it('formats today/1d/Nd', () => {
-    expect(formatAgeDays(0)).toBe('Today');
-    expect(formatAgeDays(1)).toBe('1d ago');
-    expect(formatAgeDays(5)).toBe('5d ago');
+describe('signal age is not rendered from created_at', () => {
+  it('offers no age formatter, because no column can answer it yet', async () => {
+    // `formatAgeDays` was deleted with its two call sites (SignalRow,
+    // SignalDossier). `ageDays` derives from `golf_coach_insights.created_at`,
+    // the insert-batch date frozen by upsert-by-signature, so it printed
+    // "55d ago" for content recomputed that morning. `updated_at` cannot
+    // replace it either — a trigger bumps it on dismissal.
+    const mod = await import('../buildTriageViewModel');
+    expect('formatAgeDays' in mod).toBe(false);
   });
 });

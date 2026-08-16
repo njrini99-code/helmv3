@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/fairway';
 import type { GroupedSignal, SignalSeverity } from '@/lib/coachhelm/signal-grouping';
-import { formatAgeDays, formatCategoryLabel, severityLabel } from './buildTriageViewModel';
+import { formatCategoryLabel, severityLabel } from './buildTriageViewModel';
 import { toCoachVoice } from '@/lib/golf/claim-voice';
 
 const SEVERITY_DOT: Record<SignalSeverity, string> = {
@@ -112,9 +112,9 @@ export const SignalRow = forwardRef<HTMLAnchorElement, SignalRowProps>(function 
           {toCoachVoice(signal.claim || signal.title, subjectName)}
         </span>
       </span>
-      <span className="flex-shrink-0 font-fw-mono text-caption tabular-nums text-text-tertiary">
-        {formatAgeDays(signal.ageDays)}
-      </span>
+      {/* Age removed — `ageDays` is `created_at` (the insert batch), so this
+          printed "55d ago" for content recomputed the same morning. See the
+          note in SignalDossier. Restore with `content_generated_at`. */}
     </Link>
   );
 });

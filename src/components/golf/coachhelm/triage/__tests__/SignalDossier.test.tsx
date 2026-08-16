@@ -217,4 +217,58 @@ describe('SignalDossier — related context', () => {
     expect(root?.className).toContain('min-[940px]:h-full');
     expect(root?.className).toContain('min-[940px]:overflow-y-auto');
   });
+  /**
+   * The evidence block, and the two things it must get right.
+   *
+   * The dossier's section was headed "Evidence" and contained only a sentence —
+   * on the one surface a coach uses to DECIDE. Every other insight surface
+   * already rendered the sample size, window and benchmark from the `evidence`
+   * JSON. These pin the mount, and pin the one input with no evidence at all.
+   *
+   * Verified here rather than on screen deliberately: the branch cannot be
+   * rendered authenticated on localhost (the session cookie does not persist
+   * over http://localhost), so a test is the honest proof, not a screenshot.
+   */
+  it('renders the shared evidence block — sample size and window reach the coach', () => {
+    const current = makeSignal({
+      evidence: {
+        metric: 'putts_made_3_5ft_pct',
+        metric_label: '3-5 ft make rate',
+        your_value: 47,
+        your_value_display: '47%',
+        unit: 'percent',
+        sample_n: 43,
+        window_days: 77,
+        comparison_label: 'PGA Tour',
+        comparison_value: 91,
+        comparison_source: 'pga',
+        confidence: 0.8,
+        strokes_impact: 0.9,
+      },
+    });
+    render(<SignalDossier {...baseProps()} entry={{ signal: current, group: makeGroup([current]) }} />);
+    expect(screen.getByTestId('evidence-panel-compact')).toBeInTheDocument();
+    // The sample is the number a coach needs to judge the claim at all.
+    expect(screen.getByTestId('evidence-sample')).toHaveTextContent('43');
+    expect(screen.getByTestId('evidence-sample')).toHaveTextContent('77');
+  });
+
+  it('renders NO evidence shell for a pattern, which carries no evidence blob', () => {
+    // signal-groups.ts populates `evidence: null` for golf_patterns_v2 rows.
+    // An empty bordered panel would read as "we have evidence and it is blank".
+    const pattern = makeSignal({ kind: 'pattern', evidence: null });
+    render(<SignalDossier {...baseProps()} entry={{ signal: pattern, group: makeGroup([pattern]) }} />);
+    expect(screen.queryByTestId('evidence-panel-compact')).not.toBeInTheDocument();
+    // The prose claim still shows — the section is not empty, just honest.
+    expect(screen.getByText(/Short putts are costing strokes/)).toBeInTheDocument();
+  });
+
+  it('shows no age chip — created_at is an insert batch, not content age', () => {
+    const current = makeSignal({ ageDays: 55 });
+    const { container } = render(
+      <SignalDossier {...baseProps()} entry={{ signal: current, group: makeGroup([current]) }} />,
+    );
+    // Prod rendered "55d ago" here for content recomputed that morning.
+    expect(container.textContent).not.toMatch(/\d+d ago/);
+  });
 });
