@@ -354,10 +354,50 @@ describe('getUserBusyPeriods — unsynced classes expand within their term only'
   const TUESDAY = new Date(2026, 8, 15);
   const THURSDAY = new Date(2026, 8, 17);
 
+  // ── Why two window helpers, and not one ──────────────────────────────────
+  //
+  // `expandRecurringClass` takes the calendar day from the RUNTIME's zone
+  // (`current.getDay()`, `runtimeDateKey`) but resolves the class's wall clock
+  // in the TEAM's ('America/New_York' here — golf_team_settings is seeded
+  // EMPTY, so the code falls back to DEFAULT_TIMEZONE). The two only agree when
+  // the runner happens to sit in the team's zone, which is why this block was
+  // green on a UTC-4 laptop and red in CI: a 09:00 New York class is 13:00 UTC,
+  // and under Pacific/Kiritimati it lands outside a local-midnight window
+  // entirely. CI runs the suite under shifted zones to catch that, and did.
+  //
+  // On Vercel the runtime is UTC and every team is behind it, so the two agree
+  // in production. That is why this is fixed here and not in the expansion —
+  // but it makes the runner's zone a real input, so the windows have to stop
+  // depending on it:
+  //
+  //   dayWindow  — exactly the local day. Zone-independent for a NEGATIVE
+  //                assertion: a local Sunday is Sunday under every runner, so
+  //                a Monday/Wednesday/Friday class is skipped everywhere.
+  //   aroundDay  — the local day ±1. Guarantees a POSITIVE assertion finds its
+  //                occurrence however far the runner's zone shifts it. Safe
+  //                because it is only used where the neighbouring days are not
+  //                meeting days: for an M/W/F class, Monday is flanked by
+  //                Sunday and Tuesday, so exactly one meeting is still in range.
+  const TEAM_TZ = 'America/New_York';
+
   function dayWindow(day: Date): [Date, Date] {
     const start = new Date(day); start.setHours(0, 0, 0, 0);
     const end = new Date(day); end.setHours(23, 59, 59, 999);
     return [start, end];
+  }
+
+  function aroundDay(day: Date): [Date, Date] {
+    const start = new Date(day); start.setDate(start.getDate() - 1); start.setHours(0, 0, 0, 0);
+    const end = new Date(day); end.setDate(end.getDate() + 1); end.setHours(23, 59, 59, 999);
+    return [start, end];
+  }
+
+  /** The hour a coach actually reads off the calendar, in the team's zone. */
+  function hourIn(instant: Date, timeZone: string): number {
+    return Number(
+      new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hourCycle: 'h23' })
+        .format(instant),
+    );
   }
 
   function classRow(over: Row = {}): Row {
@@ -371,14 +411,21 @@ describe('getUserBusyPeriods — unsynced classes expand within their term only'
   it('expands a short-code meeting day the old full-name match missed', async () => {
     const tables = baseTables();
     tables.golf_player_classes.push(classRow());
-    const [start, end] = dayWindow(MONDAY);
+    const [start, end] = aroundDay(MONDAY);
 
     const busy = await getUserBusyPeriods('u1', start, end, createStubClient(tables));
 
     expect(busy).toHaveLength(1);
     expect(busy[0]!.type).toBe('class');
     expect(busy[0]!.title).toBe('MATH 2415 - Calculus III');
-    expect(busy[0]!.start.getHours()).toBe(9);
+    // 09:00 in the TEAM's zone. This read `.getHours()`, which returns 9 only
+    // on a machine that happens to be UTC-4.
+    expect(hourIn(busy[0]!.start, TEAM_TZ)).toBe(9);
+    // The control, so the line above cannot pass vacuously: 14 Sep 2026 is EDT
+    // (UTC-4), so 09:00 New York is exactly 13:00Z. The bug this file guards —
+    // `setHours` resolving in the runtime zone — put the block at 09:00Z, which
+    // still reads "9" to a naive check but is 05:00 to the coach.
+    expect(busy[0]!.start.toISOString()).toBe('2026-09-14T13:00:00.000Z');
   });
 
   it("reads 'T' as Tuesday and 'Th' as Thursday, never both", async () => {
@@ -386,7 +433,7 @@ describe('getUserBusyPeriods — unsynced classes expand within their term only'
     tables.golf_player_classes.push(classRow({ days: ['T'] }));
     const supabase = createStubClient(tables);
 
-    const onTuesday = await getUserBusyPeriods('u1', ...dayWindow(TUESDAY), supabase);
+    const onTuesday = await getUserBusyPeriods('u1', ...aroundDay(TUESDAY), supabase);
     const onThursday = await getUserBusyPeriods('u1', ...dayWindow(THURSDAY), supabase);
 
     expect(onTuesday).toHaveLength(1);
@@ -420,7 +467,7 @@ describe('getUserBusyPeriods — unsynced classes expand within their term only'
     // that is the more expensive error.
     const tables = baseTables();
     tables.golf_player_classes.push(classRow({ semester: null }));
-    const [start, end] = dayWindow(MONDAY);
+    const [start, end] = aroundDay(MONDAY);
 
     const busy = await getUserBusyPeriods('u1', start, end, createStubClient(tables));
 

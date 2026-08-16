@@ -977,9 +977,17 @@ function fillDefaults(partial: Partial<ParsedClass>): ParsedClass {
 // ============================================================================
 
 export function detectSemester(text: string): string {
+  // UTC, deliberately, and it is the ONLY zone that keeps this function's
+  // answer consistent with the windows it feeds. `inferTermForImport` compares
+  // in `utcDay`, and `parseSemesterDates` emits UTC date strings; reading the
+  // AMBIENT zone here mixed a local calendar day into a UTC comparison, so the
+  // same moment resolved to different terms in a browser (`AddClassModal`, the
+  // player's zone) and on Vercel (`schedule-vision`, UTC). At the 15 May and
+  // 15 August boundaries that divergence is a whole term — the exact two days
+  // this function exists to get right.
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
 
   const springMatch = text.match(/spring\s*(\d{4})?/i);
   const fallMatch = text.match(/fall\s*(\d{4})?/i);
@@ -1004,7 +1012,7 @@ export function detectSemester(text: string): string {
   // inferTermForImport() answers "the soonest term with real time left", which
   // is the term a student importing today is actually enrolling in, and is the
   // same rule the contradicted-label overrule uses.
-  const todayIso = `${year}-${String(month + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayIso = `${year}-${String(month + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
   return inferTermForImport(todayIso) ?? `Fall ${year}`;
 }
 
