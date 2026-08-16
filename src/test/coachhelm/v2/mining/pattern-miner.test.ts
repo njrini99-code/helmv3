@@ -287,15 +287,57 @@ describe('PatternMiner.generateDescription (bug #915 grammar fix, end-to-end)', 
 
   it('generateRecommendation is unaffected by the grammar fix (still player-voiced; the coach rewrite lives in patternToInsightVocabulary.ts)', () => {
     const miner = new PatternMiner('player-1') as unknown as Miner;
-    expect(miner.generateRecommendation([AFTER_5_DAYS], {})).toBe(
-      'Monitor this pattern and discuss with your coach.',
-    );
+    // Still SECOND-PERSON here — that is what this test guards. The coach-voice
+    // rewrite is patternToInsightVocabulary.ts's job, not the miner's.
+    expect(miner.generateRecommendation([AFTER_5_DAYS], {})).toMatch(/\byour?\b/);
     expect(
       miner.generateRecommendation(
         [{ field: 'days_since_last', operator: 'gte', value: 7, label: 'After 7+ days off' }],
         {},
       ),
     ).toBe('Consider a practice round before important events after extended breaks.');
+  });
+
+  // The generic fallback used to swallow every condition except
+  // `days_since_last >= 7`, which is why 27 of 596 production insights carry the
+  // identical sentence "Monitor this pattern and discuss with your coach."
+  // These lock in the conditions that ACTUALLY occur in golf_patterns_v2.
+  describe('generateRecommendation — no condition falls back to content-free filler', () => {
+    const FILLER = 'Monitor this pattern and discuss with your coach.';
+
+    const REAL_PRODUCTION_CONDITIONS: Array<[string, PatternCondition]> = [
+      ['back-to-back rounds (19 in prod — the most common)', {
+        field: 'days_since_last', operator: 'lte', value: 1, label: 'Back-to-back rounds',
+      } as PatternCondition],
+      ['in tournament (10 in prod)', {
+        field: 'round_type', operator: 'eq', value: 'tournament', label: 'In tournament',
+      } as PatternCondition],
+      ['after 5+ days off (3 in prod)', {
+        field: 'days_since_last', operator: 'gte', value: 5, label: 'After 5+ days off',
+      } as PatternCondition],
+      ['a shot-level lie condition (no rule — must still be specific)', {
+        field: 'lie', operator: 'eq', value: 'rough', label: 'From the rough',
+      } as PatternCondition],
+    ];
+
+    it.each(REAL_PRODUCTION_CONDITIONS)('%s produces a real recommendation', (_name, condition) => {
+      const miner = new PatternMiner('player-1') as unknown as Miner;
+      const rec = miner.generateRecommendation([condition], {});
+
+      expect(rec).not.toBe(FILLER);
+      expect(rec).not.toMatch(/discuss with your coach/i);
+      // Long enough to actually say something — the filler was 48 chars.
+      expect(rec.length).toBeGreaterThan(60);
+    });
+
+    it('names the condition back to the reader when no specific rule matches', () => {
+      const miner = new PatternMiner('player-1') as unknown as Miner;
+      const rec = miner.generateRecommendation(
+        [{ field: 'lie', operator: 'eq', value: 'rough', label: 'From the rough' } as PatternCondition],
+        {},
+      );
+      expect(rec).toContain('from the rough');
+    });
   });
 });
 
