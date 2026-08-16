@@ -282,6 +282,65 @@ describe('composeRoundReview prompt enrichment', () => {
     expect(evidence.find((e) => e.field.startsWith('strokes_gained'))).toBeUndefined();
   });
 
+  /**
+   * The single biggest quality leak on the round-review surface.
+   *
+   * Measured in production 2026-08-16: 19 of 107 round_review compose() calls
+   * (17.8%) were DISCARDED for failed citation verification, and every discard
+   * in the whole table is a round review. The unmatched tokens are not
+   * hallucinations — they are correct arithmetic:
+   *
+   *   55.6 = 10/18   72.2 = 13/18   27.8 = 5/18   44.4 = 8/18
+   *   64.3 = 9/14    71.4 = 10/14   57.1 = 8/14   53.8 = 7/13
+   *
+   * `buildEvidence` hands the model COUNTS (gir, gir_total, fairways_hit,
+   * fairways_total). A good narrative naturally writes "you hit 55.6% of
+   * greens" — a derivation, not an invention — and the verifier, which
+   * requires every numeric token to appear verbatim in the evidence set,
+   * classifies it as a fabricated cite. compose() then throws the ENTIRE
+   * review away and ships the deterministic template.
+   *
+   * BASE_INPUT is 10/18 and 9/14, so its own percentages are 55.6 and 64.3 —
+   * two of the exact tokens observed failing in production.
+   *
+   * Fixed by SUPPLYING the derived percentages as evidence, never by loosening
+   * the verifier: a number that does not follow from the counts must still be
+   * rejected (third case below).
+   */
+  it('lets the verifier accept a correctly-derived GIR percentage', () => {
+    const evidence = roundReviewInternals.buildEvidence(BASE_INPUT);
+    expect(verifyCitations('You hit 55.6% of greens in regulation.', evidence).verified).toBe(true);
+  });
+
+  it('lets the verifier accept the rounded form the model often prefers', () => {
+    const evidence = roundReviewInternals.buildEvidence(BASE_INPUT);
+    expect(verifyCitations('You hit 56% of greens in regulation.', evidence).verified).toBe(true);
+  });
+
+  it('lets the verifier accept a correctly-derived fairway percentage', () => {
+    // 9 / 14 = 64.3
+    const evidence = roundReviewInternals.buildEvidence(BASE_INPUT);
+    expect(verifyCitations('You found 64.3% of fairways.', evidence).verified).toBe(true);
+  });
+
+  it('STILL rejects a percentage that does not follow from the counts', () => {
+    // The guard has to keep its teeth. 88.9% is 16/18 — a real-looking figure
+    // for a different round. Nothing in this evidence set supports it.
+    const evidence = roundReviewInternals.buildEvidence(BASE_INPUT);
+    const v = verifyCitations('You hit 88.9% of greens in regulation.', evidence);
+    expect(v.verified).toBe(false);
+    // The raw token keeps its '%' — normalization happens on comparison only.
+    expect(v.unmatched_tokens).toContain('88.9%');
+  });
+
+  it('emits no percentage claim when the denominator is missing or zero', () => {
+    // A null total must not produce NaN%/Infinity% claims.
+    const noTotal = roundReviewInternals.buildEvidence({ ...BASE_INPUT, gir_total: null });
+    expect(noTotal.find((e) => e.field === 'gir_pct')).toBeUndefined();
+    const zeroTotal = roundReviewInternals.buildEvidence({ ...BASE_INPUT, fairways_total: 0 });
+    expect(zeroTotal.find((e) => e.field === 'fairways_pct')).toBeUndefined();
+  });
+
   it('keeps headline stat claims intact alongside the new optional fields', () => {
     const evidence = roundReviewInternals.buildEvidence({
       ...BASE_INPUT,
