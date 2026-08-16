@@ -134,6 +134,30 @@ describe('SyncEngine.retryFailed — failed offline rounds must be recoverable',
     expect(row._sync_status).not.toBe('failed');
   });
 
+  // Reachability: retryFailed() being correct is worthless if nothing calls it.
+  // The only UI affordance (OfflineIndicator's retry button) renders solely when
+  // `syncError` is set — React state, gone on remount — and the indicator itself
+  // is gated on `pendingCount`, which reads the v1 sync queue and so never counts
+  // a v2 failed round. `offlineSyncStore.failedCount` does count them but is read
+  // by nothing. So a round that failed in a PREVIOUS session must be recovered by
+  // the ordinary reconnect path or not at all.
+  it('recovers a failed round through the ordinary sync path, not just an explicit retry', async () => {
+    const saveRoundDraft = vi.fn(async () => ({
+      success: true as const,
+      data: { roundId: 'server-2', lastAutoSave: '2026-08-16T00:00:00.000Z' },
+    }));
+    vi.doMock('@/app/golf/actions/round-drafts', () => ({ saveRoundDraft }));
+
+    const db = await seedStrandedRound('round-reconnect');
+
+    const { getSyncEngine } = await import('./sync-engine');
+    // syncAll() is what auto-sync/reconnect runs — NOT retryFailed().
+    await getSyncEngine().syncAll();
+
+    const row = db.stores.get(ROUNDS)!.rows.get('round-reconnect') as Row;
+    expect(row._sync_status).not.toBe('failed');
+  });
+
   it('leaves a round alone once its retry budget is exhausted', async () => {
     const db = await seedStrandedRound('round-exhausted');
     const store = db.stores.get(ROUNDS)!;

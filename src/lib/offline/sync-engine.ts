@@ -285,39 +285,62 @@ class SyncEngine {
    * Retry failed items
    */
   async retryFailed(): Promise<SyncResult> {
-    // Read the FAILED items. This used to call getPending*(), which query
-    // `index.getAll('pending')` — so the `_sync_status === 'failed'` filter
-    // below could never match and nothing was ever requeued. Since
-    // markRoundFailed flips status to 'failed' and the pending queries exclude
-    // it, one failed sync stranded a round permanently and the player's
-    // "Retry sync" control was a no-op. See retry-failed.test.ts.
-    const rounds = await getFailedRounds();
-    const holes = await getFailedHoles();
-    const shots = await getFailedShots();
+    // The requeue now happens inside syncPendingData(), so this is a plain
+    // delegate. Keeping the requeue there rather than here is the whole point:
+    // an item that failed in an EARLIER session is recovered by the ordinary
+    // reconnect path, not only when the user taps a button that may never be
+    // rendered (OfflineIndicator shows it only while `syncError` is set, which
+    // is React state and does not survive a remount).
+    return this.syncPendingData();
+  }
 
-    // Reset to 'pending' so the sync pass below picks them up. The status check
-    // is now redundant (the query guarantees it), so only the backoff/budget
-    // decision remains — an item past MAX_RETRY_COUNT stays failed rather than
-    // looping forever.
+  /**
+   * Move failed items whose backoff has elapsed back to 'pending' so the sync
+   * pass can pick them up. Returns how many were requeued.
+   *
+   * Reads the FAILED side of the `_sync_status` index. retryFailed() used to do
+   * this by calling getPending*() — which query `index.getAll('pending')`, so
+   * every row they return is 'pending' by construction — and then filtering for
+   * `_sync_status === 'failed'`, a predicate that could never match. Nothing was
+   * ever requeued, and because markRoundFailed flips status to 'failed' while
+   * the pending queries exclude it, ONE failed sync stranded a round in
+   * IndexedDB permanently. See retry-failed.test.ts.
+   *
+   * `shouldRetry` is the only gate: it enforces the exponential backoff and
+   * MAX_RETRY_COUNT, so running this on every sync pass cannot re-hammer the
+   * server or loop forever.
+   */
+  private async requeueRetryableFailures(): Promise<number> {
+    const [rounds, holes, shots] = await Promise.all([
+      getFailedRounds(),
+      getFailedHoles(),
+      getFailedShots(),
+    ]);
+
+    let requeued = 0;
+
     for (const round of rounds) {
       if (shouldRetry(round._retry_count, round._last_retry)) {
         await updateOfflineRound(round._offline_id, { _sync_status: 'pending' });
+        requeued++;
       }
     }
 
     for (const hole of holes) {
       if (shouldRetry(hole._retry_count, hole._last_retry)) {
         await updateOfflineHole(hole._offline_id, { _sync_status: 'pending' });
+        requeued++;
       }
     }
 
     for (const shot of shots) {
       if (shouldRetry(shot._retry_count, shot._last_retry)) {
         await updateOfflineShot(shot._offline_id, { _sync_status: 'pending' });
+        requeued++;
       }
     }
 
-    return this.syncPendingData();
+    return requeued;
   }
 
   /**
@@ -398,6 +421,14 @@ class SyncEngine {
     };
 
     try {
+      // Recover anything stranded in 'failed' before syncing. A player whose
+      // round failed to sync in a previous session has no other way back: the
+      // retry button renders only while `syncError` is set (React state, lost on
+      // remount), the pending badge reads the v1 queue and never counts a v2
+      // failure, and offlineSyncStore.failedCount is tracked but read by nothing.
+      // Guarded by shouldRetry's backoff + MAX_RETRY_COUNT.
+      await this.requeueRetryableFailures();
+
       // Sync rounds first (highest priority)
       const roundsResult = await this.syncRounds();
       result.syncedRounds = roundsResult.synced;
