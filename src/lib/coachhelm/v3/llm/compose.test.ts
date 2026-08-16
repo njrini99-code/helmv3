@@ -113,6 +113,18 @@ describe('compose() citation grounding (P0-03)', () => {
     expect(verRow?.fallback_to_template).toBe(true);
     expect(verRow?.verified).toBe(false);
     expect((verRow?.citations as { unmatched_tokens?: string[] }).unmatched_tokens).toContain('42');
+
+    // …and what it was checked AGAINST. A discard row that records only the
+    // rejected token cannot distinguish a fabricated number from a real one
+    // whose claim was missing — that ambiguity made 19 production discards
+    // undiagnosable on 2026-08-16.
+    const offered = (verRow?.citations as {
+      evidence_offered?: Array<{ field: string; value: string | number }>;
+    }).evidence_offered;
+    expect(offered).toBeTruthy();
+    expect(offered).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: expect.any(String) })]),
+    );
   });
 
   it('recovers via retry: a grounded second draft is surfaced as verified LLM text', async () => {
