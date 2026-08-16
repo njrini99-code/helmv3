@@ -217,6 +217,23 @@ export async function compose(
       citations: {
         reason: 'verification_failed',
         unmatched_tokens: attempt.verification.unmatched_tokens,
+        // The values that WERE allowed. Without these a discard is not
+        // diagnosable: the row says what was rejected but not what it was
+        // checked against, so you cannot tell a fabricated number from a
+        // legitimate one whose claim was missing.
+        //
+        // Measured 2026-08-16, which is why this exists: 19 of 107
+        // round_review calls had been discarded, and the leftover tokens
+        // correlated exactly with the player's round `total_putts` and
+        // `total_score` — values that ARE unconditional claims. Whether the
+        // input carried them, or the reviewed round differed from the one the
+        // token came from, was UNANSWERABLE from the log. It still needed a
+        // guess after an hour of joins against golf_rounds.
+        //
+        // Fields + values only. No prose, no prompt, no completion — this
+        // lands in `golf_coachhelm_llm_calls.citations` next to a player_id,
+        // so it stays the same class of data the row already holds.
+        evidence_offered: req.evidence.map((e) => ({ field: e.field, value: e.value })),
       },
       verified: false,
       fallback_to_template: true,
