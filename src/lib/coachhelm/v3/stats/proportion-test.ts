@@ -56,9 +56,22 @@ export interface ProportionTestResult {
   gapPp: number;
   /** Two-sided p-value of the pooled z-test. */
   pValue: number;
-  /** True only when |gap| >= MIN_EFFECT_PP AND both n >= MIN_PUTTS_PER_SIDE AND p < ALPHA. */
+  /** True only when |gap| >= the effect floor AND both n >= the per-side floor AND p < ALPHA. */
   significant: boolean;
   reason: 'significant' | 'insufficient_n' | 'effect_too_small' | 'not_significant';
+}
+
+/**
+ * Per-call override of the two module-level gates. Omitted fields fall back
+ * to {@link MIN_PUTTS_PER_SIDE} / {@link MIN_EFFECT_PP} — existing callers
+ * (PuttBiasGenerator) are unaffected. A caller with a different, still-honest
+ * sample-size floor (e.g. a downhill-vs-level slope comparison measured to be
+ * reliable at n>=8/side, per production data) passes its own `minPerSide`
+ * without changing the break-direction gate's numbers.
+ */
+export interface ProportionTestOptions {
+  minPerSide?: number;
+  minEffectPp?: number;
 }
 
 /**
@@ -71,15 +84,18 @@ export function twoProportionZTest(
   nA: number,
   makesB: number,
   nB: number,
+  opts?: ProportionTestOptions,
 ): ProportionTestResult {
+  const minPerSide = opts?.minPerSide ?? MIN_PUTTS_PER_SIDE;
+  const minEffectPp = opts?.minEffectPp ?? MIN_EFFECT_PP;
   const pA = nA > 0 ? makesA / nA : 0;
   const pB = nB > 0 ? makesB / nB : 0;
   const gapPp = (pA - pB) * 100;
 
-  if (nA < MIN_PUTTS_PER_SIDE || nB < MIN_PUTTS_PER_SIDE) {
+  if (nA < minPerSide || nB < minPerSide) {
     return { gapPp, pValue: 1, significant: false, reason: 'insufficient_n' };
   }
-  if (Math.abs(gapPp) < MIN_EFFECT_PP) {
+  if (Math.abs(gapPp) < minEffectPp) {
     return { gapPp, pValue: 1, significant: false, reason: 'effect_too_small' };
   }
 

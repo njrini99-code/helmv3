@@ -29,6 +29,7 @@ import { generateWorstHolesInsights } from './mining/course-management';
 // v3 BaseGenerator subclasses.
 import { PuttDistanceGenerator } from '@/lib/coachhelm/v3/generators/putt-distance';
 import { PuttBiasGenerator } from '@/lib/coachhelm/v3/generators/putt-bias';
+import { PuttSlopeBiasGenerator } from '@/lib/coachhelm/v3/generators/putt-slope-bias';
 import { ScramblingGenerator } from '@/lib/coachhelm/v3/generators/scrambling';
 import { ParTypeGenerator } from '@/lib/coachhelm/v3/generators/par-type';
 import { CourseMgmtGenerator } from '@/lib/coachhelm/v3/generators/course-mgmt';
@@ -366,6 +367,11 @@ class CoachHelmIntelligence {
       // shared 'putt_bias:' scope could mutually archive each other's fresh
       // row when their reads diverged mid-batch).
       { name: 'v3.puttBias', fn: () => new PuttBiasGenerator(playerId).run() },
+      // v3 — putt slope bias (diagnostic, no PGA standing; downhill-vs-level
+      // penalty inside 6 ft, distance-band-controlled — see file header for
+      // the confound it exists to avoid). Non-overlapping signature scope
+      // from v3.puttBias above, so their stale-row sweeps never collide.
+      { name: 'v3.puttSlopeBias', fn: () => new PuttSlopeBiasGenerator(playerId).run() },
       // v3 — scrambling (sand only; rough/fairway pending cache split)
       { name: 'v3.scrambling.sand', fn: () => new ScramblingGenerator(playerId, 'sand').run() },
       // v3 — per-par scoring (3 instances)
