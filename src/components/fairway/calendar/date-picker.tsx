@@ -30,6 +30,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CalendarSurface } from './calendar-surface';
 import glass from '../surfaces/glass-surface.module.css';
+import { useModalPortalContainer } from '../overlays/_shared';
 import type { CalendarMode, CalendarSize, DateRange } from './types';
 
 /* -------------------------------------------------------------------------- */
@@ -183,6 +184,11 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
     numberOfMonths = 1,
   } = props;
 
+  // Portal INTO the nearest ModalShell's own DOM subtree when opened from one
+  // (e.g. the event editor) — see _shared.ts's ModalPortalContext docblock.
+  // `null` outside any modal falls through to Radix's own document.body default.
+  const modalPortalContainer = useModalPortalContainer();
+
   // Controlled / uncontrolled value.
   const [valueState, setValueState] = React.useState<ValueForMode<M> | undefined>(
     defaultValue,
@@ -274,7 +280,7 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
         <input type="hidden" name={name} value={toFormValue(mode, value)} />
       ) : null}
 
-      <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Portal container={modalPortalContainer ?? undefined}>
         <PopoverPrimitive.Content
           side={side}
           align={align}
@@ -285,7 +291,18 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
             // RESTRAINED Liquid Glass (allow-listed overlay) — collapses to
             // matte under reduced-transparency via the shared glass module.
             glass.glass,
-            'z-modal rounded-lg p-1 outline-none',
+            /*
+             * `z-dropdown` (globals.css, 1000) — NOT `z-modal` (Tailwind's
+             * z-index scale in tokens.css, resolves to 30 there). ModalShell
+             * paints its panel at the DIFFERENT --fw-z-* ladder's
+             * `--fw-z-modal` (50, see design-tokens.css's documented "known
+             * footgun"), so a popover opened from inside a ModalShell (e.g.
+             * the event editor's Start/End date fields) at `z-modal` (30)
+             * rendered BEHIND the modal panel — invisible and unclickable.
+             * `z-dropdown` is the same fix already used for Select's popup
+             * positioner (forms/styles.ts) for the identical footgun.
+             */
+            'z-dropdown rounded-lg p-1 outline-none',
             /*
              * Fit the space that actually exists, and scroll if it does not.
              *

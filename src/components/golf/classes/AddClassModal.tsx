@@ -414,7 +414,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   type="button"
                   onClick={() => handleDayToggle(day.abbrev)}
                   className={cn(
-                    'w-10 h-10 rounded-lg text-sm font-medium transition-all',
+                    'w-11 h-11 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
                       ? 'bg-accent-750 text-text-on-accent'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
@@ -559,7 +559,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="w-10 h-10 rounded-lg border border-border-subtle cursor-pointer"
+                  className="w-11 h-11 rounded-lg border border-border-subtle cursor-pointer"
                 />
                 <span className="text-sm text-text-tertiary">Calendar color</span>
               </div>
@@ -592,17 +592,17 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
             role="alert"
             aria-live="assertive"
             tabIndex={-1}
-            className="mx-6 mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2"
+            className="mx-6 mb-4 p-4 rounded-xl border border-fw-warning-ring bg-fw-warning-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-fw-warning focus-visible:ring-offset-2"
           >
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                <IconWarning size={18} className="text-amber-600" />
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-fw-warning-bg flex items-center justify-center">
+                <IconWarning size={18} className="text-fw-warning-ink" />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-amber-800 mb-1">
+                <h4 className="text-sm font-medium text-fw-warning-ink mb-1">
                   {hasExactDuplicate ? 'Duplicate Time Slot' : 'Schedule Conflict Detected'}
                 </h4>
-                <p className="text-sm text-amber-700 mb-3">
+                <p className="text-sm text-fw-warning-ink mb-3">
                   {hasExactDuplicate
                     ? 'A class with the exact same days and times already exists. Please adjust the schedule.'
                     : 'This class overlaps with existing class times:'}
@@ -611,10 +611,10 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   {conflicts.map((conflict, index) => (
                     <li
                       key={index}
-                      className="text-sm text-amber-800 bg-amber-100/50 rounded-lg px-3 py-2"
+                      className="text-sm text-fw-warning-ink bg-fw-warning-bg/60 rounded-lg px-3 py-2"
                     >
                       <span className="font-medium">{conflict.existingClass.class_name}</span>
-                      <span className="text-amber-800 ml-2">
+                      <span className="text-fw-warning-ink ml-2">
                         ({conflict.conflictingDays.join(', ')} at {conflict.existingClass.start_time} - {conflict.existingClass.end_time})
                       </span>
                     </li>
@@ -634,9 +634,11 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                       type="button"
                       size="sm"
                       onClick={handleConfirmWithConflicts}
-                      // amber-800 (#92400E) on white text ≈ 6.4:1 — clears WCAG AA
-                      // 4.5:1 (the old amber-600 fill was ~2.8:1 and failed).
-                      className="bg-amber-800 text-white hover:bg-amber-900 transition-colors"
+                      // Same solid-warning-fill + dark-ink text combo as
+                      // AttendancePanel's "Late" mark (text-text-primary
+                      // resolves to warm-900 in light / near-white in dark,
+                      // unlike a flat amber-800 which never adapted).
+                      className="bg-fw-warning text-text-primary hover:bg-fw-warning/90 transition-colors"
                     >
                       Add Anyway
                     </Button>

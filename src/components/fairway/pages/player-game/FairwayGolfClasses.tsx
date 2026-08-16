@@ -55,7 +55,7 @@
  * ========================================================================== */
 
 import { useMemo, useState } from 'react';
-import { BookOpen, Plus, Upload, MapPin } from 'lucide-react';
+import { BookOpen, Plus, Upload, MapPin, AlertTriangle } from 'lucide-react';
 
 import {
   ViewHeader,
@@ -63,7 +63,6 @@ import {
   Surface,
   EmptyState,
   Skeleton,
-  SkeletonCard,
   Segmented,
   Chip,
   Button,
@@ -121,6 +120,14 @@ export interface FairwayGolfClassesProps {
   onImportSchedule: () => void;
   onClassClick: (cls: FairwayPlayerClass) => void;
   onDeleteAll: () => void;
+  /**
+   * Class ids whose last calendar-sync attempt failed. The class row itself
+   * saved fine — nothing here means the DATA is wrong — but the coach won't
+   * see it on the shared team calendar until the player re-saves it and the
+   * sync succeeds. Surfaced as a small warning marker on the roster card so
+   * it's still visible after the save toast has disappeared.
+   */
+  failedSyncIds?: Set<string>;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -264,6 +271,7 @@ export function FairwayGolfClasses({
   onImportSchedule,
   onClassClick,
   onDeleteAll,
+  failedSyncIds,
 }: FairwayGolfClassesProps) {
   const count = classes.length;
   const hasClasses = count > 0;
@@ -446,9 +454,16 @@ export function FairwayGolfClasses({
           eyebrow="My Classes"
           title="Your classes this semester"
           description={
-            hasClasses
-              ? `${count} ${count === 1 ? 'class' : 'classes'} · ${totalCredits} ${totalCredits === 1 ? 'credit' : 'credits'}`
-              : 'Add your schedule so coaches plan practices around your academics.'
+            // `loading` first: a returning player's `classes` state starts
+            // empty on the very first fetch, so gating on `hasClasses` alone
+            // briefly showed the "no classes" copy to a player who actually
+            // has a full schedule, for the instant before the real data
+            // arrives.
+            loading
+              ? 'Loading your schedule…'
+              : hasClasses
+                ? `${count} ${count === 1 ? 'class' : 'classes'} · ${totalCredits} ${totalCredits === 1 ? 'credit' : 'credits'}`
+                : 'Add your schedule so coaches plan practices around your academics.'
           }
           primaryAction={
             <Button variant="primary" onClick={onAddClass} leftIcon={<Plus className="h-4 w-4" />}>
@@ -476,8 +491,9 @@ export function FairwayGolfClasses({
 
         {loading ? (
           /* ── Loading skeleton — mirrors the real shell (strip → timeline →
-             2-col list). role/aria + sr-only match the codebase skeleton
-             a11y contract (SkeletonGroup); SkeletonCard carries it per-card. ── */
+             2-col list), shape-matched per breakpoint and per card (not the
+             generic avatar-led SkeletonCard). role/aria + sr-only match the
+             codebase skeleton a11y contract. ── */
           <div
             role="status"
             aria-busy="true"
@@ -486,10 +502,36 @@ export function FairwayGolfClasses({
           >
             <span className="sr-only">Loading classes…</span>
             <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-[420px] w-full" />
+            {/* "This week" — desktop grid vs. mobile day-picker + list shape,
+                matching the real breakpoint split below (a single flat block
+                undershot the real ~560px desktop grid and looked nothing like
+                the mobile list). */}
+            <Skeleton className="hidden h-[560px] w-full md:block" />
+            <div className="flex flex-col gap-3 md:hidden">
+              <Skeleton className="h-9 w-full rounded-fw-md" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-[60px] w-full rounded-fw-md" />
+              ))}
+            </div>
+            {/* "All classes" roster — same time-block + 2-line shape as the
+                real card (FairwayEventCard idiom), not the generic
+                avatar-led SkeletonCard. */}
             <div className="grid gap-2.5 md:grid-cols-2">
-              <SkeletonCard />
-              <SkeletonCard />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 rounded-card border border-border-subtle bg-surface p-4"
+                >
+                  <div className="flex w-[68px] flex-shrink-0 flex-col gap-1 md:w-[76px]">
+                    <Skeleton className="h-4 w-14" />
+                    <Skeleton className="h-3 w-12" />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <Skeleton className="h-4 w-40 max-w-full" />
+                    <Skeleton className="h-3 w-52 max-w-full" />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ) : !hasClasses ? (
@@ -891,9 +933,24 @@ export function FairwayGolfClasses({
                             <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">
                               {name}
                             </span>
-                            {cls.credits != null ? (
-                              <span className="ml-auto flex-shrink-0 font-fw-mono text-caption tabular-nums text-text-tertiary">
-                                {cls.credits} cr
+                            {failedSyncIds?.has(cls.id) || cls.credits != null ? (
+                              <span className="ml-auto flex flex-shrink-0 items-center gap-1.5">
+                                {failedSyncIds?.has(cls.id) ? (
+                                  <span
+                                    title="Not on your calendar — the last sync failed. Re-save this class to retry."
+                                    className="flex items-center text-fw-warning-ink"
+                                  >
+                                    <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+                                    <span className="sr-only">
+                                      Not synced to your calendar — the last sync attempt failed
+                                    </span>
+                                  </span>
+                                ) : null}
+                                {cls.credits != null ? (
+                                  <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                                    {cls.credits} cr
+                                  </span>
+                                ) : null}
                               </span>
                             ) : null}
                           </span>

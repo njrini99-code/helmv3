@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useId } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconSparkles } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
@@ -31,8 +30,10 @@ const DAYS = [
 ];
 
 // Canonical brand green fallback when a parsed class has no assigned color.
-// Sourced from the design token so it stays in sync with primary-600.
-const DEFAULT_CLASS_COLOR = 'var(--color-primary-600)';
+// `--fw-color-accent-500` (NOT `--color-primary-600`, which has no dark-mode
+// override in tokens.css and stayed the flat light-mode green under dark
+// theme) — matches FairwayGolfClasses.tsx's own DOT_FALLBACK.
+const DEFAULT_CLASS_COLOR = 'var(--fw-color-accent-500)';
 
 export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses }: ConfirmClassesModalProps) {
   const uid = useId();
@@ -166,9 +167,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 <span className="text-text-tertiary">days/week</span>
               </div>
               {stats.withTime < classes.length && (
-                <Badge variant="warning" size="sm">
+                <span className="text-micro font-medium text-fw-warning-ink bg-fw-warning-bg px-1.5 py-0.5 rounded">
                   {classes.length - stats.withTime} missing time
-                </Badge>
+                </span>
               )}
             </div>
           )}
@@ -236,7 +237,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                               type="button"
                               onClick={() => handleDayToggle(index, day.abbrev)}
                               className={cn(
-                                'flex-1 h-10 rounded-lg text-xs font-medium transition-all duration-150',
+                                'flex-1 h-11 rounded-lg text-xs font-medium transition-all duration-150',
                                 cls.days.includes(day.abbrev)
                                   ? 'text-text-on-accent shadow-sm'
                                   : 'bg-surface-sunken text-text-tertiary hover:bg-surface-sunken/80 active:bg-surface-sunken hover:text-text-secondary'

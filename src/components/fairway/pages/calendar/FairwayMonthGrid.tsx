@@ -75,7 +75,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 const TONE_CHIP: Record<FwStatusTone, string> = {
   accent: 'bg-accent-50 text-accent-700 hover:bg-accent-100',
   success: 'bg-fw-success-bg text-accent-700 hover:bg-accent-100',
-  warning: 'bg-fw-warning-bg text-fw-warning-ink hover:bg-warm-200/60',
+  warning: 'bg-fw-warning-bg text-fw-warning-ink hover:bg-fw-warning/10',
   danger: 'bg-fw-danger-bg text-fw-danger-ink hover:bg-fw-danger/10',
   neutral: 'bg-surface-sunken text-text-secondary hover:bg-surface-tint',
   info: 'bg-surface-sunken text-text-secondary hover:bg-surface-tint',

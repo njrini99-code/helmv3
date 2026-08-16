@@ -73,7 +73,7 @@ const RSVP_BADGES: Record<string, { label: string; className: string }> = {
 
 const MARK_OPTIONS: Array<{ value: AttendanceMark; label: string; activeClassName: string }> = [
   { value: 'present', label: 'Present', activeClassName: 'bg-accent-600 text-text-on-accent ring-accent-600' },
-  { value: 'late', label: 'Late', activeClassName: 'bg-fw-warning text-warm-900 ring-fw-warning' },
+  { value: 'late', label: 'Late', activeClassName: 'bg-fw-warning text-text-primary ring-fw-warning' },
   { value: 'no_show', label: 'No-show', activeClassName: 'bg-fw-danger text-text-on-accent ring-fw-danger' },
 ];
 
@@ -340,7 +340,7 @@ function AttendanceRow({ row, pending, onMark }: AttendanceRowProps) {
       <div
         role="group"
         aria-label={`Attendance for ${row.name}`}
-        className={cn('flex flex-shrink-0 items-center gap-1', pending && 'opacity-60')}
+        className={cn('flex flex-shrink-0 items-center gap-1.5', pending && 'opacity-60')}
       >
         {MARK_OPTIONS.map((option) => {
           const active = row.mark === option.value;
