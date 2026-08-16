@@ -254,27 +254,10 @@ export async function getUserBusyPeriodsWithStatus(
   // block a 09:05 class at 05:05 Eastern, the exact bug this plumbing exists
   // to prevent.
   if (teamIds.length > 0) {
-    // Failure here is NOT folded into `partial`: an unknown zone shifts class
-    // blocks, it does not drop them. Marking the whole answer incomplete would
-    // suppress real conflicts the rest of this function found correctly. It is
-    // still LOGGED — "no team carries a zone" and "the read failed" are
-    // indistinguishable downstream and mean very different things.
-    const { data: tzRows, error: tzError } = await supabase
-      .from('golf_team_settings')
-      .select('team_id, timezone')
-      .in('team_id', teamIds)
-      .order('team_id', { ascending: true });
-    if (tzError) {
-      await logServerError(
-        `[availability] team settings timezone read failed; class blocks fall back to ${DEFAULT_TIMEZONE}: ${describeError(tzError)}`,
-        { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
-        'warning',
-      );
-    }
-    classTimeZone = getValidTimezone(
-      (tzRows ?? [])
-        .map((t) => (t as { timezone?: string | null }).timezone)
-        .find((tz): tz is string => Boolean(tz)) ?? null,
+    classTimeZone = await resolveTeamTimeZone(
+      teamIds,
+      supabase,
+      'calendar.getUserBusyPeriods',
     );
   }
 
@@ -495,15 +478,69 @@ export async function getUserBusyPeriodsWithStatus(
 }
 
 /**
+ * The IANA zone a team's wall-clock intent is written in.
+ *
+ * ONE rule, two callers with different team sets: `getUserBusyPeriods` resolves
+ * a single user's teams, `checkEventConflicts` resolves every attendee's. The
+ * rule itself must not diverge, which is why it lives here and takes `teamIds`
+ * rather than deriving them.
+ *
+ * DETERMINISM: `.order('team_id')` makes the LOWEST team_id win when an org
+ * spans several teams — arbitrary, but STABLE, which is the property that was
+ * missing when this was a `.find()` over unordered rows.
+ *
+ * FALLBACK: `getValidTimezone` yields DEFAULT_TIMEZONE when no row carries a
+ * zone — the common case, not an edge one: 5 of the 10 production teams have no
+ * `golf_team_settings` row at all. Never null. `wallClockInZone` reads null as
+ * "use the runtime zone", and on Vercel that is UTC — the exact bug this
+ * plumbing exists to prevent.
+ *
+ * A failed read is LOGGED, not fatal, and never marks a result `partial`: an
+ * unknown zone SHIFTS times, it does not drop them, and suppressing an
+ * otherwise-correct answer would hide real conflicts.
+ */
+export async function resolveTeamTimeZone(
+  teamIds: string[],
+  supabase: SupabaseClient,
+  action: string,
+): Promise<string> {
+  if (teamIds.length === 0) return DEFAULT_TIMEZONE;
+
+  const { data: tzRows, error: tzError } = await supabase
+    .from('golf_team_settings')
+    .select('team_id, timezone')
+    .in('team_id', teamIds)
+    .order('team_id', { ascending: true });
+  if (tzError) {
+    await logServerError(
+      `[availability] team settings timezone read failed; falling back to ${DEFAULT_TIMEZONE}: ${describeError(tzError)}`,
+      { action, featureArea: 'calendar' },
+      'warning',
+    );
+  }
+  return getValidTimezone(
+    (tzRows ?? [])
+      .map((t) => (t as { timezone?: string | null }).timezone)
+      .find((tz): tz is string => Boolean(tz)) ?? null,
+  );
+}
+
+/**
  * Find common free time slots between multiple users
  * Used for "Find a Time" feature when scheduling events
+ *
+ * `timeZone` is REQUIRED, deliberately. An optional zone means a caller that
+ * forgets it silently gets the runtime zone back — which on Vercel is UTC, and
+ * is precisely how the 03:00 suggestions survived unnoticed. Make the compiler
+ * ask the question.
  */
 export async function findCommonAvailability(
   userIds: string[],
   dateRange: { start: Date; end: Date },
   duration: number, // in minutes
   workingHours: WorkingHours, // e.g., { start: 7, end: 19 }
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  timeZone: string
 ): Promise<TimeSlot[]> {
   if (userIds.length === 0) return [];
 
@@ -516,7 +553,7 @@ export async function findCommonAvailability(
   const mergedBusy = mergeOverlappingPeriods(allBusyPeriods.flat());
 
   // 3. Generate all possible time slots within working hours
-  const slots = generateTimeSlots(dateRange, duration, workingHours);
+  const slots = generateTimeSlots(dateRange, duration, workingHours, timeZone);
 
   // 4. Filter out slots that overlap with any busy period
   return slots.filter(slot => !overlapsWithAny(slot, mergedBusy));
@@ -687,7 +724,9 @@ function mergeOverlappingPeriods(periods: BusyPeriod[]): BusyPeriod[] {
 function generateTimeSlots(
   dateRange: { start: Date; end: Date },
   duration: number,
-  workingHours: WorkingHours
+  workingHours: WorkingHours,
+  /** IANA zone `workingHours` is expressed in — the team's. */
+  timeZone: string
 ): TimeSlot[] {
   const slots: TimeSlot[] = [];
 
@@ -697,16 +736,23 @@ function generateTimeSlots(
   while (currentDate <= dateRange.end) {
     // Generate slots for this day within working hours
     for (let hour = workingHours.start; hour < workingHours.end; hour++) {
-      const slotStart = new Date(currentDate);
-      slotStart.setHours(hour, 0, 0, 0);
+      // Only add if the slot ENDS within working hours. Compared as minutes
+      // rather than by reading `slotEnd.getHours()`: the old check answered in
+      // the runtime zone, and a slot running to midnight read as hour 0, which
+      // is <= 19 and so was wrongly kept.
+      if (hour * 60 + duration > workingHours.end * 60) continue;
 
-      const slotEnd = new Date(slotStart);
-      slotEnd.setMinutes(slotEnd.getMinutes() + duration);
+      // "07:00" means 07:00 to the COACH. `setHours` meant 07:00 to whatever
+      // machine happened to run this — UTC on Vercel, so the working day was
+      // offered as 03:00-15:00 Eastern.
+      const slotStart = wallClockInZone(
+        currentDate,
+        `${String(hour).padStart(2, '0')}:00`,
+        timeZone
+      );
+      const slotEnd = new Date(slotStart.getTime() + duration * 60_000);
 
-      // Only add if slot end is within working hours
-      if (slotEnd.getHours() <= workingHours.end) {
-        slots.push({ start: slotStart, end: slotEnd });
-      }
+      slots.push({ start: slotStart, end: slotEnd });
     }
 
     // Move to next day

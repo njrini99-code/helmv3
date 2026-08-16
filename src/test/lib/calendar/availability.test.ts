@@ -21,6 +21,21 @@ type Row = Record<string, unknown>;
 // Filter-applying stub
 // ---------------------------------------------------------------------------
 
+/**
+ * The hour a coach actually reads off the calendar, in a named zone.
+ *
+ * Module scope on purpose: every assertion about a wall-clock time in this file
+ * has to be made in the zone the time was WRITTEN in. `.getHours()` answers in
+ * the runner's zone, which is how a 09:00 New York class came to assert as 9 on
+ * a UTC-4 laptop and 13 in CI.
+ */
+function hourIn(instant: Date, timeZone: string): number {
+  return Number(
+    new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hourCycle: 'h23' })
+      .format(instant),
+  );
+}
+
 function get(row: Row, path: string): unknown {
   let cur: unknown = row;
   for (const part of path.split('.')) {
@@ -392,13 +407,6 @@ describe('getUserBusyPeriods — unsynced classes expand within their term only'
     return [start, end];
   }
 
-  /** The hour a coach actually reads off the calendar, in the team's zone. */
-  function hourIn(instant: Date, timeZone: string): number {
-    return Number(
-      new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hourCycle: 'h23' })
-        .format(instant),
-    );
-  }
 
   function classRow(over: Row = {}): Row {
     return {
@@ -552,6 +560,47 @@ describe('checkEventConflicts — timed conflict across timezones', () => {
       { excludeEventId: 'e1' },
     );
     expect(editingSelf.hasConflict).toBe(false);
+  });
+
+  it('suggests alternatives inside the TEAM\'s working day, not the server\'s', async () => {
+    // `workingHours` defaults to { start: 7, end: 19 } in conflicts.ts — an
+    // explicit WALL-CLOCK intent, "7am to 7pm". generateTimeSlots realised it
+    // with `setHours`, which resolves in the RUNTIME zone, and this whole path
+    // is server-side: FairwayEventEditor -> checkScheduleConflicts (a server
+    // action, golf.ts:4363) -> checkEventConflicts -> findCommonAvailability.
+    // On Vercel the runtime is UTC, so a coach who hit a conflict was offered
+    // alternative times running 03:00-15:00 Eastern.
+    //
+    // Until this test, findCommonAvailability, generateTimeSlots and
+    // suggestedTimes had NO coverage of any kind — which is how a four-hour
+    // offset sat in the suggestion path unnoticed.
+    const tables = baseTables();
+    tables.golf_team_settings.push({ team_id: 't1', timezone: 'America/New_York' });
+    tables.golf_events.push({
+      id: 'e1', team_id: 't1', title: 'Team Practice', status: 'scheduled',
+      start_time: '2026-06-10T18:30:00+00:00', end_time: '2026-06-10T19:30:00+00:00',
+      created_by: 'c1',
+    });
+    const supabase = createStubClient(tables);
+
+    const result = await checkEventConflicts(
+      new Date('2026-06-10T14:00-04:00'),
+      new Date('2026-06-10T16:00-04:00'),
+      ['p1'],
+      supabase,
+    );
+
+    expect(result.hasConflict).toBe(true);
+    expect(result.suggestedTimes.length).toBeGreaterThan(0);
+
+    // Every suggestion must sit inside 07:00-19:00 read in the TEAM's zone.
+    // Asserted per-slot rather than on the first: the bug shifts the whole
+    // grid, so a single sample could coincide with a correct hour by luck.
+    for (const slot of result.suggestedTimes) {
+      const hour = hourIn(slot.start, 'America/New_York');
+      expect(hour).toBeGreaterThanOrEqual(7);
+      expect(hour).toBeLessThan(19);
+    }
   });
 });
 

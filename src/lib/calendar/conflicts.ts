@@ -11,6 +11,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import {
   getUserBusyPeriodsWithStatus,
   findCommonAvailability,
+  resolveTeamTimeZone,
   periodsOverlap,
   getStartOfWeek,
   getEndOfWeek,
@@ -150,6 +151,34 @@ export async function checkEventConflicts(
   if (conflicts.length > 0 && userIds.length > 0) {
     const duration = (proposedEnd.getTime() - proposedStart.getTime()) / (1000 * 60); // minutes
 
+    // The zone `workingHours` is expressed in. Resolved from every attendee's
+    // active team, and resolved HERE rather than at the top of the function so
+    // the happy path (no conflict, no suggestions) pays for no extra query.
+    const { data: memberships, error: membershipsError } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .in('player_id', attendeePlayerIds)
+      .eq('status', 'active');
+    if (membershipsError) {
+      await logServerError(
+        `[conflicts] membership read failed; suggested times fall back to the default zone: ${describeError(membershipsError)}`,
+        { action: 'calendar.checkEventConflicts', featureArea: 'calendar' },
+        'warning',
+      );
+    }
+    const teamIds = [
+      ...new Set(
+        (memberships ?? [])
+          .map((m) => (m as { team_id?: string | null }).team_id)
+          .filter((id): id is string => Boolean(id))
+      ),
+    ];
+    const timeZone = await resolveTeamTimeZone(
+      teamIds,
+      supabase,
+      'calendar.checkEventConflicts',
+    );
+
     // Look within the same week for alternatives
     const weekStart = getStartOfWeek(proposedStart);
     const weekEnd = getEndOfWeek(proposedStart);
@@ -159,7 +188,8 @@ export async function checkEventConflicts(
       { start: weekStart, end: weekEnd },
       duration,
       workingHours,
-      supabase
+      supabase,
+      timeZone
     );
 
     // Filter out the proposed time itself and limit results
@@ -178,7 +208,8 @@ export async function checkEventConflicts(
         { start: nextWeekStart, end: nextWeekEnd },
         duration,
         workingHours,
-        supabase
+        supabase,
+        timeZone
       );
 
       suggestedTimes = nextWeekSlots.slice(0, maxSuggestions);
