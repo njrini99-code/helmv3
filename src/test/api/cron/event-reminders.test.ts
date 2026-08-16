@@ -44,6 +44,9 @@ interface TeamSettingsRow {
   event_reminders_enabled?: boolean | null;
   event_reminder_early_hours?: number | null;
   event_reminder_late_minutes?: number | null;
+  /** Team display zone. Optional because 5 of 10 production teams have no
+   *  golf_team_settings row at all, so absent is the common case. */
+  timezone?: string | null;
 }
 
 interface AttendanceRow {
@@ -373,6 +376,106 @@ describe('event-reminders cron route', () => {
       'u1@x.test',
       expect.objectContaining({ reminderWindow: '3 days' }),
     );
+  });
+
+  // ── Timezone ────────────────────────────────────────────────────────────
+  //
+  // NOW is 2026-06-10T12:00:00Z. The cron runs on Vercel, where the process
+  // timezone is UTC, so every formatter here used to render in UTC: the
+  // day comparison used toDateString() and neither the push message nor the
+  // email passed a timeZone. For an Eastern team a 9pm event is already the
+  // NEXT DAY in UTC, so the reminder said the wrong day AND the wrong time.
+
+  it('says "Today" for an event that is today in the TEAM zone but tomorrow in UTC', async () => {
+    // 2026-06-11T01:00Z === 2026-06-10 21:00 America/New_York.
+    // Team-local day: Jun 10 (today). UTC day: Jun 11 (tomorrow).
+    currentClient = makeClient({
+      events: [eventAt('E1', 13 * HOUR)],
+      teamSettings: [{ team_id: 'T1', timezone: 'America/New_York' }],
+      attendance: [{ event_id: 'E1', player_id: 'P1', status: 'accepted' }],
+      players: [{ id: 'P1', user_id: 'U1' }],
+      users: [{ id: 'U1', email: 'u1@x.test' }],
+    });
+
+    await GET(authed());
+
+    const row = upsertsForKind('event_reminder_24h')[0];
+    expect(row?.title).toBe('Today: Event E1');
+    expect(row?.title).not.toContain('Tomorrow');
+  });
+
+  it('renders the message in the team zone, not UTC', async () => {
+    currentClient = makeClient({
+      events: [eventAt('E1', 13 * HOUR)],
+      teamSettings: [{ team_id: 'T1', timezone: 'America/New_York' }],
+      attendance: [{ event_id: 'E1', player_id: 'P1', status: 'accepted' }],
+      players: [{ id: 'P1', user_id: 'U1' }],
+      users: [{ id: 'U1', email: 'u1@x.test' }],
+    });
+
+    await GET(authed());
+
+    const row = upsertsForKind('event_reminder_24h')[0];
+    // 9:00 PM on Jun 10 local — NOT 1:00 AM on Jun 11, which is what the
+    // UTC-rendered string said.
+    expect(row?.message).toContain('9:00 PM');
+    expect(row?.message).toContain('Jun 10');
+    expect(row?.message).not.toContain('1:00 AM');
+  });
+
+  it('resolves the zone PER TEAM: one instant, two teams, two different words', async () => {
+    // 2026-06-11T04:00Z is Jun 11 00:00 in New York but Jun 10 21:00 in
+    // Los Angeles. Same event instant, so only a per-team zone can tell them
+    // apart — a single global default cannot produce both answers.
+    currentClient = makeClient({
+      events: [
+        eventAt('E_EAST', 16 * HOUR, { team_id: 'T1' }),
+        eventAt('E_WEST', 16 * HOUR, { team_id: 'T2' }),
+      ],
+      teamSettings: [
+        { team_id: 'T1', timezone: 'America/New_York' },
+        { team_id: 'T2', timezone: 'America/Los_Angeles' },
+      ],
+      attendance: [
+        { event_id: 'E_EAST', player_id: 'P1', status: 'accepted' },
+        { event_id: 'E_WEST', player_id: 'P2', status: 'accepted' },
+      ],
+      players: [
+        { id: 'P1', user_id: 'U1' },
+        { id: 'P2', user_id: 'U2' },
+      ],
+      users: [
+        { id: 'U1', email: 'u1@x.test' },
+        { id: 'U2', email: 'u2@x.test' },
+      ],
+    });
+
+    await GET(authed());
+
+    const rows = upsertsForKind('event_reminder_24h');
+    const east = rows.find((r) => r.event_id === 'E_EAST');
+    const west = rows.find((r) => r.event_id === 'E_WEST');
+
+    expect(east?.title).toBe('Tomorrow: Event E_EAST');
+    expect(west?.title).toBe('Today: Event E_WEST');
+  });
+
+  it('falls back to the default zone when a team has no timezone set', async () => {
+    // Only 5 of 10 production teams have a golf_team_settings row at all, so
+    // the absent case is the common one and must not throw or render UTC.
+    currentClient = makeClient({
+      events: [eventAt('E1', 13 * HOUR)],
+      teamSettings: [{ team_id: 'T1' }],
+      attendance: [{ event_id: 'E1', player_id: 'P1', status: 'accepted' }],
+      players: [{ id: 'P1', user_id: 'U1' }],
+      users: [{ id: 'U1', email: 'u1@x.test' }],
+    });
+
+    await GET(authed());
+
+    // DEFAULT_TIMEZONE is America/New_York, so this matches the Eastern case.
+    const row = upsertsForKind('event_reminder_24h')[0];
+    expect(row?.title).toBe('Today: Event E1');
   });
 
   it('a failed push send is NOT marked sent (retryable next tick); successes still are', async () => {

@@ -50,6 +50,7 @@ import {
   type EventReminderRow,
 } from '@/lib/golf/event-reminder-settings';
 import { describeError } from '@/lib/utils/describe-error';
+import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -119,9 +120,9 @@ export async function GET(req: NextRequest) {
       // that team's settings, shared by both slots. Fetching this once (rather
       // than once per slot) also guarantees the two slots agree on which teams
       // have reminders switched off.
-      const { events, settingsByTeam } = await loadWindow(supabase, now);
-      result24h = await dispatchReminders(supabase, now, events, settingsByTeam, 'event_reminder_24h', deadlineAt);
-      result1h = await dispatchReminders(supabase, now, events, settingsByTeam, 'event_reminder_1h', deadlineAt);
+      const { events, settingsByTeam, tzByTeam } = await loadWindow(supabase, now);
+      result24h = await dispatchReminders(supabase, now, events, settingsByTeam, tzByTeam, 'event_reminder_24h', deadlineAt);
+      result1h = await dispatchReminders(supabase, now, events, settingsByTeam, tzByTeam, 'event_reminder_1h', deadlineAt);
     } catch (err) {
       await logServerError(
         `cron.eventReminders failed: ${describeError(err)}`,
@@ -172,7 +173,11 @@ export async function GET(req: NextRequest) {
 async function loadWindow(
   supabase: ReturnType<typeof createAdminClient>,
   now: Date,
-): Promise<{ events: EventRow[]; settingsByTeam: Map<string, TeamEventReminderSettings> }> {
+): Promise<{
+  events: EventRow[];
+  settingsByTeam: Map<string, TeamEventReminderSettings>;
+  tzByTeam: Map<string, string>;
+}> {
   const nowIso = now.toISOString();
   const horizon = new Date(now.getTime() + MAX_REMINDER_LEAD_MS).toISOString();
 
@@ -201,7 +206,8 @@ async function loadWindow(
 
   const eventRows = (events ?? []) as EventRow[];
   const settingsByTeam = new Map<string, TeamEventReminderSettings>();
-  if (eventRows.length === 0) return { events: eventRows, settingsByTeam };
+  const tzByTeam = new Map<string, string>();
+  if (eventRows.length === 0) return { events: eventRows, settingsByTeam, tzByTeam };
 
   const teamIds = Array.from(new Set(eventRows.map((e) => e.team_id).filter(Boolean)));
   for (const ids of chunk(teamIds, ID_CHUNK_SIZE)) {
@@ -211,7 +217,7 @@ async function loadWindow(
     const { data: rows, error: settingsErr } = await fetchAllRowsResult((from, to) =>
       fromUntyped(supabase, 'golf_team_settings')
         .select(
-          'team_id, event_reminders_enabled, event_reminder_early_hours, event_reminder_late_minutes',
+          'team_id, event_reminders_enabled, event_reminder_early_hours, event_reminder_late_minutes, timezone',
         )
         .in('team_id', ids)
         .order('team_id', { ascending: true })
@@ -223,12 +229,17 @@ async function loadWindow(
       throw new Error(`fetch team settings: ${settingsErr.message}`);
     }
     for (const row of rows ?? []) {
-      const r = row as EventReminderRow & { team_id: string };
+      const r = row as EventReminderRow & { team_id: string; timezone?: string | null };
       settingsByTeam.set(r.team_id, resolveEventReminderSettings(r));
+      // Carried SEPARATELY from TeamEventReminderSettings on purpose: that type
+      // is a tested contract with its own fallback shape, and the timezone is
+      // not a reminder setting — it is the team's display zone, read here only
+      // because this select already has the row.
+      tzByTeam.set(r.team_id, getValidTimezone(r.timezone));
     }
   }
 
-  return { events: eventRows, settingsByTeam };
+  return { events: eventRows, settingsByTeam, tzByTeam };
 }
 
 async function dispatchReminders(
@@ -236,6 +247,7 @@ async function dispatchReminders(
   now: Date,
   allEvents: EventRow[],
   settingsByTeam: Map<string, TeamEventReminderSettings>,
+  tzByTeam: Map<string, string>,
   kind: ReminderKind,
   deadlineAt: number,
 ): Promise<KindResult> {
@@ -402,6 +414,7 @@ async function dispatchReminders(
           recipient.event,
           leadByEventId.get(recipient.event.id) ?? 0,
           emailByUserId,
+          tzByTeam.get(recipient.event.team_id) ?? DEFAULT_TIMEZONE,
         ),
       ),
     );
@@ -424,8 +437,14 @@ async function dispatchReminders(
     notification_type: kind,
     // Generated from the team's ACTUAL lead, not from the slot name — a team on
     // a 3-day early reminder must not be told "Tomorrow".
-    title: buildTitle(event, kind, leadByEventId.get(event.id) ?? 0, now),
-    message: buildMessage(event, kind),
+    title: buildTitle(
+      event,
+      kind,
+      leadByEventId.get(event.id) ?? 0,
+      now,
+      tzByTeam.get(event.team_id) ?? DEFAULT_TIMEZONE,
+    ),
+    message: buildMessage(event, kind, tzByTeam.get(event.team_id) ?? DEFAULT_TIMEZONE),
     action_url: `/golf/dashboard/calendar?event=${event.id}`,
   }));
 
@@ -457,6 +476,7 @@ async function sendReminderToRecipient(
   event: EventRow,
   leadMinutes: number,
   emailByUserId: Map<string, string>,
+  timeZone: string,
 ): Promise<boolean> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
   const start = new Date(event.start_time);
@@ -469,6 +489,7 @@ async function sendReminderToRecipient(
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      timeZone,
     }),
     location: event.location || '',
     eventUrl: `${baseUrl}/golf/dashboard/calendar?event=${event.id}`,
@@ -497,22 +518,39 @@ async function sendReminderToRecipient(
  * When leadMinutes is 24h, check the actual event time to distinguish "Today"
  * from "Tomorrow" — a same-day event should not say "Tomorrow".
  */
-function buildTitle(event: EventRow, kind: ReminderKind, leadMinutes: number, now: Date): string {
+/**
+ * The team-local calendar day for an instant, as `YYYY-MM-DD`.
+ *
+ * `en-CA` because it formats as ISO-8601, which makes the strings directly
+ * comparable and sortable — `toDateString()` was the previous approach and it
+ * resolves in the PROCESS timezone, which on Vercel is UTC.
+ */
+function localDay(instant: Date, timeZone: string): string {
+  return instant.toLocaleDateString('en-CA', { timeZone });
+}
+
+function buildTitle(
+  event: EventRow,
+  kind: ReminderKind,
+  leadMinutes: number,
+  now: Date,
+  timeZone: string,
+): string {
   if (kind !== 'event_reminder_24h') return `Starting soon: ${event.title}`;
   if (leadMinutes === 24 * 60) {
-    const eventDate = new Date(event.start_time);
-    const todayDate = new Date(now);
-    const eventDay = eventDate.toDateString();
-    const todayDay = todayDate.toDateString();
+    const eventDay = localDay(new Date(event.start_time), timeZone);
+    const todayDay = localDay(now, timeZone);
     if (eventDay === todayDay) return `Today: ${event.title}`;
-    const tomorrowDate = new Date(todayDate);
-    tomorrowDate.setDate(todayDate.getDate() + 1);
-    if (eventDay === tomorrowDate.toDateString()) return `Tomorrow: ${event.title}`;
+    // Add the day in UTC then re-render in the team's zone. Adding to the
+    // team-local calendar date directly would be wrong across a DST boundary,
+    // where the local day is not 24h long.
+    const tomorrowDay = localDay(new Date(now.getTime() + 24 * 60 * 60 * 1000), timeZone);
+    if (eventDay === tomorrowDay) return `Tomorrow: ${event.title}`;
   }
   return `In ${formatLead(leadMinutes)}: ${event.title}`;
 }
 
-function buildMessage(event: EventRow, kind: ReminderKind): string {
+function buildMessage(event: EventRow, kind: ReminderKind, timeZone: string): string {
   const start = new Date(event.start_time);
   const timeStr = start.toLocaleString('en-US', {
     weekday: 'short',
@@ -520,9 +558,10 @@ function buildMessage(event: EventRow, kind: ReminderKind): string {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZone,
   });
   const locationStr = event.location ? ` at ${event.location}` : '';
   return kind === 'event_reminder_24h'
     ? `${timeStr}${locationStr}`
-    : `Starts at ${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${locationStr}`;
+    : `Starts at ${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone })}${locationStr}`;
 }
