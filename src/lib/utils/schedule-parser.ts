@@ -10,6 +10,11 @@
  *   - Comma/pipe/dash delimited rows
  */
 
+// The term windows live in ONE place. detectSemester() used to carry its own
+// month buckets, which drifted from the windows parseSemesterDates() generates
+// and produced already-ended terms on 15 May and 15 August.
+import { inferTermForImport } from '@/lib/golf/semester';
+
 export interface ParsedClass {
   id: string;
   course_code: string;
@@ -69,6 +74,15 @@ const INVALID_COURSE_PREFIXES = [
   'WEEKLY', 'DAILY', 'CREDITS', 'CREDIT',
   'DATE', 'TERM', 'CAMPUS', 'STATUS',
   'NOTES', 'UNITS', 'GRADE', 'FINAL',
+  // Building words. COURSE_CODE_RE and LOCATION_RE match the SAME shape —
+  // 2-5 letters then 3-4 digits — so "Smith Hall 201" on its own line parsed
+  // as a course code and became a phantom class ("HALL 201", no days, no
+  // times). ROOM/BLDG/BUILDING were already here; these are the rest of the
+  // common ones. The denylist alone is not sufficient (any building name
+  // works), which is why parseLeadingCourseCode() anchors to the line start.
+  'HALL', 'CTR', 'CENTER', 'CENTRE', 'LAB', 'LABS', 'GYM',
+  'ANNEX', 'TOWER', 'WING', 'PAVILION', 'COMPLEX', 'ARENA',
+  'STE', 'SUITE', 'FLOOR', 'LEVEL', 'AUD', 'THEATER', 'THEATRE',
 ];
 
 // Lines that indicate section headers, not data
@@ -97,6 +111,36 @@ function isSkippableLine(line: string): boolean {
   return SKIP_LINE_PATTERNS.some(p => p.test(line));
 }
 
+/**
+ * A building/room reference in ordinary capitalisation — "Smith Hall 201",
+ * "Olin Center 3", "Wilson Lab 12".
+ *
+ * LOCATION_RE only matches SHOUTED codes (`[A-Z]{2,6}` with no `i` flag), which
+ * is right for a registrar column like "WLSN 105" and useless for the way a
+ * human-readable schedule writes the same thing. Both are consulted wherever a
+ * line has to be told apart from a course title.
+ */
+const LOCATION_WORD_RE =
+  /\b(hall|building|bldg|center|centre|lab|labs|gym|annex|tower|wing|pavilion|complex|arena|auditorium|theat(?:er|re)|room|rm|suite|ste|floor|fl)\b\.?\s*#?\s*\d{1,4}[A-Za-z]?\b/i;
+
+/**
+ * Document metadata that is not part of any class — advisor lines, credit
+ * totals, holds, GPA summaries. These arrive after the schedule proper, often
+ * separated by a blank line, and the course-name fallback was storing them as
+ * the name of whichever class happened to be open at the time.
+ */
+const METADATA_LINE_RE =
+  /^\s*(advisor|adviser|advising|total|totals|credits?\s+(earned|attempted|total)|gpa|hold|holds|registration|registered|status|standing|major|minor|degree|catalog|level|college|department|printed|generated|as\s+of|page\s+\d)\b/i;
+
+function looksLikeMetadata(line: string): boolean {
+  if (METADATA_LINE_RE.test(line)) return true;
+  // "Label: value" where the label is a single short word is document
+  // furniture, not a course title ("Advisor: Dr. Jones", "Term: Fall 2026").
+  const labelled = line.match(/^\s*([A-Za-z][A-Za-z\s]{0,18}):\s*\S/);
+  if (labelled && (labelled[1] ?? '').trim().split(/\s+/).length <= 2) return true;
+  return false;
+}
+
 // ============================================================================
 // COURSE CODE PARSING
 // ============================================================================
@@ -121,6 +165,27 @@ function parseCourseCode(text: string): string {
   return isValidCourseCode(code) ? code : '';
 }
 
+/**
+ * A course code only STARTS a new class when it leads the line.
+ *
+ * `parseCourseCode` searches anywhere in the string, which is right for a table
+ * CELL but wrong for deciding "is this line a new course?". A location line
+ * indented under a class — "Smith Hall 201" — contains a substring that matches
+ * COURSE_CODE_RE, so it opened a second, empty class. Anchoring to the start
+ * fixes the whole family rather than the building names we happened to list:
+ * a course code is written first on its line, a room number never is.
+ *
+ * Leading list markers are stripped first, so "1. CHEM 101" and "• CHEM 101"
+ * still count.
+ */
+function parseLeadingCourseCode(text: string): string {
+  const withoutMarker = text.replace(/^[\s\d.)\]\-–—•*#]+/, '');
+  const match = withoutMarker.match(COURSE_CODE_RE);
+  if (!match || match.index !== 0 || !match[1] || !match[2]) return '';
+  const code = `${match[1].toUpperCase()} ${match[2].toUpperCase()}`;
+  return isValidCourseCode(code) ? code : '';
+}
+
 // ============================================================================
 // DAY PARSING
 // ============================================================================
@@ -139,11 +204,28 @@ const DAYS_INLINE_RE = /\b((?:M|Tu?|W|Th?|R|F|Sa?|Su?)(?:(?:M|Tu?|W|Th?|R|F|Sa?|
 // a day name, so "Monday Physics 200" does not over-match.
 const FULL_DAY_RE = /\b((?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)(?:(?:\s*[/,&]\s*|\s+)(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?))*)\b/i;
 
+/**
+ * Global twin of FULL_DAY_RE, used ONLY by delimiter detection to blank out the
+ * commas inside a weekday list before they are counted as field separators.
+ * Kept adjacent so the two patterns cannot drift apart.
+ */
+const FULL_DAY_LIST_GLOBAL_RE = new RegExp(FULL_DAY_RE.source, 'gi');
+
 function parseDays(daysStr: string): string[] {
   const normalized = daysStr.trim();
 
-  // Try full day names first (Monday, Tuesday...)
-  if (/monday|tuesday|wednesday|thursday|friday|saturday|sunday/i.test(normalized)) {
+  // Try day NAMES first — full or three-letter, which is the same decision.
+  //
+  // This used to require the full word, so "Mon, Wed, Fri" fell through to the
+  // character scan below, where `R` means Thursday (as in "TR") — and "FRI"
+  // contains an R. Every class written with three-letter days gained a PHANTOM
+  // Thursday meeting, every week, for the whole term. "Fri" on its own returned
+  // ["Th","F"].
+  //
+  // Word-boundaried on purpose: it must catch "Mon"/"Fri" without catching the
+  // F and R inside compact codes like "MWF", "TR" or "MTWRF", which are exactly
+  // what the character scan is for.
+  if (/\b(mon|tues?|wed|thur?s?|fri|sat|sun)(day)?\b/i.test(normalized)) {
     const days: string[] = [];
     if (/mon/i.test(normalized)) days.push('M');
     if (/tue/i.test(normalized)) days.push('T');
@@ -407,8 +489,19 @@ function detectFormat(lines: string[]): FormatHints {
 
   for (const line of sampleLines) {
     if (line.includes('\t')) tabCount++;
-    // Only count commas between fields, not within names
-    if ((line.match(/,/g) || []).length >= 2) commaCount++;
+    // Only count commas between FIELDS — and a comma-separated weekday list is
+    // not a field separator.
+    //
+    // "Monday, Wednesday, Friday" carries exactly two commas, which met this
+    // threshold and classified the whole document as CSV; every row was then
+    // split on those commas, tearing the days column into three cells, and the
+    // class came back with NO days at all. Two day names ("Tuesday, Thursday")
+    // stayed under the threshold and worked, so the failure was invisible until
+    // someone pasted a three-day class — i.e. MWF, the most common pattern
+    // there is. Slash- and space-separated lists were unaffected, which is why
+    // the format matrix in the tests varies the separator too.
+    const withoutDayCommas = line.replace(FULL_DAY_LIST_GLOBAL_RE, (m) => m.replace(/,/g, ' '));
+    if ((withoutDayCommas.match(/,/g) || []).length >= 2) commaCount++;
     if (line.includes('|')) pipeCount++;
     // Multiple runs of 3+ spaces suggest columnar layout
     if ((line.match(/\s{3,}/g) || []).length >= 2) wideSpaceCount++;
@@ -464,8 +557,14 @@ function detectColumns(headerLine: string, delimiter: string): ColumnMap {
     else if (lower.includes('title') || lower === 'name' || lower.includes('description')) map.title = idx;
     else if (lower.includes('day') && !lower.includes('today')) map.days = idx;
     else if (lower === 'time' || lower.includes('times') || lower.includes('meeting time')) map.time = idx;
-    else if (lower.includes('start') && lower.includes('time')) map.startTime = idx;
-    else if (lower.includes('end') && lower.includes('time')) map.endTime = idx;
+    // Bare `Start` / `End` are the common registrar headings, and requiring
+    // BOTH the word and "time" missed them: the columns went unmapped, so a
+    // pasted export WITH a header row produced classes with days but no times
+    // at all — while the identical rows WITHOUT a header parsed correctly,
+    // because the header-less path infers columns from content. Word-boundary
+    // matched so "Attendance" cannot be read as an end column.
+    else if (/\b(start|begin|from)\b/.test(lower)) map.startTime = idx;
+    else if (/\b(end|finish|thru|through|until)\b/.test(lower)) map.endTime = idx;
     else if (lower.includes('location') || lower === 'where') map.location = idx;
     else if (lower.includes('building') || lower === 'bldg') map.building = idx;
     else if (lower.includes('room') || lower === 'rm') map.room = idx;
@@ -681,7 +780,9 @@ function parseMultiLineFormat(lines: string[], semester: string): ParsedClass[] 
     const line = lines[i];
     if (!line || isSkippableLine(line)) continue;
 
-    const courseCode = parseCourseCode(line);
+    // Anchored: only a code at the START of the line opens a new class. See
+    // parseLeadingCourseCode — an indented "Smith Hall 201" used to open one.
+    const courseCode = parseLeadingCourseCode(line);
 
     if (courseCode) {
       // Flush previous class
@@ -715,10 +816,20 @@ function parseMultiLineFormat(lines: string[], semester: string): ParsedClass[] 
       // Continue extracting details for current class from subsequent lines
       extractInlineDetails(line, currentClass);
 
-      // Course name fallback: if still missing, use a descriptive line
+      // Course name fallback: if still missing, use a descriptive line.
+      //
+      // This is the last resort, so its rejections carry the weight. Two kinds
+      // of line were slipping through and being stored as the course's NAME:
+      //
+      //   "Smith Hall 201"     — LOCATION_RE is uppercase-only and unflagged,
+      //                          so a normally-capitalised building did not
+      //                          match and the room became the course name.
+      //   "Advisor: Dr. Jones" — trailing document metadata after a blank line,
+      //                          which is not part of any class at all.
       if (!currentClass.course_name && line.length > 5 && !/^\d/.test(line) && !TIME_RANGE_RE.test(line)) {
-        // Make sure it's not a day line or location-only line
-        if (!(/^[MTWRF]{1,5}h?\s*$/i.test(line)) && !LOCATION_RE.test(line)) {
+        const isDayLine = /^[MTWRF]{1,5}h?\s*$/i.test(line);
+        const isLocation = LOCATION_RE.test(line) || LOCATION_WORD_RE.test(line);
+        if (!isDayLine && !isLocation && !looksLikeMetadata(line)) {
           currentClass.course_name = line;
         }
       }
@@ -880,23 +991,21 @@ export function detectSemester(text: string): string {
   if (summerMatch) return `Summer ${summerMatch[1] || year}`;
   if (winterMatch) return `Winter ${winterMatch[1] || year}`;
 
-  // ACADEMIC terms, not calendar months. These buckets must line up with the
-  // windows parseSemesterDates() actually generates (src/lib/golf/semester.ts):
-  //   Spring 15 Jan – 15 May · Summer 1 Jun – 15 Aug · Fall 20 Aug – 15 Dec
+  // ACADEMIC terms, not calendar months — and derived from the SAME windows
+  // parseSemesterDates() generates, rather than a parallel set of month buckets.
   //
-  // The old rule was month-only, so all of August read as "Summer". A class
-  // added on 6 August therefore got a term ENDING 15 August — nine days of
-  // occurrences and then nothing — and one added on 20 August got a term that
-  // had already closed, generating ZERO future events. Both look identical to
-  // the player: "I added my classes and my calendar is empty." Late August is
-  // exactly when a college roster enters its fall schedule, so this was the
-  // single most likely moment for the feature to be used and to fail.
-  const day = now.getDate();
-  if (month <= 3) return `Spring ${year}`;                       // Jan–Apr
-  if (month === 4) return day <= 15 ? `Spring ${year}` : `Summer ${year}`;
-  if (month <= 6) return `Summer ${year}`;                       // Jun–Jul
-  if (month === 7) return day <= 15 ? `Summer ${year}` : `Fall ${year}`;
-  return `Fall ${year}`;                                          // Sep–Dec
+  // Those buckets were a second source of truth and they disagreed with the
+  // windows at both ends. `month === 7 && day <= 15` returned "Summer", whose
+  // window ENDS 15 August: import on that exact day and every occurrence is
+  // already in the past, so the calendar stays empty while the toast says
+  // "Synced to your calendar". Identical bug on 15 May, the last day of spring.
+  // Two days a year, both inside an enrolment rush.
+  //
+  // inferTermForImport() answers "the soonest term with real time left", which
+  // is the term a student importing today is actually enrolling in, and is the
+  // same rule the contradicted-label overrule uses.
+  const todayIso = `${year}-${String(month + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return inferTermForImport(todayIso) ?? `Fall ${year}`;
 }
 
 // ============================================================================

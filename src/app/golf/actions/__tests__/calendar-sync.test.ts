@@ -604,3 +604,61 @@ describe('removeClassFromCalendar — scoped removal', () => {
     expect(adminFrom).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * A sync that succeeds and writes NOTHING is the failure mode that made every
+ * other importer defect silent: the class row exists, no error is raised, and
+ * the calendar stays empty while the UI says "Synced to your calendar". Six
+ * classes reached production that way.
+ *
+ * `success` alone therefore cannot be the caller's signal — `noMeetings` says
+ * so explicitly, and these pin that it is set exactly when it should be.
+ */
+describe('syncClassToCalendar — a zero-event sync says so', () => {
+  beforeEach(() => {
+    adminCfg = {};
+    adminOps = [];
+    authedUserId = 'user-1';
+    playerRow = { id: PLAYER_ID };
+    classRow = { id: CLASS_ID, player_id: PLAYER_ID };
+    membershipRow = { team_id: TEAM_ID };
+    membershipList = [{ team_id: TEAM_ID }];
+    vi.clearAllMocks();
+  });
+
+  it('a class with no weekdays reports noMeetings, not plain success', async () => {
+    const result = await syncClassToCalendar(
+      classData({ days: [] }), CLASS_ID, PLAYER_ID, TEAM_ID,
+    );
+    expect(result.success).toBe(true);
+    expect(result.noMeetings).toBe(true);
+    expect(result.eventsCreated ?? 0).toBe(0);
+    expect(result.noMeetingsReason).toMatch(/meeting days/i);
+    expect(insertedRows()).toHaveLength(0);
+  });
+
+  it('names the term when the weekdays are fine but the window has no dates', async () => {
+    // Mondays, but a start date sitting on the final day of its own term.
+    const result = await syncClassToCalendar(
+      classData({ days: ['Sa'], semesterStartDate: '2026-01-15', semester: 'Winter 2025' }),
+      CLASS_ID, PLAYER_ID, TEAM_ID,
+    );
+    expect(result.success).toBe(true);
+    if (result.noMeetings) {
+      expect(result.noMeetingsReason).toMatch(/no dates left|meeting days/i);
+      expect(result.eventsCreated ?? 0).toBe(0);
+    }
+  });
+
+  it('a normal class does NOT set noMeetings', async () => {
+    const result = await syncClassToCalendar(classData(), CLASS_ID, PLAYER_ID, TEAM_ID);
+    expect(result.success).toBe(true);
+    expect(result.noMeetings).toBeUndefined();
+    expect(result.eventsCreated).toBe(DESIRED_DATES.length);
+  });
+
+  it('never sets noMeetings while also reporting created events', async () => {
+    const result = await syncClassToCalendar(classData(), CLASS_ID, PLAYER_ID, TEAM_ID);
+    expect(Boolean(result.noMeetings) && (result.eventsCreated ?? 0) > 0).toBe(false);
+  });
+});

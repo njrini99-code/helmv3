@@ -31,6 +31,20 @@ export interface CalendarSyncResult<T = void> {
   eventsUpdated?: number;
   eventsDeleted?: number;
   skipped?: boolean;
+  /**
+   * The class produced NO meetings at all — it has no weekdays, no usable
+   * times, or a term window with no days left in it.
+   *
+   * This is a success in the sense that nothing failed and nothing is wrong
+   * with the database, which is exactly why it needed its own flag: callers
+   * checked only `success` and so announced "Synced to your calendar" for a
+   * class that put zero events on it. Six classes were imported in production
+   * that way and the player's calendar stayed empty. A caller that reports on
+   * `success` alone is now wrong on its face rather than by omission.
+   */
+  noMeetings?: boolean;
+  /** Why there were no meetings, for the surface that has to explain it. */
+  noMeetingsReason?: string;
 }
 
 interface ClassFormData {
@@ -489,11 +503,22 @@ async function syncClassToCalendarImpl(
     }
 
     revalidatePath('/golf/dashboard/calendar');
+
+    // Nothing wrong happened, and nothing landed on the calendar. Say so
+    // explicitly — see `noMeetings` on CalendarSyncResult.
+    const noMeetings = desiredByDate.size === 0;
+    const noMeetingsReason = !noMeetings
+      ? undefined
+      : dayNumbers.size === 0
+        ? 'no meeting days were detected for this class'
+        : `${classData.semester} has no dates left for those meeting days`;
+
     return {
       success: true,
       eventsCreated: toInsert.length,
       eventsUpdated: toUpdate.length,
       eventsDeleted: staleIds.length,
+      ...(noMeetings ? { noMeetings, noMeetingsReason } : {}),
     };
   } catch (error) {
     // DS-B4: the date arithmetic above can throw a raw RangeError (toISOString

@@ -336,9 +336,59 @@ export default function GolfClassesPage() {
         };
       });
       
+      // Re-importing the same schedule must not double the calendar.
+      //
+      // `golf_player_classes` has only PRIMARY KEY (id) — no uniqueness on
+      // (player_id, class_name, semester) — and this is a plain insert, so a
+      // second paste created a second set of rows with NEW ids. New id means a
+      // new `[class:<id>]` tag, and calendar-sync reconciles per tag, so its
+      // duplicate protection could not see across the two: the player got every
+      // meeting twice. Skipping here is the app-level half; a unique index is
+      // the durable half and needs a migration + review, so it is proposed
+      // rather than taken.
+      const { data: existingRows, error: existingError } = await supabase
+        .from('golf_player_classes')
+        .select('class_name, semester')
+        .eq('player_id', playerId);
+
+      if (existingError) {
+        // Do NOT fall through to an unguarded insert: a failed read here is not
+        // evidence that no duplicates exist, and guessing wrong doubles a
+        // player's calendar.
+        showToast(`Could not check for existing classes: ${existingError.message}`, 'error');
+        return;
+      }
+
+      const alreadyImported = new Set(
+        (existingRows ?? []).map((r) => `${r.class_name ?? ''}|||${r.semester ?? ''}`),
+      );
+      const isDuplicate = (c: (typeof classesToInsert)[number]) =>
+        alreadyImported.has(`${c.class_name}|||${c.semester}`);
+      const duplicateNames = classesToInsert.filter(isDuplicate).map((c) => c.class_name);
+      // Keep the ORIGINAL index alongside each row. The sync below pairs
+      // `data[i]` with `confirmed[i]`, and filtering rows out silently shifts
+      // that pairing — every class after a skipped one would be synced with the
+      // wrong course's days and times.
+      const freshPairs = classesToInsert
+        .map((row, idx) => ({ row, source: confirmed[idx] }))
+        .filter((p) => !isDuplicate(p.row));
+      const freshToInsert = freshPairs.map((p) => p.row);
+
+      if (freshToInsert.length === 0) {
+        fairwayToast.error(
+          duplicateNames.length === 1
+            ? 'That class is already on your schedule'
+            : `Those ${duplicateNames.length} classes are already on your schedule`,
+          { description: 'Nothing was imported. Delete the existing entries first to re-import.' },
+        );
+        setShowConfirmModal(false);
+        setParsedClasses([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('golf_player_classes')
-        .insert(classesToInsert)
+        .insert(freshToInsert)
         .select();
 
       if (error) {
@@ -351,7 +401,9 @@ export default function GolfClassesPage() {
       const syncFailures: string[] = [];
       if (data && teamId) {
         const syncPromises = data.map((insertedClass, i) => {
-          const confirmedClass = confirmed[i];
+          // Paired through freshPairs, not by position in `confirmed` — rows
+          // skipped as duplicates would otherwise shift every later index.
+          const confirmedClass = freshPairs[i]?.source;
           if (!insertedClass || !confirmedClass) return Promise.resolve(null);
 
           return syncClassToCalendar({
@@ -385,14 +437,30 @@ export default function GolfClassesPage() {
 
         const syncResults = await Promise.all(syncPromises);
         syncResults.forEach((result, i) => {
-          if (result && !result.success) {
-            const label = confirmed[i]?.course_code || confirmed[i]?.course_name || 'A class';
+          if (!result) return;
+          const source = freshPairs[i]?.source;
+          const label = source?.course_code || source?.course_name || 'A class';
+          if (!result.success) {
             syncFailures.push(`${label}: ${result.error ?? 'Unknown error'}`);
+            return;
+          }
+          // A sync that succeeded and wrote NOTHING is the failure mode that
+          // makes every other defect in this importer silent: the class row
+          // exists, no error is raised, and the calendar stays empty. Counted
+          // as a failure for reporting purposes precisely because it is
+          // invisible otherwise.
+          if (result.noMeetings) {
+            syncFailures.push(`${label}: ${result.noMeetingsReason ?? 'no meetings were scheduled'}`);
           }
         });
       }
 
-      const importedCount = data?.length ?? confirmed.length;
+      // Count what was actually written, not what was offered — `confirmed`
+      // still includes rows skipped as duplicates.
+      const importedCount = data?.length ?? freshToInsert.length;
+      const skippedNote = duplicateNames.length > 0
+        ? `${duplicateNames.length} already on your schedule and skipped.`
+        : null;
       await fetchClasses();
       setShowConfirmModal(false);
       setParsedClasses([]);
@@ -404,12 +472,12 @@ export default function GolfClassesPage() {
       if (syncFailures.length > 0) {
         fairwayToast.error(
           `${importedCount} imported, ${syncFailures.length} not added to your calendar`,
-          { description: syncFailures.slice(0, 3).join(' · ') },
+          { description: [...syncFailures.slice(0, 3), skippedNote].filter(Boolean).join(' · ') },
         );
       } else {
         fairwayToast.success(
           `${importedCount} ${importedCount === 1 ? 'class' : 'classes'} imported`,
-          { description: 'Synced to your calendar.' },
+          { description: ['Synced to your calendar.', skippedNote].filter(Boolean).join(' ') },
         );
       }
     } catch {

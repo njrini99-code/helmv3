@@ -64,6 +64,54 @@ function utcDay(date: string): number {
 }
 
 /**
+ * The academic term to use for a schedule imported on `todayIso` that does not
+ * state its own term.
+ *
+ * Callers must NOT infer this from the calendar month. The term CONTAINING a
+ * date is the wrong answer at both ends of a window: on 15 August the summer
+ * window ends that very day, so "Summer" yields `{06-01 … 08-15}` — a term with
+ * zero days left — and every generated meeting lands in the past. The player
+ * imports their schedule, sees "Synced to your calendar", and the calendar is
+ * empty. Same on 15 May, the last day of spring. Both dates fall in an
+ * enrolment rush, which is exactly when the feature gets used.
+ *
+ * So: the soonest term that still has at least MIN_PLAUSIBLE_TERM_DAYS to run.
+ * This is the same rule `termForDate` applies when a start date contradicts a
+ * stated label — one definition, so the inferred term and the overrule cannot
+ * disagree.
+ */
+export function inferTermForImport(todayIso: string): string | null {
+  const t = utcDay(todayIso);
+  if (!Number.isFinite(t)) return null;
+  const year = Number(todayIso.slice(0, 4));
+  if (!Number.isFinite(year)) return null;
+
+  // Neighbouring years matter: winter runs 15 Dec → 15 Jan, so early January
+  // has to be able to see the PRIOR year's winter.
+  const usable: Array<{ term: keyof typeof TERM_WINDOWS; year: number; start: number; end: number }> = [];
+  for (const y of [year - 1, year, year + 1]) {
+    for (const term of ['spring', 'summer', 'fall', 'winter'] as const) {
+      const start = utcDay(TERM_WINDOWS[term].start(y));
+      const end = utcDay(TERM_WINDOWS[term].end(y));
+      // STRICTLY after today: a term whose last day is today has no future date
+      // left to put a meeting on. That single `>` is the whole fix — the term
+      // containing 15 August is Summer, whose window ENDS 15 August.
+      if (end > t) usable.push({ term, year: y, start, end });
+    }
+  }
+  if (usable.length === 0) return null;
+
+  // Prefer the term actually in progress; otherwise the next one to begin,
+  // which covers the gaps between windows (16–19 August, say).
+  const inProgress = usable.filter((c) => c.start <= t).sort((a, b) => b.start - a.start)[0];
+  const chosen = inProgress ?? usable.sort((a, b) => a.start - b.start)[0];
+  if (!chosen) return null;
+
+  const label = chosen.term.charAt(0).toUpperCase() + chosen.term.slice(1);
+  return `${label} ${chosen.year}`;
+}
+
+/**
  * The soonest term that still has real time left on it as of `date`.
  *
  * Deliberately NOT "the term containing this date". The containing term is
@@ -142,6 +190,31 @@ export function parseSemesterDates(
 
   if (customStartDate) {
     if (!isValidCustomStart(customStartDate, yearNum, endDate)) return null;
+
+    // A start date far BEFORE the labelled term begins contradicts the label
+    // just as surely as one that leaves no runway, and it was not checked:
+    // isValidCustomStart only bounded the start at 1 January of the term year,
+    // so `('Fall 2026', '2026-01-20')` was accepted verbatim and produced
+    // `{2026-01-20 … 2026-12-15}` — a 329-day "Fall" term generating ~140
+    // meetings for a class that has ~50. Worth avoiding on volume alone:
+    // golf_events is in the realtime publication, so each row is a message to
+    // every open calendar.
+    //
+    // The grace window keeps a legitimately-early start (orientation week, a
+    // syllabus listing the Friday before) from being treated as a contradiction.
+    const earlyByDays = (utcDay(defaultStartDate) - utcDay(customStartDate)) / DAY_MS;
+    if (earlyByDays > MIN_PLAUSIBLE_TERM_DAYS) {
+      const better = termForDate(customStartDate);
+      if (better) {
+        return {
+          start: customStartDate,
+          end: TERM_WINDOWS[better.term].end(better.year),
+        };
+      }
+      // No better term — trust the LABEL's window rather than a start date it
+      // disagrees with, since the label is the only other evidence we have.
+      return { start: defaultStartDate, end: endDate };
+    }
 
     // Does the label survive contact with the start date? A term with only days
     // left is not the term this class belongs to — the player imported their
