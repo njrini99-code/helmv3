@@ -82,3 +82,8 @@ echo "  2. Check any production Sentry event's \`release\` tag == $SHORT"
 echo
 echo "If the release tag still shows an older SHA, the build did not pick up"
 echo "--build-env — do NOT assume the code is stale on that evidence alone."
+echo
+echo "FIRST RUN ONLY — confirm the var did NOT persist into project settings:"
+echo "  vercel env ls production | grep NEXT_PUBLIC_SENTRY_RELEASE"
+echo "Expect NO match. --env is per-deployment; a stored value would pin every"
+echo "future deploy to $SHORT and turn this traceability fix into a permanent lie."
