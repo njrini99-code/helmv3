@@ -482,6 +482,16 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                       value={props.courseSearchQuery}
                       onChange={(e) => props.setCourseSearchQuery(e.target.value)}
                       placeholder="Search saved courses…"
+                      // Explicit name: this <Input> is NOT wrapped in a `Field`,
+                      // and Input only borrows a label by attaching to a
+                      // surrounding one (see input.tsx header) — so the
+                      // placeholder was this control's only name. Placeholder-as-
+                      // name is fragile in two ways: it is last-resort in the
+                      // accname chain, and it stops being announced the moment
+                      // the field has content, so the name disappears exactly
+                      // when the user is mid-task. The decorative leftIcon
+                      // contributes nothing.
+                      aria-label="Search saved courses"
                       enterKeyHint="search"
                       autoComplete="off"
                       leftIcon={<Search className="h-4 w-4 text-text-tertiary" />}
