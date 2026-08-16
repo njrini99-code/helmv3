@@ -37,7 +37,16 @@ export function resolveTriageView(raw: string | string[] | null | undefined): Tr
   return v === 'players' || v === 'effectiveness' ? v : 'signals';
 }
 
-export type QueueFilterKey = 'all' | 'urgent' | 'new' | 'patterns' | `category:${string}`;
+/**
+ * `'new'` was REMOVED. It filtered on `ageDays <= 7`, and `ageDays` comes from
+ * `golf_coach_insights.created_at` — the insert-batch date, frozen by
+ * upsert-by-signature. With 68% of live rows June-born the chip matched almost
+ * nothing: the desk showed "0 NEW THIS WEEK" on a day 188 rows had been
+ * recomputed. A filter that hides current work while claiming to show the
+ * newest is worse than no filter. Restore it when `content_generated_at` gives
+ * a real answer.
+ */
+export type QueueFilterKey = 'all' | 'urgent' | 'patterns' | `category:${string}`;
 
 /** Legacy `alerts`/`insights`/`patterns` (the three retired routes' filter
  *  values, still forwarded by their permanent-redirect shims) map onto the
@@ -50,9 +59,12 @@ export function resolveQueueFilter(raw: string | string[] | null | undefined): Q
       return 'urgent';
     case 'insights':
       return 'all';
+    // A bookmarked `?filter=new` degrades to the full queue rather than an
+    // empty one — the chip is gone, but old links must not show nothing.
+    case 'new':
+      return 'all';
     case 'patterns':
     case 'urgent':
-    case 'new':
     case 'all':
       return v;
     default:
@@ -66,7 +78,6 @@ export function resolveQueueFilter(raw: string | string[] | null | undefined): Q
 export const BASE_QUEUE_FILTERS: ReadonlyArray<{ key: QueueFilterKey; label: string }> = [
   { key: 'all', label: 'All' },
   { key: 'urgent', label: 'Urgent' },
-  { key: 'new', label: 'New' },
   { key: 'patterns', label: 'Patterns' },
 ];
 
@@ -84,7 +95,6 @@ function worstSeverityOf(signals: readonly GroupedSignal[]): SignalSeverity {
 function matchesFilter(signal: GroupedSignal, filter: QueueFilterKey): boolean {
   if (filter === 'all') return true;
   if (filter === 'urgent') return signal.severity === 'urgent';
-  if (filter === 'new') return signal.ageDays <= 7;
   if (filter === 'patterns') return signal.kind === 'pattern';
   return signal.category === filter.slice('category:'.length);
 }
@@ -170,22 +180,19 @@ export function findSignalInGroups(
 
 export interface BriefCounts {
   urgent: number;
-  newThisWeek: number;
   playersFlagged: number;
 }
 
 export function computeBriefCounts(groups: readonly SignalGroup[]): BriefCounts {
   let urgent = 0;
-  let newThisWeek = 0;
   const flagged = new Set<string>();
   for (const group of groups) {
     if (group.playerId && group.signals.length > 0) flagged.add(group.playerId);
     for (const signal of group.signals) {
       if (signal.severity === 'urgent') urgent += 1;
-      if (signal.ageDays <= 7) newThisWeek += 1;
     }
   }
-  return { urgent, newThisWeek, playersFlagged: flagged.size };
+  return { urgent, playersFlagged: flagged.size };
 }
 
 /** The Brief's 1-2 sentence verdict — names what needs attention today, or
@@ -254,8 +261,8 @@ export function severityLabel(severity: SignalSeverity): string {
   }
 }
 
-export function formatAgeDays(ageDays: number): string {
-  if (ageDays <= 0) return 'Today';
-  if (ageDays === 1) return '1d ago';
-  return `${ageDays}d ago`;
-}
+/* `formatAgeDays` was removed along with its two call sites (SignalRow,
+ * SignalDossier). It is not merely unmounted — the copy itself was wrong:
+ * "{n}d ago" describes the insight's age, when what a coach needs is when the
+ * content was COMPUTED. The replacement reads "computed {n}d ago", matching the
+ * chat surface, and arrives with `content_generated_at`. */

@@ -361,7 +361,20 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
   if (isHardArchivable) {
     patch.lifecycle_state = 'archived';
     patch.archived_at = nowIso;
-    patch.metadata = metadata;
+    // STAMP THE PROVENANCE. Both sibling sweeps already do — synthesis.ts
+    // writes 'composite-scope-sweep' and generator-base.ts writes
+    // 'generator-scope-sweep' — so an archived row that carries NEITHER was
+    // unattributable, and this cron is the only writer that produced them.
+    // That gap cost a real investigation: bulk events of 38 rows (2026-07-23)
+    // and 33 rows (2026-08-10) had no recorded cause, and ruling out "insights
+    // are silently vanishing" required reading three other writers first.
+    // A coach asking "where did that insight go?" now has an answer.
+    patch.metadata = {
+      ...metadata,
+      archived_by: 'insight-lifecycle-cron',
+      archive_reason: `rule3:hard-stale>${ARCHIVE_HARD_AGE_DAYS}d`,
+      archived_stale_days: Math.round(staleDays),
+    };
     return patch;
   }
 
@@ -377,7 +390,22 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
   if (isSoftArchivable) {
     patch.lifecycle_state = 'archived';
     patch.archived_at = nowIso;
-    patch.metadata = metadata;
+    // Distinct reason from Rule 3 so the two are separable in one query. They
+    // mean different things: rule3 retires anything long-dead, rule2 retires an
+    // insight the engine stopped re-emitting and no coach ever engaged with.
+    //
+    // Rule 2 is only SAFE because a re-emit of an unchanged insight still bumps
+    // `updated_at` — v2/insights/upsert.ts:240 and :311 write it
+    // unconditionally, with no change-detection guard. If a no-op re-emit were
+    // ever skipped, this branch would silently retire still-true insights after
+    // 30 quiet days. Anyone adding write-skipping to that upsert must revisit
+    // this rule first.
+    patch.metadata = {
+      ...metadata,
+      archived_by: 'insight-lifecycle-cron',
+      archive_reason: `rule2:detected-no-movement>${ARCHIVE_DETECTED_AGE_DAYS}d`,
+      archived_stale_days: Math.round(staleDays),
+    };
     return patch;
   }
 

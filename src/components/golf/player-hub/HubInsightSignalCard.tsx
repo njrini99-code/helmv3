@@ -52,6 +52,7 @@ import {
   type FocusAreaModalSubmit,
 } from '@/components/fairway/pages/coachhelm/FocusAreaModal';
 import { createFocusAreaFromInsightV2 } from '@/app/golf/actions/development';
+import { EvidencePanel } from '@/components/golf/coachhelm/insights/EvidencePanel';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightMovement } from '@/lib/coachhelm/v2/insights/types';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
@@ -106,13 +107,10 @@ function rewriteForPlayer(text: string): string {
     .replace(/\bthey\b/gi, 'you');
 }
 
-/** Same zero-leverage guard the legacy card used: a composite / non-standing
- *  row's `strokes_impact` backfill can legitimately be exactly 0 — showing
- *  "~0.0 strokes" under an otherwise real insight reads as noise. */
-function hasDisplayableImpact(strokesImpact: number | null | undefined): boolean {
-  const impact = Math.abs(Number(strokesImpact ?? 0));
-  return Number.isFinite(impact) && Math.round(impact * 10) > 0;
-}
+/* `hasDisplayableImpact` was removed with the hand-rolled evidence row. Its
+ * zero-leverage guard is not lost: EvidencePanel applies the same
+ * `Math.round(Math.abs(impact) * 10) > 0` test before rendering the stroke
+ * figure, plus a clamp for the stale 40+ strokes/round rows. */
 
 /** Mirrors MovementPill's own magnitude formatter (not exported from that
  *  file — see the module doc above for why this card doesn't import it). */
@@ -316,8 +314,8 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
 
   const title = rewriteForPlayer(insight.title);
   const content = rewriteForPlayer(insight.content);
-  const impact = Math.abs(Number(insight.evidence.strokes_impact ?? 0));
-  const showImpact = hasDisplayableImpact(insight.evidence.strokes_impact);
+  // `impact`/`showImpact` were the hand-rolled stroke readout; EvidencePanel
+  // renders that itself now, with the same clamp applied.
   const hasDrills = Boolean(insight.drills && insight.drills.length > 0);
   const promotable = insight.lifecycle_state !== 'resolved' && insight.status !== 'resolved';
 
@@ -332,24 +330,25 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
       onClick={() => router.push(`/golf/dashboard/coachhelm?focus=${insight.id}`)}
       data-testid="insight-card-default"
       evidence={
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          <span>
-            <span className="font-fw-mono font-medium tabular-nums text-text-primary">
-              {insight.evidence.your_value_display}
-            </span>
-            <span className="text-text-tertiary"> vs {insight.evidence.comparison_label}</span>
-          </span>
+        <div className="flex flex-col gap-1.5">
+          {/*
+            Was a hand-rolled row: value, "vs <benchmark>", and stroke impact —
+            with NO sample size and NO window. A player could not tell whether
+            "47%" came from 43 attempts or 4.
+
+            EvidencePanel already renders all of it (benchmark scale, then
+            `{sample} · {window_days} days`, then impact) and, more importantly,
+            already implements the "too few to read reliably" honesty this card
+            was silently bypassing. Reused rather than re-derived; it no-ops on
+            an insight minted before evidence JSON existed.
+          */}
+          <EvidencePanel evidence={insight.evidence} compact />
           {movementChip ? (
             <span className="inline-flex items-center gap-1.5">
               <TrendChip direction={movementChip.direction} size="sm" />
               <span className="text-eyebrow text-text-tertiary">
                 {movementChip.magnitude} since last check
               </span>
-            </span>
-          ) : null}
-          {showImpact ? (
-            <span className="font-fw-mono tabular-nums text-text-tertiary">
-              ~{impact.toFixed(1)} strokes/round
             </span>
           ) : null}
         </div>

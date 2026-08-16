@@ -30,7 +30,9 @@ import { Badge, Button, EmptyState, PressTarget, StatusPill, TrendGlyph } from '
 import type { PlayersGridFocusArea, PlayersGridStats } from '@/components/fairway';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
-import { formatAgeDays, formatCategoryLabel } from './buildTriageViewModel';
+import { EvidencePanel } from '@/components/golf/coachhelm/insights/EvidencePanel';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { formatCategoryLabel } from './buildTriageViewModel';
 import { SeverityChip } from './SignalRow';
 import { PromoteToFocusAreaButton } from './PromoteToFocusAreaButton';
 import { toCoachVoice } from '@/lib/golf/claim-voice';
@@ -133,9 +135,26 @@ export function SignalDossier({
             {group.playerName}
           </Badge>
         ) : null}
-        <span className="ml-auto font-fw-mono text-caption tabular-nums text-text-tertiary">
-          {formatAgeDays(signal.ageDays)}
-        </span>
+        {/*
+          The age was REMOVED, deliberately, rather than corrected.
+
+          It read `formatAgeDays(signal.ageDays)`, and `ageDays` is derived from
+          `golf_coach_insights.created_at` — the row's INSERT date. Insights
+          upsert by `signature`, so `created_at` never moves: 68% of live rows
+          are June-born and a row whose content was recomputed this morning
+          rendered as "55d ago". It was a confident, precise, wrong number on
+          the surface a coach uses to decide what to act on.
+
+          It cannot simply be re-pointed at `updated_at` either: a DB trigger
+          bumps that column on ANY write, including the dismissals and
+          acknowledgements in insight-management.ts, so an insight would appear
+          freshest immediately after a coach dismissed it.
+
+          Neither column carries content freshness, so nothing here can tell the
+          truth yet. Showing nothing is the honest state until an explicit
+          `content_generated_at` exists; then this is where the line goes, worded
+          "computed {n}d ago" to match the chat surface's existing idiom.
+        */}
       </div>
 
       <h3 className="font-fw-display text-h3 font-semibold text-text-primary">{signal.title}</h3>
@@ -147,6 +166,19 @@ export function SignalDossier({
               player is the subject (audit M12). */}
           {signal.claim ? toCoachVoice(signal.claim, group.playerName) : 'No further detail recorded.'}
         </p>
+        {/*
+          The section was called "Evidence" and contained only prose. Every
+          other insight surface renders the sample size, observation window and
+          benchmark from the `evidence` JSON; the Triage Desk — the one surface
+          a coach uses to DECIDE — showed none of it. A coach who cannot see
+          that "47%" came from 43 attempts over 18 rounds cannot judge the
+          claim, and had no way to ask.
+
+          Reused rather than rebuilt, so this inherits the panel's existing
+          "too few to read reliably" handling. Renders nothing for patterns and
+          for pre-evidence v2 rows, which is why it needs no guard here.
+        */}
+        <EvidencePanel evidence={signal.evidence as InsightEvidence | null} compact />
         <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 font-fw-mono text-caption tabular-nums text-text-tertiary">
           <span>
             Status <span className="text-text-secondary">{signal.status}</span>

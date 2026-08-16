@@ -131,7 +131,7 @@ async function getSignalGroupsImpl(
     const { data: insightRows, error: insightsError } = await applyInsightVisibility(
       supabase
         .from('golf_coach_insights')
-        .select('id, player_id, insight_type, category, title, content, priority, status, metadata, created_at')
+        .select('id, player_id, insight_type, category, title, content, priority, status, metadata, evidence, created_at')
         .eq('team_id', teamId)
         // The desk is an ACTION queue. Reviewed/resolved rows remain valid
         // history elsewhere, but must leave this queue after the coach acts.
@@ -202,6 +202,10 @@ async function getSignalGroupsImpl(
         strokeImpact: typeof strokesImpact === 'number' ? strokesImpact : null,
         playerId: row.player_id,
         supersededCount: 0,
+        // Carried so the desk can render the shared evidence block. The Triage
+        // Desk was the only insight surface showing no sample size, window or
+        // benchmark — the surface a coach uses to decide what to act on.
+        evidence: row.evidence ?? null,
       };
     });
 
@@ -219,6 +223,9 @@ async function getSignalGroupsImpl(
         strokeImpact: typeof row.stroke_impact === 'number' ? row.stroke_impact : null,
         playerId: row.player_id,
         supersededCount: 0,
+        // Patterns carry no evidence blob — the panel renders nothing for them
+        // rather than an empty shell.
+        evidence: null,
       };
     });
 
