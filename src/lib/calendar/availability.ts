@@ -14,6 +14,7 @@ import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { classIdFromDescription } from '@/lib/calendar/class-events';
 import { parseSemesterDates } from '@/lib/golf/semester';
 import { wallClockInZone } from '@/lib/golf/timezone';
+import { DEFAULT_TIMEZONE, getValidTimezone } from '@/lib/calendar/timezone';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -184,14 +185,22 @@ export async function getUserBusyPeriodsWithStatus(
   let teamIds: string[] = [];
   // IANA zone the players' class wall-clock times are written in. Read here
   // because `expandRecurringClass` builds Date objects from `HH:MM` strings and
-  // the runtime zone on Vercel is UTC — see setTimeOnDate. All 10 production
-  // teams carry a timezone today; null degrades to the previous behaviour
-  // rather than guessing a zone.
+  // the runtime zone on Vercel is UTC — see setTimeOnDate.
+  //
+  // SOURCE: `golf_team_settings.timezone`, resolved once below for BOTH the
+  // coach and player branches. It used to read `golf_teams.timezone` here, and
+  // that column has NO WRITER anywhere in the codebase — it is `NOT NULL
+  // DEFAULT 'America/New_York'` and no insert path ever sets it, so this
+  // function was effectively hardcoded to Eastern while the calendar page, both
+  // iCal feeds, the dashboard and the reminder cron all correctly honoured the
+  // coach's Settings choice (`golf_team_settings`, written by
+  // FairwaySettingsGeneral). A team outside Eastern got a correct calendar and
+  // an hour-wrong "find a common time".
   let classTimeZone: string | null = null;
   if (coach?.organization_id) {
     const { data: teams, error: teamsError } = await supabase
       .from('golf_teams')
-      .select('id, timezone')
+      .select('id')
       .eq('organization_id', coach.organization_id);
     if (teamsError) {
       partial = true;
@@ -202,9 +211,6 @@ export async function getUserBusyPeriodsWithStatus(
       );
     }
     teamIds = (teams ?? []).map((t) => t.id);
-    classTimeZone = (teams ?? [])
-      .map((t) => (t as { timezone?: string | null }).timezone)
-      .find((tz): tz is string => Boolean(tz)) ?? null;
   } else if (player) {
     const { data: memberships, error: membershipsError } = await supabase
       .from('golf_team_members')
@@ -223,33 +229,53 @@ export async function getUserBusyPeriodsWithStatus(
       .map((m) => m.team_id)
       .filter((id): id is string => Boolean(id));
 
-    if (teamIds.length > 0) {
-      // Failure here is NOT folded into `partial`: an unknown zone makes class
-      // blocks land in the runtime zone (the pre-existing behaviour), it does
-      // not drop them. Marking the whole answer incomplete for that would
-      // suppress real conflicts the rest of this function found correctly.
-      //
-      // It is still LOGGED, because "no team carries a zone" and "the zone read
-      // failed" produce the same null here and have very different meanings.
-      // Falling back to the runtime zone silently would reinstate exactly the
-      // bug this timezone plumbing exists to fix — on Vercel the runtime zone
-      // is UTC, so a 09:05 class would block 05:05 Eastern again, with nothing
-      // in the logs to say why.
-      const { data: tzRows, error: tzError } = await supabase
-        .from('golf_teams')
-        .select('timezone')
-        .in('id', teamIds);
-      if (tzError) {
-        await logServerError(
-          `[availability] team timezone read failed; class blocks fall back to the runtime zone: ${describeError(tzError)}`,
-          { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
-          'warning',
-        );
-      }
-      classTimeZone = (tzRows ?? [])
-        .map((t) => (t as { timezone?: string | null }).timezone)
-        .find((tz): tz is string => Boolean(tz)) ?? null;
+  }
+
+  // ── Class-block timezone, resolved ONCE for both branches ─────────────────
+  //
+  // This lived in two places (a column on the coach's team query, and a second
+  // read in the player branch). Two copies of one rule is how they drift, so
+  // there is now one.
+  //
+  // DETERMINISM: a coach's org — and a player's memberships — can span several
+  // teams. This used to `.find()` the first non-null zone with no ORDER BY, so
+  // a multi-team org (Shenandoah has two) got whatever order Postgres happened
+  // to return. `.order('team_id')` makes the LOWEST team_id win: an arbitrary
+  // rule, but a STABLE one, which is the property that was missing. It only
+  // matters once an org actually spans zones; until then every candidate is
+  // identical and the choice is unobservable.
+  //
+  // FALLBACK: `getValidTimezone` yields DEFAULT_TIMEZONE when no row carries a
+  // zone — which is the common case, not an edge one: 5 of the 10 production
+  // teams have no `golf_team_settings` row at all. That matches every other
+  // reader (calendar page, both iCal feeds, dashboard, reminder cron). It is
+  // also why `classTimeZone` is no longer nullable: `wallClockInZone` treats
+  // null as "use the runtime zone", and on Vercel that is UTC — which would
+  // block a 09:05 class at 05:05 Eastern, the exact bug this plumbing exists
+  // to prevent.
+  if (teamIds.length > 0) {
+    // Failure here is NOT folded into `partial`: an unknown zone shifts class
+    // blocks, it does not drop them. Marking the whole answer incomplete would
+    // suppress real conflicts the rest of this function found correctly. It is
+    // still LOGGED — "no team carries a zone" and "the read failed" are
+    // indistinguishable downstream and mean very different things.
+    const { data: tzRows, error: tzError } = await supabase
+      .from('golf_team_settings')
+      .select('team_id, timezone')
+      .in('team_id', teamIds)
+      .order('team_id', { ascending: true });
+    if (tzError) {
+      await logServerError(
+        `[availability] team settings timezone read failed; class blocks fall back to ${DEFAULT_TIMEZONE}: ${describeError(tzError)}`,
+        { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+        'warning',
+      );
     }
+    classTimeZone = getValidTimezone(
+      (tzRows ?? [])
+        .map((t) => (t as { timezone?: string | null }).timezone)
+        .find((tz): tz is string => Boolean(tz)) ?? null,
+    );
   }
 
   // 2. Fetch all busy periods in parallel (major performance improvement).

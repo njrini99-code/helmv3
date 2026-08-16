@@ -10,7 +10,7 @@
  * old date-collapsed filters exclude the seeded timed events under these same
  * semantics, the new timestamp-overlap filters include them.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getUserBusyPeriods, periodsOverlap } from '@/lib/calendar/availability';
 import { checkEventConflicts } from '@/lib/calendar/conflicts';
@@ -133,6 +133,7 @@ interface SeedTables extends Record<string, Row[]> {
   golf_event_attendance: Row[];
   golf_player_classes: Row[];
   golf_coach_blocked_time: Row[];
+  golf_team_settings: Row[];
 }
 
 function baseTables(): SeedTables {
@@ -145,6 +146,9 @@ function baseTables(): SeedTables {
     golf_event_attendance: [],
     golf_player_classes: [],
     golf_coach_blocked_time: [],
+    // Seeded EMPTY on purpose: the default state is "this team has no settings
+    // row", which is not an edge case — 5 of the 10 production teams are in it.
+    golf_team_settings: [],
   };
 }
 
@@ -509,5 +513,75 @@ describe('periodsOverlap', () => {
     const a = { start: new Date('2026-06-10T18:00:00Z'), end: new Date('2026-06-10T20:00:00Z') };
     expect(periodsOverlap(a, { start: new Date('2026-06-10T19:00:00Z'), end: new Date('2026-06-10T21:00:00Z') })).toBe(true);
     expect(periodsOverlap(a, { start: new Date('2026-06-10T20:00:00Z'), end: new Date('2026-06-10T21:00:00Z') })).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Class-block timezone SOURCE (calendar audit F2)
+// ---------------------------------------------------------------------------
+//
+// `getUserBusyPeriods` used to read the class wall-clock zone from
+// `golf_teams.timezone`. That column has NO WRITER anywhere in the codebase —
+// it is `NOT NULL DEFAULT 'America/New_York'` and no insert path sets it — so
+// conflict detection was effectively pinned to Eastern while the calendar page,
+// both iCal feeds, the dashboard and the reminder cron all honoured the coach's
+// Settings choice on `golf_team_settings.timezone`.
+//
+// Both cases below seed `golf_teams` WITHOUT a timezone, which is what
+// production actually looks like from this function's point of view: the old
+// read found nothing, `classTimeZone` fell to null, and `wallClockInZone` then
+// resolved the class in the RUNTIME zone — UTC on Vercel. Hence `TZ=UTC` here:
+// it reproduces the server, and it makes the old behaviour (09:05Z) visibly
+// wrong instead of accidentally right on an Eastern laptop.
+describe('getUserBusyPeriods — class zone comes from golf_team_settings (F2)', () => {
+  const ORIGINAL_TZ = process.env.TZ;
+  beforeAll(() => { process.env.TZ = 'UTC'; });
+  afterAll(() => { process.env.TZ = ORIGINAL_TZ; });
+
+  // 2026-06-10 is a Wednesday. `semester: null` is deliberate — every one of the
+  // 43 production class rows has a null semester, so the expander's no-term
+  // path is the real one.
+  const WED = '2026-06-10';
+  function seedWednesdayClass(tables: SeedTables) {
+    tables.golf_teams.push({ id: 't1', organization_id: 'org1' });
+    tables.golf_player_classes.push({
+      id: 'cls-tz', player_id: 'p1', class_name: 'BUS 324',
+      days: ['Wednesday'], start_time: '09:05', end_time: '10:20', semester: null,
+    });
+  }
+  const windowFor = (): [Date, Date] => [
+    new Date(`${WED}T00:00:00Z`),
+    new Date(`${WED}T23:59:00Z`),
+  ];
+
+  it('resolves a NON-Eastern zone from golf_team_settings', async () => {
+    const tables = baseTables();
+    seedWednesdayClass(tables);
+    tables.golf_team_settings.push({ team_id: 't1', timezone: 'America/Chicago' });
+
+    const [min, max] = windowFor();
+    const busy = await getUserBusyPeriods('u1', min, max, createStubClient(tables));
+    const cls = busy.find((b) => b.type === 'class');
+
+    expect(cls).toBeDefined();
+    // 09:05 CDT (UTC-5 in June) = 14:05Z. Before the fix this was 09:05Z,
+    // because the zone read came back empty and the runtime zone (UTC) won.
+    expect(cls!.start.toISOString()).toBe(`${WED}T14:05:00.000Z`);
+  });
+
+  it('falls back to DEFAULT_TIMEZONE — never the runtime zone — when the team has no settings row', async () => {
+    const tables = baseTables();
+    seedWednesdayClass(tables);
+    // No golf_team_settings row at all: the 5-of-10-teams case.
+
+    const [min, max] = windowFor();
+    const busy = await getUserBusyPeriods('u1', min, max, createStubClient(tables));
+    const cls = busy.find((b) => b.type === 'class');
+
+    expect(cls).toBeDefined();
+    // 09:05 America/New_York (UTC-4 in June) = 13:05Z. The runtime zone is UTC
+    // here, so a regression to the old null-means-runtime-zone path would show
+    // up as 09:05Z — this assertion is what distinguishes the two.
+    expect(cls!.start.toISOString()).toBe(`${WED}T13:05:00.000Z`);
   });
 });
