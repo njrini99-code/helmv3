@@ -1024,6 +1024,28 @@ class CoachHelmIntelligence {
    *
    * @param teamId - The team's UUID
    */
+  /**
+   * DORMANT — has never produced a row in production. Verified 2026-08-16:
+   * `golf_coach_insights` has 596 rows and ZERO with `player_id IS NULL`.
+   *
+   * Not a data problem and not a gate problem. Its only caller is
+   * `generateTeamInsights()` (actions/insights.ts:1173), whose only caller is
+   * `InsightsFeed.tsx` — a component nothing mounts since its page was removed
+   * with the legacy dual-tree in ffd0fd8ab. The consolidated
+   * /dashboard/intelligence surface has no team-level view and never calls it.
+   *
+   * The gate below (`playerCount >= 2 && confidence >= 0.6`) would pass easily:
+   * 11 Guilford players share one `contextual` pattern at 0.69 avg confidence
+   * over 125 instances. This would emit today if anything invoked it.
+   *
+   * Beware: `insight_type = 'team_trend'` returns 2 production rows, but they
+   * are NOT from here — both carry a non-null player_id and no
+   * `metadata.cross_player`, so they are mislabelled player-scoped rows.
+   *
+   * See docs/design/team-level-insights-are-dark.md. Turning it on is a product
+   * decision (where it surfaces, what triggers it, and that it starts writing
+   * rows on a shared production DB), not a mechanical rewire.
+   */
   async generateTeamPatternInsights(
     teamId: string
   ): Promise<ComposedInsight[]> {
