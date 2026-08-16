@@ -2,10 +2,37 @@
 
 /**
  * Player-facing CoachHelm effectiveness summary — the player equivalent of
- * `coachhelm-analytics.ts` but scoped to a single player. Used by the player's
- * /dashboard/coachhelm "Your CoachHelm Impact" card to surface how many of the
- * insights surfaced to them have actually resolved + improved their game over
- * the last 90 days.
+ * `coachhelm-analytics.ts` but scoped to a single player.
+ *
+ * NOT WIRED. Verified 2026-08-16: `getPlayerEffectiveness` has no caller
+ * anywhere — no component, page, action or test invokes it. The only
+ * references are `coverage-contract.b8-files.test.ts` and
+ * `feature-registry.test.ts`, both of which assert this FILE PATH is listed,
+ * not that anything calls into it.
+ *
+ * The previous version of this comment said it was "used by the player's
+ * /dashboard/coachhelm 'Your CoachHelm Impact' card". That card does not
+ * exist and never has — grep "CoachHelm Impact" returns this comment and
+ * nothing else. Leaving that claim in place is what makes an orphan read as
+ * live code, so it is corrected rather than deleted.
+ *
+ * Also note `feature-registry.ts` maps this file into the `coachhelm_analytics`
+ * feature with 'ALL', so the admin dashboard counts its exports toward a live
+ * feature. The feature's actual health signal reads `golf_insight_effectiveness`
+ * (its primaryTable), which this file never touches, so nothing is currently
+ * mis-measured — but the mapping over-claims.
+ *
+ * BEFORE WIRING THIS, READ THIS. It has no empty-state guard, and its inputs
+ * are almost entirely unpopulated: `outcome_status` is NULL on 594 of 596
+ * production `golf_coach_insights` rows, so `improvedCount` and
+ * `totalStrokesSavedPerRound` would render a confident **0 strokes saved** for
+ * effectively every player — a measured-looking zero for something never
+ * measured. Its sibling `coachhelm-analytics.ts` already solved this (it logs
+ * "would have reported zero effectiveness it never measured" and ships a
+ * tested empty state); this file would reintroduce the bug. The ledger is
+ * empty for workflow reasons, not a defect: only 5 of 25 focus areas carry a
+ * `from_insight_id`, and none of those 5 are completed yet, so
+ * `recordFocusAreaOutcome` has had nothing to credit.
  *
  * Stroke impact lives on `golf_coach_insights.metadata.stroke_impact` (jsonb)
  * because the column itself isn't present on the insights table — only on
