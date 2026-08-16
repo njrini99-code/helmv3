@@ -49,6 +49,14 @@ export interface CausalRelationshipRow {
   dose_response: boolean;
   intervention_potential: number;
   created_at: string | null;
+  /**
+   * When the engine LAST re-confirmed this relationship. `created_at` is frozen
+   * at first detection — `saveRelationships` updates an existing row in place
+   * and only inserts a genuinely new one — so `updated_at` is the only honest
+   * freshness signal. Measured 2026-08-16: 5,518 of 5,641 production rows have
+   * `updated_at > created_at`.
+   */
+  updated_at: string | null;
 }
 
 /** The raw row shape we select from `golf_causal_relationships`. */
@@ -66,10 +74,11 @@ interface RawCausalRow {
   dose_response: boolean | null;
   intervention_potential: number | null;
   created_at: string | null;
+  updated_at: string | null;
 }
 
 const SELECT_COLUMNS =
-  'id, player_id, cause, cause_metric, effect, effect_metric, relationship_type, strength, confidence, mechanism, dose_response, intervention_potential, created_at';
+  'id, player_id, cause, cause_metric, effect, effect_metric, relationship_type, strength, confidence, mechanism, dose_response, intervention_potential, created_at, updated_at';
 
 /**
  * Cap the per-player fetch so a 2,033-row player doesn't over-fetch. We order
@@ -121,6 +130,7 @@ function dedupeAndRank(rows: RawCausalRow[]): CausalRelationshipRow[] {
       dose_response: Boolean(row.dose_response),
       intervention_potential: row.intervention_potential ?? 0,
       created_at: row.created_at,
+      updated_at: row.updated_at,
     });
   }
 
@@ -157,8 +167,15 @@ async function fetchPlayerRowsDeduped(
     query = query.eq('is_active', true);
   }
 
+  // Order by LAST CONFIRMED, not first detected. This is not cosmetic: the
+  // table holds physical duplicates per logical relationship (see this file's
+  // header — one gir→scoring relationship 1,831×) and `dedupeAndRank` keeps the
+  // FIRST row per natural key, so this column picks the SURVIVOR. `created_at`
+  // is frozen at first detection, so it kept whichever duplicate was inserted
+  // earliest — potentially one the engine has long since stopped confirming.
+  // (It does NOT set display order; dedupeAndRank re-sorts by actionability.)
   const { data, error } = await query
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
     .limit(FETCH_LIMIT);
 
   if (error) {
@@ -224,8 +241,11 @@ async function fetchTeamRowsDeduped(
           query = query.eq('is_active', true);
         }
 
+        // Last-confirmed, matching fetchPlayerRowsDeduped — the two reads must
+        // pick the same duplicate or a coach and a player see different rows
+        // for the same relationship.
         const { data, error } = await query
-          .order('created_at', { ascending: false })
+          .order('updated_at', { ascending: false })
           .limit(FETCH_LIMIT);
 
         if (error) {
