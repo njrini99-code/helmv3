@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
+import { resolveClientEnvironment } from '@/lib/sentry-environment';
 
 /**
  * True when this event came from `captureConsoleIntegration` rather than an
@@ -17,7 +18,19 @@ function isConsoleOriginEvent(event: Sentry.ErrorEvent): boolean {
 
 const isDev = process.env.NODE_ENV === 'development';
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
-const environment = process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV || process.env.NODE_ENV || 'development';
+// The browser cannot read `VERCEL` (Next only inlines NEXT_PUBLIC_*), and
+// next.config.mjs bakes NEXT_PUBLIC_VERCEL_ENV from VERCEL_ENV || NODE_ENV at
+// BUILD time — so a local `next build` ships the literal string "production"
+// in the bundle. The only signal that can still tell the truth at runtime is
+// where the browser actually is; a deployed host never matches.
+const environment = resolveClientEnvironment(
+  {
+    NEXT_PUBLIC_VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    NODE_ENV: process.env.NODE_ENV,
+  },
+  typeof window === 'undefined' ? undefined : window.location.hostname,
+);
 
 Sentry.init({
   dsn,

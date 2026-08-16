@@ -1,10 +1,17 @@
 import * as Sentry from '@sentry/nextjs';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
+import { resolveServerEnvironment } from '@/lib/sentry-environment';
 
 const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
-const environment = process.env.VERCEL_ENV || process.env.NODE_ENV || 'development';
+// NOT `VERCEL_ENV || NODE_ENV`: NODE_ENV is 'production' in ANY optimized
+// build, so `next build && next start` on a laptop reported
+// `environment: production` and agent QA worktrees landed in Sentry looking
+// like live outages. Gated on `VERCEL` (set to "1" on every Vercel build and
+// runtime) so a genuine production event can never be relabelled — see
+// resolve-environment.ts and its matrix test.
+const environment = resolveServerEnvironment(process.env);
 
 const sharedIgnoreErrors = [
   'NEXT_NOT_FOUND',
