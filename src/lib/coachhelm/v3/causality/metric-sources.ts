@@ -269,6 +269,15 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   // per-round metric the canonical id resolves to — so attribution computes lift
   // on the right data, never a near-miss substitute.
 
+  // New diagnostic-only metric — PuttSlopeBiasGenerator (2026-08-16). Same
+  // classification rationale as putt_miss_bias_* above: a downhill-vs-level
+  // penalty is a shot-level (not per-round time-series) comparison, and the
+  // underlying population (short putts on one slope) is small per round, so
+  // no measurable causal lift is expected over a 21-day attribution window.
+  // Classifying it intentional-null (not leaving it unresolved) keeps it out
+  // of the "unknown-metric" drift bucket the cron treats as a registry gap.
+  putt_slope_downhill_penalty_pct: { kind: 'intentional-null', reason: 'diagnostic-only' },
+
   // Drift: `putt_make_pct_5_10` is the insight-surface spelling of the canonical
   // 5–10 ft putt-make metric `putts_made_5_10ft_pct`. We reuse that canonical
   // def verbatim — which is `intentional-null` because per-distance putt make-rate
