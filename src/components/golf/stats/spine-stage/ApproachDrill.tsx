@@ -100,6 +100,46 @@ function finite(n: number | null | undefined): number | null {
 function fmtPct(n: number | null): string {
   return n === null ? '—' : `${Math.round(n)}%`;
 }
+
+/**
+ * GIR by approach lie, without inventing a zero.
+ *
+ * These rows used to do `finite(...) ?? 0`, so a null — which `safePercent`
+ * returns precisely when the denominator is zero — rendered a 0% bar. "GIR from
+ * Sand: 0%" for a player who has never had an approach from a bunker reads
+ * identically to one who has been in six and missed every green, on the panel
+ * whose whole job is diagnosing where approaches go wrong.
+ *
+ * Live, and worse than the bento's equivalent. Measured 2026-08-17 across the
+ * 42 players with completed rounds: 6 have ZERO sand approaches and render the
+ * fabricated 0%, and 14 more have between one and four. Nearly half the roster
+ * sees a GIR-from-sand number it cannot act on. Fairway and rough are never at
+ * zero, so the false value is specific to the lie that is genuinely rare.
+ *
+ * A REAL 0% stays undimmed — six approaches from sand and no greens is a
+ * finding, and must not be swept in with the no-data case.
+ *
+ * NOT FIXED HERE: the sample size. `girByLie` computes `{made, total}` for all
+ * three lies (golf-stats-calculator-shots.ts:2798-2801) but the interface
+ * exposes only `girCountFromFairway` and `girCountFromRough` — there is no
+ * `girCountFromSand`, so the denominator for the one thin lie is computed and
+ * discarded. Exposing it is a calculator change with its own blast radius; this
+ * closes the false-zero half, which needs no new field.
+ */
+export function buildGirByLieRows(s: GolfStats | null): RailBarRow[] {
+  const rows: Array<[string, number | null]> = [
+    ['Fairway', finite(s?.girPctFromFairway)],
+    ['Rough', finite(s?.girPctFromRough)],
+    ['Sand', finite(s?.girPctFromSand)],
+  ];
+  return rows.map(([label, pct]) => ({
+    label,
+    pct: pct ?? 0,
+    value: fmtPct(pct),
+    dim: pct === null,
+  }));
+}
+
 function toBuckets(buckets: LeakBucket[]): LeakMapBucket[] {
   return buckets.map((b) => ({ label: b.label, teamValue: b.team_value, pgaValue: b.pga_value, sampleN: b.sample_n }));
 }
@@ -258,11 +298,7 @@ export function ApproachDrill({
     return { label: band.label, n: null, pct: finite(raw) };
   });
 
-  const byLie: RailBarRow[] = [
-    { label: 'Fairway', pct: finite(s?.girPctFromFairway) ?? 0, value: fmtPct(finite(s?.girPctFromFairway)) },
-    { label: 'Rough', pct: finite(s?.girPctFromRough) ?? 0, value: fmtPct(finite(s?.girPctFromRough)) },
-    { label: 'Sand', pct: finite(s?.girPctFromSand) ?? 0, value: fmtPct(finite(s?.girPctFromSand)) },
-  ];
+  const byLie: RailBarRow[] = buildGirByLieRows(s);
 
   const missRows: RailBarRow[] = [
     { label: 'Short', pct: finite(s?.approachMissShortPct) ?? 0, value: fmtPct(finite(s?.approachMissShortPct)) },
