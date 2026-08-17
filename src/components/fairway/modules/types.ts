@@ -83,7 +83,25 @@ export interface BentoCellProps {
   children?: ReactNode;          // mini-viz slot
 }
 
-export interface RailBarRow { label: string; pct: number; value: string; dim?: boolean; tickPct?: number }
+export interface RailBarRow {
+  label: string;
+  pct: number;
+  value: string;
+  dim?: boolean;
+  tickPct?: number;
+  /**
+   * The evidence behind `value`, as "made/attempts" — e.g. `'1/2'`.
+   *
+   * A rate with no denominator is not a fact a coach can act on: one sand save
+   * from two tries renders "50%", identical in weight to twenty from forty.
+   * Measured 2026-08-17, 14 of 42 players carry a sand-save number derived from
+   * four or fewer attempts. Mirrors `RampCell.n`, which already carries a
+   * sample count in this same module family.
+   *
+   * Optional, and omitted rather than faked when the counts are unavailable.
+   */
+  sample?: string;
+}
 export interface RailBarsProps { rows: RailBarRow[]; labelWidth?: number }
 
 export interface DivergingRow { label: string; delta: number; display: string }

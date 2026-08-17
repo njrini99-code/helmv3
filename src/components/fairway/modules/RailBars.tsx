@@ -58,6 +58,17 @@ export function RailBars({ rows, labelWidth = 56 }: RailBarsProps) {
               className="text-right font-fw-mono text-caption font-normal tabular-nums text-text-primary"
             >
               {row.value}
+              {/* The evidence behind the rate. A percentage with no denominator
+                  is not actionable — one sand save from two tries reads "50%",
+                  the same weight as twenty from forty, and 14 of 42 players
+                  carry a sand number built on four attempts or fewer. Rendered
+                  quiet and one step down so it informs the number without
+                  competing with it. */}
+              {row.sample ? (
+                <span className="ml-1 font-fw-mono text-microlabel font-normal text-text-tertiary">
+                  {row.sample}
+                </span>
+              ) : null}
             </span>
           </m.div>
         ))}

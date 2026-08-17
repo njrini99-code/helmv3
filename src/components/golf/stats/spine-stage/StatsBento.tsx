@@ -39,6 +39,58 @@ function fmtPct(n: number | null): string {
   return n === null ? '—' : `${Math.round(n)}%`;
 }
 
+/**
+ * "made/attempts", or undefined when the counts are not available.
+ *
+ * Omitted rather than faked: a legacy stats object carrying a rate but no
+ * counts must not render "undefined/undefined" or an invented 0/0.
+ */
+function sampleOf(made: number | null | undefined, attempts: number | null | undefined): string | undefined {
+  if (typeof made !== 'number' || typeof attempts !== 'number') return undefined;
+  if (!Number.isFinite(made) || !Number.isFinite(attempts) || attempts <= 0) return undefined;
+  return `${made}/${attempts}`;
+}
+
+/**
+ * Short-game rows, extracted from the component so the honesty rules below are
+ * testable without mounting the bento.
+ *
+ * TWO THINGS THIS FIXES.
+ *
+ * 1. It used to fabricate a zero. `golf-stats-calculator-shots.ts` is
+ *    deliberately null-honest — `sandSavePercentage: number | null`, null when
+ *    there were no attempts — and the row did `finite(...) ?? 0`, so a player
+ *    who has never been in a bunker rendered a 0% bar, identical to one who
+ *    failed every save. Null now renders an em-dash on a dimmed rail.
+ *
+ * 2. It hid the denominator, which was sitting unused on the same interface
+ *    (`sandSaveAttempts`/`sandSavesMade`, `scrambleAttempts`/`scramblesMade`).
+ *    Measured 2026-08-17 across 42 players with completed rounds: 1 has zero
+ *    sand attempts, and 14 have between one and four — a third of the roster
+ *    showing a rate built on four tries or fewer with nothing saying so. One
+ *    save from two reads "50%", the same visual weight as twenty from forty.
+ */
+export function buildShortGameRows(s: GolfStats | null): RailBarRow[] {
+  const scrPct = finite(s?.scramblingPercentage);
+  const sandPct = finite(s?.sandSavePercentage);
+  return [
+    {
+      label: 'Scrambling',
+      pct: scrPct ?? 0,
+      value: fmtPct(scrPct),
+      dim: scrPct === null,
+      sample: sampleOf(s?.scramblesMade, s?.scrambleAttempts),
+    },
+    {
+      label: 'Sand saves',
+      pct: sandPct ?? 0,
+      value: fmtPct(sandPct),
+      dim: sandPct === null,
+      sample: sampleOf(s?.sandSavesMade, s?.sandSaveAttempts),
+    },
+  ];
+}
+
 export interface StatsBentoProps {
   detailedStats: GolfStats | null;
   standingByMetric: Map<string, PlayerStandingRow>;
@@ -106,10 +158,7 @@ export function StatsBento({
     { label: 'Par 4', pct: finite(s?.girPctPar4) ?? 0, value: fmtPct(finite(s?.girPctPar4)) },
   ];
 
-  const shortGameRows: RailBarRow[] = [
-    { label: 'Scrambling', pct: finite(s?.scramblingPercentage) ?? 0, value: fmtPct(finite(s?.scramblingPercentage)) },
-    { label: 'Sand saves', pct: finite(s?.sandSavePercentage) ?? 0, value: fmtPct(finite(s?.sandSavePercentage)) },
-  ];
+  const shortGameRows: RailBarRow[] = buildShortGameRows(s);
 
   const scoringDiverging: DivergingRow[] = [
     { label: 'Par 3', delta: s?.scoringByPar.par3.avgToPar ?? 0, display: fmtToPar(s?.scoringByPar.par3.avgToPar ?? null) },
