@@ -79,6 +79,95 @@ async function safeRows<T>(query: PromiseLike<{ data: T[] | null }>): Promise<T[
 }
 
 /**
+ * The same degrade-don't-throw contract as `safeRows`, for a `head: true`
+ * count. A failed count must not blank the pulse — it falls back to 0, and the
+ * caller then omits the signals item rather than printing a number it did not
+ * actually measure.
+ */
+async function safeCount(query: PromiseLike<{ count: number | null }>): Promise<number> {
+  try {
+    const { count } = await query;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * The Program Pulse's "N open signals" item.
+ *
+ * Extracted and given a real total because BOTH halves of it were wrong, and
+ * both were only visible against production data (#1479).
+ *
+ * 1. THE COUNT WAS THE QUERY LIMIT. The headline used `signals.length`, and
+ *    `signals` is a `.limit(50)` page. Demo University Golf's roster carries
+ *    **148** insights (124 with `status = 'active'`) and the Brief read
+ *    "50 open signals across 7 players". It would have read 50 for a team with
+ *    fifty and for a team with five hundred — a cap presented as a measurement.
+ *    `total` is now counted separately and the page is used only for evidence.
+ *
+ * 2. THE EVIDENCE REPEATED ITSELF. It took the two newest titles verbatim, so
+ *    when the two newest came from the same generator on adjacent bands the
+ *    line read:
+ *
+ *        Downhill putts inside 4-6 ft: a real penalty ·
+ *        Downhill putts inside 0-3 ft: a real penalty
+ *
+ *    Same finding, twice, differing by a numeric range. Both are true — the
+ *    slope generator runs an independent test per band and both cleared
+ *    significance — but a coach reading them learns less than from one line,
+ *    and it is why a real signal reads as padding. Titles are now compared with
+ *    their numbers stripped, so two bands of one finding count as one, and the
+ *    second slot goes to a genuinely different signal when the roster has one.
+ *
+ * Pure and exported so this is testable without standing up six query mocks.
+ */
+export function buildSignalsPulseItem(
+  signals: readonly { player_id?: string | null; title?: string | null }[],
+  total: number,
+): PulseItem | null {
+  if (total <= 0 || signals.length === 0) return null;
+
+  const players = new Set(signals.map((s) => s.player_id).filter(Boolean));
+
+  // Strip digits, ranges and units so "inside 0-3 ft" and "inside 4-6 ft"
+  // collapse to one shape. Deliberately crude: the goal is to stop ONE finding
+  // being said twice, not to cluster unrelated signals, and anything smarter
+  // risks merging two genuinely different problems into a single line.
+  const shapeOf = (title: string) =>
+    title
+      .toLowerCase()
+      .replace(/[\d.]+\s*(?:-\s*[\d.]+)?\s*(?:ft|feet|yd|yds|yards|%)?/g, '#')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const seen = new Set<string>();
+  const distinct: string[] = [];
+  for (const s of signals) {
+    const title = s.title?.trim();
+    if (!title) continue;
+    const shape = shapeOf(title);
+    if (seen.has(shape)) continue;
+    seen.add(shape);
+    distinct.push(title);
+    if (distinct.length === 2) break;
+  }
+
+  // Every signal on the roster being one restated finding is itself honest
+  // information — show the one, do not pad it back to two.
+  if (distinct.length === 0) return null;
+
+  return {
+    id: 'signals-open',
+    headline: `${total} open signal${total === 1 ? '' : 's'} across ${players.size} player${players.size === 1 ? '' : 's'}`,
+    evidence: distinct.join(' · '),
+    tone: 'neutral',
+    weight: 70,
+    action: { label: 'Review signals', href: '/golf/dashboard/intelligence?view=signals' },
+  };
+}
+
+/**
  * Read the program's current state.
  *
  * Individually degradable: one failing query must not blank the whole surface,
@@ -105,7 +194,7 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
   const now = Date.now();
   const items: PulseItem[] = [];
 
-  const [rounds, events, attendance, tasks, focus, signals] = await Promise.all([
+  const [rounds, events, attendance, tasks, focus, signals, signalCount] = await Promise.all([
     safeRows(
       sb
         .from('golf_rounds')
@@ -160,6 +249,17 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
       )
         .order('created_at', { ascending: false })
         .limit(50),
+    ),
+    // The TOTAL, separately. The page above is capped at 50 and was previously
+    // also used as the count, so the headline reported the cap — "50 open
+    // signals" on a roster carrying 148. `head: true` fetches no rows. #1479.
+    safeCount(
+      applyInsightVisibility(
+        sb
+          .from('golf_coach_insights')
+          .select('id', { count: 'exact', head: true })
+          .in('player_id', playerIds),
+      ),
     ),
   ]);
 
@@ -255,20 +355,8 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
   }
 
   // ── Signals ─────────────────────────────────────────────────────────────
-  if (signals.length > 0) {
-    const players = new Set(signals.map((s) => s.player_id).filter(Boolean));
-    items.push({
-      id: 'signals-open',
-      headline: `${signals.length} open signal${signals.length === 1 ? '' : 's'} across ${players.size} player${players.size === 1 ? '' : 's'}`,
-      evidence: signals
-        .slice(0, 2)
-        .map((s) => s.title)
-        .join(' · '),
-      tone: 'neutral',
-      weight: 70,
-      action: { label: 'Review signals', href: '/golf/dashboard/intelligence?view=signals' },
-    });
-  }
+  const signalsItem = buildSignalsPulseItem(signals, signalCount);
+  if (signalsItem) items.push(signalsItem);
 
   // ── RSVPs ───────────────────────────────────────────────────────────────
   const liveEvents = events.filter((e) => e.status !== 'cancelled' && e.requires_rsvp);
