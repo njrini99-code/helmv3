@@ -2,26 +2,53 @@
  * Genome dimension: scrambling_rate.
  *
  * Category: recovery_patterns.
- * Fraction of short-game attempts from rough/sand that ended within
- * 10 ft of the hole (a rough proxy for "saved par from trouble").
- * Returns value in [0, 1].
+ * The canonical golf definition: of the greens you MISSED in regulation, the
+ * fraction you still finished at par or better. Returns a value in [0, 1].
+ *
+ * WHY THIS IS NOT A PROXIMITY MEASURE. Until 2026-08-17 this dimension counted
+ * short-game shots from rough/sand that finished within 10 ft, and its own
+ * docstring called that "a rough proxy for 'saved par from trouble'". It is not
+ * a proxy for it: you can stiff a chip to three feet, three-putt, and the
+ * proximity measure still scores it a save. Meanwhile
+ * `golf-stats-calculator-shots.ts` has always used the real definition
+ * (`scrambleAttempt: !gir && score !== null`, `scrambleMade: … && score <=
+ * par`), so one product showed two numbers under one word.
+ *
+ * Measured across production before the change — the same players, same day:
+ *
+ *   Lily Rowe      Stats 30.9%   Genome 61.0%   +30.1 pts
+ *   Ethan Park     Stats 30.3%   Genome 56.3%   +26.0
+ *   Cole Bennett   Stats 33.7%   Genome 57.6%   +23.9
+ *   Luke Wise      Stats 31.5%   Genome 53.7%   +22.2
+ *
+ * The labels inverted the verdict rather than merely shifting it. Of 26 players
+ * with a genome value, the old cutoffs called 14 "Wizard" — 8 of them
+ * scrambling below 40% — and put 13 at "Reliable" or better while their real
+ * rate was under 35%. By the canonical stat 14 of those players are Leaky; the
+ * genome flagged one. Coaches were being told a weakness was a strength.
  */
 
 import type { DimensionResult, GenomeContext, GenomeDimension } from '../types';
 
+/**
+ * Attempts, not rounds. Production's 90-day cohort carries 19–87 missed greens
+ * per player, so this floor costs nothing real and still refuses a player with
+ * two rounds logged.
+ */
 const MIN_ATTEMPTS = 15;
-const SAVE_PROXIMITY_FT = 10;
 
 /**
- * distance_to_hole_after is stored in mixed units (golf_shots.distance_unit_after
- * is 'feet' for most short-game leaves but 'yards' for longer ones). The SAVE
- * threshold is in FEET, so yards rows must be converted (×3) before the compare —
- * never average/compare a feet threshold against a raw yards value (CANON: UNITS).
+ * Cutoffs taken from the squad this actually describes, not from intuition.
+ * Measured over the genome's own 90-day window (20 players with >=15 attempts):
+ * p25 27.6%, median 34.1%, p75 40.6%. So Wizard is top-quartile and Leaky is
+ * bottom-quartile among college golfers.
+ *
+ * The old 0.55 / 0.35 cutoffs were calibrated against the inflated proximity
+ * number. Applied to real rates they would invert the error rather than fix it:
+ * nobody in production clears 0.55, and most of the squad would read Leaky.
  */
-function leaveFeet(s: { distance_to_hole_after: number | null; distance_unit_after?: string | null }): number {
-  const raw = s.distance_to_hole_after ?? Infinity;
-  return s.distance_unit_after === 'yards' ? raw * 3 : raw;
-}
+const WIZARD_AT = 0.406;
+const RELIABLE_AT = 0.276;
 
 const dim: GenomeDimension = {
   id: 'scrambling_rate',
@@ -29,31 +56,22 @@ const dim: GenomeDimension = {
   label: 'Scrambling rate',
 
   compute(ctx: GenomeContext): DimensionResult {
-    const attempts = ctx.shots.filter(
-      (s) =>
-        // Post-040 short-game shots are stored as 'around_green' (the
-        // CHECK constraint forbids 'chip'/'pitch'). Pre-040 prod data may
-        // still carry legacy values — accept all three to match
-        // shot-analytics.ts:410 and keep historical scrambling-rate
-        // computation accurate.
-        (s.shot_type === 'around_green' ||
-          s.shot_type === 'chip' ||
-          s.shot_type === 'pitch') &&
-        // Canonical recovery lies actually stored in golf_shots are 'rough'
-        // and 'sand'. The old 'heavy_rough'/'light_rough'/'bunker' literals
-        // match zero rows, which silently excluded EVERY greenside-sand
-        // recovery and inflated the rate (CANON: sand-save/scrambling).
-        (s.lie_before === 'rough' || s.lie_before === 'sand') &&
-        typeof s.distance_to_hole_after === 'number',
+    // A hole with no `gir` recorded cannot be classified either way, and a null
+    // read as "missed" would invent attempts. A missed green with no score is
+    // skipped for the same reason the stats calculator skips it: we cannot know
+    // whether it converted.
+    const attempts = ctx.hole_scores.filter(
+      (h) => h.gir === false && typeof h.score === 'number' && typeof h.par === 'number',
     );
     if (attempts.length < MIN_ATTEMPTS) {
       return { value: null, confidence: null };
     }
-    const saves = attempts.filter((s) => leaveFeet(s) <= SAVE_PROXIMITY_FT);
+
+    const saves = attempts.filter((h) => h.score <= h.par);
     const rate = saves.length / attempts.length;
     const confidence = Math.min(1, attempts.length / 30);
     const label =
-      rate >= 0.55 ? 'Wizard' : rate >= 0.35 ? 'Reliable' : 'Leaky';
+      rate >= WIZARD_AT ? 'Wizard' : rate >= RELIABLE_AT ? 'Reliable' : 'Leaky';
     return { value: Number(rate.toFixed(3)), confidence, label };
   },
 };

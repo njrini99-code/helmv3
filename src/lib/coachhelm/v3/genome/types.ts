@@ -64,6 +64,12 @@ export interface GenomeHoleScore {
   hole_number: number;
   par: number;
   score: number;
+  /**
+   * Green in regulation. Nullable because `golf_holes.gir` is — a hole logged
+   * without it cannot be classified either way, and `scrambling_rate` skips it
+   * rather than guessing (a null read as "missed" would invent attempts).
+   */
+  gir: boolean | null;
 }
 
 export interface GenomeShot {

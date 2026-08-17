@@ -49,6 +49,7 @@ function hole(over: Partial<GenomeHoleScore> & { hole_number: number; par: numbe
     hole_number: over.hole_number,
     par: over.par,
     score: over.score,
+    gir: over.gir ?? null,
   };
 }
 
@@ -105,19 +106,110 @@ describe('pressure_delta', () => {
 // scrambling_rate
 // ---------------------------------------------------------------------------
 
+/**
+ * SCRAMBLING IS AN OUTCOME, NOT A PROXIMITY.
+ *
+ * The canonical golf definition — and the one `golf-stats-calculator-shots.ts`
+ * has always used (`scrambleAttempt: !gir && score !== null`,
+ * `scrambleMade: … && score <= par`) — is: you missed the green in regulation
+ * and still made par or better.
+ *
+ * This dimension used to measure something else entirely: short-game shots from
+ * rough/sand that finished within 10 ft. Its own docstring called that "a rough
+ * proxy for 'saved par from trouble'". It is not a proxy for it — you can stiff
+ * it to three feet and three-putt, and the proxy still scores that a save.
+ *
+ * The two ran side by side in one product, under the same word, and disagreed
+ * by 19–30 points per player. Measured in production 2026-08-17:
+ *
+ *   Lily Rowe      Stats 30.9%   Genome 61.0%   +30.1
+ *   Ethan Park     Stats 30.3%   Genome 56.3%   +26.0
+ *   Cole Bennett   Stats 33.7%   Genome 57.6%   +23.9
+ *   Luke Wise      Stats 31.5%   Genome 53.7%   +22.2
+ *
+ * The labels made it worse than a mismatched number. Of 26 players with a
+ * genome value, it called 14 "Wizard" — 8 of whom scramble below 40% — and
+ * labelled 13 at least "Reliable" while their real rate was under 35%. By the
+ * canonical stat 14 players are Leaky; the genome flagged one. It was telling
+ * coaches a weakness was a strength.
+ *
+ * The two assertions below CHANGED with the fix rather than being deleted: the
+ * old ones pinned the proxy (20 chips landing 6 ft → 1.0 "Wizard") and pinning
+ * that contract is exactly what let the two surfaces drift. The floor test
+ * still exists, now counting missed greens instead of chips.
+ */
 describe('scrambling_rate', () => {
-  it('high rate from rough/bunker chips that land close', () => {
+  it('counts a missed green converted to par or better, not a close chip', () => {
+    // 20 missed greens, 6 saved → 0.30. The same fixture carries 20 chips from
+    // rough that finished 6 ft away, which the old proximity proxy scored 1.0.
+    const holes = [
+      ...Array.from({ length: 6 }, (_, i) => hole({ hole_number: i + 1, par: 4, score: 4, gir: false })),
+      ...Array.from({ length: 14 }, (_, i) => hole({ hole_number: i + 7, par: 4, score: 5, gir: false })),
+    ];
     const shots = Array.from({ length: 20 }, () =>
       shot({ shot_type: 'chip', lie_before: 'rough', distance_to_hole_after: 6 }),
     );
-    const r = scramblingRate.compute(ctx({ shots }));
-    expect(r.value).toBe(1);
-    expect(r.label).toBe('Wizard');
+
+    const r = scramblingRate.compute(ctx({ hole_scores: holes, shots }));
+
+    expect(r.value).toBe(0.3);
   });
 
-  it('null below 15 attempts', () => {
-    const shots = Array.from({ length: 5 }, () => shot({ shot_type: 'chip', lie_before: 'rough' }));
-    expect(scramblingRate.compute(ctx({ shots })).value).toBeNull();
+  it('does not count a hole that WAS hit in regulation', () => {
+    // A green hit in regulation is not a scrambling attempt at all. Including
+    // it would inflate the denominator and depress every player's rate.
+    const holes = [
+      ...Array.from({ length: 20 }, (_, i) => hole({ hole_number: i + 1, par: 4, score: 4, gir: true })),
+      ...Array.from({ length: 20 }, (_, i) => hole({ hole_number: i + 1, par: 4, score: 4, gir: false })),
+    ];
+
+    const r = scramblingRate.compute(ctx({ hole_scores: holes }));
+
+    // Only the 20 missed greens count, and all were saved.
+    expect(r.value).toBe(1);
+  });
+
+  it('ignores a missed green with no recorded score', () => {
+    // Mirrors the stats calculator's own comment: "A missed green with no
+    // recorded score is NOT a scramble attempt — we cannot know whether it
+    // converted."
+    const holes = [
+      ...Array.from({ length: 16 }, (_, i) => hole({ hole_number: i + 1, par: 4, score: 4, gir: false })),
+      ...Array.from({ length: 10 }, (_, i) => ({
+        ...hole({ hole_number: i + 1, par: 4, score: 4, gir: false }),
+        score: null as unknown as number,
+      })),
+    ];
+
+    const r = scramblingRate.compute(ctx({ hole_scores: holes }));
+
+    expect(r.value).toBe(1);
+  });
+
+  it('null below 15 scrambling attempts', () => {
+    const holes = Array.from({ length: 5 }, (_, i) =>
+      hole({ hole_number: i + 1, par: 4, score: 4, gir: false }),
+    );
+    expect(scramblingRate.compute(ctx({ hole_scores: holes })).value).toBeNull();
+  });
+
+  it('labels off the squad distribution, not the inflated proxy', () => {
+    // Thresholds come from the measured 90-day cohort (20 players, >=15
+    // attempts): p25 27.6%, median 34.1%, p75 40.6%. Wizard is top-quartile,
+    // Leaky is bottom-quartile. Under the OLD 0.55/0.35 cutoffs applied to real
+    // rates, nobody in production would clear Wizard and most of the squad
+    // would read Leaky — an equally useless inversion in the other direction.
+    const rateOf = (made: number, total: number) => {
+      const holes = [
+        ...Array.from({ length: made }, (_, i) => hole({ hole_number: i + 1, par: 4, score: 4, gir: false })),
+        ...Array.from({ length: total - made }, (_, i) => hole({ hole_number: i + 1, par: 4, score: 6, gir: false })),
+      ];
+      return scramblingRate.compute(ctx({ hole_scores: holes }));
+    };
+
+    expect(rateOf(45, 100).label).toBe('Wizard');    // 45% — above p75
+    expect(rateOf(34, 100).label).toBe('Reliable');  // 34% — around the median
+    expect(rateOf(20, 100).label).toBe('Leaky');     // 20% — below p25
   });
 });
 

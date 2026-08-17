@@ -109,7 +109,11 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
     const [{ data: holes, error: holesErr }, { data: shotRows, error: shotsErr }] = await Promise.all([
       fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
-        .select('round_id, hole_number, par, score')
+        // `gir` feeds scrambling_rate, which is an OUTCOME stat (missed the
+        // green, still made par) — not a proximity proxy. Without it the
+        // dimension had to guess from short-game shot leaves and read 19-30
+        // points high against the Stats surface for the same player.
+        .select('round_id, hole_number, par, score, gir')
         .in('round_id', roundIds)
         .not('score', 'is', null)
         .order('id', { ascending: true })
@@ -137,7 +141,7 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
     }
 
     hole_scores = (holes ?? [])
-      .filter((h): h is { round_id: string; hole_number: number; par: number; score: number } =>
+      .filter((h): h is { round_id: string; hole_number: number; par: number; score: number; gir: boolean | null } =>
         h.score !== null && typeof h.par === 'number',
       )
       .map((h) => ({
@@ -145,6 +149,10 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
         hole_number: h.hole_number,
         par: h.par,
         score: h.score,
+        // Passed through as-is, null included: `scrambling_rate` treats a null
+        // as "cannot classify" and skips the hole rather than counting it as a
+        // missed green.
+        gir: h.gir ?? null,
       }));
     shots = shotRows ?? [];
   }
