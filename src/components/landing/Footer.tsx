@@ -110,8 +110,23 @@ export function Footer() {
         <div className="pt-6 border-t border-warm-300 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-warm-400">
           <p>© {new Date().getFullYear()} Helm Sports Labs. All rights reserved.</p>
           <div className="flex items-center gap-5">
-            <Link href="/privacy" className="text-warm-500 hover:text-warm-900 transition-colors">Privacy</Link>
-            <Link href="/terms" className="text-warm-500 hover:text-warm-900 transition-colors">Terms</Link>
+            {/* 44px touch target via `py-3 -my-3` — the padding grows the hit
+                area, the negative margin cancels the layout shift so the bottom
+                bar keeps its height. Measured live on /baseball at 39x18 and
+                32x18 before this. Same treatment as the three auth pages;
+                guarded by `src/test/static/legal-link-touch-targets.test.ts`. */}
+            <Link
+              href="/privacy"
+              className="inline-flex items-center rounded-lg py-3 -my-3 min-h-[44px] text-warm-500 hover:text-warm-900 transition-colors"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="inline-flex items-center rounded-lg py-3 -my-3 min-h-[44px] text-warm-500 hover:text-warm-900 transition-colors"
+            >
+              Terms
+            </Link>
           </div>
         </div>
       </div>

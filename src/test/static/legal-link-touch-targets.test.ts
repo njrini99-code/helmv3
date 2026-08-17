@@ -26,11 +26,19 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Public auth surfaces that render the Privacy / Terms pair. */
+/**
+ * Public surfaces that render the Privacy / Terms pair.
+ *
+ * `landing/Footer.tsx` is the shared marketing footer — it appears on the
+ * landing page, pricing, products, about, support and the BaseballHelm page, so
+ * it is the highest-reach instance of the three. Measured live on `/baseball`
+ * 2026-08-17: `Privacy` 39x18, `Terms` 32x18.
+ */
 const AUTH_PAGES = [
   'src/app/golf/(auth)/login/page.tsx',
   'src/app/golf/(auth)/signup/page.tsx',
   'src/app/golf/(auth)/demo/page.tsx',
+  'src/components/landing/Footer.tsx',
 ];
 
 /** The 44px hit-area marker, matching the signup gate's implementation. */
