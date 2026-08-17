@@ -99,15 +99,27 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
             exit={reduced ? undefined : { opacity: 0, scale: 0.9 }}
             transition={{ duration: reduced ? 0 : 0.18 }}
             // Desktop only. On a phone the bottom-right corner belongs to the
-            // tab bar, and CoachHelm already has a nav destination there.
+            // tab bar, and CoachHelm already has a nav destination there
+            // (`buildCoachBottomNavItems`, nav-registry.ts:461).
+            //
+            // LABELLED, not a bare glyph. The standing complaint is that "Ask
+            // CoachHelm is not clearly visible", and the mechanism was this
+            // control: a 56px circle carrying a generic speech-bubble icon and
+            // an `aria-label` no sighted user ever reads. An icon-only FAB is
+            // discoverable only by hovering it, so the product's headline
+            // capability was advertised by a symbol that could equally have
+            // meant "messages" — which golf also has, in the rail, two icons
+            // away. The name is the affordance; it now ships visibly.
             className={cn(
-              'fixed bottom-6 right-6 z-[var(--fw-z-nav,40)] hidden h-14 w-14 items-center justify-center md:flex',
+              'fixed bottom-6 right-6 z-[var(--fw-z-nav,40)] hidden h-14 items-center justify-center gap-2 px-5 md:inline-flex',
               'rounded-full bg-accent-650 text-text-on-accent shadow-soft',
+              'font-fw-sans text-label font-semibold',
               'transition-colors hover:bg-accent-800',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
             )}
           >
-            <MessageSquare aria-hidden className="h-5 w-5" />
+            <MessageSquare aria-hidden className="h-5 w-5 shrink-0" />
+            <span>Ask CoachHelm</span>
           </m.button>
         )}
       </AnimatePresence>

@@ -46,6 +46,30 @@ export interface FairwayHubSubNavProps {
   className?: string;
 }
 
+/**
+ * Which tab's own route the user is literally ON — for `aria-current="page"`.
+ *
+ * DELIBERATELY NARROWER than `resolveActiveTabId` below, which also honours
+ * `matchPrefixes`. Those prefixes exist so a tab stays visually lit across a
+ * sibling drill-down (`nav-registry.ts:193-200` gives Team Stats
+ * `['/golf/dashboard/stats']` precisely so the strip does not go dark on the
+ * `/stats` interstitial). That is a section highlight, and it is correct.
+ *
+ * `aria-current="page"` is a stronger claim: ARIA defines it as "the current
+ * page within a set of pages". Driving it off the same prefix match meant that
+ * on `/golf/dashboard/stats` THREE elements claimed to be the current page and
+ * two of them pointed at `/golf/dashboard/stats/team` (measured in production
+ * 2026-08-17). A screen reader announced "Team Stats, current page" while the
+ * body copy told the coach to go open Team Stats. #1480.
+ *
+ * A deeper leaf under a tab's OWN href still counts — `/rounds/abc` is the
+ * Rounds tab's page. Only a sibling prefix must not claim it.
+ */
+function isCurrentPage(pathname: string | null, tab: GolfSubTab): boolean {
+  if (!pathname) return false;
+  return pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+}
+
 /** Longest-prefix match across every tab's href + matchPrefixes. */
 function resolveActiveTabId(pathname: string | null, tabs: readonly GolfSubTab[]): string | null {
   if (!pathname) return null;
@@ -160,7 +184,9 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
                 ref={(node) => {
                   itemRefs.current[i] = node;
                 }}
-                aria-current={isActive ? 'page' : undefined}
+                // NOT `isActive` — that is the section highlight and may point
+                // at a route the user is not on. See isCurrentPage. #1480.
+                aria-current={isCurrentPage(pathname, t) ? 'page' : undefined}
                 tabIndex={isActive ? 0 : -1}
                 onKeyDown={onKeyDown}
                 data-active={isActive ? '' : undefined}
