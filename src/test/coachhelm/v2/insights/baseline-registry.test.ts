@@ -58,10 +58,33 @@ describe('baselineRegistry', () => {
 });
 
 /**
- * Static guard: every miner under src/lib/coachhelm/v2/mining/ MUST emit a
- * comparison_source that maps to a registered baseline. This prevents future
- * generators from re-introducing the Finding 1 class of bug (hard-coded label
- * disagreeing with the underlying numeric source).
+ * Static guard: no hard-coded `comparison_source` string may fall outside the
+ * canonical enum.
+ *
+ * WHAT THIS DOES NOT CATCH — read before trusting it. The registry docblock
+ * used to claim "never hard-code a comparison_label or comparison_source string
+ * at a call site — the static test will fail." That was not true, and something
+ * shipped through the gap:
+ * `v3/composite/rules/long-approach-3putt-cascade.ts` emitted
+ * `comparison_value: 45, comparison_label: 'PGA Tour 175+ yd avg',
+ * comparison_source: 'pga_baseline'` against a proximity measured only over
+ * green-finding shots — a conditional measure against an unconditional
+ * benchmark. Every player it could fire for (production max 36.3 ft) would have
+ * rendered as beating Tour.
+ *
+ * It passed, for two reasons, both still true of the check below:
+ *   1. `'pga_baseline'` IS a canonical enum member. This guard compares the
+ *      SOURCE STRING to a tuple; it never looks at the accompanying label or
+ *      value, so a triple that disagrees with what was actually measured is
+ *      invisible to it.
+ *   2. The walk covered only `v2/mining`. v3 is now included below, which
+ *      closes the directory half — but see (1): scanning more files with a
+ *      check this shallow finds 0 offenders and buys no real safety.
+ *
+ * The semantic half is what the registry was for: look up a BaselineKey and
+ * spread the triple, so source/label/value cannot disagree. Nothing enforces
+ * that call sites do so. Treat a green run here as "no typo'd enum value",
+ * nothing more.
  */
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -73,9 +96,15 @@ function walk(dir: string): string[] {
   return out;
 }
 
-describe('mining files use only canonical comparison_source values', () => {
+describe('generator files use only canonical comparison_source values', () => {
   it('no hard-coded comparison_source string is outside the canonical set', () => {
-    const minerFiles = walk('src/lib/coachhelm/v2/mining');
+    const minerFiles = [
+      'src/lib/coachhelm/v2/mining',
+      // v3 was unscanned until 2026-08-17. 22 hard-coded sites live under these
+      // two trees, every one of them emitting a card a coach reads.
+      'src/lib/coachhelm/v3/generators',
+      'src/lib/coachhelm/v3/composite/rules',
+    ].flatMap(walk);
     const canonical = new Set<string>(COMPARISON_SOURCES);
     const offenders: Array<{ file: string; line: number; value: string }> = [];
 

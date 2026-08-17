@@ -120,24 +120,34 @@ const rule: CompositeRule = {
     const proximity = Math.round(Number(match.signals.approach_proximity_ft ?? 0));
     const midPct = Math.round(Number(match.signals.mid_putt_pct ?? 0));
     return {
-      title: `Long approaches are leaking 3-putts`,
+      title: `Long approaches are leaving long putts`,
       content:
-        `Your 175+ yd approaches average ${proximity} ft from the hole, leaving ` +
-        `you in the 10-15 ft zone where you're only converting ${midPct}%. ` +
-        `That's the canonical cascade: long approach → mid-range putt → 3-putt ` +
-        `risk. Every 5 ft closer on those approaches is worth ~10-15 percentage ` +
-        `points of conversion (Research doc §4). Worth dialing in your stock ` +
-        `200-yd shot before grinding on the 10-15 ft putting drill.`,
+        `When you find the green from 175+ yd you're averaging ${proximity} ft ` +
+        `from the hole — past the ${WEAK_ON_GREEN_PROXIMITY_FT} ft line that marks ` +
+        `the squad's weakest quartile of long-approach dial-in. Across the roster, ` +
+        `a 175+ yd approach that finds the green leaves a 25 ft first putt on ` +
+        `average, and 79% of them finish outside 15 ft. That is lag-putt ` +
+        `territory, where 3-putts are driven by speed control rather than line ` +
+        `(Research doc §4, "Lag Putting (>25 ft) → 3-Putt Avoidance"). You're ` +
+        `also converting only ${midPct}% from 10-15 ft. Dialling in the stock ` +
+        `200-yd shot shortens the first putt; the lag work is what stops the ` +
+        `three.`,
       signature: `long_approach_3putt_cascade`,
       evidence: {
         metric: 'approach_proximity_175_plus_ft',
-        metric_label: 'Long approach → 3-putt cascade',
+        metric_label: 'Long approach dial-in (on-green)',
         unit: 'feet',
         your_value: proximity,
         your_value_display: `${proximity} ft`,
-        comparison_value: 45,
-        comparison_label: 'PGA Tour 175+ yd avg',
-        comparison_source: 'pga_baseline',
+        // NOT the Tour 45 ft anchor. See the WEAK_ON_GREEN_PROXIMITY_FT docblock:
+        // Tour's ~45 ft is proximity over ALL approaches from the range, misses
+        // included, while `proximity_when_hit_feet` is averaged over green-finding
+        // shots only. Against that anchor every player this card can fire for —
+        // production max 36.3 ft — renders as beating Tour off a long iron. The
+        // honest reference is the empirical line the gate itself fires on.
+        comparison_value: WEAK_ON_GREEN_PROXIMITY_FT,
+        comparison_label: `weak-quartile line (${WEAK_ON_GREEN_PROXIMITY_FT} ft)`,
+        comparison_source: 'absolute_target',
         sample_n: Number(match.signals.sample_n ?? 0),
         window_days: 30,
         window_start: '',

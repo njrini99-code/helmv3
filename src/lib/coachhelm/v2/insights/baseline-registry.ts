@@ -15,9 +15,27 @@
  * To add a new comparison:
  *   1. Add a BaselineEntry to ENTRIES below.
  *   2. Generators call `baselineRegistry.get(key)` and spread the result.
- *   3. Never hard-code a comparison_label or comparison_source string at a
- *      call site — the static test at
- *      `src/test/coachhelm/v2/insights/baseline-registry.test.ts` will fail.
+ *   3. Do not hard-code a comparison_label or comparison_source at a call site.
+ *
+ * BUT THE STATIC TEST DOES NOT ENFORCE (3), AND SAYING IT DID LET A BUG THROUGH.
+ * This block used to end "...the static test at
+ * `src/test/coachhelm/v2/insights/baseline-registry.test.ts` will fail." It does
+ * not. That test only checks a hard-coded `comparison_source` STRING is a member
+ * of the canonical enum; it never reads the label or value beside it, which is
+ * where the Finding-1 mismatch actually lives. It also walked `v2/mining` alone
+ * until 2026-08-17.
+ *
+ * What got through: `v3/composite/rules/long-approach-3putt-cascade.ts` shipped
+ * `comparison_value: 45, comparison_label: 'PGA Tour 175+ yd avg',
+ * comparison_source: 'pga_baseline'` on a proximity averaged over green-finding
+ * shots only — a conditional measure against an unconditional Tour figure. The
+ * production maximum is 36.3 ft, so every player the card could fire for would
+ * have rendered as beating Tour off a long iron. `'pga_baseline'` is a valid
+ * enum member, so the guard was green throughout.
+ *
+ * Rule (3) is therefore a convention this file asks for, not an invariant it
+ * enforces. Twenty-two v3 call sites still construct the triple by hand. Read
+ * them when you touch them; do not assume a green suite has checked them.
  */
 import type { BaselineKey, InsightComparisonSource } from './types';
 
