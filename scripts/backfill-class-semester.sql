@@ -72,6 +72,23 @@ FROM ce;
 --   step 3  Summer 2026   5 classes,  132 events  (genuinely summer: Jun 1 - Aug 14)
 --   step 4  truncated     4 classes,    6 events  (relabelled Fall 2026, events deleted)
 --   -> 26 null-semester rows resolved, matching the 26 measured before the fix.
+--
+-- RE-MEASURED 2026-08-17 (read-only). The steps still resolve the same 26 rows,
+-- but the broken population has grown from 26 to 43, so this no longer clears
+-- the table:
+--
+--   null semester now  43   step 3 fixes 22   step 4 fixes 4   left over 17
+--
+-- The 17 have NO `[class:...]` events, so there is no series to infer a term
+-- from. See step 5 — the old "expect 0" verification is wrong now, and the
+-- corrected wording is there. #1473.
+--
+-- Also verified before trusting the tag-only match, because a previous class
+-- sweep leaked across players by keying on one marker instead of two:
+--   events with [class:...] tag 1427 · events with event_type='class' 1427
+--   type='class' but no tag 0 · tag but type<>'class' 0
+-- Perfectly correlated, so matching on the tag alone misses nothing today.
+-- Re-check if the tag ever stops being written alongside the type.
 
 -- ---------------------------------------------------------------------------
 -- 3. Fill only rows that have no term AND have a real series to infer from.
@@ -118,15 +135,41 @@ WHERE substring(e.description FROM '\[class:([0-9a-f-]+)\]')::uuid = ct.class_id
   AND ct.first_meeting >= DATE '2026-08-01';
 
 -- ---------------------------------------------------------------------------
--- 5. Verify BEFORE committing. Expect remaining_null_semester = 0 for every
---    class that has a synced series.
+-- 5. Verify BEFORE committing.
+--
+--    `remaining_null_semester` will NOT be zero, and that is expected. Read
+--    `synced_but_still_null` instead — THAT is the one that must be 0.
+--
+--    Re-measured against production 2026-08-17 (the dry-run comment above is
+--    from 08-13 and the population has since grown):
+--
+--      null semester now                            43   (was 26 on 08-13)
+--      step 3 resolves                              22
+--      step 4 resolves                               4   (+6 events deleted)
+--      -> remaining_null_semester                   17
+--      -> synced_but_still_null                      0
+--
+--    Those 17 have NO `[class:...]` events at all, so there is no series to
+--    infer a term from and nothing here can touch them: 11 created 2026-02-09/10
+--    (predating class-event syncing entirely) and 6 created 2026-07-23. They
+--    need a term chosen by a human, or by the player re-saving the class
+--    through the fixed code path. Tracked in #1473.
+--
+--    Stated explicitly because the old wording ("Expect remaining_null_semester
+--    = 0") turns a correct run into something that reads as a failure at the
+--    exact moment the operator has to choose COMMIT or ROLLBACK.
 -- ---------------------------------------------------------------------------
 SELECT
+  -- Expected: 17 as of 2026-08-17. Not an error — see the note above.
   (SELECT COUNT(*) FROM golf_player_classes
      WHERE semester IS NULL OR semester = '')                       AS remaining_null_semester,
+  -- MUST be 0. A class with a synced series that still has no term means the
+  -- inference above failed and something is genuinely wrong — ROLLBACK.
   (SELECT COUNT(*) FROM golf_player_classes pc
      JOIN class_term ct ON ct.class_id = pc.id
     WHERE pc.semester IS NULL OR pc.semester = '')                  AS synced_but_still_null,
+  -- Sanity on the step-4 deletion: this should have dropped by exactly the
+  -- number of events step 4 removed (6 as of 2026-08-17), and no more.
   (SELECT COUNT(*) FROM golf_events WHERE description LIKE '%[class:%') AS class_events_now;
 
 -- Inspect the numbers above, then:
