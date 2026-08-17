@@ -416,7 +416,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'w-11 h-11 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
-                      ? 'bg-accent-750 text-text-on-accent'
+                      ? 'bg-accent-650 text-text-on-accent'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
                   )}
                 >

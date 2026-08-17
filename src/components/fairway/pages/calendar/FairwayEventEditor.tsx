@@ -892,7 +892,7 @@ export function FairwayEventEditor({
                       // FairwayEventCard's own `ring-offset-canvas` convention.
                       'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                       active
-                        ? 'bg-accent-750 text-text-on-accent shadow-flat'
+                        ? 'bg-accent-650 text-text-on-accent shadow-flat'
                         : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
                     )}
                   >
@@ -1321,7 +1321,7 @@ export function FairwayEventEditor({
                               "before:absolute before:-inset-1.5 before:content-['']",
                               'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                               selected
-                                ? 'bg-accent-750 text-text-on-accent shadow-flat'
+                                ? 'bg-accent-650 text-text-on-accent shadow-flat'
                                 : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
                             )}
                           >

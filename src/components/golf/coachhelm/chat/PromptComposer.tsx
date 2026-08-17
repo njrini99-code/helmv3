@@ -339,7 +339,7 @@ export function PromptComposer({
             aria-label="Send"
             className={cn(
               'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-fw-md',
-              'bg-accent-750 text-text-on-accent transition-colors hover:bg-accent-800',
+              'bg-accent-650 text-text-on-accent transition-colors hover:bg-accent-800',
               'disabled:bg-surface-sunken disabled:text-text-tertiary',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
             )}

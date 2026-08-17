@@ -167,7 +167,7 @@ export function FairwayCalendarMemberRail({
             className={cn(
               'flex h-9 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
               allSelected
-                ? 'bg-accent-750 text-text-on-accent shadow-flat'
+                ? 'bg-accent-650 text-text-on-accent shadow-flat'
                 : 'border border-border-subtle bg-surface-sunken text-text-secondary group-hover:bg-surface-tint',
             )}
           >
