@@ -10,10 +10,16 @@
  * - Events can be output in UTC (with Z suffix) or with TZID
  */
 
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import {
   getValidTimezone,
 } from './timezone';
+
+// NOTE ON date-fns `format`: it is deliberately NOT imported here. Every date
+// this file emits lands in a UTC-typed iCal property — a `VALUE=DATE` day or a
+// `…Z` instant — and `format` reads the RUNTIME zone's calendar fields. The two
+// helpers at the bottom of this file read UTC fields directly instead. See the
+// comment on `formatDateTime` for what that cost before it was fixed.
 
 // ============================================================================
 // TYPES
@@ -25,6 +31,13 @@ export interface ICalEvent {
   description?: string;
   location?: string;
   startDate: Date;
+  /**
+   * The event's end, in the INCLUSIVE convention this product uses everywhere
+   * else: for an all-day event this is the last day the event runs, matching
+   * what `golf_events.end_time` stores and what the editor's "Sep 3 → Sep 6"
+   * span summary shows the coach. `generateEvent` converts it to iCal's
+   * exclusive `DTEND` on the way out — do not pre-shift it here.
+   */
   endDate?: Date;
   allDay?: boolean;
   recurrenceRule?: string; // RRULE string
@@ -146,11 +159,22 @@ function generateEvent(event: ICalEvent): string[] {
 
   // Start and end times
   if (event.allDay) {
-    // All-day event
+    // All-day event.
+    //
+    // `DTEND` for a DATE value is EXCLUSIVE (RFC 5545 §3.8.2.2) — it names the
+    // first day NOT in the event, and it "MUST be later in time than the value
+    // of the DTSTART property". `golf_events` stores the opposite convention:
+    // `end_time` is the last day the event runs (golf.ts writes the coach's
+    // End Date field verbatim, and the editor renders it back as an inclusive
+    // "Sep 3 → Sep 6"). Passing that through unshifted published every
+    // multi-day tournament one day short — the Transylvania Invite's final
+    // round, the last day of the NCAA Championship — and made every single-day
+    // all-day event a zero-length span that clients recover from differently.
+    //
+    // A missing endDate falls back to the start day, so the event still gets a
+    // well-formed one-day span rather than relying on the client's default.
     lines.push(`DTSTART;VALUE=DATE:${formatDate(event.startDate)}`);
-    if (event.endDate) {
-      lines.push(`DTEND;VALUE=DATE:${formatDate(event.endDate)}`);
-    }
+    lines.push(`DTEND;VALUE=DATE:${formatDate(nextUtcDay(event.endDate ?? event.startDate))}`);
   } else {
     // Timed event
     lines.push(`DTSTART:${formatDateTime(event.startDate)}`);
@@ -206,19 +230,52 @@ function generateEvent(event: ICalEvent): string[] {
 // FORMATTING HELPERS
 // ============================================================================
 
+const pad = (n: number, width = 2): string => String(n).padStart(width, '0');
+
 /**
- * Format date as YYYYMMDD
+ * The UTC midnight after `date`'s UTC day — iCal's exclusive `DTEND`.
+ *
+ * `Date.UTC` rather than `+ 86400000` so the result is a clean UTC midnight
+ * even when the input carries a time of day, and so the intent survives a
+ * reader who wonders about DST (UTC has none, but the arithmetic shouldn't
+ * require knowing that).
  */
-function formatDate(date: Date): string {
-  return format(date, 'yyyyMMdd');
+function nextUtcDay(date: Date): Date {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1),
+  );
 }
 
 /**
- * Format datetime as YYYYMMDDTHHmmssZ (UTC)
+ * Format date as YYYYMMDD, reading UTC fields.
+ *
+ * An all-day event is persisted at UTC midnight and the date AS WRITTEN IN UTC
+ * is the intended calendar date — the same doctrine `eventCalendarDay` in
+ * ./timezone.ts states at length, written for the Guilford report of all-day
+ * events landing one cell early. Reading local fields off that instant repeats
+ * that bug in the subscription feed for every runtime west of Greenwich.
+ */
+function formatDate(date: Date): string {
+  return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`;
+}
+
+/**
+ * Format datetime as YYYYMMDDTHHmmssZ (UTC).
+ *
+ * The trailing `Z` is a promise that the digits before it are UTC, so the
+ * fields have to be read with the UTC getters. This previously read
+ * `format(new Date(date.toISOString()), "yyyyMMdd'T'HHmmss'Z'")` — the
+ * round-trip through `toISOString()` returns the very same instant, so it
+ * converted nothing while reading as though it did, and `format` then took the
+ * runtime zone's fields. Vercel runs UTC so production was right by accident;
+ * under TZ=Pacific/Midway a 14:00Z practice published as `20260903T030000Z`,
+ * eleven hours early in every subscribed calendar.
  */
 function formatDateTime(date: Date): string {
-  const utc = new Date(date.toISOString());
-  return format(utc, "yyyyMMdd'T'HHmmss'Z'");
+  return (
+    `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}` +
+    `T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`
+  );
 }
 
 /**

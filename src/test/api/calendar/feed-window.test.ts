@@ -244,3 +244,106 @@ describe('ICS team feed route — windowing + UID stability + DTEND defense', ()
     expect(dtend).toBe(end.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z');
   });
 });
+
+/**
+ * All-day DTEND is EXCLUSIVE (RFC 5545 §3.8.2.2) — the first day NOT in the
+ * event — while `golf_events.end_time` stores the INCLUSIVE last day (golf.ts
+ * writes the coach's End Date verbatim; the editor renders it back as an
+ * inclusive "Sep 3 → Sep 6"). This route passed the stored value straight
+ * through, so every multi-day tournament reached a subscribed calendar one day
+ * short and every single-day all-day event reached it as a zero-length span.
+ *
+ * Same defect and same day as `src/lib/calendar/__tests__/ical-all-day-span.test.ts`
+ * fixed in the coach feed — two independent ICS generators, one convention
+ * mismatch, found by asking whether the two agreed. Production had 44 all-day
+ * events, 14 of them multi-day, when this was written (2026-08-17).
+ */
+describe('ICS team feed route — all-day DTEND is exclusive', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    tokenCounter += 1;
+    TOKEN = `feedtoken${String(tokenCounter).padStart(4, '0')}`.padEnd(40, 'f');
+    eventQueryCalls.length = 0;
+    eventRows = [];
+    currentClient = makeClient();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  function allDayRow(start: string, end: string | null, title = 'Tournament'): FeedEventRow {
+    return {
+      id: 'evt-allday',
+      title,
+      description: null,
+      location: null,
+      event_type: 'tournament',
+      start_time: start,
+      end_time: end,
+      all_day: true,
+      status: 'confirmed',
+    };
+  }
+
+  it('publishes the day AFTER the last day of a multi-day tournament', async () => {
+    // Transylvania Invite, as stored in production.
+    eventRows = [
+      allDayRow('2026-09-03T00:00:00+00:00', '2026-09-06T00:00:00+00:00', 'Transylvania Invite'),
+    ];
+
+    const body = await (await callRoute()).text();
+    expect(body).toContain('DTSTART;VALUE=DATE:20260903');
+    // 20260906 ends the event after Sep 5 — the final round vanishes.
+    expect(body).toContain('DTEND;VALUE=DATE:20260907');
+  });
+
+  it('gives a single-day all-day event a span a calendar can render', async () => {
+    eventRows = [allDayRow('2026-08-14T00:00:00+00:00', '2026-08-14T00:00:00+00:00', 'Photo Day')];
+
+    const body = await (await callRoute()).text();
+    expect(body).toContain('DTSTART;VALUE=DATE:20260814');
+    expect(body).toContain('DTEND;VALUE=DATE:20260815');
+  });
+
+  it('emits a one-day span when end_time is absent', async () => {
+    eventRows = [allDayRow('2026-08-14T00:00:00+00:00', null, 'Move-In')];
+
+    const body = await (await callRoute()).text();
+    expect(body).toContain('DTSTART;VALUE=DATE:20260814');
+    expect(body).toContain('DTEND;VALUE=DATE:20260815');
+  });
+
+  it('keeps the inverted-range defense — an inverted all-day row still spans one day forward', async () => {
+    // The existing guard collapses end<start to start. With an exclusive DTEND
+    // that must still come out as start+1, not start, or the guard trades a
+    // negative duration for a zero-length one.
+    eventRows = [allDayRow('2026-09-03T00:00:00+00:00', '2026-08-20T00:00:00+00:00', 'Corrupt Row')];
+
+    const body = await (await callRoute()).text();
+    expect(body).toContain('DTSTART;VALUE=DATE:20260903');
+    expect(body).toContain('DTEND;VALUE=DATE:20260904');
+  });
+
+  it('never emits an all-day DTEND that is not strictly later than DTSTART', async () => {
+    for (const [start, end] of [
+      ['2026-08-14T00:00:00+00:00', '2026-08-14T00:00:00+00:00'],
+      ['2026-10-19T00:00:00+00:00', '2026-10-20T00:00:00+00:00'],
+      ['2026-09-13T00:00:00+00:00', '2026-09-15T00:00:00+00:00'],
+    ]) {
+      tokenCounter += 1;
+      TOKEN = `feedtoken${String(tokenCounter).padStart(4, '0')}`.padEnd(40, 'f');
+      currentClient = makeClient();
+      eventRows = [allDayRow(start as string, end as string)];
+
+      const body = await (await callRoute()).text();
+      const dtstart = body.match(/DTSTART;VALUE=DATE:(\d+)/)?.[1];
+      const dtend = body.match(/DTEND;VALUE=DATE:(\d+)/)?.[1];
+      expect(dtstart, `${start}..${end}`).toBeDefined();
+      expect(dtend, `${start}..${end}`).toBeDefined();
+      expect(Number(dtend), `${start}..${end}`).toBeGreaterThan(Number(dtstart));
+    }
+  });
+});

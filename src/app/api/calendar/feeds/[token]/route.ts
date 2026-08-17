@@ -109,6 +109,26 @@ function formatICalDateOnly(dateStr: string): string {
   return `${y}${m}${d}`;
 }
 
+/**
+ * iCal's exclusive `DTEND` for an all-day event whose stored end is the
+ * INCLUSIVE last day.
+ *
+ * RFC 5545 §3.8.2.2 defines a DATE-valued DTEND as the first day NOT in the
+ * event, and requires it to be strictly later than DTSTART. `golf_events`
+ * stores the opposite: `end_time` is the last day the event runs, because
+ * golf.ts writes the coach's End Date field verbatim and the editor renders it
+ * back as an inclusive "Sep 3 → Sep 6". Without this shift the Transylvania
+ * Invite (Sep 3–6) reached every subscriber as Sep 3–5, and a single-day
+ * all-day event reached them as a zero-length span.
+ */
+function formatICalDateOnlyExclusiveEnd(dateStr: string): string {
+  const date = new Date(dateStr);
+  const next = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1),
+  );
+  return formatICalDateOnly(next.toISOString());
+}
+
 function escapeICalText(text: string | null): string {
   if (!text) return '';
   return text.replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n');
@@ -133,10 +153,13 @@ function generateVEvent(event: CalendarFeedEvent): string {
       : event.end_time;
 
   if (event.all_day) {
+    // DTEND is exclusive here — see formatICalDateOnlyExclusiveEnd. Falling
+    // back to start_time when end_time is absent publishes an explicit
+    // one-day span instead of leaving the duration to the client's default.
     lines.push(`DTSTART;VALUE=DATE:${formatICalDateOnly(event.start_time)}`);
-    if (endTime) {
-      lines.push(`DTEND;VALUE=DATE:${formatICalDateOnly(endTime)}`);
-    }
+    lines.push(
+      `DTEND;VALUE=DATE:${formatICalDateOnlyExclusiveEnd(endTime || event.start_time)}`,
+    );
   } else {
     lines.push(`DTSTART:${formatICalDate(event.start_time)}`);
     lines.push(`DTEND:${formatICalDate(endTime || event.start_time)}`);
