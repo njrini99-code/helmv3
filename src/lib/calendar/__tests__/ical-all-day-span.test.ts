@@ -37,8 +37,23 @@
  * zone, so the mandated Pacific/Kiritimati (+14) and Pacific/Midway (-11) runs
  * exercise them.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { generateCoachCalendar, convertToICalEvent } from '../ical';
+
+// DTSTAMP is stamped from the wall clock. Pinning it removes the one-in-a-
+// million race where the feed is generated at 13:59:59.999 and the assertion's
+// own `new Date()` lands at 14:00:00.000 — this suite runs in three zones on
+// every CI run, and a flaky red here costs more to diagnose than it saves.
+const NOW = new Date('2026-08-17T14:30:45.000Z');
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 /** A `golf_events` row exactly as `api/calendar/coach/[token]/route.ts` maps it. */
 function eventRow(over: {
@@ -174,17 +189,42 @@ describe('iCal date helpers read UTC, not the runtime zone', () => {
     const ics = feedFor(
       eventRow({ start_date: '2026-09-03T14:00:00+00:00', end_date: null, all_day: false }),
     );
-    const stamp = prop(ics, 'DTSTAMP');
-    expect(stamp).toMatch(/^\d{8}T\d{6}Z$/);
+    // The clock is pinned to 2026-08-17T14:30:45Z, so this is the same literal
+    // in every runtime zone — under Pacific/Midway the local reading would be
+    // 20260817T033045Z.
+    expect(prop(ics, 'DTSTAMP')).toBe('20260817T143045Z');
+  });
+});
 
-    // Compare against a UTC rendering of "now" rather than a fixed value:
-    // the two must agree to the minute in every zone.
-    const now = new Date();
-    const expectedPrefix =
-      `${now.getUTCFullYear()}` +
-      `${String(now.getUTCMonth() + 1).padStart(2, '0')}` +
-      `${String(now.getUTCDate()).padStart(2, '0')}` +
-      `T${String(now.getUTCHours()).padStart(2, '0')}`;
-    expect(stamp?.slice(0, expectedPrefix.length)).toBe(expectedPrefix);
+describe('iCal generation — a malformed row costs one entry, not the feed', () => {
+  it('omits an event whose start cannot be parsed instead of emitting NaN', () => {
+    const ics = feedFor(eventRow({ title: 'Corrupt', start_date: 'not-a-date' }));
+    expect(ics).not.toContain('NaN');
+    expect(ics).not.toContain('BEGIN:VEVENT');
+    // The calendar itself still comes back well-formed.
+    expect(ics.startsWith('BEGIN:VCALENDAR')).toBe(true);
+    expect(ics.trimEnd().endsWith('END:VCALENDAR')).toBe(true);
+  });
+
+  it('keeps the good events when one row in the feed is malformed', () => {
+    const ics = generateCoachCalendar(
+      'Nick Rini',
+      [
+        convertToICalEvent(eventRow({ id: 'bad', title: 'Corrupt', start_date: 'not-a-date' })),
+        convertToICalEvent(
+          eventRow({
+            id: 'good',
+            title: 'Transylvania Invite',
+            start_date: '2026-09-03T00:00:00+00:00',
+            end_date: '2026-09-06T00:00:00+00:00',
+            all_day: true,
+          }),
+        ),
+      ],
+      'America/New_York',
+    );
+    expect(ics).toContain('UID:good@helm.golf');
+    expect(ics).not.toContain('UID:bad@helm.golf');
+    expect(ics).toContain('DTEND;VALUE=DATE:20260907');
   });
 });

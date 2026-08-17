@@ -129,6 +129,15 @@ function generateICalendar(calendar: ICalCalendar): string {
 function generateEvent(event: ICalEvent): string[] {
   const lines: string[] = [];
 
+  // An unparseable start yields no VEVENT at all, rather than a line reading
+  // `DTSTART;VALUE=DATE:NaNNaNNaN`. Same doctrine as `eventCalendarDay` in
+  // ./timezone.ts: one malformed row must cost one missing entry, not the whole
+  // team's calendar. (Before the UTC-getter fix this path threw RangeError out
+  // of date-fns `format` and took the entire feed down with a 500; a malformed
+  // line would have been the opposite failure, equally wrong.) Unreachable from
+  // a `timestamptz` column today — this is the floor, not a live path.
+  if (Number.isNaN(event.startDate?.getTime?.())) return [];
+
   lines.push('BEGIN:VEVENT');
 
   // UID (must be unique and stable)
