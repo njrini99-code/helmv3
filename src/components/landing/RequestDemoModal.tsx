@@ -164,9 +164,18 @@ export function RequestDemoModal({ open, onClose }: RequestDemoModalProps) {
               Tell us where you coach and we&apos;ll set up a walkthrough with your data in mind.
             </p>
             <form onSubmit={onSubmit} noValidate className="mt-[22px] flex flex-col gap-4">
-              <Input ref={firstFieldRef} label="Name" name="name" type="text" autoComplete="name" error={errors.name} />
-              <Input label="Work email" name="email" type="email" error={errors.email} />
-              <Input label="Program / school" name="school" type="text" autoComplete="organization" error={errors.school} />
+              {/* `required` on all three because `onSubmit` already rejects each
+                  one when blank — it drives the asterisk (`ui/input.tsx:139`) and
+                  `aria-required` (line 160), so the form stops being mandatory in
+                  fact but unmarked in presentation. The identical form at
+                  `(auth)/demo/page.tsx:353-387` has always passed it; a coach met
+                  whichever version they happened to arrive through.
+                  The enclosing form sets `noValidate`, so this changes the marker
+                  and the ARIA only — no native validation bubble preempts the
+                  component's own error copy. */}
+              <Input ref={firstFieldRef} label="Name" name="name" type="text" autoComplete="name" required error={errors.name} />
+              <Input label="Work email" name="email" type="email" required error={errors.email} />
+              <Input label="Program / school" name="school" type="text" autoComplete="organization" required error={errors.school} />
               {/* Honeypot — hidden from real users and assistive tech */}
               <div aria-hidden="true" className="absolute -left-[9999px] top-0 h-px w-px overflow-hidden">
                 <label>
