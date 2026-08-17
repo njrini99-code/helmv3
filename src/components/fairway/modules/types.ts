@@ -90,7 +90,8 @@ export interface RailBarRow {
   dim?: boolean;
   tickPct?: number;
   /**
-   * The evidence behind `value`, as "made/attempts" — e.g. `'1/2'`.
+   * The evidence behind `value` — `'1/2'` where both halves are known, or a
+   * bare `'n=3'` where only the denominator is (mirroring `RampCell.n`).
    *
    * A rate with no denominator is not a fact a coach can act on: one sand save
    * from two tries renders "50%", identical in weight to twenty from forty.

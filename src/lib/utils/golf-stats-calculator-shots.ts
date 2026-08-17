@@ -192,6 +192,18 @@ export interface GolfStats {
   girPctFromSand: number | null;
   girCountFromFairway: number;
   girCountFromRough: number;
+  /**
+   * Approaches attempted from sand — the denominator behind
+   * `girPctFromSand`.
+   *
+   * `girByLie` has always computed `{made, total}` for all three lies;
+   * only fairway and rough were surfaced, so the count for the ONE lie
+   * that is genuinely thin was computed and discarded. Measured
+   * 2026-08-17: 6 of 42 players have zero sand approaches and 14 more
+   * have between one and four, so "GIR from Sand: 33%" was routinely a
+   * three-shot sample with nothing saying so.
+   */
+  girCountFromSand: number;
 
   // Approach miss direction (when missing green)
   approachMissShortPct: number | null;
@@ -1433,6 +1445,7 @@ function aggregateRoundStats(rounds: Array<{
     girPctFromSand: null,
     girCountFromFairway: 0,
     girCountFromRough: 0,
+    girCountFromSand: 0,
     approachMissShortPct: null,
     approachMissLongPct: null,
     approachMissLeftPct: null,
@@ -2800,6 +2813,7 @@ function aggregateRoundStats(rounds: Array<{
   stats.girPctFromSand = safePercent(girByLie.sand.made, girByLie.sand.total);
   stats.girCountFromFairway = girByLie.fairway.total;
   stats.girCountFromRough = girByLie.rough.total;
+  stats.girCountFromSand = girByLie.sand.total;
 
   // Approach miss direction (when missing green)
   stats.approachMissTotal = approachMissTotal;

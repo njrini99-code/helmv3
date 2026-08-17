@@ -84,3 +84,57 @@ describe('ApproachDrill — GIR by lie does not invent a zero', () => {
     expect(sand?.pct).toBe(0);
   });
 });
+
+/**
+ * The other half of c8284af93, now that the field exists.
+ *
+ * That commit fixed the fabricated zero but left the sample size, because
+ * `girByLie` computes `{made, total}` for all three lies
+ * (golf-stats-calculator-shots.ts:2798-2801) while the interface exposed only
+ * `girCountFromFairway` and `girCountFromRough` — the denominator for the ONE
+ * lie that is actually thin was computed and thrown away.
+ *
+ * Why it matters here more than anywhere: measured 2026-08-17, 6 of 42 players
+ * have zero sand approaches and 14 more have between one and four. "GIR from
+ * Sand: 33%" off three attempts is not a finding, and nothing on the row said
+ * how many attempts there were.
+ *
+ * Rendered as a bare count (`n=3`) rather than made/attempts, because
+ * `girCountFrom*` is the TOTAL — the made counts are not exposed, and deriving
+ * them from pct x total would be reconstructing data rather than reporting it.
+ * `n=` is the convention this codebase already uses for exactly this, in
+ * `RampCell.n` and in ShortGameDrill's own miss-direction row.
+ */
+describe('ApproachDrill — GIR by lie carries its attempt count', () => {
+  it('shows the attempt count for each lie', () => {
+    const rows = buildGirByLieRows(
+      stats({
+        girPctFromFairway: 65, girCountFromFairway: 120,
+        girPctFromRough: 45, girCountFromRough: 60,
+        girPctFromSand: 33, girCountFromSand: 3,
+      }),
+    );
+
+    expect(rows.find((r) => r.label === 'Fairway')?.sample).toBe('n=120');
+    expect(rows.find((r) => r.label === 'Rough')?.sample).toBe('n=60');
+    // The whole point: 33% off three attempts must not read like 33% off sixty.
+    expect(rows.find((r) => r.label === 'Sand')?.sample).toBe('n=3');
+  });
+
+  it('omits the count when there were no attempts', () => {
+    // Already renders an em-dash for the value; adding "n=0" would be noise.
+    const sand = buildGirByLieRows(
+      stats({ girPctFromSand: null, girCountFromSand: 0 }),
+    ).find((r) => r.label === 'Sand');
+
+    expect(sand?.value).toBe('—');
+    expect(sand?.sample).toBeUndefined();
+  });
+
+  it('omits the count rather than inventing one when the field is absent', () => {
+    const sand = buildGirByLieRows(stats({ girPctFromSand: 25 })).find((r) => r.label === 'Sand');
+
+    expect(sand?.value).toBe('25%');
+    expect(sand?.sample).toBeUndefined();
+  });
+});

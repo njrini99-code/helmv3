@@ -119,24 +119,35 @@ function fmtPct(n: number | null): string {
  * A REAL 0% stays undimmed — six approaches from sand and no greens is a
  * finding, and must not be swept in with the no-data case.
  *
- * NOT FIXED HERE: the sample size. `girByLie` computes `{made, total}` for all
- * three lies (golf-stats-calculator-shots.ts:2798-2801) but the interface
- * exposes only `girCountFromFairway` and `girCountFromRough` — there is no
- * `girCountFromSand`, so the denominator for the one thin lie is computed and
- * discarded. Exposing it is a calculator change with its own blast radius; this
- * closes the false-zero half, which needs no new field.
+ * THE SAMPLE SIZE, closed in a second pass. `girByLie` had always computed
+ * `{made, total}` for all three lies (golf-stats-calculator-shots.ts:2798-2801)
+ * while the interface exposed only `girCountFromFairway` and
+ * `girCountFromRough` — the denominator for the one lie that is genuinely thin
+ * was computed and discarded. `girCountFromSand` now exists alongside its two
+ * siblings, so "GIR from Sand: 33%" can no longer hide that it came off three
+ * attempts.
  */
 export function buildGirByLieRows(s: GolfStats | null): RailBarRow[] {
-  const rows: Array<[string, number | null]> = [
-    ['Fairway', finite(s?.girPctFromFairway)],
-    ['Rough', finite(s?.girPctFromRough)],
-    ['Sand', finite(s?.girPctFromSand)],
+  // `n=` rather than made/attempts: `girCountFrom*` is the TOTAL, and the made
+  // counts are not exposed. Deriving them from pct x total would be
+  // reconstructing data rather than reporting it. `n=` is the convention this
+  // codebase already uses for exactly this — `RampCell.n`, and ShortGameDrill's
+  // own miss-direction row. Omitted at zero attempts, where the value is
+  // already an em-dash and "n=0" would be noise.
+  const countOf = (n: number | null | undefined): string | undefined =>
+    typeof n === 'number' && Number.isFinite(n) && n > 0 ? `n=${n}` : undefined;
+
+  const rows: Array<[string, number | null, string | undefined]> = [
+    ['Fairway', finite(s?.girPctFromFairway), countOf(s?.girCountFromFairway)],
+    ['Rough', finite(s?.girPctFromRough), countOf(s?.girCountFromRough)],
+    ['Sand', finite(s?.girPctFromSand), countOf(s?.girCountFromSand)],
   ];
-  return rows.map(([label, pct]) => ({
+  return rows.map(([label, pct, sample]) => ({
     label,
     pct: pct ?? 0,
     value: fmtPct(pct),
     dim: pct === null,
+    sample,
   }));
 }
 
