@@ -134,6 +134,41 @@ describe('TriageDesk URL-driven drill-ins', () => {
     expect(screen.getByTestId('signal-dossier').parentElement).not.toHaveClass('hidden');
   });
 
+  it('opens the view named in the URL on FIRST RENDER, not just on click', () => {
+    // The block below proves clicking works. Nothing proved a direct load did —
+    // and clicking is the one path a bookmark, a refresh, a shared link, or the
+    // back button never take. `view` is resolved client-side (the page's own
+    // searchParams docblock says so), so a first-render regression here is
+    // invisible to every server test and to the click test underneath.
+    //
+    // Observed on production 2026-08-17 as coach Nick Rini: loading
+    // `/golf/dashboard/intelligence?view=effectiveness` — and `?view=signals` —
+    // rendered the Brief instead, breadcrumb "Dashboard / CoachHelm AI / Brief",
+    // `document.title` "Brief | CoachHelm", while the nav on that very page
+    // linked to those exact URLs. Whether that is this component or the
+    // deployed build being behind main, the assertion belongs here: it is the
+    // contract, and until now nothing checked it.
+    for (const [view, testId] of [
+      ['players', 'players-view'],
+      ['effectiveness', 'effectiveness-view'],
+    ] as const) {
+      navigation.params = new URLSearchParams(`view=${view}`);
+      window.history.replaceState({}, '', `/golf/dashboard/intelligence?view=${view}`);
+      const { unmount } = renderDesk();
+      expect(screen.getByTestId(testId), view).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('falls back to the signals queue for an absent or unknown view, rather than blanking', () => {
+    for (const search of ['', 'view=', 'view=not-a-view', 'view=brief']) {
+      navigation.params = new URLSearchParams(search);
+      const { unmount } = renderDesk();
+      expect(screen.getByTestId('signal-queue'), JSON.stringify(search)).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   it('switches top-level tabs immediately without rerendering the server page', () => {
     renderDesk();
 
