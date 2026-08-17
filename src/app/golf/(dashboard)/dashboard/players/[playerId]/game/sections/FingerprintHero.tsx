@@ -1,22 +1,35 @@
 'use client';
 
 /**
- * FingerprintHero — top-of-page header for the coach scouting report.
+ * ============================================================================
+ * MOSTLY DEAD CODE. Only `MetricPill` is rendered anywhere.
+ * ----------------------------------------------------------------------------
+ * Verified 2026-08-16 by grepping the whole tree: there is no `<FingerprintHero`
+ * and no `<SectionBand` in `src/**`, and the live `/game` route
+ * (`game/page.tsx`) imports nothing from this `sections/` directory — it renders
+ * `PlayerDeepDiveTabs` -> `FairwayPlayerGameFingerprint` instead. The single
+ * live consumer of this file is `game/print/page.tsx`, which imports
+ * `MetricPill` and nothing else.
  *
- * Renders:
- *   - Player name (Fraunces, large)
- *   - Team name (small)
- *   - Composite rating big number (Fraunces) + trend arrow
- *   - Action buttons: Print · Discuss in messages · Assign focus area
+ * That matters for anyone sent here to "fix the fingerprint UI". This file is
+ * the only genome/fingerprint file left carrying the pre-Fairway visual
+ * language — legacy `Card`/`Button` from `@/components/ui/*`, and ~24 banned
+ * `warm-*`/`cream-*`/`red-*`/`amber-*` classes. Every LIVE surface in this area
+ * measures ZERO banned tokens: `FairwayPlayerGameFingerprint` (894 lines),
+ * `FairwayPlayerInsight`, `GenomeDetailView`, `GenomeCompareView`,
+ * `PlayerDeepDiveTabs`, `game/page.tsx`, `players/[playerId]/genome/page.tsx`.
+ * So restyling THIS file changes nothing a coach can see — check what actually
+ * mounts before spending effort here.
  *
- * Fraunces is applied surgically to the name + rating numeral only — the
- * rest of the page (and every body-copy slot) stays on the system/sans
- * stack per Rule 9 of the design contract.
+ * The header used to describe "Player name (Fraunces, large)" and "Composite
+ * rating big number (Fraunces)". Fraunces was deliberately removed from the
+ * type stack; display/sans now resolve to the system stack. The code never
+ * applied a display class anyway, so the note documented an intention that was
+ * never true and is now impossible.
  *
- * Also exports `SectionBand`, the shared chrome every other section renders
- * inside of. Co-located here because Wave 2's file-ownership contract locks
- * me to the 8 sections/*.tsx files — no room for a `_shared.tsx`.
- */
+ * `SectionBand` was the shared chrome the other section files rendered inside
+ * of; it is unreferenced along with them.
+ * ========================================================================== */
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

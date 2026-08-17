@@ -186,9 +186,23 @@ export default async function PlayerCoachHelmPage() {
       // no resolved organization yet (mid-onboarding), where the Brief route
       // can't resolve a team either.
       //
-      // This branch renders IN PLACE rather than `redirect()`-ing: a
-      // conditional `redirect()` out of an RSC page is what produced React
-      // #310 on this route (see stats/page.tsx for the full reasoning).
+      // This branch renders IN PLACE rather than `redirect()`-ing, and that is
+      // load-bearing — see `src/test/static/golf-conditional-redirect.test.ts`,
+      // which pins it against production evidence (34 React #310 events in
+      // `admin_events`). A SESSION-CONDITIONAL redirect out of an RSC render is
+      // the crash; the bare shims stopped crashing on 2026-07-22 once
+      // `next.config.mjs` `redirects()` intercepted them BEFORE render, which a
+      // session-dependent redirect can never be.
+      //
+      // Do not "fix" this into a redirect because the `if (!session)` bounce
+      // above appears to be a counter-example: that one is explicitly
+      // whitelisted (middleware normally handles it, and the branch is not
+      // reachable from in-app navigation). It is the exception the guard
+      // allows, not proof the guard is wrong.
+      //
+      // The UX complaint this interstitial causes is real — a coach is told
+      // "you are in the wrong place" and has to click again. Fix it upstream by
+      // never linking a coach here, not by redirecting from inside the render.
       if (coach.organization_id) {
         return (
           <FeatureUnavailable
