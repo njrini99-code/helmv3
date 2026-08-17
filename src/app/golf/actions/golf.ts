@@ -3426,13 +3426,33 @@ async function setQualifierRoundCoursesImpl(
 
     const safeNumRounds = Math.min(Math.max(Math.trunc(numRounds), 1), 50);
 
-    // Keep golf_qualifiers.num_rounds in sync. RLS (coach-only UPDATE) gates this.
-    const { error: numRoundsError } = await fromUntyped(supabase, 'golf_qualifiers')
+    // Keep golf_qualifiers.num_rounds in sync. RLS (coach-only UPDATE) gates
+    // this — and `.select('id')` is what makes that gate observable. A
+    // PostgREST UPDATE that RLS refuses matches no rows and resolves
+    // `{ data: null, error: null }`, indistinguishable from a successful one,
+    // so relying on `error` alone reported "saved" for a write that did
+    // nothing. The single-round edit path is the one that bites: it sends an
+    // empty roundCourses array, so this is the ONLY write in the function and
+    // there is nothing downstream to fail loudly instead.
+    const { data: qualifierRows, error: numRoundsError } = await fromUntyped(supabase, 'golf_qualifiers')
       .update({ num_rounds: safeNumRounds })
-      .eq('id', qualifierId);
+      .eq('id', qualifierId)
+      .select('id');
 
     if (numRoundsError) {
       return { success: false, error: 'Failed to update the round count. Please try again.' };
+    }
+
+    if (!Array.isArray(qualifierRows) || qualifierRows.length === 0) {
+      await logServerError(
+        `setQualifierRoundCourses matched no rows for qualifier ${qualifierId} — the write was refused or the qualifier is gone`,
+        { action: 'setQualifierRoundCourses.numRounds', featureArea: 'qualifiers' },
+        'warning',
+      );
+      return {
+        success: false,
+        error: "Couldn't save the round setup — the qualifier may have been deleted, or you may not have edit access to this team.",
+      };
     }
 
     // Upsert the assignments that fall within the declared round count.
@@ -3693,13 +3713,38 @@ async function updateGolfQualifierDetailsImpl(
       return { success: true, data: undefined };
     }
 
-    const { error } = await supabase
+    // `.select('id')` so a 0-row update surfaces as a failure instead of a
+    // false success — a PostgREST UPDATE matching no rows resolves
+    // `{ data: null, error: null }`, exactly like one that matched. Same
+    // reasoning, and the same fix, as recordFocusAreaOutcomeImpl in
+    // development.ts and the WriteIntegrityError guard in rsvp.ts.
+    //
+    // It can genuinely match nothing. The gate above compares ORGANISATIONS,
+    // while `golf_qualifiers_update_coach` is `is_golf_team_coach(team_id)` —
+    // a `golf_team_coach_staff` row for that specific team, which is the
+    // narrower set. A concurrently deleted qualifier does it too. Either way
+    // `FairwayEditQualifier` used to navigate to the detail page as though the
+    // edit had landed, and the coach found out on reload.
+    const { data: updatedRows, error } = await supabase
       .from('golf_qualifiers')
       .update(updateData)
-      .eq('id', qualifierId);
+      .eq('id', qualifierId)
+      .select('id');
 
     if (error) {
       return { success: false, error: 'Failed to update qualifier. Please try again.' };
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      await logServerError(
+        `updateGolfQualifierDetails matched no rows for qualifier ${qualifierId} — the org-level gate passed but the write did not land`,
+        { action: 'golf.updateGolfQualifierDetails', featureArea: 'qualifiers' },
+        'warning',
+      );
+      return {
+        success: false,
+        error: "Couldn't save this qualifier — it may have been deleted, or you may not have edit access to this team.",
+      };
     }
 
     revalidatePath('/golf/dashboard/qualifiers');
