@@ -174,26 +174,26 @@ export function getEventTypeConfig(type: EventType): EventTypeConfig {
 /**
  * Format time for display (e.g., "9:00 AM")
  */
-export function formatTime(timeString: string): string {
-  // Handle time-only strings (HH:MM:SS or HH:MM)
-  if (timeString && !timeString.includes('T') && !timeString.includes(' ')) {
-    const parts = timeString.split(':').map(Number);
-    const hours = parts[0] ?? 0;
-    const minutes = parts[1] ?? 0;
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHour = hours % 12 || 12;
-    const displayMinutes = String(minutes).padStart(2, '0');
-    return `${displayHour}:${displayMinutes} ${period}`;
-  }
-
-  // Handle full datetime strings
-  const date = new Date(timeString);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-}
+/**
+ * Delegates to the calendar's other formatTime rather than keeping a second
+ * copy. The two agreed on every well-formed value and diverged only on input
+ * neither could read — where this one INVENTED an answer:
+ *
+ *   formatTime('abc')  ->  '12:00 AM'     (`parts[1] ?? 0`; `??` does not
+ *                                          catch NaN, so garbage became midnight)
+ *   formatTime('')     ->  'Invalid Date' (empty skipped the time-only branch
+ *                                          and reached `new Date('')`)
+ *
+ * Both were rendered straight to a coach on EventCard and MobileEventCard. A
+ * fabricated 12:00 AM is the worse of the two, because it is a time a real
+ * event can legitimately have — it does not read as an error. The surviving
+ * implementation hands the raw string back instead, per this repo's standing
+ * rule against fabricated values.
+ *
+ * Kept as a named re-export so both call sites and their imports are unchanged.
+ * Pinned by src/lib/calendar/__tests__/format-time-agreement.test.ts.
+ */
+export { formatTime } from '@/lib/calendar/premium-utils';
 
 /**
  * Format date range for display (e.g., "Dec 31, 9:00 AM - 10:30 AM")

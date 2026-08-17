@@ -102,7 +102,13 @@ export function formatTime(time: string | null): string {
 
   // Time-only strings (HH:MM or HH:MM:SS)
   const [hours, minutes] = time.split(':').map(Number);
-  if (hours === undefined || minutes === undefined || isNaN(hours)) return time;
+  // `isNaN(minutes)` matters as much as `isNaN(hours)` and was missing: only
+  // the hour was checked, so '09:abc' rendered "9:NaN AM" on the calendar.
+  // Hand the value back unchanged instead — a string the reader can see is
+  // wrong beats a plausible-looking time that is not the event's.
+  if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes)) {
+    return time;
+  }
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours % 12 || 12;
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
