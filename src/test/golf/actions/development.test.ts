@@ -816,3 +816,193 @@ describe('reactivateFocusArea — reopen a completed area', () => {
     expect(result.error).toMatch(/not found or not permitted/i);
   });
 });
+
+/**
+ * A player marking their own focus area complete permanently destroyed the
+ * coach's ability to say how it went.
+ *
+ * Two completion paths exist and only one records an outcome:
+ *
+ *   completeFocusArea       player-facing (/dashboard/my-development's
+ *                           LogProgressButton, FairwayMyDevelopment,
+ *                           DevelopmentDrill) — sets status='completed' and
+ *                           touches NEITHER outcome column
+ *   recordFocusAreaOutcome  coach-facing (FocusAreaCard role="coach" in
+ *                           PlayersGridView and GenomeDetailView) — writes the
+ *                           verdict to the focus area AND credits
+ *                           golf_coach_insights.outcome_status
+ *
+ * `recordFocusAreaOutcome` gated on ACTIONABLE_FOCUS_AREA_STATUSES
+ * (['active','in_progress','paused']), so once the player tapped Mark Complete
+ * the coach got "This focus area is already completed." and the loop could
+ * never be closed for that item. The player has no way to know their tap did
+ * that.
+ *
+ * Measured in production 2026-08-17: 25 focus areas — 10 completed, of which
+ * **9 carry no outcome at all** and can no longer be given one. 4 more are
+ * `active` AND derived from an insight, so the door is armed: the next Mark
+ * Complete on any of them destroys that insight's credit for good. Insight
+ * side: `outcome_status` is NULL on 606 of 608 rows, which is why CoachHelm
+ * Effectiveness reads empty.
+ *
+ * 'proposed' and 'declined' stay refused — those have no work behind them, and
+ * recording an outcome would fabricate progress the player never made. Only
+ * 'completed' is added, because "it's finished" is not a reason you cannot say
+ * how it went.
+ */
+describe('recordFocusAreaOutcome — a completed focus area can still be given its verdict', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function clientFor(row: Record<string, unknown>, faUpdateSpy: ReturnType<typeof vi.fn>) {
+    return {
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
+      from: (table: string) => {
+        if (table === 'golf_player_focus_areas') {
+          return {
+            select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }) }),
+            update: faUpdateSpy,
+          };
+        }
+        if (table === 'golf_coach_insights') {
+          return { update: () => ({ eq: async () => ({ error: null }) }) };
+        }
+        return {};
+      },
+    };
+  }
+
+  it('records an outcome the player already closed out', async () => {
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
+    const faUpdateSpy = vi.fn().mockReturnValue({
+      eq: () => ({ in: () => ({ select: async () => ({ data: [{ id: 'fa-1' }], error: null }) }) }),
+    });
+    createClientMock.mockResolvedValue(
+      clientFor(
+        {
+          player_id: 'player-1',
+          from_insight_id: null,
+          status: 'completed',
+          completed_at: '2026-08-01T12:00:00.000Z',
+        },
+        faUpdateSpy,
+      ),
+    );
+
+    const result = await recordFocusAreaOutcome('fa-1', 'improved');
+
+    expect(result.success).toBe(true);
+    const payload = faUpdateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toHaveProperty('outcome_status', 'improved');
+  });
+
+  it('does not rewrite the original completion timestamp', async () => {
+    // The coach is recording a verdict weeks later. `completed_at` is when the
+    // player finished, not when the coach got round to grading it — clobbering
+    // it would silently re-date the work.
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
+    const faUpdateSpy = vi.fn().mockReturnValue({
+      eq: () => ({ in: () => ({ select: async () => ({ data: [{ id: 'fa-1' }], error: null }) }) }),
+    });
+    createClientMock.mockResolvedValue(
+      clientFor(
+        {
+          player_id: 'player-1',
+          from_insight_id: null,
+          status: 'completed',
+          completed_at: '2026-08-01T12:00:00.000Z',
+        },
+        faUpdateSpy,
+      ),
+    );
+
+    await recordFocusAreaOutcome('fa-1', 'no_change');
+
+    const payload = faUpdateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload.completed_at).toBe('2026-08-01T12:00:00.000Z');
+  });
+
+  it('still stamps completed_at when the coach closes an open focus area', async () => {
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
+    const faUpdateSpy = vi.fn().mockReturnValue({
+      eq: () => ({ in: () => ({ select: async () => ({ data: [{ id: 'fa-1' }], error: null }) }) }),
+    });
+    createClientMock.mockResolvedValue(
+      clientFor(
+        { player_id: 'player-1', from_insight_id: null, status: 'active', completed_at: null },
+        faUpdateSpy,
+      ),
+    );
+
+    await recordFocusAreaOutcome('fa-1', 'improved');
+
+    const payload = faUpdateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload).toHaveProperty('status', 'completed');
+    expect(typeof payload.completed_at).toBe('string');
+    expect(payload.completed_at).not.toBeNull();
+  });
+
+  it('credits the source insight even when the player closed the area first', async () => {
+    // This is the case the whole fix exists for: 4 insight-derived focus areas
+    // are active in production right now, and a player tap was a one-way door
+    // on each of them.
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
+    const insightUpdateSpy = vi.fn().mockReturnValue({ eq: async () => ({ error: null }) });
+    const faUpdateSpy = vi.fn().mockReturnValue({
+      eq: () => ({ in: () => ({ select: async () => ({ data: [{ id: 'fa-1' }], error: null }) }) }),
+    });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
+      from: (table: string) => {
+        if (table === 'golf_player_focus_areas') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({
+                  data: {
+                    player_id: 'player-1',
+                    from_insight_id: 'insight-9',
+                    status: 'completed',
+                    completed_at: '2026-08-01T12:00:00.000Z',
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+            update: faUpdateSpy,
+          };
+        }
+        if (table === 'golf_coach_insights') return { update: insightUpdateSpy };
+        return {};
+      },
+    });
+
+    const result = await recordFocusAreaOutcome('fa-1', 'improved');
+
+    expect(result.success).toBe(true);
+    const credited = insightUpdateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(credited).toHaveProperty('outcome_status', 'improved');
+    expect(credited).toHaveProperty('action_taken', true);
+  });
+
+  it('still refuses a proposed or declined focus area', async () => {
+    // These have no work behind them. Recording an outcome would fabricate
+    // progress the player never made — the reason the guard exists at all.
+    for (const status of ['proposed', 'declined']) {
+      verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
+      const faUpdateSpy = vi.fn();
+      createClientMock.mockResolvedValue(
+        clientFor(
+          { player_id: 'player-1', from_insight_id: null, status, completed_at: null },
+          faUpdateSpy,
+        ),
+      );
+
+      const result = await recordFocusAreaOutcome('fa-1', 'improved');
+
+      expect(result.success, status).toBe(false);
+      expect(faUpdateSpy, status).not.toHaveBeenCalled();
+    }
+  });
+});

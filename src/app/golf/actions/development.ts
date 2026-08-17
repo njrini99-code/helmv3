@@ -115,6 +115,36 @@ function normalizeTimeframe(
 const ACTIONABLE_FOCUS_AREA_STATUSES = ['active', 'in_progress', 'paused'] as const;
 
 /**
+ * The statuses an OUTCOME may be recorded against — the actionable set plus
+ * 'completed'.
+ *
+ * Recording a verdict is not the same operation as logging progress, and it
+ * needed a different gate. There are two completion paths and only one of them
+ * records an outcome: `completeFocusArea` is player-facing (my-development's
+ * LogProgressButton, FairwayMyDevelopment, DevelopmentDrill) and touches
+ * neither outcome column, while `recordFocusAreaOutcome` is coach-facing
+ * (FocusAreaCard role="coach"). Gating the coach path on the actionable set
+ * meant a player's Mark Complete was a ONE-WAY DOOR: the coach was then told
+ * "This focus area is already completed." and the effectiveness loop could
+ * never be closed for that item. The player has no way to know their tap did
+ * that.
+ *
+ * Measured in production 2026-08-17: of 25 focus areas, 10 are completed and
+ * NINE of those carry no outcome and can no longer be given one; 4 more are
+ * active AND insight-derived, so the door was armed on each of them.
+ * `golf_coach_insights.outcome_status` is NULL on 606 of 608 rows, which is
+ * why CoachHelm Effectiveness reads empty.
+ *
+ * 'proposed' and 'declined' stay refused. Those have no work behind them and a
+ * verdict would fabricate progress the player never made — the reason the
+ * guard exists. "It's finished" is not a reason you cannot say how it went.
+ */
+const OUTCOME_RECORDABLE_FOCUS_AREA_STATUSES = [
+  ...ACTIONABLE_FOCUS_AREA_STATUSES,
+  'completed',
+] as const;
+
+/**
  * Returns a human error when `status` is NOT one of the actionable lifecycle
  * states above, or null when the write may proceed.
  */
@@ -126,6 +156,14 @@ function focusAreaLifecycleError(status: string | null | undefined): string | nu
   if (status === 'declined') return 'This focus area was declined by the player.';
   if (status === 'completed') return 'This focus area is already completed.';
   return 'This focus area cannot be updated in its current state.';
+}
+
+/** `focusAreaLifecycleError`'s sibling for outcome recording — 'completed' passes. */
+function outcomeLifecycleError(status: string | null | undefined): string | null {
+  if (status && (OUTCOME_RECORDABLE_FOCUS_AREA_STATUSES as readonly string[]).includes(status)) {
+    return null;
+  }
+  return focusAreaLifecycleError(status);
 }
 
 // ============================================================================
@@ -1590,11 +1628,12 @@ async function recordFocusAreaOutcomeImpl(
   }
 
   // Look up the focus area: we need its player (for the ownership guard), its
-  // status (for the lifecycle guard), and its originating insight (the row
-  // whose outcome we credit).
+  // status (for the lifecycle guard), its originating insight (the row whose
+  // outcome we credit), and `completed_at` — which must survive a verdict
+  // recorded after the player already closed the area out.
   const { data: focusArea, error: focusAreaError } = await supabase
     .from('golf_player_focus_areas')
-    .select('player_id, from_insight_id, status')
+    .select('player_id, from_insight_id, status, completed_at')
     .eq('id', focusAreaId)
     .maybeSingle();
 
@@ -1618,13 +1657,17 @@ async function recordFocusAreaOutcomeImpl(
   }
 
   // Lifecycle guard: a 'proposed' (not yet accepted) or 'declined' area has no
-  // real outcome to record — see ACTIONABLE_FOCUS_AREA_STATUSES.
-  const lifecycleError = focusAreaLifecycleError(focusArea.status);
+  // real outcome to record — see OUTCOME_RECORDABLE_FOCUS_AREA_STATUSES, which
+  // unlike ACTIONABLE_FOCUS_AREA_STATUSES also admits 'completed'.
+  const lifecycleError = outcomeLifecycleError(focusArea.status);
   if (lifecycleError) {
     return { success: false, error: lifecycleError };
   }
 
   const nowIso = new Date().toISOString();
+  // The player's own Mark Complete stamps `completed_at`; a coach grading it
+  // weeks later must not re-date the work to the day they got round to it.
+  const completedAt = focusArea.completed_at ?? nowIso;
 
   // Always mark the focus area completed (the outcome resolves the work).
   // Select the updated row back so a 0-row update (status changed out from
@@ -1634,7 +1677,7 @@ async function recordFocusAreaOutcomeImpl(
     .from('golf_player_focus_areas')
     .update({
       status: 'completed',
-      completed_at: nowIso,
+      completed_at: completedAt,
       updated_at: nowIso,
       // Persist the verdict on the focus area ITSELF (column added by migration
       // 20260621140000 for exactly this) — previously it was written only to the
@@ -1644,7 +1687,7 @@ async function recordFocusAreaOutcomeImpl(
       outcome_status: outcome,
     })
     .eq('id', focusAreaId)
-    .in('status', ACTIONABLE_FOCUS_AREA_STATUSES)
+    .in('status', OUTCOME_RECORDABLE_FOCUS_AREA_STATUSES)
     .select('id');
 
   if (faError) {
