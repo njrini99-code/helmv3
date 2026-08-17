@@ -86,8 +86,20 @@ test.describe('Golf Qualifier - Player Flow', () => {
     if (await qualifierLink.isVisible()) {
       await qualifierLink.click();
 
-      // Should see qualifier details
-      await expect(page.locator('h1, h2')).toBeVisible();
+      // Should see qualifier details.
+      //
+      // `.first()` is load-bearing, not style. Every page in this app renders
+      // an `h1` ("GolfHelm") plus an `h2` page title, so a bare `h1, h2`
+      // locator matches two elements and Playwright's strict mode fails the
+      // assertion outright:
+      //
+      //   strict mode violation: locator('h1, h2') resolved to 2 elements
+      //
+      // It only fired when the `isVisible()` guard above passed, so the test
+      // went green whenever the qualifier link had NOT rendered and red when it
+      // had — failing precisely when the page worked. All 12 sibling uses in
+      // baseball-phase1.spec.ts already carry `.first()`; this was the outlier.
+      await expect(page.locator('h1, h2').first()).toBeVisible();
 
       // Should see leaderboard section (visibility depends on qualifier state)
       // Leaderboard may or may not be visible depending on qualifier state
