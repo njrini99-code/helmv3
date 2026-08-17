@@ -79,6 +79,15 @@ function PricingCapture() {
         className="mb-2 block pl-1 text-left font-fw-sans text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-text-tertiary"
       >
         Work email
+        {/* The marker has to live HERE, not on the <Input>. `ui/input.tsx`
+            renders its asterisk inside its own label block, and that block is
+            skipped when `label` is empty — which it is below, deliberately, so
+            this hand-rolled label can carry the styling above. Going around the
+            component is exactly how the golf login form lost the same marker
+            (54fea01a3). `required` on the Input supplies `aria-required`; this
+            span supplies what a sighted user sees. Both are asserted in
+            `src/test/landing/pricing-email-required.test.tsx`. */}
+        <span className="text-red-500 ml-0.5" aria-hidden="true">*</span>
       </label>
       {/* Stadium radius only works while the form is a single row — stacked
           on mobile, `rounded-full` curves the card away behind the full-width
@@ -92,6 +101,12 @@ function PricingCapture() {
               type="email"
               label=""
               placeholder="you@school.edu"
+              // The submit handler above rejects a blank or malformed address,
+              // so the field is required in fact; this makes it required to
+              // assistive tech too (`aria-required`, ui/input.tsx:160). The
+              // enclosing form sets `noValidate`, so no native bubble preempts
+              // the component's own error copy.
+              required
               error={undefined}
             />
           </div>
