@@ -21,11 +21,20 @@
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { RotateCw } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Surface, Button, EmptyState, InlineNotice, Skeleton, Select } from '@/components/fairway';
+import { Surface, Button, EmptyState, Eyebrow, InlineNotice, Skeleton, Select } from '@/components/fairway';
+import { RoundStatReport } from '@/components/golf/stats/round-report/RoundStatReport';
+
+// Same lazy-load treatment the sibling drills give it — the spray field pulls
+// in the chart runtime, and the career stage must not pay for it.
+const SprayField = dynamic(
+  () => import('@/components/fairway/charts/SprayField').then((m) => m.SprayField),
+  { ssr: false, loading: () => <Skeleton className="h-[260px] rounded-fw-lg" /> },
+);
 import { StageRouter } from '@/components/fairway/modules';
 import type { StageView } from '@/components/fairway/modules';
 
@@ -65,6 +74,20 @@ export interface StatsSpineStageProps {
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
+}
+
+/**
+ * `round_date` is a plain YYYY-MM-DD calendar date. Parsing it with `new
+ * Date()` resolves midnight UTC and then renders in the VIEWER's zone, which
+ * shows the previous day for anyone west of Greenwich. Split it instead.
+ *
+ * Module scope, not inlined in the picker's `useMemo`: the scoped-round report
+ * header needs the same formatting, and two copies of a date rule is how the
+ * two of them end up disagreeing about which day a round was played.
+ */
+function formatRoundDate(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return y && m && d ? `${Number(m)}/${Number(d)}/${y.slice(2)}` : iso;
 }
 
 export function StatsSpineStage({ playerId, isOwnStats = false, playerName, className }: StatsSpineStageProps) {
@@ -183,24 +206,18 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     };
   }, [playerId]);
 
-  const roundSelectOptions = useMemo(() => {
-    const fmt = (iso: string) => {
-      // round_date is a plain YYYY-MM-DD calendar date. Parsing it with `new
-      // Date()` resolves midnight UTC and then renders in the VIEWER's zone,
-      // which shows the previous day for anyone west of Greenwich. Split it.
-      const [y, m, d] = iso.slice(0, 10).split('-');
-      return y && m && d ? `${Number(m)}/${Number(d)}/${y.slice(2)}` : iso;
-    };
-    return [
+  const roundSelectOptions = useMemo(
+    () => [
       { label: 'All rounds', value: 'overall' },
       ...roundOptions.map((r) => ({
         value: r.id,
-        label: [fmt(r.date), r.courseName, r.totalScore !== null ? `(${r.totalScore})` : null]
+        label: [formatRoundDate(r.date), r.courseName, r.totalScore !== null ? `(${r.totalScore})` : null]
           .filter(Boolean)
           .join(' · '),
       })),
-    ];
-  }, [roundOptions]);
+    ],
+    [roundOptions],
+  );
 
   const scopedRound = useMemo(
     () => (scopeRoundId === 'overall' ? null : roundOptions.find((r) => r.id === scopeRoundId) ?? null),
@@ -352,6 +369,96 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     );
   }
 
+  /**
+   * SCOPED TO ONE ROUND — the formal report replaces the career stage.
+   *
+   * Owner report (2026-08-15): filtering to a round produced "that blob of
+   * stats". It did, and the blob was structural rather than cosmetic. The
+   * spine and the bento were built to describe a season: "Last 10 rounds",
+   * "Fills in after 5+ rounds", "Score trend across the most recent rounds",
+   * a team-relative standing and 30-day trends that do not move with the
+   * picker at all. Worse, `StatsSpine` prints a round-scoped `scoringAverage`
+   * beside a career `sgTotal` in identical typography, so the one number that
+   * did narrow was indistinguishable from the one that did not. An
+   * `InlineNotice` apologising for that is weaker than not rendering it.
+   *
+   * Three things are deliberate here:
+   *   - `roundPicker` stays mounted (it is rendered by every branch above too)
+   *     — a control that vanishes the moment you use it is the trap the
+   *     cold-start comment below already records being hit once.
+   *   - The spray charts are kept: `sprayData` is one of only two reads that
+   *     genuinely narrows to the round, so dropping the stage must not drop it.
+   *   - `?area=` is left alone. Switching back to "All rounds" restores
+   *     whichever drill the user was on, which is the least surprising thing
+   *     it can do.
+   */
+  if (scopedRound) {
+    const subtitle = [
+      formatRoundDate(scopedRound.date),
+      scopedRound.courseName,
+      scopedRound.totalScore !== null ? `${scopedRound.totalScore} strokes` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
+    return (
+      <div className={cn('flex flex-col gap-4', className)}>
+        {roundPicker}
+        {detailedStats ? (
+          <RoundStatReport stats={detailedStats} title="Round stats" subtitle={subtitle} />
+        ) : (
+          <Surface padding="lg">
+            <InlineNotice
+              tone="danger"
+              title="Couldn't load this round's stats"
+              action={
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  busy={loading}
+                  leftIcon={<RotateCw className="h-4 w-4" aria-hidden />}
+                  onClick={() => void loadAll(playerId, scopeRoundId)}
+                >
+                  Try again
+                </Button>
+              }
+            >
+              Switch back to All rounds to keep working, or retry this round.
+            </InlineNotice>
+          </Surface>
+        )}
+        {/* Gated on a shot actually being plottable, not merely on the read
+            succeeding: a scorecard-only round returns a well-formed response
+            with zero points, and an empty "Shot pattern" surface sitting under
+            the report's own "no shot detail" notice says the same nothing
+            twice. */}
+        {sprayData && sprayData.driving.plottedShots + sprayData.approach.plottedShots > 0 ? (
+          <Surface padding="lg">
+            <div className="flex flex-col gap-4">
+              <div>
+                <Eyebrow as="h3" tone="accent">
+                  Shot pattern
+                </Eyebrow>
+                <p className="mt-1 font-fw-sans text-caption text-text-tertiary">
+                  Where this round&apos;s tee shots and approaches finished.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <SprayField group={sprayData.driving} family="driving" compact />
+                <SprayField group={sprayData.approach} family="approach" compact />
+              </div>
+            </div>
+          </Surface>
+        ) : null}
+        <p className="font-fw-sans text-caption text-text-tertiary">
+          Team standing, 30-day trends and the strokes-gained leak maps are not shown here — they
+          are cross-round by construction, and one round is too small a sample to rank or trend.
+          Switch back to <span className="text-text-secondary">All rounds</span> for those.
+        </p>
+      </div>
+    );
+  }
+
   if (isColdStart) {
     return (
       <Surface padding="lg" className={className}>
@@ -479,19 +586,10 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           ledger={ledger}
         />
         <div className="flex min-w-0 flex-col gap-4">
-          {/* Say plainly what the scope does and does not move. The spine's
-              standing, the trend windows and the leak maps are all cross-round
-              by construction and keep showing the career picture — without this
-              line a coach would read a team-relative rank as this round's. */}
-          {scopedRound ? (
-            <InlineNotice tone="info" title="Scoped to one round">
-              Every stat below is from this round alone
-              {scopedRound.courseName ? ` at ${scopedRound.courseName}` : ''}. Team standing, 30-day
-              trends and the leak maps still cover all rounds — one round is too small a sample to
-              rank or trend.
-            </InlineNotice>
-          ) : null}
-          {detailedStats?.truncated && !scopedRound ? (
+          {/* No "scoped to one round" notice here any more: a scoped round
+              never reaches this branch — it returns the formal RoundStatReport
+              above instead of trying to caption a career layout into honesty. */}
+          {detailedStats?.truncated ? (
             <InlineNotice tone="info" title="Stats cover your most recent 100 rounds">
               Older rounds aren&apos;t included in the totals below.
             </InlineNotice>
