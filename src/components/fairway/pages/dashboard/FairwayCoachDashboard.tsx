@@ -95,6 +95,7 @@ import type {
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { DaySchedule, type DayScheduleEvent } from './DaySchedule';
+import { formatToPar } from '@/lib/golf/format-to-par';
 
 // Fairway TrendChart, lazy + ssr:false (mirrors FairwayPlayerDashboard's
 // Scoring Trend chart). recharts' ResponsiveContainer has no real size to
@@ -166,10 +167,10 @@ const RANGE_OPTIONS: { value: DashboardDateRange; label: string }[] = [
 
 type RoundRow = CoachDashboardData['recentRounds'][number];
 
-function formatToPar(toPar: number): string {
-  if (toPar === 0) return 'E';
-  return toPar > 0 ? `+${toPar}` : `${toPar}`;
-}
+// formatToPar consolidated onto @/lib/golf/format-to-par (see
+// src/test/schema/format-to-par-single-source.test.ts). Ten copies existed;
+// four rendered the ASCII hyphen where the rest render U+2212, so the same
+// score changed glyph between adjacent screens and broke tabular alignment.
 
 /** Title-case a course name that may have been entered in all-lowercase.
  *  Preserves existing uppercase letters (e.g. "TPC", "GC", "No."),

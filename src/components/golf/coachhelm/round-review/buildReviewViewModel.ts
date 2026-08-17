@@ -57,10 +57,26 @@ export function sanitizeNaN(text: string): string {
 }
 
 /** `+13` / `E` / `-2` — the mono to-par string next to the raw score. */
-export function formatToPar(scoreToPar: number): string {
-  if (scoreToPar === 0) return 'E';
-  return scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
-}
+/**
+ * Delegates to the shared Fairway formatter rather than reimplementing it.
+ *
+ * This copy stringified the raw negative (`${-2}` -> "-2"), so Round Review
+ * emitted the ASCII hyphen-minus while `lib/golf/format-to-par` — the
+ * documented convention, and what FairwayRoundDetail and FairwayQualifierDetail
+ * independently arrived at — emits the Unicode minus U+2212.
+ *
+ * Visible, not pedantic: `ReviewHero.tsx:376` renders this inside
+ * `font-fw-mono … tabular-nums`, and tabular figures are cut around U+2212,
+ * which carries the digit advance width. The ASCII hyphen is narrower and sits
+ * at a different height, so its column stops lining up — while the qualifier
+ * leaderboard, a tabular-nums standings table importing the shared helper, does
+ * line up. A player moving from a round card into that round's review saw the
+ * same score change glyph one tap apart.
+ *
+ * Kept as a named re-export so the ~1 call site and its tests are unchanged,
+ * and so the next person greps `formatToPar` here and finds the canonical one.
+ */
+export { formatToPar } from '@/lib/golf/format-to-par';
 
 export interface ReviewGrade {
   score: 0 | 1 | 2 | 3 | 4 | 5;

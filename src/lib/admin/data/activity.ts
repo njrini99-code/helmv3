@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import { resolveTeamUserIds, resolveTeamConversationIds } from '@/lib/admin/data/team-scope';
 import { FAILURE_SEVERITIES } from '@/lib/admin/severity';
+import { formatToPar } from '@/lib/golf/format-to-par';
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -149,11 +150,12 @@ export function fullName(first: string | null | undefined, last: string | null |
   return name.length > 0 ? name : null;
 }
 
-export function formatToPar(n: number | null): string {
-  if (n === null) return '—';
-  if (n === 0) return 'E';
-  return n > 0 ? `+${n}` : `${n}`;
-}
+// Was a local copy that stringified negatives, so admin activity rendered the
+// ASCII hyphen where the golf surfaces render U+2212. Imported AND re-exported:
+// this module uses it internally (see below) and the export was public API, so
+// dropping it silently would be a breaking change for no gain.
+// See src/test/schema/format-to-par-single-source.test.ts.
+export { formatToPar };
 
 export interface ActivitySourceResult {
   kind: ActivityKind;

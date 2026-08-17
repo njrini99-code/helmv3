@@ -82,6 +82,7 @@ import { createFocusAreaFromInsight, createPlayerFocusArea } from '@/app/golf/ac
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import { formatToPar } from '@/lib/golf/format-to-par';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props
@@ -141,11 +142,10 @@ function toInsightPriority(priority: string): InsightPriority {
 }
 
 /** Signed, honest score-to-par chip ("E", "+3", "−2", or "—" when absent). */
-function formatToPar(stp: number | null): string {
-  if (stp == null) return '—';
-  if (stp === 0) return 'E';
-  return stp > 0 ? `+${stp}` : `−${Math.abs(stp)}`;
-}
+// formatToPar consolidated onto @/lib/golf/format-to-par (see
+// src/test/schema/format-to-par-single-source.test.ts). Ten copies existed;
+// four rendered the ASCII hyphen where the rest render U+2212, so the same
+// score changed glyph between adjacent screens and broke tabular alignment.
 
 /**
  * Format the aggregator's `generated_at` ISO timestamp deterministically —

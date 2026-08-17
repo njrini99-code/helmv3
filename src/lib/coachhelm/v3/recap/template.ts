@@ -14,7 +14,20 @@ const WARM_900 = '#1c1917';
 const WARM_500 = '#78716c';
 const WARM_200 = '#e7e5e4';
 
-function formatToPar(p: number | null): string {
+/**
+ * AVERAGE score-to-par, for the weekly recap email. Deliberately NOT
+ * `@/lib/golf/format-to-par`, and renamed so the difference is visible at every
+ * call site rather than hidden behind a shared name:
+ *
+ *   - the input is a float mean, so it needs one decimal place and a
+ *     near-zero tolerance for "E"; the shared helper formats exact integers
+ *   - the output goes into HTML email, where the shared helper's Unicode minus
+ *     (U+2212) is a needless compatibility risk across older mail clients
+ *
+ * Same name, different function. That collision is what made
+ * src/test/schema/format-to-par-single-source.test.ts flag this file.
+ */
+function formatAvgToPar(p: number | null): string {
   if (p === null) return '—';
   if (Math.abs(p) < 0.05) return 'E';
   return p > 0 ? `+${p.toFixed(1)}` : p.toFixed(1);
@@ -51,7 +64,7 @@ export function buildWeeklyRecapHtml(recap: WeeklyRecap): { subject: string; htm
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
               <tr>
                 ${statCell('Rounds', String(recap.totals.rounds_played))}
-                ${statCell('Avg to par', formatToPar(recap.totals.avg_score_to_par))}
+                ${statCell('Avg to par', formatAvgToPar(recap.totals.avg_score_to_par))}
                 ${statCell('Insights', String(recap.totals.insights_surfaced))}
                 ${statCell('Active goals', String(recap.totals.goals_active))}
               </tr>
@@ -85,12 +98,12 @@ export function buildWeeklyRecapHtml(recap: WeeklyRecap): { subject: string; htm
     `${recap.team_name} — weekly recap (${formatDate(recap.week_start_iso)}–${formatDate(recap.week_end_iso)})`,
     ``,
     `Rounds: ${recap.totals.rounds_played}`,
-    `Avg to par: ${formatToPar(recap.totals.avg_score_to_par)}`,
+    `Avg to par: ${formatAvgToPar(recap.totals.avg_score_to_par)}`,
     `Insights: ${recap.totals.insights_surfaced}`,
     `Active goals: ${recap.totals.goals_active}`,
     ``,
     `Most active:`,
-    ...recap.active_players.map((p) => `  ${p.name} · ${p.rounds} rounds · ${formatToPar(p.avg_score_to_par)}`),
+    ...recap.active_players.map((p) => `  ${p.name} · ${p.rounds} rounds · ${formatAvgToPar(p.avg_score_to_par)}`),
     ``,
     `Team patterns:`,
     ...recap.top_patterns.map((p) => `  ${p.insight_type} · ${p.player_count} players`),
@@ -116,7 +129,7 @@ function activePlayersHtml(players: WeeklyRecap['active_players']): string {
         `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid ${WARM_200};">
         <tr>
           <td valign="middle" style="padding:10px 0; font-size:15px; color:${WARM_900};">${escapeHtml(p.name)}</td>
-          <td valign="middle" align="right" style="padding:10px 0; font-size:13px; color:${WARM_500};">${p.rounds} rounds · ${formatToPar(p.avg_score_to_par)}</td>
+          <td valign="middle" align="right" style="padding:10px 0; font-size:13px; color:${WARM_500};">${p.rounds} rounds · ${formatAvgToPar(p.avg_score_to_par)}</td>
         </tr>
       </table>`,
     )

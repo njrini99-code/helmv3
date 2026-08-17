@@ -59,9 +59,15 @@ describe('formatToPar', () => {
   it('formats even par as E', () => {
     expect(formatToPar(0)).toBe('E');
   });
+  // CHANGED 2026-08-17, deliberately. This asserted the ASCII hyphen, which is
+  // what the local copy in activity.ts produced. That copy is gone — the module
+  // now imports the shared `@/lib/golf/format-to-par`, whose convention is the
+  // Unicode minus U+2212, so admin renders the same glyph as every golf
+  // surface. See src/test/schema/format-to-par-single-source.test.ts for why
+  // ten copies with three behaviours was the actual defect.
   it('formats over/under par with a sign', () => {
     expect(formatToPar(3)).toBe('+3');
-    expect(formatToPar(-2)).toBe('-2');
+    expect(formatToPar(-2)).toBe('−2');
   });
 });
 

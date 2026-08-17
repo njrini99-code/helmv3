@@ -69,6 +69,7 @@ import { classifyTrend, TREND_COLOR } from '@/components/fairway/charts/TrendChi
 import { cn } from '@/lib/utils';
 import { formatDateOnlyWeekdayLong, formatDateOnlyFull } from '@/lib/golf/date-only';
 import { deriveRoundTotalsFromHoles } from '@/lib/golf/round-total';
+import { formatToPar } from '@/lib/golf/format-to-par';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — fully-resolved, serializable data from the server page.
@@ -137,11 +138,10 @@ function finite(n: number | null | undefined): number | null {
 }
 
 /** Signed, honest score-to-par chip ("E", "+3", "−2"). */
-function formatToPar(stp: number | null): string {
-  if (stp == null) return '—';
-  if (stp === 0) return 'E';
-  return stp > 0 ? `+${stp}` : `−${Math.abs(stp)}`;
-}
+// formatToPar consolidated onto @/lib/golf/format-to-par (see
+// src/test/schema/format-to-par-single-source.test.ts). Ten copies existed;
+// four rendered the ASCII hyphen where the rest render U+2212, so the same
+// score changed glyph between adjacent screens and broke tabular alignment.
 
 /** Round type → human label (mirrors the legacy page's vocabulary). */
 function roundTypeLabel(roundType: string | null): string {

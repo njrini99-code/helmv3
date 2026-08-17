@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import { StatusPill, Inset } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { TeamHealth } from '@/lib/admin/data/golf';
+import { formatToPar } from '@/lib/golf/format-to-par';
 
 const HEALTH_TONE: Record<TeamHealth, 'success' | 'warning' | 'danger'> = {
   active: 'success',
@@ -40,11 +41,12 @@ function sortRoster(roster: readonly RosterDisplayRow[]): RosterDisplayRow[] {
   );
 }
 
-function formatToPar(toPar: number | null): string {
-  if (toPar === null) return '—';
-  if (toPar === 0) return 'E';
-  return toPar > 0 ? `+${toPar}` : String(toPar);
-}
+// Was a local copy that did `String(toPar)` for negatives, so this table
+// rendered the ASCII hyphen while the rest of the product renders U+2212. This
+// table is explicitly tabular (see the GREEN CONTRACT note below), and tabular
+// figures are cut around U+2212 — it carries the digit advance width, the ASCII
+// hyphen does not — so the to-par column did not line up with itself.
+// Behaviour is otherwise identical: '—' for null, 'E' at level, '+n' over.
 
 /**
  * Team roster — GREEN CONTRACT: heavy graphite (warm-900, bold, tabular)

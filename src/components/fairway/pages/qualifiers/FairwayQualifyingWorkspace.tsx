@@ -59,6 +59,7 @@ import type {
   QualifyingWorkspace,
   SelectionCandidate,
 } from '@/lib/coachhelm/v3/qualifying/types';
+import { formatToPar } from '@/lib/golf/format-to-par';
 
 export interface FairwayQualifyingWorkspaceProps {
   workspace: QualifyingWorkspace;
@@ -71,11 +72,10 @@ const STATE_META: Record<QualifierSelectionState, { tone: FwStatusTone; label: s
   selected: { tone: 'success', label: 'Selected · roster committed', pulse: false },
 };
 
-function formatToPar(p: number | null): string {
-  if (p === null) return '—';
-  if (p === 0) return 'E';
-  return p > 0 ? `+${p}` : String(p);
-}
+// formatToPar consolidated onto @/lib/golf/format-to-par (see
+// src/test/schema/format-to-par-single-source.test.ts). Ten copies existed;
+// four rendered the ASCII hyphen where the rest render U+2212, so the same
+// score changed glyph between adjacent screens and broke tabular alignment.
 
 export function FairwayQualifyingWorkspace({ workspace }: FairwayQualifyingWorkspaceProps) {
   const {

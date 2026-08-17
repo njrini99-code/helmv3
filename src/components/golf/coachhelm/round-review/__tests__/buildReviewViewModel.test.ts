@@ -50,7 +50,15 @@ function hole(overrides: Partial<HoleBreakdown> = {}): HoleBreakdown {
 describe('formatToPar', () => {
   it('formats even as E', () => expect(formatToPar(0)).toBe('E'));
   it('formats over par with a leading +', () => expect(formatToPar(13)).toBe('+13'));
-  it('formats under par with the native minus sign', () => expect(formatToPar(-2)).toBe('-2'));
+  // CHANGED 2026-08-17, deliberately. This asserted the ASCII hyphen ('-2')
+  // while its own name said "the native minus sign" — and Fairway's native
+  // minus, per `lib/golf/format-to-par` and the two surfaces that
+  // independently reimplemented it, is U+2212. The assertion was pinning what
+  // this local copy happened to do, not the product's convention. See the
+  // consistency block at the bottom of this file for why the glyph matters in
+  // a tabular-nums readout.
+  it('formats under par with the native minus sign (U+2212)', () =>
+    expect(formatToPar(-2)).toBe('−2'));
 });
 
 describe('buildGrade (gradeDotsForDelta wiring)', () => {
@@ -380,5 +388,38 @@ describe('pickPracticePriority', () => {
   });
   it('returns null when neither source has content', () => {
     expect(pickPracticePriority(undefined, undefined)).toBeNull();
+  });
+});
+
+/**
+ * Round Review's score-to-par must render the same glyph as every other Fairway
+ * surface showing the same number.
+ *
+ * `src/lib/golf/format-to-par.ts` is the documented convention — "the
+ * convention new/rebuilt call sites should import rather than reimplement" —
+ * and it emits the Unicode minus sign U+2212 ("−"). FairwayRoundDetail and
+ * FairwayQualifierDetail independently reimplemented it and both arrived at
+ * U+2212 too. This module's copy stringifies the raw negative and so emits the
+ * ASCII hyphen-minus.
+ *
+ * That is visible, not pedantic. `ReviewHero.tsx:376` renders this value inside
+ * `font-fw-mono … tabular-nums`, and tabular figures are designed around
+ * U+2212, which shares the digit advance width; the ASCII hyphen is narrower
+ * and sits at a different height, so the column it is in stops lining up. The
+ * qualifier leaderboard — a tabular-nums standings table — imports the shared
+ * helper and does line up. A player moving from a round card to that round's
+ * review sees the same score change glyph one tap apart.
+ */
+describe('formatToPar agrees with the shared Fairway formatter', () => {
+  it('emits the same string as lib/golf/format-to-par for every sign', async () => {
+    const { formatToPar: shared } = await import('@/lib/golf/format-to-par');
+    for (const value of [-13, -2, -1, 0, 1, 2, 13]) {
+      expect(formatToPar(value), `to-par ${value}`).toBe(shared(value));
+    }
+  });
+
+  it('uses the Unicode minus U+2212, not the ASCII hyphen', () => {
+    expect(formatToPar(-2)).toBe('−2');
+    expect(formatToPar(-2)).not.toContain('-'); // U+002D must not appear
   });
 });

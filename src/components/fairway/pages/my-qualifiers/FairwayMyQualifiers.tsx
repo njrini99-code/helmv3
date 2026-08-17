@@ -45,6 +45,7 @@ import {
 } from '@/components/fairway';
 import { IconCalendar, IconMapPin, IconArrowRight, IconGolf } from '@/components/icons';
 import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
+import { formatToPar } from '@/lib/golf/format-to-par';
 
 const detailHref = (id: string) => `/golf/dashboard/qualifiers/${id}`;
 const startRoundHref = (id: string) => `/golf/dashboard/rounds/new?qualifier=${id}`;
@@ -95,12 +96,11 @@ export function formatDate(dateStr: string): string {
   });
 }
 
-/** Honest to-par: scored only. null → em-dash. */
-function formatToPar(toPar: number | null): string {
-  if (toPar === null) return '—';
-  if (toPar === 0) return 'E';
-  return toPar > 0 ? `+${toPar}` : `${toPar}`;
-}
+// Honest to-par: scored only, null → em-dash. Was a local copy that stringified
+// negatives, so this surface rendered the ASCII hyphen while the qualifier
+// LEADERBOARD — which a player reaches from here — renders U+2212 via the
+// shared helper. Same score, two glyphs, one tap apart. Behaviour is otherwise
+// identical.
 
 /**
  * "thru R1, R2" — never a fabricated X/N denominator. For 3+ posted rounds we

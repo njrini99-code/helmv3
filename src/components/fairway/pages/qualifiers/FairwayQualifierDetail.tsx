@@ -48,6 +48,7 @@ import type { QualifierRoundCourse } from '@/app/golf/actions/golf';
 
 import { FairwayQualifierLeaderboard } from './FairwayQualifierLeaderboard';
 import { qualifierStatusMeta } from './qualifier-status';
+import { formatToPar } from '@/lib/golf/format-to-par';
 
 /** One round's score within a player's breakdown (shape from the route page). */
 interface RoundScore {
@@ -137,12 +138,10 @@ function dateRange(start: string, end: string | null): string {
 
 /** Over/under par, rendered with the Unicode minus (U+2212) — a plain ASCII
  *  hyphen sits too high and reads inconsistently next to the `+` glyph. */
-function formatToPar(toPar: number | null): string {
-  if (toPar === null) return '—';
-  if (toPar === 0) return 'E';
-  if (toPar > 0) return `+${toPar}`;
-  return `−${Math.abs(toPar)}`;
-}
+// formatToPar consolidated onto @/lib/golf/format-to-par (see
+// src/test/schema/format-to-par-single-source.test.ts). Ten copies existed;
+// four rendered the ASCII hyphen where the rest render U+2212, so the same
+// score changed glyph between adjacent screens and broke tabular alignment.
 
 /** Under par = green (accent). Over par = amber warning, never the SF-red
  *  danger token — a bad hole isn't an error state. */
