@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
+import { isGolfTaskOverdue } from '@/lib/golf/task-overdue';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamHubWrapper } from '@/components/fairway/pages/team-hub';
 import { EmptyState, Button, FeatureUnavailable } from '@/components/fairway';
@@ -246,7 +247,10 @@ export default async function TeamHubPage({
       const assignment = assignmentMap.get(t.id);
       const isCompleted = assignment?.status === 'completed';
       const completedAt = assignment?.completed_at || null;
-      const isOverdue = !isCompleted && t.due_date && new Date(t.due_date) < new Date();
+      // `new Date('2026-08-17')` is UTC MIDNIGHT, so comparing it to `new Date()`
+      // flipped a task to overdue the EVENING BEFORE its due date in US zones.
+      // `due_date` is a DATE column; the comparison has to be day-vs-day.
+      const isOverdue = !isCompleted && isGolfTaskOverdue(t.due_date);
       return {
         id: t.id,
         title: t.title,

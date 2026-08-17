@@ -41,6 +41,7 @@ import {
 } from '@/components/icons';
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
 import { parseDateOnly } from '@/lib/utils/date-only';
+import { isGolfTaskOverdue } from '@/lib/golf/task-overdue';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the legacy TeamInfoPlayer loader output EXACTLY
@@ -339,8 +340,10 @@ export function FairwayTeamInfo({
                 // Same overdue rule as the canonical Tasks page (FairwayTasks)
                 // and Team Hub's Tasks tab (TaskRow): a real due date in the
                 // past on a task that isn't complete.
-                const isOverdue =
-                  !!now && !!task.due_date && parseDateOnly(task.due_date) < now;
+                // `isGolfTaskOverdue`, not `parseDateOnly(due) < now`: the
+                // latter anchors a DATE at local midnight and compares it to an
+                // instant, so a task due TODAY read as late from 00:00 onward.
+                const isOverdue = !!now && isGolfTaskOverdue(task.due_date, now);
                 return (
                   <Surface key={task.id} elevation="border" padding="md">
                     <div className="flex items-start gap-3">
