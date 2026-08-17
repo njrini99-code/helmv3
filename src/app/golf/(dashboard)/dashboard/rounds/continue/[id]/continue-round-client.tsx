@@ -877,7 +877,12 @@ export default function ContinueRoundClient({
     try {
       const result = await deleteInProgressRound(roundId);
       if (result && 'success' in result && !result.success) {
-        showToast?.('Failed to delete round. Please try again.', 'error');
+        // Surface the action's OWN message. It distinguishes "this round can no
+        // longer be discarded — already finished or removed" from a transient
+        // failure, and the next line clears the local recovery snapshot
+        // irreversibly, so "Please try again" is the wrong steer for the first
+        // case. The other two callers of this action already do this.
+        showToast?.(result.error || 'Failed to delete round. Please try again.', 'error');
         return;
       }
       clearEmergencySave(roundId);

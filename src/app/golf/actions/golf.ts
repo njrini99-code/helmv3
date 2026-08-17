@@ -5995,16 +5995,41 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
       return { success: false, error: 'Player profile not found' };
     }
 
-    // Delete the round (cascades to holes and shots)
-    const { error } = await supabase
+    // Delete the round (cascades to holes and shots).
+    //
+    // `.select('id')` so a 0-row delete is distinguishable from a real one. Two
+    // of the three filters are ownership and are unremarkable; the third,
+    // `status = 'in_progress'`, is SEMANTIC — a round that has already been
+    // submitted stops matching. A PostgREST DELETE that matches nothing
+    // resolves `{ data: null, error: null }`, so checking `error` alone
+    // returned success for a discard that discarded nothing.
+    //
+    // The caller acts on that answer: continue-round-client's handleDeleteRound
+    // calls `clearEmergencySave(roundId)` — an irreversible
+    // localStorage.removeItem — and navigates away. So the player lost their
+    // local recovery snapshot while the round stayed on the server, and was
+    // told nothing. The race is ordinary: a submit that succeeded server-side
+    // but errored on the client, or a round finished in another tab.
+    const { data: deletedRows, error } = await supabase
       .from('golf_rounds')
       .delete()
       .eq('id', roundId)
       .eq('player_id', player.id)
-      .eq('status', 'in_progress');
+      .eq('status', 'in_progress')
+      .select('id');
 
     if (error) {
       return { success: false, error: 'Failed to delete round' };
+    }
+
+    if (!deletedRows || deletedRows.length === 0) {
+      // Deliberately specific. The player is one tap from losing their local
+      // recovery copy, so "try again" would be the wrong steer — the round is
+      // not in a discardable state and retrying cannot change that.
+      return {
+        success: false,
+        error: "This round can no longer be discarded — it looks like it was already finished or removed.",
+      };
     }
 
     revalidatePath('/golf/dashboard/rounds');
