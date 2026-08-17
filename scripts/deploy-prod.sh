@@ -67,18 +67,48 @@ if [ "${DRY_RUN:-0}" = "1" ]; then
   exit 0
 fi
 
+# --scope is REQUIRED and its absence is not obvious. This project lives under
+# the `nick-rinis-projects` TEAM, and without --scope the CLI resolves a
+# personal context and the deploy dies with a bare:
+#
+#     {"status":"error","reason":"deploy_failed","message":"Not authorized"}
+#
+# which reads like a credentials problem and is not — `vercel whoami`,
+# `vercel project ls` and `vercel ls` all succeed at that moment. Observed on
+# this script's first real run, 2026-08-16.
+#
+# Read the team from .vercel/project.json rather than hardcoding it, so a
+# re-link cannot silently point the deploy at the wrong org.
+SCOPE="$(node -e 'try{process.stdout.write(require("./.vercel/project.json").orgId||"")}catch{}' 2>/dev/null)"
+if [ -z "$SCOPE" ]; then
+  echo "REFUSING: could not read orgId from .vercel/project.json." >&2
+  echo "Run \`vercel link\` first — deploying without --scope fails as 'Not authorized'." >&2
+  exit 1
+fi
+echo "  scope       -> $SCOPE"
+
 # --build-env: available to `next build`, which is when Next inlines
 #   NEXT_PUBLIC_* into the bundle. This is the one that actually matters.
 # --env: available at runtime too, so the server-side Sentry init agrees with
 #   the client bundle rather than reporting a different release.
 vercel deploy --prod --yes \
+  --scope "$SCOPE" \
   --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" \
   --env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA"
 
 echo
-echo "Deployed. Verify the release actually moved before trusting it:"
-echo "  1. vercel inspect helmsportslabs.com   # confirm the alias points at the new deployment"
-echo "  2. Check any production Sentry event's \`release\` tag == $SHORT"
+echo "Deployed. READY is not LIVE — verify all three before trusting it:"
+echo "  1. vercel inspect helmsportslabs.com --scope $SCOPE"
+echo "     The printed deployment id must equal the one above. A READY"
+echo "     production build whose alias never moved serves nobody."
+echo "  2. curl -s -o /dev/null -w '%{http_code}' https://helmsportslabs.com/"
+echo "  3. Release stamp reached the BUNDLE (not the HTML — NEXT_PUBLIC_* is"
+echo "     inlined into JS chunks, so grepping the page source finds nothing"
+echo "     even on a correct deploy; verified 2026-08-16, 2 of 32 chunks):"
+echo "       curl -s https://helmsportslabs.com/ \\"
+echo "         | grep -o '/_next/static/chunks/[^\"]*\\.js' | sort -u \\"
+echo "         | while read c; do curl -s \"https://helmsportslabs.com\$c\" \\"
+echo "             | grep -q $SHA && echo \"stamp in \$c\"; done"
 echo
 echo "If the release tag still shows an older SHA, the build did not pick up"
 echo "--build-env — do NOT assume the code is stale on that evidence alone."
