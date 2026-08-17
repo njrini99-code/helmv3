@@ -293,11 +293,18 @@ function statusMeta(status: string | null | undefined): { tone: FwStatusTone; la
 }
 
 /**
- * Lifecycle states the mutating actions (Mark complete / Log progress / Record
- * outcome) are meaningful on. Mirrors the server-side allowlist
- * (development.ts's ACTIONABLE_FOCUS_AREA_STATUSES) so a 'proposed' (not yet
- * accepted) or 'declined' (rejected) area never shows live action buttons that
- * would just be rejected by the server anyway.
+ * Lifecycle states the mid-flight actions (Mark complete / Log progress) are
+ * meaningful on. Mirrors development.ts's ACTIONABLE_FOCUS_AREA_STATUSES so a
+ * 'proposed' (not yet accepted) or 'declined' (rejected) area never shows live
+ * action buttons that would just be rejected by the server anyway.
+ *
+ * DO NOT widen this to cover outcome capture. There are now TWO server
+ * allowlists, and this one mirrors the narrower: recording an outcome is also
+ * legal on a 'completed' area (development.ts's
+ * OUTCOME_RECORDABLE_FOCUS_AREA_STATUSES), which is what lets the completed
+ * row's own "How did it go?" prompt below actually succeed. Marking an already
+ * completed area complete again, or logging progress against it, is still
+ * meaningless — so those stay gated here.
  */
 const ACTIONABLE_STATUSES = new Set(['active', 'in_progress', 'paused']);
 
