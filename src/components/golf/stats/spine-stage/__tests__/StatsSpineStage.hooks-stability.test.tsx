@@ -180,6 +180,54 @@ function mockHealthyBundle() {
  */
 const FIND_TIMEOUT_MS = 15_000;
 
+/**
+ * Find the DrillPanel's "Home"/"All areas" back chip, and say what the stage
+ * ACTUALLY shows when it is not there.
+ *
+ * #1484's complaint is not that this test is flaky — it is that when it fails
+ * it blames the wrong thing. On 2026-08-17 it reddened main on `80472667a`
+ * (Pacific/Kiritimati shard 2, 15,449ms) with:
+ *
+ *     TestingLibraryElementError: Unable to find role="button" and
+ *     name `/home|all areas/i`
+ *
+ * That names the symptom. Whether the drill never mounted, mounted and
+ * re-rendered back to home, or simply lost the wall-clock race under a
+ * four-shard-by-two-zone CI fan-out is invisible from it — and those want
+ * different fixes. Failing with the stage's own headings and button names
+ * attached makes the next occurrence diagnosable from the log alone, without
+ * reproducing a load condition that does not exist locally (this file passes in
+ * ~4s here and burned its entire 15s budget on ONE lookup there).
+ *
+ * The assertion is unchanged: the chip must still be found. Only the failure
+ * message is richer.
+ */
+async function findBackChip(): Promise<HTMLElement> {
+  try {
+    return await screen.findByRole(
+      'button',
+      { name: /home|all areas/i },
+      { timeout: FIND_TIMEOUT_MS },
+    );
+  } catch (err) {
+    const stage = document.querySelector('[data-slot="stage"]');
+    const headings = Array.from(stage?.querySelectorAll('h1, h2, h3') ?? [])
+      .map((h) => h.textContent?.trim())
+      .filter(Boolean);
+    const buttons = screen
+      .queryAllByRole('button')
+      .map((b) => b.textContent?.trim().slice(0, 40))
+      .filter(Boolean);
+    throw new Error(
+      `Back chip (/home|all areas/i) not found within ${FIND_TIMEOUT_MS}ms.\n` +
+        `Stage mounted: ${stage ? 'yes' : 'NO — the stage itself is gone'}\n` +
+        `Stage headings: ${headings.length ? headings.join(' | ') : '(none)'}\n` +
+        `Buttons on screen (${buttons.length}): ${buttons.join(' | ') || '(none)'}\n` +
+        `Original: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
+
 const AREAS = ['home', 'putting', 'driving', 'approach', 'short-game', 'scoring', 'standing', 'rounds'] as const;
 
 const AREA_HEADING: Record<(typeof AREAS)[number], string> = {
@@ -251,7 +299,7 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', { t
       // reliable "navigation finished" signal. Await the back chip itself —
       // it only exists inside a drill's DrillPanel — otherwise a synchronous
       // lookup here races the click's re-render under CI load.
-      const backChip = await screen.findByRole('button', { name: /home|all areas/i }, { timeout: FIND_TIMEOUT_MS });
+      const backChip = await findBackChip();
       fireEvent.click(backChip);
       await expectStageShows('Core ball striking');
 
@@ -260,7 +308,7 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', { t
       const cellAgain = screen.getAllByRole('button').find((btn) => btn.textContent?.includes(AREA_HEADING[area]));
       fireEvent.click(cellAgain!);
       await expectStageShows(AREA_HEADING[area]);
-      fireEvent.click(await screen.findByRole('button', { name: /home|all areas/i }, { timeout: FIND_TIMEOUT_MS }));
+      fireEvent.click(await findBackChip());
       await expectStageShows('Core ball striking');
     }
   });
