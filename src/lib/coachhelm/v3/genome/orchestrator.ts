@@ -27,7 +27,14 @@ import type {
 import type { Json } from '@/lib/types/database';
 import { describeError } from '@/lib/utils/describe-error';
 
-const WINDOW_DAYS = 90;
+/**
+ * Exported because the nightly cron must pre-filter candidates on the SAME
+ * window this orchestrator computes over. If the two drift, the cron either
+ * queues players it will then skip (which starved the job for six weeks —
+ * see `select-refresh-chunk.ts`) or silently declines to refresh players it
+ * could have. One constant, one meaning.
+ */
+export const WINDOW_DAYS = 90;
 
 /**
  * Why a null dimension is null — stored on the persisted vector so the slot is

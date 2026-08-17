@@ -1,10 +1,19 @@
 /**
  * v3 genome nightly cron — GET/POST /api/cron/v3/genome-nightly
  *
- * Chunked: picks up to PLAYERS_PER_INVOCATION players ordered by the
- * oldest computed_at (NULL-first), runs the orchestrator for each,
- * returns a per-player summary. Self-balancing — next run naturally
- * grabs the now-stalest cohort.
+ * Chunked: picks up to PLAYERS_PER_INVOCATION players who can actually
+ * produce a vector — at least one completed round inside the orchestrator's
+ * window — ordered never-computed first, then oldest computed_at. Runs the
+ * orchestrator for each and returns a per-player summary.
+ *
+ * "Self-balancing — next run naturally grabs the now-stalest cohort" is what
+ * this header used to claim, and it was false for six weeks. Rotation depends
+ * on every selected player coming back with a `computed_at`, and a player the
+ * orchestrator SKIPS never gets one, so it sorted to the front again the next
+ * night. 25 permanently-uncomputable players against a 25-slot chunk meant the
+ * queue never moved: 47 consecutive `completed` runs at ~1s each while
+ * `golf_player_genome` sat frozen at 2026-07-07. The eligibility filter below
+ * is what makes the claim true; see `select-refresh-chunk.ts`.
  *
  * Auth: Vercel Cron sends Authorization: Bearer ${CRON_SECRET}.
  *
@@ -16,7 +25,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
-import { computeGenomeForPlayer } from '@/lib/coachhelm/v3/genome/orchestrator';
+import { computeGenomeForPlayer, WINDOW_DAYS as GENOME_WINDOW_DAYS } from '@/lib/coachhelm/v3/genome/orchestrator';
+import { selectGenomeRefreshChunk } from '@/lib/coachhelm/v3/genome/select-refresh-chunk';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { describeError } from '@/lib/utils/describe-error';
@@ -105,17 +115,47 @@ async function handle(): Promise<NextResponse> {
   }
   const allPlayerIds = Array.from(new Set((members ?? []).map((m) => m.player_id)));
 
-  // Sort: never-computed (no entry in map) come first, then by ascending
-  // computed_at. Take the first PLAYERS_PER_INVOCATION.
-  allPlayerIds.sort((a, b) => {
-    const ca = computedAtByPlayer.get(a);
-    const cb = computedAtByPlayer.get(b);
-    if (!ca && !cb) return 0;
-    if (!ca) return -1;
-    if (!cb) return 1;
-    return ca.localeCompare(cb);
-  });
-  const chunk = allPlayerIds.slice(0, PLAYERS_PER_INVOCATION);
+  // Who can actually produce a vector tonight. A player with no completed round
+  // inside the orchestrator's window yields zero valid dimensions, and
+  // `computeGenomeForPlayer` then refuses to upsert (all-null vectors are the
+  // trust-eroding state P2-21 forbids) — so it writes nothing, keeps no
+  // `computed_at`, and sorts to the front of the queue again tomorrow.
+  //
+  // In production that starved the job completely: 25 of the 32 never-computed
+  // players had no rounds in the window, PLAYERS_PER_INVOCATION is 25, so the
+  // same guaranteed-skip cohort filled every chunk. 47 consecutive `completed`
+  // runs, ~1s each, and `golf_player_genome` frozen at 2026-07-07 for 41 days.
+  // The Genome surface has been showing July analysis ever since.
+  const windowStart = new Date(Date.now() - GENOME_WINDOW_DAYS * 86400_000)
+    .toISOString()
+    .slice(0, 10);
+  const { data: eligibleRows, error: eligibleErr } = await fetchAllRowsResult<{ player_id: string }>(
+    (from, to) =>
+      supabase
+        .from('golf_rounds')
+        .select('player_id')
+        .eq('status', 'completed')
+        .gte('round_date', windowStart)
+        .order('id', { ascending: true })
+        .range(from, to),
+    undefined,
+    { table: 'golf_rounds', action: 'cron.v3.genome-nightly', sport: 'golf' },
+  );
+  if (eligibleErr) {
+    // Same reasoning as the two guards above: recordJobRun already writes the
+    // Bridge event for a >=400 response. Failing loudly is right — silently
+    // treating "eligibility unknown" as "nobody is eligible" would reproduce
+    // the exact no-op-but-green failure this guard exists to end.
+    return NextResponse.json({ success: false, error: eligibleErr.message }, { status: 500 });
+  }
+  const eligiblePlayerIds = new Set((eligibleRows ?? []).map((r) => r.player_id));
+
+  const chunk = selectGenomeRefreshChunk(
+    allPlayerIds,
+    computedAtByPlayer,
+    eligiblePlayerIds,
+    PLAYERS_PER_INVOCATION,
+  );
 
   const per_player: NightlySummary['per_player'] = [];
   for (const pid of chunk) {
