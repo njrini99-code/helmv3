@@ -201,6 +201,89 @@ interface TeamStatsAggregate {
 }
 
 /**
+ * Body copy for the "SG <area>: Primary Stroke Sink" insight.
+ *
+ * This is the first thing a coach reads about a player — `analyzeStrokesGained`
+ * runs first and marks the insight `critical` past a stroke of loss — so it is
+ * the sentence with the most leverage in the product.
+ *
+ * It used to read, in full:
+ *
+ *   "You're losing 3.9 strokes per round in putting. This is your biggest area
+ *    for improvement and represents the best opportunity to lower your scores."
+ *
+ * Measured in production 2026-08-17: 14 rows carried that title across 8
+ * players and only THREE distinct bodies, nine of them byte-identical, every
+ * one exactly 147 characters. The only thing that varied was the substituted
+ * number; the second sentence restated that the worst area is the worst area.
+ *
+ * The generator already had everything needed to say something diagnostic and
+ * passed none of it in. The distinction that actually changes what a coach does
+ * is whether the weakness is ISOLATED or whether the whole game is underwater:
+ * losing 3.9 putting when nothing else leaks is a putting problem, and losing
+ * 3.9 putting when approach is at 3.7 is not — treating it as one would move
+ * the score barely at all. Both used to produce identical prose.
+ *
+ * Pure and exported so the copy is testable without constructing a full
+ * `GolfStats`, matching `compareAgainstBaseline` above.
+ */
+export function composeStrokeSinkBody(args: {
+  /** Display name of the worst area, e.g. "Putting". */
+  areaName: string;
+  /** Strokes lost per round in that area, as a POSITIVE magnitude. */
+  strokesLost: number;
+  /** The next-worst area, or null when this is the only category with data. */
+  nextWorstName: string | null;
+  /** Its loss as a positive magnitude; null when it is gaining strokes. */
+  nextWorstLoss: number | null;
+  /** How many of the measured categories are losing strokes at all. */
+  categoriesLosing: number;
+  roundsPlayed: number;
+}): string {
+  const { areaName, strokesLost, nextWorstName, nextWorstLoss, categoriesLosing, roundsPlayed } = args;
+  const area = areaName.toLowerCase();
+  const rounds = `${roundsPlayed} round${roundsPlayed === 1 ? '' : 's'}`;
+  const lead = `You're losing ${strokesLost.toFixed(1)} strokes per round in ${area} across ${rounds}.`;
+
+  // No second area is losing strokes — the rest of the game is holding.
+  if (nextWorstName === null || nextWorstLoss === null) {
+    return `${lead} Every other part of your game is at or above even, so this is the one place your score is leaking.`;
+  }
+
+  const gap = strokesLost - nextWorstLoss;
+
+  // Dominant: fixing this one area is genuinely the highest-leverage move.
+  if (gap >= 1) {
+    return (
+      `${lead} That is ${gap.toFixed(1)} strokes clear of ${nextWorstName.toLowerCase()}, ` +
+      `the next-largest loss — no other area is close, so ${area} is where the round is decided.`
+    );
+  }
+
+  // "all four of your areas" rather than "4 of your four areas" — the numeral
+  // next to the spelled-out total reads like a typo.
+  const spread =
+    categoriesLosing >= 4
+      ? 'all four of your areas are losing strokes'
+      : `${categoriesLosing} of your four areas are losing strokes`;
+
+  // Crowded: the headline number is real but naming one area would mislead.
+  if (gap < 0.5) {
+    return (
+      `${lead} But ${nextWorstName.toLowerCase()} is right behind at ${nextWorstLoss.toFixed(1)}, ` +
+      `and ${spread}. Treating ${area} as a single fix ` +
+      `will not move the score much — the loss is spread across the bag.`
+    );
+  }
+
+  // In between: worth leading with, but the runner-up belongs in the sentence.
+  return (
+    `${lead} It leads ${nextWorstName.toLowerCase()} by ${gap.toFixed(1)} strokes, and ${spread} — ` +
+    `start here, but the second one is close enough to matter.`
+  );
+}
+
+/**
  * Stats Insight Generator
  * Analyzes player stats to find stroke-saving opportunities
  */
@@ -709,13 +792,22 @@ export class StatsInsightGenerator {
 
     // Insight: Biggest stroke loss area
     if (worstArea.value < -0.3) {
-      const strokesLost = Math.abs(worstArea.value).toFixed(1);
       insights.push({
         id: `sg-loss-${worstArea.name.toLowerCase().replace(' ', '_')}`,
         playerId: this.playerId,
         category: 'strokes_gained',
         headline: `SG ${worstArea.name}: Primary Stroke Sink`,
-        body: `You're losing ${strokesLost} strokes per round in ${worstArea.name.toLowerCase()}. This is your biggest area for improvement and represents the best opportunity to lower your scores.`,
+        // `sgCategories` is already sorted most-negative first, so index 1 is
+        // the runner-up. Whether it is 3.7 strokes back or 0.2 is the whole
+        // difference between "go fix your putting" and "everything is leaking".
+        body: composeStrokeSinkBody({
+          areaName: worstArea.name,
+          strokesLost: Math.abs(worstArea.value),
+          nextWorstName: sgCategories[1] && sgCategories[1].value < 0 ? sgCategories[1].name : null,
+          nextWorstLoss: sgCategories[1] && sgCategories[1].value < 0 ? Math.abs(sgCategories[1].value) : null,
+          categoriesLosing: sgCategories.filter((c) => c.value < 0).length,
+          roundsPlayed: stats.roundsPlayed,
+        }),
         strokeImpact: Math.abs(worstArea.value),
         recommendation: this.getSGRecommendation(worstArea.name, worstArea.value),
         priority: Math.abs(worstArea.value) > 1 ? 'critical' : 'high',
