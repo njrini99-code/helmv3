@@ -33,7 +33,11 @@
  * so the convention exists; RailBarRow simply never adopted it.
  */
 import { describe, it, expect } from 'vitest';
-import { buildShortGameRows } from '@/components/golf/stats/spine-stage/StatsBento';
+import {
+  buildShortGameRows,
+  buildDrivingRows,
+  buildApproachRows,
+} from '@/components/golf/stats/spine-stage/StatsBento';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 function stats(over: Partial<GolfStats>): GolfStats {
@@ -98,5 +102,85 @@ describe('StatsBento short-game rows — sample honesty', () => {
 
     expect(scr?.value).toBe('30%');
     expect(scr?.sample).toBeUndefined();
+  });
+});
+
+/**
+ * The same two defects, one row-group over.
+ *
+ * `buildShortGameRows` was fixed first because sand saves are where it bites
+ * hardest: 1 player of 42 has zero attempts and renders a fabricated 0%, and 14
+ * carry a rate built on four tries or fewer. The driving and approach groups
+ * had the identical `finite(...) ?? 0` shape and the identical hidden
+ * denominators — `fairwaysHit`/`fairwayOpportunities` and
+ * `girTotal`/`girOpportunities`, both sitting unused on the same interface.
+ *
+ * BEING STRAIGHT ABOUT THE IMPACT: unlike sand saves, this is LATENT.
+ * Measured 2026-08-17 across 42 players with completed rounds, GIR
+ * opportunities run 18 to 315 — nobody has zero and nobody is under a single
+ * round's worth; one player is thin on fairways. So the fabricated zero does
+ * not fire on today's data. It would fire for a player with no rounds yet, and
+ * the missing denominator is a consistency gap rather than an active
+ * misreading.
+ *
+ * Fixed anyway, because leaving it means the bento contradicts itself — short
+ * game showing its evidence while GIR and fairways hide theirs is the
+ * two-surfaces-disagree shape this codebase keeps getting bitten by, except
+ * self-inflicted.
+ *
+ * The per-par splits carry rates but NO counts on GolfStats, so they correctly
+ * get no sample rather than an invented one.
+ */
+describe('StatsBento driving + approach rows — same honesty rules', () => {
+  it('does not fabricate 0% for fairways when there were no opportunities', () => {
+    const fw = buildDrivingRows(
+      stats({ fairwayPercentage: null, fairwaysHit: 0, fairwayOpportunities: 0 }),
+    ).find((r) => r.label === 'Fairways');
+
+    expect(fw?.value).toBe('—');
+    expect(fw?.dim).toBe(true);
+  });
+
+  it('does not fabricate 0% for GIR when there were no opportunities', () => {
+    const gir = buildApproachRows(
+      stats({ girPercentage: null, girTotal: 0, girOpportunities: 0 }),
+      new Map(),
+    ).find((r) => r.label === 'GIR');
+
+    expect(gir?.value).toBe('—');
+    expect(gir?.dim).toBe(true);
+  });
+
+  it('carries the denominator on the top-level fairways and GIR rows', () => {
+    const fw = buildDrivingRows(
+      stats({ fairwayPercentage: 62, fairwaysHit: 90, fairwayOpportunities: 145 }),
+    ).find((r) => r.label === 'Fairways');
+    const gir = buildApproachRows(
+      stats({ girPercentage: 58, girTotal: 100, girOpportunities: 172 }),
+      new Map(),
+    ).find((r) => r.label === 'GIR');
+
+    expect(fw?.sample).toBe('90/145');
+    expect(gir?.sample).toBe('100/172');
+  });
+
+  it('leaves the per-par splits without a sample, since no counts exist for them', () => {
+    const driving = buildDrivingRows(stats({ fairwayPctPar4: 60, fairwayPctPar5: 65 }));
+    const approach = buildApproachRows(stats({ girPctPar3: 50, girPctPar4: 55 }), new Map());
+
+    expect(driving.find((r) => r.label === 'Par 4')?.sample).toBeUndefined();
+    expect(driving.find((r) => r.label === 'Par 5')?.sample).toBeUndefined();
+    expect(approach.find((r) => r.label === 'Par 3')?.sample).toBeUndefined();
+    expect(approach.find((r) => r.label === 'Par 4')?.sample).toBeUndefined();
+  });
+
+  it('still renders a real zero distinctly from no data', () => {
+    const fw = buildDrivingRows(
+      stats({ fairwayPercentage: 0, fairwaysHit: 0, fairwayOpportunities: 12 }),
+    ).find((r) => r.label === 'Fairways');
+
+    expect(fw?.value).toBe('0%');
+    expect(fw?.dim).toBeFalsy();
+    expect(fw?.sample).toBe('0/12');
   });
 });

@@ -52,24 +52,92 @@ function sampleOf(made: number | null | undefined, attempts: number | null | und
 }
 
 /**
- * Short-game rows, extracted from the component so the honesty rules below are
- * testable without mounting the bento.
+ * THE TWO HONESTY RULES EVERY ROW BUILDER BELOW FOLLOWS.
  *
- * TWO THINGS THIS FIXES.
+ * 1. NEVER FABRICATE A ZERO. `golf-stats-calculator-shots.ts` is deliberately
+ *    null-honest — rates are `number | null`, null when there were no attempts
+ *    — and these rows used to do `finite(...) ?? 0`, so a player who has never
+ *    been in a bunker rendered a 0% bar identical to one who failed every save.
+ *    Null renders an em-dash on a dimmed rail; a REAL zero still renders "0%"
+ *    undimmed, which is the distinction worth keeping.
  *
- * 1. It used to fabricate a zero. `golf-stats-calculator-shots.ts` is
- *    deliberately null-honest — `sandSavePercentage: number | null`, null when
- *    there were no attempts — and the row did `finite(...) ?? 0`, so a player
- *    who has never been in a bunker rendered a 0% bar, identical to one who
- *    failed every save. Null now renders an em-dash on a dimmed rail.
+ * 2. SHOW THE DENOMINATOR. The counts sit unused on the same interface —
+ *    `sandSaveAttempts`/`sandSavesMade`, `scrambleAttempts`/`scramblesMade`,
+ *    `fairwaysHit`/`fairwayOpportunities`, `girTotal`/`girOpportunities`. A
+ *    rate without one is not actionable: one sand save from two tries reads
+ *    "50%", the same visual weight as twenty from forty.
  *
- * 2. It hid the denominator, which was sitting unused on the same interface
- *    (`sandSaveAttempts`/`sandSavesMade`, `scrambleAttempts`/`scramblesMade`).
- *    Measured 2026-08-17 across 42 players with completed rounds: 1 has zero
- *    sand attempts, and 14 have between one and four — a third of the roster
- *    showing a rate built on four tries or fewer with nothing saying so. One
- *    save from two reads "50%", the same visual weight as twenty from forty.
+ * They live outside the component so the rules are testable without mounting
+ * the bento — the first failing run reported `buildShortGameRows is not a
+ * function`, because the logic was inline and unreachable.
  */
+
+/**
+ * Driving rows.
+ *
+ * LATENT here, unlike short game — and worth saying so. Measured 2026-08-17
+ * across 42 players with completed rounds, GIR opportunities run 18 to 315 and
+ * only one player is thin on fairways, so the fabricated zero does not fire on
+ * today's data the way it does for sand saves (1 player at zero attempts, 14
+ * more at <=4). It would fire for a player with no rounds yet. The reason to
+ * fix it anyway is that leaving it makes the bento contradict itself: short
+ * game showing its evidence while fairways hide theirs.
+ *
+ * The per-par splits carry rates but NO counts on GolfStats, so `sampleOf`
+ * returns undefined for them and the row correctly shows no denominator rather
+ * than an invented one.
+ *
+ * LATENT, not live — and worth saying so. Measured 2026-08-17 across 42 players
+ * with completed rounds, GIR opportunities run 18 to 315 and only one player is
+ * thin on fairways, so the fabricated zero does not fire on today's data the
+ * way it does for sand saves (1 player at zero attempts, 14 more at <=4). It
+ * would fire for a player with no rounds yet. The reason to fix it anyway is
+ * that leaving it makes the bento contradict itself: short game showing its
+ * evidence while fairways hide theirs.
+ *
+ * The per-par splits carry rates but NO counts on GolfStats, so `sampleOf`
+ * returns undefined for them and the row correctly shows no denominator rather
+ * than an invented one.
+ */
+export function buildDrivingRows(s: GolfStats | null): RailBarRow[] {
+  const fwPct = finite(s?.fairwayPercentage);
+  const par4 = finite(s?.fairwayPctPar4);
+  const par5 = finite(s?.fairwayPctPar5);
+  return [
+    {
+      label: 'Fairways',
+      pct: fwPct ?? 0,
+      value: fmtPct(fwPct),
+      dim: fwPct === null,
+      sample: sampleOf(s?.fairwaysHit, s?.fairwayOpportunities),
+    },
+    { label: 'Par 4', pct: par4 ?? 0, value: fmtPct(par4), dim: par4 === null },
+    { label: 'Par 5', pct: par5 ?? 0, value: fmtPct(par5), dim: par5 === null },
+  ];
+}
+
+/** Approach rows — same rules as `buildDrivingRows`; see its note. */
+export function buildApproachRows(
+  s: GolfStats | null,
+  standingByMetric: Map<string, PlayerStandingRow>,
+): RailBarRow[] {
+  const girPct = finite(s?.girPercentage);
+  const par3 = finite(s?.girPctPar3);
+  const par4 = finite(s?.girPctPar4);
+  return [
+    {
+      label: 'GIR',
+      pct: girPct ?? 0,
+      value: fmtPct(girPct),
+      dim: girPct === null,
+      sample: sampleOf(s?.girTotal, s?.girOpportunities),
+      tickPct: pgaTickPct(standingByMetric, 'gir_pct'),
+    },
+    { label: 'Par 3', pct: par3 ?? 0, value: fmtPct(par3), dim: par3 === null },
+    { label: 'Par 4', pct: par4 ?? 0, value: fmtPct(par4), dim: par4 === null },
+  ];
+}
+
 export function buildShortGameRows(s: GolfStats | null): RailBarRow[] {
   const scrPct = finite(s?.scramblingPercentage);
   const sandPct = finite(s?.sandSavePercentage);
@@ -137,26 +205,9 @@ export function StatsBento({
     },
   ];
 
-  const drivingRows: RailBarRow[] = [
-    {
-      label: 'Fairways',
-      pct: finite(s?.fairwayPercentage) ?? 0,
-      value: fmtPct(finite(s?.fairwayPercentage)),
-    },
-    { label: 'Par 4', pct: finite(s?.fairwayPctPar4) ?? 0, value: fmtPct(finite(s?.fairwayPctPar4)) },
-    { label: 'Par 5', pct: finite(s?.fairwayPctPar5) ?? 0, value: fmtPct(finite(s?.fairwayPctPar5)) },
-  ];
+  const drivingRows: RailBarRow[] = buildDrivingRows(s);
 
-  const approachRows: RailBarRow[] = [
-    {
-      label: 'GIR',
-      pct: finite(s?.girPercentage) ?? 0,
-      value: fmtPct(finite(s?.girPercentage)),
-      tickPct: pgaTickPct(standingByMetric, 'gir_pct'),
-    },
-    { label: 'Par 3', pct: finite(s?.girPctPar3) ?? 0, value: fmtPct(finite(s?.girPctPar3)) },
-    { label: 'Par 4', pct: finite(s?.girPctPar4) ?? 0, value: fmtPct(finite(s?.girPctPar4)) },
-  ];
+  const approachRows: RailBarRow[] = buildApproachRows(s, standingByMetric);
 
   const shortGameRows: RailBarRow[] = buildShortGameRows(s);
 
