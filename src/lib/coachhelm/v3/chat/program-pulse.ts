@@ -25,6 +25,7 @@ import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import type { CoachChatContext } from './context';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
+import { formatDateOnlyShort } from '@/lib/golf/date-only';
 
 type Sb = SupabaseClient<Database>;
 
@@ -409,10 +410,22 @@ export function coverageLine(pulse: ProgramPulse): string | null {
   return `${withRounds} of ${pulse.active_roster} players have recorded rounds — answers cover those ${withRounds}.`;
 }
 
+/**
+ * The `T12:00:00Z` noon anchor this used to carry survives the Americas but
+ * NOT the far east: at +13/+14 (Pacific/Kiritimati) noon UTC is already the
+ * next calendar day, so a stored 2026-08-02 formatted as "Aug 3". Measured:
+ *
+ *   zone                 noon-anchor   naive `new Date(iso)`
+ *   UTC                  Aug 2         Aug 2
+ *   America/New_York     Aug 2         Aug 1   <- naive fails
+ *   Pacific/Midway       Aug 2         Aug 1   <- naive fails
+ *   Pacific/Kiritimati   Aug 3   <-    Aug 2      anchor fails
+ *
+ * Only reading the digits out of the string and formatting with an explicit
+ * `timeZone: 'UTC'` is correct in every zone, which is what `date-only.ts` does.
+ */
 function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(
-    new Date(`${iso.slice(0, 10)}T12:00:00Z`),
-  );
+  return formatDateOnlyShort(iso);
 }
 
 function formatDateTime(iso: string, timezone: string): string {

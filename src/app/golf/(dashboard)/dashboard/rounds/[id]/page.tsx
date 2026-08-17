@@ -6,6 +6,7 @@ import { redirect, notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { generateRoundRecap } from '@/app/golf/actions/round-recap';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { formatDateOnlyFull } from '@/lib/golf/date-only';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayRoundDetail } from '@/components/fairway/pages/rounds/FairwayRoundDetail';
 
@@ -35,7 +36,11 @@ export async function generateMetadata({
 
   return {
     title: `${round.course_name} - ${round.total_score || '--'} (${scoreDisplay}) | Helm Sports`,
-    description: `Round details from ${round.course_name} on ${new Date(round.round_date).toLocaleDateString()} - Score: ${round.total_score || '--'} (${scoreDisplay})`,
+    // `round_date` is a date-only column; `new Date(iso).toLocaleDateString()`
+    // reads it back in the ambient zone and prints the previous day anywhere
+    // west of UTC. This runs server-side (UTC on Vercel) so it happens to be
+    // right in production today, which is exactly why it would rot silently.
+    description: `Round details from ${round.course_name} on ${formatDateOnlyFull(round.round_date)} - Score: ${round.total_score || '--'} (${scoreDisplay})`,
   };
 }
 

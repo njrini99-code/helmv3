@@ -28,6 +28,7 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getTimeOfDay } from '@/lib/utils/time-of-day';
+import { formatDateOnlyShort } from '@/lib/golf/date-only';
 import type { ProgramPulse, PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { PromptComposer, type ComposerPlayer } from '../chat/PromptComposer';
 import type { ChatContextChip } from '../chat/useCoachHelmChat';
@@ -283,10 +284,30 @@ function PulseRow({ item, onAsk }: { item: PulseItem; onAsk: (text: string) => v
   );
 }
 
-function relativeDays(iso: string): string {
+/**
+ * `iso` is `golf_rounds.round_date` — a Postgres `date`, serialized by
+ * PostgREST as a bare `YYYY-MM-DD`. It carries no time-of-day and no offset,
+ * so it must never be formatted through an ambient-zone read.
+ *
+ * `new Date('2026-08-02')` is UTC midnight; formatting that without pinning
+ * the formatter to UTC prints "Aug 1" everywhere west of Greenwich, and
+ * disagrees between SSR (server zone) and hydration (client zone) — the string
+ * changes under the reader. Observed in production 2026-08-17: a stored
+ * `round_date` of 2026-08-02 rendered as "last round Aug 1".
+ *
+ * `formatDateOnlyShort` pulls the Y/M/D digits straight out of the string, so
+ * the calendar day is identical in every zone. See `src/lib/golf/date-only.ts`.
+ *
+ * The elapsed-day count below is deliberately still an absolute-instant
+ * measure. Both operands are instants, so it is zone-independent, but its day
+ * boundary is UTC's — a round logged late in the US evening can read
+ * "yesterday" within hours. Fixing that needs the TEAM's timezone, which this
+ * component is not given; it is not the off-by-one bug above.
+ */
+export function relativeDays(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400_000);
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';
   if (days < 14) return `${days} days ago`;
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(iso));
+  return formatDateOnlyShort(iso);
 }
