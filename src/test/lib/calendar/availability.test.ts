@@ -896,3 +896,66 @@ describe('checkEventConflicts — an all-day event reaches the coach', () => {
     expect(result.hasConflict).toBe(false);
   });
 });
+
+/**
+ * The trap that killed the coach-dashboard migration (#1496), pinned against
+ * the fix that DID land.
+ *
+ * The tempting way to fix a start-only filter is to compare INSTANTS against
+ * `end_time`. That reintroduces the one-day-early bug: an all-day event opens
+ * at UTC midnight, and an Eastern local day runs four hours past it, so
+ * "Apr 17" and "the event starting Apr 18 00:00Z" overlap as instants. Dry-run
+ * against production, that predicate reported the ODAC Championship (Apr 18 →
+ * Apr 21) as live on Apr 17 — the exact "all-day events show one day early"
+ * report `eventCalendarDay` exists to prevent, back again.
+ *
+ * `eventBusyInterval` avoids it by expanding to the team's LOCAL days rather
+ * than comparing raw instants. This is the assertion that says so.
+ */
+describe('all-day busy blocks do not bleed onto the previous local day', () => {
+  function seedOdac() {
+    const tables = baseTables();
+    tables.golf_team_settings.push({ team_id: 't1', timezone: 'America/New_York' });
+    // ODAC Championship as production stores it: Apr 18 → Apr 21 inclusive.
+    tables.golf_events.push({
+      id: 'e-odac', team_id: 't1', title: 'ODAC Championship', status: 'scheduled',
+      start_time: '2026-04-18T00:00:00+00:00', end_time: '2026-04-21T00:00:00+00:00',
+      all_day: true, created_by: 'c1',
+    });
+    return createStubClient(tables);
+  }
+
+  it('is free at 8pm ET the evening BEFORE the tournament starts', async () => {
+    // 20:00 ET on Apr 17 is 00:00Z on Apr 18 — the instant the event's stored
+    // window opens, and the exact moment an instant-overlap test goes wrong.
+    const busy = await getUserBusyPeriods(
+      'u1',
+      new Date('2026-04-17T20:00:00-04:00'),
+      new Date('2026-04-17T22:00:00-04:00'),
+      seedOdac(),
+    );
+    expect(busy).toHaveLength(0);
+  });
+
+  it('is busy on each of the four days it actually runs', async () => {
+    for (const day of ['2026-04-18', '2026-04-19', '2026-04-20', '2026-04-21']) {
+      const busy = await getUserBusyPeriods(
+        'u1',
+        new Date(`${day}T09:00:00-04:00`),
+        new Date(`${day}T11:00:00-04:00`),
+        seedOdac(),
+      );
+      expect(busy, day).toHaveLength(1);
+    }
+  });
+
+  it('is free again the morning after it ends', async () => {
+    const busy = await getUserBusyPeriods(
+      'u1',
+      new Date('2026-04-22T09:00:00-04:00'),
+      new Date('2026-04-22T11:00:00-04:00'),
+      seedOdac(),
+    );
+    expect(busy).toHaveLength(0);
+  });
+});
