@@ -455,9 +455,23 @@ function DemoGateContent() {
               </Link>
             </p>
             <div className="flex items-center gap-1.5 text-xs text-warm-500">
-              <Link href="/privacy" className="hover:text-warm-700 transition-colors">Privacy</Link>
+              {/* 44px touch target via `py-3 -my-3` — the padding grows the hit
+                  area, the negative margin cancels the layout shift. Same
+                  treatment as `login/page.tsx` and `signup/page.tsx`; guarded by
+                  `src/test/static/legal-link-touch-targets.test.ts`. */}
+              <Link
+                href="/privacy"
+                className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
+              >
+                Privacy
+              </Link>
               <span className="text-warm-400" aria-hidden>·</span>
-              <Link href="/terms" className="hover:text-warm-700 transition-colors">Terms</Link>
+              <Link
+                href="/terms"
+                className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
+              >
+                Terms
+              </Link>
             </div>
           </m.div>
         </div>

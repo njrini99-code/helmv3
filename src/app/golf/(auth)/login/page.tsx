@@ -244,9 +244,26 @@ function LoginContent() {
                 </p>
               )}
               <div className="flex items-center justify-center gap-1.5 text-eyebrow text-warm-500 mt-1.5 tracking-[0.02em]">
-                <Link href="/privacy" className="hover:text-warm-700 transition-colors">Privacy</Link>
+                {/* `py-3 -my-3 min-h-[44px]` gives these a 44px touch target
+                    without moving anything: the padding grows the hit area and
+                    the negative margin cancels the vertical growth. Measured at
+                    41x16 and 33x16 before this — under the project's own 44px
+                    standard (docs/UIUX_AUDIT.md) and under WCAG 2.2's 24px AA
+                    minimum. Copied from `signup/page.tsx`, which already had it;
+                    kept in step by `src/test/static/legal-link-touch-targets.test.ts`. */}
+                <Link
+                  href="/privacy"
+                  className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
+                >
+                  Privacy
+                </Link>
                 <span className="text-warm-400" aria-hidden="true">·</span>
-                <Link href="/terms" className="hover:text-warm-700 transition-colors">Terms</Link>
+                <Link
+                  href="/terms"
+                  className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
+                >
+                  Terms
+                </Link>
               </div>
             </div>
           </m.div>
