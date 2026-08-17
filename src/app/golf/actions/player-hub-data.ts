@@ -27,6 +27,9 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
 
+/** Matches `dashboard-data.ts:292` — the team zone used when none is stored. */
+const DEFAULT_TEAM_TIME_ZONE = 'America/New_York';
+
 interface RawAssignment {
   task_id: string;
   status: string;
@@ -127,10 +130,23 @@ async function getPlayerHubSummaryDataImpl(
   // The announcements leg two lines below already had this right (it sets
   // announcementsLoadError from `.success`), which is what makes the other
   // three an oversight rather than a decision.
-  // teamZoneResult is deliberately NOT in this list. A failed timezone read
-  // degrades to the same default an unset column already gets; blanking the
-  // whole hub over it would trade a possible one-day overdue slip for a player
-  // who cannot see the bus time at all.
+  // teamZoneResult is deliberately NOT in the throw list below. A failed
+  // timezone read degrades to the same default an unset column already gets;
+  // blanking the whole hub over it would trade a possible one-day overdue slip
+  // for a player who cannot see the bus time at all.
+  //
+  // "Degrade" still has to be a DECISION, not a dropped `error`. Saying so in a
+  // comment is what `helm/no-unchecked-supabase-error` exists to stop being
+  // enough — this leg went in unbound and pushed the ratchet 1059 -> 1060,
+  // failing CI on main. Log it, then carry on with the default.
+  if (teamZoneResult.error) {
+    void logServerError(
+      `[getPlayerHubSummaryData] team timezone read failed; task-overdue falls back to ${DEFAULT_TEAM_TIME_ZONE}: ${describeError(teamZoneResult.error)}`,
+      { action: 'playerHub.summary', featureArea: 'player_hub', playerId, teamId },
+      'warning',
+    );
+  }
+
   const failedLeg = (
     [
       ['events', eventsResult.error],
@@ -193,7 +209,7 @@ async function getPlayerHubSummaryDataImpl(
   const assignmentMap = new Map(rawAssignments.map((a) => [a.task_id, a]));
   const taskIds = [...new Set(rawAssignments.map((a) => a.task_id))];
 
-  const teamTimeZone = teamZoneResult.data?.timezone || 'America/New_York';
+  const teamTimeZone = teamZoneResult.data?.timezone || DEFAULT_TEAM_TIME_ZONE;
 
   let tasks: PlayerTask[] = [];
   if (taskIds.length > 0) {
