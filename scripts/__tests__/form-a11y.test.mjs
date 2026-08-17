@@ -78,6 +78,12 @@ test('Select family: every <label> is associated to its trigger via useId() + ht
   assert.match(src, /=\s*useId\(\)/, 'select.tsx must call useId() to generate control ids');
 
   // Every <label> in the Select family must carry htmlFor — no bare labels.
+  //
+  // NOTE: this scans the raw source, comments included. Writing the literal
+  // text `<label>` inside a docblock in select.tsx makes this fail with
+  // "missing htmlFor association: <label>" and sends you hunting for markup
+  // that does not exist. (Cost me a gate run on 2026-08-17.) Say "label
+  // element" in prose, or teach this to strip comments first.
   const labelOpenTags = src.match(/<label\b[^>]*>/g) || [];
   assert.ok(labelOpenTags.length >= 3, `expected at least 3 <label> tags (Select, MultiSelect, NativeSelect), found ${labelOpenTags.length}`);
   for (const tag of labelOpenTags) {

@@ -220,6 +220,35 @@ function emptyClassForm(): ClassFormData {
   };
 }
 
+/**
+ * Can this form be saved?
+ *
+ * `semester` is in here because it is required IN FACT and was not required in
+ * form. It drives `parseSemesterDates`, which sets the date range the class's
+ * calendar series is generated over — a class with no term cannot sync its
+ * meetings correctly, so it is not a cosmetic label. Validation checked
+ * `course_code` and `course_name` and nothing else, and the Semester control
+ * carried no required marker, so a class could be saved with an empty term
+ * silently. 43 of 59 production classes are in exactly that state (#1473).
+ *
+ * Note what this does NOT fix: `ui/select.tsx` is a custom listbox, and when
+ * `value` matches no option it renders the placeholder and fires no onChange.
+ * So an untouched field on one of those 43 stays empty rather than snapping to
+ * some other term — the class stays broken, it is not re-dated. The submit
+ * guard is what stops it being saved that way again.
+ *
+ * Exported for deterministic unit testing.
+ */
+export function isClassFormSubmittable(form: {
+  course_code: string;
+  course_name: string;
+  semester: string | null | undefined;
+}): boolean {
+  return Boolean(
+    form.course_code.trim() && form.course_name.trim() && (form.semester ?? '').trim(),
+  );
+}
+
 export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingClasses = [] }: AddClassModalProps) {
   const uid = useId();
   const [loading, setLoading] = useState(false);
@@ -275,7 +304,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
   const handleSubmit = async (e?: React.FormEvent, forceSubmit = false) => {
     e?.preventDefault();
 
-    if (!formData.course_code || !formData.course_name) {
+    if (!isClassFormSubmittable(formData)) {
       return;
     }
 
@@ -541,8 +570,15 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Semester & Color */}
           <div className="grid grid-cols-2 gap-4">
             <div>
+              {/* Marked required to match the submit guard. `ui/select.tsx`
+                  renders its placeholder when `value` matches no option, so an
+                  existing class with no stored term shows this control empty —
+                  the asterisk is what tells the player it has to be filled
+                  before the class can be saved. #1473. */}
               <Select
                 label="Semester"
+                required
+                placeholder="Choose a term"
                 className={creamGlassFieldCls}
                 options={semesterOptions.map((option) => ({ value: option, label: option }))}
                 value={formData.semester}

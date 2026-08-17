@@ -98,6 +98,26 @@ interface SelectProps {
   className?: string;
   searchable?: boolean;
   clearable?: boolean;
+  /**
+   * Marks the field required: appends the asterisk to `label` and sets
+   * `aria-required` on the trigger.
+   *
+   * Added because a caller cannot do this itself without losing something.
+   * This component owns its label element and the htmlFor-to-triggerId
+   * linkage, so hand-rolling one outside it just to get an asterisk detaches
+   * the label from the control — the same trap `ui/input.tsx` has, where the
+   * asterisk lives inside its own label block and is silently dropped whenever
+   * a caller supplies its own. Required-ness belongs to the primitive.
+   *
+   * NOT `aria-required` on the trigger: that attribute is invalid on a
+   * `button` role and eslint's jsx-a11y/role-supports-aria-props rejects it.
+   * `Input` can use it because its control is a native `<input>`. The trigger
+   * here is a button whose accessible name comes from its own contents, so the
+   * requirement is carried by an sr-only word inside it instead — valid on any
+   * role, and it reaches a screen reader where a label/for association would
+   * not (a button is not a labelable element).
+   */
+  required?: boolean;
 }
 
 export function Select({
@@ -109,6 +129,7 @@ export function Select({
   error,
   hint,
   disabled = false,
+  required = false,
   className,
   searchable = false,
   clearable = false,
@@ -288,6 +309,12 @@ export function Select({
       {label && (
         <label htmlFor={triggerId} className="block text-sm font-medium text-warm-700 mb-1.5">
           {label}
+          {required ? (
+            <>
+              {' '}
+              <span className="text-fw-danger-ink" aria-hidden="true">*</span>
+            </>
+          ) : null}
         </label>
       )}
       <div className="relative">
@@ -324,6 +351,11 @@ export function Select({
           )}>
             {selectedOption?.icon && <span className="flex-shrink-0">{selectedOption.icon}</span>}
             {selectedOption?.label || placeholder}
+            {/* Carries the requirement into the trigger's accessible name. The
+                visible asterisk sits on the label, which does NOT name a button
+                — a button is not a labelable element — so without this a screen
+                reader user hears only the placeholder. */}
+            {required && !selectedOption ? <span className="sr-only"> (required)</span> : null}
           </span>
           <div className="flex items-center gap-1">
             <IconChevronDown
