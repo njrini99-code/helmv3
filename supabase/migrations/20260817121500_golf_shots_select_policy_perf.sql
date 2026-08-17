@@ -74,6 +74,30 @@
 -- with `Index Cond: (round_id = golf_rounds.id)` — the round filter is pushed
 -- down again. 69 ms against a 5,000 ms budget removes the aborts entirely.
 --
+-- ── THIS WAS DIAGNOSED ONCE ALREADY, AND NOT FOLLOWED THROUGH ───────────────
+--
+-- `20260728030000_shot_detail_rls_correlated.sql` hit the same wall from the
+-- other side. Fixing `putt_details` / `approach_miss_details`, it wrote:
+--
+--     "the inner `golf_shots` reference is itself RLS-checked, so that
+--      materialisation drags in all four of `golf_shots`' permissive SELECT
+--      policies — one of which (`golf_shots_select_team`) calls
+--      `is_golf_team_coach()` once per round in the entire table. Cost
+--      therefore scales with the size of the whole database, not with the rows
+--      the request asked for."
+--
+-- It measured 2,392 ms to return ZERO rows — within noise of the 2,387 ms
+-- measured here three weeks later. That migration routed the DETAIL tables
+-- around the problem with a correlated definer-rights helper, and left the
+-- four policies themselves standing. This one removes two of them.
+--
+-- NOTE FOR THAT HELPER: its conjunct 1 is documented as "the union of
+-- golf_shots' four permissive SELECT policies". It inlines equivalent
+-- predicates rather than invoking the policies, and the union is unchanged by
+-- this migration (`golf_shots_select` already covers both dropped policies), so
+-- the helper stays correct exactly as written. Only its comment's count goes
+-- stale.
+--
 -- ── SCOPE ───────────────────────────────────────────────────────────────────
 --
 -- SELECT only. The INSERT/UPDATE/DELETE policies on this table are untouched:
