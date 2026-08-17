@@ -15,6 +15,40 @@ import type { DimensionResult, GenomeContext, GenomeDimension } from '../types';
 
 const MIN_APPROACHES = 30;
 
+/**
+ * `miss_direction` is an EIGHT-value compass, not a two-value side. Production
+ * carries `left, right, short, long, short_left, short_right, long_left,
+ * long_right`.
+ *
+ * This used to filter on bare `'left'`/`'right'` only, discarding every
+ * compound value even though each still names a side. Measured 2026-08-17 over
+ * the genome's own 90-day window: of 1,701 approaches with a miss_direction,
+ * 1,001 carry a side but only 417 were counted — 58% of the signal thrown away
+ * — and the dimension went dark for 10 of the 13 players with enough data.
+ *
+ * The surviving subsample also pointed the WRONG WAY for players who did clear
+ * the floor: Owen Carter read +0.059 (right) on bare values against -0.030
+ * (left) on the full set, Tyler Hayes +0.048 against -0.048. A coach reading
+ * "misses left" would have had the player working the opposite fault.
+ *
+ * Pure `short`/`long` return 0 and are excluded — they name no side, and
+ * counting them would drag every bias toward symmetric.
+ */
+function sideOf(missDirection: string | null | undefined): -1 | 0 | 1 {
+  switch (missDirection) {
+    case 'left':
+    case 'short_left':
+    case 'long_left':
+      return -1;
+    case 'right':
+    case 'short_right':
+    case 'long_right':
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 const dim: GenomeDimension = {
   id: 'miss_side_bias',
   category: 'miss_tendencies',
@@ -23,9 +57,7 @@ const dim: GenomeDimension = {
 
   compute(ctx: GenomeContext): DimensionResult {
     const approaches = ctx.shots.filter(
-      (s) =>
-        s.shot_type === 'approach' &&
-        (s.miss_direction === 'left' || s.miss_direction === 'right'),
+      (s) => s.shot_type === 'approach' && sideOf(s.miss_direction) !== 0,
     );
     if (approaches.length < MIN_APPROACHES) {
       return { value: null, confidence: null };
@@ -34,8 +66,8 @@ const dim: GenomeDimension = {
     let left = 0;
     let right = 0;
     for (const s of approaches) {
-      if (s.miss_direction === 'left') left += 1;
-      else if (s.miss_direction === 'right') right += 1;
+      if (sideOf(s.miss_direction) === -1) left += 1;
+      else right += 1;
     }
     const total = left + right;
     const value = (right - left) / total; // [-1, 1]
