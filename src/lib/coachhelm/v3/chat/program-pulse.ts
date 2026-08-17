@@ -26,6 +26,7 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import type { CoachChatContext } from './context';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { formatDateOnlyShort } from '@/lib/golf/date-only';
+import { todayIsoInZone } from '@/lib/golf/timezone';
 
 type Sb = SupabaseClient<Database>;
 
@@ -327,7 +328,12 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
   }
 
   // ── Overdue tasks ───────────────────────────────────────────────────────
-  const today = new Date().toISOString().slice(0, 10);
+  // The team's calendar day, not UTC's — this drives the Brief's
+  // "N tasks are overdue" card, and `due_date` is a calendar date. Against
+  // `new Date().toISOString().slice(0, 10)` a task due TODAY read as overdue
+  // from 20:00 EDT onward. Same fix as `read-tools.ts`'s get_open_tasks; see
+  // `todayIsoInZone`.
+  const today = todayIsoInZone(ctx.timezone);
   const overdue = tasks.filter((t) => t.due_date && String(t.due_date).slice(0, 10) < today);
   if (overdue.length > 0) {
     items.push({

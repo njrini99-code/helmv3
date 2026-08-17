@@ -92,3 +92,41 @@ export function wallClockInZone(day: Date, time: string, timeZone: string | null
   result.setHours(Number.isFinite(hours) ? hours : 0, Number.isFinite(minutes) ? minutes : 0, 0, 0);
   return result;
 }
+
+/**
+ * Today's calendar day (`YYYY-MM-DD`) as it reads on the wall in `timeZone`.
+ *
+ * Why this exists: "is this task overdue?" is a binary, user-visible claim, and
+ * two CoachHelm surfaces were answering it against UTC's calendar day rather
+ * than the team's —
+ *
+ *     const today = new Date().toISOString().slice(0, 10);
+ *     const overdue = rows.filter((t) => String(t.due_date).slice(0, 10) < today);
+ *
+ * `due_date` is a calendar date and `toISOString()` is UTC, so from 20:00 EDT
+ * onward — exactly when a coach reviews tomorrow's plan — UTC has already
+ * rolled over and a task due TODAY was reported overdue. Measured at
+ * 2026-08-18T01:00:00Z (21:00 in New York), a task due 2026-08-17 came back
+ * `overdue: true`; the correct answer is false. East of UTC the error inverts
+ * and a genuinely late task is not flagged yet.
+ *
+ * `en-CA` is used because it formats as `YYYY-MM-DD` natively, so the parts do
+ * not have to be reassembled by hand.
+ *
+ * An unknown or empty zone falls back to the UTC day — the previous behaviour —
+ * rather than throwing, because a bad `golf_teams.timezone` must not take a
+ * read tool down.
+ */
+export function todayIsoInZone(timeZone: string | null | undefined, now: Date = new Date()): string {
+  if (!timeZone) return now.toISOString().slice(0, 10);
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(now);
+  } catch {
+    return now.toISOString().slice(0, 10);
+  }
+}

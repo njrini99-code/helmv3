@@ -39,6 +39,7 @@ import {
   unavailableEnvelope,
 } from './provenance';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
+import { todayIsoInZone } from '@/lib/golf/timezone';
 
 type Sb = SupabaseClient<Database>;
 type StatsRow = Record<string, unknown>;
@@ -1028,7 +1029,13 @@ export async function getOpenTasks(sb: Sb, ctx: CoachChatContext): Promise<ToolE
   if (error) return unavailableEnvelope('Could not read tasks.', 'The tasks query failed.');
 
   const rows = data ?? [];
-  const today = new Date().toISOString().slice(0, 10);
+  // The team's calendar day, NOT UTC's. `due_date` is a calendar date, so
+  // comparing it against `new Date().toISOString().slice(0, 10)` reported a task
+  // due TODAY as overdue from 20:00 EDT onward — the hours a coach is most
+  // likely to be reviewing tomorrow's plan. `ctx.timezone` is NOT NULL and was
+  // already being passed through as `detail.timezone` above; it just was not
+  // used for this. See `todayIsoInZone`.
+  const today = todayIsoInZone(ctx.timezone);
   const overdue = rows.filter((t) => t.due_date && String(t.due_date).slice(0, 10) < today);
 
   return {
