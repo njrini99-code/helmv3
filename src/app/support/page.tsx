@@ -13,7 +13,7 @@ import { SupportHeader } from './SupportHeader';
 import { Card } from '@/components/ui/card';
 
 export const metadata: Metadata = {
-  title: 'Support | Helm Sports Labs',
+  title: 'Support',
   description:
     'Get help with Helm Sports Labs — GolfHelm and BaseballHelm. Contact support, browse FAQs, and find resources for players, coaches, and teams.',
 };

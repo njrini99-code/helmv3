@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { SmoothScroll } from '@/components/landing/SmoothScroll';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Helm Sports Labs',
+  title: 'Privacy Policy',
   description: 'Privacy policy for Helm Sports Labs.',
 };
 

@@ -4,7 +4,7 @@ import { MarketingScrollProvider } from '@/lib/motion/gsap/MarketingScrollProvid
 import { ProductsLanding } from '@/components/products/landing/ProductsLanding';
 
 export const metadata: Metadata = {
-  title: 'Helm Sports Labs — Products',
+  title: 'Products',
   description:
     'The Helm platform for college programs: GolfHelm and BaseballHelm — track every shot, calculate 87 stats a round, and let CoachHelm find the root.',
 };

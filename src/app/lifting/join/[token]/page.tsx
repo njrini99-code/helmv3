@@ -33,7 +33,7 @@ import { JoinClient } from './join-client';
 import type { HelmLiftingCoachInviteRow } from '@/lib/types/helm-lifting';
 
 export const metadata = {
-  title: 'Join Lifting Lab | Helm Sports Labs',
+  title: 'Join Lifting Lab',
   description: 'Accept a Helm Lifting Lab coaching invitation.',
 };
 
