@@ -168,6 +168,34 @@ export class CausalEngine {
         getEffectValue: (r: RoundData) => r.score_to_par,
         mechanism: 'Hitting more fairways leads to better approach opportunities',
       },
+      // THE ONLY HYPOTHESIS HERE THAT IS NOT A TAUTOLOGY.
+      //
+      // The four above all end at `score_to_par`, and all four causes are
+      // arithmetic COMPONENTS of the score. "Hitting more greens lowers your
+      // score" is the definition of scoring, not a discovery. Production shows
+      // the consequence: 5,641 relationships across 4 cause metrics and ONE
+      // effect metric, `total_gir -> score_to_par` alone accounting for 4,282
+      // of them. The engine had never once explained why a component moved,
+      // which is the mechanism behind "insights are not root-cause".
+      //
+      // A root cause needs an effect that is not the score. This is the chain
+      // the product's own research doc documents and quantifies —
+      // docs/v3-research-golf-domain.md:146, "Drive -> Approach Distance/Lie ->
+      // GIR ... Lie quality premium: fairway -> ~65% GIR from 150; rough ->
+      // ~45%; sand -> ~25%" — which is what satisfies the blocking review rule
+      // that every causal claim trace to that document.
+      //
+      // Both fields are already on RoundData, so this costs no extra loading.
+      {
+        cause: 'driving_accuracy',
+        causeMetric: 'total_fairways_hit',
+        effect: 'greens_in_regulation',
+        effectMetric: 'total_gir',
+        getCauseValue: (r: RoundData) => r.total_fairways_hit ?? null,
+        getEffectValue: (r: RoundData) => r.total_gir ?? null,
+        mechanism:
+          'Approach play from the fairway holds ~65% GIR at 150 yards against ~45% from rough and ~25% from sand, so fairways won convert into greens hit (research: Drive -> Approach Lie -> GIR)',
+      },
     ];
   }
 
