@@ -41,6 +41,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { compose } from '@/lib/coachhelm/v3/llm/compose';
+import { buildRecapEvidence } from '@/lib/coachhelm/v3/llm/recap-evidence';
 import { pct } from '@/lib/golf/stat-formulas';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -271,7 +272,14 @@ Output only the two sentences. Nothing else.`;
       coach_id: coachId,
       player_id: round.player_id,
       prompt,
-      evidence: [],
+      // The prompt above instructs "Reference at least one specific stat by
+      // number", so shipping an empty evidence set guaranteed the discard:
+      // `verifyCitations` rejects every token outside 0/1/2/3/100, and
+      // compose() threw the whole recap away for the deterministic fallback.
+      // Register what the `facts` block already shows the model — not a
+      // loosening of the verifier, which still rejects any figure we did not
+      // hand over. See `recap-evidence.ts` for the production measurements.
+      evidence: buildRecapEvidence(facts),
       max_completion_tokens: 120, // ~36 words × ~3 tokens/word + buffer
     },
     fallbackText,
