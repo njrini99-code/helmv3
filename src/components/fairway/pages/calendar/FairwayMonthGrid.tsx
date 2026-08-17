@@ -29,13 +29,14 @@ import {
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
+  addDays,
 } from 'date-fns';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { formatEventTimeCompact, zonedMidnight, eventCalendarDay } from '@/lib/calendar/timezone';
+import { formatEventTimeCompact, zonedMidnight, eventDaySpan } from '@/lib/calendar/timezone';
 import { typeMeta } from './FairwayEventCard';
 import { tintFor } from './FairwayCalendarMemberRail';
 
@@ -128,19 +129,42 @@ export function FairwayMonthGrid({
         push(format(zonedMidnight(o.start, timezone), 'yyyy-MM-dd'), { kind: 'overlay', at, overlay: o });
       }
     } else {
+      // An event occupies EVERY day it runs, not just its start day. It used
+      // to get exactly one `push` keyed on the start, so the Transylvania
+      // Invite (Sep 3–6) vanished from the grid on the 4th, 5th and 6th while
+      // the editor's own span summary read "Sep 3 → Sep 6". `end_time` is the
+      // INCLUSIVE last day for an all-day event — the same convention the ICS
+      // feeds were getting wrong in #1493.
+      // `days` is always the full 6-week track, but read it defensively so the
+      // clamp below is a real bound rather than one TypeScript had to be
+      // talked out of.
+      const gridStart = days[0];
+      const gridEnd = days[days.length - 1];
+      if (!gridStart || !gridEnd) return map;
       for (const e of events) {
         const s = eventStart(e);
         if (!s) continue;
         const at = new Date(s).getTime();
-        // `eventCalendarDay`, NOT `zonedMidnight`: an all-day event is stored
-        // at UTC midnight, so converting it to the viewer's zone drops it one
-        // cell early for everyone west of UTC.
-        push(format(eventCalendarDay(s, e.all_day, timezone), 'yyyy-MM-dd'), { kind: 'event', at, event: e });
+        // `eventDaySpan` (built on `eventCalendarDay`, NOT `zonedMidnight`):
+        // an all-day event is stored at UTC midnight, so converting it to the
+        // viewer's zone drops it one cell early for everyone west of UTC.
+        const span = eventDaySpan(e, timezone);
+        if (!span) continue;
+
+        // Clamped to the visible grid, which bounds the loop at 42 iterations
+        // no matter how corrupt the row is, and lets an event that began
+        // before this month still appear on the days it covers inside it.
+        let cursor = span.first < gridStart ? gridStart : span.first;
+        const stop = span.last > gridEnd ? gridEnd : span.last;
+        while (cursor <= stop) {
+          push(format(cursor, 'yyyy-MM-dd'), { kind: 'event', at, event: e });
+          cursor = addDays(cursor, 1);
+        }
       }
     }
     for (const arr of map.values()) arr.sort((a, b) => a.at - b.at);
     return map;
-  }, [events, overlays, overlayMode, timezone]);
+  }, [events, overlays, overlayMode, timezone, days]);
 
   return (
     <div className="overflow-hidden rounded-card border border-border-subtle bg-surface shadow-flat">

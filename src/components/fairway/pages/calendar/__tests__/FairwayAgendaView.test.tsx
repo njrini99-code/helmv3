@@ -170,3 +170,106 @@ describe('FairwayAgendaView — anchor scroll', () => {
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * The agenda showed a multi-day event only on its start day — the same gap
+ * FairwayMonthGrid had, and the same one #1493 found in the ICS feeds. All
+ * three read `start` and ignored `end_time`, which for an all-day event is the
+ * INCLUSIVE last day the event runs.
+ *
+ * A coach opening the agenda on the Saturday of a four-day tournament saw
+ * nothing scheduled. Production had 14 multi-day all-day events when this was
+ * written (2026-08-17), all tournaments.
+ */
+describe('FairwayAgendaView — multi-day events appear on every day they run', () => {
+  const INVITE = {
+    id: 'invite',
+    team_id: 'team-1',
+    title: 'Transylvania Invite',
+    event_type: 'tournament',
+    all_day: true,
+    // Production's storage shape: UTC midnight, inclusive end.
+    start_date: '2026-09-03T00:00:00+00:00',
+    end_date: '2026-09-06T00:00:00+00:00',
+    start_time: '2026-09-03T00:00:00+00:00',
+    end_time: '2026-09-06T00:00:00+00:00',
+    location: null,
+    description: null,
+  } as unknown as CalendarEvent;
+
+  it('day mode lists it on a middle day of the span', () => {
+    const { container } = render(
+      <FairwayAgendaView
+        events={[INVITE]}
+        mode="day"
+        focusDate={new Date(2026, 8, 5)}
+        timezone={TEAM_TZ}
+        isCoach
+        nowRef={new Date(2026, 8, 5)}
+      />,
+    );
+    expect(container.textContent).toContain('Transylvania Invite');
+  });
+
+  it('day mode lists it on the last day of the span', () => {
+    const { container } = render(
+      <FairwayAgendaView
+        events={[INVITE]}
+        mode="day"
+        focusDate={new Date(2026, 8, 6)}
+        timezone={TEAM_TZ}
+        isCoach
+        nowRef={new Date(2026, 8, 6)}
+      />,
+    );
+    expect(container.textContent).toContain('Transylvania Invite');
+  });
+
+  it('day mode does not list it the day after the span ends', () => {
+    const { container } = render(
+      <FairwayAgendaView
+        events={[INVITE]}
+        mode="day"
+        focusDate={new Date(2026, 8, 7)}
+        timezone={TEAM_TZ}
+        isCoach
+        nowRef={new Date(2026, 8, 7)}
+      />,
+    );
+    expect(container.textContent).not.toContain('Transylvania Invite');
+  });
+
+  it('range mode gives it a row in each of its four day buckets', () => {
+    const { container } = render(
+      <FairwayAgendaView
+        events={[INVITE]}
+        mode="range"
+        focusDate={new Date(2026, 8, 1)}
+        rangeStart={new Date(2026, 8, 1)}
+        rangeEnd={new Date(2026, 8, 30)}
+        timezone={TEAM_TZ}
+        isCoach
+        nowRef={new Date(2026, 8, 1)}
+      />,
+    );
+    const occurrences = (container.textContent ?? '').split('Transylvania Invite').length - 1;
+    expect(occurrences).toBe(4);
+  });
+
+  it('range mode still lists a single-day event exactly once', () => {
+    const { container } = render(
+      <FairwayAgendaView
+        events={[makeEvent('solo', middayEt(10), 'Team Photo Day')]}
+        mode="range"
+        focusDate={new Date(2026, 6, 1)}
+        rangeStart={new Date(2026, 6, 1)}
+        rangeEnd={new Date(2026, 6, 31)}
+        timezone={TEAM_TZ}
+        isCoach
+        nowRef={new Date(2026, 6, 1)}
+      />,
+    );
+    const occurrences = (container.textContent ?? '').split('Team Photo Day').length - 1;
+    expect(occurrences).toBe(1);
+  });
+});

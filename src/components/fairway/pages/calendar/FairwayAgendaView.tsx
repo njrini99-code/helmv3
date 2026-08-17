@@ -26,7 +26,7 @@ import { Surface, EmptyState, Button } from '@/components/fairway';
 import { CalendarDays } from 'lucide-react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
-import { eventCalendarDay } from '@/lib/calendar/timezone';
+import { eventDaySpan } from '@/lib/calendar/timezone';
 import { FairwayEventCard } from './FairwayEventCard';
 
 export interface FairwayAgendaViewProps {
@@ -86,15 +86,15 @@ function bucketEvents(
   if (mode === 'day') {
     const dayEvents = events
       .filter((ev) => {
-        const start = ev.start_date || ev.start_time;
-        if (!start) return false;
-        // `zonedMidnight` (explicit `timezone`), NOT `new Date(start)`
-        // (implicit-local) — an event's own calendar day must agree with
-        // `focusDate` (already zoned) regardless of which process is doing
-        // the comparing (audit W1/cal-tz, React #418 on /calendar).
-        // `eventCalendarDay` — an all-day event stores its date at UTC
-        // midnight, so zone-converting it lands it on the previous day.
-        return isSameDay(eventCalendarDay(start, ev.all_day, timezone), focusDate);
+        const span = eventDaySpan(ev, timezone);
+        if (!span) return false;
+        // An event belongs to every day it RUNS, not only the day it starts.
+        // This used to be `isSameDay(startDay, focusDate)`, so the Saturday of
+        // a four-day tournament rendered "Nothing on the books for this day".
+        return (
+          (isSameDay(span.first, focusDate) || span.first < focusDate) &&
+          (isSameDay(span.last, focusDate) || span.last > focusDate)
+        );
       })
       .sort(sortByStart);
     return [
@@ -115,29 +115,35 @@ function bucketEvents(
   const buckets = new Map<string, DayBucket>();
 
   for (const ev of events) {
-    const startStr = ev.start_date || ev.start_time;
-    if (!startStr) continue;
-    // `zonedMidnight` — the DEFAULT agenda view (mode="range") is what's
-    // actually SSR'd on first paint (see FairwayCalendar's initial `view`
-    // state), so this bucket key/date is directly hydration-sensitive: the
-    // previous `startOfDay(new Date(startStr))` read the CALLING PROCESS's
-    // own local zone, so an event within ~4-5h of midnight ET could land in
-    // a DIFFERENT day bucket — with a DIFFERENT rendered header string via
-    // `formatDayLabel` below — between the SSR pass (Vercel, UTC) and the
-    // first client render (the visitor's browser), tripping React #418.
-    const evDate = eventCalendarDay(startStr, ev.all_day, timezone);
-    if (evDate < start || evDate > end) continue;
-    const key = format(evDate, 'yyyy-MM-dd');
-    const bucket = buckets.get(key);
-    if (bucket) {
-      bucket.events.push(ev);
-    } else {
-      buckets.set(key, {
-        key,
-        date: evDate,
-        label: formatDayLabel(evDate, nowRef),
-        events: [ev],
-      });
+    // `eventDaySpan` uses `eventCalendarDay`, not `startOfDay(new Date(...))`
+    // — the DEFAULT agenda view (mode="range") is what's actually SSR'd on
+    // first paint (see FairwayCalendar's initial `view` state), so this bucket
+    // key/date is directly hydration-sensitive: reading the CALLING PROCESS's
+    // own local zone put an event within ~4-5h of midnight ET in a DIFFERENT
+    // day bucket — with a DIFFERENT rendered header string via `formatDayLabel`
+    // below — between the SSR pass (Vercel, UTC) and the first client render,
+    // tripping React #418.
+    const span = eventDaySpan(ev, timezone);
+    if (!span) continue;
+
+    // Every day the event runs gets a row, clamped to the requested window so
+    // the loop is bounded by the range rather than by the event.
+    let cursor = span.first < start ? start : span.first;
+    const stop = span.last > end ? end : span.last;
+    while (cursor <= stop) {
+      const key = format(cursor, 'yyyy-MM-dd');
+      const bucket = buckets.get(key);
+      if (bucket) {
+        bucket.events.push(ev);
+      } else {
+        buckets.set(key, {
+          key,
+          date: cursor,
+          label: formatDayLabel(cursor, nowRef),
+          events: [ev],
+        });
+      }
+      cursor = addDays(cursor, 1);
     }
   }
 

@@ -101,3 +101,121 @@ describe('FairwayMonthGrid — event chip layout', () => {
     expect(chip.getAttribute('style')).toBeNull();
   });
 });
+
+/**
+ * A multi-day event occupied exactly ONE cell — its start day.
+ *
+ * `byDay` pushed each event once, keyed on `eventCalendarDay(start)`, and never
+ * looked at `end_time`. The editor lets a coach set an End Date and renders the
+ * result back as an inclusive span ("Sep 3 → Sep 6" in `SpanSummary`), so the
+ * two surfaces disagreed: a coach opening the month grid on Saturday during the
+ * Transylvania Invite (Sep 3–6) saw an empty day.
+ *
+ * Production had 14 multi-day all-day events when this was written
+ * (2026-08-17), every one of them a tournament — Sep 3–6, Sep 13–15, May 8–16.
+ * These are the weeks a coach is most likely to be checking the calendar.
+ *
+ * Found alongside #1493, which was the same inclusive-vs-exclusive end date
+ * reaching the ICS feeds wrong. Different surface, same neglected column.
+ */
+describe('FairwayMonthGrid — multi-day events span every day they run', () => {
+  /** The day cell containing a given date's number button. */
+  function cellFor(label: string): HTMLElement {
+    const dayButton = screen.getByLabelText(label);
+    const cell = dayButton.closest('div.flex.h-full');
+    if (!cell) throw new Error(`no day cell for ${label}`);
+    return cell as HTMLElement;
+  }
+
+  const invite = makeEvent({
+    id: 'evt-invite',
+    title: 'Transylvania Invite',
+    event_type: 'tournament',
+    all_day: true,
+    // Stored exactly as production stores an all-day event: UTC midnight, with
+    // end_time the INCLUSIVE last day.
+    start_date: '2026-09-03T00:00:00+00:00',
+    end_date: '2026-09-06T00:00:00+00:00',
+    start_time: '2026-09-03T00:00:00+00:00',
+    end_time: '2026-09-06T00:00:00+00:00',
+  });
+
+  function renderSeptember() {
+    render(
+      <FairwayMonthGrid
+        events={[invite]}
+        focusDate={new Date(2026, 8, 15)}
+        nowRef={new Date(2026, 8, 15)}
+        timezone="America/New_York"
+      />,
+    );
+  }
+
+  it('shows the tournament on every day from the 3rd through the 6th', () => {
+    renderSeptember();
+    for (const label of [
+      'Thursday, September 3',
+      'Friday, September 4',
+      'Saturday, September 5',
+      'Sunday, September 6',
+    ]) {
+      const chips = cellFor(label).querySelectorAll('[title*="Transylvania Invite"]');
+      expect(chips.length, label).toBe(1);
+    }
+  });
+
+  it('does not bleed onto the day before or the day after', () => {
+    renderSeptember();
+    for (const label of ['Wednesday, September 2', 'Monday, September 7']) {
+      const chips = cellFor(label).querySelectorAll('[title*="Transylvania Invite"]');
+      expect(chips.length, label).toBe(0);
+    }
+  });
+
+  it('still shows a single-day event exactly once', () => {
+    render(
+      <FairwayMonthGrid
+        events={[
+          makeEvent({
+            id: 'evt-single',
+            title: 'Team Photo Day',
+            all_day: true,
+            start_date: '2026-09-10T00:00:00+00:00',
+            end_date: '2026-09-10T00:00:00+00:00',
+            start_time: '2026-09-10T00:00:00+00:00',
+            end_time: '2026-09-10T00:00:00+00:00',
+          }),
+        ]}
+        focusDate={new Date(2026, 8, 15)}
+        nowRef={new Date(2026, 8, 15)}
+        timezone="America/New_York"
+      />,
+    );
+    expect(screen.getAllByTitle(/Team Photo Day/).length).toBe(1);
+  });
+
+  it('does not span a TIMED event that merely crosses midnight in another zone', () => {
+    // A 3pm–5pm practice is one day's event. Its end instant must not be read
+    // as a second calendar day just because a zone conversion pushes it over
+    // midnight — `eventCalendarDay` handles that, and this pins it.
+    render(
+      <FairwayMonthGrid
+        events={[
+          makeEvent({
+            id: 'evt-late',
+            title: 'Night Practice',
+            all_day: false,
+            start_date: '2026-09-10T22:00:00-04:00',
+            end_date: '2026-09-10T23:30:00-04:00',
+            start_time: '2026-09-10T22:00:00-04:00',
+            end_time: '2026-09-10T23:30:00-04:00',
+          }),
+        ]}
+        focusDate={new Date(2026, 8, 15)}
+        nowRef={new Date(2026, 8, 15)}
+        timezone="America/New_York"
+      />,
+    );
+    expect(screen.getAllByTitle(/Night Practice/).length).toBe(1);
+  });
+});

@@ -66,7 +66,7 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
-import { zonedMidnight, eventCalendarDay } from '@/lib/calendar/timezone';
+import { zonedMidnight, eventDaySpan } from '@/lib/calendar/timezone';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -723,13 +723,21 @@ export function FairwayCalendar({
   const windowCount = React.useMemo(() => {
     if (view === 'day') {
       return events.filter((e) => {
-        const s = e.start_date || e.start_time;
-        if (!s) return false;
         // Zoned bucketing (not implicit-local `new Date(s)`) — must agree
         // with what FairwayAgendaView mode="day" actually renders for the
         // same day (both bucket by `teamTimezone`), or the hero count and
         // the visible list could silently disagree near a midnight boundary.
-        return isSameDay(eventCalendarDay(s, e.all_day, teamTimezone), focusDate);
+        //
+        // `eventDaySpan`, not `eventCalendarDay`, for the same reason: the
+        // agenda counts an event on every day it RUNS, so a start-only test
+        // here would report "0 events" on the Saturday of a tournament the
+        // list below is showing.
+        const span = eventDaySpan(e, teamTimezone);
+        if (!span) return false;
+        return (
+          (isSameDay(span.first, focusDate) || span.first < focusDate) &&
+          (isSameDay(span.last, focusDate) || span.last > focusDate)
+        );
       }).length;
     }
     const startMs = visibleWindow.start.getTime();

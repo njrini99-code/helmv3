@@ -187,6 +187,51 @@ export function zonedMidnight(iso: string, timezone: string | null | undefined):
  * So: branch on `all_day`. Do NOT "simplify" this back to a single
  * `zonedMidnight` call.
  */
+/**
+ * The inclusive range of calendar days an event OCCUPIES.
+ *
+ * The counterpart to `eventCalendarDay`, which answers "what day does this
+ * start on". Every surface that buckets events by day needs this one instead,
+ * because reading only the start makes a multi-day event visible on exactly one
+ * day: a coach who opened the calendar on the Saturday of a four-day tournament
+ * got "Nothing on the books for this day" (month grid, agenda day mode, agenda
+ * range mode and the day-view hero count all had it). #1493 is the same
+ * neglected column reaching the two ICS feeds.
+ *
+ * `end_time` is the INCLUSIVE last day — `golf.ts` writes the coach's End Date
+ * field verbatim as `${endDate}T00:00:00+00:00` and the editor renders it back
+ * as "Sep 3 → Sep 6". iCal's exclusive DTEND is the odd one out and converts on
+ * the way out; nothing else should pre-shift it.
+ *
+ * An absent, unparseable or inverted end collapses to a single day. That is the
+ * pre-existing behaviour and the right floor — a corrupt row costs its own
+ * span, never an unbounded loop in the caller.
+ *
+ * Structural param rather than `CalendarEvent` so this stays free of any
+ * component/hook import; every caller's row shape satisfies it.
+ */
+export function eventDaySpan(
+  ev: {
+    start_date?: string | null;
+    start_time?: string | null;
+    end_date?: string | null;
+    end_time?: string | null;
+    all_day?: boolean | null;
+  },
+  timezone: string | null | undefined,
+): { first: Date; last: Date } | null {
+  const startStr = ev.start_date || ev.start_time;
+  if (!startStr) return null;
+  const first = eventCalendarDay(startStr, ev.all_day, timezone);
+  if (Number.isNaN(first.getTime())) return null;
+
+  const endStr = ev.end_time || ev.end_date;
+  if (!endStr) return { first, last: first };
+  const last = eventCalendarDay(endStr, ev.all_day, timezone);
+  if (Number.isNaN(last.getTime()) || last < first) return { first, last: first };
+  return { first, last };
+}
+
 export function eventCalendarDay(
   iso: string,
   allDay: boolean | null | undefined,
