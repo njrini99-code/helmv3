@@ -104,6 +104,15 @@ export function FairwayCalendarMemberRail({
   if (teamMembers.length === 0) return null;
 
   const allSelected = selectedPlayerIds.length === 0;
+  // At the cap, `toggle` below silently drops a click on any UNSELECTED chip.
+  // Five of the nine teams in production carry rosters larger than
+  // MAX_SELECTION (Hampden-Sydney 15, Shenandoah 12, Guilford 12, UNCW 10,
+  // Lynchburg 10 — measured 2026-08-17), so on most teams the trailing chips
+  // become dead controls the moment eight are picked. The cap itself is
+  // correct — it equals AVATAR_TINT_COUNT, one selectable member per tint,
+  // which is what keeps the overlay legible — so the fix is to SAY so rather
+  // than to raise it (raising it is the open design question on #1470).
+  const atCap = selectedPlayerIds.length >= MAX_SELECTION;
 
   const toggle = (id: string) => {
     if (selectedPlayerIds.includes(id)) {
@@ -182,6 +191,12 @@ export function FairwayCalendarMemberRail({
           const selected = idx !== -1;
           const color = selected ? PLAYER_COLORS[idx % PLAYER_COLORS.length]! : null;
           const tint = tintFor(m.id);
+          // Unselectable right now, because the cap is full. `aria-disabled`
+          // rather than `disabled`: the chip stays focusable and hoverable, so
+          // both the tooltip and the screen-reader name can deliver the reason.
+          // A real `disabled` would also set `pointer-events-none`, which kills
+          // the very tooltip that explains the state.
+          const capped = !selected && atCap;
           return (
             <Button
               key={m.id}
@@ -190,9 +205,23 @@ export function FairwayCalendarMemberRail({
               haptic="none"
               onClick={() => toggle(m.id)}
               aria-pressed={selected}
-              aria-label={selected ? `${fullName(m)} (viewing schedule)` : `View ${fullName(m)}'s schedule`}
-              title={fullName(m)}
-              className="group relative flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-center justify-center overflow-visible rounded-full p-0 transition-transform hover:bg-transparent active:bg-transparent"
+              aria-disabled={capped || undefined}
+              aria-label={
+                selected
+                  ? `${fullName(m)} (viewing schedule)`
+                  : capped
+                    ? `${fullName(m)} — already viewing the maximum of ${MAX_SELECTION} players`
+                    : `View ${fullName(m)}'s schedule`
+              }
+              title={
+                capped
+                  ? `${fullName(m)} — already viewing the maximum of ${MAX_SELECTION} players. Clear one to add another.`
+                  : fullName(m)
+              }
+              className={cn(
+                'group relative flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-center justify-center overflow-visible rounded-full p-0 transition-transform hover:bg-transparent active:bg-transparent',
+                capped && 'cursor-not-allowed',
+              )}
             >
               {/* Visible avatar chip — fixed 36x36 (h-9 w-9), unchanged from
                   before the fix. The Button around it is the 44x44 touch
@@ -201,6 +230,7 @@ export function FairwayCalendarMemberRail({
                 className={cn(
                   'relative grid h-9 w-9 place-items-center overflow-visible rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle transition-transform group-hover:ring-border-strong',
                   selected && 'scale-[1.06] text-white ring-0',
+                  capped && 'opacity-40 grayscale',
                 )}
                 style={
                   selected && color
@@ -248,6 +278,15 @@ export function FairwayCalendarMemberRail({
               </span>
             );
           })}
+          {/* The cap, stated where it can be seen without hovering. The dimmed
+              chips above carry it in `title`/aria-label, but `title` never
+              fires on touch — and the coach who just had a click discarded is
+              on the surface where the count matters. */}
+          {atCap ? (
+            <span className="font-fw-sans text-caption text-text-tertiary">
+              Max {MAX_SELECTION} — clear one to swap
+            </span>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
