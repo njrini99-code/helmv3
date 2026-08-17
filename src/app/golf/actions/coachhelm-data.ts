@@ -282,7 +282,21 @@ async function getPlayerProfileImpl(
   }
 
   try {
-    // Fetch player's recent rounds (last 30)
+    // ASCENDING is required, not incidental: this feeds `buildPlayerBaseline`,
+    // whose EWMA seeds on values[0] and folds forward, so the LAST element
+    // carries the most weight. Reverse the order and the "baseline" tracks the
+    // player's oldest form instead of their current form. Pinned in
+    // `stats/__tests__/baselines.test.ts` ("is order-dependent").
+    //
+    // LATENT BUG — ascending + limit takes the OLDEST 30, not the most recent
+    // 30, so the comment that used to say "last 30" was wrong. Unreachable
+    // today: measured 2026-08-17, the busiest player has 18 completed scored
+    // rounds and nobody is above 25, so the limit never binds. It becomes live
+    // the moment anyone reaches 31 — and it fails silently, freezing their
+    // baseline on their first 30 rounds forever. Fixing it means fetching
+    // `ascending: false` then reversing in JS before handing it over; left
+    // alone rather than changing which rounds feed every baseline on evidence
+    // that the failure has never once occurred.
     const { data: roundsData, error: roundsError } = await supabase
       .from('golf_rounds')
       .select('id, score_to_par, total_score, round_date, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
@@ -599,7 +613,9 @@ async function getPlayerTrendAnalysisImpl(
   }
 
   try {
-    // Fetch player's rounds (last 30)
+    // Same contract and same latent limit as `getPlayerProfileImpl` above —
+    // ascending is load-bearing for the EWMA fold, and ascending + limit takes
+    // the OLDEST 30 rather than the most recent 30. See the full note there.
     const { data: roundsData, error: roundsError } = await supabase
       .from('golf_rounds')
       .select('id, score_to_par, round_date, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
