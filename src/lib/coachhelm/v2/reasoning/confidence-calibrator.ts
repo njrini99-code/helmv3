@@ -65,7 +65,22 @@ export function updateCalibrationRecord(
   record: CalibrationRecord,
   prediction: { confidence: number; wasAccurate: boolean },
 ): CalibrationRecord {
-  const clamped = Math.max(0, Math.min(1, prediction.confidence));
+  // Upper bound is 0.9999999, not 1, and that matters. Bucket matching below is
+  // half-open (`>= rangeStart && < rangeEnd`) and the top bucket is [0.8, 1.0],
+  // so a confidence of exactly 1.0 matched NO bucket — while `totalPredictions`
+  // was incremented regardless, quietly breaking "the bucket counts add up to
+  // the total". Anything above 1.0 clamped to 1.0 and was lost the same way, so
+  // the clamp itself was creating the loss.
+  //
+  // 1.0 is inside this function's contract: it clamps its own input to [0, 1],
+  // and `calibrateConfidence` can return exactly 1.0 when a bucket's accuracy
+  // is 1.0. The other two classifiers in this file already handle it —
+  // `computeBucketRows` with this same 0.9999999 clamp, `calibrateConfidence`
+  // with a `?? buckets[last]` fallback. This was the only one that did not.
+  //
+  // Not observed in production: `golf_predictions` holds 563 rows with a max
+  // confidence of 0.8. Pinned in `__tests__/confidence-calibrator.test.ts`.
+  const clamped = Math.max(0, Math.min(0.9999999, prediction.confidence));
   const newBuckets = record.buckets.map((b) => {
     if (clamped < b.rangeStart || clamped >= b.rangeEnd) return b;
     const count = b.predictedCount + 1;
