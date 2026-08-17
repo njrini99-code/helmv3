@@ -14,6 +14,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { recapDateWindow } from '@/lib/coachhelm/v3/recap/window';
 
 type Sb = SupabaseClient<Database>;
 
@@ -51,8 +52,13 @@ export async function buildWeeklyRecap(
     week_end_iso: string;
   },
 ): Promise<WeeklyRecap | null> {
-  const weekEnd = new Date(args.week_end_iso);
-  const weekStart = new Date(weekEnd.getTime() - 7 * 86400_000);
+  // Seven calendar days ending on the fire day, per the window note above.
+  // This used to be `weekEnd - 7 days` compared inclusively against a DATE
+  // column, which spans EIGHT days — so the boundary day landed in two
+  // consecutive recaps. See `recapDateWindow`.
+  const window = recapDateWindow(args.week_end_iso);
+  const weekEnd = new Date(window.endInstant);
+  const weekStart = new Date(window.startInstant);
 
   const [{ data: team }, { data: coach }] = await Promise.all([
     sb.from('golf_teams').select('name').eq('id', args.team_id).maybeSingle(),
@@ -81,8 +87,9 @@ export async function buildWeeklyRecap(
       .select('player_id, score_to_par')
       .in('player_id', playerIds)
       .eq('status', 'completed')
-      .gte('round_date', weekStart.toISOString().slice(0, 10))
-      .lte('round_date', weekEnd.toISOString().slice(0, 10));
+      // DATE column — filter on calendar days, not instants.
+      .gte('round_date', window.startDate)
+      .lte('round_date', window.endDate);
     for (const r of rounds ?? []) {
       totalRounds += 1;
       const slot = perPlayer.get(r.player_id) ?? { rounds: 0, sum: 0, n: 0 };
