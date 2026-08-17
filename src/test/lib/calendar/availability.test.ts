@@ -681,3 +681,125 @@ describe('getUserBusyPeriods — class zone comes from golf_team_settings (F2)',
     expect(cls!.start.toISOString()).toBe(`${WED}T13:05:00.000Z`);
   });
 });
+
+/**
+ * All-day events were invisible to conflict detection.
+ *
+ * `golf_events` stores an all-day event as UTC midnight on its first day, with
+ * `end_time` at UTC midnight on its INCLUSIVE last day (golf.ts:2302 writes the
+ * coach's End Date verbatim; the editor renders it back as "Sep 3 → Sep 6").
+ * This module read `[start_time, end_time || start_time]` as a literal instant
+ * interval, which makes:
+ *
+ *   - a SINGLE-day all-day event a ZERO-LENGTH busy period, so the whole day
+ *     reads as free
+ *   - a MULTI-day all-day event free on its LAST day, since the interval ends
+ *     at that day's opening midnight
+ *
+ * and the fetch window drops the row entirely once `timeMin` passes that
+ * instant, so a coach scheduling 9am on the final round of a tournament was
+ * told there was no conflict at all.
+ *
+ * Production 2026-08-17: 30 single-day and 14 multi-day all-day events, the
+ * multi-day ones all tournaments. Same neglected column as #1493 and #1494.
+ */
+describe('getUserBusyPeriods — all-day events occupy their whole day', () => {
+  // No golf_team_settings row is seeded, so the zone resolves to the
+  // DEFAULT_TIMEZONE fallback, America/New_York — the state 5 of 10 production
+  // teams are actually in. Mid-August is EDT (UTC-4), so local midnight is
+  // 04:00Z.
+  const TEAM_TZ = 'America/New_York';
+
+  it('blocks the whole day for a single-day all-day event', async () => {
+    const tables = baseTables();
+    tables.golf_events.push({
+      id: 'e-allday', team_id: 't1', title: 'Team Photo Day', status: 'scheduled',
+      start_time: '2026-08-14T00:00:00+00:00', end_time: '2026-08-14T00:00:00+00:00',
+      all_day: true, created_by: 'c1',
+    });
+    const supabase = createStubClient(tables);
+
+    // A coach looking for a 2pm ET slot on that day.
+    const busy = await getUserBusyPeriods(
+      'u1',
+      new Date('2026-08-14T18:00:00Z'),
+      new Date('2026-08-14T20:00:00Z'),
+      supabase,
+    );
+
+    expect(busy).toHaveLength(1);
+    expect(hourIn(busy[0]!.start, TEAM_TZ)).toBe(0);
+    // Ends at the NEXT day's local midnight — an exclusive end, so the block
+    // covers every hour of the 14th.
+    expect(busy[0]!.end.getTime() - busy[0]!.start.getTime()).toBe(24 * 60 * 60 * 1000);
+    expect(periodsOverlap(
+      busy[0]!,
+      { start: new Date('2026-08-14T18:00:00Z'), end: new Date('2026-08-14T20:00:00Z') },
+    )).toBe(true);
+  });
+
+  it('is still busy on the LAST day of a multi-day tournament', async () => {
+    const tables = baseTables();
+    // Transylvania Invite, as production stores it: Sep 3 through Sep 6.
+    tables.golf_events.push({
+      id: 'e-invite', team_id: 't1', title: 'Transylvania Invite', status: 'scheduled',
+      start_time: '2026-09-03T00:00:00+00:00', end_time: '2026-09-06T00:00:00+00:00',
+      all_day: true, created_by: 'c1',
+    });
+    const supabase = createStubClient(tables);
+
+    // 9am to 11am ET on the final round.
+    const busy = await getUserBusyPeriods(
+      'u1',
+      new Date('2026-09-06T13:00:00Z'),
+      new Date('2026-09-06T15:00:00Z'),
+      supabase,
+    );
+
+    expect(busy).toHaveLength(1);
+    expect(periodsOverlap(
+      busy[0]!,
+      { start: new Date('2026-09-06T13:00:00Z'), end: new Date('2026-09-06T15:00:00Z') },
+    )).toBe(true);
+  });
+
+  it('is not busy the day after a multi-day tournament ends', async () => {
+    const tables = baseTables();
+    tables.golf_events.push({
+      id: 'e-invite', team_id: 't1', title: 'Transylvania Invite', status: 'scheduled',
+      start_time: '2026-09-03T00:00:00+00:00', end_time: '2026-09-06T00:00:00+00:00',
+      all_day: true, created_by: 'c1',
+    });
+    const supabase = createStubClient(tables);
+
+    const busy = await getUserBusyPeriods(
+      'u1',
+      new Date('2026-09-07T13:00:00Z'),
+      new Date('2026-09-07T15:00:00Z'),
+      supabase,
+    );
+
+    expect(busy).toHaveLength(0);
+  });
+
+  it('leaves a TIMED event exactly as it was', async () => {
+    const tables = baseTables();
+    tables.golf_events.push({
+      id: 'e-timed', team_id: 't1', title: 'Team Practice', status: 'scheduled',
+      start_time: '2026-08-14T17:00:00+00:00', end_time: '2026-08-14T19:00:00+00:00',
+      all_day: false, created_by: 'c1',
+    });
+    const supabase = createStubClient(tables);
+
+    const busy = await getUserBusyPeriods(
+      'u1',
+      new Date('2026-08-14T18:00:00Z'),
+      new Date('2026-08-14T20:00:00Z'),
+      supabase,
+    );
+
+    expect(busy).toHaveLength(1);
+    expect(busy[0]!.start.toISOString()).toBe('2026-08-14T17:00:00.000Z');
+    expect(busy[0]!.end.toISOString()).toBe('2026-08-14T19:00:00.000Z');
+  });
+});

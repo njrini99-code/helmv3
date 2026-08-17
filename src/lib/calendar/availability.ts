@@ -14,7 +14,7 @@ import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { classIdFromDescription } from '@/lib/calendar/class-events';
 import { parseSemesterDates } from '@/lib/golf/semester';
 import { wallClockInZone } from '@/lib/golf/timezone';
-import { DEFAULT_TIMEZONE, getValidTimezone } from '@/lib/calendar/timezone';
+import { DEFAULT_TIMEZONE, getValidTimezone, eventDaySpan } from '@/lib/calendar/timezone';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -44,12 +44,12 @@ interface WorkingHours {
 
 type TeamEventRow = Pick<
   GolfEvent,
-  'id' | 'title' | 'start_time' | 'end_time' | 'created_by' | 'description'
+  'id' | 'title' | 'start_time' | 'end_time' | 'created_by' | 'description' | 'all_day'
 >;
 
 type AttendanceEventRow = Pick<
   GolfEvent,
-  'id' | 'title' | 'start_time' | 'end_time'
+  'id' | 'title' | 'start_time' | 'end_time' | 'all_day'
 >;
 
 interface AttendanceWithEvent {
@@ -63,6 +63,77 @@ function firstEventOrNull(
 ): AttendanceEventRow | null {
   if (!value) return null;
   return Array.isArray(value) ? value[0] ?? null : value;
+}
+
+/**
+ * The instant range a `golf_events` row actually occupies.
+ *
+ * A TIMED event is its own interval, unchanged: `[start_time, end_time]`, with
+ * a null end treated as instantaneous, exactly as before.
+ *
+ * An ALL-DAY event is not an instant range at all. It is stored as UTC midnight
+ * on its first day with `end_time` at UTC midnight on its INCLUSIVE last day —
+ * `golf.ts:2302` writes the coach's End Date field verbatim, and the editor
+ * renders it back as "Sep 3 → Sep 6". Read literally, that made a single-day
+ * all-day event a ZERO-LENGTH busy period (the whole day free — 30 such rows in
+ * production) and left a multi-day tournament free on its final round (14 rows,
+ * all tournaments). This expands it to the team's real local days:
+ * `[midnight(first), midnight(last + 1))`.
+ *
+ * The zone matters and is not cosmetic. Blocking `[00:00Z, 00:00Z next day)`
+ * for an Eastern team would leave every evening after 8pm ET bookable on a day
+ * the team is away at a tournament.
+ */
+function eventBusyInterval(
+  event: { start_time: string | null; end_time?: string | null; all_day?: boolean | null },
+  timeZone: string | null | undefined,
+): { start: Date; end: Date } | null {
+  if (!event.start_time) return null;
+
+  if (!event.all_day) {
+    const start = new Date(event.start_time);
+    if (Number.isNaN(start.getTime())) return null;
+    const end = new Date(event.end_time || event.start_time);
+    return { start, end: Number.isNaN(end.getTime()) || end < start ? start : end };
+  }
+
+  // `getValidTimezone` rather than passing the zone through: `classTimeZone` is
+  // still null when the user is on no team, and `wallClockInZone` reads null as
+  // "use the runtime zone" — UTC on Vercel, which is the shift this whole file
+  // exists to keep out. DEFAULT_TIMEZONE is what every other reader falls back
+  // to, including both iCal feeds and the calendar page.
+  const zone = getValidTimezone(timeZone);
+  const span = eventDaySpan(
+    { start_time: event.start_time, end_time: event.end_time ?? null, all_day: true },
+    zone,
+  );
+  if (!span) return null;
+  return {
+    start: wallClockInZone(span.first, '00:00', zone),
+    end: wallClockInZone(addDaysLocal(span.last, 1), '00:00', zone),
+  };
+}
+
+/** Next calendar day, on a Date whose LOCAL fields carry the day (as `eventDaySpan` returns). */
+function addDaysLocal(day: Date, days: number): Date {
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate() + days);
+}
+
+/**
+ * Does this interval intersect the caller's window?
+ *
+ * Needed because the fetch floor above deliberately reaches back further than
+ * the window to catch all-day rows. Without it that widening would surface a
+ * timed event that genuinely ended yesterday as a live conflict.
+ */
+function overlapsWindow(
+  interval: { start: Date; end: Date },
+  timeMin: Date,
+  timeMax: Date,
+): boolean {
+  // `<=` on both sides so a zero-length interval touching the window still
+  // counts — that is how a null-end_time row has always behaved here.
+  return interval.start <= timeMax && interval.end >= timeMin;
 }
 
 interface CoachBlockedTimeRow {
@@ -268,15 +339,28 @@ export async function getUserBusyPeriodsWithStatus(
   // end_time rows are treated as instantaneous). Soft-cancelled events keep
   // their rows but are never busy. Paginated via fetchAllRows — PostgREST
   // hard-caps responses at 1000 rows regardless of .limit().
+  //
+  // FETCH FLOOR. The `end_time.gte` term reaches a day further back than the
+  // window, because an ALL-DAY event's `end_time` is UTC midnight on its
+  // INCLUSIVE last day, not the moment it finishes. Filtered at `minIso` the
+  // Transylvania Invite (Sep 3 → Sep 6) stopped being fetched at all once the
+  // window opened after Sep 6 00:00Z, so a coach scheduling 9am ET on the final
+  // round was told there was no conflict. A whole extra day, plus the widest
+  // real UTC offset, covers every zone's rendering of that last day.
+  //
+  // The widened floor pulls in some rows that genuinely ended before the
+  // window; `overlapsWindow` below drops them, so this cannot manufacture a
+  // false conflict.
+  const fetchFloorIso = new Date(timeMin.getTime() - 39 * 60 * 60 * 1000).toISOString();
   const teamEventsPromise: Promise<TeamEventRow[]> = teamIds.length > 0
     ? fetchAllRows<TeamEventRow>((from, to) =>
         supabase
           .from('golf_events')
-          .select('id, title, start_time, end_time, created_by, description')
+          .select('id, title, start_time, end_time, created_by, description, all_day')
           .in('team_id', teamIds)
           .neq('status', 'cancelled')
           .lte('start_time', maxIso)
-          .or(`start_time.gte.${minIso},end_time.gte.${minIso}`)
+          .or(`start_time.gte.${minIso},end_time.gte.${fetchFloorIso}`)
           .order('id', { ascending: true })
           .range(from, to)
       )
@@ -291,13 +375,13 @@ export async function getUserBusyPeriodsWithStatus(
           .from('golf_event_attendance')
           .select(`
             event_id,
-            event:golf_events!inner(id, title, start_time, end_time)
+            event:golf_events!inner(id, title, start_time, end_time, all_day)
           `)
           .eq('player_id', player.id)
           .eq('status', 'accepted')
           .neq('event.status', 'cancelled')
           .lte('event.start_time', maxIso)
-          .or(`start_time.gte.${minIso},end_time.gte.${minIso}`, { referencedTable: 'event' })
+          .or(`start_time.gte.${minIso},end_time.gte.${fetchFloorIso}`, { referencedTable: 'event' })
           .order('id', { ascending: true })
           .range(from, to)
       )
@@ -374,12 +458,12 @@ export async function getUserBusyPeriodsWithStatus(
 
   // Process team events
   for (const event of realTeamEvents) {
-    const startDateTime = new Date(event.start_time);
-    const endDateTime = new Date(event.end_time || event.start_time);
+    const interval = eventBusyInterval(event, classTimeZone);
+    if (!interval || !overlapsWindow(interval, timeMin, timeMax)) continue;
 
     busyPeriods.push({
-      start: startDateTime,
-      end: endDateTime,
+      start: interval.start,
+      end: interval.end,
       type: 'event',
       title: event.title,
       eventId: event.id,
@@ -410,12 +494,12 @@ export async function getUserBusyPeriodsWithStatus(
     const event = firstEventOrNull(attendance.event);
     if (!event || existingEventIds.has(event.id)) continue;
 
-    const startDateTime = new Date(event.start_time);
-    const endDateTime = new Date(event.end_time || event.start_time);
+    const interval = eventBusyInterval(event, classTimeZone);
+    if (!interval || !overlapsWindow(interval, timeMin, timeMax)) continue;
 
     busyPeriods.push({
-      start: startDateTime,
-      end: endDateTime,
+      start: interval.start,
+      end: interval.end,
       type: 'event',
       title: event.title,
       eventId: event.id,
