@@ -943,8 +943,8 @@ async function generateTeamInsightsImpl() {
             });
             return { player, analysis, success: true };
           } catch (err) {
-            await logServerError(`generateInsightsForTeam player analysis failed: ${describeError(err)}`, {
-              action: 'generateInsightsForTeam.analyzePlayer',
+            await logServerError(`generateTeamInsights player analysis failed: ${describeError(err)}`, {
+              action: 'generateTeamInsights.analyzePlayer',
               featureArea: 'insights',
               playerId: player.id,
             });
@@ -1066,8 +1066,8 @@ async function generateTeamInsightsImpl() {
         }
       }
     } catch (err) {
-      await logServerError(`generateInsightsForTeam team pattern insights failed: ${describeError(err)}`, {
-        action: 'generateInsightsForTeam.teamPatterns',
+      await logServerError(`generateTeamInsights team pattern insights failed: ${describeError(err)}`, {
+        action: 'generateTeamInsights.teamPatterns',
         featureArea: 'insights',
       });
     }
@@ -1113,13 +1113,13 @@ async function generateTeamInsightsImpl() {
         const skipped = cleanInsights.length - inputs.length;
         if (skipped > 0) {
           console.warn(
-            `[insights.generateInsightsForTeam] skipped ${skipped} legacy records with insufficient sample_n`,
+            `[insights.generateTeamInsights] skipped ${skipped} legacy records with insufficient sample_n`,
           );
         }
         await Promise.all(inputs.map(({ input }) => upsertInsight(supabase, input)));
       } catch (insertError) {
-        await logServerError(`generateInsightsForTeam upsert failed: ${describeError(insertError)}`, {
-          action: 'generateInsightsForTeam.insert',
+        await logServerError(`generateTeamInsights upsert failed: ${describeError(insertError)}`, {
+          action: 'generateTeamInsights.insert',
           featureArea: 'insights',
           extra: { insightCount: cleanInsights.length },
         });
@@ -1157,8 +1157,8 @@ async function generateTeamInsightsImpl() {
       execution_time_ms: executionTime,
     };
   } catch (error) {
-    await logServerError(`generateInsightsForTeam failed: ${describeError(error)}`, {
-      action: 'generateInsightsForTeam',
+    await logServerError(`generateTeamInsights failed: ${describeError(error)}`, {
+      action: 'generateTeamInsights',
       featureArea: 'insights',
     });
     return { success: false, error: 'An unexpected error occurred' };
