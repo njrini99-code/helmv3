@@ -43,6 +43,36 @@ function fmtPct(n: number | null): string {
   return n === null ? '—' : `${Math.round(n)}%`;
 }
 
+/**
+ * Scrambling by distance band, without inventing a zero.
+ *
+ * These rows did `finite(...) ?? 0`, so a null — which `safePercent` returns
+ * precisely when the denominator is zero — rendered a 0% bar. "Scrambling from
+ * 20-30 yds: 0%" for a player who has never had a 20-30 yard scramble reads
+ * identically to one who has had eight and converted none.
+ *
+ * Live. Measured 2026-08-17 across the 42 players with completed rounds:
+ * 5 have ZERO shots in the 20-30 yd band and 12 more have between one and four
+ * — 17 of 42 affected, comparable in reach to the GIR-from-sand case. The 0-10
+ * band has 2 players at zero; 10-20 has none.
+ *
+ * A REAL 0% stays undimmed: eight scrambles from that band and none converted
+ * is a finding, not missing data.
+ */
+export function buildScramblingByDistanceRows(s: GolfStats | null): RailBarRow[] {
+  const bands: Array<[string, number | null]> = [
+    ['0-10 yds', finite(s?.scramblingPct0_10)],
+    ['10-20 yds', finite(s?.scramblingPct10_20)],
+    ['20-30 yds', finite(s?.scramblingPct20_30)],
+  ];
+  return bands.map(([label, pct]) => ({
+    label,
+    pct: pct ?? 0,
+    value: fmtPct(pct),
+    dim: pct === null,
+  }));
+}
+
 /** Higher-is-better banding for up-and-down %, shared by both Misses-tab
  *  matrices. Thresholds are informed estimates — no PGA benchmark is
  *  plumbed into this drill today (the PGA Tour scrambling average is
@@ -161,11 +191,7 @@ export function ShortGameDrill({ detailedStats, patterns = [] }: ShortGameDrillP
     { label: 'Sand', pct: finite(s?.scramblingPctSand) },
   ];
 
-  const byDistance: RailBarRow[] = [
-    { label: '0-10 yds', pct: finite(s?.scramblingPct0_10) ?? 0, value: fmtPct(finite(s?.scramblingPct0_10)) },
-    { label: '10-20 yds', pct: finite(s?.scramblingPct10_20) ?? 0, value: fmtPct(finite(s?.scramblingPct10_20)) },
-    { label: '20-30 yds', pct: finite(s?.scramblingPct20_30) ?? 0, value: fmtPct(finite(s?.scramblingPct20_30)) },
-  ];
+  const byDistance: RailBarRow[] = buildScramblingByDistanceRows(s);
 
   const sandPct = finite(s?.sandSavePercentage);
   const sandAtt = s?.sandSaveAttempts ?? 0;

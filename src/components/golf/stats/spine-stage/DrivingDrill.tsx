@@ -42,6 +42,33 @@ function fmtPct(n: number | null): string {
   return n === null ? '—' : `${Math.round(n)}%`;
 }
 
+/**
+ * Fairway rate by hole type and tee club, without inventing a zero.
+ *
+ * Same rule as ShortGameDrill's distance bands: `finite(...) ?? 0` turned a
+ * null denominator into a 0% bar, so a player who never tees off with anything
+ * but driver read as "Non-driver: 0%" — never laid up, and terrible at laying
+ * up, rendered identically.
+ *
+ * Smaller reach than the scrambling band but identical in kind: measured
+ * 2026-08-17, 2 of 42 players have zero non-driver tee shots, and none have
+ * zero driver tee shots.
+ */
+export function buildFairwayByHoleTypeRows(s: GolfStats | null): RailBarRow[] {
+  const rows: Array<[string, number | null]> = [
+    ['Par 4', finite(s?.fairwayPctPar4)],
+    ['Par 5', finite(s?.fairwayPctPar5)],
+    ['Driver', finite(s?.fairwayPctDriver)],
+    ['Non-driver', finite(s?.fairwayPctNonDriver)],
+  ];
+  return rows.map(([label, pct]) => ({
+    label,
+    pct: pct ?? 0,
+    value: fmtPct(pct),
+    dim: pct === null,
+  }));
+}
+
 /** Adapt a `CategoryTrend`'s pre-formatted, direction-aware delta into a
  *  `Readout`'s `delta` shape — the numeric `value` is the SAME first→last
  *  diff `buildCategoryTrend` computed (so `direction`'s glyph/sign agree with
@@ -86,12 +113,7 @@ export function DrivingDrill({ detailedStats, sprayData, patterns = [], trends =
   const drivingTrend = categoryTrends.driving;
   const fairwayRibbonPoints: RibbonPoint[] = (trends?.fairway ?? []).map((p) => ({ x: p.date, y: p.value }));
 
-  const byHoleType: RailBarRow[] = [
-    { label: 'Par 4', pct: finite(s?.fairwayPctPar4) ?? 0, value: fmtPct(finite(s?.fairwayPctPar4)) },
-    { label: 'Par 5', pct: finite(s?.fairwayPctPar5) ?? 0, value: fmtPct(finite(s?.fairwayPctPar5)) },
-    { label: 'Driver', pct: finite(s?.fairwayPctDriver) ?? 0, value: fmtPct(finite(s?.fairwayPctDriver)) },
-    { label: 'Non-driver', pct: finite(s?.fairwayPctNonDriver) ?? 0, value: fmtPct(finite(s?.fairwayPctNonDriver)) },
-  ];
+  const byHoleType: RailBarRow[] = buildFairwayByHoleTypeRows(s);
 
   const missLeft = finite(s?.missLeftPct);
   const missRight = finite(s?.missRightPct);
