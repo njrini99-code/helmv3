@@ -285,8 +285,17 @@ export function GolfSignInForm() {
       {/* Password */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
+          {/* This label is hand-rolled rather than passed to <Input label=…>
+              so the "Forgot password?" link can sit on the same row. That is
+              also how it lost the required marker the shared component adds
+              automatically: the field was `required` and `aria-required` all
+              along, but rendered as plain "Password" next to "Email*", so the
+              form showed one required field and one that read as optional.
+              Marker markup is copied verbatim from `ui/input.tsx:139` — if that
+              changes, change it here too. */}
           <label htmlFor="golf-signin-password" className="text-sm font-medium text-warm-700">
             Password
+            <span className="text-red-500 ml-0.5">*</span>
           </label>
           <Link
             href="/golf/forgot-password"
