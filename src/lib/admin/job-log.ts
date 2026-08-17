@@ -126,12 +126,46 @@ export function summariseErrorBody(body: string, status?: number): string {
   return text.replace(/\s+/g, ' ').slice(0, 2000);
 }
 
+/** Guard rails, so a pathological body cannot bloat the row. */
+const MAX_METADATA_KEYS = 24;
+const MAX_METADATA_STRING = 300;
+
 /**
  * Best-effort outcome snapshot from a successful cron Response body, stored in
- * background_job_logs.metadata so the admin cron board can distinguish "ran
- * and did work" from "self-skipped" (e.g. ingest-gmail-replies returns
+ * background_job_logs.metadata so the admin cron board can distinguish "ran and
+ * did work" from "self-skipped" (e.g. ingest-gmail-replies returns
  * `{skipped: 'not-armed'}` until its Google scope is granted — without this,
- * both outcomes log as a bare 'completed'). Whitelisted keys only; never throws.
+ * both outcomes log as a bare 'completed').
+ *
+ * TAKES EVERY TOP-LEVEL SCALAR, BOUNDED. It used to whitelist seven key names —
+ * skipped, matched, inserted, sent, processed, count, detail — which meant a
+ * route only got metadata if it happened to name its fields from that
+ * vocabulary. Measured over 30 days, 11 of the 19 live job types logged
+ * `metadata = null` on every single run:
+ *
+ *     refresh-engagement, event-reminders, log-retention, integrity-check,
+ *     v3-goal-suggestions-evaluate, coachhelm-insight-lifecycle,
+ *     coachhelm-calibration, v3-goal-suggestions-write,
+ *     v3-causality-attribute, v3-genome-nightly, v3-standing-refresh
+ *
+ * Every one of them returns useful scalars. None uses a whitelisted name, and
+ * `event-reminders` misses by a hair — it reports `inserted24h` where the list
+ * had `inserted`.
+ *
+ * WHAT THAT COST. `v3-genome-nightly` reported `completed` 47 times across six
+ * weeks while writing nothing; `golf_player_genome` sat frozen at 2026-07-07.
+ * It returns `{ players_in_chunk, per_player, duration_ms }` — no whitelisted
+ * key — so every row logged `metadata: null`, and the only evidence anything
+ * was wrong was a ~1,039 ms duration that could not have rebuilt 25 genomes.
+ * A job that did nothing was indistinguishable from a job that did everything.
+ *
+ * A fixed vocabulary every future route must coincidentally adopt is the same
+ * shape as the dead metric map in #1488: a lookup table written against values
+ * production does not emit. Bounding the output is the real constraint, so the
+ * caps above do that directly and the key names are left to the routes.
+ *
+ * Scalars only — arrays and nested objects are still dropped, which is what
+ * keeps `per_player: [...]` and friends out of the row. Never throws.
  */
 async function extractOutcomeMetadata(
   response: Response,
@@ -140,12 +174,11 @@ async function extractOutcomeMetadata(
     const clone = response.clone();
     if (!(clone.headers.get('content-type') ?? '').includes('application/json')) return null;
     const body: unknown = await clone.json();
-    if (!body || typeof body !== 'object') return null;
-    const record = body as Record<string, unknown>;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
     const outcome: Record<string, string | number | boolean> = {};
-    for (const key of ['skipped', 'matched', 'inserted', 'sent', 'processed', 'count', 'detail']) {
-      const value = record[key];
-      if (typeof value === 'string') outcome[key] = value.slice(0, 300);
+    for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
+      if (Object.keys(outcome).length >= MAX_METADATA_KEYS) break;
+      if (typeof value === 'string') outcome[key] = value.slice(0, MAX_METADATA_STRING);
       else if (typeof value === 'number' || typeof value === 'boolean') outcome[key] = value;
     }
     return Object.keys(outcome).length > 0 ? outcome : null;

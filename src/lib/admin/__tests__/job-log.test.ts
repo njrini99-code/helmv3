@@ -122,3 +122,112 @@ describe('recordJobRun error-message hygiene', () => {
     expect(row.error_message).toContain('40P01');
   });
 });
+
+/**
+ * `extractOutcomeMetadata` exists, per its own docblock, so the admin cron board
+ * can "distinguish 'ran and did work' from 'self-skipped'". For 11 of the 19
+ * live job types it does not, because it whitelists seven key names and those
+ * routes do not happen to use any of them.
+ *
+ * That is not hypothetical. `v3-genome-nightly` reported `completed` 47 times
+ * across six weeks while writing nothing at all — `golf_player_genome` sat
+ * frozen at 2026-07-07 — and the ONLY signal that anything was wrong was a
+ * ~1,039 ms duration that could not possibly have rebuilt 25 player genomes.
+ * `metadata` was null on every one of those rows. The log could not say it had
+ * done no work, so nobody could see it.
+ *
+ * Measured across background_job_logs over 30 days:
+ *
+ *     runs_with_metadata = 0  for  refresh-engagement, event-reminders,
+ *     log-retention, integrity-check, v3-goal-suggestions-evaluate,
+ *     coachhelm-insight-lifecycle, coachhelm-calibration,
+ *     v3-goal-suggestions-write, v3-causality-attribute, v3-genome-nightly,
+ *     v3-standing-refresh
+ *
+ * Every one of those routes returns useful scalars. None uses a whitelisted
+ * name — and `event-reminders` misses by a hair, returning `inserted24h` where
+ * the list has `inserted`. A fixed vocabulary of seven keys that every future
+ * route must coincidentally adopt is the same shape as the dead metric map in
+ * #1488: a lookup table authored against values production does not emit.
+ */
+describe('recordJobRun outcome metadata — captures what the route actually reports', () => {
+  beforeEach(() => {
+    mocks.inserted.length = 0;
+    mocks.failInsert = false;
+  });
+
+  const jsonResponse = (body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+
+  it('records the genome cron\'s chunk size — the number that would have exposed the jam', async () => {
+    await recordJobRun('v3-genome-nightly', async () =>
+      jsonResponse({ players_in_chunk: 0, per_player: [], duration_ms: 1039 }),
+    );
+    expect(mocks.inserted[0]!.metadata).toMatchObject({ players_in_chunk: 0 });
+  });
+
+  it('records the other live crons\' own vocabularies', async () => {
+    const cases: Array<[string, Record<string, unknown>, Record<string, unknown>]> = [
+      ['v3-standing-refresh', { teams_in_chunk: 3, team_ids: ['a'] }, { teams_in_chunk: 3 }],
+      [
+        'coachhelm-insight-lifecycle',
+        { success: true, total: 188, resolved: 12, next_cursor: null },
+        { success: true, total: 188, resolved: 12 },
+      ],
+      [
+        'event-reminders',
+        { success: true, inserted24h: 4, inserted1h: 0, failed24h: 0 },
+        { inserted24h: 4, inserted1h: 0, failed24h: 0 },
+      ],
+      ['integrity-check', { ok: true, failed: [] }, { ok: true }],
+    ];
+
+    for (const [job, body, expected] of cases) {
+      mocks.inserted.length = 0;
+      await recordJobRun(job, async () => jsonResponse(body));
+      expect(mocks.inserted[0]!.metadata, job).toMatchObject(expected);
+    }
+  });
+
+  it('still captures the keys the old whitelist knew about', async () => {
+    // ingest-gmail-replies' self-skip is the case the whitelist was written for
+    // and it must keep working — this widens the net, it does not move it.
+    await recordJobRun('ingest-gmail-replies', async () =>
+      jsonResponse({ skipped: 'not-armed' }),
+    );
+    expect(mocks.inserted[0]!.metadata).toMatchObject({ skipped: 'not-armed' });
+  });
+
+  it('takes scalars only, so an array or object payload cannot bloat the row', async () => {
+    await recordJobRun('v3-genome-nightly', async () =>
+      jsonResponse({
+        players_in_chunk: 2,
+        per_player: [{ player_id: 'p1' }, { player_id: 'p2' }],
+        nested: { a: 1 },
+      }),
+    );
+    const meta = mocks.inserted[0]!.metadata as Record<string, unknown>;
+    expect(meta).toMatchObject({ players_in_chunk: 2 });
+    expect(meta.per_player).toBeUndefined();
+    expect(meta.nested).toBeUndefined();
+  });
+
+  it('bounds a pathological body rather than writing it whole', async () => {
+    const wide: Record<string, unknown> = {};
+    for (let i = 0; i < 200; i += 1) wide[`k${i}`] = i;
+    wide.long = 'x'.repeat(5000);
+
+    await recordJobRun('integrity-check', async () => jsonResponse(wide));
+    const meta = mocks.inserted[0]!.metadata as Record<string, unknown>;
+    expect(Object.keys(meta).length).toBeLessThanOrEqual(24);
+    expect(String(meta.long ?? '').length).toBeLessThanOrEqual(300);
+  });
+
+  it('leaves metadata null when the body carries no scalars at all', async () => {
+    await recordJobRun('log-retention', async () => jsonResponse({ rows: [1, 2, 3] }));
+    expect(mocks.inserted[0]!.metadata ?? null).toBeNull();
+  });
+});
