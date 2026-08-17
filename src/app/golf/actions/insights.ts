@@ -4027,11 +4027,21 @@ async function triggerPlayerInsightsAfterRoundImpl(
     const orgId = (membership.golf_teams as { organization_id: string } | null)?.organization_id;
     if (!orgId) return { success: false, error: 'Team organization not found' };
 
-    // Find the coach for this organization
+    // Find the coach for this organization.
+    //
+    // The order is load-bearing, not cosmetic: `player-signal-settings.ts`
+    // documents that it resolves the coach the SAME way as this path, so a
+    // player's Stats page and their post-round insights agree on whose windows
+    // apply. Without a total order neither query guarantees a row, so two
+    // multi-coach organizations (measured: 2, holding 5 coaches) could resolve
+    // differently here than there. `created_at` is nullable, so `id` is the
+    // tie-break that makes it total. Keep the two in step.
     const { data: coach } = await admin
       .from('golf_coaches')
       .select('id')
       .eq('organization_id', orgId)
+      .order('created_at', { ascending: true, nullsFirst: true })
+      .order('id', { ascending: true })
       .limit(1)
       .single();
 

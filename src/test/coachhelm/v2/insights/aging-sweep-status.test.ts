@@ -45,7 +45,18 @@ function containsMatch(row: Row, col: string, value: Record<string, unknown>): b
 function makeFakeAdminClient(tables: Record<string, Row[]>) {
   function queryBuilder(table: string) {
     const filters: Array<(row: Row) => boolean> = [];
+    const sorts: Array<(a: Row, b: Row) => number> = [];
     let limitN: number | undefined;
+    const applySorts = (rows: Row[]): Row[] =>
+      sorts.length === 0
+        ? rows
+        : [...rows].sort((a, b) => {
+            for (const cmp of sorts) {
+              const r = cmp(a, b);
+              if (r !== 0) return r;
+            }
+            return 0;
+          });
     const builder = {
       select: () => builder,
       eq: (col: string, val: unknown) => {
@@ -64,16 +75,37 @@ function makeFakeAdminClient(tables: Record<string, Row[]>) {
         limitN = n;
         return builder;
       },
+      // Sorts for real rather than returning `builder` and ignoring the key.
+      // A no-op `order` would make this mock unable to observe an ordering bug
+      // — the code under test could drop its ORDER BY and every assertion here
+      // would still pass. Multiple calls chain as successive sort keys, like
+      // PostgREST.
+      order: (col: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) => {
+        const ascending = opts?.ascending !== false;
+        const nullsFirst = opts?.nullsFirst ?? false;
+        sorts.push((a, b) => {
+          const av = a[col];
+          const bv = b[col];
+          const aNull = av === null || av === undefined;
+          const bNull = bv === null || bv === undefined;
+          if (aNull && bNull) return 0;
+          if (aNull) return nullsFirst ? -1 : 1;
+          if (bNull) return nullsFirst ? 1 : -1;
+          if (av === bv) return 0;
+          return (av < bv ? -1 : 1) * (ascending ? 1 : -1);
+        });
+        return builder;
+      },
       async single() {
-        const rows = (tables[table] ?? []).filter((r) => filters.every((f) => f(r)));
+        const rows = applySorts((tables[table] ?? []).filter((r) => filters.every((f) => f(r))));
         return rows.length === 1 ? { data: rows[0], error: null } : { data: null, error: { message: 'not found' } };
       },
       async maybeSingle() {
-        const rows = (tables[table] ?? []).filter((r) => filters.every((f) => f(r)));
+        const rows = applySorts((tables[table] ?? []).filter((r) => filters.every((f) => f(r))));
         return { data: rows[0] ?? null, error: null };
       },
       then(resolve: (v: { data: Row[]; error: null }) => unknown) {
-        let rows = (tables[table] ?? []).filter((r) => filters.every((f) => f(r)));
+        let rows = applySorts((tables[table] ?? []).filter((r) => filters.every((f) => f(r))));
         if (limitN !== undefined) rows = rows.slice(0, limitN);
         return Promise.resolve({ data: rows, error: null }).then(resolve);
       },

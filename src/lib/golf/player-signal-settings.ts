@@ -93,14 +93,34 @@ async function resolve(playerId: string): Promise<PlayerSignalSettings> {
     if (!orgId) return SIGNAL_SETTINGS_FALLBACK;
 
     // Same coach-for-organization resolution `triggerPlayerInsightsAfterRound`
-    // uses, so a player's Stats page and their post-round insights agree on
-    // whose settings apply.
+    // uses (insights.ts:4031), so a player's Stats page and their post-round
+    // insights agree on whose settings apply.
+    //
+    // That agreement needs a TOTAL ORDER, which neither query had. Both were
+    // `.eq(organization_id).limit(1)` with no `.order()`, and SQL gives no row
+    // ordering guarantee without one — so two orgs with more than one coach
+    // (measured: 2, holding 5 coaches between them) could resolve to different
+    // coaches on different reads, and the two code paths to different coaches
+    // as each other. The comment above asserted an invariant the code did not
+    // provide.
+    //
+    // Not observable today: all 5 of those coaches carry identical settings
+    // (3 / 90 / 30 / 3, the defaults), so whichever row came back gave the same
+    // answer. It becomes a live bug the first time one coach at a multi-coach
+    // program changes a window — their players' Stats page would then differ
+    // between refreshes. This makes the documented invariant real instead.
+    //
+    // `created_at` is nullable, so `id` (NOT NULL, unique) is the tie-break
+    // that makes the order total. Longest-standing coach wins, which is the
+    // most defensible reading of "the organization's settings".
     const { data: row } = await admin
       .from('golf_coaches')
       .select(
         'golf_coach_philosophy(min_hole_plays_for_ranking, pattern_lookback_days, stats_benchmark_window_days, min_rounds_for_signal)',
       )
       .eq('organization_id', orgId)
+      .order('created_at', { ascending: true, nullsFirst: true })
+      .order('id', { ascending: true })
       .limit(1)
       .maybeSingle();
 
