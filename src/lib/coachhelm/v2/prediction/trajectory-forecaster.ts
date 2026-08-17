@@ -211,6 +211,29 @@ export class TrajectoryForecaster {
       const uncertainty = 0.5 + week * 0.15;
 
       points.push({
+        // LANDMINE — READ BEFORE WIRING A CONSUMER.
+        //
+        // `new Date()` and `setDate` resolve in the RUNTIME zone; `toISOString`
+        // then converts to UTC before the day is sliced off. Local getter, UTC
+        // consumer, one expression. Run this at 8pm Pacific and the first point
+        // is labelled TOMORROW — every point in the series is off by one day
+        // west of Greenwich for the last hours of the local day.
+        //
+        // This is not a live bug, because NOTHING READS THESE POINTS. Traced
+        // 2026-08-17: `TrajectoryForecast.projections` has no consumer in the
+        // repo; the orchestrator sets `AnalysisResult.trajectory` (L644) and no
+        // caller reads that field. The forecaster only runs at all under
+        // `includeTrajectory || depth === 'deep'`, and the sole site passing
+        // either is `generateTournamentPrep` — a server action with no UI
+        // importer, which then returns only `prediction`/`keyFactors`/
+        // `recommendations` and drops the trajectory it just asked for. Every
+        // `depth:` assignment in `src` is a string literal, so no runtime value
+        // can reach 'deep' by another route.
+        //
+        // Build the label from the LOCAL calendar day before rendering it —
+        // `toLocalIsoDate`-style Y/M/D from local getters, never a UTC slice.
+        // See `src/lib/golf/task-overdue.ts` for the same class of fix, and
+        // `src/lib/calendar/ical.ts:270` for the other latent site.
         date: futureDate.toISOString().split('T')[0] ?? '',
         metric: 'scoring_average',
         value: projectedValue,
