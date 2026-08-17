@@ -197,6 +197,26 @@ export default function SignupPage() {
                   <SignInLink />
                 </Suspense>
               </p>
+              {/* This gate serves ONE audience: a player joining with the code
+                  their coach gave them. That is deliberate — production logs
+                  carry "SIGNUP_ACCESS_CODE is unset — by design: signup is team
+                  join_code only", so self-serve coach signup is sales-led.
+                  But the login page's single "Create an account" link sends
+                  everyone here, and a coach has no coach and no team code: the
+                  copy, the placeholder and the failure message all point them
+                  at someone who does not exist. `/golf/demo` is public and
+                  built for exactly that visitor, and was linked from neither
+                  page. See #1483 — this is the exit only; whether the login
+                  page should also split the two audiences is still open there. */}
+              <p className="text-center mt-2 text-warm-500 text-sm">
+                Not joining a team?{' '}
+                <Link
+                  href="/golf/demo"
+                  className="text-primary-600 font-semibold hover:text-primary-500 transition-colors"
+                >
+                  See a live demo
+                </Link>
+              </p>
             </m.div>
           </div>
         </div>
