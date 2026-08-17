@@ -1,0 +1,96 @@
+-- golf_shots SELECT: drop two policies that are provably redundant, and are
+-- costing a 34x slowdown on every shot read.
+--
+-- ── THE SYMPTOM ─────────────────────────────────────────────────────────────
+--
+-- `fetchShotDriversByCategory` (insight-delivery.ts:1156) reads a player's
+-- shots to build the shot-level drivers that turn "your approach play is weak"
+-- into "you miss short and right from 175+ out of the rough". It runs under a
+-- 5-second best-effort budget and, when that budget trips, returns undefined
+-- and the caller continues WITHOUT shot drivers — silently, by design.
+--
+-- Production has logged 35 such aborts. That is the mechanism behind the
+-- standing "insights are generic and not root-cause" complaint: the diagnostic
+-- layer is being computed away, and most often for the players with the most
+-- data, who are exactly the ones a coach wants it for.
+--
+-- ── THE MEASUREMENT (production, 2026-08-17) ────────────────────────────────
+--
+-- One page of 1,000 shots for one player, same data, same moment, only the
+-- role differing:
+--
+--   service role (RLS bypassed)      4.1 ms      187 buffers
+--   authenticated coach (RLS on)  2,387.0 ms  263,519 buffers      580x
+--
+-- 7 of 42 players carry more than 1,000 shots (max 1,302), so they need a
+-- second page every time: ~4.8s against a 5s ceiling.
+--
+-- ── WHY ─────────────────────────────────────────────────────────────────────
+--
+-- FOUR SELECT policies are OR'd together on this table, which produces an
+-- un-sargable filter chain:
+--
+--   (ANY (hole_id = SubPlan27)) OR (ANY (round_id = SubPlan34))
+--     OR (ANY (hole_id = SubPlan63)) OR (ANY (round_id = SubPlan72))
+--     OR EXISTS(SubPlan85) OR is_admin()
+--
+-- Postgres cannot push `round_id IN (...)` through it, so it scans golf_shots
+-- by primary key and evaluates the chain per row. `SubPlan 85` — the
+-- correlated EXISTS on golf_rounds — ran 13,233 times for a single page,
+-- 157,502 buffer hits on its own.
+--
+-- ── WHY THESE TWO ARE REDUNDANT ─────────────────────────────────────────────
+--
+-- `golf_shots_select` admits a row when its round satisfies:
+--     player owns the round  OR  caller coaches the team  OR  caller plays for the team
+--
+-- `golf_shots_select_own`  admits: player owns the round        -- subset
+-- `golf_shots_select_team` admits: caller coaches the team      -- subset
+--
+-- So `golf_shots_select` is a strict superset of both, EXCEPT for their
+-- `hole_id IN (...)` branches, which reach a shot through golf_holes rather
+-- than through round_id. Those are equivalent only if every shot's hole
+-- belongs to the same round as its round_id. Verified against production:
+--
+--   total_shots 23,988 | null round_id 0 | null hole_id 0 | hole/round mismatch 0
+--
+-- ── PROOF OF IDENTICAL SEMANTICS ────────────────────────────────────────────
+--
+-- Exact visible-row-set comparison, before vs after the drop, inside a rolled
+-- back transaction, for both roles that these policies exist to serve:
+--
+--   coach  (Nick Rini)     before 6,909  after 6,909  lost 0  gained 0
+--   player (Cole Bennett)  before 6,909  after 6,909  lost 0  gained 0
+--
+-- Set equality, not just matching counts. Nobody loses a row and nobody gains
+-- one.
+--
+-- ── RESULT ──────────────────────────────────────────────────────────────────
+--
+--   authenticated coach, same page:  2,387 ms  ->  69 ms   (34x)
+--   buffers:                        263,519    ->  14,828  (18x)
+--
+-- The planner recovers `Index Only Scan using idx_golf_shots_round_id_covering`
+-- with `Index Cond: (round_id = golf_rounds.id)` — the round filter is pushed
+-- down again. 69 ms against a 5,000 ms budget removes the aborts entirely.
+--
+-- ── SCOPE ───────────────────────────────────────────────────────────────────
+--
+-- SELECT only. The INSERT/UPDATE/DELETE policies on this table are untouched:
+-- they have the same shape but are not on any hot read path, and narrowing a
+-- write policy carries risk this change does not need to take.
+--
+-- Reproduce either number with:
+--   begin;
+--   set local role authenticated;
+--   select set_config('request.jwt.claims',
+--     json_build_object('sub','<auth uid>','role','authenticated')::text, true);
+--   explain (analyze, buffers) select ... from golf_shots where round_id in (...);
+--   rollback;
+
+DROP POLICY IF EXISTS golf_shots_select_own ON public.golf_shots;
+DROP POLICY IF EXISTS golf_shots_select_team ON public.golf_shots;
+
+-- `golf_shots_select` and `admin_read_all` remain and together cover every
+-- caller the dropped pair covered. Left in place verbatim — this migration
+-- removes redundancy, it does not redefine access.
