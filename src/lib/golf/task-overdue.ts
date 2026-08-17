@@ -1,4 +1,5 @@
 import { parseDateOnly } from '@/lib/golf/date-only';
+import { todayIsoInZone } from '@/lib/golf/timezone';
 
 /**
  * Is a golf task's due date in the past — meaning the day it was due has ENDED?
@@ -32,6 +33,25 @@ import { parseDateOnly } from '@/lib/golf/date-only';
  * right in the other, decided entirely by the column type. A previous attempt to
  * "fix" the baseball side was a regression and was reverted.
  *
+ * ONLY USABLE IN THE BROWSER. "Today" comes from the ambient clock, which on a
+ * server component or server action is the deploy's zone — UTC on Vercel — not
+ * the team's. Use `isGolfTaskOverdueInZone` for anything that runs on the
+ * server; see its docblock for the measured difference.
+ *
+ * AND IT IS NOT THE PRODUCT'S RULE, ONLY THE ONE THIS SURFACE CAN REACH.
+ * `dashboard-data.ts:292` and both hub surfaces decide overdue on the TEAM's
+ * zone, deliberately: a coach setting "due Aug 17" means Aug 17 where the team
+ * is, not where the reader happens to be standing. This function answers on the
+ * VIEWER's zone, so for a player travelling outside the team's zone the same
+ * task can carry a different badge here than on their hub — up to one day apart.
+ *
+ * Its one call site (`FairwayTeamInfo.tsx`, a client component) is stuck with
+ * that because its `team` prop carries only `{id, name, season, created_at}` —
+ * no timezone — and threading one through means touching `TeamForClient`, three
+ * `golf_teams` selects and seven test call sites. Tracked; until then this is a
+ * known divergence, not the intended rule. Prefer the zone form wherever a zone
+ * is reachable.
+ *
  * Callers combine this with completion status; it answers only the date question.
  */
 export function isGolfTaskOverdue(
@@ -45,4 +65,46 @@ export function isGolfTaskOverdue(
   const dueDay = new Date(parts.year, parts.month - 1, parts.day);
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return dueDay < startOfToday;
+}
+
+/**
+ * The same question, answered on the wall clock of `timeZone` — for SERVER code.
+ *
+ * A server component or server action has no viewer clock. `new Date()` there is
+ * the deploy's zone, which on Vercel is UTC, so the ambient-zone form silently
+ * asks "is it overdue in Greenwich?" of a task belonging to a team in New York.
+ *
+ * Measured with `TZ=UTC` (production's server zone) for a task due 2026-08-17
+ * belonging to an `America/New_York` team, against the expression this replaces
+ * (`new Date(due) < new Date()`, `player-hub-data.ts:198`):
+ *
+ *   21:00 New York, day BEFORE          current=true   correct=false
+ *   00:15 New York, ON the due day      current=true   correct=false
+ *   09:00 New York, ON the due day      current=true   correct=false
+ *   21:00 New York, ON the due day      current=true   correct=false
+ *
+ * Wrong in every row — a due date read as overdue from the evening before, then
+ * for the whole of the day it was actually due. `new Date('2026-08-17')` is UTC
+ * midnight, so it is already behind "now" the instant UTC rolls over.
+ *
+ * Both sides are strings here on purpose: `due_date` arrives as `YYYY-MM-DD` and
+ * `todayIsoInZone` returns the same shape, so the comparison is a plain
+ * lexicographic date compare with no `Date` in the middle to re-zone it. This is
+ * the pattern `dashboard-data.ts:770` already uses and documents.
+ *
+ * An unknown/empty `timeZone` falls back to the UTC day inside `todayIsoInZone`
+ * — the pre-existing behaviour — rather than throwing. Resolve it the way the
+ * rest of golf does: `golf_teams.timezone`, defaulting to `'America/New_York'`.
+ */
+export function isGolfTaskOverdueInZone(
+  dueDate: string | null | undefined,
+  timeZone: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!dueDate) return false;
+  const dueDay = String(dueDate).slice(0, 10);
+  // Guard the shape rather than trusting it: a malformed value must read "not
+  // overdue", not win a string compare against a well-formed today.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDay)) return false;
+  return dueDay < todayIsoInZone(timeZone, now);
 }

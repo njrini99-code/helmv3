@@ -49,6 +49,12 @@ function chain(table: string) {
     gte: self,
     order: self,
     limit: self,
+    // Terminal, unlike the chainable builders above: it RESOLVES rather than
+    // returning the node. The team-timezone read for the task-overdue
+    // comparison ends in `.maybeSingle()`, and a mock that only models the
+    // chainable half fails with "maybeSingle is not a function" — an error in
+    // the harness that reads exactly like a failure in the code under test.
+    maybeSingle: async () => settle(),
     then: (resolve: (v: Outcome) => unknown, reject?: (e: unknown) => unknown) =>
       Promise.resolve(settle()).then(resolve, reject),
   });

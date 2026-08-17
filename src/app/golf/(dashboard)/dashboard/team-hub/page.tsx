@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
-import { isGolfTaskOverdue } from '@/lib/golf/task-overdue';
+import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamHubWrapper } from '@/components/fairway/pages/team-hub';
 import { EmptyState, Button, FeatureUnavailable } from '@/components/fairway';
@@ -134,7 +134,10 @@ export default async function TeamHubPage({
       .eq('player_id', player.id)
       .order('start_time', { ascending: true }),
 
-    supabase.from('golf_teams').select('name').eq('id', teamId).maybeSingle(),
+    // `timezone` is read for the task-overdue comparison below, not for display:
+    // this is a SERVER component, so its ambient clock is UTC on Vercel, and
+    // "overdue" has to be decided on the team's wall clock.
+    supabase.from('golf_teams').select('name, timezone').eq('id', teamId).maybeSingle(),
 
     // Teammates — the player roster, folded into the hub (SAME query the
     // standalone player roster route used; excludes the viewer). F083: active
@@ -243,14 +246,17 @@ export default async function TeamHubPage({
       );
     }
 
+    // This page is a SERVER component, so `new Date()` here is the deploy's zone
+    // (UTC on Vercel), not the team's. `due_date` is a DATE column, so deciding
+    // "overdue" needs the team's wall-clock day on BOTH sides of the compare —
+    // the same resolution `dashboard-data.ts:292` uses.
+    const teamTimeZone = teamResult.data?.timezone || 'America/New_York';
+
     tasks = (taskDetails || []).map((t) => {
       const assignment = assignmentMap.get(t.id);
       const isCompleted = assignment?.status === 'completed';
       const completedAt = assignment?.completed_at || null;
-      // `new Date('2026-08-17')` is UTC MIDNIGHT, so comparing it to `new Date()`
-      // flipped a task to overdue the EVENING BEFORE its due date in US zones.
-      // `due_date` is a DATE column; the comparison has to be day-vs-day.
-      const isOverdue = !isCompleted && isGolfTaskOverdue(t.due_date);
+      const isOverdue = !isCompleted && isGolfTaskOverdueInZone(t.due_date, teamTimeZone);
       return {
         id: t.id,
         title: t.title,

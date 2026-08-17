@@ -25,6 +25,7 @@ import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
 
 interface RawAssignment {
   task_id: string;
@@ -78,7 +79,13 @@ async function getPlayerHubSummaryDataImpl(
   const eventSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const tripsSince = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const [tripsResult, tasksRaw, eventsResult, announcementsResult, topInsight] = await Promise.all([
+  const [teamZoneResult, tripsResult, tasksRaw, eventsResult, announcementsResult, topInsight] = await Promise.all([
+    // Read for the task-overdue comparison below, not for display. This is a
+    // server action, so its ambient clock is the deploy's zone (UTC on Vercel);
+    // "overdue" is a claim about the team's wall-clock day. Same resolution and
+    // same default as `dashboard-data.ts:292`.
+    supabase.from('golf_teams').select('timezone').eq('id', teamId).maybeSingle(),
+
     supabase
       .from('golf_travel_itineraries')
       .select(
@@ -120,6 +127,10 @@ async function getPlayerHubSummaryDataImpl(
   // The announcements leg two lines below already had this right (it sets
   // announcementsLoadError from `.success`), which is what makes the other
   // three an oversight rather than a decision.
+  // teamZoneResult is deliberately NOT in this list. A failed timezone read
+  // degrades to the same default an unset column already gets; blanking the
+  // whole hub over it would trade a possible one-day overdue slip for a player
+  // who cannot see the bus time at all.
   const failedLeg = (
     [
       ['events', eventsResult.error],
@@ -182,6 +193,8 @@ async function getPlayerHubSummaryDataImpl(
   const assignmentMap = new Map(rawAssignments.map((a) => [a.task_id, a]));
   const taskIds = [...new Set(rawAssignments.map((a) => a.task_id))];
 
+  const teamTimeZone = teamZoneResult.data?.timezone || 'America/New_York';
+
   let tasks: PlayerTask[] = [];
   if (taskIds.length > 0) {
     const { data: taskDetails } = await supabase
@@ -195,7 +208,11 @@ async function getPlayerHubSummaryDataImpl(
       const assignment = assignmentMap.get(t.id);
       const isCompleted = assignment?.status === 'completed';
       const completedAt = assignment?.completed_at || null;
-      const isOverdue = !isCompleted && t.due_date && new Date(t.due_date) < new Date();
+      // `new Date('2026-08-17')` is UTC MIDNIGHT, so against a UTC server clock
+      // this read TRUE from the moment UTC rolled over — i.e. from ~8pm the
+      // EVENING BEFORE for an Eastern team, and then for the whole of the day
+      // the task was actually due. Measured wrong in all four sampled hours.
+      const isOverdue = !isCompleted && isGolfTaskOverdueInZone(t.due_date, teamTimeZone);
       return {
         id: t.id,
         title: t.title,
