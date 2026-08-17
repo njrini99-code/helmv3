@@ -803,3 +803,96 @@ describe('getUserBusyPeriods — all-day events occupy their whole day', () => {
     expect(busy[0]!.end.toISOString()).toBe('2026-08-14T19:00:00.000Z');
   });
 });
+
+/**
+ * The user-visible artifact, end to end.
+ *
+ * The tests above assert `getUserBusyPeriods` output. What a coach actually
+ * sees is `checkEventConflicts` — `hasConflict` in the editor's warning strip
+ * and `suggestedTimes` beneath it — which runs the busy periods through
+ * `findCommonAvailability` and `generateTimeSlots`. An all-day event now hands
+ * that path an input shape it had never received: a 24-hour block that fully
+ * ENCLOSES the working window rather than clipping it. A slot filter written
+ * for partial overlaps could miss a fully-enclosing block and still offer the
+ * coach 9am on the final round, with the fix landing one layer short of the
+ * symptom.
+ *
+ * That path is also the one that hid a four-hour offset until it was given its
+ * first test (see 'suggests alternatives inside the TEAM's working day').
+ */
+describe('checkEventConflicts — an all-day event reaches the coach', () => {
+  function seedInvite() {
+    const tables = baseTables();
+    tables.golf_team_settings.push({ team_id: 't1', timezone: 'America/New_York' });
+    tables.golf_events.push({
+      id: 'e-invite', team_id: 't1', title: 'Transylvania Invite', status: 'scheduled',
+      start_time: '2026-09-03T00:00:00+00:00', end_time: '2026-09-06T00:00:00+00:00',
+      all_day: true, created_by: 'c1',
+    });
+    return createStubClient(tables);
+  }
+
+  it('reports a conflict for 9am on the tournament\'s final round', async () => {
+    const result = await checkEventConflicts(
+      new Date('2026-09-06T09:00-04:00'),
+      new Date('2026-09-06T11:00-04:00'),
+      ['p1'],
+      seedInvite(),
+    );
+
+    expect(result.hasConflict).toBe(true);
+    expect(result.conflicts[0]!.conflictingEvent.title).toBe('Transylvania Invite');
+  });
+
+  it('offers no alternative slot on any day the tournament runs', async () => {
+    const result = await checkEventConflicts(
+      new Date('2026-09-06T09:00-04:00'),
+      new Date('2026-09-06T11:00-04:00'),
+      ['p1'],
+      seedInvite(),
+    );
+
+    // A 24-hour block ENCLOSES the 07:00–19:00 working window rather than
+    // clipping it. Every suggestion must fall outside Sep 3–6 entirely.
+    for (const slot of result.suggestedTimes) {
+      const day = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(new Date(slot.start));
+      expect(
+        ['2026-09-03', '2026-09-04', '2026-09-05', '2026-09-06'].includes(day),
+        `suggested ${day}, which is inside the tournament`,
+      ).toBe(false);
+    }
+  });
+
+  it('reports a conflict for a single-day all-day event', async () => {
+    const tables = baseTables();
+    tables.golf_team_settings.push({ team_id: 't1', timezone: 'America/New_York' });
+    tables.golf_events.push({
+      id: 'e-photo', team_id: 't1', title: 'Team Photo Day', status: 'scheduled',
+      start_time: '2026-08-14T00:00:00+00:00', end_time: '2026-08-14T00:00:00+00:00',
+      all_day: true, created_by: 'c1',
+    });
+
+    const result = await checkEventConflicts(
+      new Date('2026-08-14T14:00-04:00'),
+      new Date('2026-08-14T16:00-04:00'),
+      ['p1'],
+      createStubClient(tables),
+    );
+
+    expect(result.hasConflict).toBe(true);
+    expect(result.conflicts[0]!.conflictingEvent.title).toBe('Team Photo Day');
+  });
+
+  it('still reports NO conflict the day after the tournament ends', async () => {
+    const result = await checkEventConflicts(
+      new Date('2026-09-07T09:00-04:00'),
+      new Date('2026-09-07T11:00-04:00'),
+      ['p1'],
+      seedInvite(),
+    );
+
+    expect(result.hasConflict).toBe(false);
+  });
+});
