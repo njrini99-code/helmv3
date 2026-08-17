@@ -118,10 +118,21 @@ export function normalizeWebsiteUrl(
   if (!trimmed) return { ok: true, value: null };
 
   // Prepend a scheme when the user omitted it ("example.com" → "https://…").
-  // Anything already carrying a scheme (http://, https://, or a bogus one) is
-  // left as-is so validation can catch a non-web scheme like "javascript:".
+  //
+  // NOTE the guard requires `://`, so a scheme with no slashes — `javascript:`,
+  // `data:`, `vbscript:` — takes the PREPEND branch, not the leave-as-is branch
+  // this comment used to claim. `https://javascript:alert(1)` then fails to
+  // parse and is rejected, so the outcome is correct; only the stated reason
+  // was. Both paths are pinned in `__tests__/course-website-url.test.ts` — do
+  // not "simplify" this regex without reading them.
+  //
+  // Leading slashes are stripped first. `//pinehurst.com` is what you get
+  // pasting an href out of HTML, and it reaches this field in practice; without
+  // the strip it persisted as `https:////pinehurst.com`. `new URL()` normalises
+  // that away when the link is FOLLOWED, so it was never a broken link — but
+  // the malformed string is what gets stored and what the coach sees on reopen.
   const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed);
-  const candidate = hasScheme ? trimmed : `https://${trimmed}`;
+  const candidate = hasScheme ? trimmed : `https://${trimmed.replace(/^\/+/, '')}`;
 
   if (!isValidAbsoluteWebUrl(candidate)) return { ok: false };
   return { ok: true, value: candidate };
