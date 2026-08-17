@@ -358,6 +358,75 @@ describe('getPlayerFingerprint', () => {
     expect(result!.composite.trend).toBe('flat');
   });
 
+  it('exposes the stats-cache sample separately, so the UI can say which number governs which metric', async () => {
+    // The test above establishes, correctly, that the composite is derived from
+    // the fetched rounds and NEVER from the stats cache. The consequence nobody
+    // surfaced: the Game Fingerprint screen then shows two samples' worth of
+    // numbers side by side and labels only one of them.
+    //
+    // Measured in production for Cole Bennett
+    // (49ffe06d-9b22-4f2f-8c69-f56badbbde6b) on 2026-08-17:
+    //
+    //   "OVERALL GAME 67 · Based on 10 rounds"   <- composite, .limit(10)
+    //   "71% · GIR"  "33.8 · Putts / round"  ... <- stats cache,
+    //                                              rounds_in_calculation = 18
+    //
+    // Both sit in the same visual block, and 71% GIR is the 18-round figure —
+    // the player's actual last-10 GIR is 76.1%. A coach reads one sample line
+    // and applies it to every number on the screen.
+    //
+    // `buildSections` already computes that second sample
+    // (`stats?.rounds_in_calculation ?? rounds.length`) and throws it away, so
+    // the component physically cannot label the category strip. Expose it.
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      stats: {
+        data: {
+          rounds_in_calculation: 18,
+          gir_percentage: 70.79,
+          putts_per_round: 33.77,
+          scoring_average: 74.71,
+        },
+        error: null,
+      },
+      rounds: {
+        data: [
+          { id: 'r1', round_date: '2026-04-20', total_score: 74, score_to_par: 2, course_name: null, holes_played: 18, round_type: 'tournament' },
+          { id: 'r2', round_date: '2026-04-21', total_score: 76, score_to_par: 4, course_name: null, holes_played: 18, round_type: 'tournament' },
+        ],
+        error: null,
+      },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPlayerFingerprint('p-1', sb as any);
+    expect(result).not.toBeNull();
+
+    // The two samples are genuinely different, and BOTH must be readable.
+    expect(result!.composite.rounds_in_calculation).toBe(2);
+    expect(result!.metrics_rounds).toBe(18);
+  });
+
+  it('falls back to the fetched-round count when the stats cache has no sample', async () => {
+    // Mirrors `buildSections`' own `?? rounds.length`: with no cache row the
+    // section metrics are derived from the rounds themselves, so that is the
+    // honest sample to print — not 0, and not a blank.
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      stats: { data: null, error: null },
+      rounds: {
+        data: [
+          { id: 'r1', round_date: '2026-04-20', total_score: 74, score_to_par: 2, course_name: null, holes_played: 18, round_type: 'tournament' },
+          { id: 'r2', round_date: '2026-04-21', total_score: 76, score_to_par: 4, course_name: null, holes_played: 18, round_type: 'tournament' },
+          { id: 'r3', round_date: '2026-04-22', total_score: 75, score_to_par: 3, course_name: null, holes_played: 18, round_type: 'tournament' },
+        ],
+        error: null,
+      },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPlayerFingerprint('p-1', sb as any);
+    expect(result!.metrics_rounds).toBe(3);
+  });
+
   it('derives composite rating from recent rounds when stats cache is empty', async () => {
     const rounds = [
       { id: 'r1', round_date: '2026-04-20', total_score: 76, course_par: 72, score_to_par: 4, course_name: null, holes_played: 18, round_type: 'practice' },

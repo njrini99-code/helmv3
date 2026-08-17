@@ -75,6 +75,11 @@ function makeFingerprint(): PlayerFingerprint {
       avatar_url: null,
     },
     composite: { rating: 71, trend: 'up', rounds_in_calculation: 12 },
+    // Deliberately NOT 12. The composite is computed from the fetched rounds
+    // and the area metrics come from the stats cache, so these two samples
+    // genuinely differ in production — 10 vs 18 for Cole Bennett on 2026-08-17.
+    // A fixture that made them equal could not tell the two labels apart.
+    metrics_rounds: 18,
     sections: {
       ...emptySections,
       putting: {
@@ -161,6 +166,32 @@ describe('FairwayPlayerGameFingerprint — mode branching', () => {
     expect(screen.getByRole('link', { name: /player page/i })).toBeInTheDocument();
     // Avatar identity header — initials fallback (no avatar_url in the fixture).
     expect(screen.getByText('JD')).toBeInTheDocument();
+  });
+
+  it('labels the rating sample and the area-average sample separately', () => {
+    // One screen, two windows. The composite comes from the fetched rounds
+    // (`.limit(10)`); the six area chips come from `golf_player_stats_cache`,
+    // whose window is whatever the last recompute covered. Measured for Cole
+    // Bennett on 2026-08-17 the card read:
+    //
+    //   OVERALL GAME 67 · "Based on 10 rounds"
+    //   71% · GIR   33.8 · Putts / round   74.7 · Scoring avg
+    //
+    // 71% is the 18-round GIR. His actual last-10 GIR is 76.1%. One unqualified
+    // sample line sat above numbers it did not describe, and the wider sample
+    // was not exposed at all, so the screen could not have said otherwise.
+    render(
+      <GolfUserProvider userData={coachUser}>
+        <FairwayPlayerGameFingerprint fingerprint={makeFingerprint()} />
+      </GolfUserProvider>,
+    );
+
+    // Scoped to the rating, and no longer the bare "Based on N".
+    expect(screen.getByText(/Rating from 12 rounds/i)).toBeInTheDocument();
+    // The wider sample the area chips actually rest on.
+    expect(screen.getByText(/Area averages from 18 rounds/i)).toBeInTheDocument();
+    // The old wording claimed the whole screen; it must not come back.
+    expect(screen.queryByText(/^Based on 12 rounds$/i)).toBeNull();
   });
 
   it('player mode drops the coach-only header actions but keeps the avatar + name', () => {

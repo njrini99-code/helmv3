@@ -318,6 +318,12 @@ export function FairwayPlayerGameFingerprint({
   const rating = composite.rating;
   const hasRating = rating != null;
   const sample = composite.rounds_in_calculation;
+  // The section metrics rest on a DIFFERENT sample from the rating — the stats
+  // cache's window, not the ten rounds the composite is computed from. Cole
+  // Bennett read "Based on 10 rounds" beside a 71% GIR that was the 18-round
+  // number (his last-10 GIR is 76.1%). Both are printed now, each next to what
+  // it actually measures.
+  const metricsSample = fingerprint.metrics_rounds;
 
   // Composite trend → an honest delta direction. Lower scores are better in
   // golf, but the composite is already a 0-100 "higher is better" rating, so
@@ -400,7 +406,11 @@ export function FairwayPlayerGameFingerprint({
                 </Chip>
                 {sample > 0 ? (
                   <span className="font-fw-sans text-caption text-text-tertiary">
-                    Based on {sample} {sample === 1 ? 'round' : 'rounds'}
+                    {/* Names what this sample is OF. It governs the rating
+                        above and nothing else on the screen: the category
+                        metrics come from the stats cache over `metricsSample`
+                        rounds, which is usually a wider window. */}
+                    Rating from {sample} {sample === 1 ? 'round' : 'rounds'}
                   </span>
                 ) : null}
               </div>
@@ -420,6 +430,12 @@ export function FairwayPlayerGameFingerprint({
         />
 
         <nav aria-label="Jump to game area" className="min-w-0">
+          {metricsSample > 0 ? (
+            <p className="mb-2 font-fw-sans text-caption text-text-tertiary">
+              Area averages from {metricsSample}{' '}
+              {metricsSample === 1 ? 'round' : 'rounds'}
+            </p>
+          ) : null}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {orderedSections.map((section, index) => {
               const leadMetric = section.metrics[0];

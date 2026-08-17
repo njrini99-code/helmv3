@@ -132,6 +132,25 @@ export interface PlayerFingerprint {
     trend: 'up' | 'flat' | 'down';
     rounds_in_calculation: number;
   };
+  /**
+   * How many rounds the SECTION METRICS rest on — a different, usually larger
+   * number than `composite.rounds_in_calculation`.
+   *
+   * The composite is derived from the fetched rounds (`.limit(10)`) and never
+   * from the stats cache; that is deliberate and is pinned by its own test. The
+   * section metrics come from `golf_player_stats_cache`, whose window is
+   * whatever the last recompute covered. So one screen carries numbers from two
+   * samples, and until this field existed the UI could only label one of them.
+   *
+   * Measured for Cole Bennett on 2026-08-17: the card read "OVERALL GAME 67 ·
+   * Based on 10 rounds" directly above "71% · GIR", where 71% is the 18-round
+   * figure — his actual last-10 GIR is 76.1%. The sample line was true of the
+   * rating and false of everything beside it.
+   *
+   * Mirrors `buildSections`' own resolution (`rounds_in_calculation ??
+   * rounds.length`) so the printed sample is the one the metrics were built on.
+   */
+  metrics_rounds: number;
   sections: Record<FingerprintSectionKey, SectionData>;
   trend: {
     rolling: FingerprintTrendPoint[];
@@ -383,6 +402,9 @@ async function getPlayerFingerprintImpl(
       avatar_url: player.avatar_url,
     },
     composite,
+    // Same resolution buildSections uses for its own sparse gate, surfaced so
+    // the screen can say which sample each number rests on.
+    metrics_rounds: stats?.rounds_in_calculation ?? rounds.length,
     sections,
     trend,
     generated_at: new Date().toISOString(),
