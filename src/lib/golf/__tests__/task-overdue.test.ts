@@ -33,7 +33,11 @@
  * runtime zone; the suite is run under UTC, +14 and -11.
  */
 import { describe, it, expect } from 'vitest';
-import { isGolfTaskOverdue, isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
+import {
+  isGolfTaskOverdue,
+  isGolfTaskOverdueInZone,
+  formatTaskDueDate,
+} from '@/lib/golf/task-overdue';
 
 /** Local-constructed instants, so the test means the same thing in every zone. */
 const eveningBefore = new Date(2026, 7, 16, 21, 0); // Aug 16, 9pm local
@@ -164,5 +168,72 @@ describe('isGolfTaskOverdueInZone — the team wall clock decides, not the serve
     const instant = new Date('2026-08-18T01:00:00Z'); // 21:00 Aug 17 in New York
     expect(isGolfTaskOverdueInZone('2026-08-17T09:00:00Z', NY, instant)).toBe(false);
     expect(isGolfTaskOverdueInZone('2026-08-10T09:00:00Z', NY, instant)).toBe(true);
+  });
+});
+
+/**
+ * The reminder-email half of #1487.
+ *
+ * `task-reminders.ts` built its human-readable due date three times over with
+ * `new Date(task.due_date).toLocaleDateString(...)`. `due_date` is a DATE
+ * column, so that is UTC midnight rendered in the runtime zone — the day BEFORE
+ * anywhere west of Greenwich:
+ *
+ *     TZ=America/New_York
+ *     new Date('2026-08-17').toLocaleDateString('en-US')  ->  '8/16/2026'
+ *
+ * Production runs UTC so it renders correctly today, which is exactly why it
+ * survived: it is one config change from telling every player their task is due
+ * a day early, in a notification they have no other copy of.
+ *
+ * These assertions are written against the STORED calendar day, so they mean
+ * the same thing under TZ=UTC, Pacific/Kiritimati (+14) and Pacific/Midway (-11)
+ * — the zones that would expose the bug in both directions.
+ */
+describe('formatTaskDueDate — renders the day that was stored, in any zone', () => {
+  it('keeps the calendar day the column holds', () => {
+    expect(formatTaskDueDate('2026-08-17')).toBe('8/17/2026');
+    expect(formatTaskDueDate('2026-01-01')).toBe('1/1/2026');
+    expect(formatTaskDueDate('2026-12-31')).toBe('12/31/2026');
+  });
+
+  it('honours format options without re-zoning the day', () => {
+    expect(
+      formatTaskDueDate('2026-08-17', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+    ).toBe('Monday, August 17, 2026');
+  });
+
+  it('does NOT shift the day the way the expression it replaces does', () => {
+    // The old form. Left in as the control: under TZ=UTC both agree, and it is
+    // only the shifted-zone runs that separate them — so a green UTC-only run
+    // proves nothing here, which was the whole problem.
+    const stored = '2026-08-17';
+    expect(formatTaskDueDate(stored)).toBe('8/17/2026');
+
+    // The divergence is WEST of Greenwich only. `new Date(bare)` is UTC
+    // midnight; east of UTC that instant is still the same calendar day
+    // locally, so the broken expression accidentally agrees — Pacific/Kiritimati
+    // (+14) renders 8/17 either way. `getTimezoneOffset()` is POSITIVE west of
+    // UTC, and that is the only side where the old form loses a day. Guarding
+    // on `!== 0` asserted the divergence at +14 as well and failed there, which
+    // is the test being wrong about the bug, not the fix being wrong.
+    if (new Date().getTimezoneOffset() > 0) {
+      expect(new Date(stored).toLocaleDateString('en-US')).not.toBe(formatTaskDueDate(stored));
+    }
+  });
+
+  it('returns null for a missing or unusable value so callers keep their "soon" fallback', () => {
+    for (const v of [null, undefined, '', 'not-a-date', '2026-13-45']) {
+      expect(formatTaskDueDate(v), JSON.stringify(v)).toBeNull();
+    }
+  });
+
+  it('reads the calendar day out of a full timestamp too', () => {
+    expect(formatTaskDueDate('2026-08-17T09:00:00Z')).toBe('8/17/2026');
   });
 });

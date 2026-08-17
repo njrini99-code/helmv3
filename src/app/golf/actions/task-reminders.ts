@@ -14,6 +14,7 @@ import { getUserNotificationPreferences } from '@/lib/notifications/email';
 import { describeError } from '@/lib/utils/describe-error';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { checkSuperAdminAccess } from '@/lib/admin/require-super-admin';
+import { formatTaskDueDate } from '@/lib/golf/task-overdue';
 
 // Email service configuration
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -786,7 +787,11 @@ async function sendInAppNotification(task: GolfTask, client?: TaskReminderClient
   const recipients = await resolveTaskRecipients(supabase, task);
   if (recipients.length === 0) return;
 
-  const body = `Reminder: "${task.title}" is due${task.due_date ? ` on ${new Date(task.due_date).toLocaleDateString()}` : ' soon'}`;
+  // `due_date` is a DATE column; `new Date(bare)` is UTC midnight, so
+  // `toLocaleDateString()` rendered the day BEFORE anywhere west of Greenwich.
+  // Correct on a UTC server, wrong the moment one is not. #1487.
+  const dueOn = formatTaskDueDate(task.due_date);
+  const body = `Reminder: "${task.title}" is due${dueOn ? ` on ${dueOn}` : ' soon'}`;
 
   await supabase.from('notifications').insert(
     recipients.map((r) => ({
@@ -835,14 +840,15 @@ async function sendEmailNotification(task: GolfTask, client?: TaskReminderClient
     return;
   }
 
-  const dueText = task.due_date
-    ? new Date(task.due_date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : 'soon';
+  // See the note above — DATE column, so format the stored calendar day rather
+  // than an instant near it. #1487.
+  const dueText =
+    formatTaskDueDate(task.due_date, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }) ?? 'soon';
 
   const taskUrl = `${APP_URL}/golf/dashboard/tasks?task=${task.id}`;
 
@@ -992,9 +998,8 @@ async function sendPushNotification(task: GolfTask, client?: TaskReminderClient)
     return;
   }
 
-  const dueText = task.due_date
-    ? new Date(task.due_date).toLocaleDateString()
-    : 'soon';
+  // See the note above — DATE column. #1487.
+  const dueText = formatTaskDueDate(task.due_date) ?? 'soon';
 
   // Send to each subscription via the v3 wrapper
   let sentCount = 0;

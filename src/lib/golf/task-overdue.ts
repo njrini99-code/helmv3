@@ -68,6 +68,40 @@ export function isGolfTaskOverdue(
 }
 
 /**
+ * A golf task's due date, formatted for a human, in ANY runtime zone.
+ *
+ * The three reminder senders in `task-reminders.ts` each wrote
+ * `new Date(task.due_date).toLocaleDateString(...)`. `due_date` is a DATE
+ * column, so `new Date('2026-08-17')` is UTC midnight, and `toLocaleDateString`
+ * then renders it in the runtime zone — which is the day BEFORE anywhere west
+ * of Greenwich:
+ *
+ *     TZ=America/New_York
+ *     new Date('2026-08-17').toLocaleDateString('en-US')  ->  '8/16/2026'
+ *
+ * Production servers run UTC, so this renders correctly today and is one
+ * config change away from telling every player their task is due a day early.
+ * These strings go into notification rows, reminder emails and push payloads —
+ * the places a wrong date is least recoverable, because the reader has no
+ * other copy to check it against.
+ *
+ * Reads the calendar day out of the string and rebuilds it as a LOCAL date, so
+ * the formatter renders the day that was stored rather than an instant that
+ * happens to be near it. Returns null for a missing or unparseable value; every
+ * caller already has a "soon" fallback for that.
+ */
+export function formatTaskDueDate(
+  dueDate: string | null | undefined,
+  options?: Intl.DateTimeFormatOptions,
+  locale: string = 'en-US',
+): string | null {
+  const parts = parseDateOnly(dueDate);
+  if (!parts) return null;
+  const localDay = new Date(parts.year, parts.month - 1, parts.day);
+  return localDay.toLocaleDateString(locale, options);
+}
+
+/**
  * The same question, answered on the wall clock of `timeZone` — for SERVER code.
  *
  * A server component or server action has no viewer clock. `new Date()` there is
