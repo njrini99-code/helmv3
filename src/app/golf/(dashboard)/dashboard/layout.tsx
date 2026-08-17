@@ -67,7 +67,25 @@ export default async function DashboardLayout({
           motion, so mobile + accessibility-first users keep native
           inertia; only desktop pointer users get the inertial sweep. */}
       <SmoothScrollMount />
-      {children}
+      {/* CLEARANCE FOR THE FIXED LAUNCHER (#1478).
+          The Ask CoachHelm button below is `position: fixed` at `bottom-6`
+          with `h-14`, so it owns the bottom 80px of the viewport and nothing
+          scrolls out from under it. On /dashboard/stats/team that put it on
+          top of the Signal column — measured in production 2026-08-17, the
+          `Top performer` and `▲ Most improved` badges both sat beneath it,
+          which is the one column a coach reads first.
+
+          Its z-index does not rescue this: the class says
+          `z-[var(--fw-z-nav,40)]`, but `--fw-z-nav` is defined as 20, so the
+          fallback never applies and the launcher sits on the nav layer, over
+          content. Reserving the space is the fix; raising z-index would only
+          change which thing is hidden.
+
+          Gated on `isCoach` and `md:` to mirror the launcher exactly — players
+          never get one, and below `md` it is hidden because the bottom tab bar
+          owns that corner and carries its own CoachHelm destination
+          (nav-registry.ts:461). Padding either of those would be dead space. */}
+      <div className={isCoach ? 'md:pb-24' : undefined}>{children}</div>
       {/* The global CoachHelm drawer — coach-only, and the same shared chat
           system the full Ask page runs on. Streamed; see the note above. */}
       {isCoach && (
