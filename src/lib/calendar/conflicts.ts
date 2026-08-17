@@ -13,7 +13,7 @@ import {
   findCommonAvailability,
   resolveTeamTimeZone,
   periodsOverlap,
-  getStartOfWeek,
+  getWeekWindowInZone,
   getEndOfWeek,
   TimeSlot,
 } from './availability';
@@ -179,9 +179,11 @@ export async function checkEventConflicts(
       'calendar.checkEventConflicts',
     );
 
-    // Look within the same week for alternatives
-    const weekStart = getStartOfWeek(proposedStart);
-    const weekEnd = getEndOfWeek(proposedStart);
+    // Look within the same week for alternatives — the COACH's week. Resolving
+    // `timeZone` above and then slicing the week in the runtime's calendar sent
+    // an Eastern coach proposing Saturday 21:00 (01:00 UTC Sunday) a full week
+    // forward: 2026-08-16..22 instead of 2026-08-09..15.
+    const { start: weekStart, end: weekEnd } = getWeekWindowInZone(proposedStart, timeZone);
 
     const availableSlots = await findCommonAvailability(
       userIds,
@@ -199,6 +201,11 @@ export async function checkEventConflicts(
 
     // If no suggestions in same week, try next week
     if (suggestedTimes.length === 0) {
+      // Deliberately NOT re-anchored through getWeekWindowInZone: `weekEnd`
+      // is already a local-triple Date in the team's calendar, and re-reading
+      // its INSTANT through the zone would convert a value that was never a
+      // real instant, shifting the day. Local-calendar arithmetic on a
+      // local-triple Date preserves the triple.
       const nextWeekStart = new Date(weekEnd);
       nextWeekStart.setDate(nextWeekStart.getDate() + 1);
       const nextWeekEnd = getEndOfWeek(nextWeekStart);

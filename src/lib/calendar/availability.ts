@@ -14,7 +14,7 @@ import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { classIdFromDescription } from '@/lib/calendar/class-events';
 import { parseSemesterDates } from '@/lib/golf/semester';
 import { wallClockInZone } from '@/lib/golf/timezone';
-import { DEFAULT_TIMEZONE, getValidTimezone, eventDaySpan } from '@/lib/calendar/timezone';
+import { DEFAULT_TIMEZONE, getValidTimezone, eventDaySpan, zonedMidnight } from '@/lib/calendar/timezone';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -864,7 +864,43 @@ export function periodsOverlap(
 }
 
 /**
- * Get start of week (Sunday) for a given date
+ * The Sunday-to-Saturday window around `date`, read in `timeZone`.
+ *
+ * `getStartOfWeek`/`getEndOfWeek` below answer in the RUNTIME's calendar, which
+ * on Vercel is UTC. `checkEventConflicts` resolves the attendees' team zone and
+ * then called them directly, so the zone it had just looked up governed the
+ * hour-of-day inside `generateTimeSlots` and nothing else — the WEEK being
+ * searched was still the server's.
+ *
+ * That is not a few hours of drift. An Eastern coach proposing Saturday 21:00
+ * is proposing at 01:00 UTC on Sunday, so the UTC weekday is 0 and the window
+ * snapped forward a full week:
+ *
+ *     expected  2026-08-09 .. 2026-08-15   (the coach's week)
+ *     received  2026-08-16 .. 2026-08-22   (the week that has not started)
+ *
+ * The rest of that Saturday and the six days before it were never considered.
+ *
+ * `zonedMidnight` is the existing answer: it returns a locally-CONSTRUCTED Date
+ * whose runtime getters reproduce the target zone's calendar triple, so
+ * `getDay()` below becomes the team's weekday. Everything downstream —
+ * `generateTimeSlots`'s day cursor, `wallClockInZone`'s date key — already reads
+ * through local getters, so the corrected triple carries through on any runtime
+ * rather than only on a UTC one.
+ */
+export function getWeekWindowInZone(
+  date: Date,
+  timeZone: string | null | undefined,
+): { start: Date; end: Date } {
+  const anchor = zonedMidnight(date.toISOString(), timeZone);
+  return { start: getStartOfWeek(anchor), end: getEndOfWeek(anchor) };
+}
+
+/**
+ * Get start of week (Sunday) for a given date.
+ *
+ * READS THE RUNTIME'S CALENDAR. Feed it a zone-anchored Date — see
+ * `getWeekWindowInZone` above, which is what any zone-sensitive caller wants.
  */
 export function getStartOfWeek(date: Date): Date {
   const result = new Date(date);
@@ -875,7 +911,9 @@ export function getStartOfWeek(date: Date): Date {
 }
 
 /**
- * Get end of week (Saturday) for a given date
+ * Get end of week (Saturday) for a given date.
+ *
+ * Same runtime-calendar caveat as `getStartOfWeek`.
  */
 export function getEndOfWeek(date: Date): Date {
   const result = new Date(date);
