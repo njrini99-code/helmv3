@@ -166,9 +166,31 @@ export async function appendMessage(
 
 /**
  * P1-11 — idempotently record the user turn. When a `client_turn_id` is present
- * the partial unique index (conversation_id, role, client_turn_id) makes a
- * retried send a no-op upsert (returns the existing row) instead of a duplicate
- * user bubble. Without a client_turn_id it behaves like a plain append.
+ * the unique index (conversation_id, role, client_turn_id) makes a retried send
+ * a no-op upsert (returns the existing row) instead of a duplicate user bubble.
+ * Without a client_turn_id it behaves like a plain append.
+ *
+ * That index is `golf_coachhelm_chat_messages_conv_turn_uniq`, and it is a
+ * PLAIN unique index — verified against production 2026-08-17:
+ *
+ *   CREATE UNIQUE INDEX golf_coachhelm_chat_messages_conv_turn_uniq
+ *     ON public.golf_coachhelm_chat_messages
+ *     USING btree (conversation_id, role, client_turn_id)
+ *
+ * This comment used to call it PARTIAL, and the difference is load-bearing
+ * rather than pedantic: Postgres will not infer a partial index from a bare
+ * `ON CONFLICT (cols)` unless the statement repeats its predicate, so anyone
+ * "restoring" a `WHERE client_turn_id IS NOT NULL` here would break this upsert
+ * with 42P10 — "there is no unique or exclusion constraint matching the ON
+ * CONFLICT specification". `golf_predictions` took exactly that error 6 times
+ * (`error_logs`, through 2026-04-28) before its natural-key index was added.
+ *
+ * No predicate is needed anyway: `client_turn_id` is nullable and Postgres
+ * treats NULLs as distinct, so the rows `appendMessage` writes without a turn id
+ * never collide with each other.
+ *
+ * Healthy in production at the time of writing: 125 messages across 55
+ * conversations, zero duplicate (conversation_id, role, client_turn_id) groups.
  */
 export async function upsertUserTurn(
   sb: Sb,
