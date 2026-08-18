@@ -188,13 +188,16 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
     [hero, active],
   );
 
-  // The ONE coach-only primary action — a Button wrapping next/link (asChild).
+  // The ONE coach-only primary action. This deliberately remains a document
+  // navigation: the coach dashboard's streamed data can keep a soft transition
+  // pending, whereas the qualifier builder is immediately available on a full
+  // request. A real anchor preserves normal modified-click behavior as well.
   const createCta = isCoach ? (
     <Button variant="primary" asChild>
-      <Link href={CREATE_HREF}>
+      <a href={CREATE_HREF}>
         <IconPlus size={16} />
         <span>Create qualifier</span>
-      </Link>
+      </a>
     </Button>
   ) : undefined;
 
@@ -247,10 +250,10 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
               action={
                 isCoach ? (
                   <Button variant="primary" asChild>
-                    <Link href={CREATE_HREF}>
+                    <a href={CREATE_HREF}>
                       <IconPlus size={16} />
                       <span>Create qualifier</span>
-                    </Link>
+                    </a>
                   </Button>
                 ) : undefined
               }

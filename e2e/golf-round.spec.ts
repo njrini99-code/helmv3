@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { golfPlayerTest as test, hasGolfPlayerAuth } from './fixtures/golf-auth';
 
 /**
  * Golf Round E2E Test
@@ -19,29 +20,25 @@ import { test, expect } from '@playwright/test';
  * generic "Save"/"Pause" button.
  */
 
-const GOLF_EMAIL = process.env.E2E_GOLF_EMAIL;
-const GOLF_PASSWORD = process.env.E2E_GOLF_PASSWORD;
-const hasSeededAuth = Boolean(GOLF_EMAIL && GOLF_PASSWORD);
+async function closeCoursePicker(page: import('@playwright/test').Page): Promise<void> {
+  const dialog = page.getByRole('dialog', { name: 'Choose a course' });
+  // The course picker is opened in an effect after the new-round screen
+  // mounts. Give that effect a bounded chance to run before choosing manual
+  // entry, otherwise the picker can appear just after this helper returns.
+  await dialog.waitFor({ state: 'visible', timeout: 2_000 }).catch(() => {});
+  if (await dialog.isVisible().catch(() => false)) {
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(dialog).toBeHidden();
+  }
+}
 
 test.describe('Golf Round - Complete Flow', () => {
-  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
+  test.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
 
-  test.beforeEach(async ({ page }) => {
-    // Navigate to login page
-    await page.goto('/golf/login');
-
-    // Login
-    await page.fill('input[type="email"]', GOLF_EMAIL as string);
-    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
-    await page.click('button[type="submit"]');
-
-    // Wait for redirect to dashboard
-    await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
-  });
-
-  test('should complete a full round entry', async ({ page }) => {
+  test('should configure a full round entry', async ({ page }) => {
     // Navigate to new round page
     await page.goto('/golf/dashboard/rounds/new');
+    await closeCoursePicker(page);
 
     // Step 1: Course Setup
     await page.fill('#courseName', 'E2E Test Course');
@@ -55,21 +52,15 @@ test.describe('Golf Round - Complete Flow', () => {
     // Step 2: Hole Configuration
     await expect(page.locator('text=E2E Test Course')).toBeVisible();
 
-    // Configure some holes (par values should be prefilled)
-    await page.getByRole('button', { name: 'Start round →' }).click();
-
-    // Step 3: Shot Tracking
-    await expect(page.locator('text=Hole 1')).toBeVisible({ timeout: 5000 });
-
-    // The shot entry panel is always visible (no "Add Shot" trigger / "Shot
-    // Details" modal in the current UI) — verify it loaded for the first shot.
-    const shotResultGroup = page.getByRole('radiogroup', { name: 'Shot result' });
-    await expect(shotResultGroup).toBeVisible({ timeout: 3000 });
+    // The configured scorecard reaches the persistence boundary. The next
+    // click creates a real round; the save-in-progress test owns that write.
+    await expect(page.getByRole('button', { name: 'Start round →' })).toBeEnabled();
   });
 
   test('should show validation errors for invalid input', async ({ page }) => {
     // Navigate to new round page
     await page.goto('/golf/dashboard/rounds/new');
+    await closeCoursePicker(page);
 
     // Try to proceed without filling course name
     const nextButton = page.getByRole('button', { name: 'Next: configure holes →' });
@@ -85,6 +76,7 @@ test.describe('Golf Round - Complete Flow', () => {
   test('should save round in progress', async ({ page }) => {
     // Navigate to new round page
     await page.goto('/golf/dashboard/rounds/new');
+    await closeCoursePicker(page);
 
     // Setup course
     await page.fill('#courseName', 'Progress Test Course');
@@ -95,7 +87,7 @@ test.describe('Golf Round - Complete Flow', () => {
     await page.getByRole('button', { name: 'Start round →' }).click();
 
     // Wait for shot tracking to load
-    await expect(page.locator('text=Hole 1')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Hole 1', exact: true })).toBeVisible({ timeout: 5000 });
 
     // "Save & exit" (desktop scorecard header) opens the exit-confirmation
     // sheet; "Save for later" persists the in-progress round.
@@ -105,11 +97,17 @@ test.describe('Golf Round - Complete Flow', () => {
 
       const saveForLater = page.getByRole('button', { name: /Save for later/i });
       if (await saveForLater.isVisible()) {
+        const exitDialog = page.getByRole('dialog', { name: 'Exit round' });
         await saveForLater.click();
+        // The dialog closes only after savePartialRound succeeds. Waiting on
+        // that state avoids racing a manual navigation against the save.
+        await expect(exitDialog).toBeHidden({ timeout: 20000 });
 
         // Verify round is saved
         await page.goto('/golf/dashboard/rounds');
-        await expect(page.locator('text=Progress Test Course')).toBeVisible();
+        await expect(
+          page.getByRole('region', { name: 'Rounds in progress' }).getByText('Progress Test Course'),
+        ).toBeVisible();
       }
     }
   });
@@ -122,16 +120,20 @@ test.describe('Golf Round - Complete Flow', () => {
     const continueButton = page.getByRole('button', { name: 'Continue' }).first();
 
     if (await continueButton.isVisible()) {
-      await continueButton.click();
+      await Promise.all([
+        page.waitForURL(/\/golf\/dashboard\/rounds\/continue\//, { timeout: 20000 }),
+        continueButton.click(),
+      ]);
 
       // Should load shot tracking
-      await expect(page.locator('text=Hole')).toBeVisible({ timeout: 5000 });
+      await expect(page.getByRole('heading', { name: /^Hole \d+$/ })).toBeVisible({ timeout: 10000 });
     }
   });
 
   test('should handle network errors gracefully', async ({ page }) => {
     // Navigate to new round page
     await page.goto('/golf/dashboard/rounds/new');
+    await closeCoursePicker(page);
 
     // Setup course
     await page.fill('#courseName', 'Network Error Test');
@@ -150,26 +152,19 @@ test.describe('Golf Round - Complete Flow', () => {
 });
 
 test.describe('Golf Round - Stats Calculation', () => {
-  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
-
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/golf/login');
-    await page.fill('input[type="email"]', GOLF_EMAIL as string);
-    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
-  });
+  test.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
 
   test('should display stats after round completion', async ({ page }) => {
     // Navigate to stats page
     await page.goto('/golf/dashboard/stats');
 
-    // Should see stats categories (rendered as role="tab")
-    await expect(page.getByRole('tab', { name: 'Scoring' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Putting' })).toBeVisible();
+    // The stats redesign exposes drill cards as named buttons.
+    await expect(page.getByRole('button', { name: /^Open Scoring/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Open Putting/ })).toBeVisible();
 
     // Click on putting to see detailed stats
-    await page.getByRole('tab', { name: 'Putting' }).click();
+    await page.getByRole('button', { name: /^Open Putting/ }).click();
+    await expect(page.getByRole('heading', { name: 'Putting by distance' })).toBeVisible();
 
     // Should see putting stats (if rounds exist)
     // Stats visibility depends on having rounds
@@ -179,15 +174,12 @@ test.describe('Golf Round - Stats Calculation', () => {
     await page.goto('/golf/dashboard/stats');
 
     // Click through all categories
-    const categories = ['Scoring', 'Driving', 'Approach', 'Putting', 'Scrambling'];
+    const categories = ['Scoring', 'Off the tee', 'Approach', 'Putting', 'Short game'];
 
     for (const category of categories) {
-      await page.getByRole('tab', { name: category }).click();
-      // Wait for the category's content fetch to settle instead of a flat
-      // 500ms guess. Tolerant (matches e2e/helpers/common.ts's
-      // waitForPageLoad) since this loop has no single stable selector to
-      // assert on across all five categories.
-      await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+      await page.getByRole('button', { name: new RegExp(`^Open ${category}`) }).click();
+      await expect(page.getByRole('button', { name: 'All areas' })).toBeVisible();
+      await page.getByRole('button', { name: 'All areas' }).click();
     }
   });
 });

@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test as publicTest, expect } from '@playwright/test';
+import { golfPlayerTest, hasGolfPlayerAuth } from './fixtures/golf-auth';
 
 /**
  * Cloud Course Library E2E (Phase 6).
@@ -28,8 +29,8 @@ import { test, expect } from '@playwright/test';
 const COURSES_PATH = '/golf/dashboard/courses';
 
 // ── Unauthenticated contract (always runs, CI-safe) ──────────────────────
-test.describe('Cloud Course Library — unauthenticated contract', () => {
-  test('redirects /golf/dashboard/courses to golf login (not 404/500)', async ({
+publicTest.describe('Cloud Course Library — unauthenticated contract', () => {
+  publicTest('redirects /golf/dashboard/courses to golf login (not 404/500)', async ({
     page,
   }) => {
     const response = await page.goto(COURSES_PATH);
@@ -46,7 +47,7 @@ test.describe('Cloud Course Library — unauthenticated contract', () => {
     expect(page.url()).toContain(`returnTo=${encodeURIComponent(COURSES_PATH)}`);
   });
 
-  test('golf login page renders its email + password form', async ({ page }) => {
+  publicTest('golf login page renders its email + password form', async ({ page }) => {
     await page.goto('/golf/login');
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
@@ -58,30 +59,13 @@ test.describe('Cloud Course Library — unauthenticated contract', () => {
 //
 // These run only when a seeded login is provided, matching the per-spec
 // form-login pattern used by golf-dashboard.spec.ts / golf-round.spec.ts.
-const GOLF_EMAIL = process.env.E2E_GOLF_EMAIL;
-const GOLF_PASSWORD = process.env.E2E_GOLF_PASSWORD;
-const hasSeededAuth = Boolean(GOLF_EMAIL && GOLF_PASSWORD);
-
-test.describe('Cloud Course Library — authenticated flow', () => {
-  test.skip(
-    !hasSeededAuth,
-    'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.',
+golfPlayerTest.describe('Cloud Course Library — authenticated flow', () => {
+  golfPlayerTest.skip(
+    !hasGolfPlayerAuth,
+    'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.',
   );
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/golf/login');
-    await page.fill('input[type="email"]', GOLF_EMAIL as string);
-    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
-    await page.click('button[type="submit"]');
-    // Login may land on the dashboard, hub, or onboarding depending on the
-    // account — just wait until we've left the login page (any authed golf URL).
-    await page.waitForURL(
-      (url) => url.pathname.startsWith('/golf/') && !url.pathname.endsWith('/login'),
-      { timeout: 20000 },
-    );
-  });
-
-  test('renders the course library', async ({ page }) => {
+  golfPlayerTest('renders the course library', async ({ page }) => {
     await page.goto(COURSES_PATH);
 
     await expect(page).toHaveURL(/\/golf\/dashboard\/courses/);
@@ -91,7 +75,7 @@ test.describe('Cloud Course Library — authenticated flow', () => {
     await expect(page.getByText(/in the cloud library/i)).toBeVisible();
   });
 
-  test('search filters the library', async ({ page }) => {
+  golfPlayerTest('search filters the library', async ({ page }) => {
     await page.goto(COURSES_PATH);
     await expect(page.locator('h1')).toContainText('Course library.');
 
@@ -108,20 +92,37 @@ test.describe('Cloud Course Library — authenticated flow', () => {
     await expect(page.getByText(/No courses match/i)).toHaveCount(0);
   });
 
-  test('"Browse course library" on new round opens the tee picker', async ({
+  golfPlayerTest('opens a selected course with a usable snapshot', async ({ page }) => {
+    await page.goto(COURSES_PATH);
+    const library = page.locator('main');
+    const courseCard = library.getByRole('button', { name: /^Open / }).first();
+    await expect(courseCard).toBeVisible();
+
+    // Cards include the course name as their accessible heading. Keeping this
+    // dynamic makes the check portable across seeded course libraries while
+    // exercising the exact click → detail contract the dashboard relies on.
+    const courseName = await courseCard.getByRole('heading', { level: 3 }).innerText();
+    await courseCard.click();
+
+    const detail = page.getByRole('dialog', { name: courseName });
+    await expect(detail).toBeVisible();
+    await expect(detail.getByRole('heading', { name: 'Course snapshot' })).toBeVisible();
+    await expect(detail.getByRole('heading', { name: /Tee sets/ })).toBeVisible();
+  });
+
+  golfPlayerTest('"Browse course library" on new round opens the tee picker', async ({
     page,
   }) => {
     await page.goto('/golf/dashboard/rounds/new');
 
-    const browse = page.getByRole('button', { name: /Browse course library/i });
-    // Only present when not resuming an in-progress round; guard so the test
-    // is honest about that precondition rather than hanging.
-    await expect(browse).toBeVisible();
-    await browse.click();
-
-    // TeePickerDrawer opens as a dialog (Vaul bottom-sheet). Its own course
-    // search input ("Search courses…") confirms the picker mounted.
-    const dialog = page.getByRole('dialog');
+    // Choosing from the library is now the new-round landing action, so the
+    // picker opens automatically. If a resumed/manual state suppresses that,
+    // the on-page affordance still opens the same dialog.
+    const dialog = page.getByRole('dialog', { name: 'Choose a course' });
+    await dialog.waitFor({ state: 'visible', timeout: 2_000 }).catch(() => {});
+    if (!(await dialog.isVisible().catch(() => false))) {
+      await page.getByRole('button', { name: /Browse course library/i }).click();
+    }
     await expect(dialog).toBeVisible();
     await expect(
       dialog.getByPlaceholder(/Search courses/i).or(page.getByPlaceholder(/Search courses/i)),
@@ -131,26 +132,27 @@ test.describe('Cloud Course Library — authenticated flow', () => {
   // Capture screenshots of the premium course picker for review as CI artifacts
   // (uploaded by .github/workflows/playwright.yml). Best-effort — the point is
   // the image, not a gate; a missing affordance skips rather than fails.
-  test('capture: premium course picker screenshots', async ({ page }) => {
+  golfPlayerTest('capture: premium course picker screenshots', async ({ page }) => {
     const dir = 'e2e-screenshots';
 
     await page.goto('/golf/dashboard/rounds/new');
-    const browse = page.getByRole('button', { name: /Browse course library/i });
-    await browse.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
-    if (!(await browse.isVisible().catch(() => false))) {
-      // Capture whatever rendered so the artifact reveals where it's stuck
-      // (login redirect, onboarding, resume prompt) instead of silently skipping.
-      await page.screenshot({ path: `${dir}/picker-debug-no-cta.png`, fullPage: true });
-      test.skip(true, 'New-round "Browse course library" CTA not present (resuming a round?).');
-      return;
+    const dialog = page.getByRole('dialog', { name: 'Choose a course' });
+    await dialog.waitFor({ state: 'visible', timeout: 2_000 }).catch(() => {});
+    if (!(await dialog.isVisible().catch(() => false))) {
+      const browse = page.getByRole('button', { name: /Browse course library/i });
+      if (!(await browse.isVisible().catch(() => false))) {
+        await page.screenshot({ path: `${dir}/picker-debug-no-cta.png`, fullPage: true });
+        golfPlayerTest.skip(true, 'Course picker is unavailable while resuming a round.');
+        return;
+      }
+      await browse.click();
     }
-    await browse.click();
 
     // Wait for the picker sheet, then for the entrance animation's actual
     // signal — the first carousel slide (role="group"/aria-roledescription
     // "slide" in FairwayCoursePicker) mounted and visible — instead of a
     // flat 1000ms guess at how long that entrance takes.
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
+    await expect(dialog).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('group').first()).toBeVisible({ timeout: 10000 }).catch(() => {});
     await page.screenshot({ path: `${dir}/picker-desktop-stage-a.png` });
 
@@ -183,7 +185,7 @@ test.describe('Cloud Course Library — authenticated flow', () => {
     // The standalone library page too (CourseLibraryClient), for completeness.
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(COURSES_PATH);
-    await expect(page.locator('h1')).toContainText('Courses', { timeout: 10000 });
+    await expect(page.locator('h1')).toContainText('Course library.', { timeout: 10000 });
     await page.evaluate(
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
     );

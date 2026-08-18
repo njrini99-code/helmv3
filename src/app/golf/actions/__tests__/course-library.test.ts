@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // ── Mocks (declared before importing the action module) ──────────────────────
 const revalidatePath = vi.fn();
 vi.mock('next/cache', () => ({ revalidatePath: (p: string) => revalidatePath(p) }));
-vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
+const { logServerError } = vi.hoisted(() => ({ logServerError: vi.fn(async () => {}) }));
+vi.mock('@/lib/server-error-logger', () => ({ logServerError }));
 
 const resolveCoachTeamIdWithCookie = vi.fn(async () => 'team-1');
 vi.mock('@/lib/golf/resolve-team-server', () => ({
@@ -13,7 +14,7 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
 let currentClient: unknown = null;
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => currentClient }));
 
-import { createCourse, createTee, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse, softDeleteCourse, getCourseTeeHoles, contributeCourseFromRound, listCoursesStrict, getCourseTeeCountsStrict, getTeamSavedCoursesStrict } from '../course-library';
+import { createCourse, createTee, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse, softDeleteCourse, getCourseDetail, getCourseTeeHoles, contributeCourseFromRound, listCoursesStrict, getCourseTeeCountsStrict, getTeamSavedCoursesStrict } from '../course-library';
 
 /** A caller WITH a golf_coaches row — passes the course-library-write-scoping coach gate. */
 const asCoach = { maybeSingle: { data: { id: 'co1', organization_id: 'org1' }, error: null } };
@@ -557,6 +558,31 @@ describe('getCourseTeeHoles — #913 part 3 (course detail "Holes" summary)', ()
     expect(await getCourseTeeHoles('c1')).toEqual({});
   });
 
+  it('keeps the drawer non-fatal but records when the active-tee lookup fails', async () => {
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_course_tees: tableBuilder({ resolve: { data: null, error: { message: 'connection reset' } } }),
+    });
+
+    await expect(getCourseTeeHoles('c1')).resolves.toEqual({});
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('tee read failed'),
+      expect.objectContaining({ action: 'courseLibrary.getCourseTeeHoles' }),
+    );
+  });
+
+  it('keeps the drawer non-fatal but records when the hole lookup fails', async () => {
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_course_tees: tableBuilder({ resolve: { data: [{ id: 't1' }], error: null } }),
+      golf_course_tee_holes: tableBuilder({ resolve: { data: null, error: { message: 'statement timeout' } } }),
+    });
+
+    await expect(getCourseTeeHoles('c1')).resolves.toEqual({});
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('hole read failed'),
+      expect.objectContaining({ action: 'courseLibrary.getCourseTeeHoles' }),
+    );
+  });
+
   it('returns {} when the course has no active tees (skips the holes query)', async () => {
     const tees = tableBuilder({ resolve: { data: [], error: null } });
     const client = makeClient({ id: 'u1' }, { golf_course_tees: tees });
@@ -587,5 +613,32 @@ describe('getCourseTeeHoles — #913 part 3 (course detail "Holes" summary)', ()
     expect(res['t1']![0]!.hole_number).toBe(1);
     expect(res['t1']![1]!.hole_number).toBe(2);
     expect(holes._calls.in).toContainEqual(['tee_id', ['t1', 't2']]);
+  });
+});
+
+describe('getCourseDetail — course snapshot reads', () => {
+  it('rejects when the course lookup fails instead of presenting a database failure as a missing course', async () => {
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_courses: tableBuilder({ maybeSingle: { data: null, error: { message: 'connection reset' } } }),
+    });
+
+    await expect(getCourseDetail('c1')).rejects.toThrow('getCourseDetail course read failed: connection reset');
+  });
+
+  it('keeps the course snapshot available when only its tee-set read fails', async () => {
+    const courseRow = { id: 'c1', name: 'Pinehurst No. 2', normalized_name: 'pinehurst 2', par: 72 };
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_courses: tableBuilder({ maybeSingle: { data: courseRow, error: null } }),
+      golf_course_tees: tableBuilder({ resolve: { data: null, error: { message: 'statement timeout' } } }),
+    });
+
+    await expect(getCourseDetail('c1')).resolves.toMatchObject({
+      course: { id: 'c1', name: 'Pinehurst No. 2' },
+      tees: [],
+    });
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('tee read failed'),
+      expect.objectContaining({ action: 'courseLibrary.getCourseDetail' }),
+    );
   });
 });

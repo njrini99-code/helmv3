@@ -54,7 +54,10 @@ export function CourseDetailDrawer({
   const [detail, setDetail] = useState<{ course: GolfCourse; tees: GolfCourseTee[] } | null>(null);
   const [holesByTeeId, setHolesByTeeId] = useState<Record<string, GolfCourseTeeHole[]>>({});
   const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  // `getCourseDetail` returns null for a missing, soft-deleted, or
+  // inaccessible course. Keep that distinct from a transport/action failure
+  // so neither path can be mistaken for an indefinitely-loading drawer.
+  const [loadError, setLoadError] = useState<'unavailable' | 'request' | null>(null);
   const [editCourseOpen, setEditCourseOpen] = useState(false);
   const [teeForm, setTeeForm] = useState<{ open: boolean; mode: 'create' | 'edit'; tee?: GolfCourseTeeWithHoles }>({ open: false, mode: 'create' });
   const [uploading, setUploading] = useState(false);
@@ -87,17 +90,31 @@ export function CourseDetailDrawer({
   // must never block the rest of the drawer (tee sets, save/pin, edit) —
   // it just leaves the Holes section empty.
   const reload = async (id: string) => {
-    const [d, holes] = await Promise.all([
-      getCourseDetail(id),
-      getCourseTeeHoles(id).catch(() => ({})),
-    ]);
-    setDetail(d);
-    setHolesByTeeId(holes);
+    try {
+      const [d, holes] = await Promise.all([
+        getCourseDetail(id),
+        getCourseTeeHoles(id).catch(() => ({})),
+      ]);
+      if (!d) {
+        setDetail(null);
+        setHolesByTeeId({});
+        setLoadError('unavailable');
+        return;
+      }
+      setDetail(d);
+      setHolesByTeeId(holes);
+      setLoadError(null);
+    } catch {
+      // A write may already have succeeded when its follow-up read fails.
+      // Keep that refresh failure inside the same explicit retry surface rather
+      // than leaking an unhandled rejection out of a successful mutation.
+      setLoadError('request');
+    }
   };
 
   const loadDetail = (id: string) => {
     setLoading(true);
-    setLoadError(false);
+    setLoadError(null);
     setDetail(null);
     setHolesByTeeId({});
     Promise.all([
@@ -105,10 +122,14 @@ export function CourseDetailDrawer({
       getCourseTeeHoles(id).catch(() => ({})),
     ])
       .then(([d, holes]) => {
+        if (!d) {
+          setLoadError('unavailable');
+          return;
+        }
         setDetail(d);
         setHolesByTeeId(holes);
       })
-      .catch(() => setLoadError(true))
+      .catch(() => setLoadError('request'))
       .finally(() => setLoading(false));
   };
 
@@ -234,6 +255,11 @@ export function CourseDetailDrawer({
   const course = detail?.course;
   const tees = detail?.tees ?? [];
   const location = course ? [course.city, course.state].filter(Boolean).join(', ') : '';
+  // `loading` flips inside an effect, so include the brief first render in the
+  // loading state too. This avoids a blank/empty drawer between opening it and
+  // starting the server-action request.
+  const isLoadingDetail = loading || Boolean(open && courseId && !course && !loadError);
+  const isUnavailable = loadError === 'unavailable';
 
   // #913 part 2 — a course with no human creator shipped with the shared
   // library; only a super admin may edit or remove it. Team/user-contributed
@@ -280,7 +306,9 @@ export function CourseDetailDrawer({
           )}
         >
 
-          <DrawerTitle className="sr-only">{course ? formatCourseName(course.name) : 'Course details'}</DrawerTitle>
+          <DrawerTitle className="sr-only">
+            {course ? formatCourseName(course.name) : (isUnavailable ? 'Course unavailable' : 'Course details')}
+          </DrawerTitle>
 
           <div className="max-h-[88vh] overflow-y-auto">
             {/* Hero */}
@@ -341,7 +369,7 @@ export function CourseDetailDrawer({
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="font-fw-display text-title-2 font-semibold tracking-tight text-white drop-shadow-sm">
-                    {course ? formatCourseName(course.name) : (loadError ? 'Couldn’t load course' : 'Loading…')}
+                    {course ? formatCourseName(course.name) : (loadError ? 'Course unavailable' : 'Loading course…')}
                   </h2>
                   {isLibraryOwned && (
                     <span
@@ -364,10 +392,10 @@ export function CourseDetailDrawer({
             <div className="space-y-6 p-5">
               {/* Detail-fetch failure: explicit error + retry (the drawer must never
                   hang on a permanent "Loading…" hero when getCourseDetail rejects). */}
-              {loadError && !loading ? (
+              {loadError && !isLoadingDetail ? (
                 <InlineNotice
                   tone="danger"
-                  title="Couldn’t load this course"
+                  title={isUnavailable ? 'Course unavailable' : 'Couldn’t load this course'}
                   action={
                     <Button
                       variant="secondary"
@@ -378,10 +406,15 @@ export function CourseDetailDrawer({
                     </Button>
                   }
                 >
-                  Something went wrong fetching the course details.
+                  {isUnavailable
+                    ? 'This course is unavailable or you no longer have access to it.'
+                    : 'We couldn’t fetch the course details.'}
                 </InlineNotice>
-              ) : (
+              ) : isLoadingDetail ? (
+                <CourseSnapshotSkeleton />
+              ) : course ? (
               <>
+                <CourseSnapshot course={course} teeCount={tees.length} />
               {/* actions */}
               <div className="flex flex-wrap gap-2">
                 {canManageTeam && course && (
@@ -523,7 +556,7 @@ export function CourseDetailDrawer({
                 </p>
               )}
               </>
-              )}
+              ) : null}
             </div>
           </div>
         </DrawerContent>
@@ -588,6 +621,63 @@ export function CourseDetailDrawer({
         onCancel={() => { if (!deleting) setDeleteCourseConfirm(false); }}
       />
     </>
+  );
+}
+
+function CourseSnapshot({ course, teeCount }: { course: GolfCourse; teeCount: number }) {
+  const ratingAndSlope =
+    typeof course.course_rating === 'number' && typeof course.slope_rating === 'number'
+      ? `${course.course_rating} / ${course.slope_rating}`
+      : typeof course.course_rating === 'number'
+        ? String(course.course_rating)
+        : '—';
+  const facts = [
+    { label: 'Par', value: typeof course.total_par === 'number' ? String(course.total_par) : '—' },
+    {
+      label: 'Yardage',
+      value: typeof course.total_yardage === 'number'
+        ? `${course.total_yardage.toLocaleString('en-US')} yds`
+        : '—',
+    },
+    { label: 'Rating / slope', value: ratingAndSlope },
+    { label: 'Tee sets', value: String(teeCount) },
+  ];
+
+  return (
+    <section aria-labelledby="course-snapshot-heading">
+      <h3 id="course-snapshot-heading" className="mb-2 font-fw-sans text-body font-semibold text-text-primary">
+        Course snapshot
+      </h3>
+      <dl className="grid grid-cols-2 overflow-clip rounded-fw-md border border-border-subtle bg-border-subtle sm:grid-cols-4">
+        {facts.map((fact) => (
+          <div key={fact.label} className="min-w-0 bg-surface px-3 py-3">
+            <dt className="truncate text-caption font-medium text-text-tertiary">{fact.label}</dt>
+            <dd className="mt-1 truncate font-fw-sans text-body-sm font-semibold tabular-nums text-text-primary">
+              {fact.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+function CourseSnapshotSkeleton() {
+  return (
+    <section aria-labelledby="course-snapshot-loading-heading" aria-busy="true">
+      <h3 id="course-snapshot-loading-heading" className="mb-2 font-fw-sans text-body font-semibold text-text-primary">
+        Course snapshot
+      </h3>
+      <div role="status" aria-live="polite" className="grid grid-cols-2 gap-px overflow-clip rounded-fw-md border border-border-subtle bg-border-subtle sm:grid-cols-4">
+        <span className="sr-only">Loading course snapshot…</span>
+        {[0, 1, 2, 3].map((index) => (
+          <div key={index} className="space-y-2 bg-surface px-3 py-3" aria-hidden="true">
+            <Skeleton className="h-3 w-16 rounded" />
+            <Skeleton className="h-5 w-20 rounded" />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

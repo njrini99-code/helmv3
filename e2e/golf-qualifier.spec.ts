@@ -1,4 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import {
+  golfCoachTest,
+  golfPlayerTest,
+  hasGolfCoachAuth,
+  hasGolfPlayerAuth,
+} from './fixtures/golf-auth';
 
 /**
  * Golf Qualifier E2E Test
@@ -12,11 +18,7 @@ import { test, expect } from '@playwright/test';
  * run these; otherwise they self-skip instead of failing.
  */
 
-const GOLF_EMAIL = process.env.E2E_GOLF_EMAIL;
-const GOLF_PASSWORD = process.env.E2E_GOLF_PASSWORD;
-const hasSeededAuth = Boolean(GOLF_EMAIL && GOLF_PASSWORD);
-
-test.describe('Golf Qualifier - Coach Flow', () => {
+golfCoachTest.describe('Golf Qualifier - Coach Flow', () => {
   // Was `test.skip('should create a new qualifier', ...)` — Playwright's
   // (name, fn) skip signature, which unconditionally skips forever
   // regardless of env vars. That predates the env-gating documented in the
@@ -27,45 +29,30 @@ test.describe('Golf Qualifier - Coach Flow', () => {
   // repo's environment (no seeded-auth CI fixture exists yet), so this
   // remains skipped today — the true current blocker is the missing env
   // vars, not the test itself.
-  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach) to run.');
+  golfCoachTest.skip(!hasGolfCoachAuth, 'Set GOLFHELM_COACH_EMAIL and GOLFHELM_COACH_PASSWORD to run.');
 
-  test('should create a new qualifier', async ({ page }) => {
-    await page.goto('/golf/login');
-    await page.fill('input[type="email"]', GOLF_EMAIL as string);
-    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
-    await page.click('button[type="submit"]');
-
-    // Navigate to qualifiers
+  golfCoachTest('coach can reach the qualifier creation form', async ({ page }) => {
     await page.goto('/golf/dashboard/qualifiers');
+    await expect(page.getByRole('heading', { name: 'Lineup decisions.' })).toBeVisible();
 
-    // Click create qualifier
-    await page.click('button:has-text("Create Qualifier")');
-
-    // Fill qualifier form
-    await page.fill('input[name="name"]', 'E2E Test Qualifier');
-    await page.fill('input[name="numRounds"]', '2');
-    await page.fill('input[name="spots"]', '5');
-
-    // Submit
-    await page.click('button:has-text("Create")');
-
-    // Should see new qualifier in list
-    await expect(page.locator('text=E2E Test Qualifier')).toBeVisible();
+    // Assert the real navigation contract without adding another durable
+    // qualifier to the shared test team on every run. This must be a working
+    // click, not only a valid href: coach soft navigation previously started
+    // the request but never committed the route transition.
+    const createQualifier = page.getByRole('link', { name: 'Create qualifier' });
+    await expect(createQualifier).toHaveAttribute('href', '/golf/dashboard/qualifiers/new');
+    await createQualifier.click();
+    await expect(page).toHaveURL(/\/golf\/dashboard\/qualifiers\/new/);
+    await expect(page.getByRole('heading', { name: 'Create a qualifier.' })).toBeVisible();
+    await expect(page.getByLabel(/qualifier name/i)).toBeVisible();
+    await expect(page.getByLabel(/start date/i)).toBeVisible();
   });
 });
 
-test.describe('Golf Qualifier - Player Flow', () => {
-  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
+golfPlayerTest.describe('Golf Qualifier - Player Flow', () => {
+  golfPlayerTest.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/golf/login');
-    await page.fill('input[type="email"]', GOLF_EMAIL as string);
-    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
-  });
-
-  test('should view qualifiers list', async ({ page }) => {
+  golfPlayerTest('should view qualifiers list', async ({ page }) => {
     // Navigate to qualifiers page
     await page.goto('/golf/dashboard/qualifiers');
 
@@ -77,7 +64,7 @@ test.describe('Golf Qualifier - Player Flow', () => {
     await expect(content).toBeVisible();
   });
 
-  test('should view qualifier details', async ({ page }) => {
+  golfPlayerTest('should view qualifier details', async ({ page }) => {
     await page.goto('/golf/dashboard/qualifiers');
 
     // Click on a qualifier if one exists
@@ -106,7 +93,7 @@ test.describe('Golf Qualifier - Player Flow', () => {
     }
   });
 
-  test('should submit a round for a qualifier', async ({ page }) => {
+  golfPlayerTest('should submit a round for a qualifier', async ({ page }) => {
     await page.goto('/golf/dashboard/qualifiers');
 
     // Find a qualifier with "Submit Round" option
@@ -121,18 +108,10 @@ test.describe('Golf Qualifier - Player Flow', () => {
   });
 });
 
-test.describe('Golf Qualifier - Leaderboard', () => {
-  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
+golfPlayerTest.describe('Golf Qualifier - Leaderboard', () => {
+  golfPlayerTest.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/golf/login');
-    await page.fill('input[type="email"]', GOLF_EMAIL as string);
-    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
-  });
-
-  test('should display leaderboard correctly', async ({ page }) => {
+  golfPlayerTest('should display leaderboard correctly', async ({ page }) => {
     await page.goto('/golf/dashboard/qualifiers');
 
     // Navigate to a qualifier
@@ -152,7 +131,7 @@ test.describe('Golf Qualifier - Leaderboard', () => {
     }
   });
 
-  test('should highlight qualifying positions', async ({ page }) => {
+  golfPlayerTest('should highlight qualifying positions', async ({ page }) => {
     await page.goto('/golf/dashboard/qualifiers');
 
     const qualifierLink = page.locator('a[href*="/qualifiers/"]').first();

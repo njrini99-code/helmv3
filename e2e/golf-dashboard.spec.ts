@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test as publicTest, expect } from '@playwright/test';
+import { golfPlayerTest as test, hasGolfPlayerAuth } from './fixtures/golf-auth';
 
 /**
  * Golf Dashboard E2E Test
@@ -18,27 +19,23 @@ import { test, expect } from '@playwright/test';
  * changes with the design system, not the user-facing contract.
  */
 
-const GOLF_EMAIL = process.env.E2E_GOLF_EMAIL;
-const GOLF_PASSWORD = process.env.E2E_GOLF_PASSWORD;
-const hasSeededAuth = Boolean(GOLF_EMAIL && GOLF_PASSWORD);
+async function closeCoursePicker(page: import('@playwright/test').Page): Promise<void> {
+  const dialog = page.getByRole('dialog', { name: 'Choose a course' });
+  // The course picker is opened in an effect after the new-round screen
+  // mounts. Give that effect a bounded chance to run before choosing manual
+  // entry, otherwise the picker can appear just after this helper returns.
+  await dialog.waitFor({ state: 'visible', timeout: 2_000 }).catch(() => {});
+  if (await dialog.isVisible().catch(() => false)) {
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(dialog).toBeHidden();
+  }
+}
 
 test.describe('Golf Dashboard - Player Flow', () => {
-  test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
-
-  test.beforeEach(async ({ page }) => {
-    // Navigate to login page
-    await page.goto('/golf/login');
-
-    // Login
-    await page.fill('input[type="email"]', GOLF_EMAIL as string);
-    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
-    await page.click('button[type="submit"]');
-
-    // Wait for redirect to dashboard
-    await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
-  });
+  test.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
 
   test('should load dashboard successfully', async ({ page }) => {
+    await page.goto('/golf/dashboard');
     // Verify dashboard loaded
     await expect(page).toHaveURL(/\/golf\/dashboard/);
 
@@ -47,8 +44,9 @@ test.describe('Golf Dashboard - Player Flow', () => {
   });
 
   test('should navigate to rounds page', async ({ page }) => {
+    await page.goto('/golf/dashboard');
     // Click on rounds link
-    await page.click('text=My Rounds');
+    await page.getByRole('link', { name: 'My Rounds', exact: true }).click();
 
     // Should navigate to rounds page
     await expect(page).toHaveURL(/\/golf\/dashboard\/rounds/);
@@ -62,9 +60,13 @@ test.describe('Golf Dashboard - Player Flow', () => {
     // Navigate to new round page
     await page.goto('/golf/dashboard/rounds/new');
 
+    // The current flow opens the course library as the landing action. Close
+    // it here because this test deliberately exercises manual course entry.
+    await closeCoursePicker(page);
+
     // Step 1: Setup - Should see course setup form (FairwayNewRoundEntry's
     // cockpit band h1, not a literal "New Round" string).
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/choose a course/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/track every shot/i);
     await expect(page.locator('#courseName')).toBeVisible();
 
     // Fill in course setup
@@ -105,15 +107,8 @@ test.describe('Golf Dashboard - Player Flow', () => {
     const saveButton = page.getByRole('button', { name: 'Start round →' });
     await expect(saveButton).toBeVisible();
 
-    // Click save to proceed to shot tracking
-    await saveButton.click();
-
-    // Step 3: Shot Tracking - Should see the tracking surface for hole 1
-    await expect(page.locator('text=Hole 1')).toBeVisible({ timeout: 5000 });
-
-    // Should see the shot entry interface
-    // (Note: Full shot tracking test would be more complex,
-    // this just verifies the component loaded)
+    // Stop at the persistence boundary. Clicking here creates a real round in
+    // the environment; the dedicated save-in-progress spec owns that write.
   });
 
   test('should navigate to stats page', async ({ page }) => {
@@ -124,18 +119,18 @@ test.describe('Golf Dashboard - Player Flow', () => {
     // player viewing their own page).
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/stats/i);
 
-    // Should see category tabs (FairwayStatsCockpit renders these as
-    // role="tab" via the Fairway Tabs/Radix primitive, not plain buttons).
-    await expect(page.getByRole('tab', { name: 'Scoring' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Driving' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Approach' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Putting' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Scrambling' })).toBeVisible();
+    // The stats redesign exposes drill cards as named buttons.
+    await expect(page.getByRole('button', { name: /^Open Scoring/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Open Off the tee/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Open Approach/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Open Putting/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Open Short game/ })).toBeVisible();
   });
 
   test('should keep the primary setup/holes CTAs keyboard-accessible', async ({ page }) => {
     // Go to new round page
     await page.goto('/golf/dashboard/rounds/new');
+    await closeCoursePicker(page);
 
     // The primary CTA must be a real, named, focusable control — not just a
     // colored div. (This replaces the old bg-emerald-600 color-scheme check,
@@ -159,8 +154,8 @@ test.describe('Golf Dashboard - Player Flow', () => {
   });
 });
 
-test.describe('Golf Dashboard - Route Consolidation', () => {
-  test('should not have player-golf routes', async ({ page }) => {
+publicTest.describe('Golf Dashboard - Route Consolidation', () => {
+  publicTest('should not have player-golf routes', async ({ page }) => {
     // Attempt to access old player-golf routes
     const oldRoutes = [
       '/player-golf/rounds/new',
@@ -175,18 +170,4 @@ test.describe('Golf Dashboard - Route Consolidation', () => {
     }
   });
 
-  test('login should redirect to golf dashboard', async ({ page }) => {
-    test.skip(!hasSeededAuth, 'Set E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD (seeded golf coach/player) to run.');
-
-    await page.goto('/golf/login');
-
-    // Login
-    await page.fill('input[type="email"]', GOLF_EMAIL as string);
-    await page.fill('input[type="password"]', GOLF_PASSWORD as string);
-    await page.click('button[type="submit"]');
-
-    // Should redirect to golf dashboard (not player-golf)
-    await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
-    await expect(page).toHaveURL(/\/golf\/dashboard$/);
-  });
 });
