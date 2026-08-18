@@ -199,12 +199,22 @@ export function SignalDossier({
       ) : null}
 
       <div className="flex flex-wrap gap-2 pt-1">
-        <Button variant="secondary" size="sm" busy={pending} disabled={pending} onClick={() => onReview(signal)}>
-          Mark reviewed
-        </Button>
-        <Button variant="ghost" size="sm" busy={pending} disabled={pending} onClick={() => onDismiss(signal)}>
-          Dismiss
-        </Button>
+        {/* A roster roll-up has no row to acknowledge. Its id is a synthetic
+            `team:<metric>`, so the server actions cannot act on it — and there
+            is nothing coherent for them to mean, since dismissing the summary
+            would not touch any of the leaks it summarizes (each of which has
+            its own card below). Rendering disabled-looking buttons that
+            silently no-op is worse than not rendering them. */}
+        {signal.kind !== 'team_synthesis' ? (
+          <>
+            <Button variant="secondary" size="sm" busy={pending} disabled={pending} onClick={() => onReview(signal)}>
+              Mark reviewed
+            </Button>
+            <Button variant="ghost" size="sm" busy={pending} disabled={pending} onClick={() => onDismiss(signal)}>
+              Dismiss
+            </Button>
+          </>
+        ) : null}
         <PromoteToFocusAreaButton
           signal={signal}
           coachId={coachId}

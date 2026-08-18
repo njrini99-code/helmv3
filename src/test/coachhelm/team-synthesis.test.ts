@@ -165,3 +165,41 @@ describe('synthesizeTeamSignals', () => {
     expect(team).toEqual([]);
   });
 });
+
+/**
+ * A roll-up must be distinguishable from a detection.
+ *
+ * Emitting these as `kind: 'insight'` caused two live regressions the moment
+ * they reached the feed, both found by rendering the real component:
+ *
+ *   - `TeamSignalSummary` flattens every group INCLUDING the pinned team
+ *     bucket and sums `strokeImpact`. Three leaks totalling 4.5 rendered as
+ *     "4 live | 9.0 est. strokes" — each leak counted once on its player and
+ *     again inside the roster total synthesized from it.
+ *   - `TriageDesk.runSignalAction` passes `signal.id` to
+ *     acknowledgeInsight/dismissInsight. These ids are synthetic
+ *     (`team:<metric>`) and match no row.
+ *
+ * The `kind` is what lets aggregates skip them and actions refuse them.
+ */
+describe('synthesizeTeamSignals — roll-ups are typed as roll-ups', () => {
+  it('marks every emitted signal team_synthesis, never insight', () => {
+    const team = synthesizeTeamSignals([
+      sig('p1', 'putts_made_3_5ft_pct', 2.0),
+      sig('p2', 'putts_made_3_5ft_pct', 1.5),
+      sig('p3', 'putts_made_3_5ft_pct', 1.0),
+    ]);
+
+    expect(team).toHaveLength(1);
+    expect(team[0]!.kind).toBe('team_synthesis');
+  });
+
+  it('still refuses to fold a roll-up back in on a second pass', () => {
+    const once = synthesizeTeamSignals([
+      sig('p1', 'putts_made_3_5ft_pct', 2.0),
+      sig('p2', 'putts_made_3_5ft_pct', 1.5),
+      sig('p3', 'putts_made_3_5ft_pct', 1.0),
+    ]);
+    expect(synthesizeTeamSignals(once)).toEqual([]);
+  });
+});

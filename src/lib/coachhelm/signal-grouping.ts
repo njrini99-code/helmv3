@@ -12,7 +12,16 @@ export type SignalSeverity = 'urgent' | 'high' | 'medium' | 'low';
 
 export interface GroupedSignal {
   id: string;
-  kind: 'insight' | 'pattern';
+  /**
+   * `insight` / `pattern` are real detected rows with a database id.
+   * `team_synthesis` is a DERIVED roster roll-up minted by
+   * `synthesizeTeamSignals` — it has no row behind it, its `id` is a synthetic
+   * `team:<metric>`, and its `strokeImpact` is the SUM of per-player leaks that
+   * are already present in the same list. Anything that AGGREGATES must skip
+   * it or it double-counts; anything that ACTS on a signal must skip it or it
+   * will call the server with an id that does not exist.
+   */
+  kind: 'insight' | 'pattern' | 'team_synthesis';
   category: string;
   severity: SignalSeverity;
   title: string;

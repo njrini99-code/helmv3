@@ -112,3 +112,59 @@ export function regimeGuidanceLine(round: RoundRegimeFacts): string | null {
     ` so putting is the lever that moved this score (domain doc §4). Weight the putting story accordingly.`
   );
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Coach-facing copy
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export interface RegimeHeadline {
+  /** Maps to a Fairway InlineNotice tone. */
+  tone: 'warning' | 'info';
+  title: string;
+  body: string;
+}
+
+/**
+ * The same finding as `regimeGuidanceLine`, said to a person.
+ *
+ * That function is written FOR the model — it opens "- Lens for this round:"
+ * and issues instructions. It also does not reach anyone: it feeds
+ * `buildPrompt` -> `composeRoundReview` -> `generateLlmRoundReview`, and that
+ * action has ZERO callers (all 7 references sit inside its own file). The
+ * coach-facing review is produced by the v2 path instead — measured in
+ * production as `generation_method: 'v1'`, `ai_model_version: NULL`, with no
+ * rows in `golf_coachhelm_llm_calls`.
+ *
+ * So the correction has to render on the page itself, above the stat panel,
+ * where the putt count is about to be read. Same thresholds, same silence on
+ * the transitional band, no invented claim.
+ */
+export function regimeHeadline(round: RoundRegimeFacts): RegimeHeadline | null {
+  const regime = classifyRoundRegime(round);
+  if (regime === 'unknown' || regime === 'transitional') return null;
+
+  const greens = `${round.gir} of ${round.gir_total}`;
+
+  if (regime === 'scrambling_driven') {
+    const puttClause =
+      round.total_putts !== null
+        ? ` The ${round.total_putts} putts are not a putting result — with that many greens missed, a low count usually means chipping close and 1-putting for bogey.`
+        : '';
+    return {
+      tone: 'warning',
+      title: 'Scrambling round',
+      body:
+        `You hit ${greens} greens, so the short game carried this round.` +
+        puttClause +
+        ' Read the approach and scrambling numbers first.',
+    };
+  }
+
+  return {
+    tone: 'info',
+    title: 'Putting round',
+    body:
+      `You hit ${greens} greens, so most of this score was decided on the putting surface.` +
+      ' The putting numbers are the ones that moved it.',
+  };
+}

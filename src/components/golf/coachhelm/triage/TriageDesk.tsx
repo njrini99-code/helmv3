@@ -389,6 +389,13 @@ export function TriageDesk({
     action: (id: string, kind: 'insight' | 'pattern') => Promise<{ success: boolean; error?: string }>,
     successLabel: string,
   ) {
+    // A roster roll-up has no row behind it — its id is a synthetic
+    // `team:<metric>` minted by synthesizeTeamSignals. Sending that to
+    // acknowledgeInsight/dismissInsight would hit the server with an id that
+    // does not exist, and optimistically remove a card that would come
+    // straight back on refresh. Nothing to acknowledge: dismissing the summary
+    // would not touch any of the leaks it summarizes.
+    if (signal.kind === 'team_synthesis') return;
     if (pendingIds.has(signal.id)) return;
     setPendingIds((prev) => new Set(prev).add(signal.id));
     const prevGroups = groups;

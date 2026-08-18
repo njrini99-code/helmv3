@@ -105,7 +105,9 @@ export function synthesizeTeamSignals(signals: GroupedSignal[]): GroupedSignal[]
 
     out.push({
       id: `team:${metricId}`,
-      kind: 'insight',
+      // NOT 'insight'. There is no row behind this and its impact is a sum of
+      // rows already in the list — see the `kind` docs in signal-grouping.ts.
+      kind: 'team_synthesis',
       category: metricId,
       severity: severityForCombined(rounded),
       title: `Team leak: ${entry.label}`,

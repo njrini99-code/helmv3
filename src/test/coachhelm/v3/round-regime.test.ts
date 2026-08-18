@@ -35,6 +35,7 @@ import { describe, it, expect } from 'vitest';
 import {
   classifyRoundRegime,
   regimeGuidanceLine,
+  regimeHeadline,
   SCRAMBLING_DRIVEN_MAX_GIR,
   PUTTING_DRIVEN_MIN_GIR,
 } from '@/lib/coachhelm/v3/insights/round-regime';
@@ -163,5 +164,61 @@ describe('round-review prompt carries the round lens', () => {
     const prompt = __testables.buildPrompt({ ...BASE, gir: null, gir_total: null });
 
     expect(prompt).not.toMatch(/Lens for this round/);
+  });
+});
+
+/**
+ * The prompt line is not UI copy, and the prompt path is not reachable.
+ *
+ * `regimeGuidanceLine` is written FOR the model — it opens with "- Lens for
+ * this round:" and instructs ("do not praise the putt total"). It reaches
+ * `buildPrompt` -> `composeRoundReview` -> `generateLlmRoundReview`, and that
+ * action has ZERO callers: all 7 references to it live inside its own file.
+ * Measured in production, the coach-facing review is written by the v2 path
+ * (`generation_method: 'v1'`, `ai_model_version: NULL`, no rows in
+ * `golf_coachhelm_llm_calls`), so nothing a coach reads today passes through
+ * that prompt at all.
+ *
+ * `regimeHeadline` is the same finding said to a person, so the correction
+ * lands on the surface that actually renders — above the stat panel, where the
+ * putt count is about to be read.
+ */
+describe('regimeHeadline — coach-facing copy for the round review surface', () => {
+  it('warns the putt count is not a putting result on a scrambling round', () => {
+    const h = regimeHeadline({ gir: 6, gir_total: 18, total_putts: 29 });
+
+    expect(h).not.toBeNull();
+    expect(h!.tone).toBe('warning');
+    expect(h!.title).toMatch(/scrambling/i);
+    expect(h!.body).toMatch(/6 of 18/);
+    expect(h!.body).toMatch(/29 putts/);
+    expect(h!.body).toMatch(/chip(ping)? close|1-putting/i);
+  });
+
+  it('omits the putt clause when no putt count was recorded', () => {
+    const h = regimeHeadline({ gir: 5, gir_total: 18, total_putts: null });
+    expect(h).not.toBeNull();
+    expect(h!.body).not.toMatch(/putts/);
+  });
+
+  it('names putting as the lever on a putting-driven round', () => {
+    const h = regimeHeadline({ gir: 14, gir_total: 18, total_putts: 33 });
+    expect(h).not.toBeNull();
+    expect(h!.tone).toBe('info');
+    expect(h!.body).toMatch(/14 of 18/);
+  });
+
+  it('says nothing on a transitional round', () => {
+    expect(regimeHeadline({ gir: 10, gir_total: 18, total_putts: 31 })).toBeNull();
+  });
+
+  it('says nothing when greens were not recorded', () => {
+    expect(regimeHeadline({ gir: null, gir_total: null, total_putts: 30 })).toBeNull();
+  });
+
+  it('never uses prompt voice — no instructions to a model', () => {
+    const h = regimeHeadline({ gir: 6, gir_total: 18, total_putts: 29 });
+    expect(h!.body).not.toMatch(/Lens for this round|do not praise|domain doc/i);
+    expect(h!.title).not.toMatch(/^-/);
   });
 });

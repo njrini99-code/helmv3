@@ -44,7 +44,14 @@ const SEVERITY_BAR_CLASS: Record<SignalSeverity, string> = {
 };
 
 export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSignalSummaryProps) {
-  const signals = groups.flatMap((group) => group.signals);
+  // Roster roll-ups are excluded from EVERY aggregate here. They are derived
+  // from the per-player signals in this same list, so counting them again
+  // double-counts the strokes ("4 live | 9.0 est. strokes" for three leaks
+  // totalling 4.5) and inflates the finding count with a row that is a summary
+  // rather than a detection. They still render in the pinned Team group.
+  const signals = groups
+    .flatMap((group) => group.signals)
+    .filter((signal) => signal.kind !== 'team_synthesis');
   if (signals.length === 0) return null;
 
   const categoryPressure = buildCategoryPressure(signals).slice(0, 6);

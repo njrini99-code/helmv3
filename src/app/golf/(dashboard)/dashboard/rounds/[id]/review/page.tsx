@@ -42,6 +42,7 @@ import {
   Skeleton as FwSkeleton,
 } from '@/components/fairway';
 import { Flag as LucideFlag } from 'lucide-react';
+import { regimeHeadline } from '@/lib/coachhelm/v3/insights/round-regime';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -737,6 +738,29 @@ export default function RoundReviewPage() {
           }
         />
       )}
+
+      {/* Which lens explains THIS round, stated before the numbers are read.
+          Measured over all 328 completed rounds with a GIR figure: putts per
+          round FALL as greens fall (33.2 -> 31.7 -> 29.8) while the score
+          climbs from +1.78 to +9.44. On the 36 rounds in the scrambling band a
+          low putt count is a CONSEQUENCE of missing greens — chip close,
+          1-putt for bogey — so reading it as good putting is exactly backwards.
+          Silent on the 9-11 transitional band (37% of rounds), where the
+          research makes no claim. */}
+      {(() => {
+        const lens = round
+          ? regimeHeadline({
+              gir: round.total_gir,
+              gir_total: round.total_gir_possible,
+              total_putts: round.total_putts,
+            })
+          : null;
+        return lens ? (
+          <FwInlineNotice tone={lens.tone} title={lens.title}>
+            {lens.body}
+          </FwInlineNotice>
+        ) : null;
+      })()}
 
       {/* The full stat breakdown renders regardless of whether a NARRATIVE
           exists — the numbers come straight from the round's shots, so a round
