@@ -34,8 +34,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 function MockDashboardShell({ children }: { children: React.ReactNode }) {
   'use client';
 
-  // Simulate SmoothScrollMount behavior
-  const pathname = React.useMemo(
+  // Simulate SmoothScrollMount behavior: creates a memoized pathname value
+  // to verify that useMemo hooks remain stable even during loading→not-found transitions
+  React.useMemo(
     () => '/golf/dashboard/players/player-id/genome',
     [],
   );
