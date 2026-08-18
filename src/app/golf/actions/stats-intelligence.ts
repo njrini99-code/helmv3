@@ -62,6 +62,8 @@ export interface TeamStatsIntelligence {
     composite: number | null;
     topInsight: EvidenceInsight | null;
     insightCount: number;
+    statsCacheUpdatedAt: string | null;
+    statsCacheStale: boolean;
   }>;
   sampleSize: number;
 }
@@ -90,7 +92,7 @@ const STATS_METRIC_MAP: Record<string, string> = {
  *  with template-string `select()` calls, so we keep this explicit. Must
  *  stay in sync with STATS_METRIC_MAP above. */
 const STATS_SELECT =
-  'player_id, driving_distance_average, driving_accuracy_percentage, gir_percentage, strokes_gained_approach, approach_proximity_average, scrambling_percentage, strokes_gained_around_green, strokes_gained_putting, putts_per_round, three_putt_percentage, scoring_average_vs_par';
+  'player_id, driving_distance_average, driving_accuracy_percentage, gir_percentage, strokes_gained_approach, approach_proximity_average, scrambling_percentage, strokes_gained_around_green, strokes_gained_putting, putts_per_round, three_putt_percentage, scoring_average_vs_par, updated_at, is_stale';
 
 const LOWER_IS_BETTER = new Set([
   'puttsPerRound',
@@ -370,6 +372,15 @@ async function getTeamStatsIntelligenceImpl(
       : [];
     const byPlayer = new Map<string, (typeof normalized)[number]>();
     for (const n of normalized) byPlayer.set(n.playerId, n);
+    const statsCacheMetaByPlayer = new Map(
+      statsList.map((row) => [
+        String(row.player_id),
+        {
+          updatedAt: typeof row.updated_at === 'string' ? row.updated_at : null,
+          isStale: row.is_stale === true,
+        },
+      ]),
+    );
 
     // Pull the top insight per player from the feed (evidence-backed,
     // non-archived). ONE batched query for the whole roster (P446): the old
@@ -383,6 +394,7 @@ async function getTeamStatsIntelligenceImpl(
 
     const players = playerIds.map((pid) => {
       const n = byPlayer.get(pid);
+      const cacheMeta = statsCacheMetaByPlayer.get(pid);
       const categories = n
         ? {
             teeGame: Math.round(n.categories.teeGame),
@@ -400,6 +412,8 @@ async function getTeamStatsIntelligenceImpl(
         composite: n?.composite == null ? null : Math.round(n.composite),
         topInsight: rows[0] ?? null,
         insightCount: rows.length,
+        statsCacheUpdatedAt: cacheMeta?.updatedAt ?? null,
+        statsCacheStale: cacheMeta?.isStale ?? false,
       };
     });
 
