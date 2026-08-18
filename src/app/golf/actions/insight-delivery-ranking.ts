@@ -70,12 +70,12 @@ async function feedRankScore(
  * Sort a mapped insight list by the shared composite, newest-first on ties.
  * If a database client is provided, applies calibration to confidence values.
  */
-export async function rankEvidenceInsights<T extends RankableEvidenceInsight>(
+export async function rankEvidenceInsightsScored<T extends RankableEvidenceInsight>(
   insights: T[],
   weights: CoachWeights = {},
   goals: Goal[] = [],
   sb?: SupabaseClient<Database>,
-): Promise<T[]> {
+): Promise<Array<{ insight: T; score: number }>> {
   const scored = await Promise.all(
     insights.map(async (insight) => ({
       insight,
@@ -88,8 +88,22 @@ export async function rankEvidenceInsights<T extends RankableEvidenceInsight>(
       const diff = b.score - a.score;
       if (diff !== 0) return diff;
       return (b.insight.created_at ?? '').localeCompare(a.insight.created_at ?? '');
-    })
-    .map((row) => row.insight);
+    });
+}
+
+/**
+ * Ranked insights, score discarded — the shape every caller of the ordering
+ * wants. Delegates to `rankEvidenceInsightsScored` so there is exactly one
+ * ranking implementation.
+ */
+export async function rankEvidenceInsights<T extends RankableEvidenceInsight>(
+  insights: T[],
+  weights: CoachWeights = {},
+  goals: Goal[] = [],
+  sb?: SupabaseClient<Database>,
+): Promise<T[]> {
+  const scored = await rankEvidenceInsightsScored(insights, weights, goals, sb);
+  return scored.map((row) => row.insight);
 }
 
 /**

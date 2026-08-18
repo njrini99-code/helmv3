@@ -37,12 +37,14 @@ import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import { computeSgTrends } from '@/lib/coachhelm/v3/themes/trend';
 import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
 import { loadCoachWeightsForPlayer, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
+import { buildExposureRows } from '@/lib/coachhelm/v3/effectiveness/exposure-rows';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import {
   collapseParScoring,
   dedupeBySubject,
   rankEvidenceInsights,
+  rankEvidenceInsightsScored,
 } from './insight-delivery-ranking';
 import {
   V3_ENGINE_FILTER,
@@ -305,17 +307,16 @@ function recordExposureForReturned(
   insights: Array<{ id: string; player_id: string }>,
   surface: string,
   coachId?: string | null,
+  scoreById?: ReadonlyMap<string, number>,
 ): void {
   if (!Array.isArray(insights) || insights.length === 0) return;
-  const rows = insights
-    .filter((ins) => ins && ins.id && ins.player_id)
-    .map((ins, idx) => ({
-      insight_id: ins.id,
-      player_id: ins.player_id,
-      coach_id: coachId ?? null,
-      surface,
-      rank_position: idx,
-    }));
+  // Row construction lives in a plain module so it can be unit-tested — this
+  // file is 'use server', where every export must be an async action.
+  // `scoreById` is what finally populates `golf_insight_exposure.rank_score`,
+  // NULL on all 127,295 rows before this: the score was computed by
+  // rankEvidenceInsights, used to sort, then dropped. Surfaces that pick a
+  // single insight without ranking pass nothing rather than a fabricated 0.
+  const rows = buildExposureRows(insights, surface, coachId, scoreById);
   // Fire-and-forget — the writer is failure-silent, so we don't await it into
   // the render path (and a rejected promise can't surface because it never
   // rejects). `void` documents the deliberate non-await.
@@ -619,7 +620,9 @@ async function getInsightsForPlayerImpl(
   // until calibration lands; active goals float goal-touching rows up.
   const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
   const activeGoals = await loadActiveGoals(playerId).catch(() => []);
-  const ranked = await rankEvidenceInsights(filtered, weights, activeGoals, supabase);
+  const rankedScored = await rankEvidenceInsightsScored(filtered, weights, activeGoals, supabase);
+  const scoreById = new Map(rankedScored.map((r) => [r.insight.id, r.score]));
+  const ranked = rankedScored.map((r) => r.insight);
 
   // Finding 29: apply the SAME (player:category:metric-subject) dedupe the
   // coach feed uses (via the shared `dedupeBySubject` helper) so a player does
@@ -639,7 +642,7 @@ async function getInsightsForPlayerImpl(
   const shown = applyPlayerFeedbackOverlay(deduped, feedbackByInsight).slice(0, limit);
   // Record exposure for the EXACT rows returned (post overlay + slice) — a row
   // dropped by the limit or by a player dismissal is never counted as shown.
-  recordExposureForReturned(shown, 'player_feed');
+  recordExposureForReturned(shown, 'player_feed', null, scoreById);
   return shown;
 }
 
@@ -832,8 +835,11 @@ async function getInsightsForCoachWithMetaImpl(
   }
   // C2: collapse the 3 par_scoring rows into ONE "Scoring by par type" card
   // BEFORE dedupe — same IDENTICAL-application rule as dedupeBySubject itself.
-  const rankedInsights = await rankEvidenceInsights(mapped, weights, goals, supabase);
-  const ranked = dedupeBySubject(collapseParScoring(rankedInsights));
+  const rankedScored = await rankEvidenceInsightsScored(mapped, weights, goals, supabase);
+  // Keyed by id so it survives collapse + dedupe + slice below, which all
+  // preserve ids while reordering and dropping rows.
+  const scoreById = new Map(rankedScored.map((r) => [r.insight.id, r.score]));
+  const ranked = dedupeBySubject(collapseParScoring(rankedScored.map((r) => r.insight)));
 
   // P058: `total` is the FULL eligible count (post rank + dedupe, pre-slice),
   // so a capped page can honestly disclose "showing N of TOTAL" instead of
@@ -841,7 +847,7 @@ async function getInsightsForCoachWithMetaImpl(
   const data_ = ranked.slice(0, limit);
   // Record exposure for the page the coach actually receives (post rank + dedupe
   // + slice). Rows beyond the limit are NOT counted — only what's surfaced is.
-  recordExposureForReturned(data_, 'coach_feed', coachId);
+  recordExposureForReturned(data_, 'coach_feed', coachId, scoreById);
   return { ok: true, data: data_, total: ranked.length, capped: ranked.length > data_.length };
 }
 
