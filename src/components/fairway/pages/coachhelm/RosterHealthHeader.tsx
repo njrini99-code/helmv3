@@ -182,10 +182,13 @@ export function RosterHealthHeader({
   /** A roster with zero focus areas — active OR completed — is a program that
    *  hasn't started, not one that has fallen behind. Every player with rounds
    *  matches `rounds > 0 && uncoached`, so the triage framing greets a brand-new
-   *  coach by calling their whole squad problems (observed live on Guilford: 12
-   *  active players, all with rounds, 0 rows in `golf_focus_areas` → "12 players
-   *  to look at"). The ranked list is still the useful part and stays; only the
-   *  framing changes, from a backlog to a starting point. */
+   *  coach by calling their whole squad problems. Measured in production
+   *  2026-08-18: EVERY non-demo team has zero rows in `golf_player_focus_areas`
+   *  — Hampden-Sydney 15 players, Guilford 12, Shenandoah 12, Lynchburg 10, UNC
+   *  Wilmington 10, Shenandoah Women's 6, Denison 1 — so all 66 real players
+   *  were being flagged. Only the two demo teams have any areas at all (11, 14).
+   *  The ranked list is still the useful part and stays; only the framing
+   *  changes, from a backlog to a starting point. */
   const areasPrescribed = activeAreas + completedAreas;
   const noAreasYet = areasPrescribed === 0;
 
