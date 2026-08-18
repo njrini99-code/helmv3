@@ -90,12 +90,26 @@ export function CourseDetailDrawer({
   // must never block the rest of the drawer (tee sets, save/pin, edit) —
   // it just leaves the Holes section empty.
   const reload = async (id: string) => {
-    const [d, holes] = await Promise.all([
-      getCourseDetail(id),
-      getCourseTeeHoles(id).catch(() => ({})),
-    ]);
-    setDetail(d);
-    setHolesByTeeId(holes);
+    try {
+      const [d, holes] = await Promise.all([
+        getCourseDetail(id),
+        getCourseTeeHoles(id).catch(() => ({})),
+      ]);
+      if (!d) {
+        setDetail(null);
+        setHolesByTeeId({});
+        setLoadError('unavailable');
+        return;
+      }
+      setDetail(d);
+      setHolesByTeeId(holes);
+      setLoadError(null);
+    } catch {
+      // A write may already have succeeded when its follow-up read fails.
+      // Keep that refresh failure inside the same explicit retry surface rather
+      // than leaking an unhandled rejection out of a successful mutation.
+      setLoadError('request');
+    }
   };
 
   const loadDetail = (id: string) => {

@@ -36,10 +36,12 @@ golfCoachTest.describe('Golf Qualifier - Coach Flow', () => {
     await expect(page.getByRole('heading', { name: 'Lineup decisions.' })).toBeVisible();
 
     // Assert the real navigation contract without adding another durable
-    // qualifier to the shared test team on every run.
+    // qualifier to the shared test team on every run. This must be a working
+    // click, not only a valid href: coach soft navigation previously started
+    // the request but never committed the route transition.
     const createQualifier = page.getByRole('link', { name: 'Create qualifier' });
     await expect(createQualifier).toHaveAttribute('href', '/golf/dashboard/qualifiers/new');
-    await page.goto('/golf/dashboard/qualifiers/new');
+    await createQualifier.click();
     await expect(page).toHaveURL(/\/golf\/dashboard\/qualifiers\/new/);
     await expect(page.getByRole('heading', { name: 'Create a qualifier.' })).toBeVisible();
     await expect(page.getByLabel(/qualifier name/i)).toBeVisible();

@@ -119,6 +119,7 @@ golfPlayerTest.describe('Cloud Course Library — authenticated flow', () => {
     // picker opens automatically. If a resumed/manual state suppresses that,
     // the on-page affordance still opens the same dialog.
     const dialog = page.getByRole('dialog', { name: 'Choose a course' });
+    await dialog.waitFor({ state: 'visible', timeout: 2_000 }).catch(() => {});
     if (!(await dialog.isVisible().catch(() => false))) {
       await page.getByRole('button', { name: /Browse course library/i }).click();
     }
@@ -136,6 +137,7 @@ golfPlayerTest.describe('Cloud Course Library — authenticated flow', () => {
 
     await page.goto('/golf/dashboard/rounds/new');
     const dialog = page.getByRole('dialog', { name: 'Choose a course' });
+    await dialog.waitFor({ state: 'visible', timeout: 2_000 }).catch(() => {});
     if (!(await dialog.isVisible().catch(() => false))) {
       const browse = page.getByRole('button', { name: /Browse course library/i });
       if (!(await browse.isVisible().catch(() => false))) {

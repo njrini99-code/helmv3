@@ -22,6 +22,10 @@ import { golfPlayerTest as test, hasGolfPlayerAuth } from './fixtures/golf-auth'
 
 async function closeCoursePicker(page: import('@playwright/test').Page): Promise<void> {
   const dialog = page.getByRole('dialog', { name: 'Choose a course' });
+  // The course picker is opened in an effect after the new-round screen
+  // mounts. Give that effect a bounded chance to run before choosing manual
+  // entry, otherwise the picker can appear just after this helper returns.
+  await dialog.waitFor({ state: 'visible', timeout: 2_000 }).catch(() => {});
   if (await dialog.isVisible().catch(() => false)) {
     await dialog.getByRole('button', { name: 'Close' }).click();
     await expect(dialog).toBeHidden();

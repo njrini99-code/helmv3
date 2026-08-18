@@ -103,11 +103,17 @@ vi.mock('@/app/golf/actions/course-library', () => ({
 }));
 
 import { CourseDetailDrawer } from '@/components/golf/courses/CourseDetailDrawer';
-import { getCourseDetail } from '@/app/golf/actions/course-library';
+import { getCourseDetail, setCourseImageUrl } from '@/app/golf/actions/course-library';
+import { uploadCourseImage } from '@/lib/golf/upload-course-image';
 
 describe('CourseDetailDrawer — desktop chrome + holes', () => {
   beforeEach(() => {
     vi.mocked(getCourseDetail).mockReset().mockResolvedValue({ course, tees: [tee] });
+    vi.mocked(setCourseImageUrl).mockReset().mockResolvedValue({
+      success: true,
+      data: { imageUrl: 'https://example.com/course.jpg' },
+    });
+    vi.mocked(uploadCourseImage).mockReset().mockResolvedValue({ ok: true, url: 'https://example.com/course.jpg' });
   });
 
   it('exits loading after a missing detail response and retries to the course snapshot', async () => {
@@ -163,6 +169,35 @@ describe('CourseDetailDrawer — desktop chrome + holes', () => {
 
     expect((await screen.findAllByText('Championship')).length).toBeGreaterThan(0);
     expect(screen.getByText('Course snapshot')).toBeInTheDocument();
+  });
+
+  it('keeps a successful photo save recoverable when its follow-up detail refresh fails', async () => {
+    vi.mocked(getCourseDetail)
+      .mockResolvedValueOnce({ course, tees: [tee] })
+      .mockRejectedValueOnce(new Error('refresh unavailable'));
+
+    render(
+      <CourseDetailDrawer
+        courseId="course-1"
+        open
+        onOpenChange={() => {}}
+        canManageTeam
+        isSuperAdmin={false}
+        savedCourseIds={new Set()}
+      />,
+    );
+
+    await screen.findAllByText('Championship');
+    const fileInput = document.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
+    fireEvent.change(fileInput!, {
+      target: { files: [new File(['course photo'], 'course.jpg', { type: 'image/jpeg' })] },
+    });
+
+    const failure = await screen.findByRole('alert');
+    expect(failure).toHaveTextContent('We couldn’t fetch the course details.');
+    expect(uploadCourseImage).toHaveBeenCalledWith('course-1', expect.any(File));
+    expect(setCourseImageUrl).toHaveBeenCalledWith('course-1', 'https://example.com/course.jpg');
   });
 
   it('hides the mobile-sheet drag handle and applies cream-glass chrome at sm and up', async () => {
