@@ -1,5 +1,41 @@
 import { describe, it, expect } from 'vitest';
-import { showAnnouncementsList } from './FairwayTeamHub';
+import { createElement } from 'react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { FairwayTeamHub, showAnnouncementsList } from './FairwayTeamHub';
+
+const fixture = {
+  tasks: [],
+  announcements: [],
+  trips: [],
+  classes: [],
+  teammates: [],
+  playerName: 'Jamie Player',
+  teamName: 'Wildcats Golf',
+  onCompleteTask: async () => {},
+};
+
+describe('Team Hub operational overview', () => {
+  it('opens on an operational overview with direct access to each team workflow', () => {
+    render(createElement(FairwayTeamHub, fixture));
+
+    expect(screen.getByRole('heading', { name: /team hub/i })).toBeVisible();
+    expect(screen.getByRole('heading', { name: /^tasks$/i })).toBeVisible();
+    expect(screen.getByRole('heading', { name: /^announcements$/i })).toBeVisible();
+    expect(screen.getByRole('heading', { name: /^travel$/i })).toBeVisible();
+    expect(screen.getByRole('heading', { name: /class schedule/i })).toBeVisible();
+    expect(screen.queryByRole('tab', { name: /teammates/i })).not.toBeInTheDocument();
+  });
+
+  it('switches from an overview action to the corresponding detail tab', async () => {
+    const user = userEvent.setup();
+    render(createElement(FairwayTeamHub, fixture));
+
+    await user.click(screen.getByRole('button', { name: /view all tasks/i }));
+
+    expect(screen.getByRole('tab', { name: /^tasks$/i })).toHaveAttribute('aria-selected', 'true');
+  });
+});
 
 /* ---------------------------------------------------------------------------
  * showAnnouncementsList (W1 count-coherence audit)

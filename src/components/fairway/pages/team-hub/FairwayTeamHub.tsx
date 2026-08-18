@@ -35,7 +35,7 @@
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, GraduationCap, Megaphone } from 'lucide-react';
+import { ArrowRight, ClipboardList, GraduationCap, Megaphone, Plane } from 'lucide-react';
 
 import { completeTask } from '@/app/golf/actions/tasks';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -64,10 +64,7 @@ import {
   type TripData,
   type PlayerTask,
 } from '../hub/hub-parts';
-import {
-  FairwayPlayerRoster,
-  type FairwayPlayerRosterPlayer,
-} from '../roster/FairwayPlayerRoster';
+import type { FairwayPlayerRosterPlayer } from '../roster/FairwayPlayerRoster';
 
 /* ─────────────────────────────────────────────────────────────────────────
  * A read-only class schedule row shape (subset of golf_player_classes). The
@@ -87,13 +84,13 @@ export interface TeamHubClass {
   color: string | null;
 }
 
-type TabId = 'tasks' | 'announcements' | 'travel' | 'classes' | 'teammates';
+type TabId = 'overview' | 'tasks' | 'announcements' | 'travel' | 'classes';
 
-const TAB_IDS: readonly TabId[] = ['tasks', 'announcements', 'travel', 'classes', 'teammates'];
+const TAB_IDS: readonly TabId[] = ['overview', 'tasks', 'announcements', 'travel', 'classes'];
 
 /** Resolve the `?tab=` deep-link (Cmd+K / bookmarks) to a valid tab. */
 function normalizeTab(raw: string | undefined): TabId {
-  return raw && (TAB_IDS as readonly string[]).includes(raw) ? (raw as TabId) : 'tasks';
+  return raw && (TAB_IDS as readonly string[]).includes(raw) ? (raw as TabId) : 'overview';
 }
 
 export interface FairwayTeamHubProps {
@@ -112,7 +109,7 @@ export interface FairwayTeamHubProps {
   teammates: FairwayPlayerRosterPlayer[];
   playerName: string;
   teamName: string;
-  /** Deep-link target from the `?tab=` query (server-passed). Defaults to Tasks. */
+  /** Deep-link target from the `?tab=` query (server-passed). Defaults to Overview. */
   initialTab?: string;
   /** The legacy optimistic completeTask path (owned by the wrapper). */
   onCompleteTask: (taskId: string) => Promise<void>;
@@ -138,7 +135,6 @@ export function FairwayTeamHub({
   announcementsLoadError = false,
   trips,
   classes,
-  teammates,
   teamName,
   initialTab,
   onCompleteTask,
@@ -149,12 +145,12 @@ export function FairwayTeamHub({
 
   // Keep the URL in sync with the active tab so the view is deep-linkable
   // (Cmd+K / bookmarks) WITHOUT a server round-trip (history.replaceState, not
-  // router) — Tasks is the default so it gets a clean URL.
+  // router) — Overview is the default so it gets a clean URL.
   const handleTabChange = (v: string) => {
     const next = normalizeTab(v);
     setActiveTab(next);
     if (typeof window !== 'undefined') {
-      const url = next === 'tasks' ? window.location.pathname : `${window.location.pathname}?tab=${next}`;
+      const url = next === 'overview' ? window.location.pathname : `${window.location.pathname}?tab=${next}`;
       window.history.replaceState(null, '', url);
     }
   };
@@ -187,12 +183,24 @@ export function FairwayTeamHub({
       {/* ── Sub-tabs across the top ──────────────────────────────────────── */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList aria-label="Team hub sections">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="travel">Travel</TabsTrigger>
           <TabsTrigger value="classes">Class schedule</TabsTrigger>
-          <TabsTrigger value="teammates">Teammates</TabsTrigger>
         </TabsList>
+
+        {/* ═══════════ OVERVIEW ═══════════ */}
+        <TabsContent value="overview">
+          <TeamOperationsOverview
+            tasks={tasks}
+            announcements={announcements}
+            announcementsLoadError={announcementsLoadError}
+            trips={trips}
+            classes={classes}
+            onOpenTab={handleTabChange}
+          />
+        </TabsContent>
 
         {/* ═══════════ TASKS ═══════════ */}
         <TabsContent value="tasks">
@@ -286,17 +294,122 @@ export function FairwayTeamHub({
           <ClassScheduleReadonly classes={classes} />
         </TabsContent>
 
-        {/* ═══════════ TEAMMATES ═══════════ (the player roster, folded into the
-            hub; read-only teammate grid — header hidden since the hub masthead
-            + tab already title it). */}
-        <TabsContent value="teammates">
-          <FairwayPlayerRoster players={teammates} teamName={teamName} hideHeader />
-        </TabsContent>
       </Tabs>
 
       {/* Trip detail — Fairway Sheet (read-only), reused from the Hub. */}
       <TripDetailSheet trip={selectedTrip} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * TeamOperationsOverview — an at-a-glance entry point for the player's real
+ * team work. It deliberately summarizes the arrays already supplied by the
+ * server page; detail tabs remain the single place for task completion and
+ * other existing interactions.
+ * ──────────────────────────────────────────────────────────────────────── */
+function TeamOperationsOverview({
+  tasks,
+  announcements,
+  announcementsLoadError,
+  trips,
+  classes,
+  onOpenTab,
+}: {
+  tasks: PlayerTask[];
+  announcements: GolfAnnouncementMeta[];
+  announcementsLoadError: boolean;
+  trips: TripData[];
+  classes: TeamHubClass[];
+  onOpenTab: (tab: TabId) => void;
+}) {
+  const outstandingTasks = tasks.filter((task) => task.status !== 'completed');
+  const newestAnnouncement = announcements[0];
+  const nextTrip = trips[0];
+  const nextClass = classes[0];
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <OperationsOverviewCard
+        icon={ClipboardList}
+        title="Tasks"
+        summary={
+          outstandingTasks.length > 0
+            ? `${outstandingTasks.length} outstanding ${outstandingTasks.length === 1 ? 'task' : 'tasks'}`
+            : 'No outstanding tasks'
+        }
+        detail={outstandingTasks[0]?.title}
+        actionLabel="View all tasks"
+        onOpen={() => onOpenTab('tasks')}
+      />
+      <OperationsOverviewCard
+        icon={Megaphone}
+        title="Announcements"
+        summary={
+          announcementsLoadError
+            ? "Couldn't load announcements"
+            : newestAnnouncement
+              ? 'Latest team update'
+              : 'No recent announcements'
+        }
+        detail={newestAnnouncement?.title}
+        actionLabel="View all announcements"
+        onOpen={() => onOpenTab('announcements')}
+      />
+      <OperationsOverviewCard
+        icon={Plane}
+        title="Travel"
+        summary={nextTrip ? 'Next trip' : 'No upcoming travel'}
+        detail={nextTrip ? [nextTrip.event_name, nextTrip.destination].filter(Boolean).join(' · ') : undefined}
+        actionLabel="View all travel"
+        onOpen={() => onOpenTab('travel')}
+      />
+      <OperationsOverviewCard
+        icon={GraduationCap}
+        title="Class schedule"
+        summary={nextClass ? 'Current schedule' : 'No classes on your schedule'}
+        detail={nextClass?.class_name}
+        actionLabel="View class schedule"
+        onOpen={() => onOpenTab('classes')}
+      />
+    </div>
+  );
+}
+
+function OperationsOverviewCard({
+  icon: Icon,
+  title,
+  summary,
+  detail,
+  actionLabel,
+  onOpen,
+}: {
+  icon: typeof ClipboardList;
+  title: string;
+  summary: string;
+  detail?: string;
+  actionLabel: string;
+  onOpen: () => void;
+}) {
+  return (
+    <Surface padding="md" className="flex min-h-48 flex-col items-start">
+      <span className="grid h-10 w-10 place-items-center rounded-fw-md bg-surface-sunken text-accent-700">
+        <Icon aria-hidden className="h-4 w-4" />
+      </span>
+      <h2 className="mt-4 font-fw-sans text-h3 font-semibold text-text-primary">{title}</h2>
+      <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">{summary}</p>
+      {detail ? <p className="mt-1 line-clamp-2 font-fw-sans text-caption text-text-tertiary">{detail}</p> : null}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        rightIcon={<ArrowRight className="h-4 w-4" />}
+        onClick={onOpen}
+        className="mt-auto pt-5 text-accent-700"
+      >
+        {actionLabel}
+      </Button>
+    </Surface>
   );
 }
 
