@@ -167,3 +167,35 @@ describe('ScramblingGenerator — Phase E honest 90d window + attempt disclosure
     expect(c.evidence.sample_n).toBe(20);
   });
 });
+
+/**
+ * `evidence.window_end` is blank on every row this generator writes.
+ *
+ * Measured against production 2026-08-18 across the five generators that call
+ * `staleDataSuffix`:
+ *
+ *     insight_type        rows   window_end set   "Data through" in content
+ *     putt_distance        109         0                    95
+ *     par_scoring           69         0                    54
+ *     course_management     47        47                    36
+ *     tee_strategy          40         0                    26
+ *     scrambling            22         0                    20
+ *
+ * Only `course_management` populates it. The other four hardcode
+ * `window_end: ''` — while 195 of those same rows successfully rendered
+ * "Data through <date>" into their prose from `agg.last_round_date`. The date
+ * is on the aggregate and in the sentence; it just never reached the field a
+ * consumer can read.
+ *
+ * That blank is what makes #1505 unfixable at the read path: the staleness
+ * disclosure is computed once at write time and goes wrong as the row ages,
+ * and the obvious repair — derive it when rendering — needs `window_end`,
+ * which is empty on 240 of 287 rows.
+ */
+describe('evidence.window_end carries the newest contributing round', () => {
+  it('is the aggregate last_round_date, not an empty string', () => {
+    const g = new ScramblingGenerator(PLAYER_ID, 'sand');
+    const c = g.composeContent(makeAgg({ playerValue: 30, attempts: 20, rounds_played: 12 }));
+    expect(c.evidence.window_end).toBe('2026-05-25');
+  });
+});

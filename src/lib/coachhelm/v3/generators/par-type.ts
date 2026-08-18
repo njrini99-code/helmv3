@@ -235,7 +235,20 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
         sample_n: agg.holes_scored,
         window_days: agg.spanDays ?? 0,
         window_start: '',
-        window_end: '',
+        // The newest contributing round. This was hardcoded '' while the same
+        // `agg.last_round_date` was being rendered into the prose by
+        // `staleDataSuffix` — the date was on the aggregate and in the
+        // sentence, but never in the field a consumer can read. Measured
+        // 2026-08-18: of 287 active insights from the five generators that
+        // disclose staleness, only course_management's 47 carried a
+        // window_end; the other 240 were blank, 195 of them WITH a "Data
+        // through <date>" sentence built from this very value.
+        //
+        // `window_start` stays '' deliberately: this aggregate does not carry
+        // a first_round_date, and inventing one would be worse than an honest
+        // blank. `window_days` above is already the true span via
+        // lifetimeSpanDays().
+        window_end: agg.last_round_date ?? '',
         // Seed 0: "impact" is a gap-to-COHORT quantity, so the BaseGenerator
         // backfills the real value from the counterfactual (capped) when there
         // is genuine cohort-relative leverage. A gap-to-PAR diagnostic must NOT
