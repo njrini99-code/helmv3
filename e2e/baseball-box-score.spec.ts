@@ -206,7 +206,10 @@ test.describe('Coach - Create New Game', () => {
     await waitForPageLoad(page);
 
     // Newly created, uncompleted game lands directly on the manual entry form.
-    await expect(page.getByText(opponent)).toBeVisible();
+    // The page renders the opponent name in several places (breadcrumb, crumb
+    // trail, uppercase dateline), so a bare getByText trips strict mode — the
+    // page title heading is the single stable anchor.
+    await expect(page.getByRole('heading', { name: `Game vs ${opponent}` })).toBeVisible();
     await expect(page.locator('[data-testid="batting-entry-table"]')).toBeVisible();
   });
 });
