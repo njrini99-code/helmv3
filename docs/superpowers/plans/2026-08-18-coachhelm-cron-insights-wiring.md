@@ -103,39 +103,42 @@ Verified Connor Lynde's approach card against raw `golf_shots`:
 Four of four. **Accuracy of the shot-derived layer is not the problem.** The
 problem is what the insight is *about* — see Part 3.
 
-### 2.2 The cached putting numbers disagree with the shots
+### 2.2 RETRACTED — the cached putting numbers are correct
 
-This is the real accuracy defect. Braeden Gillen, cache vs raw `golf_shots`:
+**This section previously claimed the cache disagreed with raw shots by up to
+13.5 points. That was my measurement error, not a product defect.** Correcting
+it in place rather than deleting it, because the way it went wrong is worth
+keeping.
 
-| Band | Cache (what the UI shows) | Raw shots |
+I compared the cache against a query using bands `>= 3 AND < 5`. The writer,
+`update_player_putt_make_pct` (a SECURITY DEFINER plpgsql function), uses
+`> 3 AND <= 5` — exclusive lower, inclusive upper. Re-running the function's
+exact aggregation against `golf_shots` today reproduces the cache perfectly:
+
+| Band | Cache | Recomputed from shots |
 |---|---|---|
-| **3–5 ft** | **46.5%** / 43 attempts | **60%** / 43 attempts |
-| 5–10 ft | 27.7% / 83 | 35% / 77 |
-| 10–15 ft | 15.6% / 64 | 15% / **48** |
-| 15–25 ft | 12.2% / 49 | 13% / **68** |
-| 25+ ft | 0.0% / 31 | 2% / **46** |
+| 3-5 ft | 46.5% / 43 | **46.5% / 43** |
+| 5-10 ft | 27.7% / 83 | **27.7% / 83** |
+| 10-15 ft | 15.6% / 64 | **15.6% / 64** |
+| 25+ ft | 0.0% / 31 | **0.0% / 31** |
 
-The 3–5 ft row is the one that cannot be explained away: **identical
-denominators, 20 makes versus 26.** The calculator counts a make as
-`result === 'hole' || putt_made === true`, which can only produce *more* makes
-than my `result='hole'` query, never fewer.
+The TS bucketer `getPuttDistanceBucket` uses the same semantics
+(`<= 3`, `<= 5`, `<= 10`, `<= 15`), so the two implementations agree. There is
+no drift.
 
-Braeden's cache row was written **2026-06-10 — 69 days ago** — while his last
-round is 2026-04-21. So the cache is not missing rounds; it was computed by
-whatever code was deployed in June, and nothing has re-verified it since.
+What made the wrong conclusion convincing: the 3-5 ft band had an IDENTICAL
+attempt count (43) under both definitions, so it looked like the same
+denominator with a different numerator — the one shape that cannot be a
+boundary difference. It can: a 3.0 ft putt is in my band and not theirs, a
+5.0 ft putt is in theirs and not mine, and here those happened to cancel. Equal
+set SIZE is not equal set MEMBERSHIP.
 
-The chat surface is honest about this and says so unprompted: *"computed 69 days
-ago"*. The insight cards are not — they present the same numbers with no age.
-
-**This matters because `putt_distance` reads the cache, not the shots.** Every
-putting insight on the coach's feed inherits the discrepancy. "Braeden is making
-47% from 3–5 ft" is what a coach acts on; the shots say 60%.
-
-**Fix.** A reconciliation check: recompute a sample of cached bands from
-`golf_shots` and alert on divergence beyond a tolerance. This is the same class
-as the "two read paths must not drift" rule in `.claude/rules/golf-review.md`,
-which currently has no enforcement. Cheapest version is a nightly job comparing
-N players and logging the max delta into `background_job_logs.metadata`.
+**The genuine version of this concern still stands and is unenforced.** SG has
+two implementations by design — `sg-benchmarks.ts` states "AUTHORITATIVE SOURCE
+OF TRUTH IS THE DATABASE" and carries a "KEEP IN SYNC" comment against the DB's
+`sg_expected_strokes`. Nothing tests that they agree. A reconciliation check
+belongs there, where drift is possible, rather than on the putting bands, where
+it is not.
 
 ### 2.3 Insight staleness is invisible
 
