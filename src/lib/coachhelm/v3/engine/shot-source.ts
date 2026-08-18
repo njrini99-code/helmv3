@@ -26,6 +26,10 @@ export interface ApproachShot {
   distance_to_hole_before: number; // yards
   distance_to_hole_after: number;  // raw, in the unit named by distance_unit_after — normalize to feet before use
   distance_unit_after: string | null; // 'feet' | 'yards' (mixed in prod) — drives the proximity→feet conversion
+  /** Unit of `distance_to_hole_before` — 'feet' | 'yards', mixed in prod like
+   *  its `_after` sibling. Drives the approach-band bucketing; assuming yards
+   *  put a 43-yd shot in the 125-175 yd band. */
+  distance_unit_before: string | null;
   lie_before: string | null;
   /** Lie the ball came to rest in ('green' when the approach found the putting surface).
    *  Used with `result` to tell on-green finishes (proximity, feet) from off-green misses. */
@@ -95,12 +99,32 @@ export interface TeeStrategyShot {
 }
 
 /** Bucket a yards-to-hole value into v3 approach metric buckets. */
-export function bucketApproachDistance(yards: number): ApproachBucket | null {
+/**
+ * Which approach band a shot belongs to.
+ *
+ * `distance` is RAW, in the unit named by the row's `distance_unit_before` —
+ * the same "mixed in prod" caveat the `ApproachShot` fields carry. This used to
+ * take a bare number and assume yards, while `loadApproachShots` declined to
+ * select the unit column at all (the sand loader below has always selected
+ * both). Measured 2026-08-17: 6,800 of 6,801 approach shots record yards and
+ * exactly one records feet — 128 ft, i.e. 43 yd, which is under the 50-yd floor
+ * and should not be an approach at all. It was counting as a 128-YARD approach.
+ *
+ * `unit` omitted or unrecognised means yards, which is what the writer emits
+ * almost always and what every existing caller relied on.
+ */
+export function bucketApproachDistance(
+  distance: number,
+  unit?: string | null,
+): ApproachBucket | null {
+  const yards = unit === 'feet' ? distance / FEET_PER_YARD : distance;
   if (yards >= 50 && yards < 125) return '50_125ft';
   if (yards >= 125 && yards < 175) return '125_175ft';
   if (yards >= 175) return '175_plus_ft';
   return null;
 }
+
+const FEET_PER_YARD = 3;
 
 const DEFAULT_WINDOW_DAYS = 90;
 
@@ -130,7 +154,7 @@ export async function loadApproachShots(
   const { data, error } = await fetchAllRowsResult<ApproachShot>((from, to) =>
     fromUntyped(supabase, 'golf_shots')
       .select(
-        'round_id, hole_number, shot_number, distance_to_hole_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, result, is_penalty, miss_direction',
+        'round_id, hole_number, shot_number, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, result, is_penalty, miss_direction',
       )
       .eq('shot_type', 'approach')
       .in('round_id', roundIds)

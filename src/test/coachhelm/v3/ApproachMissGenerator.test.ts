@@ -40,6 +40,9 @@ function shot(
     hole_number: 1,
     shot_number: 2,
     distance_to_hole_before: distBeforeYards,
+    // Yards unless a case overrides it — 6,800 of 6,801 production approach
+    // shots record yards, so that is the fixture's honest default.
+    distance_unit_before: 'yards',
     distance_to_hole_after: proxAfter,
     distance_unit_after: unitAfter,
     lie_before: 'fairway',
@@ -106,6 +109,40 @@ describe('bucketApproachDistance', () => {
   it('returns null for sub-50-yard shots', () => {
     expect(bucketApproachDistance(20)).toBeNull();
     expect(bucketApproachDistance(49)).toBeNull();
+  });
+
+  /**
+   * `golf_shots.distance_to_hole_before` is raw, in the unit named by
+   * `distance_unit_before` — and this file's own `ApproachShot` comment says
+   * the units are "mixed in prod". `loadApproachShots` selects
+   * `distance_unit_after` but NOT `distance_unit_before`, so the bucketer was
+   * handed a number and told nothing about what it measured. The sand loader
+   * three functions down selects both.
+   *
+   * Live, and small: measured 2026-08-17, 6,800 of 6,801 approach shots record
+   * yards and exactly one records feet — 128 ft, which is 43 yd. That shot is
+   * below the 50-yd approach floor and should not be bucketed at all; instead
+   * it counts as a 128-YARD approach in someone's 125-175 band, where the
+   * roster average green-hit rate is 57%.
+   *
+   * One shot is not a crisis. A loader that silently assumes a unit it declines
+   * to read is, because nothing stops the writer emitting feet again.
+   */
+  it('reads the unit instead of assuming yards', () => {
+    // The exact production row: 128 ft = 42.7 yd, under the 50-yd floor.
+    expect(bucketApproachDistance(128, 'feet')).toBeNull();
+  });
+
+  it('buckets a feet-recorded approach by its real yardage', () => {
+    expect(bucketApproachDistance(450, 'feet')).toBe('125_175ft'); // 150 yd
+    expect(bucketApproachDistance(600, 'feet')).toBe('175_plus_ft'); // 200 yd
+    expect(bucketApproachDistance(300, 'feet')).toBe('50_125ft'); // 100 yd
+  });
+
+  it('treats an absent or unknown unit as yards — what 6,800 of 6,801 rows are', () => {
+    expect(bucketApproachDistance(150, null)).toBe('125_175ft');
+    expect(bucketApproachDistance(150, undefined)).toBe('125_175ft');
+    expect(bucketApproachDistance(150, 'yards')).toBe('125_175ft');
   });
 });
 

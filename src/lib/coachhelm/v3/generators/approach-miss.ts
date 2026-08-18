@@ -171,7 +171,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
   async aggregate(): Promise<ApproachMissAggregate | null> {
     const shots = await loadApproachShots(this.playerId);
     const inBucket = shots.filter(
-      (s) => bucketApproachDistance(s.distance_to_hole_before) === this.bucket,
+      (s) => bucketApproachDistance(s.distance_to_hole_before, s.distance_unit_before) === this.bucket,
     );
     if (inBucket.length === 0) return null;
 
