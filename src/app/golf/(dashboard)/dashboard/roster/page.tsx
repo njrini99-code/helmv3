@@ -14,6 +14,7 @@ import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
+import { findSuspectedDuplicateMembers } from '@/lib/golf/duplicate-roster-members';
 import { loadActiveGoalsForPlayers } from '@/lib/coachhelm/v3/goals/loader';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
@@ -283,6 +284,7 @@ export default async function GolfRosterPage() {
         id,
         first_name,
         last_name,
+        email,
         avatar_url,
         hometown,
         state,
@@ -304,6 +306,7 @@ export default async function GolfRosterPage() {
         id: string;
         first_name: string | null;
         last_name: string | null;
+        email: string | null;
         avatar_url: string | null;
         hometown: string | null;
         state: string | null;
@@ -315,6 +318,7 @@ export default async function GolfRosterPage() {
         id: player.id,
         first_name: player.first_name,
         last_name: player.last_name,
+        email: player.email,
         avatar_url: player.avatar_url,
         hometown: player.hometown,
         state: player.state,
@@ -557,8 +561,30 @@ export default async function GolfRosterPage() {
   const teamName = team?.name || 'Team';
   const inviteCode = team?.join_code || null;
 
+  // The same student signing up twice — once personally, once with the school
+  // address — lands on the roster as two players with their data split across
+  // them (#1477). Nothing told the coach; they found out by noticing a
+  // teammate who had apparently never played. Within-team by construction, so
+  // the deliberate Demo University / Demo University (Pat) clone pairs are
+  // never flagged.
+  const suspectedDuplicates = findSuspectedDuplicateMembers(players);
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
+      {suspectedDuplicates.length > 0 ? (
+        <div className="mx-auto w-full max-w-7xl px-5 pt-6 md:px-8">
+          <InlineNotice tone="warning" title="Two entries for the same player">
+            <p>
+              {suspectedDuplicates
+                .map((d) => `${d.name} (${d.emails.filter(Boolean).join(' and ')})`)
+                .join('; ')}{' '}
+              {suspectedDuplicates.length === 1 ? 'appears' : 'appear'} on this roster more than
+              once — usually a personal address and a school one. Their rounds and stats attach to
+              only one of the entries.
+            </p>
+          </InlineNotice>
+        </div>
+      ) : null}
       <FairwayCoachRoster
         players={playersWithStats}
         teamName={teamName}
