@@ -221,7 +221,23 @@ export function GenomeDetailView({
     [genome],
   );
   const liveRows = dimRows.filter((d) => !d.locked && d.score != null);
-  const totalDims = GENOME_DIMENSIONS.length;
+  /**
+   * The denominator counts only dimensions that CAN become live.
+   *
+   * `neverAvailable` marks a permanent stub — today `weather_sensitivity_stub`,
+   * because no weather or temperature is recorded in shot data at all. Its own
+   * docblock in genome/types.ts says the flag exists to "drive a separate 'Not
+   * tracked' UI treatment so coaches don't read it as 'will unlock
+   * eventually'", and the grid cell honors that. This caption did not: counting
+   * the stub made the page say "0 of 8 dimensions live · more land as data
+   * matures" directly above a cell reading NOT TRACKED — the exact promise the
+   * flag exists to prevent, made at the aggregate level where a coach reads it.
+   * No amount of golf resolves that spoke; it needs a feature to ship.
+   *
+   * The untracked dimensions are not hidden — they keep their own cell and
+   * their own honest label in the grid below.
+   */
+  const totalDims = GENOME_DIMENSIONS.filter((d) => d.neverAvailable !== true).length;
 
   // Radar axes — ONLY live dimensions (locked spokes are never plotted as 0).
   const radarData: GenomeAxis[] = liveRows.map((d) => ({ label: d.label, value: d.score! }));
