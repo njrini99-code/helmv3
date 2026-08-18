@@ -48,6 +48,7 @@ import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/Fair
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { localDayIso } from '@/lib/golf/local-day';
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
@@ -264,7 +265,7 @@ export default function NewRoundClient() {
   // Set roundDate on mount to avoid server/client timezone hydration mismatch
   useEffect(() => {
     if (!setupData.roundDate) {
-      setSetupData(prev => ({ ...prev, roundDate: new Date().toISOString().split('T')[0]! }));
+      setSetupData(prev => ({ ...prev, roundDate: localDayIso() }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

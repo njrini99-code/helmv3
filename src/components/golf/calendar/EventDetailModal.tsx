@@ -34,12 +34,13 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import type { CalendarCapabilities } from './PremiumCalendarClient';
+import { localDayIso } from '@/lib/golf/local-day';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
 // Helper to get today's date in YYYY-MM-DD format
 function getTodayDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDayIso();
 }
 
 export type RecurrenceFrequency = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly';

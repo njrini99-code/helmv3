@@ -51,6 +51,7 @@ import {
   type TravelExpense,
   type CreateExpenseInput,
 } from '@/app/golf/actions/travel';
+import { localDayIso } from '@/lib/golf/local-day';
 
 type ExpenseIcon = ComponentType<SVGAttributes<SVGElement> & { size?: number }>;
 
@@ -113,7 +114,7 @@ export function FairwayExpenseForm({
     setCategory('other');
     setDescription('');
     setAmount('');
-    setExpenseDate(new Date().toISOString().split('T')[0] || '');
+    setExpenseDate(localDayIso());
     setPaidBy('team');
     setNotes('');
     setReceiptUrl(null);

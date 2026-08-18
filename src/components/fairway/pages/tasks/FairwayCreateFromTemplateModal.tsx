@@ -33,6 +33,7 @@ import {
 import { IconCheck } from '@/components/icons';
 import { createTaskFromTemplate, type TaskTemplate } from '@/app/golf/actions/tasks';
 import type { FairwayTaskPlayer } from './FairwayTasks';
+import { localDayIso } from '@/lib/golf/local-day';
 
 export interface FairwayCreateFromTemplateModalProps {
   open: boolean;
@@ -49,7 +50,7 @@ function defaultDueDate(template: TaskTemplate): string {
   if (template.default_due_days) {
     const d = new Date();
     d.setDate(d.getDate() + template.default_due_days);
-    return d.toISOString().split('T')[0] ?? '';
+    return localDayIso(d);
   }
   return '';
 }

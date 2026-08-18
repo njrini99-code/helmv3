@@ -48,6 +48,7 @@ import { createGolfQualifier } from '@/app/golf/actions/golf';
 // course shelves → Stage B tee). We only need the picked course/tee identity, so
 // we read courseId / courseName / teeId off the returned TeeRoundDefaults.
 import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/FairwayCoursePicker';
+import { localDayIso } from '@/lib/golf/local-day';
 
 /** One round's assigned course in the create form. */
 interface RoundCourseDraft {
@@ -67,7 +68,7 @@ export interface FairwayNewQualifierProps {
   players: Player[];
 }
 
-const todayISO = () => new Date().toISOString().split('T')[0] as string;
+const todayISO = () => localDayIso();
 
 export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
   const router = useRouter();

@@ -42,6 +42,7 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
+import { localDayIso } from '@/lib/golf/local-day';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -100,7 +101,7 @@ interface MobileEventSheetProps {
 
 // Helper to get today's date in YYYY-MM-DD format
 function getTodayDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDayIso();
 }
 
 // Premium event type pills for mobile
