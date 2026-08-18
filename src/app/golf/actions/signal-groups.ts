@@ -29,6 +29,7 @@ import {
   type GroupedSignal,
   type SignalGroup,
 } from '@/lib/coachhelm/signal-grouping';
+import { synthesizeTeamSignals } from '@/lib/coachhelm/v3/insights/team-synthesis';
 import { acknowledgeInsight, dismissInsight } from './intelligence-dashboard';
 import { markPatternAddressed, dismissPattern } from './pattern-management';
 import { describeError } from '@/lib/utils/describe-error';
@@ -233,7 +234,15 @@ async function getSignalGroupsImpl(
       };
     });
 
-    const groups = groupSignals([...insightSignals, ...patternSignals], playerNames);
+    // The Team bucket `groupSignals` pins first has been empty since it was
+    // written (0 of 615 insights are team-scoped in production). Synthesize it
+    // here from the per-player signals we already hold, so a team card can
+    // only ever cite leaks the coach can open individually below it.
+    const perPlayerSignals = [...insightSignals, ...patternSignals];
+    const groups = groupSignals(
+      [...perPlayerSignals, ...synthesizeTeamSignals(perPlayerSignals)],
+      playerNames,
+    );
 
     const timestamps = [...(insightRows ?? []), ...(patternRows ?? [])]
       .map((row) => row.created_at)
