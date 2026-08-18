@@ -33,7 +33,13 @@ export function RailBars({ rows, labelWidth = 56 }: RailBarsProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: DURATION.short, delay: stagger(i), ease: EASE_CINEMATIC }}
             className="grid items-center gap-2.5"
-            style={{ gridTemplateColumns: `${labelWidth}px 1fr 38px` }}
+            // The last track carries `row.value` AND `row.sample` together.
+            // A fixed 38px fits "62%" but not "62% 133/216", so the
+            // denominator overflowed and was clipped by the enclosing card —
+            // the exact evidence the sample exists to show. `minmax` keeps the
+            // 38px floor (rows with no sample keep today's alignment) and lets
+            // the track grow when there is a denominator to fit.
+            style={{ gridTemplateColumns: `${labelWidth}px 1fr minmax(38px, max-content)` }}
           >
             <span className="truncate font-fw-sans text-caption text-text-tertiary">{row.label}</span>
             <span className="relative h-[9px] rounded-full bg-surface-sunken">
@@ -55,7 +61,7 @@ export function RailBars({ rows, labelWidth = 56 }: RailBarsProps) {
             </span>
             <span
               style={TABULAR_NUMS}
-              className="text-right font-fw-mono text-caption font-normal tabular-nums text-text-primary"
+              className="whitespace-nowrap text-right font-fw-mono text-caption font-normal tabular-nums text-text-primary"
             >
               {row.value}
               {/* The evidence behind the rate. A percentage with no denominator
