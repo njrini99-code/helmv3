@@ -16,6 +16,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { GENOME_DIMENSIONS } from './registry';
+import { GENOME_WINDOW_DAYS } from './types';
 import type {
   DimensionResult,
   GenomeContext,
@@ -34,7 +35,10 @@ import { describeError } from '@/lib/utils/describe-error';
  * see `select-refresh-chunk.ts`) or silently declines to refresh players it
  * could have. One constant, one meaning.
  */
-export const WINDOW_DAYS = 90;
+// Defined in ./types so a client component can name the window without
+// importing this module (which pulls in the service-role admin client).
+// Re-exported under the original name so existing callers are unchanged.
+export const WINDOW_DAYS = GENOME_WINDOW_DAYS;
 
 /**
  * Why a null dimension is null — stored on the persisted vector so the slot is

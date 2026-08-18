@@ -8,6 +8,23 @@
  * registered dimension for a player and upserts the result.
  */
 
+/**
+ * Trailing window, in days, that every genome computation reads.
+ *
+ * Lives here rather than in ./orchestrator.ts because that module imports the
+ * service-role admin client; a `'use client'` surface importing the constant
+ * from there would pull the admin client into the browser bundle. This file
+ * has no imports at all, so it is safe from either side. The orchestrator
+ * re-exports it as `WINDOW_DAYS` so there is exactly one source of truth.
+ *
+ * The UI must SAY this number. `rounds_basis` counts rounds inside the window,
+ * not a career total, and a coach comparing "Computed on 6 rounds" here
+ * against "Area averages from 16 rounds" on the Game Fingerprint has no way to
+ * reconcile them otherwise — measured on Luke Wise 2026-08-18: 16 career
+ * rounds, 3 in the last 90 days.
+ */
+export const GENOME_WINDOW_DAYS = 90;
+
 export const GENOME_CATEGORIES = [
   'miss_tendencies',
   'pressure_response',

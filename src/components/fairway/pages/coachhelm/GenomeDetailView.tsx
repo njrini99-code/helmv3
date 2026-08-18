@@ -66,6 +66,7 @@ import {
 import { GENOME_DIMENSIONS, getDimension } from '@/lib/coachhelm/v3/genome/registry';
 import { formatGenomeRefreshed } from '@/lib/coachhelm/v3/genome/format-refreshed';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
+import { GENOME_WINDOW_DAYS } from '@/lib/coachhelm/v3/genome/types';
 import type { GenomeVector, DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import type { Persona, PersonaEntry } from '@/lib/coachhelm/v3/genome/persona';
 import {
@@ -342,7 +343,7 @@ export function GenomeDetailView({
       title={playerName}
       description={
         genome
-          ? `${genome.rounds_basis} rounds · last refreshed ${formatAgo(genome.computed_at)}`
+          ? `${genome.rounds_basis} rounds in the last ${GENOME_WINDOW_DAYS} days · last refreshed ${formatAgo(genome.computed_at)}`
           : 'Genome not computed yet'
       }
       breadcrumbs={[
@@ -549,6 +550,13 @@ function RoundsBasisReadout({ rounds }: { rounds: number }) {
         samples={rounds === 0 ? { have: 0, need: 1 } : undefined}
         awaitingLabel="No rounds yet"
       />
+      {/* The window is load-bearing, not a footnote: `rounds_basis` counts only
+          rounds inside it, so without this line "Computed on 6 rounds" reads as
+          a career total and contradicts the Game Fingerprint's "16 rounds" for
+          the same player. */}
+      <span className="mt-1 block font-fw-sans text-caption text-text-tertiary">
+        {`Last ${GENOME_WINDOW_DAYS} days`}
+      </span>
     </InstrumentPanel>
   );
 }
