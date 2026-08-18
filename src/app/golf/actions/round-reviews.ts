@@ -794,9 +794,16 @@ async function saveCoachFeedbackImpl(
       updateData.coach_notes = feedback.coach_notes;
     }
 
-    const { error: updateError } = await fromUntyped(supabase, 'golf_round_reviews')
+    // `.select('id')` so a 0-row update surfaces as a failure instead of a
+    // false success. A PostgREST UPDATE matching no rows resolves
+    // `{ data: null, error: null }` — byte-identical to one that matched — so
+    // checking `error` alone told the coach their notes were saved and threw
+    // them away. Same fix, same reasoning, as development.ts
+    // recordFocusAreaOutcomeImpl, rsvp.ts, and the qualifier save paths (#1498).
+    const { data: updatedRows, error: updateError } = await fromUntyped(supabase, 'golf_round_reviews')
       .update(updateData)
-      .eq('id', reviewId);
+      .eq('id', reviewId)
+      .select('id');
 
     if (updateError) {
       await logServerError(`saveCoachFeedback update failed: ${updateError.message}`, {
@@ -812,6 +819,24 @@ async function saveCoachFeedbackImpl(
         sport: 'golf',
       });
       return { success: false, error: 'Failed to save feedback' };
+    }
+
+    if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
+      // The review was read a few lines above, so reaching here means it went
+      // away or the write policy refused: `admin_read_all` grants SELECT on
+      // every review with no matching UPDATE policy, and a concurrently
+      // deleted review matches nothing regardless of policy.
+      await logServerError('saveCoachFeedback matched no rows', {
+        action: 'saveCoachFeedback',
+        featureArea: 'round_reviews',
+        extra: { reviewId },
+      });
+      return {
+        success: false,
+        // Name what the coach can act on. "Failed to save feedback" sends them
+        // to retry the same thing; this tells them where to look.
+        error: 'Could not save feedback — the review may have been deleted, or you may not have edit access to this player.',
+      };
     }
 
     // 5. Revalidate paths. The review is read from the player-facing page
