@@ -93,7 +93,7 @@ export function CourseDetailDrawer({
     try {
       const [d, holes] = await Promise.all([
         getCourseDetail(id),
-        getCourseTeeHoles(id).catch(() => ({})),
+        getCourseTeeHoles(id).then((byTee) => byTee ?? {}).catch(() => ({})),
       ]);
       if (!d) {
         setDetail(null);
@@ -119,7 +119,7 @@ export function CourseDetailDrawer({
     setHolesByTeeId({});
     Promise.all([
       getCourseDetail(id),
-      getCourseTeeHoles(id).catch(() => ({})),
+      getCourseTeeHoles(id).then((byTee) => byTee ?? {}).catch(() => ({})),
     ])
       .then(([d, holes]) => {
         if (!d) {
