@@ -45,11 +45,26 @@ export const METRIC_RENDER_CONFIG: Record<MetricId, MetricRenderConfig> = {
   putts_made_15_25ft_pct:      { direction: 'higher_better', unit: 'percent', display_label: 'Putts Made 15-25 ft', default_scale: { min: 0,  max: 30  } },
   putts_made_25_plus_ft_pct:   { direction: 'higher_better', unit: 'percent', display_label: 'Putts Made 25+ ft',   default_scale: { min: 0,  max: 15  } },
 
-  // Putt miss bias — lower is better; scale 0-100% of misses
+  // Putt break-direction bias.
+  //
+  // high/low have NO producer — `DIR_TO_METRIC_ID` in putt-bias.ts maps only
+  // 'left' and 'right' — so nothing has ever written a value under them and
+  // there is no evidence of what one would mean. They keep the original
+  // miss-share reading; guessing a direction for a metric with no producer is
+  // exactly how left/right below went wrong.
   putt_miss_bias_high_pct:   { direction: 'lower_better', unit: 'percent', display_label: 'Putt Miss High %',  default_scale: { min: 0, max: 60 } },
   putt_miss_bias_low_pct:    { direction: 'lower_better', unit: 'percent', display_label: 'Putt Miss Low %',   default_scale: { min: 0, max: 60 } },
-  putt_miss_bias_left_pct:   { direction: 'lower_better', unit: 'percent', display_label: 'Putt Miss Left %',  default_scale: { min: 0, max: 60 } },
-  putt_miss_bias_right_pct:  { direction: 'lower_better', unit: 'percent', display_label: 'Putt Miss Right %', default_scale: { min: 0, max: 60 } },
+  // left/right are a MAKE rate, so HIGHER is better. PuttBiasGenerator emits
+  // only the player's WEAKER break direction and writes `weak_pct` —
+  // "Make-% on the weaker direction within the cut" (putt-bias.ts:62) — with
+  // its own label "Break-direction make % (distance-controlled)". The metric
+  // NAME says the opposite and this table used to agree with the name rather
+  // than the value. Measured 2026-08-18, the generator's `comparison_value` is
+  // the same player's make % on their STRONGER side, and your_value is lower
+  // in 8 of 8 rows carrying both, 0 higher — a miss share on the weaker side
+  // would be the higher number, not the lower one.
+  putt_miss_bias_left_pct:   { direction: 'higher_better', unit: 'percent', display_label: 'Break Make % (weaker side, L-to-R)',  default_scale: { min: 0, max: 100 } },
+  putt_miss_bias_right_pct:  { direction: 'higher_better', unit: 'percent', display_label: 'Break Make % (weaker side, R-to-L)', default_scale: { min: 0, max: 100 } },
 
   // Approach proximity — lower is better (closer to hole), feet
   approach_proximity_50_125ft:   { direction: 'lower_better', unit: 'feet', display_label: 'Approach Proximity 50-125 yd',  default_scale: { min: 10, max: 50 } },

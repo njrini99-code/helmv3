@@ -52,8 +52,13 @@ INSERT INTO public.golf_metrics (
   -- Putt miss bias (4) — PuttBiasGenerator W22
   ('putt_miss_bias_high_pct',  'Putt Miss High %',  'percent', 'lower_better', 'putting', 'Of missed putts, share that finished past the hole. Speed-control diagnostic.', 'W9'),
   ('putt_miss_bias_low_pct',   'Putt Miss Low %',   'percent', 'lower_better', 'putting', 'Of missed putts, share that finished short. Decel / under-read diagnostic.', 'W9'),
-  ('putt_miss_bias_left_pct',  'Putt Miss Left %',  'percent', 'lower_better', 'putting', 'Of missed putts, share that missed left of hole. Aim / stroke-path diagnostic.', 'W9'),
-  ('putt_miss_bias_right_pct', 'Putt Miss Right %', 'percent', 'lower_better', 'putting', 'Of missed putts, share that missed right of hole.', 'W9'),
+  -- left/right carry a MAKE rate, not a miss share, so higher is better.
+  -- PuttBiasGenerator (W22) emits only the player's WEAKER break direction and
+  -- writes `weak_pct` = "Make-% on the weaker direction within the cut"
+  -- (putt-bias.ts:62). The W9 miss-share definition below never had a producer;
+  -- this is the metric's only real meaning in the data. Corrected 2026-08-18.
+  ('putt_miss_bias_left_pct',  'Break Make % (weaker side, L-to-R)',  'percent', 'higher_better', 'putting', 'Make percentage on left-to-right breaking putts, distance-controlled, when that is the player''s weaker side.', 'W22'),
+  ('putt_miss_bias_right_pct', 'Break Make % (weaker side, R-to-L)', 'percent', 'higher_better', 'putting', 'Make percentage on right-to-left breaking putts, distance-controlled, when that is the player''s weaker side.', 'W22'),
 
   -- Approach proximity by distance (3) — ApproachMissGenerator W22 (unit feet, lower is better)
   ('approach_proximity_50_125ft',   'Approach Proximity 50-125 yd',  'feet', 'lower_better', 'approach', 'Average proximity to hole from approaches 50-125 yards (Tour ~16-19 ft; college ~25-32 ft — biggest gap).', 'W9'),

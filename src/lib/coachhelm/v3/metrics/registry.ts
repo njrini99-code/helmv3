@@ -126,11 +126,15 @@ const METRIC_DIRECTION: Record<MetricId, MetricDirection> = {
   putts_made_15_25ft_pct: 'higher_better',
   putts_made_25_plus_ft_pct: 'higher_better',
 
-  // Putt miss bias — lower is better (fewer misses in any one direction)
+  // Putt break-direction bias. high/low have no producer and keep the original
+  // miss-share reading; left/right carry a MAKE rate written by
+  // PuttBiasGenerator (`weak_pct`, "Make-% on the weaker direction"), so higher
+  // is better. Must stay in step with standing/metric-config.ts — a test pins
+  // that the two tables agree.
   putt_miss_bias_high_pct: 'lower_better',
   putt_miss_bias_low_pct: 'lower_better',
-  putt_miss_bias_left_pct: 'lower_better',
-  putt_miss_bias_right_pct: 'lower_better',
+  putt_miss_bias_left_pct: 'higher_better',
+  putt_miss_bias_right_pct: 'higher_better',
 
   // Approach proximity — lower is better (closer to the hole)
   approach_proximity_50_125ft: 'lower_better',
