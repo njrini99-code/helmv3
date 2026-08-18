@@ -58,6 +58,45 @@ const REPORT_DIR = path.join(process.cwd(), 'test-results');
  * this is a smoke check, not an exhaustive crawl of every public profile. */
 const MAX_PUBLIC_SAMPLES = 3;
 
+/**
+ * Budget for ONE role's crawl, and why it is not the default.
+ *
+ * These two tests each walk a breadth-first frontier — every visible nav link,
+ * plus the hub-subnav links those reveal, plus up to MAX_PUBLIC_SAMPLES
+ * anonymous re-checks — inside a SINGLE test. Playwright's default test timeout
+ * is 30s, and `gotoAndAssessRouteHealth` defaulted to a 30s navigation timeout
+ * PER ROUTE. Those two numbers being equal is the bug: the first genuinely slow
+ * route consumed the entire test budget, so the helper's graceful per-route
+ * failure path — the one that returns `http-error` and names the route — could
+ * never fire, and every route after it reported the cascade instead.
+ *
+ * That is exactly what CI showed on 2026-08-18 (run 32128796723): one real
+ * timeout on /baseball/dashboard/dev-plans, then eight routes reporting
+ * "Target page, context or browser has been closed" — which reads as nine
+ * broken surfaces and is actually one slow one plus a dead context.
+ *
+ * The assertion is unchanged (`failures.length === 0`); only the wall clock
+ * moves. A 30s budget silently converted this test from "is every surface
+ * healthy" into "can the whole app be crawled in 30 seconds", which is not a
+ * property anyone chose and which no growing nav tree can satisfy.
+ *
+ * Arithmetic: worst case per route is ROUTE_NAV_TIMEOUT_MS + the 8s networkidle
+ * settle, so ~23s; a frontier in the mid-twenties needs ~9 minutes if every
+ * route is pathological. A healthy crawl finishes in a fraction of that — this
+ * budget is headroom for diagnosis, not expected runtime, and the job itself
+ * allows 120 minutes.
+ */
+const ROLE_CRAWL_TIMEOUT_MS = 8 * 60 * 1000;
+
+/**
+ * Per-route navigation cap, deliberately well under ROLE_CRAWL_TIMEOUT_MS.
+ *
+ * This is what lets one hanging route be REPORTED rather than take the run
+ * down with it: the helper catches its own navigation timeout and records
+ * `http-error` against the route by name, which is the signal a reader needs.
+ */
+const ROUTE_NAV_TIMEOUT_MS = 15 * 1000;
+
 const PUBLIC_SAMPLE_RE = /^\/baseball\/(player|team|program)\/[^/?#]+$|^\/baseball\/packet\/[^/?#]+$/;
 
 /** Visible `<nav>` links, deduped, same-origin, baseball-scoped. Excludes
@@ -124,6 +163,7 @@ async function crawlAuthenticatedRole(
 
     const result = await gotoAndAssessRouteHealth(page, route, {
       expectedSportPrefix: '/baseball/',
+      navigationTimeoutMs: ROUTE_NAV_TIMEOUT_MS,
     });
     results.push(result);
 
@@ -156,7 +196,10 @@ async function verifyPublicSamplesAnonymously(
     const results: RouteHealthResult[] = [];
     for (const route of routes) {
       results.push(
-        await gotoAndAssessRouteHealth(anonPage, route, { expectedSportPrefix: '/baseball/' }),
+        await gotoAndAssessRouteHealth(anonPage, route, {
+          expectedSportPrefix: '/baseball/',
+          navigationTimeoutMs: ROUTE_NAV_TIMEOUT_MS,
+        }),
       );
     }
     return results;
@@ -184,6 +227,7 @@ test.describe('BaseballHelm authenticated route crawler — coach', { tag: '@coa
   test('every visible coach nav link renders a healthy authenticated surface', async ({
     page,
   }) => {
+    test.setTimeout(ROLE_CRAWL_TIMEOUT_MS);
     const { results, publicSamples } = await crawlAuthenticatedRole(
       page,
       '/baseball/dashboard/command-center',
@@ -201,6 +245,7 @@ test.describe('BaseballHelm authenticated route crawler — player', { tag: '@pl
   test('every visible player nav link renders a healthy authenticated surface', async ({
     page,
   }) => {
+    test.setTimeout(ROLE_CRAWL_TIMEOUT_MS);
     const { results, publicSamples } = await crawlAuthenticatedRole(page, '/baseball/player/today');
     const publicResults = await verifyPublicSamplesAnonymously(page, publicSamples);
     const all = [...results, ...publicResults];
