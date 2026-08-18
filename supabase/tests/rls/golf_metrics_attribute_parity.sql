@@ -40,8 +40,13 @@ INSERT INTO expected_metrics VALUES
   ('putts_made_25_plus_ft_pct',   'Putts Made 25+ ft',             'percent', 'higher_better', 'putting'),
   ('putt_miss_bias_high_pct',     'Putt Miss High %',              'percent', 'lower_better',  'putting'),
   ('putt_miss_bias_low_pct',      'Putt Miss Low %',               'percent', 'lower_better',  'putting'),
-  ('putt_miss_bias_left_pct',     'Putt Miss Left %',              'percent', 'lower_better',  'putting'),
-  ('putt_miss_bias_right_pct',    'Putt Miss Right %',             'percent', 'lower_better',  'putting'),
+  -- left/right carry a MAKE rate written by PuttBiasGenerator (`weak_pct`,
+  -- "Make-% on the weaker direction"), so higher is better. The W9 miss-share
+  -- reading these used to assert never had a producer. Corrected 2026-08-18
+  -- alongside migration 20260818060000; high/low keep the original reading
+  -- because nothing produces them.
+  ('putt_miss_bias_left_pct',     'Break Make % (weaker side, L-to-R)',  'percent', 'higher_better', 'putting'),
+  ('putt_miss_bias_right_pct',    'Break Make % (weaker side, R-to-L)', 'percent', 'higher_better', 'putting'),
   ('approach_proximity_50_125ft',    'Approach Proximity 50-125 yd',  'feet', 'lower_better', 'approach'),
   ('approach_proximity_125_175ft',   'Approach Proximity 125-175 yd', 'feet', 'lower_better', 'approach'),
   ('approach_proximity_175_plus_ft', 'Approach Proximity 175+ yd',    'feet', 'lower_better', 'approach'),
