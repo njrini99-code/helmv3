@@ -179,6 +179,16 @@ export function RosterHealthHeader({
     totalOutcomes,
   } = health;
 
+  /** A roster with zero focus areas — active OR completed — is a program that
+   *  hasn't started, not one that has fallen behind. Every player with rounds
+   *  matches `rounds > 0 && uncoached`, so the triage framing greets a brand-new
+   *  coach by calling their whole squad problems (observed live on Guilford: 12
+   *  active players, all with rounds, 0 rows in `golf_focus_areas` → "12 players
+   *  to look at"). The ranked list is still the useful part and stays; only the
+   *  framing changes, from a backlog to a starting point. */
+  const areasPrescribed = activeAreas + completedAreas;
+  const noAreasYet = areasPrescribed === 0;
+
   // FOCAL — coach triage: WHO needs a look (trending down or uncoached), ranked.
   // The program-coverage stat is demoted to a subtext line; the eye lands on the
   // players, not an abstract percentage. Honest: dims to "awaiting" with no roster.
@@ -201,7 +211,9 @@ export function RosterHealthHeader({
               {needs.length}
             </span>
             <span className="mb-2 font-fw-sans text-body-sm text-text-secondary">
-              player{needs.length === 1 ? '' : 's'} to look at — trending down or without a focus area.
+              {noAreasYet
+                ? `player${needs.length === 1 ? '' : 's'} ready for a focus area — none set on this roster yet.`
+                : `player${needs.length === 1 ? '' : 's'} to look at — trending down or without a focus area.`}
             </span>
           </div>
           <ul className="flex flex-col">
@@ -293,16 +305,23 @@ export function RosterHealthHeader({
         header="Did the coaching land?"
         className="flex h-full flex-col justify-center"
       >
+        {/* The denominator was a hardcoded `need: 1`, which rendered
+            "AWAITING OUTCOMES — 0 OF 1" on a roster with nothing prescribed —
+            reading as one verdict already overdue. With no focus areas there is
+            nothing to grade, so the readout carries no denominator at all; once
+            areas DO exist, every one of them is genuinely awaiting a verdict, so
+            the denominator is their count. */}
         <Readout
           label="Outcomes recorded"
           size="md"
           state="awaiting"
-          samples={{ have: 0, need: 1 }}
-          awaitingLabel="Awaiting outcomes"
+          samples={noAreasYet ? undefined : { have: 0, need: areasPrescribed }}
+          awaitingLabel={noAreasYet ? 'No focus areas yet' : 'Awaiting outcomes'}
         />
         <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
-          Mark a focus area improved / no change / worsened to start the
-          effectiveness loop.
+          {noAreasYet
+            ? 'Set a focus area for a player, then mark it improved / no change / worsened to start the effectiveness loop.'
+            : 'Mark a focus area improved / no change / worsened to start the effectiveness loop.'}
         </p>
       </InstrumentPanel>
     );
@@ -314,6 +333,11 @@ export function RosterHealthHeader({
       tertiaryColumns={4}
       primary={primary}
       secondary={[outcomeInstrument]}
+      /* These four are plain counts, not sampled measurements, so none of them
+         carries a `samples` denominator. Each used to pass `{ have: 0, need: 1 }`
+         when empty, rendering "NONE ACTIVE — 0 OF 1" / "NONE YET — 0 OF 1" — a
+         threshold of one that nothing in the product defines, reading as one
+         item already pending. The awaiting label alone says it honestly. */
       tertiary={[
         <InstrumentPanel key="players" depth="base" padding="md" className="h-full">
           <Readout
@@ -322,7 +346,6 @@ export function RosterHealthHeader({
             label="Players"
             size="md"
             state={totalPlayers > 0 ? 'live' : 'awaiting'}
-            samples={totalPlayers === 0 ? { have: 0, need: 1 } : undefined}
             awaitingLabel="No roster"
           />
         </InstrumentPanel>,
@@ -333,7 +356,6 @@ export function RosterHealthHeader({
             label="Active focus areas"
             size="md"
             state={activeAreas > 0 ? 'live' : 'awaiting'}
-            samples={activeAreas === 0 ? { have: 0, need: 1 } : undefined}
             awaitingLabel="None active"
           />
         </InstrumentPanel>,
@@ -344,7 +366,6 @@ export function RosterHealthHeader({
             label="Completed"
             size="md"
             state={completedAreas > 0 ? 'live' : 'awaiting'}
-            samples={completedAreas === 0 ? { have: 0, need: 1 } : undefined}
             awaitingLabel="None yet"
           />
         </InstrumentPanel>,
@@ -355,7 +376,6 @@ export function RosterHealthHeader({
             label="With recent rounds"
             size="md"
             state={playersWithRounds > 0 ? 'live' : 'awaiting'}
-            samples={playersWithRounds === 0 ? { have: 0, need: 1 } : undefined}
             awaitingLabel="No rounds"
           />
         </InstrumentPanel>,

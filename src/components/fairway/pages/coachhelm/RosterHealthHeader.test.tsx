@@ -255,3 +255,96 @@ describe('RosterHealthHeader — render', () => {
     expect(screen.getByText(/more player/)).toBeInTheDocument();
   });
 });
+
+/**
+ * ---------------------------------------------------------------------------
+ * A roster with NO focus areas at all is a program that hasn't started, not a
+ * program in trouble. Observed live on Guilford: 12 active players, every one
+ * with rounds logged, ZERO focus areas in `golf_focus_areas` — so every player
+ * matched `rounds > 0 && uncoached` and the instrument led with
+ *
+ *     12  players to look at — trending down or without a focus area.
+ *
+ * which reads as twelve problems the coach has let pile up. Underneath it, the
+ * outcome panel showed "AWAITING OUTCOMES — 0 OF 1", whose `need: 1` implies
+ * one outcome is pending a verdict when nothing has been prescribed at all.
+ *
+ * The triage framing is only meaningful once focus areas exist to be missing.
+ * ------------------------------------------------------------------------- */
+describe('RosterHealthHeader — a roster with no focus areas yet', () => {
+  /** 12 players, all with rounds, none coached — the Guilford shape. */
+  function bareRoster() {
+    const players = Array.from({ length: 12 }, (_, i) =>
+      player({ id: `p${i}`, first_name: 'Player', last_name: `${i}` }),
+    );
+    const playerStats: Record<string, PlayersGridStats> = {};
+    for (const p of players) playerStats[p.id] = stats({ rounds_played: 6, recent_trend: 'stable' });
+    const rows: RosterRow[] = players.map((p) => ({
+      player: p,
+      stats: playerStats[p.id]!,
+      activeCount: 0,
+      completedCount: 0,
+    }));
+    return { players, focusAreas: [] as PlayersGridFocusArea[], playerStats, rows };
+  }
+
+  it('does not frame an un-started program as N players to look at', () => {
+    const { players, focusAreas, playerStats, rows } = bareRoster();
+    render(
+      <RosterHealthHeader
+        health={computeRosterHealth(players, focusAreas, playerStats)}
+        needs={computeNeedsAttention(rows)}
+        onAdd={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/players to look at/)).not.toBeInTheDocument();
+    expect(screen.getByText(/none set on this roster yet/)).toBeInTheDocument();
+  });
+
+  it('still lists the players so the coach knows where to start', () => {
+    const { players, focusAreas, playerStats, rows } = bareRoster();
+    render(
+      <RosterHealthHeader
+        health={computeRosterHealth(players, focusAreas, playerStats)}
+        needs={computeNeedsAttention(rows)}
+        onAdd={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByRole('button', { name: 'Add focus area' })).toHaveLength(
+      NEEDS_ATTENTION_LIST_CAP,
+    );
+  });
+
+  it('does not claim an outcome is pending when nothing was ever prescribed', () => {
+    const { players, focusAreas, playerStats, rows } = bareRoster();
+    render(
+      <RosterHealthHeader
+        health={computeRosterHealth(players, focusAreas, playerStats)}
+        needs={computeNeedsAttention(rows)}
+        onAdd={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('0 of 1')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Awaiting outcomes/)).not.toBeInTheDocument();
+  });
+
+  it('counts every prescribed area as awaiting a verdict once areas DO exist', () => {
+    const { players, playerStats, rows } = bareRoster();
+    // Three areas prescribed, none carrying an outcome yet: the honest reading
+    // is "0 of 3 recorded", not "0 of 1".
+    const focusAreas = [
+      focusArea({ id: 'fa1', player_id: 'p0', status: 'active' }),
+      focusArea({ id: 'fa2', player_id: 'p1', status: 'active' }),
+      focusArea({ id: 'fa3', player_id: 'p2', status: 'completed' }),
+    ];
+    render(
+      <RosterHealthHeader
+        health={computeRosterHealth(players, focusAreas, playerStats)}
+        needs={computeNeedsAttention(rows)}
+        onAdd={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Awaiting outcomes/)).toBeInTheDocument();
+    expect(screen.getByText('0 of 3')).toBeInTheDocument();
+  });
+});
