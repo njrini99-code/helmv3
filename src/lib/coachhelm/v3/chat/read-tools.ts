@@ -545,8 +545,16 @@ export async function getPuttingDistanceProfile(
     const attempts = b.attemptsColumn ? int(row[b.attemptsColumn]) : 0;
     // A bucket with no attempt column cannot support a claim, so it is not
     // charted — an unfalsifiable percentage is worse than a gap in the chart.
-    if (b.attemptsColumn && attempts === 0) continue;
-    if (b.attemptsColumn && attempts < 10) thin.push(`${b.bucket} (${attempts} attempts)`);
+    //
+    // The guard used to read `b.attemptsColumn && attempts === 0`, which is the
+    // one case it could never catch: `0-3 ft` is the only bucket defined with
+    // `attemptsColumn: null` (there is no `putt_attempts_0_3ft` column on the
+    // stats cache), so it fell through with attempts = 0, got charted, and was
+    // stamped "Only 0 attempts recorded." — a make rate over zero attempts,
+    // reaching the coach through Ask CoachHelm on every player who had putting
+    // data at all.
+    if (!b.attemptsColumn || attempts === 0) continue;
+    if (attempts < 10) thin.push(`${b.bucket} (${attempts} attempts)`);
     points.push({ at: b.bucket, value: pct, bucket: b.bucket, sample_size: attempts });
   }
 
