@@ -563,7 +563,7 @@ describe('getCourseTeeHoles — #913 part 3 (course detail "Holes" summary)', ()
       golf_course_tees: tableBuilder({ resolve: { data: null, error: { message: 'connection reset' } } }),
     });
 
-    await expect(getCourseTeeHoles('c1')).resolves.toEqual({});
+    await expect(getCourseTeeHoles('c1')).resolves.toBeNull();
     expect(logServerError).toHaveBeenCalledWith(
       expect.stringContaining('tee read failed'),
       expect.objectContaining({ action: 'courseLibrary.getCourseTeeHoles' }),
@@ -576,7 +576,7 @@ describe('getCourseTeeHoles — #913 part 3 (course detail "Holes" summary)', ()
       golf_course_tee_holes: tableBuilder({ resolve: { data: null, error: { message: 'statement timeout' } } }),
     });
 
-    await expect(getCourseTeeHoles('c1')).resolves.toEqual({});
+    await expect(getCourseTeeHoles('c1')).resolves.toBeNull();
     expect(logServerError).toHaveBeenCalledWith(
       expect.stringContaining('hole read failed'),
       expect.objectContaining({ action: 'courseLibrary.getCourseTeeHoles' }),
@@ -608,10 +608,11 @@ describe('getCourseTeeHoles — #913 part 3 (course detail "Holes" summary)', ()
 
     const res = await getCourseTeeHoles('c1');
 
-    expect(res['t1']).toHaveLength(2);
-    expect(res['t2']).toHaveLength(1);
-    expect(res['t1']![0]!.hole_number).toBe(1);
-    expect(res['t1']![1]!.hole_number).toBe(2);
+    expect(res).not.toBeNull();
+    expect(res!['t1']).toHaveLength(2);
+    expect(res!['t2']).toHaveLength(1);
+    expect(res!['t1']![0]!.hole_number).toBe(1);
+    expect(res!['t1']![1]!.hole_number).toBe(2);
     expect(holes._calls.in).toContainEqual(['tee_id', ['t1', 't2']]);
   });
 });

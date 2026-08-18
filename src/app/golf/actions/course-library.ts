@@ -584,7 +584,12 @@ export async function getCourseDetail(
  * `getCourseDetail` (used by the new-round + tee-picker flows too) so those
  * hot paths never pay for hole data they don't render.
  */
-async function getCourseTeeHolesImpl(courseId: string): Promise<Record<string, GolfCourseTeeHole[]>> {
+/**
+ * Null contract (fail-open ratchet): a FAILED read returns null so the caller
+ * can tell "couldn't read the scorecard" from "no holes recorded" ({}); the
+ * drawer maps null to "omit the supplemental Holes summary" itself.
+ */
+async function getCourseTeeHolesImpl(courseId: string): Promise<Record<string, GolfCourseTeeHole[]> | null> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return {};
@@ -599,7 +604,7 @@ async function getCourseTeeHolesImpl(courseId: string): Promise<Record<string, G
       `[getCourseTeeHoles] tee read failed for course ${courseId}; omitting the supplemental scorecard: ${describeError(teeError)}`,
       { action: 'courseLibrary.getCourseTeeHoles', featureArea: 'course_library' },
     );
-    return {};
+    return null;
   }
   const teeIds = (teeRows ?? []).map((t) => t.id as string);
   if (teeIds.length === 0) return {};
@@ -614,7 +619,7 @@ async function getCourseTeeHolesImpl(courseId: string): Promise<Record<string, G
       `[getCourseTeeHoles] hole read failed for course ${courseId}; omitting the supplemental scorecard: ${describeError(holeError)}`,
       { action: 'courseLibrary.getCourseTeeHoles', featureArea: 'course_library' },
     );
-    return {};
+    return null;
   }
 
   const byTee: Record<string, GolfCourseTeeHole[]> = {};
@@ -633,7 +638,7 @@ const observedGetCourseTeeHoles = withAdminObserved(
 
 export async function getCourseTeeHoles(
   courseId: string,
-): Promise<Record<string, GolfCourseTeeHole[]>> {
+): Promise<Record<string, GolfCourseTeeHole[]> | null> {
   return observedGetCourseTeeHoles(courseId);
 }
 
