@@ -82,6 +82,7 @@ import {
   publishableParts,
 } from '@/lib/coachhelm/v3/chat/ui-parts';
 import { describeError } from '@/lib/utils/describe-error';
+import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
 
 export const maxDuration = 120;
 
@@ -485,7 +486,7 @@ export async function POST(req: NextRequest) {
         // worst-case estimate instead (which an earlier revision of this route
         // did) over-charges every short answer several times over and
         // exhausts a coach's daily budget long before they have spent it.
-        await recordTurnCost({ admin, ctx, conversationId: convId, usagePromise });
+        await recordTurnCost({ admin, ctx, conversationId: convId, usagePromise, grounded });
       } catch (err) {
         await logServerError(
           `chat/stream: persistence failed — ${describeError(err)}`,
@@ -533,8 +534,12 @@ async function recordTurnCost(args: {
   ctx: CoachChatContext;
   conversationId: string;
   usagePromise: Promise<LanguageModelUsage> | null;
+  /** `unsupported.length === 0` from the numeric-claim audit above. Was not
+   *  passed at all, so the ledger recorded a literal `false` for every turn —
+   *  0 of 37 verified in production while round_review recorded 29 of 121. */
+  grounded: boolean;
 }): Promise<void> {
-  const { admin, ctx, conversationId, usagePromise } = args;
+  const { admin, ctx, conversationId, usagePromise, grounded } = args;
   try {
     const usage = usagePromise ? await usagePromise : undefined;
     const promptTokens = usage?.inputTokens ?? 0;
@@ -555,19 +560,17 @@ async function recordTurnCost(args: {
           )
         : CHAT_TURN_COST_ESTIMATE_USD;
 
-    await admin.from('golf_coachhelm_llm_calls').insert({
-      task: 'coach_chat',
-      coach_id: ctx.coach_id,
-      player_id: null,
-      prompt_hash: conversationId.slice(0, 16),
-      model_id: MODEL_FOR_TASK.coach_chat,
-      prompt_tokens: promptTokens,
-      completion_tokens: completionTokens,
-      cost_usd: cost,
-      citations: null,
-      verified: false,
-      fallback_to_template: false,
-    });
+    await admin.from('golf_coachhelm_llm_calls').insert(
+      buildChatLlmCallRow({
+        coachId: ctx.coach_id,
+        conversationId,
+        modelId: MODEL_FOR_TASK.coach_chat,
+        promptTokens,
+        completionTokens,
+        costUsd: cost,
+        grounded,
+      }),
+    );
     await recordSpend(admin, { coach_id: ctx.coach_id, task: 'coach_chat', cost_usd: cost });
   } catch {
     // Never fail a coach's answer because accounting hiccuped.
