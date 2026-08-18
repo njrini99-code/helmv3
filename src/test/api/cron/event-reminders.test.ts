@@ -36,6 +36,8 @@ interface EventRow {
   cancelled_at: string | null;
   status: string | null;
   team_id: string;
+  /** `'class'` marks a synced personal class meeting — see class-events.ts. */
+  event_type?: string | null;
 }
 
 /** Per-team reminder lead times (migration 20260725150000). */
@@ -88,12 +90,19 @@ function makeClient(cfg: MockConfig) {
       case 'golf_events': {
         const gt = getFilterArg(calls, 'gt')?.[1] as string;
         const lte = getFilterArg(calls, 'lte')?.[1] as string;
+        // Every `.neq()` the route issues is honored, rather than one of them
+        // being hardcoded here. The mock's whole contract is that it filters
+        // like the DB does; a hardcoded `status !== 'cancelled'` meant a route
+        // that FORGOT a neq still behaved in tests as though it had one.
+        const neqs = calls
+          .filter((c) => c.name === 'neq')
+          .map((c) => [c.args[0] as string, c.args[1] as unknown] as const);
         return (cfg.events ?? []).filter(
           (e) =>
             e.start_time > gt &&
             e.start_time <= lte &&
             e.cancelled_at === null &&
-            e.status !== 'cancelled',
+            neqs.every(([col, val]) => (e as unknown as Record<string, unknown>)[col] !== val),
         ) as unknown as Array<Record<string, unknown>>;
       }
       case 'golf_event_attendance': {
@@ -201,17 +210,6 @@ function eventAt(id: string, offsetMs: number, overrides: Partial<EventRow> = {}
   };
 }
 
-function authed(): NextRequest {
-  return new NextRequest('http://x/api/cron/event-reminders', {
-    headers: { authorization: 'Bearer cron-secret-value' },
-  });
-}
-
-function upsertsForKind(kind: string): Array<Record<string, unknown>> {
-  return upserts
-    .flatMap((u) => u.rows)
-    .filter((r) => r.notification_type === kind);
-}
 
 describe('event-reminders cron route', () => {
   beforeEach(() => {
@@ -614,4 +612,83 @@ describe('event-reminders cron route', () => {
     const res = await GET(authed());
     expect(res.status).toBe(500);
   });
+
+  /**
+   * A synced CLASS meeting must never generate a reminder.
+   *
+   * `golf_events` carries one row per class meeting so classes appear on the
+   * calendar's "All" lens (class-events.ts explains the two markers). They are
+   * one player's personal commitments, not team events, and this cron emails
+   * every non-declined attendee of whatever it finds.
+   *
+   * Its event query selects `id, title, start_time, location, cancelled_at,
+   * status, team_id` — no `event_type`, no `description` — so it cannot tell the
+   * two apart. The ONLY reason nothing has leaked is a data coincidence:
+   * measured 2026-08-17, all 1,427 class events (1,275 of them in the future)
+   * carry ZERO `golf_event_attendance` rows, so the recipient set is empty.
+   *
+   * That is an unenforced invariant holding up a privacy boundary. Anything that
+   * starts writing attendance for class rows — an RSVP feature, a backfill, a
+   * coach marking a player present — turns "no recipients" into "email every
+   * attendee about one student's Organic Chemistry lecture". The filter belongs
+   * in the query, not in the luck.
+   */
+  describe('event reminders — synced class meetings', () => {
+    it('sends no reminder for a class event, even with an eligible attendee', async () => {
+      currentClient = makeClient({
+        events: [
+          eventAt('E1', 2 * HOUR),
+          eventAt('CLASS1', 2 * HOUR, { event_type: 'class', title: 'CHEM 241' }),
+        ],
+        attendance: [
+          { event_id: 'E1', player_id: 'P1', status: 'accepted' },
+          // The row that does not exist in production today, and is the only
+          // thing standing between this cron and a leaked timetable.
+          { event_id: 'CLASS1', player_id: 'P1', status: 'accepted' },
+        ],
+        players: [{ id: 'P1', user_id: 'U1' }],
+        users: [{ id: 'U1', email: 'u1@x.test' }],
+      });
+
+      const res = await GET(authed());
+      const body = await res.json();
+      expect(res.status).toBe(200);
+      // The real team event still reminds; only the class is dropped.
+      // +2h lands in the 24h slot, not the 1h one.
+      expect(body.inserted24h).toBe(1);
+    });
+
+    it('still reminds for ordinary team events of every other type', async () => {
+      currentClient = makeClient({
+        events: [
+          eventAt('E1', 2 * HOUR, { event_type: 'practice' }),
+          eventAt('E2', 2 * HOUR, { event_type: 'tournament' }),
+          eventAt('E3', 2 * HOUR, { event_type: null }),
+        ],
+        attendance: [
+          { event_id: 'E1', player_id: 'P1', status: 'accepted' },
+          { event_id: 'E2', player_id: 'P1', status: 'accepted' },
+          { event_id: 'E3', player_id: 'P1', status: 'accepted' },
+        ],
+        players: [{ id: 'P1', user_id: 'U1' }],
+        users: [{ id: 'U1', email: 'u1@x.test' }],
+      });
+
+      const res = await GET(authed());
+      const body = await res.json();
+      expect(body.inserted24h).toBe(3);
+    });
+  });
+
+  function authed(): NextRequest {
+    return new NextRequest('http://x/api/cron/event-reminders', {
+      headers: { authorization: 'Bearer cron-secret-value' },
+    });
+  }
+
+  function upsertsForKind(kind: string): Array<Record<string, unknown>> {
+    return upserts
+      .flatMap((u) => u.rows)
+      .filter((r) => r.notification_type === kind);
+  }
 });

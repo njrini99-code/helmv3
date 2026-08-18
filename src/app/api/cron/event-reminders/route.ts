@@ -38,6 +38,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { sendEmailNotification } from '@/lib/notifications/email';
+import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { recordJobRun } from '@/lib/admin/job-log';
 import {
@@ -194,6 +195,19 @@ async function loadWindow(
       .lte('start_time', horizon)
       .is('cancelled_at', null)
       .neq('status', 'cancelled')
+      // A synced class meeting is one player's personal commitment on the team
+      // calendar, not a team event (see class-events.ts for the two markers).
+      // This cron emails every non-declined attendee of whatever it finds, so a
+      // class row reaching it would announce one student's timetable to
+      // everyone on that event.
+      //
+      // Nothing has leaked, because nothing writes attendance for class rows:
+      // measured 2026-08-17, all 1,427 class events — 1,275 of them still in
+      // the future — carry ZERO golf_event_attendance rows, so the recipient
+      // set is empty. That is an unenforced data coincidence propping up a
+      // privacy boundary, not a guarantee. Any future RSVP, backfill or
+      // mark-present path turns "no recipients" into a leaked timetable.
+      .neq('event_type', CLASS_EVENT_TYPE)
       .order('id', { ascending: true })
       .range(from, to),
     undefined,
