@@ -167,63 +167,6 @@ const VIEW_OPTIONS: ReadonlyArray<{ value: ViewId; label: string }> = [
   { value: 'agenda', label: 'Agenda' },
 ];
 
-/**
- * How many events fall inside the currently visible window — the hero's
- * "{n} this week/month" / "{n} in view" number.
- *
- * Exported for the same reason as `sortEventsStably` above: this is the number
- * a coach reads, and it needs a test that does not stand up the whole calendar.
- *
- * Class meetings are excluded, for exactly the reason `liveUpcomingCount`
- * excludes them: they are a player's own timetable, not team business. This
- * filter used to be on the upcoming count only, so the hero paired two
- * populations in one sentence — measured on Guilford 2026-08-18, the agenda
- * window held 891 events of which 864 (97%) were lectures, and the hero read
- * "23 upcoming · 875 in view" for a team with 27 real commitments in range.
- */
-export function countEventsInWindow(
-  events: readonly CalendarEvent[],
-  opts: {
-    view: ViewId;
-    focusDate: Date;
-    visibleWindow: { start: Date; end: Date };
-    teamTimezone: string | null;
-  },
-): number {
-  const { view, focusDate, visibleWindow, teamTimezone } = opts;
-
-  if (view === 'day') {
-    return events.filter((e) => {
-      if (isClassEvent(e)) return false;
-      // Zoned bucketing (not implicit-local `new Date(s)`) — must agree
-      // with what FairwayAgendaView mode="day" actually renders for the
-      // same day (both bucket by `teamTimezone`), or the hero count and
-      // the visible list could silently disagree near a midnight boundary.
-      //
-      // `eventDaySpan`, not `eventCalendarDay`, for the same reason: the
-      // agenda counts an event on every day it RUNS, so a start-only test
-      // here would report "0 events" on the Saturday of a tournament the
-      // list below is showing.
-      const span = eventDaySpan(e, teamTimezone);
-      if (!span) return false;
-      return (
-        (isSameDay(span.first, focusDate) || span.first < focusDate) &&
-        (isSameDay(span.last, focusDate) || span.last > focusDate)
-      );
-    }).length;
-  }
-
-  const startMs = visibleWindow.start.getTime();
-  const endMs = visibleWindow.end.getTime() + 24 * 60 * 60 * 1000 - 1;
-  return events.filter((e) => {
-    if (isClassEvent(e)) return false;
-    const s = e.start_time || e.start_date;
-    if (!s) return false;
-    const t = new Date(s).getTime();
-    return t >= startMs && t <= endMs;
-  }).length;
-}
-
 export function FairwayCalendar({
   events: initialEvents,
   teamMembers,
@@ -777,10 +720,35 @@ export function FairwayCalendar({
   // Day body (FairwayAgendaView mode="day") only ever shows `focusDate`'s own
   // events, so the hero count must match what's actually on screen instead of
   // silently counting the whole week (mustFix #4).
-  const windowCount = React.useMemo(
-    () => countEventsInWindow(events, { view, focusDate, visibleWindow, teamTimezone }),
-    [events, visibleWindow, view, focusDate, teamTimezone],
-  );
+  const windowCount = React.useMemo(() => {
+    if (view === 'day') {
+      return events.filter((e) => {
+        // Zoned bucketing (not implicit-local `new Date(s)`) — must agree
+        // with what FairwayAgendaView mode="day" actually renders for the
+        // same day (both bucket by `teamTimezone`), or the hero count and
+        // the visible list could silently disagree near a midnight boundary.
+        //
+        // `eventDaySpan`, not `eventCalendarDay`, for the same reason: the
+        // agenda counts an event on every day it RUNS, so a start-only test
+        // here would report "0 events" on the Saturday of a tournament the
+        // list below is showing.
+        const span = eventDaySpan(e, teamTimezone);
+        if (!span) return false;
+        return (
+          (isSameDay(span.first, focusDate) || span.first < focusDate) &&
+          (isSameDay(span.last, focusDate) || span.last > focusDate)
+        );
+      }).length;
+    }
+    const startMs = visibleWindow.start.getTime();
+    const endMs = visibleWindow.end.getTime() + 24 * 60 * 60 * 1000 - 1;
+    return events.filter((e) => {
+      const s = e.start_time || e.start_date;
+      if (!s) return false;
+      const t = new Date(s).getTime();
+      return t >= startMs && t <= endMs;
+    }).length;
+  }, [events, visibleWindow, view, focusDate, teamTimezone]);
 
   // Upcoming count — derived from the SAME canonical `events` list as
   // `windowCount` (finding #37/#166/#185/#83). The server-computed
