@@ -10,6 +10,7 @@ import {
   type RoundInfo
 } from '@/lib/utils/golf-stats-calculator-shots';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
+import { resolveStatsDateRange, utcYearsAgo } from '@/lib/golf/stats-date-range';
 import {
   generateStatisticalStrengthsWeaknesses,
   type StatisticalStrengthWeakness,
@@ -240,28 +241,12 @@ function getFilterConditions(filter?: StatsFilter): {
     return { startDate: null, endDate: null, roundType: null, courseName: null };
   }
 
-  // Date-based presets
-  const now = new Date();
-  let startDateVal: string | null = null;
-  let endDateVal: string | null = filter.endDate || null;
-
-  if (filter.preset === 'thisMonth') {
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    startDateVal = monthStart.toISOString().split('T')[0] ?? null;
-  } else if (filter.preset === 'thisYear') {
-    const yearStart = new Date(now.getFullYear(), 0, 1);
-    startDateVal = yearStart.toISOString().split('T')[0] ?? null;
-  } else if (filter.startDate) {
-    startDateVal = filter.startDate;
-  }
-
-  // Season filter
-  if (filter.season) {
-    const seasonStart = new Date(filter.season, 0, 1);
-    const seasonEnd = new Date(filter.season, 11, 31);
-    startDateVal = seasonStart.toISOString().split('T')[0] ?? null;
-    endDateVal = seasonEnd.toISOString().split('T')[0] ?? null;
-  }
+  // Date-based presets + season. These bounds are compared against
+  // `golf_rounds.round_date`, a DATE column, so they must be calendar days —
+  // not an instant sliced into one. The arithmetic lives in
+  // `@/lib/golf/stats-date-range` because this file is `'use server'`, where a
+  // pure helper cannot be exported to a test.
+  const { startDate: startDateVal, endDate: endDateVal } = resolveStatsDateRange(filter, new Date());
 
   // Round type filter
   let roundType: string | null = null;
@@ -1932,9 +1917,11 @@ async function getTeamComparisonImpl(
 
   // Get rounds for team members — bounded to current season (last 12 months)
   // to prevent unbounded queries on teams with years of historical data
-  const seasonStart = new Date();
-  seasonStart.setFullYear(seasonStart.getFullYear() - 1);
-  const seasonStartDate = seasonStart.toISOString().split('T')[0]!;
+  // Was the same local-constructor/UTC-consumer shape as the filter bounds
+  // above, but LATENT rather than live: this is a query bound that exists to
+  // cap the row count, so a one-day shift changed no displayed number. Built
+  // from UTC parts now, so the window no longer depends on the runtime zone.
+  const seasonStartDate = utcYearsAgo(new Date(), 1);
 
   // Paginate past the PostgREST 1000-row hard cap. A full roster across
   // tournament + qualifier + practice rounds over a 12-month window can exceed
