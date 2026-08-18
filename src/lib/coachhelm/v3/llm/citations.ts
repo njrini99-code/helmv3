@@ -21,6 +21,32 @@ import type { EvidenceClaim } from './types';
 
 const NUMERIC_RE = /(?:^|\s|\()(-?\d+(?:\.\d+)?%?)(?=[\s,.;:!?)\]]|$)/g;
 
+/**
+ * A made/attempted fraction — `8/14`, `10/18`.
+ *
+ * `NUMERIC_RE` cannot see either half of one: the first number is followed by
+ * `/` and the second is preceded by it, and neither is in that pattern's
+ * boundary sets. So a fraction was invisible to the verifier and the model
+ * could write ANY fraction and still be logged `verified: true` — a false
+ * negative, which this module's contract says is the one kind of error it must
+ * not make. The same fact rendered "(8 of 14)" was checked normally, so two
+ * spellings of one claim got opposite scrutiny.
+ *
+ * Fractions are what the model actually produces here. `buildEvidence` in
+ * ./round-review.ts registers `fairways_hit`/`fairways_total` and
+ * `gir`/`gir_total` as separate counts precisely because the prompt hands over
+ * counts, and its own comment lists the derivations observed in production
+ * (`57.1 = 8/14`, `72.2 = 13/18`). Both halves are therefore already in the
+ * evidence set: a truthful fraction verifies, and a fabricated numerator does
+ * not.
+ *
+ * `(?![\/\d])` after the denominator is what keeps a slash DATE out. `8/14/2026`
+ * must not become the citable claims 8, 14 and 2026 — a date is not a
+ * measurement, and demanding it appear in the evidence set would discard the
+ * whole review, which is the 17.8%-of-calls failure round-review.ts documents.
+ */
+const FRACTION_RE = /(?:^|\s|\()(\d+)\/(\d+)(?![/\d])(?=[\s,.;:!?)\]]|$)/g;
+
 export interface CitationVerification {
   verified: boolean;
   /** Tokens found in the text that did NOT match any evidence value.
@@ -42,11 +68,24 @@ export interface CitationVerification {
  * exactly how a number becomes registerable-but-unverifiable, or vice versa.
  */
 export function extractNumericTokens(text: string): string[] {
-  const out: string[] = [];
+  // Both scanners run over the whole string, then the results are merged back
+  // into READING ORDER. Order matters because a caller registering the figures
+  // it showed the model compares these lists positionally in review, and a
+  // reader debugging `unmatched_tokens` expects them in the order they appear.
+  const found: Array<{ at: number; token: string }> = [];
+
   for (const match of text.matchAll(NUMERIC_RE)) {
-    if (match[1]) out.push(match[1]);
+    if (match[1]) found.push({ at: match.index + match[0].indexOf(match[1]), token: match[1] });
   }
-  return out;
+  for (const match of text.matchAll(FRACTION_RE)) {
+    const [numerator, denominator] = [match[1], match[2]];
+    if (!numerator || !denominator) continue;
+    const start = match.index + match[0].indexOf(numerator);
+    found.push({ at: start, token: numerator });
+    found.push({ at: start + numerator.length + 1, token: denominator });
+  }
+
+  return found.sort((a, b) => a.at - b.at).map((f) => f.token);
 }
 
 export function verifyCitations(text: string, evidence: EvidenceClaim[]): CitationVerification {
