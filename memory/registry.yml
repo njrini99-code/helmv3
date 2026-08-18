@@ -656,11 +656,13 @@ features:
         - src/app/golf/(dashboard)/dashboard/documents/**
         - src/app/golf/(dashboard)/dashboard/travel/**
         - src/app/golf/(dashboard)/dashboard/hub/**
+        - src/app/golf/(dashboard)/dashboard/team-hub/**
       components:
         - src/components/golf/tasks/**
         - src/components/golf/documents/**
         - src/components/golf/travel/**
         - src/components/golf/player-hub/**
+        - src/components/fairway/pages/team-hub/**
       api:
         - src/app/api/tasks/**
         - src/app/api/documents/**
@@ -675,12 +677,14 @@ features:
         - src/app/golf/actions/dashboard-data.ts
       services:
         - src/lib/supabase/**
+        - src/lib/golf/nav-registry.ts
       db:
         - supabase/migrations/*task*.sql
         - supabase/migrations/*document*.sql
         - supabase/migrations/*travel*.sql
       tests:
         - src/app/golf/actions/__tests__/travel.test.ts
+        - src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts
     integrations:
       - supabase
       - storage

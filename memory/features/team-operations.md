@@ -6,7 +6,10 @@
 
 ## Current State
 
-Team Operations covers tasks, documents, travel, and the player hub surfaces that assemble those operational objects into daily player workflows.
+Team Operations covers tasks, documents, travel, and the player-facing Team
+Hub that assembles those operational objects into daily workflows. The former
+standalone Player Hub is a dashboard redirect; Team Hub is the full player
+operations destination.
 
 Tasks let coaches assign work to players. Documents provide a team file library with versioning and visibility controls. Travel manages itinerary details and partially implemented budget/expense tracking. The player hub pulls travel, task, and event data into a player action center.
 
@@ -18,6 +21,7 @@ Tasks let coaches assign work to players. Documents provide a team file library 
 - `src/app/golf/(dashboard)/dashboard/documents/**`
 - `src/app/golf/(dashboard)/dashboard/travel/**`
 - `src/app/golf/(dashboard)/dashboard/hub/**`
+- `src/app/golf/(dashboard)/dashboard/team-hub/**`
 
 ### Components
 
@@ -25,6 +29,7 @@ Tasks let coaches assign work to players. Documents provide a team file library 
 - `src/components/golf/documents/**`
 - `src/components/golf/travel/**`
 - `src/components/golf/player-hub/**`
+- `src/components/fairway/pages/team-hub/**`
 
 ### Actions
 
@@ -42,7 +47,6 @@ Tasks let coaches assign work to players. Documents provide a team file library 
 - `golf_task_assignments`
 - `golf_task_templates`
 - `golf_task_reminders`
-- `golf_task_completions`
 - `golf_documents`
 - `golf_document_versions`
 - `golf_travel_itineraries`
@@ -76,6 +80,16 @@ Travel create
 Player hub
   -> reads travel, tasks, and events
   -> lets player act on tasks and RSVPs
+
+Player Team Hub
+  -> resolves active team membership, then reads task assignments, travel,
+     announcements, classes, and team timezone in parallel
+  -> presents an Overview plus Tasks, Announcements, Travel, and Class schedule
+  -> derives "next trip" from departure_date >= today's team-local date; past
+     itineraries remain visible only in the Travel detail tab
+  -> completeTask() is the only write and stays in the client wrapper
+  -> a failed task, travel, class, or announcement read is displayed as a
+     retryable load failure, never as a cheerful empty state
 ```
 
 ## Business Rules
@@ -93,10 +107,15 @@ Player hub
 - Documents need preview, version history, upload new version, category/visibility, and unsupported-file states.
 - Travel needs itinerary cards, transport/hotel/packing/room assignment details, budget/expense affordances where wired, and player-friendly status.
 - Player Hub should not lie about task completion state; it must read the same operational truth as task completion writes.
+- Player Team Hub is player-only and starts on an operations Overview; its
+  ordered detail tabs are Tasks, Announcements, Travel, and Class schedule.
+- Player Team navigation order is Team Hub, My Qualifiers, Roster, then Team
+  Info. The Team Hub must not duplicate the roster as an inner tab.
+- Empty and failed reads are different states. Only successful empty reads may
+  say there are no tasks, trips, classes, or announcements.
 
 ## Known Risk Areas
 
-- Player Hub has a known task completion mismatch: it reads `golf_task_completions`, while `completeTask()` writes `golf_task_assignments`.
 - Task reminder auto-send is missing; setting `reminder_at` does not imply notifications will fire.
 - Travel expense split table exists but dedicated split calculation/assignment logic is incomplete.
 - Budget/expense actions may exist even when UI exposure is partial.

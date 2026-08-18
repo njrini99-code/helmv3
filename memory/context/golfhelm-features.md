@@ -828,6 +828,16 @@ Info in the Team workspace strip. Team Hub is the operational destination for
 the player-facing tasks and travel surfaces; coach-only management remains
 role-gated and is not exposed by this player navigation ordering.
 
+**Player Team Hub:** Team Hub starts on a concise **Overview** that summarizes
+the player's real outstanding tasks, latest team announcement, next
+team-local future trip, and current class schedule. Each card leads directly
+to its detailed tab: **Tasks, Announcements, Travel, Class schedule**. The
+roster remains its own Team workspace tab rather than appearing again inside
+Team Hub. The page is read-mostly; task completion preserves the existing
+optimistic `completeTask()` boundary. Failed task, travel, class, or
+announcement reads are explicitly retryable and never rendered as a genuine
+empty state. A completed itinerary is never named the next trip.
+
 ### What It Does
 A "needs you now" triage section on the player's Dashboard: top pending
 tasks, events awaiting RSVP, recent announcements, and upcoming trips —
