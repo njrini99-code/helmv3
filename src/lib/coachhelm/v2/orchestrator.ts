@@ -1035,10 +1035,15 @@ class CoachHelmIntelligence {
    * `golf_coach_insights` has 596 rows and ZERO with `player_id IS NULL`.
    *
    * Not a data problem and not a gate problem. Its only caller is
-   * `generateTeamInsights()` (actions/insights.ts:1173), whose only caller is
-   * `InsightsFeed.tsx` — a component nothing mounts since its page was removed
-   * with the legacy dual-tree in ffd0fd8ab. The consolidated
-   * /dashboard/intelligence surface has no team-level view and never calls it.
+   * `generateTeamInsights()` (actions/insights.ts:1173), which as of 2026-08-18
+   * has NO caller at all: the last one was `InsightsFeed.tsx`, a component
+   * nothing had mounted since its page was removed with the legacy dual-tree in
+   * ffd0fd8ab, and that component was deleted in the dead-code purge. The
+   * consolidated /dashboard/intelligence surface has no team-level view.
+   *
+   * Retained deliberately, NOT dead-by-accident: wiring a team-level view is an
+   * open backlog item, and this is the engine it would call. Deleting the chain
+   * would throw away the capability the backlog item exists to surface.
    *
    * The gate below (`playerCount >= 2 && confidence >= 0.6`) would pass easily:
    * 11 Guilford players share one `contextual` pattern at 0.69 avg confidence

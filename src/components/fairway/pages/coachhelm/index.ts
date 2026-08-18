@@ -125,20 +125,16 @@ export type {
 } from './signals/patternToInsightVocabulary';
 
 // ── Player-path surfaces (phase 5 · the PLAYER shell variant) ────────────────
-//   • FairwayPlayerCoachHelm — the player front door over
-//     /golf/dashboard/coachhelm. DEAD but deliberately RETAINED (2026-08-15).
-//     `PlayerCoachHelmHome` superseded it and it has zero non-test importers,
-//     so it was slated for deletion — but it is the ONLY value-importer of
-//     `HeroNarrativeCard` (:110) and `FocusAreasGrid` (:111), so deleting it
-//     alone orphans both and turns route-reachability.test.ts red. The three
-//     are one cluster and need one decision, which is above this pass's remit.
+//   • FairwayPlayerCoachHelm removed 2026-08-18, together with the two
+//     components it was the sole value-importer of (`HeroNarrativeCard`,
+//     `FocusAreasGrid`) — that was the one decision the retain-note here had
+//     been deferring since 2026-08-15. `PlayerCoachHelmHome` superseded it and
+//     /golf/dashboard/coachhelm has mounted that instead all along.
 //   • FairwayMyDevelopment   — the player My Development list over
 //     /golf/dashboard/my-development. Renders the player CoachHelmShell variant,
 //     a FocusAreaCard list (active/completed partition preserved) with REAL
 //     source-chip Links + per-area Sparkline (honest InsufficientData when thin),
 //     a real error state distinct from empty, and retires the hand-rolled glass.
 //     Wires development.ts#updateFocusAreaProgress / completeFocusArea UNCHANGED.
-export { FairwayPlayerCoachHelm } from './FairwayPlayerCoachHelm';
-export type { FairwayPlayerCoachHelmProps } from './FairwayPlayerCoachHelm';
 export { FairwayMyDevelopment } from './FairwayMyDevelopment';
 export type { FairwayMyDevelopmentProps } from './FairwayMyDevelopment';

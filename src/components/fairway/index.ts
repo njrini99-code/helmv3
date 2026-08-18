@@ -521,11 +521,9 @@ export {
   type SignalSource,
   type SignalEvidenceLine,
   // ── Player-path surfaces (phase 5 · the PLAYER shell variant) ──────────────
-  // FairwayPlayerCoachHelm is dead but RETAINED — see the note in
-  // ./pages/coachhelm/index.ts. It is the only importer of HeroNarrativeCard
-  // and FocusAreasGrid, so the three must be deleted together or not at all.
-  FairwayPlayerCoachHelm,
-  type FairwayPlayerCoachHelmProps,
+  // FairwayPlayerCoachHelm and the two components only it imported
+  // (HeroNarrativeCard, FocusAreasGrid) were deleted together 2026-08-18 —
+  // see the note in ./pages/coachhelm/index.ts.
   FairwayMyDevelopment,
   type FairwayMyDevelopmentProps,
 } from './pages/coachhelm';
