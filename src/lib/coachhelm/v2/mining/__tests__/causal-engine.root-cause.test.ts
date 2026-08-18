@@ -165,6 +165,47 @@ describe('CausalEngine — can explain a component, not only the score', () => {
     }
   });
 
+  /**
+   * The second non-tautological chain, and the one that changes what a coach
+   * concludes rather than only what the engine says.
+   *
+   * `docs/v3-research-golf-domain.md:29`: "putts-per-round is *lower* for bad
+   * iron players (they chip close and 1-putt for bogey)". So a low putt count
+   * is not evidence of good putting — it can be evidence of missed greens. The
+   * engine already tests `total_putts -> score_to_par`, which reports the
+   * confounded number as a cause and says nothing about why it moved.
+   *
+   * Measured 2026-08-18, this matters on the real roster: of Guilford's 12
+   * active players, 5 carry any active causal relationship at all and every one
+   * of those relationships except a single `total_fairways_hit -> total_gir`
+   * terminates in `score_to_par`. Adding one research-backed pair last night
+   * produced the only genuine root cause on the team, for one player. This is
+   * the same lever pulled once more.
+   */
+  it('carries the documented GIR -> putts confound', () => {
+    const engine = new CausalEngine('player-1', 'team-1');
+    const hypotheses = (engine as unknown as EngineInternals).generateHypotheses();
+
+    const chain = hypotheses.find(
+      (h) => h.causeMetric === 'total_gir' && h.effectMetric === 'total_putts',
+    );
+    expect(chain).toBeDefined();
+    // Same blocking rule as the chain above: the claim has to carry its
+    // provenance into the row a coach reads.
+    expect(chain?.mechanism ?? '').toMatch(/chip|one-putt|1-putt|confound/i);
+  });
+
+  it('now tests more than one non-score effect', () => {
+    const engine = new CausalEngine('player-1', 'team-1');
+    const hypotheses = (engine as unknown as EngineInternals).generateHypotheses();
+
+    const nonScore = hypotheses.filter((h) => h.effectMetric !== 'score_to_par');
+    expect(nonScore.length).toBeGreaterThanOrEqual(2);
+    // Distinct effects, not two routes to the same one — the point is breadth
+    // of what the engine can explain.
+    expect(new Set(nonScore.map((h) => h.effectMetric)).size).toBeGreaterThanOrEqual(2);
+  });
+
   it('discovers the fairways -> GIR relationship from real-shaped rounds', async () => {
     const engine = new CausalEngine('player-1', 'team-1');
     await engine.discoverCausalRelationships();

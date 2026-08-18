@@ -196,6 +196,39 @@ export class CausalEngine {
         mechanism:
           'Approach play from the fairway holds ~65% GIR at 150 yards against ~45% from rough and ~25% from sand, so fairways won convert into greens hit (research: Drive -> Approach Lie -> GIR)',
       },
+      // THE SECOND NON-TAUTOLOGY, and the one that changes a coach's CONCLUSION
+      // rather than only widening the engine's vocabulary.
+      //
+      // `total_putts -> score_to_par` above reports a confounded number as a
+      // cause. docs/v3-research-golf-domain.md:29 states the confound directly:
+      // "putts-per-round is *lower* for bad iron players (they chip close and
+      // 1-putt for bogey)". So a low putt count is not evidence of good
+      // putting — it can be evidence of missed greens, and a coach reading
+      // "putting looks fine" off it draws the wrong conclusion.
+      //
+      // Testing GIR -> putts makes that confound explicit per player instead of
+      // leaving it as a footnote in a research document nobody on the team
+      // reads. Where the relationship holds, "your putts per round are low
+      // BECAUSE you are missing greens" is a root cause; where it does not, the
+      // player's putting number can be read at face value.
+      //
+      // Measured 2026-08-18: of Guilford's 12 active players, 5 carry any
+      // active causal relationship and every one of those except a single
+      // `total_fairways_hit -> total_gir` terminates in `score_to_par`. Adding
+      // one research-backed pair produced the only genuine root cause on the
+      // roster. This is that lever pulled once more.
+      //
+      // Both fields are already on RoundData, so this costs no extra loading.
+      {
+        cause: 'greens_in_regulation',
+        causeMetric: 'total_gir',
+        effect: 'putting_volume',
+        effectMetric: 'total_putts',
+        getCauseValue: (r: RoundData) => r.total_gir ?? null,
+        getEffectValue: (r: RoundData) => r.total_putts ?? null,
+        mechanism:
+          'Putts per round is confounded by greens hit — a player who misses greens chips close and 1-putts for bogey, so a low putt count can mask poor iron play rather than show good putting (research: traditional-stat interaction effects)',
+      },
     ];
   }
 
