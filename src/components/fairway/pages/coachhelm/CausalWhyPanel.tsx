@@ -17,6 +17,16 @@
  * confidence (as %), intervention potential, plus a "dose-responsive" badge when
  * the engine confirmed dose-response.
  *
+ * ROOT-CAUSE CHAINS: above that list, any two rows that connect (one's effect is
+ * the next one's cause) are joined by `composeCausalChains` into a single chain
+ * card. This is the one derivation the panel does, and it is done HERE rather
+ * than in the read action deliberately — composing from the array the panel
+ * already holds means a chain can only ever cite hops the coach can also see
+ * listed individually below it. It adds no claim: every hop is a row the engine
+ * detected and confirmed on its own, the chain's confidence is its WEAKEST hop,
+ * and the card says so. Nothing renders when nothing connects — which is most
+ * players, since almost every stored row ends at `score_to_par`.
+ *
  * HONEST-EMPTY: when the array is empty (player has <10 rounds, or no relationship
  * cleared the engine's bar — e.g. Tyler Passmore), render a calm EmptyState.
  * Never fabricate a relationship.
@@ -28,6 +38,7 @@
  * is always `[]`.
  * ========================================================================== */
 
+import { useMemo } from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -37,6 +48,10 @@ import {
   StatusPill,
   EmptyState,
 } from '@/components/fairway';
+import {
+  composeCausalChains,
+  type CausalChain,
+} from '@/lib/coachhelm/v3/causality/chains';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -106,6 +121,9 @@ export function CausalWhyPanel({
   title = 'Why your scores move',
   className,
 }: CausalWhyPanelProps) {
+  // Pure, deterministic, and over the SAME array rendered below — see header.
+  const chains = useMemo(() => composeCausalChains(relationships), [relationships]);
+
   return (
     <section className={cn('flex flex-col gap-4', className)} aria-label={title}>
       <div className="flex items-baseline justify-between gap-3">
@@ -133,12 +151,96 @@ export function CausalWhyPanel({
         </Surface>
       ) : (
         <div className="flex flex-col gap-4">
+          {/* Chains first — the deepest one is the closest thing to a root
+              cause the engine can state. Absent for most players; renders
+              nothing at all rather than an empty section. */}
+          {chains.map((chain) => (
+            <CausalChainCard key={chain.metrics.join('>')} chain={chain} />
+          ))}
           {relationships.map((rel) => (
             <CausalRelationshipRowCard key={rel.id} rel={rel} />
           ))}
         </div>
       )}
     </section>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * One chain — the joined path, and the honesty line that keeps it a lead
+ * rather than a proof. The per-hop mechanism sentences are deliberately NOT
+ * repeated here; each hop keeps its own card below.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Node labels come from the hop rows' own `cause`/`effect` fields, so the chain
+ * speaks the exact vocabulary the individual cards do — no second label map to
+ * drift. `metrics` drives the composition; these drive the reading.
+ */
+function chainNodeLabels(chain: CausalChain): string[] {
+  const first = chain.hops[0];
+  if (!first) return [];
+  return [causeLabel(first), ...chain.hops.map((hop) => effectLabel(hop))];
+}
+
+function CausalChainCard({ chain }: { chain: CausalChain }) {
+  const nodes = chainNodeLabels(chain);
+  const endpoints = `${nodes[0] ?? ''} to ${nodes[nodes.length - 1] ?? ''}`;
+
+  return (
+    <Surface
+      padding="md"
+      className="flex flex-col gap-4"
+      role="group"
+      aria-label={`Root-cause chain: ${endpoints}`}
+    >
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
+        <Badge tone="accent" variant="outline" size="sm">
+          Root-cause chain
+        </Badge>
+        <span className="font-fw-sans text-body-sm font-normal text-text-tertiary">
+          {chain.hops.length} steps
+        </span>
+      </div>
+
+      {/* The path itself: every node in order, the shared metric named once. */}
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
+        {nodes.map((node, i) => (
+          <span key={node} className="flex items-center gap-x-2.5">
+            {i > 0 ? (
+              <ArrowRight
+                className="h-4 w-4 flex-shrink-0 text-accent-600"
+                aria-hidden
+              />
+            ) : null}
+            <span className="font-fw-display text-body-lg font-medium text-text-primary">
+              {node}
+            </span>
+          </span>
+        ))}
+      </div>
+
+      <p className="font-fw-sans text-body text-text-secondary leading-6">
+        Each step was detected separately over this player&apos;s own rounds.
+        Read the chain as the lead to check first — the engine did not test the
+        path end to end.
+      </p>
+
+      {/* A chain is only as trustworthy as its thinnest link, so both readouts
+          report the weakest hop rather than an average or a product. */}
+      <Inset padding="sm" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <CausalReadout
+          label="Weakest link — confidence"
+          value={pct(chain.confidence)}
+          hint="The least certain step in the chain"
+        />
+        <CausalReadout
+          label="Weakest link — strength"
+          value={pct(chain.strength)}
+          hint="The loosest step in the chain"
+        />
+      </Inset>
+    </Surface>
   );
 }
 
