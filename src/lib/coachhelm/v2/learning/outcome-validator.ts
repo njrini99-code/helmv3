@@ -149,6 +149,14 @@ export interface RoundOutcomeRow {
   total_gir: number | null;
   total_gir_possible: number | null;
   created_at: string | null;
+  /**
+   * The day the round was PLAYED (`golf_rounds.round_date`, a DATE, NOT NULL in
+   * schema). This is what eligibility is measured on — `created_at` is when the
+   * row was typed in, and in production those differ for 80% of rounds by an
+   * average of 33.6 days (max 89). Optional here only so older callers that
+   * have not added it to their select keep working via the fallback below.
+   */
+  round_date?: string | null;
 }
 
 /**
@@ -224,25 +232,54 @@ export function endOfDueDate(dueDate: string): Date | null {
  * against — not an average over a window that can include rounds played before
  * the prediction existed.
  */
+/**
+ * The calendar day a round was played, as `YYYY-MM-DD`.
+ *
+ * `round_date` is the truth. `created_at` is only a fallback for rows (or
+ * callers) that did not supply one — it is the INSERT timestamp, and grading on
+ * it is the bug this function exists to not have: a coach entering last month's
+ * card today produces a row whose `created_at` is today and whose `round_date`
+ * is last month.
+ */
+function playDay(r: RoundOutcomeRow): string | null {
+  if (r.round_date) return r.round_date.slice(0, 10);
+  if (r.created_at) {
+    const ms = new Date(r.created_at).getTime();
+    if (Number.isFinite(ms)) return new Date(ms).toISOString().slice(0, 10);
+  }
+  return null;
+}
+
+/**
+ * The first round PLAYED strictly after the prediction was made and no later
+ * than its due date.
+ *
+ * Compared as calendar days, not instants: `round_date` is a DATE with no time
+ * or zone, and a prediction's `created_at` is a timestamp. Slicing both to a
+ * UTC `YYYY-MM-DD` makes the comparison deterministic and zone-independent —
+ * the same doctrine this codebase applies to every other date-only column.
+ *
+ * "Strictly after" is deliberate and matches `hasValidHorizon` already retiring
+ * same-day horizons: a round played the same day a prediction was made cannot
+ * test it.
+ */
 export function selectValidationRound<T extends RoundOutcomeRow>(
   rounds: T[],
   createdAt: string,
   dueDate: string,
 ): T | null {
   const createdMs = new Date(createdAt).getTime();
-  const end = endOfDueDate(dueDate);
-  if (!Number.isFinite(createdMs) || end === null) return null;
-  const endMs = end.getTime();
+  if (!Number.isFinite(createdMs)) return null;
+  const createdDay = new Date(createdMs).toISOString().slice(0, 10);
+  const dueDay = dueDate.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDay)) return null;
 
   const eligible = rounds
-    .filter((r) => {
-      if (!r.created_at) return false;
-      const ms = new Date(r.created_at).getTime();
-      return Number.isFinite(ms) && ms > createdMs && ms <= endMs;
-    })
-    .sort((a, b) => new Date(a.created_at!).getTime() - new Date(b.created_at!).getTime());
+    .map((r) => ({ r, day: playDay(r) }))
+    .filter((x): x is { r: T; day: string } => x.day !== null && x.day > createdDay && x.day <= dueDay)
+    .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
 
-  return eligible[0] ?? null;
+  return eligible[0]?.r ?? null;
 }
 
 /**
@@ -286,18 +323,25 @@ async function resolveActualValue(
     return { kind: 'invalid' };
   }
 
-  const start = new Date(prediction.created_at).toISOString();
   const end = endOfDueDate(prediction.due_date);
   if (end === null) return { kind: 'invalid' };
 
+  // Filter on the day the round was PLAYED, not the day the row was inserted.
+  // Measured 2026-08-18: 260 of 326 completed rounds (80%) were entered on a
+  // different day than they were played, averaging 33.6 days apart and reaching
+  // 89 — so the old `created_at` window both missed real outcomes and admitted
+  // rounds played before the prediction existed.
+  const createdDay = new Date(prediction.created_at).toISOString().slice(0, 10);
+  const dueDay = prediction.due_date.slice(0, 10);
+
   const { data: rounds, error } = await supabase
     .from('golf_rounds')
-    .select('id, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, created_at')
+    .select('id, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, created_at, round_date')
     .eq('player_id', prediction.player_id)
     .eq('status', 'completed')
-    .gt('created_at', start)
-    .lte('created_at', end.toISOString())
-    .order('created_at', { ascending: true });
+    .gt('round_date', createdDay)
+    .lte('round_date', dueDay)
+    .order('round_date', { ascending: true });
 
   if (error) {
     await logServerError(
