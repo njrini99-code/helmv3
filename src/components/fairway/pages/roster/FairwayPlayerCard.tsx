@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Users } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn, pluralize } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Badge } from '@/components/fairway/controls/badge';
@@ -139,11 +139,21 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
       {/* Anchor stat */}
       <div className="px-5 pb-3 md:px-6">
         <div className="flex items-baseline justify-between gap-3 rounded-fw-md bg-surface-sunken px-5 py-4">
-          <div className="flex items-center gap-2">
-            <p className="font-fw-sans text-caption font-medium uppercase tracking-wide text-text-tertiary">Avg score</p>
-            {player.recent_trend ? (
-              <TrendGlyph direction={player.recent_trend} className="text-caption font-medium" />
-            ) : null}
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <p className="font-fw-sans text-caption font-medium uppercase tracking-wide text-text-tertiary">Avg score</p>
+              {player.recent_trend ? (
+                <TrendGlyph direction={player.recent_trend} className="text-caption font-medium" />
+              ) : null}
+            </div>
+            {/* The denominator. Without it a coach compares an average built on
+                one round against one built on sixteen — measured on Guilford
+                2026-08-18, the same list held players at 1, 2 and 16 rounds.
+                Every neighbouring surface states this ("'30 · 1 rds · 88.0" on
+                the team board, "14/15" per putting bucket in round review). */}
+            <p className="font-fw-sans text-caption tabular-nums text-text-tertiary">
+              {pluralize(player.rounds_count ?? 0, 'round')}
+            </p>
           </div>
           <p
             className={cn(

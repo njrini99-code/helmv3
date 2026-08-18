@@ -29,6 +29,22 @@ function makePlayer(overrides: Partial<RosterPlayer> = {}): RosterPlayer {
   };
 }
 
+/**
+ * The denominator was in hand and dropped.
+ *
+ * Observed in production 2026-08-18, coach Ben Potter / Guilford College. The
+ * roster card showed Kalani Centeno at `SG:TOTAL -18.41` and Samanyu Bedi at
+ * `-9.02` with nothing to separate them — Kalani has ONE round (that figure is
+ * literally his single Aug 16 round at The Cardinal) and Samanyu has two, while
+ * Luke Wise on the same screen has sixteen. A coach triaging the list reads
+ * three numbers built on 1, 2 and 16 rounds as if they were comparable.
+ *
+ * `rounds_count` is already threaded to this component — roster/page.tsx:550
+ * supplies it and FairwayCoachRoster sorts by it — it was declared in
+ * `RosterPlayer` and never rendered. Every neighbouring surface states its
+ * denominator: the team board prints "'30 · 1 rds · 88.0", round review prints
+ * "14/15" per putting bucket. This card was the outlier.
+ */
 describe('FairwayPlayerCard — CoachHelm signal strip', () => {
   it('renders the trend glyph next to Avg score when a real trend signal exists', () => {
     render(<FairwayPlayerCard player={makePlayer({ recent_trend: 'improving' })} intent={null} />);
@@ -93,5 +109,21 @@ describe('FairwayPlayerCard — CoachHelm signal strip', () => {
       'href',
       '/golf/dashboard/roster/p1',
     );
+  });
+
+  it('states the round count behind the anchor stat', () => {
+    render(<FairwayPlayerCard player={makePlayer({ rounds_count: 1, avg_score: 88 })} intent={null} />);
+    // One round is the case that most needs the caveat.
+    expect(screen.getByText(/1 round\b/i)).toBeInTheDocument();
+  });
+
+  it('pluralizes the round count', () => {
+    render(<FairwayPlayerCard player={makePlayer({ rounds_count: 16 })} intent={null} />);
+    expect(screen.getByText(/16 rounds/i)).toBeInTheDocument();
+  });
+
+  it('says "No rounds" rather than "0 rounds" when the player has never played', () => {
+    render(<FairwayPlayerCard player={makePlayer({ rounds_count: 0, avg_score: undefined })} intent={null} />);
+    expect(screen.getByText(/no rounds/i)).toBeInTheDocument();
   });
 });
