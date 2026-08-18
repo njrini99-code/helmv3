@@ -237,6 +237,8 @@ export const GOLF_COACH_HUBS: readonly GolfHubDef[] = [
 // -----------------------------------------------------------------------------
 
 const PLAYER_TEAM_TABS: readonly GolfSubTab[] = [
+  { id: 'team-hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: IconLayoutGrid },
+  { id: 'my-qualifiers', label: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
   {
     id: 'roster',
     label: 'Roster',
@@ -248,8 +250,6 @@ const PLAYER_TEAM_TABS: readonly GolfSubTab[] = [
     // tab's own href, so no extra matchPrefixes are needed for it.
   },
   { id: 'team-info', label: 'Team Info', href: '/golf/dashboard/team', icon: IconUsers },
-  { id: 'team-hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: IconLayoutGrid },
-  { id: 'my-qualifiers', label: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
 ];
 
 export const GOLF_PLAYER_HUBS: readonly GolfHubDef[] = [
