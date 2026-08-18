@@ -16,8 +16,8 @@
  * is a horizontally-scrollable table, not a fixed-height clipped list, so
  * every hole column exists in the DOM regardless of viewport width.
  */
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { GolfCourse, GolfCourseTee, GolfCourseTeeHole } from '@/lib/types/golf-course';
 
 vi.mock('@/components/ui/sonner', () => ({ useToast: () => ({ showToast: vi.fn() }) }));
@@ -103,8 +103,68 @@ vi.mock('@/app/golf/actions/course-library', () => ({
 }));
 
 import { CourseDetailDrawer } from '@/components/golf/courses/CourseDetailDrawer';
+import { getCourseDetail } from '@/app/golf/actions/course-library';
 
 describe('CourseDetailDrawer — desktop chrome + holes', () => {
+  beforeEach(() => {
+    vi.mocked(getCourseDetail).mockReset().mockResolvedValue({ course, tees: [tee] });
+  });
+
+  it('exits loading after a missing detail response and retries to the course snapshot', async () => {
+    // The production action deliberately returns null when the row is missing,
+    // soft-deleted, or inaccessible. Before the fix that was treated like a
+    // successful load, leaving the drawer hero at "Loading…" forever.
+    vi.mocked(getCourseDetail)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ course, tees: [tee] });
+
+    render(
+      <CourseDetailDrawer
+        courseId="course-1"
+        open
+        onOpenChange={() => {}}
+        canManageTeam={false}
+        isSuperAdmin={false}
+        savedCourseIds={new Set()}
+      />,
+    );
+
+    const unavailable = await screen.findByRole('alert');
+    expect(unavailable).toHaveTextContent('This course is unavailable or you no longer have access to it.');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
+    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect((await screen.findAllByText('Championship')).length).toBeGreaterThan(0);
+    expect(screen.getByText('Course snapshot')).toBeInTheDocument();
+  });
+
+  it('shows a recoverable error when the course-detail request rejects', async () => {
+    vi.mocked(getCourseDetail)
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValueOnce({ course, tees: [tee] });
+
+    render(
+      <CourseDetailDrawer
+        courseId="course-1"
+        open
+        onOpenChange={() => {}}
+        canManageTeam={false}
+        isSuperAdmin={false}
+        savedCourseIds={new Set()}
+      />,
+    );
+
+    const failure = await screen.findByRole('alert');
+    expect(failure).toHaveTextContent('We couldn’t fetch the course details.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect((await screen.findAllByText('Championship')).length).toBeGreaterThan(0);
+    expect(screen.getByText('Course snapshot')).toBeInTheDocument();
+  });
+
   it('hides the mobile-sheet drag handle and applies cream-glass chrome at sm and up', async () => {
     render(
       <CourseDetailDrawer
@@ -140,6 +200,8 @@ describe('CourseDetailDrawer — desktop chrome + holes', () => {
       />,
     );
 
+    await screen.findAllByText('Championship');
+
     const panel = document.querySelector('[data-vaul-drawer]') ?? document.querySelector('[role="dialog"]');
     expect(panel).toBeTruthy();
     const className = panel!.className;
@@ -170,7 +232,7 @@ describe('CourseDetailDrawer — desktop chrome + holes', () => {
     expect(await screen.findByText('Holes')).toBeInTheDocument();
     // The "Hole" row prints every hole number 1..18 as its own cell.
     for (const n of [1, 8, 9, 10, 17, 18]) {
-      expect(screen.getByText(String(n))).toBeInTheDocument();
+      expect(screen.getAllByText(String(n)).length).toBeGreaterThan(0);
     }
     expect(screen.queryByText('19')).not.toBeInTheDocument();
   });
