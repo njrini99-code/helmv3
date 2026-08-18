@@ -69,8 +69,8 @@ test.describe('Golf Qualifier - Player Flow', () => {
     // Navigate to qualifiers page
     await page.goto('/golf/dashboard/qualifiers');
 
-    // Should see qualifiers heading
-    await expect(page.locator('h1')).toContainText(/Qualifier/i);
+    // Should see the qualifiers heading (FairwayQualifiers.tsx:226 title).
+    await expect(page.locator('h1')).toContainText('Lineup decisions.');
 
     // Should see list or empty state
     const content = page.locator('main');
