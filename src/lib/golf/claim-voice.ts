@@ -50,13 +50,65 @@ const NO_INFLECTION = new Set([
   'need',
 ]);
 
-/** Words that can follow "you" but never take an -s (adverbs, negation). */
-const NOT_A_VERB = new Set(['not', 'never', 'always', 'still', 'also', 'only', 'just', 'rarely', 'often']);
+/**
+ * Words that can follow "you" but never take an -s.
+ *
+ * This used to hold nine adverbs, and everything not on it was inflected. That
+ * is the wrong default for a function whose docblock promises to leave alone
+ * what it cannot conjugate: production rendered "bailing Connor outs" and
+ * "costing Braeden as stroke", because `out` and `a` are not on a denylist and
+ * so were treated as present-simple verbs.
+ *
+ * Both of those are cases where "you" was an OBJECT, not a subject — "bailing
+ * you out", "costing you a stroke" — so the correct rewrite substitutes the
+ * name and touches nothing else. Everything below can legitimately follow an
+ * object pronoun.
+ */
+const NOT_A_VERB = new Set([
+  // adverbs / negation (the original list)
+  'not', 'never', 'always', 'still', 'also', 'only', 'just', 'rarely', 'often',
+  // particles and prepositions — "bailing you out", "backing you up"
+  'out', 'up', 'in', 'on', 'off', 'to', 'for', 'at', 'by', 'with', 'from',
+  'into', 'over', 'under', 'about', 'through', 'around', 'back', 'down',
+  // determiners and articles — "costing you a stroke"
+  'a', 'an', 'the', 'any', 'some', 'more', 'less', 'most', 'least',
+  // conjunctions and pronouns
+  'and', 'or', 'but', 'that', 'this', 'it', 'them', 'they', 'when', 'where',
+]);
 
-/** Third-person singular present of a lowercase English verb. */
+/**
+ * Irregular past tenses. Third-person past is identical to second-person past
+ * ("you found" → "Cole found"), so these must NOT be inflected — production
+ * rendered "Connor founds the green 77% of the time".
+ */
+const IRREGULAR_PAST = new Set([
+  'found', 'made', 'hit', 'left', 'lost', 'took', 'went', 'saw', 'got', 'had',
+  'was', 'were', 'did', 'came', 'gave', 'kept', 'held', 'ran', 'won', 'put',
+  'set', 'cut', 'let', 'cost', 'shot', 'drove', 'sank', 'broke', 'chose',
+  'fell', 'felt', 'knew', 'meant', 'paid', 'read', 'sent', 'spent', 'stood',
+  'struck', 'threw', 'wrote', 'began', 'built', 'brought', 'bought',
+]);
+
+/**
+ * The handful of present-simple verbs that end in "ed" and so survive the
+ * past-tense rule below. Without this, "you exceed" would stop conjugating.
+ */
+const PRESENT_ENDING_IN_ED = new Set(['need', 'exceed', 'proceed', 'succeed', 'feed', 'speed', 'bleed', 'breed']);
+
+/**
+ * Third-person singular present of a lowercase English verb, or null when the
+ * word is not a present-simple verb we can inflect confidently.
+ *
+ * Null is not a failure — it is the caller's signal to substitute the name and
+ * leave the following word exactly as written, which is correct for every past
+ * tense and every object-pronoun construction.
+ */
 export function thirdPerson(verb: string): string | null {
   const lower = verb.toLowerCase();
   if (NOT_A_VERB.has(lower)) return null;
+  if (IRREGULAR_PAST.has(lower)) return null;
+  // Past tense: "you attempted" → "Connor attempted", never "attempteds".
+  if (/ed$/.test(lower) && lower.length > 3 && !PRESENT_ENDING_IN_ED.has(lower)) return null;
   if (NO_INFLECTION.has(lower)) return verb;
   if (IRREGULAR[lower]) return IRREGULAR[lower];
   if (/[^aeiou]y$/.test(lower)) return `${lower.slice(0, -1)}ies`;
@@ -95,9 +147,15 @@ export function toCoachVoice(claim: string, name: string | null | undefined): st
 
   // Subject "you" + a present-simple verb → "Cole verbs". Only when a verb
   // follows and we can inflect it; otherwise leave the pronoun in place.
-  out = out.replace(/\byou\b(\s+)([A-Za-z]+)/gi, (whole, gap: string, verb: string) => {
+  // `(?!['\u2019])` keeps a contraction whole. Without it `[A-Za-z]+` matched
+  // the "couldn" of "you couldn't" and production rendered "Luke couldns't".
+  out = out.replace(/\byou\b(\s+)([A-Za-z]+)(?!['\u2019])/gi, (_whole, gap: string, verb: string) => {
     const inflected = thirdPerson(verb);
-    if (inflected === null) return whole;
+    // Not a present-simple verb: substitute the name and leave the word alone.
+    // Correct for every past tense ("you attempted" → "Connor attempted") and
+    // for an object pronoun ("bailing you out" → "bailing Connor out"). The old
+    // code returned `whole` here, leaving "you" in front of a coach.
+    if (inflected === null) return `${who}${gap}${verb}`;
     // Preserve the source's emphasis casing ("You ESCAPE" → "Cole ESCAPES").
     const cased = verb === verb.toUpperCase() && verb.length > 1 ? inflected.toUpperCase() : inflected;
     return `${who}${gap}${cased}`;
