@@ -223,11 +223,40 @@ export function formatEventTime(start: string, end: string): string {
 }
 
 /**
- * Check if event is happening today
+ * Is `dateString` the viewer's current LOCAL calendar day?
+ *
+ * Two input shapes, because two things get called a date here and they do not
+ * mean the same thing:
+ *
+ *   - A bare `"2026-08-18"` is a CALENDAR DAY. JS parses that at UTC midnight,
+ *     so reading local fields back off it lands on the previous day everywhere
+ *     west of Greenwich — `new Date('2026-08-18').getDate()` is 17 in Eastern.
+ *     The literal Y/M/D is the only honest reading, the same doctrine
+ *     `eventCalendarDay` applies to all-day events in ./timezone.ts.
+ *   - Anything else is an INSTANT (all three live callers pass
+ *     `someDate.toISOString()`), and the local day of that instant is exactly
+ *     what "is this today" should mean for a timed event.
+ *
+ * A full UTC-midnight timestamp — `2026-08-18T00:00:00+00:00`, how an all-day
+ * event's `start_time` is stored — deliberately takes the instant path. Only
+ * the `allDay` flag can distinguish that from a real midnight event, this
+ * function never receives one, and guessing is how the iCal writer managed to
+ * be wrong in both directions at once. Callers holding an all-day event should
+ * pass its date prefix, or use `eventCalendarDay`.
  */
 export function isToday(dateString: string): boolean {
-  const date = new Date(dateString);
   const today = new Date();
+
+  const calendarDay = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+  if (calendarDay) {
+    return (
+      Number(calendarDay[1]) === today.getFullYear() &&
+      Number(calendarDay[2]) === today.getMonth() + 1 &&
+      Number(calendarDay[3]) === today.getDate()
+    );
+  }
+
+  const date = new Date(dateString);
   return (
     date.getDate() === today.getDate() &&
     date.getMonth() === today.getMonth() &&
