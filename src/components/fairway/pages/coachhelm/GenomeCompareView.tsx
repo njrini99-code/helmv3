@@ -50,6 +50,7 @@ import {
   EmptyState,
 } from '@/components/fairway';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
+import { formatGenomeRefreshed } from '@/lib/coachhelm/v3/genome/format-refreshed';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import type { GenomeVector } from '@/lib/coachhelm/v3/genome/types';
 import { IconCheck } from '@/components/icons';
@@ -70,6 +71,19 @@ export interface CompareSeries {
   name: string;
   /** The loaded genome vector, or null when the player has no genome computed. */
   vector: GenomeVector | null;
+  /**
+   * When this vector was computed, and off how many rounds.
+   *
+   * `loadGenomes` selects both (genome/loader.ts:61) and `GenomeDetailView`
+   * renders them; this surface used to drop them at the props boundary, so a
+   * head-to-head showed six-week-old vectors with nothing saying so. Measured
+   * 2026-08-17, the newest `computed_at` in production was 41 days old.
+   *
+   * Null is honest, not a default: a player with no genome has no computation
+   * to date, and the "no genome computed" chip already covers that case.
+   */
+  computedAt: string | null;
+  roundsBasis: number | null;
 }
 
 export interface GenomeCompareViewProps {
@@ -296,6 +310,7 @@ function CompareReadoutRail({
             samples={!aHasGenome || aLive === 0 ? { have: aLive, need: 3 } : undefined}
             awaitingLabel={aHasGenome ? 'Awaiting data' : 'No genome'}
           />
+          <GenomeProvenance series={seriesA} />
         </InstrumentPanel>
       ) : null}
 
@@ -311,6 +326,7 @@ function CompareReadoutRail({
             samples={!bHasGenome || bLive === 0 ? { have: bLive, need: 3 } : undefined}
             awaitingLabel={bHasGenome ? 'Awaiting data' : 'No genome'}
           />
+          <GenomeProvenance series={seriesB} />
         </InstrumentPanel>
       ) : null}
 
@@ -327,6 +343,32 @@ function CompareReadoutRail({
         />
       </InstrumentPanel>
     </InstrumentPanel>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * GENOME PROVENANCE — how old this vector is, and how much it was built from.
+ *
+ * Mirrors `GenomeDetailView`'s "N rounds · last refreshed {ago}" caption so the
+ * two genome surfaces read as one product rather than two. Renders nothing at
+ * all when there is no genome or no timestamp: the "no genome computed" chip
+ * already says the former, and inventing a freshness for the latter is exactly
+ * what `formatGenomeRefreshed` refuses to do.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function GenomeProvenance({ series }: { series: CompareSeries }) {
+  if (!series.vector) return null;
+  const refreshed = formatGenomeRefreshed(series.computedAt);
+  if (!refreshed && series.roundsBasis == null) return null;
+
+  const rounds =
+    series.roundsBasis == null
+      ? null
+      : `${series.roundsBasis} ${series.roundsBasis === 1 ? 'round' : 'rounds'}`;
+
+  return (
+    <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+      {[rounds, refreshed ? `last refreshed ${refreshed}` : null].filter(Boolean).join(' · ')}
+    </p>
   );
 }
 

@@ -70,11 +70,28 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
   // numeric dimension table + an honest "N of M live" caption + a "no genome
   // computed" legend chip. loadGenomes + roster + ?p1=&p2= resolution + coach
   // gate all ran above; vectors carried in as serializable CompareSeries.
+  // `computed_at`/`rounds_basis` are carried through, not dropped. loadGenomes
+  // selects both and GenomeDetailView renders them; this route used to build
+  // props without them, so the head-to-head — the surface a coach uses to
+  // decide who travels — showed vectors with no indication of their age. The
+  // newest genome in production was 41 days old when that was measured.
   const seriesA: CompareSeries | null = playerA
-    ? { playerId: playerA.id, name: playerA.name, vector: a ? a.vector : null }
+    ? {
+        playerId: playerA.id,
+        name: playerA.name,
+        vector: a ? a.vector : null,
+        computedAt: a ? a.computed_at : null,
+        roundsBasis: a ? a.rounds_basis : null,
+      }
     : null;
   const seriesB: CompareSeries | null = playerB
-    ? { playerId: playerB.id, name: playerB.name, vector: b ? b.vector : null }
+    ? {
+        playerId: playerB.id,
+        name: playerB.name,
+        vector: b ? b.vector : null,
+        computedAt: b ? b.computed_at : null,
+        roundsBasis: b ? b.rounds_basis : null,
+      }
     : null;
 
   const countsRes = await getAlertCounts(session.coach.id);

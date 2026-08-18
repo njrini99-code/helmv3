@@ -64,6 +64,7 @@ import {
   type FocusAreaOutcome,
 } from '@/app/golf/actions/development';
 import { GENOME_DIMENSIONS, getDimension } from '@/lib/coachhelm/v3/genome/registry';
+import { formatGenomeRefreshed } from '@/lib/coachhelm/v3/genome/format-refreshed';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import type { GenomeVector, DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import type { Persona, PersonaEntry } from '@/lib/coachhelm/v3/genome/persona';
@@ -176,14 +177,22 @@ function buildDimRows(vector: GenomeVector): DimRow[] {
   });
 }
 
+/**
+ * Local wrapper over the shared genome formatter.
+ *
+ * The body used to live here and returned the string `'just now'` for a null
+ * timestamp — the most reassuring possible answer for a value we do not have.
+ * It also formatted the absolute date in the RUNTIME's zone, so a genome
+ * computed at 08:12Z rendered as the previous day west of Greenwich and the
+ * server render and the client hydration could disagree.
+ *
+ * Both are fixed in `formatGenomeRefreshed`, which returns null for unknown and
+ * pins the date to UTC (a nightly batch stamp's calendar date is a UTC fact).
+ * `GenomeCompareView` imports the same function, so the two genome surfaces
+ * cannot word this differently again.
+ */
 function formatAgo(iso: string | null): string {
-  if (!iso) return 'just now';
-  const diff = Date.now() - new Date(iso).getTime();
-  const days = Math.floor(diff / 86_400_000);
-  if (days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 7) return `${days} days ago`;
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatGenomeRefreshed(iso) ?? 'not yet computed';
 }
 
 /* ---------------------------------------------------------------------------
