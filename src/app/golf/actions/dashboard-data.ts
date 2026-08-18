@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { verifyPlayerAccess, verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTodayRangeForTz } from '@/lib/utils/timezone';
+import { eventRunsOnDay } from '@/lib/calendar/timezone';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
@@ -912,6 +913,15 @@ async function getPlayerDashboardDataImpl(
     // so its date portion IS today.
     const today = todayStart.split('T')[0] ?? '';
 
+    // Lower bound for the Today OVERLAP window (#1496). An event still running
+    // today can have started days ago, so Today cannot be a start-membership
+    // filter. 14 days is comfortably past the longest event in production
+    // (8 days) and keeps the fetch small; `eventRunsOnDay` then decides
+    // exactly, using the team's own calendar days rather than instants.
+    const todayOverlapFloor = new Date(
+      new Date(`${today}T00:00:00Z`).getTime() - 14 * 86400_000,
+    ).toISOString();
+
     // ── Parallel batch: team, rounds, handicap, stats cache, today events, tasks, announcements ──
     const [
         teamResult,
@@ -945,14 +955,26 @@ async function getPlayerDashboardDataImpl(
         teamId
             ? supabase
                 .from('golf_events')
-                .select('id, title, event_type, start_time, end_time, location')
+                .select('id, title, event_type, start_time, end_time, location, all_day')
                 .eq('team_id', teamId)
                 .neq('event_type', CLASS_EVENT_TYPE)
-                .gte('start_time', todayStart)
+                // OVERLAP, not start-membership (#1496). A tournament on its
+                // 3rd day starts in the past and outside today, so filtering
+                // `start_time >= todayStart` dropped it from Today while
+                // Upcoming's `start_time >= now` dropped it too — it appeared
+                // in neither. All 14 multi-day events in production are
+                // tournaments and every one was invisible after day 1.
+                //
+                // Bounded here, then filtered EXACTLY by `eventRunsOnDay`
+                // below: `end_time` on an all-day row is UTC midnight of the
+                // INCLUSIVE last day, so no instant comparison gets the final
+                // round right. The window absorbs that offset — the longest
+                // event in production spans 8 days.
                 .lt('start_time', todayEnd)
+                .or(`end_time.is.null,end_time.gte.${todayOverlapFloor}`)
                 .order('start_time', { ascending: true })
-                .limit(10)
-            : Promise.resolve({ data: [] as Array<{ id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null }> }),
+                .limit(40)
+            : Promise.resolve({ data: [] as Array<{ id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null; all_day?: boolean | null }> }),
         // Upcoming events BEYOND today (DaySchedule home-dashboard card, #TASK2
         // additive) — same shape/table as the today query above, just the next
         // slice of the calendar so the card can show "today + what's coming
@@ -1020,7 +1042,15 @@ async function getPlayerDashboardDataImpl(
     } | null;
 
     // Fetch player's own RSVP for today's events
-    const todayEventsRaw = todayEventsResult.data || [];
+    // The query above fetches a WINDOW that could overlap today; this decides
+    // exactly which of them actually run today, in the TEAM's calendar days
+    // (#1496). `eventRunsOnDay` is built on `eventDaySpan` because an all-day
+    // row's `end_time` is UTC midnight on the INCLUSIVE last day — comparing
+    // instants drops the final round of every tournament, the same
+    // one-day-early bug as #1493/#1494/#1495.
+    const todayEventsRaw = (todayEventsResult.data || []).filter((e) =>
+        eventRunsOnDay(e as { start_time?: string | null; end_time?: string | null; all_day?: boolean | null }, playerTeamTimezone, today),
+    );
     let todayEvents: TodayEvent[] = todayEventsRaw.map(e => ({
         id: e.id,
         title: e.title,

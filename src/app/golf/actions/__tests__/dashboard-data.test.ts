@@ -11,7 +11,12 @@ const mockLimit = vi.fn(() => ({ data: [], error: null }));
 const mockOrder = vi.fn(() => ({ limit: mockLimit, data: [], error: null }));
 const mockNot = vi.fn(() => ({ order: mockOrder, limit: mockLimit, data: [], error: null }));
 const mockIn = vi.fn(() => ({ order: mockOrder, not: mockNot, limit: mockLimit, data: [], error: null }));
-const mockLt = vi.fn(() => ({ order: mockOrder, data: [], error: null }));
+// `.or()` is part of the real PostgREST builder and the Today query now uses it
+// (#1496 — Today is an OVERLAP window, so a running tournament is fetched and
+// then filtered exactly). Extending the stub to match the client it stands in
+// for; these tests assert the returned PAYLOAD, never the query shape.
+const mockOr = vi.fn(() => ({ order: mockOrder, limit: mockLimit, data: [], error: null }));
+const mockLt = vi.fn(() => ({ order: mockOrder, or: mockOr, data: [], error: null }));
 const mockGte = vi.fn(() => ({ lt: mockLt, gte: vi.fn(), order: mockOrder, data: [], error: null, limit: mockLimit }));
 // Team-scoped event reads chain `.neq('event_type', 'class')` so a player's
 // synced class meetings don't count as the team's schedule.
@@ -23,6 +28,7 @@ const mockNeq = vi.fn((_column?: string, _value?: unknown) => ({
   in: mockIn,
   gte: mockGte,
   lt: mockLt,
+  or: mockOr,
   not: mockNot,
   order: mockOrder,
   limit: mockLimit,
@@ -82,7 +88,8 @@ function createChainableMock({
     error: null,
     count: Array.isArray(data) ? data.length : 0,
   };
-  for (const method of ['select', 'eq', 'neq', 'in', 'gte', 'lt', 'not', 'order', 'limit']) {
+  // `or` is on the list because the Today query is an OVERLAP window (#1496).
+  for (const method of ['select', 'eq', 'neq', 'in', 'gte', 'lt', 'or', 'not', 'order', 'limit']) {
     chain[method] = vi.fn(() => chain);
   }
   chain.range = vi.fn((from: number, to: number) => ({
@@ -595,4 +602,80 @@ describe('dashboard-data server actions', () => {
       expect(result.scoringTrend.length).toBe(3);
     });
   });
+
+  /**
+   * #1496 — a tournament that has started but not finished appeared in NEITHER
+   * Today nor Upcoming, so it vanished for days 2..N.
+   *
+   * Today filtered `start_time >= todayStart AND start_time < todayEnd`; day 3
+   * of a four-day event has its start in the past, so it failed that. Upcoming
+   * filters `start_time >= todayEnd`, which it also fails. Measured on
+   * production for Guilford on 2026-04-20 — day 3 of the ODAC Championship —
+   * Today returned 0 while exactly 1 event was actually running.
+   *
+   * Today is now an OVERLAP window filtered by `eventRunsOnDay`, which reads
+   * the event's calendar-day span rather than comparing instants — an all-day
+   * row's `end_time` is UTC midnight of the INCLUSIVE last day, so instants
+   * drop the final round.
+   */
+  describe('getPlayerDashboardData — a tournament in progress (#1496)', () => {
+    it('shows a multi-day event on a MIDDLE day, not just its first', async () => {
+      vi.setSystemTime(new Date('2026-04-20T15:00:00Z'));
+
+      const running = {
+        id: 'odac',
+        title: 'ODAC Championship',
+        event_type: 'tournament',
+        start_time: '2026-04-18T00:00:00+00:00',
+        end_time: '2026-04-21T00:00:00+00:00',
+        location: 'Roanoke',
+        all_day: true,
+      };
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'golf_events') return createChainableMock({ data: [running] });
+        if (table === 'golf_teams') {
+          return createChainableMock({
+            singleData: { id: 'team-1', name: 'Eagles', season: '2026', join_code: 'E1', created_at: '2026-01-01' },
+          });
+        }
+        return createChainableMock();
+      });
+
+      const result = await getPlayerDashboardData('player-1', 'user-1', 'team-1');
+
+      expect(result.todayEvents.map((e) => e.id)).toContain('odac');
+      vi.useRealTimers();
+    });
+
+    it('does not show it once the tournament is over', async () => {
+      vi.setSystemTime(new Date('2026-04-23T15:00:00Z'));
+
+      const finished = {
+        id: 'odac',
+        title: 'ODAC Championship',
+        event_type: 'tournament',
+        start_time: '2026-04-18T00:00:00+00:00',
+        end_time: '2026-04-21T00:00:00+00:00',
+        location: 'Roanoke',
+        all_day: true,
+      };
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'golf_events') return createChainableMock({ data: [finished] });
+        if (table === 'golf_teams') {
+          return createChainableMock({
+            singleData: { id: 'team-1', name: 'Eagles', season: '2026', join_code: 'E1', created_at: '2026-01-01' },
+          });
+        }
+        return createChainableMock();
+      });
+
+      const result = await getPlayerDashboardData('player-1', 'user-1', 'team-1');
+
+      expect(result.todayEvents.map((e) => e.id)).not.toContain('odac');
+      vi.useRealTimers();
+    });
+  });
+
 });

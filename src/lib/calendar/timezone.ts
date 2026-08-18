@@ -265,3 +265,43 @@ export function eventCalendarDay(
 
   return zonedMidnight(iso, timezone);
 }
+
+/**
+ * Does `ev` run on the given calendar day, in the TEAM's timezone?
+ *
+ * Membership-on-start is the wrong test and it is what made a tournament in
+ * progress vanish from both dashboards (#1496): day 3 of a four-day event has
+ * a start in the past (so it is not Upcoming) and a start outside today (so it
+ * is not Today). Measured on production, all 14 multi-day events — every one a
+ * tournament — were invisible after their first day; the NCAA Championship
+ * (May 8-16) was missing on eight of its nine days.
+ *
+ * Built on `eventDaySpan` rather than comparing instants, because
+ * `golf_events.end_time` for an all-day row is UTC midnight on the INCLUSIVE
+ * last day. Comparing instants drops the final round of every tournament —
+ * the same one-day-early bug as #1493/#1494/#1495.
+ *
+ * `day` may be a bare `YYYY-MM-DD` or the `${dateStr}T00:00:00` form
+ * `getTodayRange` returns; only the date prefix is read, so the runtime zone
+ * cannot change the answer. The team's timezone decides the day, never the
+ * server's.
+ */
+export function eventRunsOnDay(
+  ev: {
+    start_date?: string | null;
+    start_time?: string | null;
+    end_date?: string | null;
+    end_time?: string | null;
+    all_day?: boolean | null;
+  },
+  timezone: string | null | undefined,
+  day: string,
+): boolean {
+  const span = eventDaySpan(ev, timezone);
+  if (!span) return false;
+  // `allDay: true` makes eventCalendarDay read the literal Y/M/D prefix, which
+  // is exactly the semantics wanted for a calendar-day bound.
+  const target = eventCalendarDay(day, true, timezone);
+  if (Number.isNaN(target.getTime())) return false;
+  return span.first.getTime() <= target.getTime() && target.getTime() <= span.last.getTime();
+}
