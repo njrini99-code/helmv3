@@ -237,6 +237,22 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
   readonly category: InsightCategory = 'approach';
   readonly minSampleN = 5; // attempts in the bucket
   protected override readonly requiresStanding = false;
+  /**
+   * ...but DO attach standing when the table has it.
+   *
+   * `requiresStanding: false` is right — no sourced PGA on-green-proximity
+   * benchmark exists for these buckets, and inventing one is what made
+   * `long_approach_3putt_cascade` unfireable. It used to also mean "never
+   * load", which threw away a cohort position that already existed: measured
+   * 2026-08-18, 0 of 123 active approach_miss insights carried standing while
+   * `golf_player_standing` held 106 approach-proximity rows across 38 players,
+   * refreshed that day.
+   *
+   * Attaching it also lights up the `if (standing)` branch in run(), which is
+   * where the counterfactual and its `strokes_impact` are computed — the value
+   * the signals feed now ranks on.
+   */
+  protected override readonly attachStandingWhenAvailable = true;
 
   readonly metricId: MetricId;
   readonly bucket: ApproachBucket;

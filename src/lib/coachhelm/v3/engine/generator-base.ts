@@ -72,6 +72,24 @@ const PRIORITY_RANK: Record<InsightPriority, number> = {
  *   returned unchanged — these metrics must never acquire CF-derived per-round
  *   leverage they don't independently own, or they crowd the actionable feed.
  */
+/**
+ * Separate the two standing questions a generator has to answer.
+ *
+ * `requiresStanding` is the ONLY thing that may suppress an insight;
+ * `attachStandingWhenAvailable` only ever adds. Keeping this pure (and
+ * exported) means the decision is testable without standing up a generator,
+ * a Supabase client, and a write path.
+ */
+export function resolveStandingPolicy(opts: {
+  requiresStanding: boolean;
+  attachStandingWhenAvailable: boolean;
+}): { load: boolean; gateOnMissing: boolean } {
+  return {
+    load: opts.requiresStanding || opts.attachStandingWhenAvailable,
+    gateOnMissing: opts.requiresStanding,
+  };
+}
+
 export function backfilledStrokesImpact(
   composedImpact: number,
   counterfactual: CounterfactualProjection | null,
@@ -314,8 +332,29 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
    * - false: emit diagnostic insight without standing/counterfactual.
    *   Used for metrics that are player-vs-self only (e.g. putt miss bias
    *   — no public PGA benchmark exists).
+   *
+   * This flag answers "may I emit WITHOUT standing?". It is NOT the same
+   * question as "should I load standing if it happens to exist?" — see
+   * `attachStandingWhenAvailable`.
    */
   protected readonly requiresStanding: boolean = true;
+
+  /**
+   * Load standing even when it is not required, and emit either way.
+   *
+   * `requiresStanding: false` used to mean "never load", so a generator with
+   * no sourced benchmark could never carry a cohort position even when the
+   * standing table already had one. Measured 2026-08-18: of 123 active
+   * `approach_miss` insights, 0 carried standing while
+   * `golf_player_standing` held 106 approach-proximity rows across 38
+   * players, refreshed that day.
+   *
+   * Flipping `requiresStanding` on instead would have suppressed the card
+   * entirely for the 18 of 123 (player, metric) pairs with no standing row.
+   * This flag buys the benchmark for the 105 that have one without costing
+   * the 18 that do not.
+   */
+  protected readonly attachStandingWhenAvailable: boolean = false;
 
   constructor(protected readonly playerId: string) {}
 
@@ -486,11 +525,15 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         return { id: null, gated: false, status: 'no_data', retracted };
       }
 
-      const standing = this.requiresStanding
+      const standingPolicy = resolveStandingPolicy({
+        requiresStanding: this.requiresStanding,
+        attachStandingWhenAvailable: this.attachStandingWhenAvailable,
+      });
+      const standing = standingPolicy.load
         ? await loadStandingForMetric(this.playerId, this.metricId)
         : null;
 
-      if (this.requiresStanding && !standing) {
+      if (standingPolicy.gateOnMissing && !standing) {
         // No standing yet → no PGA reference → skip the insight. The
         // standing cron will catch up; next run picks this up.
         // Deliberately NO retraction here — this is infrastructure lag,
