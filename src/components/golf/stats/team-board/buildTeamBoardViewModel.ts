@@ -400,7 +400,7 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
       const worstCategory = worstCategoryLabel(ranks);
       label = worstCategory ? `${worstCategory} slump` : (p.topInsightTitle ?? 'Needs attention');
     } else if (p.roundsPlayed < TREND_SIGNAL_MIN_ROUNDS) {
-      label = `${TREND_SIGNAL_MIN_ROUNDS - p.roundsPlayed} rds to trend`;
+      label = `${TREND_SIGNAL_MIN_ROUNDS - p.roundsPlayed} rounds to trend`;
     } else {
       label = 'Steady';
     }

@@ -345,14 +345,14 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
         description={`Every player on ${teamName}'s roster: ranked, tracked, and measured against Tour.`}
         meta={<p className="max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">{formatTeamStatsFreshness(freshness)}</p>}
         secondaryActions={
-          <div className="flex items-center gap-2">
-            <Button asChild variant="secondary" size="md">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+            <Button asChild variant="secondary" size="md" className="min-w-0 flex-1 sm:flex-none">
               <Link href="/golf/dashboard/coachhelm/chat">Ask CoachHelm</Link>
             </Button>
-            <Button asChild variant="ghost" size="md">
+            <Button asChild variant="ghost" size="md" className="min-w-0 flex-1 sm:flex-none">
               <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
             </Button>
-            <IconButton variant="secondary" size="md" aria-label="Export team stats as CSV" onClick={handleExport} disabled={vm.rows.length === 0}>
+            <IconButton className="shrink-0" variant="secondary" size="md" aria-label="Export team stats as CSV" onClick={handleExport} disabled={vm.rows.length === 0}>
               <Download className="h-4 w-4" aria-hidden />
             </IconButton>
           </div>

@@ -61,6 +61,8 @@ export interface TeamStatsIntelligence {
     categories: CategoryRatings | null;
     composite: number | null;
     topInsight: EvidenceInsight | null;
+    /** Raw persisted timestamp for the surfaced insight; null when unavailable. */
+    topInsightSourceUpdatedAt: string | null;
     insightCount: number;
     statsCacheUpdatedAt: string | null;
     statsCacheStale: boolean;
@@ -411,6 +413,7 @@ async function getTeamStatsIntelligenceImpl(
         categories,
         composite: n?.composite == null ? null : Math.round(n.composite),
         topInsight: rows[0] ?? null,
+        topInsightSourceUpdatedAt: rows[0]?.source_updated_at ?? null,
         insightCount: rows.length,
         statsCacheUpdatedAt: cacheMeta?.updatedAt ?? null,
         statsCacheStale: cacheMeta?.isStale ?? false,
