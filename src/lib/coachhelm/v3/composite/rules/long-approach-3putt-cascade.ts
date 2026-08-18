@@ -73,6 +73,37 @@ function approachProximityFeet(i: EvidenceInsight): number {
  */
 const WEAK_ON_GREEN_PROXIMITY_FT = 31;
 
+/**
+ * RE-MEASURED 2026-08-18 — the gate is alive; the rule still emits nothing;
+ * THAT IS NOT A BUG, AND IT IS NOT A REASON TO MOVE THE THRESHOLD AGAIN.
+ *
+ * Production still holds 0 rows whose signature contains
+ * `long_approach_3putt_cascade`, which reads like the 31 ft recalibration
+ * failed. It did not. Measured against `golf_coach_insights`:
+ *
+ *   players with a leg-1 measure (175+ proximity)   30
+ *   players with a leg-2 measure (10-15 ft standing) 20
+ *   EVALUABLE ON BOTH LEGS                           18
+ *     of those, pass leg 1 (proximity > 31 ft)        4
+ *     of those, pass leg 2 (team_pct < 50)            8
+ *     pass BOTH                                       0
+ *
+ * Before 31 ft, leg 1 passed ZERO players and the rule was structurally
+ * unfireable. It now passes 4 of 18, so the gate does discriminate.
+ *
+ * The conjunction is what yields nothing, and at this sample size that is
+ * expected: under independence the overlap is 4 x 8 / 18 = 1.78 players, and
+ * P(observing 0) = C(10,4)/C(18,4) = 0.069. A ~7% outcome is noise, not
+ * counter-evidence — it does NOT show that long-approach dial-in and
+ * mid-putt weakness are unrelated, and it does not license widening either
+ * gate to "make the rule work". Widening on exactly this reasoning is how the
+ * 50 ft threshold survived: a number chosen so a rule would fire, justified
+ * afterwards.
+ *
+ * Re-measure when the evaluable population is materially larger (say 50+
+ * players on both legs). Until then, zero firings is the honest output.
+ */
+
 function isWeakLongApproach(i: EvidenceInsight): boolean {
   return (
     i.insight_type === 'approach_miss' &&
