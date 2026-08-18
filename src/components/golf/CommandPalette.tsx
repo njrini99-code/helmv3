@@ -23,14 +23,15 @@ import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import { cn } from '@/lib/utils';
-import { IconButton } from '@/components/ui/button';
+import { IconButton as LegacyIconButton } from '@/components/ui/button';
+import { IconButton } from '@/components/fairway/controls/button';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import {
   IconSearch, IconUsers, IconCalendar, IconChartBar, IconMessage,
   IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconSparkles,
   IconTarget, IconTrophy, IconClipboardList, IconBell, IconAlertCircle,
   IconBrain, IconGauge, IconBot, IconChartRadar, IconCrosshair, IconWrench,
-  IconRocket, IconLayoutGrid, IconMapPin,
+  IconRocket, IconLayoutGrid, IconMapPin, IconX,
 } from '@/components/icons';
 import {
   getCommandPaletteData,
@@ -231,12 +232,12 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   return (
     <div className="fixed inset-0 z-50 animate-in fade-in-0 duration-200">
       {/* Backdrop */}
-      <IconButton variant="default"
+      <LegacyIconButton
         type="button"
-        aria-label="Close command palette"
-        onClick={() => setOpen(false)}
+        aria-label="Dismiss command palette"
+        onClick={handleClose}
         className="absolute inset-0 bg-[oklch(0.18_0.01_55_/_0.32)] backdrop-blur-md cursor-default"
-      ><span className="sr-only">Close command palette</span></IconButton>
+      ><span className="sr-only">Dismiss command palette</span></LegacyIconButton>
 
       {/* Palette frame */}
       <div
@@ -244,7 +245,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]"
+        className="fixed left-[calc(50%+var(--fw-rail-width,0px)/2)] top-1/2 z-[100] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 max-md:left-1/2 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]"
       >
         <Command
           label="Command palette"
@@ -255,7 +256,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
           )}
         >
           {/* Search input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle">
+          <div className="flex items-center gap-3 px-4 py-3 pr-14 border-b border-border-subtle">
             <IconSearch size={18} className="text-text-tertiary" aria-hidden />
             <Command.Input
               placeholder="Search commands…"
@@ -438,6 +439,15 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
             </div>
           </div>
         </Command>
+
+        <IconButton
+          aria-label="Close command palette"
+          onClick={handleClose}
+          size="sm"
+          className="absolute right-2 top-2 z-10"
+        >
+          <IconX size={16} aria-hidden />
+        </IconButton>
       </div>
     </div>
   );
