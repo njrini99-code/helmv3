@@ -147,3 +147,66 @@ describe('composeCausalChains', () => {
     expect(chains).toEqual([]);
   });
 });
+
+/**
+ * PARALLEL EDGES — found 2026-08-18 by querying production after the composer
+ * shipped, not by reading the code.
+ *
+ * `dedupeAndRank` in the read action keys on
+ * `player_id|cause|effect|relationship_type`, so RELATIONSHIP TYPE is part of
+ * the identity and two rows for the same metric pair both survive it. That is
+ * not hypothetical:
+ *
+ *     player 654d35a1…  total_gir   -> score_to_par   direct AND mediated
+ *     player 654d35a1…  total_putts -> score_to_par   direct AND mediated
+ *
+ * The walk treats those as two distinct edges, so a chain running through that
+ * pair is emitted once per type — two cards whose every VISIBLE field is
+ * identical, since the panel renders the metric path and never the type. Worse,
+ * `CausalWhyPanel` keys chain cards on `metrics.join('>')`, which is the same
+ * string for both: a duplicate React key on a live surface.
+ *
+ * Not live today — that player has no edge leading INTO total_gir or
+ * total_putts, and Cole Bennett, the only player who currently chains at all,
+ * has one row per pair. It becomes live the moment the engine detects one more
+ * adjacent relationship for anyone who already carries a doubled pair.
+ *
+ * A chain is identified by the path it names. Two readings of the same path are
+ * one chain, and the honest survivor is the better-supported one.
+ */
+describe('composeCausalChains — parallel edges are one chain, not two', () => {
+  it('emits a single chain when a hop exists under two relationship types', () => {
+    const chains = composeCausalChains([
+      edge('total_fairways_hit', 'total_gir'),
+      edge('total_gir', 'score_to_par', { id: 'gir-direct', relationship_type: 'direct', confidence: 0.6 }),
+      edge('total_gir', 'score_to_par', { id: 'gir-mediated', relationship_type: 'mediated', confidence: 0.9 }),
+    ]);
+
+    expect(chains).toHaveLength(1);
+    expect(chains[0]!.metrics).toEqual(['total_fairways_hit', 'total_gir', 'score_to_par']);
+  });
+
+  it('keeps the better-supported reading of a duplicated path', () => {
+    const chains = composeCausalChains([
+      edge('total_fairways_hit', 'total_gir'),
+      edge('total_gir', 'score_to_par', { id: 'gir-direct', relationship_type: 'direct', confidence: 0.6 }),
+      edge('total_gir', 'score_to_par', { id: 'gir-mediated', relationship_type: 'mediated', confidence: 0.9 }),
+    ]);
+
+    // Weakest hop of the surviving chain is min(0.8, 0.9) — the 0.6 reading lost.
+    expect(chains[0]!.confidence).toBeCloseTo(0.8, 10);
+  });
+
+  it('gives every emitted chain a distinct metric path, so a key can be built from it', () => {
+    const chains = composeCausalChains([
+      edge('total_fairways_hit', 'total_gir'),
+      edge('total_gir', 'total_putts', { id: 'putts-direct', relationship_type: 'direct' }),
+      edge('total_gir', 'total_putts', { id: 'putts-mediated', relationship_type: 'mediated' }),
+      edge('penalty_strokes', 'double_bogey_rate'),
+      edge('double_bogey_rate', 'round_variance'),
+    ]);
+
+    const paths = chains.map((c) => c.metrics.join('>'));
+    expect(new Set(paths).size).toBe(paths.length);
+  });
+});

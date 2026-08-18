@@ -107,7 +107,39 @@ export function composeCausalChains(rows: CausalRelationshipRow[]): CausalChain[
     walk([start], new Set([start.cause_metric, start.effect_metric]));
   }
 
-  return chains.sort(byDepthThenConfidence);
+  return dedupeByPath(chains).sort(byDepthThenConfidence);
+}
+
+/**
+ * One path, one chain.
+ *
+ * The same metric pair can be stored twice under different `relationship_type`s
+ * — measured in production 2026-08-18, one player carries both
+ * `total_gir -> score_to_par (direct)` and `total_gir -> score_to_par
+ * (mediated)`, and the read action's dedupe keeps both because type is part of
+ * its natural key. The walk then emits one chain per combination, and every
+ * VISIBLE field of those chains is identical: the panel renders the metric
+ * path and never the type. Two indistinguishable cards, and — since the panel
+ * keys on the joined path — a duplicate React key.
+ *
+ * A chain is identified by the path it names, so the duplicates collapse. The
+ * survivor is the better-supported reading: highest weakest-hop confidence,
+ * then strength. Never the first one walked, which is just insertion order.
+ */
+function dedupeByPath(chains: CausalChain[]): CausalChain[] {
+  const best = new Map<string, CausalChain>();
+  for (const chain of chains) {
+    const key = chain.metrics.join('>');
+    const held = best.get(key);
+    if (
+      !held ||
+      chain.confidence > held.confidence ||
+      (chain.confidence === held.confidence && chain.strength > held.strength)
+    ) {
+      best.set(key, chain);
+    }
+  }
+  return [...best.values()];
 }
 
 function toChain(path: Array<CausalRelationshipRow & { cause_metric: string; effect_metric: string }>): CausalChain {
