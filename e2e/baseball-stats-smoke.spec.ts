@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { TEST_USERS } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 import { BASEBALL_SEED_MANIFEST } from './helpers/baseball-seed-manifest';
@@ -40,6 +40,19 @@ import { BASEBALL_SEED_MANIFEST } from './helpers/baseball-seed-manifest';
 const SEEDED =
   process.env.PLAYWRIGHT_BASEBALL_SEEDED === '1' ||
   process.env.PLAYWRIGHT_BASEBALL_SEEDED === 'true';
+
+/**
+ * Read a figure off a Fairway "Key figures" strip (KPIContentsStrip →
+ * StatStrip). RuledStatLine mounts each numeral digit in its own span
+ * ("Roster 1 4"), so Number(textContent) is NaN — strip everything that
+ * isn't a digit instead. Labels on these strips carry no digits, so what
+ * remains is exactly the figure.
+ */
+async function kpiFigure(keyFigures: Locator, label: string): Promise<number> {
+  const item = keyFigures.getByRole('listitem').filter({ hasText: label }).first();
+  await expect(item).toBeVisible({ timeout: 10000 });
+  return Number(((await item.textContent()) ?? '').replace(/\D/g, ''));
+}
 
 /** Try to log a user in; returns true on success, false if no fixture (mirrors baseball-phase1.spec.ts's tryLogin). */
 async function tryLogin(
@@ -114,25 +127,29 @@ test.describe('BaseballHelm seeded smoke — coach surfaces', () => {
     await page.goto('/baseball/dashboard/command-center');
     await waitForPageLoad(page);
 
-    // Roster tab (default): the empty-state copy must be ABSENT — the seed
-    // claims a full roster, so this surface rendering "No players yet" would
-    // mean the read model can't see the seeded team at all.
-    await expect(page.getByText('No players yet')).toHaveCount(0);
+    // CommandCenterFairway replaced the roster card grid + stats tabs with a
+    // "Key figures" KPI strip (KPIContentsStrip); per-player surfaces moved to
+    // /baseball/dashboard/roster and Stats Center. The strip only mounts when
+    // the summary read model returned a team, so its absence — or a zero
+    // Roster figure — is the "empty state while the seed claims data" failure
+    // this smoke exists to catch.
+    const keyFigures = page.getByRole('list', { name: 'Key figures' });
+    await expect(keyFigures).toBeVisible({ timeout: 10000 });
 
-    const marcusCard = page.getByRole('button', { name: /View Marcus Rodriguez details/i });
-    await expect(marcusCard).toBeVisible({ timeout: 10000 });
-    // The AVG StatChip renders a real ".xxx" average (formatAvg strips the
-    // leading 0) once baseball_player_aggregates has a row — "—" would mean
-    // the seed's aggregate rollup never reached this player.
-    await expect(marcusCard).toContainText(/\.\d{3}/);
+    expect(await kpiFigure(keyFigures, 'Roster')).toBeGreaterThanOrEqual(
+      BASEBALL_SEED_MANIFEST.minimums.playersWithData,
+    );
+    expect(await kpiFigure(keyFigures, 'On the Record')).toBeGreaterThanOrEqual(
+      BASEBALL_SEED_MANIFEST.minimums.playersWithData,
+    );
 
-    // Stats tab: switch and assert the per-player table also shows real data.
-    await page.locator('#cc-tab-stats').click();
-    const statsPanel = page.locator('#cc-panel-stats');
-    await expect(statsPanel.getByText('No performance data yet')).toHaveCount(0);
-    const marcusRow = statsPanel.locator('tr', { hasText: 'Rodriguez' });
-    await expect(marcusRow).toBeVisible({ timeout: 10000 });
-    await expect(marcusRow).toContainText(/\.\d{3}/);
+    // The per-player check followed the roster grid to the Team surface: the
+    // seeded stat-bearing player must render there, not an empty roster.
+    await page.goto('/baseball/dashboard/roster');
+    await waitForPageLoad(page);
+    await expect(
+      page.getByText(BASEBALL_SEED_MANIFEST.player.fullName).first(),
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('Stats Center shows seeded official games and per-player splits, not the unauthorized/no-data states', async ({ page }) => {
@@ -147,23 +164,26 @@ test.describe('BaseballHelm seeded smoke — coach surfaces', () => {
     // check itself is broken for the seeded account, not just "no data".
     await expect(page.getByText('Stats Center is for coaching staff')).toHaveCount(0);
 
-    const withDataValue = page
-      .getByText('With Data', { exact: true })
-      .locator('xpath=following-sibling::p[1]');
-    const officialGamesValue = page
-      .getByText('Official Games', { exact: true })
-      .locator('xpath=following-sibling::p[1]');
-
-    await expect(withDataValue).toBeVisible({ timeout: 10000 });
-    const withData = Number((await withDataValue.textContent())?.trim() ?? '0');
-    const officialGames = Number((await officialGamesValue.textContent())?.trim() ?? '0');
-    expect(withData).toBeGreaterThanOrEqual(BASEBALL_SEED_MANIFEST.minimums.playersWithData);
-    expect(officialGames).toBeGreaterThanOrEqual(BASEBALL_SEED_MANIFEST.minimums.officialGames);
+    // The Fairway redesign renamed the "With Data" figure to "On the Record"
+    // and moved both counts into the same "Key figures" strip the Command
+    // Center uses (StatsCenterClient → KPIContentsStrip).
+    const keyFigures = page.getByRole('list', { name: 'Key figures' });
+    await expect(keyFigures).toBeVisible({ timeout: 10000 });
+    expect(await kpiFigure(keyFigures, 'On the Record')).toBeGreaterThanOrEqual(
+      BASEBALL_SEED_MANIFEST.minimums.playersWithData,
+    );
+    expect(await kpiFigure(keyFigures, 'Official Games')).toBeGreaterThanOrEqual(
+      BASEBALL_SEED_MANIFEST.minimums.officialGames,
+    );
 
     // At least one player card (Marcus, who has both batting and pitching
     // box-score lines every game) must show real splits, not the per-row
-    // "no box-score lines" honest-empty card.
-    await expect(page.getByText('Marcus Rodriguez')).toBeVisible({ timeout: 10000 });
+    // "no box-score lines" honest-empty card. His row link carries the real
+    // ".xxx" averages once baseball_player_aggregates has his rollup — this
+    // is the assertion that used to live on the Command Center AVG chip.
+    const marcusRow = page.locator('a', { hasText: 'Marcus Rodriguez' }).first();
+    await expect(marcusRow).toBeVisible({ timeout: 10000 });
+    await expect(marcusRow).toContainText(/\.\d{3}/);
     await expect(page.getByText('No box-score lines or events captured yet this season.')).toHaveCount(0);
   });
 
@@ -188,7 +208,9 @@ test.describe('BaseballHelm seeded smoke — coach surfaces', () => {
     await seededGameLink.click();
     await expect(page).toHaveURL(new RegExp(`/baseball/dashboard/stats/games/${BASEBALL_SEED_MANIFEST.completedGame.id}$`));
     await expect(page.getByText('No stats recorded for this game yet')).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Batting' })).toBeVisible({ timeout: 10000 });
+    // BoxScoreView labels its sections with Eyebrow paragraphs, not headings
+    // (the redesign that reworded #1509's assertions also demoted these).
+    await expect(page.getByText('Batting', { exact: true }).first()).toBeVisible({ timeout: 10000 });
 
     // Deep-link to the manifest's known completed game rather than depending
     // on games-list click-through ordering.
@@ -196,8 +218,8 @@ test.describe('BaseballHelm seeded smoke — coach surfaces', () => {
     await waitForPageLoad(page);
 
     await expect(page.getByText('No stats recorded for this game yet')).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Batting' })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('heading', { name: 'Pitching' })).toBeVisible();
+    await expect(page.getByText('Batting', { exact: true }).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Pitching', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('TOTALS').first()).toBeVisible();
     await expect(page.getByText('FINAL')).toBeVisible();
   });
