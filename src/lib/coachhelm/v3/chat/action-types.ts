@@ -13,10 +13,19 @@
  *   confirm   — writes ONLY after an explicit coach approval.
  *   destructive — same, plus an impact summary the coach must read first.
  *
- * The gate is structural, not advisory. `confirm` and `destructive` tools have
- * `needsApproval: true` in the AI SDK tool definition, so the model literally
- * cannot execute them; the SDK suspends the call and emits an approval request
- * part. A prompt-injected "yes, go ahead" reaches the model, not the database.
+ * The gate is structural, not advisory: the SDK suspends the call and emits an
+ * approval request part, so a prompt-injected "yes, go ahead" reaches the model,
+ * not the database.
+ *
+ * CORRECTED 2026-08-18 — this used to say the gate is `needsApproval: true` in
+ * the tool definition. It is not, and looking for it there finds nothing: no
+ * tool in agent-tools.ts sets that property, and `needsApproval` appears in this
+ * repo only in the AI SDK type shim and in prose like the sentence being
+ * corrected. The single live gate is the `toolApproval` callback in
+ * src/app/api/coachhelm/v3/chat/stream/route.ts:361, which returns
+ * 'user-approval' exactly when `isConfirmRequired(toolName)` is true. That
+ * allowlist is therefore the whole mechanism, and
+ * agent-tools.confirm-gate.test.ts is what keeps it in step with the tool set.
  * ========================================================================== */
 
 export type ActionClass = 'read' | 'draft' | 'confirm' | 'destructive';

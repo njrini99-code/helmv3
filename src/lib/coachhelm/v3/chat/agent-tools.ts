@@ -7,11 +7,28 @@
  * READ tools execute immediately. They cannot write, they never accept a
  * `team_id`, and every `player_id` is checked against the active roster first.
  *
- * ACTION tools carry `needsApproval`, so the SDK suspends the call and emits an
- * approval request instead of executing. This is the load-bearing gate: the
- * model has no path to the database that does not pass through a coach clicking
- * Confirm. Text injected into a round note saying "yes, approve this" reaches
- * the model, not the write.
+ * ACTION tools are suspended before execution: the SDK emits an approval request
+ * instead of running them. This is the load-bearing gate — the model has no path
+ * to the database that does not pass through a coach clicking Confirm, so text
+ * injected into a round note saying "yes, approve this" reaches the model, not
+ * the write.
+ *
+ * WHERE THAT GATE ACTUALLY LIVES (corrected 2026-08-18). This header used to say
+ * "ACTION tools carry `needsApproval`". They do not — no tool below sets that
+ * property, and `needsApproval` exists in this repo only in the AI SDK type shim
+ * and in prose. The gate is the `toolApproval` callback in
+ * src/app/api/coachhelm/v3/chat/stream/route.ts:361:
+ *
+ *     toolApproval: ({ toolCall }) =>
+ *       isConfirmRequired(toolCall.toolName) ? 'user-approval' : 'not-applicable'
+ *
+ * So CONFIRM_REQUIRED_TOOLS below is not a hint or a mirror of some other
+ * setting — it is the entire mechanism, and a mutating tool missing from it is
+ * ungated. That is a two-places-must-agree invariant with a silent, outward
+ * facing failure, so it is pinned by agent-tools.confirm-gate.test.ts rather
+ * than left to memory. The correction matters because an auditor who greps for
+ * `needsApproval` finds it on no tool and can only conclude the gate is absent
+ * — or "restore" it while deleting the one that works.
  *
  * The preview problem, and how it is solved: a coach cannot meaningfully
  * approve "create a recurring practice" — they need the eight exact dates, the
