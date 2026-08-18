@@ -768,15 +768,3 @@ function addPressureCandidates(stats: GolfStats, candidates: StrengthWeaknessCan
   }
 }
 
-// ============================================
-// FORMATTING FUNCTIONS
-// ============================================
-
-/**
- * Format strokes gained value for display
- */
-export function formatStrokesGained(value: number): string {
-  const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}`;
-}
-

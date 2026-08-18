@@ -118,6 +118,32 @@ test.describe('GolfHelm — Coach critical paths', () => {
     await expect(page.locator('h1').first()).toBeVisible();
     await expect(page.getByText(/something went wrong|application error/i)).toHaveCount(0);
   });
+
+  test('an unavailable player deep-dive resolves to the GolfHelm not-found surface', async ({ page }) => {
+    await page.goto('/golf/dashboard/players/00000000-0000-4000-8000-000000000000/game');
+
+    await expect(page.getByRole('heading', { name: "We couldn't find that" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(/this page couldn't load|application error/i)).toHaveCount(0);
+  });
+
+  test('an unavailable player genome resolves to the GolfHelm not-found surface', async ({ page }) => {
+    await page.goto('/golf/dashboard/players/00000000-0000-4000-8000-000000000000/genome');
+
+    await expect(page.getByRole('heading', { name: "We couldn't find that" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(/this page couldn't load|application error/i)).toHaveCount(0);
+  });
+
+  test('an unavailable round review leaves its loading skeleton for a designed error state', async ({ page }) => {
+    await page.goto('/golf/dashboard/rounds/00000000-0000-4000-8000-000000000000/review');
+
+    await expect(page.getByText("We couldn't load this review")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('status')).toHaveCount(0);
+    await expect(page.getByText(/this page couldn't load|application error/i)).toHaveCount(0);
+  });
 });
 
 test.describe('GolfHelm — Player critical paths', () => {
