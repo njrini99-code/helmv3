@@ -22,6 +22,7 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   groupSignals,
+  readStrokeImpact,
   severityFromInsightPriority,
   severityFromPatternSeverity,
   ageDaysFromCreatedAt,
@@ -186,8 +187,6 @@ async function getSignalGroupsImpl(
     }
 
     const insightSignals: GroupedSignal[] = (insightRows ?? []).map((row) => {
-      const metadata = (row.metadata as Record<string, unknown> | null) ?? {};
-      const strokesImpact = metadata.strokes_impact;
       return {
         id: row.id,
         kind: 'insight',
@@ -199,7 +198,12 @@ async function getSignalGroupsImpl(
         claim: row.content || row.title || '',
         ageDays: ageDaysFromCreatedAt(row.created_at),
         status: row.status || 'active',
-        strokeImpact: typeof strokesImpact === 'number' ? strokesImpact : null,
+        // From `evidence`, which is where the generators actually write it.
+        // This read `metadata.strokes_impact` until 2026-08-18 — a key present
+        // on 0 of 501 active insights, so every insight reached the desk with
+        // a null impact: no strokes readout in SignalDossier, and every
+        // insight silently excluded from TeamSignalSummary's estimated total.
+        strokeImpact: readStrokeImpact(row),
         playerId: row.player_id,
         supersededCount: 0,
         // Carried so the desk can render the shared evidence block. The Triage

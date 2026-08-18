@@ -55,6 +55,35 @@ const SEVERITY_WEIGHT: Record<SignalSeverity, number> = {
   low: 1,
 };
 
+/**
+ * Pull a signal's per-round stroke impact off a raw insight row.
+ *
+ * `signal-groups.ts` used to read `metadata.strokes_impact`. The generators
+ * write it to `evidence`. Measured against production 2026-08-18, of the 501
+ * ACTIVE insights: `evidence` carries it on 501 and `metadata` on 0 — so the
+ * desk saw `null` for every insight, which silently blanked the stroke readout
+ * in `SignalDossier` and dropped every insight out of `TeamSignalSummary`'s
+ * "estimated impact" total.
+ *
+ * `metadata` is kept as a fallback rather than deleted: it costs one branch and
+ * covers any historical or externally-written row that did store it there.
+ *
+ * Returns NULL, never 0, when the value is absent or non-numeric. Zero is a
+ * real reading — "this leak costs nothing per round" — and must not be
+ * confused with "we do not know".
+ */
+export function readStrokeImpact(row: {
+  evidence?: unknown;
+  metadata?: unknown;
+}): number | null {
+  for (const blob of [row.evidence, row.metadata]) {
+    if (!blob || typeof blob !== 'object') continue;
+    const raw = (blob as Record<string, unknown>).strokes_impact;
+    if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  }
+  return null;
+}
+
 /** `golf_coach_insights.priority` -> `SignalSeverity`. Mirrors
  *  `mapPriorityToLevel` in alerts.ts / getAlertCounts's bucketing so Triage
  *  Desk severity never disagrees with the alert badge: `urgent` and `high`
@@ -217,7 +246,24 @@ export function groupSignals(signals: GroupedSignal[], playerNames: Record<strin
   const groups: SignalGroup[] = Array.from(byPlayer.entries()).map(([key, bucketSignals]) => {
     const signalsSorted = [...bucketSignals].sort((a, b) => {
       const severityDelta = SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity);
-      return severityDelta !== 0 ? severityDelta : a.ageDays - b.ageDays;
+      if (severityDelta !== 0) return severityDelta;
+
+      // Within a band: MOST RECOVERABLE first. This used to be `a.ageDays -
+      // b.ageDays` — freshest first — while `strokeImpact` sat unread on every
+      // signal. `ageDays` derives from `created_at`, which is frozen at first
+      // detection (insights upsert on `signature`), so the list was ordered by
+      // "when we first ever noticed this" and a 2-stroke leak could never climb
+      // above a 0.1-stroke one that happened to be spotted more recently.
+      //
+      // Magnitude, because a leak is material in either direction. A KNOWN
+      // impact outranks an unknown one; two unknowns keep the old
+      // freshest-first behaviour rather than tying arbitrarily.
+      const aImpact = a.strokeImpact === null ? null : Math.abs(a.strokeImpact);
+      const bImpact = b.strokeImpact === null ? null : Math.abs(b.strokeImpact);
+      if (aImpact !== null && bImpact !== null && aImpact !== bImpact) return bImpact - aImpact;
+      if (aImpact !== null && bImpact === null) return -1;
+      if (aImpact === null && bImpact !== null) return 1;
+      return a.ageDays - b.ageDays;
     });
     const worstSeverity = worstSeverityOf(signalsSorted);
     const playerId = key === '__team__' ? null : key;
