@@ -82,6 +82,7 @@ import { createFocusAreaFromInsight, createPlayerFocusArea } from '@/app/golf/ac
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import { pluralize } from '@/lib/utils';
 import { formatToPar } from '@/lib/golf/format-to-par';
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -567,7 +568,7 @@ function FingerprintSection({
         <span className="font-fw-sans text-caption text-text-tertiary">
           {section.sparse
             ? 'Calibrating'
-            : `${section.metrics.length} metrics · ${section.insights.length} insights`}
+            : `${pluralize(section.metrics.length, 'metric')} · ${pluralize(section.insights.length, 'insight')}`}
         </span>
       </header>
 

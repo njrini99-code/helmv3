@@ -148,6 +148,23 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+describe('FairwayPlayerGameFingerprint — section count label', () => {
+  /**
+   * Observed on production 2026-08-18, Luke Wise / Guilford College: the
+   * "From the tee" section header read "3 metrics · 1 insights". The counts
+   * were interpolated into hardcoded plurals, so any section with exactly one
+   * of either rendered "1 metrics" / "1 insights".
+   *
+   * The `putting` fixture carries exactly one metric and one insight, which is
+   * the singular case.
+   */
+  it('says "1 metric · 1 insight", not "1 metrics · 1 insights"', () => {
+    renderFingerprint('coach', coachUser);
+    expect(screen.getByText('1 metric · 1 insight')).toBeInTheDocument();
+    expect(screen.queryByText('1 metrics · 1 insights')).not.toBeInTheDocument();
+  });
+});
+
 describe('FairwayPlayerGameFingerprint — mode branching', () => {
   it('coach mode (default prop) shows the coach-only header actions + avatar initials', () => {
     render(
