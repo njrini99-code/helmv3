@@ -28,6 +28,7 @@
 import { compose } from './compose';
 import { extractNumericTokens } from './citations';
 import type { ComposeResult, EvidenceClaim } from './types';
+import { regimeGuidanceLine } from '@/lib/coachhelm/v3/insights/round-regime';
 
 /**
  * Per-component Strokes Gained for this round. All five may be null when
@@ -169,6 +170,17 @@ function buildPrompt(input: RoundReviewInput): string {
   }
   const statsClause = stats.length > 0 ? stats.join(', ') : '';
 
+  // Which lens actually explains THIS round. Without it the prompt states a
+  // bare putt count and invites the one sentence that verifies but is false:
+  // praising 29 putts on a 6-green round, where the low total is a CONSEQUENCE
+  // of missing greens (chip close, 1-putt for bogey). Null on transitional
+  // rounds and when greens weren't recorded — see round-regime.ts.
+  const lensClause = regimeGuidanceLine({
+    gir: input.gir,
+    gir_total: input.gir_total,
+    total_putts: input.total_putts,
+  });
+
   // W27 coach-intent line — orthogonal to the v3-audit enrichment
   // sections below; included in the Round-facts block.
   const intentClause = input.narrative_goal
@@ -191,6 +203,7 @@ function buildPrompt(input: RoundReviewInput): string {
     `Round facts:`,
     `- Score: ${input.total_score} (${toParStr}) ${courseClause}`.trim(),
     statsClause ? `- Stats: ${statsClause}` : '',
+    lensClause ?? '',
     intentClause,
     sgBlock,
     compositeBlock,
