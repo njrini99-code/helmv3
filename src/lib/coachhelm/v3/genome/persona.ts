@@ -100,14 +100,30 @@ function buildCourseProfile(vector: GenomeVector): string {
   if (!driver || driver.value === null) return 'Not enough rounds yet for a course profile.';
 
   const teeProfile = driver.label ?? 'Mixed';
+  // Read the SAME normalized good-axis the strengths and watchouts gate on,
+  // so this sentence can never contradict the lists beside it.
+  //
+  // This used to branch on the dimension's own LABEL, whose else-case catches
+  // everything that is not 'Under par' or 'Even' — and par3-proficiency.ts:31
+  // starts 'Bleeds shots' at +0.2, while a watchout needs norm <= 0.3, i.e.
+  // +0.8. That left a 0.6-stroke band, [0.2, 0.8), where the card read
+  // "No watchouts flagged yet." directly above "leaks shots on par-3 holes."
+  // Seen in production on a player sitting at +0.44. The good side had the
+  // mirror of it: 'Under par' begins at -0.1 (norm 0.525) while a STRENGTH
+  // needs norm >= 0.7 (-0.8), so a player could be told they "thrive" with an
+  // empty strengths list.
+  //
+  // Deliberately NOT fixed by moving a threshold — both sets are defensible on
+  // their own terms. The bug was one card speaking two languages.
+  const par3Norm = par3 && par3.value !== null ? normalizeForRadar('par3_proficiency', par3) : null;
   const par3Note =
-    par3 && par3.value !== null
-      ? (par3.label === 'Under par'
+    par3Norm == null
+      ? null
+      : par3Norm >= STRENGTH_THRESHOLD
         ? 'thrives on par-3 holes'
-        : par3.label === 'Even'
-          ? 'holds steady on par-3 holes'
-          : 'leaks shots on par-3 holes')
-      : null;
+        : par3Norm <= WATCHOUT_THRESHOLD
+          ? 'leaks shots on par-3 holes'
+          : 'holds steady on par-3 holes';
   const missNote =
     miss && miss.value !== null && miss.label && miss.label !== 'Symmetric'
       ? `tendency to miss ${miss.label.toLowerCase().replace(' bias', '')}`
