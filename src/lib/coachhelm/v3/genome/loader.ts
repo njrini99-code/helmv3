@@ -9,6 +9,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { GenomeVector } from './types';
+import { retireOutdatedDimensions } from './dimension-validity';
 
 type Sb = SupabaseClient<Database>;
 
@@ -43,7 +44,13 @@ export async function loadGenome(sb: Sb, player_id: string): Promise<LoadedGenom
   if (!data) return null;
   return {
     player_id: data.player_id,
-    vector: (data.vector as unknown as GenomeVector) ?? {},
+    // Retire any dimension whose formula was corrected after this row was
+    // written — a value the engine would no longer produce must not reach a
+    // coach as if it were current. See ./dimension-validity.ts.
+    vector: retireOutdatedDimensions(
+      (data.vector as unknown as GenomeVector) ?? {},
+      data.computed_at,
+    ),
     computed_at: data.computed_at,
     rounds_basis: data.rounds_basis,
   };
@@ -65,7 +72,9 @@ export async function loadGenomes(sb: Sb, player_ids: string[]): Promise<LoadedG
   }
   return (data ?? []).map((d) => ({
     player_id: d.player_id,
-    vector: (d.vector as unknown as GenomeVector) ?? {},
+    // Same retirement as loadGenome — the compare page must not be the one
+    // surface that still shows a corrected-away reading.
+    vector: retireOutdatedDimensions((d.vector as unknown as GenomeVector) ?? {}, d.computed_at),
     computed_at: d.computed_at,
     rounds_basis: d.rounds_basis,
   }));
