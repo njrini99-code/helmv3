@@ -526,20 +526,36 @@ async function getCourseDetailImpl(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: courseRow } = await supabase
+  const { data: courseRow, error: courseError } = await supabase
     .from('golf_courses')
     .select('*')
     .eq('id', courseId)
     .is('deleted_at', null)
     .maybeSingle();
+  // A missing row is a valid null result. A failed row read is not: treating a
+  // connection/RLS failure as "that course does not exist" leaves the detail
+  // drawer with no snapshot and no useful recovery path.
+  if (courseError) {
+    throw new Error(`getCourseDetail course read failed: ${courseError.message}`);
+  }
   if (!courseRow) return null;
 
-  const { data: teeRows } = await supabase
+  const { data: teeRows, error: teeError } = await supabase
     .from('golf_course_tees')
     .select('*')
     .eq('course_id', courseId)
     .is('deleted_at', null)
     .order('total_yards', { ascending: false, nullsFirst: false });
+
+  // The course itself is enough to render the snapshot. Keep it available
+  // when only the optional tee list fails, but record the failed read rather
+  // than misrepresenting the result as a course with no tee sets.
+  if (teeError) {
+    await logServerError(
+      `[getCourseDetail] tee read failed for course ${courseId}; rendering the course snapshot without tees: ${describeError(teeError)}`,
+      { action: 'courseLibrary.getCourseDetail', featureArea: 'course_library' },
+    );
+  }
 
   return {
     course: mapCourseRow(courseRow),
@@ -573,19 +589,33 @@ async function getCourseTeeHolesImpl(courseId: string): Promise<Record<string, G
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return {};
 
-  const { data: teeRows } = await supabase
+  const { data: teeRows, error: teeError } = await supabase
     .from('golf_course_tees')
     .select('id')
     .eq('course_id', courseId)
     .is('deleted_at', null);
+  if (teeError) {
+    await logServerError(
+      `[getCourseTeeHoles] tee read failed for course ${courseId}; omitting the supplemental scorecard: ${describeError(teeError)}`,
+      { action: 'courseLibrary.getCourseTeeHoles', featureArea: 'course_library' },
+    );
+    return {};
+  }
   const teeIds = (teeRows ?? []).map((t) => t.id as string);
   if (teeIds.length === 0) return {};
 
-  const { data: holeRows } = await supabase
+  const { data: holeRows, error: holeError } = await supabase
     .from('golf_course_tee_holes')
     .select('*')
     .in('tee_id', teeIds)
     .order('hole_number');
+  if (holeError) {
+    await logServerError(
+      `[getCourseTeeHoles] hole read failed for course ${courseId}; omitting the supplemental scorecard: ${describeError(holeError)}`,
+      { action: 'courseLibrary.getCourseTeeHoles', featureArea: 'course_library' },
+    );
+    return {};
+  }
 
   const byTee: Record<string, GolfCourseTeeHole[]> = {};
   for (const row of holeRows ?? []) {
