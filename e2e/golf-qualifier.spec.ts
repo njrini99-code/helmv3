@@ -57,7 +57,12 @@ golfPlayerTest.describe('Golf Qualifier - Player Flow', () => {
     await page.goto('/golf/dashboard/qualifiers');
 
     // Should see the qualifiers heading (FairwayQualifiers.tsx:226 title).
-    await expect(page.locator('h1')).toContainText('Lineup decisions.');
+    // `.first()`: two identical view-header h1s coexist for a beat during the
+    // route transition (old + new view), so a bare locator('h1') trips strict
+    // mode — observed flaking exactly that way in CI (run 32165337216).
+    await expect(
+      page.getByRole('heading', { name: 'Lineup decisions.' }).first(),
+    ).toBeVisible();
 
     // Should see list or empty state
     const content = page.locator('main');

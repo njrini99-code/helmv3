@@ -71,8 +71,13 @@ test.describe('Messaging', () => {
         await messageInput.first().waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
 
         if (await messageInput.count() > 0) {
-          // Type message
-          await messageInput.first().fill('Test message from E2E test');
+          // A unique body per run: this spec writes into a durable seeded
+          // conversation, so the old static "Test message from E2E test" text
+          // accumulated one bubble per CI run and the assertion below matched
+          // 200+ elements (strict-mode violation). Uniqueness pins the
+          // assertion to THIS run's send.
+          const messageBody = `Test message from E2E test ${Date.now()}`;
+          await messageInput.first().fill(messageBody);
 
           // Find send button
           const sendButton = page.locator(
@@ -82,10 +87,9 @@ test.describe('Messaging', () => {
           if (await sendButton.count() > 0) {
             await sendButton.first().click();
 
-            // Message should appear in conversation
-            await expect(
-              page.locator('text=/Test message from E2E test/i')
-            ).toBeVisible({ timeout: 5000 });
+            // Message should appear in conversation. `.first()` tolerates the
+            // sidebar conversation preview echoing the same body.
+            await expect(page.getByText(messageBody).first()).toBeVisible({ timeout: 5000 });
           }
         }
       }
