@@ -16,6 +16,7 @@ import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { isEvidenceRefusal } from '@/lib/coachhelm/v2/insights/upsert';
 import { calcConfidence } from '@/lib/coachhelm/v2/insights/types';
 import type { CausalityLevel, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { InsightPriority } from '@/lib/coachhelm/insight-types';
 // Import from the leaf registry, NOT the './index' barrel — the barrel
 // re-exports synthesizeForPlayer FROM this file, so importing COMPOSITE_RULES
 // from './index' created a value-level cycle (index ↔ synthesis) that the
@@ -25,6 +26,7 @@ import { COMPOSITE_RULES } from './registry';
 import { loadRecentInsightsForPlayer } from './loader';
 import { loadCompositeContext } from './hole-sequence-loader';
 import type { CompositeMatch, CompositeRule, EvidenceInsight } from './types';
+import { enforcePriorityConfidenceGate } from '@/lib/coachhelm/v3/engine/generator-base';
 import { describeError } from '@/lib/utils/describe-error';
 
 const COMPOSITE_PREFIX = 'composite';
@@ -299,6 +301,36 @@ export interface SynthesisResult {
  * Run synthesis for one player. Idempotent — upsertInsightV3's dedup
  * means re-running this on the same player produces the same outcome.
  */
+/**
+ * The priority a composite row is written with, after the SAME confidence gate
+ * every generator-written priority clears.
+ *
+ * `CompositeRule.priority` is a static property typed `'high' | 'urgent'`
+ * (./types.ts), so every composite is act-now by construction, while its
+ * confidence is produced separately by the rule's own `compose()`. Nothing
+ * compared the two, so a rule could — and did — publish 'high' on a confidence
+ * the generators would have capped at 'medium'.
+ *
+ * This is the second time this hole has been found. `enforcePriorityConfidenceGate`
+ * exists because of the first: "a generator that COMPOSES 'high'/'urgent'
+ * directly bypassed the confidence gate entirely — 7 live sub-0.5-confidence
+ * 'high' rows auto-surfaced in the Alert Center. Every written priority must
+ * clear the same gate regardless of which path produced it." That was closed for
+ * generators; the composite path kept the bypass.
+ *
+ * Measured in production 2026-08-18 (`golf_coach_insights`): of 54 'high' rows,
+ * 5 sat below the 0.5 floor, minimum 0.333 — all five `insight_type =
+ * 'composite'`, one created that morning, so it was live rather than residue.
+ *
+ * Delegates rather than re-deriving the rule: one floor, one implementation.
+ */
+export function gatedCompositePriority(
+  rulePriority: CompositeRule['priority'],
+  confidence: number,
+): InsightPriority {
+  return enforcePriorityConfidenceGate(rulePriority, confidence) ?? rulePriority;
+}
+
 export async function synthesizeForPlayer(playerId: string): Promise<SynthesisResult> {
   const result: SynthesisResult = {
     player_id: playerId,
@@ -433,7 +465,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         signature: `v3:${sig}`,
         title: composed.title,
         content: composed.content,
-        priority: rule.priority,
+        priority: gatedCompositePriority(rule.priority, calibrated.confidence),
         evidence: evidence as typeof composed.evidence,
       });
       if (upsertResult !== GATED_OUT) {
