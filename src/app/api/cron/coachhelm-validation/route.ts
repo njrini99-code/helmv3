@@ -68,6 +68,12 @@ export async function GET(req: NextRequest) {
 
     let validated = 0;
     let skipped = 0;
+    let skippedUnknown = 0;
+    const skippedByReason: Record<'retired_invalid_horizon' | 'no_round_in_closed_window' | 'awaiting_round', number> = {
+      retired_invalid_horizon: 0,
+      no_round_in_closed_window: 0,
+      awaiting_round: 0,
+    };
     let failed = 0;
 
     for (const row of ripe ?? []) {
@@ -89,10 +95,16 @@ export async function GET(req: NextRequest) {
 
       try {
         const result = await validatePredictionAgainstOutcome(supabase, prediction);
-        if (result) {
+        if (result && 'skipped' in result) {
+          skipped++;
+          skippedByReason[result.skipped]++;
+        } else if (result) {
           validated++;
         } else {
+          // Legacy/no-reason return. Counted so a caller that has not been
+          // updated cannot silently vanish from the totals.
           skipped++;
+          skippedUnknown++;
         }
       } catch (err) {
         failed++;
@@ -113,12 +125,22 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // FLAT SCALARS ONLY. `recordJobRun`'s extractOutcomeMetadata keeps
+    // string/number/boolean values and drops everything else, so a nested
+    // `{ skipped_breakdown: {...} }` would never reach
+    // `background_job_logs.metadata` — the same way v3-genome-nightly's
+    // `per_player` array does not, which is why its stalled players were
+    // invisible until the job was run by hand.
     return NextResponse.json({
       success: true,
       total: (ripe ?? []).length,
       validated,
       skipped,
       failed,
+      skipped_retired_invalid_horizon: skippedByReason.retired_invalid_horizon,
+      skipped_no_round_in_closed_window: skippedByReason.no_round_in_closed_window,
+      skipped_awaiting_round: skippedByReason.awaiting_round,
+      skipped_unknown: skippedUnknown,
     });
   });
 }

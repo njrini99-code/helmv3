@@ -140,6 +140,30 @@ export interface ValidationPersistResult {
   direction: ValidationResult['direction'];
 }
 
+/**
+ * Why a ripe prediction did NOT produce a validation.
+ *
+ * These were all collapsed into a bare `null`, so `coachhelm-validation` could
+ * only report one undifferentiated `skipped` count — and did, 66 of 66, for 72
+ * consecutive runs, while 5 of those were resolvable and 64 had a window that
+ * had closed empty. One number that is compatible with both a healthy backlog
+ * and a permanently stuck queue is not an observable.
+ */
+export type ValidationSkipReason =
+  /** Same-day or inverted horizon. `retireInvalidHorizon` has marked it; terminal. */
+  | 'retired_invalid_horizon'
+  /** Due date has passed and no completed round was PLAYED inside the window.
+   *  Only a back-dated entry can still fill it — and this product back-dates
+   *  often (80% of rounds are entered on a different day than played, averaging
+   *  33.6 days later), so this is "stuck", not strictly "impossible". */
+  | 'no_round_in_closed_window'
+  /** Due date is still ahead; a qualifying round may yet be played. */
+  | 'awaiting_round';
+
+export interface ValidationSkip {
+  skipped: ValidationSkipReason;
+}
+
 /** Minimal shape of a completed round row used to resolve an actual outcome. */
 export interface RoundOutcomeRow {
   score_to_par: number | null;
@@ -392,7 +416,7 @@ async function resolveActualValue(
 export async function validatePredictionAgainstOutcome(
   supabase: AdminSupabase,
   prediction: RipePrediction,
-): Promise<ValidationPersistResult | null> {
+): Promise<ValidationPersistResult | ValidationSkip> {
   const outcome = await resolveActualValue(supabase, prediction);
 
   // Same-day / inverted horizon: this prediction can never validate honestly.
@@ -400,11 +424,22 @@ export async function validatePredictionAgainstOutcome(
   // by the cron (validated_at IS NULL filter), without recording a bogus result.
   if (outcome.kind === 'invalid') {
     await retireInvalidHorizon(supabase, prediction);
-    return null;
+    return { skipped: 'retired_invalid_horizon' };
   }
 
-  // Horizon valid but no eligible round yet — leave ripe for the next cron.
-  if (outcome.kind === 'pending') return null;
+  // No eligible round. Whether that is temporary or terminal depends entirely
+  // on the due date, and the caller needs to be able to tell them apart — a
+  // queue of the second kind never drains and used to look identical to the
+  // first in the cron's output.
+  if (outcome.kind === 'pending') {
+    // `due_date` is non-null by the time we get here (resolveActualValue
+    // returns `invalid` without one), but the type does not say so.
+    const dueDay = prediction.due_date?.slice(0, 10) ?? '';
+    const todayUtc = new Date().toISOString().slice(0, 10);
+    return {
+      skipped: dueDay !== '' && dueDay < todayUtc ? 'no_round_in_closed_window' : 'awaiting_round',
+    };
+  }
 
   const actual = outcome.value;
 

@@ -122,7 +122,7 @@ describe('GET /api/cron/coachhelm-validation', () => {
         withinInterval: true,
         direction: 'accurate',
       })
-      .mockResolvedValueOnce(null); // p2: no round yet, skipped
+      .mockResolvedValueOnce(null as never); // p2: legacy no-reason return, still counted as skipped
 
     const req = new Request('http://x/api/cron/coachhelm-validation', {
       headers: { authorization: 'Bearer cs' },
