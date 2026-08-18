@@ -64,7 +64,7 @@ test.describe('Golf Dashboard - Player Flow', () => {
 
     // Step 1: Setup - Should see course setup form (FairwayNewRoundEntry's
     // cockpit band h1, not a literal "New Round" string).
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/track every shot/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/choose a course/i);
     await expect(page.locator('#courseName')).toBeVisible();
 
     // Fill in course setup

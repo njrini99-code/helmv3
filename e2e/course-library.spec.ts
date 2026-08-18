@@ -85,15 +85,15 @@ test.describe('Cloud Course Library — authenticated flow', () => {
     await page.goto(COURSES_PATH);
 
     await expect(page).toHaveURL(/\/golf\/dashboard\/courses/);
-    // CourseLibraryClient header.
-    await expect(page.locator('h1')).toContainText('Courses');
+    // CourseLibraryClient header (CourseLibraryClient.tsx:128).
+    await expect(page.locator('h1')).toContainText('Course library.');
     // Subtitle confirms the cloud-library count line rendered.
     await expect(page.getByText(/in the cloud library/i)).toBeVisible();
   });
 
   test('search filters the library', async ({ page }) => {
     await page.goto(COURSES_PATH);
-    await expect(page.locator('h1')).toContainText('Courses');
+    await expect(page.locator('h1')).toContainText('Course library.');
 
     const search = page.getByLabel('Search courses');
     await expect(search).toBeVisible();
