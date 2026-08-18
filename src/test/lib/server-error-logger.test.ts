@@ -6,7 +6,7 @@
  * so the Sentry issue page is a faithful mirror of admin_events.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock Sentry BEFORE importing the module under test so the imports in
 // server-error-logger.ts pick up these mocks.
@@ -42,6 +42,10 @@ describe('logServerError → Sentry', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('forwards handled errors to Sentry with action/feature_area tags', async () => {
     const { logServerError } = await import('@/lib/server-error-logger');
 
@@ -75,5 +79,22 @@ describe('logServerError → Sentry', () => {
     await expect(
       logServerError('still fine', { action: 'x' }),
     ).resolves.toBeUndefined();
+  });
+
+  it('uses a non-issue-level log when off-production persistence is disabled', async () => {
+    vi.stubEnv('ADMIN_EVENTS_FORCE_CAPTURE', '');
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { logServerError } = await import('@/lib/server-error-logger');
+
+    await logServerError('database unavailable', { action: 'test.offProduction' });
+
+    expect(captureException).toHaveBeenCalledOnce();
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(consoleWarn).toHaveBeenCalledWith(
+      '[ServerErrorLogger] not persisted off-prod',
+      expect.objectContaining({ action: 'test.offProduction', traceMessage: 'database unavailable' }),
+    );
   });
 });
