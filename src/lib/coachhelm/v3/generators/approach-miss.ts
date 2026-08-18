@@ -128,6 +128,87 @@ function classifyMiss(raw: string | null): { sl: keyof AxisTally; lr: keyof Axis
   return { sl, lr };
 }
 
+/* ───────────────────────────────────────────────────────────────────────────
+ * Par split — the 175+ band pools two different shots
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export interface ParSplitSide {
+  attempts: number;
+  /** Green-hit % over this side's attempts; null when there are none. */
+  greenHitPct: number | null;
+}
+
+export interface ParSplit {
+  par4: ParSplitSide;
+  par5: ParSplitSide;
+  /** Attempts whose hole par is missing or is a par 3 — never folded into either side. */
+  unknown: number;
+}
+
+/**
+ * Split a bucket's attempts by the par of the hole they were played on.
+ *
+ * Measured 2026-08-18 over every 175+ yd approach from fairway or rough:
+ * par 4 → 341 shots at 27.9% greens; par 5 → 1,094 shots at 15.8%. Par 5s are
+ * 76% of the band and convert twelve points worse, because at 241 yards the
+ * play is often a deliberate lay-up to a wedge number — and a lay-up finishing
+ * in the fairway records here as an approach that missed the green.
+ *
+ * Par 3 counts as UNKNOWN, not as a side: an "approach" from 175+ on a par 3
+ * is the tee shot, a different shot again.
+ */
+export function parSplit(shots: ApproachShot[]): ParSplit {
+  const tally = (par: number) => {
+    const side = shots.filter((s) => s.par === par);
+    if (side.length === 0) return { attempts: 0, greenHitPct: null };
+    const greens = side.filter(reachedGreen).length;
+    return { attempts: side.length, greenHitPct: round((100 * greens) / side.length, 1) };
+  };
+  const par4 = tally(4);
+  const par5 = tally(5);
+  return { par4, par5, unknown: shots.length - par4.attempts - par5.attempts };
+}
+
+/** One side must hold this much of the band before the mix is worth reporting. */
+const PAR_MIX_DOMINANT_SHARE = 0.6;
+/** And the minority side needs at least this many attempts to state a rate. */
+const PAR_MIX_MIN_MINORITY = 5;
+
+/**
+ * A sentence naming the split, or null when there is nothing to say.
+ *
+ * Deliberately does NOT infer intent. A par-5 second shot from 175 can be a
+ * genuine go-for-it and nothing in the data says which it was, so this reports
+ * the composition and the par-4 rate — the one taken while actually hunting a
+ * green — and lets the coach read it.
+ */
+export function parMixSentence(split: ParSplit): string | null {
+  const known = split.par4.attempts + split.par5.attempts;
+  if (known === 0) return null;
+  if (split.par4.attempts < PAR_MIX_MIN_MINORITY || split.par5.attempts < PAR_MIX_MIN_MINORITY) {
+    return null;
+  }
+
+  const par5Share = split.par5.attempts / known;
+  const par4Share = split.par4.attempts / known;
+  if (par5Share < PAR_MIX_DOMINANT_SHARE && par4Share < PAR_MIX_DOMINANT_SHARE) return null;
+
+  if (par5Share >= PAR_MIX_DOMINANT_SHARE) {
+    return (
+      ` ${(par5Share * 100).toFixed(0)}% of these (${split.par5.attempts} of ${known}) were second shots on par 5s,` +
+      ` where laying up to a wedge number is often the right play and a lay-up records as a missed green.` +
+      ` On par 4s, where you have to go at it, you found the green ${split.par4.greenHitPct?.toFixed(0)}%` +
+      ` of the time over ${split.par4.attempts} approaches.`
+    );
+  }
+
+  return (
+    ` ${(par4Share * 100).toFixed(0)}% of these (${split.par4.attempts} of ${known}) were par-4 approaches,` +
+    ` where you found the green ${split.par4.greenHitPct?.toFixed(0)}% of the time;` +
+    ` the ${split.par5.attempts} par-5 second shots converted ${split.par5.greenHitPct?.toFixed(0)}%.`
+  );
+}
+
 interface ApproachMissAggregate extends GeneratorAggregate {
   /** Newest cache round date — feeds the staleness disclosure. */
   last_round_date: string | null;
@@ -146,6 +227,8 @@ interface ApproachMissAggregate extends GeneratorAggregate {
   cohort_gender: CohortGender;
   /** Attempts in this bucket per distinct round — used for CF attempt-rate sizing. */
   attempts_per_round: number;
+  /** Par-4 vs par-5 composition of the band. See parSplit(). */
+  par_split: ParSplit;
 }
 
 export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> {
@@ -230,6 +313,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       miss_left_right: lr,
       cohort_gender: cohort.gender,
       attempts_per_round: inBucket.length / Math.max(1, distinctRounds),
+      par_split: parSplit(inBucket),
     };
   }
 
@@ -286,9 +370,16 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
         lrDom.axis === 'negative' ? 'left' : 'right', lrDom.share, lrDom.n);
     }
 
+    // The 175+ band is the one that pools a green-hunting shot with a par-5
+    // lay-up; the shorter bands are green-hunting either way, so the split is
+    // only worth the words where it changes the reading.
+    const parMix = agg.bucket === '175_plus_ft' ? (parMixSentence(agg.par_split) ?? '') : '';
+
     return {
       title,
-      content: reachSentence + dialInSentence + penaltySentence + axisSentence + staleDataSuffix(agg.last_round_date),
+      content:
+        reachSentence + dialInSentence + parMix + penaltySentence + axisSentence +
+        staleDataSuffix(agg.last_round_date),
       // Descriptive diagnostic — severity is read off the StandingBar, not the verdict.
       priority: 'low',
       signature: `approach_miss:${agg.bucket}`,

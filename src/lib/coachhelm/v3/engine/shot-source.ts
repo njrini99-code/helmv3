@@ -38,6 +38,19 @@ export interface ApproachShot {
   result: string | null;
   is_penalty: boolean;
   miss_direction: string | null;
+  /**
+   * The hole's par, from `golf_holes.par`, or null when the shot has no hole
+   * row. Needed because the 175+ yd band pools two different shots: measured
+   * 2026-08-18, 1,094 of the 1,435 approaches from 175+ (76%) are par-5 second
+   * shots converting 15.8%, against 341 par-4 approaches converting 27.9%. A
+   * deliberate lay-up to a wedge number records as an approach that missed the
+   * green, so pooling them understates long-approach skill.
+   *
+   * LEFT-joined on purpose. `!inner` here would silently drop every shot whose
+   * hole row is missing from the whole approach analysis — a much worse
+   * outcome than an unknown par, which the consumers count separately.
+   */
+  par: number | null;
 }
 
 /** A GREENSIDE-bunker shot resolved against its hole so the ScramblingGenerator
@@ -151,10 +164,17 @@ export async function loadApproachShots(
   if (!rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
 
-  const { data, error } = await fetchAllRowsResult<ApproachShot>((from, to) =>
+  type RawApproachRow = Omit<ApproachShot, 'par'> & {
+    // PostgREST returns an embedded row as an object, or an array on some
+    // relationship shapes — normalize both. Absent when the hole row is
+    // missing, which the LEFT join permits by design.
+    golf_holes?: { par: number | null } | Array<{ par: number | null }> | null;
+  };
+
+  const { data, error } = await fetchAllRowsResult<RawApproachRow>((from, to) =>
     fromUntyped(supabase, 'golf_shots')
       .select(
-        'round_id, hole_number, shot_number, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, result, is_penalty, miss_direction',
+        'round_id, hole_number, shot_number, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, result, is_penalty, miss_direction, golf_holes ( par )',
       )
       .eq('shot_type', 'approach')
       .in('round_id', roundIds)
@@ -162,11 +182,17 @@ export async function loadApproachShots(
       .range(from, to)); // paginate past PostgREST 1000-row cap
   if (error) throw new Error(`shot-source shots query failed: ${error.message}`);
   if (!data) return [];
-  return data.filter(
-    (s) =>
-      typeof s.distance_to_hole_before === 'number' &&
-      typeof s.distance_to_hole_after === 'number',
-  );
+  return data
+    .filter(
+      (s) =>
+        typeof s.distance_to_hole_before === 'number' &&
+        typeof s.distance_to_hole_after === 'number',
+    )
+    .map(({ golf_holes, ...shot }) => {
+      const hole = Array.isArray(golf_holes) ? golf_holes[0] : golf_holes;
+      const par = hole?.par;
+      return { ...shot, par: typeof par === 'number' ? par : null };
+    });
 }
 
 /** Greenside-bunker threshold (yards from hole). Mirrors

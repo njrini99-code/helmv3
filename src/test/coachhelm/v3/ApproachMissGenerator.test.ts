@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ApproachMissGenerator } from '@/lib/coachhelm/v3/generators/approach-miss';
+import { ApproachMissGenerator, type ParSplit } from '@/lib/coachhelm/v3/generators/approach-miss';
 import {
   bucketApproachDistance,
   loadApproachShots,
@@ -50,6 +50,14 @@ function shot(
     result,
     is_penalty: false,
     miss_direction: null,
+    // Par is LEFT-joined in production and genuinely absent on some rows;
+
+    // null is the honest default so the par split stays silent unless a case
+
+    // opts in.
+
+    par: null,
+
     ...over,
   };
 }
@@ -66,6 +74,7 @@ function makeAgg(over: Partial<{
   miss_short_long: AxisTally;
   miss_left_right: AxisTally;
   cohort_gender: 'mens' | 'womens';
+  par_split: ParSplit;
 }> = {}) {
   const attempts = over.attempts ?? 20;
   const greenHitPct = over.green_hit_pct ?? 60;
@@ -88,6 +97,14 @@ function makeAgg(over: Partial<{
       : { negative: 0, positive: 0, neutral: 0 }),
     cohort_gender: over.cohort_gender ?? 'mens',
     attempts_per_round: (over.attempts ?? 20) / 15,
+    // Default is a NEUTRAL split: no par known, so parMixSentence stays silent
+    // and these existing assertions keep testing exactly what they tested
+    // before the 175+ band learned about par.
+    par_split: over.par_split ?? {
+      par4: { attempts: 0, greenHitPct: null },
+      par5: { attempts: 0, greenHitPct: null },
+      unknown: attempts,
+    },
   };
 }
 
@@ -452,5 +469,50 @@ describe('ApproachMissGenerator — Phase E window stays 90d, attempts disclosed
       green_hit_pct: 80, proximity_when_hit_feet: 17,
     }));
     expect(c.content).toMatch(/over 24 greens/);
+  });
+});
+
+/**
+ * The 175+ band pools a green-hunting shot with a par-5 lay-up. Measured
+ * 2026-08-18 over every 175+ yd approach from fairway or rough: par 4 → 341
+ * shots at 27.9% greens, par 5 → 1,094 at 15.8%. Par 5s are 76% of the band,
+ * so the headline number is mostly a par-5 second-shot statistic and reads as
+ * a long-approach weakness the player may not have.
+ */
+describe('ApproachMissGenerator — par composition of the 175+ band', () => {
+  it('names the par-5 share and the par-4 rate on the 175+ card', () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '175_plus_ft');
+    const c = g.composeContent(makeAgg({
+      bucket: '175_plus_ft', green_hit_pct: 16, attempts: 1435,
+      par_split: {
+        par4: { attempts: 341, greenHitPct: 27.9 },
+        par5: { attempts: 1094, greenHitPct: 15.8 },
+        unknown: 0,
+      },
+    }));
+
+    expect(c.content).toMatch(/76% of these/);
+    expect(c.content).toMatch(/par 5s/);
+    expect(c.content).toMatch(/28%/);
+  });
+
+  it('stays silent on the shorter bands — they are green-hunting either way', () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '125_175ft');
+    const c = g.composeContent(makeAgg({
+      bucket: '125_175ft', green_hit_pct: 40, attempts: 100,
+      par_split: {
+        par4: { attempts: 80, greenHitPct: 42 },
+        par5: { attempts: 20, greenHitPct: 32 },
+        unknown: 0,
+      },
+    }));
+
+    expect(c.content).not.toMatch(/of these/);
+  });
+
+  it('stays silent on 175+ when par was never resolved', () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '175_plus_ft');
+    const c = g.composeContent(makeAgg({ bucket: '175_plus_ft', attempts: 40 }));
+    expect(c.content).not.toMatch(/of these/);
   });
 });
