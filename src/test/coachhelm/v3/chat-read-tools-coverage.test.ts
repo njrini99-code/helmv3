@@ -240,11 +240,16 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
     );
 
     expect((envelope.detail as { insights: unknown[] }).insights).toEqual([
-      expect.objectContaining({
+      {
         insight_id: 'insight-1',
+        type: 'trend',
+        category: 'putting',
+        title: 'Inside six feet',
+        content: 'Conversion improved.',
         metric_label: 'Make rate',
         value_display: '82%',
-      }),
+        created_at: '2026-08-17T12:00:00Z',
+      },
     ]);
   });
 
