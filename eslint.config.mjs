@@ -56,6 +56,27 @@ export default tseslint.config(
     },
   },
   {
+    // Workflow scripts (the Workflow tool's `script` payload, saved to disk).
+    // They are executed inside a sandbox that INJECTS these as globals, so they
+    // are never imported or declared in the file itself. Without this block
+    // eslint reports 62 no-undef errors that are all false — and 62 fake errors
+    // is precisely how a directory ends up excluded from linting altogether,
+    // which is what had happened to scripts/ before 2026-08-19.
+    files: ["scripts/wf_*.js", "scripts/**/*.workflow.js"],
+    languageOptions: {
+      globals: {
+        agent: "readonly",
+        parallel: "readonly",
+        pipeline: "readonly",
+        phase: "readonly",
+        log: "readonly",
+        args: "readonly",
+        budget: "readonly",
+        workflow: "readonly",
+      },
+    },
+  },
+  {
     plugins: {
       "react-hooks": reactHooks,
       "jsx-a11y": jsxA11y,
