@@ -43,3 +43,13 @@ coverage/
 # them here is what makes .gitignore's intent apply to the upload too.
 .deepsec/
 .worktrees/
+# .claude/worktrees/ is the SAME hazard as .worktrees/ above, at a new address:
+# Claude Code's own worktree tooling creates them here now rather than in the
+# repo-root .worktrees/ this file already covered. Measured 2026-08-19: 5.0 GB
+# and ~44,000 .ts/.tsx across 12 trees, against src/'s 3,888 — an order of
+# magnitude more source than the app itself.
+#
+# This is not hypothetical tidiness. `scripts/deploy-prod.sh` uploads the local
+# tree, and production deploys began failing outright with
+# "Request body too large. Limit: 10mb" until this line existed.
+.claude/worktrees/
