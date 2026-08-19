@@ -54,6 +54,34 @@ const SIZE_CELL: Record<CalendarSize, string> = {
 /* -------------------------------------------------------------------------- */
 /* Warm-skinned chevron (left/right) + day button custom components.          */
 /* -------------------------------------------------------------------------- */
+/**
+ * Pull a representative Date out of whatever a DayPicker date-ish prop holds.
+ *
+ * `selected` is `Date` in single mode, `Date[]` in multiple, and
+ * `{ from, to }` in range — and `month` / `defaultMonth` are plain Dates. This
+ * only needs to identify a MONTH to compare against, so the first real Date in
+ * any of those shapes is enough, and a runtime check avoids narrowing the
+ * generic `mode` union at every call site.
+ *
+ * Returns null rather than a fallback so the caller decides the default.
+ */
+function firstDateOf(value: unknown): Date | null {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const d = firstDateOf(item);
+      if (d) return d;
+    }
+    return null;
+  }
+  if (value && typeof value === 'object') {
+    // DateRange — `from` may be set with `to` still undefined mid-selection.
+    const range = value as { from?: unknown; to?: unknown };
+    return firstDateOf(range.from) ?? firstDateOf(range.to);
+  }
+  return null;
+}
+
 function CalendarChevron({ orientation, className }: ChevronProps) {
   const Icon = orientation === 'left' ? ChevronLeft : ChevronRight;
   return <Icon className={cn('h-4 w-4', className)} aria-hidden="true" />;
@@ -155,19 +183,49 @@ export const CalendarSurface = React.forwardRef<
     el.classList.add(cls);
   }, []);
 
+  /*
+   * The month the grid STARTED on, so the very first arrow click knows which
+   * way it travelled.
+   *
+   * `prevMonthRef` is only ever written in `handleMonthChange`, so on the first
+   * call there was nothing to compare against and the direction fell back to
+   * the 'next' default — clicking BACK first slid the grid forwards. Cosmetic,
+   * but wrong every time a coach's first move is backwards.
+   *
+   * Mirrors DayPicker's own resolution order (month → defaultMonth → selected →
+   * today) so the seed matches whatever it actually rendered. Read through a
+   * runtime helper rather than by narrowing the generic `mode` union: `selected`
+   * is Date | Date[] | DateRange depending on mode, and type-narrowing that here
+   * would cost far more than the animation is worth.
+   */
+  const seedMonth = React.useCallback((): Date => {
+    const props = dayPickerProps as {
+      month?: unknown;
+      defaultMonth?: unknown;
+      selected?: unknown;
+    };
+    return (
+      firstDateOf(props.month) ??
+      firstDateOf(props.defaultMonth) ??
+      firstDateOf(props.selected) ??
+      new Date()
+    );
+     
+  }, [dayPickerProps]);
+
   const handleMonthChange = React.useCallback(
     (month: Date) => {
-      const prev = prevMonthRef.current;
-      let dir: TemporalDirection = direction;
-      if (prev) {
-        dir = month.getTime() >= prev.getTime() ? 'next' : 'prev';
-        setDirection(dir);
-      }
+      // Falling back to the seed means direction is ALWAYS computed, so the
+      // `if (prev)` branch that silently defaulted to 'next' is gone.
+      const prev = prevMonthRef.current ?? seedMonth();
+      const dir: TemporalDirection =
+        month.getTime() >= prev.getTime() ? 'next' : 'prev';
+      setDirection(dir);
       prevMonthRef.current = month;
       replayEnterAnimation(dir);
       onMonthChange?.(month);
     },
-    [direction, onMonthChange, replayEnterAnimation],
+    [onMonthChange, replayEnterAnimation, seedMonth],
   );
 
   // Merge caller modifiers with the eventDays matcher (drives the dot).

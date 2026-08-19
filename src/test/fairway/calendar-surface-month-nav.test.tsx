@@ -77,6 +77,56 @@ describe('CalendarSurface — month navigation', () => {
     expect(caption().textContent).toMatch(/August 2026/);
   });
 
+  it('slides BACKWARDS on a first click of the previous arrow', () => {
+    // `prevMonthRef` starts empty, so the first change had nothing to compare
+    // against and direction fell back to its 'next' default — a coach whose
+    // first move was backwards got a forwards slide. The seed (month →
+    // defaultMonth → selected → today) gives that first comparison something
+    // real to measure from.
+    renderSurface();
+    const grid = document.querySelector('[data-slot="calendar-surface"] > div:last-child');
+
+    fireEvent.click(prevBtn());
+
+    expect(grid?.className).toMatch(/enterPrev/);
+    expect(grid?.className).not.toMatch(/enterNext/);
+  });
+
+  it('slides forwards on a first click of the next arrow', () => {
+    renderSurface();
+    const grid = document.querySelector('[data-slot="calendar-surface"] > div:last-child');
+
+    fireEvent.click(nextBtn());
+
+    expect(grid?.className).toMatch(/enterNext/);
+    expect(grid?.className).not.toMatch(/enterPrev/);
+  });
+
+  it('reverses direction mid-sequence', () => {
+    // Guards the seed from being used for anything after the first click —
+    // once prevMonthRef is populated it must win.
+    renderSurface();
+    const grid = document.querySelector('[data-slot="calendar-surface"] > div:last-child');
+
+    fireEvent.click(nextBtn());
+    fireEvent.click(nextBtn());
+    expect(grid?.className).toMatch(/enterNext/);
+
+    fireEvent.click(prevBtn());
+    expect(grid?.className).toMatch(/enterPrev/);
+  });
+
+  it('still navigates when no date is selected at all', () => {
+    // With no `selected`, the seed falls through to today. The arrows must
+    // still work — this is the shape an empty "Pick a date" field renders.
+    render(<CalendarSurface mode="single" />);
+    const before = caption().textContent;
+
+    fireEvent.click(nextBtn());
+
+    expect(caption().textContent).not.toBe(before);
+  });
+
   it('does not destroy the focused nav button on click', () => {
     // The remount also blew away DOM focus, so a keyboard user had to re-find
     // the arrow after every press. Asserted separately from the month value
