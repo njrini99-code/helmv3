@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { redactEventPii } from '@/lib/observability/redact-pii';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { resolveClientEnvironment } from '@/lib/sentry-environment';
 
@@ -140,7 +141,10 @@ Sentry.init({
         : 'marketing';
       event.tags = { ...event.tags, sport };
     }
-    return event;
+    // Mask email addresses in message / extra / contexts / exception values.
+    // The scrubbing above covers only the request envelope; the free-text fields
+    // are where addresses actually appear.
+    return redactEventPii(event);
   },
 
   // Filter out noisy errors

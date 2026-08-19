@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { redactEventPii } from '@/lib/observability/redact-pii';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { resolveServerEnvironment } from '@/lib/sentry-environment';
@@ -78,7 +79,18 @@ const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   if (!event.tags?.sport) {
     event.tags = { ...event.tags, sport: deriveSportFromUrl(event.request?.url) };
   }
-  return event;
+
+  // Mask email addresses in the free-text fields.
+  //
+  // Everything above this line scrubs the request ENVELOPE — cookies, auth
+  // headers, the query string. Nothing scrubbed `message`, `extra`, `contexts`
+  // or exception values, which is where this app actually puts addresses: 11
+  // files send a raw email to Sentry, and the auth paths send an email and an
+  // IP together (baseball/actions/auth.ts:320, :471). Either alone is ordinary
+  // telemetry; the pair identifies a person and where they were.
+  //
+  // Applied last, so it also covers anything the tagging above introduced.
+  return redactEventPii(event);
 };
 
 export async function register() {

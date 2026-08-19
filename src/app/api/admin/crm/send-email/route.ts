@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkSuperAdminAccess } from '@/lib/admin/require-super-admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { mergeTags } from '@/lib/crm/merge-tags';
@@ -41,25 +42,47 @@ export async function POST(request: Request) {
   let userEmail: string | null = null;
 
   try {
-    // Auth check - must be logged-in admin
+    // Auth gate -- THE canonical super-admin gate, not a local re-implementation.
+    //
+    // This route sends real outreach email, up to 100 recipients per call, from
+    // the company's own domain. It used to authorize on `users.role === 'admin'`,
+    // which made it a THIRD authorization authority alongside the two that
+    // `require-super-admin.ts` was written to reconcile after the 2026-07-29
+    // incident (the `SUPER_ADMIN_USER_IDS` env var and the `admin_allowlist`
+    // table had silently diverged in production).
+    //
+    // `users.role` is not the same predicate as `public.is_super_admin()`. A row
+    // can carry role='admin' without being in the allowlist, and a mass-mail
+    // endpoint is the last place that difference should be discovered.
+    //
+    // Measured BEFORE changing this, because tightening an auth gate on a tool
+    // the founder actually uses is how you lock him out of it:
+    //   users with role='admin'                  : 1
+    //   admin_allowlist rows                     : 2
+    //   role='admin' AND NOT in admin_allowlist  : 0
+    // So no account loses access. One allowlisted account that lacks
+    // role='admin' GAINS access -- which is correct rather than incidental: the
+    // allowlist is the database's own definition of super-admin, and that
+    // account already holds full admin-console access including event resolution.
+    //
+    // `checkSuperAdminAccess()` rather than `requireSuperAdmin()` because this is
+    // a route handler; the probe is the documented non-throwing variant and maps
+    // cleanly onto the 401/403 split this endpoint already returned.
+    const access = await checkSuperAdminAccess();
+    if (!access.allowed) {
+      return access.reason === 'unauthenticated'
+        ? NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        : NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    userId = access.context.userId;
+    userEmail = access.context.email || null;
+
+    // Non-null local for the downstream write sites. `userId` above is the
+    // function-scoped `string | null` used by the error logger, so it does not
+    // narrow at those points.
+    const actorId = access.context.userId;
+
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    userId = user.id;
-    userEmail = user.email ?? null;
-
-    // Verify admin role
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const { recipients, subject, body, logOnly, templateId, format } = (await request.json()) as SendEmailRequest;
     const isHtmlBody = format === 'html';
@@ -84,7 +107,7 @@ export async function POST(request: Request) {
             coach_id: recipient.id,
             contact_type: 'email',
             notes: `Sent via Gmail (BCC): "${subject}"`,
-            created_by: user.id,
+            created_by: actorId,
           });
           // Auto-advance new_lead → contacted on first outreach
           await supabase.from('crm_coaches').update({
@@ -297,7 +320,7 @@ export async function POST(request: Request) {
             // Provider-side exactly-once for the whole batch: survives a crash/retry
             // between POST-success and the DB writes below. Keyed on the chunk's first
             // recipient + size so two same-day 100-recipient chunks don't collide.
-            'Idempotency-Key': `crm-bulk-${user.id}-${today.getTime()}-${included[0]!.recipient.id}-${included.length}`,
+            'Idempotency-Key': `crm-bulk-${actorId}-${today.getTime()}-${included[0]!.recipient.id}-${included.length}`,
           },
           body: JSON.stringify(batchEmails),
         });
@@ -337,7 +360,7 @@ export async function POST(request: Request) {
               subject: personalizedSubject,
               notes: `Bulk email: "${personalizedSubject}"`,
               resend_message_id: resendId,
-              created_by: user.id,
+              created_by: actorId,
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               metadata: { campaign: 'crm_bulk', template_id: templateId ?? null } as any,
             });

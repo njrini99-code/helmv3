@@ -16,6 +16,19 @@ import { CRON_REGISTRY } from '@/lib/admin/cron-registry';
  * Audited 2026-07-31: 17/17 guarded (13 via requireCronAuth, 4 inline). This
  * test exists so that stays true, not because it was ever false.
  *
+ * TIGHTENED 2026-08-19: the inline escape hatch is GONE. It used to accept any
+ * route that merely mentioned `process.env.CRON_SECRET` alongside a 401, and
+ * every route taking that path compared the header with `!==`. String `!==`
+ * short-circuits at the first differing byte, so response latency leaks a
+ * prefix-match oracle against CRON_SECRET — precisely the flaw
+ * `cronSecretMatches` was written to eliminate with `timingSafeEqual`. The
+ * detector was therefore certifying as "guarded" the one pattern the helper
+ * exists to replace.
+ *
+ * The last three inline routes (log-retention, integrity-check,
+ * event-reminders) were converted in the same change, so requiring the helper
+ * costs nothing today and stops the leaky shape from reappearing.
+ *
  * WHY A SHAPE CHECK. Calling each GET with a bad token would be stronger, but
  * every route pulls in its own Supabase/LLM/email dependencies, which is why
  * the behavioural test (shared-auth.test.ts) covers only three hand-mocked
@@ -30,14 +43,23 @@ describe('cron auth coverage', () => {
   it('every registered cron route enforces an auth guard', () => {
     const unguarded = CRON_REGISTRY.map((e) => e.path).filter((path) => {
       const src = routeSource(path);
-      const viaHelper = /requireCronAuth\s*\(/.test(src);
-      // A handful predate the helper and check inline; both are acceptable,
-      // an absent guard is not.
-      const inline = /process\.env\.CRON_SECRET/.test(src) && /401/.test(src);
-      return !viaHelper && !inline;
+      // The helper is now the ONLY accepted guard. Inline comparison against
+      // process.env.CRON_SECRET is not equivalent: it is not constant-time.
+      return !/requireCronAuth\s*\(/.test(src);
     });
 
     expect(unguarded).toEqual([]);
+  });
+
+  it('no cron route compares the secret inline', () => {
+    // A route can satisfy the guard check above AND still carry a leftover
+    // hand-rolled comparison. This catches a half-finished conversion, where
+    // the helper is added but the timing-leaky branch is never removed.
+    const inlineComparers = CRON_REGISTRY.map((e) => e.path).filter((path) =>
+      /process\.env\.CRON_SECRET/.test(routeSource(path)),
+    );
+
+    expect(inlineComparers).toEqual([]);
   });
 
   it('the registry is non-empty and every entry resolves to a route file', () => {

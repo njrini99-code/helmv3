@@ -27,6 +27,7 @@ import { recordJobRun } from '@/lib/admin/job-log';
 import { archiveKnownResolvedIncidents } from '@/lib/admin/incident-resolver';
 import { autoResolveFixedIncidents, type AutoResolveResult } from '@/lib/admin/auto-resolve';
 import type { Database } from '@/lib/types/database';
+import { requireCronAuth } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -153,10 +154,13 @@ async function runAutoResolve(): Promise<AutoResolveResult | { error: string }> 
 }
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  if (!expected || req.headers.get('authorization') !== `Bearer ${expected}`) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
+  // Constant-time secret comparison. The inline `!==` this replaces
+  // short-circuits at the first differing byte, so response latency leaks a
+  // prefix-match oracle against CRON_SECRET. `cronSecretMatches` compares
+  // buffer lengths first (timingSafeEqual THROWS on a length mismatch) and
+  // still fails closed when the secret is unset.
+  const unauthorized = requireCronAuth(req);
+  if (unauthorized) return unauthorized;
 
   return recordJobRun('log-retention', async () => {
     const admin = createAdminClient();

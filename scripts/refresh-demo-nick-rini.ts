@@ -28,6 +28,7 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { assertSafeTarget } from './lib/prod-target-guard.mjs';
 
 const RININ_PLAYER_ID = '49ffe06d-9b22-4f2f-8c69-f56badbbde6b'; // Nick Rini (rinin376)
 const SRC_PLAYER_ID = 'a37e4fc9-e54e-4955-ac1a-0bb4c86f7d47';   // Braeden Gillen — 15 complete rounds
@@ -183,6 +184,20 @@ async function main() {
   const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
   if (!url || !key) throw new Error('Missing SUPABASE env vars');
   const dryRun = process.argv.includes('--dry-run');
+
+  // This script DELETES rinin376's rounds, and everything below them cascades.
+  // Its own usage header points at .vercel/.env.production.local, so production
+  // is the documented target -- which is exactly why it needs a deliberate flag
+  // rather than an environment file nobody re-reads. A --dry-run against prod
+  // is still allowed.
+  assertSafeTarget({
+    url,
+    allowProd: process.argv.includes('--allow-prod'),
+    dryRun,
+    scriptName: 'refresh-demo-nick-rini',
+    deletes: ['golf_rounds', 'golf_holes', 'golf_shots', 'golf_round_reviews', 'golf_round_stats_cache'],
+  });
+
   const supabase = createClient(url, key, { auth: { persistSession: false } });
 
   console.log(`${dryRun ? '[DRY RUN] ' : ''}Refreshing demo player Nick Rini (rinin376)…\n`);
