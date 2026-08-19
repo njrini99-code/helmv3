@@ -56,6 +56,43 @@ Pick one of these before dispatching, never neither:
   git worktree list                    # what's still checked out
   ```
 
+**A worktree goes OUTSIDE the repo — never `.worktrees/` inside it.** Note the
+`../` above; it is load-bearing. `.gitignore` line 5 hides `.worktrees/` from
+git, and that is exactly the trap: `find`, `grep`, `ls` and most agent file
+search do NOT honour gitignore. Observed 2026-08-18 —
+`.worktrees/codex-golf-team-operations/` held **4,314** `.ts`/`.tsx` files
+against `src/`'s 3,884, so a search from the repo root returned two hits for
+essentially every file:
+
+```
+./.worktrees/codex-golf-team-operations/src/.../PlayerCoachHelmHome.tsx
+./src/.../PlayerCoachHelmHome.tsx
+```
+
+Agents picked one at random and edited a branch nobody was shipping, then
+reported success. That is the mechanical cause of "the agents keep getting
+lost". Put worktrees in a sibling directory and this cannot happen.
+
+**Prune by PR state, not by `--merged`.** This repo squash-merges, so a merged
+branch's commits never become ancestors of `main` and
+`git branch --merged` will never list it — `codex/golf-team-operations` still
+reported "10 commits not in main" long after #1513 had shipped as `a9f2c7f37`.
+Cleanup keyed on `--merged` therefore never fires and worktrees accumulate
+forever. Use the PR instead:
+
+```bash
+gh pr list --state merged --limit 20 --json headRefName,number,mergeCommit
+git worktree remove --force <path> && git branch -D <branch>
+```
+
+Before removing anything, check nothing still holds it — a stale process whose
+cwd is inside a worktree turns the removal into deleted-inode confusion rather
+than a clean error:
+
+```bash
+lsof +D <worktree-path> | awk '$4=="cwd"'
+```
+
   Worktrees share the object store, so branches and commits are visible from the
   main checkout immediately — no pushing between them.
 

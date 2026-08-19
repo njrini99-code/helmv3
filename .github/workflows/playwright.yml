@@ -39,7 +39,15 @@ on:
 
 concurrency:
   group: playwright-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded runs on PR branches (saves runner minutes, harmless there),
+  # but NEVER on main. Main pushes land in bursts — 2026-08-18 had three inside
+  # 32 minutes, two of them 43 seconds apart — and with a blanket
+  # cancel-in-progress each push killed the previous commit's E2E run. The
+  # result was a wall of `cancelled`, which reads as "not red" at a glance, so
+  # nothing surfaced that this suite had failed on every main run that actually
+  # finished. A commit on main must produce a verdict, even if a newer one is
+  # already on its way.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read

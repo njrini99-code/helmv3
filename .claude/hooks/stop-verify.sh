@@ -13,17 +13,66 @@
 #
 # exit 0 + no output  = allow the stop
 # {"decision":"block"} = Claude keeps working, reason is fed back
+#
+# ATTRIBUTION (2026-08-18). This hook used to read the WHOLE dirty tree, which
+# is only correct when one session owns the checkout. With several Claude
+# sessions sharing this working tree it blamed whoever happened to be ending a
+# turn for whatever anyone else had dirty: one session was blocked five times
+# over 17-21 files it never touched, while the count moved 19 -> 20 -> 21 -> 17
+# -> 18 underneath it as a peer committed and edited. Four turns were spent
+# proving "not mine" instead of working.
+#
+# Two changes, both conservative — the gate still fires, it just stops
+# misattributing:
+#   1. A per-session BASELINE. The first stop records what was already dirty;
+#      later stops only count what appeared since. Churn from a peer session
+#      no longer re-arms this hook against you.
+#   2. An honest CONCURRENCY note. When other sessions are live in this tree,
+#      attribution is genuinely unknowable from git alone, so the message says
+#      so rather than asserting the files are yours.
 set -uo pipefail
 
 cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 
-# Only care about source that can actually break. Docs, audits and scratch
-# files are not worth interrupting a turn for.
-CHANGED=$(git status --porcelain 2>/dev/null \
-  | grep -cE '\.(ts|tsx|js|jsx|mjs|cjs|sql|css)$')
+SRC_RE='\.(ts|tsx|js|jsx|mjs|cjs|sql|css)$'
+
+# Stop hooks receive JSON on stdin; session_id is what makes the baseline
+# per-session. Fall back to the parent pid so a missing/!jq environment still
+# gets a stable-enough key rather than sharing one baseline across sessions.
+STDIN_JSON=$(cat 2>/dev/null || true)
+SESSION_ID=$(printf '%s' "$STDIN_JSON" | jq -r '.session_id // empty' 2>/dev/null)
+[ -z "$SESSION_ID" ] && SESSION_ID="ppid-$PPID"
+SESSION_ID=$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')
+
+DIRTY_NOW=$(git status --porcelain 2>/dev/null | grep -E "$SRC_RE" | awk '{print $NF}' | sort)
+
+BASE=".git/claude-stop-baseline-$SESSION_ID"
+if [ ! -f "$BASE" ]; then
+  # First stop this session. Anything already dirty predates our first chance
+  # to have touched it in a way we can prove, so record it and don't claim it.
+  printf '%s\n' "$DIRTY_NOW" > "$BASE"
+fi
+find .git -maxdepth 1 -name 'claude-stop-baseline-*' -mmin +720 -delete 2>/dev/null
+
+# Only files that appeared since this session's baseline are plausibly ours.
+NEW_FILES=$(comm -13 <(sort "$BASE" 2>/dev/null) <(printf '%s\n' "$DIRTY_NOW") 2>/dev/null | grep -E "$SRC_RE" || true)
+CHANGED=$(printf '%s' "$NEW_FILES" | grep -cE "$SRC_RE" || true)
 [ "${CHANGED:-0}" -eq 0 ] && exit 0
+
+# Other live Claude sessions in this tree mean git alone cannot attribute a
+# change to anyone. Say that instead of implying certainty.
+PEERS=$(ls -1 /tmp/cc-socks/*.sock 2>/dev/null | wc -l | tr -d ' ')
+CONCURRENCY=""
+if [ "${PEERS:-0}" -gt 1 ]; then
+  CONCURRENCY="
+NOTE: ${PEERS} Claude sessions are live in this working tree, so these files
+cannot be attributed to you from git alone. If none of them are yours, say so
+with evidence (\`git status --porcelain\` scoped to the paths you edited) and
+stop — do not run gates over another session's in-flight work, and never
+'fix' a failure you did not cause."
+fi
 
 # The state key must be CONTENT-sensitive, not just file-list-sensitive.
 # `git status --porcelain` alone reports which files are dirty, not what is in
@@ -43,9 +92,7 @@ MARK=".git/claude-stop-verify-$STATE"
 find .git -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 -delete 2>/dev/null
 : > "$MARK"
 
-FILES=$(git status --porcelain 2>/dev/null \
-  | grep -E '\.(ts|tsx|js|jsx|mjs|cjs|sql|css)$' \
-  | awk '{print $NF}' | head -8 | tr '\n' ' ')
+FILES=$(printf '%s\n' "$NEW_FILES" | head -8 | tr '\n' ' ')
 
 SERVER_ACTION=""
 if git diff --name-only 2>/dev/null | grep -qE '\.(ts|tsx)$' \
@@ -74,7 +121,7 @@ codes — do not infer them:
 
 Never pipe a gate without 'set -o pipefail' — the pipeline reports the LAST
 command's exit code, so a failing suite reads as success.
-Never delete, skip, or weaken a test to reach green.${SERVER_ACTION}
+Never delete, skip, or weaken a test to reach green.${SERVER_ACTION}${CONCURRENCY}
 
 If you already ran these and they passed, say so with the exit codes and stop —
 this will not fire again for this tree state. If a gate is genuinely unrunnable
