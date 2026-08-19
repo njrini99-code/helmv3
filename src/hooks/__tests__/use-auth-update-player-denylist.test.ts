@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // =============================================================================
 // src/hooks/__tests__/use-auth-update-player-denylist.test.ts
 //

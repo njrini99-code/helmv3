@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * use-colleges — non-production fixture exclusion.
  *

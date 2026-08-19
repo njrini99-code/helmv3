@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Regression test for the Live Weight Room offline set buffer.
  *

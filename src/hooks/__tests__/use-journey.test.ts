@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * useJourney stats — the "researching" KPI bucket.
  *

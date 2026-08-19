@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * onboarding-storage.test.ts
  *

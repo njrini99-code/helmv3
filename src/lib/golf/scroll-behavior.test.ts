@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // =============================================================================
 // src/lib/golf/scroll-behavior.test.ts
 //

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests for src/lib/error-logging.ts
  *

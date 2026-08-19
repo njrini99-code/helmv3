@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // =============================================================================
 // src/lib/auth/__tests__/session-activity.test.ts
 //

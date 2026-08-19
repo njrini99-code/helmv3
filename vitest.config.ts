@@ -81,10 +81,17 @@ export default defineConfig({
         extends: true,
         test: {
           ...sharedTestConfig,
+          // Plain-.ts tests run in a node environment: jsdom startup was
+          // ~0.4s per file across 800+ files that never touch the DOM.
+          // Anything DOM-flavored belongs in .test.tsx (the unit-dom
+          // project below) or carries a per-file
+          // `// @vitest-environment jsdom` pragma. A misclassified file
+          // fails loudly ("document is not defined") — never silently.
+          environment: 'node' as const,
           name: 'unit',
           include: [
-            'src/**/*.test.{ts,tsx}',
-            'src/**/*.spec.{ts,tsx}',
+            'src/**/*.test.ts',
+            'src/**/*.spec.ts',
             // Named explicitly (not a `scripts/**/*.test.mjs` glob): the other
             // 46 files in scripts/__tests__/ are written for `node --test`
             // (see their own "Run:" header comments) and are NOT wired into
@@ -216,6 +223,32 @@ export default defineConfig({
             // tokens.css and globals.css never redeclare the same CSS
             // custom property inside :root (the W0 silent-override class).
             'scripts/__tests__/token-files-no-conflict.test.mjs',
+          ],
+          exclude: [
+            'node_modules',
+            '.next',
+            'archive',
+            'helm-website-ui',
+            'helm-intelligence',
+            'src/**/*.integration.test.{ts,tsx}',
+            'src/**/*.rls.test.{ts,tsx}',
+            'src/**/*.contract.test.{ts,tsx}',
+            'src/**/*-contract.test.{ts,tsx}',
+          ],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          // The component half of the unit suite: .tsx tests get the real
+          // jsdom environment. Split from `unit` so the 800+ DOM-free .ts
+          // files stop paying jsdom startup per file. Keep include/exclude
+          // in lockstep with `unit` above.
+          ...sharedTestConfig,
+          name: 'unit-dom',
+          include: [
+            'src/**/*.test.tsx',
+            'src/**/*.spec.tsx',
           ],
           exclude: [
             'node_modules',

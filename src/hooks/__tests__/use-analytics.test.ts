@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * useAnalytics — regression coverage for the `organizations.location_state`
  * column bug.
