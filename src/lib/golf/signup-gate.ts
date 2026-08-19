@@ -127,7 +127,11 @@ async function isValidTeamJoinCode(code: string): Promise<boolean> {
  * Every caller MUST rate-limit before reaching here — a miss falls through to
  * a service-role join_code lookup.
  */
-type SignupCodeMatch = 'none' | 'global' | 'team_join_code' | 'staff_invite_code';
+export type SignupCodeMatch =
+  | 'none'
+  | 'global'
+  | 'team_join_code'
+  | 'staff_invite_code';
 
 async function classifySignupCode(candidate: string): Promise<SignupCodeMatch> {
   // DS-B2: no committed fallback. An unset SIGNUP_ACCESS_CODE used to make the
@@ -178,10 +182,6 @@ async function isValidStaffInviteCode(candidate: string): Promise<boolean> {
   }
 }
 
-async function isAcceptedSignupCode(candidate: string): Promise<boolean> {
-  return (await classifySignupCode(candidate)) !== 'none';
-}
-
 /**
  * Remember that this browser cleared the gate, so `signupAction` — a separate
  * request that never sees the typed code — can re-verify it.
@@ -214,8 +214,32 @@ async function rememberSignupGrant(code: string): Promise<void> {
  * grant so the signup request itself can re-verify it server-side.
  */
 export async function grantSignupAccess(code: string): Promise<boolean> {
+  return (await grantSignupAccessDetailed(code)).granted;
+}
+
+/**
+ * Same gate, but it also reports WHICH KIND of code opened it.
+ *
+ * The kind was always computed here and then thrown away at the boundary, so
+ * the signup UI could not tell a roster join_code from a head-coach staff code
+ * and offered the same role picker for both. Picking "Coach" with a ROSTER code
+ * runs new-program onboarding, which mints a fresh organization and team with
+ * the signer as head coach — so an assistant handed the team link became head
+ * coach of a phantom duplicate instead of joining the program that invited him.
+ *
+ * Reported twice: UNCW 2026-08-18, then Shenandoah 2026-08-19 despite the
+ * explanatory note added after the first. A note is not a control.
+ *
+ * The kind is safe to expose: it says which NAMESPACE the code came from, never
+ * a role and never a grant. The role still comes only from the signed token
+ * inside `redeemStaffInvite`, so a roster credential can still only ever
+ * produce a player.
+ */
+export async function grantSignupAccessDetailed(
+  code: string,
+): Promise<{ granted: boolean; kind: SignupCodeMatch }> {
   const candidate = code.trim();
-  if (!candidate) return false; // never let a blank code authorize signup
+  if (!candidate) return { granted: false, kind: 'none' }; // never let a blank code authorize signup
 
   // DS-B2: the gate runs pre-auth and every miss falls through to a
   // service-role join_code lookup, so an anonymous caller could hammer it as an
@@ -227,11 +251,14 @@ export async function grantSignupAccess(code: string): Promise<boolean> {
   // nothing. SIGNUP carries no blockDurationMs, so a DB blip fails OPEN here
   // rather than sealing off signup.
   const rateLimit = await checkRateLimit(`signup:gate:${await clientIp()}`, RATE_LIMITS.SIGNUP);
-  if (!rateLimit.allowed) return false; // gate returns a plain boolean; a throttle reads as "no"
+  // A throttle reads as "no", and reports kind 'none' — a rate-limited caller
+  // must not learn which namespace a code belongs to.
+  if (!rateLimit.allowed) return { granted: false, kind: 'none' };
 
-  const accepted = await isAcceptedSignupCode(candidate);
-  if (accepted) await rememberSignupGrant(candidate);
-  return accepted;
+  const kind = await classifySignupCode(candidate);
+  if (kind === 'none') return { granted: false, kind };
+  await rememberSignupGrant(candidate);
+  return { granted: true, kind };
 }
 
 /**

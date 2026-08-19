@@ -12,7 +12,7 @@ import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { isNativeApp } from '@/lib/utils/capacitor';
-import { validateAccessCode } from '@/app/golf/actions/access-code';
+import { validateAccessCode, type SignupCodeScope } from '@/app/golf/actions/access-code';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -44,6 +44,13 @@ export default function SignupPage() {
   // /golf/signup?returnTo=...). Prefills the access-code field and is forwarded
   // to onboarding so the player auto-joins the inviting team.
   const [joinCode, setJoinCode] = useState<string | null>(null);
+  // Which NAMESPACE the accepted code came from. It decides what the second
+  // role option MEANS: with a roster code it is "Assistant coach", which joins
+  // this program pending the head coach's approval; only the global code still
+  // offers "Coach", the new-program path. A roster code must never reach
+  // new-program onboarding — that is what minted a duplicate organization for
+  // the assistants who picked Coach.
+  const [codeScope, setCodeScope] = useState<SignupCodeScope>('generic');
   // Match the login page: one painterly scene per viewport. SSR renders the
   // portrait CourseScene (matches our iOS native target) and useMediaQuery
   // swaps to the landscape CoastalScene after hydration on desktop ≥768px.
@@ -80,10 +87,11 @@ export default function SignupPage() {
   async function handleCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
     const entered = code.trim();
-    const isValid = await validateAccessCode(entered);
-    if (isValid) {
+    const scope = await validateAccessCode(entered);
+    if (scope !== 'invalid') {
       setAccessGranted(true);
       setCodeError(false);
+      setCodeScope(scope);
       // If a player typed a team join code directly (no invite link), carry it
       // to onboarding so they still auto-join that team. Non-team codes (e.g.
       // the global access code) are a harmless no-op on the onboarding side.
@@ -307,7 +315,7 @@ export default function SignupPage() {
                 <div className="h-12 bg-primary-400/20 rounded-xl" />
               </div>
             }>
-              <GolfSignUpForm joinCode={joinCode} />
+              <GolfSignUpForm joinCode={joinCode} codeScope={codeScope} />
             </Suspense>
           </m.div>
         </m.div>

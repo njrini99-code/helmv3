@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 435', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 442', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -308,6 +308,12 @@ describe('global tripwire', () => {
     // src/app/golf/actions/tasks.ts — the series-create action, bounded by
     // MAX_SERIES_OCCURRENCES and withAdminObserved-wrapped like its siblings.
     // creating a second organization for a school that already exists.
+    // 436-439: the pending-assistant path. A head coach hands out ONE code;
+    //   whoever types it picks Player or Assistant coach, and the assistant
+    //   choice records a REQUEST (createPendingAssistantCoach) that a head
+    //   coach approves (list/approve/decline). The approval is the grant —
+    //   writing golf_team_coach_staff is the whole of team access — so the
+    //   single-code flow ships without re-opening 266d02d91's escalation.
     // 435: createStaffInvite + redeemStaffInvite — coach-issued staff
     // invitations, replacing a join-code path that let any player
     // grant themselves program-administrator.
@@ -319,6 +325,6 @@ describe('global tripwire', () => {
     // redeeming it (staff join flow).
     // 438: signupWithStaffInviteAction (auth.ts) — create account for staff
     // invited to join a program.
-    expect(total).toBe(438);
+    expect(total).toBe(442);
   });
 });

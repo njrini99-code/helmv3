@@ -3,14 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signupAction } from '@/app/golf/actions/auth';
+import { signupAction, type GolfSignupRole } from '@/app/golf/actions/auth';
 import { Users, GraduationCap, AlertCircle } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 
-type Role = 'player' | 'coach';
+import type { SignupCodeScope } from '@/app/golf/actions/access-code';
+
+type Role = GolfSignupRole;
 
 function getSignupErrorMessage(error: string): string {
   const lower = error.toLowerCase();
@@ -58,9 +60,65 @@ function getSignupErrorMessage(error: string): string {
   return error;
 }
 
-export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
+export function GolfSignUpForm({
+  joinCode,
+  codeScope = 'generic',
+}: {
+  joinCode?: string | null;
+  /**
+   * Which namespace the code that opened the gate came from.
+   *
+   * 'roster'  — a team join_code, the ONE code a head coach hands out. Both
+   *             options are offered here, but "Assistant coach" means join
+   *             THIS program pending approval — never new-program onboarding,
+   *             which is what minted a phantom duplicate for the assistants
+   *             who picked Coach (UNCW 2026-08-18, Shenandoah 2026-08-19).
+   * 'staff'   — a head-coach-minted staff code. The role lives in the signed
+   *             token and `signupAction` redeems it, so there is nothing to
+   *             pick; showing a picker only invites the wrong choice.
+   * 'generic' — the global access code, or no gate. Unchanged behaviour.
+   */
+  codeScope?: SignupCodeScope;
+}) {
   const router = useRouter();
+  const rosterCodeOnly = codeScope === 'roster';
+  const staffInvite = codeScope === 'staff';
   const [role, setRole] = useState<Role>('player');
+
+  /*
+   * The role picker only appears when the code does not already decide.
+   *
+   * roster → player, always. This is the fix for the phantom-duplicate program:
+   *   the picker used to offer Coach here, and choosing it ran new-program
+   *   onboarding. A note explaining that was added after UNCW hit it on
+   *   2026-08-18; Shenandoah hit it anyway on 2026-08-19. A note is not a
+   *   control.
+   * staff  → the signed token carries the role and `signupAction` redeems it,
+   *   so there is nothing to choose. Treated as 'coach' locally ONLY so the
+   *   player-specific graduation-year requirement is skipped — an assistant
+   *   coach does not have one. The server ignores this value entirely.
+   */
+  const showRolePicker = !staffInvite;
+
+  /*
+   * The second option MEANS something different on the two paths, which is why
+   * it is derived rather than stored.
+   *
+   *   roster  → 'assistant_request'. Joins THIS program as an assistant,
+   *             pending the head coach's approval, and never runs new-program
+   *             onboarding. Deriving it also means a visitor who picked Coach
+   *             before typing a team code cannot be left holding 'coach' once
+   *             the scope resolves — the exact mismatch that sent Shenandoah's
+   *             assistant into school-details onboarding.
+   *   generic → 'coach', the original new-program path. The owner stands head
+   *             coaches up by hand, so this is effectively their door only.
+   */
+  const isCoachChoice = role === 'coach' || role === 'assistant_request';
+  const effectiveRole: Role = staffInvite
+    ? 'coach'
+    : isCoachChoice
+      ? (rosterCodeOnly ? 'assistant_request' : 'coach')
+      : 'player';
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -79,7 +137,7 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (role === 'player') {
+    if (effectiveRole === 'player') {
       if (!formData.graduationYear) {
         setError('Please select your expected graduation year.');
         return;
@@ -103,7 +161,7 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
       const result = await signupAction(
         formData.email,
         formData.password,
-        role,
+        effectiveRole,
         formData.firstName,
         formData.lastName
       );
@@ -133,10 +191,30 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
       const code = joinCode?.trim().toUpperCase() ?? '';
 
 
+      /*
+       * THE SERVER'S REDIRECT WINS.
+       *
+       * This used to check `role === 'player' && code` FIRST, which beat
+       * `result.redirectTo` outright. That silently broke the staff path: a
+       * typed staff code is carried in `joinCode`, the picker still said
+       * 'player', so a successful staff redemption — which returns
+       * '/golf/dashboard' — was overridden and the new assistant was sent to
+       * `/golf/player?joinCode=<their staff code>` instead.
+       *
+       * signupAction already computes every case, INCLUDING carrying a roster
+       * join code onto the player onboarding path, so deferring to it is not
+       * just safer, it is less logic. The client fallback stays only for a
+       * response that somehow carries no redirect.
+       */
       const onboardingPath =
-        role === 'player' && code
+        result.redirectTo ||
+        (effectiveRole === 'player' && code
           ? `/golf/player?joinCode=${encodeURIComponent(code)}`
-          : result.redirectTo || (role === 'coach' ? '/golf/coach' : '/golf/player');
+          : effectiveRole === 'assistant_request'
+            ? '/golf/coach/pending'
+            : effectiveRole === 'coach'
+              ? '/golf/coach'
+              : '/golf/player');
       router.push(onboardingPath);
     } catch (err) {
       setError(getSignupErrorMessage(err instanceof Error ? err.message : 'Signup failed'));
@@ -169,65 +247,69 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
       )}
 
       {/* Role Selection */}
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-warm-700">I am a...</legend>
-        <div className="grid grid-cols-2 gap-3">
-          <Button variant="primary"
-            type="button"
-            onClick={() => setRole('player')}
-            aria-pressed={role === 'player'}
-            className={`
-              p-4 rounded-md border-2 transition-colors
-              flex flex-col items-center gap-2
-              ${role === 'player'
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-warm-200 bg-cream-50 hover:border-warm-300'
-              }
-            `}
-          >
-            <GraduationCap className={`w-6 h-6 ${role === 'player' ? 'text-primary-600' : 'text-warm-400'}`} />
-            <span className={`text-sm font-medium ${role === 'player' ? 'text-primary-600' : 'text-warm-700'}`}>
-              Player
-            </span>
-          </Button>
 
-          <Button variant="primary"
-            type="button"
-            onClick={() => setRole('coach')}
-            aria-pressed={role === 'coach'}
-            className={`
-              p-4 rounded-md border-2 transition-colors
-              flex flex-col items-center gap-2
-              ${role === 'coach'
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-warm-200 bg-cream-50 hover:border-warm-300'
-              }
-            `}
-          >
-            <Users className={`w-6 h-6 ${role === 'coach' ? 'text-primary-600' : 'text-warm-400'}`} />
-            <span className={`text-sm font-medium ${role === 'coach' ? 'text-primary-600' : 'text-warm-700'}`}>
-              Coach
-            </span>
-          </Button>
-        </div>
-      </fieldset>
+      {showRolePicker ? (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-warm-700">I am a...</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="primary"
+              type="button"
+              onClick={() => setRole('player')}
+              aria-pressed={role === 'player'}
+              className={`
+                p-4 rounded-md border-2 transition-colors
+                flex flex-col items-center gap-2
+                ${role === 'player'
+                  ? 'border-primary-600 bg-primary-50'
+                  : 'border-warm-200 bg-cream-50 hover:border-warm-300'
+                }
+              `}
+            >
+              <GraduationCap className={`w-6 h-6 ${role === 'player' ? 'text-primary-600' : 'text-warm-400'}`} />
+              <span className={`text-sm font-medium ${role === 'player' ? 'text-primary-600' : 'text-warm-700'}`}>
+                Player
+              </span>
+            </Button>
 
-      {/* Staff joining an EXISTING program need an invite, not a team code.
-          Without this note the path silently forked the customer's program:
-          picking Coach here runs coach onboarding, which mints a NEW
-          organization + team with the signer as head coach — so an assistant
-          who was handed the team code ended up head coach of a phantom
-          duplicate instead of joining the program that invited him
-          (reported 2026-08-18, UNCW). The team code cannot grant staff access
-          by design — see src/lib/golf/staff-invite.ts. */}
-      {role === 'coach' && (
+            <Button variant="primary"
+              type="button"
+              onClick={() => setRole(rosterCodeOnly ? 'assistant_request' : 'coach')}
+              aria-pressed={isCoachChoice}
+              className={`
+                p-4 rounded-md border-2 transition-colors
+                flex flex-col items-center gap-2
+                ${isCoachChoice
+                  ? 'border-primary-600 bg-primary-50'
+                  : 'border-warm-200 bg-cream-50 hover:border-warm-300'
+                }
+              `}
+            >
+              <Users className={`w-6 h-6 ${isCoachChoice ? 'text-primary-600' : 'text-warm-400'}`} />
+              <span className={`text-sm font-medium ${isCoachChoice ? 'text-primary-600' : 'text-warm-700'}`}>
+                {rosterCodeOnly ? 'Assistant coach' : 'Coach'}
+              </span>
+            </Button>
+          </div>
+        </fieldset>
+      ) : null}
+
+      {/* The code already decided the role — say which, and why there is no
+          choice. Silently removing the picker would read as a broken page. */}
+      {rosterCodeOnly && effectiveRole === 'assistant_request' && (
         <p className="text-sm text-warm-600 bg-cream-50 border border-warm-200 rounded-xl p-3">
-          Joining an existing program as an assistant coach or admin?{' '}
-          <strong className="font-semibold text-warm-800">
-            Ask your head coach for a staff invite link
-          </strong>{' '}
-          — a team code signs you up as a player, and continuing here creates a
-          brand-new program instead of joining theirs.
+          You&rsquo;ll join this program as an{' '}
+          <strong className="font-semibold text-warm-800">assistant coach</strong> once
+          your head coach approves you — they&rsquo;ll see the request as soon as you
+          finish signing up. You can sign in right away; team data appears when
+          they approve.
+        </p>
+      )}
+
+      {staffInvite && (
+        <p className="text-sm text-warm-600 bg-cream-50 border border-warm-200 rounded-xl p-3">
+          You&rsquo;re joining with a{' '}
+          <strong className="font-semibold text-warm-800">staff invite</strong> — your
+          role and team are already set by the invite, so there&rsquo;s nothing to pick.
         </p>
       )}
 

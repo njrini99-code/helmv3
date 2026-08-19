@@ -2353,3 +2353,342 @@ const observedPreviewStaffInvite = withAdminObserved(
 export async function previewStaffInvite(token: string): Promise<PreviewStaffInviteResult> {
   return observedPreviewStaffInvite(token);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Pending assistant coaches — the single-code path                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ONE CODE, TWO DESTINATIONS.
+ *
+ * A head coach hands out exactly one thing: the team code. Whoever types it
+ * picks Player or Assistant coach at signup. Players are attached immediately,
+ * as they always were. Assistants are not — they land here.
+ *
+ * A "pending assistant" is a golf_coaches row carrying the program's
+ * organization_id and NO golf_team_coach_staff row. That distinction is the
+ * whole security model, and it is not a convention — it is what the database
+ * enforces. Verified against prod 2026-08-19:
+ *
+ *   is_golf_team_coach(t)      = EXISTS(golf_team_coach_staff WHERE team=t …)
+ *   is_golf_team_head_coach(t) = the same, AND role='head_coach'
+ *
+ * Neither reads golf_coaches.organization_id, and every coach-side RLS policy
+ * routes through one of them. So a pending assistant can sign in and see
+ * nothing at all until a head coach approves.
+ *
+ * Why an approval step exists when the owner asked for one code: everyone
+ * holding the team code is on the roster. If choosing "Assistant coach" also
+ * GRANTED it, any player could self-promote with a second email and read every
+ * teammate's rounds and PII, and delete roster rows. That is precisely the
+ * escalation reverted in 266d02d91 (2026-08-05). The approval keeps the single
+ * code and closes it: one click for the head coach, no second credential to
+ * find, mint, or forward.
+ */
+export interface PendingAssistantCoach {
+  coachId: string;
+  fullName: string | null;
+  email: string | null;
+  requestedAt: string | null;
+}
+
+async function createPendingAssistantCoachImpl(
+  userId: string,
+  teamJoinCode: string,
+  fullName: string | undefined,
+  email: string,
+): Promise<{ success: boolean; error?: string }> {
+  const admin = createAdminClient();
+
+  // The join code is the ONLY thing that decides which program is being asked
+  // to approve. It came from the server-side gate cookie, never from the form.
+  const { data: team, error: teamError } = await admin
+    .from('golf_teams')
+    .select('id, organization_id')
+    .eq('join_code', teamJoinCode.toUpperCase())
+    .maybeSingle();
+
+  if (teamError || !team?.organization_id) {
+    await logServerError(
+      `[createPendingAssistantCoach] team lookup failed: ${describeError(teamError)}`,
+      { action: 'teams.createPendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not find the team for that code.' };
+  }
+
+  // onboarding_completed stays false: the pending screen is their onboarding
+  // until a head coach acts, and completing coach onboarding is what would
+  // otherwise mint a duplicate organization.
+  const { error: insertError } = await admin
+    .from('golf_coaches')
+    .upsert(
+      {
+        user_id: userId,
+        organization_id: team.organization_id,
+        full_name: fullName ?? null,
+        email,
+        onboarding_completed: false,
+      },
+      { onConflict: 'user_id' },
+    );
+
+  if (insertError) {
+    await logServerError(
+      `[createPendingAssistantCoach] coach upsert failed: ${describeError(insertError)}`,
+      { action: 'teams.createPendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not record your request.' };
+  }
+
+  return { success: true };
+}
+
+const observedCreatePendingAssistantCoach = withAdminObserved(
+  'createPendingAssistantCoach',
+  { sport: 'golf', feature: 'join_team_flow', demoSafe: true },
+  createPendingAssistantCoachImpl,
+);
+
+export async function createPendingAssistantCoach(
+  userId: string,
+  teamJoinCode: string,
+  fullName: string | undefined,
+  email: string,
+): Promise<{ success: boolean; error?: string }> {
+  return observedCreatePendingAssistantCoach(userId, teamJoinCode, fullName, email);
+}
+
+/**
+ * Resolve the caller to a HEAD COACH of `teamId`, or fail.
+ *
+ * Shared by the list/approve/decline actions below so the gate is written once
+ * — an assistant must never be able to approve another assistant, which would
+ * turn one approval into an unbounded chain.
+ */
+async function requireHeadCoachOfTeam(
+  teamId: string,
+): Promise<{ ok: true; coachId: string; organizationId: string } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return { ok: false, error: 'Not authenticated' };
+
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (coachError || !coach?.organization_id) {
+    return { ok: false, error: 'Coach profile not found' };
+  }
+
+  const { data: staffRow, error: staffRowError } = await supabase
+    .from('golf_team_coach_staff')
+    .select('id')
+    .eq('team_id', teamId)
+    .eq('coach_id', coach.id)
+    .eq('role', 'head_coach')
+    .maybeSingle();
+
+  if (staffRowError) {
+    await logServerError(
+      `[requireHeadCoachOfTeam] head-coach check failed for team ${teamId}: ${describeError(staffRowError)}`,
+      { action: 'teams.requireHeadCoachOfTeam', featureArea: 'teams' },
+      'warning',
+    );
+    return { ok: false, error: 'We could not verify your access just now.' };
+  }
+  if (!staffRow) return { ok: false, error: 'Only a head coach of this team can do that.' };
+
+  return { ok: true, coachId: coach.id, organizationId: coach.organization_id };
+}
+
+async function listPendingAssistantCoachesImpl(
+  teamId: string,
+): Promise<{ success: boolean; error?: string; pending?: PendingAssistantCoach[] }> {
+  const gate = await requireHeadCoachOfTeam(teamId);
+  if (!gate.ok) return { success: false, error: gate.error };
+
+  const admin = createAdminClient();
+
+  // Everyone who asked to join this program…
+  const { data: candidates, error: candidatesError } = await admin
+    .from('golf_coaches')
+    .select('id, full_name, email, created_at')
+    .eq('organization_id', gate.organizationId)
+    .eq('onboarding_completed', false)
+    .order('created_at', { ascending: true });
+
+  if (candidatesError) {
+    await logServerError(
+      `[listPendingAssistantCoaches] candidate read failed: ${describeError(candidatesError)}`,
+      { action: 'teams.listPendingAssistantCoaches', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not load pending requests.' };
+  }
+
+  const ids = (candidates ?? []).map((c) => c.id);
+  if (ids.length === 0) return { success: true, pending: [] };
+
+  // …minus anyone who already holds staff anywhere. Holding a staff row is the
+  // definition of "already in", so this is the same predicate the access
+  // helpers use rather than a parallel notion of pending that could drift.
+  const { data: staffed, error: staffedError } = await admin
+    .from('golf_team_coach_staff')
+    .select('coach_id')
+    .in('coach_id', ids);
+
+  if (staffedError) {
+    await logServerError(
+      `[listPendingAssistantCoaches] staff read failed: ${describeError(staffedError)}`,
+      { action: 'teams.listPendingAssistantCoaches', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not load pending requests.' };
+  }
+
+  const attached = new Set((staffed ?? []).map((row) => row.coach_id));
+
+  return {
+    success: true,
+    pending: (candidates ?? [])
+      .filter((c) => !attached.has(c.id) && c.id !== gate.coachId)
+      .map((c) => ({
+        coachId: c.id,
+        fullName: c.full_name,
+        email: c.email,
+        requestedAt: c.created_at,
+      })),
+  };
+}
+
+const observedListPendingAssistantCoaches = withAdminObserved(
+  'listPendingAssistantCoaches',
+  { sport: 'golf', feature: 'join_team_flow', demoSafe: true },
+  listPendingAssistantCoachesImpl,
+);
+
+export async function listPendingAssistantCoaches(
+  teamId: string,
+): Promise<{ success: boolean; error?: string; pending?: PendingAssistantCoach[] }> {
+  return observedListPendingAssistantCoaches(teamId);
+}
+
+async function approvePendingAssistantCoachImpl(
+  coachId: string,
+  teamId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await requireHeadCoachOfTeam(teamId);
+  if (!gate.ok) return { success: false, error: gate.error };
+
+  const admin = createAdminClient();
+
+  // Re-check the request belongs to this head coach's own program. Without it,
+  // a head coach could pass any coach id and attach a stranger to their team.
+  const { data: candidate, error: candidateError } = await admin
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('id', coachId)
+    .maybeSingle();
+
+  if (candidateError || !candidate) {
+    return { success: false, error: 'That request no longer exists.' };
+  }
+  if (candidate.organization_id !== gate.organizationId) {
+    return { success: false, error: 'That request is not part of your program.' };
+  }
+
+  // ALWAYS 'assistant_coach'. This action cannot mint a head coach — promoting
+  // someone to head coach stays with createStaffInvite's admin role, which
+  // requires deliberately choosing "Program admin".
+  const { error: staffError } = await admin
+    .from('golf_team_coach_staff')
+    .upsert(
+      { team_id: teamId, coach_id: coachId, role: 'assistant_coach', is_primary: false },
+      { onConflict: 'team_id,coach_id' },
+    );
+
+  if (staffError) {
+    await logServerError(
+      `[approvePendingAssistantCoach] staff insert failed: ${describeError(staffError)}`,
+      { action: 'teams.approvePendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not approve that request.' };
+  }
+
+  revalidatePath('/golf/dashboard/team');
+  revalidatePath('/golf/dashboard');
+  return { success: true };
+}
+
+const observedApprovePendingAssistantCoach = withAdminObserved(
+  'approvePendingAssistantCoach',
+  { sport: 'golf', feature: 'join_team_flow' },
+  approvePendingAssistantCoachImpl,
+);
+
+export async function approvePendingAssistantCoach(
+  coachId: string,
+  teamId: string,
+): Promise<{ success: boolean; error?: string }> {
+  return observedApprovePendingAssistantCoach(coachId, teamId);
+}
+
+async function declinePendingAssistantCoachImpl(
+  coachId: string,
+  teamId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await requireHeadCoachOfTeam(teamId);
+  if (!gate.ok) return { success: false, error: gate.error };
+
+  const admin = createAdminClient();
+
+  const { data: candidate, error: candidateError } = await admin
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('id', coachId)
+    .maybeSingle();
+
+  if (candidateError || !candidate) return { success: false, error: 'That request no longer exists.' };
+  if (candidate.organization_id !== gate.organizationId) {
+    return { success: false, error: 'That request is not part of your program.' };
+  }
+
+  // Detach rather than delete. The person still has working credentials — they
+  // simply are not attached to this program — so declining never destroys an
+  // account, and a mistaken decline costs one re-request instead of a support
+  // ticket.
+  const { error: detachError } = await admin
+    .from('golf_coaches')
+    .update({ organization_id: null })
+    .eq('id', coachId);
+
+  if (detachError) {
+    await logServerError(
+      `[declinePendingAssistantCoach] detach failed: ${describeError(detachError)}`,
+      { action: 'teams.declinePendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not decline that request.' };
+  }
+
+  revalidatePath('/golf/dashboard/team');
+  return { success: true };
+}
+
+const observedDeclinePendingAssistantCoach = withAdminObserved(
+  'declinePendingAssistantCoach',
+  { sport: 'golf', feature: 'join_team_flow' },
+  declinePendingAssistantCoachImpl,
+);
+
+export async function declinePendingAssistantCoach(
+  coachId: string,
+  teamId: string,
+): Promise<{ success: boolean; error?: string }> {
+  return observedDeclinePendingAssistantCoach(coachId, teamId);
+}

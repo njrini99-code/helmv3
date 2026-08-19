@@ -21,7 +21,7 @@
  * no warm-* / primary-* legacy classes, no surface-matte / surface-stone.
  * ========================================================================== */
 
-import { useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
@@ -55,6 +55,10 @@ import {
   regenerateJoinCode,
   createStaffInvite,
   addSecondTeam,
+  listPendingAssistantCoaches,
+  approvePendingAssistantCoach,
+  declinePendingAssistantCoach,
+  type PendingAssistantCoach,
 } from '@/app/golf/actions/teams';
 import { setActiveTeam } from '@/app/golf/actions/team-switcher';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -713,6 +717,7 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
       </section>
 
       {/* ── Staff invitations ───────────────────────────────────────────── */}
+      <PendingAssistantsSection teamId={team?.id ?? null} />
       <StaffInviteSection teamId={team?.id ?? null} />
 
       {/* ── Team information (editable) ─────────────────────────────────── */}
@@ -910,6 +915,127 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
  * token. The recipient cannot change it, and the team join code can never
  * confer staff access — see the header of src/lib/golf/staff-invite.ts.
  */
+/**
+ * Approve the assistants who signed up with THIS TEAM'S CODE.
+ *
+ * The head coach hands out one code. Whoever types it picks Player or
+ * Assistant coach; players attach immediately, assistants land here. Until a
+ * row appears in golf_team_coach_staff they hold nothing — both
+ * is_golf_team_coach and is_golf_team_head_coach are EXISTS() over that table
+ * and read nothing else — so this button IS the grant.
+ *
+ * That is what lets the single-code flow ship without re-opening the
+ * escalation reverted in 266d02d91: every player on the roster holds the team
+ * code, so the choice may not grant itself.
+ */
+function PendingAssistantsSection({ teamId }: { teamId: string | null }) {
+  const [pending, setPending] = useState<PendingAssistantCoach[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!teamId) return;
+    setLoading(true);
+    try {
+      const result = await listPendingAssistantCoaches(teamId);
+      if (!result.success) {
+        // Not a head coach of this team is guidance, not a fault — the section
+        // simply stays empty for assistants rather than showing them an alarm.
+        setError(result.error ?? null);
+        setPending([]);
+        return;
+      }
+      setError(null);
+      setPending(result.pending ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, [teamId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const act = async (coachId: string, approve: boolean) => {
+    if (!teamId) return;
+    setBusyId(coachId);
+    try {
+      const result = approve
+        ? await approvePendingAssistantCoach(coachId, teamId)
+        : await declinePendingAssistantCoach(coachId, teamId);
+      if (!result.success) {
+        fairwayToast.error(result.error ?? 'That did not go through.');
+        return;
+      }
+      fairwayToast.success(approve ? 'Assistant coach approved' : 'Request declined');
+      // Optimistically drop the row, then reconcile against the server.
+      setPending((rows) => rows.filter((row) => row.coachId !== coachId));
+      void refresh();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // Nothing waiting, still loading, or the viewer is not a head coach: render
+  // nothing at all rather than an empty box on every visit.
+  if (!teamId || loading || error || pending.length === 0) return null;
+
+  return (
+    <section className="mt-10">
+      <Surface elevation="border" padding="md" className="flex flex-col gap-4">
+        <div>
+          <h2 className="font-fw-display text-h3 text-text-primary">
+            Assistant coach requests
+            <span className="ml-2 rounded-full bg-accent-subtle px-2 py-0.5 align-middle font-fw-mono text-caption text-text-primary">
+              {pending.length}
+            </span>
+          </h2>
+          <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
+            These people signed up with your team code and chose assistant coach.
+            They can see nothing until you approve them.
+          </p>
+        </div>
+
+        <ul className="flex flex-col gap-2">
+          {pending.map((row) => (
+            <li
+              key={row.coachId}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border-subtle p-3"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-fw-sans text-body text-text-primary">
+                  {row.fullName?.trim() || row.email || 'Unnamed coach'}
+                </p>
+                {row.fullName?.trim() && row.email && (
+                  <p className="truncate font-fw-sans text-caption text-text-tertiary">{row.email}</p>
+                )}
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  variant="secondary"
+                  busy={busyId === row.coachId}
+                  onClick={() => void act(row.coachId, false)}
+                >
+                  Decline
+                </Button>
+                <Button
+                  variant="primary"
+                  busy={busyId === row.coachId}
+                  onClick={() => void act(row.coachId, true)}
+                >
+                  Approve
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Surface>
+    </section>
+  );
+}
+
+
 function StaffInviteSection({ teamId }: { teamId: string | null }) {
   const [role, setRole] = useState<StaffInviteRole>('coach');
   const [link, setLink] = useState<string | null>(null);

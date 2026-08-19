@@ -28,7 +28,7 @@ import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { verifyStaffInvite } from '@/lib/golf/staff-invite';
-import { redeemStaffInvite } from '@/app/golf/actions/teams';
+import { createPendingAssistantCoach, redeemStaffInvite } from '@/app/golf/actions/teams';
 import { resolveStaffInviteCode } from '@/lib/golf/staff-invite-lookup';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
@@ -286,14 +286,35 @@ export type SignupResult = {
 /**
  * Golf-specific signup with rate limiting
  */
+/**
+ * What the signup form may ask for.
+ *
+ * `assistant_request` is deliberately NOT a role — it is a request for one. It
+ * exists because the head coach and the assistant share ONE code (the team
+ * join code), so the choice has to be made in the UI rather than sealed into a
+ * separate credential. Everyone holding that code is on the roster, so letting
+ * the choice grant itself would let any player self-promote to assistant coach
+ * and read every teammate's rounds and PII. That is the escalation reverted in
+ * 266d02d91 (2026-08-05); the approval step below is what lets the single-code
+ * flow ship without re-opening it.
+ */
+export type GolfSignupRole = 'player' | 'coach' | 'assistant_request';
+
 async function signupActionImpl(
   email: string,
   password: string,
-  role: 'player' | 'coach',
+  role: GolfSignupRole,
   firstName?: string,
   lastName?: string
 ): Promise<SignupResult> {
   const normalizedEmail = email.toLowerCase().trim();
+
+  // An assistant-coach REQUEST is a coach account as far as auth is concerned;
+  // what makes it a request rather than a grant is that no
+  // golf_team_coach_staff row is written for it below. Both access helpers
+  // (is_golf_team_coach / is_golf_team_head_coach) read that table and nothing
+  // else, so until a head coach approves, this account can see no team data.
+  const authRole: 'player' | 'coach' = role === 'assistant_request' ? 'coach' : role;
 
   // Validate password strength FIRST (before rate limiting to provide immediate feedback)
   const passwordValidation = validatePassword(password);
@@ -347,7 +368,7 @@ async function signupActionImpl(
     password,
     options: {
       data: {
-        role,
+        role: authRole,
         sport: 'golf',
         first_name: firstName || '',
         last_name: lastName || '',
@@ -427,7 +448,7 @@ async function signupActionImpl(
   }
 
   // Log signup event (fire-and-forget)
-  logSignup(data.user.id, normalizedEmail, role, { ip }).catch(() => {});
+  logSignup(data.user.id, normalizedEmail, authRole, { ip }).catch(() => {});
 
   // Auth state changed (session established) — revalidate dashboard like loginAction
   // so server components re-read the new authenticated session.
@@ -477,6 +498,42 @@ async function signupActionImpl(
     return { success: true, redirectTo: `/golf/staff/join/${encodeURIComponent(gate.staffInviteCode)}` };
   }
 
+  // ASSISTANT-COACH REQUEST on the shared team code.
+  //
+  // Creates a real coach profile bound to the inviting PROGRAM, and writes no
+  // golf_team_coach_staff row. That row is the whole of team access — both
+  // is_golf_team_coach and is_golf_team_head_coach are EXISTS() over it and
+  // read nothing else (verified against prod 2026-08-19) — so this account
+  // holds nothing until a head coach approves it in Team settings.
+  //
+  // Anchored to gate.teamJoinCode, never to anything the browser sent: without
+  // a team code there is no program to request, and the request is refused
+  // rather than silently downgraded to a stray coach account.
+  if (role === 'assistant_request') {
+    if (!gate.teamJoinCode) {
+      return {
+        success: false,
+        error: 'Assistant coaches need their team\'s code. Ask your head coach for it and try again.',
+      };
+    }
+    const requested = await createPendingAssistantCoach(
+      data.user.id,
+      gate.teamJoinCode,
+      [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
+      normalizedEmail,
+    );
+    if (!requested.success) {
+      // The account exists by now, so refusing the whole signup would strand
+      // them with credentials and nothing to sign into.
+      await logServerError(
+        `[signupAction] pending assistant request failed after account creation: ${requested.error ?? 'unknown'}`,
+        { action: 'auth.signupAction' },
+        'warning',
+      );
+    }
+    return { success: true, redirectTo: '/golf/coach/pending' };
+  }
+
   const carryJoinCode = role === 'player' && gate.teamJoinCode;
   const redirectTo = role === 'coach'
     ? '/golf/coach'
@@ -499,7 +556,7 @@ const observedSignupAction = withAdminObserved(
 export async function signupAction(
   email: string,
   password: string,
-  role: 'player' | 'coach',
+  role: GolfSignupRole,
   firstName?: string,
   lastName?: string
 ): Promise<SignupResult> {

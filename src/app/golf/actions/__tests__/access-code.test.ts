@@ -64,6 +64,20 @@ vi.mock('@/lib/auth/supabase-rate-limit', () => ({
 }));
 
 import { validateAccessCode } from '../access-code';
+
+/*
+ * validateAccessCode returns a SCOPE, not a boolean.
+ *
+ * 'roster' | 'staff' | 'generic' name the NAMESPACE the accepted code came
+ * from; 'invalid' is the only rejection. The boolean it used to return threw
+ * that away at the action boundary, so the signup UI could not tell a team
+ * join code from a head-coach staff code and offered the same picker for both
+ * — which is how an assistant handed the TEAM code reached new-program
+ * onboarding (UNCW 2026-08-18, Shenandoah 2026-08-19).
+ *
+ * The scope is safe to expose: it says which namespace opened the gate, never
+ * a role and never a grant.
+ */
 // The gate's enforcement half is a plain server module, NOT a server action —
 // only validateAccessCode should ever be POST-able from a browser.
 import { verifySignupGate } from '@/lib/golf/signup-gate';
@@ -92,37 +106,37 @@ describe('validateAccessCode', () => {
     // global-code branch entirely rather than falling back to a literal that
     // ships in the repo. The team join_code path still works (specs below).
     delete process.env.SIGNUP_ACCESS_CODE;
-    expect(await validateAccessCode('1881')).toBe(false);
-    expect(await validateAccessCode('anything')).toBe(false);
+    expect(await validateAccessCode('1881')).toBe('invalid');
+    expect(await validateAccessCode('anything')).toBe('invalid');
   });
 
   it('accepts an alphanumeric global code', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
-    expect(await validateAccessCode('HELM25')).toBe(true);
+    expect(await validateAccessCode('HELM25')).toBe('generic');
   });
 
   it('tolerates surrounding whitespace', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
-    expect(await validateAccessCode('  HELM25  ')).toBe(true);
+    expect(await validateAccessCode('  HELM25  ')).toBe('generic');
   });
 
   it('accepts the global code case-insensitively', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
-    expect(await validateAccessCode('helm25')).toBe(true);
-    expect(await validateAccessCode('Helm25')).toBe(true);
+    expect(await validateAccessCode('helm25')).toBe('generic');
+    expect(await validateAccessCode('Helm25')).toBe('generic');
   });
 
   it('rejects empty/blank input', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
-    expect(await validateAccessCode('')).toBe(false);
-    expect(await validateAccessCode('   ')).toBe(false);
+    expect(await validateAccessCode('')).toBe('invalid');
+    expect(await validateAccessCode('   ')).toBe('invalid');
   });
 
   // ── team join code (coach-invited players) ──────────────────────────────
   it('accepts a valid team join code even when it is not the global code', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
-    expect(await validateAccessCode('K7PQX4MN')).toBe(true);
+    expect(await validateAccessCode('K7PQX4MN')).toBe('roster');
   });
 
   it('looks up the join code upper-cased and trimmed', async () => {
@@ -135,26 +149,26 @@ describe('validateAccessCode', () => {
   it('rejects a code matching neither the global code nor any team', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     maybeSingle.mockResolvedValue({ data: null, error: null });
-    expect(await validateAccessCode('ZZZZZZZZ')).toBe(false);
+    expect(await validateAccessCode('ZZZZZZZZ')).toBe('invalid');
   });
 
   it('never throws the gate when the team lookup fails (returns false)', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     maybeSingle.mockRejectedValue(new Error('service role unavailable'));
-    expect(await validateAccessCode('K7PQX4MN')).toBe(false);
+    expect(await validateAccessCode('K7PQX4MN')).toBe('invalid');
   });
 
   it('still accepts the global code when the team lookup would fail', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     maybeSingle.mockRejectedValue(new Error('service role unavailable'));
-    expect(await validateAccessCode('HELM25')).toBe(true);
+    expect(await validateAccessCode('HELM25')).toBe('generic');
   });
 
   // ── IP throttle ─────────────────────────────────────────────────────────
   it('refuses (and never reaches the join_code lookup) when the IP is throttled', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     checkRateLimit.mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
-    expect(await validateAccessCode('HELM25')).toBe(false);
+    expect(await validateAccessCode('HELM25')).toBe('invalid');
     expect(createAdminClient).not.toHaveBeenCalled();
   });
 
@@ -167,7 +181,7 @@ describe('validateAccessCode', () => {
   // ── B8-1 grant cookie ───────────────────────────────────────────────────
   it('records an httpOnly grant cookie carrying the validated code', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
-    expect(await validateAccessCode('  helm25 ')).toBe(true);
+    expect(await validateAccessCode('  helm25 ')).toBe('generic');
     expect(cookieSet).toHaveBeenCalledWith(
       GRANT_COOKIE,
       'helm25',
@@ -178,7 +192,7 @@ describe('validateAccessCode', () => {
   it('records no grant when the code is rejected', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     maybeSingle.mockResolvedValue({ data: null, error: null });
-    expect(await validateAccessCode('ZZZZZZZZ')).toBe(false);
+    expect(await validateAccessCode('ZZZZZZZZ')).toBe('invalid');
     expect(cookieSet).not.toHaveBeenCalled();
   });
 });
@@ -250,7 +264,7 @@ describe('verifySignupGate', () => {
     // signupAction re-checks one request later.
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
-    expect(await validateAccessCode('k7pqx4mn')).toBe(true);
+    expect(await validateAccessCode('k7pqx4mn')).toBe('roster');
     // Typed lowercase at the gate; normalized before it is carried onward, so
     // onboarding resolves the same team either way.
     expect(await verifySignupGate()).toEqual({ passed: true, teamJoinCode: 'K7PQX4MN', staffInviteCode: null });

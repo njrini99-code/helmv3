@@ -325,7 +325,7 @@ describe('FEATURE_REGISTRY completeness', () => {
   // 'ALL'-mapped to `course_library`, so this new withAdminObserved-wrapped
   // export is picked up by the live `scanExports` count with no manifest
   // edit required.
-  it('total manifest size is exactly 429 (excludes the CRM row)', () => {
+  it('total manifest size is exactly 436 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -351,7 +351,7 @@ describe('FEATURE_REGISTRY completeness', () => {
     // redeeming it (staff join flow).
     // 432: signupWithStaffInviteAction (auth.ts) — create account for staff
     // invited to join a program. auth.ts is already 'ALL'-mapped.
-    expect(total).toBe(432);
+    expect(total).toBe(436);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {
