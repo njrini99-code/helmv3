@@ -206,7 +206,6 @@ suspect specs at `--workers=1` against the same deploy.
 | INFRA-07 | **Prod migration history rewritten mid-audit** by a peer: 280/300 local migrations were unknown to prod; 248 marked applied on a name/content match; **32 unaccounted** | OPEN · DECISION |
 | INFRA-08 | Sibling worktree symlinks all four `.env` files, giving sandbox-denied secrets a second, unprotected path | OPEN · DECISION |
 | INFRA-09 | 4 Dependabot alerts (3 high, 1 moderate), all `scope: development`: `extract-zip` (no patch), `sharp`, `adm-zip`, `uuid` | OPEN · SAFE |
-
 | INFRA-10 | **Repo is PUBLIC** (`njrini99-code/helmv3`) — worth an explicit decision given CI seeds production and `.env` files are symlinked between worktrees | OPEN · DECISION |
 
 ### Structural audit results (25 agents, 12 dimensions — 56 kept, 3 refuted)
