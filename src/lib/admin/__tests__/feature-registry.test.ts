@@ -347,7 +347,11 @@ describe('FEATURE_REGISTRY completeness', () => {
     // 430: getPlayerRoundOptions (stats-data.ts) — the round list behind the
     // stats round-scope picker. stats-data.ts is already 'ALL'-mapped, so
     // scanExports picks it up with no manifest edit needed.
-    expect(total).toBe(430);
+    // 431: previewStaffInvite (teams.ts) — preview a staff invitation before
+    // redeeming it (staff join flow).
+    // 432: signupWithStaffInviteAction (auth.ts) — create account for staff
+    // invited to join a program. auth.ts is already 'ALL'-mapped.
+    expect(total).toBe(432);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

@@ -438,6 +438,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'validateGolfPlayerCanJoinTeam',
         'joinGolfTeam',
         'createStaffInvite',
+        'previewStaffInvite',
         'redeemStaffInvite',
         'processGolfTeamInvitation',
         'createTeamJoinRequest',

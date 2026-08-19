@@ -2243,6 +2243,13 @@ async function previewStaffInviteImpl(token: string): Promise<PreviewStaffInvite
       'warning',
     );
   }
+  if (orgResult.error) {
+    await logServerError(
+      `[previewStaffInvite] organization read failed for ${organizationId}: ${describeError(orgResult.error)}`,
+      { action: 'teams.previewStaffInvite', featureArea: 'teams' },
+      'warning',
+    );
+  }
 
   return {
     valid: true,

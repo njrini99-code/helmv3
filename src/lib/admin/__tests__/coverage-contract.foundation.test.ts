@@ -315,6 +315,10 @@ describe('global tripwire', () => {
     // src/app/golf/actions/stats-data.ts — lists a player's completed rounds
     // so the ~75-stat panel can be scoped to one. withAdminObserved-wrapped
     // and access-gated by verifyPlayerAccess like its siblings in that file.
-    expect(total).toBe(436);
+    // 437: previewStaffInvite (teams.ts) — preview a staff invitation before
+    // redeeming it (staff join flow).
+    // 438: signupWithStaffInviteAction (auth.ts) — create account for staff
+    // invited to join a program.
+    expect(total).toBe(438);
   });
 });
