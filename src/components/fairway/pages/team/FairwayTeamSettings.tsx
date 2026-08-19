@@ -36,8 +36,10 @@ import {
   FormField,
   Input,
   InlineNotice,
+  Segmented,
   fairwayToast,
 } from '@/components/fairway';
+import type { StaffInviteRole } from '@/lib/golf/staff-invite';
 import {
   IconCopy,
   IconCheck,
@@ -51,6 +53,7 @@ import {
   createTeam,
   updateTeam,
   regenerateJoinCode,
+  createStaffInvite,
   addSecondTeam,
 } from '@/app/golf/actions/teams';
 import { setActiveTeam } from '@/app/golf/actions/team-switcher';
@@ -709,6 +712,9 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
         </Surface>
       </section>
 
+      {/* ── Staff invitations ───────────────────────────────────────────── */}
+      <StaffInviteSection teamId={team?.id ?? null} />
+
       {/* ── Team information (editable) ─────────────────────────────────── */}
       <Form spacing="roomy" onSubmit={handleUpdateTeam} className="mt-10">
         <FormSection
@@ -887,5 +893,115 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
         Managed by {coach.full_name || EM_DASH}
       </p>
     </div>
+  );
+}
+
+
+/**
+ * Mint a staff invitation link (head coach only).
+ *
+ * This is the missing door for `createStaffInvite`/`redeemStaffInvite`: both
+ * were fully built and secure but had no caller, so there was no way to add an
+ * assistant coach at all. A head coach handed his assistant the TEAM CODE
+ * instead, which is a player credential — the assistant reached the player
+ * signup gate, found no assistant-coach option, and was stuck (2026-08-18).
+ *
+ * The role is chosen HERE, by the head coach, and is sealed into the signed
+ * token. The recipient cannot change it, and the team join code can never
+ * confer staff access — see the header of src/lib/golf/staff-invite.ts.
+ */
+function StaffInviteSection({ teamId }: { teamId: string | null }) {
+  const [role, setRole] = useState<StaffInviteRole>('coach');
+  const [link, setLink] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!teamId) return null;
+
+  const handleCreate = async () => {
+    setBusy(true);
+    setError(null);
+    setLink(null);
+    try {
+      const result = await createStaffInvite(teamId, role);
+      if (!result.success || !result.token) {
+        // Surface the server's own reason — "Only a head coach of this team can
+        // invite staff." is the common one and is guidance, not a fault.
+        setError(result.error ?? 'Could not create an invitation.');
+        return;
+      }
+      setLink(`${window.location.origin}/golf/staff/join/${result.token}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      fairwayToast.success('Staff invite link copied');
+    } catch {
+      fairwayToast.error('Could not copy to clipboard');
+    }
+  };
+
+  return (
+    <section className="mt-10">
+      <Surface elevation="border" padding="md" className="flex flex-col gap-4">
+        <div>
+          <h2 className="font-fw-display text-h3 text-text-primary">Staff invitations</h2>
+          <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
+            Add an assistant coach or a program admin. Staff need their own invite —
+            the team code is for players and never grants staff access.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Segmented
+            aria-label="Staff role"
+            value={role}
+            onValueChange={(next) => setRole(next as StaffInviteRole)}
+            options={[
+              { value: 'coach', label: 'Assistant coach' },
+              { value: 'admin', label: 'Program admin' },
+            ]}
+          />
+          <Button variant="primary" busy={busy} onClick={() => void handleCreate()}>
+            Create invite link
+          </Button>
+        </div>
+
+        <p className="font-fw-sans text-caption text-text-tertiary">
+          {role === 'admin'
+            ? 'Program admin: head-coach access across every team in the program.'
+            : 'Assistant coach: coaching access to this team only.'}{' '}
+          Links expire in 72 hours.
+        </p>
+
+        {error && (
+          <InlineNotice tone="warning" title="Could not create invitation">
+            {error}
+          </InlineNotice>
+        )}
+
+        {link && (
+          <div className="flex flex-col gap-2">
+            <code className="break-all rounded-card border border-border-subtle bg-surface p-3 font-fw-mono text-caption text-text-secondary">
+              {link}
+            </code>
+            <div>
+              <Button
+                variant="secondary"
+                leftIcon={<IconCopy size={16} />}
+                onClick={() => void handleCopy()}
+              >
+                Copy staff invite link
+              </Button>
+            </div>
+          </div>
+        )}
+      </Surface>
+    </section>
   );
 }

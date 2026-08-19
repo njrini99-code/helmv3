@@ -27,6 +27,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
+import { verifyStaffInvite } from '@/lib/golf/staff-invite';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
 import { verifySignupGate } from '@/lib/golf/signup-gate';
@@ -576,4 +577,160 @@ export async function requestPasswordResetAction(
   email: string
 ): Promise<PasswordResetResult> {
   return observedRequestPasswordResetAction(email);
+}
+
+
+// ---------------------------------------------------------------------------
+// Staff-invite signup (invited assistant coaches / program admins)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create an account for someone holding a coach-issued STAFF INVITE.
+ *
+ * WHY THIS EXISTS SEPARATELY FROM signupAction
+ * --------------------------------------------
+ * `signupAction` is gated by `verifySignupGate()` — a global access code or a
+ * live `golf_teams.join_code`. Neither is something an invited assistant coach
+ * has: the join code is the PLAYER code, handed to the whole roster, and the
+ * product deliberately does not let a join code confer staff access (see the
+ * header of src/lib/golf/staff-invite.ts). So an invited assistant had no way
+ * to create an account at all — the failure a customer hit on 2026-08-18.
+ *
+ * The invite token replaces the gate, and is strictly STRONGER than the one it
+ * replaces: it is HMAC-signed, expiry-bounded, and can only have been minted by
+ * someone already holding head_coach on that team. The role is NOT taken from
+ * this call — it travels inside the signed payload and is read again by
+ * `redeemStaffInvite`, which the caller invokes next to actually attach the
+ * staff row.
+ *
+ * This account is created with NO profile row (same as signupAction, which only
+ * writes auth metadata); `redeemStaffInvite` creates the golf_coaches row bound
+ * to the INVITING organization. That ordering is what stops an invited coach
+ * from minting a duplicate phantom program, which is what the old
+ * "pick Coach at signup" path did.
+ *
+ * The error branches below intentionally mirror signupActionImpl's. They are
+ * duplicated rather than shared because this landed as a customer-facing
+ * hotfix and refactoring the live signup path was the larger risk; if a third
+ * caller appears, extract them.
+ */
+export interface StaffInviteSignupResult {
+  success: boolean;
+  error?: string;
+}
+
+async function signupWithStaffInviteActionImpl(
+  token: string,
+  email: string,
+  password: string,
+  fullName: string,
+): Promise<StaffInviteSignupResult> {
+  // The invite IS the authorization — verify it before anything else, so an
+  // invalid token cannot even consume the signup rate limit.
+  const verified = verifyStaffInvite(token);
+  if (!verified.ok) {
+    return {
+      success: false,
+      error:
+        verified.reason === 'expired'
+          ? 'That invitation has expired. Ask your head coach for a new one.'
+          : verified.reason === 'unconfigured'
+            ? 'Staff invites are unavailable right now.'
+            : 'That invitation link is not valid.',
+    };
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.valid) {
+    return {
+      success: false,
+      error: passwordValidation.feedback[0] || 'Password does not meet security requirements',
+    };
+  }
+
+  const headersList = await headers();
+  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+
+  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
+  if (!rateLimit.allowed) {
+    const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
+    return {
+      success: false,
+      error: `Too many signup attempts. Please try again in ${remaining}.`,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email: normalizedEmail,
+    password,
+    options: {
+      data: {
+        role: 'coach',
+        sport: 'golf',
+        first_name: fullName.trim().split(/\s+/)[0] ?? '',
+        last_name: fullName.trim().split(/\s+/).slice(1).join(' '),
+      },
+      emailRedirectTo: `${getAppBaseUrl()}/golf/dashboard`,
+    },
+  });
+
+  if (error) {
+    if (error.message.includes('security purposes') || error.message.includes('rate limit')) {
+      const match = error.message.match(/after (\d+) seconds/);
+      return {
+        success: false,
+        error: `Please wait ${match ? match[1] : '60'} seconds before trying again.`,
+      };
+    }
+    if (error.message.includes('already registered') || error.message.includes('already exists')) {
+      return {
+        success: false,
+        error: 'An account with this email already exists. Sign in first, then open this invite link again.',
+      };
+    }
+    if (
+      error.message.toLowerCase().includes('weak') ||
+      error.message.toLowerCase().includes('easy to guess')
+    ) {
+      return {
+        success: false,
+        error: 'Please choose a stronger password — this one is too common or has appeared in a data breach.',
+      };
+    }
+    await logServerError(`[Golf Staff Invite Signup]: ${describeError(error)}`, {
+      action: 'auth.signupWithStaffInviteAction',
+    });
+    return { success: false, error: 'Failed to create account. Please try again.' };
+  }
+
+  if (!data.user) return { success: false, error: 'Failed to create account' };
+  if (!data.session) {
+    return {
+      success: false,
+      error: 'Account created but session could not be established. Please try signing in.',
+    };
+  }
+
+  logSignup(data.user.id, normalizedEmail, 'coach', { ip }).catch(() => {});
+  revalidatePath('/golf/dashboard');
+
+  return { success: true };
+}
+
+const observedSignupWithStaffInviteAction = withAdminObserved(
+  'signupWithStaffInviteAction',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  signupWithStaffInviteActionImpl,
+);
+
+export async function signupWithStaffInviteAction(
+  token: string,
+  email: string,
+  password: string,
+  fullName: string,
+): Promise<StaffInviteSignupResult> {
+  return observedSignupWithStaffInviteAction(token, email, password, fullName);
 }

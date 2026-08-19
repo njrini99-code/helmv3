@@ -2182,3 +2182,82 @@ export async function redeemStaffInvite(
 ): Promise<RedeemStaffInviteResult> {
   return observedRedeemStaffInvite(token, fullName);
 }
+
+
+// ---------------------------------------------------------------------------
+// Staff invite — PREVIEW (unauthenticated)
+// ---------------------------------------------------------------------------
+
+export interface PreviewStaffInviteResult {
+  valid: boolean;
+  error?: string;
+  /** 'coach' → assistant coach on one team. 'admin' → head coach across the program. */
+  role?: StaffInviteRole;
+  teamName?: string;
+  organizationName?: string;
+}
+
+/**
+ * Describe an invite WITHOUT redeeming it, for the accept screen.
+ *
+ * Deliberately callable while signed out: an invited assistant usually has no
+ * account yet (GolfHelm self-serve signup is a PLAYER team-code gate), so the
+ * accept screen has to render "You've been invited to X as an assistant coach"
+ * before there is any session to authenticate.
+ *
+ * Safe to expose because the token is the capability: it is HMAC-signed and
+ * expiry-bounded, so a caller can only preview an invite someone with
+ * head_coach already minted for them. It returns names — never ids, rosters,
+ * or anything else about the program — and the ROLE still travels in the
+ * signed payload, so this cannot be used to shop for a better one.
+ */
+async function previewStaffInviteImpl(token: string): Promise<PreviewStaffInviteResult> {
+  const verified = verifyStaffInvite(token);
+  if (!verified.ok) {
+    return {
+      valid: false,
+      error:
+        verified.reason === 'expired'
+          ? 'That invitation has expired. Ask your head coach for a new one.'
+          : verified.reason === 'unconfigured'
+            ? 'Staff invites are unavailable right now.'
+            : 'That invitation link is not valid.',
+    };
+  }
+
+  const { t: teamId, o: organizationId, r: role } = verified.payload;
+  const admin = createAdminClient();
+
+  const [teamResult, orgResult] = await Promise.all([
+    admin.from('golf_teams').select('name').eq('id', teamId).maybeSingle(),
+    admin.from('organizations').select('name').eq('id', organizationId).maybeSingle(),
+  ]);
+
+  // A read failure must NOT read as "invalid invite" — the token verified, so
+  // the invite is genuine and the accept button must still work. Fall back to
+  // generic copy rather than turning an outage into "your link is broken".
+  if (teamResult.error) {
+    await logServerError(
+      `[previewStaffInvite] team read failed for ${teamId}: ${describeError(teamResult.error)}`,
+      { action: 'teams.previewStaffInvite', featureArea: 'teams' },
+      'warning',
+    );
+  }
+
+  return {
+    valid: true,
+    role,
+    teamName: teamResult.data?.name ?? undefined,
+    organizationName: orgResult.data?.name ?? undefined,
+  };
+}
+
+const observedPreviewStaffInvite = withAdminObserved(
+  'previewStaffInvite',
+  { sport: 'golf', feature: 'join_team_flow', demoSafe: true },
+  previewStaffInviteImpl,
+);
+
+export async function previewStaffInvite(token: string): Promise<PreviewStaffInviteResult> {
+  return observedPreviewStaffInvite(token);
+}

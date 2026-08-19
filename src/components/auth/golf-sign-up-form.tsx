@@ -212,6 +212,25 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
         </div>
       </fieldset>
 
+      {/* Staff joining an EXISTING program need an invite, not a team code.
+          Without this note the path silently forked the customer's program:
+          picking Coach here runs coach onboarding, which mints a NEW
+          organization + team with the signer as head coach — so an assistant
+          who was handed the team code ended up head coach of a phantom
+          duplicate instead of joining the program that invited him
+          (reported 2026-08-18, UNCW). The team code cannot grant staff access
+          by design — see src/lib/golf/staff-invite.ts. */}
+      {role === 'coach' && (
+        <p className="text-sm text-warm-600 bg-cream-50 border border-warm-200 rounded-xl p-3">
+          Joining an existing program as an assistant coach or admin?{' '}
+          <strong className="font-semibold text-warm-800">
+            Ask your head coach for a staff invite link
+          </strong>{' '}
+          — a team code signs you up as a player, and continuing here creates a
+          brand-new program instead of joining theirs.
+        </p>
+      )}
+
       {/* Name fields - side by side */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
