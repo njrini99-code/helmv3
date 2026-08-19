@@ -185,7 +185,27 @@ async function saveRoundDraftImpl(
       ]);
 
       if (holeCountError || shotCountError) {
-        return false;
+        // FAIL CLOSED. A failed count is UNKNOWN, not "no tracked data".
+        //
+        // Returning false here sent the caller straight into the draft overlay
+        // on a round that may well be full of tracked shots -- the single case
+        // this guard exists to prevent -- and it did so precisely when the
+        // database was already misbehaving, which is when a retry is most
+        // likely and the overlay most likely to land.
+        //
+        // The asymmetry decides it. A false positive skips ONE autosave: the
+        // caller gets success, writes nothing, and the next autosave a few
+        // seconds later re-reads and proceeds normally. A false negative
+        // overlays draft_data onto a round whose shots are being tracked by the
+        // other persistence path. One is a few seconds of a draft; the other
+        // corrupts the state of round data that cannot be reconstructed.
+        await logServerError(
+          `[saveRoundDraft] tracked-data count failed for round ${roundId}; treating as TRACKED and skipping the draft overlay: ` +
+            describeError(holeCountError ?? shotCountError),
+          { action: 'round_drafts.saveRoundDraft', featureArea: 'round_tracking' },
+          'warning',
+        );
+        return true;
       }
 
       return (holeCount ?? 0) > 0 || (shotCount ?? 0) > 0;
