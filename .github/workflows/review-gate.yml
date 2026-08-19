@@ -293,17 +293,24 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g markdownlint-cli2
-      - name: Run markdownlint
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '(^docs/.*\.md$|^(CLAUDE|AGENTS|CLAUDE_CODE_GUIDE)\.md$)' || true)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No changed Markdown files for markdownlint."
-            exit 0
-          fi
-          markdownlint-cli2 "${files[@]}" "!**/node_modules/**" "!**/archive/**" "!**/.full-review*/**" || true
+      # Was: changed-files-only lint piped through `|| true`, so this job
+      # was structurally incapable of failing no matter what it found —
+      # yet it sat in the required `all` aggregate. Measured 2026-08-19:
+      # 34,576 pre-existing violations across the full docs/ + CLAUDE.md +
+      # AGENTS.md scope (dominated by MD013 line-length and MD060
+      # table-column-style — rules this repo has never enforced on prose),
+      # far too many to unmask as a hard zero-violations gate. Replaced with
+      # a full-scope, per-rule count ratchet (scripts/markdown-lint-ratchet.mjs,
+      # same shape as scripts/lint-ratchet.mjs): the existing backlog is
+      # grandfathered via .markdownlint-baseline.json, and the job fails
+      # only if any rule's count goes UP. Full-scope (not changed-files) on
+      # purpose — a ratchet baseline is only meaningful if measured over a
+      # scope that doesn't shift under it.
+      # Invoked directly (not via `npm run`) — the script only imports
+      # node: builtins, so it needs no `npm ci` / node_modules at all,
+      # keeping this job as cheap as the `|| true` version it replaces.
+      - name: Markdown lint ratchet
+        run: node scripts/markdown-lint-ratchet.mjs
 
   python:
     name: ruff + pylint
@@ -357,17 +364,27 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install sqlfluff
-      - name: Lint Postgres SQL
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          mapfile -t files < <(bash .github/scripts/changed-files.sh 'supabase/migrations/*.sql' 'supabase/seed/*.sql')
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No changed SQL files for sqlfluff."
-            exit 0
-          fi
-          sqlfluff lint --dialect postgres --rules core "${files[@]}" || true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      # Was: changed-files-only lint piped through `|| true`, so this job
+      # was structurally incapable of failing no matter what it found —
+      # yet it sat in the required `all` aggregate. Measured 2026-08-19:
+      # 7,649 pre-existing violations across supabase/migrations/*.sql +
+      # supabase/seed/*.sql (264 of 303 files; sqlfluff's own 20KB
+      # large-file safety limit skips the other 18 rather than parser-
+      # locking on them), far too many to unmask as a hard zero-violations
+      # gate without a repo-wide SQL reformat nobody asked for. Replaced
+      # with a full-scope, per-rule count ratchet
+      # (scripts/sql-lint-ratchet.mjs, same shape as scripts/lint-ratchet.mjs):
+      # the existing backlog is grandfathered via .sqlfluff-baseline.json,
+      # and the job fails only if any rule's count goes UP. Full-scope (not
+      # changed-files) on purpose — a ratchet baseline is only meaningful if
+      # measured over a scope that doesn't shift under it. Invoked directly
+      # (not via `npm run`) — the script only imports node: builtins, so it
+      # needs no `npm ci` / node_modules.
+      - name: SQL lint ratchet
+        run: node scripts/sql-lint-ratchet.mjs
 
   hadolint:
     name: hadolint
