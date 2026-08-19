@@ -913,6 +913,7 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
 function StaffInviteSection({ teamId }: { teamId: string | null }) {
   const [role, setRole] = useState<StaffInviteRole>('coach');
   const [link, setLink] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -922,6 +923,7 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
     setBusy(true);
     setError(null);
     setLink(null);
+    setCode(null);
     try {
       const result = await createStaffInvite(teamId, role);
       if (!result.success || !result.token) {
@@ -931,6 +933,7 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
         return;
       }
       setLink(`${window.location.origin}/golf/staff/join/${result.token}`);
+      setCode(result.code ?? null);
     } finally {
       setBusy(false);
     }
@@ -983,6 +986,30 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
           <InlineNotice tone="warning" title="Could not create invitation">
             {error}
           </InlineNotice>
+        )}
+
+        {code && (
+          <div className="flex flex-col gap-2">
+            <p className="font-fw-sans text-body-sm text-text-secondary">
+              They can enter this code on the sign-up screen — it already carries
+              the role, so there is nothing for them to pick.
+            </p>
+            <code className="rounded-card border border-border-subtle bg-surface p-3 text-center font-fw-mono text-h3 tracking-[0.2em] text-text-primary">
+              {code}
+            </code>
+            <div>
+              <Button
+                variant="secondary"
+                leftIcon={<IconCopy size={16} />}
+                onClick={() => void navigator.clipboard.writeText(code).then(
+                  () => fairwayToast.success('Staff code copied'),
+                  () => fairwayToast.error('Could not copy to clipboard'),
+                )}
+              >
+                Copy staff code
+              </Button>
+            </div>
+          </div>
         )}
 
         {link && (

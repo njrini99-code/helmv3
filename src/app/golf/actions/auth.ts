@@ -28,6 +28,8 @@ import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { verifyStaffInvite } from '@/lib/golf/staff-invite';
+import { redeemStaffInvite } from '@/app/golf/actions/teams';
+import { resolveStaffInviteCode } from '@/lib/golf/staff-invite-lookup';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
 import { verifySignupGate } from '@/lib/golf/signup-gate';
@@ -443,6 +445,38 @@ async function signupActionImpl(
   // no team attached, and had to be invited a second time. Coaches keep going
   // to their own onboarding — a join code is meaningless for them, since they
   // create the team rather than join one.
+  // A STAFF INVITE CODE cleared the gate: attach them to the inviting program
+  // instead of running new-program onboarding (which would mint a duplicate
+  // organization — the failure the owner's assistant would otherwise hit).
+  //
+  // The role is NOT taken from `role` above. It is read from the signed token
+  // the code resolves to, inside redeemStaffInvite. That is the whole reason
+  // this is safe to expose at signup: typing a code cannot choose a role, and
+  // the roster join_code lives in a different namespace entirely, so a player
+  // credential can still only ever produce a player.
+  if (gate.staffInviteCode) {
+    const token = await resolveStaffInviteCode(gate.staffInviteCode);
+    if (token) {
+      const redeemed = await redeemStaffInvite(
+        token,
+        [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
+      );
+      if (redeemed.success) {
+        return { success: true, redirectTo: '/golf/dashboard' };
+      }
+      // The account EXISTS at this point, so failing the whole signup would
+      // strand them with credentials and no program. Send them to the accept
+      // screen, which states the real reason (expired / already used) and lets
+      // them retry with a fresh code once signed in.
+      await logServerError(
+        `[signupAction] staff invite redemption failed after account creation: ${redeemed.error ?? 'unknown'}`,
+        { action: 'auth.signupAction' },
+        'warning',
+      );
+    }
+    return { success: true, redirectTo: `/golf/staff/join/${encodeURIComponent(gate.staffInviteCode)}` };
+  }
+
   const carryJoinCode = role === 'player' && gate.teamJoinCode;
   const redirectTo = role === 'coach'
     ? '/golf/coach'

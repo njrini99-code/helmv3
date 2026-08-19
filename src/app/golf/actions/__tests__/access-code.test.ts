@@ -200,7 +200,7 @@ describe('verifySignupGate', () => {
 
   it('is false when no grant cookie exists (a direct POST to signupAction)', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
-    expect(await verifySignupGate()).toEqual({ passed: false, teamJoinCode: null });
+    expect(await verifySignupGate()).toEqual({ passed: false, teamJoinCode: null, staffInviteCode: null });
     expect(createAdminClient).not.toHaveBeenCalled();
   });
 
@@ -208,7 +208,7 @@ describe('verifySignupGate', () => {
     // The global code identifies no team, so there is nothing to auto-join.
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     cookieJar.set(GRANT_COOKIE, 'HELM25');
-    expect(await verifySignupGate()).toEqual({ passed: true, teamJoinCode: null });
+    expect(await verifySignupGate()).toEqual({ passed: true, teamJoinCode: null, staffInviteCode: null });
   });
 
   it('accepts a grant carrying a live team join code AND hands that code back', async () => {
@@ -217,7 +217,7 @@ describe('verifySignupGate', () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
     cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
-    expect(await verifySignupGate()).toEqual({ passed: true, teamJoinCode: 'K7PQX4MN' });
+    expect(await verifySignupGate()).toEqual({ passed: true, teamJoinCode: 'K7PQX4MN', staffInviteCode: null });
     expect(eq).toHaveBeenCalledWith('join_code', 'K7PQX4MN');
   });
 
@@ -227,14 +227,14 @@ describe('verifySignupGate', () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM26';
     maybeSingle.mockResolvedValue({ data: null, error: null });
     cookieJar.set(GRANT_COOKIE, 'HELM25');
-    expect(await verifySignupGate()).toEqual({ passed: false, teamJoinCode: null });
+    expect(await verifySignupGate()).toEqual({ passed: false, teamJoinCode: null, staffInviteCode: null });
   });
 
   it('is false when the verify throttle trips, without a join_code lookup', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
     checkRateLimit.mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
-    expect(await verifySignupGate()).toEqual({ passed: false, teamJoinCode: null });
+    expect(await verifySignupGate()).toEqual({ passed: false, teamJoinCode: null, staffInviteCode: null });
     expect(createAdminClient).not.toHaveBeenCalled();
   });
 
@@ -253,6 +253,6 @@ describe('verifySignupGate', () => {
     expect(await validateAccessCode('k7pqx4mn')).toBe(true);
     // Typed lowercase at the gate; normalized before it is carried onward, so
     // onboarding resolves the same team either way.
-    expect(await verifySignupGate()).toEqual({ passed: true, teamJoinCode: 'K7PQX4MN' });
+    expect(await verifySignupGate()).toEqual({ passed: true, teamJoinCode: 'K7PQX4MN', staffInviteCode: null });
   });
 });

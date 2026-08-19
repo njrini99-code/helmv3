@@ -16141,6 +16141,68 @@ export type Database = {
           },
         ]
       }
+      golf_staff_invite_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by_coach_id: string | null
+          expires_at: string
+          organization_id: string
+          role: string
+          team_id: string
+          token: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by_coach_id?: string | null
+          expires_at: string
+          organization_id: string
+          role: string
+          team_id: string
+          token: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by_coach_id?: string | null
+          expires_at?: string
+          organization_id?: string
+          role?: string
+          team_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_staff_invite_codes_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_staff_invite_codes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_staff_invite_codes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_staff_invite_codes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_staff_invite_redemptions: {
         Row: {
           nonce: string
