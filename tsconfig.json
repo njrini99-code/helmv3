@@ -66,8 +66,7 @@
   "exclude": [
     "node_modules",
     "archive",
-    "helm-website-ui",
-    "scripts",
+        "scripts",
     "supabase/functions"
   ]
 }

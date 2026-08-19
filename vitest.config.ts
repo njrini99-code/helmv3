@@ -74,7 +74,7 @@ export default defineConfig({
     // `exclude` stays at the root deliberately: merging excludes is additive
     // in the safe direction (each project subtracts at least these), which is
     // exactly what it is for.
-    exclude: ['node_modules', '.next', 'archive', 'helm-website-ui'],
+    exclude: ['node_modules', '.next', 'archive'],
 
     projects: [
       {
@@ -228,7 +228,6 @@ export default defineConfig({
             'node_modules',
             '.next',
             'archive',
-            'helm-website-ui',
             'src/**/*.integration.test.{ts,tsx}',
             'src/**/*.rls.test.{ts,tsx}',
             'src/**/*.contract.test.{ts,tsx}',
@@ -253,7 +252,6 @@ export default defineConfig({
             'node_modules',
             '.next',
             'archive',
-            'helm-website-ui',
             'src/**/*.integration.test.{ts,tsx}',
             'src/**/*.rls.test.{ts,tsx}',
             'src/**/*.contract.test.{ts,tsx}',

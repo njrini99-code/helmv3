@@ -154,7 +154,6 @@ e2e/**/*.js
 scripts/*.js
 scripts/ui-intelligence/*.js
 supabase/functions/**/*.js
-helm-website-ui/**/*.js
 landing/**/*.js
 helm-intelligence/typescript/*.js
 playwright/*.js
