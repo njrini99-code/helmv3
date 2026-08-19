@@ -16,7 +16,7 @@ between — every count below drifted. Re-verify with:
 
 Scope: `src/app/**` route trees for BaseballHelm, GolfHelm, Lift Lab, and
 Admin/Helm Bridge; the canonical action-wrapper / toast / data-access /
-design-token / nav-registry / error-boundary idioms; the 7 traps found by a
+design-token / nav-registry / error-boundary idioms; the 8 traps found by a
 2026-07 sweep; a before-you-write-code checklist.
 
 ---
@@ -53,7 +53,7 @@ resolved to the actual path.
 - **Misc top-level** — `/baseball/admin/demo-sessions`,
   `/baseball/join/[code]`, `/baseball/staff/join/[code]`
 
-### GolfHelm — `src/app/golf/**` (66 `page.tsx`, 65 `error.tsx` — near 1:1)
+### GolfHelm — `src/app/golf/**` (68 `page.tsx`, 65 `error.tsx`)
 
 - **`(auth)`** — `/golf/login`, `/signup`, `/forgot-password`,
   `/reset-password`, `/demo`, `/welcome`

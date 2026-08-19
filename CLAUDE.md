@@ -41,7 +41,7 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 | **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all action files, component directories |
 | **CoachHelm AI / Stats nav labels or hrefs** (rail, sub-nav tabs, CommandPalette, page `<title>`, breadcrumb) | `src/lib/golf/surface-registry.ts` — SINGLE SOURCE OF TRUTH for the canonical `{id, canonicalName, href, role, group, legacy?, hidden?}` of every CoachHelm AI + Stats surface. Every consumer (`nav-registry.ts`, `CoachHelmSubNav.tsx`, `CommandPalette.tsx`, breadcrumb, page titles) imports from here — never hand-write a label/href for one of these surfaces |
 | **Baseball features** | `memory/context/baseballhelm-features.md` — feature-by-feature data flow, files, tables, gaps; `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` — canonical spec (source of truth for what baseball should be) |
-| **Cross-product structure** (route trees, canonical action-wrapper/toast/data-access/design-token/nav-registry/error-boundary idioms, known traps) | `docs/REPO_MAP.md` — resolved route atlas for BaseballHelm/GolfHelm/Lift Lab/Admin, idioms table with file:line anchors, 7 traps, pre-code checklist |
+| **Cross-product structure** (route trees, canonical action-wrapper/toast/data-access/design-token/nav-registry/error-boundary idioms, known traps) | `docs/REPO_MAP.md` — resolved route atlas for BaseballHelm/GolfHelm/Lift Lab/Admin, idioms table with file:line anchors, 8 traps, pre-code checklist |
 
 ### By Role Context
 
@@ -159,14 +159,17 @@ npm run build        # Production build
 
 # Inventory docs (auto-regenerated; do not edit AUTOGEN blocks by hand)
 npm run docs:regen   # Regenerate memory/glossary.md + memory/projects/golfhelm.md inventory
-npm run docs:check   # CI guard — fails if inventory is out of sync
+npm run docs:check   # LOCAL guard — no workflow runs it; docs-regen.yml
+                     # opens an auto-PR on drift instead
 
 # Tests (Vitest workspace split by file naming)
 npm test                  # unit only (fast inner loop)
 npm run test:all          # every project (unit + integration + rls)
 npm run test:integration  # *.integration.test.{ts,tsx}
 npm run test:rls          # *.rls.test.{ts,tsx}
-npm run test:e2e          # Playwright (also runs in GHA on every PR)
+npm run test:e2e          # Playwright, full local suite. CI does NOT run
+                          # this script: playwright.yml runs `smoke` on PRs
+                          # and the full `e2e` job on push to main only
 
 # Quality (one-shot)
 npm run evals             # Promptfoo LLM eval — needs ANTHROPIC_API_KEY or OPENAI_API_KEY
