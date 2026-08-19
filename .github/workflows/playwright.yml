@@ -38,15 +38,28 @@ on:
           - "true"
 
 concurrency:
-  group: playwright-${{ github.ref }}
-  # Cancel superseded runs on PR branches (saves runner minutes, harmless there),
-  # but NEVER on main. Main pushes land in bursts — 2026-08-18 had three inside
-  # 32 minutes, two of them 43 seconds apart — and with a blanket
-  # cancel-in-progress each push killed the previous commit's E2E run. The
-  # result was a wall of `cancelled`, which reads as "not red" at a glance, so
-  # nothing surfaced that this suite had failed on every main run that actually
-  # finished. A commit on main must produce a verdict, even if a newer one is
-  # already on its way.
+  # On main, the group is per-COMMIT, so main pushes never contend with each
+  # other at all. On PR branches the group is per-ref, so a new push supersedes
+  # the old one.
+  #
+  # `cancel-in-progress: false` was NOT enough, and the reason is a GitHub
+  # behaviour the previous comment did not account for: that flag protects a run
+  # that is already IN PROGRESS, but GitHub keeps only ONE PENDING run per
+  # concurrency group. A newly queued run cancels the previously *pending* one
+  # regardless of the flag. So a burst of pushes still erased earlier commits'
+  # verdicts — just at the queued stage instead of the running one.
+  #
+  # Observed live on 2026-08-19: run 32288775383 (b90f4b8a8) was cancelled 3
+  # minutes after it queued, superseded by the next push. `gh run view --json
+  # jobs` returned `{"jobs":[]}` — zero jobs ever started, which is what proves
+  # it died queued rather than running.
+  #
+  # This matters more than runner minutes. A wall of `cancelled` reads as "not
+  # red" at a glance, which is exactly how it went unnoticed that this suite had
+  # failed on every main run that actually finished (2026-08-16 onward). A
+  # commit on main must produce a verdict, even if a newer one is already on its
+  # way — and now each one gets its own lane to do it in.
+  group: playwright-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
