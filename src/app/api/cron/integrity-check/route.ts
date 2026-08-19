@@ -27,6 +27,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { requireCronAuth } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -51,10 +52,13 @@ function isCheckResult(value: unknown): value is CheckResult {
 }
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  if (!expected || req.headers.get('authorization') !== `Bearer ${expected}`) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
+  // Constant-time secret comparison. The inline `!==` this replaces
+  // short-circuits at the first differing byte, so response latency leaks a
+  // prefix-match oracle against CRON_SECRET. `cronSecretMatches` compares
+  // buffer lengths first (timingSafeEqual THROWS on a length mismatch) and
+  // still fails closed when the secret is unset.
+  const unauthorized = requireCronAuth(req);
+  if (unauthorized) return unauthorized;
 
   return recordJobRun('integrity-check', async () => {
     const admin = createAdminClient();

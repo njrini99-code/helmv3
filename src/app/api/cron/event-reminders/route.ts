@@ -52,6 +52,7 @@ import {
 } from '@/lib/golf/event-reminder-settings';
 import { describeError } from '@/lib/utils/describe-error';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import { requireCronAuth } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -100,11 +101,13 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  const auth = req.headers.get('authorization');
-  if (!expected || auth !== `Bearer ${expected}`) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
+  // Constant-time secret comparison. The inline `!==` this replaces
+  // short-circuits at the first differing byte, so response latency leaks a
+  // prefix-match oracle against CRON_SECRET. `cronSecretMatches` compares
+  // buffer lengths first (timingSafeEqual THROWS on a length mismatch) and
+  // still fails closed when the secret is unset.
+  const unauthorized = requireCronAuth(req);
+  if (unauthorized) return unauthorized;
 
   return recordJobRun('event-reminders', async () => {
     const supabase = createAdminClient();
