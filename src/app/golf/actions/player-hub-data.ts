@@ -17,6 +17,7 @@
  * ========================================================================== */
 
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { getTopInsightForPlayer } from '@/app/golf/actions/insight-delivery';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -78,6 +79,47 @@ async function getPlayerHubSummaryDataImpl(
   playerId: string,
 ): Promise<PlayerHubSummaryData> {
   const supabase = await createClient();
+
+  // SECURITY (Wave A4): this is a `'use server'` export — its signature IS
+  // the trust boundary for anyone able to invoke it directly, independent of
+  // which components reference it. Every downstream read below does its own
+  // RLS/RPC authorization (verified against migration source during the
+  // audit), but the action itself performed none: it went straight from
+  // caller-supplied teamId/playerId into the Promise.all below with no
+  // session check at all. The one production caller (dashboard/page.tsx)
+  // resolves both ids server-side from the authenticated session and cannot
+  // forge them, but a direct call could. Verify the caller IS playerId, and
+  // that playerId is an active member of teamId, before touching anything
+  // else. Distinct error strings matter: 'Not authenticated' is the exact
+  // string dashboard/page.tsx's redirectToLoginOnExpiredSession already
+  // special-cases into a login redirect for a genuinely expired session;
+  // 'Forbidden' is deliberately different so an id mismatch instead falls
+  // through to the route's real error boundary, matching the failedLeg throw
+  // below in this same function.
+  const session = await getGolfSessionProfile();
+  if (!session?.player) {
+    throw new Error('Not authenticated');
+  }
+  if (session.player.id !== playerId) {
+    throw new Error('Forbidden');
+  }
+  const { data: membership, error: membershipError } = await supabase
+    .from('golf_team_members')
+    .select('id')
+    .eq('team_id', teamId)
+    .eq('player_id', playerId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (membershipError) {
+    await logServerError(
+      `[getPlayerHubSummaryData] membership check failed for player ${playerId} on team ${teamId}; refusing rather than trusting the caller-supplied ids: ${describeError(membershipError)}`,
+      { action: 'playerHub.summary', featureArea: 'player_hub', playerId, teamId },
+    );
+    throw new Error('Forbidden');
+  }
+  if (!membership) {
+    throw new Error('Forbidden');
+  }
 
   const eventSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const tripsSince = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);

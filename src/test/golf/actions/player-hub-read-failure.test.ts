@@ -22,6 +22,18 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerException: vi.fn(async () => {}),
   logServerEvent: vi.fn(async () => {}),
 }));
+// Wave A4 added an authorization check at the top of the action (caller must
+// be player 'p1', an active member of team 't1' — matching the ids `hub()`
+// below invokes with). Stub the session as that exact player so these
+// pre-existing read-failure tests keep exercising the downstream reads they
+// were written for, not the new auth gate.
+vi.mock('@/lib/auth/session', () => ({
+  getGolfSessionProfile: async () => ({
+    role: 'player',
+    coach: null,
+    player: { id: 'p1', user_id: 'u1', first_name: 'Test', last_name: 'Player', avatar_url: null, handicap: null, onboarding_completed: true },
+  }),
+}));
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
@@ -78,6 +90,10 @@ describe('getPlayerHubSummaryData — an unreadable hub must not look like an em
     logServerError.mockClear();
     outcomes.clear();
     rpcOutcome = { data: [], error: null };
+    // The new Wave A4 authorization check: player p1 is an active member of
+    // team t1. `.maybeSingle()` expects a single row object (or null), not
+    // the array `chain()`'s generic default falls back to.
+    outcomes.set('golf_team_members', { data: { id: 'membership-1' }, error: null });
   });
 
   it('returns empty arrays for a genuinely quiet team, without complaining', async () => {
