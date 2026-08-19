@@ -20325,6 +20325,10 @@ export type Database = {
         Args: { p_team_id: string }
         Returns: boolean
       }
+      baseball_conversation_has_other_participant: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       baseball_conversation_on_my_team: {
         Args: { p_conversation_id: string }
         Returns: boolean
@@ -20786,6 +20790,10 @@ export type Database = {
         Returns: boolean
       }
       golf_conversation_created_by_me: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
+      golf_conversation_has_other_participant: {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
