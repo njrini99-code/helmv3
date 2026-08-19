@@ -158,13 +158,19 @@ test.describe('Golf Round - Stats Calculation', () => {
     // Navigate to stats page
     await page.goto('/golf/dashboard/stats');
 
-    // The stats redesign exposes drill cards as named buttons.
-    await expect(page.getByRole('button', { name: /^Open Scoring/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^Open Putting/ })).toBeVisible();
+    // The stats redesign exposes drill cards as named buttons. These are
+    // page-load-readiness checks ("did the stats page finish rendering its
+    // drill cards"), not a perf budget — raised from the 5000ms default to
+    // 15000ms 2026-08-19 (Wave L, Lane C) after this exact assertion missed
+    // its window on real CI under the workers 1->3 contention (run
+    // c31cfb1d6: "Open Scoring" button not found within 5000ms, retry
+    // passed). A real render failure still fails at 15s.
+    await expect(page.getByRole('button', { name: /^Open Scoring/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: /^Open Putting/ })).toBeVisible({ timeout: 15_000 });
 
     // Click on putting to see detailed stats
     await page.getByRole('button', { name: /^Open Putting/ }).click();
-    await expect(page.getByRole('heading', { name: 'Putting by distance' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Putting by distance' })).toBeVisible({ timeout: 15_000 });
 
     // Should see putting stats (if rounds exist)
     // Stats visibility depends on having rounds
