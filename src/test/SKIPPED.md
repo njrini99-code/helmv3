@@ -20,10 +20,28 @@ These specs assert against the pre-fix `comparison_source` / threshold shape. Th
   (`THRESHOLDS.minSupport`) remains correctly skipped: `THRESHOLDS` is still
   module-private (re-verified), and exporting it purely to satisfy a test would
   widen the production surface.
-- `src/test/coachhelm/v2/mining/putt-analytics.test.ts` — `emits insight for a noteworthy gap …`
 - `src/test/coachhelm/v2/mining/approach-analytics.test.ts` — `emits the severity insight …`, `emits the direction-bias insight …`
-- `src/test/coachhelm/v2/mining/scoring-context.test.ts` — 4 specs in `generateParTypeInsights` describe
-- `src/test/coachhelm/v2/mining/scrambling-analytics.test.ts` — `emits an above-baseline insight when the player is >=8pp better`
+  — **re-checked 2026-08-19, still genuinely pending.** `src/lib/coachhelm/v2/insights/baseline-registry.ts`
+  now exists (landed 2026-08-17 for an unrelated fix), but
+  `approach-analytics.ts` does not import it — Plan 03 has not actually been
+  wired into this generator yet, so the stated blocker is still real, not a
+  stale hypothesis.
+- ~~`src/test/coachhelm/v2/mining/putt-analytics.test.ts`~~,
+  ~~`src/test/coachhelm/v2/mining/scoring-context.test.ts`~~,
+  ~~`src/test/coachhelm/v2/mining/scrambling-analytics.test.ts`~~
+  — **MOOT, found stale 2026-08-19 (Lane C / worker-ci skip audit).** These
+  three files, and the generators they tested
+  (`src/lib/coachhelm/v2/mining/{putt-analytics,scoring-context,scrambling-analytics}.ts`),
+  were deleted outright by `79f485ecf` ("wave26: v2 sunset (partial — 4 files
+  deleted, reasoning/nlg deferred)"), 2026-05-25 — three months before this
+  audit and even before this doc's own 2026-07-30 pass (which fixed a
+  different stale entry, `intelligence-dashboard.test.ts`, but missed these
+  three). There is no code left to un-skip when Plan 03 ships; if the v2
+  sunset is ever reversed for this mining tier, these would need to be
+  rewritten from scratch against whatever replaces them, not re-enabled as
+  written. Removing from the pending list — verified via `git log
+  --diff-filter=D` and confirming the source files are absent, not by
+  re-running anything (there is nothing left to run).
 
 ## Resolved 2026-07-30 — premise obsolete, not deferred
 
@@ -80,7 +98,38 @@ _Updated 2026-07-09: 5 of the original 9 entries are resolved and removed from t
   `disabled` button is NOT aria-busy and has no spinner, so the pair cannot pass
   for the wrong reason.
 - `src/test/golf/components/EvidencePanel.test.tsx` — `compact mode renders the four key facts in a single row`
+  — **re-verified 2026-08-19 by actually un-skipping and running it**
+  (`npx vitest run --project unit-dom`), not by reading the component: still
+  fails, and for the reason the skip names — `evidence-sample`,
+  `evidence-impact`, and `evidence-confidence` all render with the exact
+  expected content, but there is no `evidence-your-value` node anywhere in
+  the compact view's output. The "your number vs comparison pill" this test
+  needs genuinely hasn't been built yet. Reverted the un-skip (`git checkout`)
+  after confirming — still correctly skipped.
 - `src/test/golf/components/InsightCard.test.tsx` — `fires coach actions including create_focus_area`, `renders different action buttons for player vs coach`
+  — **re-verified 2026-08-19 the same way; both still fail, but the stated
+  "user-wip" reason is now stale even though the skip itself is still
+  warranted — correcting the record:**
+  - `fires coach actions including create_focus_area`: fails because the
+    button's click handler no longer calls `onAction('create_focus_area', …)`
+    directly — `PromoteFocusAreaAction` (the component behind that testid,
+    `src/components/golf/coachhelm/insight-card/InsightCard.tsx`) now opens a
+    `FocusAreaModal` (`setOpen(true)`) and submits through
+    `createFocusAreaFromInsightV2` from inside the modal instead. This is an
+    architecture change (click → modal → server action), not incomplete a11y
+    work — the "user-wip" framing doesn't describe it anymore. Rewriting this
+    test to assert against the modal flow is real test-design work, not a
+    docs fix, so left skipped rather than guessed at.
+  - `renders different action buttons for player vs coach`: fails at the
+    FIRST assertion, `audience="player"` — `action-create-focus-area`
+    (nominally coach-only) renders anyway; the test expects it to be `null`
+    for a player. `PromoteFocusAreaAction` does take a `mode: 'coach' |
+    'player'` prop, suggesting it's now deliberately shown to both
+    audiences with mode-specific behavior rather than coach-only as this
+    test assumes — but that's a product-behavior question, not something to
+    resolve by editing a test's expectations without design input. **Flagged
+    as a background task** rather than guessed at or silently left
+    mis-described.
 - ~~`src/test/golf/components/RoundTakeaway.test.tsx`~~ — deleted 2026-07-20: `RoundTakeaway` was retired by the Round Review filmstrip rebuild (Task 10) — its one narrative replaces the separate hero card.
 
 ## Plan 04 deferred — round-loop hardening test surface
