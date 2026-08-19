@@ -86,6 +86,28 @@ try {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 2b. Report scope honestly. sqlfluff silently SKIPS any file over its own
+// large_file_skip_byte_limit (20KB) rather than lint it — those files are
+// NOT covered by this ratchet's count, and a silent scope reduction would
+// read as "N violations under control" when it might mean "we stopped
+// looking at some files." Always print which files that is, every run.
+// ---------------------------------------------------------------------------
+const SKIP_WARNING_RE = /^WARNING\s+Length of file '([^']+)' is \d+ bytes which is over the limit/;
+const skippedFiles = [];
+for (const line of output.split('\n')) {
+  const m = SKIP_WARNING_RE.exec(line);
+  if (m) skippedFiles.push(m[1]);
+}
+if (skippedFiles.length > 0) {
+  console.log(
+    `sql-lint-ratchet: NOT COVERED — sqlfluff's own 20KB large-file limit skipped ${skippedFiles.length} of ${files.length} in-scope file${files.length !== 1 ? 's' : ''}:`
+  );
+  for (const f of skippedFiles) console.log(`  - ${f}`);
+} else {
+  console.log(`sql-lint-ratchet: full coverage — all ${files.length} in-scope files linted, none skipped.`);
+}
+
 /** @type {Record<string, number>} */
 const current = {};
 let totalNow = 0;

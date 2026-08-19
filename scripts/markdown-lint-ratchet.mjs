@@ -45,6 +45,9 @@ const UPDATE = process.argv.includes('--update');
 //    filter used (`^docs/.*\.md$|^(CLAUDE|AGENTS|CLAUDE_CODE_GUIDE)\.md$`),
 //    just walked over the whole tree instead of the PR's changed files.
 // ---------------------------------------------------------------------------
+/** @type {{ path: string; reason: string }[]} */
+const excluded = [];
+
 function markdownFilesUnder(dir) {
   const abs = resolve(ROOT, dir);
   let entries;
@@ -57,7 +60,11 @@ function markdownFilesUnder(dir) {
   for (const e of entries) {
     const rel = join(dir, e.name);
     if (e.isDirectory()) {
-      if (e.name === 'archive' || e.name.startsWith('.full-review')) continue;
+      if (e.name === 'archive' || e.name.startsWith('.full-review')) {
+        const count = countMarkdownFilesRecursive(resolve(ROOT, rel));
+        if (count > 0) excluded.push({ path: rel, reason: `${count} .md file${count !== 1 ? 's' : ''}, deliberately excluded directory` });
+        continue;
+      }
       out.push(...markdownFilesUnder(rel));
     } else if (e.isFile() && e.name.endsWith('.md')) {
       out.push(rel);
@@ -66,11 +73,43 @@ function markdownFilesUnder(dir) {
   return out;
 }
 
+/** Count-only walk, for reporting how big an excluded directory actually is. */
+function countMarkdownFilesRecursive(abs) {
+  let entries;
+  try {
+    entries = readdirSync(abs, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  let n = 0;
+  for (const e of entries) {
+    if (e.isDirectory()) n += countMarkdownFilesRecursive(join(abs, e.name));
+    else if (e.isFile() && e.name.endsWith('.md')) n += 1;
+  }
+  return n;
+}
+
 const files = markdownFilesUnder('docs');
 for (const name of ['CLAUDE.md', 'AGENTS.md', 'CLAUDE_CODE_GUIDE.md']) {
   if (existsSync(resolve(ROOT, name))) files.push(name);
+  else excluded.push({ path: name, reason: 'not present in this checkout' });
 }
 files.sort();
+
+// ---------------------------------------------------------------------------
+// Report scope honestly, every run. A silent scope reduction would read as
+// "N violations under control" when it might mean "we stopped looking at
+// some files." archive/ and .full-review*/ are excluded ON PURPOSE
+// (superseded/in-progress docs), not a tool limitation like sqlfluff's — but
+// "on purpose" still deserves visible, current numbers, not just a code
+// comment nobody re-checks.
+// ---------------------------------------------------------------------------
+if (excluded.length > 0) {
+  console.log(`markdown-lint-ratchet: NOT COVERED — ${excluded.length} exclusion${excluded.length !== 1 ? 's' : ''} from scope:`);
+  for (const { path, reason } of excluded) console.log(`  - ${path} (${reason})`);
+} else {
+  console.log('markdown-lint-ratchet: full coverage — no exclusions from scope.');
+}
 
 if (files.length === 0) {
   console.log('markdown-lint-ratchet: no Markdown files found in scope — nothing to lint.');
