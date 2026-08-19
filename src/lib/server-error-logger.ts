@@ -18,6 +18,7 @@
 // it needs fetch-all-rows.ts to stop depending on the admin logger.
 
 import * as Sentry from '@sentry/nextjs';
+import { maskEmails, collapseEmailsForGrouping } from '@/lib/observability/redact-pii';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
@@ -343,7 +344,9 @@ async function writeAdminTables(
       severity: severity as IncidentSeverity,
       errorCode: context.errorCode ?? null,
       route: context.route ?? context.url ?? null,
-      message,
+      // Collapsed, not masked: see the note at the message assignment. A
+      // per-address mask still fragments a grouping key.
+      message: collapseEmailsForGrouping(message),
     });
 
   const writeAdminEvent = () => admin.from('admin_events').upsert({
@@ -503,7 +506,25 @@ async function captureServerTrace(
   // collapseEmbeddedHtml keeps the caller's prefix (which says WHICH call
   // failed) and replaces only the HTML with a byte-stable summary, so an outage
   // collapses to one incident with a count instead of dozens of singletons.
-  const message = collapseEmbeddedHtml(rawMessage) ?? rawMessage;
+  // Then mask email addresses in the message. Measured 2026-08-19: 11 files
+  // interpolate a raw address into a trace message, among them
+  // send-password-reset.ts, task-reminders.ts, webhooks/resend/route.ts and
+  // cron/ingest-gmail-replies.
+  //
+  // TWO DIFFERENT REDACTIONS, DELIBERATELY, because one form cannot do both
+  // jobs. The stored message keeps `a***@school.edu`, since the domain is the
+  // diagnostically useful half. But that form is still UNIQUE PER ADDRESS, so
+  // it does nothing for the fingerprint -- which groups by string equality, and
+  // would still mint a new incident group per recipient. That is exactly the
+  // Cloudflare Ray ID fragmentation the HTML collapse above was written to
+  // stop. The fingerprint therefore gets the fully-collapsed `<email>` form.
+  //
+  // Privacy is the secondary benefit and deliberately only that. The acting
+  // user's address is stored ON PURPOSE in admin_events.user_email, a
+  // structured admin-only column that retention prunes. That is a design
+  // decision and is left exactly as it is -- this masks free text, never the
+  // columns built to hold identity.
+  const message = maskEmails(collapseEmbeddedHtml(rawMessage) ?? rawMessage);
   const enriched = enrichTraceContext(message, context);
   const normalizedError = error ?? syntheticTraceError(message);
 

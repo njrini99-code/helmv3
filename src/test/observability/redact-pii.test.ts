@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { maskEmails, redactPiiDeep, redactEventPii } from '@/lib/observability/redact-pii';
+import {
+  maskEmails,
+  redactPiiDeep,
+  redactEventPii,
+  collapseEmailsForGrouping,
+} from '@/lib/observability/redact-pii';
 
 /**
  * Both Sentry `beforeSend` hooks were named for PII and scrubbed only the
@@ -110,5 +115,38 @@ describe('redactEventPii — the real shapes that were leaking', () => {
   it('leaves an event with no PII structurally unchanged', () => {
     const before = { message: 'boom', extra: { count: 3 }, tags: { sport: 'golf' } };
     expect(redactEventPii({ ...before, extra: { count: 3 } })).toEqual(before);
+  });
+});
+
+describe('collapseEmailsForGrouping — the fingerprint form', () => {
+  it('collapses DIFFERENT addresses to the same string', () => {
+    // This is the whole reason it exists. maskEmails cannot do this job: it
+    // keeps the first character and the domain, so two recipients still hash
+    // to two incident groups.
+    const a = collapseEmailsForGrouping('password reset send failed for alice@school.edu');
+    const b = collapseEmailsForGrouping('password reset send failed for bob@school.edu');
+
+    expect(a).toBe(b);
+    expect(a).toBe('password reset send failed for <email>');
+  });
+
+  it('is NOT what maskEmails does — the two forms must stay distinct', () => {
+    // Guards against someone "simplifying" these into one function later.
+    const masked = [
+      maskEmails('failed for alice@school.edu'),
+      maskEmails('failed for bob@school.edu'),
+    ];
+    expect(masked[0]).not.toBe(masked[1]);
+
+    const grouped = [
+      collapseEmailsForGrouping('failed for alice@school.edu'),
+      collapseEmailsForGrouping('failed for bob@school.edu'),
+    ];
+    expect(grouped[0]).toBe(grouped[1]);
+  });
+
+  it('leaves a message with no address alone, so grouping is unchanged for it', () => {
+    const s = 'createGolfEvent email notification failed for 3/12 recipients';
+    expect(collapseEmailsForGrouping(s)).toBe(s);
   });
 });

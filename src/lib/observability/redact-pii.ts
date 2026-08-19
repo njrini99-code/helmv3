@@ -114,3 +114,22 @@ export function redactEventPii<
 
   return event;
 }
+
+/**
+ * Collapse every address to a single fixed token.
+ *
+ * Distinct from `maskEmails`, and the difference is the whole point. The mask
+ * keeps the first character and the domain because that is diagnostically
+ * useful in a message a human reads. But it is still UNIQUE PER ADDRESS, so it
+ * does nothing for anything that groups by string equality.
+ *
+ * Incident fingerprints group by string equality. `... failed for a***@x.edu`
+ * and `... failed for b***@x.edu` are one incident and hash to two. This form
+ * collapses them to one.
+ *
+ * Use `maskEmails` for anything displayed; use this only for a grouping key.
+ */
+export function collapseEmailsForGrouping(input: string): string {
+  if (input.length > MAX_STRING) return input;
+  return input.replace(EMAIL_RE, '<email>');
+}
