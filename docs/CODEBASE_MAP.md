@@ -165,7 +165,6 @@ helmv3/
 │   ├── skills/                   # AI skills library
 │   └── commands.json             # Audit command orchestration
 │
-├── .production-team/             # Multi-agent audit prompts
 │   └── memory/                   # Agent memory files
 │
 └── .helm/                        # Project intelligence
@@ -344,11 +343,6 @@ Multi-agent codebase auditing:
 - **5 Agents**: Orchestrator, Code Auditor, DB Auditor, UI Auditor, Enhancement
 - **Memory**: Semantic + Episodic + Codebase knowledge
 - **Budget**: $30 USD (~7 full audits)
-
-#### Production Team (`.production-team/`)
-AI audit system with persistent memory:
-- **Agents**: Database Sentinel, Feature Maestro, Experience Architect, Code Janitor
-- **Memory**: Per-agent learning files that compound across audit rounds
 
 ---
 

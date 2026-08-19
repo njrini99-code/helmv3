@@ -67,7 +67,6 @@
     "node_modules",
     "archive",
     "helm-website-ui",
-    "helm-intelligence",
     "scripts",
     "supabase/functions"
   ]
