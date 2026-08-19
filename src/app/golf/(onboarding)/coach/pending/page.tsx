@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata = {
   title: 'Waiting for approval | GolfHelm',
@@ -22,35 +24,75 @@ export const metadata = {
  */
 export default async function CoachPendingPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Bind `error`. supabase-js resolves an auth failure as { data: null, error }
+  // rather than throwing, so an unbound read makes an OUTAGE indistinguishable
+  // from a signed-out visitor — the assistant coach is bounced to /login with no
+  // signal anywhere that auth was down. Redirecting is still the right response
+  // (fail closed), but it must be a decision, not an accident.
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) {
+    await logServerError(
+      `[coach/pending] auth read failed: ${describeError(authError)}`,
+      { action: 'golf.coachPending', featureArea: 'auth' },
+      'warning',
+    );
+  }
   if (!user) redirect('/golf/login');
 
   const admin = createAdminClient();
-  const { data: coach } = await admin
+  const { data: coach, error: coachError } = await admin
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
+  if (coachError) {
+    await logServerError(
+      `[coach/pending] coach read failed: ${describeError(coachError)}`,
+      { action: 'golf.coachPending', featureArea: 'teams' },
+      'warning',
+    );
+  }
 
   // Approved already? The staff row is the signal, so this reads the same
   // table the RLS helpers do rather than a second notion of "approved".
   if (coach?.id) {
-    const { data: staffRow } = await admin
+    const { data: staffRow, error: staffError } = await admin
       .from('golf_team_coach_staff')
       .select('id')
       .eq('coach_id', coach.id)
       .limit(1)
       .maybeSingle();
+    // This one matters most on the page. A failed read leaves staffRow null,
+    // which is indistinguishable from "not approved yet" — so an assistant who
+    // HAS been approved sits on this waiting screen indefinitely, and refreshing
+    // does not help. Log it loudly rather than letting an outage look like a
+    // pending approval.
+    if (staffError) {
+      await logServerError(
+        `[coach/pending] staff-row read failed; an approved coach may be stranded on the waiting page: ${describeError(staffError)}`,
+        { action: 'golf.coachPending', featureArea: 'teams' },
+        'error',
+      );
+    }
     if (staffRow) redirect('/golf/dashboard');
   }
 
   let programName: string | null = null;
   if (coach?.organization_id) {
-    const { data: org } = await admin
+    const { data: org, error: orgError } = await admin
       .from('organizations')
       .select('name')
       .eq('id', coach.organization_id)
       .maybeSingle();
+    if (orgError) {
+      await logServerError(
+        `[coach/pending] organization read failed: ${describeError(orgError)}`,
+        { action: 'golf.coachPending', featureArea: 'teams' },
+        'warning',
+      );
+    }
+    // Falls back to generic copy when the name is genuinely absent OR the read
+    // failed — but the failure is now logged rather than silently cosmetic.
     programName = org?.name ?? null;
   }
 
