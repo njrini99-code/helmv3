@@ -66,14 +66,20 @@ export function resolveProjectRef(url) {
  *   - unparseable URL  -> same
  *   - prod without the flag -> refuse and name what would have been deleted
  *
+ * A DRY RUN against production is permitted without the flag. Blocking it would
+ * be actively harmful: previewing what a script would do to prod is the correct
+ * way to use these, and refusing it just trains people to pass --allow-prod
+ * reflexively, which is the habit the guard exists to prevent.
+ *
  * @param {object}  o
  * @param {string}  o.url          NEXT_PUBLIC_SUPABASE_URL the script will use
  * @param {boolean} o.allowProd    true when --allow-prod was passed
  * @param {string}  o.scriptName   for the refusal message
  * @param {string[]} [o.deletes]   tables this script deletes from
+ * @param {boolean} [o.dryRun]     true when --dry-run was passed; permits prod
  * @returns {{ projectRef: string, isProd: boolean }}
  */
-export function assertSafeTarget({ url, allowProd, scriptName, deletes = [] }) {
+export function assertSafeTarget({ url, allowProd, scriptName, deletes = [], dryRun = false }) {
   const projectRef = resolveProjectRef(url);
 
   if (!projectRef) {
@@ -87,6 +93,14 @@ export function assertSafeTarget({ url, allowProd, scriptName, deletes = [] }) {
   }
 
   const isProd = projectRef === KNOWN_PROD_PROJECT_REF;
+
+  if (isProd && dryRun && !allowProd) {
+    console.warn(
+      `[${scriptName}] DRY RUN against PRODUCTION (${projectRef}). No writes will be made.\n` +
+        `To actually execute against production, re-run with --allow-prod.`,
+    );
+    return { projectRef, isProd };
+  }
 
   if (isProd && !allowProd) {
     const hit = deletes.filter((t) => PROTECTED_TABLES.includes(t));
