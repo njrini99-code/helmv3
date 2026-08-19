@@ -59,6 +59,29 @@
 -- there is no input for which this migration deletes more than the current
 -- schema does. It creates no new delete path.
 --
+-- --- APPLYING THIS REQUIRES A TYPES REGEN, AND MAY REQUIRE CODE CHANGES -------
+--
+-- Read this before applying. `golf_players.user_id` is currently generated as
+-- NON-NULL in src/lib/types/database.ts:
+--
+--   golf_players: { Row: { ... user_id: string ... } }
+--
+-- Widening it to NULL makes that `string | null` on the next types
+-- regeneration, and 59 sites in src/ reference golf_players together with
+-- user_id. Any of them dereferencing it without a null check becomes a
+-- TypeScript error the moment the types are regenerated.
+--
+-- That is the intended, safe order, and it fails loudly rather than silently:
+--
+--   1. apply this migration
+--   2. regenerate the database types
+--   3. run the type checker  <- call sites needing null handling surface here
+--   4. fix them, then ship
+--
+-- Do NOT apply it and skip the regeneration. The database would then permit a
+-- NULL that the compiler still believes is impossible, which is the one
+-- ordering that turns a compile error into a runtime one.
+--
 -- NOT APPLIED BY THE AUTHORING SESSION. Docker was unavailable, so the
 -- clean-room `supabase db reset` replay could not be run and this has not been
 -- exercised against a local stack. It ships in the PR for review and deliberate
