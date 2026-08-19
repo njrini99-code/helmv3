@@ -16141,6 +16141,55 @@ export type Database = {
           },
         ]
       }
+      golf_staff_invite_redemptions: {
+        Row: {
+          nonce: string
+          organization_id: string
+          redeemed_at: string
+          redeemed_by: string | null
+          role: string
+          team_id: string
+        }
+        Insert: {
+          nonce: string
+          organization_id: string
+          redeemed_at?: string
+          redeemed_by?: string | null
+          role: string
+          team_id: string
+        }
+        Update: {
+          nonce?: string
+          organization_id?: string
+          redeemed_at?: string
+          redeemed_by?: string | null
+          role?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_staff_invite_redemptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_staff_invite_redemptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_staff_invite_redemptions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_task_assignments: {
         Row: {
           assigned_at: string | null

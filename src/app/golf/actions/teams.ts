@@ -79,9 +79,21 @@ async function getCoachTeamId(
 }
 
 /**
- * Generate a readable 6-character join code
- * Uses uppercase letters and numbers, excluding ambiguous characters (I, O, L, 0, 1)
- * Must match the format used in onboarding.ts
+ * Generate a readable 8-character team join code.
+ *
+ * Charset is 32 chars (A-Z minus I/O, digits 2-9), so 8 chars carries exactly
+ * 40 bits of entropy — ~1.1e12 codes, not brute-forceable over a network.
+ *
+ * This docstring previously said "6-character" and claimed `L` was excluded;
+ * the loop runs 8 times and `L` is in the charset. Only I, O, 0 and 1 are
+ * dropped. That mattered: the code's strength is the ONLY thing standing
+ * between a guessed code and a roster join, so a doc that understates its
+ * length invites someone to "simplify" it back down. Must match the format
+ * used in onboarding.ts.
+ *
+ * NOTE this is a PLAYER credential — it is handed to every athlete on the
+ * roster. It must never be sufficient to grant staff access; staff come from
+ * head-coach-minted signed invites (src/lib/golf/staff-invite.ts).
  */
 function generateJoinCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -2071,9 +2083,47 @@ async function redeemStaffInviteImpl(
           : 'That invitation link is not valid.';
     return { success: false, error: message };
   }
-  const { t: teamId, o: organizationId, r: role } = verified.payload;
+  const { t: teamId, o: organizationId, r: role, n: nonce } = verified.payload;
 
   const admin = createAdminClient();
+
+  // SINGLE USE. Claim the nonce BEFORE writing any staff row: the primary key
+  // on golf_staff_invite_redemptions is the mutual exclusion, so two concurrent
+  // redemptions of the same link cannot both win, and a replay after the fact
+  // loses here rather than minting a second grant.
+  //
+  // This matters most for role='admin', which writes head_coach on EVERY team
+  // in the org — and is_golf_team_coach() is existence-only, so each redemption
+  // is full roster/PII/message access plus the ability to remove players and
+  // rotate the join code. A forwarded admin link was previously repeatable for
+  // its whole 72h life.
+  const { error: claimError } = await admin
+    .from('golf_staff_invite_redemptions')
+    .insert({
+      nonce,
+      team_id: teamId,
+      organization_id: organizationId,
+      role,
+      redeemed_by: user.id,
+    });
+
+  if (claimError) {
+    // 23505 = unique_violation: the invite was already spent. Anything else is
+    // an infrastructure failure, and we refuse rather than fail open — granting
+    // staff access when the replay guard is unavailable is the exact trade this
+    // table exists to prevent.
+    if (claimError.code === '23505') {
+      return {
+        success: false,
+        error: 'That invitation has already been used. Ask your head coach for a new one.',
+      };
+    }
+    await logServerError(
+      `[redeemStaffInvite] could not claim invite nonce; refusing rather than granting staff without a replay guard: ${describeError(claimError)}`,
+      { action: 'teams.redeemStaffInvite', featureArea: 'teams' },
+    );
+    return { success: false, error: 'Could not verify that invitation. Please try again.' };
+  }
 
   // The `error` is READ. Discarded, a failed read looked like "this user has no
   // coach row", so the insert below minted a SECOND coach profile for someone
