@@ -12,10 +12,15 @@
 -- is the correct predicate for a privileged action.
 --
 -- Three DELETE policies governing competitive history trust the existence-only
--- variant, so an `assistant_coach` can delete a team's rounds directly through
--- PostgREST. Deleting a round CASCADEs to `golf_shots`, `golf_holes`,
--- `golf_round_reviews` and `golf_round_stats_cache` -- the shot history goes
--- with it, and there is no soft-delete, no export and no recovery path.
+-- variant, which makes them role-blind: they authorize on staff membership
+-- rather than on being the team's head coach. Deleting a round CASCADEs to
+-- `golf_shots`, `golf_holes`, `golf_round_reviews` and
+-- `golf_round_stats_cache` -- the shot history goes with it, and there is no
+-- soft-delete, no export and no recovery path.
+--
+-- Exposure figures and the reachability assessment are kept OUT of this
+-- repository, which is public, since this migration may sit unapplied for a
+-- while. They live with the 2026-08-19 audit material outside the repo.
 --
 -- --- WHY THESE THREE AND NOTHING ELSE --------------------------------------
 --
