@@ -7,6 +7,7 @@ import { isPathnameModuleDisabled } from '@/lib/baseball/product-modules';
 import { evaluateAdminGate, isAdminPath } from '@/lib/admin/super-admin-shared';
 import {
   DEMO_SESSION_IDLE_TIMEOUT_MS,
+  NATIVE_APP_SESSION_IDLE_TIMEOUT_MS,
   SESSION_IDLE_COOKIE,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
   SESSION_IDLE_TIMEOUT_MS,
@@ -110,13 +111,20 @@ function isIdleExpiredSession(args: {
   sport: 'baseball' | 'golf' | 'lifting' | null;
   lastActivity: number | null;
   now: number;
+  isNativeApp?: boolean;
 }): boolean {
-  const { user, sport, lastActivity, now } = args;
+  const { user, sport, lastActivity, now, isNativeApp = false } = args;
   // Demo visitors get the longer window so a prospect can evaluate the app,
   // switch to another task, and return without being bounced to the gate.
+  // The native app gets the longest: closing it is routine, not walking away
+  // from a shared terminal (see NATIVE_APP_SESSION_IDLE_TIMEOUT_MS). Demo
+  // still wins when both apply — a demo visitor inside the app is still a
+  // shared account.
   const idleTimeoutMs = isDemoContextUser(user, sport)
     ? DEMO_SESSION_IDLE_TIMEOUT_MS
-    : SESSION_IDLE_TIMEOUT_MS;
+    : isNativeApp
+      ? NATIVE_APP_SESSION_IDLE_TIMEOUT_MS
+      : SESSION_IDLE_TIMEOUT_MS;
   const lastSignInMs = user.last_sign_in_at ? Date.parse(user.last_sign_in_at) : NaN;
   const sessionYoungerThanWindow =
     Number.isFinite(lastSignInMs) && now - lastSignInMs < idleTimeoutMs;
@@ -669,6 +677,7 @@ export async function updateSession(request: NextRequest) {
       sport,
       lastActivity: parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value),
       now: Date.now(),
+      isNativeApp: isNativeUserAgent(request),
     });
     const dest = resolvePostAuthDestination({
       sport,
@@ -758,7 +767,7 @@ export async function updateSession(request: NextRequest) {
     // Demo-window selection and the stale-marker guard now live in
     // `isIdleExpiredSession` so the sign-in-page bounce above evaluates
     // idleness identically. Two call sites, one definition.
-    if (isIdleExpiredSession({ user, sport, lastActivity, now })) {
+    if (isIdleExpiredSession({ user, sport, lastActivity, now, isNativeApp: isNativeUserAgent(request) })) {
       try {
         // Local scope: clear cookies without a GoTrue round-trip — middleware
         // must stay fast and must not depend on auth-server reachability.

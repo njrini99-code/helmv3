@@ -35,6 +35,51 @@ export const SESSION_IDLE_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 hours
 export const DEMO_SESSION_IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 /**
+ * Idle window for the NATIVE iOS/Android app.
+ *
+ * The 8-hour staff window above is a SHARED-BROWSER boundary: it protects a
+ * coach who leaves a dashboard open on a team laptop or a library machine.
+ * The native app has a different threat model and a different usage shape —
+ * it is installed on one person's device, behind that device's own passcode
+ * or Face ID, and "close the app" is its normal, constant gesture rather than
+ * "walk away from a terminal".
+ *
+ * With the 8-hour window applied to it, a coach who used the app on Monday
+ * evening and opened it again Tuesday morning crossed the window while doing
+ * nothing wrong, and the reopen bounced them to /login?message=session_expired
+ * every single time. Reported 2026-08-18 by a customer whose whole staff hit
+ * it daily ("my guys still get logged out every time you close the app") — it
+ * reads as the app being broken, not as a security feature.
+ *
+ * 30 days matches {@link SESSION_IDLE_COOKIE_MAX_AGE_S}: a window longer than
+ * the marker's own lifetime would be meaningless, because a marker that has
+ * expired reads as absent, and absent fails open to "not idle".
+ */
+export const NATIVE_APP_SESSION_IDLE_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+/**
+ * UA marker appended by the Capacitor shell on BOTH platforms (see the
+ * `appendUserAgent` entries in capacitor.config.ts). `src/proxy.ts` and the
+ * auth middleware already key native-app behaviour off this same literal.
+ */
+export const NATIVE_APP_UA_MARKER = 'HelmSportsLabsApp';
+
+/**
+ * True when a request/browser is the native app shell.
+ *
+ * Deliberately usable from BOTH sides: the server passes the request's
+ * `user-agent` header, the client passes `navigator.userAgent` (Capacitor's
+ * `appendUserAgent` puts the marker on the WebView UA, so page JS sees it
+ * too). One definition keeps the middleware and the client hook from
+ * disagreeing about whether a session is idle — a disagreement would mean the
+ * client signs the user out while the server considers them active, which is
+ * the exact bug this fixes, just relocated.
+ */
+export function isNativeAppUserAgent(ua: string | null | undefined): boolean {
+  return typeof ua === 'string' && ua.includes(NATIVE_APP_UA_MARKER);
+}
+
+/**
  * While the tab is visible, refresh the activity marker on this interval so
  * reading a dashboard (no mouse/keyboard) does not trip the idle window.
  * Must stay well below {@link SESSION_IDLE_TIMEOUT_MS}.

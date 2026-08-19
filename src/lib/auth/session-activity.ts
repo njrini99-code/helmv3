@@ -18,6 +18,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
   DEMO_SESSION_IDLE_TIMEOUT_MS,
+  NATIVE_APP_SESSION_IDLE_TIMEOUT_MS,
+  isNativeAppUserAgent,
   SESSION_IDLE_COOKIE,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
   SESSION_IDLE_TIMEOUT_MS,
@@ -81,15 +83,27 @@ function isSessionTimedOut(timeoutMs: number): boolean {
 async function resolveIdleTimeoutMs(
   supabase: ReturnType<typeof createClient>,
 ): Promise<number> {
+  // Inside the native shell the client must agree with the middleware, or it
+  // would sign the user out on a timer the server considers perfectly active
+  // — the same "logged out every time you close the app" report, just moved
+  // from the server to the client. Resolved BEFORE the session read so a
+  // stuck/failed getSession() still lands on the native window rather than
+  // falling back to the 8-hour browser one.
+  const nativeApp =
+    typeof navigator !== 'undefined' && isNativeAppUserAgent(navigator.userAgent);
+  const standardTimeoutMs = nativeApp
+    ? NATIVE_APP_SESSION_IDLE_TIMEOUT_MS
+    : SESSION_IDLE_TIMEOUT_MS;
+
   try {
     const {
       data: { session },
     } = await raceWithTimeout(supabase.auth.getSession(), 4000);
     return isDemoMetadataUser(session?.user)
       ? DEMO_SESSION_IDLE_TIMEOUT_MS
-      : SESSION_IDLE_TIMEOUT_MS;
+      : standardTimeoutMs;
   } catch {
-    return SESSION_IDLE_TIMEOUT_MS;
+    return standardTimeoutMs;
   }
 }
 
