@@ -408,7 +408,15 @@ jobs:
         run: node scripts/check-env-secret-fallbacks.mjs
 
   all:
-    name: all
+    # Renamed from the bare `all` (2026-08-19): ci.yml's aggregate job was
+    # ALSO named `all`, so both workflows posted an identically-named check
+    # run and a single required context "all" could not tell them apart —
+    # see .github/branch-protection.md and docs/CI_RUNBOOK.md for the
+    # PR #1125 incident this caused. Job id stays `all` (nothing references
+    # it via `needs:`); only `name:` — the actual check-run/required-context
+    # string — needed to change, and it must stay globally unique across
+    # every workflow in this repo.
+    name: Review Gate aggregate
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15

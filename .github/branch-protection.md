@@ -30,6 +30,51 @@ so a job split/rename does not silently break protection.
 > waiting forever for a context named `all` that no longer exists, which blocks
 > every PR.
 >
+> ### 🔧 MIGRATION PREPARED, NOT YET LIVE (2026-08-19, Lane C / worker-ci)
+>
+> `ci.yml`'s aggregate job is renamed `all` → **`CI aggregate`**, and
+> `review-gate.yml`'s is renamed `all` → **`Review Gate aggregate`** (job
+> `name:` field only — job ids, `needs:`, and every leaf job are untouched;
+> verified nothing else in the repo references the job id `all` via
+> `needs:`, and `actionlint` passes clean on both files). That workflow
+> change is safe to merge on its own — it just makes two *new*,
+> not-yet-required check runs start appearing.
+>
+> **The live GitHub setting above (`contexts: [..., "all", ...]`) has NOT
+> been touched.** Completing the migration is an owner action, in this exact
+> order, so `main` is never blocked on a context nothing will report:
+>
+> 1. Merge/land the job-rename commit on `main` first. Confirm both new
+>    check runs (`CI aggregate`, `Review Gate aggregate`) post green for
+>    that commit's own SHA — `gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs
+>    -q '.check_runs[] | {name, conclusion}'`. Only once both have actually
+>    reported for a real commit should the next step run, or the new
+>    required context can end up waiting on a name that has genuinely never
+>    fired.
+> 2. Then, in one call, swap the required context list:
+>    ```bash
+>    gh api --method PUT repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
+>      -f strict=true \
+>      -f 'contexts[]=CodeQL' \
+>      -f 'contexts[]=Smoke checks' \
+>      -f 'contexts[]=CI aggregate' \
+>      -f 'contexts[]=Review Gate aggregate'
+>    ```
+>    (`gh api` with repeated `-f 'contexts[]=...'` sends a JSON array; drop
+>    `"all"` in this same call rather than as a separate step, so there is no
+>    window where both the old and a stale expectation coexist.)
+> 3. Re-verify with the same `-q '.required_status_checks | {strict, contexts}'`
+>    query used above, then update the "verified live" date/output block at
+>    the top of this section and the matching row in
+>    `docs/CI_RUNBOOK.md` §1 to stop describing this as open.
+>
+> Steps 2–3 are the owner-level part — not executed by this pass. Note that
+> the *current* live branch protection has `enforce_admins` off and permits
+> direct owner pushes (see `CLAUDE.md` rule 0), so for this repo specifically
+> a mis-sequenced step 1 would not actually block the owner from pushing;
+> the ordering above is the fully-general-case-safe sequence, worth
+> following anyway in case `enforce_admins` is ever turned on later.
+>
 > `CodeRabbit` is **no longer required** (dropped 2026-07-20). The bullet below is
 > kept struck through rather than deleted so the change is visible to anyone
 > re-applying these settings from this file.

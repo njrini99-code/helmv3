@@ -59,6 +59,18 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 > either job changes its check-run name, and branch protection would then wait
 > forever for a context named `all` that no longer exists — blocking every PR. The
 > rename and the `required_status_checks` update have to land together.
+>
+> **2026-08-19 (Lane C / worker-ci): the job rename is prepared, the live
+> setting is not.** `ci.yml`'s aggregate is renamed `all` → `CI aggregate`;
+> `review-gate.yml`'s is renamed `all` → `Review Gate aggregate` (job `name:`
+> only, `needs:`/leaf jobs untouched). The exact remaining steps — merge the
+> rename, confirm both new names post green for a real commit, then swap
+> `required_status_checks.contexts` in one `gh api` call that both adds the
+> two new names and drops `"all"` — are written out in
+> `.github/branch-protection.md`'s "MIGRATION PREPARED, NOT YET LIVE" note.
+> Until the owner runs that, this section's live query above still returns
+> bare `"all"` and everything in this runbook about the ambiguity still
+> applies.
 
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|

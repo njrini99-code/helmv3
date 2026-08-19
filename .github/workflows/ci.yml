@@ -650,7 +650,17 @@ jobs:
         run: supabase stop || true
 
   all:
-    name: all
+    # Renamed from the bare `all` (2026-08-19): review-gate.yml's aggregate
+    # job was ALSO named `all`, so both workflows posted an identically-named
+    # check run and a single required context "all" could not tell them
+    # apart — see .github/branch-protection.md and docs/CI_RUNBOOK.md for the
+    # PR #1125 incident this caused (a red BaseballHelm smoke merged because
+    # Review Gate's "all" reported green while CI's "all" was still running).
+    # This job's id stays `all` (nothing references it via `needs:` — grepped
+    # repo-wide before renaming) so the diff is name-only; only the `name:`
+    # field below is what GitHub uses as the check-run/required-context
+    # string, and it must stay globally unique across every workflow.
+    name: CI aggregate
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 30
