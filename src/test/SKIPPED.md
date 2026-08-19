@@ -21,11 +21,21 @@ These specs assert against the pre-fix `comparison_source` / threshold shape. Th
   module-private (re-verified), and exporting it purely to satisfy a test would
   widen the production surface.
 - `src/test/coachhelm/v2/mining/approach-analytics.test.ts` — `emits the severity insight …`, `emits the direction-bias insight …`
-  — **re-checked 2026-08-19, still genuinely pending.** `src/lib/coachhelm/v2/insights/baseline-registry.ts`
+  — **re-checked 2026-08-19, still genuinely pending, but the stated blocker
+  is INCOMPLETE — there are two, not one.** `src/lib/coachhelm/v2/insights/baseline-registry.ts`
   now exists (landed 2026-08-17 for an unrelated fix), but
   `approach-analytics.ts` does not import it — Plan 03 has not actually been
-  wired into this generator yet, so the stated blocker is still real, not a
-  stale hypothesis.
+  wired into this generator yet, so that half of the stated blocker is still
+  real. **Second, independent, pre-existing blocker** (surfaced by
+  `docs/audits/COMPLETE_FINDINGS_2026_08_18.md`'s `config-drift-3`, verified
+  here rather than trusted): `approach-analytics.ts:45` has carried
+  `MIN_SAMPLES_FOR_SEVERITY = 15` since 2026-04-28 (commit `4bb5768d8`) —
+  BEFORE this skip was ever written — and returns early without emitting
+  when `stats.n < MIN_SAMPLES_FOR_SEVERITY` (line 489). The skipped test's
+  own fixture creates only 9 rows. Even after Plan 03 ships and is wired in,
+  un-skipping with "corrected assertions for the emit shape" alone would
+  still fail on the sample gate. Whoever re-enables this needs to bump the
+  fixture to >=15 rows too, not just fix the emit shape.
 - ~~`src/test/coachhelm/v2/mining/putt-analytics.test.ts`~~,
   ~~`src/test/coachhelm/v2/mining/scoring-context.test.ts`~~,
   ~~`src/test/coachhelm/v2/mining/scrambling-analytics.test.ts`~~
@@ -82,7 +92,19 @@ Checked and NOT a bug, recorded so nobody else chases it: the action reads
   Also added a paired negative — `reports not-found before attempting a delete` — so
   the error path can only be reached *after* the existence check succeeds.
 
-## User WIP — a11y / design-system sweep (in-progress on `main`)
+## User WIP — a11y / design-system sweep
+
+> **The "in-progress" / "uncommitted WIP" framing below is itself stale as of
+> 2026-08-19 — flagging rather than rewriting the historical record.** The
+> two component redesigns this section blames on ongoing work landed and
+> committed weeks before this section was last touched: EvidencePanel's
+> compact redesign shipped in `ffd0fd8ab` (2026-07-09), InsightCard's modal
+> flow in PR #1009 (2026-07-23) — both well before this section's own
+> 2026-07-30 pass (which fixed `button.test.tsx` below but didn't revisit
+> this header). There is no WIP left to finalize; the two remaining entries
+> below need real assertion rewrites against already-shipped behavior, not
+> a wait for someone's next commit. See the 2026-08-19 notes under each
+> entry for exactly what changed and what a correct rewrite needs to assert.
 
 These component tests drifted because the user's uncommitted WIP modified component behavior (e.g. Button now renders children alongside loading spinner for accessibility). The user is expected to update these specs as part of finalizing the sweep. Skip them now so CI is green; the user's next commit on the sweep should re-enable them with updated assertions.
 
