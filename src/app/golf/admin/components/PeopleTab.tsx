@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { IconUsers, IconWarning, IconUserX, IconCheckCircle2, IconMail, IconDownload, IconClock } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { TeamHealthCards } from './TeamHealthCards';
+import CoachIntelligenceCard from './CoachIntelligenceCard';
 import { TeamUserDirectory } from './TeamUserDirectory';
 import { UserDetailPanel } from './UserDetailPanel';
 import { BulkEmailModal } from '@/app/golf/admin/crm/components/BulkEmailModal';
@@ -338,6 +339,26 @@ export function PeopleTab({ data }: Props) {
             <span className="text-xs text-warm-400">{userActivity.teams.length} teams</span>
           </div>
           <TeamHealthCards teams={userActivity.teams} onSelectTeam={handleSelectTeam} />
+        </div>
+      )}
+
+      {/* Coach effectiveness.
+          `data.coachIntelligence` has been computed on every admin page load
+          since the monolith and was read by zero mounted components -- the
+          2026-08-19 audit found this table built and never rendered. Its props
+          are a field-for-field match for that slice, so mounting it needed no
+          new query, action or plumbing.
+          Deliberately NOT sourced from admin-people-data.ts's
+          CoachEffectivenessEntry: that shape is missing roundsReviewed,
+          totalPlayerRounds, reviewRate, insightsViewed and lastActiveAt, and
+          carries teamCount where this wants teamName. */}
+      {(viewMode === 'all' || viewMode === 'coaches') && data.coachIntelligence.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-semibold text-warm-900">Coach effectiveness</h3>
+            <span className="text-xs text-warm-400">{data.coachIntelligence.length} coaches</span>
+          </div>
+          <CoachIntelligenceCard coaches={data.coachIntelligence} />
         </div>
       )}
 
