@@ -36,7 +36,8 @@
 import {
   useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
-import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/fairway/controls/button';
@@ -92,7 +93,7 @@ export function FairwayCoursePicker({
   // showToast in a ref so the data callbacks stay referentially stable.
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
-  const reduceMotion = !!useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
 
   const [stage, setStage] = useState<Stage>('courses');
   const [courses, setCourses] = useState<GolfCourse[]>([]);     // full shared library
