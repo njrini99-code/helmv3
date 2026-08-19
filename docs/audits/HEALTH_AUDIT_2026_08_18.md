@@ -207,7 +207,127 @@ suspect specs at `--workers=1` against the same deploy.
 | INFRA-08 | Sibling worktree symlinks all four `.env` files, giving sandbox-denied secrets a second, unprotected path | OPEN · DECISION |
 | INFRA-09 | 4 Dependabot alerts (3 high, 1 moderate), all `scope: development`: `extract-zip` (no patch), `sharp`, `adm-zip`, `uuid` | OPEN · SAFE |
 
-*Structural audit still running; its findings append here.*
+| INFRA-10 | **Repo is PUBLIC** (`njrini99-code/helmv3`) — worth an explicit decision given CI seeds production and `.env` files are symlinked between worktrees | OPEN · DECISION |
+
+### Structural audit results (25 agents, 12 dimensions — 56 kept, 3 refuted)
+
+Verdict: **not structurally sound.** Three independent layers carry verified
+high-severity defects at once — database drift, an ambiguous required check, and
+stale agent-facing entry points.
+
+#### INFRA-11 · P0 · VERIFIED · **TIME-BOXED**
+**Three orphaned stashes hold real work and are aging toward reflog expiry.**
+
+```
+stash@{2}  2026-07-25  24d old   2 files  +4,858 / −2,655   ← ~6 days left
+stash@{1}  2026-07-29  20d old  18 files    +923 / −159
+stash@{0}  2026-08-13   5d old  10 files    +234 / −437
+```
+
+All three source branches (`agent/fairway-crm-ui`, `baseball/overnight-completion`,
+`fix/provider-fault-code-through-soft-failure`) are **deleted**, so this content is
+reachable only through `refs/stash`'s reflog. `gc.reflogExpireUnreachable` is unset
+→ 30-day default.
+
+**⚠️ Do NOT run `git gc --prune` until these are triaged.** An earlier
+recommendation in this session to `gc --prune` after deleting fossil refs was wrong
+for exactly this reason.
+**Fix:** `git stash show -p stash@{N}` on each; keep via
+`git stash branch recovered/<name> stash@{N}`, or drop deliberately.
+
+#### INFRA-12 · P0 · SKEPTIC · DECISION
+**`supabase/migrations/` can no longer rebuild production.**
+
+- **32 migration files** have no entry in the 803-row applied ledger. Some ran
+  out-of-band under different stamps (`20260807030400_gate_qualifier_leaderboard.sql`
+  applied as `20260807044633`); others (`20260730030000_avatars_storage_bucket_rls.sql`,
+  `20260801000000_crm_signal_spine.sql`) have no record at all, though the objects
+  they describe exist live.
+- **`crm_email_templates_backup_20260720`** — live, 40 rows, RLS enabled with
+  **zero policies**, no primary key, and **no `CREATE TABLE` anywhere**. Its only
+  migration is a guarded `ALTER` that silently no-ops on a fresh replay.
+- **`v_crm_coaches_by_school`** — live view with `security_invoker=true`, created
+  entirely out-of-band; its only referencing migration (`20260623131038`) was itself
+  never applied, yet the hardening is present in prod.
+
+**Why it matters:** "read the migrations to know what prod looks like" is the
+assumption CI's shadow-DB reset, disaster recovery, and preview branches all rest
+on. It is false today, and nothing detects when the gap widens.
+**Caveat:** at least one of the 32 (`20260708141000_gate_secdef_ownership_and_redemption.sql`)
+is a deliberately held draft. **Do not bulk-backfill** — reconcile file-by-file with
+`supabase migration repair`.
+
+#### INFRA-13 · P0 · SKEPTIC · DECISION
+**The required check `all` is emitted by two unrelated workflows — and already let a
+broken PR merge.** `ci.yml` and `review-gate.yml` both emit a job named `all` with no
+way to tell them apart. Documented consequence: **PR #1125 merged with failing unit
+tests.** Still unfixed; recurs on the next race.
+
+#### INFRA-14 · P1 · SKEPTIC · SAFE
+**`.git/hooks/pre-commit` is undocumented, hits the network, and mutates the staged
+tree.** On any staged `supabase/migrations/*.sql` it runs `npm run db:types` and
+`git add`s `src/lib/types/database.ts`. It appears in no hook table in CLAUDE.md, so
+staging a migration triggers an unanticipated Supabase call that can hang in a
+sandboxed session.
+
+#### INFRA-15 · P1 · SKEPTIC · SAFE
+**`merge.ours.driver=true` is configured with no `.gitattributes` anywhere.** The
+moment any `.gitattributes` invokes it, merges silently keep "our" side and discard
+the other branch's changes with no conflict marker.
+**Fix:** `git config --local --unset merge.ours.driver`
+
+#### INFRA-16 · P1 · SKEPTIC · SAFE
+**A blanket `*.png` ignore rejects new images in directories that already track
+dozens.** `.gitignore:88`, with no `!` exception for `public/` (16 tracked),
+`design/` (10), or `ios/App/App/Assets.xcassets/` (4). Confirmed: `git add
+public/new-graphic.png` is refused. A replaced app icon renders locally and never
+reaches a commit.
+
+#### INFRA-17 · P1 · SKEPTIC · SAFE
+**`output/` has no ignore coverage** while six sibling scratch dirs are all ignored.
+CLAUDE.md's own autonomy rule documents an incident where `git add -A` swept in
+another agent's half-finished files from a directory exactly like this.
+**Fix:** add `/output/` beside `/test-results/`.
+
+#### INFRA-18 · P1 · SKEPTIC · DECISION
+**A CI gate has been checking a 49-day-frozen snapshot.** `ci.yml`'s `route-hygiene`
+job reads five JSON files under `docs/operations/generated/` and throws if absent —
+but **nothing writes them**. All five share one commit (`b877e537f`, 2026-06-30)
+while `.gitignore:119-120` claims they are "regenerated by CI/scripts."
+
+#### INFRA-19 · P1 · SKEPTIC · SAFE
+**`helm-website-ui/` was deleted from git 2026-07-15 but 376M of `node_modules`
+remains**, and `docs/REPO_MAP.md:113-115` — the file CLAUDE.md routes agents to for
+cross-product structure — still describes it as a live second Next.js app.
+`tsconfig.json:69` and `vitest.config.ts:77,231,257` still exclude it.
+
+#### INFRA-20 · P2 · SKEPTIC · SAFE
+**13 non-standard refs pin ~35 days of dead PR-review objects** (`refs/pr666`,
+`refs/review-pinned/*`, `refs/codex/turn-diffs/...` — the last pointing at a tree,
+not a commit). None live under `refs/heads` or `refs/tags`, so `gc` can never reclaim
+them; the pack is 251.97 MiB. Separately, **21 of 23** `branch.*` config sections are
+dangling — consistent with the fsmonitor half-applied-checkout failure mode.
+
+#### INFRA-21 · P2 · SKEPTIC · SAFE
+**`scripts/deploy-prod.sh` — the mandated production deploy path — is referenced by
+no doc in the repo.** CLAUDE.md discusses on-demand CLI promotion at length without
+naming it. Its own header documents a 2026-08-16 incident where a bare
+`vercel deploy --prod` left `VERCEL_GIT_COMMIT_SHA` unset.
+
+#### INFRA-22 · P2 · UNVERIFIED · SAFE
+**The doc rot CLAUDE.md cites as historical is still live.**
+`memory/projects/golfhelm.md:207-222` lists "12 golf hooks" (naming 5 that no longer
+exist; there are 48); `:111-172` lists "41 action files" (real count 114) — both
+**outside** the AUTOGEN markers, so `docs:regen`/`docs:check` structurally cannot fix
+them. `golfhelm-database.md:7` says 3,998 columns while its own AUTOGEN block at
+`:1550` says 4,002. `baseballhelm-database.md:9-11` asserts 118 baseball tables;
+there are 93 — a real, unexplained 21% drop.
+
+#### INFRA-23 · P3 · SKEPTIC · DECISION
+**Screenshot output is scattered across 7 top-level directories (~1.15G)** with no
+canonical location — `grep -ni screenshot CLAUDE.md` returns nothing, so each run
+picks an eighth. `docs/` is 81% archive (1,163 of 1,432 files); most of the remaining
+bulk is `docs/qa/` (69M) and `docs/ui-audits/` (39M) — audit byproducts, not reference.
 
 ---
 
@@ -285,13 +405,21 @@ runtime while every other gate passes).
 16. Deduplicate `formatToPar*` and the metric labels.
 17. Correct the drifted docs and the `surface-registry` hrefs.
 
+### Wave 0 — Before anything else (TIME-BOXED, minutes)
+0. **`INFRA-11`** — triage the three orphaned stashes. `stash@{2}` (4,858
+   insertions) is ~6 days from reflog expiry and its branch is already deleted.
+   **Do not run `git gc --prune` until this is done.**
+
 ### Do these three first
-1. **SEC-01** — a mass-email endpoint gated on a third, undocumented auth
+1. **INFRA-11** — the only item with a clock. Everything else waits; this doesn't.
+2. **SEC-01** — a mass-email endpoint gated on a third, undocumented auth
    authority, of exactly the kind that already caused one outage here.
-2. **SEC-03** — the cheapest fix on the list (copy a sibling's call) guarding the
-   highest blast radius, currently held shut only by RLS coincidence.
-3. **BUG-01** — the only finding actively producing wrong coaching output for
-   every player, right now.
+3. **INFRA-12** — the migration drift invalidates the assumption every other
+   safety net rests on: that `supabase/migrations/` can rebuild production.
+
+Runners-up, both cheap: **SEC-03** (copy a sibling's auth call, highest blast
+radius) and **BUG-01** (the only finding actively producing wrong coaching output
+for every player today).
 
 ---
 
