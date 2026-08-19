@@ -136,6 +136,32 @@ export default async function GolfDashboardLayout({
   let userData: GolfUserData;
 
   if (resolvedRole === 'coach') {
+    // A PENDING ASSISTANT must not be sent to '/golf/coach'.
+    //
+    // That path is new-program onboarding — the school-details form that mints
+    // a fresh organization and team. An assistant who signed up with the team
+    // code and chose "Assistant coach" is deliberately left with a coach
+    // profile carrying the program's organization_id and NO
+    // golf_team_coach_staff row, waiting on the head coach's approval. Both of
+    // those look exactly like "onboarding not finished" to the check below, so
+    // without this branch every such login lands on the very screen the
+    // single-code flow exists to avoid (Shenandoah 2026-08-19).
+    //
+    // The staff row is the discriminator because it is the same thing the
+    // access helpers read: is_golf_team_coach and is_golf_team_head_coach are
+    // EXISTS() over golf_team_coach_staff, so "has a row" and "can see team
+    // data" cannot drift apart.
+    if (coach && !coach.onboarding_completed && coach.organization_id) {
+      const pendingCheckClient = await createClient();
+      const { data: pendingStaffRow } = await pendingCheckClient
+        .from('golf_team_coach_staff')
+        .select('id')
+        .eq('coach_id', coach.id)
+        .limit(1)
+        .maybeSingle();
+      if (!pendingStaffRow) redirect('/golf/coach/pending');
+    }
+
     if (!coach || !coach.onboarding_completed) {
       redirect('/golf/coach');
     }
