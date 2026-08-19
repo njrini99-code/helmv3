@@ -4,70 +4,69 @@
  * ============================================================================
  * Fairway · pages/team-hub · FairwayTeamHub
  * ----------------------------------------------------------------------------
- * The redesigned PLAYER "Team Hub" (route /golf/dashboard/team-hub, player role)
- * in the warm "Fairway" design system. It CONSOLIDATES four previously-scattered
- * team surfaces into ONE destination with sub-tabs across the top:
+ * The PLAYER "Team Hub" (route /golf/dashboard/team-hub, player role) as a
+ * BENTO OVERVIEW ("Locker room" direction, 2026-08-18). Every team domain is
+ * one glanceable card, sized by urgency, and each card routes to its CANONICAL
+ * detail page (TEAM_HUB_CARD_ROUTES in ./team-hub-routes) — the sub-tab layer
+ * this surface used to carry is gone, and the server page redirects the old
+ * `?tab=` deep links to the same destinations, so no pre-redesign link breaks:
  *
- *     Tasks · Announcements · Travel · Class schedule
+ *     Tasks         → /dashboard/tasks           (inline complete stays here)
+ *     Announcements → /dashboard/announcements
+ *     Travel        → /dashboard/travel?trip=…   (next trip auto-selects)
+ *     Classes       → /dashboard/classes
+ *     Teammates     → /dashboard/roster
  *
- * This is a PRESENTATION + LAYOUT rebuild — it does NOT fetch, reshape, or
+ * This is a PRESENTATION + LAYOUT surface — it does NOT fetch, reshape, or
  * duplicate any business data. The server page (team-hub/page.tsx) fetches the
- * four datasets with the SAME queries the player Hub uses and passes them down.
- * Every sub-tab REUSES the Hub's existing Fairway-native building blocks so the
- * write boundaries are preserved exactly:
+ * same datasets the tabbed hub used and passes them down, each with an honest
+ * per-domain load-error flag (never render a failed read as a quiet week).
+ * Write boundaries are preserved exactly:
  *
- *   • Tasks         → TaskRow rows; the ONE optimistic write (completeTask) lives
- *                     in FairwayTeamHubWrapper (cloned from FairwayPlayerHubWrapper)
- *                     — never in the server page, never destructive.
- *   • Announcements → AnnouncementsList (self-contained: owns its own
- *                     acknowledgeAnnouncement optimistic path + badge refetch).
- *   • Travel        → TripRow + TripDetailSheet (read-only; itinerary writes are
- *                     coach-only and stay out of the player surface).
- *   • Class schedule→ a READ-ONLY schedule view (links out to /dashboard/classes
- *                     for edits) — deliberately NOT duplicating that page's
- *                     destructive delete-then-reinsert write surface.
+ *   • Tasks    → TaskRow rows; the ONE optimistic write (completeTask) lives in
+ *                FairwayTeamHubWrapper — never in the server page, never
+ *                destructive. Because these rows are interactive, the Tasks
+ *                card is NOT a whole-card link (design-system invariant: no
+ *                interactive children inside a fully-clickable element) — its
+ *                header and footer are the links instead.
+ *   • Announcements / Travel / Classes / Teammates → read-only previews with
+ *                NO nested interactive children, so each whole card is one
+ *                <Link>. On a load error the card renders as a plain Surface
+ *                with a retry button instead (retry = router.refresh()).
+ *
+ * Trip recency runs on the TEAM's wall clock: the server passes
+ * `todayInTeamZone` (YYYY-MM-DD via todayIsoInZone) and the countdown is pure
+ * date-string arithmetic — no viewer-clock reads, no hydration drift.
  *
  * ADDITIVE + GATED. Renders inside a `.fairway-ds` scope on `bg-canvas` (the
- * page supplies the scope wrapper). AnnouncementsList's useNotificationBadges()
- * is fine because the dashboard layout provides the badge Provider.
+ * page supplies the scope wrapper).
  * ========================================================================== */
 
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ClipboardList, GraduationCap, Megaphone, Plane } from 'lucide-react';
+import {
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  GraduationCap,
+  Megaphone,
+  Plane,
+  Users,
+} from 'lucide-react';
 
 import { completeTask } from '@/app/golf/actions/tasks';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
-import {
-  ViewHeader,
-  Button,
-  Surface,
-  EmptyState,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-  fairwayToast,
-} from '@/components/fairway';
+import { ViewHeader, Button, Surface, EmptyState, fairwayToast } from '@/components/fairway';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { formatTimeDisplay, formatDaysDisplay } from '@/lib/utils/schedule-parser';
 
-import {
-  SectionTitle,
-  TripRow,
-  TripDetailSheet,
-  TaskRow,
-  AnnouncementsList,
-  NoUpcomingTrips,
-  NoTasks,
-  type TripData,
-  type PlayerTask,
-} from '../hub/hub-parts';
+import { TaskRow, type TripData, type PlayerTask } from '../hub/hub-parts';
+import { TEAM_HUB_CARD_ROUTES } from './team-hub-routes';
 
 /* ─────────────────────────────────────────────────────────────────────────
  * A read-only class schedule row shape (subset of golf_player_classes). The
- * Team Hub Class tab DISPLAYS the schedule; all edits route to the canonical
+ * Classes card DISPLAYS the schedule; all edits route to the canonical
  * /golf/dashboard/classes editor (whose write surface stays the single source).
  * ──────────────────────────────────────────────────────────────────────── */
 export interface TeamHubClass {
@@ -83,13 +82,12 @@ export interface TeamHubClass {
   color: string | null;
 }
 
-type TabId = 'overview' | 'tasks' | 'announcements' | 'travel' | 'classes';
-
-const TAB_IDS: readonly TabId[] = ['overview', 'tasks', 'announcements', 'travel', 'classes'];
-
-/** Resolve the `?tab=` deep-link (Cmd+K / bookmarks) to a valid tab. */
-function normalizeTab(raw: string | undefined): TabId {
-  return raw && (TAB_IDS as readonly string[]).includes(raw) ? (raw as TabId) : 'overview';
+/** The Teammates card's compact roster preview shape. */
+export interface TeamHubTeammate {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
 }
 
 export interface FairwayTeamHubProps {
@@ -100,37 +98,60 @@ export interface FairwayTeamHubProps {
   /**
    * True when the announcements fetch itself FAILED (RPC error, permission
    * denial, transient network hiccup) — distinguishes that from a genuinely
-   * empty `announcements` array so the tab never renders the cheerful "No
-   * announcements" state over a real outage (W1 count-coherence audit).
+   * empty `announcements` array so the card never renders the cheerful "No
+   * recent announcements" state over a real outage (W1 count-coherence audit).
    */
   announcementsLoadError?: boolean;
-  trips: TripData[];
+  /** The first itinerary whose STAY has not ended, resolved on the team clock
+   *  (return_date participates — an in-progress trip is still the next trip,
+   *  #1514). */
+  nextUpcomingTrip?: TripData | null;
   /** The travel itinerary read failed; never present that as no travel. */
   tripsLoadError?: boolean;
-  /** The first itinerary that has not yet departed, resolved on the team clock. */
-  nextUpcomingTrip?: TripData | null;
   classes: TeamHubClass[];
   /** The class schedule read failed; never present that as no classes. */
   classesLoadError?: boolean;
+  teammates: TeamHubTeammate[];
+  /** The roster read failed; never present that as an empty team. */
+  teammatesLoadError?: boolean;
+  /** The team wall-clock "today" (YYYY-MM-DD, server-resolved via todayIsoInZone). */
+  todayInTeamZone: string;
   teamName: string;
-  /** Deep-link target from the `?tab=` query (server-passed). Defaults to Overview. */
-  initialTab?: string;
   /** The legacy optimistic completeTask path (owned by the wrapper). */
   onCompleteTask: (taskId: string) => Promise<void>;
 }
 
+/** Max pending TaskRows previewed on the Tasks card before the footer count. */
+const TASK_PREVIEW_CAP = 5;
+/** Max class rows previewed on the Classes card. */
+const CLASS_PREVIEW_CAP = 3;
+/** Max avatars in the Teammates stack before the "+N" overflow chip. */
+const AVATAR_STACK_CAP = 6;
+
+/** Whole days between two YYYY-MM-DD strings (UTC-anchored, pure). */
+function diffDays(fromIso: string, toIso: string): number | null {
+  const from = Date.parse(`${fromIso}T00:00:00Z`);
+  const to = Date.parse(`${toIso}T00:00:00Z`);
+  if (Number.isNaN(from) || Number.isNaN(to)) return null;
+  return Math.round((to - from) / 86_400_000);
+}
+
 /**
- * Pure decision for the Announcements tab's branch (W1 count-coherence audit).
- * AnnouncementsList itself already renders an honest "Couldn't load" + retry
- * state when `loadError` is set (see hub-parts.tsx), but only if it's actually
- * mounted — a caller that gates on `announcements.length > 0` alone skips
- * straight to the plain "No announcements" EmptyState on a failed fetch,
- * because a failure and a genuine empty list both arrive as `[]`. A load
- * error must always route to AnnouncementsList so its error state can render.
- * Exported for deterministic unit tests.
+ * Human label for how far out the next trip's departure is, on the team
+ * clock. Departure in the past reads "In progress" — the server only nominates
+ * a trip whose stay has not ended. Exported for deterministic unit tests.
  */
-export function showAnnouncementsList(announcementCount: number, loadError: boolean): boolean {
-  return announcementCount > 0 || loadError;
+export function tripCountdownLabel(
+  departureDate: string | null | undefined,
+  todayInTeamZone: string,
+): string | null {
+  if (!departureDate) return null;
+  const days = diffDays(todayInTeamZone, departureDate);
+  if (days === null) return null;
+  if (days > 1) return `In ${days} days`;
+  if (days === 1) return 'Tomorrow';
+  if (days === 0) return 'Today';
+  return 'In progress';
 }
 
 export function FairwayTeamHub({
@@ -138,303 +159,363 @@ export function FairwayTeamHub({
   tasksLoadError = false,
   announcements,
   announcementsLoadError = false,
-  trips,
-  tripsLoadError = false,
   nextUpcomingTrip = null,
+  tripsLoadError = false,
   classes,
   classesLoadError = false,
+  teammates,
+  teammatesLoadError = false,
+  todayInTeamZone,
   teamName,
-  initialTab,
   onCompleteTask,
 }: FairwayTeamHubProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabId>(() => normalizeTab(initialTab));
-  const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-
-  // Keep the URL in sync with the active tab so the view is deep-linkable
-  // (Cmd+K / bookmarks) WITHOUT a server round-trip (history.replaceState, not
-  // router) — Overview is the default so it gets a clean URL.
-  const handleTabChange = (v: string) => {
-    const next = normalizeTab(v);
-    setActiveTab(next);
-    if (typeof window !== 'undefined') {
-      const url = next === 'overview' ? window.location.pathname : `${window.location.pathname}?tab=${next}`;
-      window.history.replaceState(null, '', url);
-    }
-  };
 
   // A single stable `now`, set on mount (day-granularity → no hydration text
-  // mismatch). TaskRow / TripRow accept a null `now` until it resolves.
+  // mismatch). TaskRow accepts a null `now` until it resolves; the trip
+  // countdown deliberately does NOT read it (team clock only, see header).
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     setNow(new Date());
   }, []);
 
-  const pendingTasks = tasks.filter((t) => t.status !== 'completed');
-  const completedTasks = tasks.filter((t) => t.status === 'completed');
-
-  const openTrip = (trip: TripData) => {
-    setSelectedTrip(trip);
-    setSheetOpen(true);
-  };
   const retryLoad = () => router.refresh();
 
+  const pendingTasks = tasks.filter((t) => t.status !== 'completed');
+  const previewTasks = pendingTasks.slice(0, TASK_PREVIEW_CAP);
+
+  const countdown = nextUpcomingTrip
+    ? tripCountdownLabel(nextUpcomingTrip.departure_date, todayInTeamZone)
+    : null;
+
+  const latestAnnouncement = announcements[0] ?? null;
+  const needsAckCount = announcements.filter(
+    (a) => a.requires_acknowledgement && !a.has_player_acknowledged,
+  ).length;
+
+  const previewClasses = classes.slice(0, CLASS_PREVIEW_CAP);
+
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6 md:py-10">
-      {/* ── ONE masthead ─────────────────────────────────────────────────── */}
+    <div className="mx-auto w-full max-w-4xl px-4 py-6 md:px-6 md:py-10">
       <ViewHeader
         eyebrow={teamName}
         title="Team Hub"
-        description="Tasks, announcements, travel, and your class schedule — all in one place."
+        description="Your team at a glance — open a card for the full picture."
         className="mb-8"
       />
 
-      {/* ── Sub-tabs across the top ──────────────────────────────────────── */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList aria-label="Team hub sections">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="announcements">Announcements</TabsTrigger>
-          <TabsTrigger value="travel">Travel</TabsTrigger>
-          <TabsTrigger value="classes">Class schedule</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {/* ═══════════ TASKS — interactive rows, so header/footer link ═══════ */}
+        <Surface padding="md" className="flex flex-col gap-4 md:row-span-2">
+          <Link
+            href={TEAM_HUB_CARD_ROUTES.tasks}
+            className="group flex items-center justify-between gap-2 rounded-fw-sm"
+          >
+            <span className="flex items-center gap-2">
+              <h2 className="font-fw-sans text-body-sm font-semibold text-text-secondary">Tasks</h2>
+              {!tasksLoadError && pendingTasks.length > 0 ? (
+                <span className="rounded-full bg-surface-sunken px-2 font-fw-mono text-caption text-text-tertiary">
+                  {pendingTasks.length} open
+                </span>
+              ) : null}
+            </span>
+            <ChevronRight
+              className="h-4 w-4 text-text-tertiary transition-transform duration-150 group-hover:translate-x-0.5"
+              aria-hidden
+            />
+          </Link>
 
-        {/* ═══════════ OVERVIEW ═══════════ */}
-        <TabsContent value="overview">
-          <TeamOperationsOverview
-            tasks={tasks}
-            tasksLoadError={tasksLoadError}
-            announcements={announcements}
-            announcementsLoadError={announcementsLoadError}
-            tripsLoadError={tripsLoadError}
-            nextUpcomingTrip={nextUpcomingTrip}
-            classes={classes}
-            classesLoadError={classesLoadError}
-            onOpenTab={handleTabChange}
-            onRetryLoad={retryLoad}
-          />
-        </TabsContent>
-
-        {/* ═══════════ TASKS ═══════════ */}
-        <TabsContent value="tasks">
           {tasksLoadError ? (
-            <TeamHubLoadError
-              title="Couldn't load your tasks"
-              description="Try again to see your assigned work."
+            <EmptyState
+              variant="subtle"
               icon={ClipboardList}
-              onRetry={retryLoad}
+              title="Couldn't load tasks"
+              description="Try again to see your assigned work."
+              action={
+                <Button type="button" variant="secondary" size="sm" onClick={retryLoad}>
+                  Try again
+                </Button>
+              }
             />
-          ) : tasks.length > 0 ? (
-            <div className="flex flex-col gap-8">
-              {pendingTasks.length > 0 ? (
-                <section>
-                  <SectionTitle count={pendingTasks.length}>To-do</SectionTitle>
-                  <Surface padding="sm" className="flex flex-col gap-1.5">
-                    {pendingTasks.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        now={now}
-                        onComplete={() => onCompleteTask(task.id)}
-                      />
-                    ))}
-                  </Surface>
-                </section>
-              ) : null}
-              {completedTasks.length > 0 ? (
-                <section>
-                  <SectionTitle count={completedTasks.length}>Completed</SectionTitle>
-                  <Surface padding="sm" className="flex flex-col gap-1.5">
-                    {completedTasks.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        now={now}
-                        onComplete={() => onCompleteTask(task.id)}
-                      />
-                    ))}
-                  </Surface>
-                </section>
-              ) : null}
-            </div>
-          ) : (
-            <NoTasks />
-          )}
-        </TabsContent>
-
-        {/* ═══════════ ANNOUNCEMENTS ═══════════ (self-contained acknowledge;
-            AnnouncementsList renders null when empty, so guard with an honest
-            empty-state so the tab is never blank — but a LOAD FAILURE must
-            still route to AnnouncementsList (loadError) rather than the plain
-            "No announcements" state, or an outage reads as a genuinely quiet
-            team (W1 count-coherence audit).
-              P152 — this tab's data comes from get_player_hub_announcements(),
-            which (server-side, outside this component) hard-windows to posts
-            published in the last 30 days. The dedicated /dashboard/announcements
-            page has no such window, so a team with older posts can legitimately
-            show 4 there and 0 here — that is NOT a bug in this component, it's
-            two different server queries. Rather than let the empty state imply
-            "your coach has never posted", the copy is honest about the 30-day
-            scope and always offers a way to the full history. */}
-        <TabsContent value="announcements">
-          {showAnnouncementsList(announcements.length, announcementsLoadError) ? (
-            <AnnouncementsList announcements={announcements} loadError={announcementsLoadError} />
-          ) : (
-            <Surface padding="sm">
-              <EmptyState
-                variant="subtle"
-                icon={Megaphone}
-                title="No recent announcements"
-                description="Nothing posted in the last 30 days. Older announcements from your coach still live on the full Announcements page."
-                action={
-                  <Button asChild variant="secondary" size="sm" rightIcon={<ArrowRight className="h-4 w-4" />}>
-                    <Link href="/golf/dashboard/announcements">View all announcements</Link>
-                  </Button>
-                }
-              />
-            </Surface>
-          )}
-        </TabsContent>
-
-        {/* ═══════════ TRAVEL ═══════════ (read-only) */}
-        <TabsContent value="travel">
-          {tripsLoadError ? (
-            <TeamHubLoadError
-              title="Couldn't load travel plans"
-              description="Try again to see your team itineraries."
-              icon={Plane}
-              onRetry={retryLoad}
-            />
-          ) : trips.length > 0 ? (
-            <div className="flex flex-col gap-2">
-              {trips.map((trip) => (
-                <TripRow key={trip.id} trip={trip} now={now} onOpen={() => openTrip(trip)} />
+          ) : previewTasks.length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              {previewTasks.map((task) => (
+                <TaskRow key={task.id} task={task} now={now} onComplete={() => onCompleteTask(task.id)} />
               ))}
             </div>
           ) : (
-            <NoUpcomingTrips />
+            <EmptyState
+              variant="subtle"
+              icon={CheckCircle2}
+              title="You're all caught up"
+              description="Anything your coach assigns lands here, with due dates up front."
+            />
           )}
-        </TabsContent>
 
-        {/* ═══════════ CLASS SCHEDULE ═══════════ (read-only; edits route out) */}
-        <TabsContent value="classes">
-          <ClassScheduleReadonly classes={classes} loadError={classesLoadError} onRetry={retryLoad} />
-        </TabsContent>
+          {!tasksLoadError ? (
+            <div className="mt-auto">
+              <Link
+                href={TEAM_HUB_CARD_ROUTES.tasks}
+                className="font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-800"
+              >
+                {pendingTasks.length > 0 ? `All tasks · ${pendingTasks.length} open` : 'All tasks'}
+              </Link>
+            </div>
+          ) : null}
+        </Surface>
 
-      </Tabs>
+        {/* ═══════════ TRAVEL — read-only preview, whole card links ═════════ */}
+        {tripsLoadError ? (
+          <CardErrorState
+            label="Travel"
+            icon={Plane}
+            title="Couldn't load travel plans"
+            description="Try again to see your team itineraries."
+            onRetry={retryLoad}
+          />
+        ) : (
+          <CardLink
+            href={
+              nextUpcomingTrip
+                ? `${TEAM_HUB_CARD_ROUTES.travel}?trip=${encodeURIComponent(nextUpcomingTrip.id)}`
+                : TEAM_HUB_CARD_ROUTES.travel
+            }
+          >
+            <CardHeader label="Travel" />
+            {nextUpcomingTrip ? (
+              <div className="flex flex-col gap-1">
+                {countdown ? (
+                  <span className="font-fw-mono text-h2 font-semibold text-text-primary">{countdown}</span>
+                ) : null}
+                <p className="font-fw-sans text-body font-semibold text-text-primary">
+                  {nextUpcomingTrip.event_name || nextUpcomingTrip.destination || 'Team trip'}
+                </p>
+                <p className="font-fw-sans text-body-sm text-text-secondary">
+                  {[
+                    nextUpcomingTrip.destination,
+                    nextUpcomingTrip.departure_time
+                      ? `departs ${formatTimeDisplay(nextUpcomingTrip.departure_time)}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || 'Itinerary details inside'}
+                </p>
+              </div>
+            ) : (
+              <EmptyState
+                variant="subtle"
+                icon={Plane}
+                title="No upcoming travel"
+                description="Tournament travel shows up here with departure times and lodging."
+              />
+            )}
+          </CardLink>
+        )}
 
-      {/* Trip detail — Fairway Sheet (read-only), reused from the Hub. */}
-      <TripDetailSheet trip={selectedTrip} open={sheetOpen} onOpenChange={setSheetOpen} />
+        {/* ═══════════ ANNOUNCEMENTS — read-only preview, whole card links ══
+            P152 — this card's data comes from get_player_hub_announcements(),
+            which (server-side) hard-windows to posts published in the last 30
+            days. The dedicated /dashboard/announcements page has no such
+            window, so a team with older posts can legitimately show rows there
+            and none here — the empty copy is honest about that scope and the
+            card itself routes to the full history. A LOAD FAILURE renders the
+            retry state, never the quiet-team state (W1 audit; #1514 gave this
+            card the same retry affordance as its siblings). */}
+        {announcementsLoadError ? (
+          <CardErrorState
+            label="Announcements"
+            icon={Megaphone}
+            title="Couldn't load announcements"
+            description="Try again to see updates from your coach."
+            onRetry={retryLoad}
+          />
+        ) : (
+          <CardLink href={TEAM_HUB_CARD_ROUTES.announcements}>
+            <CardHeader
+              label="Announcements"
+              accent={
+                needsAckCount > 0 ? (
+                  <span className="rounded-full bg-accent-50 px-2 font-fw-mono text-caption text-accent-800">
+                    {needsAckCount} to acknowledge
+                  </span>
+                ) : null
+              }
+            />
+            {latestAnnouncement ? (
+              <div className="flex flex-col gap-1">
+                <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
+                  {latestAnnouncement.title}
+                </p>
+                <p className="font-fw-sans text-caption text-text-tertiary">
+                  {announcements.length === 1
+                    ? 'Latest from your coach'
+                    : `Latest of ${announcements.length} recent`}
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <p className="font-fw-sans text-body font-medium text-text-primary">
+                  No recent announcements
+                </p>
+                <p className="font-fw-sans text-body-sm text-text-tertiary">
+                  Nothing posted in the last 30 days. View all announcements for the full history.
+                </p>
+              </div>
+            )}
+          </CardLink>
+        )}
+
+        {/* ═══════════ CLASSES — read-only preview, whole card links ════════ */}
+        {classesLoadError ? (
+          <CardErrorState
+            label="Class schedule"
+            icon={GraduationCap}
+            title="Couldn't load your class schedule"
+            description="Try again to see your classes."
+            onRetry={retryLoad}
+          />
+        ) : (
+          <CardLink href={TEAM_HUB_CARD_ROUTES.classes}>
+            <CardHeader
+              label="Class schedule"
+              accent={
+                classes.length > CLASS_PREVIEW_CAP ? (
+                  <span className="rounded-full bg-surface-sunken px-2 font-fw-mono text-caption text-text-tertiary">
+                    {classes.length} classes
+                  </span>
+                ) : null
+              }
+            />
+            {previewClasses.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {previewClasses.map((c) => (
+                  <ClassPreviewRow key={c.id} klass={c} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                variant="subtle"
+                icon={GraduationCap}
+                title="No classes added yet"
+                description="Add your schedule and it mirrors into the team calendar so conflicts surface early."
+              />
+            )}
+          </CardLink>
+        )}
+
+        {/* ═══════════ TEAMMATES — read-only preview, whole card links ══════ */}
+        {teammatesLoadError ? (
+          <CardErrorState
+            label="Teammates"
+            icon={Users}
+            title="Couldn't load your roster"
+            description="Try again to see your teammates."
+            onRetry={retryLoad}
+            className="md:col-span-2"
+          />
+        ) : (
+          <CardLink href={TEAM_HUB_CARD_ROUTES.teammates} className="md:col-span-2">
+            <div className="flex flex-wrap items-center gap-4">
+              <CardHeader label="Teammates" className="flex-1 basis-40" />
+              {teammates.length > 0 ? (
+                <>
+                  <div className="flex items-center">
+                    {teammates.slice(0, AVATAR_STACK_CAP).map((tm, i) => (
+                      <TeammateAvatar key={tm.id} teammate={tm} stacked={i > 0} />
+                    ))}
+                    {teammates.length > AVATAR_STACK_CAP ? (
+                      <span className="-ml-2 grid h-8 w-8 place-items-center rounded-full border-2 border-surface bg-surface-sunken font-fw-mono text-caption font-semibold text-text-secondary">
+                        +{teammates.length - AVATAR_STACK_CAP}
+                      </span>
+                    ) : null}
+                  </div>
+                  <span className="font-fw-sans text-body-sm font-medium text-accent-700">View roster</span>
+                </>
+              ) : (
+                <span className="font-fw-sans text-body-sm text-text-tertiary">
+                  No teammates yet — your roster fills in as players join the team.
+                </span>
+              )}
+            </div>
+          </CardLink>
+        )}
+      </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * TeamOperationsOverview — an at-a-glance entry point for the player's real
- * team work. It deliberately summarizes the arrays already supplied by the
- * server page; detail tabs remain the single place for task completion and
- * other existing interactions.
+ * Card shells — read-only cards are ONE link each (no nested interactive
+ * children, per the design-system invariant), sharing Surface's resting
+ * treatment with a quiet hover tint + chevron slide as the affordance. A
+ * card in a load-error state swaps to a plain Surface with a retry button.
  * ──────────────────────────────────────────────────────────────────────── */
-function TeamOperationsOverview({
-  tasks,
-  tasksLoadError,
-  announcements,
-  announcementsLoadError,
-  tripsLoadError,
-  nextUpcomingTrip,
-  classes,
-  classesLoadError,
-  onOpenTab,
-  onRetryLoad,
-}: {
-  tasks: PlayerTask[];
-  tasksLoadError: boolean;
-  announcements: GolfAnnouncementMeta[];
-  announcementsLoadError: boolean;
-  tripsLoadError: boolean;
-  nextUpcomingTrip: TripData | null;
-  classes: TeamHubClass[];
-  classesLoadError: boolean;
-  onOpenTab: (tab: TabId) => void;
-  onRetryLoad: () => void;
-}) {
-  const outstandingTasks = tasks.filter((task) => task.status !== 'completed');
-  const newestAnnouncement = announcements[0];
-  const nextClass = classes[0];
 
+function CardLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <OperationsOverviewCard
-        icon={ClipboardList}
-        title="Tasks"
-        summary={
-          tasksLoadError
-            ? "Couldn't load tasks"
-            : outstandingTasks.length > 0
-            ? `${outstandingTasks.length} outstanding ${outstandingTasks.length === 1 ? 'task' : 'tasks'}`
-            : 'No outstanding tasks'
-        }
-        detail={tasksLoadError ? 'Try again to refresh your assigned work.' : outstandingTasks[0]?.title}
-        actionLabel={tasksLoadError ? 'Try again' : 'View all tasks'}
-        onOpen={tasksLoadError ? onRetryLoad : () => onOpenTab('tasks')}
-      />
-      <OperationsOverviewCard
-        icon={Megaphone}
-        title="Announcements"
-        summary={
-          announcementsLoadError
-            ? "Couldn't load announcements"
-            : newestAnnouncement
-              ? 'Latest team update'
-              : 'No recent announcements'
-        }
-        detail={newestAnnouncement?.title}
-        actionLabel="View all announcements"
-        onOpen={() => onOpenTab('announcements')}
-      />
-      <OperationsOverviewCard
-        icon={Plane}
-        title="Travel"
-        summary={tripsLoadError ? "Couldn't load travel plans" : nextUpcomingTrip ? 'Next trip' : 'No upcoming travel'}
-        detail={
-          tripsLoadError
-            ? 'Try again to refresh your team itineraries.'
-            : nextUpcomingTrip
-              ? [nextUpcomingTrip.event_name, nextUpcomingTrip.destination].filter(Boolean).join(' · ')
-              : undefined
-        }
-        actionLabel={tripsLoadError ? 'Try again' : 'View all travel'}
-        onOpen={tripsLoadError ? onRetryLoad : () => onOpenTab('travel')}
-      />
-      <OperationsOverviewCard
-        icon={GraduationCap}
-        title="Class schedule"
-        summary={classesLoadError ? "Couldn't load your class schedule" : nextClass ? 'Current schedule' : 'No classes on your schedule'}
-        detail={classesLoadError ? 'Try again to refresh your class schedule.' : nextClass?.class_name}
-        actionLabel={classesLoadError ? 'Try again' : 'View class schedule'}
-        onOpen={classesLoadError ? onRetryLoad : () => onOpenTab('classes')}
+    <Link href={href} className={`group block rounded-card ${className ?? ''}`}>
+      <Surface
+        padding="md"
+        className="flex h-full flex-col gap-3 transition-colors duration-150 group-hover:bg-surface-tint"
+      >
+        {children}
+      </Surface>
+    </Link>
+  );
+}
+
+function CardHeader({
+  label,
+  accent,
+  className,
+}: {
+  label: string;
+  accent?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`flex items-center justify-between gap-2 ${className ?? ''}`}>
+      <span className="flex items-center gap-2">
+        <h2 className="font-fw-sans text-body-sm font-semibold text-text-secondary">{label}</h2>
+        {accent}
+      </span>
+      <ChevronRight
+        className="h-4 w-4 text-text-tertiary transition-transform duration-150 group-hover:translate-x-0.5"
+        aria-hidden
       />
     </div>
   );
 }
 
-function TeamHubLoadError({
+function CardErrorState({
+  label,
+  icon,
   title,
   description,
-  icon: Icon,
   onRetry,
+  className,
 }: {
+  label: string;
+  icon: typeof ClipboardList;
   title: string;
   description: string;
-  icon: typeof ClipboardList;
   onRetry: () => void;
+  className?: string;
 }) {
   return (
-    <Surface padding="sm">
+    <Surface padding="md" className={`flex h-full flex-col gap-3 ${className ?? ''}`}>
+      <h2 className="font-fw-sans text-body-sm font-semibold text-text-secondary">{label}</h2>
       <EmptyState
         variant="subtle"
-        icon={Icon}
+        icon={icon}
         title={title}
         description={description}
         action={
@@ -447,144 +528,51 @@ function TeamHubLoadError({
   );
 }
 
-function OperationsOverviewCard({
-  icon: Icon,
-  title,
-  summary,
-  detail,
-  actionLabel,
-  onOpen,
-}: {
-  icon: typeof ClipboardList;
-  title: string;
-  summary: string;
-  detail?: string;
-  actionLabel: string;
-  onOpen: () => void;
-}) {
-  return (
-    <Surface padding="md" className="flex min-h-48 flex-col items-start">
-      <span className="grid h-10 w-10 place-items-center rounded-fw-md bg-surface-sunken text-accent-700">
-        <Icon aria-hidden className="h-4 w-4" />
-      </span>
-      <h2 className="mt-4 font-fw-sans text-h3 font-semibold text-text-primary">{title}</h2>
-      <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">{summary}</p>
-      {detail ? <p className="mt-1 line-clamp-2 font-fw-sans text-caption text-text-tertiary">{detail}</p> : null}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        rightIcon={<ArrowRight className="h-4 w-4" />}
-        onClick={onOpen}
-        className="mt-auto pt-5 text-accent-700"
-      >
-        {actionLabel}
-      </Button>
-    </Surface>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
- * ClassScheduleReadonly — a calm, readable display of the player's classes.
- * READ-ONLY by design: the canonical editor (with its add/import/delete +
- * calendar-mirror writes) stays at /golf/dashboard/classes. Honest-empty.
- * ──────────────────────────────────────────────────────────────────────── */
-function ClassScheduleReadonly({
-  classes,
-  loadError,
-  onRetry,
-}: {
-  classes: TeamHubClass[];
-  loadError: boolean;
-  onRetry: () => void;
-}) {
-  const manageLink = (
-    <Button asChild variant="secondary" rightIcon={<ArrowRight className="h-4 w-4" />}>
-      <Link href="/golf/dashboard/classes">Manage classes</Link>
-    </Button>
-  );
-
-  if (loadError) {
-    return (
-      <TeamHubLoadError
-        title="Couldn't load your class schedule"
-        description="Try again to see your classes."
-        icon={GraduationCap}
-        onRetry={onRetry}
-      />
-    );
-  }
-
-  if (classes.length === 0) {
-    return (
-      <div className="flex flex-col gap-4">
-        <SectionTitle>Class schedule</SectionTitle>
-        <Surface padding="lg" className="flex flex-col items-center gap-4 text-center">
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-50 text-accent-700">
-            <GraduationCap className="h-5 w-5" aria-hidden />
-          </span>
-          <div>
-            <p className="font-fw-display text-body-lg font-medium text-text-primary">
-              No classes added yet
-            </p>
-            <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
-              Add your class schedule and it mirrors into the team calendar so conflicts surface early.
-            </p>
-          </div>
-          {manageLink}
-        </Surface>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <SectionTitle count={classes.length}>Class schedule</SectionTitle>
-      <Surface padding="sm" className="flex flex-col gap-1">
-        {classes.map((c) => (
-          <ClassRow key={c.id} klass={c} />
-        ))}
-      </Surface>
-      <div className="flex justify-end">{manageLink}</div>
-    </div>
-  );
-}
-
-function ClassRow({ klass }: { klass: TeamHubClass }) {
+function ClassPreviewRow({ klass }: { klass: TeamHubClass }) {
   const time =
     klass.start_time && klass.end_time
       ? `${formatTimeDisplay(klass.start_time)} – ${formatTimeDisplay(klass.end_time)}`
       : klass.start_time
         ? formatTimeDisplay(klass.start_time)
         : null;
-  const when = [
-    klass.days && klass.days.length > 0 ? formatDaysDisplay(klass.days) : null,
-    time,
-  ]
+  const when = [klass.days && klass.days.length > 0 ? formatDaysDisplay(klass.days) : null, time]
     .filter(Boolean)
     .join(' · ');
-  const where = [klass.building, klass.room].filter(Boolean).join(' ');
 
   return (
-    <div className="flex items-center gap-3 rounded-fw-md px-3 py-2.5">
+    <div className="flex items-center gap-3">
       {/* Course color dot — the player's own per-class color, honestly shown. */}
       <span
         aria-hidden
         className="h-2.5 w-2.5 flex-shrink-0 rounded-full ring-1 ring-inset ring-border-strong"
         style={{ backgroundColor: klass.color || 'var(--fw-color-accent-500)' }}
       />
-      <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
-          {klass.class_name}
-        </p>
-        {when ? (
-          <p className="truncate font-fw-sans text-caption text-text-tertiary">{when}</p>
-        ) : null}
-      </div>
-      {where ? (
-        <span className="flex-shrink-0 font-fw-mono text-caption text-text-tertiary">{where}</span>
+      <p className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+        {klass.class_name}
+      </p>
+      {when ? (
+        <span className="flex-shrink-0 font-fw-mono text-caption text-text-tertiary">{when}</span>
       ) : null}
     </div>
+  );
+}
+
+function TeammateAvatar({ teammate, stacked }: { teammate: TeamHubTeammate; stacked: boolean }) {
+  const initials =
+    `${teammate.first_name?.[0] ?? ''}${teammate.last_name?.[0] ?? ''}`.toUpperCase() || '•';
+  const name = `${teammate.first_name ?? ''} ${teammate.last_name ?? ''}`.trim();
+  return (
+    <span
+      title={name || undefined}
+      className={`grid h-8 w-8 place-items-center overflow-hidden rounded-full border-2 border-surface bg-accent-100 font-fw-mono text-caption font-semibold text-accent-800 ${stacked ? '-ml-2' : ''}`}
+    >
+      {teammate.avatar_url ? (
+        /* Plain <img>: a 32px avatar chip — next/image adds nothing at this size. */
+        <img src={teammate.avatar_url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initials
+      )}
+    </span>
   );
 }
 
@@ -594,8 +582,9 @@ function ClassRow({ klass }: { klass: TeamHubClass }) {
  * Holds the SAME completeTask optimistic path as FairwayPlayerHubWrapper,
  * VERBATIM (optimistic setState → call the unchanged completeTask action →
  * revert on failure → router.refresh in a transition). The mutation is NOT in
- * the server page; it lives here in the client boundary. AnnouncementsList owns
- * its own acknowledge path; Travel + Classes are read-only on the player side.
+ * the server page; it lives here in the client boundary. All other card
+ * domains are read-only on this surface — their writes live on the detail
+ * pages the cards route to.
  * ──────────────────────────────────────────────────────────────────────── */
 export interface FairwayTeamHubWrapperProps {
   tasks: PlayerTask[];
@@ -603,14 +592,14 @@ export interface FairwayTeamHubWrapperProps {
   announcements: GolfAnnouncementMeta[];
   /** True when the announcements fetch itself failed (see FairwayTeamHubProps). */
   announcementsLoadError?: boolean;
-  trips: TripData[];
-  tripsLoadError?: boolean;
   nextUpcomingTrip?: TripData | null;
+  tripsLoadError?: boolean;
   classes: TeamHubClass[];
   classesLoadError?: boolean;
+  teammates: TeamHubTeammate[];
+  teammatesLoadError?: boolean;
+  todayInTeamZone: string;
   teamName: string;
-  /** Deep-link target from the `?tab=` query (server-passed). */
-  initialTab?: string;
 }
 
 export function FairwayTeamHubWrapper({
@@ -618,13 +607,14 @@ export function FairwayTeamHubWrapper({
   tasksLoadError = false,
   announcements,
   announcementsLoadError = false,
-  trips,
-  tripsLoadError = false,
   nextUpcomingTrip = null,
+  tripsLoadError = false,
   classes,
   classesLoadError = false,
+  teammates,
+  teammatesLoadError = false,
+  todayInTeamZone,
   teamName,
-  initialTab,
 }: FairwayTeamHubWrapperProps) {
   const router = useRouter();
   const badges = useNotificationBadges();
@@ -661,8 +651,8 @@ export function FairwayTeamHubWrapper({
         // Surface the failure so the silent revert is explained (gate B3 / Nielsen #1, #9).
         fairwayToast.error(result.error || 'Could not mark task complete. Please try again.');
       } else {
-        // The sidebar "Tasks" badge is a separate polled feed — refetch it so it
-        // drops immediately instead of waiting up to 45s (conn-golf-player
+        // The dark-rail "Team" badge is a separate polled feed — refetch it so
+        // it drops immediately instead of waiting up to 45s (conn-golf-player
         // Finding 3).
         void badges.refetch();
       }
@@ -680,13 +670,14 @@ export function FairwayTeamHubWrapper({
       tasksLoadError={tasksLoadError}
       announcements={announcements}
       announcementsLoadError={announcementsLoadError}
-      trips={trips}
-      tripsLoadError={tripsLoadError}
       nextUpcomingTrip={nextUpcomingTrip}
+      tripsLoadError={tripsLoadError}
       classes={classes}
       classesLoadError={classesLoadError}
+      teammates={teammates}
+      teammatesLoadError={teammatesLoadError}
+      todayInTeamZone={todayInTeamZone}
       teamName={teamName}
-      initialTab={initialTab}
       onCompleteTask={handleCompleteTask}
     />
   );

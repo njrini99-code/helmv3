@@ -106,6 +106,11 @@ describe('categorizeNotificationRow', () => {
     expect(categorizeNotificationRow(row)).toBe('tasks');
   });
 
+  it('routes announcement fan-out rows (data.announcement_id) to announcements under the shared event_reminder enum value', () => {
+    const row = notifRow({ type: 'event_reminder', data: { announcement_id: 'ann-1' } });
+    expect(categorizeNotificationRow(row)).toBe('announcements');
+  });
+
   it('routes a bare event_reminder (no task_type) to events', () => {
     const row = notifRow({ type: 'event_reminder', data: null });
     expect(categorizeNotificationRow(row)).toBe('events');

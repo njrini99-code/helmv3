@@ -2,20 +2,46 @@
 import { describe, it, expect } from 'vitest';
 import { createElement } from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { FairwayTeamHub, FairwayTeamHubWrapper, showAnnouncementsList } from './FairwayTeamHub';
+import { FairwayTeamHub, FairwayTeamHubWrapper, tripCountdownLabel } from './FairwayTeamHub';
+import { TEAM_HUB_CARD_ROUTES, LEGACY_TAB_ROUTES } from './team-hub-routes';
+import type { TripData } from '../hub/hub-parts';
 
 const fixture = {
   tasks: [],
   announcements: [],
-  trips: [],
   classes: [],
+  teammates: [],
+  todayInTeamZone: '2026-08-18',
   teamName: 'Wildcats Golf',
   onCompleteTask: async () => {},
 };
 
-describe('Team Hub operational overview', () => {
-  it('opens on an operational overview with direct access to each team workflow', () => {
+function makeTrip(overrides: Partial<TripData>): TripData {
+  return {
+    id: 'trip-1',
+    event_name: 'Firestone Invitational',
+    destination: 'Akron, OH',
+    transportation_type: 'van',
+    departure_date: '2026-08-21',
+    departure_time: null,
+    departure_location: null,
+    return_date: null,
+    return_time: null,
+    hotel_name: null,
+    hotel_address: null,
+    hotel_phone: null,
+    hotel_confirmation: null,
+    uniform_requirements: null,
+    gear_list: null,
+    room_assignments: null,
+    notes: null,
+    flight_info: null,
+    ...overrides,
+  };
+}
+
+describe('Team Hub bento overview', () => {
+  it('renders every team domain as a card with no tab layer', () => {
     render(createElement(FairwayTeamHub, fixture));
 
     expect(screen.getByRole('heading', { name: /team hub/i })).toBeVisible();
@@ -23,83 +49,65 @@ describe('Team Hub operational overview', () => {
     expect(screen.getByRole('heading', { name: /^announcements$/i })).toBeVisible();
     expect(screen.getByRole('heading', { name: /^travel$/i })).toBeVisible();
     expect(screen.getByRole('heading', { name: /class schedule/i })).toBeVisible();
-    expect(screen.queryByRole('tab', { name: /teammates/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^teammates$/i })).toBeVisible();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
-  it('switches from an overview action to the corresponding detail tab', async () => {
-    const user = userEvent.setup();
+  it('routes each card to its canonical detail page', () => {
     render(createElement(FairwayTeamHub, fixture));
 
-    await user.click(screen.getByRole('button', { name: /view all tasks/i }));
-
-    expect(screen.getByRole('tab', { name: /^tasks$/i })).toHaveAttribute('aria-selected', 'true');
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(hrefs).toContain(TEAM_HUB_CARD_ROUTES.tasks);
+    expect(hrefs).toContain(TEAM_HUB_CARD_ROUTES.announcements);
+    expect(hrefs).toContain(TEAM_HUB_CARD_ROUTES.travel);
+    expect(hrefs).toContain(TEAM_HUB_CARD_ROUTES.classes);
+    expect(hrefs).toContain(TEAM_HUB_CARD_ROUTES.teammates);
   });
 
-  it('maps every overview action to its detailed operation tab', async () => {
-    const user = userEvent.setup();
-    render(createElement(FairwayTeamHub, fixture));
+  it('deep-links the Travel card to the next trip so it auto-selects on the travel page', () => {
+    render(
+      createElement(FairwayTeamHub, {
+        ...fixture,
+        nextUpcomingTrip: makeTrip({ id: 'trip-42' }),
+      }),
+    );
 
-    for (const [action, tab] of [
-      ['View all tasks', 'Tasks'],
-      ['View all announcements', 'Announcements'],
-      ['View all travel', 'Travel'],
-      ['View class schedule', 'Class schedule'],
-    ] as const) {
-      await user.click(screen.getByRole('button', { name: action }));
-      expect(screen.getByRole('tab', { name: tab })).toHaveAttribute('aria-selected', 'true');
-      await user.click(screen.getByRole('tab', { name: 'Overview' }));
-    }
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(hrefs).toContain(`${TEAM_HUB_CARD_ROUTES.travel}?trip=trip-42`);
+    expect(screen.getByText('In 3 days')).toBeVisible();
+    expect(screen.getByText('Firestone Invitational')).toBeVisible();
   });
 
-  it('never calls a failed task, travel, or class read an empty team state', () => {
+  it('never calls a failed read an empty team state, and every failed card offers a retry (#1514)', () => {
     render(
       createElement(FairwayTeamHub, {
         ...fixture,
         tasksLoadError: true,
+        announcementsLoadError: true,
         tripsLoadError: true,
         classesLoadError: true,
+        teammatesLoadError: true,
       }),
     );
 
-    expect(screen.getByText("Couldn't load tasks")).toBeVisible();
-    expect(screen.getByText("Couldn't load travel plans")).toBeVisible();
-    expect(screen.getByText("Couldn't load your class schedule")).toBeVisible();
-    expect(screen.queryByText('No outstanding tasks')).not.toBeInTheDocument();
+    // EmptyState is a framer-motion reveal (initial opacity 0); jsdom never
+    // runs the animation, so presence — not toBeVisible — is the assertable
+    // truth for its text.
+    expect(screen.getByText("Couldn't load tasks")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't load announcements")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't load travel plans")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't load your class schedule")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't load your roster")).toBeInTheDocument();
+
+    // The announcements card gets the SAME retry affordance as its siblings
+    // (#1514 finding 2) — five failed domains, five retry buttons.
+    expect(screen.getAllByRole('button', { name: /try again/i })).toHaveLength(5);
+
+    expect(screen.queryByText("You're all caught up")).not.toBeInTheDocument();
+    expect(screen.queryByText('No recent announcements')).not.toBeInTheDocument();
     expect(screen.queryByText('No upcoming travel')).not.toBeInTheDocument();
-    expect(screen.queryByText('No classes on your schedule')).not.toBeInTheDocument();
-  });
-
-  it('only calls a future itinerary the next trip', () => {
-    render(
-      createElement(FairwayTeamHub, {
-        ...fixture,
-        trips: [
-          {
-            id: 'past-trip',
-            event_name: 'Spring Invitational',
-            destination: 'Augusta',
-            transportation_type: 'bus',
-            departure_date: '2026-03-01',
-            departure_time: null,
-            departure_location: null,
-            return_date: null,
-            return_time: null,
-            hotel_name: null,
-            hotel_address: null,
-            hotel_phone: null,
-            hotel_confirmation: null,
-            uniform_requirements: null,
-            gear_list: null,
-            room_assignments: null,
-            notes: null,
-            flight_info: null,
-          },
-        ],
-      }),
-    );
-
-    expect(screen.getByText('No upcoming travel')).toBeVisible();
-    expect(screen.queryByText('Next trip')).not.toBeInTheDocument();
+    expect(screen.queryByText('No classes added yet')).not.toBeInTheDocument();
+    expect(screen.queryByText(/no teammates yet/i)).not.toBeInTheDocument();
   });
 
   it('adopts refreshed tasks after a previously failed task read recovers', () => {
@@ -110,7 +118,7 @@ describe('Team Hub operational overview', () => {
       }),
     );
 
-    expect(screen.getByText("Couldn't load tasks")).toBeVisible();
+    expect(screen.getByText("Couldn't load tasks")).toBeInTheDocument();
 
     rerender(
       createElement(FairwayTeamHubWrapper, {
@@ -136,28 +144,72 @@ describe('Team Hub operational overview', () => {
 });
 
 /* ---------------------------------------------------------------------------
- * showAnnouncementsList (W1 count-coherence audit)
- * ----------------------------------------------------------------------------
- * The Team Hub Announcements tab folded a FAILED fetch into a bare `[]`, then
- * gated on `announcements.length > 0` alone — so a load error rendered the
- * exact same "No announcements" EmptyState as a genuinely empty team, even
- * though the dedicated /dashboard/announcements page (a separate query path)
- * could still show real rows for the same team. A load error must always
- * route to AnnouncementsList so ITS OWN honest "Couldn't load" + retry state
- * (hub-parts.tsx) has a chance to render, regardless of the empty array.
- * No time, no I/O — pure function only.
+ * tripCountdownLabel — pure team-clock date-string arithmetic (no viewer
+ * clock, no hydration drift). The server only nominates a trip whose STAY has
+ * not ended (return_date participates, #1514 finding 1), so a departure in
+ * the past reads "In progress".
  * ------------------------------------------------------------------------- */
-
-describe('showAnnouncementsList', () => {
-  it('routes to AnnouncementsList when there are real announcements', () => {
-    expect(showAnnouncementsList(4, false)).toBe(true);
+describe('tripCountdownLabel', () => {
+  it('counts down future departures on the team clock', () => {
+    expect(tripCountdownLabel('2026-08-21', '2026-08-18')).toBe('In 3 days');
   });
 
-  it('routes to AnnouncementsList on a load failure even with zero announcements (the regression)', () => {
-    expect(showAnnouncementsList(0, true)).toBe(true);
+  it('says Tomorrow and Today at the boundaries', () => {
+    expect(tripCountdownLabel('2026-08-19', '2026-08-18')).toBe('Tomorrow');
+    expect(tripCountdownLabel('2026-08-18', '2026-08-18')).toBe('Today');
   });
 
-  it('shows the plain "No announcements" empty state only for a genuinely empty, successful fetch', () => {
-    expect(showAnnouncementsList(0, false)).toBe(false);
+  it('calls a departed-but-not-returned trip In progress', () => {
+    expect(tripCountdownLabel('2026-08-16', '2026-08-18')).toBe('In progress');
+  });
+
+  it('returns null rather than a fabricated label for missing or malformed dates', () => {
+    expect(tripCountdownLabel(null, '2026-08-18')).toBeNull();
+    expect(tripCountdownLabel('', '2026-08-18')).toBeNull();
+    expect(tripCountdownLabel('not-a-date', '2026-08-18')).toBeNull();
+  });
+});
+
+/* ---------------------------------------------------------------------------
+ * Legacy `?tab=` deep links — every tab the old hub ever had must resolve to
+ * the canonical page its card now routes to; `overview` was the hub itself
+ * and deliberately has no redirect entry.
+ * ------------------------------------------------------------------------- */
+describe('LEGACY_TAB_ROUTES', () => {
+  it('maps every retired tab to its canonical detail page', () => {
+    expect(LEGACY_TAB_ROUTES).toEqual({
+      tasks: '/golf/dashboard/tasks',
+      announcements: '/golf/dashboard/announcements',
+      travel: '/golf/dashboard/travel',
+      classes: '/golf/dashboard/classes',
+      teammates: '/golf/dashboard/roster',
+    });
+  });
+
+  it('leaves overview (and unknown values) rendering the hub itself', () => {
+    expect(LEGACY_TAB_ROUTES.overview).toBeUndefined();
+  });
+});
+
+/* ---------------------------------------------------------------------------
+ * W1 count-coherence audit, restated for the bento: a failure and a genuine
+ * empty list both arrive as `[]`, so the card branches on the error flag
+ * FIRST — a load error must never render the quiet-team "No recent
+ * announcements" state. (The old showAnnouncementsList() helper encoded this;
+ * the bento enforces it structurally, so the proof is a render, not a unit.)
+ * ------------------------------------------------------------------------- */
+describe('announcements count coherence (W1)', () => {
+  it('renders the quiet-team state only for a genuinely empty, successful fetch', () => {
+    render(createElement(FairwayTeamHub, fixture));
+    expect(screen.getByText('No recent announcements')).toBeVisible();
+    expect(screen.getByText(/last 30 days/i)).toBeVisible();
+  });
+
+  it('renders the failure state — never the quiet-team state — on a load error', () => {
+    render(createElement(FairwayTeamHub, { ...fixture, announcementsLoadError: true }));
+    // Presence, not toBeVisible: EmptyState's framer-motion reveal keeps
+    // opacity 0 in jsdom (no animation runs).
+    expect(screen.getByText("Couldn't load announcements")).toBeInTheDocument();
+    expect(screen.queryByText('No recent announcements')).not.toBeInTheDocument();
   });
 });

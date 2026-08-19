@@ -8,13 +8,14 @@ import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamHubWrapper } from '@/components/fairway/pages/team-hub';
+import { LEGACY_TAB_ROUTES } from '@/components/fairway/pages/team-hub/team-hub-routes';
 import { EmptyState, Button, FeatureUnavailable } from '@/components/fairway';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
   title: 'Team Hub | Helm Golf',
-  description: 'Tasks, announcements, travel, and your class schedule — all in one place.',
+  description: 'Your team at a glance — tasks, announcements, travel, classes, and teammates.',
 };
 
 interface RawAssignment {
@@ -28,8 +29,14 @@ export default async function TeamHubPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  // Deep-link target (Cmd+K / bookmarks): /team-hub?tab=travel etc.
-  const initialTab = (await searchParams)?.tab;
+  // Legacy deep links (Cmd+K / bookmarks): the tabbed hub's /team-hub?tab=X
+  // URLs now redirect to the canonical detail pages the bento cards route to.
+  // `overview` (and any unknown value) was the hub itself and just renders it.
+  const legacyTab = (await searchParams)?.tab;
+  const legacyTarget = legacyTab ? LEGACY_TAB_ROUTES[legacyTab] : undefined;
+  if (legacyTarget) {
+    redirect(legacyTarget);
+  }
 
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
@@ -113,7 +120,7 @@ export default async function TeamHubPage({
   // Fetch the player-facing datasets in parallel — SAME queries the player Hub uses.
   // (golf_task_assignments + the casts mirror hub/page.tsx because the table is
   // not in the generated types.)
-  const [tripsResult, tasksRaw, announcementsResult, classesResult, teamResult] = await Promise.all([
+  const [tripsResult, tasksRaw, announcementsResult, classesResult, teamResult, teammatesResult] = await Promise.all([
     supabase
       .from('golf_travel_itineraries')
       .select('*')
@@ -138,6 +145,16 @@ export default async function TeamHubPage({
     // "overdue" has to be decided on the team's wall clock.
     supabase.from('golf_teams').select('name, timezone').eq('id', teamId).maybeSingle(),
 
+    // Teammates — the roster preview on the Teammates card (SAME membership
+    // filter the standalone roster route uses; excludes the viewer). F083:
+    // active members only, so pending/removed rows never surface. Compact
+    // select: the card renders avatars + names, nothing more.
+    supabase
+      .from('golf_team_members')
+      .select('player:golf_players!inner (id, first_name, last_name, avatar_url)')
+      .eq('team_id', teamId)
+      .eq('status', 'active')
+      .neq('player_id', player.id),
   ]);
 
   // ── Trips (jsonb → string, text[] → csv) — verbatim from hub/page.tsx ──────
@@ -146,6 +163,7 @@ export default async function TeamHubPage({
     ['tasks', tasksRaw.error],
     ['classes', classesResult.error],
     ['team', teamResult.error],
+    ['teammates', teammatesResult.error],
   ] as const) {
     if (!failed) continue;
     void logServerError(
@@ -197,13 +215,17 @@ export default async function TeamHubPage({
   }));
 
   // `departure_date` is a DATE column. Resolve "next" against the team's wall
-  // clock, not the deployment's UTC date, and keep completed itineraries in the
-  // Travel tab where they belong. A past itinerary must never be called the
-  // next trip just because it is first in an ascending list.
+  // clock, not the deployment's UTC date. The STAY defines relevance, not the
+  // departure: a trip that departed yesterday but returns tomorrow is still
+  // the player's current trip (#1514 — a departure-only predicate told a
+  // mid-trip player there was no travel), while a past itinerary must never
+  // be called next just because it is first in an ascending list.
   const teamTimeZone = teamResult.data?.timezone || 'America/New_York';
-  const nextUpcomingTrip = trips.find(
-    (trip) => trip.departure_date && trip.departure_date >= todayIsoInZone(teamTimeZone),
-  ) ?? null;
+  const todayInTeamZone = todayIsoInZone(teamTimeZone);
+  const nextUpcomingTrip = trips.find((trip) => {
+    const stayEnd = trip.return_date || trip.departure_date;
+    return Boolean(stayEnd) && stayEnd >= todayInTeamZone;
+  }) ?? null;
 
   // ── Tasks from golf_task_assignments → golf_tasks — verbatim from hub ──────
   const rawAssignments = (tasksRaw.data || []) as unknown as RawAssignment[];
@@ -287,6 +309,25 @@ export default async function TeamHubPage({
   // PlayerActionCenter's identical AnnouncementsList usage.
   const announcementsLoadError = !announcementsResult.success;
 
+  // ── Teammates (roster preview on the Teammates card) ───────────────────────
+  const teammates = (teammatesResult.data || [])
+    .filter((tm) => tm.player && !('error' in tm.player))
+    .map((tm) => {
+      const p = tm.player as {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        avatar_url: string | null;
+      };
+      return {
+        id: p.id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        avatar_url: p.avatar_url,
+      };
+    })
+    .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <FairwayTeamHubWrapper
@@ -294,13 +335,14 @@ export default async function TeamHubPage({
         tasksLoadError={Boolean(tasksRaw.error) || taskDetailsLoadError}
         announcements={announcements}
         announcementsLoadError={announcementsLoadError}
-        trips={trips}
-        tripsLoadError={Boolean(tripsResult.error)}
         nextUpcomingTrip={nextUpcomingTrip}
+        tripsLoadError={Boolean(tripsResult.error)}
         classes={classes}
         classesLoadError={Boolean(classesResult.error)}
+        teammates={teammates}
+        teammatesLoadError={Boolean(teammatesResult.error)}
+        todayInTeamZone={todayInTeamZone}
         teamName={teamResult.data?.name || 'Your team'}
-        initialTab={initialTab}
       />
     </div>
   );

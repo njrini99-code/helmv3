@@ -104,6 +104,10 @@ export function categorizeNotificationRow(row: Pick<RawNotificationRow, 'type' |
   const data = readJsonObject(row.data);
   if (typeof data.coachhelm_category === 'string') return 'coachhelm';
   if (data.task_type === 'task_reminder') return 'tasks';
+  // Announcement fan-out rows (announcements.ts createEnrichedAnnouncement)
+  // share the `event_reminder` enum value the same way task reminders do —
+  // the `data.announcement_id` tag is the authoritative signal.
+  if (typeof data.announcement_id === 'string') return 'announcements';
 
   switch (row.type) {
     case 'message':

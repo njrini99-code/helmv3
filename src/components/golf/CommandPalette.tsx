@@ -136,30 +136,21 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'settings', label: 'Settings', description: 'Account settings', icon: <IconSettings size={18} />, href: '/golf/dashboard/settings', keywords: ['account', 'profile'] },
   ];
 
-  // The player's Tasks / Announcements / Travel / Classes are consolidated
-  // into the Team Hub, so the palette deep-links into the matching sub-tab
-  // (and gains a top-level "Team Hub" command) instead of the old scattered
-  // routes.
+  // The Team Hub is a bento overview whose cards route to the canonical
+  // detail pages, so the palette's Tasks / Announcements / Travel / Classes
+  // entries link straight to those pages again (the old `?tab=` deep links
+  // are server-redirected there too) — plus a top-level "Team Hub" command
+  // for the overview itself.
   const playerActions: CommandItemSpec[] = (() => {
-    const TAB_FOR_ID: Record<string, 'tasks' | 'announcements' | 'travel' | 'classes'> = {
-      tasks: 'tasks',
-      announcements: 'announcements',
-      travel: 'travel',
-      classes: 'classes',
-    };
-    const remapped = playerQuickActions.map((a) => {
-      const tab = TAB_FOR_ID[a.id];
-      return tab ? { ...a, href: `/golf/dashboard/team-hub?tab=${tab}` } : a;
-    });
     const teamHubEntry: CommandItemSpec = {
       id: 'team-hub',
       label: 'Team Hub',
-      description: 'Tasks, announcements, travel & your classes',
+      description: 'Your team at a glance — tasks, announcements, travel, classes & teammates',
       icon: <IconLayoutGrid size={18} />,
       href: '/golf/dashboard/team-hub',
       keywords: ['team', 'hub', 'tasks', 'announcements', 'travel', 'classes', 'updates'],
     };
-    return [teamHubEntry, ...remapped];
+    return [teamHubEntry, ...playerQuickActions];
   })();
 
   const quickActions = isCoach ? coachQuickActions : playerActions;

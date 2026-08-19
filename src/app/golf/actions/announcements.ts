@@ -500,6 +500,40 @@ async function createEnrichedAnnouncementImpl(input: {
           }
 
           if (userRows && userRows.length > 0) {
+            // In-app bell fan-out: one `notifications` row per recipient, so a
+            // new announcement surfaces in the NotificationBell (badge + feed)
+            // and the dark-rail Team badge — not only in email/push. Mirrors
+            // task-reminders.ts's shared `event_reminder` enum idiom; the
+            // `data.announcement_id` tag is what categorizes the row as an
+            // announcement (unified-notifications-model.ts). SERVICE-ROLE for
+            // the same reason as the users read above: recipients derive from
+            // targetPlayerIds already authorized against the coach's own team,
+            // and RLS on `notifications` only permits self-inserts. Best-effort
+            // like the rest of this block: a failure logs, never blocks.
+            const { error: bellError } = await createAdminClient()
+              .from('notifications')
+              .insert(
+                userRows.map((u) => ({
+                  user_id: u.id,
+                  type: 'event_reminder' as const,
+                  title: validated.title,
+                  body:
+                    validated.body.length > 160
+                      ? `${validated.body.slice(0, 157)}…`
+                      : validated.body,
+                  action_url: '/golf/dashboard/announcements',
+                  data: { announcement_id: announcementId },
+                  read: false,
+                })),
+              );
+            if (bellError) {
+              await logServerError(
+                `[createEnrichedAnnouncement] bell notification insert failed for announcement ${announcementId}; ${userRows.length} recipient(s) will not see it in-app until they visit the page: ${describeError(bellError)}`,
+                { action: 'announcements.createEnrichedAnnouncement', featureArea: 'announcements' },
+                'warning',
+              );
+            }
+
             // Non-blocking: notify all players in parallel. send_email reflects
             // whether at least one addressable recipient was emailed.
             const emailResults = await Promise.allSettled(
