@@ -713,6 +713,7 @@ jobs:
       - database-types
       - schema-invariants
       - feature-knowledge
+      - bridge-env
       - typecheck
       - edge-functions
       - lint
@@ -727,7 +728,7 @@ jobs:
       - baseball-auth-smoke
     steps:
       - name: Fail if any required CI check failed
-        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
         run: |
           echo "One or more CI checks failed."
           exit 1
