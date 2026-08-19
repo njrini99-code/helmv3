@@ -38,7 +38,8 @@ import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
 import type { TeamLeakMaps, LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
 
-import { buildTeamBoardViewModel, fmtSg, weightedMean, type TeamBoardPlayerInput, type TeamBoardRowViewModel } from './buildTeamBoardViewModel';
+import { buildTeamBoardViewModel, fmtSg, TREND_SIGNAL_MIN_ROUNDS, weightedMean, type TeamBoardPlayerInput, type TeamBoardRowViewModel } from './buildTeamBoardViewModel';
+import { formatTeamStatsFreshness, type TeamStatsFreshness } from './teamStatsFreshness';
 
 // ============================================================================
 // PROPS — same shapes the route already resolves (page.tsx reuses its
@@ -74,6 +75,8 @@ export interface TeamStatsBoardProps {
   standingByPlayer: Map<string, Map<MetricId, PlayerStanding>>;
   /** Rounds across the whole roster in the last 30 days (already-fetched `allRounds`, filtered by date). */
   teamRounds30d: number;
+  /** Explicit source timestamps for values that contribute to right-side signals. */
+  freshness: TeamStatsFreshness;
 }
 
 const SG_CATEGORY_BARS: ReadonlyArray<{ metric: MetricId; label: string }> = [
@@ -156,7 +159,7 @@ const COLUMNS: MatrixColumn[] = [
   { key: 'signal', label: 'Signal' },
 ];
 
-export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intelligenceError = false, intelligenceSampleSize = 0, leakMaps, leakError = false, roundsError = false, standingByPlayer, teamRounds30d }: TeamStatsBoardProps) {
+export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intelligenceError = false, intelligenceSampleSize = 0, leakMaps, leakError = false, roundsError = false, standingByPlayer, teamRounds30d, freshness }: TeamStatsBoardProps) {
   const boardInput = React.useMemo(() => {
     const boardPlayers: TeamBoardPlayerInput[] = players.map((p) => ({
       id: p.id,
@@ -340,12 +343,16 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
         eyebrow="Team Stats"
         title="Team Stats"
         description={`Every player on ${teamName}'s roster: ranked, tracked, and measured against Tour.`}
+        meta={<p className="max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">{formatTeamStatsFreshness(freshness)}</p>}
         secondaryActions={
-          <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="md">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+            <Button asChild variant="secondary" size="md" className="min-w-0 flex-1 sm:flex-none">
+              <Link href="/golf/dashboard/coachhelm/chat">Ask CoachHelm</Link>
+            </Button>
+            <Button asChild variant="ghost" size="md" className="min-w-0 flex-1 sm:flex-none">
               <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
             </Button>
-            <IconButton variant="secondary" size="md" aria-label="Export team stats as CSV" onClick={handleExport} disabled={vm.rows.length === 0}>
+            <IconButton className="shrink-0" variant="secondary" size="md" aria-label="Export team stats as CSV" onClick={handleExport} disabled={vm.rows.length === 0}>
               <Download className="h-4 w-4" aria-hidden />
             </IconButton>
           </div>
@@ -360,6 +367,9 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
 
       {/* ── ROSTER BOARD — first, per spec §5.2 (roster before tornado/leak-map) ── */}
       <section className="mt-8">
+        <p className="mb-3 font-fw-sans text-caption text-text-secondary">
+          Trend signals begin after {TREND_SIGNAL_MIN_ROUNDS} completed rounds: five recent rounds compared with at least three prior rounds.
+        </p>
         {vm.rows.length === 0 ? (
           <InstrumentPanel depth="base">
             <p className="font-fw-sans text-body-sm text-text-secondary">No players on your roster yet.</p>

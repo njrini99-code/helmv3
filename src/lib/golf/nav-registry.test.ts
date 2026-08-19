@@ -161,6 +161,22 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
     });
   });
 
+  it('puts the player team workspace in operational order', () => {
+    const team = GOLF_PLAYER_HUBS.find((hub) => hub.id === 'team');
+
+    expect(team?.tabs?.map(({ label, href }) => [label, href])).toEqual([
+      ['Team Hub', '/golf/dashboard/team-hub'],
+      ['My Qualifiers', '/golf/dashboard/my-qualifiers'],
+      ['Roster', '/golf/dashboard/roster'],
+      ['Team Info', '/golf/dashboard/team'],
+    ]);
+    expect(
+      buildPlayerRailSections(ZERO_BADGES)
+        .flatMap((section) => section.items)
+        .find((item) => item.label === 'Team')?.href,
+    ).toBe('/golf/dashboard/team-hub');
+  });
+
   describe('every hub sub-tab href resolves to a real page on disk', () => {
     const allTabs = [
       ...GOLF_COACH_HUBS.flatMap((h) => h.tabs),

@@ -9,6 +9,7 @@ import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence'
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { TeamStatsBoard } from '@/components/golf/stats/team-board/TeamStatsBoard';
+import { earliestTimestamp } from '@/components/golf/stats/team-board/teamStatsFreshness';
 import { ViewHeader, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
@@ -75,6 +76,14 @@ export interface TeamPlayerStats {
   recent_scores?: number[];
 }
 
+function CoachHelmAction() {
+  return (
+    <Button asChild variant="secondary" size="md">
+      <Link href="/golf/dashboard/coachhelm/chat">Ask CoachHelm</Link>
+    </Button>
+  );
+}
+
 export default async function TeamStatsPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
@@ -103,9 +112,12 @@ export default async function TeamStatsPage() {
             title="No team yet"
             description="Create a team and add players to see team statistics, strokes-gained, and where the strokes leak."
             action={
-              <Button asChild variant="primary" size="md">
-                <Link href="/golf/dashboard/team">Create a team</Link>
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button asChild variant="primary" size="md">
+                  <Link href="/golf/dashboard/team">Create a team</Link>
+                </Button>
+                <CoachHelmAction />
+              </div>
             }
           />
         </div>
@@ -157,9 +169,12 @@ export default async function TeamStatsPage() {
               title="No players on your roster yet"
               description="Add players to your roster and their rounds will roll up here into team strokes-gained, leak maps, and per-player tiles."
               action={
-                <Button asChild variant="primary" size="md">
-                  <Link href="/golf/dashboard/roster">Add players to your roster</Link>
-                </Button>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button asChild variant="primary" size="md">
+                    <Link href="/golf/dashboard/roster">Add players to your roster</Link>
+                  </Button>
+                  <CoachHelmAction />
+                </div>
               }
             />
           </div>
@@ -463,9 +478,19 @@ export default async function TeamStatsPage() {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const thirtyDaysAgoIso = thirtyDaysAgo.toISOString().slice(0, 10);
   const teamRounds30d = (allRounds || []).filter((r) => r.round_date >= thirtyDaysAgoIso).length;
+  const intelligencePlayers = intelligenceResult.success && intelligenceResult.data ? intelligenceResult.data.players : [];
+  const freshness = {
+    roundRefreshMinutes: revalidate / 60,
+    statsCacheAsOf: earliestTimestamp(intelligencePlayers.map((player) => player.statsCacheUpdatedAt)),
+    statsCacheStale: intelligencePlayers.some((player) => player.statsCacheStale),
+    standingAsOf: earliestTimestamp(
+      Array.from(standingByPlayer.values()).flatMap((standing) => Array.from(standing.values(), (row) => row.computed_at)),
+    ),
+    oldestSignalInsightAsOf: earliestTimestamp(intelligencePlayers.map((player) => player.topInsightSourceUpdatedAt)),
+  };
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <TeamStatsBoard teamName={team?.name ?? 'Your Team'} players={playersWithStats} intelligenceByPlayer={intelligenceByPlayer} intelligenceError={intelligenceError} intelligenceSampleSize={intelligenceSampleSize} leakMaps={leakRes.success ? (leakRes.data ?? null) : null} leakError={leakError} roundsError={roundsError} standingByPlayer={standingByPlayer} teamRounds30d={teamRounds30d} />
+      <TeamStatsBoard teamName={team?.name ?? 'Your Team'} players={playersWithStats} intelligenceByPlayer={intelligenceByPlayer} intelligenceError={intelligenceError} intelligenceSampleSize={intelligenceSampleSize} leakMaps={leakRes.success ? (leakRes.data ?? null) : null} leakError={leakError} roundsError={roundsError} standingByPlayer={standingByPlayer} teamRounds30d={teamRounds30d} freshness={freshness} />
     </div>
   );
 }

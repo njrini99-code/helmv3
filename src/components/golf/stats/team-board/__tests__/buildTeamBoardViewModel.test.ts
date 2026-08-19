@@ -380,7 +380,7 @@ describe('buildTeamBoardViewModel', () => {
     expect(masonRow?.expand.links.fingerprint).toBe('/golf/dashboard/players/mason/game');
   });
 
-  it('reports "N rds to trend" for a cold-start player under the signal minimum', () => {
+  it('reports the full remaining-round count for a cold-start player under the signal minimum', () => {
     const p = player({ id: 'rookie', roundsPlayed: 5, scoringTrend: null });
     const vm = buildTeamBoardViewModel({
       players: [p],
@@ -389,7 +389,7 @@ describe('buildTeamBoardViewModel', () => {
       rounds30d: 3,
     });
     expect(vm.rows[0]?.signal.tone).toBe('quiet');
-    expect(vm.rows[0]?.signal.label).toBe(`${TREND_SIGNAL_MIN_ROUNDS - 5} rds to trend`);
+    expect(vm.rows[0]?.signal.label).toBe(`${TREND_SIGNAL_MIN_ROUNDS - 5} rounds to trend`);
   });
 
   it('produces an honest em-dash team scoring/SG when the roster has no data', () => {

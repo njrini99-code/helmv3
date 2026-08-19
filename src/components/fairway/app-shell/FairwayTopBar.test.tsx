@@ -50,6 +50,13 @@ function titleEl(container: HTMLElement): HTMLElement {
 }
 
 describe('FairwayTopBar — desktop-only chrome leaves the phone entirely', () => {
+  it('keeps desktop search in a dedicated center region', () => {
+    renderBar({ onSearchOpen: () => {} });
+
+    expect(screen.getByRole('button', { name: 'Open command menu' }))
+      .toHaveAttribute('data-layout-region', 'center');
+  });
+
   it('renders exactly ONE breadcrumb element (no leftover <md-only crumb copy)', () => {
     const { container } = renderBar();
     // There used to be TWO: the desktop `<nav aria-label="Breadcrumb">` trail

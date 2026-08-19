@@ -35,7 +35,7 @@
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, GraduationCap, Megaphone } from 'lucide-react';
+import { ArrowRight, ClipboardList, GraduationCap, Megaphone, Plane } from 'lucide-react';
 
 import { completeTask } from '@/app/golf/actions/tasks';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -64,10 +64,6 @@ import {
   type TripData,
   type PlayerTask,
 } from '../hub/hub-parts';
-import {
-  FairwayPlayerRoster,
-  type FairwayPlayerRosterPlayer,
-} from '../roster/FairwayPlayerRoster';
 
 /* ─────────────────────────────────────────────────────────────────────────
  * A read-only class schedule row shape (subset of golf_player_classes). The
@@ -87,17 +83,19 @@ export interface TeamHubClass {
   color: string | null;
 }
 
-type TabId = 'tasks' | 'announcements' | 'travel' | 'classes' | 'teammates';
+type TabId = 'overview' | 'tasks' | 'announcements' | 'travel' | 'classes';
 
-const TAB_IDS: readonly TabId[] = ['tasks', 'announcements', 'travel', 'classes', 'teammates'];
+const TAB_IDS: readonly TabId[] = ['overview', 'tasks', 'announcements', 'travel', 'classes'];
 
 /** Resolve the `?tab=` deep-link (Cmd+K / bookmarks) to a valid tab. */
 function normalizeTab(raw: string | undefined): TabId {
-  return raw && (TAB_IDS as readonly string[]).includes(raw) ? (raw as TabId) : 'tasks';
+  return raw && (TAB_IDS as readonly string[]).includes(raw) ? (raw as TabId) : 'overview';
 }
 
 export interface FairwayTeamHubProps {
   tasks: PlayerTask[];
+  /** The task assignment or task-detail read failed; never present that as no work. */
+  tasksLoadError?: boolean;
   announcements: GolfAnnouncementMeta[];
   /**
    * True when the announcements fetch itself FAILED (RPC error, permission
@@ -107,12 +105,15 @@ export interface FairwayTeamHubProps {
    */
   announcementsLoadError?: boolean;
   trips: TripData[];
+  /** The travel itinerary read failed; never present that as no travel. */
+  tripsLoadError?: boolean;
+  /** The first itinerary that has not yet departed, resolved on the team clock. */
+  nextUpcomingTrip?: TripData | null;
   classes: TeamHubClass[];
-  /** Teammates on the player's team (the roster, folded into the hub). */
-  teammates: FairwayPlayerRosterPlayer[];
-  playerName: string;
+  /** The class schedule read failed; never present that as no classes. */
+  classesLoadError?: boolean;
   teamName: string;
-  /** Deep-link target from the `?tab=` query (server-passed). Defaults to Tasks. */
+  /** Deep-link target from the `?tab=` query (server-passed). Defaults to Overview. */
   initialTab?: string;
   /** The legacy optimistic completeTask path (owned by the wrapper). */
   onCompleteTask: (taskId: string) => Promise<void>;
@@ -134,27 +135,31 @@ export function showAnnouncementsList(announcementCount: number, loadError: bool
 
 export function FairwayTeamHub({
   tasks,
+  tasksLoadError = false,
   announcements,
   announcementsLoadError = false,
   trips,
+  tripsLoadError = false,
+  nextUpcomingTrip = null,
   classes,
-  teammates,
+  classesLoadError = false,
   teamName,
   initialTab,
   onCompleteTask,
 }: FairwayTeamHubProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>(() => normalizeTab(initialTab));
   const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Keep the URL in sync with the active tab so the view is deep-linkable
   // (Cmd+K / bookmarks) WITHOUT a server round-trip (history.replaceState, not
-  // router) — Tasks is the default so it gets a clean URL.
+  // router) — Overview is the default so it gets a clean URL.
   const handleTabChange = (v: string) => {
     const next = normalizeTab(v);
     setActiveTab(next);
     if (typeof window !== 'undefined') {
-      const url = next === 'tasks' ? window.location.pathname : `${window.location.pathname}?tab=${next}`;
+      const url = next === 'overview' ? window.location.pathname : `${window.location.pathname}?tab=${next}`;
       window.history.replaceState(null, '', url);
     }
   };
@@ -173,6 +178,7 @@ export function FairwayTeamHub({
     setSelectedTrip(trip);
     setSheetOpen(true);
   };
+  const retryLoad = () => router.refresh();
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6 md:py-10">
@@ -187,16 +193,39 @@ export function FairwayTeamHub({
       {/* ── Sub-tabs across the top ──────────────────────────────────────── */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList aria-label="Team hub sections">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="travel">Travel</TabsTrigger>
           <TabsTrigger value="classes">Class schedule</TabsTrigger>
-          <TabsTrigger value="teammates">Teammates</TabsTrigger>
         </TabsList>
+
+        {/* ═══════════ OVERVIEW ═══════════ */}
+        <TabsContent value="overview">
+          <TeamOperationsOverview
+            tasks={tasks}
+            tasksLoadError={tasksLoadError}
+            announcements={announcements}
+            announcementsLoadError={announcementsLoadError}
+            tripsLoadError={tripsLoadError}
+            nextUpcomingTrip={nextUpcomingTrip}
+            classes={classes}
+            classesLoadError={classesLoadError}
+            onOpenTab={handleTabChange}
+            onRetryLoad={retryLoad}
+          />
+        </TabsContent>
 
         {/* ═══════════ TASKS ═══════════ */}
         <TabsContent value="tasks">
-          {tasks.length > 0 ? (
+          {tasksLoadError ? (
+            <TeamHubLoadError
+              title="Couldn't load your tasks"
+              description="Try again to see your assigned work."
+              icon={ClipboardList}
+              onRetry={retryLoad}
+            />
+          ) : tasks.length > 0 ? (
             <div className="flex flex-col gap-8">
               {pendingTasks.length > 0 ? (
                 <section>
@@ -270,7 +299,14 @@ export function FairwayTeamHub({
 
         {/* ═══════════ TRAVEL ═══════════ (read-only) */}
         <TabsContent value="travel">
-          {trips.length > 0 ? (
+          {tripsLoadError ? (
+            <TeamHubLoadError
+              title="Couldn't load travel plans"
+              description="Try again to see your team itineraries."
+              icon={Plane}
+              onRetry={retryLoad}
+            />
+          ) : trips.length > 0 ? (
             <div className="flex flex-col gap-2">
               {trips.map((trip) => (
                 <TripRow key={trip.id} trip={trip} now={now} onOpen={() => openTrip(trip)} />
@@ -283,15 +319,9 @@ export function FairwayTeamHub({
 
         {/* ═══════════ CLASS SCHEDULE ═══════════ (read-only; edits route out) */}
         <TabsContent value="classes">
-          <ClassScheduleReadonly classes={classes} />
+          <ClassScheduleReadonly classes={classes} loadError={classesLoadError} onRetry={retryLoad} />
         </TabsContent>
 
-        {/* ═══════════ TEAMMATES ═══════════ (the player roster, folded into the
-            hub; read-only teammate grid — header hidden since the hub masthead
-            + tab already title it). */}
-        <TabsContent value="teammates">
-          <FairwayPlayerRoster players={teammates} teamName={teamName} hideHeader />
-        </TabsContent>
       </Tabs>
 
       {/* Trip detail — Fairway Sheet (read-only), reused from the Hub. */}
@@ -301,16 +331,189 @@ export function FairwayTeamHub({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+ * TeamOperationsOverview — an at-a-glance entry point for the player's real
+ * team work. It deliberately summarizes the arrays already supplied by the
+ * server page; detail tabs remain the single place for task completion and
+ * other existing interactions.
+ * ──────────────────────────────────────────────────────────────────────── */
+function TeamOperationsOverview({
+  tasks,
+  tasksLoadError,
+  announcements,
+  announcementsLoadError,
+  tripsLoadError,
+  nextUpcomingTrip,
+  classes,
+  classesLoadError,
+  onOpenTab,
+  onRetryLoad,
+}: {
+  tasks: PlayerTask[];
+  tasksLoadError: boolean;
+  announcements: GolfAnnouncementMeta[];
+  announcementsLoadError: boolean;
+  tripsLoadError: boolean;
+  nextUpcomingTrip: TripData | null;
+  classes: TeamHubClass[];
+  classesLoadError: boolean;
+  onOpenTab: (tab: TabId) => void;
+  onRetryLoad: () => void;
+}) {
+  const outstandingTasks = tasks.filter((task) => task.status !== 'completed');
+  const newestAnnouncement = announcements[0];
+  const nextClass = classes[0];
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <OperationsOverviewCard
+        icon={ClipboardList}
+        title="Tasks"
+        summary={
+          tasksLoadError
+            ? "Couldn't load tasks"
+            : outstandingTasks.length > 0
+            ? `${outstandingTasks.length} outstanding ${outstandingTasks.length === 1 ? 'task' : 'tasks'}`
+            : 'No outstanding tasks'
+        }
+        detail={tasksLoadError ? 'Try again to refresh your assigned work.' : outstandingTasks[0]?.title}
+        actionLabel={tasksLoadError ? 'Try again' : 'View all tasks'}
+        onOpen={tasksLoadError ? onRetryLoad : () => onOpenTab('tasks')}
+      />
+      <OperationsOverviewCard
+        icon={Megaphone}
+        title="Announcements"
+        summary={
+          announcementsLoadError
+            ? "Couldn't load announcements"
+            : newestAnnouncement
+              ? 'Latest team update'
+              : 'No recent announcements'
+        }
+        detail={newestAnnouncement?.title}
+        actionLabel="View all announcements"
+        onOpen={() => onOpenTab('announcements')}
+      />
+      <OperationsOverviewCard
+        icon={Plane}
+        title="Travel"
+        summary={tripsLoadError ? "Couldn't load travel plans" : nextUpcomingTrip ? 'Next trip' : 'No upcoming travel'}
+        detail={
+          tripsLoadError
+            ? 'Try again to refresh your team itineraries.'
+            : nextUpcomingTrip
+              ? [nextUpcomingTrip.event_name, nextUpcomingTrip.destination].filter(Boolean).join(' · ')
+              : undefined
+        }
+        actionLabel={tripsLoadError ? 'Try again' : 'View all travel'}
+        onOpen={tripsLoadError ? onRetryLoad : () => onOpenTab('travel')}
+      />
+      <OperationsOverviewCard
+        icon={GraduationCap}
+        title="Class schedule"
+        summary={classesLoadError ? "Couldn't load your class schedule" : nextClass ? 'Current schedule' : 'No classes on your schedule'}
+        detail={classesLoadError ? 'Try again to refresh your class schedule.' : nextClass?.class_name}
+        actionLabel={classesLoadError ? 'Try again' : 'View class schedule'}
+        onOpen={classesLoadError ? onRetryLoad : () => onOpenTab('classes')}
+      />
+    </div>
+  );
+}
+
+function TeamHubLoadError({
+  title,
+  description,
+  icon: Icon,
+  onRetry,
+}: {
+  title: string;
+  description: string;
+  icon: typeof ClipboardList;
+  onRetry: () => void;
+}) {
+  return (
+    <Surface padding="sm">
+      <EmptyState
+        variant="subtle"
+        icon={Icon}
+        title={title}
+        description={description}
+        action={
+          <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
+            Try again
+          </Button>
+        }
+      />
+    </Surface>
+  );
+}
+
+function OperationsOverviewCard({
+  icon: Icon,
+  title,
+  summary,
+  detail,
+  actionLabel,
+  onOpen,
+}: {
+  icon: typeof ClipboardList;
+  title: string;
+  summary: string;
+  detail?: string;
+  actionLabel: string;
+  onOpen: () => void;
+}) {
+  return (
+    <Surface padding="md" className="flex min-h-48 flex-col items-start">
+      <span className="grid h-10 w-10 place-items-center rounded-fw-md bg-surface-sunken text-accent-700">
+        <Icon aria-hidden className="h-4 w-4" />
+      </span>
+      <h2 className="mt-4 font-fw-sans text-h3 font-semibold text-text-primary">{title}</h2>
+      <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">{summary}</p>
+      {detail ? <p className="mt-1 line-clamp-2 font-fw-sans text-caption text-text-tertiary">{detail}</p> : null}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        rightIcon={<ArrowRight className="h-4 w-4" />}
+        onClick={onOpen}
+        className="mt-auto pt-5 text-accent-700"
+      >
+        {actionLabel}
+      </Button>
+    </Surface>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
  * ClassScheduleReadonly — a calm, readable display of the player's classes.
  * READ-ONLY by design: the canonical editor (with its add/import/delete +
  * calendar-mirror writes) stays at /golf/dashboard/classes. Honest-empty.
  * ──────────────────────────────────────────────────────────────────────── */
-function ClassScheduleReadonly({ classes }: { classes: TeamHubClass[] }) {
+function ClassScheduleReadonly({
+  classes,
+  loadError,
+  onRetry,
+}: {
+  classes: TeamHubClass[];
+  loadError: boolean;
+  onRetry: () => void;
+}) {
   const manageLink = (
     <Button asChild variant="secondary" rightIcon={<ArrowRight className="h-4 w-4" />}>
       <Link href="/golf/dashboard/classes">Manage classes</Link>
     </Button>
   );
+
+  if (loadError) {
+    return (
+      <TeamHubLoadError
+        title="Couldn't load your class schedule"
+        description="Try again to see your classes."
+        icon={GraduationCap}
+        onRetry={onRetry}
+      />
+    );
+  }
 
   if (classes.length === 0) {
     return (
@@ -396,13 +599,15 @@ function ClassRow({ klass }: { klass: TeamHubClass }) {
  * ──────────────────────────────────────────────────────────────────────── */
 export interface FairwayTeamHubWrapperProps {
   tasks: PlayerTask[];
+  tasksLoadError?: boolean;
   announcements: GolfAnnouncementMeta[];
   /** True when the announcements fetch itself failed (see FairwayTeamHubProps). */
   announcementsLoadError?: boolean;
   trips: TripData[];
+  tripsLoadError?: boolean;
+  nextUpcomingTrip?: TripData | null;
   classes: TeamHubClass[];
-  teammates: FairwayPlayerRosterPlayer[];
-  playerName: string;
+  classesLoadError?: boolean;
   teamName: string;
   /** Deep-link target from the `?tab=` query (server-passed). */
   initialTab?: string;
@@ -410,12 +615,14 @@ export interface FairwayTeamHubWrapperProps {
 
 export function FairwayTeamHubWrapper({
   tasks: initialTasks,
+  tasksLoadError = false,
   announcements,
   announcementsLoadError = false,
   trips,
+  tripsLoadError = false,
+  nextUpcomingTrip = null,
   classes,
-  teammates,
-  playerName,
+  classesLoadError = false,
   teamName,
   initialTab,
 }: FairwayTeamHubWrapperProps) {
@@ -423,6 +630,13 @@ export function FairwayTeamHubWrapper({
   const badges = useNotificationBadges();
   const [tasks, setTasks] = useState(initialTasks);
   const [, startTransition] = useTransition();
+
+  // A retry calls `router.refresh()`, which streams a fresh server prop into
+  // this still-mounted client wrapper. Keep the optimistic local copy in sync
+  // with that prop so a recovered task read does not remain an empty array.
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
 
   const handleCompleteTask = useCallback(
     async (taskId: string) => {
@@ -463,12 +677,14 @@ export function FairwayTeamHubWrapper({
   return (
     <FairwayTeamHub
       tasks={tasks}
+      tasksLoadError={tasksLoadError}
       announcements={announcements}
       announcementsLoadError={announcementsLoadError}
       trips={trips}
+      tripsLoadError={tripsLoadError}
+      nextUpcomingTrip={nextUpcomingTrip}
       classes={classes}
-      teammates={teammates}
-      playerName={playerName}
+      classesLoadError={classesLoadError}
       teamName={teamName}
       initialTab={initialTab}
       onCompleteTask={handleCompleteTask}

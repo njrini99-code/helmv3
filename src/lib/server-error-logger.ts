@@ -520,7 +520,12 @@ async function captureServerTrace(
   }
 
   if (!shouldPersistAdminTables()) {
-    console.error('[ServerErrorLogger] not persisted off-prod', {
+    // `captureServerTrace` already sent the real exception/message to Sentry.
+    // The server console integration captures console.error as a *second*
+    // issue, and its structured payload becomes an unreadable `[object Object]`
+    // title. Keep this diagnostic in the log stream without manufacturing a
+    // duplicate issue.
+    console.warn('[ServerErrorLogger] not persisted off-prod', {
       severity,
       traceMessage: message,
       action: enriched.action ?? '',

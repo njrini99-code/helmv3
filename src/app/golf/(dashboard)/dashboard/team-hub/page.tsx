@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
+import { todayIsoInZone } from '@/lib/golf/timezone';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamHubWrapper } from '@/components/fairway/pages/team-hub';
 import { EmptyState, Button, FeatureUnavailable } from '@/components/fairway';
@@ -103,18 +104,16 @@ export default async function TeamHubPage({
     );
   }
 
-  const playerName = `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player';
-
-  // Every panel below reads `.data || []`, so a failed fetch renders as an
-  // empty panel — "no trips", "no tasks", "no teammates" — stated to the player
+  // Every panel below reads `.data || []`, so a failed fetch can otherwise
+  // render as an empty panel — "no trips" or "no tasks" — stated to the player
   // as fact. The Hub is deliberately tolerant (one dead panel should not take
   // the page down), so these still degrade; what changes is that the failure
   // now leaves a trace instead of looking like a quiet week.
 
-  // Fetch the four datasets in parallel — SAME queries the player Hub uses.
+  // Fetch the player-facing datasets in parallel — SAME queries the player Hub uses.
   // (golf_task_assignments + the casts mirror hub/page.tsx because the table is
   // not in the generated types.)
-  const [tripsResult, tasksRaw, announcementsResult, classesResult, teamResult, teammatesResult] = await Promise.all([
+  const [tripsResult, tasksRaw, announcementsResult, classesResult, teamResult] = await Promise.all([
     supabase
       .from('golf_travel_itineraries')
       .select('*')
@@ -139,20 +138,6 @@ export default async function TeamHubPage({
     // "overdue" has to be decided on the team's wall clock.
     supabase.from('golf_teams').select('name, timezone').eq('id', teamId).maybeSingle(),
 
-    // Teammates — the player roster, folded into the hub (SAME query the
-    // standalone player roster route used; excludes the viewer). F083: active
-    // members only, so pending/removed rows don't surface in the Teammates tab.
-    supabase
-      .from('golf_team_members')
-      .select(`
-        player:golf_players!inner (
-          id, first_name, last_name, avatar_url, handicap, graduation_year,
-          user:users(last_seen)
-        )
-      `)
-      .eq('team_id', teamId)
-      .eq('status', 'active')
-      .neq('player_id', player.id),
   ]);
 
   // ── Trips (jsonb → string, text[] → csv) — verbatim from hub/page.tsx ──────
@@ -161,7 +146,6 @@ export default async function TeamHubPage({
     ['tasks', tasksRaw.error],
     ['classes', classesResult.error],
     ['team', teamResult.error],
-    ['teammates', teammatesResult.error],
   ] as const) {
     if (!failed) continue;
     void logServerError(
@@ -212,11 +196,21 @@ export default async function TeamHubPage({
             : null,
   }));
 
+  // `departure_date` is a DATE column. Resolve "next" against the team's wall
+  // clock, not the deployment's UTC date, and keep completed itineraries in the
+  // Travel tab where they belong. A past itinerary must never be called the
+  // next trip just because it is first in an ascending list.
+  const teamTimeZone = teamResult.data?.timezone || 'America/New_York';
+  const nextUpcomingTrip = trips.find(
+    (trip) => trip.departure_date && trip.departure_date >= todayIsoInZone(teamTimeZone),
+  ) ?? null;
+
   // ── Tasks from golf_task_assignments → golf_tasks — verbatim from hub ──────
   const rawAssignments = (tasksRaw.data || []) as unknown as RawAssignment[];
   const assignmentMap = new Map(rawAssignments.map((a) => [a.task_id, a]));
   const taskIds = [...new Set(rawAssignments.map((a) => a.task_id))];
 
+  let taskDetailsLoadError = false;
   let tasks: Array<{
     id: string;
     title: string;
@@ -237,6 +231,7 @@ export default async function TeamHubPage({
       .order('due_date', { ascending: true, nullsFirst: false });
 
     if (taskDetailsError) {
+      taskDetailsLoadError = true;
       // The assignments exist; only their titles are missing. Rendering the
       // task list empty tells the player they have nothing to do.
       void logServerError(
@@ -250,8 +245,6 @@ export default async function TeamHubPage({
     // (UTC on Vercel), not the team's. `due_date` is a DATE column, so deciding
     // "overdue" needs the team's wall-clock day on BOTH sides of the compare —
     // the same resolution `dashboard-data.ts:292` uses.
-    const teamTimeZone = teamResult.data?.timezone || 'America/New_York';
-
     tasks = (taskDetails || []).map((t) => {
       const assignment = assignmentMap.get(t.id);
       const isCompleted = assignment?.status === 'completed';
@@ -294,41 +287,18 @@ export default async function TeamHubPage({
   // PlayerActionCenter's identical AnnouncementsList usage.
   const announcementsLoadError = !announcementsResult.success;
 
-  // ── Teammates (read-only roster grid in the Teammates tab) ──────────────────
-  const teammates = (teammatesResult.data || [])
-    .filter((tm) => tm.player && !('error' in tm.player))
-    .map((tm) => {
-      const p = tm.player as {
-        id: string;
-        first_name: string | null;
-        last_name: string | null;
-        avatar_url: string | null;
-        handicap: number | null;
-        graduation_year: number | null;
-        user?: { last_seen: string | null } | null;
-      };
-      return {
-        id: p.id,
-        first_name: p.first_name,
-        last_name: p.last_name,
-        avatar_url: p.avatar_url,
-        handicap: p.handicap,
-        graduation_year: p.graduation_year,
-        last_seen: p.user?.last_seen || null,
-      };
-    })
-    .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
-
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <FairwayTeamHubWrapper
         tasks={tasks}
+        tasksLoadError={Boolean(tasksRaw.error) || taskDetailsLoadError}
         announcements={announcements}
         announcementsLoadError={announcementsLoadError}
         trips={trips}
+        tripsLoadError={Boolean(tripsResult.error)}
+        nextUpcomingTrip={nextUpcomingTrip}
         classes={classes}
-        teammates={teammates}
-        playerName={playerName}
+        classesLoadError={Boolean(classesResult.error)}
         teamName={teamResult.data?.name || 'Your team'}
         initialTab={initialTab}
       />

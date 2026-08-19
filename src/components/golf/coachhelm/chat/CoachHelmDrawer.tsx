@@ -43,6 +43,15 @@ export interface CoachHelmDrawerProps {
   teamName: string;
 }
 
+/**
+ * The team-stats matrix owns its final Signal column all the way to the
+ * viewport edge. A fixed launcher in that corner obscures the very labels a
+ * coach is comparing, so that route exposes a normal page action instead.
+ */
+export function shouldRenderCoachHelmLauncher(pathname: string): boolean {
+  return pathname !== '/golf/dashboard/stats/team';
+}
+
 export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDrawerProps) {
   const [open, setOpen] = React.useState(false);
   const [session, setSession] = React.useState(0);
@@ -87,7 +96,7 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
   return (
     <>
       <AnimatePresence>
-        {!open && (
+        {!open && shouldRenderCoachHelmLauncher(pathname) && (
           <m.button
             key="coachhelm-launcher"
             ref={opener}

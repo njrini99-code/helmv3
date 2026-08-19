@@ -108,6 +108,12 @@ export interface EvidenceInsight {
   outcome_measured_at?: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * The actual database `updated_at` value when it was available. `updated_at`
+   * above remains non-null for older visual consumers, but freshness displays
+   * must use this field so a mapper fallback is never presented as source time.
+   */
+  source_updated_at?: string | null;
   player_feedback?: InsightPlayerFeedback | null;
   drills?: InsightAttachedDrill[];
 }
@@ -1598,6 +1604,7 @@ function mapRowToEvidenceInsight(row: RawInsightRowWithDrills): EvidenceInsight 
     outcome_measured_at: row.outcome_measured_at ?? null,
     created_at: row.created_at ?? new Date().toISOString(),
     updated_at: row.updated_at ?? new Date().toISOString(),
+    source_updated_at: typeof row.updated_at === 'string' ? row.updated_at : null,
     drills,
   };
 }

@@ -249,7 +249,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
           that renders as part of this same sticky chrome unit — sat on 16px.
           Measured at 390px on every golf route: title left 24, content left 16.
           Nothing in the mobile frame shared a left edge. */}
-      <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8 xl:grid xl:grid-cols-[minmax(0,1fr)_340px_minmax(0,1fr)] xl:gap-6">
         {/* Leading slot — PHONE: the standing destination title. Present from
             first paint, never gated on scroll, never animated. `min-w-0
             flex-1` + `truncate` against the `flex-shrink-0` action cluster
@@ -270,17 +270,16 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
         {/* Leading slot — DESKTOP: the breadcrumb trail (rule 7: phones never
             get a crumb trail). */}
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <div className="hidden min-w-0 flex-shrink md:block">
+          <div className="hidden min-w-0 flex-shrink md:block xl:col-start-1">
             <BreadcrumbTrail breadcrumbs={breadcrumbs} Link={Link} />
           </div>
         )}
 
-        {/* Trailing slot — the persistent search / ⌘K command entry, desktop
-            only. Now that the title owns the phone leading slot, this whole
-            group is `hidden md:flex`; at `md+` its computed layout
-            (`ml-auto`, `flex-none`, `basis-[340px]`, `gap-3`) is identical to
-            before, so desktop is unchanged. */}
-        <div className="ml-auto hidden min-w-0 flex-1 items-center justify-end gap-3 md:flex md:flex-none md:basis-[340px]">
+        {/* At xl+ this gets its own fixed center grid column, independent of
+            breadcrumb/action widths. md..xl retains the existing trailing
+            layout, where the available content column is too narrow to safely
+            reserve three desktop columns beside the expanded rail. */}
+        <div className="ml-auto hidden min-w-0 flex-1 items-center justify-end gap-3 md:flex md:flex-none md:basis-[340px] xl:col-start-2 xl:ml-0 xl:w-[340px] xl:basis-auto xl:justify-self-center">
           {searchSlot ??
             (onSearchOpen && (
               <Button
@@ -289,6 +288,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
                 onClick={onSearchOpen}
                 aria-label="Open command menu"
                 aria-keyshortcuts="Meta+K Control+K"
+                data-layout-region="center"
                 className={cn(
                   'group flex h-10 min-h-0 w-full max-w-[340px] items-center justify-start gap-2.5 rounded-fw-sm px-3',
                   'bg-surface-sunken/80 text-text-tertiary',
@@ -312,7 +312,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
         </div>
 
         {/* Action cluster — every breakpoint. */}
-        {actions && <div className="flex flex-shrink-0 items-center gap-2">{actions}</div>}
+        {actions && <div className="flex flex-shrink-0 items-center gap-2 xl:col-start-3 xl:justify-self-end">{actions}</div>}
       </div>
 
       {/* Active-team accent underline — overlays the glass bottom border, cross-

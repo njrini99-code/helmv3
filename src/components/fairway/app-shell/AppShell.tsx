@@ -319,6 +319,22 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
 
   // Desktop content column offset by the (collapsed) rail width.
   const railOffset = collapsed ? 'md:pl-[76px]' : 'md:pl-[260px]';
+  const railWidth = collapsed ? '76px' : '260px';
+
+  // CommandPalette is mounted beside (rather than inside) AppShell by the
+  // active Golf dashboard shell. Publish the rail width on documentElement as
+  // well as this shell so the palette can center inside the desktop content
+  // column; restore any pre-existing value when this shell unmounts.
+  useEffect(() => {
+    const root = document.documentElement;
+    const previous = root.style.getPropertyValue('--fw-rail-width');
+    root.style.setProperty('--fw-rail-width', railWidth);
+
+    return () => {
+      if (previous) root.style.setProperty('--fw-rail-width', previous);
+      else root.style.removeProperty('--fw-rail-width');
+    };
+  }, [railWidth]);
 
   return (
     <div
@@ -342,6 +358,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
         'relative min-h-dvh w-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary antialiased',
         className,
       )}
+      style={{ '--fw-rail-width': railWidth } as React.CSSProperties}
     >
       {/* ── Desktop rail (fixed) ──
           Mount gated on `isDesktop` (matchMedia) — see the doc comment above.
