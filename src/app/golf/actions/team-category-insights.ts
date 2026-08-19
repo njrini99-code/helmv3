@@ -5,6 +5,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeSeriesTrend } from '@/lib/coachhelm/trend';
 import { getInsightsForCoachWithMeta } from '@/app/golf/actions/insight-delivery';
@@ -340,6 +341,15 @@ async function getTeamOverviewImpl(
     //    skip the redundant org→team lookup. Otherwise look it up here.
     let team: { id: string } | null = null;
     if (teamIdArg) {
+      // A caller-supplied teamId must be authorized the same way the
+      // cookie-resolved fallback below already is via
+      // resolveCoachTeamIdWithCookie -> validateCoachTeamAccess. Without
+      // this, an authenticated coach could invoke this exported action
+      // directly with an arbitrary teamId and read another team's data.
+      const ok = await validateCoachTeamAccess(supabase, session.coach.id, teamIdArg, orgId);
+      if (!ok) {
+        return { success: false, error: 'Unauthorized' };
+      }
       team = { id: teamIdArg };
     } else {
       const resolvedTeamId = await resolveCoachTeamIdWithCookie(
@@ -709,6 +719,15 @@ async function getTeamCategoryInsightsImpl(
     //    skip the redundant org→team lookup. Otherwise look it up here.
     let team: { id: string } | null = null;
     if (teamIdArg) {
+      // A caller-supplied teamId must be authorized the same way the
+      // cookie-resolved fallback below already is via
+      // resolveCoachTeamIdWithCookie -> validateCoachTeamAccess. Without
+      // this, an authenticated coach could invoke this exported action
+      // directly with an arbitrary teamId and read another team's data.
+      const ok = await validateCoachTeamAccess(supabase, session.coach.id, teamIdArg, orgId);
+      if (!ok) {
+        return { success: false, error: 'Unauthorized' };
+      }
       team = { id: teamIdArg };
     } else {
       const resolvedTeamId = await resolveCoachTeamIdWithCookie(
