@@ -169,4 +169,72 @@ Use an absolute path inside the project instead."
   done
 fi
 
+# 11. `git worktree add` INSIDE the repo. .claude/rules/autonomy.md has said not
+#     to do this for a while; on 2026-08-19 there were nine of them, and prose
+#     had not prevented a single one.
+#
+#     The harm is not disk. .gitignore hides `.claude/worktrees/` from git but
+#     NOT from find, grep, ripgrep-without-ignore-rules, or agent file search, so
+#     every nested tree puts a second copy of every source file in front of every
+#     search. Worse, each carries its own .claude/ — its own CLAUDE.md, its own
+#     skills — so which copy an agent was launched from decides what it was told.
+#     Two of those nine had a CLAUDE.md that genuinely differed from root.
+#
+#     External worktrees are the supported shape and are proven not to drift: the
+#     three sibling checkouts all had byte-identical CLAUDE.md/AGENTS.md/.mcp.json.
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+worktree[[:space:]]+add'; then
+  PROJ_ROOT=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && pwd -P) || PROJ_ROOT=""
+
+  # Everything after `worktree add`.
+  # NOTE: [[:space:]][[:space:]]* and not \+ — BSD sed (macOS, where this hook
+  # actually runs) does not support \+ in a basic regex. With \+ this returns
+  # EMPTY, the loop never runs, and the guard silently allows everything. That
+  # exact bug shipped once and was caught only by the discrimination test.
+  WT_REST=$(printf '%s' "$CMD" | sed -n 's/.*worktree[[:space:]][[:space:]]*add[[:space:]][[:space:]]*//p')
+
+  # The destination is the first NON-FLAG token — but -b/-B take a branch name
+  # as their value, and that value is not a path. Treating it as one made the
+  # first version of this rule block legitimate external worktrees.
+  WT_DEST=""
+  WT_SKIP=0
+  for WT_TOK in $WT_REST; do
+    if [ "$WT_SKIP" -eq 1 ]; then WT_SKIP=0; continue; fi
+    case "$WT_TOK" in
+      -b|-B) WT_SKIP=1; continue ;;
+      --) continue ;;
+      -*) continue ;;
+      *) WT_DEST="$WT_TOK"; break ;;
+    esac
+  done
+
+  if [ -n "$WT_DEST" ] && [ -n "$PROJ_ROOT" ]; then
+    case "$WT_DEST" in
+      /*) WT_ABS="$WT_DEST" ;;
+      *)  WT_ABS="${PROJ_ROOT}/${WT_DEST}" ;;
+    esac
+    # Collapse . and .. textually. The path does not exist yet, so realpath is
+    # not available; a naive prefix match without this treats ../foo as inside.
+    WT_ABS=$(printf '%s' "$WT_ABS" | awk -F/ '{
+      n = 0
+      for (i = 1; i <= NF; i++) {
+        if ($i == "" || $i == ".") continue
+        if ($i == "..") { if (n > 0) n--; continue }
+        n++; parts[n] = $i
+      }
+      out = ""
+      for (i = 1; i <= n; i++) out = out "/" parts[i]
+      print (out == "" ? "/" : out)
+    }')
+    case "$WT_ABS" in
+      "$PROJ_ROOT"/?*)
+        block "BLOCKED: 'git worktree add' targeting '$WT_DEST', which resolves inside this repository ($WT_ABS).
+
+A nested worktree is invisible to git but fully visible to find, grep and agent file search, so it puts a duplicate of every source file in front of every search. Each one also carries its own .claude/ — its own CLAUDE.md and skills — so which copy a session starts in decides which instructions it gets.
+
+Put it outside the repo instead:
+  git worktree add ~/worktrees/helmv3/<task> -b <branch>" ;;
+    esac
+  fi
+fi
+
 exit 0
