@@ -425,6 +425,12 @@ export function buildPlayerRailSections(badges: GolfNavBadgeCounts): NavSection[
       href: team.tabs[0]!.href,
       icon: IconUsers,
       tabs: team.tabs,
+      // The Team cluster owns the hub's three notification feeds. Summing the
+      // provider's existing per-domain counts lights the dark rail the moment
+      // a new announcement, task, or itinerary lands (badge only when > 0 —
+      // never a fake zero). The mobile More sheet mirrors the rail, so this
+      // one declaration covers both surfaces.
+      badge: navBadge(badges.announcements + badges.tasks + badges.travel),
     }),
     hubToNavItem({
       label: 'Messages',

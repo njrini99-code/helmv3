@@ -433,6 +433,21 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       const messagesZero = zeroed.find((i) => i.label === 'Messages')!;
       expect(messagesZero.badge).toBeUndefined();
     });
+
+    it("sums the player Team cluster's badge from the hub's three feeds (announcements + tasks + travel)", () => {
+      const items = buildPlayerRailSections({
+        ...ZERO_BADGES,
+        announcements: 2,
+        tasks: 1,
+        travel: 1,
+      }).flatMap((s) => s.items);
+      const team = items.find((i) => i.label === 'Team')!;
+      expect(team.badge).toBe(4);
+
+      const zeroed = buildPlayerRailSections(ZERO_BADGES).flatMap((s) => s.items);
+      const teamZero = zeroed.find((i) => i.label === 'Team')!;
+      expect(teamZero.badge).toBeUndefined();
+    });
   });
 
   describe('isGolfLateralDestination — Doctrine Rule 9 (M1, 2026-07-10)', () => {
