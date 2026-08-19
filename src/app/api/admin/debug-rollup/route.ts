@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { checkSuperAdminAccess } from '@/lib/admin/require-super-admin';
 import { fetchAdminRollupA } from '@/app/golf/actions/admin/rollup-a';
 import { fetchAdminRollupB } from '@/app/golf/actions/admin/rollup-b';
 import { fetchAdminRollupC } from '@/app/golf/actions/admin/rollup-c';
@@ -68,15 +68,24 @@ export async function GET() {
     return new NextResponse('Not Found', { status: 404 });
   }
 
-  // 1. Auth gate
-  const supabase = await createClient();
-  const { data: { user }, error: authErr } = await supabase.auth.getUser();
-  if (authErr || !user) {
-    return NextResponse.json({ ok: false, stage: 'auth', error: 'not-authenticated' }, { status: 401 });
-  }
-  const { data: userRow } = await supabase.from('users').select('role').eq('id', user.id).single();
-  if ((userRow?.role as string) !== 'admin') {
-    return NextResponse.json({ ok: false, stage: 'auth', error: 'not-admin' }, { status: 403 });
+  // 1. Auth gate — THE canonical super-admin gate, not a local re-implementation.
+  //
+  // This used to read `users.role === 'admin'` itself, which made it a THIRD
+  // authorization authority alongside the two `require-super-admin.ts` was
+  // written to reconcile after the 2026-07-29 incident (`SUPER_ADMIN_USER_IDS`
+  // env var vs the `admin_allowlist` table drifting apart). A `users.role` row
+  // is not the same predicate as `public.is_super_admin()`: a user can carry
+  // role='admin' without being in the allowlist, and this endpoint serializes
+  // raw Error internals.
+  //
+  // `checkSuperAdminAccess()` rather than `requireSuperAdmin()` because this is
+  // a route handler: the probe is the documented non-throwing variant and maps
+  // cleanly onto the 401/403 split this endpoint already returned.
+  const access = await checkSuperAdminAccess();
+  if (!access.allowed) {
+    return access.reason === 'unauthenticated'
+      ? NextResponse.json({ ok: false, stage: 'auth', error: 'not-authenticated' }, { status: 401 })
+      : NextResponse.json({ ok: false, stage: 'auth', error: 'not-admin' }, { status: 403 });
   }
 
   // 2. Exercise each rollup in isolation
