@@ -229,7 +229,10 @@ test.describe('Coach - Manual Box Score Entry', () => {
     await waitForPageLoad(page);
     const gameCard = page.locator('[data-testid="game-card"]', { hasText: SCHEDULED_OPPONENT });
     await expect(gameCard).toBeVisible();
-    await gameCard.getByRole('link').click();
+    // The card IS the <a> — `getByRole('link')` looked for a link INSIDE it and
+    // found none, so this hung the whole beforeEach for its 30s budget and took
+    // every test in the describe with it. Click the card itself.
+    await gameCard.click();
     await waitForPageLoad(page);
   });
 

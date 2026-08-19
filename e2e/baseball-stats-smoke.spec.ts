@@ -1,4 +1,4 @@
-import { test, expect, type Locator, type Page } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { TEST_USERS } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 import { BASEBALL_SEED_MANIFEST } from './helpers/baseball-seed-manifest';
@@ -42,16 +42,45 @@ const SEEDED =
   process.env.PLAYWRIGHT_BASEBALL_SEEDED === 'true';
 
 /**
- * Read a figure off a Fairway "Key figures" strip (KPIContentsStrip →
- * StatStrip). RuledStatLine mounts each numeral digit in its own span
- * ("Roster 1 4"), so Number(textContent) is NaN — strip everything that
- * isn't a digit instead. Labels on these strips carry no digits, so what
- * remains is exactly the figure.
+ * Read one figure off a Fairway KPI strip, by the numeral's OWN accessible
+ * name.
+ *
+ * Two earlier attempts failed for instructive reasons, both worth not
+ * repeating:
+ *
+ *   1. `getByRole('list', { name: 'Key figures' })` — StatStrip only emits
+ *      role="list"/aria-label in its RAIL branch. The 4-column grid branch
+ *      the Command Center renders is a bare <div>, so the locator matched
+ *      nothing there while working fine on Stats Center's 5-item rail. Never
+ *      anchor on the strip container; the two branches disagree.
+ *
+ *   2. Reading the container's textContent — RuledStatLine renders the value
+ *      through StatReadout's AnimatedNumber, which counts UP from zero on
+ *      mount. Reading the moment it becomes visible can legitimately observe
+ *      "0", which is how "On the Record" asserted 0 >= 1 against a seeded
+ *      team that really had 14.
+ *
+ * StatReadout puts aria-label={label} on the span wrapping the number itself,
+ * in BOTH branches — so that is the stable hook. Poll until it settles on a
+ * non-zero value rather than trusting the first paint; a genuinely zero figure
+ * still fails, just via the caller's own assertion after the timeout.
  */
-async function kpiFigure(keyFigures: Locator, label: string): Promise<number> {
-  const item = keyFigures.getByRole('listitem').filter({ hasText: label }).first();
-  await expect(item).toBeVisible({ timeout: 10000 });
-  return Number(((await item.textContent()) ?? '').replace(/\D/g, ''));
+async function kpiFigure(scope: Page, label: string): Promise<number> {
+  const readout = scope.locator(`[aria-label="${label}"]`).first();
+  await expect(readout).toBeVisible({ timeout: 10000 });
+
+  const digitsOf = async () =>
+    Number(((await readout.textContent()) ?? '').replace(/\D/g, '') || '0');
+
+  // AnimatedNumber settles well inside this budget; the loop exists so a slow
+  // animation cannot be misread as real data, not to paper over a zero.
+  const deadline = Date.now() + 10_000;
+  let value = await digitsOf();
+  while (value === 0 && Date.now() < deadline) {
+    await scope.waitForTimeout(250);
+    value = await digitsOf();
+  }
+  return value;
 }
 
 /** Try to log a user in; returns true on success, false if no fixture (mirrors baseball-phase1.spec.ts's tryLogin). */
@@ -133,13 +162,10 @@ test.describe('BaseballHelm seeded smoke — coach surfaces', () => {
     // the summary read model returned a team, so its absence — or a zero
     // Roster figure — is the "empty state while the seed claims data" failure
     // this smoke exists to catch.
-    const keyFigures = page.getByRole('list', { name: 'Key figures' });
-    await expect(keyFigures).toBeVisible({ timeout: 10000 });
-
-    expect(await kpiFigure(keyFigures, 'Roster')).toBeGreaterThanOrEqual(
+    expect(await kpiFigure(page, 'Roster')).toBeGreaterThanOrEqual(
       BASEBALL_SEED_MANIFEST.minimums.playersWithData,
     );
-    expect(await kpiFigure(keyFigures, 'On the Record')).toBeGreaterThanOrEqual(
+    expect(await kpiFigure(page, 'On the Record')).toBeGreaterThanOrEqual(
       BASEBALL_SEED_MANIFEST.minimums.playersWithData,
     );
 
@@ -167,12 +193,10 @@ test.describe('BaseballHelm seeded smoke — coach surfaces', () => {
     // The Fairway redesign renamed the "With Data" figure to "On the Record"
     // and moved both counts into the same "Key figures" strip the Command
     // Center uses (StatsCenterClient → KPIContentsStrip).
-    const keyFigures = page.getByRole('list', { name: 'Key figures' });
-    await expect(keyFigures).toBeVisible({ timeout: 10000 });
-    expect(await kpiFigure(keyFigures, 'On the Record')).toBeGreaterThanOrEqual(
+    expect(await kpiFigure(page, 'On the Record')).toBeGreaterThanOrEqual(
       BASEBALL_SEED_MANIFEST.minimums.playersWithData,
     );
-    expect(await kpiFigure(keyFigures, 'Official Games')).toBeGreaterThanOrEqual(
+    expect(await kpiFigure(page, 'Official Games')).toBeGreaterThanOrEqual(
       BASEBALL_SEED_MANIFEST.minimums.officialGames,
     );
 
