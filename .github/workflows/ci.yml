@@ -156,6 +156,36 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+  edge-functions:
+    name: Edge functions (Deno)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # supabase/functions/ is EXCLUDED from tsconfig.json, so `npm run typecheck`
+    # has never covered these three Deno edge functions. They are deployed code
+    # that sends push notifications and email; until 2026-08-19 nothing checked
+    # them at all. The first run of this gate found a real type error in
+    # send-fcm-push (crypto.subtle.importKey rejecting a widened Uint8Array).
+    #
+    # The npm script uses --node-modules-dir=none deliberately. With `auto`,
+    # deno resolves npm deps itself and REWRITES node_modules — locally that
+    # silently bumped stripe 22.3.2 -> 22.5.0, whose pinned API-version type no
+    # longer matched src/lib/stripe/server.ts, so `npm run typecheck` started
+    # failing on a file nobody had touched. A type gate must not mutate the
+    # tree it is checking.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed  # v2.0.5
+        with:
+          deno-version: v2.x
+
+      - name: Type-check edge functions
+        run: npm run typecheck:functions
+
   lint:
     name: ESLint
     runs-on: ubuntu-latest
@@ -684,6 +714,7 @@ jobs:
       - schema-invariants
       - feature-knowledge
       - typecheck
+      - edge-functions
       - lint
       - lint-ratchet
       - unit-tests

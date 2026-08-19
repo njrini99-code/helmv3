@@ -23,6 +23,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 0",
     "lint:ratchet": "node scripts/lint-ratchet.mjs",
     "typecheck": "tsc --noEmit",
+    "typecheck:functions": "deno check --node-modules-dir=none supabase/functions/*/index.ts",
     "db:types": "bash scripts/gen-db-types.sh",
     "db:types:check": "npm run db:types && git diff --exit-code src/lib/types/database.ts || (echo '\u274c Types are out of date. Run npm run db:types and commit changes.' && exit 1)",
     "docs:regen": "node scripts/regen-docs.mjs",
