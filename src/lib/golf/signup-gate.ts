@@ -127,7 +127,7 @@ async function isValidTeamJoinCode(code: string): Promise<boolean> {
  * Every caller MUST rate-limit before reaching here — a miss falls through to
  * a service-role join_code lookup.
  */
-type SignupCodeMatch = 'none' | 'global' | 'team_join_code';
+type SignupCodeMatch = 'none' | 'global' | 'team_join_code' | 'staff_invite_code';
 
 async function classifySignupCode(candidate: string): Promise<SignupCodeMatch> {
   // DS-B2: no committed fallback. An unset SIGNUP_ACCESS_CODE used to make the
@@ -140,8 +140,42 @@ async function classifySignupCode(candidate: string): Promise<SignupCodeMatch> {
     return 'global';
   }
 
+  // A head-coach-minted STAFF code. Checked before the roster join code
+  // because the two namespaces are deliberately separate and a staff code must
+  // never be mistaken for (or satisfied by) a player credential.
+  //
+  // This is what makes "type a code, join as an assistant coach" safe: the code
+  // IS the grant and it carries the role in a signed token, so there is nothing
+  // for the joiner to pick and nothing to escalate. Typing the ROSTER join code
+  // here can only ever produce a player — which is why the 2026-08-05 revert
+  // (266d02d91) of "join code + role dropdown" stays reverted.
+  if (await isValidStaffInviteCode(candidate)) return 'staff_invite_code';
+
   // Otherwise accept a real team join code so coach-invited players get in.
   return (await isValidTeamJoinCode(candidate)) ? 'team_join_code' : 'none';
+}
+
+/**
+ * True when the candidate is a live, unexpired staff invite code.
+ *
+ * Only checks existence + expiry here; the ROLE and the team are read from the
+ * signed token at redemption, never from this lookup. So the worst a forged row
+ * in this table could do is open the signup gate — it cannot grant staff.
+ */
+async function isValidStaffInviteCode(candidate: string): Promise<boolean> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('golf_staff_invite_codes')
+      .select('code, expires_at')
+      .eq('code', candidate.toUpperCase())
+      .maybeSingle();
+    // A failed read must not read as "valid" — fail closed to the join-code path.
+    if (error || !data) return false;
+    return new Date(data.expires_at).getTime() > Date.now();
+  } catch {
+    return false;
+  }
 }
 
 async function isAcceptedSignupCode(candidate: string): Promise<boolean> {
@@ -232,10 +266,17 @@ export interface SignupGateResult {
    * second service-role join_code lookup or a second throttle slot.
    */
   teamJoinCode: string | null;
+  /**
+   * The STAFF INVITE CODE the visitor cleared the gate with, uppercased, or
+   * null. Returned so `signupAction` can redeem it after creating the account —
+   * the role is then read from the signed token that code resolves to, never
+   * from anything the browser sent.
+   */
+  staffInviteCode: string | null;
 }
 
 export async function verifySignupGate(): Promise<SignupGateResult> {
-  const denied: SignupGateResult = { passed: false, teamJoinCode: null };
+  const denied: SignupGateResult = { passed: false, teamJoinCode: null, staffInviteCode: null };
 
   const cookieStore = await cookies();
   const granted = cookieStore.get(SIGNUP_GATE_COOKIE)?.value?.trim();
@@ -253,5 +294,6 @@ export async function verifySignupGate(): Promise<SignupGateResult> {
   return {
     passed: true,
     teamJoinCode: match === 'team_join_code' ? granted.toUpperCase() : null,
+    staffInviteCode: match === 'staff_invite_code' ? granted.toUpperCase() : null,
   };
 }

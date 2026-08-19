@@ -1935,6 +1935,8 @@ export async function addSecondTeam(
 // redeem what they were sent. Changing "coach" to "admin" breaks the signature.
 
 export interface CreateStaffInviteResult {
+  /** Short typed alias for the invite. Null when the alias could not be stored. */
+  code?: string | null;
   success: boolean;
   error?: string;
   token?: string;
@@ -2034,11 +2036,46 @@ async function createStaffInviteImpl(
     return { success: false, error: 'Staff invites are unavailable right now.' };
   }
 
+  const expiresAt = new Date(Date.now() + STAFF_INVITE_TTL_MS).toISOString();
+
+  // Short typed alias for the link, so an assistant can join the way a player
+  // does: click Sign Up, type a code. The code is a LOOKUP KEY ONLY — the role
+  // is still read from the signed token at redemption, so a tampered row here
+  // cannot forge a grant. Stored in a table players cannot read; the roster
+  // join_code namespace is deliberately separate (see the migration).
+  const admin = createAdminClient();
+  let code: string | null = null;
+  for (let attempt = 0; attempt < 5 && !code; attempt++) {
+    const candidate = generateJoinCode();
+    const { error: codeError } = await admin.from('golf_staff_invite_codes').insert({
+      code: candidate,
+      token,
+      team_id: team.id,
+      organization_id: team.organization_id,
+      role,
+      expires_at: expiresAt,
+      created_by_coach_id: coach.id,
+    });
+    if (!codeError) {
+      code = candidate;
+    } else if (codeError.code !== '23505') {
+      // Not a collision — the link still works, so degrade to link-only rather
+      // than failing a mint the coach can still use.
+      await logServerError(
+        `[createStaffInvite] short code insert failed; returning link-only invite: ${describeError(codeError)}`,
+        { action: 'teams.createStaffInvite', featureArea: 'teams' },
+        'warning',
+      );
+      break;
+    }
+  }
+
   return {
     success: true,
     token,
+    code,
     role,
-    expiresAt: new Date(Date.now() + STAFF_INVITE_TTL_MS).toISOString(),
+    expiresAt,
   };
 }
 
@@ -2233,6 +2270,34 @@ export async function redeemStaffInvite(
   return observedRedeemStaffInvite(token, fullName);
 }
 
+
+/**
+ * Resolve a typed staff code to its signed token, or null.
+ *
+ * Deliberately returns the TOKEN and nothing else: every caller then runs the
+ * normal verifyStaffInvite path, so an expired or revoked invite fails exactly
+ * where a pasted link would. Uppercased before lookup — codes are stored and
+ * displayed uppercase, and coaches read them aloud.
+ */
+export async function resolveStaffInviteCode(code: string): Promise<string | null> {
+  const candidate = code.trim().toUpperCase();
+  if (!candidate) return null;
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('golf_staff_invite_codes')
+    .select('token')
+    .eq('code', candidate)
+    .maybeSingle();
+  if (error) {
+    await logServerError(
+      `[resolveStaffInviteCode] lookup failed: ${describeError(error)}`,
+      { action: 'teams.resolveStaffInviteCode', featureArea: 'teams' },
+      'warning',
+    );
+    return null;
+  }
+  return data?.token ?? null;
+}
 
 // ---------------------------------------------------------------------------
 // Staff invite — PREVIEW (unauthenticated)
