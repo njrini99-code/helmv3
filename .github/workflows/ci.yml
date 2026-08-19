@@ -197,7 +197,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The four ratchet steps below carry continue-on-error so that ONE
+      # failure can't mask the others — on 2026-08-18 a stale Supabase
+      # baseline hid a fail-open regression for a full CI cycle because the
+      # steps ran sequentially and the later ones never ran. Each step still
+      # records its real outcome; the aggregator at the end fails the job if
+      # ANY ratchet failed, so nothing gets weaker — every failure now just
+      # surfaces in the same run.
       - name: Lint ratchet
+        id: ratchet_lint
+        continue-on-error: true
         run: npm run lint:ratchet
 
       # A failed Supabase read must not render as an empty one. supabase-js
@@ -209,6 +218,8 @@ jobs:
       # This fails only if the count goes UP, so it blocks new ones without
       # demanding the existing backlog be paid off first.
       - name: Unchecked Supabase reads (ratchet)
+        id: ratchet_supabase
+        continue-on-error: true
         run: npm run audit:supabase-errors
 
       # Counts guards whose "the read failed" answer is the same value as their
@@ -216,10 +227,30 @@ jobs:
       # unchecked-read ratchet above could not see any of them — all three bound
       # their error correctly and then answered it permissively.
       - name: Fail-open guards (ratchet)
+        id: ratchet_failopen
+        continue-on-error: true
         run: npm run audit:fail-open
 
       - name: Unchecked paginated reads (ratchet)
+        id: ratchet_paginated
+        continue-on-error: true
         run: npm run audit:paginated-reads
+
+      - name: Ratchet aggregate (fails if any ratchet failed)
+        if: always()
+        env:
+          O_LINT: ${{ steps.ratchet_lint.outcome }}
+          O_SUPABASE: ${{ steps.ratchet_supabase.outcome }}
+          O_FAILOPEN: ${{ steps.ratchet_failopen.outcome }}
+          O_PAGINATED: ${{ steps.ratchet_paginated.outcome }}
+        run: |
+          bad=0
+          for pair in "lint:$O_LINT" "supabase:$O_SUPABASE" "fail-open:$O_FAILOPEN" "paginated:$O_PAGINATED"; do
+            name="${pair%%:*}"; outcome="${pair#*:}"
+            echo "ratchet $name -> $outcome"
+            if [ "$outcome" != "success" ]; then bad=1; fi
+          done
+          exit "$bad"
 
   unit-tests:
     name: Unit tests

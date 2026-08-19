@@ -7,17 +7,28 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
 
-  /* Run tests in files in parallel */
-  fullyParallel: true,
+  /* File-level parallelism only: tests WITHIN a file run in authored order.
+   * fullyParallel:true would also interleave tests inside one file once
+   * workers > 1, and several specs (box-score create, messages) assume
+   * their file's earlier tests ran first. Files are self-contained (each
+   * logs in itself; created rows carry per-run unique names), so files may
+   * safely run side by side. */
+  fullyParallel: false,
 
   /* Fail the build on CI if you accidentally left test.only in the source code */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* One retry on CI: enough to absorb a transient, without a deterministic
+   * failure costing 3x its runtime in reruns + artifact capture. */
+  retries: process.env.CI ? 1 : 0,
 
-  /* Opt out of parallel tests on CI */
-  workers: process.env.CI ? 1 : undefined,
+  /* 3 workers in CI (was 1, which ran the whole ~190-test suite serially and
+   * made Playwright the 30-minute long pole of every push). Parallelism is
+   * across FILES only — see fullyParallel above. If a cross-file shared-state
+   * race ever surfaces against the seeded DB, it will surface as a FAILURE
+   * (never silently), and the offending spec should get serial isolation
+   * rather than this dropping back to 1. */
+  workers: process.env.CI ? 3 : undefined,
 
   /* Reporter to use */
   reporter: [
