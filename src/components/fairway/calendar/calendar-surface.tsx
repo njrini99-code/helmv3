@@ -115,20 +115,59 @@ export const CalendarSurface = React.forwardRef<
   // Track travel direction so the grid can slide the way time moves.
   const [direction, setDirection] = React.useState<TemporalDirection>('next');
   const prevMonthRef = React.useRef<Date | null>(null);
-  // Bump a key on each month change to re-trigger the entrance animation.
-  const [animKey, setAnimKey] = React.useState(0);
+  const gridRef = React.useRef<HTMLDivElement | null>(null);
+
+  /*
+   * REPLAY THE ENTRANCE ANIMATION WITHOUT REMOUNTING THE GRID.
+   *
+   * This used to bump a `key` on the wrapper div. That div contains
+   * <DayPicker>, and DayPicker is UNCONTROLLED here — no `month` or
+   * `defaultMonth` prop is passed, so it holds the displayed month in its own
+   * internal state. Changing the key unmounted and remounted it, discarding
+   * that state and snapping the view back to the month derived from
+   * `selected`.
+   *
+   * So every arrow click advanced the month and instantly reverted it. From
+   * the user's side the nav simply did nothing — reported from Shenandoah
+   * 2026-08-19 as "calendar is glitching and won't let him change months",
+   * with the picker stuck on the selected date's month.
+   *
+   * The remount also destroyed the focused nav button on every click, so a
+   * keyboard user had to re-find the arrow each time.
+   *
+   * Restarting a CSS animation needs the class removed, a reflow forced, then
+   * the class re-added — assigning the same class name again is a no-op
+   * because nothing changed from the browser's point of view. Doing it on a
+   * ref keeps DayPicker mounted, so its month state and the DOM focus both
+   * survive.
+   */
+  const replayEnterAnimation = React.useCallback((dir: TemporalDirection) => {
+    const el = gridRef.current;
+    const cls = dir === 'next' ? styles.enterNext : styles.enterPrev;
+    if (!el || !cls) return;
+    const other = dir === 'next' ? styles.enterPrev : styles.enterNext;
+    if (other) el.classList.remove(other);
+    el.classList.remove(cls);
+    // Force a reflow so the removal is committed before the re-add; without
+    // this the browser coalesces both mutations and the animation never
+    // restarts.
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }, []);
 
   const handleMonthChange = React.useCallback(
     (month: Date) => {
       const prev = prevMonthRef.current;
+      let dir: TemporalDirection = direction;
       if (prev) {
-        setDirection(month.getTime() >= prev.getTime() ? 'next' : 'prev');
+        dir = month.getTime() >= prev.getTime() ? 'next' : 'prev';
+        setDirection(dir);
       }
       prevMonthRef.current = month;
-      setAnimKey((k) => k + 1);
+      replayEnterAnimation(dir);
       onMonthChange?.(month);
     },
-    [onMonthChange],
+    [direction, onMonthChange, replayEnterAnimation],
   );
 
   // Merge caller modifiers with the eventDays matcher (drives the dot).
@@ -160,8 +199,10 @@ export const CalendarSurface = React.forwardRef<
         </div>
       ) : null}
 
+      {/* NO `key` here. Keying this wrapper remounts <DayPicker>, which owns
+          the displayed month internally — see replayEnterAnimation above. */}
       <div
-        key={animKey}
+        ref={gridRef}
         className={cn(
           styles.grid,
           direction === 'next' ? styles.enterNext : styles.enterPrev,
