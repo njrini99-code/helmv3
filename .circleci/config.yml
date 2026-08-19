@@ -92,7 +92,7 @@ jobs:
           command: npm install --no-save knip
       - run:
           name: Knip — unused exports, files, deps
-          command: npx knip --no-config-hints --reporter compact || true
+          command: npx knip --no-config-hints --reporter compact 2>&1 | tee knip-report.txt || true
       - store_artifacts:
           path: knip-report.txt
           destination: knip

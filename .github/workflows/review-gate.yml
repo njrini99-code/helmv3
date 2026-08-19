@@ -404,7 +404,7 @@ jobs:
           if [ "${#files[@]}" -gt 0 ]; then
             curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64 -o hadolint
             chmod +x hadolint
-            ./hadolint --no-fail "${files[@]}"
+            ./hadolint "${files[@]}"
           else
             echo "No changed Dockerfiles for hadolint."
           fi
