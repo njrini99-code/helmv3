@@ -30,15 +30,18 @@
 -- VERIFIED (run against production after applying):
 --   SELECT r.rolname,
 --          has_function_privilege(r.rolname,
---            'public.release_baseball_team_invitation_redemption(uuid)', 'EXECUTE')
+--            'public.release_baseball_team_invitation_redemption(uuid)',
+--            'EXECUTE')
 --   FROM (VALUES ('anon'),('authenticated'),('service_role')) AS r(rolname);
 --   -- anon=false, authenticated=false, service_role=true
 --
 -- ROLLBACK: GRANT EXECUTE ... TO authenticated. Do NOT do this without first
 --           reverting f55c74eae, or the rollback re-opens the hole it closed.
 
-REVOKE EXECUTE ON FUNCTION public.release_baseball_team_invitation_redemption(uuid)
-  FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION
+public.release_baseball_team_invitation_redemption(uuid)
+FROM PUBLIC, "anon", "authenticated";
 
-GRANT EXECUTE ON FUNCTION public.release_baseball_team_invitation_redemption(uuid)
-  TO service_role;
+GRANT EXECUTE ON FUNCTION
+public.release_baseball_team_invitation_redemption(uuid)
+TO "service_role";
