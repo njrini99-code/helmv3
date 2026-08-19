@@ -92,7 +92,8 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       .maybeSingle();
     const { data: coachRow } = await supabase
       .from('golf_coaches')
-      .select('id, user_id')
+      // organization_id is needed by validateCoachTeamAccess below.
+      .select('id, user_id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -103,11 +104,67 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
 
     if (coachRow && input.player_id_if_coach_creating) {
       creator_role = 'coach';
-      player_id = input.player_id_if_coach_creating;
       coach_id_if_assigned = coachRow.id;
       if (!team_id) {
         return { ok: false, error: 'Coach-created goal requires team_id' };
       }
+
+      // BOTH ids arrive from the caller, and until now neither was checked here.
+      //
+      // The DB was supposed to be the backstop, and it is not: the hardened
+      // `goals_coach_create` policy that binds player_id to team_id was written
+      // twice (20260526180000, re-authored replay-safe as 20260528010000) and
+      // NEVER LANDED IN PROD. Verified 2026-08-19 against pg_policies — the live
+      // WITH CHECK is still
+      //   is_team_coach(team_id) AND creator_role='coach'
+      //     AND coach_id_if_assigned = current_coach_id()
+      // with no golf_team_members clause. So `player_id` was unconstrained at
+      // both layers at once.
+      //
+      // That mattered beyond the row itself: `loadStandingForMetric` below runs
+      // on the SERVICE-ROLE client and reads golf_player_standing for whatever
+      // player_id it is handed, then the value is persisted as this goal's
+      // baseline — a row the coach can read back. A coach could therefore
+      // exfiltrate another program's player's real per-metric standing, one
+      // metric per goal, without ever touching that team.
+      //
+      // Check the team first (it scopes the membership probe), then membership.
+      const teamAllowed = await validateCoachTeamAccess(
+        supabase,
+        coachRow.id,
+        team_id,
+        coachRow.organization_id,
+      );
+      if (!teamAllowed) {
+        return { ok: false, error: 'Not authorized for this team' };
+      }
+
+      // Deliberately the ADMIN client: this is a boolean authorization probe,
+      // not a data read. Under the session client an RLS-hidden row and a
+      // genuinely absent row are indistinguishable, and "I could not see it"
+      // would silently become "deny" for legitimate coaches too. It returns
+      // nothing to the caller either way.
+      const { data: membership, error: membershipError } = await createAdminClient()
+        .from('golf_team_members')
+        .select('id')
+        .eq('team_id', team_id)
+        .eq('player_id', input.player_id_if_coach_creating)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (membershipError) {
+        // Fail CLOSED. An authorization check that could not run must not pass.
+        await logServerError(
+          `createGoal: membership check failed for player ${input.player_id_if_coach_creating} on team ${team_id}: ${membershipError.message}`,
+          { action: 'v3.goals.create' },
+        );
+        return { ok: false, error: 'Could not verify roster membership' };
+      }
+      if (!membership) {
+        return { ok: false, error: 'That player is not an active member of this team' };
+      }
+
+      player_id = input.player_id_if_coach_creating;
     } else if (playerRow) {
       creator_role = 'player';
       player_id = playerRow.id;
