@@ -48,13 +48,37 @@ SESSION_ID=$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')
 
 DIRTY_NOW=$(git status --porcelain 2>/dev/null | grep -E "$SRC_RE" | awk '{print $NF}' | sort)
 
-BASE=".git/claude-stop-baseline-$SESSION_ID"
+# `.git` is a DIRECTORY in a normal clone and a FILE in a worktree, so a
+# hardcoded ".git/..." path silently fails everywhere this repo actually runs
+# agents — three of the four live checkouts are worktrees. Every baseline write
+# went to stderr as "Not a directory", $BASE never existed, and `comm -13`
+# against a missing file reports EVERYTHING as new. The per-session scoping was
+# inert in exactly the configuration it was written for.
+#
+# Found by running the hook, not by reading it.
+GITDIR=$(git rev-parse --git-dir 2>/dev/null || echo ".git")
+BASE="$GITDIR/claude-stop-baseline-$SESSION_ID"
 if [ ! -f "$BASE" ]; then
   # First stop this session. Anything already dirty predates our first chance
   # to have touched it in a way we can prove, so record it and don't claim it.
   printf '%s\n' "$DIRTY_NOW" > "$BASE"
 fi
-find .git -maxdepth 1 -name 'claude-stop-baseline-*' -mmin +720 -delete 2>/dev/null
+
+# A ONE-TIME baseline was not enough, and this is the bug that shipped.
+#
+# It correctly ignored files that were dirty BEFORE this session's first stop.
+# It said nothing about files another session dirties WHILE this one runs: those
+# are absent from our frozen baseline, present in DIRTY_NOW, and therefore
+# attributed to us. With several sessions in one checkout that is not an edge
+# case, it is the common case.
+#
+# Observed 2026-08-19: a session that wrote ZERO bytes to this repo all night
+# was blocked twice and asked to run gates over another session's in-flight
+# auth and staff-invite work. It had to stop mid-task and prove a negative.
+#
+# So the baseline is refreshed on every stop. Only files that appeared between
+# THIS session's previous stop and now are plausibly ours.
+find "$GITDIR" -maxdepth 1 -name 'claude-stop-baseline-*' -mmin +720 -delete 2>/dev/null
 
 # Only files that appeared since this session's baseline are plausibly ours.
 NEW_FILES=$(comm -13 <(sort "$BASE" 2>/dev/null) <(printf '%s\n' "$DIRTY_NOW") 2>/dev/null | grep -E "$SRC_RE" || true)
@@ -66,12 +90,24 @@ CHANGED=$(printf '%s' "$NEW_FILES" | grep -cE "$SRC_RE" || true)
 PEERS=$(ls -1 /tmp/cc-socks/*.sock 2>/dev/null | wc -l | tr -d ' ')
 CONCURRENCY=""
 if [ "${PEERS:-0}" -gt 1 ]; then
-  CONCURRENCY="
-NOTE: ${PEERS} Claude sessions are live in this working tree, so these files
-cannot be attributed to you from git alone. If none of them are yours, say so
-with evidence (\`git status --porcelain\` scoped to the paths you edited) and
-stop — do not run gates over another session's in-flight work, and never
-'fix' a failure you did not cause."
+  # DO NOT BLOCK when peers are live. Refreshing the baseline above narrows the
+  # window but cannot close it: another session can dirty a file between our two
+  # stops, and git offers nothing that attributes a working-tree change to a
+  # session. Blocking on an unattributable change asks the wrong agent to prove
+  # a negative, and the honest answer to "is this yours?" is "unknowable here".
+  #
+  # Advisory instead. The gate that actually protects main is CI, which runs on
+  # the merged result and does not care who typed it.
+  printf '%s\n' "$DIRTY_NOW" > "$BASE"
+  cat >&2 <<ADVISORY
+[stop-verify] ${CHANGED} source file(s) changed since this session's last stop,
+and ${PEERS} Claude sessions are live in this checkout — git cannot attribute a
+working-tree change to a session, so this is a NOTE, not a request.
+
+If any of these are yours, run the gates for them. If none are, carry on.
+  ${NEW_FILES}
+ADVISORY
+  exit 0
 fi
 
 # The state key must be CONTENT-sensitive, not just file-list-sensitive.
@@ -83,14 +119,18 @@ STATE=$(printf '%s%s%s' "$(git rev-parse HEAD 2>/dev/null)" \
                         "$(git status --porcelain 2>/dev/null)" \
                         "$(git diff --stat 2>/dev/null)" \
         | shasum | cut -d' ' -f1)
-MARK=".git/claude-stop-verify-$STATE"
+MARK="$GITDIR/claude-stop-verify-$STATE"
 
 # Already pushed back on this exact tree state — let it go.
 [ -f "$MARK" ] && exit 0
 
 # Prune old markers so .git does not accumulate them.
-find .git -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 -delete 2>/dev/null
+find "$GITDIR" -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 -delete 2>/dev/null
 : > "$MARK"
+
+# Re-baseline: these files have now been raised. Raising them again on the next
+# stop would re-ask a question already answered.
+printf '%s\n' "$DIRTY_NOW" > "$BASE"
 
 FILES=$(printf '%s\n' "$NEW_FILES" | head -8 | tr '\n' ' ')
 
