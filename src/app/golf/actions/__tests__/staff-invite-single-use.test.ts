@@ -5,11 +5,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
  *
  * The token is a bearer credential: anyone the link reaches can present it.
  * That is an accepted trade for a 72h invite, but repeatability was not — an
- * `admin` invite writes head_coach on EVERY team in the organization, and
- * `is_golf_team_coach()` is existence-only (verified against production
- * 2026-08-18), so each redemption is full roster/PII/message access plus the
- * ability to remove players and rotate the join code. A forwarded admin link
- * was therefore an org-wide grant that could be spent repeatedly.
+ * `admin` invite writes staff rows across the whole organization, so each
+ * redemption widens access. A forwarded admin link was therefore a grant that
+ * could be spent repeatedly.
  *
  * The guard is the primary key on golf_staff_invite_redemptions: the claiming
  * INSERT happens BEFORE any staff row is written, so a replay loses on the

@@ -4,11 +4,9 @@
 -- ---
 -- The owner wants the assistant-coach path to look like the player path: click
 -- Sign Up, type a code. The unsafe version of that is "type the TEAM join code,
--- then pick Assistant Coach from a dropdown" — the join code is handed to every
--- athlete on the roster, and is_golf_team_coach() is existence-only, so any
--- player picking that option would get teammates' rounds and PII, plus the
--- ability to remove players and rotate the code. That exact feature was built
--- and reverted on 2026-08-05 (266d02d91).
+-- then pick Assistant Coach from a dropdown" — the join code is deliberately
+-- handed to every athlete on the roster, so a player could self-select a staff
+-- role. That exact feature was built and reverted on 2026-08-05 (266d02d91).
 --
 -- The safe shape keeps the UX and moves the authority: the code IS the grant.
 -- A head coach mints it, it belongs to a namespace players never see, and it

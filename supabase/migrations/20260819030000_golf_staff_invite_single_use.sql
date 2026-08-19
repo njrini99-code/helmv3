@@ -4,13 +4,11 @@
 -- ---
 -- `signStaffInvite` mints a bearer token carrying {team, org, role, expiry,
 -- nonce}. Until now nothing recorded that a token had been spent, so a link
--- could be redeemed repeatedly for its full 72h life. That is tolerable for a
--- `coach` invite (one squad) and NOT tolerable for an `admin` invite, which
--- writes head_coach on EVERY team in the organization — and `is_golf_team_coach`
--- is existence-only, so each redemption is full roster/PII/message access plus
--- the ability to delete players and rotate the join code.
+-- could be redeemed repeatedly for its full 72h life. That is a narrow issue
+-- for a `coach` invite (one squad) and a broad one for an `admin` invite, which
+-- writes staff rows across the whole organization.
 --
--- A forwarded or leaked admin link was therefore an org-wide, repeatable grant.
+-- A forwarded or leaked admin link was therefore a repeatable grant.
 -- src/lib/golf/staff-invite.ts already anticipated this: "Making it strictly
 -- single-use needs a redemption table; if that becomes necessary, store the
 -- nonce (`n`) below and reject a replay." This is that table.

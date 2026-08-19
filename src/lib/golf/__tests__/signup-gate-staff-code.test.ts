@@ -6,9 +6,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
  * This is the invariant the whole "type a code, join as an assistant coach"
  * design rests on. The roster join_code is handed to every athlete, so if a
  * roster code could ever classify as a staff code, any player could become a
- * coach — the exact feature reverted on 2026-08-05 (266d02d91), and a real
- * exposure because is_golf_team_coach() is existence-only: an assistant_coach
- * row reads every player's rounds and PII and can delete roster rows.
+ * coach — the exact feature reverted on 2026-08-05 (266d02d91).
  *
  * So the test that matters most here is the NEGATIVE one: a live roster join
  * code must classify as a player credential and nothing else.

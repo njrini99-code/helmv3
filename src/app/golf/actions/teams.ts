@@ -2129,11 +2129,9 @@ async function redeemStaffInviteImpl(
   // redemptions of the same link cannot both win, and a replay after the fact
   // loses here rather than minting a second grant.
   //
-  // This matters most for role='admin', which writes head_coach on EVERY team
-  // in the org — and is_golf_team_coach() is existence-only, so each redemption
-  // is full roster/PII/message access plus the ability to remove players and
-  // rotate the join code. A forwarded admin link was previously repeatable for
-  // its whole 72h life.
+  // This matters most for role='admin', which writes staff rows across the
+  // whole organization, so each redemption widens access. A forwarded admin
+  // link was previously repeatable for its whole 72h life.
   const { error: claimError } = await admin
     .from('golf_staff_invite_redemptions')
     .insert({
