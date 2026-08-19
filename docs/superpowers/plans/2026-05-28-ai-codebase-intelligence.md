@@ -11,7 +11,7 @@ KEPT FOR HISTORY -- do not delete this file.
 
 **Goal:** Add a Helmv3-native codebase intelligence layer that maps changed files to features, business rules, UI contracts, tests, and context docs without duplicating the existing `memory/` system.
 
-**Architecture:** Keep `AGENTS.md`, `CLAUDE.md`, Greptile, and CodeRabbit as the instruction/review front door. Add `memory/registry.yml` as the routing table and lightweight Node scripts under `scripts/knowledge/` to produce review context packs and documentation coverage checks.
+**Architecture:** Keep `AGENTS.md`, `CLAUDE.md`, the external review bot, and CodeRabbit as the instruction/review front door. Add `memory/registry.yml` as the routing table and lightweight Node scripts under `scripts/knowledge/` to produce review context packs and documentation coverage checks.
 
 **Tech Stack:** Node.js stdlib, Markdown, YAML-like registry format, GitHub Actions/CircleCI-ready CLI scripts.
 
@@ -32,7 +32,7 @@ KEPT FOR HISTORY -- do not delete this file.
 
 - [x] **Step 1: Document the Helmv3-specific setup**
 
-Create `docs/ai-system/helmv3-ai-codebase-intelligence.md` with the operating model: `memory/` is the source of truth, Greptile and CodeRabbit remain PR reviewers, Codex generates context packs and fixes, and n8n/Linear/Slack become later orchestration layers.
+Create `docs/ai-system/helmv3-ai-codebase-intelligence.md` with the operating model: `memory/` is the source of truth, the external review bots remain PR reviewers, Codex generates context packs and fixes, and n8n/Linear/Slack become later orchestration layers.
 
 - [x] **Step 2: Seed `memory/registry.yml` with the first high-risk features**
 

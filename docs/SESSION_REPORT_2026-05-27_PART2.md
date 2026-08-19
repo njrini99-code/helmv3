@@ -179,7 +179,7 @@ You can do this after restarting your computer.
 - `package.json` — added `check:env`, `check:ledger`, `check:types-drift` scripts + `prebuild` hook
 - `src/lib/supabase/{client,server,admin,middleware}.ts` — replaced placeholder fallbacks with throwing guards
 - `.coderabbit.yaml` — new custom_check rule for historical migrations
-- `.greptile/instructions.md` — new hard rule for historical migrations
+- `.external-review-bot/instructions.md` — new hard rule for historical migrations
 
 ### Modified by PR #114
 - `tools/continuous-improvement/.mcp.json` — MCP server URL now points at `qmnssrrolpinvwjjnufo`
@@ -244,7 +244,7 @@ REPO (main)
 ├── scripts/check-* — env, types, ledger drift checks
 ├── supabase/tests/rls/* — 30 v3 contracts + 12 RPC grant assertions = 42 total
 ├── .github/workflows/migration-lockdown.yml — blocks edits to historical migrations
-├── .coderabbit.yaml + .greptile/instructions.md — same rule for AI reviewers
+├── .coderabbit.yaml + .external-review-bot/instructions.md — same rule for AI reviewers
 └── Migration history STILL not replay-safe (the big remaining structural problem)
 ```
 

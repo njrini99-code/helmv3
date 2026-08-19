@@ -195,7 +195,7 @@ Issue labeled safe candidate
   → code changed
   → PR opened
   → tests run
-  → CodeRabbit/Greptile/CI review
+  → CodeRabbit/the external review bot/CI review
   → command center shows status
   → Nick approves merge
 ```
@@ -265,7 +265,7 @@ AI created PR
   → run tests
   → run lint/typecheck
   → run CodeRabbit
-  → run Greptile/Claude/Codex review if available
+  → run the external review bot/Claude/Codex review if available
   → generate plain-English summary
   → assign risk score
   → require Nick approval

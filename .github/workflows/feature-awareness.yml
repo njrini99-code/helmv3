@@ -2,7 +2,7 @@ name: Feature Awareness
 
 # Advisory PR workflow for the repo-native AI feature-awareness layer.
 # It maps changed files through memory/registry.yml and uploads a context
-# pack that Codex/Claude/Greptile reviewers can use. Keep this non-blocking
+# pack that Codex/Claude reviewers can use. Keep this non-blocking
 # until registry coverage is stable across normal PR traffic.
 
 on:

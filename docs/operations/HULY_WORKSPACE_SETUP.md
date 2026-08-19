@@ -525,7 +525,7 @@ GitHub Actions
 Playwright
 Lighthouse
 CodeRabbit
-Greptile
+the external review bot
 ```
 
 Views:

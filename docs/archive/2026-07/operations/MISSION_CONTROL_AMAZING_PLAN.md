@@ -16,7 +16,7 @@ The one screen you open with coffee, and the one page a partner opens to trust t
 | **Prod error early-warning → Notion Incidents** (Seer root-cause) | Sentry (helm-xs) | Early-warning line before a paying-school outage; auto-filed with root cause | quick | live |
 | **Deploy + Supabase-pause watcher** (auto-deploy is ON) | Vercel + Supabase CLI | Empty-log "provisioning failed" = paused Supabase; breaks live users, easy to miss | quick | live |
 | **Nightly Supabase security-advisor + drift sweep** | Supabase `get_advisors` + `information_schema` | Agents keep re-shipping GRANT ALL TO anon + recorded-but-unran migrations — top recurring prod risk | medium | verify |
-| **Morning PR digest** (green / red / blocked / mergeable) | gh CLI + CodeRabbit/Greptile | Wave-based clean-slate work = many concurrent PRs; one-glance triage | quick | live |
+| **Morning PR digest** (green / red / blocked / mergeable) | gh CLI + CodeRabbit/the external review bot | Wave-based clean-slate work = many concurrent PRs; one-glance triage | quick | live |
 | **Ship-safety gate** ("no auto-merge/deploy during a demo window") | GitHub + Vercel + Google Calendar | Mid-demo deploy breaks a prospect call | medium | needs-setup |
 | **NCAA coach outreach funnel** (emailed→opened→replied→booked) — FREE | Resend + Gmail + Supabase `crm_coaches` | The actual GolfHelm/BaseballHelm acquisition motion; today it's fire-and-forget | medium | needs-setup |
 | **Gmail reply/meeting detector → "needs reply" queue** | Gmail (draft-only) | A warm coach reply sitting 2 days is the most expensive miss in a solo op | quick | live |
@@ -37,7 +37,7 @@ The one screen you open with coffee, and the one page a partner opens to trust t
 1. **Sentry daily error feed** — 7:30am scan of helmv3 prod for new + spiking unhandled issues, run Seer on the top one, write each into Notion Incidents.
 2. **Deploy + Supabase-pause watcher** — after every push to main, check latest prod deploy state; if failed/empty-log, probe Supabase status and post a red pill to Notion Deploys.
 3. **Gmail "needs reply" queue** — search the outreach mailbox for coach replies + calendar-link clicks, label them, surface a same-day "needs reply" list in the Daily Brief. **Never auto-send.**
-4. **Morning PR digest** — nightly `gh pr list` with CI + CodeRabbit/Greptile verdicts → "mergeable / red / blocked (admin-merge)" into Notion PRs.
+4. **Morning PR digest** — nightly `gh pr list` with CI + CodeRabbit/the external review bot verdicts → "mergeable / red / blocked (admin-merge)" into Notion PRs.
 5. **endor CVE scan** — weekly scan of the Next.js 16 / Supabase tree; open a Notion Incident on any new critical/high.
 6. **Schedule-aware brief header** — merge your fixed week + booked demos so the brief opens with "FIELD day — 2 demos" vs "OFFICE day — deep work."
 7. **Coach-outreach email health** — daily Resend bounce/spam/open-rate deltas so deliverability problems surface before they tank a batch.
@@ -65,7 +65,7 @@ The one screen you open with coffee, and the one page a partner opens to trust t
 > 1) Gmail: scan the outreach mailbox for replies from NCAA coaches + any `calendar.app.google/s9DBb3bKD2teLLBT7` booking clicks; label + advance the contact to replied/meeting and build a same-day "needs reply" list (DRAFT replies only, never send). 2) Resend: surface bounce/spam/open-rate deltas on coach outreach. 3) Supabase `crm_coaches`: show the funnel (emailed→opened→replied→booked) and who's stuck. Write "Who to reply to today" + funnel to Notion CRM. Free-data only — no paid enrichment.
 
 **Routine: Morning PR + Ship-Safety Gate** — *Weekdays 7:15am · gh CLI, Vercel, Google Calendar, Notion*
-> For njrini99-code/helmv3: list open PRs with CI + CodeRabbit/Greptile verdicts; classify mergeable / red / blocked(admin-merge). Check Google Calendar for demos booked today; if a demo window exists, add a bold warning: "DEMO WINDOW — do not auto-merge or deploy to prod between [start] and [end]" (Vercel auto-deploy is ON). Post digest + gate to Notion PRs. Do not merge anything.
+> For njrini99-code/helmv3: list open PRs with CI + CodeRabbit/the external review bot verdicts; classify mergeable / red / blocked(admin-merge). Check Google Calendar for demos booked today; if a demo window exists, add a bold warning: "DEMO WINDOW — do not auto-merge or deploy to prod between [start] and [end]" (Vercel auto-deploy is ON). Post digest + gate to Notion PRs. Do not merge anything.
 
 **Routine: Product Activation + AI Value Pulse** — *Weekly Mon 9:00am · Supabase, PostHog, Notion*
 > Compute weekly activation across onboarded programs: rounds logged (GolfHelm), check-ins (Lift Lab), baseball recruiting profiles created, coach AI-insight opens; list programs that signed but never activated or went dark >7 days. From `golf_coachhelm_llm_budget`, report insights generated vs silent template-downgrades (budget_exhausted/zero) and per-team burn. Flag dormant programs (churn) and downgrade spikes (trust erosion). Write to Notion Roadmap + Activation.

@@ -45,16 +45,14 @@
 
 ## Automated review
 
-There are **no AI reviewers on PRs.** CodeRabbit and Greptile were dropped
-2026-07-20 by founder decision — CodeRabbit's credit quota had become the
-slowest step in shipping, and the Review Gate + CodeQL cover the same hard
-rules deterministically. Do not wait for a review comment that is never
-coming, and do not treat their absence as a check still pending.
+There are **no AI reviewers on PRs.** The external review bots were dropped
+2026-07-20 by founder decision — their quota had become the slowest step in
+shipping, and the Review Gate + CodeQL cover the same hard rules
+deterministically. Do not wait for a review comment that is never coming, and
+do not treat its absence as a check still pending.
 
 What that leaves:
 
-- `.greptile/` is **deleted**. Any reference to `.greptile/rules.md` or
-  `.greptile/config.json` is stale.
 - `.coderabbit.yaml` is a **disable stub** (`auto_review.enabled: false`),
   not live path-instruction config.
 - The custom rule packs under `.coderabbit/ast-grep/` and

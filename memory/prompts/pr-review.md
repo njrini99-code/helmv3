@@ -11,7 +11,6 @@ Inputs:
 - mapped business rules
 - mapped UI contracts
 - test results
-- Greptile and CodeRabbit comments if available
 
 Review for:
 

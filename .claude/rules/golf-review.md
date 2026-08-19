@@ -64,6 +64,6 @@ Business context: `docs/business/08-golfhelm-business-context.md`,
   surface the PR touches.
 
 ---
-*Promoted 2026-08-09 from `src/app/golf/.greptile/rules.md`, orphaned when
-Greptile was dropped 2026-07-20. Claims re-verified against the code at
-promotion time.*
+*Promoted 2026-08-09 from a per-directory review-rules file, orphaned when the
+external review bots were dropped 2026-07-20. Claims re-verified against the
+code at promotion time.*

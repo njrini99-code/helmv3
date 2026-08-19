@@ -27,7 +27,7 @@ KEPT FOR HISTORY -- do not delete this file.
 - **SQLFluff** — SQL style/format on migrations and ad-hoc queries (Phase 3, Phase 6; already in `.coderabbit.yaml` + CircleCI weekly).
 - **pgTAP** — RLS + schema contract tests (Phase 6.3).
 - **Sqitch** — *evaluated only* as a possible future replacement for Supabase's migration folder if drift recurs after this alignment; out of scope for the initial fix.
-- **Greptile** — codebase-wide rule that no PR may edit a migration with a timestamp ≤ the alignment migration (Phase 6.5).
+- **the external review bot** — codebase-wide rule that no PR may edit a migration with a timestamp ≤ the alignment migration (Phase 6.5).
 - **CodeRabbit** — line-level blocking rule for the same constraint (Phase 6.5).
 - **GitHub Actions** — per-PR fast checks; new `schema-drift.yml` workflow (Phase 6.4).
 - **CircleCI weekly** — full-repo sqlfluff + Squawk migration safety (already configured in `.circleci/config.yml`; this plan only adds the new files to its scope).
@@ -1109,18 +1109,18 @@ git add .github/workflows/schema-drift.yml
 git commit -m "ci(schema): Atlas + types + ledger drift on every PR and nightly"
 ```
 
-### Task 6.5: Lock down historical migrations via Greptile + CodeRabbit
+### Task 6.5: Lock down historical migrations via the external review bot + CodeRabbit
 
 **Files:**
-- Modify: `.greptile/instructions.md`
+- Modify: `.external-review-bot/instructions.md`
 - Modify: `.coderabbit.yaml`
 - Modify: `.coderabbit/ast-grep/no-historical-migration-edits.yml` (create)
 
 Goal: prevent the next contributor from "fixing" a CI failure by editing `supabase/migrations/<timestamp ≤ 20260527120000>_*.sql`.
 
-- [ ] **Step 1: Add hard rule to Greptile instructions**
+- [ ] **Step 1: Add hard rule to the external review bot instructions**
 
-Append to `.greptile/instructions.md` under "Hard rules":
+Append to `.external-review-bot/instructions.md` under "Hard rules":
 
 ```markdown
 - **No edits to historical migrations.** Any PR that modifies a file under
@@ -1167,7 +1167,7 @@ Edit any historical migration locally and run the Review Gate workflow on a draf
 - [ ] **Step 5: Commit**
 
 ```bash
-git add .greptile/instructions.md .coderabbit.yaml .coderabbit/ast-grep/no-historical-migration-edits.yml
+git add .external-review-bot/instructions.md .coderabbit.yaml .coderabbit/ast-grep/no-historical-migration-edits.yml
 git commit -m "ci(review): block edits to historical migrations after alignment baseline"
 ```
 

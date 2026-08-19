@@ -84,7 +84,7 @@
     },
     {
       "title": "Testing CI and Review Gates",
-      "purpose": "Document GitHub Actions, CircleCI, Playwright, Vitest, Supabase tests, CodeRabbit, Greptile, feature-awareness reports, and suggested checks by feature."
+      "purpose": "Document GitHub Actions, CircleCI, Playwright, Vitest, Supabase tests, feature-awareness reports, and suggested checks by feature."
     }
   ]
 }

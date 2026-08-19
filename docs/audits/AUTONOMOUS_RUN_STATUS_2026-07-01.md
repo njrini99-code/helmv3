@@ -20,7 +20,7 @@
 - **Feature remediations** (`#573–#577 #580 #582–#590 #592–#606 #608–#610 #612–#614`): lift-publish no-op, onboarding data-loss, Decision Room read-models, messages/documents/announcements, stats, calendar tz, box-score RPC, schema-drift wrong-column reads.
 - **Sweep-2 fixes** (`#615–#619`): Discover pagination (+ a hidden 100%-drop enrichment bug the verifier caught), watchlist demo-guard bypass + honest toasts, travel IDOR, coach-notes & roles-permissions wrong-column reads.
 - **Fairway Phase A** (`#591`): flag-gated shell, provider-parity, dark by default.
-- **Docs** (`#578`): V1 spec + Greptile pointer.
+- **Docs** (`#578`): V1 spec + the external review bot pointer.
 
 ### ⚠️ Needs YOUR decision (escalated — I did NOT touch these)
 - **`baseball_coaches` PII leak** (`baseball_coaches_select_all USING(true)`): a blanket DROP breaks player→coach messaging. Fix = non-PII view/RPC + repoint `NewMessageModal`/`use-messages`, THEN drop. Product decision needed.

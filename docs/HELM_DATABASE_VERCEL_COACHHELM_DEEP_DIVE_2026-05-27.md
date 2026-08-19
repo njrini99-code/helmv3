@@ -728,7 +728,7 @@ CoachHelm v3 wave work landed rapidly:
 
 Infra and tooling changes landed:
 
-- CodeRabbit/Greptile strict config
+- CodeRabbit/the external review bot strict config
 - CircleCI
 - auto-regen docs
 - Inngest integration
@@ -1307,7 +1307,7 @@ Catch local line-level issues and rule violations before merge.
 
 It cannot replace live DB verification.
 
-### Greptile
+### the external review bot
 
 Use for:
 

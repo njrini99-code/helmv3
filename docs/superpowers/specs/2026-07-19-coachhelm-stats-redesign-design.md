@@ -206,7 +206,7 @@ Sizing rules: cell padding 16–18px; KPI band cells 14–16px; mono numerals ge
 - Every phase gate: `npm run typecheck` + `npm run lint` + `npm test` green before the next
   phase starts; `npm run build` before PR.
 - Reviews: code-reviewer agent on each phase diff; ui-polish-reviewer on the final diff.
-- CI: PR into `main` via the normal review gate (CodeRabbit/Greptile).
+- CI: PR into `main` via the normal review gate (CodeRabbit/the external review bot).
 
 ## 8. Non-goals (this project)
 

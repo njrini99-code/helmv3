@@ -33,8 +33,6 @@ features:
     integrations:
       - github_actions
       - codex
-      - greptile
-      - coderabbit
     review:
       required_docs:
         - docs/ai-system/helmv3-ai-codebase-intelligence.md
@@ -1087,8 +1085,6 @@ systems:
     docs: .github/branch-protection.md
     code:
       - .github/workflows/review-gate.yml
-      - .coderabbit.yaml
-      - .greptile/**
     criticality: high
 
 integrations:

@@ -74,7 +74,7 @@ Advisory checks:
 
 - `Vercel` and `Vercel Preview Comments` (non-main preview builds skipped —
   see `docs/operations/COST_CONTROLS.md`)
-- ~~`Greptile Review`~~ — **DELETED 2026-07-20**; `.greptile/` is gone.
+- ~~`the external review bot`~~ — **DELETED 2026-07-20**; the retired rules directory is gone.
 - `ci/circleci: lighthouse-preview`
 - `Playwright PR smoke (a11y)` — public routes only, path-filtered within PRs
 - `Playwright (chromium)` — main + manual only
@@ -100,8 +100,8 @@ configured or the job fails loudly. Note the added cost: a second full
 non-Dependabot PR, on top of the existing `Next build` / `Smoke checks`
 builds.
 
-**HISTORICAL (both AI reviewers were dropped 2026-07-20).** `Greptile Review` was
-intentionally advisory, not required: its `.greptile/config.json` skipped
+**HISTORICAL (both AI reviewers were dropped 2026-07-20).** `the external review bot` was
+intentionally advisory, not required: its `its config` skipped
 `dependabot`-titled PRs, so it never posted a passing status on them, and making it
 a required context would have left every Dependabot PR permanently un-mergeable
 without an admin override. CodeRabbit was the blocking AI reviewer.

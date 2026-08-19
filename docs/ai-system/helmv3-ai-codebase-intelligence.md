@@ -1,6 +1,6 @@
 # Helmv3 AI-Native Codebase Intelligence System
 
-Helmv3 already has the hard parts of an AI-native engineering system: `AGENTS.md`, `CLAUDE.md`, CodeRabbit, Greptile, GitHub Actions, CircleCI, Supabase tests, Playwright, and a curated `memory/` folder. This layer makes those parts act like one operating system.
+Helmv3 already has the hard parts of an AI-native engineering system: `AGENTS.md`, `CLAUDE.md`, CodeRabbit, the external review bot, GitHub Actions, CircleCI, Supabase tests, Playwright, and a curated `memory/` folder. This layer makes those parts act like one operating system.
 
 ## Source Of Truth
 
@@ -21,7 +21,7 @@ Use `memory/` as the repo intelligence source. Do not create a parallel `/knowle
 | Tool | Role |
 | --- | --- |
 | Codex | Implements fixes, generates context packs, validates locally, updates docs |
-| Greptile | Whole-codebase PR review and drift detection |
+| the external review bot | Whole-codebase PR review and drift detection |
 | CodeRabbit | Line-level review, static analysis, custom security and RLS rules |
 | GitHub Actions | Fast PR gate: typecheck, lint, unit tests, build, Supabase lint and RLS |
 | CircleCI | Heavy jobs: iOS compile, Lighthouse preview, Knip, Stryker, Squawk, Promptfoo |
@@ -38,7 +38,7 @@ Changed files
   -> memory/registry.yml impacted features
   -> scripts/knowledge/generate-context-pack.mjs
   -> Codex/Claude product-aware review
-  -> Greptile whole-codebase review
+  -> the external review bot whole-codebase review
   -> CodeRabbit line/static review
   -> Playwright/Supabase/CI validation
   -> docs or Linear follow-up if knowledge is stale
@@ -50,7 +50,7 @@ Changed files
 
 - `feature-map.json` — changed files mapped to `memory/registry.yml` features.
 - `summary.md` — human-readable impacted feature summary and suggested checks.
-- `context-pack.md` — focused context pack for Codex, Claude, Greptile, or manual review.
+- `context-pack.md` — focused context pack for Codex, Claude, the external review bot, or manual review.
 
 This workflow is intentionally advisory for now. Promote it to a required gate only after normal PR traffic shows low noise and registry coverage is strong.
 

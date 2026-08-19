@@ -310,7 +310,12 @@ jobs:
         run: npm run build
 
       - name: Run course-library spec (capture screenshots)
-        run: npx playwright test course-library.spec.ts --reporter=line || echo "course-library spec had failures — see screenshots/report artifacts"
+        # No `|| echo`: masking the exit code made this job report SUCCESS while
+        # its own log said tests failed — the same defect already fixed for the
+        # chromium job above (#812). This job is advisory, not a required check,
+        # so an honest red here cannot block a merge; it only makes the badge
+        # mean what it says. Artifacts still upload via `if: always()` below.
+        run: npx playwright test course-library.spec.ts --reporter=line
 
       - name: Upload course-picker screenshots
         if: always()
@@ -370,7 +375,9 @@ jobs:
         run: npm run build
 
       - name: Run baseball-smoke spec
-        run: npx playwright test baseball-stats-smoke.spec.ts --reporter=line || echo "baseball-smoke had failures — see report artifact"
+        # Same unmasking as the course-library step above. Observed 2026-08-18:
+        # this job reported conclusion=success while its log read "2 failed".
+        run: npx playwright test baseball-stats-smoke.spec.ts --reporter=line
 
       - name: Upload Playwright report (baseball-smoke)
         if: always()

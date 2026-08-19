@@ -4,13 +4,13 @@ verified: unverified  # never re-checked against code — do not trust without g
 
 ## Code Review Tooling
 
-> 2026-07-20: the external AI reviewers (CodeRabbit, Greptile) were
-> DROPPED by founder decision — CodeRabbit's credit quota had become the
-> slowest step in shipping, and the Review Gate + CodeQL cover the same
-> hard rules deterministically. `.coderabbit.yaml` is now a disable stub;
-> `.greptile/` is deleted; "CodeRabbit" was removed from main's required
-> status checks. The GitHub Apps themselves still need an owner uninstall
-> (repo Settings → Integrations). The custom rule packs under
+> 2026-07-20: the external AI reviewers were DROPPED by founder decision —
+> their credit quota had become the slowest step in shipping, and the Review
+> Gate + CodeQL cover the same hard rules deterministically. `.coderabbit.yaml`
+> is now a disable stub, and the bots were removed from main's required status
+> checks. The GitHub Apps themselves still need an owner uninstall
+> (repo Settings → Integrations) — until that happens they keep posting
+> advisory checks on PRs. The custom rule packs under
 > `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` REMAIN — CI consumes
 > them directly; treat that directory name as historical.
 

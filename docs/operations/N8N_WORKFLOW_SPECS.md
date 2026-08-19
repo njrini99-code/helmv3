@@ -266,7 +266,7 @@ PR opened
   → summarize diff for partners
   → assign risk score
   → watch checks
-  → track CodeRabbit/Greptile/CI status
+  → track CodeRabbit/the external review bot/CI status
   → update Git Activity Timeline
   → if checks fail, mark blocked
   → if checks pass, mark ready for Nick review

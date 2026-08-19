@@ -72,7 +72,7 @@ subsystem is under active rework, trust DB enums/RLS over route detail):
   glance).
 
 ---
-*Promoted 2026-08-09 from `src/app/baseball/.greptile/rules.md`, orphaned when
-Greptile was dropped 2026-07-20. Claims re-verified at promotion time; the
+*Promoted 2026-08-09 from a per-directory review-rules file, orphaned when the
+external review bots were dropped 2026-07-20. Claims re-verified at promotion time; the
 `contacted`/`campus_visit` item was rewritten — the source rule still called it
 a live bug, but it had been fixed.*

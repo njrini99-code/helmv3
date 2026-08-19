@@ -23,7 +23,7 @@ KEPT FOR HISTORY -- do not delete this file.
 ## Standing rules (the contract — non-negotiable)
 
 1. **Spec-first.** Read the V1 tab spec + the issue (`gh issue view <N>`) + the ledger evidence before coding. Where the app deliberately diverges from the spec, that's a decision to surface — not auto-treat as a bug.
-2. **One surface per PR, ≤ ~15 files / ~400 lines.** This is *the* rule the post-mortem exists to enforce — PRs over the review bots' file ceilings (Greptile 100, CodeRabbit 150) get auto-skipped and duplication slips through. Never batch unrelated fixes.
+2. **One surface per PR, ≤ ~15 files / ~400 lines.** This is *the* rule the post-mortem exists to enforce — PRs over the review bots' file ceilings (the external review bot 100, CodeRabbit 150) get auto-skipped and duplication slips through. Never batch unrelated fixes.
 3. **Delete dead code** the fix obsoletes — don't leave old+new coexisting.
 4. **Branch:** `fix/baseball-<issue>-<slug>` off `origin/main`. **No direct-to-main pushes.**
 5. **Migrations:** ADDITIVE only (CREATE OR REPLACE / IF NOT EXISTS). New timestamped file after `20260630230000`. `GRANT EXECUTE ... TO authenticated, service_role` only — **never anon** (Supabase re-grant gotcha). Serialize timestamps to avoid collisions.

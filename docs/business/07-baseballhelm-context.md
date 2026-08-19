@@ -38,7 +38,7 @@ innings. The buyer is the **program/coach**; players and recruits are end users.
 ## 3. Invariants that must never break
 
 These are stable rules the active rework must respect (enforced in
-`03-product-invariants.md` and `src/app/baseball/.greptile/rules.md`):
+`03-product-invariants.md` and `src/app/baseball/.external-review-bot/rules.md`):
 
 - **Recruiting is opt-in.** A player must explicitly activate recruiting
   (`recruiting_activated`). **College players can never activate.** Only the

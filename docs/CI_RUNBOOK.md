@@ -68,7 +68,7 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 | `Playwright PR smoke (a11y)` | `pr-smoke.yml` | public-route accessibility Playwright only when frontend/e2e paths change | Advisory |
 | `CodeRabbit` | CodeRabbit GitHub App | ~~assertive line-level review + blocking custom checks~~ | **DROPPED 2026-07-20** — removed from the required set by founder decision; `.coderabbit.yaml` is a disable stub. If a `CodeRabbit` status still appears, it is informational. The custom rule packs under `.coderabbit/` REMAIN and are consumed directly by the Review Gate. |
 | `CodeQL` | `codeql.yml` | code-scanning security analysis | **Hard gate** |
-| `Greptile Review` | Greptile GitHub App | ~~whole-codebase review~~ | **DROPPED 2026-07-20** — `.greptile/` is deleted. Neither external AI reviewer is a gate any more; the deterministic Review Gate + CodeQL cover the same hard rules. |
+| `the external review bot` | the external review bot GitHub App | ~~whole-codebase review~~ | **DROPPED 2026-07-20** — the retired rules directory is deleted. Neither external AI reviewer is a gate any more; the deterministic Review Gate + CodeQL cover the same hard rules. |
 | `Playwright (chromium)` / `Course picker screenshots` / `BaseballHelm seeded smoke` | `playwright.yml` | full E2E (mandatory Baseball smoke + mobile-viewport regression + broader chromium suite) — **main push + manual `workflow_dispatch` only** (not PRs) | Advisory on main; manual for feature branches. **Note:** `Playwright (chromium)`'s broader-suite step no longer masks its exit code (`|| echo ...` removed) — a red run here now means a real failure, not just "see artifact." |
 | `ci/circleci: lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; usually skips when no preview exists (non-main Vercel builds disabled) | Advisory |
 | `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, only relevant when `ios/**` / `capacitor.config.ts` changed | Advisory unless the PR touches iOS |
@@ -86,7 +86,7 @@ Don't treat a check as "stuck" before its normal window has passed:
   ship. CircleCI Lighthouse skips accordingly, since no preview URL exists.
   (This bullet said "only `main` builds automatically" until 2026-08-15 —
   five weeks after that stopped being true.)
-- **CodeRabbit / Greptile** — gone. Dropped 2026-07-20 by founder decision;
+- **CodeRabbit / the external review bot** — gone. Dropped 2026-07-20 by founder decision;
   see `.claude/rules/code-review-tooling.md`. There is no AI review on a PR,
   so their absence is never a pending check. The Review Gate + CodeQL cover
   the same hard rules deterministically.
@@ -144,7 +144,7 @@ pending check has hung — then rerun (see below) rather than waiting longer.
 - Not a GHA-style "rerun" button — redeploy from the Vercel dashboard, or
   promote from the CLI. Since `git.deploymentEnabled` is `{"*": false}`, there
   is no git-triggered deploy to rerun in the first place.
-- CodeRabbit and Greptile used to be listed here. Both were dropped
+- the external review bots used to be listed here. Both were dropped
   2026-07-20 — there is nothing to re-request.
 
 ## 4. Inherited failures from `main`

@@ -15,7 +15,7 @@
 
 | Doc | What it gives you | Primary readers |
 |---|---|---|
-| [PRODUCT_CONTEXT_PACK.md](PRODUCT_CONTEXT_PACK.md) | 60-second brief per product (BaseballHelm, GolfHelm, CoachHelm, Lift Lab, Platform): buyer/users, jobs-to-be-done, key surfaces, never-break invariants, maturity. | Partners, n8n triage, Greptile |
+| [PRODUCT_CONTEXT_PACK.md](PRODUCT_CONTEXT_PACK.md) | 60-second brief per product (BaseballHelm, GolfHelm, CoachHelm, Lift Lab, Platform): buyer/users, jobs-to-be-done, key surfaces, never-break invariants, maturity. | Partners, n8n triage, the external review bot |
 | [TOOLS_AND_SERVICES_REGISTRY.md](TOOLS_AND_SERVICES_REGISTRY.md) | Every tool/service Helm runs on, grouped by category, with purpose, tier, where configured, and partner-visibility. | Nick, ops, onboarding |
 | [COMPETITIVE_INTEL_BASELINE.md](COMPETITIVE_INTEL_BASELINE.md) | Competitor profiles (golf, baseball recruiting/team/hardware, coaching-AI) with strengths, gaps, Helm's edge, threat level. Seeds the Huly Competitive Intel space. | Partners, roadmap, GTM |
 | [TELEMETRY_BASELINE.md](TELEMETRY_BASELINE.md) | Point-in-time production-health snapshot (live Sentry + Vercel), top issues by blast radius, and the prioritized fix list. Seeds the Huly Telemetry space. | Nick, n8n Sentry/Vercel workflows |
@@ -27,7 +27,7 @@
 
 This context pack is a **lens**, not a duplicate. The authoritative detail lives here:
 
-**Business / product truth** (already used by Greptile as review context):
+**Business / product truth** (already used by the external review bot as review context):
 - `docs/business/00-business-context.md` … `09-coachhelm-business-context.md` — company, personas, jobs-to-be-done, product invariants, workflow maps, revenue/packaging, competitor positioning, and per-product context.
 
 **Engineering / feature truth:**
@@ -51,8 +51,8 @@ This context pack is a **lens**, not a duplicate. The authoritative detail lives
 
 ## For Mission Control (how the automation uses this pack)
 
-- **Greptile** — these docs are high-signal review context. Add the ones relevant
-  to a surface to `.greptile/files.json` so PR review is product-aware (e.g.
+- **the external review bot** — these docs are high-signal review context. Add the ones relevant
+  to a surface to `.external-review-bot/files.json` so PR review is product-aware (e.g.
   competitive intel + product pack when judging whether a change strengthens the edge).
 - **n8n** — the intake/triage workflows read `PRODUCT_CONTEXT_PACK.md` (to route by
   product/surface) and `TELEMETRY_BASELINE.md` (to correlate a Sentry/Vercel signal

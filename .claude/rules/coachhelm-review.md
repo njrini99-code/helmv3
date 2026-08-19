@@ -71,6 +71,6 @@ routine backend plumbing. Business context:
   differentiator (`docs/business/06-competitor-positioning.md`).
 
 ---
-*Promoted 2026-08-09 from `src/lib/coachhelm/.greptile/rules.md`, orphaned when
-Greptile was dropped 2026-07-20. `budget.ts`, `checkBudget`/`recordSpend` and
+*Promoted 2026-08-09 from a per-directory review-rules file, orphaned when the
+external review bots were dropped 2026-07-20. `budget.ts`, `checkBudget`/`recordSpend` and
 the composer names were re-verified against the code at promotion time.*
