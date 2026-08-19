@@ -216,3 +216,8 @@ SECURITY_REVIEW_*.json
 # regenerates it every run. Ignored so the gate never leaves the tree dirty,
 # which would trip deploy-prod.sh's dirty-tree guard and block a deploy.
 deno.lock
+
+# Real product asset. The blanket *.png rule above hid it from git while three
+# live Lift Lab pages referenced it (login, forgot-password, coach onboarding),
+# so it existed on exactly one machine. Scratch/screenshot PNGs stay ignored.
+!public/helm-lifting-logo.png
