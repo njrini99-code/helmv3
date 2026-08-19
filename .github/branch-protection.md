@@ -41,39 +41,88 @@ so a job split/rename does not silently break protection.
 > not-yet-required check runs start appearing.
 >
 > **The live GitHub setting above (`contexts: [..., "all", ...]`) has NOT
-> been touched.** Completing the migration is an owner action, in this exact
-> order, so `main` is never blocked on a context nothing will report:
+> been touched.** Completing the migration is an owner action.
 >
-> 1. Merge/land the job-rename commit on `main` first. Confirm both new
->    check runs (`CI aggregate`, `Review Gate aggregate`) post green for
->    that commit's own SHA — `gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs
->    -q '.check_runs[] | {name, conclusion}'`. Only once both have actually
->    reported for a real commit should the next step run, or the new
->    required context can end up waiting on a name that has genuinely never
->    fired.
-> 2. Then, in one call, swap the required context list:
->    ```bash
->    gh api --method PUT repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
->      -f strict=true \
->      -f 'contexts[]=CodeQL' \
->      -f 'contexts[]=Smoke checks' \
->      -f 'contexts[]=CI aggregate' \
->      -f 'contexts[]=Review Gate aggregate'
->    ```
->    (`gh api` with repeated `-f 'contexts[]=...'` sends a JSON array; drop
->    `"all"` in this same call rather than as a separate step, so there is no
->    window where both the old and a stale expectation coexist.)
-> 3. Re-verify with the same `-q '.required_status_checks | {strict, contexts}'`
->    query used above, then update the "verified live" date/output block at
->    the top of this section and the matching row in
->    `docs/CI_RUNBOOK.md` §1 to stop describing this as open.
+> **PRECONDITION — check this first, not from this doc's memory of it:**
+> `gh api repos/njrini99-code/helmv3/branches/main/protection -q '.required_status_checks.contexts'`
+> and confirm `"all"` is still in the list. It was, verified 2026-08-19. If
+> someone already changed it since, the rest of this note is stale — work
+> from what the API says, not from this file.
 >
-> Steps 2–3 are the owner-level part — not executed by this pass. Note that
-> the *current* live branch protection has `enforce_admins` off and permits
-> direct owner pushes (see `CLAUDE.md` rule 0), so for this repo specifically
-> a mis-sequenced step 1 would not actually block the owner from pushing;
-> the ordering above is the fully-general-case-safe sequence, worth
-> following anyway in case `enforce_admins` is ever turned on later.
+> **There is no ordering of "merge the rename" and "update the required
+> context list" that is both instant and non-blocking, because they are two
+> separate systems (a git commit vs. a repo setting) that cannot land
+> atomically.** Whichever comes first, there is a real window before the
+> second lands. Pick one of the two orderings below — this is a judgment
+> call about which kind of window you'd rather have, not a technical
+> question with one right answer:
+>
+> **Option A — rename first (blocked-merge window, nothing under-protected).**
+> Between steps 1 and 3, `all` is still a *required* context and nothing
+> will ever post it again, because the job that used to emit it now has a
+> different name. Any PR-based merge — and any other session's push, if
+> `enforce_admins` is ever turned on — is stuck waiting on a check that will
+> never arrive, for as long as this window stays open. **Do not start step 1
+> unless you can reach step 3 in the same sitting; treat the gap as a timed
+> operation, not a place to pause.** For *this* repo, right now,
+> `enforce_admins` is off and the owner can push straight through the block
+> (see `CLAUDE.md` rule 0) — so the practical cost today is "PRs are stuck,
+> not you," which may be acceptable for a solo-owner repo. It stops being
+> acceptable the moment `enforce_admins` is turned on or a second
+> contributor exists.
+>   1. Merge/land the job-rename commit on `main`.
+>   2. Confirm both new check runs (`CI aggregate`, `Review Gate aggregate`)
+>      post green for that commit's own SHA:
+>      `gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs -q '.check_runs[] | {name, conclusion}'`.
+>      This step necessarily happens *inside* the blocked window — there is
+>      no way to observe the new names posting before the rename commit that
+>      makes them exist has landed.
+>   3. Immediately swap the required context list, adding both new names and
+>      dropping `"all"` in the same call so there's no second gap:
+>      ```bash
+>      gh api --method PUT repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
+>        -f strict=true \
+>        -f 'contexts[]=CodeQL' \
+>        -f 'contexts[]=Smoke checks' \
+>        -f 'contexts[]=CI aggregate' \
+>        -f 'contexts[]=Review Gate aggregate'
+>      ```
+>
+> **Option B — required-contexts first (briefly-reduced-protection window,
+> nothing ever blocked).** Drop `"all"` from the required list *before* the
+> rename lands. For the gap between steps 1 and 2, `main` has only two
+> required contexts (`CodeQL`, `Smoke checks`) instead of three — the
+> CI/Review-Gate aggregates run and are visible, just not enforced, so a red
+> CI or Review Gate run could theoretically merge during this window. Never
+> blocked, but permissive while open. Keep it short.
+>   1. Remove `"all"` from the required list, keeping the other two:
+>      ```bash
+>      gh api --method PUT repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
+>        -f strict=true \
+>        -f 'contexts[]=CodeQL' \
+>        -f 'contexts[]=Smoke checks'
+>      ```
+>   2. Merge/land the job-rename commit on `main`. Confirm both new check
+>      runs post green for that commit's SHA (same `check-runs` query as
+>      Option A step 2).
+>   3. Add the two new names back:
+>      ```bash
+>      gh api --method PUT repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
+>        -f strict=true \
+>        -f 'contexts[]=CodeQL' \
+>        -f 'contexts[]=Smoke checks' \
+>        -f 'contexts[]=CI aggregate' \
+>        -f 'contexts[]=Review Gate aggregate'
+>      ```
+>
+> **Either way, finish with:** re-verify via the same
+> `-q '.required_status_checks | {strict, contexts}'` query used above, then
+> update the "verified live" date/output block at the top of this section
+> and the matching row in `docs/CI_RUNBOOK.md` §1 to stop describing this as
+> open.
+>
+> None of the steps above have been executed by this pass — this section
+> only prepares the choice and the exact commands for the owner to run.
 >
 > `CodeRabbit` is **no longer required** (dropped 2026-07-20). The bullet below is
 > kept struck through rather than deleted so the change is visible to anyone

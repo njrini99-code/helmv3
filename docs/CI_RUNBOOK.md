@@ -63,14 +63,17 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 > **2026-08-19 (Lane C / worker-ci): the job rename is prepared, the live
 > setting is not.** `ci.yml`'s aggregate is renamed `all` → `CI aggregate`;
 > `review-gate.yml`'s is renamed `all` → `Review Gate aggregate` (job `name:`
-> only, `needs:`/leaf jobs untouched). The exact remaining steps — merge the
-> rename, confirm both new names post green for a real commit, then swap
-> `required_status_checks.contexts` in one `gh api` call that both adds the
-> two new names and drops `"all"` — are written out in
-> `.github/branch-protection.md`'s "MIGRATION PREPARED, NOT YET LIVE" note.
-> Until the owner runs that, this section's live query above still returns
-> bare `"all"` and everything in this runbook about the ambiguity still
-> applies.
+> only, `needs:`/leaf jobs untouched). Landing the rename commit and
+> updating `required_status_checks.contexts` cannot happen atomically —
+> they're two different systems — so there is unavoidably a real window
+> between them, either "main blocked on `all`" or "briefly running with one
+> fewer required context." `.github/branch-protection.md`'s "MIGRATION
+> PREPARED, NOT YET LIVE" note lays out both orderings with exact `gh api`
+> commands and lets the owner pick which window they'd rather have; it also
+> has a precondition check to run first, since this note may be read hours
+> after it was written. Until the owner runs either path, this section's
+> live query above still returns bare `"all"` and everything in this
+> runbook about the ambiguity still applies.
 
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
