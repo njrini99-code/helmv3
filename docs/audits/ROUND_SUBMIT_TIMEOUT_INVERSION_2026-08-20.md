@@ -271,9 +271,20 @@ asserts the invariant directly — zero DELETEs against `golf_holes` / `golf_sho
 on an abort — rather than asserting end state, because the test fake's inserts
 always succeed and a delete-then-reinsert is indistinguishable from never having
 deleted. Confirmed by bug injection: with the guard disabled both tests fail on
-the delete count. Full suite 556 passing; the 2 failures in
+the delete count.
+
+Scope of that test run, stated precisely: `vitest run --project unit
+src/app/golf/actions/__tests__/` — 556 passing, **not** the full suite (`npm
+test` is 818 files, which was not run here). The 2 failures in
 `program-onboarding` / `auth-signup-gate` are pre-existing and belong to another
-session's staged work.
+session's staged work. Typecheck is clean for both changed files.
+
+**`save_partial_round_atomic` deliberately gets no guard.** Checked, not missed:
+its error path logs and returns, and there is no destructive rebuild behind it —
+so an abort there costs the player one auto-save cycle, never data. The two
+remaining `attemptDirectSubmitFallback` call sites that pass
+`source: 'rpc_result'` are also correctly excluded: a DB-returned failure means
+Postgres rolled back, so rebuilding is the safe and correct response there.
 
 **Still owed:** fix 4 (single-flight auto-save per round) and the follow-up
 batching. Until 4 lands, the pile-up that produces the tail is unchanged — the
@@ -299,11 +310,31 @@ batching. Until 4 lands, the pile-up that produces the tail is unchanged — the
 
 ## Owner decisions — not taken here
 
-- **Recovering `crobinson3@guilford.edu`'s round.** The holes and shots are not
-  in `golf_rounds.draft_data` (the RPC cleared it) and there is no backup table.
-  Supabase PITR to ~03:18 UTC on 2026-08-20 into a branch, then extracting the
-  18 holes / 72 shots, is the only route. That is a paid, owner-initiated
-  operation.
+- **Recovering James Peach's round.** Searched and empty: `golf_rounds.draft_data`
+  (the RPC cleared it), `admin_events.metadata`, `error_logs.context`, and every
+  table carrying a `round_id`. No backup table exists — the "submission backup"
+  writes to `draft_data`, which the successful RPC then nulled. No local dump
+  exists in the repo either (`supabase/seed/v3-seed.sql` is 5KB of fixtures).
+  **Supabase managed backups / PITR are the only route, and whether PITR is
+  enabled on this project and what its retention window is has NOT been
+  verified** — that needs the project's backup settings, not a SQL query.
+  Restoring to ~03:18 UTC on 2026-08-20 into a branch and extracting the 18
+  holes / 72 shots is the shape of it.
+
+  **Reconstruction from the surviving cache is not viable.**
+  `golf_round_stats_cache` pins the *multiset* — 5 birdies, 8 pars, 5 bogeys,
+  front 36 / back 36, 7 one-putts, 1 three-putt, 2/6 scrambling, 2 penalty
+  strokes — but not which hole each belongs to, and the 72 shot records cannot
+  be inverted out of four strokes-gained numbers. Writing invented holes and
+  shots would feed strokes-gained, his trend line and CoachHelm's insights with
+  fabrications indistinguishable from real play, permanently. An empty round is
+  the better failure.
+
+- **The round is currently un-resubmittable.** `submit_round_atomic` rejects on
+  `status != 'completed'`, so even with his scorecard in hand Peach cannot
+  re-enter it. Flipping `status` back to `in_progress` is a one-row, reversible
+  repair — but it is a production write on a real customer's record and it would
+  disturb a PITR extraction, so it is being offered rather than done.
 - **Deploying.** `vercel.json` carries `deploymentEnabled: {"*": false}`, so
   none of this ships on push; production is an on-demand CLI promote, and env
   vars bake at build time.
