@@ -1,9 +1,10 @@
 # Issue ledger — 2026-08-19
 
-Consolidates three sources into one actionable list:
+Consolidates four sources into one actionable list:
 
 - the codebase audit at `~/helmv3-audit-2026-08-19/` (MF-001..018, 34 tools)
 - two agent-context reviews of `.claude/`, `.cursor/` and git config
+- a structural review of the knowledge registry, types and folders
 - items still open from the overnight remediation run
 
 **Every entry below was re-verified against the working tree, the live hooks,
@@ -220,6 +221,97 @@ parallel agents.
 
 ---
 
+## KNOWLEDGE-SYSTEM & STRUCTURE (third review, 2026-08-19)
+
+Verified the same way. The theme is real and worth naming: this repo built
+sophisticated systems — the registry, AUTOGEN blocks, `knowledge:map`, scoped
+rules — and then stopped checking for drift INSIDE them.
+
+### K1. `src/lib/recruiting/**` is routed by nothing
+
+Verified, and sharper than reported. The review said the `recruiting` registry
+entry "points at golf routes for a baseball feature". What is actually true:
+
+- the entry maps golf routes/components/actions and golf docs
+- a golf recruiting route really does exist, so that half is not wrong
+- but `src/lib/recruiting/**` appears in **no registry entry at all**
+
+`npm run knowledge:map -- --files src/lib/recruiting/stages.ts` returns
+`impactedFeatures: []`. Meanwhile CLAUDE.md routes that same path to
+`baseball-review`, and `stages.ts:17` reads the `baseball_pipeline_stage` DB
+enum. So the rule layer calls it baseball, the registry calls it nothing, and
+the only registry entry named `recruiting` is golf. **Priority: this is a
+silent no-op, which is worse than a wrong answer.**
+
+### K2. Registry keys and feature-doc filenames use different conventions
+
+Verified: 19 of 25 registry keys are snake_case; 15 of 16 feature docs are
+kebab-case. Mapping still works because it resolves through `code.routes` globs
+and an explicit `docs.feature` path, not filename inference — so this is a
+navigability problem, not a broken pipeline. Also verified: 9 of 25 entries have
+no feature/context doc, and `baseball_core` points at `CLAUDE.md`, a routing
+file rather than a feature doc.
+
+### K3. Two parallel feature-doc systems
+
+`memory/context/golfhelm-features.md` (57 KB, 28 features) and
+`memory/features/*.md` (16 per-feature docs) both exist and are both maintained.
+CLAUDE.md's routing table sends agents to the first; the registry sends them to
+the second. Two sources of truth for the same feature is double the drift
+surface. Pick one; make the other an index or an archive.
+
+### K4. `baseballhelm-database.md` is 50 days stale with no AUTOGEN block
+
+Golf's equivalent was regenerated 2026-08-19 and carries an `AUTOGEN:columns`
+block; baseball's has neither. `database.md` points at the golf doc's AUTOGEN
+block for columns and says the surrounding narrative is stale — baseball has no
+equivalent guardrail. Either give it an AUTOGEN block or route baseball column
+lookups to `database.ts` + `execute_sql` explicitly.
+
+### K5. Staleness detectors exist but nothing runs them
+
+`scripts/knowledge/` has `stale-doc-check.mjs` and `check-doc-coverage.mjs`;
+`feature-awareness.yml` runs only `knowledge:check`. The AUTOGEN system catches
+inventory drift via `docs-regen.yml`, but feature-doc staleness (K4) has no
+automated detector. CircleCI's `weekly` workflow is the natural home.
+
+### K6. Rename bare `Coach` / `Player` to `BaseballCoach` / `BaseballPlayer`
+
+The doc half is fixed (`1be0b96f0` annotated CLAUDE.md's example, which was
+actively teaching the trap). The rename itself is still open: 24 files import
+the bare names, **0 of them golf**, so this is pre-emptive rather than a live
+bug — do it before a golf file ever picks them up.
+
+### K7. Document the `ui/` vs `fairway/` boundary
+
+`design-system.md` says "Fairway is the only dashboard design system", but
+`ui/` has 50 files and 376 `button.tsx` import sites against fairway's 62.
+Baseball and lifting are almost entirely `ui/`; golf is genuinely split
+(116 fairway / 123 ui). The rule and the tree disagree, so agents guess. Write
+down the real boundary rather than restating the aspiration.
+
+### K8. Smaller structural items
+
+- **`docs/` root holds ~12 dated session reports** that belong in
+  `docs/archive/<month>/`, which already exists and is organised by month.
+  They are sediment in every `docs/` search.
+- **`src/lib/` has 30+ top-level dirs** mixing product-specific (`golf/`,
+  `baseball/`) with cross-product (`auth/`, `email/`, `stripe/`) and loose
+  files. No structural signal for "shared". At minimum document it in
+  `file-structure.md` — which is itself one of the 9 `unverified` rules (H2).
+- **Route groups differ per product** — baseball has `(public)` and
+  `(player-dashboard)` that golf and lifting lack. `file-structure.md`
+  documents only golf's.
+- **`src/lib/types/` is 24 baseball files vs 1 golf file.** Not a bug, but the
+  convention (baseball split per-feature, golf consolidated) is undocumented,
+  so an agent adding a golf type does not know where it goes.
+- **`.vscode/` is split** — `launch.json` is tracked while `settings.json`
+  (which carries the Momentic YAML schema mapping) is ignored. Pick one.
+- **No `jsconfig.json`** mirroring tsconfig's `@/*` alias, so non-TS tooling
+  cannot resolve it.
+
+---
+
 ## DEFERRED, with reason
 
 - **MF-006 dependency refresh** (55/114 direct deps outdated). No driver:
@@ -246,6 +338,10 @@ parallel agents.
 | Two hardcoded DB passwords in HEAD | `634af1eda` |
 | `code-review-tooling.md` phantom check name | `5f2c66152` |
 | `autonomy.md` stale fsmonitor warning | `5f2c66152` |
+| `.cursorignore` hid `database.ts` + `*.sql` from Cursor | `1be0b96f0` |
+| CONTRIBUTING.md + PR template phantom check names | `1be0b96f0` |
+| CLAUDE.md rule 1 taught the baseball `Coach`/`Player` types | `1be0b96f0` |
+| No `.editorconfig` (values measured from the tree) | `1be0b96f0` |
 | Required contexts: 2 of 3 were phantoms | `7b09b4ee8` |
 | `CLAUDE.md` rule 0 force-push claim | `7b09b4ee8` |
 
