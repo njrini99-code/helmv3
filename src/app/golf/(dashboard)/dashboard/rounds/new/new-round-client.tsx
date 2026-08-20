@@ -1247,6 +1247,9 @@ export default function NewRoundClient() {
           }
         } else if (result.error === 'conflict') {
           void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+        } else if (result.error === 'busy') {
+          // Single-flight skip — another save for this round holds the row
+          // server-side; the next tick re-sends the full state. Not a failure.
         } else if (isCompletedRoundError(result.error)) {
           redirectToCompletedRound();
         } else {
@@ -1428,6 +1431,11 @@ export default function NewRoundClient() {
             }
           } else if (result.error === 'conflict') {
             void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+          } else if (result.error === 'busy') {
+            // Single-flight skip: another save for this round already holds the
+            // row server-side (FOR UPDATE NOWAIT). Not a failure — the next
+            // tick re-sends the full state — so it must not advance the
+            // circuit breaker, warn, or throw.
           } else if (isCompletedRoundError(result.error)) {
             redirectToCompletedRound();
           } else {
@@ -1611,7 +1619,15 @@ export default function NewRoundClient() {
   };
 
   const handleSaveForLater = async () => {
-    const result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
+    let result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
+
+    // 'busy' = an auto-save for this round is mid-flight server-side. This is a
+    // user-initiated save, so don't fail it on a coalescing skip — wait for the
+    // in-flight save to release the row and try once more with current state.
+    if (!result.success && result.error === 'busy') {
+      await new Promise((resolve) => setTimeout(resolve, 1_500));
+      result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
+    }
 
     if (!result.success) {
       if (result.error === 'conflict') {

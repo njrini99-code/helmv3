@@ -1057,12 +1057,14 @@ async function createTeamJoinRequestImpl(
   // Notify coaches about the join request
   if (team.organization_id) {
     try {
-      const { data: coaches } = await supabase
+      const { data: coaches, error: coachesError } = await supabase
         .from('golf_coaches')
         .select('id, user_id')
         .eq('organization_id', team.organization_id);
 
-      if (coaches && coaches.length > 0) {
+      // Best-effort notification: a failed read means we can't know who to
+      // notify — skip explicitly rather than treating it as "no coaches".
+      if (!coachesError && coaches && coaches.length > 0) {
         const playerName = `${player.first_name} ${player.last_name}`.trim();
 
         const notifications = coaches.map((coach) => ({
@@ -2258,10 +2260,14 @@ async function redeemStaffInviteImpl(
     };
   }
 
-  const { data: orgTeams } = await admin
+  const { data: orgTeams, error: orgTeamsError } = await admin
     .from('golf_teams')
     .select('id, name, gender')
     .eq('organization_id', organizationId);
+  // A failed read must not present as "that program has no teams" below.
+  if (orgTeamsError) {
+    return { success: false, error: 'Could not load the program\'s teams. Please try again.' };
+  }
 
   // coach → the invited team only. admin → the whole program, which is what
   // makes the Men's/Women's toggle appear (canSwitch needs head_coach on >1).
@@ -2272,10 +2278,15 @@ async function redeemStaffInviteImpl(
     return { success: false, error: 'That program has no teams to join yet.' };
   }
 
-  const { data: alreadyStaffed } = await admin
+  const { data: alreadyStaffed, error: alreadyStaffedError } = await admin
     .from('golf_team_coach_staff')
     .select('team_id')
     .eq('coach_id', coachId);
+  // Unchecked, a failed read looked like "staffed nowhere" and produced
+  // duplicate staff rows on retry.
+  if (alreadyStaffedError) {
+    return { success: false, error: 'Could not check existing team access. Please try again.' };
+  }
   const staffedIds = new Set((alreadyStaffed ?? []).map((r) => r.team_id));
 
   const rows = targetTeams
@@ -2566,13 +2577,15 @@ async function joinTeamAsAssistantCoachImpl(
   // is WITH CHECK (user_id = auth.uid()) and would refuse a row addressed to
   // somebody else.
   try {
-    const { data: heads } = await admin
+    const { data: heads, error: headsError } = await admin
       .from('golf_team_coach_staff')
       .select('coach_id, golf_coaches!inner(user_id)')
       .eq('team_id', team.id)
       .eq('role', 'head_coach');
 
-    const recipients = (heads ?? [])
+    // Best-effort notification — a failed read is "recipients unknown", not
+    // "no recipients"; skip rather than silently notify nobody.
+    const recipients = (headsError ? [] : heads ?? [])
       .map((row) => (row as unknown as { golf_coaches?: { user_id?: string | null } }).golf_coaches?.user_id)
       .filter((id): id is string => Boolean(id) && id !== userId);
 
@@ -2829,18 +2842,20 @@ async function approvePendingAssistantCoachImpl(
   // check"; a notification is the difference between joining the team and
   // discovering later that they had.
   try {
-    const { data: approved } = await admin
+    const { data: approved, error: approvedError } = await admin
       .from('golf_coaches')
       .select('user_id')
       .eq('id', coachId)
       .maybeSingle();
-    const { data: team } = await admin
+    const { data: team, error: teamReadError } = await admin
       .from('golf_teams')
       .select('name')
       .eq('id', teamId)
       .maybeSingle();
 
-    if (approved?.user_id) {
+    // Best-effort notification — on a failed read, skip rather than address
+    // a notification from partial data.
+    if (!approvedError && !teamReadError && approved?.user_id) {
       const { error: notifyError } = await fromUntyped(admin, 'notifications').insert({
         user_id: approved.user_id,
         // Same enum constraint as the request notification above.

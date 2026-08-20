@@ -1666,17 +1666,23 @@ async function submitGolfRoundComprehensiveImpl(
           message: typeof trigger.message === 'string' ? trigger.message : null,
         })
       ) {
-        const { count: holeCount } = await supabase
+        const { count: holeCount, error: holeCountError } = await supabase
           .from('golf_holes')
           .select('id', { count: 'exact', head: true })
           .eq('round_id', roundId);
-        const { data: reconciled } = await fromUntyped(supabase, 'golf_rounds')
+        const { data: reconciled, error: reconcileError } = await fromUntyped(supabase, 'golf_rounds')
           .select('id, status')
           .eq('id', roundId)
           .eq('player_id', player.id)
           .maybeSingle();
 
-        if (reconciled?.status === 'completed' && (holeCount ?? 0) > 0) {
+        // A failed reconciliation read is NOT "zero holes" — it is "outcome
+        // still unknown", which takes the refuse-to-delete branch below. The
+        // distinction matters: this guard exists because a round was destroyed
+        // by treating an unknown outcome as a failure.
+        const reconcileReadFailed = Boolean(holeCountError || reconcileError);
+
+        if (!reconcileReadFailed && reconciled?.status === 'completed' && (holeCount ?? 0) > 0) {
           // The RPC committed after we gave up listening. The round is fine.
           await logServerError(
             'Round submit aborted client-side but COMMITTED server-side — reconciled, destructive fallback SKIPPED',
@@ -1712,6 +1718,8 @@ async function submitGolfRoundComprehensiveImpl(
               trigger,
               backupPersisted,
               reconciled: reconciled?.status ?? 'unknown',
+              reconcileReadFailed,
+              reconcileReadError: holeCountError?.message ?? reconcileError?.message ?? null,
             },
           },
           'critical'
@@ -5800,6 +5808,16 @@ async function savePartialRoundImpl(
         // Return conflict errors with a distinct error key so the UI can prompt a reload
         if (rpcResult.error === 'conflict') {
           return { success: false, error: 'conflict', };
+        }
+        // 'busy' = single-flight skip: another save (or a submit) already holds
+        // this round's row, so the RPC declined to queue behind it
+        // (FOR UPDATE NOWAIT — see 20260820170000_single_flight_partial_round_save.sql).
+        // Expected under normal team-session load, not a failure: every save
+        // carries the full round state, so the next tick covers this one. No
+        // error event — 15 of these across one Guilford evening is healthy
+        // coalescing, not 15 incidents.
+        if (rpcResult.error === 'busy') {
+          return { success: false, error: 'busy' };
         }
         // Already-completed rounds are an expected race condition (auto-save fires
         // after submit completes) — return early without logging an error event.

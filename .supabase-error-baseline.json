@@ -1,7 +1,7 @@
 {
-  "total": 1052,
+  "total": 1049,
   "byArea": {
-    "app/golf/actions": 403,
+    "app/golf/actions": 400,
     "app/baseball/actions": 217,
     "lib/baseball/read-models": 62,
     "lib/admin/data": 46,

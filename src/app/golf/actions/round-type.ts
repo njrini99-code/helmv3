@@ -117,29 +117,38 @@ async function updateRoundTypeImpl(
     // Either the player whose round it is, or a coach of the team it belongs
     // to. Mirrors the three RLS UPDATE policies, stated in code so a refusal
     // is legible instead of arriving as "0 rows updated".
-    const { data: ownPlayer } = await supabase
+    const { data: ownPlayer, error: ownPlayerError } = await supabase
       .from('golf_players')
       .select('id')
       .eq('id', round.player_id)
       .eq('user_id', user.id)
       .maybeSingle();
+    if (ownPlayerError) {
+      return { success: false, error: 'Could not verify your access to this round. Please try again.' };
+    }
 
     let permitted = Boolean(ownPlayer);
 
     if (!permitted && round.team_id) {
-      const { data: coachRow } = await supabase
+      const { data: coachRow, error: coachRowError } = await supabase
         .from('golf_coaches')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
+      if (coachRowError) {
+        return { success: false, error: 'Could not verify your access to this round. Please try again.' };
+      }
 
       if (coachRow) {
-        const { data: staffRow } = await supabase
+        const { data: staffRow, error: staffRowError } = await supabase
           .from('golf_team_coach_staff')
           .select('coach_id')
           .eq('team_id', round.team_id)
           .eq('coach_id', coachRow.id)
           .maybeSingle();
+        if (staffRowError) {
+          return { success: false, error: 'Could not verify your access to this round. Please try again.' };
+        }
         permitted = Boolean(staffRow);
       }
     }
@@ -167,12 +176,17 @@ async function updateRoundTypeImpl(
         };
       }
 
-      const { data: qualifier } = await supabase
+      const { data: qualifier, error: qualifierError } = await supabase
         .from('golf_qualifiers')
         .select('id, status, num_rounds')
         .eq('id', qualifierId)
         .maybeSingle();
 
+      // A failed read must not present as "no longer exists" — that message
+      // tells the coach to give up on a qualifier that may be fine.
+      if (qualifierError) {
+        return { success: false, error: 'Could not look up that qualifier. Please try again.' };
+      }
       if (!qualifier) {
         return { success: false, error: 'That qualifier no longer exists.' };
       }
@@ -184,13 +198,16 @@ async function updateRoundTypeImpl(
       }
 
       // The player must actually be entered — same check the submit path runs.
-      const { data: entry } = await supabase
+      const { data: entry, error: entryError } = await supabase
         .from('golf_qualifier_entries')
         .select('id')
         .eq('qualifier_id', qualifierId)
         .eq('player_id', round.player_id)
         .maybeSingle();
 
+      if (entryError) {
+        return { success: false, error: 'Could not check the qualifier entries. Please try again.' };
+      }
       if (!entry) {
         return { success: false, error: 'This player is not entered in that qualifier.' };
       }
@@ -205,7 +222,7 @@ async function updateRoundTypeImpl(
       }
 
       // Don't let two rounds claim the same slot.
-      const { data: clash } = await supabase
+      const { data: clash, error: clashError } = await supabase
         .from('golf_rounds')
         .select('id')
         .eq('qualifier_id', qualifierId)
@@ -215,6 +232,11 @@ async function updateRoundTypeImpl(
         .neq('id', roundId)
         .maybeSingle();
 
+      // Unchecked, this guard FAILED OPEN: a read error looked like "no
+      // clash" and let two rounds claim the same qualifier slot.
+      if (clashError) {
+        return { success: false, error: 'Could not verify the qualifier slot is free. Please try again.' };
+      }
       if (clash) {
         return {
           success: false,
