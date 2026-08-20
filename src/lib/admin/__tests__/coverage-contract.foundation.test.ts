@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 444', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 445', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -332,6 +332,9 @@ describe('global tripwire', () => {
     // 444: updateRoundType (golf/actions/round-type.ts) — change a submitted
     //   round's type, and keep its qualifier linkage honest. demoSafe because
     //   it moves a score in or out of a qualifier's standings.
-    expect(total).toBe(444);
+    // 445: listTeamCoachingStaff (teams.ts) — the coaching staff of a team,
+    //   head coach first. Added when assistants started joining at signup and
+    //   were visible nowhere on the Team page.
+    expect(total).toBe(445);
   });
 });

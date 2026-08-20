@@ -45,7 +45,6 @@ import {
   IconCheck,
   IconRefresh,
   IconLink,
-  IconUsers,
   IconCalendar,
   IconPlus,
 } from '@/components/icons';
@@ -56,6 +55,8 @@ import {
   createStaffInvite,
   addSecondTeam,
   listPendingAssistantCoaches,
+  listTeamCoachingStaff,
+  type TeamCoachingStaffMember,
   approvePendingAssistantCoach,
   declinePendingAssistantCoach,
   type PendingAssistantCoach,
@@ -130,7 +131,11 @@ function defaultSeason(): string {
 
 const EM_DASH = '—';
 
-export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSettingsProps) {
+// `coach` stays in the props interface for the server page that passes it, but
+// is no longer destructured: its last consumer was the "Managed by" footer,
+// which named the VIEWER rather than the head coach and was replaced by the
+// Coaching staff section.
+export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
@@ -716,6 +721,9 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
         </Surface>
       </section>
 
+      {/* ── Coaching staff ──────────────────────────────────────────────── */}
+      <CoachingStaffSection teamId={team?.id ?? null} />
+
       {/* ── Staff invitations ───────────────────────────────────────────── */}
       <PendingAssistantsSection teamId={team?.id ?? null} />
       <StaffInviteSection teamId={team?.id ?? null} />
@@ -888,15 +896,10 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
         )}
       </section>
 
-      {/* Quiet coach attribution — honest about what we know. */}
-      <p
-        className={cn(
-          'mt-8 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary',
-        )}
-      >
-        <IconUsers size={13} aria-hidden />
-        Managed by {coach.full_name || EM_DASH}
-      </p>
+      {/* The old footer here said "Managed by {viewing coach}" — it named
+          whoever happened to be LOOKING at the page, so an assistant saw the
+          team as managed by themselves. The Coaching staff section above now
+          carries attribution with real roles. */}
     </div>
   );
 }
@@ -928,6 +931,78 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
  * escalation reverted in 266d02d91: every player on the roster holds the team
  * code, so the choice may not grant itself.
  */
+/**
+ * The coaching staff, visibly ON the team.
+ *
+ * Added 2026-08-20: assistants now join with full access at signup — and were
+ * then visible nowhere. The head coach's only evidence an assistant had joined
+ * was a one-time notification; this list is the durable answer to "did it put
+ * him on the team?".
+ */
+function CoachingStaffSection({ teamId }: { teamId: string | null }) {
+  const [staff, setStaff] = useState<TeamCoachingStaffMember[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!teamId) return;
+    let cancelled = false;
+    void listTeamCoachingStaff(teamId).then((result) => {
+      if (cancelled) return;
+      if (result.success) setStaff(result.staff ?? []);
+      setLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [teamId]);
+
+  // Nothing readable (not staffed, or a failed read): render nothing rather
+  // than an empty box or a false "no staff".
+  if (!teamId || !loaded || staff.length === 0) return null;
+
+  return (
+    <section className="mt-10">
+      <Surface elevation="border" padding="md" className="flex flex-col gap-4">
+        <div>
+          <h2 className="font-fw-display text-h3 text-text-primary">Coaching staff</h2>
+          <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
+            Everyone with coaching access to this team.
+          </p>
+        </div>
+        <ul className="flex flex-col gap-2">
+          {staff.map((member) => (
+            <li
+              key={member.coachId}
+              className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-fw-sans text-body text-text-primary">
+                  {member.fullName || EM_DASH}
+                </p>
+                {member.title ? (
+                  <p className="truncate font-fw-sans text-caption text-text-tertiary">
+                    {member.title}
+                  </p>
+                ) : null}
+              </div>
+              <span
+                className={cn(
+                  'shrink-0 rounded-full px-2.5 py-1 font-fw-sans text-caption font-medium',
+                  member.role === 'head_coach'
+                    ? 'bg-accent-subtle text-text-primary'
+                    : 'bg-surface-sunken text-text-secondary',
+                )}
+              >
+                {member.role === 'head_coach' ? 'Head coach' : 'Assistant coach'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Surface>
+    </section>
+  );
+}
+
 function PendingAssistantsSection({ teamId }: { teamId: string | null }) {
   const [pending, setPending] = useState<PendingAssistantCoach[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1081,8 +1156,9 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
         <div>
           <h2 className="font-fw-display text-h3 text-text-primary">Staff invitations</h2>
           <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
-            Add an assistant coach or a program admin. Staff need their own invite —
-            the team code is for players and never grants staff access.
+            Assistant coaches can simply sign up with the team code. Use an
+            invite to add a program admin, or to hand an assistant a direct
+            link instead of the code.
           </p>
         </div>
 
