@@ -43,11 +43,10 @@ export function CoachHelmSection() {
             className="mt-4 text-[clamp(1.9rem,3.4vw,2.75rem)] leading-[1.06] tracking-[-0.02em] text-text-on-accent [text-wrap:balance]"
             style={{ fontWeight: 600 }}
           >
-            Ask the program. See the evidence.
+            The leak your data is screaming about.
           </h2>
           <p className="mt-5 text-[clamp(1rem,1.3vw,1.12rem)] leading-relaxed text-[oklch(0.8_0.008_85)] [text-wrap:pretty]">
-            An intelligence layer that reads your program&apos;s own rounds and resolves them into an evidence-backed
-            focus — with the sources it used, never a black box.
+            CoachHelm reads your rounds and flags exactly where strokes are being lost — not a guess, but the data-backed diagnosis with a practice block ready to go next week.
           </p>
         </div>
         <div
@@ -91,11 +90,10 @@ export function PerformanceSection() {
             className="mt-4 text-[clamp(1.9rem,3.4vw,2.75rem)] leading-[1.06] tracking-[-0.02em] text-text-primary [text-wrap:balance]"
             style={{ fontWeight: 600 }}
           >
-            Every shot, in its place.
+            Real stats that explain what happened.
           </h2>
           <p className="mt-5 text-[clamp(1rem,1.3vw,1.12rem)] leading-relaxed text-text-secondary [text-wrap:pretty]">
-            Shots are logged live on the hole — lie, distance, result — then resolve into strokes gained and the miss
-            tendency a coach can actually work on.
+            Every shot gets logged live. Your team gets 85 stats per round — strokes gained, miss patterns, GIR trends — everything you need to see who's improving and why.
           </p>
           <Reveal
             delay={150}

@@ -131,8 +131,7 @@ export function ProductsIntro() {
           textWrap: 'pretty',
         }}
       >
-        College golf intelligence — rounds, shots, and strokes-gained stats, with the CoachHelm layer
-        that turns every number into the next decision.
+        The operating system for college golf. Every round gets logged live. Every stat is benchmarked and real. CoachHelm surfaces the leak and the fix — so your team improves.
       </p>
 
       <div style={{ margin: 'clamp(30px,4vw,52px) 0 0', borderTop: '1px solid var(--line)' }}>
@@ -150,7 +149,7 @@ export function ProductsIntro() {
           <span>
             <h3 style={titleStyle}>Team Management</h3>
             <p style={descStyle}>
-              Rosters, travel squads, and qualifying — every player and event organized in one place.
+              Roster, travel squads, qualifying events, and player development all in one view — so nothing falls through group chats.
             </p>
           </span>
           <Arrow />
@@ -171,7 +170,7 @@ export function ProductsIntro() {
           <span>
             <h3 style={titleStyle}>Built-in CoachHelm AI</h3>
             <p style={descStyle}>
-              Root-cause diagnosis and development plans, layered on top of every stat automatically.
+              Flagged leaks with the practice blocks to fix them. Development plans your players actually work on. No black boxes.
             </p>
           </span>
           <Arrow />
@@ -190,7 +189,7 @@ export function ProductsIntro() {
           <span>
             <h3 style={titleStyle}>Shot Tracking &amp; Stats</h3>
             <p style={descStyle}>
-              Log every shot live, and turn one round into 85 measured, benchmarked stats.
+              Every shot logged live. 85 stats per round. Miss patterns that explain who needs what. Benchmarks so you know where you stand.
             </p>
           </span>
           <Arrow />

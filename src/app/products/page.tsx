@@ -4,9 +4,9 @@ import { MarketingScrollProvider } from '@/lib/motion/gsap/MarketingScrollProvid
 import { ProductsLanding } from '@/components/products/landing/ProductsLanding';
 
 export const metadata: Metadata = {
-  title: 'Products',
+  title: 'GolfHelm — College Golf Platform',
   description:
-    'The Helm platform for college programs: GolfHelm and BaseballHelm — track every shot, calculate 87 stats a round, and let CoachHelm find the root.',
+    'GolfHelm: track every shot live, 85 stats per round, root-cause diagnosis via CoachHelm AI, and development plans your players actually follow.',
 };
 
 export default function ProductsPage() {

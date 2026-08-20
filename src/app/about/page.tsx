@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 import { AboutView } from '@/components/landing/AboutView'
 
 export const metadata: Metadata = {
-  title: 'About',
+  title: 'About GolfHelm',
   description:
-    'Helm Sports Labs was created by two former collegiate athletes who were tired of spreadsheets and group chats — and built one premium platform for running a college program.',
+    'GolfHelm was built by coaches tired of spreadsheets. Now we help college golf programs see every round, flag every leak, and develop every player clearly.',
   openGraph: {
-    title: 'About — Helm Sports Labs',
+    title: 'About — GolfHelm',
     description:
-      'Helm Sports Labs was created by two former collegiate athletes who were tired of spreadsheets and group chats — and built one premium platform for running a college program.',
+      'GolfHelm was built by coaches tired of spreadsheets. Now we help college golf programs see every round, flag every leak, and develop every player clearly.',
     type: 'website',
     url: '/about',
   },

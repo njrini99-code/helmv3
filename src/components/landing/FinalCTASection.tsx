@@ -71,15 +71,15 @@ export function FinalCTASection({ onRequestDemo }: FinalCTASectionProps) {
           </g>
         </svg>
         <Reveal className="relative">
-          <div className="font-fw-mono text-[0.75rem] uppercase tracking-[0.2em] text-accent-400">See GolfHelm</div>
+          <div className="font-fw-mono text-[0.75rem] uppercase tracking-[0.2em] text-accent-400">Your Next Move</div>
           <h2
             className="mx-auto mt-[18px] max-w-[15em] text-[clamp(2.1rem,4.6vw,3.6rem)] leading-[1.03] tracking-[-0.022em] text-text-on-accent [text-wrap:balance]"
             style={{ fontWeight: 600 }}
           >
-            See GolfHelm with your program in mind.
+            See your team&apos;s performance, clearly.
           </h2>
           <p className="mx-auto mt-5 max-w-[34em] text-[clamp(1rem,1.4vw,1.18rem)] leading-relaxed text-[oklch(0.82_0.008_85)] [text-wrap:pretty]">
-            Bring your rounds and roster. We&apos;ll show you the operating view built for college golf.
+            Bring your rounds and roster. We&apos;ll show you where strokes are lost, what your players need to work on, and what recruiting strength you actually have.
           </p>
           <div className="mt-[34px] flex flex-wrap items-center justify-center gap-5">
             <Button

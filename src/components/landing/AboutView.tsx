@@ -45,41 +45,41 @@ import { Reveal, useSequence } from './motion';
 
 const PILLARS = [
   {
-    title: 'Roster & Communication',
+    title: 'Shot Logging & Real Stats',
     description:
-      'Centralize your roster, messaging, announcements, and documents in a single hub your whole team can access.',
+      'Every shot logged live. 85 measured stats per round. Miss patterns, GIR trends, strokes gained — so you see exactly what happened and why.',
   },
   {
-    title: 'Scheduling & Travel',
+    title: 'Root Cause via CoachHelm',
     description:
-      'Manage practices, tournaments, travel itineraries, and attendance without juggling calendars and group chats.',
+      'Puts the leak in front of you. Not a number — a diagnosis with a practice block ready. Development plans your players actually follow.',
   },
   {
-    title: 'Stats & Development',
+    title: 'Team in One Place',
     description:
-      'Track every round, monitor performance trends, and build individualized development plans backed by real data.',
+      'Roster, travel, qualifying, communication, documents — everything your program needs without juggling spreadsheets and group chats.',
   },
   {
-    title: 'AI-Powered Coaching',
+    title: 'Recruiting Intel',
     description:
-      'CoachHelm surfaces patterns, flags at-risk players, and delivers insights so nothing falls through the cracks.',
+      'See your team\'s actual strength. Real stats tell the story of what you built. Better conversations with recruits who fit your system.',
   },
 ];
 
 const VALUES = [
   {
-    title: 'Clarity over noise',
-    description: 'We cut through the clutter so coaches can focus on what actually moves the needle.',
+    title: 'Real data, real answers',
+    description: 'Every stat is benchmarked. Every insight traces back to the rounds that drove it. No black boxes, no guesses.',
   },
   {
-    title: 'Built for the day-to-day',
+    title: 'Built by coaches who got tired of spreadsheets',
     description:
-      'Every feature exists because a coach or player needed it — not because it looked good on a feature list.',
+      'Every feature exists because a coach or player actually needed it. The team management, the stats, the AI — it all came from real coaching problems.',
   },
   {
-    title: 'Premium by default',
+    title: 'Premium, not bloated',
     description:
-      'College programs deserve software that matches their standards. No compromises on quality or experience.',
+      'College programs deserve software that gets out of the way. Fast, intentional, muted — built for the work, not the feature list.',
   },
 ];
 
@@ -210,16 +210,13 @@ export function AboutView() {
                 className="mt-5 text-[clamp(1.85rem,3.6vw,2.85rem)] leading-[1.05] tracking-[-0.022em] [text-wrap:balance]"
                 style={{ fontWeight: 600 }}
               >
-                Managing a college team shouldn&apos;t feel like a second job.
+                Good coaches aren&apos;t buried in spreadsheets.
               </h2>
               <p className="mt-6 max-w-[38em] text-[clamp(1rem,1.3vw,1.12rem)] leading-relaxed text-[oklch(0.82_0.008_85)] [text-wrap:pretty]">
-                Coaches juggle spreadsheets for stats, group chats for communication, separate apps for scheduling, and
-                notebooks for player development. Players never know where to look for what they need. Important details
-                get buried.
+                Right now your data lives everywhere: spreadsheets for stats, group chats for updates, calendars for travel, notebooks for notes. You can&apos;t see the story. Your team can&apos;t find what they need. And making a coaching call takes three apps.
               </p>
               <p className="mt-4 max-w-[38em] text-[clamp(1rem,1.3vw,1.12rem)] leading-relaxed text-[oklch(0.82_0.008_85)] [text-wrap:pretty]">
-                We built Helm to unify everything into one premium platform — so coaches can focus on coaching and
-                players can focus on improving.
+                GolfHelm puts every round, every shot, every stat, and every development plan in one place — so coaches coach and players improve.
               </p>
             </Reveal>
 
@@ -244,12 +241,10 @@ export function AboutView() {
                   className="mt-6 text-[clamp(1.35rem,2.3vw,1.85rem)] leading-[1.2] tracking-[-0.02em] [text-wrap:balance]"
                   style={{ fontWeight: 600 }}
                 >
-                  Coaches deserve better tools
+                  Data becomes decisions.
                 </p>
                 <p className="mt-4 max-w-[34em] text-body leading-relaxed text-[oklch(0.79_0.008_85)] [text-wrap:pretty]">
-                  Every decision a coach makes impacts their players&apos; growth. Those decisions shouldn&apos;t be
-                  slowed down by disconnected tools and lost information. Helm gives you the clarity to lead with
-                  confidence.
+                  Every coaching decision changes a player&apos;s development. Those decisions shouldn&apos;t come from hunches or lost notes. GolfHelm shows you exactly where the leak is, what the fix looks like, and which players need what — so you move faster and recruit smarter.
                 </p>
               </div>
             </Reveal>
@@ -266,15 +261,15 @@ export function AboutView() {
       >
         <div className="mx-auto max-w-[1320px] px-[clamp(20px,4vw,64px)]">
           <Reveal className="max-w-[660px]">
-            <Eyebrow>What We&apos;re Building</Eyebrow>
+            <Eyebrow>GolfHelm Solves</Eyebrow>
             <h2
               className="mt-5 text-[clamp(1.85rem,3.4vw,2.75rem)] leading-[1.06] tracking-[-0.02em] text-text-primary [text-wrap:balance]"
               style={{ fontWeight: 600 }}
             >
-              One platform, everything unified.
+              Shot data that drives coaching.
             </h2>
             <p className="mt-4 max-w-[32em] text-[clamp(1rem,1.3vw,1.15rem)] leading-relaxed text-text-secondary">
-              Helm replaces the patchwork of tools that slow your program down.
+              Every round logged. Every leak surfaced. Every player focused. One place to lead from.
             </p>
           </Reveal>
           <div className="mt-[clamp(34px,4.5vw,60px)] grid gap-[clamp(12px,1.5vw,18px)] sm:grid-cols-2">

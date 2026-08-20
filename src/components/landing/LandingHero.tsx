@@ -141,13 +141,13 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
             className="text-[clamp(3rem,6.6vw,6rem)] leading-[0.98] tracking-[-0.028em] text-text-primary [text-wrap:balance]"
             style={{ fontWeight: 640 }}
           >
-            Command every angle of your program.
+            From data to development in one system.
           </h1>
           <p
             data-hero="sub"
             className="mt-[30px] max-w-[32em] text-[clamp(1.06rem,1.5vw,1.32rem)] leading-normal text-text-secondary [text-wrap:pretty]"
           >
-            The operating system for college golf — where every round, shot, and stat resolves into your next coaching decision.
+            GolfHelm turns every round, shot, and stat into your next coaching move — fewer spreadsheets, clearer decisions, faster recruiting.
           </p>
           {/* STACKED BELOW `sm`, NOT WRAPPED.
               `flex-wrap` + a 22px gap put these two on a knife edge: the button
