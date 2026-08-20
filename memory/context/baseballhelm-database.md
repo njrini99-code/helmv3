@@ -1,5 +1,7 @@
 # BaseballHelm Database Schema — Complete Reference
 
+<!-- schema-drift-banner: hand-written above/below; do not auto-band this file -->
+
 > Source: `supabase/migrations/*.sql` (repo, mined 2026-06-30) — NOT a live DB query.
 > Anchor migration: `supabase/migrations/20260527000000_prod_public_baseline.sql` (~22,200-line
 > prod schema dump; 47 `baseball_*` tables). All other `baseball_*`/`helm_lifting_*` tables were

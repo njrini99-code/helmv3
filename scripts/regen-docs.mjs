@@ -36,7 +36,7 @@
 
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { join, relative, sep, posix } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const REPO_ROOT = join(fileURLToPath(import.meta.url), '..', '..');
 const DATABASE_TYPES = join(REPO_ROOT, 'src/lib/types/database.ts');
@@ -463,7 +463,19 @@ async function main() {
   console.log('Done.');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Only run when invoked directly. Without this guard, importing anything from
+// this module executes main() and REWRITES the docs as a side effect — which
+// made extractEnums() untestable, and untestable is how a regex that dropped
+// two thirds of the enums survived roughly six months behind a
+// "DO NOT EDIT — regenerated" stamp.
+const invokedDirectly =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (invokedDirectly) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+export { extractEnums, extractTopLevelKeys };

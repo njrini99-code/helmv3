@@ -100,6 +100,14 @@ export default defineConfig({
             // this P0 fix. Only the #516 secrets guard is promoted to vitest
             // here, since it previously never ran under any mechanism at all.
             'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
+            // Named explicitly for the same reason. Guards extractEnums() in
+            // regen-docs.mjs, which rendered "**6 enums**" into memory/glossary.md
+            // for ~6 months while the schema had 18 — under a
+            // "DO NOT EDIT — regenerated" stamp, in the exact file CLAUDE.md
+            // routes sessions to for enum lookups. docs:check could not catch it
+            // (it re-runs the generator and diffs against itself), and the
+            // function was untestable until main() got an entrypoint guard.
+            'scripts/__tests__/regen-docs-enums.test.mjs',
             // Named explicitly for the same reason as the line above (no
             // `scripts/**` glob — the legacy `node --test` files must not be
             // swept in). This one guards the transient-retry wrapper that sits

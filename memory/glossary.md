@@ -1,5 +1,7 @@
 # GolfHelm Glossary
 
+<!-- schema-drift-banner: hand-written above/below; do not auto-band this file -->
+
 > Quick decoder ring for table names, enums, types, and terminology.
 
 > **Trust boundary — read before using anything below.**
