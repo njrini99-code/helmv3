@@ -123,6 +123,72 @@ create index if not exists golf_players_anonymized_at_idx
 on public.golf_players (anonymized_at)
 where anonymized_at is not null;
 
+-- --- ACTUALLY CLEAR THE PII, WHICH THE REST OF THIS FILE ONLY PROMISED ------
+--
+-- Everything above turns account deletion from data-LOSS into data-RETENTION,
+-- and stops there. That is a worse bug than the one it fixes if it ships
+-- alone: `golf_players` carries first_name, last_name, email, phone,
+-- avatar_url, hometown, state, high_school_name, graduation_year and gpa, and
+-- after the FK swap that row SURVIVES the delete with all of it. A user
+-- deleting their account for privacy would have their name, email, phone and
+-- GPA retained indefinitely.
+--
+-- The `anonymized_at` comment above already asserts "the identity fields were
+-- cleared". Nothing above clears them and nothing above ever sets the column,
+-- so the schema was documenting a guarantee it did not provide.
+--
+-- Doing it here rather than in the delete route is deliberate:
+--   * the route (src/app/api/account/delete/route.ts) mentions golf_players
+--     ZERO times, so a route-side fix has to be remembered, and forgetting it
+--     is silent;
+--   * a route-side fix must deploy in LOCKSTEP with this migration -- writing
+--     `anonymized_at` before the column exists is a 42703, and applying this
+--     without the route change is the retention bug above;
+--   * `user_id` going NOT NULL -> NULL happens only via the ON DELETE SET NULL
+--     added above, so the trigger fires on exactly the deletion path and on no
+--     other write. A coach editing or reassigning a player never nulls it.
+--
+-- Athletic data is deliberately NOT cleared -- handicap, handicap_index and
+-- the whole round/shot/hole history are the point of the exercise. What is
+-- retained is de-identified, which is what makes retention defensible.
+
+create or replace function public.golf_player_anonymize_on_unlink()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $$
+begin
+    if old.user_id is not null and new.user_id is null then
+        new.first_name := null;
+        new.last_name := null;
+        new.email := null;
+        new.phone := null;
+        new.avatar_url := null;
+        new.hometown := null;
+        new.state := null;
+        new.high_school_name := null;
+        new.graduation_year := null;
+        new.gpa := null;
+        new.anonymized_at := now();
+    end if;
+    return new;
+end;
+$$;
+
+-- SECURITY INVOKER (the default) on purpose. A trigger function needs no
+-- elevation -- it runs inside the statement that fired it -- and DEFINER here
+-- would be a bypass with no benefit. Revoke anyway: Postgres grants EXECUTE to
+-- PUBLIC by default, and `anon` is the unauthenticated role.
+revoke execute on function public.golf_player_anonymize_on_unlink()
+from public, anon;
+
+drop trigger if exists golf_players_anonymize_on_unlink on public.golf_players;
+
+create trigger golf_players_anonymize_on_unlink
+before update of user_id on public.golf_players
+for each row
+execute function public.golf_player_anonymize_on_unlink();
+
 commit;
 
 -- ─── VERIFICATION (run after applying) ──────────────────────────────────────
