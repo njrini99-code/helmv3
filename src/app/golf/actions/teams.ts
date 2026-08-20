@@ -2416,6 +2416,107 @@ export async function previewStaffInvite(token: string): Promise<PreviewStaffInv
   return observedPreviewStaffInvite(token);
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* Coaching staff — who is on this team's staff                                */
+/* -------------------------------------------------------------------------- */
+
+export interface TeamCoachingStaffMember {
+  coachId: string;
+  fullName: string | null;
+  title: string | null;
+  role: 'head_coach' | 'assistant_coach' | string;
+  isPrimary: boolean;
+}
+
+/**
+ * List the coaching staff of a team, head coach first.
+ *
+ * WHY THIS EXISTS (2026-08-20): assistants now join with full access the
+ * moment they sign up with the team code — and were then visible NOWHERE. The
+ * Team page had no staff list at all, so a head coach whose assistant had just
+ * joined ("will it upload him to the team?") had no surface that showed the
+ * answer. The join notification told them once; this is the durable view.
+ *
+ * Caller must be STAFFED on the team — the same golf_team_coach_staff row that
+ * is team access everywhere else. Reads with the admin client after that gate
+ * so an assistant sees the full staff, not the RLS-visible slice of it.
+ */
+async function listTeamCoachingStaffImpl(
+  teamId: string,
+): Promise<{ success: boolean; error?: string; staff?: TeamCoachingStaffMember[] }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'You need to be signed in.' };
+  }
+
+  const admin = createAdminClient();
+
+  const { data: callerCoach, error: callerError } = await admin
+    .from('golf_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (callerError || !callerCoach) {
+    return { success: false, error: 'Coach profile not found.' };
+  }
+
+  const { data: callerStaffRow, error: gateError } = await admin
+    .from('golf_team_coach_staff')
+    .select('coach_id')
+    .eq('team_id', teamId)
+    .eq('coach_id', callerCoach.id)
+    .maybeSingle();
+  // Fail CLOSED on error: a failed gate read must never widen visibility.
+  if (gateError || !callerStaffRow) {
+    return { success: false, error: 'You are not on this team\'s staff.' };
+  }
+
+  const { data: rows, error: staffError } = await admin
+    .from('golf_team_coach_staff')
+    .select('coach_id, role, is_primary, golf_coaches!inner(full_name, title)')
+    .eq('team_id', teamId);
+  if (staffError) {
+    return { success: false, error: 'Could not load the coaching staff. Please try again.' };
+  }
+
+  const staff: TeamCoachingStaffMember[] = (rows ?? [])
+    .map((row) => {
+      const c = (row as unknown as { golf_coaches?: { full_name?: string | null; title?: string | null } }).golf_coaches;
+      return {
+        coachId: String((row as { coach_id: string }).coach_id),
+        fullName: c?.full_name ?? null,
+        title: c?.title ?? null,
+        role: String((row as { role: string }).role),
+        isPrimary: Boolean((row as { is_primary: boolean | null }).is_primary),
+      };
+    })
+    .sort((a, b) =>
+      // Head coach first, then alphabetical — a stable, legible order.
+      a.role === b.role
+        ? (a.fullName ?? '').localeCompare(b.fullName ?? '')
+        : a.role === 'head_coach' ? -1 : 1,
+    );
+
+  return { success: true, staff };
+}
+
+const observedListTeamCoachingStaff = withAdminObserved(
+  'listTeamCoachingStaff',
+  { sport: 'golf', feature: 'join_team_flow', observeSoftFailures: false },
+  listTeamCoachingStaffImpl,
+);
+
+export async function listTeamCoachingStaff(
+  teamId: string,
+): Promise<{ success: boolean; error?: string; staff?: TeamCoachingStaffMember[] }> {
+  return observedListTeamCoachingStaff(teamId);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Assistant coaches — the single-code path                                    */
 /* -------------------------------------------------------------------------- */
