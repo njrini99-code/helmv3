@@ -111,12 +111,19 @@ features:
     owner: product
     criticality: high
     docs:
-      feature: CLAUDE.md
-      flows: []
+      # Was `CLAUDE.md` for all three — a ROUTING file, not a feature doc, so
+      # every baseball change routed an agent to the table of contents. These
+      # three docs already existed and were simply never wired up.
+      feature: memory/context/baseballhelm-features.md
+      flows:
+        - memory/context/baseballhelm-features.md
       ui:
-        - CLAUDE.md
+        - docs/audits/BASEBALLHELM_CANONICAL_SPEC.md
       business_logic:
-        - CLAUDE.md
+        # STALE 2026-06-30 and carries no AUTOGEN:columns block, unlike its
+        # golf counterpart. For live column truth prefer src/lib/types/
+        # database.ts or a direct information_schema query. Tracked as K4.
+        - memory/context/baseballhelm-database.md
       incidents: []
     code:
       routes:
@@ -129,6 +136,13 @@ features:
         - src/app/baseball/**/actions/**
       services:
         - src/lib/baseball/**
+        # src/lib/recruiting/** was mapped by NO registry entry, so
+        # `knowledge:map` returned impactedFeatures: [] for it — a silent
+        # no-op rather than a wrong answer. It belongs here: stages.ts reads
+        # the `baseball_pipeline_stage` enum and its only importers are 3
+        # baseball files + src/lib/validation. The entry NAMED `recruiting`
+        # is golf's (golf routes, *golf_recruits*.sql) and is correct as-is.
+        - src/lib/recruiting/**
       db:
         - supabase/migrations/*baseball*.sql
       tests:
