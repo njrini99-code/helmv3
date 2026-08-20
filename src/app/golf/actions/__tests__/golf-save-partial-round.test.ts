@@ -292,3 +292,66 @@ describe('savePartialRound — single admin_events row per failure (no duplicate
     expect(logServerException).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Single-flight coalescing (2026-08-20, docs/audits/
+ * ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md): save_partial_round_atomic
+ * now takes its golf_rounds row with FOR UPDATE NOWAIT and returns
+ * {success:false, error:'busy'} when another save (or a submit) already holds
+ * it. A whole-team session produced 15 auto-save timeouts across 8 rounds in
+ * one evening by QUEUEING on that row lock instead — 'busy' is the healthy
+ * outcome, so it must pass through to the client verbatim and must NOT land
+ * in admin_events as a failure.
+ */
+describe('savePartialRound — single-flight busy skip', () => {
+  it("returns error:'busy' verbatim and logs NOTHING", async () => {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-busy',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_A,
+      course_name: 'Bryan Park Champs',
+      round_date: '2026-08-19',
+      status: 'in_progress',
+      updated_at: '2026-08-19T22:00:00Z',
+    });
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: {
+        // Another save for this round holds the row — the RPC skipped.
+        save_partial_round_atomic: async () => ({
+          data: { success: false, error: 'busy' },
+          error: null,
+        }),
+      },
+    });
+    adminFake = fake;
+
+    const result = await savePartialRound(
+      {
+        courseName: 'Bryan Park Champs',
+        courseId: COURSE_A,
+        roundType: 'practice',
+        roundDate: '2026-08-19',
+        currentHole: 17,
+        holesToPlay: 18,
+        holes: [],
+      },
+      'round-busy'
+    );
+
+    // The distinct key the clients branch on — never remapped to a generic
+    // "Failed to save" message the circuit breaker would count.
+    expect(result).toEqual({ success: false, error: 'busy' });
+
+    // A coalescing skip is not an incident. Pre-fix, an unrecognized RPC
+    // failure logged an admin_events row — 15 of those in one evening was
+    // exactly the noise that buried the real signal.
+    const { logServerError, logServerException, logServerEvent } = await import('@/lib/server-error-logger');
+    expect(logServerError).not.toHaveBeenCalled();
+    expect(logServerException).not.toHaveBeenCalled();
+    expect(logServerEvent).not.toHaveBeenCalled();
+  });
+});

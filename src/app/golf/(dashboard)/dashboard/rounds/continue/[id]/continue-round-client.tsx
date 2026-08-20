@@ -483,6 +483,10 @@ export default function ContinueRoundClient({
           if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
         } else if (result.error === 'conflict') {
           void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+        } else if (result.error === 'busy') {
+          // Single-flight skip: another save for this round already holds the
+          // row server-side. Not a failure — the next tick re-sends the full
+          // state — so it must not advance the circuit breaker or warn.
         } else if (isCompletedRoundError(result.error)) {
           redirectToCompletedRound();
         } else {
@@ -664,6 +668,9 @@ export default function ContinueRoundClient({
               if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
             } else if (result.error === 'conflict') {
               void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+            } else if (result.error === 'busy') {
+              // Single-flight skip — another save for this round holds the row
+              // server-side; the next tick re-sends the full state. Not a failure.
             } else if (isCompletedRoundError(result.error)) {
               redirectToCompletedRound();
             } else {
@@ -846,7 +853,15 @@ export default function ContinueRoundClient({
 
   const handleSaveForLater = async () => {
     try {
-      const result = await savePartialRound(buildPartialRoundData(), roundId);
+      let result = await savePartialRound(buildPartialRoundData(), roundId);
+
+      // 'busy' = an auto-save for this round is mid-flight server-side. This is
+      // a user-initiated save, so don't fail it on a coalescing skip — wait for
+      // the in-flight save to release the row and try once more.
+      if (!result.success && result.error === 'busy') {
+        await new Promise((resolve) => setTimeout(resolve, 1_500));
+        result = await savePartialRound(buildPartialRoundData(), roundId);
+      }
 
       if (!result.success) {
         if (result.error === 'conflict') {

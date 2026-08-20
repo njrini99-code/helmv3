@@ -5801,6 +5801,16 @@ async function savePartialRoundImpl(
         if (rpcResult.error === 'conflict') {
           return { success: false, error: 'conflict', };
         }
+        // 'busy' = single-flight skip: another save (or a submit) already holds
+        // this round's row, so the RPC declined to queue behind it
+        // (FOR UPDATE NOWAIT — see 20260820170000_single_flight_partial_round_save.sql).
+        // Expected under normal team-session load, not a failure: every save
+        // carries the full round state, so the next tick covers this one. No
+        // error event — 15 of these across one Guilford evening is healthy
+        // coalescing, not 15 incidents.
+        if (rpcResult.error === 'busy') {
+          return { success: false, error: 'busy' };
+        }
         // Already-completed rounds are an expected race condition (auto-save fires
         // after submit completes) — return early without logging an error event.
         if (typeof rpcResult.error === 'string' && rpcResult.error.includes('already been completed')) {
