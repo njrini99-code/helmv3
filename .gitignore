@@ -220,3 +220,10 @@ deno.lock
 # live Lift Lab pages referenced it (login, forgot-password, coach onboarding),
 # so it existed on exactly one machine. Scratch/screenshot PNGs stay ignored.
 !public/helm-lifting-logo.png
+
+# Python bytecode. Three .pyc files under tools/ were tracked until 2026-08-19
+# with no ignore rule covering them, so every run of those scripts dirtied the
+# tree and the compiled bytecode of a 3.14 interpreter was in version control.
+__pycache__/
+*.pyc
+*.pyo
