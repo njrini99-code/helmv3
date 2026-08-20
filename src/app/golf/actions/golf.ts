@@ -4383,6 +4383,85 @@ export async function sendEventReminderToPlayers(
 /**
  * Check for scheduling conflicts when creating/editing an event
  */
+/**
+ * Restrict a conflict check to people the caller actually shares a team with.
+ *
+ * `attendeeIds` are auth user ids handed in by the client. Resolving them
+ * takes three reads, because a golf team has two kinds of member and the
+ * caller can be either kind:
+ *
+ *   1. the caller's own team ids — staffed teams if they are a coach, joined
+ *      teams if they are a player, both if they hold both profiles;
+ *   2. the player user ids on those teams;
+ *   3. the coach user ids staffing those teams.
+ *
+ * Fails CLOSED on a failed read, and says so separately from a real denial — a
+ * coach whose roster read timed out must be told to retry, not told their own
+ * athletes are strangers.
+ */
+async function resolveSharedScheduleScope(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  attendeeIds: string[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const requested = [...new Set(attendeeIds.filter(Boolean))].filter((id) => id !== userId);
+  if (requested.length === 0) return { ok: true };
+
+  const RETRY = "Couldn't verify your team just now. Please try again.";
+  const DENIED = 'Not authorized to check availability for these people';
+
+  const [{ data: coachRows, error: coachErr }, { data: playerRows, error: playerErr }] =
+    await Promise.all([
+      supabase.from('golf_coaches').select('id').eq('user_id', userId),
+      supabase.from('golf_players').select('id').eq('user_id', userId),
+    ]);
+  if (coachErr || playerErr) return { ok: false, error: RETRY };
+
+  const coachIds = (coachRows ?? []).map((r) => r.id);
+  const playerIds = (playerRows ?? []).map((r) => r.id);
+
+  const [staffTeams, memberTeams] = await Promise.all([
+    coachIds.length
+      ? supabase.from('golf_team_coach_staff').select('team_id').in('coach_id', coachIds)
+      : Promise.resolve({ data: [] as Array<{ team_id: string }>, error: null }),
+    playerIds.length
+      ? supabase.from('golf_team_members').select('team_id').in('player_id', playerIds)
+      : Promise.resolve({ data: [] as Array<{ team_id: string }>, error: null }),
+  ]);
+  if (staffTeams.error || memberTeams.error) return { ok: false, error: RETRY };
+
+  const teamIds = [
+    ...new Set([
+      ...(staffTeams.data ?? []).map((r) => r.team_id),
+      ...(memberTeams.data ?? []).map((r) => r.team_id),
+    ]),
+  ].filter((t): t is string => Boolean(t));
+
+  if (teamIds.length === 0) return { ok: false, error: DENIED };
+
+  const [teamPlayers, teamCoaches] = await Promise.all([
+    supabase.from('golf_team_members').select('golf_players!inner(user_id)').in('team_id', teamIds),
+    supabase
+      .from('golf_team_coach_staff')
+      .select('golf_coaches!inner(user_id)')
+      .in('team_id', teamIds),
+  ]);
+  if (teamPlayers.error || teamCoaches.error) return { ok: false, error: RETRY };
+
+  const allowed = new Set<string>([userId]);
+  const playerJoin = (teamPlayers.data ?? []) as unknown as Array<{
+    golf_players: { user_id: string | null } | null;
+  }>;
+  const coachJoin = (teamCoaches.data ?? []) as unknown as Array<{
+    golf_coaches: { user_id: string | null } | null;
+  }>;
+  for (const row of playerJoin) if (row.golf_players?.user_id) allowed.add(row.golf_players.user_id);
+  for (const row of coachJoin) if (row.golf_coaches?.user_id) allowed.add(row.golf_coaches.user_id);
+
+  if (requested.some((id) => !allowed.has(id))) return { ok: false, error: DENIED };
+  return { ok: true };
+}
+
 async function checkScheduleConflictsImpl(
   startDate: string,
   startTime: string,
@@ -4401,6 +4480,17 @@ async function checkScheduleConflictsImpl(
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Unauthorized');
+
+    // `attendeeIds` are auth user ids, and authentication was the only gate on
+    // them. checkEventConflicts returns each attendee's NAME, AVATAR and the
+    // TITLE of whatever they are busy with — including class schedules — so an
+    // arbitrary id list turned this into a scheduling oracle for anyone the
+    // caller could name. The editor only ever offers roster members, so
+    // requiring a shared team costs legitimate callers nothing.
+    const scope = await resolveSharedScheduleScope(supabase, user.id, attendeeIds);
+    if (!scope.ok) {
+      return { success: false, error: scope.error };
+    }
 
     const start = new Date(buildDateTimeString(startDate, startTime, timezoneOffset));
     const end = new Date(buildDateTimeString(endDate, endTime, timezoneOffset));

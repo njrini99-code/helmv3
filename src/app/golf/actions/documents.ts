@@ -704,6 +704,16 @@ async function uploadNewVersionImpl(
 
     if (docError) throw docError;
 
+    // The storage path is derived from the document's own team (good), but
+    // authentication was the only gate on WHO could push a version — so any
+    // player on the team, or any signed-in user RLS happened to let read the
+    // row, could add a version and change what the document resolves to.
+    // Coach-only, scoped to the document's team, same as saveTextDocument.
+    const role = await resolveTeamRole(supabase, user.id, document.team_id);
+    if (role !== 'coach') {
+      return { success: false, error: 'Only a coach on this team can upload a new version' };
+    }
+
     const newVersionNumber = (document.version_count || 1) + 1;
 
     // Upload new file
@@ -1269,6 +1279,17 @@ async function createGolfDocumentImpl(data: {
     // Get authenticated user ID (uploaded_by now references auth.users)
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error('Not authenticated');
+
+    // Authentication was the ONLY gate here: `data.team_id` came from the
+    // client and was written straight onto the row, so any signed-in user
+    // could create a document record under any team they could name. RLS was
+    // the sole backstop. Use the same rule saveTextDocument already applies —
+    // a coach STAFFED on this team, not merely a member of it — since the
+    // whole documents surface is coach-managed.
+    const role = await resolveTeamRole(supabase, user.id, data.team_id);
+    if (role !== 'coach') {
+      return { success: false, error: 'Only a coach on this team can add documents' };
+    }
 
     // Create document record
     const { data: document, error: insertError } = await supabase
