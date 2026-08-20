@@ -790,7 +790,7 @@ async function getPlayerShotContextImpl(
     }
 
     if (!shotsData || shotsData.length === 0) {
-      return { success: false, error: 'No shot data available for analysis' };
+      return { success: false, error: 'No shot data available for analysis', code: 'no_shot_data' };
     }
 
     // Map DB shots to ShotData interface
@@ -825,7 +825,7 @@ async function getPlayerShotContextImpl(
       });
 
     if (shots.length === 0) {
-      return { success: false, error: 'Insufficient shot data with distance information' };
+      return { success: false, error: 'Insufficient shot data with distance information', code: 'no_shot_detail' };
     }
 
     // Build default SG baseline
