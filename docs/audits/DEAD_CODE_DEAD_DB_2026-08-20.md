@@ -57,7 +57,7 @@ of every other function, and code references — never from call counts.
 
 ---
 
-# PART A — Dead Supabase
+## PART A — Dead Supabase
 
 ## A1. The `graveyard` schema is the precedent to follow (32 tables)
 
@@ -226,7 +226,7 @@ row.
 
 ---
 
-# PART B — Dead code
+## PART B — Dead code
 
 ## B1. Nine files three independent tools agree are dead
 
@@ -316,7 +316,7 @@ signal is that the Fairway component library is far larger than what ships.
 
 ---
 
-# PART C — The alignment list (this is the part to act on)
+## PART C — The alignment list (this is the part to act on)
 
 Built, working, and invisible. **Two of the three items I first put at the top
 of this list did not survive verification** — both are corrected below rather
@@ -451,7 +451,7 @@ Something reads these on every dashboard load and always gets nothing.
 every hour. Either wire the UI that creates a reminder, or retire all four
 pieces together.
 
-# PART D — Triage
+## PART D — Triage
 
 **Do now, zero risk** — nothing reads these and nothing can break:
 0. **`REVOKE EXECUTE` on the five uncalled SECURITY DEFINER functions (F1).**
@@ -481,7 +481,7 @@ pieces together.
 
 ---
 
-# PART E — Dead columns (129 that are 100% NULL in production)
+## PART E — Dead columns (129 that are 100% NULL in production)
 
 Measured from `pg_stats.null_frac = 1` on tables with >20 live rows. Full list
 in the query; the clusters that mean something:
@@ -589,7 +589,7 @@ something is silently not happening, rather than a feature nobody uses.
 
 ---
 
-# PART F — Where dead code becomes attack surface
+## PART F — Where dead code becomes attack surface
 
 The Supabase security linter reports **146 advisories**. Most are noise on
 their own; crossed with the dead-object analysis, two are not.
@@ -647,7 +647,7 @@ each so the next audit does not re-raise them.
 
 ---
 
-# PART G — Cross-confirmed with the feature-intent audit
+## PART G — Cross-confirmed with the feature-intent audit
 
 `FEATURE_GAP_INTENT_2026-08-20.md` ran in parallel over the repo's own feature
 docs. One of its findings is checkable directly against production, so I

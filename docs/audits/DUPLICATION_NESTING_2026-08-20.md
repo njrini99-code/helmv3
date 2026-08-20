@@ -212,7 +212,7 @@ spends four paragraphs documenting for a different function:
 
 - `src/app/golf/admin/components/admin-utils.ts:25-33` and
   `src/app/golf/admin/components/DataFreshnessAlerts.tsx:33-40` both guard:
-  `dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`` before
+  ``dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00` `` before
   constructing the `Date`.
 - `src/components/fairway/pages/qualifiers/FairwayQualifiers.tsx:90-98`
   guards differently (manual Y/M/D parse + local `Date` constructor) with a
