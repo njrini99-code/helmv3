@@ -57,7 +57,7 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 |------------------------|---------------------|
 | **Any golf feature** (understanding behavior, fixing bugs, adding to it) | `memory/context/golfhelm-features.md` — Find the feature by name, get data flow, files, tables, dependencies, gaps |
 | **Database queries** (writing SQL, adding columns, debugging data) | `memory/context/golfhelm-database.md` — Every column of every table |
-| **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — All tables, all enums, all type locations (AUTOGEN table count block — do not hand-copy the number elsewhere, it rots) |
+| **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — **use its AUTOGEN blocks, not its narrative index.** `AUTOGEN:tables` and `AUTOGEN:enums` are generated from `src/lib/types/database.ts` and are complete. The hand-written by-feature index above them was last verified 2026-02-13 and named 20 tables that do not exist in production. Do not hand-copy the counts elsewhere, they rot |
 | **CoachHelm AI** (insights, patterns, predictions, reviews, philosophy) | `memory/context/coachhelm-ai.md` — V2 engine architecture, pipeline, components |
 | **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all action files, component directories |
 | **CoachHelm AI / Stats nav labels or hrefs** (rail, sub-nav tabs, CommandPalette, page `<title>`, breadcrumb) | `src/lib/golf/surface-registry.ts` — SINGLE SOURCE OF TRUTH for the canonical `{id, canonicalName, href, role, group, legacy?, hidden?}` of every CoachHelm AI + Stats surface. Every consumer (`nav-registry.ts`, `CoachHelmSubNav.tsx`, `CommandPalette.tsx`, breadcrumb, page titles) imports from here — never hand-write a label/href for one of these surfaces |
@@ -204,8 +204,18 @@ npm run build        # Production build
 
 # Inventory docs (auto-regenerated; do not edit AUTOGEN blocks by hand)
 npm run docs:regen   # Regenerate memory/glossary.md + memory/projects/golfhelm.md inventory
-npm run docs:check   # LOCAL guard — no workflow runs it; docs-regen.yml
-                     # opens an auto-PR on drift instead
+npm run docs:check   # regen + diff + schema-drift. The regen/diff half is a
+                     # LOCAL guard (no workflow runs it; docs-regen.yml opens
+                     # an auto-PR on drift instead) and it can only ever
+                     # compare the generator to itself.
+npm run docs:schema-drift  # THE one that catches wrong docs: fails when
+                     # memory/**, CLAUDE.md, AGENTS.md or .claude/rules/*
+                     # name a golf_*/baseball_* object that isn't in
+                     # src/lib/types/database.ts. Runs in CI on every PR
+                     # ("Check knowledge base against the schema"), baseline
+                     # in .doc-schema-baseline.json — the count may only go
+                     # DOWN. Added 2026-08-19 after an audit found 59
+                     # documented-but-nonexistent identifiers.
 
 # Tests (Vitest workspace split by file naming)
 npm test                  # unit only (fast inner loop)

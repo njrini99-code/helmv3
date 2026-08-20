@@ -4,9 +4,36 @@
 
 - active
 
+> **⚠️ Schema claims in this file were corrected 2026-08-19 against production.**
+> It previously named 17 tables, **10 of which do not exist** — and, because it
+> listed them beside the 8 real ones in the same format, described several
+> subsystems the product does not have. The 10 are recorded in
+> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on any new one.
+>
+> **The 8 calendar tables that exist in production** (verified by direct
+> `pg_class` query, and matching what the shipped calendar code queries):
+> `golf_events`, `golf_event_attendance`, `golf_event_documents`,
+> `golf_academic_exclusions`, `golf_attendance_summary`, `golf_calendar_feeds`,
+> `golf_calendar_notifications`, `golf_coach_blocked_time`.
+>
+> **Do not exist — do not build on them:** `golf_recurring_events`,
+> `golf_availability_polls`, `golf_poll_responses`, `golf_calendar_sync_log`,
+> `golf_calendar_sync_state`, `golf_external_calendars`,
+> `golf_event_exclusions`, `golf_event_status_log`,
+> `golf_player_availability_blocks`, `golf_player_attendance_stats`.
+
 ## Current State
 
-Calendar and Events provide team scheduling, RSVP, attendance tracking, recurring events, availability polling, iCal feeds, sync state, academic conflict detection, and links into related team workflows.
+Calendar and Events provide team scheduling, RSVP, attendance tracking, iCal
+feed subscriptions, calendar notifications, coach blocked time, academic
+conflict detection, event document links, and attendance summaries.
+
+**Not implemented**, despite earlier revisions of this file listing them as
+current: recurring-event definitions, availability polling / poll responses,
+external-calendar connections, and two-way sync state. Each was described here
+with a backing table; none of those tables exist in production. If you are asked
+to extend one of these, the honest answer is that it would be new work, not an
+extension.
 
 The route is shared by coaches and players, but permissions and actions differ. Coaches create/manage events and attendance; players respond and consume schedule context.
 

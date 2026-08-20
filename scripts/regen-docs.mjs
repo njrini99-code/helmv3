@@ -128,14 +128,56 @@ function extractEnums(src) {
     }
   }
   const blockText = src.slice(blockStart, i);
+
+  // Parse line-wise, NOT with one multi-line regex. The previous single regex
+  // (`/^      (name):\s*((?:"[^"]*"\s*\|?\s*)+)/gm`) reported 6 of 18 enums
+  // because of two independent defects:
+  //
+  //   1. Supabase emits long enums with a LEADING pipe on continuation lines:
+  //          baseball_note_scope:
+  //            | "staff_public"
+  //            | "coach_group"
+  //      The pattern only allowed a pipe AFTER a quoted value, so every
+  //      multi-line enum failed to match at all.
+  //
+  //   2. lastIndex swallow: the trailing `\s*` consumed the newline AND the
+  //      next line's six-space indent, so the `^      ` anchor could not match
+  //      the immediately following enum. Any enum declared directly after a
+  //      matched one was skipped even when single-line and well-formed
+  //      (baseball_coach_type, program_type, team_member_status were lost this
+  //      way).
+  //
+  // Silent under-reporting is the dangerous failure here: glossary.md is what
+  // CLAUDE.md routes sessions to for enum lookups, and the block is stamped
+  // "DO NOT EDIT — regenerated", so a short list reads as authoritative.
+  const lines = blockText.split('\n');
   const enums = [];
-  const re = /^      ([a-z_][a-z0-9_]*):\s*((?:"[^"]*"\s*\|?\s*)+)/gm;
-  let m;
-  while ((m = re.exec(blockText)) !== null) {
-    const name = m[1];
-    const values = [...m[2].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
-    enums.push({ name, values });
+  for (let ln = 0; ln < lines.length; ln++) {
+    const head = lines[ln].match(/^ {6}([a-z_][a-z0-9_]*):(.*)$/);
+    if (!head) continue;
+    let tail = head[2];
+    // Absorb continuation lines (they start with an optional pipe then a
+    // quoted value) until the next key or the end of the block.
+    while (ln + 1 < lines.length && /^\s*\|?\s*"/.test(lines[ln + 1])) {
+      tail += ` ${lines[++ln]}`;
+    }
+    const values = [...tail.matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+    if (values.length) enums.push({ name: head[1], values });
   }
+
+  // Fail loudly rather than emit a short list. Every top-level key in the
+  // Enums block is an enum; if we extracted fewer, the parser regressed.
+  const declared = [...blockText.matchAll(/^ {6}([a-z_][a-z0-9_]*):/gm)].length;
+  if (enums.length !== declared) {
+    const found = new Set(enums.map((e) => e.name));
+    const dropped = [...blockText.matchAll(/^ {6}([a-z_][a-z0-9_]*):/gm)]
+      .map((m) => m[1])
+      .filter((n) => !found.has(n));
+    throw new Error(
+      `extractEnums dropped ${declared - enums.length} of ${declared} enums: ${dropped.join(', ')}`
+    );
+  }
+
   return enums.sort((a, b) => a.name.localeCompare(b.name));
 }
 

@@ -1,5 +1,17 @@
 # CoachHelm AI — Intelligence Engine Reference
 
+<!-- schema-drift-banner -->
+> **⚠️ 5 identifiers named below do not exist in the database.**
+> Verified 2026-08-19 against production. `golf_insight_feedback`, `golf_insight_weights`, `golf_player_insight_preferences`, `golf_review_insights`, `golf_validations`
+>
+> They are described here as if live. Do not query, type, or build on them —
+> check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
+> before trusting any table name in this file. Tracked in
+> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
+> Removing these is a ratchet-down — re-run
+> `node scripts/check-doc-schema-drift.mjs --update` after.
+
+
 > Last updated: 2026-02-13
 > Corrected 2026-07-25: a top-down live-path trace found several statements below stale or wrong — engine version status (V2 vs V3), confidence calibration, the behavior learner, insight lifecycle-state names, composite-rule `sample_n`, effectiveness/trust signals, and which components actually render insights to a coach/player. Corrections are inline and marked "CORRECTED 2026-07-25"; original prose is kept, not deleted. A new "Live vs Built-but-Dark (as of 2026-07-25)" section near the end has the consolidated file:line evidence.
 

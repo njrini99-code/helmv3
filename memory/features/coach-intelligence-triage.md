@@ -1,5 +1,17 @@
 # Feature: Coach Intelligence Triage
 
+<!-- schema-drift-banner -->
+> **⚠️ 2 identifiers named below do not exist in the database.**
+> Verified 2026-08-19 against production. `golf_insight_evidence`, `golf_insight_feedback`
+>
+> They are described here as if live. Do not query, type, or build on them —
+> check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
+> before trusting any table name in this file. Tracked in
+> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
+> Removing these is a ratchet-down — re-run
+> `node scripts/check-doc-schema-drift.mjs --update` after.
+
+
 ## Status
 
 - active

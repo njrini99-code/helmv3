@@ -92,6 +92,22 @@ jobs:
       - name: Check feature knowledge registry
         run: npm run knowledge:check
 
+      # Fails when memory/**, CLAUDE.md, AGENTS.md or .claude/rules/* name a
+      # golf_*/baseball_* database object that does not exist in
+      # src/lib/types/database.ts.
+      #
+      # This runs HERE, on the per-PR fast path, on purpose. `docs:check` is a
+      # local-only guard (no workflow invokes it) and it could not have caught
+      # this class anyway — it re-runs the generator and diffs the output
+      # against the file, so it only compares the generator to itself, only
+      # reads AUTOGEN blocks, and covers 3 files. An audit on 2026-08-19 found
+      # 59 identifiers documented as live tables — with columns, FKs and RLS
+      # policy names — that returned absent from every catalog in production.
+      # Sessions are ordered by CLAUDE.md to read those docs before writing
+      # code, so a wrong doc becomes wrong code with no signal in between.
+      - name: Check knowledge base against the schema
+        run: npm run docs:schema-drift
+
   # Helm Bridge integration env drift.
   #
   # Runs in --drift mode, which is a no-op while NONE of these secrets are

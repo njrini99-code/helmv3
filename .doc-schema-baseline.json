@@ -1,0 +1,300 @@
+{
+  "$comment": "Identifiers named in the knowledge base that do not exist in src/lib/types/database.ts. This number may only go DOWN. See scripts/check-doc-schema-drift.mjs for why this file exists.",
+  "total": 59,
+  "identifiers": [
+    "baseball_availability_statuses",
+    "baseball_bodyweight_entries",
+    "baseball_coaches_select",
+    "baseball_coaches_select_all",
+    "baseball_context",
+    "baseball_import_field_mappings",
+    "baseball_lift_assignments",
+    "baseball_lift_days",
+    "baseball_lift_exercise_substitutions",
+    "baseball_lift_exercises",
+    "baseball_lift_import_rows",
+    "baseball_lift_import_runs",
+    "baseball_lift_prescriptions",
+    "baseball_lift_program_assignments",
+    "baseball_lift_programs",
+    "baseball_lift_results",
+    "baseball_lift_sections",
+    "baseball_lift_session_exercises",
+    "baseball_lift_sessions",
+    "baseball_lift_set_results",
+    "baseball_lift_weeks",
+    "baseball_log_staff_change",
+    "baseball_organizations",
+    "baseball_players_select",
+    "baseball_readiness_checkins",
+    "baseball_scope_player_ids_isolation",
+    "baseball_signal_visibility",
+    "baseball_soreness_maps",
+    "baseball_stat_facts",
+    "baseball_stat_uploads_insert",
+    "baseball_strength_group_audit",
+    "baseball_strength_group_members",
+    "baseball_strength_groups",
+    "baseball_strength_maxes",
+    "baseball_strength_prs",
+    "baseball_teams_select",
+    "golf_availability_polls",
+    "golf_calendar_sync_log",
+    "golf_calendar_sync_state",
+    "golf_coach_settings",
+    "golf_event_exclusions",
+    "golf_event_status_log",
+    "golf_external_calendars",
+    "golf_insight_evidence",
+    "golf_insight_feedback",
+    "golf_insight_weights",
+    "golf_insights",
+    "golf_player_attendance_stats",
+    "golf_player_availability_blocks",
+    "golf_player_insight_preferences",
+    "golf_player_settings",
+    "golf_poll_responses",
+    "golf_putting_tendencies",
+    "golf_recurring_events",
+    "golf_review_insights",
+    "golf_round_holes",
+    "golf_task_completions",
+    "golf_travel_expense_splits",
+    "golf_validations"
+  ],
+  "byFile": {
+    "baseball_availability_statuses": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_bodyweight_entries": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_coaches_select": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_coaches_select_all": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_context": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_import_field_mappings": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_assignments": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_days": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_exercise_substitutions": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_exercises": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_import_rows": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_import_runs": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_prescriptions": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_program_assignments": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_programs": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_results": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_sections": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_session_exercises": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_sessions": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_set_results": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_lift_weeks": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_log_staff_change": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_organizations": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_players_select": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_readiness_checkins": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_scope_player_ids_isolation": [
+      "memory/context/baseballhelm-features.md"
+    ],
+    "baseball_signal_visibility": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_soreness_maps": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_stat_facts": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_stat_uploads_insert": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_strength_group_audit": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_strength_group_members": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_strength_groups": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_strength_maxes": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_strength_prs": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "baseball_teams_select": [
+      "memory/context/baseballhelm-database.md"
+    ],
+    "golf_availability_polls": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_calendar_sync_log": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_calendar_sync_state": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_coach_settings": [
+      "memory/context/golfhelm-database.md",
+      "memory/glossary.md"
+    ],
+    "golf_event_exclusions": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_event_status_log": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_external_calendars": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_insight_evidence": [
+      "memory/features/coach-intelligence-triage.md",
+      "memory/features/coachhelm-ai.md"
+    ],
+    "golf_insight_feedback": [
+      "memory/context/coachhelm-ai.md",
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/coach-intelligence-triage.md",
+      "memory/glossary.md"
+    ],
+    "golf_insight_weights": [
+      "memory/context/coachhelm-ai.md",
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/glossary.md"
+    ],
+    "golf_insights": [
+      "memory/context/golfhelm-features.md"
+    ],
+    "golf_player_attendance_stats": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_player_availability_blocks": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_player_insight_preferences": [
+      "memory/context/coachhelm-ai.md",
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/glossary.md"
+    ],
+    "golf_player_settings": [
+      "memory/context/golfhelm-database.md",
+      "memory/glossary.md"
+    ],
+    "golf_poll_responses": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_putting_tendencies": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/stats-analytics.md",
+      "memory/glossary.md"
+    ],
+    "golf_recurring_events": [
+      "memory/context/golfhelm-features.md",
+      "memory/features/calendar-events.md",
+      "memory/glossary.md"
+    ],
+    "golf_review_insights": [
+      "memory/context/coachhelm-ai.md",
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/glossary.md"
+    ],
+    "golf_round_holes": [
+      "memory/features/golf-round-lifecycle.md"
+    ],
+    "golf_task_completions": [
+      "memory/context/golfhelm-features.md",
+      "memory/features/player-hub.md",
+      "memory/glossary.md"
+    ],
+    "golf_travel_expense_splits": [
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/features/team-operations.md",
+      "memory/glossary.md"
+    ],
+    "golf_validations": [
+      "memory/context/coachhelm-ai.md",
+      "memory/context/golfhelm-database.md",
+      "memory/context/golfhelm-features.md",
+      "memory/glossary.md"
+    ]
+  }
+}

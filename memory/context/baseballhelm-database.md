@@ -8,9 +8,21 @@
 >
 > Total `baseball_*` tables confirmed via migrations: **119** (118 present in the current
 > `src/lib/types/database.ts`; `baseball_demo_sessions` — added 2026-06-30 — is not yet in
-> generated types; see Gotcha G7). A parallel, sport-agnostic **`helm_lifting_*`** family
-> (40 tables) also exists — see Gotcha G1, it is NOT a baseball-prefixed rename, it's a second
-> live system.
+> generated types; see Gotcha G7).
+>
+> **⚠️ Corrected 2026-08-19 by direct production query.** This header used to say a
+> sport-agnostic **`helm_lifting_*`** family of "40 tables" existed alongside the
+> `baseball_lift_*` family as "a second live system", "NOT a baseball-prefixed rename".
+> That is wrong, and §2d repeated it. Production has **33 `helm_lifting_*` tables** and
+> exactly **one** survivor of the old family (`baseball_exercises`). It *was* a
+> supersession and it completed — there is no twin, and nothing to keep in sync.
+> **§2d is retired schema; do not query anything in it.** The 35 dead names are
+> recorded in `.doc-schema-baseline.json`; `npm run docs:schema-drift` will fail on any
+> *new* one.
+>
+> This is the exact failure mode this file's own G8 warns about, pointed the other way:
+> a migration existing in the repo is not evidence the table is live — and here, a table
+> documented in detail was not evidence either.
 >
 > Per `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` (2026-06-25), prod already had "118
 > baseball + 26 lifting tables" applied via an out-of-band session **before** the file-list
@@ -475,13 +487,47 @@ Key columns: id, team_id, owner_user_id (→ auth.users, NOT baseball_coaches/pl
 FKs: team_id → baseball_teams.id (CASCADE); owner_user_id → auth.users.id (CASCADE); player_id → baseball_players.id (CASCADE)
 RLS: per-user rows only, team-scoped via `is_baseball_team_member`; table uses **`FORCE ROW LEVEL SECURITY`** (even the table owner role is subject to RLS) — the only table in this group with FORCE RLS. No anon grants. [`supabase/migrations/20260624000083_baseball_stat_visual_views.sql`]
 
-### 2d. Lift Lab — Strength & Conditioning (25 tables, `baseball_*` family)
+### 2d. Lift Lab — Strength & Conditioning — ⚠️ RETIRED SCHEMA, DO NOT QUERY
 
-> **Read Gotcha G1 before using any table in this group** — there is a SECOND, parallel,
-> sport-agnostic `helm_lifting_*` table family (40 tables, not counted in the 119) that is a
-> live, unsynced twin of this one, not a superseding rename.
+> ## 🛑 Every `baseball_lift_*` / `baseball_strength_*` table below is GONE from production.
+>
+> **Verified 2026-08-19 by direct query** against `pg_class` in the production
+> project (`qmnssrrolpinvwjjnufo`), not from migration files:
+>
+> | Family | Tables in production |
+> |---|---|
+> | `baseball_lift_*`, `baseball_strength_*`, `baseball_readiness_*`, `baseball_soreness_*`, `baseball_bodyweight_*` | **1** — `baseball_exercises`, and nothing else |
+> | `helm_lifting_*` | **33 — this is the live system** |
+>
+> **Use `helm_lifting_*`.** The source code already does, and says so:
+>
+> ```
+> src/lib/baseball/read-models/decision-room/lift.ts:10
+>   * to helm_lifting_sessions now — the legacy baseball_lift_sessions table is …
+> src/lib/baseball/read-models/live-weight-room.ts:104
+>   // helm_lifting_* tables now — the legacy baseball_lift_sessions / …
+> ```
+>
+> **Correction to what this section used to say.** It described
+> `helm_lifting_*` as *"a live, unsynced twin of this one, not a superseding
+> rename"* and counted 25 live `baseball_*` lifting tables. Both are false: it
+> **was** a supersession, and it completed. There is no twin to keep in sync —
+> there is one live family and one dead one.
+>
+> **Why the specs below are kept.** They record the *intent* of the Lift Lab
+> model — the materialize-at-publish rule, the staff/player visibility split,
+> the capability gating — which carried over to `helm_lifting_*` and is still
+> useful design context. They are **historical** and must not be used to write
+> a query, a migration, or a type. Names, columns, FKs and RLS predicates below
+> are unverified against the live `helm_lifting_*` schema; for those, read
+> `src/lib/types/database.ts`.
+>
+> These names are recorded in `.doc-schema-baseline.json` so
+> `npm run docs:schema-drift` does not fail on them. **Deleting or migrating
+> this section is a ratchet-down** — re-run `node scripts/check-doc-schema-drift.mjs --update`
+> afterwards.
 
-There are two generations of the `baseball_lift_*`/`baseball_strength_*` schema:
+The two generations below are both retired. Kept for design intent only: 
 
 **Generation 1 ("Lite")** — `supabase/migrations/20260624000061_baseball_lifting_performance.sql`:
 

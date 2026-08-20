@@ -25,9 +25,9 @@
     "typecheck": "tsc --noEmit",
     "typecheck:functions": "deno check --node-modules-dir=none supabase/functions/*/index.ts",
     "db:types": "bash scripts/gen-db-types.sh",
-    "db:types:check": "npm run db:types && git diff --exit-code src/lib/types/database.ts || (echo '\u274c Types are out of date. Run npm run db:types and commit changes.' && exit 1)",
+    "db:types:check": "npm run db:types && git diff --exit-code src/lib/types/database.ts || (echo '❌ Types are out of date. Run npm run db:types and commit changes.' && exit 1)",
     "docs:regen": "node scripts/regen-docs.mjs",
-    "docs:check": "npm run docs:regen && git diff --exit-code memory/glossary.md memory/projects/golfhelm.md memory/context/golfhelm-database.md || (echo '\u274c Inventory docs are out of date. Run npm run docs:regen and commit changes.' && exit 1)",
+    "docs:check": "npm run docs:regen && npm run docs:diff-check && npm run docs:schema-drift",
     "orphans:mounts": "node scripts/find-orphan-mounts.mjs",
     "knowledge:map": "node scripts/knowledge/map-changed-files.mjs",
     "knowledge:context": "node scripts/knowledge/generate-context-pack.mjs",
@@ -67,7 +67,9 @@
     "audit:fail-open": "node scripts/fail-open-audit.mjs",
     "audit:paginated-reads": "node scripts/paginated-read-audit.mjs",
     "sql:ratchet": "node scripts/sql-lint-ratchet.mjs",
-    "markdown:ratchet": "node scripts/markdown-lint-ratchet.mjs"
+    "markdown:ratchet": "node scripts/markdown-lint-ratchet.mjs",
+    "docs:schema-drift": "node scripts/check-doc-schema-drift.mjs",
+    "docs:diff-check": "git diff --exit-code memory/glossary.md memory/projects/golfhelm.md memory/context/golfhelm-database.md || (echo \"❌ Inventory docs are out of date. Run npm run docs:regen and commit changes.\" && exit 1)"
   },
   "keywords": [],
   "author": "",
