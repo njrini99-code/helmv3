@@ -25,8 +25,25 @@
 
 ## Mobile UI rules
 
-- Use the `modern-saas-ui` skill for mobile web screens, responsive app UI, navigation, headers, cards, tabs, filters, buttons, chips, empty states, and layout refactors — it encodes the Fairway tokens and component idioms this repo has actually shipped. For technical layout bugs (overlays, jitter, breakpoint failures, z-index) use `ui-stability-debugger-v2` instead; it targets defects rather than aesthetics.
-  (This line previously pointed at a `mobile-app-consistency-system` skill that does not exist anywhere — not in `.claude/skills/`, `~/.claude/skills/`, or any plugin cache — which made every rule below it unreachable. Verify a skill resolves before citing it here.)
+- **Canonical design sources, in authority order:** `src/styles/design-tokens.css`
+  (the `--fw-*` tokens) → `src/components/fairway/**` (the shipped components) →
+  `.claude/rules/design-system.md` (the binding invariant). Tokens beat prose,
+  always. Read these before styling anything under `src/app/golf/(dashboard)/`.
+- The `modern-saas-ui` skill is **craft guidance only** — useful for hierarchy,
+  density, motion and empty-state judgement. It does **not** encode this repo's
+  tokens: it carries zero references to the canonical sources and ~31 uses of
+  the glass / `bg-white` / `gray-*` vocabulary that `design-system.md` declares
+  RETIRED. Consult it for *how a screen should feel*; take the actual classes
+  from the tokens and the Fairway components.
+  (Corrected 2026-08-19: this line previously claimed the skill "encodes the
+  Fairway tokens and component idioms this repo has actually shipped." It does
+  not, and that claim pointed the constitution at a skill the rules contradict.)
+- For technical layout bugs (overlays, jitter, breakpoint failures, z-index) use
+  `ui-stability-debugger-v2` instead; it targets defects rather than aesthetics.
+  (An earlier version of this line pointed at a `mobile-app-consistency-system`
+  skill that does not exist anywhere — not in `.claude/skills/`,
+  `~/.claude/skills/`, or any plugin cache — which made every rule below it
+  unreachable. Verify a skill resolves before citing it here.)
 - All mobile screens must use the shared app shell with consistent safe-area handling, page padding, section spacing, and bottom-nav clearance.
 - All mobile headers must use either a Standard header or an Action header pattern.
 - Standard header: leading nav control, title, optional subtitle or meta, and at most one visible trailing action.

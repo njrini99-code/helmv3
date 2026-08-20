@@ -2,6 +2,27 @@
 
 > **Read this entire file before writing ANY code.**
 
+@AGENTS.md
+
+> The line above is a real import, not a pointer. Claude Code reads `CLAUDE.md`
+> and does **not** read `AGENTS.md` on its own, so without it this repo had two
+> independent instruction documents that already disagreed — AGENTS routed
+> feature work through `memory/registry.yml` → `memory/features/*`, while the
+> table below routed it to `memory/context/*`. Two navigation models, two
+> generations of the same knowledge, and which one a session followed depended
+> on nothing legible.
+>
+> **AGENTS.md is the repo constitution and outranks this file.** It is
+> vendor-neutral and applies to every agent. This file is the Claude-specific
+> adapter: it should hold what Claude Code needs and nothing AGENTS already
+> says. When the two disagree, AGENTS wins and this file is the one to fix.
+>
+> Design authority in particular: the aesthetic prose below describes the
+> *product's* look. `.claude/rules/design-system.md` is the binding rule for
+> dashboard code, and it declares the older glass / cream / warm vocabulary
+> **retired** under `src/app/golf/(dashboard)/`. Canonical tokens live in
+> `src/styles/design-tokens.css`. Prose loses to tokens.
+
 ---
 
 ## What This Is
