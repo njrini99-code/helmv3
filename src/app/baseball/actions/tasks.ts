@@ -18,6 +18,7 @@ import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { logServerError } from '@/lib/server-error-logger';
 import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import { assertPlayersOnBaseballTeam } from '@/lib/baseball/resolve-team';
 import {
   withBaseballAction,
   BaseballUnauthorizedError,
@@ -152,6 +153,13 @@ const createTaskAction = withBaseballAction(
     if (teamId !== ctx.activeTeamId) {
       await requireBaseballCapability(teamId, 'can_manage_settings');
     }
+
+    // The capability above establishes the TEAM. `data.player_ids` is a
+    // separate, unchecked client array that went straight into
+    // baseball_task_assignments, so a coach of team A could assign a task to a
+    // player on team B, who would then see its title, description and due date.
+    // Checked before the task insert so a rejection leaves no orphan task.
+    await assertPlayersOnBaseballTeam(supabase, teamId, data.player_ids);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: task, error: taskError } = await (supabase as any)
@@ -879,6 +887,14 @@ const createTaskFromTemplateAction = withBaseballAction(
     if (template.team_id !== teamId) {
       return { success: false, error: 'Template does not belong to this team' };
     }
+
+    // Same gap as createTask, reached by the template route: the capability
+    // covers the team, `playerIds` does not. Checked here rather than beside
+    // the assignment insert below, because that insert happens AFTER the task
+    // row exists and a rejection there would strand it. The `all_players`
+    // fallback needs no check — those ids come out of baseball_team_members
+    // for this same team.
+    await assertPlayersOnBaseballTeam(supabase, teamId, playerIds ?? []);
 
     let dueDate: string | null = customDueDate ?? null;
     if (!dueDate && template.default_due_days) {

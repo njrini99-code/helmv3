@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { logServerError } from '@/lib/server-error-logger';
 import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import { assertPlayersOnBaseballTeam } from '@/lib/baseball/resolve-team';
 import {
   withBaseballAction,
   BaseballUnauthorizedError,
@@ -337,6 +338,15 @@ const addPlayerClassAction = withBaseballAction(
   }) => {
     await assertPlayerClassAccess(ctx, playerId);
 
+    // assertPlayerClassAccess binds the PLAYER to the caller's active team.
+    // `data.team_id` was a separate, unvalidated client field written onto the
+    // row, so a class could be filed into another team's namespace and appear
+    // in that team's schedule views. The caller's active team is the only
+    // namespace they are entitled to write into.
+    if (data.team_id && data.team_id !== ctx.activeTeamId) {
+      throw new BaseballUnauthorizedError('That class cannot be filed under another team.');
+    }
+
     const validated = addClassSchema.parse({
       player_id: playerId,
       team_id: data.team_id || null,
@@ -653,6 +663,15 @@ const createEligibilityRecordAction = withBaseballAction(
     const teamId = data.team_id ?? ctx.activeTeamId;
     await requireBaseballCapability(teamId, 'can_view_academics');
 
+    const supabase = await createClient();
+
+    // The capability covers the TEAM the record is filed under; `playerId` was
+    // never checked against it, so eligibility, GPA, credit and academic-
+    // standing rows could be created for players outside the team — visible to
+    // them on their own reads. Academic standing is exactly the kind of record
+    // that should not be writable across a tenancy boundary.
+    await assertPlayersOnBaseballTeam(supabase, teamId, [playerId]);
+
     const validated = eligibilitySchema.parse({
       player_id: playerId,
       team_id: teamId,
@@ -664,8 +683,6 @@ const createEligibilityRecordAction = withBaseballAction(
       academic_standing: data.academic_standing || null,
       notes: data.notes || null,
     });
-
-    const supabase = await createClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: created, error } = await (supabase as any)
@@ -730,6 +747,12 @@ const upsertPlayerAcademicsAction = withBaseballAction(
   > => {
     const validated = upsertAcademicsSchema.parse(input);
     const supabase = await createClient();
+
+    // `teamFrom` on this action feeds input.team_id into the capability check,
+    // so the TEAM is enforced. input.player_id was not, which let the same
+    // cross-team academic write happen through the upsert route as through
+    // createEligibilityRecord.
+    await assertPlayersOnBaseballTeam(supabase, validated.team_id, [validated.player_id]);
 
     const payload = {
       player_id: validated.player_id,

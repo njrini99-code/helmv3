@@ -38,6 +38,22 @@ describe('updateLineup — atomic position replacement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     from.mockImplementation((table: string) => {
+      // updateLineup now verifies the incoming positions against the lineup's
+      // team before calling the RPC. That is a READ, so it does not weaken the
+      // guard below — which exists to catch a direct position delete/insert
+      // sneaking back in place of the transactional RPC.
+      if (table === 'baseball_team_members') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              in: vi.fn(async () => ({
+                data: [{ player_id: 'player-1' }, { player_id: 'player-2' }],
+                error: null,
+              })),
+            })),
+          })),
+        };
+      }
       if (table !== 'baseball_team_lineups') {
         throw new Error(`Unexpected direct table write: ${table}`);
       }
@@ -73,7 +89,14 @@ describe('updateLineup — atomic position replacement', () => {
         { batting_order: 2, player_id: 'player-2' },
       ],
     });
-    expect(from).toHaveBeenCalledTimes(1);
+    // Was `toHaveBeenCalledTimes(1)`. The intent is that positions are never
+    // touched through a direct table call — the count was a proxy for that,
+    // and it stopped being one when the roster READ was added. Assert the
+    // intent directly instead, so the guard survives further reads while still
+    // failing the moment a delete/insert on baseball_lineup_positions returns.
+    const tablesTouched = from.mock.calls.map((c) => c[0]);
+    expect(tablesTouched).toEqual(['baseball_team_lineups', 'baseball_team_members']);
+    expect(tablesTouched).not.toContain('baseball_lineup_positions');
   });
 
   it('preserves a permission denial returned by the privileged RPC boundary', async () => {
