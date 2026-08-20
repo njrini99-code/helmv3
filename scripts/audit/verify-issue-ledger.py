@@ -391,28 +391,86 @@ def _s1() -> Result:
     )
 
 
-@check("S10", "golf createTask assigns to unvalidated player ids")
+@check("S10", "roster gate present at every site the authz sweep touched")
 def _s10() -> Result:
-    """Semgrep ai.detection.authz, verified still present in HEAD.
+    """Semgrep ai.detection.authz/idor/logic -- the 29-instance class.
 
-    createTaskImpl gates the TEAM correctly (validateCoachTeamAccess) and then
-    resolves assignees with `.in('id', assignToPlayerIds)` carrying no team_id
-    filter, so a coach of team A can assign a task to a player on team B.
+    Team scope was already enforced almost everywhere after deepsec wave 1.
+    What was missing was scope of the id INSIDE the call: an action proved
+    "you are a coach of team X" and then wrote a caller-supplied playerId,
+    player_ids[], attendeeIds[] or event_id without checking it belonged to
+    that team.
 
-    Representative of the whole open class: team scope enforced, id-within-team
-    scope not. Closes when the assignee read is team-filtered.
+    Each entry below is (file, enclosing symbol, the token that proves the
+    gate is present). Deliberately keyed on the GATE, not on the vulnerable
+    shape: a check that looks for the old code goes green the moment someone
+    reformats it. Reports the first site that has lost its gate, so a
+    regression names itself.
     """
-    src = read("src/app/golf/actions/tasks.ts")
-    if "validateCoachTeamAccess" not in src:
-        return "OPEN", "team gate itself is missing -- worse than reported"
-    i = src.find(".in('id', assignToPlayerIds)")
-    if i < 0:
-        return "DONE", "unfiltered assignee read is gone"
-    window = src[max(0, i - 400):i + 200]
-    filtered = ".eq('team_id'" in window or "golf_team_members" in window
-    return ("DONE" if filtered else "OPEN"), (
-        "assignee read is team-filtered" if filtered
-        else "assignee read has no team_id filter"
+    sites = [
+        ("src/app/golf/actions/tasks.ts", "createTaskImpl", "verifyPlayersOnTeam"),
+        ("src/app/golf/actions/tasks.ts", "createTaskFromTemplateImpl", "verifyPlayersOnTeam"),
+        ("src/app/golf/actions/insights.ts", "generateRoundReviewImpl", "verifyRoundBelongsToPlayer"),
+        ("src/app/golf/actions/round-review-system.ts", "generateAndStoreRoundReviewImpl", "verifyRoundBelongsToPlayer"),
+        ("src/app/golf/actions/v3/llm.ts", "generateLlmRoundReviewImpl", "verifyPlayerAccess"),
+        ("src/app/golf/actions/v3/llm.ts", "generateHeroNarrativeImpl", "verifyPlayerAccess"),
+        ("src/app/golf/actions/v3/qualifying.ts", "setQualifierCoachPickImpl", "verifyPlayersOnTeam"),
+        ("src/app/golf/actions/round-reviews.ts", "publishReviewImpl", "verifyReviewAccess"),
+        ("src/app/golf/actions/round-reviews.ts", "shareReviewWithPlayerImpl", "verifyReviewAccess"),
+        ("src/app/golf/actions/documents.ts", "createGolfDocumentImpl", "resolveTeamRole"),
+        ("src/app/golf/actions/documents.ts", "uploadNewVersionImpl", "resolveTeamRole"),
+        ("src/app/golf/actions/golf.ts", "checkScheduleConflictsImpl", "resolveSharedScheduleScope"),
+        ("src/app/golf/actions/teams.ts", "addSecondTeamImpl", "'head_coach'"),
+        ("src/app/baseball/actions/tasks.ts", "createTaskAction", "assertPlayersOnBaseballTeam"),
+        ("src/app/baseball/actions/tasks.ts", "createTaskFromTemplateAction", "assertPlayersOnBaseballTeam"),
+        ("src/app/baseball/actions/lineups.ts", "saveLineupAction", "assertPlayersOnBaseballTeam"),
+        ("src/app/baseball/actions/lineups.ts", "updateLineupAction", "assertPlayersOnBaseballTeam"),
+        ("src/app/baseball/actions/games.ts", "saveFullBoxScoreAction", "assertPlayersOnBaseballTeam"),
+        ("src/app/baseball/actions/calendar.ts", "createBaseballEventAction", "assertPlayersOnBaseballTeam"),
+        ("src/app/baseball/actions/academics.ts", "createEligibilityRecordAction", "assertPlayersOnBaseballTeam"),
+        ("src/app/baseball/actions/academics.ts", "upsertPlayerAcademicsAction", "assertPlayersOnBaseballTeam"),
+        ("src/app/lifting/actions/player-sessions.ts", "logMySetResult", "callerOwnsAthlete"),
+    ]
+    missing = []
+    for path, symbol, token in sites:
+        src = read(path)
+        start = src.find(symbol)
+        if start < 0:
+            missing.append(f"{path}::{symbol} gone")
+            continue
+        # Generous window: the gate sits inside the same function, and these
+        # bodies run to a few hundred lines.
+        if token not in src[start : start + 20_000]:
+            missing.append(f"{path}::{symbol} lacks {token}")
+    if missing:
+        return "OPEN", f"{len(missing)}/{len(sites)} without a gate; first: {missing[0]}"
+    return "DONE", f"all {len(sites)} sites carry their gate"
+
+
+@check("S13", "Google OAuth state is signed, not merely compared")
+def _s13() -> Result:
+    """Semgrep ai.detection.logic x3 on api/crm/google-calendar/*.
+
+    The state was unsigned base64 JSON and both consumers only compared its
+    userId to the session. That catches a mismatch, never a forgery. Closes
+    when both routes delegate to the HMAC verifier and neither still parses
+    the raw payload itself.
+    """
+    helper = read("src/lib/crm/oauth-state.ts")
+    signed = "createHmac" in helper and "timingSafeEqual" in helper
+    routes = {
+        p: read(p)
+        for p in (
+            "src/app/api/crm/google-calendar/auth/route.ts",
+            "src/app/api/crm/google-calendar/callback/route.ts",
+        )
+    }
+    delegating = all("verifyOAuthState" in src for src in routes.values())
+    hand_parsed = [p for p, src in routes.items() if "Buffer.from(state, 'base64')" in src]
+    ok = signed and delegating and not hand_parsed
+    return ("DONE" if ok else "OPEN"), (
+        f"hmac={signed} both-routes-delegate={delegating} "
+        f"hand-parsed={len(hand_parsed)}"
     )
 
 

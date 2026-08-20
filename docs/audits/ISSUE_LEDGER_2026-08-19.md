@@ -263,89 +263,66 @@ server-validated team CONTEXT → CAPABILITY). Both landed **after** the scan
 commit, so the CSV cannot see either. Those fixes carry in-code tags (`DS-03`,
 `DS-3`, `DS-B4`, `DS-B10-1`), which is how each verdict below was confirmed.
 
-### Verdict on all 72
+### Verdict on all 72 — and all 68 actionable ones are now CLOSED
 
-| verdict | n |
-|---|---|
-| CLOSED — fix verified in HEAD | 34 |
-| OPEN — the gap is still in the code | 29 |
-| DESIGN QUESTION — org-vs-team scope, owner's call | 4 |
-| OAUTH — unsigned `state`, one fix covers all three | 3 |
-| FALSE POSITIVE — the rule's premise is factually wrong | 2 |
+| verdict | n | state |
+|---|---|---|
+| CLOSED at triage time | 34 | fix already in HEAD |
+| OPEN, now FIXED | 29 | `f30f1fdd1`, `6f6217835`, `ec49ee2fd`, `295afb103` |
+| OAUTH, now FIXED | 3 | `e462448ce` |
+| FALSE POSITIVE | 2 | premise is factually wrong |
+| DESIGN QUESTION | 4 | org-vs-team scope, owner's call |
 
 **The 2 false positives.** `lib/notifications/push.ts::sendPushNotification`
-and `sendBulkPushNotification` are described as "exported server actions".
-The file carries an explicit comment saying it deliberately has **no**
-`'use server'` directive, for exactly the reason Semgrep gives. Not
-client-callable, not an endpoint. Do not "fix".
+and `sendBulkPushNotification` are described as "exported server actions". The
+file carries an explicit comment saying it deliberately has **no** `'use
+server'` directive, for exactly the reason Semgrep gives. Not client-callable,
+not an endpoint. Do not "fix" these.
 
-### The 29 open ones are one bug, 29 times
+### The 29 were one bug, 29 times
 
-Team scope is now enforced almost everywhere. **Scope of the id *inside* the
-team is not.** An action correctly proves "you are a coach of team X" and then
-accepts an arbitrary `playerId`, `player_ids[]`, `event_id`, `reviewId` or
-`attendeeIds[]` and writes it. Several are additionally RLS-dependent — the
-database may still reject the write — but the code-level authorization gap is
-real in all 29.
+Team scope was already enforced almost everywhere after wave 1. **Scope of the
+id *inside* the call was not.** An action proved "you are a coach of team X"
+and then accepted an arbitrary `playerId`, `player_ids[]`, `event_id`,
+`reviewId` or `attendeeIds[]` and wrote it.
 
-**Tier 1 — real regardless of RLS (7).**
+Three primitives now carry that check, rather than 29 bespoke ones:
 
-- `baseball/actions/documents.ts::uploadNewVersion` — capability is checked
-  against `document.team_id`, then the storage path is built from the
-  caller-supplied `teamId`. Cross-tenant object write. The cleanest bug here.
-- `golf/actions/insights.ts::generateRoundReviewImpl` — `verifyRoundAccess(
-  roundId)` only; nothing ties `playerId` to that round.
-- `golf/actions/round-review-system.ts::generateAndStoreRoundReviewImpl` —
-  mirror image: `verifyReviewAccess(playerId)` only, `roundId` unchecked.
-- `golf/actions/v3/llm.ts::generateLlmRoundReview` and `generateHeroNarrative`
-  — auth plus a rate limit, no access check, before LLM spend billed to the
-  resolved coach.
-- `golf/actions/tasks.ts::createTaskImpl` — team validated, then
-  `assignToPlayerIds` goes through `.in('id', …)` with no `team_id` filter.
-- `golf/actions/tasks.ts::createTaskFromTemplateImpl` — the roster read only
-  runs when `playerIds` is empty; a supplied array bypasses it entirely.
-- `golf/actions/teams.ts::addSecondTeamImpl` — requires *a* primary staff row,
-  not a head-coach role, then self-inserts `role:'head_coach'` on the new team.
+- `verifyPlayersOnTeam(teamId, ids)` — golf, in
+`@/lib/auth/verify-player-access`
+- `verifyRoundBelongsToPlayer(roundId, playerId)` — golf, same module
+- `assertPlayersOnBaseballTeam(sb, teamId, ids)` — `@/lib/baseball/resolve-team`
 
-**Tier 2 — real in code, RLS is the only remaining backstop (8).**
+Three rules they all share, each of which had a wrong answer available. An
+empty list PASSES, because callers legitimately branch on it — a helper that
+rejected `[]` would break `createTaskFromTemplate`'s whole-roster path while
+looking stricter. A failed read fails CLOSED **and says which kind of no it
+is**, because this repo has already shipped the version where a discarded
+roster-read error told a coach their own player was not on their team.
+Membership, not lifecycle: `pending`/`inactive`/NULL still count, since the
+defect is cross-TEAM writes and quietly retiring removed players at 29 call
+sites under cover of a security fix would be a different change.
 
-- `golf/actions/documents.ts::createGolfDocumentImpl` — auth only,
-  `data.team_id` written unscoped.
-- `golf/actions/documents.ts::uploadNewVersionImpl` — auth only, no role
-  check, so a player can add versions.
-- `golf/actions/round-reviews.ts::publishReviewImpl` — proves "is a coach",
-  then `UPDATE … .eq('id', reviewId)` with no resource scope.
-- `golf/actions/round-reviews.ts::createFocusAreaFromReviewImpl` — same shape.
-- `golf/actions/round-reviews.ts::shareReviewWithPlayerImpl` — no team scope
-  on the review read or update.
-- `golf/actions/golf.ts::checkScheduleConflictsImpl` — `attendeeIds` are
-  arbitrary; conflict windows for any id the caller names.
-- `golf/actions/insights.ts::acknowledgeComposedInsightImpl` and
-  `dismissComposedInsightImpl` — team resolved server-side, which is right;
-  the `playerId` written alongside it is not validated.
+Two sites turned out worse than the scan reported. `createTaskFromTemplate`
+(golf) had **no team gate at all** — only "is a coach" — and wrote `team_id`
+straight from its argument. `addSecondTeam` checked that a primary staff row
+existed, never that it was a head-coach row, then inserted the caller into the
+new team's staff as `role: 'head_coach'`.
 
-**Tier 3 — same root cause, narrow blast radius (14).**
+Verified by `S10` in the verifier, which keys on the GATE rather than on the
+vulnerable shape — a check that looks for the old code goes green the moment
+someone reformats it — and names the first site to lose one.
 
-- baseball writes that validate the team and never check `player_id` against
-  it: `tasks::createTask`, `tasks::createTaskFromTemplate`,
-  `lineups::saveLineup`, `lineups::updateLineup`, `games::saveFullBoxScore`,
-  `calendar::createBaseballEvent` (attendee rows),
-  `academics::createEligibilityRecord`, `academics::upsertPlayerAcademics`.
-- `baseball/actions/academics.ts::addPlayerClass` — `data.team_id` is written
-  onto the row with no validation, though the *player* is roster-checked.
-- `baseball/actions/games.ts::createGame` — `input.event_id` is not checked
-  as belonging to `teamId`.
-- `golf/actions/v3/qualifying.ts::setQualifierCoachPick` and
-  `confirmQualifierSelection` — team is derived from the qualifier (good);
-  `player_id` is not checked as an entrant.
-- `lifting/actions/player-sessions.ts::logMySetResult` — `input.athleteId` is
-  trusted outright after authentication.
+### The 3 OAuth rows, one fix
 
-**The single highest-leverage fix** is not 29 patches: it is one
-`assertPlayersOnTeam(supabase, teamId, ids[])` helper next to
-`validateCoachTeamAccess`, plus a Review Gate ast-grep rule that fails any
-action writing a `player_id` column from an argument without it. Otherwise
-this class regenerates — it already did once, after wave 1.
+`api/crm/google-calendar/*` state was unsigned base64 JSON, and both consumers
+only compared its `userId` to the session. That catches a mismatch, never a
+forgery: an attacker knowing a victim's uuid could mint a state naming them and
+have the victim's browser complete a callback carrying the attacker's Google
+code. Now HMAC-signed via `src/lib/crm/oauth-state.ts`, with the expiry
+enforced on both consumers — the callback previously checked identity and not
+age. Key derives from `GOOGLE_CLIENT_SECRET`, which both routes already
+require, rather than a new env var that would be unset on the day it shipped.
 
 ### 4 design questions, not bugs — owner's call
 
@@ -356,26 +333,17 @@ Whether an org's coaches may see sibling teams is a product decision. The
 settings-row *creation* side effect on an unstaffed team is worth tightening
 either way.
 
-### 3 OAuth rows, one fix
-
-`api/crm/google-calendar/*` — the `state` parameter is unsigned base64 JSON.
-The callback compares `decodedState.userId` to the session user, which blocks
-a mismatch but not forgery: an attacker who knows a victim's user UUID can
-mint a state naming them, then have the victim's browser complete the
-callback with the attacker's Google code. Sign the state (HMAC, same shape as
-`verifyUnsubToken`) or store a per-session nonce.
-
 ### The 15 OSS rows
 
 - **12 `crypto-weak-algorithm` — all false positives.** Every one is SHA-1 or
   MD5 deriving a deterministic UUIDv5-style id from a `namespace:key` pair.
   Checked all twelve for secret/signature adjacency: zero. All in seed
   scripts, e2e helpers, dev tooling. Settled; do not re-verify.
-- **1 `npm-missing-minimum-release-age` — REAL and cheap.** npm 11.17 does
-  support this, under the key `min-release-age` (currently `null`), not the
-  `minimum-release-age` spelling the rule name suggests. A cooldown blunts the
-  npm-compromise wave class. `npm ci` installs pinned versions, so CI is
-  unaffected; Dependabot PRs are the path that changes.
+- **1 `npm-missing-minimum-release-age` — REAL and cheap, still open.** npm
+  11.17 does support this, under the key `min-release-age` (currently `null`),
+  not the `minimum-release-age` spelling the rule name suggests. A cooldown
+  blunts the npm-compromise wave class. `npm ci` installs pinned versions, so
+  CI is unaffected; Dependabot PRs are the path that changes.
 - **1 `cors-default-config-express`** — `tools/ultra-agent-audit/src/server.js`
   uses bare `app.use(cors())`. Local dev tool, referenced by nothing in
   `package.json` or CI. Low value.
