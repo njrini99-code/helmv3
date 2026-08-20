@@ -222,6 +222,54 @@ has no detector at all.
 
 ---
 
+## SEMGREP — the CSV was stale, the fresh scan is clean
+
+Two Semgrep artifacts arrived. They disagree, and the newer one wins.
+
+**The 87-row CSV is a single scan from 2026-07-26, never re-run.** Its commit
+(`8a7f049be`) is **546 commits** behind main; every row was created AND last
+opened that same day. "Status: Open" means open in Semgrep's UI, not open in
+the code. Line numbers are unreliable: 75 of the 87 flagged files have changed
+since, and the one I spot-checked had drifted 28 lines. Do not action it.
+
+Of its 87 rows, 72 were Pro AI-detection rules (45 authz / 13 idor / 14 logic)
+and 12 were `crypto-weak-algorithm`. **All 12 crypto findings are false
+positives** — every one is SHA-1/MD5 deriving a deterministic UUIDv5-style id
+from a `namespace:key` pair for seed data and task dedup. Checked all twelve
+for secret/signature adjacency: zero. They are also entirely in seed scripts,
+e2e helpers and dev tooling.
+
+**The fresh scan (semgrep 1.172.0, current main) reports 0 blocking findings
+and exits 0.** 347 findings, 342 non-blocking code + 5 supply chain. The AI
+authz/idor/logic rules do not appear in it at all.
+
+### The one reachable supply-chain finding, triaged
+
+`sharp` GHSA-f88m-g3jw-g9cj, HIGH, marked **Reachable**. It is dev-only, and
+the lockfile proves it rather than the dependency graph implying it:
+
+| path | version | `dev` | production |
+|---|---|---|---|
+| `node_modules/sharp` | 0.34.5 vuln | **true** | excluded by `--omit=dev` |
+| `next/node_modules/sharp` | 0.35.3 | — | this is what prod uses |
+
+It arrives via `@huggingface/transformers` <- `promptfoo`, a devDependency.
+The only direct import in the tree is `scripts/gen-ios-icon.mjs`, a build
+script — itself one of the 5 scripts with no reference anywhere.
+
+**Deliberately not force-overridden.** Promoting the existing `next`-scoped
+`sharp: 0.35.3` override to global would force `@huggingface/transformers` off
+its declared `^0.34.5` range, which excludes 0.35.x — risking the eval tooling
+for zero production benefit. That is the same trade that broke typecheck
+earlier today. Tracked as K13; the verifier re-checks the `dev` flag so this
+closes automatically if it ever stops being dev-only.
+
+The other four supply-chain findings are `uuid` (undetermined) and
+`adm-zip` x2 / `extract-zip` (all **unreachable**), consistent with MF-018's
+finding that all 12 npm-audit vulnerabilities terminate at two devDependencies.
+
+---
+
 ## DEFERRED, with reason
 
 **MF-006 dependency refresh** (55/114 direct deps outdated). No driver:

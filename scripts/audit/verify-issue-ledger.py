@@ -352,6 +352,25 @@ def _k12() -> Result:
     return state, f"{n} cron file(s) uncommitted; test asserts the old 2000 x{stale}"
 
 
+@check("K13", "vulnerable sharp hoisted to root (dev-only)")
+def _k13() -> Result:
+    """Semgrep marks sharp GHSA-f88m-g3jw-g9cj REACHABLE. It is dev-only.
+
+    The lockfile is the authority: the root copy carries dev=true, so
+    `npm ci --omit=dev` never installs it. next/ has its own patched 0.35.3
+    via the existing override. Deliberately NOT force-overridden globally --
+    @huggingface/transformers requires ^0.34.5, which excludes 0.35.x.
+    """
+    lock = json.loads(read("package-lock.json"))["packages"]
+    root = lock.get("node_modules/sharp", {})
+    nxt = lock.get("node_modules/next/node_modules/sharp", {})
+    prod_exposed = bool(root.get("version", "").startswith("0.34")) and not root.get("dev")
+    return ("OPEN" if prod_exposed else "DONE"), (
+        f'root {root.get("version")} dev={root.get("dev")}; '
+        f'next {nxt.get("version")} -> production unaffected'
+    )
+
+
 def main() -> None:
     rows = []
     for cid, desc, fn in CHECKS:
