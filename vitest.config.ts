@@ -144,6 +144,7 @@ export default defineConfig({
             // covers (a look-alike domain resolving to the prod ref, `.local`
             // accepted as a loopback suffix) both passed a grep happily.
             'scripts/lib/__tests__/seed-target-guard.test.ts',
+            'scripts/repo-doctor/__tests__/repo-doctor.test.ts',
             // The demo-seed guards. Same rationale as the secrets guard above:
             // they were written for `node --test` and so ran under nothing, and
             // what they protect — a script that creates auth users and deletes

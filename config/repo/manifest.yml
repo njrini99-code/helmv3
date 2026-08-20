@@ -1,0 +1,63 @@
+# Repository control-plane manifest — the DESIRED state repo:doctor checks against.
+#
+# This file is the single source of project identity and invariants. `repo:doctor`
+# compares it against the ACTUAL repository/local state and reports PASS / WARN /
+# FAIL / DRIFT / UNKNOWN. It never mutates anything.
+#
+# Keep desired values here, not observed platform state. When an invariant
+# changes deliberately, change it here in the same PR — the doctor then makes any
+# other representation that disagrees (a doc, a machine-local file) fail loudly.
+
+repository:
+  # Matched against `git remote get-url origin` (host/owner/name, ignoring
+  # protocol and .git suffix). This is what makes "am I in the right repo"
+  # deterministic instead of assumed.
+  remote: njrini99-code/helmv3
+
+authority:
+  constitution: AGENTS.md            # the vendor-neutral repo constitution
+  claude_adapter: CLAUDE.md          # must import the constitution (@AGENTS.md)
+  feature_registry: memory/registry.yml
+
+workspace:
+  # A worktree whose path is INSIDE the repo root poisons file search (two copies
+  # of every file). Forbidden, mechanically.
+  nested_worktrees: forbidden
+
+scratch:
+  # Gitignored top-level dirs that are legitimately allowed to be large.
+  allowlist:
+    - .next
+    - node_modules
+    - playwright-report
+    - test-results
+    - coverage
+    - .git
+    - .dev-artifacts
+    - .turbo
+    - dist
+    - .vercel
+  warn_file_count: 5000
+  warn_bytes: 262144000   # 250 MB
+
+# npm scripts the standard workflow depends on. A missing one means a documented
+# workflow cannot actually be run.
+required_scripts:
+  - repo:doctor
+  - typecheck
+  - lint
+  - build
+  - docs:check
+
+supabase:
+  # The one expected Supabase project root (holds config.toml). An unexpected
+  # second root is how "which database am I targeting" becomes ambiguous.
+  root: supabase
+
+ci:
+  # Check-run names that must be produced by EXACTLY ONE workflow job. Two jobs
+  # posting the same name is the phantom-required-context trap (PR #1125).
+  unique_check_names:
+    - CI aggregate
+    - Review Gate aggregate
+    - Smoke checks
