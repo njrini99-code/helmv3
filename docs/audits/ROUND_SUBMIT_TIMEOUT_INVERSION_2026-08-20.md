@@ -275,9 +275,42 @@ the delete count.
 
 Scope of that test run, stated precisely: `vitest run --project unit
 src/app/golf/actions/__tests__/` — 556 passing, **not** the full suite (`npm
-test` is 818 files, which was not run here). The 2 failures in
-`program-onboarding` / `auth-signup-gate` are pre-existing and belong to another
-session's staged work. Typecheck is clean for both changed files.
+test` is 818 files, which was not run here).
+
+Re-run on a **clean detached worktree at HEAD** (`25433419f`), outside the repo,
+because the shared checkout carries four sessions' uncommitted edits and a
+measurement taken there is not a measurement of `main`:
+
+- `tsc --noEmit` → **EXIT 0**. The `alreadyMember` error seen earlier in the
+  dirty tree does not exist on `main`; it was an artifact of concurrent
+  uncommitted work. Anyone who reported that error as a blocker measured the
+  wrong tree.
+- Same 556 pass / 2 fail. **The two failures are real on `main`** — they are not
+  dirty-tree artifacts and not "someone's staged work". See below.
+
+### Unrelated: `main` is red on two signup tests (not mine, but real)
+
+Found while verifying on the clean tree. Both are **stale tests encoding a
+contract that `0b83f9ca5` deliberately changed**, not production regressions —
+but they are committed on `main`, so `CI aggregate` is red and every future PR
+inherits it.
+
+- `auth-signup-gate.test.ts` → *"does not carry a join code for a coach"*.
+  The test signs up `role: 'coach'` while holding a **valid team join code**
+  (`K7PQX4MN` → `team-1`) and asserts `{success: true, redirectTo: '/golf/coach'}`.
+  `0b83f9ca5` makes a roster code outrank the browser-sent role precisely so that
+  case becomes an `assistant_request` instead — that is the entire point of the
+  change. The test asserts the old contract. It fails with *"We could not find
+  the team for that code"* because the test's mocks do not cover the assistant
+  branch's own team lookup, **not** because coach signup is broken.
+- `program-onboarding.test.ts` → asserts `/already exists/i` against the
+  duplicate-organization message, which `0b83f9ca5` rewrote to name the action
+  that actually works ("get the team code and enter it at sign-up"). Purely a
+  wording assertion.
+
+Both belong to the signup/onboarding owner, not to this incident. Recorded here
+only because a clean-tree run is the thing that distinguishes them from the
+dirty-tree noise, and someone had already concluded the opposite.
 
 **`save_partial_round_atomic` deliberately gets no guard.** Checked, not missed:
 its error path logs and returns, and there is no destructive rebuild behind it —
