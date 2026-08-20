@@ -96,9 +96,19 @@ vi.mock('@/lib/server-error-logger', () => ({
  * error is a gap in these fakes, not a broken signup: production error_logs
  * carry zero occurrences of that string.
  */
-const joinTeamAsAssistantCoach = vi.fn(async () => ({ success: true }));
+// Typed with the real signature — an argless `vi.fn` infers `calls[0]` as the
+// empty tuple, so reading `[1]` (the join code) is a compile error.
+const joinTeamAsAssistantCoach = vi.fn(
+  async (
+    _userId: string,
+    _teamJoinCode: string,
+    _fullName: string | undefined,
+    _email: string,
+  ): Promise<{ success: boolean; error?: string }> => ({ success: true }),
+);
 vi.mock('@/app/golf/actions/teams', () => ({
-  joinTeamAsAssistantCoach: (...args: unknown[]) => joinTeamAsAssistantCoach(...(args as [])),
+  joinTeamAsAssistantCoach: (...args: unknown[]) =>
+    joinTeamAsAssistantCoach(...(args as [string, string, string | undefined, string])),
   redeemStaffInvite: vi.fn(async () => ({ success: true })),
 }));
 

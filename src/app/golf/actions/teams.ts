@@ -295,6 +295,24 @@ export async function validateGolfPlayerCanJoinTeam(
 }
 
 /**
+ * The shape both join paths return.
+ *
+ * Stated explicitly rather than inferred. With inference, `alreadyMember`
+ * exists on only one arm of a three-arm union, so every caller and test that
+ * reads it after checking `success` is a type error — `expect(...)` narrows
+ * nothing for the compiler. That broke `main`'s typecheck, and since
+ * `next.config.mjs` sets `typescript: { ignoreBuildErrors: false }` and
+ * tsconfig's `include` covers tests, it fails the PRODUCTION BUILD, not just
+ * CI. All existing return shapes already satisfy this; no runtime change.
+ */
+export interface GolfJoinTeamResult {
+  success: boolean;
+  /** Already on this team — an idempotent no-op, not a failure. */
+  alreadyMember?: boolean;
+  error?: string;
+}
+
+/**
  * Add a golf player to a team via golf_team_members
  * Also notifies coaches when a player joins
  */
@@ -303,7 +321,7 @@ async function joinGolfTeamImpl(
   teamId: string,
   joinCode?: string,
   resolvedTeam?: ResolvedTeamRef | null
-) {
+): Promise<GolfJoinTeamResult> {
   const supabase = await createClient();
 
   // Validate first
@@ -529,7 +547,7 @@ export async function joinGolfTeam(
  * Process a golf team join code
  * Note: golf_teams uses join_code, not invite_code
  */
-async function processGolfTeamInvitationImpl(joinCode: string, playerId: string) {
+async function processGolfTeamInvitationImpl(joinCode: string, playerId: string): Promise<GolfJoinTeamResult> {
   const supabase = await createClient();
 
   // Normalize join code to uppercase for case-insensitive matching
