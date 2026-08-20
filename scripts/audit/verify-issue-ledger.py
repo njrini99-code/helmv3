@@ -102,7 +102,7 @@ def _o3() -> Result:
 
 @check("O4", "golf history migration unapplied")
 def _o4() -> Result:
-    return "OWNER", "20260819050000 complete, trigger verified; apply is a decision"
+    return "OWNER", "20260819200000 complete, trigger verified; apply is a decision"
 
 
 @check("O6", "migration ledger orphans keep Supabase Preview red")
@@ -297,24 +297,59 @@ def _k9() -> Result:
     return "OPEN", f"{out} agent doc(s) carry imports no gate compiles"
 
 
-@check("K10", "migration version-stamp collision in a worktree")
+@check("K10", "migration version-stamp collision across worktrees")
 def _k10() -> Result:
+    """Two files sharing a stamp is silent data loss, not a conflict.
+
+    supabase_migrations.schema_migrations keys on VERSION alone. Whichever
+    file applies first records the stamp; the other is treated as already
+    applied and skipped, with no error.
+    """
     _, listing = sh("git worktree list --porcelain | grep '^worktree ' | cut -d' ' -f2")
-    collisions: list[str] = []
+    seen: dict[str, list[str]] = {}
     for line in listing.split("\n"):
         wt = line.strip()
-        if not wt or Path(wt).resolve() == ROOT:
+        if not wt:
             continue
-        rc, files = sh(
-            f"ls {shlex.quote(wt)}/supabase/migrations/20260819050000_* 2>/dev/null"
+        _, files = sh(
+            f"ls {shlex.quote(wt)}/supabase/migrations/*.sql 2>/dev/null"
         )
-        if rc != 0:
-            continue
-        collisions += [
-            Path(f).name for f in files.split("\n")
-            if f and "preserve_golf_history" not in f
-        ]
-    return ("OPEN" if collisions else "DONE"), f"collisions: {collisions or 'none'}"
+        for path in files.split("\n"):
+            name = Path(path).name
+            if not name or "_" not in name:
+                continue
+            stamp = name.split("_", 1)[0]
+            seen.setdefault(stamp, [])
+            if name not in seen[stamp]:
+                seen[stamp].append(name)
+    clashes = {k: v for k, v in seen.items() if len(v) > 1}
+    return ("OPEN" if clashes else "DONE"), (
+        f"{len(clashes)} stamp(s) claimed by 2+ different filenames"
+    )
+
+
+@check("K11", ".deepsec holds 2x src/ in .ts/.tsx, invisible to git")
+def _k11() -> Result:
+    _, deep = sh("find .deepsec -name '*.ts' -o -name '*.tsx' 2>/dev/null | wc -l")
+    _, src = sh("find src -name '*.ts' -o -name '*.tsx' | wc -l")
+    n = int(deep or 0)
+    ratio = n / max(int(src or 1), 1)
+    return ("OPEN" if n > 0 else "DONE"), (
+        f"{n} files ({ratio:.1f}x src/); gitignored so every scanner still reads them"
+    )
+
+
+@check("K12", "orphaned PostgREST fix uncommitted, its test encodes the bug")
+def _k12() -> Result:
+    _, dirty = sh("git status --porcelain src/app/api/cron/ | wc -l")
+    _, asserts = sh(
+        "grep -c 'toHaveBeenCalledWith(2000)' "
+        "src/test/api/cron/coachhelm-insight-lifecycle-bounds.test.ts 2>/dev/null"
+    )
+    n = int(dirty or 0)
+    stale = int(asserts or 0)
+    state = "OPEN" if (n or stale) else "DONE"
+    return state, f"{n} cron file(s) uncommitted; test asserts the old 2000 x{stale}"
 
 
 def main() -> None:

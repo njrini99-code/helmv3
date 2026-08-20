@@ -1,3 +1,22 @@
+-- RESTAMPED 2026-08-19: 20260819050000 -> 20260819200000.
+--
+-- An uncommitted migration in a sibling worktree claimed the same stamp
+-- (20260819050000_drop_duplicate_baseball_decision_log_index.sql). Neither was
+-- applied, and supabase_migrations.schema_migrations keys on VERSION ALONE --
+-- not the filename -- so whichever applied first would record 20260819050000
+-- and the other would be treated as already-applied and skipped SILENTLY.
+-- No error, no conflict, nothing red.
+--
+-- The loser in that race would have been this file: the golf cascade fix,
+-- whose absence means deleting one account still destroys that player's ~25k
+-- shots. A P0 that reports itself as applied is worse than one that reports
+-- itself as missing.
+--
+-- Restamped this side rather than the other because this file is mine and
+-- committed, while the baseball claimant is uncommitted in a worktree whose
+-- session has exited -- waiting for that owner is waiting indefinitely. This
+-- removes the race without touching anyone else's in-flight work.
+
 -- Golf round/shot history survives account deletion.
 --
 -- OWNER DECISION, 2026-08-18: "There should be no deletion of golf shot

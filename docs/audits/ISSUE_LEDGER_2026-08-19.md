@@ -56,7 +56,7 @@ protection exists to prevent, so O1/O2 are flagged rather than fixed.
 | **O1** | `guard-bash` rule 3 misses `; true` masking | 3/3 forms allowed |
 | **O2** | `guard-bash` rule 4 says force pushes are enabled | 1 stale claim |
 | **O3** | credentials in git history | HEAD clean; needs rotation |
-| **O4** | golf history migration unapplied | complete + trigger verified |
+| **O4** | golf history migration unapplied (`20260819200000`) | verified |
 | **O5** | `Bash(*)` makes the scoped allowlist inert | among 44 allow entries |
 | **O6** | 538 orphan rows keep `Supabase Preview` red | 300 need judgement |
 
@@ -107,13 +107,46 @@ example still teaching it, non-compiling, for about an hour.
 A doc-example extractor that type-checks fenced TS would close a class, not an
 instance.
 
-### K10. Migration version-stamp collision
+### K11. `.deepsec/` is the worktree problem, unfixed
 
-`20260819050000_drop_duplicate_baseball_decision_log_index.sql` sits
-uncommitted in the `wf_509b1144-d87-20` worktree and collides with
-`20260819050000_preserve_golf_history_on_account_deletion.sql` on main. Two
-different migrations, one stamp. Whoever lands second silently shadows the
-other. Needs a re-stamp before either ships.
+Moving the worktrees closed the instance, not the class. Counting `.ts/.tsx`
+from the repo root:
+
+| directory | files |
+|---|---|
+| `node_modules` | 40,008 |
+| **`.deepsec`** | **7,990** |
+| `src` | 3,900 |
+| `tools` | 1,452 |
+
+`.deepsec/` holds **2x `src/`**, is gitignored with 0 tracked files, and is
+770 MB. Gitignored means invisible to git and fully visible to `find`, `grep`
+and every filesystem scanner — the exact property that made the worktrees
+dangerous. It is also where the `.env` JSON copies live that bypass the
+sandbox's `.env*` deny-list (MF-010). Any scan that excludes
+`.claude/worktrees` and stops there still reads ~8,000 phantom files.
+
+### K12. An orphaned production fix is sitting uncommitted
+
+Three cron routes are modified in the shared tree and three
+`docs/SECURITY_*_POSTGREST_1000_ROW_CAP` files are untracked. All four live
+sessions have disowned them; the timestamps (22:12–22:14) point to a session
+that has since exited.
+
+The change is real and correct. `PAGE_SIZE = 2000` in
+`coachhelm-insight-lifecycle` meant a full 1,000-row PostgREST response read as
+a short page, so the early-exit logic halted — leaving **~9,000 insights
+unprocessed per run**. The other two cron files are comment-only.
+
+**The committed test asserts the bug**:
+`coachhelm-insight-lifecycle-bounds.test.ts` expects
+`.limit(2000)`, which is why the suite is 1120/1121. Three sessions reached
+that conclusion independently. Treating it as a regression would revert a live
+production fix.
+
+Nobody should commit this on the original author's behalf without a decision —
+but it should not be lost either, and a dirty tree is currently the only thing
+blocking a deploy.
 
 ### M7. `ruff` / `pylint` only cover `tools/**/*.py`
 
