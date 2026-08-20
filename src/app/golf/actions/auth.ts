@@ -28,7 +28,7 @@ import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { verifyStaffInvite } from '@/lib/golf/staff-invite';
-import { createPendingAssistantCoach, redeemStaffInvite } from '@/app/golf/actions/teams';
+import { joinTeamAsAssistantCoach, redeemStaffInvite } from '@/app/golf/actions/teams';
 import { resolveStaffInviteCode } from '@/lib/golf/staff-invite-lookup';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
@@ -504,17 +504,22 @@ async function signupActionImpl(
     return { success: true, redirectTo: `/golf/staff/join/${encodeURIComponent(gate.staffInviteCode)}` };
   }
 
-  // ASSISTANT-COACH REQUEST on the shared team code.
+  // ASSISTANT COACH on the shared team code — attached IMMEDIATELY.
   //
-  // Creates a real coach profile bound to the inviting PROGRAM, and writes no
-  // golf_team_coach_staff row. That row is the whole of team access — both
-  // is_golf_team_coach and is_golf_team_head_coach are EXISTS() over it and
-  // read nothing else (verified against prod 2026-08-19) — so this account
-  // holds nothing until a head coach approves it in Team settings.
+  // Creates a real coach profile bound to the inviting PROGRAM and writes a
+  // golf_team_coach_staff row for every team in it. Those rows are the whole of
+  // team access — both is_golf_team_coach and is_golf_team_head_coach are
+  // EXISTS() over that table and read nothing else — so writing them is what
+  // makes the account work on first sign-in, with no waiting page in between.
+  //
+  // There is deliberately NO approval step (owner decision 2026-08-20): "The
+  // approval is them having the access code, and putting it in when they hit
+  // sign up." See joinTeamAsAssistantCoach in actions/teams.ts for the
+  // trade-off that decision accepts.
   //
   // Anchored to gate.teamJoinCode, never to anything the browser sent: without
-  // a team code there is no program to request, and the request is refused
-  // rather than silently downgraded to a stray coach account.
+  // a team code there is no program to join, and the signup is refused rather
+  // than silently downgraded to a stray coach account.
   if (role === 'assistant_request') {
     if (!gate.teamJoinCode) {
       return {
@@ -522,22 +527,30 @@ async function signupActionImpl(
         error: 'Assistant coaches need their team\'s code. Ask your head coach for it and try again.',
       };
     }
-    const requested = await createPendingAssistantCoach(
+    const joined = await joinTeamAsAssistantCoach(
       data.user.id,
       gate.teamJoinCode,
       [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
       normalizedEmail,
     );
-    if (!requested.success) {
-      // The account exists by now, so refusing the whole signup would strand
-      // them with credentials and nothing to sign into.
+    if (!joined.success) {
+      // The auth account exists by now, so refusing the whole signup would
+      // strand them with credentials and nothing to sign into. But unlike the
+      // old request-and-wait flow, a failure here means they genuinely have NO
+      // team access — so say so instead of sending them to a dashboard that
+      // would render empty.
       await logServerError(
-        `[signupAction] pending assistant request failed after account creation: ${requested.error ?? 'unknown'}`,
+        `[signupAction] assistant coach team attach failed after account creation: ${joined.error ?? 'unknown'}`,
         { action: 'auth.signupAction' },
-        'warning',
+        'error',
       );
+      return {
+        success: false,
+        error: joined.error ?? 'We created your account but could not add you to the team. Please sign in and try again.',
+      };
     }
-    return { success: true, redirectTo: '/golf/coach/pending' };
+    // Straight to the dashboard. They are on the team.
+    return { success: true, redirectTo: '/golf/dashboard' };
   }
 
   const carryJoinCode = role === 'player' && gate.teamJoinCode;

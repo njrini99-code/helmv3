@@ -80,11 +80,12 @@ export function GolfSignUpForm({
   /**
    * Which namespace the code that opened the gate came from.
    *
-   * 'roster'  — a team join_code, the ONE code a head coach hands out. Both
-   *             options are offered here, but "Assistant coach" means join
-   *             THIS program pending approval — never new-program onboarding,
-   *             which is what minted a phantom duplicate for the assistants
-   *             who picked Coach (UNCW 2026-08-18, Shenandoah 2026-08-19).
+   * 'roster'  — a team join_code, the ONE code a team gets. Both options are
+   *             offered here: Player, or Assistant coach. "Assistant coach"
+   *             joins THIS program immediately with full access — never
+   *             new-program onboarding, which is what minted a phantom
+   *             duplicate for the assistants who picked Coach (UNCW
+   *             2026-08-18, Shenandoah 2026-08-19).
    * 'staff'   — a head-coach-minted staff code. The role lives in the signed
    *             token and `signupAction` redeems it, so there is nothing to
    *             pick; showing a picker only invites the wrong choice.
@@ -116,9 +117,10 @@ export function GolfSignUpForm({
    * The second option MEANS something different on the two paths, which is why
    * it is derived rather than stored.
    *
-   *   roster  → 'assistant_request'. Joins THIS program as an assistant,
-   *             pending the head coach's approval, and never runs new-program
-   *             onboarding. Deriving it also means a visitor who picked Coach
+   *   roster  → 'assistant_request'. Joins THIS program as an assistant
+   *             immediately, with full access, and never runs new-program
+   *             onboarding. There is no approval step: holding the code IS the
+   *             authorization (owner decision 2026-08-20). Deriving it also means a visitor who picked Coach
    *             before typing a team code cannot be left holding 'coach' once
    *             the scope resolves — the exact mismatch that sent Shenandoah's
    *             assistant into school-details onboarding.
@@ -312,10 +314,9 @@ export function GolfSignUpForm({
       {rosterCodeOnly && effectiveRole === 'assistant_request' && (
         <p className="text-sm text-warm-600 bg-cream-50 border border-warm-200 rounded-xl p-3">
           You&rsquo;ll join {teamName ?? 'this program'} as an{' '}
-          <strong className="font-semibold text-warm-800">assistant coach</strong> once
-          your head coach approves you — they&rsquo;ll see the request as soon as you
-          finish signing up. You can sign in right away; team data appears when
-          they approve.
+          <strong className="font-semibold text-warm-800">assistant coach</strong> with
+          full access to the team as soon as you finish signing up — nothing to wait
+          for.
         </p>
       )}
 

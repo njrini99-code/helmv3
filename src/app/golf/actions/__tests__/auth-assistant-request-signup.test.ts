@@ -67,8 +67,8 @@ vi.mock('@/lib/golf/staff-invite-lookup', () => ({ resolveStaffInviteCode }));
 // vi.mock factories are hoisted above every const in this file, so the spies
 // they hand back have to be created inside vi.hoisted() or the factory runs
 // before they exist.
-const { createPendingAssistantCoach, redeemStaffInvite } = vi.hoisted(() => ({
-  createPendingAssistantCoach: vi.fn(
+const { joinTeamAsAssistantCoach, redeemStaffInvite } = vi.hoisted(() => ({
+  joinTeamAsAssistantCoach: vi.fn(
     async (_userId: string, _teamJoinCode: string, _fullName?: string, _email?: string) => ({
       success: true,
     }),
@@ -76,7 +76,7 @@ const { createPendingAssistantCoach, redeemStaffInvite } = vi.hoisted(() => ({
   redeemStaffInvite: vi.fn(async (_token: string, _fullName?: string) => ({ success: true })),
 }));
 vi.mock('@/app/golf/actions/teams', () => ({
-  createPendingAssistantCoach,
+  joinTeamAsAssistantCoach,
   redeemStaffInvite,
 }));
 
@@ -87,7 +87,7 @@ const CODE = 'K7PQX4MN';
 
 beforeEach(() => {
   signUp.mockReset();
-  createPendingAssistantCoach.mockClear();
+  joinTeamAsAssistantCoach.mockClear();
   redeemStaffInvite.mockClear();
   signUp.mockResolvedValue({
     data: { user: { id: 'user-1' }, session: { access_token: 't' } },
@@ -96,28 +96,33 @@ beforeEach(() => {
   verifySignupGate.mockResolvedValue({ passed: true, teamJoinCode: CODE, staffInviteCode: null });
 });
 
-describe("assistant coach on the team code — a request, never a grant", () => {
-  it('records a pending request and never writes a staff grant', async () => {
+describe("assistant coach on the team code — a grant, immediately", () => {
+  it('attaches them to the program through the one shared code path', async () => {
     const result = await signupAction('asst@shenandoah.edu', STRONG_PASSWORD, 'assistant_request', 'Ben', 'Potter');
 
     expect(result.success).toBe(true);
-    expect(createPendingAssistantCoach).toHaveBeenCalledTimes(1);
+    expect(joinTeamAsAssistantCoach).toHaveBeenCalledTimes(1);
     // The team comes from the GATE, so a forged form field cannot redirect the
     // request at another program.
-    expect(createPendingAssistantCoach.mock.calls[0]?.[1]).toBe(CODE);
+    expect(joinTeamAsAssistantCoach.mock.calls[0]?.[1]).toBe(CODE);
     // Nothing on this path may mint staff access.
     expect(redeemStaffInvite).not.toHaveBeenCalled();
   });
 
-  it('lands on the pending screen, not coach onboarding', async () => {
+  it('lands on the DASHBOARD — no waiting page, no coach onboarding', async () => {
     const result = await signupAction('asst@shenandoah.edu', STRONG_PASSWORD, 'assistant_request');
     // '/golf/coach' is new-program onboarding — the school-details form that
     // minted a phantom duplicate program for UNCW and Shenandoah.
-    expect(result.redirectTo).toBe('/golf/coach/pending');
+    // Owner decision 2026-08-20: "There shouldn't be an approval. The approval
+    // is them having the access code, and putting it in when they hit sign up."
+    // The staff rows are written before this returns, so the dashboard has
+    // something to render.
+    expect(result.redirectTo).toBe('/golf/dashboard');
     expect(result.redirectTo).not.toBe('/golf/coach');
+    expect(result.redirectTo).not.toBe('/golf/coach/pending');
   });
 
-  it("writes 'coach' into auth metadata, not the request marker", async () => {
+  it("writes 'coach' into auth metadata, not the signup-role marker", async () => {
     await signupAction('asst@shenandoah.edu', STRONG_PASSWORD, 'assistant_request');
     // handle_new_user's CASE accepts only 'coach'/'player' and silently
     // defaults anything else to 'player'. Leaking 'assistant_request' through
@@ -131,7 +136,7 @@ describe("assistant coach on the team code — a request, never a grant", () => 
     const result = await signupAction('nobody@example.com', STRONG_PASSWORD, 'assistant_request');
 
     expect(result.success).toBe(false);
-    expect(createPendingAssistantCoach).not.toHaveBeenCalled();
+    expect(joinTeamAsAssistantCoach).not.toHaveBeenCalled();
   });
 });
 

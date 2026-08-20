@@ -27,8 +27,9 @@ import { describeError } from '@/lib/utils/describe-error';
  * Two account shapes carry `onboarding_completed = false` and must never see
  * that wizard:
  *
- *   1. A PENDING assistant. `createPendingAssistantCoach` writes the flag false
- *      deliberately — the waiting screen is their onboarding.
+ *   1. A PENDING assistant — a legacy shape. Assistants are now staffed at
+ *      signup (`joinTeamAsAssistantCoach`) and carry the flag TRUE, so nothing
+ *      new lands here; rows predating that change still route safely.
  *   2. An APPROVED assistant. Until this change `approvePendingAssistantCoach`
  *      inserted the staff row and left the flag alone, so approval did not
  *      clear the condition. An assistant the head coach had just approved was

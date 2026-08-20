@@ -46,8 +46,9 @@ export default function SignupPage() {
   const [joinCode, setJoinCode] = useState<string | null>(null);
   // Which NAMESPACE the accepted code came from. It decides what the second
   // role option MEANS: with a roster code it is "Assistant coach", which joins
-  // this program pending the head coach's approval; only the global code still
-  // offers "Coach", the new-program path. A roster code must never reach
+  // this program immediately with full access; only the global code still
+  // offers "Coach", the new-program path (the owner stands head coaches up by
+  // hand, so that door is effectively theirs). A roster code must never reach
   // new-program onboarding — that is what minted a duplicate organization for
   // the assistants who picked Coach.
   const [codeScope, setCodeScope] = useState<SignupCodeScope>('generic');
@@ -205,9 +206,18 @@ export default function SignupPage() {
               animate={{ opacity: 1 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
             >
-              <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
+              {/* READABILITY OVER THE SCENE.
+                  These two lines used to sit as bare text directly on the
+                  painterly course illustration. On a phone the card ends
+                  higher up the viewport, so they landed right on the trees —
+                  green `text-primary-600` links on green foliage, reported
+                  2026-08-20 as "the wording at the bottom you can't even
+                  read". The panel gives them their own opaque ground instead
+                  of relying on whatever pixel happens to be behind them. */}
+              <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-cream-50/95 px-4 py-3 shadow-sm ring-1 ring-warm-200/70 backdrop-blur-sm">
+              <p className="text-center text-warm-700 text-sm">
                 Already have an account?{' '}
-                <Suspense fallback={<Link href="/golf/login" className="text-primary-600 font-semibold hover:text-primary-500 transition-colors">Sign in</Link>}>
+                <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">Sign in</Link>}>
                   <SignInLink />
                 </Suspense>
               </p>
@@ -222,15 +232,16 @@ export default function SignupPage() {
                   built for exactly that visitor, and was linked from neither
                   page. See #1483 — this is the exit only; whether the login
                   page should also split the two audiences is still open there. */}
-              <p className="text-center mt-2 text-warm-500 text-sm">
+              <p className="text-center mt-2 text-warm-600 text-sm">
                 Not joining a team?{' '}
                 <Link
                   href="/golf/demo"
-                  className="text-primary-600 font-semibold hover:text-primary-500 transition-colors"
+                  className="text-primary-700 font-semibold hover:text-primary-600 transition-colors"
                 >
                   See a live demo
                 </Link>
               </p>
+              </div>
             </m.div>
           </div>
         </div>
@@ -340,12 +351,16 @@ export default function SignupPage() {
           animate={{ opacity: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
         >
-          <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
-            Already have an account?{' '}
-            <Suspense fallback={<Link href="/golf/login" className="text-primary-600 font-semibold hover:text-primary-500 transition-colors">Sign in</Link>}>
-              <SignInLink />
-            </Suspense>
-          </p>
+          {/* Same readability panel as the code gate: these lines sit over the
+              painterly scene, and on a phone they land on the foliage. */}
+          <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-cream-50/95 px-4 py-3 shadow-sm ring-1 ring-warm-200/70 backdrop-blur-sm">
+            <p className="text-center text-warm-700 text-sm">
+              Already have an account?{' '}
+              <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">Sign in</Link>}>
+                <SignInLink />
+              </Suspense>
+            </p>
+          </div>
 
           {!isNative && (
             <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
