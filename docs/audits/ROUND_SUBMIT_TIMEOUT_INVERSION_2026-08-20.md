@@ -404,33 +404,46 @@ batching. Until 4 lands, the pile-up that produces the tail is unchanged — the
 
 ---
 
-## Owner decisions — not taken here
+## Recovery — RESOLVED 2026-08-20 16:09 UTC: unrecoverable, round unbricked
 
-- **Recovering James Peach's round.** Searched and empty: `golf_rounds.draft_data`
-  (the RPC cleared it), `admin_events.metadata`, `error_logs.context`, and every
-  table carrying a `round_id`. No backup table exists — the "submission backup"
-  writes to `draft_data`, which the successful RPC then nulled. No local dump
-  exists in the repo either (`supabase/seed/v3-seed.sql` is 5KB of fixtures).
-  **Supabase managed backups / PITR are the only route, and whether PITR is
-  enabled on this project and what its retention window is has NOT been
-  verified** — that needs the project's backup settings, not a SQL query.
-  Restoring to ~03:18 UTC on 2026-08-20 into a branch and extracting the 18
-  holes / 72 shots is the shape of it.
+**The verdict, checked in the dashboard rather than assumed** (owner opened the
+Backups page; PITR tab verified through the browser session):
 
-  **Reconstruction from the surviving cache is not viable.**
-  `golf_round_stats_cache` pins the *multiset* — 5 birdies, 8 pars, 5 bogeys,
-  front 36 / back 36, 7 one-putts, 1 three-putt, 2/6 scrambling, 2 penalty
-  strokes — but not which hole each belongs to, and the 72 shot records cannot
-  be inverted out of four strokes-gained numbers. Writing invented holes and
-  shots would feed strokes-gained, his trend line and CoachHelm's insights with
-  fabrications indistinguishable from real play, permanently. An empty round is
-  the better failure.
+- **PITR is NOT enabled** on Helm-Production — the Point-in-time tab shows
+  "Point in Time Recovery is available as an add-on" with an Enable button.
+  No WAL archive exists for the incident window.
+- **The daily backups bracket the round on both sides.** Snapshots run daily
+  ~04:44–04:49 UTC. The round was created 02:48 UTC Aug 20 and destroyed 03:19
+  UTC Aug 20; the Aug 19 backup (04:46) predates the round's existence and the
+  Aug 20 backup (04:44) postdates the wipe by 85 minutes. The 18 holes and 72
+  shots existed for 31 minutes, entirely between two snapshots.
 
-- **The round is currently un-resubmittable.** `submit_round_atomic` rejects on
-  `status != 'completed'`, so even with his scorecard in hand Peach cannot
-  re-enter it. Flipping `status` back to `in_progress` is a one-row, reversible
-  repair — but it is a production write on a real customer's record and it would
-  disturb a PITR extraction, so it is being offered rather than done.
+**James Peach's round data is therefore permanently unrecoverable.** Every
+software copy was already ruled out (`draft_data` — nulled by the committed RPC;
+`admin_events` / `error_logs` — counts only; no backup table; the 5KB seed).
+
+**Reconstruction from the surviving cache remains not viable.**
+`golf_round_stats_cache` pins the *multiset* — 5 birdies, 8 pars, 5 bogeys,
+front 36 / back 36, 7 one-putts, 1 three-putt, 2/6 scrambling, 2 penalty
+strokes — but not which hole each belongs to, and 72 shot records cannot be
+inverted out of four strokes-gained numbers. Fabricated holes and shots would
+poison strokes-gained, his trend line and CoachHelm permanently. If Peach kept
+a paper scorecard, the cache gives him a checksum to re-enter against: 72
+(36/36), and the multiset above.
+
+**The round has been unbricked.** With no PITR extraction left to protect, the
+one-row repair went ahead: `status` flipped `completed → in_progress` at
+2026-08-20 16:09:05 UTC (conditioned on `status='completed'`, RETURNING
+verified). Peach can now re-enter the round through the normal continue-round
+flow; his re-submit recomputes the stale cache row via the existing trigger.
+
+## Owner decisions — still open
+
+- **Enabling PITR going forward.** This incident is the exact shape PITR
+  exists for: sub-day data destroyed between daily snapshots. It is one click
+  ("Enable add-on") on the Backups → Point in time page, and it is a paid
+  add-on — cost is the owner's call. Note it protects only from enablement
+  forward; nothing retroactive.
 - **Deploying.** `vercel.json` carries `deploymentEnabled: {"*": false}`, so
   none of this ships on push; production is an on-demand CLI promote, and env
   vars bake at build time.
