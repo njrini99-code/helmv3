@@ -25,6 +25,7 @@ import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
+import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 
 export interface LlmRoundReviewActionResult {
   ok: boolean;
@@ -70,6 +71,22 @@ async function generateLlmRoundReviewImpl(
       .maybeSingle();
     if (!round || round.total_score === null || round.score_to_par === null) {
       return { ok: false, error: 'Round not found or incomplete' };
+    }
+
+    // DS-44 fixed the rate and the spend. It did not add an access check: the
+    // round was fetched by id alone, so authorization rested entirely on
+    // golf_rounds RLS, and any authenticated user who could read a teammate's
+    // round could have prose composed from that player's score and stats —
+    // billed to that player's coach. Authorize the SUBJECT explicitly, the
+    // same way every other player-scoped golf read does.
+    const access = await verifyPlayerAccess(round.player_id, user.id, supabase);
+    if (!access.allowed) {
+      return {
+        ok: false,
+        error: access.reason === 'unavailable'
+          ? 'Could not verify access just now. Please try again.'
+          : 'Unauthorized',
+      };
     }
 
     const { data: player } = await supabase
@@ -196,6 +213,21 @@ async function generateHeroNarrativeImpl(
       'Too many requests. Please wait a moment and try again.',
     );
     if (!rateLimit.allowed) return { ok: false, error: rateLimit.error };
+
+    // ...and the same missing access check as round-review, which matters more
+    // here: `player_id` is the caller's own argument rather than a field read
+    // off an authorized row, so any authenticated team member could generate
+    // narrative for any teammate and consume that player's coach's LLM budget
+    // doing it.
+    const access = await verifyPlayerAccess(input.player_id, user.id, supabase);
+    if (!access.allowed) {
+      return {
+        ok: false,
+        error: access.reason === 'unavailable'
+          ? 'Could not verify access just now. Please try again.'
+          : 'Unauthorized',
+      };
+    }
 
     const { data: player } = await supabase
       .from('golf_players')

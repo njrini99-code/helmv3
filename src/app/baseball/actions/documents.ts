@@ -567,7 +567,7 @@ export async function uploadNewVersion(
 const uploadNewVersionAction = withBaseballAction(
   'uploadNewVersion',
   { featureArea: 'baseball-documents' },
-  async (ctx, documentId: string, file: File, teamId?: string, _coachId?: string, changeNotes?: string) => {
+  async (ctx, documentId: string, file: File, _teamId?: string, _coachId?: string, changeNotes?: string) => {
     void _coachId;
     const supabase = await createClient();
 
@@ -581,7 +581,15 @@ const uploadNewVersionAction = withBaseballAction(
 
     await requireBaseballCapability(String(document.team_id), 'can_manage_documents');
 
-    const effectiveTeamId = teamId || document.team_id;
+    // `_teamId` is IGNORED, deliberately. It used to feed the storage path as
+    // `teamId || document.team_id`, while the capability above was checked
+    // against the DOCUMENT's team — so a coach who could legitimately manage
+    // document D could name any other team and drop the new object under that
+    // team's prefix. The document's own team is the only correct answer here;
+    // the parameter survives for call-site compatibility only, exactly as the
+    // golf sibling already marks its `_teamId`.
+    void _teamId;
+    const effectiveTeamId = String(document.team_id);
     const newVersionNumber = (document.version_count || 1) + 1;
 
     const fileExt = file.name.split('.').pop();

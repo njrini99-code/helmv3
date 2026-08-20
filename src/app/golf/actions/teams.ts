@@ -1747,6 +1747,39 @@ async function addSecondTeamImpl(
     return { success: false, error: 'You must have a primary team before adding a second team.' };
   }
 
+  // ...and be a program head, which until now was only asserted in the comment
+  // above. Holding ANY primary staff row was the whole gate, so an assistant
+  // coach could call this, get a new team created in their org, and be written
+  // into its staff as `role: 'head_coach'` by the insert further down — a
+  // self-service promotion on a team of their own making.
+  //
+  // 'head_coach' on at least one staffed row is the same predicate the team
+  // switcher already uses for program-head capability (see
+  // getCoachTeamSwitchContext), so this adds no new notion of seniority; it
+  // applies the existing one to the action that hands out the role.
+  const { data: headCoachRow, error: headCoachError } = await supabase
+    .from('golf_team_coach_staff')
+    .select('id')
+    .eq('coach_id', coach.id)
+    .eq('role', 'head_coach')
+    .limit(1)
+    .maybeSingle();
+
+  // Same fail-closed-but-honest split as the primary-team read above: a failed
+  // read must not be reported to a real head coach as "you are not one".
+  if (headCoachError) {
+    await logServerError(
+      `addSecondTeam: head-coach check failed for coach ${coach.id}: ${describeError(headCoachError)}`,
+      { action: 'teams.addSecondTeam', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: "Couldn't verify your role. Please try again." };
+  }
+
+  if (!headCoachRow) {
+    return { success: false, error: 'Only a head coach can add another team.' };
+  }
+
   // Prevent exact-duplicate gender: a coach should not have two teams with the
   // same gender. Fetch all teams in the org this coach staffs, check genders.
   const { data: existingStaffTeams, error: existingStaffError } = await supabase

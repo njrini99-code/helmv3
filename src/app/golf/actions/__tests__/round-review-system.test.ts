@@ -101,6 +101,10 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 vi.mock('@/lib/auth/verify-player-access', () => ({
   verifyPlayerAccess: vi.fn(async () => ({ allowed: true, reason: 'self' })),
+  // generateAndStoreRoundReview now binds roundId to playerId before it
+  // computes -- verifying the player alone let a caller pair a subject they
+  // may read with a round they may not.
+  verifyRoundBelongsToPlayer: vi.fn(async () => true),
 }));
 
 vi.mock('@/lib/coachhelm/v2', () => ({

@@ -51,7 +51,11 @@ import { classifyDashboardFailure } from '@/lib/coachhelm/v2/dashboard-error-cla
 import { logServerError, logServerEvent, logServerException } from '@/lib/server-error-logger';
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
-import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import {
+  verifyPlayerAccess as sharedVerifyPlayerAccess,
+  verifyRoundBelongsToPlayer,
+  verifyPlayersOnTeam,
+} from '@/lib/auth/verify-player-access';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 // 2026-08-01: gateCoachHelmEngineCall used to live here (private). Lifted into
 // @/lib/auth/action-rate-limit so alerts.ts, round-recap.ts, schedule-image.ts
@@ -2883,6 +2887,15 @@ async function generateRoundReviewImpl(
       return { success: false, error: access.error || 'Not authorized' };
     }
 
+    // ...and that the round is actually THIS player's. The check above
+    // authorizes the ROUND and says nothing about `playerId`, so a caller
+    // holding one accessible round could name any player id and have the
+    // engine build the analysis from that player's history instead. Both
+    // arguments must describe the same subject before the engine runs.
+    if (!(await verifyRoundBelongsToPlayer(roundId, playerId))) {
+      return { success: false, error: 'Not authorized' };
+    }
+
     // Rate-limit engine entrypoint
     const sb = await createClient();
     const { data: { user } } = await sb.auth.getUser();
@@ -3784,6 +3797,20 @@ async function acknowledgeComposedInsightImpl(
     // and the men's/women's toggle). Falls back to the coach's primary team.
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
+    // `teamId` is server-resolved and therefore trustworthy; `playerId` is not.
+    // It is the caller's argument and was written straight onto the insight
+    // row, so a coach could file insight state against a player on a team they
+    // do not staff and pollute that player's feed. Bind the two.
+    const roster = await verifyPlayersOnTeam(teamId ?? '', [playerId], supabase);
+    if (!roster.ok) {
+      return {
+        success: false,
+        error: roster.reason === 'unavailable'
+          ? "Couldn't confirm your roster just now. Please try again."
+          : 'That player is not on your team',
+      };
+    }
+
     // Insert the insight with acknowledged status
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: insertError } = await (supabase as any)
@@ -3888,6 +3915,20 @@ async function dismissComposedInsightImpl(
     // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
     // and the men's/women's toggle). Falls back to the coach's primary team.
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+
+    // `teamId` is server-resolved and therefore trustworthy; `playerId` is not.
+    // It is the caller's argument and was written straight onto the insight
+    // row, so a coach could file insight state against a player on a team they
+    // do not staff and pollute that player's feed. Bind the two.
+    const roster = await verifyPlayersOnTeam(teamId ?? '', [playerId], supabase);
+    if (!roster.ok) {
+      return {
+        success: false,
+        error: roster.reason === 'unavailable'
+          ? "Couldn't confirm your roster just now. Please try again."
+          : 'That player is not on your team',
+      };
+    }
 
     // Insert the insight with dismissed status
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
