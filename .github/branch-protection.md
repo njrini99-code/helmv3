@@ -19,6 +19,10 @@ so a job split/rename does not silently break protection.
 > #    ]}
 > ```
 >
+> **Updated 2026-08-20:** `strict` is now `false` (owner decision); see
+> **Other settings** below for the current, API-verified state. The six
+> required contexts are unchanged.
+>
 > **The window this section used to warn about was OPEN, and is now closed.**
 > The job rename (`all` → `CI aggregate` / `Review Gate aggregate`) had already
 > landed on `main`, but the required-context list had not been updated — exactly
@@ -153,12 +157,26 @@ sqlfluff, hadolint) plus CodeQL cover the same hard rules and report on every PR
 
 ## Other settings
 
-- Require branches to be up to date before merging: **ON**
-- Require linear history: **ON** (or rebase-only — team preference)
-- Require pull request reviews before merging: **ON**, 1 approval minimum
-- Dismiss stale pull request approvals when new commits are pushed: **ON**
-- Restrict who can push to matching branches: **ON** (admins only)
-- **Do not allow bypassing the above settings: ON** (no admin bypass)
+> **Verified live against the GitHub API 2026-08-20** (`gh api …/branches/main/protection`).
+> This list is the ACTUAL state, not the aspiration — several items were relaxed
+> by owner decision and this doc had drifted from them until this sync.
+
+- Require branches to be up to date before merging: **OFF** — `strict` was set to
+  `false` on 2026-08-20 (owner decision). With multiple sessions landing commits,
+  `strict: true` forced every open PR to restart its full check suite each time
+  `main` moved, starving small PRs. Squash-merge already linearizes history, so the
+  up-to-date requirement bought little here; the compensating control is
+  `git pull main` before branching.
+- Require linear history: **ON**
+- Require pull request reviews before merging: **OFF** — 0 approvals required
+  (owner works solo and is the only reviewer).
+- Dismiss stale pull request approvals when new commits are pushed: **N/A** (no
+  reviews required).
+- Restrict who can push to matching branches: **OFF** (no push-restriction list).
+- Do not allow bypassing the above settings: **OFF** — `enforce_admins` is
+  disabled, so the owner can direct-push to `main`.
+- Allow force pushes: **OFF**. Required status checks: Smoke checks, CI aggregate,
+  Review Gate aggregate, Analyze (actions / javascript-typescript / python).
 
 ## Why this matters
 
