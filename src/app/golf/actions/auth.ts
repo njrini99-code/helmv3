@@ -33,6 +33,7 @@ import { resolveStaffInviteCode } from '@/lib/golf/staff-invite-lookup';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
 import { verifySignupGate } from '@/lib/golf/signup-gate';
+import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 
 export type LoginResult = {
   success: boolean;
@@ -246,9 +247,14 @@ async function loginActionImpl(
         : declaredRole;
 
   if (resolvedRole === 'coach') {
-    if (!coachProfile || !coachProfile.onboarding_completed) {
-      redirectTo = '/golf/coach';
-    }
+    // NOT `!onboarding_completed -> '/golf/coach'`. That flag is false for both
+    // a PENDING and an APPROVED assistant coach, and '/golf/coach' is
+    // new-program onboarding — completing it overwrites their
+    // organization_id and detaches them from the program they joined. The
+    // resolver keys on the golf_team_coach_staff row instead, which is the same
+    // thing the RLS access helpers read. See lib/golf/coach-entry-path.ts.
+    const entry = await resolveGolfCoachEntry(data.user.id);
+    redirectTo = entry.path;
   } else if (resolvedRole === 'player') {
     if (!playerProfile || !playerProfile.onboarding_completed) {
       redirectTo = '/golf/player';

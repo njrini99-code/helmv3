@@ -2437,7 +2437,7 @@ async function createPendingAssistantCoachImpl(
   // to approve. It came from the server-side gate cookie, never from the form.
   const { data: team, error: teamError } = await admin
     .from('golf_teams')
-    .select('id, organization_id')
+    .select('id, name, organization_id')
     .eq('join_code', teamJoinCode.toUpperCase())
     .maybeSingle();
 
@@ -2473,6 +2473,87 @@ async function createPendingAssistantCoachImpl(
       'warning',
     );
     return { success: false, error: 'We could not record your request.' };
+  }
+
+  // TELL THE HEAD COACH. This was the missing half of the flow.
+  //
+  // Every other join path in this file notifies (createTeamJoinRequest,
+  // acceptJoinRequest, rejectJoinRequest); this one wrote the row and told
+  // nobody. The assistant finished signup, saw "pending approval", and waited
+  // on a head coach who had no way to know a request existed short of opening
+  // Team settings on a hunch. A request nobody is told about is functionally a
+  // request that was never made — which is exactly what "it didn't work" looks
+  // like from both ends.
+  //
+  // Fire-and-forget and logged: the request itself is already recorded, so a
+  // notification failure must not fail the signup that just created their
+  // account. ADMIN client because this is a cross-user write —
+  // `notifications_insert_own` is WITH CHECK (user_id = auth.uid()) and would
+  // refuse every row addressed to somebody else.
+  try {
+    const { data: heads, error: headsError } = await admin
+      .from('golf_team_coach_staff')
+      .select('coach_id, golf_coaches!inner(user_id)')
+      .eq('team_id', team.id)
+      .eq('role', 'head_coach');
+
+    if (headsError) {
+      await logServerError(
+        `[createPendingAssistantCoach] head-coach lookup failed; nobody will be told about this request: ${describeError(headsError)}`,
+        { action: 'teams.createPendingAssistantCoach', featureArea: 'teams' },
+      );
+    }
+
+    const recipients = (heads ?? [])
+      .map((row) => (row as unknown as { golf_coaches?: { user_id?: string | null } }).golf_coaches?.user_id)
+      .filter((id): id is string => Boolean(id));
+
+    if (recipients.length > 0) {
+      const requesterName = fullName?.trim() || email;
+      const { error: notifyError } = await fromUntyped(admin, 'notifications').insert(
+        recipients.map((userId) => ({
+          user_id: userId,
+          // `team_join_request` — NOT a new `assistant_coach_request` value.
+          // `notification_type` is a Postgres ENUM and its 11 members
+          // (verified against production 2026-08-20) do not include any
+          // assistant_* label. `fromUntyped` bypasses the type check at exactly
+          // this spot, so an invented label compiles, fails at runtime with
+          // 22P02, and gets swallowed by the fire-and-forget logging below —
+          // leaving the head coach un-notified, which is the very bug this
+          // block exists to fix. The title/body carry the specificity instead.
+          type: 'team_join_request' as const,
+          title: 'Assistant coach request',
+          body: `${requesterName} asked to join ${team.name ?? 'your team'} as an assistant coach.`,
+          action_url: '/golf/dashboard/team',
+          data: {
+            team_id: team.id,
+            team_name: team.name,
+            requester_email: email,
+            requester_name: requesterName,
+          },
+          read: false,
+        })),
+      );
+      if (notifyError) {
+        await logServerError(
+          `[createPendingAssistantCoach] head-coach notification insert failed; the request is recorded but unannounced: ${describeError(notifyError)}`,
+          { action: 'teams.createPendingAssistantCoach', featureArea: 'teams' },
+        );
+      }
+    } else if (!headsError) {
+      // No head coach on the team at all. Not an error in the request — but it
+      // means the approval can never happen, so it must not be silent.
+      await logServerError(
+        `[createPendingAssistantCoach] team ${team.id} has no head coach; assistant request from ${email} cannot be approved by anyone`,
+        { action: 'teams.createPendingAssistantCoach', featureArea: 'teams' },
+      );
+    }
+  } catch (error) {
+    await logServerError(
+      `[createPendingAssistantCoach] notification step threw: ${describeError(error)}`,
+      { action: 'teams.createPendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
   }
 
   return { success: true };
@@ -2653,8 +2734,84 @@ async function approvePendingAssistantCoachImpl(
     return { success: false, error: 'We could not approve that request.' };
   }
 
+  // APPROVAL IS THEIR ONBOARDING — say so in the row.
+  //
+  // This step did not exist, and its absence made approval actively harmful.
+  // `createPendingAssistantCoach` writes `onboarding_completed: false`; five
+  // separate entry points then read `!onboarding_completed` and sent the
+  // account to '/golf/coach', which is NEW-PROGRAM onboarding. So the moment a
+  // head coach approved an assistant, that assistant's next login walked them
+  // into the school-details wizard, and finishing it overwrote their
+  // organization_id and detached them from the program that had just accepted
+  // them. Being approved was worse than being ignored.
+  //
+  // Those entry points now key on the staff row instead (see
+  // lib/golf/coach-entry-path.ts), so this write is no longer load-bearing for
+  // routing. It is still correct: the flag means "this account needs no
+  // further setup", and after approval that is true. Both layers agree, and
+  // neither depends on the other being right.
+  //
+  // Logged rather than failed: the staff row above is the grant, and it landed.
+  // Refusing the approval now would leave access granted and the caller told it
+  // was refused, which is the worse of the two outcomes.
+  const { error: flagError } = await admin
+    .from('golf_coaches')
+    .update({ onboarding_completed: true })
+    .eq('id', coachId);
+
+  if (flagError) {
+    await logServerError(
+      `[approvePendingAssistantCoach] approved coach ${coachId} but could not clear onboarding_completed: ${describeError(flagError)}`,
+      { action: 'teams.approvePendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+  }
+
+  // Tell them they're in. They have been sitting on a page that says "reload to
+  // check"; a notification is the difference between joining the team and
+  // discovering later that they had.
+  try {
+    const { data: approved } = await admin
+      .from('golf_coaches')
+      .select('user_id')
+      .eq('id', coachId)
+      .maybeSingle();
+    const { data: team } = await admin
+      .from('golf_teams')
+      .select('name')
+      .eq('id', teamId)
+      .maybeSingle();
+
+    if (approved?.user_id) {
+      const { error: notifyError } = await fromUntyped(admin, 'notifications').insert({
+        user_id: approved.user_id,
+        // Same enum constraint as the request notification above.
+        type: 'team_join_approved' as const,
+        title: "You're on the team",
+        body: `You were approved as an assistant coach for ${team?.name ?? 'your team'}.`,
+        action_url: '/golf/dashboard',
+        data: { team_id: teamId, team_name: team?.name ?? null },
+        read: false,
+      });
+      if (notifyError) {
+        await logServerError(
+          `[approvePendingAssistantCoach] approval notification insert failed: ${describeError(notifyError)}`,
+          { action: 'teams.approvePendingAssistantCoach', featureArea: 'teams' },
+          'warning',
+        );
+      }
+    }
+  } catch (error) {
+    await logServerError(
+      `[approvePendingAssistantCoach] approval notification step threw: ${describeError(error)}`,
+      { action: 'teams.approvePendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+  }
+
   revalidatePath('/golf/dashboard/team');
   revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/coach/pending');
   return { success: true };
 }
 

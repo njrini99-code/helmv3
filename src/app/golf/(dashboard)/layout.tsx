@@ -9,6 +9,7 @@ import { ThemeApplier } from '@/components/golf/theme/ThemeApplier';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 
 /**
  * Golf Dashboard Layout — SERVER COMPONENT
@@ -136,53 +137,33 @@ export default async function GolfDashboardLayout({
   let userData: GolfUserData;
 
   if (resolvedRole === 'coach') {
-    // A PENDING ASSISTANT must not be sent to '/golf/coach'.
+    // An ASSISTANT COACH — pending OR approved — must not be sent to
+    // '/golf/coach'. That path is new-program onboarding: the school-details
+    // form that mints a fresh organization and team, and completing it
+    // overwrites organization_id and detaches them from the program that
+    // invited them (UNCW 2026-08-18, Shenandoah 2026-08-19).
     //
-    // That path is new-program onboarding — the school-details form that mints
-    // a fresh organization and team. An assistant who signed up with the team
-    // code and chose "Assistant coach" is deliberately left with a coach
-    // profile carrying the program's organization_id and NO
-    // golf_team_coach_staff row, waiting on the head coach's approval. Both of
-    // those look exactly like "onboarding not finished" to the check below, so
-    // without this branch every such login lands on the very screen the
-    // single-code flow exists to avoid (Shenandoah 2026-08-19).
-    //
-    // The staff row is the discriminator because it is the same thing the
-    // access helpers read: is_golf_team_coach and is_golf_team_head_coach are
-    // EXISTS() over golf_team_coach_staff, so "has a row" and "can see team
-    // data" cannot drift apart.
-    if (coach && !coach.onboarding_completed && coach.organization_id) {
-      const pendingCheckClient = await createClient();
-      const { data: pendingStaffRow, error: pendingStaffError } = await pendingCheckClient
-        .from('golf_team_coach_staff')
-        .select('id')
-        .eq('coach_id', coach.id)
-        .limit(1)
-        .maybeSingle();
+    // This block used to check the staff row only when
+    // `!onboarding_completed && organization_id`, then fall through to
+    // `if (!coach.onboarding_completed) redirect('/golf/coach')`. Approval
+    // inserted the staff row and never touched the flag, so an APPROVED
+    // assistant passed the staff check, fell through, and was redirected into
+    // new-program onboarding anyway — they could not reach the dashboard at
+    // all. Routing now lives in one place for every entry point; see
+    // lib/golf/coach-entry-path.ts.
+    const entry = await resolveGolfCoachEntry(session.userId);
+    if (entry.path !== '/golf/dashboard') redirect(entry.path);
 
-      // A FAILED read cannot tell "no staff row" (pending) from "has one"
-      // (approved) — supabase-js resolves both as data: null. The pending page
-      // is the safe direction for that ambiguity: it self-clears the moment
-      // the staff row is readable, whereas falling through to '/golf/coach'
-      // would offer new-program onboarding to a coach who already has a
-      // program, which is the duplicate-program hazard this branch exists to
-      // prevent. So the redirect below is deliberately reached on error too —
-      // but it is logged, because an outage must stay distinguishable from a
-      // genuine absence.
-      if (pendingStaffError) {
-        void logServerError(
-          `[golf dashboard layout] pending-assistant staff lookup failed; routing to the pending page, which self-clears once the row is readable: ${describeError(pendingStaffError)}`,
-          { action: 'golf.dashboardLayout.pendingAssistantCheck', featureArea: 'auth' },
-          'error'
-        );
-      }
-
-      if (!pendingStaffRow) redirect('/golf/coach/pending');
-    }
-
-    if (!coach || !coach.onboarding_completed) {
-      redirect('/golf/coach');
-    }
+    // The resolver only answers '/golf/dashboard' when a coach row AND a staff
+    // row exist, so `coach` is non-null by the time we get here. That reasoning
+    // lives in another module though, so it is stated for the compiler — and
+    // the fallback is the WAITING page, not the wizard: if the layout's own
+    // RLS-scoped read came back empty while the service-role resolver saw a
+    // staffed coach, that is a transient read disagreement, and
+    // /golf/coach/pending redirects straight through to the dashboard the
+    // moment the staff row is readable. Guessing '/golf/coach' instead would
+    // offer new-program onboarding to a coach who demonstrably has a program.
+    if (!coach) redirect('/golf/coach/pending');
 
     // Fetch coach's active team with cookie-awareness:
     //   1. Read the golf_active_team cookie (if set).

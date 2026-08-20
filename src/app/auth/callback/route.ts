@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { checkRateLimit, formatTimeRemaining } from '@/lib/auth/supabase-rate-limit';
+import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 
 // Whitelist of allowed redirect paths to prevent open redirect attacks
 const ALLOWED_REDIRECTS = [
@@ -159,9 +160,14 @@ export async function GET(request: NextRequest) {
         ]);
 
         if (golfCoach) {
-          // If onboarded and there's a specific golf destination (e.g. join link), honor it
-          const destination = !golfCoach.onboarding_completed
-            ? '/golf/coach'
+          // `!onboarding_completed -> '/golf/coach'` sent both a pending and an
+          // approved assistant coach into NEW-PROGRAM onboarding, which
+          // overwrites organization_id and detaches them from the program they
+          // joined. resolveGolfCoachEntry keys on the golf_team_coach_staff row
+          // instead — see lib/golf/coach-entry-path.ts.
+          const entry = await resolveGolfCoachEntry(data.user.id);
+          const destination = entry.path !== '/golf/dashboard'
+            ? entry.path
             : (next.path.startsWith('/golf/') ? next.path : '/golf/dashboard');
           console.info('[OAuth] Redirecting golf coach to:', { destination, userId: data.user.id });
           return NextResponse.redirect(new URL(destination, requestUrl.origin));

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { redirect } from 'next/navigation';
+import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 import { GolfJoinTeamClient } from './golf-join-team-client';
 
 export const metadata = {
@@ -52,7 +53,14 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   }
 
   if (coach) {
-    redirect(coach.onboarding_completed ? '/golf/dashboard' : '/golf/coach');
+    // `onboarding_completed ? dashboard : '/golf/coach'` was wrong for the two
+    // account shapes that carry the flag false while already belonging to a
+    // program — a pending assistant and an approved one. '/golf/coach' is
+    // new-program onboarding, and completing it detaches them from that
+    // program. An assistant clicking the same team link their players use is
+    // exactly how this got hit. See lib/golf/coach-entry-path.ts.
+    const entry = await resolveGolfCoachEntry(user.id);
+    redirect(entry.path);
   }
 
   // Resolve the code BEFORE deciding where to send anyone.

@@ -63,8 +63,20 @@ function getSignupErrorMessage(error: string): string {
 export function GolfSignUpForm({
   joinCode,
   codeScope = 'generic',
+  teamName = null,
 }: {
   joinCode?: string | null;
+  /**
+   * The program the roster code belongs to, when the gate could resolve one.
+   *
+   * Purely for legibility, never for authorization — the server re-derives the
+   * team from the gate cookie and ignores anything the browser says about it.
+   * But "Join Guilford as..." is the difference between a choice and a guess:
+   * the head coach hands the SAME code to players and to an incoming assistant,
+   * so until now the person typing it was picking a role with no confirmation
+   * of which program they were picking it for.
+   */
+  teamName?: string | null;
   /**
    * Which namespace the code that opened the gate came from.
    *
@@ -250,7 +262,9 @@ export function GolfSignUpForm({
 
       {showRolePicker ? (
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-warm-700">I am a...</legend>
+          <legend className="text-sm font-medium text-warm-700">
+            {rosterCodeOnly && teamName ? `Join ${teamName} as...` : 'I am a...'}
+          </legend>
           <div className="grid grid-cols-2 gap-3">
             <Button variant="primary"
               type="button"
@@ -297,7 +311,7 @@ export function GolfSignUpForm({
           choice. Silently removing the picker would read as a broken page. */}
       {rosterCodeOnly && effectiveRole === 'assistant_request' && (
         <p className="text-sm text-warm-600 bg-cream-50 border border-warm-200 rounded-xl p-3">
-          You&rsquo;ll join this program as an{' '}
+          You&rsquo;ll join {teamName ?? 'this program'} as an{' '}
           <strong className="font-semibold text-warm-800">assistant coach</strong> once
           your head coach approves you — they&rsquo;ll see the request as soon as you
           finish signing up. You can sign in right away; team data appears when

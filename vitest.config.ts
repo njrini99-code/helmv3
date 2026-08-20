@@ -92,12 +92,22 @@ export default defineConfig({
           include: [
             'src/**/*.test.ts',
             'src/**/*.spec.ts',
-            // Named explicitly (not a `scripts/**/*.test.mjs` glob): the other
-            // 46 files in scripts/__tests__/ are written for `node --test`
-            // (see their own "Run:" header comments) and are NOT wired into
-            // any CI job or npm script today — a separate, larger dead-test
-            // finding tracked in the stabilization report, out of scope for
-            // this P0 fix. Only the #516 secrets guard is promoted to vitest
+            // Named explicitly (not a `scripts/**/*.test.mjs` glob) so that
+            // `node --test` files are never swept in.
+            //
+            // COUNT CORRECTED 2026-08-20. This comment used to say "the other
+            // 46 files in scripts/__tests__/ … are NOT wired into any CI job",
+            // which was true when written and badly stale by the time anyone
+            // read it: 32 have since been promoted below. Of 51 files under
+            // scripts/__tests__/, 32 now run under vitest and 19 still run
+            // nowhere. Nothing references `node --test` — not a single npm
+            // script, not a single workflow — so an unpromoted file executes
+            // never, silently, and its guard is decorative.
+            //
+            // If you promote or drop one, fix this count. A stale number here
+            // is how "46 dead tests" became folklore while the real figure
+            // moved by 24.
+            // Only the #516 secrets guard is promoted to vitest
             // here, since it previously never ran under any mechanism at all.
             'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
             // Named explicitly for the same reason. Guards extractEnums() in
@@ -108,6 +118,18 @@ export default defineConfig({
             // (it re-runs the generator and diffs against itself), and the
             // function was untestable until main() got an entrypoint guard.
             'scripts/__tests__/regen-docs-enums.test.mjs',
+            // Promoted 2026-08-20 after a doctor pass found 22 files under
+            // scripts/__tests__/ that no runner executed. Of those, exactly
+            // these three PASSED when run manually, so wiring them is free
+            // coverage with no CI risk — and all three guard seed/demo data
+            // integrity, the worst class to leave unguarded. The other 19 fail
+            // against current main (e.g. 8 single-<h1> violations, 4+
+            // unconsolidated badges): they encode real drift that accumulated
+            // while they sat unrun, and wiring them would turn main red, so
+            // they stay out until someone fixes the underlying violations.
+            'scripts/__tests__/seed-recruiting-invariant.test.mjs',
+            'scripts/__tests__/seed-baseball-stats.safety.test.mjs',
+            'scripts/__tests__/baseball-demo-seed-surfaces.test.mjs',
             // Named explicitly for the same reason as the line above (no
             // `scripts/**` glob — the legacy `node --test` files must not be
             // swept in). This one guards the transient-retry wrapper that sits

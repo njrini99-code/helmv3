@@ -60,6 +60,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 
 /**
@@ -89,7 +90,7 @@ export interface UpdateRoundTypeResult {
   error?: string;
 }
 
-export async function updateRoundType(
+async function updateRoundTypeImpl(
   input: UpdateRoundTypeInput,
 ): Promise<UpdateRoundTypeResult> {
   const { roundId, roundType } = input;
@@ -265,4 +266,35 @@ export async function updateRoundType(
   } catch (err) {
     return { success: false, error: describeError(err) };
   }
+}
+
+/**
+ * Wrapped for Helm Bridge, like every other golf server action — enforced by
+ * `__tests__/coverage-contract.observability.test.ts`.
+ *
+ * `demoSafe: true` because this MUTATES: it rewrites what a round counts
+ * toward, including its qualifier linkage. The shared demo account must not be
+ * able to move rounds in and out of a real program's standings.
+ *
+ * `observeSoftFailures: false` — every `{ success: false }` this action returns
+ * is a deliberate, explained refusal (not entered in that qualifier, slot
+ * already taken, no permission). Those are the action working, not incidents.
+ * Thrown exceptions are still recorded by the wrapper.
+ */
+const observedUpdateRoundType = withAdminObserved(
+  'updateRoundType',
+  {
+    demoSafe: true,
+    sport: 'golf',
+    feature: 'round_tracking',
+    observeSoftFailures: false,
+    contextFrom: ([input]) => ({ roundId: input?.roundId }),
+  },
+  updateRoundTypeImpl,
+);
+
+export async function updateRoundType(
+  input: UpdateRoundTypeInput,
+): Promise<UpdateRoundTypeResult> {
+  return observedUpdateRoundType(input);
 }

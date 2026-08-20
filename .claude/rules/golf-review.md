@@ -4,7 +4,7 @@ paths:
   - "src/lib/golf/**"
   - "src/components/golf/**"
   - "src/app/api/golf/**"
-verified: unverified  # never re-checked against code — do not trust without grepping first
+verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 # GolfHelm review checklist

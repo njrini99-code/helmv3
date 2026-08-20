@@ -32,12 +32,26 @@ export type SignupCodeScope = 'staff' | 'roster' | 'generic' | 'invalid';
  * half (`verifySignupGate`) is imported directly by `signupAction`, so it is
  * never exposed as an action of its own.
  */
-async function validateAccessCodeImpl(code: string): Promise<SignupCodeScope> {
-  const { granted, kind } = await grantSignupAccessDetailed(code);
-  if (!granted) return 'invalid';
-  if (kind === 'staff_invite_code') return 'staff';
-  if (kind === 'team_join_code') return 'roster';
-  return 'generic';
+/**
+ * What the gate reports back to the signup screen.
+ *
+ * `teamName` is populated ONLY for a roster code, and only so the role screen
+ * can say "Join Guilford as…" rather than a bare "I am a…". A coach hands the
+ * same code to players and to an incoming assistant, so the person typing it
+ * has no other way to confirm they are joining the right program before they
+ * commit to a role.
+ */
+export interface SignupCodeCheck {
+  scope: SignupCodeScope;
+  teamName: string | null;
+}
+
+async function validateAccessCodeImpl(code: string): Promise<SignupCodeCheck> {
+  const { granted, kind, teamName } = await grantSignupAccessDetailed(code);
+  if (!granted) return { scope: 'invalid', teamName: null };
+  if (kind === 'staff_invite_code') return { scope: 'staff', teamName: null };
+  if (kind === 'team_join_code') return { scope: 'roster', teamName };
+  return { scope: 'generic', teamName: null };
 }
 
 const observedValidateAccessCode = withAdminObserved(
@@ -52,6 +66,6 @@ const observedValidateAccessCode = withAdminObserved(
  * Callers that only need "did it pass" can compare against 'invalid'. The
  * signup page needs more than that — see SignupCodeScope above.
  */
-export async function validateAccessCode(code: string): Promise<SignupCodeScope> {
+export async function validateAccessCode(code: string): Promise<SignupCodeCheck> {
   return observedValidateAccessCode(code);
 }

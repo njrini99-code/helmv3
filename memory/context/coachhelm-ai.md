@@ -32,7 +32,7 @@ Two engine versions coexist:
 - `src/lib/coachhelm/pattern-detector.ts` — Pattern detection
 - `src/lib/coachhelm/highlight-detector.ts` — Highlight moments
 - `src/lib/coachhelm/area-detector.ts` — Problem areas
-- `src/lib/coachhelm/strokes-gained.ts` — SG calculations
+- `src/lib/golf/strokes-gained.ts` — SG calculations (moved out of `src/lib/coachhelm/` — verified 2026-08-20)
 - `src/lib/coachhelm/insights/putting.ts` — Putting analysis
 
 ### V2 (CORRECTED 2026-07-25: still live-writing, but its output is now largely invisible to coaches/players — see V3 below and "Live vs Built-but-Dark")

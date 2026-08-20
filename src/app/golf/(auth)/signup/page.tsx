@@ -51,6 +51,11 @@ export default function SignupPage() {
   // new-program onboarding — that is what minted a duplicate organization for
   // the assistants who picked Coach.
   const [codeScope, setCodeScope] = useState<SignupCodeScope>('generic');
+  // The name of the team the roster code belongs to, so the role screen can say
+  // "Join Guilford as…" instead of a bare "I am a…". A coach hands the SAME code
+  // to players and to an incoming assistant, so naming the program is the only
+  // confirmation the person typing it gets that they are joining the right one.
+  const [teamName, setTeamName] = useState<string | null>(null);
   // Match the login page: one painterly scene per viewport. SSR renders the
   // portrait CourseScene (matches our iOS native target) and useMediaQuery
   // swaps to the landscape CoastalScene after hydration on desktop ≥768px.
@@ -87,11 +92,12 @@ export default function SignupPage() {
   async function handleCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
     const entered = code.trim();
-    const scope = await validateAccessCode(entered);
+    const { scope, teamName: resolvedTeamName } = await validateAccessCode(entered);
     if (scope !== 'invalid') {
       setAccessGranted(true);
       setCodeError(false);
       setCodeScope(scope);
+      setTeamName(resolvedTeamName);
       // If a player typed a team join code directly (no invite link), carry it
       // to onboarding so they still auto-join that team. Non-team codes (e.g.
       // the global access code) are a harmless no-op on the onboarding side.
@@ -292,9 +298,17 @@ export default function SignupPage() {
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
           >
             <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
-              Create your account
+              {teamName ? `Join ${teamName}` : 'Create your account'}
             </h2>
-            <p className="text-warm-500 text-sm sm:text-base">You&apos;re in. Let&apos;s set up your team.</p>
+            {/* "Let's set up your team" was actively misleading on a roster
+                code: nobody arriving with a coach's code is setting up a team,
+                they are joining one that already exists. That sentence is a
+                large part of why an assistant reached for "Coach". */}
+            <p className="text-warm-500 text-sm sm:text-base">
+              {teamName
+                ? 'Choose how you\u2019re joining, then create your account.'
+                : 'You\u2019re in. Let\u2019s set up your team.'}
+            </p>
           </m.div>
 
           {/* Form */}
@@ -315,7 +329,7 @@ export default function SignupPage() {
                 <div className="h-12 bg-primary-400/20 rounded-xl" />
               </div>
             }>
-              <GolfSignUpForm joinCode={joinCode} codeScope={codeScope} />
+              <GolfSignUpForm joinCode={joinCode} codeScope={codeScope} teamName={teamName} />
             </Suspense>
           </m.div>
         </m.div>

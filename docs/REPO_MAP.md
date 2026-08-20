@@ -14,6 +14,24 @@ between — every count below drifted. Re-verify with:
 `find src/app/<product> -name page.tsx | wc -l`, `find src -name error.tsx | wc -l`,
 `wc -l <anchor-file>`.
 
+> ⚠️ **STALE AS OF 2026-08-20: 192 commits to `src/**` have landed since that
+> verify point** (`a5d03ddd8`..`main`). That is over half the drift that
+> invalidated "every count below" last time. Treat every count and every
+> `file:line` anchor in this document as a HINT, not a fact, until someone
+> re-runs the pass — the route counts especially, since 231 `page.tsx` files
+> exist today.
+>
+> This warning is deliberately a number, not a date: "re-verified 2026-08-15"
+> reads as current for weeks after it stops being true, which is exactly how
+> this document drifted the last two times. Check the commit count, not the
+> calendar:
+>
+> ```bash
+> git rev-list --count a5d03ddd8..HEAD -- 'src/**'
+> ```
+>
+> When you re-verify, update BOTH the anchor SHA above and this block.
+
 Scope: `src/app/**` route trees for BaseballHelm, GolfHelm, Lift Lab, and
 Admin/Helm Bridge; the canonical action-wrapper / toast / data-access /
 design-token / nav-registry / error-boundary idioms; the 8 traps found by a

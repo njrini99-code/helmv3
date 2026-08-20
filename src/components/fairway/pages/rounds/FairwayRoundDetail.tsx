@@ -70,6 +70,10 @@ import { cn } from '@/lib/utils';
 import { formatDateOnlyWeekdayLong, formatDateOnlyFull } from '@/lib/golf/date-only';
 import { deriveRoundTotalsFromHoles } from '@/lib/golf/round-total';
 import { formatToPar } from '@/lib/golf/format-to-par';
+import {
+  RoundTypeEditor,
+  type QualifierOption,
+} from '@/components/fairway/pages/rounds/RoundTypeEditor';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — fully-resolved, serializable data from the server page.
@@ -127,6 +131,22 @@ export interface FairwayRoundDetailProps {
   isCoach: boolean;
   /** Whether the viewer owns this round. */
   viewerIsOwner: boolean;
+  /**
+   * Whether to offer the "Change type" control.
+   *
+   * True for the owning PLAYER as well as a coach — the request that prompted
+   * this was "can they edit on their end?", and the RLS UPDATE policy
+   * `golf_rounds_update` already permits the owning player, so gating this to
+   * coaches would have shipped the button to the one person who didn't ask for
+   * it. `updateRoundType` re-derives permission server-side regardless; this
+   * flag only decides whether the control is worth rendering.
+   */
+  canChangeType?: boolean;
+  /** Current qualifier linkage, so the editor opens on the real current state. */
+  currentQualifierId?: string | null;
+  currentQualifierRoundNumber?: number | null;
+  /** Open qualifiers this round's player is entered in. */
+  qualifierOptions?: QualifierOption[];
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -192,6 +212,10 @@ export function FairwayRoundDetail({
   playerName,
   isCoach,
   viewerIsOwner,
+  canChangeType = false,
+  currentQualifierId = null,
+  currentQualifierRoundNumber = null,
+  qualifierOptions = [],
 }: FairwayRoundDetailProps) {
   const reviewHref = `/golf/dashboard/rounds/${round.id}/review`;
 
@@ -346,6 +370,26 @@ export function FairwayRoundDetail({
             </Button>
           }
         />
+
+        {/* Change a mis-tapped round type. Sits directly under the masthead
+            rather than inside `secondaryActions` because its OPEN state is a
+            full panel (segmented control + qualifier picker), which would
+            deform the header's action row. Closed, it is just a small ghost
+            button — so the resting page is unchanged for everyone.
+
+            The context line above already renders `roundTypeLabel(round_type)`,
+            so the control sits next to the thing it edits. */}
+        {canChangeType && (
+          <div className="-mt-6">
+            <RoundTypeEditor
+              roundId={round.id}
+              currentType={round.round_type}
+              currentQualifierId={currentQualifierId}
+              currentQualifierRoundNumber={currentQualifierRoundNumber}
+              qualifierOptions={qualifierOptions}
+            />
+          </div>
+        )}
 
         {/* ════════════════ 2 · HERO — the SCORE (one focal instrument) ═════ */}
         <InstrumentCluster

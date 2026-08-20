@@ -11,6 +11,7 @@ import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import type { Database } from '@/lib/types/database';
+import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -89,6 +90,40 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
     if (!user) {
       await logServerError('[Onboarding] No authenticated user after 5 attempts', { action: 'onboarding.completeCoachOnboarding' });
       return { success: false, error: 'Session not found. Please try logging in again, or check if email confirmation is required in Supabase settings.' };
+    }
+
+    // THE CHOKEPOINT. Everything below creates a NEW organization, a NEW team,
+    // and makes this user their head coach — and the coach upsert further down
+    // overwrites `organization_id`, which is the entire link between a person
+    // and their program. Run by an assistant coach, that detaches them from the
+    // program that invited them and stands up a phantom duplicate of it
+    // (UNCW 2026-08-18, Shenandoah 2026-08-19).
+    //
+    // Five separate entry points decide who gets shown this form, and they were
+    // all fixed — but "five places I found" is not the same as "every place
+    // there is", and RLS will not catch a sixth: `golf_coaches_update_own` has
+    // no WITH CHECK, and `organizations_insert_coaches` only tests
+    // `users.role = 'coach'`. So the guard belongs HERE, once, where the damage
+    // is actually done.
+    //
+    // Deliberately the SAME function the routers call. If routing would not
+    // send you to this page, this action will not run for you, and the two
+    // cannot drift into disagreeing about who belongs here.
+    const entry = await resolveGolfCoachEntry(user.id);
+    if (entry.path !== '/golf/coach') {
+      await logServerError(
+        `[Onboarding] refused new-program onboarding for user ${user.id}: belongs at ${entry.path} (${entry.reason})`,
+        { action: 'onboarding.completeCoachOnboarding' },
+        'warning',
+      );
+      return {
+        success: false,
+        error:
+          entry.path === '/golf/coach/pending'
+            ? "You've already asked to join a program — your head coach just needs to approve you. You don't need to set up a new one."
+            : "You're already part of a program, so there's nothing to set up here.",
+        redirectTo: entry.path,
+      };
     }
 
     // Ensure users table record exists with correct role

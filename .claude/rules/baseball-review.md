@@ -5,7 +5,7 @@ paths:
   - "src/lib/recruiting/**"
   - "src/components/baseball/**"
   - "src/app/api/baseball/**"
-verified: unverified  # never re-checked against code — do not trust without grepping first
+verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 # BaseballHelm review checklist

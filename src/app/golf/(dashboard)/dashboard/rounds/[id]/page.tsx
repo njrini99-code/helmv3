@@ -55,6 +55,11 @@ interface RoundWithDetails {
   course_slope: number | null;
   tees_played: string | null;
   round_type: string | null;
+  // Read so the type editor can open on the round's REAL current linkage. A
+  // qualifier round is one because of `qualifier_id`, not because of
+  // `round_type` — see actions/round-type.ts.
+  qualifier_id: string | null;
+  qualifier_round_number: number | null;
   round_date: string;
   total_score: number | null;
   score_to_par: number | null;
@@ -155,6 +160,13 @@ export default async function RoundDetailPage({
     redirect('/golf/dashboard');
   }
 
+  // The owning player OR a coach of their team may retype the round. Deliberately
+  // includes the player: the coach's question was "can they edit on their end?",
+  // and `golf_rounds_update` (RLS) already permits the owning player to write
+  // both `round_type` and `qualifier_id`. Anyone who reached this line is
+  // already one of the two, so this is exactly the page's own access rule.
+  const canChangeType = isCoach || !!isOwnRound;
+
   const playerName = roundData.player
     ? `${roundData.player.first_name || ''} ${roundData.player.last_name || ''}`.trim()
     : 'Unknown Player';
@@ -216,6 +228,43 @@ export default async function RoundDetailPage({
     );
   }
 
+  // ── Qualifiers this round's player could attach the round to ──────────────
+  // Only the ones they are ENTERED in and which are not completed — the two
+  // conditions `updateRoundType` re-checks server-side. Offering any other
+  // qualifier would be a dead end dressed as a choice.
+  //
+  // Degrades rather than throws: an empty list makes the editor say "not
+  // entered in any open qualifier" instead of taking the whole page down, and
+  // the practice/tournament choices still work without it.
+  let qualifierOptions: Array<{ id: string; name: string; numRounds: number }> = [];
+  if (canChangeType && roundData.player_id) {
+    const { data: entryRows, error: entriesError } = await supabase
+      .from('golf_qualifier_entries')
+      .select('qualifier:golf_qualifiers(id, name, num_rounds, status)')
+      .eq('player_id', roundData.player_id);
+
+    if (entriesError) {
+      void logServerError(
+        `[round detail] qualifier options read failed for round ${id}; the type editor will offer no qualifier to attach to: ${describeError(entriesError)}`,
+        { action: 'roundDetail.qualifierOptions', featureArea: 'rounds' },
+        'warning',
+      );
+    }
+
+    qualifierOptions = (entryRows ?? [])
+      .map((row) => {
+        const q = (row as { qualifier?: unknown }).qualifier;
+        return (Array.isArray(q) ? q[0] : q) as
+          | { id: string; name: string | null; num_rounds: number | null; status: string | null }
+          | null
+          | undefined;
+      })
+      .filter((q): q is { id: string; name: string | null; num_rounds: number | null; status: string | null } =>
+        Boolean(q && q.id && q.status !== 'completed'),
+      )
+      .map((q) => ({ id: q.id, name: q.name ?? 'Qualifier', numRounds: q.num_rounds ?? 1 }));
+  }
+
   const reviewStats = (reviewRow?.round_stats ?? null) as
     | {
         areasForImprovement?: Array<{ area: string; recommendation: string }> | null;
@@ -249,6 +298,10 @@ export default async function RoundDetailPage({
         playerName={playerName}
         isCoach={isCoach}
         viewerIsOwner={!!isOwnRound}
+        canChangeType={canChangeType}
+        currentQualifierId={roundData.qualifier_id}
+        currentQualifierRoundNumber={roundData.qualifier_round_number}
+        qualifierOptions={qualifierOptions}
       />
     </div>
   );

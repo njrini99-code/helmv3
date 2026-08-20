@@ -108,6 +108,17 @@ jobs:
       - name: Check knowledge base against the schema
         run: npm run docs:schema-drift
 
+      # Fails when a navigation doc names a file path that does not resolve.
+      # An audit on 2026-08-20 found 47 dead paths across memory/**,
+      # .claude/rules/**, CLAUDE.md, AGENTS.md and docs/REPO_MAP.md — components,
+      # hooks and tests that moved or were deleted while the docs naming them
+      # were not. Those docs read as inventories, so a session treats a dead path
+      # as "where the code lives", fails to find it, and either invents a
+      # replacement or concludes the feature is missing. Both are confident and
+      # wrong.
+      - name: Check navigation docs for dead file paths
+        run: npm run docs:path-drift
+
   # Helm Bridge integration env drift.
   #
   # Runs in --drift mode, which is a no-op while NONE of these secrets are

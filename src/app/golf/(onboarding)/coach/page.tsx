@@ -20,6 +20,7 @@ import {
 } from '@/components/icons';
 import { StepIndicator, slideVariants, staggerContainer, staggerItem } from '@/components/golf/onboarding/StepIndicator';
 import { completeCoachOnboarding } from '@/app/golf/actions/onboarding';
+import { getGolfCoachEntry } from '@/app/golf/actions/coach-entry';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
@@ -175,16 +176,28 @@ export default function GolfCoachOnboarding() {
         return;
       }
 
+      // This page IS new-program onboarding — finishing it creates an
+      // organization and a team and makes you their head coach. So the question
+      // is not "have you onboarded" but "do you already belong to a program",
+      // and only one answer may see this form.
+      //
+      // The old check was `coach?.onboarding_completed -> dashboard`, which let
+      // through both a pending assistant and (because approval never flipped
+      // the flag) an already-approved one. Either of them completing this form
+      // overwrote their organization_id and detached them from the program that
+      // invited them — the duplicate-program bug reported by UNCW and
+      // Shenandoah. See lib/golf/coach-entry-path.ts.
+      const entry = await getGolfCoachEntry();
+      if (entry && entry.path !== '/golf/coach') {
+        router.replace(entry.path);
+        return;
+      }
+
       const { data: coach } = await supabase
         .from('golf_coaches')
         .select('id, onboarding_completed')
         .eq('user_id', user.id)
         .maybeSingle();
-
-      if (coach?.onboarding_completed) {
-        router.push('/golf/dashboard');
-        return;
-      }
 
       // F024: a logged-in player must not be funnelled through the coach wizard.
       // Completing it would insert a stray golf_coaches row for a player account
