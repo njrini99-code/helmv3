@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button, IconButton } from '@/components/ui/button';
 import { IconX, IconCheck, IconDownload, IconBookmark, IconChartRadar } from '@/components/icons';
 import { getFullName, formatHeight, cn } from '@/lib/utils';
-import type { Player } from '@/lib/types';
+import type { BaseballPlayer as Player } from '@/lib/types';
 import dynamic from 'next/dynamic';
 import { SaveComparisonModal } from './save-comparison-modal';
 import { saveComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';

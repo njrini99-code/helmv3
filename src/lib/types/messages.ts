@@ -1,6 +1,6 @@
 'use client';
 
-import type { Conversation, Coach, Player } from '@/lib/types';
+import type { Conversation, BaseballCoach as Coach, BaseballPlayer as Player } from '@/lib/types';
 
 // Participant with user details
 export interface ParticipantDetails {

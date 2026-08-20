@@ -23,7 +23,7 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Player, Team } from '@/lib/types';
+import { BaseballPlayer as Player, Team } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { Button, FormField, Input, TextArea, Select, Tabs, TabsList, TabsTrigger, TabsContent, Inset } from '@/components/fairway';
 import { Skeleton } from '@/components/ui/skeleton';

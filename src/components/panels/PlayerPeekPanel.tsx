@@ -17,7 +17,7 @@ import {
   IconX,
 } from '@/components/icons';
 import { getFullName, formatHeight } from '@/lib/utils';
-import type { Player } from '@/lib/types';
+import type { BaseballPlayer as Player } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { toggleWatchlistPlayer } from '@/app/baseball/actions/watchlist';

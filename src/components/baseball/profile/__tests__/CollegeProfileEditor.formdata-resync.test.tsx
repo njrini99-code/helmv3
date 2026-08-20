@@ -15,7 +15,7 @@
 // and a Save could send an update with the name field simply absent.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import type { Player } from '@/lib/types';
+import type { BaseballPlayer as Player } from '@/lib/types';
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({

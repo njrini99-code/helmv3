@@ -21,9 +21,16 @@ export type Enums = Database['public']['Enums'];
 
 // Row types (what you get when querying)
 export type User = Tables['users']['Row'];
-export type Coach = Tables['baseball_coaches']['Row'];
-// NOTE: After migration 031, Coach has new field: organization_id (replaces college_id)
-export type Player = Tables['baseball_players']['Row'];
+// BASEBALL types. The bare names `Coach` and `Player` used to live here, and
+// nothing about them said "baseball" — while CLAUDE.md rule 1 used exactly
+// those two as its canonical import example. A golf agent following the repo's
+// first code rule got baseball table shapes. Renamed 2026-08-19 so the wrong
+// import is a compile error instead of a silent wrong type; golf wants
+// GolfCoach / GolfPlayer from '@/lib/types/golf'.
+export type BaseballCoach = Tables['baseball_coaches']['Row'];
+// NOTE: After migration 031, BaseballCoach gained organization_id (replaces
+// college_id).
+export type BaseballPlayer = Tables['baseball_players']['Row'];
 // College is an alias for Organization (for backward compatibility)
 export type College = Tables['organizations']['Row'];
 // NOTE: Player is from baseball_players table (not 'players' which doesn't exist)
@@ -52,13 +59,13 @@ export type PipelineStage = Enums['baseball_pipeline_stage'];
 // ============================================
 
 // Coach with organization join (used in auth store)
-export type CoachWithOrganization = Coach & {
+export type CoachWithOrganization = BaseballCoach & {
   organization?: { id: string; name: string } | null;
 };
 
 // Watchlist item with player data
 export type WatchlistWithPlayer = Watchlist & {
-  player?: Player;
+  player?: BaseballPlayer;
 };
 
 // ============================================
@@ -334,7 +341,7 @@ export interface BaseballCoachPhilosophy {
 }
 
 // Player with aggregates for command center
-export interface BaseballRosterPlayer extends Player {
+export interface BaseballRosterPlayer extends BaseballPlayer {
   aggregates?: BaseballPlayerAggregates;
   recentStats?: BaseballPlayerStats[];
   insights?: BaseballCoachInsight[];

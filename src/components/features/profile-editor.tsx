@@ -25,7 +25,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Player } from '@/lib/types';
+import { BaseballPlayer as Player } from '@/lib/types';
 import { Button, FormField, Input, TextArea, Select, Checkbox, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/fairway';
 import { PaperCard, Reveal } from '@/components/baseball/living-annual';
 import {

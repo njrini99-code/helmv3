@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn, getFullName } from '@/lib/utils';
 import { IconX, IconMail, IconMapPin, IconSchool, IconCalendar, IconChevronRight } from '@/components/icons';
-import type { Player, WatchlistWithPlayer, PipelineStage } from '@/lib/types';
+import type { BaseballPlayer as Player, WatchlistWithPlayer, PipelineStage } from '@/lib/types';
 import Link from 'next/link';
 
 interface PlayerQuickViewProps {

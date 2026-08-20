@@ -74,7 +74,7 @@ import {
 import { searchRecruitablePlayers } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
 import { getFullName, getPipelineStageLabel, cn } from '@/lib/utils';
 import { PIPELINE_STAGES } from '@/lib/recruiting/stages';
-import type { PipelineStage, Player, WatchlistWithPlayer } from '@/lib/types';
+import type { PipelineStage, BaseballPlayer as Player, WatchlistWithPlayer } from '@/lib/types';
 
 // Sortable columns
 type SortKey = 'name' | 'position' | 'state' | 'gradYear' | 'stage' | 'dateAdded';

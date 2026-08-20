@@ -8,7 +8,7 @@ import { ProfileEditor } from '@/components/features/profile-editor';
 import { CollegeProfileEditor } from '@/components/baseball/profile';
 import { useAuth } from '@/hooks/use-auth';
 import { IconGlobe, IconChevronRight } from '@/components/icons';
-import { Player } from '@/lib/types';
+import { BaseballPlayer as Player } from '@/lib/types';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { showRecruitingActivationPrompt } from '@/lib/baseball/recruiting-activation';
 import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
