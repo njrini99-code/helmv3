@@ -264,7 +264,7 @@ export function GolfSignUpForm({
 
       {showRolePicker ? (
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-warm-700">
+          <legend className="text-sm font-medium text-text-secondary">
             {rosterCodeOnly && teamName ? `Join ${teamName} as...` : 'I am a...'}
           </legend>
           <div className="grid grid-cols-2 gap-3">
@@ -277,12 +277,12 @@ export function GolfSignUpForm({
                 flex flex-col items-center gap-2
                 ${role === 'player'
                   ? 'border-primary-600 bg-primary-50'
-                  : 'border-warm-200 bg-cream-50 hover:border-warm-300'
+                  : 'border-border-subtle bg-surface hover:border-border-strong'
                 }
               `}
             >
-              <GraduationCap className={`w-6 h-6 ${role === 'player' ? 'text-primary-600' : 'text-warm-400'}`} />
-              <span className={`text-sm font-medium ${role === 'player' ? 'text-primary-600' : 'text-warm-700'}`}>
+              <GraduationCap className={`w-6 h-6 ${role === 'player' ? 'text-primary-600' : 'text-text-tertiary'}`} />
+              <span className={`text-sm font-medium ${role === 'player' ? 'text-primary-600' : 'text-text-secondary'}`}>
                 Player
               </span>
             </Button>
@@ -296,12 +296,12 @@ export function GolfSignUpForm({
                 flex flex-col items-center gap-2
                 ${isCoachChoice
                   ? 'border-primary-600 bg-primary-50'
-                  : 'border-warm-200 bg-cream-50 hover:border-warm-300'
+                  : 'border-border-subtle bg-surface hover:border-border-strong'
                 }
               `}
             >
-              <Users className={`w-6 h-6 ${isCoachChoice ? 'text-primary-600' : 'text-warm-400'}`} />
-              <span className={`text-sm font-medium ${isCoachChoice ? 'text-primary-600' : 'text-warm-700'}`}>
+              <Users className={`w-6 h-6 ${isCoachChoice ? 'text-primary-600' : 'text-text-tertiary'}`} />
+              <span className={`text-sm font-medium ${isCoachChoice ? 'text-primary-600' : 'text-text-secondary'}`}>
                 {rosterCodeOnly ? 'Assistant coach' : 'Coach'}
               </span>
             </Button>
@@ -309,21 +309,14 @@ export function GolfSignUpForm({
         </fieldset>
       ) : null}
 
-      {/* The code already decided the role — say which, and why there is no
-          choice. Silently removing the picker would read as a broken page. */}
-      {rosterCodeOnly && effectiveRole === 'assistant_request' && (
-        <p className="text-sm text-warm-600 bg-cream-50 border border-warm-200 rounded-xl p-3">
-          You&rsquo;ll join {teamName ?? 'this program'} as an{' '}
-          <strong className="font-semibold text-warm-800">assistant coach</strong> with
-          full access to the team as soon as you finish signing up — nothing to wait
-          for.
-        </p>
-      )}
+      {/* NO explanatory box under the role picker — owner directive 2026-08-20
+          ("There should be no fuckin words"). The picker labels carry the whole
+          meaning: you pick Player or Assistant coach and you're on the team. */}
 
       {staffInvite && (
-        <p className="text-sm text-warm-600 bg-cream-50 border border-warm-200 rounded-xl p-3">
+        <p className="text-sm text-text-secondary bg-surface border border-border-subtle rounded-xl p-3">
           You&rsquo;re joining with a{' '}
-          <strong className="font-semibold text-warm-800">staff invite</strong> — your
+          <strong className="font-semibold text-text-primary">staff invite</strong> — your
           role and team are already set by the invite, so there&rsquo;s nothing to pick.
         </p>
       )}
@@ -331,7 +324,7 @@ export function GolfSignUpForm({
       {/* Name fields - side by side */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label htmlFor="golf-signup-firstname" className="text-sm font-medium text-warm-700">
+          <label htmlFor="golf-signup-firstname" className="text-sm font-medium text-text-secondary">
             First name
           </label>
           <Input
@@ -345,7 +338,7 @@ export function GolfSignUpForm({
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="golf-signup-lastname" className="text-sm font-medium text-warm-700">
+          <label htmlFor="golf-signup-lastname" className="text-sm font-medium text-text-secondary">
             Last name
           </label>
           <Input
@@ -373,7 +366,7 @@ export function GolfSignUpForm({
           {formData.graduationYear && (() => {
             const approxAge = currentYear - (Number(formData.graduationYear) - 18);
             return approxAge >= 13 && approxAge <= 17 ? (
-              <p className="text-xs text-warm-500 mt-1">
+              <p className="text-xs text-text-secondary mt-1">
                 By creating an account, a parent or guardian acknowledges and consents to the collection of information as described in our{' '}
                 <Link href="/privacy" className="text-primary-600 hover:underline">Privacy Policy</Link>.
               </p>
@@ -384,7 +377,7 @@ export function GolfSignUpForm({
 
       {/* Email */}
       <div className="space-y-1.5">
-        <label htmlFor="golf-signup-email" className="text-sm font-medium text-warm-700">
+        <label htmlFor="golf-signup-email" className="text-sm font-medium text-text-secondary">
           Email
         </label>
         <Input
@@ -400,7 +393,7 @@ export function GolfSignUpForm({
 
       {/* Password with strength indicator */}
       <div className="space-y-1.5">
-        <label htmlFor="golf-signup-password" className="text-sm font-medium text-warm-700">
+        <label htmlFor="golf-signup-password" className="text-sm font-medium text-text-secondary">
           Password
         </label>
         <Input
@@ -434,9 +427,9 @@ export function GolfSignUpForm({
       >
         {isLoading ? (
           <div className="flex items-center gap-1" role="status" aria-label="Creating account">
-            <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <span className="w-1.5 h-1.5 bg-surface rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 bg-surface rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 bg-surface rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             <span className="sr-only">Creating account...</span>
           </div>
         ) : (
@@ -445,11 +438,11 @@ export function GolfSignUpForm({
       </Button>
 
       {/* Terms */}
-      <p className="text-xs text-warm-400 text-center mt-4">
+      <p className="text-xs text-text-tertiary text-center mt-4">
         By creating an account, you agree to our{' '}
-        <Link href="/terms" className="text-warm-600 hover:underline">Terms</Link>
+        <Link href="/terms" className="text-text-secondary hover:underline">Terms</Link>
         {' '}and{' '}
-        <Link href="/privacy" className="text-warm-600 hover:underline">Privacy Policy</Link>
+        <Link href="/privacy" className="text-text-secondary hover:underline">Privacy Policy</Link>
       </p>
     </form>
   );
