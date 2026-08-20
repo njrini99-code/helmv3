@@ -25,6 +25,55 @@ env:
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
+  detect-changes:
+    name: Detect code-relevant paths
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Classify changed paths (fail closed to code=true)
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          # Non-PR events (push to main) always run the full suite.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "non-PR event -> full suite"; exit 0
+          fi
+          # FAIL CLOSED (e3's criterion): any inability to classify the diff
+          # resolves to code=true. A misclassified docs PR wastes one suite; a
+          # misclassified code PR ships ungated — so uncertainty must be code.
+          if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "missing base/head sha -> code (fail closed)"; exit 0
+          fi
+          if ! changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "git diff failed -> code (fail closed)"; exit 0
+          fi
+          if [ -z "$changed" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "empty diff -> code (fail closed)"; exit 0
+          fi
+          # docs-only = EVERY changed file is under docs/ or ends in .md. If ANY
+          # file is outside that set the whole PR is code. Deliberately NARROW:
+          # config (ci.yml, settings.json, package.json, migrations, *.yml) is
+          # NOT docs-only — it can break the build, so it runs the full suite.
+          # Count files that are NOT docs/markdown. Count-based (not grep -q)
+          # so the classification is identical on GNU and BSD grep and testable
+          # locally. Defaults to 1 (=> code) if the count is somehow empty.
+          nondoc="$(echo "$changed" | grep -cvE '^docs/|\.md$' || true)"
+          if [ "${nondoc:-1}" -gt 0 ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "code-relevant paths changed ($nondoc) -> full suite"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"; echo "docs/markdown-only diff -> heavy jobs skip"
+          fi
+          echo "--- changed files ---"; echo "$changed"
+
   database-types:
     name: Database types drift
     runs-on: ubuntu-latest
@@ -311,6 +360,8 @@ jobs:
 
   unit-tests:
     name: Unit tests
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Sharded because the suite is runner-bound, not config-bound: 8,657 tests
@@ -448,6 +499,8 @@ jobs:
 
   next-build:
     name: Next build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -483,6 +536,8 @@ jobs:
 
   supabase:
     name: Supabase lint + RLS tests
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -577,6 +632,8 @@ jobs:
 
   baseball-auth-smoke:
     name: BaseballHelm authenticated smoke
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     # #372: promotes the already-built, already-mandatory baseball-smoke +
     # onboarding-smoke specs (e2e/baseball-smoke.spec.ts,
     # e2e/baseball-onboarding-smoke.spec.ts) from push/workflow_dispatch-only
@@ -748,6 +805,7 @@ jobs:
     # pre-merge gate, re-add `- unit-tests-timezone` to `needs` below AND remove
     # its `if: github.event_name == 'push'`.
     needs:
+      - detect-changes
       - database-types
       - schema-invariants
       - feature-knowledge
@@ -765,7 +823,11 @@ jobs:
       - baseball-auth-smoke
     steps:
       - name: Fail if any required CI check failed
-        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        # A skipped heavy job is fine ONLY on a docs-only PR (code=='false').
+        # On a code PR or a push, a skip is a real problem and still fails.
+        if: >-
+          contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') ||
+          (needs.detect-changes.outputs.code == 'true' && contains(needs.*.result, 'skipped'))
         run: |
           echo "One or more CI checks failed."
           exit 1
