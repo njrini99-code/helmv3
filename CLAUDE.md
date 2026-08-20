@@ -117,15 +117,23 @@ Still blocked by `.claude/hooks/guard-bash.sh`, deliberately:
 
 ### 1. Type Imports
 ```typescript
-import type { Player, Coach, Organization } from '@/lib/types';
+import type { BaseballCoach, BaseballPlayer, Organization } from '@/lib/types';
+import type { GolfCoach, GolfPlayer } from '@/lib/types/golf';
 // NEVER: @/types/database, @/types/supabase (don't exist)
 //
-// CAREFUL: bare `Coach` and `Player` are BASEBALL types —
-// `baseball_coaches['Row']` and `baseball_players['Row']`. The names do not
-// say so. Golf code wants GolfCoach / GolfPlayer:
-import type { GolfCoach, GolfPlayer } from '@/lib/types/golf';
-// No golf file currently imports the bare names, so this is a trap that has
-// not been sprung — but this example was teaching it.
+// The sport is in the name now, on purpose. `BaseballCoach` / `BaseballPlayer`
+// are `baseball_coaches['Row']` / `baseball_players['Row']`; they used to be
+// exported as bare `Coach` / `Player`, which said nothing about which sport
+// they belonged to — and this rule, the FIRST code rule in the file, used
+// those two as its canonical example. A golf agent following it got baseball
+// table shapes. Renamed 1505e1ddd; the bare names no longer exist.
+//
+// Verified 2026-08-19 by compiling this exact import, not by grepping for it:
+// the previous version of this block failed with
+//   TS2305: Module '"@/lib/types"' has no exported member 'Player'
+// It had survived a commit that added a warning ABOUT the trap without
+// updating the line that taught it. If you change these names, compile this
+// snippet — a doc example is the one piece of code no gate ever type-checks.
 ```
 
 ### 2. Supabase Client
