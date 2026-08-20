@@ -10,9 +10,6 @@
  *   import { BreakPlot, SprayChart, ClimbArc } from '@/components/baseball/living-annual/viz';
  */
 
-export { BreakPlot } from './BreakPlot';
-export type { BreakPlotProps, BreakPlotPitch } from './BreakPlot';
-
 export { SprayChart } from './SprayChart';
 export type { SprayChartProps, SprayBall, SprayOutcome } from './SprayChart';
 

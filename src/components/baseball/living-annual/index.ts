@@ -40,8 +40,6 @@ export type { LiveDotProps } from './LiveDot';
 // ── Evaluation (recruiting lane) ──
 export { GradeStamp } from './GradeStamp';
 export type { GradeStampProps } from './GradeStamp';
-export { ToolRail } from './ToolRail';
-export type { ToolRailProps, ToolRailAthlete } from './ToolRail';
 
 // ── Surfaces ──
 export { PaperCard } from './PaperCard';

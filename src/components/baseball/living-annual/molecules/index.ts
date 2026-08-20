@@ -13,8 +13,6 @@
 // ── Stat composition ──
 export { SlashLine } from './SlashLine';
 export type { SlashLineProps } from './SlashLine';
-export { StatLineStack } from './StatLineStack';
-export type { StatLineStackProps } from './StatLineStack';
 export { KPIContentsStrip } from './KPIContentsStrip';
 export type { KPIContentsStripProps, KPIContentsItem } from './KPIContentsStrip';
 
@@ -26,17 +24,9 @@ export type { PlayerRowPlateProps, PlayerRowPlateHeaderProps, PlayerRowStat } fr
 export { RecruitCard } from './RecruitCard';
 export type { RecruitCardProps, RecruitCardGrade } from './RecruitCard';
 
-// ── Evaluation block ──
-export { ToolRailStack } from './ToolRailStack';
-export type { ToolRailStackProps, ToolRailStackTool } from './ToolRailStack';
-export { GradeStampGrid } from './GradeStampGrid';
-export type { GradeStampGridProps, GradeStampGridGrade } from './GradeStampGrid';
-
 // ── Hero + artifact ──
 export { CoverHero } from './CoverHero';
 export type { CoverHeroProps } from './CoverHero';
-export { TearSheet } from './TearSheet';
-export type { TearSheetProps, TearSheetPlayer } from './TearSheet';
 
 // ── Composed empty states ──
 export { EmptyIssue, EMPTY_ISSUE_PRESETS } from './EmptyIssue';
