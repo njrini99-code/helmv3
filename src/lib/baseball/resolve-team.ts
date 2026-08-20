@@ -184,3 +184,80 @@ export interface CoachTeamManagementData {
 }
 
 
+
+/**
+ * Result of a baseball roster-containment check. Mirrors the golf
+ * `RosterCheckResult` shape so the two products fail the same way.
+ */
+export interface BaseballRosterCheckResult {
+  ok: boolean;
+  reason: 'empty' | 'members' | 'not-members' | 'unavailable';
+  offending?: string[];
+}
+
+const MAX_REPORTED_OFFENDERS = 5;
+
+/**
+ * Verify that every supplied player id is a member of `teamId`.
+ *
+ * `withBaseballAction` already resolves and enforces the TEAM (auth →
+ * server-validated active context → capability). What it cannot know is
+ * whether the ids inside the action's own payload belong to that team, so
+ * every action taking `player_ids[]`, `attendeeIds[]` or lineup positions
+ * needs this second gate. Without it a coach of team A could assign a task
+ * to, or write a box-score line for, a player on team B.
+ *
+ * Same three rules as the golf twin in `@/lib/auth/verify-player-access`:
+ * an empty list passes (callers branch on it themselves), a failed read fails
+ * CLOSED and is reported as `'unavailable'` rather than as an authorization
+ * denial, and membership — not lifecycle — is what is checked.
+ */
+export async function verifyPlayersOnBaseballTeam(
+  supabase: TypedSupabaseClient,
+  teamId: string,
+  playerIds: readonly (string | null | undefined)[],
+): Promise<BaseballRosterCheckResult> {
+  const unique = [...new Set(playerIds.filter((id): id is string => Boolean(id)))];
+  if (unique.length === 0) return { ok: true, reason: 'empty' };
+  if (!teamId) {
+    return { ok: false, reason: 'not-members', offending: unique.slice(0, MAX_REPORTED_OFFENDERS) };
+  }
+
+  const { data, error } = await supabase
+    .from('baseball_team_members')
+    .select('player_id')
+    .eq('team_id', teamId)
+    .in('player_id', unique);
+
+  // A read that failed never answered the question. Denying is correct;
+  // calling it 'not-members' would be a claim the probe never established.
+  if (error) return { ok: false, reason: 'unavailable' };
+
+  const found = new Set((data ?? []).map((row) => row.player_id));
+  const missing = unique.filter((id) => !found.has(id));
+  if (missing.length > 0) {
+    return { ok: false, reason: 'not-members', offending: missing.slice(0, MAX_REPORTED_OFFENDERS) };
+  }
+  return { ok: true, reason: 'members' };
+}
+
+/**
+ * Throwing wrapper for use inside `withBaseballAction` bodies, where the
+ * established idiom is to throw a `BaseballUnauthorizedError`-shaped error and
+ * let the wrapper sanitize it (see `assertPlayerClassAccess`).
+ *
+ * The two messages are deliberately different: a coach whose roster read just
+ * timed out must be told to retry, not told their own player is off the team.
+ */
+export async function assertPlayersOnBaseballTeam(
+  supabase: TypedSupabaseClient,
+  teamId: string,
+  playerIds: readonly (string | null | undefined)[],
+): Promise<void> {
+  const result = await verifyPlayersOnBaseballTeam(supabase, teamId, playerIds);
+  if (result.ok) return;
+  if (result.reason === 'unavailable') {
+    throw new Error("Couldn't confirm your roster just now. Please try again.");
+  }
+  throw new Error('Some selected players are not on this team.');
+}
