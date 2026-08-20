@@ -268,7 +268,13 @@ export function GolfSignUpForm({
             {rosterCodeOnly && teamName ? `Join ${teamName} as...` : 'I am a...'}
           </legend>
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="primary"
+            {/* variant="ghost", NOT "primary": primary's solid bg-primary-600
+                out-specifies the tile's light bg-primary-50 (stylesheet order
+                beats class order), which painted the SELECTED tile solid green
+                under its green icon/label — illegible, seen live in prod
+                2026-08-20. ghost sets no background, so the classes below own
+                the look. */}
+            <Button variant="ghost"
               type="button"
               onClick={() => setRole('player')}
               aria-pressed={role === 'player'}
@@ -287,7 +293,7 @@ export function GolfSignUpForm({
               </span>
             </Button>
 
-            <Button variant="primary"
+            <Button variant="ghost"
               type="button"
               onClick={() => setRole(rosterCodeOnly ? 'assistant_request' : 'coach')}
               aria-pressed={isCoachChoice}
