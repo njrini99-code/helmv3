@@ -68,6 +68,26 @@ vi.mock('@/app/golf/actions/team-switcher', () => ({
   getActiveTeamCookie: vi.fn(async () => null),
 }));
 
+/**
+ * Coach ROUTING now lives in one module for every entry point.
+ *
+ * The layout used to read `golf_team_coach_staff` itself through the
+ * RLS-scoped server client, which is why these cases could steer it purely by
+ * queueing table outcomes. It now delegates to `resolveGolfCoachEntry`, which
+ * reads with the SERVICE ROLE (deliberately — a routing decision must not fail
+ * closed just because RLS hid an approved assistant's own staff row). That
+ * client is not the one mocked below, so without this mock every case here
+ * would be answering a question about `createAdminClient` rather than about the
+ * retry branch it is meant to cover.
+ *
+ * The resolver's own behavior — including the failed-staff-read case that used
+ * to live here — is covered directly in
+ * `src/lib/golf/__tests__/coach-entry-path.test.ts`.
+ */
+let coachEntry: { path: string; reason: string };
+const resolveGolfCoachEntry = vi.fn(async () => coachEntry);
+vi.mock('@/lib/golf/coach-entry-path', () => ({ resolveGolfCoachEntry }));
+
 // --- session -----------------------------------------------------------------
 type GolfSession = {
   userId: string;
@@ -186,6 +206,11 @@ beforeEach(() => {
   redirect.mockClear();
   queues.clear();
   callCounts.clear();
+  resolveGolfCoachEntry.mockClear();
+  // Default: a fully staffed coach, so the routing decision is a no-op and
+  // each case below isolates the thing it actually names. Cases that care
+  // about routing override it explicitly.
+  coachEntry = { path: '/golf/dashboard', reason: 'staffed' };
   // Neither profile onboarded ⇒ the retry branch. This is the ONLY way in;
   // an onboarded coach or player takes the fast path and never reaches it.
   session = { userId: 'u1', role: null, coach: null, player: null };
@@ -261,6 +286,9 @@ describe('golf dashboard layout — a failed read must not fail open', () => {
     queues.set('users', [ok({ role: 'coach' })]);
     queues.set('golf_coaches', [fails('connection reset')]);
     queues.set('golf_players', [fails('connection reset')]);
+    // This fixture is a pending assistant (organization_id, onboarding
+    // unfinished, no staff row), so that is what the resolver answers.
+    coachEntry = { path: '/golf/coach/pending', reason: 'pending-assistant' };
 
     const pending = renderLayout().catch((e: Error) => e);
     await flushMicrotasks();
@@ -282,16 +310,19 @@ describe('golf dashboard layout — a failed read must not fail open', () => {
     expect(redirect).not.toHaveBeenCalledWith('/golf/signup');
   });
 
-  it('routes to the pending page and LOGS when the staff-row read itself errors', async () => {
-    // The pending-assistant branch reads golf_team_coach_staff to tell an
-    // unapproved assistant from a head coach mid-onboarding. supabase-js
-    // resolves a failed read as `data: null` — identical to a genuine absence
-    // — so without the error bound, an outage silently renders as "pending".
+  it('honors the resolver when a staff-row read failure makes the answer ambiguous', async () => {
+    // This case used to queue a failing `golf_team_coach_staff` read and assert
+    // the layout both routed to the pending page and LOGGED it. That read is no
+    // longer the layout's — it moved into `resolveGolfCoachEntry` so all five
+    // entry points share one answer, and the log + fail-direction now live and
+    // are asserted there (coach-entry-path.test.ts, "routes a failed STAFF read
+    // to the waiting page").
     //
-    // Routing to the pending page is the right direction for that ambiguity:
-    // it self-clears once the row is readable, whereas '/golf/coach' would
-    // offer new-program onboarding to a coach who already has a program. What
-    // must NOT happen is that it goes unrecorded.
+    // What remains the LAYOUT's job, and is what this pins: it must obey a
+    // 'lookup-failed' answer rather than falling through to the dashboard.
+    // Falling through would render a coach shell for somebody whose access
+    // could not be established — the fail-open direction this file exists to
+    // prevent.
     session = {
       userId: 'u1',
       role: null,
@@ -299,7 +330,7 @@ describe('golf dashboard layout — a failed read must not fail open', () => {
       player: null,
     };
     queues.set('users', [ok({ role: 'coach' })]);
-    queues.set('golf_team_coach_staff', [fails('connection reset')]);
+    coachEntry = { path: '/golf/coach/pending', reason: 'lookup-failed' };
 
     const pending = renderLayout().catch((e: Error) => e);
     await flushMicrotasks();
@@ -307,10 +338,11 @@ describe('golf dashboard layout — a failed read must not fail open', () => {
     await flushMicrotasks();
     await pending;
 
+    expect(resolveGolfCoachEntry).toHaveBeenCalledWith('u1');
     expect(redirect).toHaveBeenCalledWith('/golf/coach/pending');
-
-    const said = logServerError.mock.calls.map((c) => String((c as unknown[])[0]));
-    expect(said.some((m) => /staff lookup failed/i.test(m))).toBe(true);
+    // Never the wizard: that would offer new-program onboarding to a coach who
+    // already has a program, which is how the duplicate programs got minted.
+    expect(redirect).not.toHaveBeenCalledWith('/golf/coach');
   });
 
   it('records a failed role read instead of silently reading it as "not an admin"', async () => {

@@ -135,10 +135,30 @@ export async function resolveGolfCoachEntry(userId: string): Promise<GolfCoachEn
       return { path: '/golf/coach/pending', reason: 'pending-assistant' };
     }
 
-    // Program, no access, and marked onboarded — a head coach whose team or
-    // staff row did not get created. The wizard's upsert is idempotent, so
-    // sending them back finishes the job rather than duplicating it.
-    return { path: '/golf/coach', reason: 'incomplete-head-coach' };
+    // Program, no access, marked onboarded — a head coach whose team or staff
+    // row did not get created.
+    //
+    // This deliberately does NOT go to '/golf/coach'. An earlier version of
+    // this function did, on the reasoning that "the wizard's upsert is
+    // idempotent, so sending them back finishes the job". That reasoning was
+    // wrong: only the COACH write in `completeCoachOnboarding` is an upsert.
+    // The organization and the team are both plain `.insert()` calls
+    // (onboarding.ts ~267), so running the wizard again mints a SECOND
+    // organization and a SECOND team and re-points organization_id at them —
+    // the exact phantom-duplicate-program outcome this whole module exists to
+    // prevent, just reached by a different door.
+    //
+    // Production has 6 accounts in this shape (checked 2026-08-20). Five have
+    // no team in their org at all; one — a real coach — has an existing team
+    // and only lacks the staff row that links them to it. The wizard would
+    // give that person a duplicate program, not a fix.
+    //
+    // So: the dashboard, which is exactly where these accounts go today. That
+    // keeps this change scoped to the assistant-coach bug it was written for
+    // and does not alter the destination of any account that is not an
+    // assistant. Repairing an incomplete head-coach setup is a real but
+    // separate job, and it needs a repair path rather than a second program.
+    return { path: '/golf/dashboard', reason: 'incomplete-head-coach' };
   } catch (error) {
     await logServerError(
       `[resolveGolfCoachEntry] unexpected failure for user ${userId}: ${describeError(error)}`,

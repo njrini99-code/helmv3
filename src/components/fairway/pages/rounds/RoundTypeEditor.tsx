@@ -95,19 +95,32 @@ export function RoundTypeEditor({
   async function save() {
     setBusy(true);
     setError(null);
-    const res = await updateRoundType({
-      roundId,
-      roundType: type,
-      qualifierId: needsQualifier ? qualifierId || null : null,
-      qualifierRoundNumber: needsQualifier ? roundNumber : null,
-    });
-    setBusy(false);
-    if (!res.success) {
-      setError(res.error ?? 'That did not save.');
-      return;
+    try {
+      const res = await updateRoundType({
+        roundId,
+        roundType: type,
+        qualifierId: needsQualifier ? qualifierId || null : null,
+        qualifierRoundNumber: needsQualifier ? roundNumber : null,
+      });
+      if (!res.success) {
+        setError(res.error ?? 'That did not save.');
+        return;
+      }
+      setOpen(false);
+      router.refresh();
+    } catch (err) {
+      // The action THROWS as well as returning failures. Its `demoSafe`
+      // wrapper runs `assertGolfDemoWritable` OUTSIDE the implementation's own
+      // try/catch, and a dropped connection throws too. Without this the
+      // rejection escaped, `setBusy(false)` never ran, and the Save button
+      // stayed disabled forever with no message — the failure mode that looks
+      // most like the app hanging.
+      setError(err instanceof Error ? err.message : 'That did not save.');
+    } finally {
+      // In `finally` so it runs on the success path, the refusal path, and the
+      // throw path alike.
+      setBusy(false);
     }
-    setOpen(false);
-    router.refresh();
   }
 
   if (!open) {

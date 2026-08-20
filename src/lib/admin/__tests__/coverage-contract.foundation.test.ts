@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 442', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 444', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -325,6 +325,13 @@ describe('global tripwire', () => {
     // redeeming it (staff join flow).
     // 438: signupWithStaffInviteAction (auth.ts) — create account for staff
     // invited to join a program.
-    expect(total).toBe(442);
+    // 443: getGolfCoachEntry (golf/actions/coach-entry.ts) — where a signed-in
+    //   coach account belongs. Wrapped because it is a ROUTING decision: a
+    //   silent failure sends somebody to the wrong onboarding rather than
+    //   showing them an error.
+    // 444: updateRoundType (golf/actions/round-type.ts) — change a submitted
+    //   round's type, and keep its qualifier linkage honest. demoSafe because
+    //   it moves a score in or out of a qualifier's standings.
+    expect(total).toBe(444);
   });
 });

@@ -108,14 +108,19 @@ describe('resolveGolfCoachEntry — who may see new-program onboarding', () => {
     expect(state.queried).toEqual(['golf_coaches']);
   });
 
-  it('returns a head coach whose team creation half-failed to the wizard', async () => {
-    // Program + marked onboarded + no staff row. The wizard's upsert is
-    // idempotent, so sending them back finishes the job. This is the ONE case
-    // where onboarding_completed carries information the staff row cannot.
+  it('leaves a head coach whose team creation half-failed on the dashboard', async () => {
+    // Program + marked onboarded + no staff row. This is the ONE case where
+    // onboarding_completed carries information the staff row cannot — but the
+    // answer is still not the wizard.
     state.coach = { id: 'c1', organization_id: 'org-1', onboarding_completed: true };
     state.staffRow = null;
+    // NOT '/golf/coach'. `completeCoachOnboarding` upserts the COACH but
+    // plainly `.insert()`s the organization and the team, so re-running the
+    // wizard mints a duplicate program rather than finishing this one. The
+    // dashboard is where these accounts already go in production, so routing
+    // keeps its promise of only ever changing an ASSISTANT's destination.
     expect(await resolveGolfCoachEntry('user-1')).toEqual({
-      path: '/golf/coach',
+      path: '/golf/dashboard',
       reason: 'incomplete-head-coach',
     });
   });

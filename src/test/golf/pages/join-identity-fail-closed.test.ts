@@ -68,6 +68,30 @@ function tableChain(table: string) {
   return node;
 }
 
+/**
+ * Where a signed-in coach belongs is now one shared decision, not this page's
+ * own `onboarding_completed ? dashboard : '/golf/coach'`.
+ *
+ * That old ternary is exactly how an assistant coach clicking the same team
+ * link their players use got sent into NEW-PROGRAM onboarding — the flag is
+ * false for both a pending and an approved assistant, and completing that form
+ * detaches them from the program that invited them.
+ *
+ * `resolveGolfCoachEntry` reads with the service role on purpose, so it does
+ * not go through the server client mocked below; without this mock these cases
+ * would be testing `createAdminClient`. The resolver's own logic is covered in
+ * `src/lib/golf/__tests__/coach-entry-path.test.ts`.
+ */
+// Mutable on purpose — each case sets the routing answer it needs, and the
+// mock factory below closes over it rather than capturing a value at hoist
+// time. (Do not let a formatter narrow this to `const`; it is reassigned in
+// `beforeEach` and in the assistant case.)
+ 
+let coachEntry: { path: string; reason: string } = { path: '/golf/dashboard', reason: 'staffed' };
+vi.mock('@/lib/golf/coach-entry-path', () => ({
+  resolveGolfCoachEntry: vi.fn(async () => coachEntry),
+}));
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: async () => ({ data: { user: { id: 'u1' } }, error: null }) },
@@ -90,6 +114,7 @@ beforeAll(async () => {
 beforeEach(() => {
   logServerError.mockClear();
   redirect.mockClear();
+  coachEntry = { path: '/golf/dashboard', reason: 'staffed' };
   outcomes.clear();
   outcomes.set('golf_coaches', ok(null));
   outcomes.set('golf_players', ok({ id: 'p1', onboarding_completed: true }));
@@ -141,6 +166,20 @@ describe('join page — the honest routes are unchanged', () => {
     outcomes.set('golf_coaches', ok({ id: 'c1', onboarding_completed: true }));
 
     expect(await outcomeOf()).toBe('REDIRECT:/golf/dashboard');
+  });
+
+  it('sends an assistant coach to the waiting page, never new-program onboarding', async () => {
+    // The reported path, exactly: a head coach hands the assistant the same
+    // team link the players get. Under the old
+    // `onboarding_completed ? dashboard : '/golf/coach'` this page walked them
+    // into the school-details wizard, and finishing it overwrote their
+    // organization_id and stood up a phantom duplicate of the program that had
+    // just invited them (UNCW 2026-08-18, Shenandoah 2026-08-19).
+    outcomes.set('golf_coaches', ok({ id: 'c1', onboarding_completed: false }));
+    coachEntry = { path: '/golf/coach/pending', reason: 'pending-assistant' };
+
+    expect(await outcomeOf()).toBe('REDIRECT:/golf/coach/pending');
+    expect(redirect).not.toHaveBeenCalledWith('/golf/coach');
   });
 
   it('still lets a genuine non-coach through to the join flow', async () => {
