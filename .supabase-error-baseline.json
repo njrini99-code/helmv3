@@ -1,5 +1,5 @@
 {
-  "total": 1053,
+  "total": 1052,
   "byArea": {
     "app/golf/actions": 403,
     "app/baseball/actions": 217,
@@ -8,7 +8,7 @@
     "lib/coachhelm/v3": 30,
     "app/baseball/(dashboard)": 29,
     "app/api/cron": 20,
-    "app/golf/(dashboard)": 16,
+    "app/golf/(dashboard)": 15,
     "lib/baseball/coachhelm": 15,
     "lib/coachhelm/v2": 15,
     "app/actions/messages.ts": 10,
