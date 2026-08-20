@@ -124,6 +124,36 @@ interface ConflictData {
   }>;
 }
 
+/**
+ * The wire shape of `checkScheduleConflicts` — see the twin of this block in
+ * `components/fairway/pages/calendar/FairwayEventEditor.tsx`.
+ *
+ * The action serializes the alternative slots to ISO strings; this interface
+ * says Date, and `ConflictWarning.formatSuggestedTime` calls `toDateString()`
+ * and `toLocaleTimeString()` straight off them. The `as ConflictData` cast
+ * below asserted away the difference. Fairway's copy of the same cast is what
+ * threw `e.start.toLocaleTimeString is not a function` in production on
+ * 2026-08-19; this path had the identical defect and simply had not been
+ * exercised with a non-empty suggestion list.
+ */
+type WireConflictData = Omit<ConflictData, 'suggestions'> & {
+  suggestions?: Array<{ start: Date | string; end: Date | string }>;
+};
+
+function normalizeConflictData(raw: WireConflictData): ConflictData {
+  const toDate = (value: Date | string): Date =>
+    value instanceof Date ? value : new Date(value);
+  return {
+    hasConflict: raw.hasConflict,
+    conflicts: raw.conflicts ?? [],
+    // Unparseable slots are dropped, not rendered: an Invalid Date formats as
+    // the literal "Invalid Date" and yields NaN the moment somebody picks it.
+    suggestions: (raw.suggestions ?? [])
+      .map((s) => ({ start: toDate(s.start), end: toDate(s.end) }))
+      .filter((s) => !Number.isNaN(s.start.getTime()) && !Number.isNaN(s.end.getTime())),
+  };
+}
+
 async function loadGolfCalendarActions() {
   return import('@/app/golf/actions/golf');
 }
@@ -563,7 +593,7 @@ export function EventDetailModal({
         );
 
         if (result.success && result.data) {
-          setConflicts(result.data as ConflictData);
+          setConflicts(normalizeConflictData(result.data as WireConflictData));
         }
       } catch (err) {
         // Conflict check failed - continue without warning

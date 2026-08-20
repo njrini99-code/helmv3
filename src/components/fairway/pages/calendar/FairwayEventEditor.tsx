@@ -229,6 +229,50 @@ interface ConflictData {
   suggestions: Array<{ start: Date; end: Date }>;
 }
 
+/**
+ * The wire shape of `checkScheduleConflicts`, which is NOT `ConflictData`.
+ *
+ * The action deliberately serializes the alternative slots to ISO strings
+ * (`s.start.toISOString()`), and its own return type says so — `Date | string`.
+ * Everything below this line treats them as Dates: the chips call
+ * `toLocaleTimeString`, `selectSuggestedTime` calls `toISOString`/`toTimeString`.
+ * The old `as ConflictData` assertion claimed the strings were already Dates.
+ *
+ * That lie was harmless only while the list was always empty. `suggestions`
+ * had been reading a key the library never returned, so no chip ever rendered;
+ * when that one-word mismatch was fixed the chips appeared and immediately
+ * threw `e.start.toLocaleTimeString is not a function` inside `.map()` —
+ * production, /golf/dashboard/calendar, 2026-08-19.
+ */
+type WireConflictData = Omit<ConflictData, 'suggestions'> & {
+  suggestions?: Array<{ start: Date | string; end: Date | string }>;
+};
+
+/**
+ * Convert the wire shape ONCE, at the boundary, so both consumers keep working.
+ *
+ * Patching only the render would have left `selectSuggestedTime` throwing on
+ * click instead of on paint — a chip that appears and then breaks when used is
+ * worse than one that never appears.
+ *
+ * Unparseable slots are dropped rather than rendered: `new Date('nonsense')`
+ * does not throw, it yields an Invalid Date that formats as the literal string
+ * "Invalid Date" and then produces a NaN timestamp the moment somebody picks it.
+ */
+function toDate(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value);
+}
+
+function normalizeConflictData(raw: WireConflictData): ConflictData {
+  return {
+    hasConflict: raw.hasConflict,
+    conflicts: raw.conflicts ?? [],
+    suggestions: (raw.suggestions ?? [])
+      .map((s) => ({ start: toDate(s.start), end: toDate(s.end) }))
+      .filter((s) => !Number.isNaN(s.start.getTime()) && !Number.isNaN(s.end.getTime())),
+  };
+}
+
 const DEFAULT_FORM: GolfEventFormData = {
   title: '',
   eventType: 'practice',
@@ -507,7 +551,9 @@ export function FairwayEventEditor({
            */
           new Date().getTimezoneOffset(),
         );
-        if (!cancelled && result.success && result.data) setConflicts(result.data as ConflictData);
+        if (!cancelled && result.success && result.data) {
+          setConflicts(normalizeConflictData(result.data as WireConflictData));
+        }
       } catch {
         /* conflict check failed — continue without warning */
       }
