@@ -10,6 +10,71 @@ tree), not inferred.
 
 ---
 
+## Revision 2 (2026-08-20) — corrections from a reviewer
+
+This post-mortem's *forensics* held up; several of its *conclusions* did not. A
+review caught them and re-verification confirmed the review. Corrections are
+recorded here rather than silently rewritten, because a post-mortem that hides
+its own revisions teaches nothing.
+
+**The central lesson was framed wrong.** The root cause was not "worktrees." It
+was **workspace identity was not deterministic** — an agent could not answer
+*which checkout / which branch / which HEAD / is this the shipping tree* before
+editing, so it edited the wrong copy and honestly reported success. "No
+worktrees" over-corrects: it trades a visible failure (duplicate checkouts) for
+a different one (four writers sharing one HEAD). The right model is:
+
+> One canonical checkout. One mutating session in it at a time. **Managed
+> external** worktrees when genuine parallel mutation is needed. **Never**
+> nested/in-repo worktrees, never agent-improvised paths. Deterministic identity,
+> verified before the first edit — not "worktrees forbidden."
+
+**Precise remediation status** (the original said "fixed → PR", which was wrong
+while the PRs were open):
+
+| item | status |
+|---|---|
+| scratch dirs (`.deepsec` etc.) removed | `LOCAL_CLEANUP_DONE` |
+| 13 → 1 worktrees, work preserved to branches | `LOCAL_CLEANUP_DONE` |
+| `strict:false` on GitHub | `FIXED_LIVE_PLATFORM` |
+| branch-protection.md synced (#1521) | `MERGED_TO_MAIN` |
+| this post-mortem (#1522) | `MERGED_TO_MAIN` |
+| git/PR allow-list + force-push guard fix (#1518) | `FIX_PREPARED_PR / NOT_ON_MAIN` |
+| workspace-identity model as a committed rule | `NOT_STARTED / OWNER_DECISION` |
+
+**Two findings the first draft did not have:**
+
+- **A force-push guard bypass, now fixed in #1518.** `guard-bash.sh` matched
+  force with `push.*(--force|-f)([space]|$)` — only a *standalone* `-f`/`--force`.
+  Combined short flags (`git push -vf`, `-fv`) are force pushes with no `-f`
+  token and sailed through. This was latent until the same PR broadened
+  `Bash(git push:*)`, at which point it would have been an unguarded
+  force-push-to-shared-history path. Fixed and pinned by 13 tests before the
+  broad allow lands. (`allow_force_pushes` is `false` on `main`, so GitHub
+  rejects force-push to main regardless — but the hook is the only guard for
+  other branches, other remotes, and the local repo.)
+- **The docs claim "no AI reviewers," but three are live.** `greptile-apps`
+  posts reviews and `coderabbitai` / `qodo-code-review` post comments on PRs,
+  while `AGENTS.md` states none exist. They are advisory (not required checks),
+  so they do not gate merges — but they are unaccounted-for GitHub Apps with
+  repo access. Owner decision: uninstall, or document as active-advisory.
+
+**One principle worth adopting repo-wide**, because the same shape recurred
+everywhere this session:
+
+> **A state-changing operation requires independent verification of the state.**
+> A CLI printing success ≠ production moved. A migration file existing ≠ prod
+> applied it. A green check ≠ the check ran. Empty probe output ≠ a real
+> negative. A branch existing ≠ work shipped. An allow-rule ≠ a guard.
+
+Durable follow-ups the review proposed, left as owner-prioritized backlog, not
+built here: a `workspace:doctor` (identity + contaminant scan), a `deploy:status`
+(main-vs-prod drift with a live `/api/version` SHA), and a `repo:doctor` that
+mechanically diffs *desired* branch-protection policy against the live GitHub
+API so the doc can never silently drift again.
+
+---
+
 ## TL;DR
 
 Three separate problems wore the same disguise ("things aren't landing / aren't where
@@ -125,8 +190,9 @@ sessions landing commits every few minutes, small PRs got lapped repeatedly and 
 never catch up. We caught one PR live in the `BEHIND` state, restarting its 49 checks.
 
 Nothing was *failing* — the config was set to be **slow and self-invalidating**. With
-squash-merge already linearizing history, `strict` bought almost nothing and cost the
-gridlock. (Fixed → `strict:false`, owner-authorized; the compensating control is
+squash-merge already linearizing history, `strict` was a **throughput-over-freshness**
+tradeoff whose freshness guarantee bought little here relative to the gridlock it caused
+(strict and linear history are not interchangeable — see Revision 2). (Fixed → `strict:false`, owner-authorized; the compensating control is
 `git pull main` before branching.)
 
 ---
@@ -179,7 +245,9 @@ instruction, or a config that made the wrong outcome the easy one.
 
 ## 5. What now prevents recurrence
 
-- **One checkout, enforced by rule.** No `git worktree add`; work in `Downloads/helmv3`.
+- **Deterministic workspace identity** (see Revision 2 — this supersedes the blunt "no
+  worktrees"): one canonical checkout, one mutating session at a time, managed external
+  worktrees for real parallelism, never nested/in-repo ones.
   Because the shared checkout has one `HEAD`, the rule is: one session on a non-main branch
   at a time, announce on checkout and on return, `git pull main` before branching,
   `git diff --cached --name-only` before every commit, explicit paths (never `git add -A`).
