@@ -972,8 +972,48 @@ function mergeRoundWarnings(...warningGroups: Array<string[] | undefined>): stri
   return merged.length > 0 ? merged : undefined;
 }
 
-function getPreservedRoundSubmitError(): string {
-  return 'Round submission hit a server error, but your round data was preserved. Reload this round and try again. Do not re-enter it.';
+function getPreservedRoundSubmitError(backupPersisted: boolean): string {
+  // Only promise preservation when a backup actually landed. On 2026-08-20 a
+  // player was told "your round data was preserved... do not re-enter it" while
+  // the backup write had ALSO timed out and the round was then destroyed.
+  // Telling someone not to re-enter a round you did not save is the worst
+  // available outcome — it costs them the scorecard too.
+  return backupPersisted
+    ? 'Round submission hit a server error, but your round data was saved. Reload this round and try again — do not re-enter it.'
+    : 'Round submission failed and we could not confirm a backup. Reload this round to check what was saved before you re-enter anything.';
+}
+
+/**
+ * True when a write failed in a way that leaves the transaction's OUTCOME UNKNOWN.
+ *
+ * An HTTP abort (the `AbortSignal.timeout` in `src/lib/supabase/server.ts`)
+ * cancels only the *request*. PostgreSQL keeps executing and frequently COMMITS
+ * — these RPCs grant themselves a `statement_timeout` well above the client's
+ * abort, so the window is wide. On 2026-08-20 `submit_round_atomic` committed
+ * round `8e89c73e` in full, the client aborted at 10s and read that as failure,
+ * and the "recovery" fallback then deleted the 18 holes and 72 shots the RPC had
+ * just written. See docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md.
+ *
+ * A DB-returned error (57014 statement_timeout, a constraint, a deadlock) is NOT
+ * indeterminate: Postgres rolled the transaction back and the rows are untouched,
+ * so a rebuild is safe there. The discriminator is SQLSTATE — a Postgres error
+ * always carries one, a client-side abort never does.
+ */
+function isIndeterminateWriteFailure(
+  error: { message?: string | null; code?: string | null } | null | undefined
+): boolean {
+  if (!error) {
+    return false;
+  }
+  if (typeof error.code === 'string' && error.code.trim() !== '') {
+    return false;
+  }
+  const message = (error.message ?? '').toLowerCase();
+  return message.includes('abort')
+    || message.includes('timeouterror')
+    || message.includes('the operation was aborted')
+    || message.includes('fetch failed')
+    || message.includes('network');
 }
 
 async function persistRoundSubmissionBackup(
@@ -1055,19 +1095,58 @@ async function submitRoundDirectFallback({
     };
   }
   const restoreSnapshot = async (): Promise<void> => {
+    // At this point the snapshot in memory is the ONLY remaining copy of the
+    // player's round. A restore that fails silently loses it for good — that is
+    // exactly how round 8e89c73e was destroyed on 2026-08-20: the deletes below
+    // succeeded, the re-inserts timed out, and the bare `catch {}` that used to
+    // sit here swallowed it. If we cannot re-seat the rows, the snapshot MUST
+    // reach the log so the round is recoverable from something.
+    const failRestore = async (stage: string, detail: string): Promise<void> => {
+      await logServerError(
+        `CRITICAL: round rollback failed at ${stage} — holes/shots may be LOST for round ${roundId}. Snapshot attached.`,
+        {
+          action: 'submitRoundDirectFallback.restoreSnapshot',
+          roundId,
+          playerId,
+          holesCount: Array.isArray(holeSnapshot) ? holeSnapshot.length : 0,
+          shotsCount: Array.isArray(shotSnapshot) ? shotSnapshot.length : 0,
+          extra: { stage, detail, holeSnapshot, shotSnapshot },
+        },
+        'critical'
+      );
+    };
+
     try {
       // nosemgrep: helmv3-destructive-write-pattern -- this IS the rollback: re-seating the snapshot captured (and null-guarded) above after a failed swap
-      await supabase.from('golf_shots').delete().eq('round_id', roundId);
+      const { error: clearShots } = await supabase.from('golf_shots').delete().eq('round_id', roundId);
+      if (clearShots) {
+        await failRestore('clear_shots', clearShots.message);
+        return;
+      }
       // nosemgrep: helmv3-destructive-write-pattern -- rollback path, see above
-      await supabase.from('golf_holes').delete().eq('round_id', roundId);
+      const { error: clearHoles } = await supabase.from('golf_holes').delete().eq('round_id', roundId);
+      if (clearHoles) {
+        await failRestore('clear_holes', clearHoles.message);
+        return;
+      }
       if (Array.isArray(holeSnapshot) && holeSnapshot.length > 0) {
-        await supabase.from('golf_holes').insert(holeSnapshot);
+        const { error: holesBack } = await supabase.from('golf_holes').insert(holeSnapshot);
+        if (holesBack) {
+          await failRestore('reinsert_holes', holesBack.message);
+          return;
+        }
       }
       if (Array.isArray(shotSnapshot) && shotSnapshot.length > 0) {
-        await supabase.from('golf_shots').insert(shotSnapshot);
+        const { error: shotsBack } = await supabase.from('golf_shots').insert(shotSnapshot);
+        if (shotsBack) {
+          await failRestore('reinsert_shots', shotsBack.message);
+        }
       }
-    } catch {
-      // Best-effort rollback — the caller surfaces the ORIGINAL failure either way.
+    } catch (restoreError) {
+      await failRestore(
+        'threw',
+        restoreError instanceof Error ? restoreError.message : String(restoreError)
+      );
     }
   };
 
@@ -1570,6 +1649,76 @@ async function submitGolfRoundComprehensiveImpl(
       trigger: Record<string, unknown>,
       backupPersisted: boolean
     ): Promise<{ success: true; warnings?: string[] } | { success: false; error: string }> => {
+      // GUARD — single choke point, deliberately here rather than at the four
+      // call sites so a future caller cannot skip it.
+      //
+      // The fallback rebuilds the round by DELETEing holes+shots and re-inserting.
+      // That is only safe when we KNOW the RPC's transaction rolled back. When the
+      // failure was a client-side abort we know nothing — and in practice the RPC
+      // usually committed, because it grants itself a statement_timeout well above
+      // the client's abort budget. Rebuilding on top of a successful commit is what
+      // destroyed round 8e89c73e on 2026-08-20 (18 holes, 72 shots, gone).
+      // Read the round back and reconcile instead of assuming failure.
+      if (
+        trigger.source === 'rpc_error'
+        && isIndeterminateWriteFailure({
+          code: typeof trigger.code === 'string' ? trigger.code : null,
+          message: typeof trigger.message === 'string' ? trigger.message : null,
+        })
+      ) {
+        const { count: holeCount } = await supabase
+          .from('golf_holes')
+          .select('id', { count: 'exact', head: true })
+          .eq('round_id', roundId);
+        const { data: reconciled } = await fromUntyped(supabase, 'golf_rounds')
+          .select('id, status')
+          .eq('id', roundId)
+          .eq('player_id', player.id)
+          .maybeSingle();
+
+        if (reconciled?.status === 'completed' && (holeCount ?? 0) > 0) {
+          // The RPC committed after we gave up listening. The round is fine.
+          await logServerError(
+            'Round submit aborted client-side but COMMITTED server-side — reconciled, destructive fallback SKIPPED',
+            {
+              action: 'submitGolfRoundComprehensive',
+              roundId,
+              playerId: player.id,
+              userId: user.id,
+              userEmail: user.email,
+              holesCount: holeCount ?? 0,
+              shotsCount,
+              extra: { path, trigger, backupPersisted, reconciled: 'committed' },
+            },
+            'warning'
+          );
+          return { success: true };
+        }
+
+        // Outcome still unknown — the transaction may be mid-commit. Refuse to
+        // delete anything. A round that needs a retry beats a round destroyed.
+        await logServerError(
+          'Round submit aborted client-side and could not be reconciled — destructive fallback SKIPPED, round left intact',
+          {
+            action: 'submitGolfRoundComprehensive',
+            roundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            holesCount: holeCount ?? 0,
+            shotsCount,
+            extra: {
+              path,
+              trigger,
+              backupPersisted,
+              reconciled: reconciled?.status ?? 'unknown',
+            },
+          },
+          'critical'
+        );
+        return { success: false, error: getPreservedRoundSubmitError(backupPersisted) };
+      }
+
       const fallbackResult = await submitRoundDirectFallback({
         supabase,
         roundId,
@@ -1597,7 +1746,7 @@ async function submitGolfRoundComprehensiveImpl(
           },
           'critical'
         );
-        return { success: false, error: getPreservedRoundSubmitError() };
+        return { success: false, error: getPreservedRoundSubmitError(backupPersisted) };
       }
 
       await logServerError(

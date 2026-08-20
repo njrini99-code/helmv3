@@ -298,12 +298,42 @@ export async function validateGolfPlayerCanJoinTeam(
  * Add a golf player to a team via golf_team_members
  * Also notifies coaches when a player joins
  */
+/**
+ * The join flow's result shape, stated ONCE instead of being inferred.
+ *
+ * Inference produced a three-branch union in which only one arm carried
+ * `alreadyMember`, so reading it anywhere the compiler had not already
+ * narrowed to that arm was a type error — which is exactly what
+ * `join-team-rls-blocked-read.test.ts:214` does after asserting
+ * `result.success === true` (an `expect()` narrows nothing).
+ *
+ * That made `tsc --noEmit` fail on `main`, and `next.config.mjs` sets
+ * `ignoreBuildErrors: false` while `tsconfig.json` includes every `.ts` without
+ * excluding tests — so a production BUILD type-checks this test file too. A
+ * broken test type was therefore able to hold up a deploy, in a repo where a
+ * push ships nothing and the promote is manual: the slowest possible way to
+ * find out.
+ *
+ * `alreadyMember` is optional rather than a discriminated union because it is
+ * genuinely incidental — every caller cares whether the player ended up on the
+ * team, and only the idempotency test cares how they got there.
+ */
+export interface GolfJoinTeamResult {
+  success: boolean;
+  /**
+   * True when the player was ALREADY on this team — an idempotent no-op, not
+   * a failure. See the comment on the branch that sets it.
+   */
+  alreadyMember?: boolean;
+  error?: string;
+}
+
 async function joinGolfTeamImpl(
   playerId: string,
   teamId: string,
   joinCode?: string,
   resolvedTeam?: ResolvedTeamRef | null
-) {
+) : Promise<GolfJoinTeamResult> {
   const supabase = await createClient();
 
   // Validate first
@@ -529,7 +559,10 @@ export async function joinGolfTeam(
  * Process a golf team join code
  * Note: golf_teams uses join_code, not invite_code
  */
-async function processGolfTeamInvitationImpl(joinCode: string, playerId: string) {
+async function processGolfTeamInvitationImpl(
+  joinCode: string,
+  playerId: string,
+): Promise<GolfJoinTeamResult> {
   const supabase = await createClient();
 
   // Normalize join code to uppercase for case-insensitive matching
