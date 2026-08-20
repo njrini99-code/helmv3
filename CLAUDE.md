@@ -98,6 +98,13 @@ Still blocked by `.claude/hooks/guard-bash.sh`, deliberately:
 ```typescript
 import type { Player, Coach, Organization } from '@/lib/types';
 // NEVER: @/types/database, @/types/supabase (don't exist)
+//
+// CAREFUL: bare `Coach` and `Player` are BASEBALL types —
+// `baseball_coaches['Row']` and `baseball_players['Row']`. The names do not
+// say so. Golf code wants GolfCoach / GolfPlayer:
+import type { GolfCoach, GolfPlayer } from '@/lib/types/golf';
+// No golf file currently imports the bare names, so this is a trap that has
+// not been sprung — but this example was teaching it.
 ```
 
 ### 2. Supabase Client
