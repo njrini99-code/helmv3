@@ -145,6 +145,69 @@ was false. The data was not preserved, and reloading shows an empty round.
 
 ---
 
+## The full incident list, reconciled
+
+An earlier version of this document chased two rounds and generalised from them.
+That under-reported the blast radius. Every group in the dashboard's incident
+list, matched by fingerprint:
+
+| fingerprint | sev | occ | rounds | what |
+|---|---|---|---|---|
+| `6b5a2567` | error | 15 | **8** | `Auto-save RPC failed: TimeoutError` |
+| `836ce3b6` | error | 6 | **4** | `Auto-save failed: user session expired mid-round` |
+| `fc744993` | critical | 2 | 2 | `Round submit RPC failed: TimeoutError` |
+| `2d72640e` | critical | 1 | 1 | `Fallback failed while writing shots` — **the wipe** |
+| `0bb6d640` | critical | 1 | 1 | `Fallback failed while clearing holes` |
+| `943e1230` | error | 2 | — | the "your data was preserved" message shown to the player |
+| `8445987c` | error | 2 | — | the raw `TimeoutError` from the submit RPC |
+| `67108f38` | error | 1 | 1 | `Failed to persist round submission backup` |
+
+**Eight rounds hit auto-save timeouts, not two — and all eight are Guilford
+players on the same evening:**
+
+| player | score | holes | shots |
+|---|---|---|---|
+| `jpeach@guilford.edu` | 72 | **0** | **0** |
+| `lwise@guilford.edu` | 73 | 18 | 73 |
+| `kcentenoglen@guilford.edu` | 78 | 18 | 78 |
+| `sbedi@guilford.edu` | 85 | 18 | 85 |
+| `crobinson3@guilford.edu` | 76 | 18 | 76 |
+| `clynde@guilford.edu` | 74 | 18 | 74 |
+| `lfalcone@guilford.edu` | 82 | 18 | 82 |
+| `sslate@guilford.edu` | 76 | 18 | 76 |
+
+Seven survived; one was destroyed. **This was a whole-team round session**, and
+that is the load pattern the "why is the tail slow" section was missing: not
+random slowness, but eight players on one roster auto-saving into
+`save_partial_round_atomic` concurrently, each abandoned client-side at 10s while
+still holding row locks server-side for up to 20s. The contention was
+self-inflicted and predictable, and it will recur on the next team session.
+
+### A second, separate failure in the same list
+
+`836ce3b6` — *"Auto-save failed: user session expired mid-round"*, 6 occurrences
+across 4 rounds — is **not** a timeout and is not explained by the timeout
+inversion. `savePartialRound` calls `supabase.auth.getUser()` and gets `null`
+(`golf.ts:5546`), so the save is refused before it reaches the database.
+
+The idle timeouts do not explain it: `SESSION_IDLE_TIMEOUT_MS` is 8 hours and
+`NATIVE_APP_SESSION_IDLE_TIMEOUT_MS` is 30 days
+(`src/lib/auth/session-idle-shared.ts`), and a round takes four or five. The
+likelier cause is a failed token refresh — these are golfers on phones, on a
+course, with intermittent signal, which is exactly the condition a refresh round
+trip fails under.
+
+No data was lost to this on 2026-08-19/20: all four affected rounds finished with
+their holes intact, because the final submit re-sends the whole round. But it is
+a **latent** data-loss path, not a benign one — while the session is dead the
+auto-save protection is simply absent, and a player who closes the app in that
+window loses everything since their last successful save. It also returns
+`'You must be signed in'` to a caller that is a background auto-save, so whether
+the player is ever *told* their round has stopped saving is unverified and is the
+thing worth checking next.
+
+**This is not fixed.** It needs its own diagnosis.
+
 ## Why the tail is slow at all
 
 `pg_stat_statements` (cumulative since last reset — a tail, not a current rate):
