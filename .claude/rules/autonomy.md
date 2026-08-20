@@ -100,10 +100,19 @@ Two rules that hold either way:
 
 - **`git add <explicit paths>`, never `git add -A`.** In a shared tree `-A`
   stages whatever another agent happens to have written.
-- **Never assume a `git checkout -b` succeeded.** The fsmonitor daemon in this
-  repo intermittently fails with `fsmonitor_ipc__send_query: unspecified error`
-  and can leave a checkout half-applied. Re-run with
-  `git -c core.fsmonitor=false checkout -b <name>` and confirm with
+- **Never assume a `git checkout -b` succeeded** — but the reason has changed.
+  This checkout now sets `core.fsmonitor = false` in `.git/config` (verified
+  2026-08-19: `git config --show-origin --get-all core.fsmonitor` returns that
+  one entry and no global override). So the daemon is off, the
+  `fsmonitor_ipc__send_query: unspecified error` failure it used to cause
+  cannot occur here, and prefixing commands with `-c core.fsmonitor=false` is
+  now cargo cult — it changes nothing.
+
+  Two caveats keep the underlying advice alive. `.git/config` is NOT version
+  controlled, so a fresh clone does not inherit the setting; re-run the check
+  above before relying on it. And confirming the branch you are on is cheap and
+  correct regardless of cause, because in a shared tree another agent's
+  checkout can move `HEAD` under you:
   `git rev-parse --abbrev-ref HEAD` before editing anything.
 
 ### When asking IS right

@@ -21,7 +21,11 @@ verified: unverified  # never re-checked against code — do not trust without g
 **Review Gate** (`.github/workflows/review-gate.yml`) — the deterministic
 review toolchain (ast-grep, semgrep, gitleaks, actionlint, yamllint,
 shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint). Aggregate
-status check: `Review Gate / all`. The blocking hard rules live in the
+status check: `Review Gate aggregate` (renamed from `all` on 2026-08-19 —
+`Review Gate / all` posts NOTHING, and required contexts are matched by
+name, so looking for the old name is the phantom-check trap that made
+every PR unsatisfiable; CI's is `CI aggregate`). The blocking hard rules
+live in the
 custom packs: service-role key in a client bundle, RLS missing on a new
 table, server action without an auth check, sport-prefixed table name
 violation, destructive DELETE-then-INSERT in a save/submit/sync path.
