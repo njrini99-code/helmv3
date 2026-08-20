@@ -1,6 +1,7 @@
 -- Single-flight the partial-round auto-save per round.
 --
--- INCIDENT (2026-08-19/20, docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md):
+-- INCIDENT 2026-08-19/20, see
+-- docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md:
 -- a whole Guilford team round session put eight players' auto-saves into
 -- save_partial_round_atomic concurrently. The function's first row action is
 -- SELECT ... FOR UPDATE on golf_rounds, so a second save for the SAME round
@@ -28,13 +29,24 @@
 -- The only changes: FOR UPDATE → FOR UPDATE NOWAIT, and the surrounding
 -- BEGIN/EXCEPTION block translating 55P03 into the 'busy' result.
 
-CREATE OR REPLACE FUNCTION public.save_partial_round_atomic(p_round_id uuid, p_round_data jsonb, p_holes jsonb, p_shots jsonb, p_putt_details jsonb DEFAULT NULL::jsonb, p_approach_details jsonb DEFAULT NULL::jsonb, p_expected_updated_at timestamp with time zone DEFAULT NULL::timestamp with time zone)
- RETURNS jsonb
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
- SET statement_timeout TO '20s'
- SET lock_timeout TO '10s'
+-- ACL for this definer function is re-asserted at the end of this file:
+-- REVOKE EXECUTE ... FROM PUBLIC, anon; GRANT EXECUTE ... TO authenticated;
+CREATE OR REPLACE FUNCTION public.save_partial_round_atomic(
+    p_round_id uuid,
+    p_round_data jsonb,
+    p_holes jsonb,
+    p_shots jsonb,
+    p_putt_details jsonb DEFAULT NULL::jsonb,
+    p_approach_details jsonb DEFAULT NULL::jsonb,
+    p_expected_updated_at timestamp with time zone
+    DEFAULT NULL::timestamp with time zone
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+SET statement_timeout TO '20s'
+SET lock_timeout TO '10s'
 AS $function$
 DECLARE
   v_player_id UUID;
@@ -354,11 +366,21 @@ BEGIN
 END;
 $function$;
 
--- SECURITY DEFINER hygiene: CREATE OR REPLACE preserves the existing ACL, but
--- re-assert it explicitly so this migration is safe standalone and the
+-- Definer-function hygiene: CREATE OR REPLACE preserves the existing ACL,
+-- but re-assert it explicitly so this migration is safe standalone and the
 -- function can never be left callable by anon.
-REVOKE EXECUTE ON FUNCTION public.save_partial_round_atomic(uuid, jsonb, jsonb, jsonb, jsonb, jsonb, timestamp with time zone) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.save_partial_round_atomic(uuid, jsonb, jsonb, jsonb, jsonb, jsonb, timestamp with time zone) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.save_partial_round_atomic(
+    uuid, jsonb, jsonb, jsonb, jsonb, jsonb, timestamp with time zone
+) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.save_partial_round_atomic(
+    uuid, jsonb, jsonb, jsonb, jsonb, jsonb, timestamp with time zone
+) TO authenticated;
 
-COMMENT ON FUNCTION public.save_partial_round_atomic(uuid, jsonb, jsonb, jsonb, jsonb, jsonb, timestamp with time zone) IS
-'Auto-save for an in-progress round. Single-flight per round: FOR UPDATE NOWAIT on the golf_rounds row, returning {success:false, error:busy} when any writer (another auto-save or a submit) already holds it. Callers treat busy as a silent skip — every save carries the full round state, so the next tick covers it.';
+COMMENT ON FUNCTION public.save_partial_round_atomic(
+    uuid, jsonb, jsonb, jsonb, jsonb, jsonb, timestamp with time zone
+) IS
+'Auto-save for an in-progress round. Single-flight per round: FOR UPDATE'
+' NOWAIT on the golf_rounds row, returning {success:false, error:busy} when'
+' any writer (another auto-save or a submit) already holds it. Callers treat'
+' busy as a silent skip - every save carries the full round state, so the'
+' next tick covers it.';
