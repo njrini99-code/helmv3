@@ -30,11 +30,14 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button, Segmented } from '@/components/fairway';
 import { NativeSelect } from '@/components/ui/native-select';
+// The ACTION comes from the 'use server' module; the vocabulary comes from the
+// plain one. They are split because a 'use server' file may export only async
+// functions — see lib/golf/round-type-options.ts.
+import { updateRoundType } from '@/app/golf/actions/round-type';
 import {
-  updateRoundType,
   EDITABLE_ROUND_TYPES,
   type EditableRoundType,
-} from '@/app/golf/actions/round-type';
+} from '@/lib/golf/round-type-options';
 
 const TYPE_LABEL: Record<EditableRoundType, string> = {
   practice: 'Practice',

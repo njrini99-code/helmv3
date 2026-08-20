@@ -62,33 +62,16 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+// NOT declared here: this file is `'use server'`, and such a module may export
+// only async functions — every export becomes a server-action endpoint. A bare
+// `export const` is a build error. See lib/golf/round-type-options.ts.
+import {
+  EDITABLE_ROUND_TYPES,
+  type EditableRoundType,
+  type UpdateRoundTypeInput,
+  type UpdateRoundTypeResult,
+} from '@/lib/golf/round-type-options';
 
-/**
- * The types a round can be changed to.
- *
- * Deliberately the three that exist in production (tournament 240, practice
- * 124, qualifier 14) rather than every string the codebase has ever written.
- * `'casual'` appears in a handful of source literals but in zero rows, and
- * `stats-data.ts` also tolerates a legacy `'qualifying'` spelling on read —
- * neither is offered here, because an edit control is not the place to mint
- * new vocabulary into a free-text column.
- */
-export const EDITABLE_ROUND_TYPES = ['practice', 'tournament', 'qualifier'] as const;
-export type EditableRoundType = (typeof EDITABLE_ROUND_TYPES)[number];
-
-export interface UpdateRoundTypeInput {
-  roundId: string;
-  roundType: EditableRoundType;
-  /** Required when changing TO 'qualifier'. Ignored otherwise. */
-  qualifierId?: string | null;
-  /** Which round of the qualifier this is. Defaults to 1. */
-  qualifierRoundNumber?: number | null;
-}
-
-export interface UpdateRoundTypeResult {
-  success: boolean;
-  error?: string;
-}
 
 async function updateRoundTypeImpl(
   input: UpdateRoundTypeInput,
