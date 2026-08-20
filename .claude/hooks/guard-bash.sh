@@ -57,11 +57,22 @@ fi
 #    branch auto-deploys and production is an on-demand CLI promote. Pushing
 #    main ships nothing, and main is now the working branch by owner decision.
 #
-#    Force push matters MORE now: main has allow_force_pushes ENABLED and
-#    enforce_admins off, so this hook is the only guard on shared history.
-if printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+push.*(--force|-f)([[:space:]]|$)'; then
-  block "BLOCKED: force push. It rewrites remote history that other worktrees and open PRs are built on, and GitHub will NOT stop you — main has allow_force_pushes enabled and enforce_admins off.
-If you truly need it, use --force-with-lease and run it yourself."
+#    Force-push reality, verified live 2026-08-20: main's branch protection has
+#    allow_force_pushes = FALSE and enforce_admins = false, so GitHub itself now
+#    rejects a force push to main. This hook is NOT redundant: it also covers
+#    force pushes to OTHER branches, to any remote, and the local repo — none of
+#    which that GitHub setting touches. (An earlier version of this comment said
+#    allow_force_pushes was ENABLED; that was stale — corrected here.)
+#
+#    The regex was ALSO wrong until 2026-08-20. `push.*(--force|-f)([space]|$)`
+#    matched only a STANDALONE `-f`/`--force`; combined short flags carry force
+#    intent with no `-f` token, so `git push -vf` and `-fv` sailed straight
+#    through. Harmless while every push prompted — load-bearing the moment
+#    `Bash(git push:*)` was allow-listed. Now: a push AND any force spelling
+#    blocks. Both directions are pinned in src/test/hooks/guard-bash-worktree.test.ts.
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])git([[:space:]]+(-[^[:space:]]+)([[:space:]]+[^[:space:]=-][^[:space:]]*)?)*[[:space:]]+push([[:space:]]|$)' \
+   && printf '%s' "$CMD" | grep -Eq '(--force|(^|[[:space:]])-[a-zA-Z]*f[a-zA-Z]*([[:space:]]|$))'; then
+  block "BLOCKED: force push (any spelling — --force, --force-with-lease, -f, or a combined short flag like -vf/-fv). It rewrites shared history that other branches and open PRs build on. With Bash(git push:*) allow-listed, this hook is the last line — run any force push yourself, outside the agent."
 fi
 
 # 6. `supabase config push` — config.toml carries an explicit warning that this

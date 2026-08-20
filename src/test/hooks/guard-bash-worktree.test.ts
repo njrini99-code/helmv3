@@ -77,3 +77,38 @@ describe('guard-bash rule 11 — nested worktrees', () => {
     expect(runGuard('npm run typecheck')).toBe('ALLOW');
   });
 });
+
+/**
+ * Rule 4 — force push, in every spelling.
+ *
+ * The original regex `push.*(--force|-f)([space]|$)` matched only a STANDALONE
+ * `-f`/`--force`. A combined short flag carries force intent with no `-f`
+ * substring — `git push -vf` is verbose+force, `-fv` puts `-f` before a
+ * non-boundary — so both bypassed the guard entirely. Invisible by reading,
+ * obvious the moment the hook runs. This asserts BOTH directions: every force
+ * spelling blocks, and ordinary pushes still pass.
+ */
+describe('guard-bash rule 4 — force push', () => {
+  it.each([
+    ['long --force', 'git push --force origin main'],
+    ['short -f', 'git push -f origin main'],
+    ['combined -vf (the reported bypass)', 'git push -vf origin main'],
+    ['combined -fv', 'git push -fv origin main'],
+    ['combined -uf', 'git push -uf origin main'],
+    ['--force at end of line', 'git push origin main --force'],
+    ['--force-with-lease (still a history rewrite)', 'git push --force-with-lease origin main'],
+    ['with a global -c flag before push', 'git -c foo=bar push -vf origin main'],
+  ])('BLOCKS %s', (_label, cmd) => {
+    expect(runGuard(cmd)).toBe('BLOCK');
+  });
+
+  it.each([
+    ['plain push', 'git push origin main'],
+    ['set-upstream -u', 'git push -u origin main'],
+    ['verbose -v', 'git push -v origin main'],
+    ['--dry-run', 'git push --dry-run origin main'],
+    ['an explicit refspec', 'git push origin HEAD:refs/heads/x'],
+  ])('ALLOWS %s', (_label, cmd) => {
+    expect(runGuard(cmd)).toBe('ALLOW');
+  });
+});
