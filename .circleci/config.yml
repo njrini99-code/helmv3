@@ -92,7 +92,27 @@ jobs:
           command: npm install --no-save knip
       - run:
           name: Knip — unused exports, files, deps
-          command: npx knip --no-config-hints --reporter compact 2>&1 | tee knip-report.txt || true
+          # `|| true` used to swallow EVERY exit code, including 2 (bad config).
+          # knip.json carried a "_comment" key knip rejects, so for as long as
+          # that was true this job posted green while the tool never started.
+          # Distinguish the two: 1 = findings (a report, not a failure — the
+          # backlog is not yet ratcheted), 2+ = knip could not run, which is a
+          # broken gate and must go red.
+          command: |
+            # No pipe: CircleCI runs steps with -eo pipefail, so a piped knip
+            # exiting 1 would abort this step before the check below could run,
+            # and $? would be tee's status rather than knip's. Redirect instead,
+            # then cat, so $code is unambiguously knip's.
+            set +e
+            npx knip --no-config-hints --reporter compact > knip-report.txt 2>&1
+            code=$?
+            set -e
+            cat knip-report.txt
+            if [ "$code" -ge 2 ]; then
+              echo "knip failed to RUN (exit $code) — broken gate, not a finding."
+              exit "$code"
+            fi
+            echo "knip ran (exit $code); findings are published as an artifact."
       - store_artifacts:
           path: knip-report.txt
           destination: knip
