@@ -454,6 +454,8 @@ pieces together.
 # PART D — Triage
 
 **Do now, zero risk** — nothing reads these and nothing can break:
+0. **`REVOKE EXECUTE` on the five uncalled SECURITY DEFINER functions (F1).**
+   RLS-bypassing endpoints exposed to every signed-in user, called by nothing.
 1. Delete the 9 unanimously-dead `components/ui/*` files (B1).
 2. Move `crm_email_templates_backup_20260720` to `graveyard` (A7).
 3. Drop the 290 non-unique, zero-scan, non-constraint indexes (A6). Keep every
@@ -584,6 +586,64 @@ known and deliberately handled.
 `golf_player_courses.course_id` and `golf_calendar_notifications.sent_at` are
 the two I would look at first — both are columns whose nullness suggests
 something is silently not happening, rather than a feature nobody uses.
+
+---
+
+# PART F — Where dead code becomes attack surface
+
+The Supabase security linter reports **146 advisories**. Most are noise on
+their own; crossed with the dead-object analysis, two are not.
+
+## F1. Five uncalled SECURITY DEFINER functions are callable by any signed-in user
+
+136 `SECURITY DEFINER` functions are executable by the `authenticated` role,
+which means any signed-in user can invoke them directly over
+`/rest/v1/rpc/<name>` — bypassing RLS by definition, because that is what
+SECURITY DEFINER does. That is normal for a function the app actually needs.
+
+**Five of them are called by nothing at all** (A5 — no app code, no policy, no
+trigger, no other function):
+
+```
+get_golf_message_attachments      get_user_golf_organization_id
+get_qualifier_leaderboard         is_in_team
+unresolve_admin_event
+```
+
+Each is an RLS-bypassing endpoint, reachable by every authenticated user, that
+delivers zero product value because nothing in the product calls it.
+`unresolve_admin_event` is the one I would revoke first — it mutates admin
+event state.
+
+`REVOKE EXECUTE ... FROM authenticated` on these five costs nothing and cannot
+break anything, precisely because nothing calls them. It is the highest
+value-per-risk action in this report.
+
+## F2. Three tables have RLS on and zero policies — and all three are already dead
+
+`billing_customers`, `billing_invoices`, and
+`crm_email_templates_backup_20260720` have RLS enabled with no policy, which
+makes them unreachable to every role except service-role. All three
+independently appear in the dead lists above (A2, A4, A7). The linter and the
+usage data agree: they are not being used because they *cannot* be used by any
+normal caller.
+
+For `billing_*` this is worth a moment's thought rather than a delete — the
+Stripe webhook writes `billing_invoices` through the service-role client, so
+the table is intentionally service-role-only. It has simply never received a
+row, because no invoice has been processed.
+
+## F3. Noted, not findings
+
+Four `SECURITY DEFINER` views (`baseball_coaches_public`,
+`baseball_teams_public_profile`, `baseball_team_coach_staff_public`,
+`organizations_public_profile`) are flagged ERROR by the linter. They are the
+public-profile views and SECURITY DEFINER is likely deliberate for them — but
+they are the only ERROR-level security advisories in the database and none of
+them carries a comment explaining the choice. Worth one line of documentation
+each so the next audit does not re-raise them.
+
+`pg_trgm` is installed in the `public` schema (WARN). Cosmetic.
 
 ---
 
