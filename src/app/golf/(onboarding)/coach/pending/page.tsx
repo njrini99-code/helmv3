@@ -98,16 +98,16 @@ export default async function CoachPendingPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-16">
-      <div className="rounded-2xl border border-warm-200 bg-cream-50 p-8">
-        <h1 className="text-2xl font-semibold text-warm-900">
+      <div className="rounded-2xl border border-border-subtle bg-surface p-8">
+        <h1 className="text-2xl font-semibold text-text-primary">
           You&rsquo;re all set — pending approval
         </h1>
-        <p className="mt-3 text-warm-700">
-          Your account is created{programName ? <> and your request to join <strong className="font-semibold text-warm-900">{programName}</strong> as an assistant coach has been sent</> : <> and your request has been sent</>}.
+        <p className="mt-3 text-text-secondary">
+          Your account is created{programName ? <> and your request to join <strong className="font-semibold text-text-primary">{programName}</strong> as an assistant coach has been sent</> : <> and your request has been sent</>}.
           Your head coach approves it from{' '}
-          <strong className="font-semibold text-warm-900">Team → Team settings</strong>.
+          <strong className="font-semibold text-text-primary">Team → Team settings</strong>.
         </p>
-        <p className="mt-4 text-sm text-warm-600">
+        <p className="mt-4 text-sm text-text-secondary">
           Nothing else is needed from you. Team data appears the moment they
           approve — reload this page to check.
         </p>
@@ -121,14 +121,14 @@ export default async function CoachPendingPage() {
           </Link>
           <Link
             href="/golf/login"
-            className="rounded-xl border border-warm-300 px-4 py-2.5 text-sm font-medium text-warm-700 transition-colors hover:bg-warm-50"
+            className="rounded-xl border border-border-strong px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-sunken"
           >
             Sign out
           </Link>
         </div>
       </div>
 
-      <p className="mt-6 text-center text-sm text-warm-600">
+      <p className="mt-6 text-center text-sm text-text-secondary">
         Expected to be a player instead?{' '}
         <Link href="/golf/signup" className="font-medium text-primary-600 hover:underline">
           Sign up with your team code as a player
