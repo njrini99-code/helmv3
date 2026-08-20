@@ -309,14 +309,9 @@ export function GolfSignUpForm({
         </fieldset>
       ) : null}
 
-      {/* The code already decided the role — say which, and why there is no
-          choice. Silently removing the picker would read as a broken page. */}
-      {rosterCodeOnly && effectiveRole === 'assistant_request' && (
-        <p className="text-sm text-text-secondary bg-surface border border-border-subtle rounded-xl p-3">
-          Full <strong className="font-semibold text-text-primary">assistant coach</strong>{' '}
-          access to {teamName ?? 'the team'}, the moment your account is created.
-        </p>
-      )}
+      {/* NO explanatory box under the role picker — owner directive 2026-08-20
+          ("There should be no fuckin words"). The picker labels carry the whole
+          meaning: you pick Player or Assistant coach and you're on the team. */}
 
       {staffInvite && (
         <p className="text-sm text-text-secondary bg-surface border border-border-subtle rounded-xl p-3">
