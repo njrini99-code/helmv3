@@ -204,7 +204,7 @@ export function RiskFeedStrip({
             <IconShieldAlert size={15} className="text-primary-600" />
           </span>
           <div>
-            <h3 className="text-sm font-semibold text-warm-900 leading-none">Risk & Flags</h3>
+            <h3 className="text-sm font-semibold text-warm-900 leading-none">Risk &amp; Flags</h3>
             <p className="text-eyebrow text-warm-400 mt-0.5">
               AI + coach signals needing attention
             </p>

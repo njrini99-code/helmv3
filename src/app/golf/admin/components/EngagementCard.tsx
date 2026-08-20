@@ -26,7 +26,7 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerE
         <div className="p-2 bg-cream-50 rounded-lg text-warm-500">
           <IconTrendingUp size={18} />
         </div>
-        <h3 className="text-lg font-semibold text-warm-900">Engagement & Retention</h3>
+        <h3 className="text-lg font-semibold text-warm-900">Engagement &amp; Retention</h3>
       </div>
 
       {/* Key metrics */}

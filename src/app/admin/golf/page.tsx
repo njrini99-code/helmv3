@@ -181,7 +181,7 @@ async function GolfBody() {
           (RollupAUsersPayload / RollupAFeatureAdoptionPayload) and silently
           discarded before this fix (bridge-golf-rollup-wiring Finding 1). */}
       <Surface padding="sm">
-        <SectionLabel>Activation & adoption</SectionLabel>
+        <SectionLabel>Activation &amp; adoption</SectionLabel>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
@@ -436,7 +436,7 @@ async function GolfBody() {
             (src/lib/admin/data/activity.ts) links demo_session items here
             via `/admin/golf#demo`. */}
         <Surface padding="sm" id="demo">
-          <SectionLabel>Demo & leads</SectionLabel>
+          <SectionLabel>Demo &amp; leads</SectionLabel>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <StatTile label="Demo sessions 30d" value={tab.demos.demoSessions30d} tone="neutral" mono />
             <StatTile label="Inbound requests" value={tab.demos.demoRequests} tone="neutral" mono />

@@ -1141,7 +1141,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                             <img src="https://helmsportslabs.com/helm-golf-logo-transparent.png" alt="GolfHelm" className="w-10 h-10 object-contain flex-shrink-0 mt-0.5" />
                             <div>
                               <p className="text-sm text-text-secondary">Best,</p>
-                              <p className="text-sm font-semibold text-text-primary mt-1">Leah Potter & Nick Rini</p>
+                              <p className="text-sm font-semibold text-text-primary mt-1">Leah Potter &amp; Nick Rini</p>
                               <p className="text-xs text-text-tertiary">Co-Founders, Helm Sports Labs</p>
                               <div className="flex items-center gap-3 mt-1">
                                 <a href="https://helmsportslabs.com" className="text-xs font-medium text-accent-700 no-underline hover:underline">
