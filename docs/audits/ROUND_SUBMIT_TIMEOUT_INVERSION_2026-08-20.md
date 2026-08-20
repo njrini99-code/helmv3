@@ -279,6 +279,22 @@ session's staged work.
 batching. Until 4 lands, the pile-up that produces the tail is unchanged — the
 35s budget absorbs it rather than preventing it.
 
+> **Where this actually landed: `c38596d82`.** Not a commit of mine. Four
+> sessions were working this repo's single shared index at once, and another
+> session committed while these four files were staged — so the round-destruction
+> fix is sitting inside a commit titled *"state the join result's type so `main`
+> type-checks again"*, alongside an unrelated `teams.ts` change from a third
+> session. Content verified intact (`REQUEST_TIMEOUT_MS = 35_000` and the
+> `isIndeterminateWriteFailure` guard are both present in that tree); nothing was
+> lost. History is not force-rewritten to fix this — that is a worse trade on a
+> shared branch.
+>
+> This is the `git add -A` hazard `.claude/rules/autonomy.md` warns about,
+> observed live. Staging explicit paths — which was done here — is **not**
+> sufficient protection: it stops *you* sweeping in someone else's work, not
+> someone else committing yours. If you are looking for this change by `git log`,
+> search the content, not the subject lines.
+
 ---
 
 ## Owner decisions — not taken here
