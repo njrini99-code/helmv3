@@ -10,12 +10,13 @@
 -- path shape, no owner, no relationship to any course. Any authenticated user
 -- can write any object to any path in it.
 --
--- The bucket is PUBLIC (storage.buckets.public = true), so every object in it is
--- served unauthenticated from the project's own domain. The combination is an
--- open image-hosting endpoint on company infrastructure that requires only an
--- account: 5 MB per object, four image MIME types, no quota, no cleanup.
+-- The bucket is PUBLIC (storage.buckets.public = true), so every object in
+-- it is served unauthenticated from the project's own domain. The
+-- combination is an open image-hosting endpoint on company infrastructure
+-- that requires only an account: 5 MB per object, four image MIME types, no
+-- quota, no cleanup.
 --
--- --- THE SECOND HALF, WHICH THE REPO ALREADY DOCUMENTS ------------------------
+-- --- THE SECOND HALF, WHICH THE REPO ALREADY DOCUMENTS -----------------------
 --
 -- Uploads land BEFORE any authorization on the course is evaluated. The client
 -- uploads directly (src/lib/golf/upload-course-image.ts:31) and only afterwards
@@ -30,12 +31,13 @@
 -- So a rejected upload still persists, publicly, forever. There is no cleanup
 -- path for orphans anywhere in the repository.
 --
--- --- WHAT THIS FIXES, AND WHAT IT DELIBERATELY DOES NOT -----------------------
+-- --- WHAT THIS FIXES, AND WHAT IT DELIBERATELY DOES NOT ----------------------
 --
 -- Fixes: the namespace. Objects must now live under `courses/<id>/` where <id>
 -- is a real `golf_courses` row. Arbitrary paths are refused, which removes the
--- open-hosting shape -- an uploader can no longer choose where the file lands or
--- invent a namespace, and every object is attributable to a course that exists.
+-- open-hosting shape -- an uploader can no longer choose where the file
+-- lands or invent a namespace, and every object is attributable to a course
+-- that exists.
 --
 -- Does NOT fix, deliberately, because it is a product decision rather than a
 -- defect: WHO may upload. The policy still admits any authenticated user, not
@@ -44,16 +46,17 @@
 -- narrowing it could break a legitimate uploader whose role was never verified.
 -- Flagged for the owner instead.
 --
--- Also unaddressed: orphan cleanup. An upload whose setCourseImageUrl call fails
--- still persists. That needs a scheduled sweep of objects under `courses/<id>/`
--- not referenced by `golf_courses.image_url` -- a deletion path, and therefore
--- not something to introduce tonight.
+-- Also unaddressed: orphan cleanup. An upload whose setCourseImageUrl call
+-- fails still persists. That needs a scheduled sweep of objects under
+-- `courses/<id>/` not referenced by `golf_courses.image_url` -- a deletion
+-- path, and therefore not something to introduce tonight.
 --
 -- --- COMPATIBILITY -----------------------------------------------------------
 --
 -- The client already writes exactly this shape:
 --
---   `courses/${courseId}/${crypto.randomUUID()}.${ext}`   (upload-course-image.ts:31)
+--   `courses/${courseId}/${crypto.randomUUID()}.${ext}`
+--   (upload-course-image.ts:31)
 --
 -- so the only uploads this refuses are ones that do not match what the
 -- application produces.
@@ -82,17 +85,17 @@ begin;
 drop policy if exists course_images_authenticated_insert on storage.objects;
 
 create policy course_images_authenticated_insert on storage.objects
-  for insert
-  to authenticated
-  with check (
+for insert
+to authenticated
+with check (
     bucket_id = 'course-images'
     and (storage.foldername(name))[1] = 'courses'
     and exists (
-      select 1
+        select 1
         from public.golf_courses c
-       where c.id::text = (storage.foldername(name))[2]
+        where c.id::text = (storage.foldername(name))[2]
     )
-  );
+);
 
 commit;
 

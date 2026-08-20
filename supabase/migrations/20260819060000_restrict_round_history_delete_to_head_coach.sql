@@ -34,6 +34,15 @@
 -- goes through a self-scoped path that re-verifies the acting user owns the
 -- player row:
 --
+-- justification for the suppression on the next line: this migration creates
+-- NO functions. The phrase below is prose describing two PRE-EXISTING RPCs,
+-- both of which already pin search_path where they are defined
+-- (prod_public_baseline.sql:5627 and :5106). The rule is a whole-file regex
+-- and cannot tell a comment from code, so it fires on any migration that
+-- DOCUMENTS a definer function. Suppressed narrowly here rather than loosened
+-- globally: a not-regex for comments would create a false negative on every
+-- file that mixes prose with a real definer.
+-- nosemgrep: helmv3-security-definer-without-search-path
 --   * `submit_round_atomic` / `save_partial_round_atomic` -- SECURITY DEFINER
 --     RPCs that bypass RLS entirely and check `player_id` themselves
 --     (supabase/migrations/20260527000000_prod_public_baseline.sql:5627, :5106)
@@ -88,40 +97,42 @@ begin;
 drop policy if exists golf_rounds_delete_coach on public.golf_rounds;
 
 create policy golf_rounds_delete_coach on public.golf_rounds
-  for delete
-  using (
+for delete
+using (
     (team_id is not null) and is_golf_team_head_coach(team_id)
-  );
+);
 
 -- --- golf_shots ------------------------------------------------------------
 drop policy if exists golf_shots_delete_coach on public.golf_shots;
 
 create policy golf_shots_delete_coach on public.golf_shots
-  for delete
-  using (
+for delete
+using (
     exists (
-      select 1
+        select 1
         from public.golf_rounds gr
-       where gr.id = golf_shots.round_id
-         and gr.team_id is not null
-         and is_golf_team_head_coach(gr.team_id)
+        where
+            gr.id = golf_shots.round_id
+            and gr.team_id is not null
+            and is_golf_team_head_coach(gr.team_id)
     )
-  );
+);
 
 -- --- golf_holes ------------------------------------------------------------
 drop policy if exists golf_holes_delete_coach on public.golf_holes;
 
 create policy golf_holes_delete_coach on public.golf_holes
-  for delete
-  using (
+for delete
+using (
     exists (
-      select 1
+        select 1
         from public.golf_rounds gr
-       where gr.id = golf_holes.round_id
-         and gr.team_id is not null
-         and is_golf_team_head_coach(gr.team_id)
+        where
+            gr.id = golf_holes.round_id
+            and gr.team_id is not null
+            and is_golf_team_head_coach(gr.team_id)
     )
-  );
+);
 
 commit;
 

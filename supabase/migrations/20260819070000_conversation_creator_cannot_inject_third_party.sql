@@ -1,4 +1,5 @@
--- Conversation creators can no longer inject a third party into an existing thread.
+-- Conversation creators can no longer inject a third party into an existing
+-- thread.
 --
 -- --- THE DEFECT ------------------------------------------------------------
 --
@@ -81,10 +82,10 @@
 -- The predicate was checked against every golf conversation that exists, to
 -- confirm it could not have blocked one that legitimately does:
 --
---   is_team_chat | convs | creator NOT a participant | participants | max non-creator
---   -------------+-------+--------------------------+--------------+----------------
---   false (DMs)  |   5   |            0             |    2 .. 2    |       1
---   true (team)  |   6   |            0             |    2 .. 13   |      12
+-- is_team_chat | convs | creator NOT a participant | participants | max others
+-- -------------+-------+---------------------------+--------------+-----------
+-- false (DMs)  |   5   |             0             |    2 .. 2    |     1
+-- true (team)  |   6   |             0             |   2 .. 13    |     12
 --
 -- The load-bearing column is the third: in 11 of 11 conversations the creator
 -- IS among the participants, so branch 1 always covers the creator's own row
@@ -114,9 +115,10 @@ begin;
 -- against the table, not merely the branch that needed it. Applying that would
 -- have taken messaging down entirely.
 --
--- This repo has already been bitten by exactly this: `baseball_team_members_select`
--- in the baseline carries a subquery over its own table, production was patched
--- out of band with a definer helper, and the fix was not committed for months
+-- This repo has already been bitten by exactly this:
+-- `baseball_team_members_select` in the baseline carries a subquery over its
+-- own table, production was patched out of band with a definer helper, and
+-- the fix was not committed for months
 -- (see 20260729000200 / 20260730040000, and the guard at
 -- src/test/schema/no-self-referencing-rls-policy.test.ts, which caught this
 -- migration before it shipped).
@@ -127,7 +129,9 @@ begin;
 -- still cannot see rows that command is inserting, which is what makes the
 -- creation batch pass.
 
-create or replace function public.golf_conversation_has_other_participant(p_conversation_id uuid)
+create or replace function public.golf_conversation_has_other_participant(
+    p_conversation_id uuid
+)
 returns boolean
 language sql
 stable
@@ -143,15 +147,23 @@ as $$
 $$;
 
 comment on function public.golf_conversation_has_other_participant(uuid) is
-  'True when the conversation already holds a participant other than the '
-  'current user. SECURITY DEFINER so the participant INSERT policy can ask '
-  'about its own table without recursing. Reads only; grants no access.';
+'True when the conversation already holds a participant other than the '
+'current user. SECURITY DEFINER so the participant INSERT policy can ask '
+'about its own table without recursing. Reads only; grants no access.';
 
-revoke all on function public.golf_conversation_has_other_participant(uuid) from public;
-revoke all on function public.golf_conversation_has_other_participant(uuid) from anon;
-grant execute on function public.golf_conversation_has_other_participant(uuid) to authenticated;
+revoke all on function public.golf_conversation_has_other_participant(
+    uuid
+) from public;
+revoke all on function public.golf_conversation_has_other_participant(
+    uuid
+) from anon;
+grant execute on function public.golf_conversation_has_other_participant(
+    uuid
+) to authenticated;
 
-create or replace function public.baseball_conversation_has_other_participant(p_conversation_id uuid)
+create or replace function public.baseball_conversation_has_other_participant(
+    p_conversation_id uuid
+)
 returns boolean
 language sql
 stable
@@ -167,84 +179,105 @@ as $$
 $$;
 
 comment on function public.baseball_conversation_has_other_participant(uuid) is
-  'Baseball counterpart of golf_conversation_has_other_participant.';
+'Baseball counterpart of golf_conversation_has_other_participant.';
 
-revoke all on function public.baseball_conversation_has_other_participant(uuid) from public;
-revoke all on function public.baseball_conversation_has_other_participant(uuid) from anon;
-grant execute on function public.baseball_conversation_has_other_participant(uuid) to authenticated;
+revoke all on function public.baseball_conversation_has_other_participant(
+    uuid
+) from public;
+revoke all on function public.baseball_conversation_has_other_participant(
+    uuid
+) from anon;
+grant execute on function public.baseball_conversation_has_other_participant(
+    uuid
+) to authenticated;
 
 -- --- GOLF -------------------------------------------------------------------
-drop policy if exists golf_participants_insert_v2 on public.golf_conversation_participants;
+drop policy if exists golf_participants_insert_v2
+on public.golf_conversation_participants;
 
-create policy golf_participants_insert_v2 on public.golf_conversation_participants
-  for insert
-  with check (
+create policy golf_participants_insert_v2
+on public.golf_conversation_participants
+for insert
+with check (
     -- Branch 1 -- adding YOURSELF. Unchanged from the 2026-08-07 hardening.
     (
-      user_id = (select auth.uid())
-      and (
-        golf_conversation_created_by_me(conversation_id)
-        or exists (
-          select 1
-            from public.golf_conversations c
-           where c.id = golf_conversation_participants.conversation_id
-             and c.is_team_chat = true
-             and c.team_id is not null
-             and golf_conversation_on_my_team(golf_conversation_participants.conversation_id)
+        user_id = (select auth.uid())
+        and (
+            golf_conversation_created_by_me(conversation_id)
+            or exists (
+                select 1
+                from public.golf_conversations c
+                where
+                    c.id = golf_conversation_participants.conversation_id
+                    and c.is_team_chat = true
+                    and c.team_id is not null
+                    and golf_conversation_on_my_team(
+                        golf_conversation_participants.conversation_id
+                    )
+            )
         )
-      )
     )
     -- Branch 2 -- the creator adding OTHERS, now bounded to creation time.
     or (
-      exists (
-        select 1
-          from public.golf_conversations gc
-         where gc.id = golf_conversation_participants.conversation_id
-           and gc.created_by = (select auth.uid())
-      )
-      and not public.golf_conversation_has_other_participant(conversation_id)
+        exists (
+            select 1
+            from public.golf_conversations gc
+            where
+                gc.id = golf_conversation_participants.conversation_id
+                and gc.created_by = (select auth.uid())
+        )
+        and not public.golf_conversation_has_other_participant(conversation_id)
     )
-  );
+);
 
 -- --- BASEBALL ---------------------------------------------------------------
-drop policy if exists baseball_participants_insert_by_creator on public.baseball_conversation_participants;
+drop policy if exists baseball_participants_insert_by_creator
+on public.baseball_conversation_participants;
 
-create policy baseball_participants_insert_by_creator on public.baseball_conversation_participants
-  for insert
-  with check (
-    -- Branch 1 -- adding YOURSELF. Previously team-membership-only, which let a
-    -- teammate self-add to a private DM. Now mirrors golf: your own thread, or a
-    -- genuine team chat.
+create policy baseball_participants_insert_by_creator
+on public.baseball_conversation_participants
+for insert
+with check (
+    -- Branch 1 -- adding YOURSELF. Previously team-membership-only, which
+    -- let a teammate self-add to a private DM. Now mirrors golf: your own
+    -- thread, or a genuine team chat.
     (
-      user_id = (select auth.uid())
-      and (
-        exists (
-          select 1
-            from public.baseball_conversations c
-           where c.id = baseball_conversation_participants.conversation_id
-             and c.created_by = (select auth.uid())
+        user_id = (select auth.uid())
+        and (
+            exists (
+                select 1
+                from public.baseball_conversations c
+                where
+                    c.id = baseball_conversation_participants.conversation_id
+                    and c.created_by = (select auth.uid())
+            )
+            or exists (
+                select 1
+                from public.baseball_conversations c
+                where
+                    c.id = baseball_conversation_participants.conversation_id
+                    and c.is_team_chat = true
+                    and c.team_id is not null
+                    and baseball_conversation_on_my_team(
+                        baseball_conversation_participants.conversation_id
+                    )
+            )
         )
-        or exists (
-          select 1
-            from public.baseball_conversations c
-           where c.id = baseball_conversation_participants.conversation_id
-             and c.is_team_chat = true
-             and c.team_id is not null
-             and baseball_conversation_on_my_team(baseball_conversation_participants.conversation_id)
-        )
-      )
     )
     -- Branch 2 -- the creator adding OTHERS, bounded to creation time.
     or (
-      exists (
-        select 1
-          from public.baseball_conversations gc
-         where gc.id = baseball_conversation_participants.conversation_id
-           and gc.created_by = (select auth.uid())
-      )
-      and not public.baseball_conversation_has_other_participant(conversation_id)
+        exists (
+            select 1
+            from public.baseball_conversations gc
+            where
+                gc.id = baseball_conversation_participants.conversation_id
+                and gc.created_by = (select auth.uid())
+        )
+        and not public.baseball_conversation_has_other_participant(
+            conversation_id
+        )
     )
-  );
+);
 
 commit;
 

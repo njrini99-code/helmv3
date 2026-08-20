@@ -1,6 +1,7 @@
 -- Golf round/shot history survives account deletion.
 --
--- OWNER DECISION, 2026-08-18: "There should be no deletion of golf shot history."
+-- OWNER DECISION, 2026-08-18: "There should be no deletion of golf shot
+-- history."
 --
 -- ─── THE PROBLEM ────────────────────────────────────────────────────────────
 --
@@ -14,10 +15,12 @@
 --                                        -> golf_round_stats_cache
 --
 -- The route's pre-flight only blocks on three attribution tables
--- (golf_goals.created_by_user_id, golf_qualifier_selections.selected_by_user_id,
--- golf_travel_expenses.created_by). `golf_rounds` is NOT among them, so having a
--- full season of rounds does not block anything. Measured against live data on
--- 2026-08-18: 93 of 94 players pass that pre-flight and reach the delete.
+-- (golf_goals.created_by_user_id,
+-- golf_qualifier_selections.selected_by_user_id,
+-- golf_travel_expenses.created_by). `golf_rounds` is NOT among them, so
+-- having a full season of rounds does not block anything. Measured against
+-- live data on 2026-08-18: 93 of 94 players pass that pre-flight and reach
+-- the delete.
 --
 -- One settings click plus one confirm therefore destroys a player's entire
 -- competitive history, irreversibly, with no export and no grace period.
@@ -59,7 +62,7 @@
 -- there is no input for which this migration deletes more than the current
 -- schema does. It creates no new delete path.
 --
--- --- APPLYING THIS REQUIRES A TYPES REGEN, AND MAY REQUIRE CODE CHANGES -------
+-- --- APPLYING THIS REQUIRES A TYPES REGEN, AND MAY REQUIRE CODE CHANGES ------
 --
 -- Read this before applying. `golf_players.user_id` is currently generated as
 -- NON-NULL in src/lib/types/database.ts:
@@ -91,34 +94,34 @@ begin;
 
 -- 1. A player may exist without an auth user (an anonymized, departed player).
 alter table public.golf_players
-  alter column user_id drop not null;
+alter column user_id drop not null;
 
 -- 2. Deleting the auth user detaches the player instead of destroying them.
 --    Drop-and-recreate is required: Postgres has no ALTER for a FK's action.
 alter table public.golf_players
-  drop constraint if exists golf_players_user_id_fkey;
+drop constraint if exists golf_players_user_id_fkey;
 
 alter table public.golf_players
-  add constraint golf_players_user_id_fkey
-  foreign key (user_id) references public.users(id)
-  on delete set null;
+add constraint golf_players_user_id_fkey
+foreign key (user_id) references public.users (id)
+on delete set null;
 
 -- 3. Make the anonymized state explicit rather than inferred from a NULL.
 --    Something reading this row later needs to distinguish "departed player,
 --    history retained" from "record is broken".
 alter table public.golf_players
-  add column if not exists anonymized_at timestamptz;
+add column if not exists anonymized_at timestamptz;
 
 comment on column public.golf_players.anonymized_at is
-  'Set when the linked auth user was deleted and the identity fields were '
-  'cleared. The round/shot history under this player is deliberately retained '
-  'and is de-identified. NULL = active player.';
+'Set when the linked auth user was deleted and the identity fields were '
+'cleared. The round/shot history under this player is deliberately retained '
+'and is de-identified. NULL = active player.';
 
 -- 4. A partial index so "is this row anonymized" stays cheap for the roster
 --    and stats queries that must exclude departed players from active views.
 create index if not exists golf_players_anonymized_at_idx
-  on public.golf_players (anonymized_at)
-  where anonymized_at is not null;
+on public.golf_players (anonymized_at)
+where anonymized_at is not null;
 
 commit;
 
