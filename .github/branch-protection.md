@@ -8,121 +8,61 @@ Require aggregate checks instead of every leaf job. Leaf jobs still run and
 remain visible on PRs, but branch protection depends on stable aggregate names
 so a job split/rename does not silently break protection.
 
-> ### ⚠️ WHAT IS ACTUALLY ENFORCED — verified live 2026-07-30
+> ### ✅ MIGRATION COMPLETED — verified live 2026-08-19
 >
 > ```bash
 > gh api repos/njrini99-code/helmv3/branches/main/protection \
 >   -q '.required_status_checks | {strict, contexts}'
-> # => {"strict": true, "contexts": ["CodeQL", "all", "Smoke checks"]}
+> # => {"strict": true, "contexts": [
+> #      "Smoke checks", "CI aggregate", "Review Gate aggregate",
+> #      "Analyze (actions)", "Analyze (javascript-typescript)", "Analyze (python)"
+> #    ]}
 > ```
 >
-> **THREE contexts, and the names are bare** — `all`, not `CI / all`. That matters,
-> because **both `ci.yml` and `review-gate.yml` define a job named `all`**, so the
-> single required context `all` cannot distinguish them. On PR #1125 a check-runs
-> query returned `all → success` while the `BaseballHelm authenticated smoke` job
-> that CI's `all` `needs` was still `in_progress` — the green was Review Gate's, and
-> the smoke then failed. This is very likely how a PR with failing `Unit tests`
-> merged on 2026-07-29. See `docs/CI_RUNBOOK.md` §1 for the CI-run-scoped query to
-> use instead of trusting the name.
+> **The window this section used to warn about was OPEN, and is now closed.**
+> The job rename (`all` → `CI aggregate` / `Review Gate aggregate`) had already
+> landed on `main`, but the required-context list had not been updated — exactly
+> the Option A failure mode described below. `all` was a required context that
+> nothing could ever post again. Every PR-based merge was unsatisfiable, masked
+> only by `enforce_admins: false` letting the owner push straight past it.
 >
-> **Fixing it needs both halves at once:** rename one aggregate job AND update
-> `required_status_checks` in the same change. Renaming alone leaves protection
-> waiting forever for a context named `all` that no longer exists, which blocks
-> every PR.
+> **`CodeQL` was a phantom too, and the migration plan below did not catch it.**
+> Both orderings above end with `contexts[]=CodeQL`, but no check run and no
+> commit status is named `CodeQL` — this workflow's matrix posts three separate
+> runs, `Analyze (actions)`, `Analyze (javascript-typescript)` and
+> `Analyze (python)`. So of the three contexts formerly required, **two were
+> phantoms and only `Smoke checks` was real.** Verified by asking for the names
+> that actually exist rather than the ones the docs assumed:
 >
-> ### 🔧 MIGRATION PREPARED, NOT YET LIVE (2026-08-19, Lane C / worker-ci)
+> ```bash
+> gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs --paginate \
+>   -q '.check_runs[] | .name' | sort -u
+> gh api repos/njrini99-code/helmv3/commits/<sha>/status -q '.statuses[] | .context'
+> ```
 >
-> `ci.yml`'s aggregate job is renamed `all` → **`CI aggregate`**, and
-> `review-gate.yml`'s is renamed `all` → **`Review Gate aggregate`** (job
-> `name:` field only — job ids, `needs:`, and every leaf job are untouched;
-> verified nothing else in the repo references the job id `all` via
-> `needs:`, and `actionlint` passes clean on both files). That workflow
-> change is safe to merge on its own — it just makes two *new*,
-> not-yet-required check runs start appearing.
+> Do that before adding any context to this list. A required context is matched
+> by NAME against what actually posts; a name that posts nothing is
+> indistinguishable from a check that never finishes, and GitHub will not warn
+> you.
 >
-> **The live GitHub setting above (`contexts: [..., "all", ...]`) has NOT
-> been touched.** Completing the migration is an owner action.
+> All six required contexts were confirmed to run on **both** `push` to `main`
+> and on `pull_request` with no path filters, so none of them can hang a PR:
+> `ci.yml` and `review-gate.yml` trigger on `pull_request` unrestricted,
+> `playwright.yml`'s `smoke` job has `if: push || pull_request`, and
+> `codeql.yml` has all three matrix legs on `push`/`pull_request` to `main`.
 >
-> **PRECONDITION — check this first, not from this doc's memory of it:**
-> `gh api repos/njrini99-code/helmv3/branches/main/protection -q '.required_status_checks.contexts'`
-> and confirm `"all"` is still in the list. It was, verified 2026-08-19. If
-> someone already changed it since, the rest of this note is stale — work
-> from what the API says, not from this file.
+> **Also changed 2026-08-19:** `allow_force_pushes` **true → false**. Until now
+> `.claude/hooks/guard-bash.sh` was the only thing preventing a rewrite of
+> shared history on `main`; the hook stays as belt-and-braces, but it is no
+> longer load-bearing. Note `CLAUDE.md` rule 0 still describes force pushes as
+> "ENABLED on GitHub" — that sentence is now stale.
 >
-> **There is no ordering of "merge the rename" and "update the required
-> context list" that is both instant and non-blocking, because they are two
-> separate systems (a git commit vs. a repo setting) that cannot land
-> atomically.** Whichever comes first, there is a real window before the
-> second lands. Pick one of the two orderings below — this is a judgment
-> call about which kind of window you'd rather have, not a technical
-> question with one right answer:
->
-> **Option A — rename first (blocked-merge window, nothing under-protected).**
-> Between steps 1 and 3, `all` is still a *required* context and nothing
-> will ever post it again, because the job that used to emit it now has a
-> different name. Any PR-based merge — and any other session's push, if
-> `enforce_admins` is ever turned on — is stuck waiting on a check that will
-> never arrive, for as long as this window stays open. **Do not start step 1
-> unless you can reach step 3 in the same sitting; treat the gap as a timed
-> operation, not a place to pause.** For *this* repo, right now,
-> `enforce_admins` is off and the owner can push straight through the block
-> (see `CLAUDE.md` rule 0) — so the practical cost today is "PRs are stuck,
-> not you," which may be acceptable for a solo-owner repo. It stops being
-> acceptable the moment `enforce_admins` is turned on or a second
-> contributor exists.
->   1. Merge/land the job-rename commit on `main`.
->   2. Confirm both new check runs (`CI aggregate`, `Review Gate aggregate`)
->      post green for that commit's own SHA:
->      `gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs -q '.check_runs[] | {name, conclusion}'`.
->      This step necessarily happens *inside* the blocked window — there is
->      no way to observe the new names posting before the rename commit that
->      makes them exist has landed.
->   3. Immediately swap the required context list, adding both new names and
->      dropping `"all"` in the same call so there's no second gap:
->      ```bash
->      gh api --method PUT repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
->        -f strict=true \
->        -f 'contexts[]=CodeQL' \
->        -f 'contexts[]=Smoke checks' \
->        -f 'contexts[]=CI aggregate' \
->        -f 'contexts[]=Review Gate aggregate'
->      ```
->
-> **Option B — required-contexts first (briefly-reduced-protection window,
-> nothing ever blocked).** Drop `"all"` from the required list *before* the
-> rename lands. For the gap between steps 1 and 2, `main` has only two
-> required contexts (`CodeQL`, `Smoke checks`) instead of three — the
-> CI/Review-Gate aggregates run and are visible, just not enforced, so a red
-> CI or Review Gate run could theoretically merge during this window. Never
-> blocked, but permissive while open. Keep it short.
->   1. Remove `"all"` from the required list, keeping the other two:
->      ```bash
->      gh api --method PUT repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
->        -f strict=true \
->        -f 'contexts[]=CodeQL' \
->        -f 'contexts[]=Smoke checks'
->      ```
->   2. Merge/land the job-rename commit on `main`. Confirm both new check
->      runs post green for that commit's SHA (same `check-runs` query as
->      Option A step 2).
->   3. Add the two new names back:
->      ```bash
->      gh api --method PUT repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
->        -f strict=true \
->        -f 'contexts[]=CodeQL' \
->        -f 'contexts[]=Smoke checks' \
->        -f 'contexts[]=CI aggregate' \
->        -f 'contexts[]=Review Gate aggregate'
->      ```
->
-> **Either way, finish with:** re-verify via the same
-> `-q '.required_status_checks | {strict, contexts}'` query used above, then
-> update the "verified live" date/output block at the top of this section
-> and the matching row in `docs/CI_RUNBOOK.md` §1 to stop describing this as
-> open.
->
-> None of the steps above have been executed by this pass — this section
-> only prepares the choice and the exact commands for the owner to run.
+> **Not required, but real:** CircleCI posts two commit statuses,
+> `ci/circleci: android-compile` and `ci/circleci: ios-compile`. They are
+> genuine gates that nothing enforces. They were deliberately NOT added here,
+> because the `ios` workflow only triggers on `main`/`release/*`/`ios/*`/
+> `capacitor/*` — requiring a context that does not post on every PR
+> re-creates the exact bug this section documents.
 >
 > `CodeRabbit` is **no longer required** (dropped 2026-07-20). The bullet below is
 > kept struck through rather than deleted so the change is visible to anyone

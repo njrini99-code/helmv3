@@ -75,13 +75,22 @@ stale — that premise died five weeks before it was noticed, and it is what
 made the old branch-first workflow feel mandatory.
 
 Branch protection on `main`: 0 required reviews, `enforce_admins` off,
-linear history, 3 required checks (`CodeQL`, `all`, `Smoke checks`). Direct
-push is permitted for the owner. Note `all` is ambiguous — both `ci.yml` and
-`review-gate.yml` emit a job by that name; see `.github/branch-protection.md`.
+linear history, and **6 required checks** — `Smoke checks`, `CI aggregate`,
+`Review Gate aggregate`, `Analyze (actions)`, `Analyze (javascript-typescript)`,
+`Analyze (python)`. Direct push is permitted for the owner.
+
+Fixed 2026-08-19: the old list (`CodeQL`, `all`, `Smoke checks`) was TWO
+PHANTOMS and one real check. Nothing posts a check named `all` — the aggregate
+jobs were renamed to `CI aggregate` / `Review Gate aggregate` and the required
+list was never updated — and nothing posts `CodeQL` either, since that matrix
+emits three `Analyze (...)` runs. PRs were unsatisfiable, masked by
+`enforce_admins` being off. See `.github/branch-protection.md`.
 
 Still blocked by `.claude/hooks/guard-bash.sh`, deliberately:
-- **force push** — `main` has `allow_force_pushes` ENABLED on GitHub, so this
-  hook is the only thing preventing a rewrite of shared history.
+- **force push** — `allow_force_pushes` was disabled on GitHub 2026-08-19, so
+  this hook is no longer the only thing preventing a rewrite of shared
+  history. Kept as belt-and-braces; it also covers the local repo, which a
+  GitHub setting cannot.
 - `git stash`, `git clean -f`, recursive `rm` outside the project — all
   destroy work that exists nowhere else.
 
