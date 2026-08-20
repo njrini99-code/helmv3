@@ -222,53 +222,181 @@ has no detector at all.
 
 ---
 
-## SEMGREP — the CSV was stale, the fresh scan is clean
+## SEMGREP — the CSV is stale, and 29 of its 72 authz findings still stand
 
-Two Semgrep artifacts arrived. They disagree, and the newer one wins.
+Two artifacts arrived together and disagree. My first two readings were both
+partly wrong. This is the corrected triage: every one of the 72 findings was
+anchored to its enclosing function at the scan commit and that function was
+diffed against HEAD and read.
 
-**The 87-row CSV is a single scan from 2026-07-26, never re-run.** Its commit
-(`8a7f049be`) is **546 commits** behind main; every row was created AND last
-opened that same day. "Status: Open" means open in Semgrep's UI, not open in
-the code. Line numbers are unreliable: 75 of the 87 flagged files have changed
-since, and the one I spot-checked had drifted 28 lines. Do not action it.
+### Correction 1 — absence from the CI scan is NOT evidence of a fix
 
-Of its 87 rows, 72 were Pro AI-detection rules (45 authz / 13 idor / 14 logic)
-and 12 were `crypto-weak-algorithm`. **All 12 crypto findings are false
-positives** — every one is SHA-1/MD5 deriving a deterministic UUIDv5-style id
-from a `namespace:key` pair for seed data and task dedup. Checked all twelve
-for secret/signature adjacency: zero. They are also entirely in seed scripts,
-e2e helpers and dev tooling.
+The 72 high-severity rows are `ai.detection.authz` / `idor` / `logic`:
+Semgrep **Assistant/Pro** rules that run in the cloud platform.
+`review-gate.yml` runs the **OSS** engine, which does not carry those rules
+at all. "The fresh 347-finding scan does not contain them" is therefore
+*expected*, not exculpatory. An earlier note here implied they were phantom.
+They are not.
 
-**The fresh scan (semgrep 1.172.0, current main) reports 0 blocking findings
-and exits 0.** 347 findings, 342 non-blocking code + 5 supply chain. The AI
-authz/idor/logic rules do not appear in it at all.
+This class is also structurally invisible to our own gate. The Review Gate
+hard rule is *"server action without `supabase.auth.getUser()` before any DB
+call"* — which passes cleanly on an action that authenticates and then trusts
+a client-supplied `playerId`. That is why CI is green and 72 findings exist.
 
-### The one reachable supply-chain finding, triaged
+### Correction 2 — the CSV is two scans, not one
 
-`sharp` GHSA-f88m-g3jw-g9cj, HIGH, marked **Reachable**. It is dev-only, and
-the lockfile proves it rather than the dependency graph implying it:
-
-| path | version | `dev` | production |
+| rows | rule family | commit | behind |
 |---|---|---|---|
-| `node_modules/sharp` | 0.34.5 vuln | **true** | excluded by `--omit=dev` |
-| `next/node_modules/sharp` | 0.35.3 | — | this is what prod uses |
+| 72 | `ai.detection.*` (Pro) | `8a7f049be` 07-26 | 547 |
+| 15 | OSS (crypto/CORS/ATS/npm) | `e7a354eff` 08-18 | 109 |
 
-It arrives via `@huggingface/transformers` <- `promptfoo`, a devDependency.
-The only direct import in the tree is `scripts/gen-ios-icon.mjs`, a build
-script — itself one of the 5 scripts with no reference anywhere.
+Line numbers in the 72 are unusable — 75 of 87 flagged files have changed.
+Anchor by enclosing function, never by line. Note also that most flagged
+symbols are thin `withAdminObserved` wrappers; the logic lives in `<name>Impl`.
 
-**Deliberately not force-overridden.** Promoting the existing `next`-scoped
-`sharp: 0.35.3` override to global would force `@huggingface/transformers` off
-its declared `^0.34.5` range, which excludes 0.35.x — risking the eval tooling
-for zero production benefit. That is the same trade that broke typecheck
-earlier today. Tracked as K13; the verifier re-checks the `dev` flag so this
-closes automatically if it ever stops being dev-only.
+### What closed the ones that closed: `2a95fca00`, a week after the scan
 
-The other four supply-chain findings are `uuid` (undetermined) and
-`adm-zip` x2 / `extract-zip` (all **unreachable**), consistent with MF-018's
-finding that all 12 npm-audit vulnerabilities terminate at two devDependencies.
+`2a95fca00` — *"close authorization and tenancy holes found by deepsec wave
+1"* (2026-08-02, #1220) — scanned 113 files, fixed 52 of 77 findings, refuted
+25. BaseballHelm got the parallel treatment via `withBaseballAction` (AUTH →
+server-validated team CONTEXT → CAPABILITY). Both landed **after** the scan
+commit, so the CSV cannot see either. Those fixes carry in-code tags (`DS-03`,
+`DS-3`, `DS-B4`, `DS-B10-1`), which is how each verdict below was confirmed.
 
----
+### Verdict on all 72
+
+| verdict | n |
+|---|---|
+| CLOSED — fix verified in HEAD | 34 |
+| OPEN — the gap is still in the code | 29 |
+| DESIGN QUESTION — org-vs-team scope, owner's call | 4 |
+| OAUTH — unsigned `state`, one fix covers all three | 3 |
+| FALSE POSITIVE — the rule's premise is factually wrong | 2 |
+
+**The 2 false positives.** `lib/notifications/push.ts::sendPushNotification`
+and `sendBulkPushNotification` are described as "exported server actions".
+The file carries an explicit comment saying it deliberately has **no**
+`'use server'` directive, for exactly the reason Semgrep gives. Not
+client-callable, not an endpoint. Do not "fix".
+
+### The 29 open ones are one bug, 29 times
+
+Team scope is now enforced almost everywhere. **Scope of the id *inside* the
+team is not.** An action correctly proves "you are a coach of team X" and then
+accepts an arbitrary `playerId`, `player_ids[]`, `event_id`, `reviewId` or
+`attendeeIds[]` and writes it. Several are additionally RLS-dependent — the
+database may still reject the write — but the code-level authorization gap is
+real in all 29.
+
+**Tier 1 — real regardless of RLS (7).**
+
+- `baseball/actions/documents.ts::uploadNewVersion` — capability is checked
+  against `document.team_id`, then the storage path is built from the
+  caller-supplied `teamId`. Cross-tenant object write. The cleanest bug here.
+- `golf/actions/insights.ts::generateRoundReviewImpl` — `verifyRoundAccess(
+  roundId)` only; nothing ties `playerId` to that round.
+- `golf/actions/round-review-system.ts::generateAndStoreRoundReviewImpl` —
+  mirror image: `verifyReviewAccess(playerId)` only, `roundId` unchecked.
+- `golf/actions/v3/llm.ts::generateLlmRoundReview` and `generateHeroNarrative`
+  — auth plus a rate limit, no access check, before LLM spend billed to the
+  resolved coach.
+- `golf/actions/tasks.ts::createTaskImpl` — team validated, then
+  `assignToPlayerIds` goes through `.in('id', …)` with no `team_id` filter.
+- `golf/actions/tasks.ts::createTaskFromTemplateImpl` — the roster read only
+  runs when `playerIds` is empty; a supplied array bypasses it entirely.
+- `golf/actions/teams.ts::addSecondTeamImpl` — requires *a* primary staff row,
+  not a head-coach role, then self-inserts `role:'head_coach'` on the new team.
+
+**Tier 2 — real in code, RLS is the only remaining backstop (8).**
+
+- `golf/actions/documents.ts::createGolfDocumentImpl` — auth only,
+  `data.team_id` written unscoped.
+- `golf/actions/documents.ts::uploadNewVersionImpl` — auth only, no role
+  check, so a player can add versions.
+- `golf/actions/round-reviews.ts::publishReviewImpl` — proves "is a coach",
+  then `UPDATE … .eq('id', reviewId)` with no resource scope.
+- `golf/actions/round-reviews.ts::createFocusAreaFromReviewImpl` — same shape.
+- `golf/actions/round-reviews.ts::shareReviewWithPlayerImpl` — no team scope
+  on the review read or update.
+- `golf/actions/golf.ts::checkScheduleConflictsImpl` — `attendeeIds` are
+  arbitrary; conflict windows for any id the caller names.
+- `golf/actions/insights.ts::acknowledgeComposedInsightImpl` and
+  `dismissComposedInsightImpl` — team resolved server-side, which is right;
+  the `playerId` written alongside it is not validated.
+
+**Tier 3 — same root cause, narrow blast radius (14).**
+
+- baseball writes that validate the team and never check `player_id` against
+  it: `tasks::createTask`, `tasks::createTaskFromTemplate`,
+  `lineups::saveLineup`, `lineups::updateLineup`, `games::saveFullBoxScore`,
+  `calendar::createBaseballEvent` (attendee rows),
+  `academics::createEligibilityRecord`, `academics::upsertPlayerAcademics`.
+- `baseball/actions/academics.ts::addPlayerClass` — `data.team_id` is written
+  onto the row with no validation, though the *player* is roster-checked.
+- `baseball/actions/games.ts::createGame` — `input.event_id` is not checked
+  as belonging to `teamId`.
+- `golf/actions/v3/qualifying.ts::setQualifierCoachPick` and
+  `confirmQualifierSelection` — team is derived from the qualifier (good);
+  `player_id` is not checked as an entrant.
+- `lifting/actions/player-sessions.ts::logMySetResult` — `input.athleteId` is
+  trusted outright after authentication.
+
+**The single highest-leverage fix** is not 29 patches: it is one
+`assertPlayersOnTeam(supabase, teamId, ids[])` helper next to
+`validateCoachTeamAccess`, plus a Review Gate ast-grep rule that fails any
+action writing a `player_id` column from an argument without it. Otherwise
+this class regenerates — it already did once, after wave 1.
+
+### 4 design questions, not bugs — owner's call
+
+`getTeamReviews` scopes to `organization_id`; `getTeamCoachHelmAccess`,
+`getOrCreateTeamCoachHelmSettings` and baseball `getTeamAcademics` allow
+org-wide reach. The rule calls org-wide visibility a tenancy violation.
+Whether an org's coaches may see sibling teams is a product decision. The
+settings-row *creation* side effect on an unstaffed team is worth tightening
+either way.
+
+### 3 OAuth rows, one fix
+
+`api/crm/google-calendar/*` — the `state` parameter is unsigned base64 JSON.
+The callback compares `decodedState.userId` to the session user, which blocks
+a mismatch but not forgery: an attacker who knows a victim's user UUID can
+mint a state naming them, then have the victim's browser complete the
+callback with the attacker's Google code. Sign the state (HMAC, same shape as
+`verifyUnsubToken`) or store a per-session nonce.
+
+### The 15 OSS rows
+
+- **12 `crypto-weak-algorithm` — all false positives.** Every one is SHA-1 or
+  MD5 deriving a deterministic UUIDv5-style id from a `namespace:key` pair.
+  Checked all twelve for secret/signature adjacency: zero. All in seed
+  scripts, e2e helpers, dev tooling. Settled; do not re-verify.
+- **1 `npm-missing-minimum-release-age` — REAL and cheap.** npm 11.17 does
+  support this, under the key `min-release-age` (currently `null`), not the
+  `minimum-release-age` spelling the rule name suggests. A cooldown blunts the
+  npm-compromise wave class. `npm ci` installs pinned versions, so CI is
+  unaffected; Dependabot PRs are the path that changes.
+- **1 `cors-default-config-express`** — `tools/ultra-agent-audit/src/server.js`
+  uses bare `app.use(cors())`. Local dev tool, referenced by nothing in
+  `package.json` or CI. Low value.
+- **1 `ATS-consider-pinning`** — `ios/App/App/Info.plist` has no
+  `NSAppTransportSecurity` block at all. Informational.
+
+### The `sharp` supply-chain finding, re-derived
+
+Three copies in the tree, not the two I first reported:
+
+| path | version | `dev` |
+|---|---|---|
+| `node_modules/sharp` | 0.34.5 **vuln** | **true** |
+| `promptfoo/node_modules/sharp` | 0.35.3 | true |
+| `next/node_modules/sharp` | 0.35.3 | — (prod) |
+
+`npm ci --omit=dev` never installs the vulnerable copy and prod already runs
+0.35.3. Not force-overridden: promoting the `next`-scoped override globally
+would push `@huggingface/transformers` off its declared range for zero
+production benefit. Tracked as K13; the verifier reads the `dev` flag, so it
+reopens automatically if that ever stops being true.
 
 ## DEFERRED, with reason
 

@@ -371,6 +371,51 @@ def _k13() -> Result:
     )
 
 
+@check("S1", "baseball uploadNewVersion writes to a caller-named team prefix")
+def _s1() -> Result:
+    """Semgrep ai.detection.authz, verified still present in HEAD.
+
+    The capability is enforced against the document's own team --
+    requireBaseballCapability(document.team_id, 'can_manage_documents') -- and
+    then the storage path is built from `teamId || document.team_id`, where
+    `teamId` is the caller's argument. A coach who may manage document D can
+    therefore place the new object under any other team's prefix.
+
+    Closes when the storage path stops reading the caller-supplied teamId.
+    """
+    src = read("src/app/baseball/actions/documents.ts")
+    tainted = "const effectiveTeamId = teamId || document.team_id" in src
+    used_in_path = "baseball-documents/${effectiveTeamId}/" in src
+    return ("OPEN" if (tainted and used_in_path) else "DONE"), (
+        f"effectiveTeamId from caller arg={tainted}; used in storage path={used_in_path}"
+    )
+
+
+@check("S10", "golf createTask assigns to unvalidated player ids")
+def _s10() -> Result:
+    """Semgrep ai.detection.authz, verified still present in HEAD.
+
+    createTaskImpl gates the TEAM correctly (validateCoachTeamAccess) and then
+    resolves assignees with `.in('id', assignToPlayerIds)` carrying no team_id
+    filter, so a coach of team A can assign a task to a player on team B.
+
+    Representative of the whole open class: team scope enforced, id-within-team
+    scope not. Closes when the assignee read is team-filtered.
+    """
+    src = read("src/app/golf/actions/tasks.ts")
+    if "validateCoachTeamAccess" not in src:
+        return "OPEN", "team gate itself is missing -- worse than reported"
+    i = src.find(".in('id', assignToPlayerIds)")
+    if i < 0:
+        return "DONE", "unfiltered assignee read is gone"
+    window = src[max(0, i - 400):i + 200]
+    filtered = ".eq('team_id'" in window or "golf_team_members" in window
+    return ("DONE" if filtered else "OPEN"), (
+        "assignee read is team-filtered" if filtered
+        else "assignee read has no team_id filter"
+    )
+
+
 def main() -> None:
     rows = []
     for cid, desc, fn in CHECKS:
