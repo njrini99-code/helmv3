@@ -67,9 +67,12 @@ export async function run(ctx) {
   );
 
   // Duplicate source trees: a second `src/app` anywhere other than <root>/src/app.
-  const dupes = git(repoRoot, ['ls-files', '--', '**/src/app']);
-  // ls-files only sees tracked files; the real risk is UNTRACKED dupes, so use find via git status is not enough.
-  // Instead scan for a second src/ dir at any nested-but-not-node_modules location.
+  //
+  // Deliberately a filesystem walk, NOT `git ls-files`: ls-files only sees
+  // TRACKED files, and the duplicate trees that actually caused harm (a nested
+  // worktree, a copied checkout, .deepsec/) are untracked or ignored — exactly
+  // the ones git cannot see. An earlier draft called ls-files here and never
+  // used the result; CodeQL flagged the dead variable, correctly.
   const secondSrc = [];
   const stack = [{ dir: repoRoot, depth: 0 }];
   const skip = new Set(['node_modules', '.git', '.next', 'dist', '.turbo', 'coverage']);
