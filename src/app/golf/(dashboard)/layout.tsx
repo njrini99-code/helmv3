@@ -153,12 +153,30 @@ export default async function GolfDashboardLayout({
     // data" cannot drift apart.
     if (coach && !coach.onboarding_completed && coach.organization_id) {
       const pendingCheckClient = await createClient();
-      const { data: pendingStaffRow } = await pendingCheckClient
+      const { data: pendingStaffRow, error: pendingStaffError } = await pendingCheckClient
         .from('golf_team_coach_staff')
         .select('id')
         .eq('coach_id', coach.id)
         .limit(1)
         .maybeSingle();
+
+      // A FAILED read cannot tell "no staff row" (pending) from "has one"
+      // (approved) — supabase-js resolves both as data: null. The pending page
+      // is the safe direction for that ambiguity: it self-clears the moment
+      // the staff row is readable, whereas falling through to '/golf/coach'
+      // would offer new-program onboarding to a coach who already has a
+      // program, which is the duplicate-program hazard this branch exists to
+      // prevent. So the redirect below is deliberately reached on error too —
+      // but it is logged, because an outage must stay distinguishable from a
+      // genuine absence.
+      if (pendingStaffError) {
+        void logServerError(
+          `[golf dashboard layout] pending-assistant staff lookup failed; routing to the pending page, which self-clears once the row is readable: ${describeError(pendingStaffError)}`,
+          { action: 'golf.dashboardLayout.pendingAssistantCheck', featureArea: 'auth' },
+          'error'
+        );
+      }
+
       if (!pendingStaffRow) redirect('/golf/coach/pending');
     }
 

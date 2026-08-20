@@ -270,9 +270,47 @@ describe('golf dashboard layout — a failed read must not fail open', () => {
 
     // Had the failed read overwritten `coach` with its null `data`, the
     // resolved role would have collapsed to null and this would be
-    // '/golf/signup' — telling a real coach to create an account.
-    expect(redirect).toHaveBeenCalledWith('/golf/coach');
+    // '/golf/signup' — telling a real coach to create an account. That is what
+    // this case pins, and it still holds.
+    //
+    // The destination is the PENDING page rather than '/golf/coach' because
+    // this fixture carries an organization_id, an unfinished onboarding and no
+    // staff row — which is precisely a pending assistant (cbe82d95f). The
+    // '/golf/coach' literal here was incidental to the fail-open invariant, so
+    // it moved when that branch landed; the invariant did not.
+    expect(redirect).toHaveBeenCalledWith('/golf/coach/pending');
     expect(redirect).not.toHaveBeenCalledWith('/golf/signup');
+  });
+
+  it('routes to the pending page and LOGS when the staff-row read itself errors', async () => {
+    // The pending-assistant branch reads golf_team_coach_staff to tell an
+    // unapproved assistant from a head coach mid-onboarding. supabase-js
+    // resolves a failed read as `data: null` — identical to a genuine absence
+    // — so without the error bound, an outage silently renders as "pending".
+    //
+    // Routing to the pending page is the right direction for that ambiguity:
+    // it self-clears once the row is readable, whereas '/golf/coach' would
+    // offer new-program onboarding to a coach who already has a program. What
+    // must NOT happen is that it goes unrecorded.
+    session = {
+      userId: 'u1',
+      role: null,
+      coach: { ...ONBOARDED_COACH, onboarding_completed: false },
+      player: null,
+    };
+    queues.set('users', [ok({ role: 'coach' })]);
+    queues.set('golf_team_coach_staff', [fails('connection reset')]);
+
+    const pending = renderLayout().catch((e: Error) => e);
+    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(300);
+    await flushMicrotasks();
+    await pending;
+
+    expect(redirect).toHaveBeenCalledWith('/golf/coach/pending');
+
+    const said = logServerError.mock.calls.map((c) => String((c as unknown[])[0]));
+    expect(said.some((m) => /staff lookup failed/i.test(m))).toBe(true);
   });
 
   it('records a failed role read instead of silently reading it as "not an admin"', async () => {
