@@ -51,10 +51,21 @@ const COHORT_ANCHORS: Partial<Record<MetricId, GenderAnchor>> = {
   putts_made_15_25ft_pct:    { mens: 15.4, womens: 11.0 },
   putts_made_25_plus_ft_pct: { mens: 5.5,  womens: 4.0  },
 
-  // Approach green-hit % (approximate band anchors; women's discounted ~0.88).
-  approach_proximity_50_125ft:    { mens: 80, womens: 70 },
-  approach_proximity_125_175ft:   { mens: 65, womens: 56 },
-  approach_proximity_175_plus_ft: { mens: 50, womens: 42 },
+  // NOTE: approach_proximity_50_125ft / 125_175ft / 175_plus_ft were REMOVED
+  // 2026-08-19 (Wave B / B1). They were stored here as a green-hit PERCENT
+  // (mens 80/65/50, womens 70/56/42) but the registry types all three
+  // `lower_better` with unit FEET, and compute.ts's counterfactual target
+  // chain (`cohortUsable ? cohort_value : anchor ?? pga_value`) read this
+  // table directly — so whenever the real per-metric cohort was unavailable,
+  // a 42-80 PERCENT value was used as the FEET target, the same unit-mismatch
+  // class gender-anchor.ts's `applyGenderAnchor` step 1 comment documents
+  // fixing for the StandingBar path. compute.ts's independent `cohortAnchor()`
+  // call was never covered by that fix. Deleting these 3 keys makes
+  // `cohortAnchor()` return null for them, so compute.ts correctly falls
+  // through to `input.pga_value` (verified unit-correct feet). The one
+  // legitimate percent-scale consumer (approach-miss.ts's green-hit-%
+  // display prose) now reads its own local mens/womens table instead of this
+  // shared feet-typed one — see APPROACH_GREEN_HIT_PCT_BY_GENDER there.
 
   // Sand save % — the headline fix. Men's Tour ~50%, women's college ~38%.
   scrambling_pct_sand:    { mens: 50, womens: 38 },

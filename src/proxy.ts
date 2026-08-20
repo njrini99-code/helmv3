@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { updateSession } from '@/lib/supabase/middleware';
+import { isNativeAppUserAgent } from '@/lib/auth/session-idle-shared';
 
 /**
  * updateSession throws `NEXT_PUBLIC_SUPABASE_URL is missing or a placeholder`
@@ -13,8 +14,6 @@ import { updateSession } from '@/lib/supabase/middleware';
 function isConfigError(error: unknown): boolean {
   return error instanceof Error && /NEXT_PUBLIC_SUPABASE_(URL|ANON_KEY)/.test(error.message);
 }
-
-const NATIVE_UA_MARKER = 'HelmSportsLabsApp';
 
 // Routes that belong to the app itself. Anything outside of these on a native
 // request is treated as a marketing page and redirected away (App Store
@@ -30,11 +29,6 @@ const APP_ROUTE_PREFIXES = [
   '/terms',
   '/dev',
 ];
-
-function isNativeUserAgent(request: NextRequest): boolean {
-  const ua = request.headers.get('user-agent') ?? '';
-  return ua.includes(NATIVE_UA_MARKER);
-}
 
 function isMarketingRoute(pathname: string): boolean {
   if (pathname === '/') return true;
@@ -58,7 +52,7 @@ function isMarketingRoute(pathname: string): boolean {
  */
 export async function proxy(request: NextRequest) {
   // App Store Guideline 3.1.1: block marketing routes for native iOS requests.
-  if (isNativeUserAgent(request) && isMarketingRoute(request.nextUrl.pathname)) {
+  if (isNativeAppUserAgent(request.headers.get('user-agent')) && isMarketingRoute(request.nextUrl.pathname)) {
     return NextResponse.redirect(new URL('/golf/login', request.url));
   }
 

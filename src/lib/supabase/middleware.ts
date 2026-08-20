@@ -11,6 +11,7 @@ import {
   SESSION_IDLE_COOKIE,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
   SESSION_IDLE_TIMEOUT_MS,
+  isNativeAppUserAgent,
   isSessionIdleExpired,
   parseLastActivity,
 } from '@/lib/auth/session-idle-shared';
@@ -135,7 +136,6 @@ function isIdleExpiredSession(args: {
  * Native app requests use the same auth/access policy as desktop web for app
  * routes, but are kept away from marketing/pricing surfaces.
  */
-const NATIVE_UA_MARKER = 'HelmSportsLabsApp';
 const APP_ROUTE_PREFIXES = [
   '/golf',
   '/baseball',
@@ -147,11 +147,6 @@ const APP_ROUTE_PREFIXES = [
   '/terms',
   '/dev',
 ] as const;
-
-function isNativeUserAgent(request: NextRequest): boolean {
-  const ua = request.headers.get('user-agent') ?? '';
-  return ua.includes(NATIVE_UA_MARKER);
-}
 
 function isMarketingRoute(pathname: string): boolean {
   if (pathname === '/') return true;
@@ -547,7 +542,7 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  if (isNativeUserAgent(request) && isMarketingRoute(pathname)) {
+  if (isNativeAppUserAgent(request.headers.get('user-agent')) && isMarketingRoute(pathname)) {
     return NextResponse.redirect(new URL('/golf/login', request.url));
   }
 
@@ -630,7 +625,7 @@ export async function updateSession(request: NextRequest) {
   // and 3 (RLS) would hold anyway; this keeps Layer 1 strict too.
   const adminGate = evaluateAdminGate({
     pathname,
-    isNative: isNativeUserAgent(request),
+    isNative: isNativeAppUserAgent(request.headers.get('user-agent')),
     userId: degraded ? null : (user?.id ?? null),
     allowlistRaw: process.env.SUPER_ADMIN_USER_IDS,
   });
@@ -677,7 +672,7 @@ export async function updateSession(request: NextRequest) {
       sport,
       lastActivity: parseLastActivity(request.cookies.get(SESSION_IDLE_COOKIE)?.value),
       now: Date.now(),
-      isNativeApp: isNativeUserAgent(request),
+      isNativeApp: isNativeAppUserAgent(request.headers.get('user-agent')),
     });
     const dest = resolvePostAuthDestination({
       sport,
@@ -767,7 +762,7 @@ export async function updateSession(request: NextRequest) {
     // Demo-window selection and the stale-marker guard now live in
     // `isIdleExpiredSession` so the sign-in-page bounce above evaluates
     // idleness identically. Two call sites, one definition.
-    if (isIdleExpiredSession({ user, sport, lastActivity, now, isNativeApp: isNativeUserAgent(request) })) {
+    if (isIdleExpiredSession({ user, sport, lastActivity, now, isNativeApp: isNativeAppUserAgent(request.headers.get('user-agent')) })) {
       try {
         // Local scope: clear cookies without a GoTrue round-trip — middleware
         // must stay fast and must not depend on auth-server reachability.

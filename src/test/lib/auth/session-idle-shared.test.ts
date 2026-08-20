@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   DEMO_SESSION_IDLE_TIMEOUT_MS,
+  NATIVE_APP_SESSION_IDLE_TIMEOUT_MS,
   SESSION_IDLE_TIMEOUT_MS,
   SESSION_IDLE_COOKIE_MAX_AGE_S,
   SESSION_VISIBLE_HEARTBEAT_MS,
@@ -26,6 +27,16 @@ describe('session-idle-shared', () => {
     // The reopen-after-idle case must be "present + stale", never "absent".
     expect(SESSION_IDLE_COOKIE_MAX_AGE_S * 1000).toBeGreaterThan(
       DEMO_SESSION_IDLE_TIMEOUT_MS,
+    );
+    // Wave B / B2 (2026-08-19): this same assertion against the NATIVE window
+    // was missing here, which is exactly how the two constants drifted to
+    // EQUAL (both 30 days) without this "outlives every idle window" test
+    // catching it — the marker cookie was expiring in the client's browser at
+    // the same instant the native idle window was crossed, so an abandoned
+    // native session's request arrived with no cookie at all and fail-open
+    // ("missing marker = not idle") let it stay signed in forever.
+    expect(SESSION_IDLE_COOKIE_MAX_AGE_S * 1000).toBeGreaterThan(
+      NATIVE_APP_SESSION_IDLE_TIMEOUT_MS,
     );
   });
 

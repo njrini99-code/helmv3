@@ -51,9 +51,21 @@ export const DEMO_SESSION_IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 hours
  * it daily ("my guys still get logged out every time you close the app") — it
  * reads as the app being broken, not as a security feature.
  *
- * 30 days matches {@link SESSION_IDLE_COOKIE_MAX_AGE_S}: a window longer than
- * the marker's own lifetime would be meaningless, because a marker that has
- * expired reads as absent, and absent fails open to "not idle".
+ * CORRECTED 2026-08-19 (Wave B / B2): this used to read "30 days matches
+ * {@link SESSION_IDLE_COOKIE_MAX_AGE_S}: a window longer than the marker's
+ * own lifetime would be meaningless" — that inverted the invariant this same
+ * file states two definitions below ({@link SESSION_IDLE_COOKIE_MAX_AGE_S}:
+ * "deliberately MUCH longer than the timeout"). Making them EQUAL recreates
+ * exactly the fail-open bug that invariant exists to prevent: the marker
+ * cookie is refreshed with a fresh `SESSION_IDLE_COOKIE_MAX_AGE_S` on every
+ * real activity, so with the two windows equal, a native user who goes
+ * idle has their marker expire (browser drops it) at the SAME instant the
+ * 30-day window is crossed — the one moment a stale-but-present marker is
+ * needed to detect it. The request then arrives with no cookie at all,
+ * `isSessionIdleExpired(null, ...)` reads that as "not idle" per this file's
+ * own documented fail-open semantics, and the abandoned native session never
+ * re-authenticates. See {@link SESSION_IDLE_COOKIE_MAX_AGE_S}, now raised
+ * above this window so the marker always outlives it.
  */
 export const NATIVE_APP_SESSION_IDLE_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -93,8 +105,15 @@ export const SESSION_VISIBLE_HEARTBEAT_MS = 60 * 1000; // 1 minute
  * read it to detect staleness (a fail-open bug: a missing marker would look like
  * "just active"). A long-lived marker guarantees that a genuine reopen after the
  * idle window is always "present + stale", never "absent".
+ *
+ * Must outlive the LONGEST idle window, not just the longest at the time this
+ * comment was written — currently {@link NATIVE_APP_SESSION_IDLE_TIMEOUT_MS}
+ * (30 days). 45 days leaves headroom above it (Wave B / B2, 2026-08-19: this
+ * was previously also 30 days, exactly equal to the native window, which
+ * recreated the fail-open bug this comment describes for every native session
+ * that first crosses 30 days idle).
  */
-export const SESSION_IDLE_COOKIE_MAX_AGE_S = 60 * 60 * 24 * 30; // 30 days
+export const SESSION_IDLE_COOKIE_MAX_AGE_S = 60 * 60 * 24 * 45; // 45 days
 
 /** Parse a cookie value into epoch ms, or `null` when absent/malformed. */
 export function parseLastActivity(raw: string | undefined | null): number | null {

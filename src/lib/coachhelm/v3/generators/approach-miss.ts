@@ -33,7 +33,7 @@ import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { round } from '@/lib/golf/stat-formulas';
-import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
+import type { CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import {
   loadApproachShots,
@@ -87,12 +87,24 @@ const BUCKET_LABEL: Record<ApproachBucket, string> = {
  * recorded in YARDS and previously ×3'd into a fake proximity (see aggregate()).
  */
 
-/** APPROXIMATE PGA green-hit % by approach band (no sourced per-band table yet — see
- *  Research doc §2 ranges 75-85 / 60-70 / 45-55%). Flagged "approx" in the prose. */
-const TOUR_GREEN_HIT_PCT: Record<ApproachBucket, number> = {
-  '50_125ft':    80,
-  '125_175ft':   65,
-  '175_plus_ft': 50,
+/**
+ * Men's/women's green-hit % by approach band, LOCAL to this file (Wave B / B1,
+ * 2026-08-19; formerly the men's-only `TOUR_GREEN_HIT_PCT` no sourced
+ * per-band table yet — see Research doc §2 ranges 75-85 / 60-70 / 45-55%,
+ * flagged "approx" in the prose). Previously this prose comparison read
+ * `cohortAnchor()` from the shared `cohort-baselines.ts` table — the same
+ * table compute.ts's counterfactual target chain reads, where these values
+ * (percent) were wrongly usable as a FEET target (the 3 approach_proximity_*
+ * metrics are registered `lower_better`/feet). Those 3 keys were removed from
+ * the shared table; this local copy preserves the legitimate percent-scale
+ * display use here without re-exposing the wrong-unit values to compute.ts.
+ * Values match the removed shared entries (same sourcing note: approximate
+ * band anchors, women's discounted ~0.88 off men's).
+ */
+const APPROACH_GREEN_HIT_PCT_BY_GENDER: Record<ApproachBucket, { mens: number; womens: number }> = {
+  '50_125ft':    { mens: 80, womens: 70 },
+  '125_175ft':   { mens: 65, womens: 56 },
+  '175_plus_ft': { mens: 50, womens: 42 },
 };
 
 /** Need at least this many GREENS HIT in the band before reporting a proximity —
@@ -336,7 +348,9 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
   composeContent(agg: ApproachMissAggregate): ComposedContent {
     const label = BUCKET_LABEL[agg.bucket];
     const tourGreenHit =
-      cohortAnchor(this.metricId, agg.cohort_gender) ?? TOUR_GREEN_HIT_PCT[agg.bucket];
+      agg.cohort_gender === 'womens'
+        ? APPROACH_GREEN_HIT_PCT_BY_GENDER[agg.bucket].womens
+        : APPROACH_GREEN_HIT_PCT_BY_GENDER[agg.bucket].mens;
     const tourLabel = agg.cohort_gender === 'womens' ? "women's college" : 'PGA Tour';
     const ghDisp = `${agg.green_hit_pct.toFixed(0)}%`;
     const prox = agg.proximity_when_hit_feet;
