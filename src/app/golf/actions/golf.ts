@@ -1666,17 +1666,23 @@ async function submitGolfRoundComprehensiveImpl(
           message: typeof trigger.message === 'string' ? trigger.message : null,
         })
       ) {
-        const { count: holeCount } = await supabase
+        const { count: holeCount, error: holeCountError } = await supabase
           .from('golf_holes')
           .select('id', { count: 'exact', head: true })
           .eq('round_id', roundId);
-        const { data: reconciled } = await fromUntyped(supabase, 'golf_rounds')
+        const { data: reconciled, error: reconcileError } = await fromUntyped(supabase, 'golf_rounds')
           .select('id, status')
           .eq('id', roundId)
           .eq('player_id', player.id)
           .maybeSingle();
 
-        if (reconciled?.status === 'completed' && (holeCount ?? 0) > 0) {
+        // A failed reconciliation read is NOT "zero holes" — it is "outcome
+        // still unknown", which takes the refuse-to-delete branch below. The
+        // distinction matters: this guard exists because a round was destroyed
+        // by treating an unknown outcome as a failure.
+        const reconcileReadFailed = Boolean(holeCountError || reconcileError);
+
+        if (!reconcileReadFailed && reconciled?.status === 'completed' && (holeCount ?? 0) > 0) {
           // The RPC committed after we gave up listening. The round is fine.
           await logServerError(
             'Round submit aborted client-side but COMMITTED server-side — reconciled, destructive fallback SKIPPED',
@@ -1712,6 +1718,8 @@ async function submitGolfRoundComprehensiveImpl(
               trigger,
               backupPersisted,
               reconciled: reconciled?.status ?? 'unknown',
+              reconcileReadFailed,
+              reconcileReadError: holeCountError?.message ?? reconcileError?.message ?? null,
             },
           },
           'critical'
