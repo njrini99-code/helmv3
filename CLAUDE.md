@@ -63,6 +63,7 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 | **CoachHelm AI / Stats nav labels or hrefs** (rail, sub-nav tabs, CommandPalette, page `<title>`, breadcrumb) | `src/lib/golf/surface-registry.ts` — SINGLE SOURCE OF TRUTH for the canonical `{id, canonicalName, href, role, group, legacy?, hidden?}` of every CoachHelm AI + Stats surface. Every consumer (`nav-registry.ts`, `CoachHelmSubNav.tsx`, `CommandPalette.tsx`, breadcrumb, page titles) imports from here — never hand-write a label/href for one of these surfaces |
 | **Baseball features** | `memory/context/baseballhelm-features.md` — feature-by-feature data flow, files, tables, gaps; `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` — canonical spec (source of truth for what baseball should be) |
 | **Cross-product structure** (route trees, canonical action-wrapper/toast/data-access/design-token/nav-registry/error-boundary idioms, known traps) | `docs/REPO_MAP.md` — resolved route atlas for BaseballHelm/GolfHelm/Lift Lab/Admin, idioms table with file:line anchors, 8 traps, pre-code checklist |
+| **Golf platform overview** (quick orientation) | `src/app/golf/README.md` |
 
 ### By Role Context
 
@@ -75,12 +76,6 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 | **AI/CoachHelm** | #12 CoachHelm Engine + `memory/context/coachhelm-ai.md` for engine internals |
 | **Settings/config** | #26 Settings, #18 Coaching Intelligence Settings |
 | **Admin/platform** | #28 Admin Dashboard |
-
-### Quick Reference (no file read needed)
-
-These are embedded here for speed — the things you'll need on every task:
-
----
 
 ## CRITICAL RULES
 
@@ -259,15 +254,3 @@ CI behavior: `.github/workflows/docs-regen.yml` runs on every push to
 `main` that touches a source of truth, and opens an auto-PR titled
 "docs: regen inventory blocks" if the regenerated content drifts.
 Approve and squash-merge.
-
-## GolfHelm Deep Reference (memory/)
-
-| File | What's inside | When to read it |
-|------|--------------|-----------------|
-| `memory/glossary.md` | Table names, enums, TypeScript type locations (table/view/function counts are an AUTOGEN block — read the file, don't hardcode the number) | Need a table name, enum value, or type import path |
-| `memory/projects/golfhelm.md` | All routes, action files, component tree, hooks (AUTOGEN — counts live in the file, not here) | Need to find where code lives |
-| `memory/context/golfhelm-features.md` | 28 features: data flows, files, tables, deps, gaps | Working on any feature (the main reference) |
-| `memory/context/golfhelm-database.md` | Every column of every table (from production DB) | Writing SQL, adding columns, debugging data |
-| `memory/context/coachhelm-ai.md` | V2 engine: orchestrator, mining, predictions, NLG | Working on CoachHelm AI specifically |
-| `src/lib/golf/surface-registry.ts` | Canonical name/href/role/group for every CoachHelm AI + Stats surface (rail, sub-nav, palette, titles, breadcrumb all read from it) | Adding/renaming/redirecting a CoachHelm AI or Stats route |
-| `src/app/golf/README.md` | Golf platform overview | Quick orientation |
