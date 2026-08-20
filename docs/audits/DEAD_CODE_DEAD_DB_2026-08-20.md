@@ -129,7 +129,7 @@ readers, RLS policies, indexes and no writer anywhere.
 
 ## A3. Forty-eight tables have a working button nobody has ever pressed
 
-Full list in `scratchpad/button.json`. The interesting ones — where a lot of
+Full list in `docs/audits/data-2026-08-20/button.json`. The interesting ones — where a lot of
 engineering sits behind a control that has produced exactly zero rows:
 
 - `baseball_player_daily_contracts` (92,943 reads) — `saveDraftAndCommit`,
@@ -479,6 +479,114 @@ pieces together.
 
 ---
 
+# PART E — Dead columns (129 that are 100% NULL in production)
+
+Measured from `pg_stats.null_frac = 1` on tables with >20 live rows. Full list
+in the query; the clusters that mean something:
+
+## E1. The round-review WORKFLOW has never once run — 15 dead columns
+
+`golf_round_reviews` holds 105 rows and **fifteen of its columns are 100%
+NULL**, and they are not incidental ones:
+
+```
+published_at   published_by   shared_at        coach_rating
+coach_notes    coach_feedback_text             coach_viewed_at
+player_viewed_at   player_acknowledged_at      last_regenerated_at
+sentiment_score    ai_model_version            scoring_avg_before/after
+```
+
+Reviews are being generated (105 of them). **Not one has ever been published,
+shared, rated, commented on, viewed by a coach, or acknowledged by a player.**
+The generation half works; the entire human half of the loop has never
+executed. This is the same story as `golf_qualifier_selections` — and note
+that `publishReview` and `shareReviewWithPlayer` are two of the actions I
+hardened for authorization tonight. The security fix was right; the feature
+behind it has never been used.
+
+## E2. The insight → outcome attribution loop never closes
+
+`golf_coach_insights` (634 rows) has 100% NULL on:
+`outcome_metric_name`, `outcome_metric_before`, `outcome_metric_after`,
+`outcome_notes`, `action_type`, `action_date`, `addressed_at`, `source_id`.
+
+`golf_insight_outcome` has 44 rows and `golf_insight_outcome_attribution` 44 —
+so *some* attribution exists in its own tables, but the denormalised
+outcome columns on the insight itself have never been written. Two mechanisms
+for the same idea, one of them dead.
+
+## E3. `golf_patterns_v2.strokes_impact` is 100% NULL across 609 rows
+
+Directly relevant to C1. Insights carry `strokes_impact` inside `evidence`
+(520 of 520 active). **Patterns carry it in a real column and it is empty for
+every one of 609 rows.** If a re-mounted LeakBoard blends insights and
+patterns, the pattern half contributes nothing.
+
+## E4. Migration bookkeeping that was never filled
+
+`legacy_baseball_id` is 100% NULL on all five `helm_lifting_*` tables that
+carry it (`set_results`, `session_exercises`, `sessions`, `maxes`,
+`bodyweight_entries`). The Lift Lab unification (the same one that produced the
+`graveyard` schema) added a back-pointer column to every migrated table and
+populated none of them. The graveyard tables still holding data —
+`baseball_lift_results` (22 rows), `baseball_readiness_checkins` (22) — can
+therefore no longer be matched to their `helm_lifting_*` successors by id.
+
+## E5. Per-game rate stats: null by design, not a bug — but they lie about it
+
+`baseball_box_score_batting.avg/obp/slg/ops` and
+`baseball_box_score_pitching.era/whip/k9/bb9` are 100% NULL (185 and 55 rows).
+
+**I nearly reported this as "the rate stats are never computed". It is not.**
+Checked at the other two levels:
+
+| source | rows | rows with avg/obp/slg/ops |
+|---|---:|---:|
+| `baseball_player_season_stats` | 26 | **19** |
+| `baseball_player_aggregates` (career) | 22 | **20–22** |
+| `baseball_box_score_batting` | 185 | **0** |
+
+Rates are computed where they are meaningful — season and career — and left
+null per game, which is correct (a 1-for-3 game is not a .333 hitter). The
+finding is narrower and still worth fixing: eight columns exist on the
+box-score tables that nothing will ever fill, and their presence implies to
+every future reader that they should be. Drop them or comment them.
+
+## E6. Method validation — the repo already found one of these independently
+
+`golf_player_stats_cache.putt_make_pct_left_to_right` / `_right_to_left` /
+`_straight` are 100% NULL. `round-review-shots.ts:32-36` already documents
+exactly that, with the count, and warns that the BY-DISTANCE bands are a
+different and confirmed-populated set:
+
+> `0 / 29 rows (100% dark, no writer)` -> NEVER used — dead, matches
+> PuttingZoom's own "DEAD DATA" note
+
+My independent measurement reproduced a conclusion the codebase had already
+reached by hand. That is the best available evidence that the null_frac method
+is sound — and also a reminder that some of these 129 columns are already
+known and deliberately handled.
+
+## E7. The rest, briefly
+
+- `golf_events`: `course_id`, `recurrence_rule`, `rsvp_deadline`,
+  `max_attendees`, `parent_event_id`, `cancellation_reason` — 100% NULL across
+  1,716 events. Recurring events, RSVP deadlines, capacity caps and
+  cancellation are all modelled and none has ever been used.
+- `golf_courses`: `slug`, `address`, `website`, `image_url` — 100% NULL across
+  50 courses. Worth noting I fixed a course-image storage RLS policy earlier
+  tonight; `image_url` has never been set on any course.
+- `golf_player_courses.course_id` — 100% NULL across 42 rows. A join column
+  that is always null makes the row unjoinable.
+- `golf_calendar_notifications.sent_at` — 100% NULL across 1,523 rows. Either
+  nothing has been sent, or the send path does not stamp it.
+
+`golf_player_courses.course_id` and `golf_calendar_notifications.sent_at` are
+the two I would look at first — both are columns whose nullness suggests
+something is silently not happening, rather than a feature nobody uses.
+
+---
+
 ## Unverified — do not act on these without checking
 
 - **Enclosing-action attribution in A3/A4 is heuristic.** For each insert I
@@ -490,12 +598,19 @@ pieces together.
 - **`reads_ever` is cumulative since the last stats reset**, which I did not
   establish a date for. It supports "this is read a lot / not at all", not
   "this is read N times per day".
-- I did not audit **column-level** dead columns, RLS policy correctness, or
-  storage buckets.
+- I did not audit RLS policy correctness or storage buckets. Column-level
+  analysis is now PART E, but it covers only tables with >20 live rows and
+  relies on `pg_stats`, which is ANALYZE-sampled — for a small table a
+  `null_frac` of 1 is near-certain, but it is a sample, not a `count(*)`.
 - I did not check whether any of the 282 unreachable files are reachable via
   `next.config.mjs` rewrites or middleware matchers.
 
 ---
+
+All raw evidence and the three analysis scripts that produced it are in
+`docs/audits/data-2026-08-20/` — `xref.py` (code references per DB object),
+`uimap.py` (route reachability), `button.py` (is there a write path a user can
+reach). Re-run them to re-derive every number in this file.
 
 *Companion reports produced in the same pass:
 `DUPLICATION_NESTING_2026-08-20.md` (duplication + nesting),
