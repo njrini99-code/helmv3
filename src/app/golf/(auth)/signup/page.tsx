@@ -126,7 +126,7 @@ export default function SignupPage() {
               initial={prefersReducedMotion ? false : { opacity: 0, y: 20, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
-              className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
+              className="bg-surface border border-border-subtle rounded-fw-lg p-6 sm:p-8"
             >
               <m.div
                 className="flex flex-col items-center mb-6 sm:mb-8"
@@ -148,16 +148,16 @@ export default function SignupPage() {
                     />
                   </div>
                 </div>
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
+                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-text-primary to-text-secondary bg-clip-text text-transparent">
                   GolfHelm
                 </h1>
               </m.div>
 
               <div className="text-center mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
+                <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-1 sm:mb-2">
                   Enter your team code
                 </h2>
-                <p className="text-warm-500 text-sm sm:text-base">
+                <p className="text-text-secondary text-sm sm:text-base">
                   Use the code your coach gave you. You&rsquo;ll join their team automatically.
                 </p>
               </div>
@@ -179,8 +179,8 @@ export default function SignupPage() {
                     placeholder="Team code"
                     // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on signup access-code gate
                     autoFocus
-                    className={`w-full h-12 px-4 rounded-xl border bg-cream-100/82 text-warm-900 placeholder:text-warm-400 text-center text-lg tracking-widest font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all ${
-                      codeError ? 'border-red-300 ring-2 ring-red-500/20' : 'border-warm-200'
+                    className={`w-full h-12 px-4 rounded-xl border bg-surface text-text-primary placeholder:text-text-tertiary text-center text-lg tracking-widest font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all ${
+                      codeError ? 'border-red-300 ring-2 ring-red-500/20' : 'border-border-subtle'
                     }`}
                   />
                   {codeError && (
@@ -214,8 +214,8 @@ export default function SignupPage() {
                   2026-08-20 as "the wording at the bottom you can't even
                   read". The panel gives them their own opaque ground instead
                   of relying on whatever pixel happens to be behind them. */}
-              <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-cream-50/95 px-4 py-3 shadow-sm ring-1 ring-warm-200/70 backdrop-blur-sm">
-              <p className="text-center text-warm-700 text-sm">
+              <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm">
+              <p className="text-center text-text-secondary text-sm">
                 Already have an account?{' '}
                 <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">Sign in</Link>}>
                   <SignInLink />
@@ -232,7 +232,7 @@ export default function SignupPage() {
                   built for exactly that visitor, and was linked from neither
                   page. See #1483 — this is the exit only; whether the login
                   page should also split the two audiences is still open there. */}
-              <p className="text-center mt-2 text-warm-600 text-sm">
+              <p className="text-center mt-2 text-text-secondary text-sm">
                 Not joining a team?{' '}
                 <Link
                   href="/golf/demo"
@@ -273,7 +273,7 @@ export default function SignupPage() {
           initial={prefersReducedMotion ? false : { opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
-          className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
+          className="bg-surface border border-border-subtle rounded-fw-lg p-6 sm:p-8"
         >
           {/* Logo with glow effect */}
           <m.div
@@ -296,7 +296,7 @@ export default function SignupPage() {
                 />
               </div>
             </div>
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
+            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-text-primary to-text-secondary bg-clip-text text-transparent">
               GolfHelm
             </h1>
           </m.div>
@@ -308,14 +308,14 @@ export default function SignupPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
           >
-            <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-1 sm:mb-2">
               {teamName ? `Join ${teamName}` : 'Create your account'}
             </h2>
             {/* "Let's set up your team" was actively misleading on a roster
                 code: nobody arriving with a coach's code is setting up a team,
                 they are joining one that already exists. That sentence is a
                 large part of why an assistant reached for "Coach". */}
-            <p className="text-warm-500 text-sm sm:text-base">
+            <p className="text-text-secondary text-sm sm:text-base">
               {teamName
                 ? 'Choose how you\u2019re joining, then create your account.'
                 : 'You\u2019re in. Let\u2019s set up your team.'}
@@ -330,13 +330,13 @@ export default function SignupPage() {
           >
             <Suspense fallback={
               <div className="space-y-4 animate-pulse">
-                <div className="h-20 bg-warm-200 rounded-xl" />
+                <div className="h-20 bg-surface-sunken rounded-xl" />
                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <div className="h-12 bg-warm-200 rounded-xl" />
-                  <div className="h-12 bg-warm-200 rounded-xl" />
+                  <div className="h-12 bg-surface-sunken rounded-xl" />
+                  <div className="h-12 bg-surface-sunken rounded-xl" />
                 </div>
-                <div className="h-12 bg-warm-200 rounded-xl" />
-                <div className="h-12 bg-warm-200 rounded-xl" />
+                <div className="h-12 bg-surface-sunken rounded-xl" />
+                <div className="h-12 bg-surface-sunken rounded-xl" />
                 <div className="h-12 bg-primary-400/20 rounded-xl" />
               </div>
             }>
@@ -353,8 +353,8 @@ export default function SignupPage() {
         >
           {/* Same readability panel as the code gate: these lines sit over the
               painterly scene, and on a phone they land on the foliage. */}
-          <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-cream-50/95 px-4 py-3 shadow-sm ring-1 ring-warm-200/70 backdrop-blur-sm">
-            <p className="text-center text-warm-700 text-sm">
+          <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm">
+            <p className="text-center text-text-secondary text-sm">
               Already have an account?{' '}
               <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">Sign in</Link>}>
                 <SignInLink />
@@ -363,10 +363,10 @@ export default function SignupPage() {
           </div>
 
           {!isNative && (
-            <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
+            <p className="text-center mt-3 sm:mt-4 text-text-secondary text-sm">
               <Link
                 href="/"
-                className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+                className="inline-flex items-center gap-1 hover:text-text-secondary transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-surface-sunken"
               >
                 ← Back to HelmLabs
               </Link>
@@ -376,14 +376,14 @@ export default function SignupPage() {
           <div className="flex items-center justify-center gap-2 mt-2 sm:mt-3">
             <Link
               href="/privacy"
-              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
+              className="text-text-tertiary hover:text-text-secondary transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-surface-sunken"
             >
               Privacy
             </Link>
-            <span className="text-warm-300" aria-hidden="true">·</span>
+            <span className="text-text-tertiary" aria-hidden="true">·</span>
             <Link
               href="/terms"
-              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
+              className="text-text-tertiary hover:text-text-secondary transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-surface-sunken"
             >
               Terms
             </Link>
