@@ -385,6 +385,12 @@ jobs:
   # ---------------------------------------------------------------------------
   unit-tests-timezone:
     name: Unit tests (shifted timezone)
+    # PUSH/MAIN ONLY (owner 2026-08-20, PR throughput): this 2-tz x 3-shard
+    # matrix added 6 jobs to every PR and was the dominant PR-time cost. It now
+    # runs on push to main only; timezone regressions are caught post-merge
+    # (with fast rollback) rather than pre-merge. Revert this `if` to restore the
+    # pre-merge gate — see the CI-aggregate note about incident #1123.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -731,11 +737,16 @@ jobs:
     # smoke suite that only ran post-merge could not have caught a real
     # regression before it landed on `main`.
     #
-    # `unit-tests-timezone` is a hard gate, not advisory, on the same principle: a
-    # timezone-dependent fixture is a test that reports a different answer
-    # depending on when and where it runs, and one already took `main` red at 8pm
-    # EDT (#1123). Advisory would let the next one land. The suite is verified
-    # clean at both offsets, so this blocks nothing that exists today.
+    # `unit-tests-timezone` is NO LONGER in this gate (owner 2026-08-20, PR
+    # throughput). It caught a real 8pm-EDT regression (#1123) as a pre-merge
+    # gate, but at 6 jobs/PR it was the dominant PR-time cost. It now runs on
+    # push to MAIN only (see its `if`), so a timezone regression is caught
+    # post-merge with fast rollback rather than blocking every PR. The
+    # enforcement point moves accordingly: a red timezone job on `main` now
+    # blocks the DEPLOY — it is caught by the pre-promote check of main's CI
+    # before a production promote — not the merge. To restore the
+    # pre-merge gate, re-add `- unit-tests-timezone` to `needs` below AND remove
+    # its `if: github.event_name == 'push'`.
     needs:
       - database-types
       - schema-invariants
@@ -746,7 +757,6 @@ jobs:
       - lint
       - lint-ratchet
       - unit-tests
-      - unit-tests-timezone
       - business-contracts
       - next-build
       - route-hygiene
