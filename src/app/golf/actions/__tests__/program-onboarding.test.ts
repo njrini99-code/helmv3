@@ -251,7 +251,15 @@ describe('completeCoachOnboarding', () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.error).toMatch(/already exists/i);
+    // Anchored on a STABLE FRAGMENT, not the full sentence. This assertion used
+    // to pin `/already exists/i` against copy that read "Ask your program's head
+    // coach to add you to the team" — advice naming a control that does not
+    // exist, which left two real accounts stranded on 2026-08-19/20. The copy
+    // was rewritten to point at the team code, and re-pinning whole prose is how
+    // the next copy fix turns main red again.
+    expect(result.error).toMatch(/already set up on Helm/i);
+    // What the message must ACHIEVE: send them to the thing that works.
+    expect(result.error).toMatch(/team code/i);
     // Must NOT proceed to create a coach/team after the org collision.
     expect(serverMock.insertCalls.find((c) => c.table === 'golf_coaches')).toBeUndefined();
   });
