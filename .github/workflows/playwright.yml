@@ -104,9 +104,12 @@ jobs:
 
   e2e:
     name: Playwright (chromium)
+    # MANUAL ONLY (owner 2026-08-20): chromium E2E no longer runs automatically
+    # on push to main — it was PR-skipped already and its post-merge run also
+    # seeded PRODUCTION fixtures. Trigger on demand via the workflow_dispatch
+    # "Run full Playwright E2E suite" input when you actually want it.
     if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && inputs.full_e2e == 'true')
+      github.event_name == 'workflow_dispatch' && inputs.full_e2e == 'true'
     runs-on: ubuntu-latest
     # MUST stay comfortably above the `timeout <N>m` on "Run Playwright
     # tests" below, plus the ~25min of setup that precedes it (npm ci,
