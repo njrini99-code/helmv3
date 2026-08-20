@@ -99,7 +99,7 @@
     },
     {
       "path": "/api/cron/refresh-engagement",
-      "schedule": "10 * * * *"
+      "schedule": "10 */4 * * *"
     },
     {
       "path": "/api/cron/ingest-gmail-replies",
