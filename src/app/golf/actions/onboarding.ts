@@ -172,9 +172,22 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       // direct the coach to be added to the existing program instead.
       if ((orgError as { code?: string } | null)?.code === '23505') {
         await logServerError(`[Onboarding] Duplicate organization name rejected: "${orgName}"`, { action: 'onboarding.completeCoachOnboarding' });
+        // THIS MESSAGE STRANDED PEOPLE. It used to read "Ask your program's head
+        // coach to add you to the team", which named an action that did not
+        // exist — there is no add-a-coach control, and the person reading it had
+        // already been handed the only thing that works: the team code. Two
+        // accounts died here on 2026-08-19/20 (Guilford, Shenandoah), each left
+        // with an auth login and no profile, unable to sign up again (email
+        // taken) or sign in (routed straight back to this same form).
+        //
+        // The branch already knows the program exists, so the honest answer is
+        // the one that works: go back and enter the team code, which now joins
+        // this program as an assistant coach outright. Anyone already stuck
+        // reaches the fix by re-running signup with the code.
         return {
           success: false,
-          error: `An organization named "${orgName}" already exists. Ask your program's head coach to add you to the team, or contact support if you believe this is a mistake.`,
+          error: `${orgName} is already set up on Helm — so there's nothing to create. Ask your head coach for the team code and enter it at sign-up; that joins you to the existing program as an assistant coach, with full access.`,
+          redirectTo: '/golf/signup',
         };
       }
       await logServerError(`[Onboarding] Organization creation failed: ${describeError(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });

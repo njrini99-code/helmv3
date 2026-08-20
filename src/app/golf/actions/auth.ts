@@ -520,7 +520,28 @@ async function signupActionImpl(
   // Anchored to gate.teamJoinCode, never to anything the browser sent: without
   // a team code there is no program to join, and the signup is refused rather
   // than silently downgraded to a stray coach account.
-  if (role === 'assistant_request') {
+  // A ROSTER CODE OUTRANKS THE ROLE THE BROWSER SENT.
+  //
+  // `role` arrives from the client. The form derives 'assistant_request' from
+  // the resolved code scope, but the server never checked that, so a submission
+  // of role:'coach' carrying a roster code skipped the branch below and fell
+  // through to `role === 'coach' ? '/golf/coach'` — new-program onboarding, the
+  // duplicate-organization dead end this whole change exists to close.
+  //
+  // That is not hypothetical during a deploy. Anyone still holding the PREVIOUS
+  // bundle is holding the one that offers "Coach" on a roster code, and their
+  // tab posts to the NEW server — so the promote that fixes this also opens the
+  // window where it fires, for exactly the Guilford and Shenandoah users who are
+  // retrying right now.
+  //
+  // Holding a team code means joining THAT program; it cannot mean creating a
+  // new one. The staff-invite branch above already defends itself this way
+  // (see its comment: "typing a code cannot choose a role") — this is the same
+  // rule for the roster path, which was the one missing it.
+  const roleForGate: GolfSignupRole =
+    gate.teamJoinCode && role === 'coach' ? 'assistant_request' : role;
+
+  if (roleForGate === 'assistant_request') {
     if (!gate.teamJoinCode) {
       return {
         success: false,
@@ -553,8 +574,13 @@ async function signupActionImpl(
     return { success: true, redirectTo: '/golf/dashboard' };
   }
 
-  const carryJoinCode = role === 'player' && gate.teamJoinCode;
-  const redirectTo = role === 'coach'
+  // `roleForGate`, not `role` — a roster code has already been resolved to
+  // 'assistant_request' above and handled there, so reaching this line with a
+  // team code in hand and 'coach' selected is no longer possible. Reading the
+  // gated value here too means a future edit cannot reopen that path by
+  // accident.
+  const carryJoinCode = roleForGate === 'player' && gate.teamJoinCode;
+  const redirectTo = roleForGate === 'coach'
     ? '/golf/coach'
     : carryJoinCode
       ? `/golf/player?joinCode=${encodeURIComponent(gate.teamJoinCode as string)}`

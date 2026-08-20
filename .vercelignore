@@ -53,3 +53,21 @@ coverage/
 # tree, and production deploys began failing outright with
 # "Request body too large. Limit: 10mb" until this line existed.
 .claude/worktrees/
+
+# Untracked local artifact directories. Same .gitignore-is-ignored trap as the
+# blocks above, and measured 2026-08-20 during a production promote that STALLED
+# at "Uploading (0.0B/1.6GB)" and never moved:
+#
+#   audit/   1,070 MB — audit + research output, 0 files tracked by git
+#   tools/      71 MB — local tooling checkouts
+#
+# Neither has ever been part of a build. `audit/` alone was two thirds of the
+# upload. The deploy that stalled on it produced a Canceled PREVIEW and never
+# moved the production alias — i.e. it looked like a deploy and shipped nothing,
+# which is the exact failure this repo keeps re-learning.
+audit/
+tools/
+
+# Native shell — built by Capacitor/Xcode, never by the Vercel build.
+android/
+ios/
