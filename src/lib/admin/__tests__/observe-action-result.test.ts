@@ -63,6 +63,16 @@ describe('observe-action-result', () => {
     expect(isExpectedSoftFailureMessage('Could not complete the calendar action. Please try again.')).toBe(false);
   });
 
+  // submitGolfRoundComprehensive is withAdminObserved-wrapped, so its 'busy'
+  // carve-out (a same-round auto-save or a second submit still held the row
+  // past submit_round_atomic's bounded 3s wait) reaches this classifier even
+  // though the call site itself deliberately skips its own logServerError
+  // call. Without this pattern, contention that resolves itself on the next
+  // tap would page as an 'error'-severity incident.
+  it('classifies the round-submit busy message as an expected soft failure', () => {
+    expect(isExpectedSoftFailureMessage('Another save for this round is just finishing — try again in a moment.')).toBe(true);
+  });
+
   // Two identical outcomes reached the Bridge at two different severities
   // purely because of punctuation and synonym drift between emitters:
   // `Not authenticated.` (insight-delivery.ts) and `Not authorized` (~30 golf
