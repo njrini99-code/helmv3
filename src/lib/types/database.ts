@@ -625,6 +625,63 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_prevyear_classes_20260821: {
+        Row: {
+          building: string | null
+          class_name: string | null
+          color: string | null
+          created_at: string | null
+          credits: number | null
+          days: string[] | null
+          end_time: string | null
+          id: string | null
+          instructor: string | null
+          notes: string | null
+          player_id: string | null
+          room: string | null
+          semester: string | null
+          start_time: string | null
+          team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          building?: string | null
+          class_name?: string | null
+          color?: string | null
+          created_at?: string | null
+          credits?: number | null
+          days?: string[] | null
+          end_time?: string | null
+          id?: string | null
+          instructor?: string | null
+          notes?: string | null
+          player_id?: string | null
+          room?: string | null
+          semester?: string | null
+          start_time?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          building?: string | null
+          class_name?: string | null
+          color?: string | null
+          created_at?: string | null
+          credits?: number | null
+          days?: string[] | null
+          end_time?: string | null
+          id?: string | null
+          instructor?: string | null
+          notes?: string | null
+          player_id?: string | null
+          room?: string | null
+          semester?: string | null
+          start_time?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       baseball_academic_eligibility: {
         Row: {
           academic_standing: string | null
