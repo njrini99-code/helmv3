@@ -463,6 +463,168 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_ci_junk_rounds_20260821: {
+        Row: {
+          ai_recap: string | null
+          ai_recap_generated_at: string | null
+          back_nine: number | null
+          coachhelm_analyzed_at: string | null
+          coachhelm_failed_at: string | null
+          coachhelm_failure_reason: string | null
+          course_city: string | null
+          course_id: string | null
+          course_name: string | null
+          course_rating: number | null
+          course_slope: number | null
+          course_state: string | null
+          created_at: string | null
+          current_hole: number | null
+          draft_data: Json | null
+          front_nine: number | null
+          holes_played: number | null
+          id: string | null
+          notes: string | null
+          player_id: string | null
+          qualifier_id: string | null
+          qualifier_round_number: number | null
+          round_date: string | null
+          round_type: string | null
+          score_to_par: number | null
+          status: string | null
+          strokes_gained_approach: number | null
+          strokes_gained_around_green: number | null
+          strokes_gained_putting: number | null
+          strokes_gained_tee: number | null
+          strokes_gained_total: number | null
+          team_id: string | null
+          tee_id: string | null
+          tees_played: string | null
+          total_fairways: number | null
+          total_fairways_hit: number | null
+          total_gir: number | null
+          total_gir_possible: number | null
+          total_penalties: number | null
+          total_putts: number | null
+          total_score: number | null
+          updated_at: string | null
+          weather_conditions: string | null
+        }
+        Insert: {
+          ai_recap?: string | null
+          ai_recap_generated_at?: string | null
+          back_nine?: number | null
+          coachhelm_analyzed_at?: string | null
+          coachhelm_failed_at?: string | null
+          coachhelm_failure_reason?: string | null
+          course_city?: string | null
+          course_id?: string | null
+          course_name?: string | null
+          course_rating?: number | null
+          course_slope?: number | null
+          course_state?: string | null
+          created_at?: string | null
+          current_hole?: number | null
+          draft_data?: Json | null
+          front_nine?: number | null
+          holes_played?: number | null
+          id?: string | null
+          notes?: string | null
+          player_id?: string | null
+          qualifier_id?: string | null
+          qualifier_round_number?: number | null
+          round_date?: string | null
+          round_type?: string | null
+          score_to_par?: number | null
+          status?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
+          team_id?: string | null
+          tee_id?: string | null
+          tees_played?: string | null
+          total_fairways?: number | null
+          total_fairways_hit?: number | null
+          total_gir?: number | null
+          total_gir_possible?: number | null
+          total_penalties?: number | null
+          total_putts?: number | null
+          total_score?: number | null
+          updated_at?: string | null
+          weather_conditions?: string | null
+        }
+        Update: {
+          ai_recap?: string | null
+          ai_recap_generated_at?: string | null
+          back_nine?: number | null
+          coachhelm_analyzed_at?: string | null
+          coachhelm_failed_at?: string | null
+          coachhelm_failure_reason?: string | null
+          course_city?: string | null
+          course_id?: string | null
+          course_name?: string | null
+          course_rating?: number | null
+          course_slope?: number | null
+          course_state?: string | null
+          created_at?: string | null
+          current_hole?: number | null
+          draft_data?: Json | null
+          front_nine?: number | null
+          holes_played?: number | null
+          id?: string | null
+          notes?: string | null
+          player_id?: string | null
+          qualifier_id?: string | null
+          qualifier_round_number?: number | null
+          round_date?: string | null
+          round_type?: string | null
+          score_to_par?: number | null
+          status?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
+          team_id?: string | null
+          tee_id?: string | null
+          tees_played?: string | null
+          total_fairways?: number | null
+          total_fairways_hit?: number | null
+          total_gir?: number | null
+          total_gir_possible?: number | null
+          total_penalties?: number | null
+          total_putts?: number | null
+          total_score?: number | null
+          updated_at?: string | null
+          weather_conditions?: string | null
+        }
+        Relationships: []
+      }
+      backup_class_semester_20260813: {
+        Row: {
+          class_name: string | null
+          id: string | null
+          player_id: string | null
+          semester: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          class_name?: string | null
+          id?: string | null
+          player_id?: string | null
+          semester?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          class_name?: string | null
+          id?: string | null
+          player_id?: string | null
+          semester?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       baseball_academic_eligibility: {
         Row: {
           academic_standing: string | null
