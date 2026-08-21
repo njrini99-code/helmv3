@@ -1,7 +1,8 @@
--- Single-flight round SUBMIT against a same-round auto-save it may collide with.
+-- Single-flight round SUBMIT against a same-round auto-save it may collide with
 --
--- INCIDENT 2026-08-20/21, 17:07-17:30 UTC: a lock pile-up on submit_round_atomic
--- during a team submit window. save_partial_round_atomic already got the
+-- INCIDENT 2026-08-20/21, 17:07-17:30 UTC: a lock pile-up on
+-- submit_round_atomic during a team submit window.
+-- save_partial_round_atomic already got the
 -- single-flight fix (20260820170000, FOR UPDATE NOWAIT -> {success:false,
 -- error:'busy'}) because dropping an auto-save is safe by construction: the
 -- next tick resends full state. Submit is not that: it is the terminal,
@@ -41,7 +42,8 @@
 --
 -- ROLLBACK: re-apply the prior body, i.e. this same CREATE OR REPLACE with the
 -- guard section reverted to:
---   PERFORM 1 FROM golf_rounds WHERE id = p_round_id AND player_id = v_player_id
+--   PERFORM 1 FROM golf_rounds
+--     WHERE id = p_round_id AND player_id = v_player_id
 --     AND status != 'completed';
 --   IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error',
 --     'Round not found, already completed, or no permission.'); END IF;
@@ -396,7 +398,7 @@ $function$;
 -- function can never be left callable by anon.
 REVOKE EXECUTE ON FUNCTION public.submit_round_atomic(
     uuid, jsonb, jsonb, jsonb, jsonb, jsonb
-) FROM PUBLIC, anon;
+) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.submit_round_atomic(
     uuid, jsonb, jsonb, jsonb, jsonb, jsonb
 ) TO authenticated;
