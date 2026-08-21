@@ -28,7 +28,12 @@
  * score is what lets that change be seen rather than asserted.
  */
 import { describe, it, expect } from 'vitest';
-import { buildExposureRows } from '@/lib/coachhelm/v3/effectiveness/exposure-rows';
+import {
+  buildExposureRows,
+  dedupeExposureRows,
+  exposureDedupeKey,
+  startOfUtcDayIso,
+} from '@/lib/coachhelm/v3/effectiveness/exposure-rows';
 
 const INSIGHTS = [
   { id: 'i1', player_id: 'p1' },
@@ -90,5 +95,82 @@ describe('buildExposureRows', () => {
 
   it('returns nothing for an empty list', () => {
     expect(buildExposureRows([], 'coach_feed', 'c1')).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #1506 — dedup: one exposure row per (insight, coach, surface, day)
+// ---------------------------------------------------------------------------
+//
+// `recordExposureForReturned` fires on every server render, not once per
+// view. Production measured up to 349 rows for a single (insight, coach, day)
+// bucket. `dedupeExposureRows` is the app-level, racy-but-adequate filter
+// (issue's Option 1) applied right before insert — this pins its logic.
+
+describe('exposureDedupeKey', () => {
+  it('is the same key regardless of which fields are undefined vs null', () => {
+    expect(exposureDedupeKey({ insight_id: 'i1', coach_id: null, surface: null })).toBe(
+      exposureDedupeKey({ insight_id: 'i1' }),
+    );
+  });
+
+  it('distinguishes different coaches viewing the same insight', () => {
+    const a = exposureDedupeKey({ insight_id: 'i1', coach_id: 'c1', surface: 'coach_feed' });
+    const b = exposureDedupeKey({ insight_id: 'i1', coach_id: 'c2', surface: 'coach_feed' });
+    expect(a).not.toBe(b);
+  });
+
+  it('distinguishes different surfaces for the same insight and coach', () => {
+    const a = exposureDedupeKey({ insight_id: 'i1', coach_id: 'c1', surface: 'coach_feed' });
+    const b = exposureDedupeKey({ insight_id: 'i1', coach_id: 'c1', surface: 'roster_card' });
+    expect(a).not.toBe(b);
+  });
+});
+
+describe('dedupeExposureRows', () => {
+  const row = (insight_id: string, coach_id: string | null, surface: string) => ({
+    insight_id,
+    player_id: 'p1',
+    coach_id,
+    surface,
+    rank_position: 0,
+  });
+
+  it('drops a row whose (insight, coach, surface) key was already recorded today', () => {
+    const rows = [row('i1', 'c1', 'coach_feed'), row('i2', 'c1', 'coach_feed')];
+    const already = new Set([exposureDedupeKey({ insight_id: 'i1', coach_id: 'c1', surface: 'coach_feed' })]);
+
+    const out = dedupeExposureRows(rows, already);
+
+    expect(out.map((r) => r.insight_id)).toEqual(['i2']);
+  });
+
+  it('keeps every row when nothing has been recorded yet', () => {
+    const rows = [row('i1', 'c1', 'coach_feed'), row('i2', 'c1', 'coach_feed')];
+    expect(dedupeExposureRows(rows, new Set())).toHaveLength(2);
+  });
+
+  it('collapses many renders of the same insight down to one row — the #1506 shape', () => {
+    // 349 renders in a day of the same (insight, coach, surface) triple.
+    const rows = Array.from({ length: 349 }, () => row('i1', 'c1', 'coach_feed'));
+    // The first render's key is already "recorded" by the time later renders
+    // in the same batch are filtered — simulating same-day re-selects.
+    const already = new Set([exposureDedupeKey({ insight_id: 'i1', coach_id: 'c1', surface: 'coach_feed' })]);
+
+    expect(dedupeExposureRows(rows, already)).toHaveLength(0);
+  });
+
+  it('does not confuse a null coach_id (player-facing surfaces) with a real one', () => {
+    const rows = [row('i1', null, 'player_feed')];
+    const already = new Set([exposureDedupeKey({ insight_id: 'i1', coach_id: 'c9', surface: 'player_feed' })]);
+
+    expect(dedupeExposureRows(rows, already)).toHaveLength(1);
+  });
+});
+
+describe('startOfUtcDayIso', () => {
+  it('floors to UTC midnight of the given day', () => {
+    expect(startOfUtcDayIso(new Date('2026-08-18T23:59:59.999Z'))).toBe('2026-08-18T00:00:00.000Z');
+    expect(startOfUtcDayIso(new Date('2026-08-18T00:00:00.000Z'))).toBe('2026-08-18T00:00:00.000Z');
   });
 });
