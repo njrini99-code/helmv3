@@ -106,6 +106,18 @@ const CLIENT_MAX_SEVERITY: Record<string, 'info' | 'warning' | 'error'> = {
   system: 'warning',      // slow page load tops out at warning, never critical
 };
 
+/**
+ * Pure activity records among the client-allowed event types — a slow-page-
+ * load perf note ('system'), not an incident. Nothing ever triages or
+ * resolves it: auto-resolve.ts and the triage UI both filter
+ * event_type='error', so it sat resolved=false forever with no consumer that
+ * cared. Born resolved instead — same fix, same measurement (538 rows
+ * cleaned by hand 2026-08-20), as the server-side ACTIVITY_RECORD_EVENT_TYPES
+ * in admin-logger.ts. 'error' is deliberately excluded: a client crash is a
+ * real incident and must stay open for triage.
+ */
+const CLIENT_ACTIVITY_RECORD_EVENT_TYPES: ReadonlySet<string> = new Set(['system']);
+
 const SEVERITY_RANK: Record<string, number> = {
   info: 0,
   warning: 1,
@@ -301,6 +313,11 @@ export async function POST(request: NextRequest) {
         stack_trace: sanitized.stackTrace ?? null,
         browser_info: (sanitized.browserInfo ?? null) as Json,
         user_id: user.id,
+        // Activity records are born resolved — see
+        // CLIENT_ACTIVITY_RECORD_EVENT_TYPES above.
+        ...(CLIENT_ACTIVITY_RECORD_EVENT_TYPES.has(sanitized.eventType)
+          ? { resolved: true, resolved_at: new Date().toISOString() }
+          : {}),
       })
       .select('id')
       .single();
