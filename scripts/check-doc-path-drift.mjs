@@ -45,7 +45,7 @@
  *
  * Pure stdlib.
  */
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const BASELINE = '.doc-path-baseline.json';

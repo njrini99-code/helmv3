@@ -315,7 +315,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
-      - run: npm install -g markdownlint-cli2
+      # PINNED to the devDependency version (package.json). Unpinned, this
+      # floated to latest — and a markdownlint release changes rule behavior,
+      # which silently redefines the ratchet baseline: measured 2026-08-20,
+      # +102 phantom MD049s between two tool versions with zero doc edits.
+      # The baseline is only meaningful under the version that wrote it.
+      - run: npm install -g markdownlint-cli2@0.23.2
       # Was: changed-files-only lint piped through `|| true`, so this job
       # was structurally incapable of failing no matter what it found —
       # yet it sat in the required `all` aggregate. Measured 2026-08-19:
