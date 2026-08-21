@@ -248,4 +248,30 @@ Put it outside the repo instead:
   fi
 fi
 
+# 12. `vercel` production deploy/promote/rollback/alias-mutation shapes.
+#     Belt-and-braces alongside settings.json's permission `deny` rules — a
+#     permission `deny` matches a literal command-PREFIX string, and
+#     `vercel --cwd . deploy --prod` is a different prefix from
+#     `vercel deploy --prod`, so a reordered/prefixed invocation dodges the
+#     permission layer alone. Mirrors rule 6/7's supabase config push / db
+#     reset treatment. Vercel automatic git deployment stays disabled
+#     (vercel.json's deploymentEnabled: {"*": false}) — production is an
+#     on-demand, owner-run CLI action, and the GolfHelm Engineering OS's
+#     daily-reliability workflow may read Vercel (inspect/ls/logs/env ls)
+#     but must never deploy, promote, roll back, or mutate production
+#     aliasing. Read shapes are deliberately NOT touched by any of the three
+#     checks below.
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])vercel([[:space:]]|$)'; then
+  if printf '%s' "$CMD" | grep -Eq -- '--prod([[:space:]]|=|$)'; then
+    block "BLOCKED: 'vercel ... --prod'. Production deploy is an on-demand, owner-run CLI action outside the agent — this repo's Vercel automatic git deployment stays disabled on purpose.
+If a release is genuinely ready, prepare it (release candidate, verification, ledger update) and hand off; the owner runs the deploy."
+  fi
+  if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])vercel[[:space:]]+(promote|rollback)([[:space:]]|$)'; then
+    block "BLOCKED: 'vercel promote/rollback'. Both mutate what production serves, and are owner-run CLI actions outside the agent — same reasoning as the --prod block above."
+  fi
+  if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])vercel[[:space:]]+alias[[:space:]]+set([[:space:]]|$)'; then
+    block "BLOCKED: 'vercel alias set'. This mutates production domain routing and is an owner-run CLI action outside the agent, same reasoning as the --prod block above."
+  fi
+fi
+
 exit 0
