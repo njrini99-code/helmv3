@@ -36,7 +36,9 @@ import type {
   InsightCategory,
   InsightGroup,
   InsightTone,
+  PlayerTrajectorySummary,
 } from '@/lib/coachhelm/v2/types';
+import { TrajectoryForecaster } from '@/lib/coachhelm/v2/prediction/trajectory-forecaster';
 import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
@@ -61,7 +63,7 @@ import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledg
 // @/lib/auth/action-rate-limit so alerts.ts, round-recap.ts, schedule-image.ts
 // and v3/llm.ts share ONE definition. Key is unchanged (`coachhelm:engine:<id>`),
 // so live counters are not orphaned.
-import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
+import { gateCoachHelmEngineCall, gateUserAction } from '@/lib/auth/action-rate-limit';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -2750,6 +2752,130 @@ export async function generateTournamentPrep(playerId: string): Promise<{
   error?: string;
 }> {
   return observedGenerateTournamentPrep(playerId);
+}
+
+// ============================================================================
+// GET PLAYER TRAJECTORY (#1485 — the first consumer of TrajectoryForecaster)
+// ============================================================================
+
+/**
+ * Own bucket, not `coachhelm:engine`. That shared 5/min/user bucket exists for
+ * discrete "Analyze" / "Generate plan" button clicks — this action instead
+ * fires on ordinary page navigation (the player deep-dive's Scouting Report
+ * tab), so sharing the bucket would let a coach browsing five players in a
+ * minute exhaust the budget an "Analyze" click on the SIXTH page actually
+ * needs. Room to click through a full roster without tripping it.
+ */
+const TRAJECTORY_RATE_LIMIT = { maxAttempts: 20, windowMs: 60 * 1000 } as const;
+
+async function getPlayerTrajectoryImpl(playerId: string): Promise<{
+  success: boolean;
+  trajectory?: PlayerTrajectorySummary;
+  /**
+   * Set true ONLY when `success` is false because the forecaster itself
+   * found too little round history (`TrajectoryForecaster`'s own
+   * `rounds.length < 10` gate) — every other failure (auth, rate-limit,
+   * disabled, unexpected) must NOT be presented to a coach as "not enough
+   * rounds", which would be a false claim for a player with plenty of
+   * history. The caller (the player deep-dive page) branches on this flag
+   * rather than on `error`'s text.
+   */
+  insufficientHistory?: boolean;
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Coach-only surface (see the player deep-dive page's own gate). Calls
+    // the SHARED verifyPlayerAccess directly rather than this file's local
+    // wrapper: the wrapper's `coachId` is read straight from the shared
+    // helper's return value, but that helper's coach branch
+    // (verify-player-access.ts:116-155) returns
+    // `{ allowed: !!isCoach, reason: isCoach ? 'coach' : 'denied' }` — no
+    // `coachId` is ever assigned, despite the field's own docblock claiming
+    // it is. Gating on `!access.coachId` here rejected every real coach.
+    // `reason` (which the local wrapper drops entirely) is the one signal
+    // that actually distinguishes coach-access from self-access.
+    const access = await sharedVerifyPlayerAccess(playerId, user.id, supabase);
+    if (!access.allowed) {
+      return { success: false, error: 'Not authorized to access this player' };
+    }
+    if (access.reason !== 'coach') {
+      return { success: false, error: 'Not authorized' };
+    }
+
+    // See TRAJECTORY_RATE_LIMIT above for why this is its own bucket.
+    const rateLimit = await gateUserAction(
+      'coachhelm:trajectory',
+      user.id,
+      TRAJECTORY_RATE_LIMIT,
+      'Too many trajectory requests in the last minute — please wait a moment and try again.',
+    );
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error };
+    }
+
+    const status = await isCoachHelmEnabledForPlayer(playerId);
+    if (!status.effectivelyEnabled) {
+      return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
+    }
+
+    // Calls the forecaster directly rather than coachHelmIntelligence.analyzePlayer():
+    // the full orchestrator unconditionally runs ~20 tier-1 generators + composite
+    // synthesis + feature extraction on every call regardless of which optional
+    // flags are set (see orchestrator.ts's analyzePlayer body) — a write-heavy,
+    // multi-second run that is the wrong cost for "show the trajectory card".
+    // TrajectoryForecaster.forecastTrajectory() alone is read-only: one feature
+    // extraction + one 100-row golf_rounds query, no writes.
+    const trajectory = await new TrajectoryForecaster(playerId).forecastTrajectory();
+    if (!trajectory) {
+      return {
+        success: false,
+        error: 'Not enough round history for a trajectory forecast',
+        insufficientHistory: true,
+      };
+    }
+
+    // Trimmed to what the card renders — see PlayerTrajectorySummary's
+    // docblock for why the full forecast (scenarios alone repeat the whole
+    // projections series 4x) doesn't cross this boundary.
+    return {
+      success: true,
+      trajectory: {
+        horizonDays: trajectory.horizonDays,
+        projections: trajectory.projections,
+        roundsAnalyzed: trajectory.roundsAnalyzed,
+        modelConfidence: trajectory.modelConfidence,
+      },
+    };
+  } catch (error) {
+    await logServerError(`getPlayerTrajectory failed: ${describeError(error)}`, {
+      action: 'getPlayerTrajectory',
+      featureArea: 'insights',
+      playerId,
+    });
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+const observedGetPlayerTrajectory = withAdminObserved(
+  'getPlayerTrajectory',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getPlayerTrajectoryImpl,
+);
+export async function getPlayerTrajectory(playerId: string): Promise<{
+  success: boolean;
+  trajectory?: PlayerTrajectorySummary;
+  insufficientHistory?: boolean;
+  error?: string;
+}> {
+  return observedGetPlayerTrajectory(playerId);
 }
 
 // ============================================================================
