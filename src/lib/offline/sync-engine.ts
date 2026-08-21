@@ -35,6 +35,7 @@ import {
   clearSyncedData,
   shouldRetry,
   MAX_RETRY_COUNT,
+  isIdbUnavailableThisSession,
   type OfflineRound,
   type OfflineHole,
   type OfflineShot,
@@ -368,7 +369,14 @@ class SyncEngine {
         total: totalRounds + holes.length + shots.length,
       };
     } catch (error) {
-      console.error('Failed to refresh pending count:', error);
+      // `shot-storage.ts` already reports a device-level IndexedDB open
+      // failure exactly once, at 'low' severity. This runs on every
+      // auto-sync tick, so an unconditional log here would re-report the
+      // SAME already-known condition on the same interval — one production
+      // incident showing up as several Sentry events instead of one.
+      if (!isIdbUnavailableThisSession()) {
+        console.error('Failed to refresh pending count:', error);
+      }
     }
   }
 
@@ -920,7 +928,12 @@ class SyncEngine {
         this.state.lastSuccessfulSync = new Date(lastSuccessfulSync);
       }
     } catch (error) {
-      console.error('Failed to load sync metadata:', error);
+      // Same rationale as refreshPendingCount above: this runs once from the
+      // constructor and again from initialize(), so an unconditional log
+      // double-reports the same already-known device-level failure.
+      if (!isIdbUnavailableThisSession()) {
+        console.error('Failed to load sync metadata:', error);
+      }
     }
   }
 

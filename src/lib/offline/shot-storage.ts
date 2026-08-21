@@ -14,6 +14,7 @@
 
 import type { GolfShot, GolfHole, GolfRound } from '@/lib/types/golf';
 import type { Json } from '@/lib/types/database';
+import { logError } from '@/lib/error-logging';
 
 // ============================================================================
 // TYPES
@@ -137,6 +138,57 @@ const DATA_EXPIRY_DAYS = 30;
 let dbInstance: IDBDatabase | null = null;
 let dbInitPromise: Promise<IDBDatabase> | null = null;
 
+/**
+ * Set once `indexedDB.open()` itself fails — a device-level condition
+ * ("Internal error opening backing store", 5 production events from WebKit's
+ * storage-eviction/quota quirks), not a stale-connection race. This is
+ * distinct from `dbInstance`/`dbInitPromise`: those get reset and retried
+ * (a closed connection or an in-flight open can resolve on the next call),
+ * but a backing-store failure does not resolve mid-session — retrying only
+ * repeats the same OS-level failure, at the same latency cost, producing the
+ * same error every caller then had to independently catch and (in some
+ * paths) log. Once set, `openShotDatabase()` fails FAST with the cached
+ * error instead of re-attempting `indexedDB.open()`, so every consumer
+ * (the offline-sync hook, the sync engine, `OfflineProvider`) degrades to
+ * network-only for the rest of the tab's session — no retries, no repeated
+ * "Internal error opening backing store" round-trips to the OS.
+ */
+let idbUnavailableThisSession = false;
+let idbUnavailableError: Error | null = null;
+
+/**
+ * True once the device-level open failure has already been reported for this
+ * session. Callers that keep their OWN unconditional `console.error` around a
+ * `shot-storage.ts` read (e.g. `SyncEngine.loadSyncMetadata`/
+ * `refreshPendingCount`, which run repeatedly — once per construction and
+ * again on every auto-sync tick) should gate that log on this flag rather
+ * than reporting the same known, already-logged condition again each time.
+ */
+export function isIdbUnavailableThisSession(): boolean {
+  return idbUnavailableThisSession;
+}
+
+/**
+ * Report the device-level open failure exactly once per session (module-level
+ * flag survives remounts of whatever hook/component triggered it — the
+ * production incident this fixes was 5 events from ONE user's ONE session,
+ * each from a fresh mount retrying and re-logging the same unrecoverable
+ * failure). `logError`'s own client-side throttle would eventually cap
+ * repeats too, but only after up to 8 duplicate Sentry issues; this stops it
+ * at exactly one, at 'low' severity (Sentry 'info' — expected on some
+ * devices, not an application defect).
+ */
+function reportIdbUnavailableOnce(error: Error): void {
+  if (idbUnavailableThisSession) return;
+  idbUnavailableThisSession = true;
+  idbUnavailableError = error;
+  try {
+    logError(error, { component: 'shot-storage', action: 'openShotDatabase' }, 'low');
+  } catch {
+    // Logging must never be the reason offline storage fails to degrade.
+  }
+}
+
 function isClosingConnectionError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   return error.name === 'InvalidStateError'
@@ -153,6 +205,10 @@ function resetShotDatabase(expected?: IDBDatabase): void {
  * Open or create the IndexedDB database with all stores
  */
 async function openShotDatabase(): Promise<IDBDatabase> {
+  if (idbUnavailableThisSession) {
+    throw idbUnavailableError ?? new Error('IndexedDB unavailable this session');
+  }
+
   // Return existing instance if available and connection is still open
   if (dbInstance) {
     try {
@@ -183,7 +239,9 @@ async function openShotDatabase(): Promise<IDBDatabase> {
 
     request.onerror = () => {
       dbInitPromise = null;
-      reject(new Error(`Failed to open IndexedDB: ${request.error?.message}`));
+      const error = new Error(`Failed to open IndexedDB: ${request.error?.message}`);
+      reportIdbUnavailableOnce(error);
+      reject(error);
     };
 
     request.onsuccess = () => {
@@ -263,24 +321,49 @@ async function openShotDatabase(): Promise<IDBDatabase> {
 }
 
 /**
- * Create a transaction, reopening once when another tab closes/upgrades the
- * cached connection between `openShotDatabase()` and `transaction()`.
+ * Run `runOnTransaction` against a freshly-created transaction, reopening once
+ * when another tab closed/upgraded the cached connection between
+ * `openShotDatabase()` and `db.transaction()`.
  *
- * Only transaction SETUP is retried. Request/transaction failures after work
- * begins are left to the caller, so writes are never replayed ambiguously.
+ * THE BUG THIS REPLACES (production, Capacitor-iOS): the previous shape —
+ * `const transaction = await openShotTransaction(...)`, THEN place a request
+ * on it inside a separately-constructed `new Promise(...)` — returned an
+ * already-created `IDBTransaction` across an `await`, and every caller placed
+ * its first request on it a FULL PROMISE-RESOLUTION LATER. An IndexedDB
+ * transaction auto-commits once its request queue goes empty; Safari/WebKit
+ * is measurably stricter than Chromium about how many microtask ticks it
+ * tolerates between "transaction created" and "first request queued" before
+ * treating it as finished. Two ticks — one for `openShotDatabase()`'s own
+ * promise, one for the wrapper's — was consistently enough on-device to
+ * auto-commit before the first `.get()`/`.getAll()` ran, throwing "Attempt to
+ * get a record from database without an in-progress transaction" (and the
+ * verbatim "Failed to get sync metadata" from `getSyncMetadata` below).
+ * Never reproduced in Chrome devtools, which is exactly what an
+ * engine-specific commit-timing gap looks like.
+ *
+ * THE FIX: resolve the database handle first — that await is safe, no
+ * transaction exists yet to go stale — then create the transaction AND place
+ * every request on it SYNCHRONOUSLY inside `runOnTransaction`, in the same
+ * microtask as `db.transaction(...)`. Only transaction SETUP is retried;
+ * request/transaction failures after `runOnTransaction` starts are left to the
+ * caller, so writes are never replayed ambiguously.
  */
-async function openShotTransaction(
+async function withShotTransaction<T>(
   stores: string | string[],
   mode: IDBTransactionMode,
-): Promise<IDBTransaction> {
+  runOnTransaction: (transaction: IDBTransaction) => Promise<T>,
+): Promise<T> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const db = await openShotDatabase();
+    let transaction: IDBTransaction;
     try {
-      return db.transaction(stores, mode);
+      transaction = db.transaction(stores, mode);
     } catch (error) {
       if (attempt > 0 || !isClosingConnectionError(error)) throw error;
       resetShotDatabase(db);
+      continue;
     }
+    return runOnTransaction(transaction);
   }
   throw new Error('Failed to open IndexedDB transaction');
 }
@@ -326,9 +409,7 @@ export async function updateOfflineShot(
  * Get all pending shots
  */
 export async function getPendingShots(): Promise<OfflineShot[]> {
-  const transaction = await openShotTransaction(SHOTS_STORE, 'readonly');
-
-  return new Promise((resolve, reject) => {
+  return withShotTransaction(SHOTS_STORE, 'readonly', (transaction) => new Promise((resolve, reject) => {
     const store = transaction.objectStore(SHOTS_STORE);
     const index = store.index('_sync_status');
     const request = index.getAll('pending');
@@ -342,7 +423,7 @@ export async function getPendingShots(): Promise<OfflineShot[]> {
     };
 
     request.onerror = () => reject(new Error(`Failed to get pending shots: ${request.error?.message || 'unknown error'}`));
-  });
+  }));
 }
 
 /**
@@ -426,9 +507,7 @@ export async function updateOfflineHole(
  * Get all pending holes
  */
 export async function getPendingHoles(): Promise<OfflineHole[]> {
-  const transaction = await openShotTransaction(HOLES_STORE, 'readonly');
-
-  return new Promise((resolve, reject) => {
+  return withShotTransaction(HOLES_STORE, 'readonly', (transaction) => new Promise((resolve, reject) => {
     const store = transaction.objectStore(HOLES_STORE);
     const index = store.index('_sync_status');
     const request = index.getAll('pending');
@@ -442,7 +521,7 @@ export async function getPendingHoles(): Promise<OfflineHole[]> {
     };
 
     request.onerror = () => reject(new Error(`Failed to get pending holes: ${request.error?.message || 'unknown error'}`));
-  });
+  }));
 }
 
 /**
@@ -526,9 +605,7 @@ export async function updateOfflineRound(
  * Get all pending rounds
  */
 export async function getPendingRounds(): Promise<OfflineRound[]> {
-  const transaction = await openShotTransaction(ROUNDS_STORE, 'readonly');
-
-  return new Promise((resolve, reject) => {
+  return withShotTransaction(ROUNDS_STORE, 'readonly', (transaction) => new Promise((resolve, reject) => {
     const store = transaction.objectStore(ROUNDS_STORE);
     const index = store.index('_sync_status');
     const request = index.getAll('pending');
@@ -542,7 +619,7 @@ export async function getPendingRounds(): Promise<OfflineRound[]> {
     };
 
     request.onerror = () => reject(new Error(`Failed to get pending rounds: ${request.error?.message || 'unknown error'}`));
-  });
+  }));
 }
 
 /**
@@ -564,9 +641,7 @@ async function getByStatus<T extends OfflineMetadata>(
   store: string,
   status: SyncStatus
 ): Promise<T[]> {
-  const transaction = await openShotTransaction(store, 'readonly');
-
-  return new Promise((resolve, reject) => {
+  return withShotTransaction(store, 'readonly', (transaction) => new Promise((resolve, reject) => {
     const objectStore = transaction.objectStore(store);
     const index = objectStore.index('_sync_status');
     const request = index.getAll(status);
@@ -580,7 +655,7 @@ async function getByStatus<T extends OfflineMetadata>(
     };
 
     request.onerror = () => reject(new Error(`Failed to get ${status} rows from ${store}: ${request.error?.message || 'unknown error'}`));
-  });
+  }));
 }
 
 /** Rounds whose last sync attempt failed — the retry candidates. */
@@ -668,9 +743,7 @@ export async function setSyncMetadata(key: string, value: unknown): Promise<void
  * Get a sync metadata value
  */
 export async function getSyncMetadata<T>(key: string): Promise<T | null> {
-  const transaction = await openShotTransaction(SYNC_META_STORE, 'readonly');
-
-  return new Promise((resolve, reject) => {
+  return withShotTransaction(SYNC_META_STORE, 'readonly', (transaction) => new Promise((resolve, reject) => {
     const store = transaction.objectStore(SYNC_META_STORE);
     const request = store.get(key);
 
@@ -680,7 +753,7 @@ export async function getSyncMetadata<T>(key: string): Promise<T | null> {
     };
 
     request.onerror = () => reject(new Error('Failed to get sync metadata'));
-  });
+  }));
 }
 
 // ============================================================================
@@ -707,16 +780,14 @@ export async function getOfflineStats(): Promise<OfflineStats> {
     .catch(() => 0);
 
   // Count failed items
-  const getFailedCount = async (store: string): Promise<number> => {
-    const transaction = await openShotTransaction(store, 'readonly');
-    return new Promise((resolve) => {
+  const getFailedCount = async (store: string): Promise<number> =>
+    withShotTransaction(store, 'readonly', (transaction) => new Promise((resolve) => {
       const objectStore = transaction.objectStore(store);
       const index = objectStore.index('_sync_status');
       const request = index.count('failed');
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => resolve(0);
-    });
-  };
+    }));
 
   const [failedRounds, failedHoles, failedShots] = await Promise.all([
     getFailedCount(ROUNDS_STORE),
