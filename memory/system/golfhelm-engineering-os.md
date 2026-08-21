@@ -5,18 +5,19 @@
 > designing changes TO this system, not for daily work. If this file and the
 > long spec disagree, the long spec wins and this file is the one to fix.
 
-> **Build status (verified 2026-08-21, this file's install date):** this file
-> describes the target contract; parts of it are not wired yet. Live today:
+> **Build status (verified 2026-08-21, updated P2):** Live today:
 > `knowledge:map` / `knowledge:context` / `knowledge:check` / `knowledge:report`,
-> `repo:doctor`, `preflight`, `config/release-policy.yml`, this file, and the
-> `.claude/rules/golfhelm-engineering-os.md` path-scoped pointer. **Not built
+> `repo:doctor`, `preflight`, `config/release-policy.yml`, this file, the
+> `.claude/rules/golfhelm-engineering-os.md` path-scoped pointer,
+> `.claude/session-state/<session_id>.jsonl` event recording, the
+> `guard-feature-context` PreToolUse gate, and the session-owned Stop gate
+> (mapping/context/memory checks, see "Session mechanics" below). **Not built
 > yet** (later phases of the same install): `knowledge:registry-check`,
 > `reliability:collect`/`report`, `release:status`/`budget`/`prepare`/`check`,
-> the `guard-feature-context` hook, `.claude/session-state/` recording, the
-> rebuilt Stop gate, the `golfhelm-daily-reliability`/`golfhelm-release-manager`
-> skills, and the 12 new `repo:doctor` OS-wiring checks. Where this file says a
-> hook "enforces" or "denies" something below, read that as the rule the build
-> is working toward — apply it by hand until the hook lands.
+> the `golfhelm-daily-reliability`/`golfhelm-release-manager` skills, and the
+> 12 new `repo:doctor` OS-wiring checks. Where this file still says a rule
+> "will" enforce something, that phrasing has not caught up for the items
+> just listed as live — read it as already in force for those.
 
 ## Source-of-truth hierarchy (highest first)
 
@@ -62,10 +63,10 @@ Governed paths: everything `memory/registry.yml` maps, plus
    multi-feature files, every materially impacted feature).
 3. Verify names, columns, and paths against generated/live truth.
 
-The `guard-feature-context` hook will enforce this mechanically once wired:
-edits to governed files denied until the session has actually loaded the
+The `guard-feature-context` PreToolUse hook enforces this mechanically:
+edits to governed files are denied until the session has actually loaded the
 mapped feature context (reading the doc or running `knowledge:context`
-counts; writing a flag does not). Apply it by hand until then.
+counts; writing a flag does not).
 
 ## After meaningful behavioral mutation
 
@@ -75,12 +76,12 @@ counts; writing a flag does not). Apply it by hand until then.
 - Update/create `memory/incidents/<feature-id>/INC-*.md` when incident-driven.
 - Create `memory/decisions/ADR-*.md` for architecture decisions.
 
-Non-behavioral changes record a structured reason instead
-(`node .claude/hooks/lib/record-event.mjs no-memory-change --reason <r>`,
-once that helper lands); valid reasons: `format-only`,
-`generated-file-refresh`, `test-only-no-contract-change`,
-`comment-correction`, `mechanical-refactor-with-proven-equivalent-behavior`.
-The Stop gate rejects bare "not needed".
+Non-behavioral changes record a structured reason instead:
+`node .claude/hooks/lib/record-event.mjs no-memory-change --reason <r>`;
+valid reasons: `format-only`, `generated-file-refresh`,
+`test-only-no-contract-change`, `comment-correction`,
+`mechanical-refactor-with-proven-equivalent-behavior`. The Stop gate rejects
+bare "not needed".
 
 ## Verification before stopping
 
@@ -171,16 +172,18 @@ npm run repo:doctor                 # live; OS-wiring checks arrive with the che
 npm run preflight                   # live — the blocking static gate set
 ```
 
-## Session mechanics (target — hooks arrive in a later phase of this build)
+## Session mechanics (live)
 
-Not wired yet; apply the rules above manually until these exist. Once wired:
 SessionStart initializes `.claude/session-state/<session_id>.jsonl` and
 announces this OS. PostToolUse records the feature contexts you actually
 load and every file you touch (event-time ownership — git is never asked to
 guess whose change is whose). PreToolUse denies governed edits without
-loaded context, and denies production deploy shapes outright. Stop verifies
-mapping, context, memory, and verification evidence against your session's
-own state before you may finish.
+loaded context (`guard-feature-context.mjs`), and denies production deploy
+shapes outright (`.claude/settings.json` permission denies plus a
+`guard-bash.sh` belt-and-braces rule). Stop verifies mapping, context, and
+memory evidence against your session's own state before allowing the turn to
+end (`stop-verify.sh` + `lib/stop-check.mjs`); git is a fallback cross-check
+only, used solely when a session's own ledger recorded zero touches.
 
 ## Advanced Reliability Layer
 
@@ -211,3 +214,10 @@ fixtures, no risk model, no flag registry, no baselines, no eval registry
 exist in the repo today. Nothing above is a live command, registry, or gate
 until its phase lands; treat every noun in this section as planned, not
 present.
+
+### Autonomy Control Plane (arc 3, pending)
+
+Deep-research extension beyond the layer above: world model, agent flight
+recorder, verification ensemble, earned autonomy, and more — detail at
+`docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md`. Sequenced after this base OS
+and the Advanced Reliability Layer; nothing in it is wired yet.

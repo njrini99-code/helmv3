@@ -56,6 +56,20 @@ export default tseslint.config(
     },
   },
   {
+    // The GolfHelm Engineering OS's hooks (P2) are plain Node scripts, same
+    // shape as scripts/** above — `npm run lint` doesn't reach .claude/ (it
+    // targets src/**/*.{ts,tsx} only), but ad-hoc/future linting of these
+    // files should not report 50 fake `process`/`console` no-undef errors,
+    // for the same reason the scripts/wf_*.js block above exists: that is
+    // exactly how a directory ends up excluded from linting altogether.
+    files: [".claude/hooks/**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     // Workflow scripts (the Workflow tool's `script` payload, saved to disk).
     // They are executed inside a sandbox that INJECTS these as globals, so they
     // are never imported or declared in the file itself. Without this block

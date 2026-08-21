@@ -53,6 +53,12 @@
     "deny": [
       "Bash(supabase config push:*)",
       "Bash(supabase db reset:*)",
+      "Bash(vercel deploy --prod:*)",
+      "Bash(vercel deploy --prod)",
+      "Bash(vercel --prod:*)",
+      "Bash(vercel promote:*)",
+      "Bash(vercel rollback:*)",
+      "Bash(vercel alias set:*)",
       "Read(./.env)",
       "Read(./.env.local)",
       "Read(./.env.*.local)",
@@ -69,6 +75,12 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-context.sh",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/init-session-state.mjs",
+            "timeout": 10,
+            "statusMessage": "engineering-os: init session"
           }
         ]
       }
@@ -93,6 +105,12 @@
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-sql.sh",
             "timeout": 10,
             "statusMessage": "guard: sql grants"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-feature-context.mjs",
+            "timeout": 10,
+            "statusMessage": "guard: feature context"
           }
         ]
       },
@@ -110,8 +128,25 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Read|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-context-load.mjs",
+            "timeout": 10,
+            "statusMessage": "engineering-os: record context load"
+          }
+        ]
+      },
+      {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-session-touch.mjs",
+            "timeout": 10,
+            "statusMessage": "engineering-os: record touch"
+          },
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit.sh",
