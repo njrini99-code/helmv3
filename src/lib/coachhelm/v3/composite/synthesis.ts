@@ -54,8 +54,8 @@ const INFERRED_CONFIDENCE_CEILING = 0.6;
  * Diagnostic `strokes_impact` backfill for composites (tee-strat-1/lag3putt-3).
  *
  * Composite rules that don't compute their own leverage hard-code
- * `strokes_impact: 0` (bunker-miss-side, flyer-lie, lag-distance, long-approach-
- * 3putt-cascade, short-side-scrambling-chain, short-approach-proximity-gap).
+ * `strokes_impact: 0` (bunker-miss-side, flyer-lie, lag-distance,
+ * short-side-scrambling-chain, short-approach-proximity-gap).
  * They never run through the generator-base counterfactual backfill, so they
  * ship `strokes_impact = 0` and rank LAST on every flat surface (Hub card,
  * coach feed, digest) — under titles framed as urgent cascades.
