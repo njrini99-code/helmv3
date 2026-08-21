@@ -170,8 +170,9 @@ export interface TracerData {
   }[];
   /**
    * True if any of the bounded queries (rounds, players, etc.) hit their
-   * row limit. UI can surface "showing latest N — older not shown" when set.
-   * Tonight: just expose, don't render.
+   * row limit. Wired into TracerTab -> TracerHealthOverview -> TracerKPICards'
+   * "Completion Rate" card as a "first 500 rounds" caveat (Bridge audit
+   * 2026-08-21 — this was computed but never read for months).
    */
   truncated: boolean;
   /** Per-round integrity data from hole-level aggregation */
@@ -845,11 +846,12 @@ async function getTracerDataImpl(): Promise<TracerData> {
     // as round_started above — classifyInProgressActivity returns null for
     // anything untouched in 30+ days, so a round nobody has touched since
     // May doesn't sit in "recent activity" forever. Within that window, only
-    // a round that was ALSO started recently renders as "stuck" (loud, red,
-    // highest priority); one started long ago renders as the quieter
-    // "abandoned" tier instead of screaming stuck/critical on every load.
+    // a round that has ALSO been idle less than STUCK_TIER_MAX_IDLE_HOURS
+    // renders as "stuck" (loud, red, highest priority); one idle longer
+    // renders as the quieter "abandoned" tier instead of screaming
+    // stuck/critical on every load.
     if (r.status === 'in_progress' && r.updated_at) {
-      const activityType = classifyInProgressActivity(r.created_at, r.updated_at);
+      const activityType = classifyInProgressActivity(r.updated_at);
       if (activityType) {
         const hoursInactive = (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60);
         const isStuck = activityType === 'round_stuck';
@@ -1230,15 +1232,16 @@ async function getTracerEnrichedDataImpl(): Promise<TracerEnrichedData> {
       .order('created_at', { ascending: true }),
 
     // Candidate stuck rounds (in_progress, updated_at > 1 hour ago, within
-    // the same 30-day window as everything else here). `created_at` is
-    // selected so classifyInProgressActivity below can tell a recently-
-    // started round that halted (stuck — belongs on this alert panel) apart
-    // from one abandoned long ago (not alert-worthy — see the `.filter`
-    // below). The `.gte` bound also keeps rows this query returns from
-    // growing unboundedly as abandoned rounds accumulate over time.
+    // the same 30-day window as everything else here). classifyInProgressActivity
+    // below tells a round idle < STUCK_TIER_MAX_IDLE_HOURS (stuck — belongs
+    // on this alert panel) apart from one idle longer (not alert-worthy —
+    // see the `.filter` below) using `updated_at` alone; `created_at` is no
+    // longer part of that decision and isn't selected here. The `.gte`
+    // bound also keeps rows this query returns from growing unboundedly as
+    // abandoned rounds accumulate over time.
     adminDb
       .from('golf_rounds')
-      .select('id, player_id, course_name, current_hole, holes_played, created_at, updated_at')
+      .select('id, player_id, course_name, current_hole, holes_played, updated_at')
       .eq('status', 'in_progress')
       .lt('updated_at', oneHourAgo)
       .gte('updated_at', ago30d),
@@ -1290,7 +1293,7 @@ async function getTracerEnrichedDataImpl(): Promise<TracerEnrichedData> {
   // alert panel forever.
   const stuckRounds = stuckData
     .filter((r): r is typeof r & { updated_at: string } => r.updated_at != null)
-    .filter((r) => classifyInProgressActivity(r.created_at, r.updated_at) === 'round_stuck')
+    .filter((r) => classifyInProgressActivity(r.updated_at) === 'round_stuck')
     .map((r) => ({
       round_id: r.id,
       player_id: r.player_id,

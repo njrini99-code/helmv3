@@ -1,6 +1,6 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchLiftingTab, type LiftingSessionFeedRow } from '@/lib/admin/data/lifting';
-import { Surface, StatStrip, StatusPill, TrendChart } from '@/components/fairway';
+import { Surface, StatStrip, StatusPill, TrendChart, InlineNotice } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
@@ -78,6 +78,14 @@ async function LiftingBody() {
           baseball tabs each show their own sport-scoped Lift Lab slice; this is the whole picture.
         </p>
       </Surface>
+
+      {lift.allSessionsAreDemoOrgs && (
+        <InlineNotice tone="warning" title="Every session below is seed/demo data">
+          Every helm_lifting_sessions row that has ever existed belongs to Rini University or Demo University — no
+          real program has logged a Lift Lab session yet. The numbers below are honestly computed; there just isn't
+          real usage to compute them from.
+        </InlineNotice>
+      )}
 
       <section className="space-y-4">
         <SectionLabel>Activity pulse</SectionLabel>

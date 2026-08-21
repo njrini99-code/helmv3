@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchTeamDetail } from '@/lib/admin/data/team-detail';
+import { coachDisplayName, buildCoachDisambiguator } from './coach-display';
 import { fetchTeamPageExtras } from '@/lib/admin/data/team-page-extras';
 import { computeTeamGrade, computeTeamComputedInsights, type TeamGrade } from '@/lib/admin/data/team-grade';
 import { classifyTeamHealth, type TeamHealth } from '@/lib/admin/data/golf';
@@ -167,12 +168,16 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
             {coaches.length > 0 ? (
               <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                 <span className="text-warm-500">Coaches:</span>
-                {coaches.map((c) => (
-                  <Link key={c.id} href={c.href} className="text-accent-700 underline-offset-2 hover:underline">
-                    {c.fullName ?? c.email ?? 'Unnamed coach'}
-                    {c.isPrimary ? ' (primary)' : ''}
-                  </Link>
-                ))}
+                {coaches.map((c) => {
+                  const disambiguator = buildCoachDisambiguator(c, coaches);
+                  return (
+                    <Link key={c.id} href={c.href} className="text-accent-700 underline-offset-2 hover:underline">
+                      {coachDisplayName(c)}
+                      {disambiguator ? ` (${disambiguator})` : ''}
+                      {c.isPrimary ? ' (primary)' : ''}
+                    </Link>
+                  );
+                })}
               </p>
             ) : (
               <p className="mt-2 text-sm text-warm-500">No coaches assigned</p>

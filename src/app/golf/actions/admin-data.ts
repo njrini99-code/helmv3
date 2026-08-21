@@ -3968,7 +3968,7 @@ async function getAdminStuckRoundsImpl(): Promise<AdminStuckRound[] | null> {
 
   const { data: rows, error } = await adminDb
     .from('golf_rounds')
-    .select('id, player_id, course_name, current_hole, created_at, updated_at')
+    .select('id, player_id, course_name, current_hole, updated_at')
     .eq('status', 'in_progress')
     .lt('updated_at', oneHourAgo)
     .gte('updated_at', ago30d)
@@ -4013,7 +4013,7 @@ async function getAdminStuckRoundsImpl(): Promise<AdminStuckRound[] | null> {
   }
 
   return candidates
-    .filter((r) => classifyInProgressActivity(r.created_at, r.updated_at) === 'round_stuck')
+    .filter((r) => classifyInProgressActivity(r.updated_at) === 'round_stuck')
     .map((r) => ({
       round_id: r.id,
       player_name: playerNameMap.get(r.player_id) || 'Unknown',

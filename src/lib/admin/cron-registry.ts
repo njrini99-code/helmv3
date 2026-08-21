@@ -24,7 +24,14 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'integrity-check', path: '/api/cron/integrity-check', cadenceMinutes: DAILY },
   { jobType: 'log-retention', path: '/api/cron/log-retention', cadenceMinutes: DAILY },
   { jobType: 'admin-digest', path: '/api/cron/admin-digest', cadenceMinutes: DAILY },
-  { jobType: 'refresh-engagement', path: '/api/cron/refresh-engagement', cadenceMinutes: 5 },
+  // vercel.json schedules this "10 */4 * * *" — every 4 hours, not 5 minutes.
+  // The 5-minute value survived here because the contract test below only
+  // ever diffed the SET of paths between this file and vercel.json, never
+  // cadenceMinutes against the actual schedule string — see that test for
+  // the fix. At 5 min, classifyCronStatus's 1.5x-cadence overdue threshold
+  // (7.5 min) made the Jobs board show this job "overdue" almost
+  // continuously between its real, on-schedule 4-hour runs.
+  { jobType: 'refresh-engagement', path: '/api/cron/refresh-engagement', cadenceMinutes: 4 * 60 },
   { jobType: 'ingest-gmail-replies', path: '/api/cron/ingest-gmail-replies', cadenceMinutes: 30 },
 ] as const;
 

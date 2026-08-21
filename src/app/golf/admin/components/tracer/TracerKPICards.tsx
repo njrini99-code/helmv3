@@ -18,6 +18,12 @@ interface TracerKPICardsProps {
     rounds: number[];
     errors: number[];
   };
+  /** True when the rounds query behind these KPIs hit its 500-row cap
+   *  (TracerData.truncated, admin-tracer-data.ts) — totalRounds/completedRounds/
+   *  completionRate are all computed from that same capped set platform-wide,
+   *  so once total rounds crosses 500 they silently under-count with no
+   *  warning unless this is surfaced. */
+  truncated?: boolean;
 }
 
 export function TracerKPICards({
@@ -28,6 +34,7 @@ export function TracerKPICards({
   critical7d,
   statsMismatches,
   sparklineData,
+  truncated,
 }: TracerKPICardsProps) {
   // Force remount of the cards when their numeric values change. AdminStatCard
   // wraps numbers in <AnimatedNumber>, which only animates from 0 to its value
@@ -55,7 +62,11 @@ export function TracerKPICards({
         value={`${completionRate}%`}
         icon={<IconCheckCircle2 size={20} />}
         accentColor={completionRate >= 80 ? 'green' : completionRate >= 50 ? 'amber' : 'red'}
-        detail={`${totalRounds - completedRounds} incomplete`}
+        detail={
+          truncated
+            ? `${totalRounds - completedRounds} incomplete · first 500 rounds`
+            : `${totalRounds - completedRounds} incomplete`
+        }
       />
       <AdminStatCard
         key={`errors-7d-${errors7d}`}

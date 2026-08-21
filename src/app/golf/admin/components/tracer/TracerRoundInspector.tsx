@@ -42,18 +42,19 @@ type StatusFilter = 'all' | 'completed' | 'in_progress' | 'draft';
  * A round's activity tier: 'not_in_progress' for anything that isn't
  * currently `in_progress` (or has no `updated_at` to classify from), else
  * whatever classifyInProgressActivity resolves to — 'round_stuck' only for
- * an in_progress round that was ALSO created recently (recently-active-then-
- * halted); a round idle 1h+ that was started long ago is 'round_abandoned'
- * instead, so it doesn't sort to the top with a red Critical badge forever.
- * A round outside the 30-day recency window (classifyInProgressActivity
- * returns null) still needs a tier here — the round table shows every round
- * regardless of age, unlike the activity feed — so it falls back to
- * 'round_abandoned', the correct low-priority tier for something even older
- * than the window that produces 'round_abandoned' on its own.
+ * an in_progress round that has ALSO been idle less than
+ * STUCK_TIER_MAX_IDLE_HOURS (recently-active-then-halted); a round idle
+ * longer than that is 'round_abandoned' instead, so it doesn't sort to the
+ * top with a red Critical badge forever. A round outside the 30-day recency
+ * window (classifyInProgressActivity returns null) still needs a tier here
+ * — the round table shows every round regardless of age, unlike the
+ * activity feed — so it falls back to 'round_abandoned', the correct
+ * low-priority tier for something even older than the window that produces
+ * 'round_abandoned' on its own.
  */
 function roundActivityTier(round: FlatRound): InProgressActivityType | 'not_in_progress' {
   if (round.status !== 'in_progress' || !round.updated_at) return 'not_in_progress';
-  return classifyInProgressActivity(round.created_at, round.updated_at) ?? 'round_abandoned';
+  return classifyInProgressActivity(round.updated_at) ?? 'round_abandoned';
 }
 
 export function isStuckRound(round: FlatRound): boolean {

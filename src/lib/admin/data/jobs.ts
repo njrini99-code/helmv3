@@ -87,10 +87,52 @@ interface BackgroundJobLogRow {
 /** Runs kept per job for the recent-history strip / failure-rate summary. */
 const RECENT_RUNS_PER_JOB = 20;
 
+/** Only a title shaped exactly like this (written by
+ *  src/app/api/cron/integrity-check/route.ts) is a real integrity-check
+ *  result. Anything else sharing `source='integrity'` — currently
+ *  integration-health.ts's reachability faults — is a different signal and
+ *  must not be parsed as a check name. */
+const INTEGRITY_TITLE_PATTERN = /^Integrity (?:PASS|FAIL): (.+) \(\d+\)$/;
+
+/**
+ * Latest result per real integrity check, newest-first input assumed (the
+ * first occurrence per check name wins). Exported and pure so both bugs
+ * fixed here (the nested-metadata read, and the source='integrity' name
+ * collision with integration-health.ts) have a direct unit test against a
+ * realistic row shape, without mocking Supabase.
+ */
+export function parseIntegrityRows(rows: readonly IntegrityEventRow[]): Map<string, IntegrityRow> {
+  const latestIntegrity = new Map<string, IntegrityRow>();
+  for (const row of rows) {
+    const match = row.title.match(INTEGRITY_TITLE_PATTERN);
+    if (!match) continue;
+    const name = match[1]!;
+    if (!latestIntegrity.has(name)) {
+      latestIntegrity.set(name, {
+        check: name,
+        status: row.severity === 'info' ? 'pass' : 'fail',
+        count: row.metadata?.metadata?.count ?? 0,
+        lastRunAt: row.created_at,
+        sample: row.metadata?.metadata?.sample ?? [],
+      });
+    }
+  }
+  return latestIntegrity;
+}
+
 interface IntegrityEventRow {
   title: string;
   severity: string;
-  metadata: { count?: number; sample?: unknown[] } | null;
+  // The write path (src/app/api/cron/integrity-check/route.ts -> logServerEvent
+  // -> writeAdminTables/normalizeContext in server-error-logger.ts) stores the
+  // FULL context envelope in this column, with the caller's own `{count,
+  // sample}` payload nested one level deeper at `metadata.metadata` —
+  // normalizeContext always writes `metadata: context.metadata ?? {}` as ONE
+  // field of the outer envelope it persists, it never IS the envelope. A flat
+  // `{count, sample}` read here silently always finds `undefined` and falls
+  // back to `0`/`[]`, masked today because every live integrity check passes
+  // with count 0 anyway.
+  metadata: { metadata?: { count?: number; sample?: unknown[] } } | null;
   created_at: string;
 }
 
@@ -104,7 +146,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
   const admin = createAdminClient();
   const now = new Date();
 
-  // One bounded query PER job type (18 registry entries, each capped at
+  // One bounded query PER job type (CRON_REGISTRY.length entries, each capped at
   // RECENT_RUNS_PER_JOB) instead of a single globally-ordered top-500 query.
   // The prior single-query shape let high-frequency crons (refresh-engagement
   // every 5min, event/task-reminders hourly) crowd low-frequency ones
@@ -196,23 +238,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     };
   });
 
-  // Latest per check: admin_events rows are titled
-  // `Integrity PASS: <check> (<count>)` / `Integrity FAIL: <check> (<count>)`
-  // by the integrity-check cron. Rows are already newest-first from the
-  // query above, so the first occurrence per check name wins.
-  const latestIntegrity = new Map<string, IntegrityRow>();
-  for (const row of (integrityRows.data ?? []) as IntegrityEventRow[]) {
-    const name = row.title.replace(/^Integrity (PASS|FAIL): /, '').replace(/ \(\d+\)$/, '');
-    if (!latestIntegrity.has(name)) {
-      latestIntegrity.set(name, {
-        check: name,
-        status: row.severity === 'info' ? 'pass' : 'fail',
-        count: row.metadata?.count ?? 0,
-        lastRunAt: row.created_at,
-        sample: row.metadata?.sample ?? [],
-      });
-    }
-  }
+  const latestIntegrity = parseIntegrityRows((integrityRows.data ?? []) as IntegrityEventRow[]);
 
   // Order matters: absent keys is a more fundamental truth than a stale fault
   // row, so 'not-configured' wins outright. 2026-07-25: isInngestConfigured()
