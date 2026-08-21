@@ -66,19 +66,28 @@
 -- (rule id: helmv3-security-definer-without-search-path), which scans
 -- file-by-file and has no way to know the defining migration already
 -- covers it — it does not change what this migration does on top of what
--- production already ran. The procost regression guard
--- (can-read-golf-shot-detail-procost.test.ts) only cares about COST and is
--- unaffected either way.
+-- production already ran. The re-assertion below MUST carry both
+-- entries, public AND pg_temp: an earlier draft of this file re-asserted
+-- only `public`, which in migration replay NARROWS the defining
+-- migration's pin rather than restating it, and pgTAP caught it — RLS
+-- test 18 of supabase/tests/rls/golf_shot_detail_visibility.sql (the
+-- "stays pinned to public+pg_temp" assertion on this function) failed
+-- against that version. The procost regression guard
+-- (can-read-golf-shot-detail-procost.test.ts) only cares about COST and
+-- is unaffected either way.
 -- ===========================================================================
 
 SET LOCAL lock_timeout = '3s';
 
 ALTER FUNCTION public.can_read_golf_shot_detail(uuid) COST 10000;
 
--- Idempotent re-assertion of the search_path the defining migration already
--- pins (see REPO-SIDE NOTE above) — keeps this file self-contained rather
--- than relying on a reader to know another migration already set it.
-ALTER FUNCTION public.can_read_golf_shot_detail(uuid) SET search_path = public;
+-- Idempotent re-assertion of the EXACT search_path the defining migration
+-- already pins (see REPO-SIDE NOTE above) — both entries, public AND
+-- pg_temp — keeps this file self-contained rather than relying on a
+-- reader to know another migration already set it. Dropping pg_temp here
+-- would narrow the pin the defining migration set, not just restate it.
+ALTER FUNCTION public.can_read_golf_shot_detail(uuid)
+SET search_path = 'public, pg_temp';
 
 -- Re-assert the ACL. ALTER FUNCTION ... COST does not touch grants, but this
 -- keeps the migration safe standalone and matches the guard's expectation
