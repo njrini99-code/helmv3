@@ -190,4 +190,3 @@ jobs:
           name: playwright-results-json
           path: test-results/
           retention-days: 3
-
