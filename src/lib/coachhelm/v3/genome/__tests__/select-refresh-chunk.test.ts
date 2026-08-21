@@ -132,3 +132,88 @@ describe('selectGenomeRefreshChunk — dormant players must not jam the queue', 
     expect(chunk).toEqual([]);
   });
 });
+
+/**
+ * #1503 — the next layer down. `2e0632326` (above) fixed players who fail the
+ * "has ≥1 round in the window" filter; it did nothing for players who PASS
+ * that filter and still produce zero valid dimensions (6 rounds, none with a
+ * sand shot, none a tournament round — `dimensions_computed: 0` every night).
+ * Before orchestrator.ts started writing a refusal marker for that case, those
+ * players kept no `computed_at`, so they sorted never-computed-first forever —
+ * production measured 7 of 25 nightly slots burned this way once the eligible
+ * pool (33) exceeded the chunk size.
+ *
+ * `selectGenomeRefreshChunk` itself needs no change for this — it already
+ * treats ANY populated `computed_at` as "not never-computed", whether that
+ * timestamp came from a real vector or a refusal marker. These tests pin that
+ * the marker's `computed_at` is enough on its own to stop the crowd-out.
+ */
+describe('selectGenomeRefreshChunk — #1503 a refusal marker stops crowding the chunk', () => {
+  function shapeWithRefusals() {
+    // Matches the issue's measured shape: 80 active, 28 eligible, 7 of those
+    // eligible-but-structurally-uncomputable, 15 with a genome older than a
+    // day, PLAYERS_PER_INVOCATION 25.
+    const refused = Array.from({ length: 7 }, (_, i) => `refused-${i}`);
+    const stale = Array.from({ length: 15 }, (_, i) => `stale-${i}`);
+    const dormant = Array.from({ length: 52 }, (_, i) => `dormant-${i}`); // no round in window
+
+    const computedAt = new Map<string, string>();
+    stale.forEach((id, i) => {
+      computedAt.set(id, `2026-08-${String((i % 10) + 1).padStart(2, '0')}T05:00:00Z`);
+    });
+
+    return {
+      active: [...refused, ...stale, ...dormant],
+      computedAt,
+      eligible: new Set([...refused, ...stale]), // dormant has no round in window
+      refused,
+      stale,
+    };
+  }
+
+  it('a refused player marked LAST night no longer outranks a genuinely stale genome', () => {
+    const { active, computedAt, eligible, refused, stale } = shapeWithRefusals();
+
+    // Simulate last night: every refused player's refusal marker was written
+    // with a recent stamp (orchestrator.ts writes computed_at unconditionally
+    // now, even for the all-null case).
+    for (const id of refused) computedAt.set(id, '2026-08-20T02:00:00Z');
+
+    const chunk = selectGenomeRefreshChunk(active, computedAt, eligible, 25);
+
+    // Both cohorts fit in a 25-slot chunk (15 stale + 7 refused = 22), but
+    // ORDER is the property that matters: the stale, genuinely-computable
+    // genomes lead — a freshly marked refusal is no longer treated as more
+    // urgent than a real genome that hasn't refreshed in weeks — and the
+    // refused cohort trails.
+    expect(chunk.slice(0, stale.length).sort()).toEqual([...stale].sort());
+    expect(chunk.slice(stale.length).sort()).toEqual([...refused].sort());
+  });
+
+  it('when slots are actually scarce, a marked refusal loses its slot to a stale genome', () => {
+    const { active, computedAt, eligible, refused, stale } = shapeWithRefusals();
+    for (const id of refused) computedAt.set(id, '2026-08-20T02:00:00Z');
+
+    // Tighter than the 22 total eligible (15 stale + 7 refused) — this is the
+    // shape that actually burns slots: before #1503, ALL 7 refused sorted
+    // first and this size of chunk would have been refused players only.
+    const chunk = selectGenomeRefreshChunk(active, computedAt, eligible, 20);
+
+    expect(chunk).toHaveLength(20);
+    // Every stale (genuinely computable) genome gets a slot.
+    expect(stale.every((id) => chunk.includes(id))).toBe(true);
+    // Only 5 of the 7 marked refusals fit — the ones bumped are refusals, not
+    // stale genomes, which is the inversion of the pre-fix crowd-out.
+    expect(chunk.filter((id) => refused.includes(id))).toHaveLength(5);
+  });
+
+  it('an UNMARKED refused player (first time, no computed_at yet) still gets one attempt', () => {
+    const { active, computedAt, eligible, refused } = shapeWithRefusals();
+    // No prior stamp for `refused` here — this is their first night, same as
+    // any genuinely never-computed player. They are allowed IN the chunk once;
+    // the fix is that they cannot dominate every chunk forever after.
+    const chunk = selectGenomeRefreshChunk(active, computedAt, eligible, 25);
+
+    expect(refused.every((id) => chunk.includes(id))).toBe(true);
+  });
+});
