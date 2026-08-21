@@ -112,20 +112,27 @@ interface InsightRecord {
   status: 'active';
 }
 
-interface TeamPlayerRow {
+export interface TeamPlayerRow {
   id: string;
   first_name: string | null;
   last_name: string | null;
 }
 
-interface PlayerStatsCacheRow {
+export interface PlayerStatsCacheRow {
   player_id: string;
   rounds_in_calculation: number | null;
-  strokes_gained_total: number | null;
-  strokes_gained_tee: number | null;
-  strokes_gained_approach: number | null;
-  strokes_gained_around_green: number | null;
-  strokes_gained_putting: number | null;
+  // Per-round SG averages — NOT strokes_gained_total/tee/approach/
+  // around_green/putting, which are season-cumulative SUMs on the same
+  // golf_player_stats_cache row (see #1297/#1300: reading the cumulative
+  // family here produced coach-facing text like "SG Approach -85.84" for
+  // a player whose actual per-round SG was -6.6 — the two families are
+  // written atomically by the same function from the same query, so this
+  // was always a reader-side column choice, not stale/inconsistent data).
+  sg_total_per_round: number | null;
+  sg_tee_per_round: number | null;
+  sg_approach_per_round: number | null;
+  sg_around_green_per_round: number | null;
+  sg_putting_per_round: number | null;
   gir_percentage: number | null;
   driving_accuracy_percentage: number | null;
   scrambling_percentage: number | null;
@@ -2311,7 +2318,7 @@ async function generateTeamInsightImpl(): Promise<{
     const { data: statsRows } = await supabase
       .from('golf_player_stats_cache')
       .select(
-        'player_id, rounds_in_calculation, scoring_average, scoring_average_vs_par, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, gir_percentage, driving_accuracy_percentage, scrambling_percentage, putts_per_round, approach_proximity_average, three_putt_percentage, penalty_strokes_per_round, putt_make_pct_5_10ft, putt_make_pct_10_15ft, putt_make_pct_15_25ft, approach_miss_left_pct, approach_miss_right_pct, approach_miss_short_pct, approach_miss_long_pct, par3_average, par4_average, par5_average, last_5_average, improvement_trend, trend_direction, best_round, worst_round'
+        'player_id, rounds_in_calculation, scoring_average, scoring_average_vs_par, sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, gir_percentage, driving_accuracy_percentage, scrambling_percentage, putts_per_round, approach_proximity_average, three_putt_percentage, penalty_strokes_per_round, putt_make_pct_5_10ft, putt_make_pct_10_15ft, putt_make_pct_15_25ft, approach_miss_left_pct, approach_miss_right_pct, approach_miss_short_pct, approach_miss_long_pct, par3_average, par4_average, par5_average, last_5_average, improvement_trend, trend_direction, best_round, worst_round'
       )
       .in('player_id', playerIds);
 
@@ -3624,7 +3631,7 @@ function computeInsightConfidence(rounds: number | null | undefined): number {
   return clampNumber(0.45 + normalized * 0.4, 0.45, 0.85);
 }
 
-function buildStatInsightsForTeam(
+export function buildStatInsightsForTeam(
   players: TeamPlayerRow[],
   statsRows: PlayerStatsCacheRow[],
   philosophy: CoachPhilosophy
@@ -3642,11 +3649,14 @@ function buildStatInsightsForTeam(
   );
 
   const teamAverages = {
-    sgTotal: averageNumber(statsRows.map((row) => row.strokes_gained_total)),
-    sgTee: averageNumber(statsRows.map((row) => row.strokes_gained_tee)),
-    sgApproach: averageNumber(statsRows.map((row) => row.strokes_gained_approach)),
-    sgAround: averageNumber(statsRows.map((row) => row.strokes_gained_around_green)),
-    sgPutting: averageNumber(statsRows.map((row) => row.strokes_gained_putting)),
+    // Per-round averages (sg_*_per_round), so averaging across players with
+    // different rounds_in_calculation stays comparable — averaging the
+    // cumulative strokes_gained_* SUMs here mixed scales across players.
+    sgTotal: averageNumber(statsRows.map((row) => row.sg_total_per_round)),
+    sgTee: averageNumber(statsRows.map((row) => row.sg_tee_per_round)),
+    sgApproach: averageNumber(statsRows.map((row) => row.sg_approach_per_round)),
+    sgAround: averageNumber(statsRows.map((row) => row.sg_around_green_per_round)),
+    sgPutting: averageNumber(statsRows.map((row) => row.sg_putting_per_round)),
     gir: averageNumber(statsRows.map((row) => row.gir_percentage)),
     fairway: averageNumber(statsRows.map((row) => row.driving_accuracy_percentage)),
     scrambling: averageNumber(statsRows.map((row) => row.scrambling_percentage)),
@@ -3706,28 +3716,28 @@ function buildStatInsightsForTeam(
         {
           key: 'strokes_gained_tee',
           label: 'Off the Tee',
-          value: stats.strokes_gained_tee,
+          value: stats.sg_tee_per_round,
           action: `Drill: 10-ball dispersion test on the range — aim at a fairway-width target (30 yds) from 250 yds. Track hit rate. Goal: 7/10. Also practice tee shot strategy: pick a specific miss side for each hole shape.`,
           teamAvg: teamAverages.sgTee,
         },
         {
           key: 'strokes_gained_approach',
           label: 'Approach',
-          value: stats.strokes_gained_approach,
+          value: stats.sg_approach_per_round,
           action: `Drill: Proximity ladder — hit 5 shots each from 100, 125, 150, 175 yds. Measure average distance to pin. Goal: inside 25 ft from 150 yds. Focus on distance control over direction.`,
           teamAvg: teamAverages.sgApproach,
         },
         {
           key: 'strokes_gained_around_green',
           label: 'Around the Green',
-          value: stats.strokes_gained_around_green,
+          value: stats.sg_around_green_per_round,
           action: `Drill: Up-and-down challenge from 4 spots (short-sided rough, fringe, bunker, long-sided). 10 balls each spot. Track up-and-down %. Goal: 50%+ from each lie. Emphasize landing spot selection.`,
           teamAvg: teamAverages.sgAround,
         },
         {
           key: 'strokes_gained_putting',
           label: 'Putting',
-          value: stats.strokes_gained_putting,
+          value: stats.sg_putting_per_round,
           action: `Drill: 3-putt eliminator — putt 10 balls from 30-40 ft, count how many finish inside 3 ft. Goal: 8/10. Also run gate drill for start line: two tees just wider than ball, 3 ft away. 20 putts, track makes.`,
           teamAvg: teamAverages.sgPutting,
         },

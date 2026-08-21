@@ -76,6 +76,7 @@ features:
       actions:
         - src/app/golf/actions/coachhelm-*.ts
         - src/app/golf/actions/insight-*.ts
+        - src/app/golf/actions/insights.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/v3/**
