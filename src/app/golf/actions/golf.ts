@@ -4593,14 +4593,20 @@ export async function sendEventReminderToPlayers(
 /**
  * Restrict a conflict check to people the caller actually shares a team with.
  *
- * `attendeeIds` are auth user ids handed in by the client. Resolving them
- * takes three reads, because a golf team has two kinds of member and the
- * caller can be either kind:
+ * `attendeeIds` are golf_players TABLE ids — NOT auth user ids. The comment
+ * that previously said "auth user ids" was the bug: the editor's roster picker
+ * sends `golf_players.id` (calendar page selects `golf_players(id, ...)`), and
+ * the conflict library filters `golf_players .in('id', attendeeIds)` — so the
+ * ids were always player ids end to end. This gate compared them against a set
+ * of USER ids, which contains no player id, ever, so every conflict check with
+ * at least one attendee was denied for every coach from the moment the gate
+ * shipped. Caught in the Bridge 2026-08-20 19:03Z: the Guilford HEAD COACH
+ * told "Not authorized to check availability for these people" about his own
+ * roster.
  *
- *   1. the caller's own team ids — staffed teams if they are a coach, joined
- *      teams if they are a player, both if they hold both profiles;
- *   2. the player user ids on those teams;
- *   3. the coach user ids staffing those teams.
+ * The allowed set is therefore the PLAYER ids on the caller's teams — staffed
+ * teams if they are a coach, joined teams if they are a player, both if both.
+ * (The picker offers only players, so coach ids never appear in the list.)
  *
  * Fails CLOSED on a failed read, and says so separately from a real denial — a
  * coach whose roster read timed out must be told to retry, not told their own
@@ -4646,24 +4652,20 @@ async function resolveSharedScheduleScope(
 
   if (teamIds.length === 0) return { ok: false, error: DENIED };
 
-  const [teamPlayers, teamCoaches] = await Promise.all([
-    supabase.from('golf_team_members').select('golf_players!inner(user_id)').in('team_id', teamIds),
-    supabase
-      .from('golf_team_coach_staff')
-      .select('golf_coaches!inner(user_id)')
-      .in('team_id', teamIds),
-  ]);
-  if (teamPlayers.error || teamCoaches.error) return { ok: false, error: RETRY };
+  const teamPlayers = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .in('team_id', teamIds);
+  if (teamPlayers.error) return { ok: false, error: RETRY };
 
-  const allowed = new Set<string>([userId]);
-  const playerJoin = (teamPlayers.data ?? []) as unknown as Array<{
-    golf_players: { user_id: string | null } | null;
-  }>;
-  const coachJoin = (teamCoaches.data ?? []) as unknown as Array<{
-    golf_coaches: { user_id: string | null } | null;
-  }>;
-  for (const row of playerJoin) if (row.golf_players?.user_id) allowed.add(row.golf_players.user_id);
-  for (const row of coachJoin) if (row.golf_coaches?.user_id) allowed.add(row.golf_coaches.user_id);
+  // PLAYER-table ids, matching what the client sends and what
+  // checkEventConflicts filters on. The caller's own player ids are included
+  // so a player checking their own availability passes without a roster row
+  // lookup ordering hazard.
+  const allowed = new Set<string>(playerIds);
+  for (const row of teamPlayers.data ?? []) {
+    if (row.player_id) allowed.add(row.player_id);
+  }
 
   if (requested.some((id) => !allowed.has(id))) return { ok: false, error: DENIED };
   return { ok: true };
