@@ -69,7 +69,33 @@ jobs:
         env:
           TRIGGER_SHA: ${{ github.sha }}
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN CANNOT MAKE THIS PR GO GREEN ON ITS OWN. GitHub
+          # suppresses `pull_request`-triggered workflow runs (ci.yml,
+          # review-gate.yml) on any PR whose triggering event was itself
+          # caused by the repo's default GITHUB_TOKEN — that is the
+          # recursion-prevention rule documented at
+          # https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow.
+          # #1544 and #1552 both sat with zero CI runs because of exactly
+          # this: required checks never posted, so `gh pr merge --auto`
+          # could never fire.
+          #
+          # Closing and reopening the PR is NOT a fix here: peter-evans/
+          # create-pull-request's own docs list that as a workaround only
+          # when done MANUALLY by a human — an automated close/reopen using
+          # this same GITHUB_TOKEN identity is still "triggered by
+          # GITHUB_TOKEN" and is suppressed the same way the original PR was.
+          #
+          # The token's own docs name a PAT (or a GitHub App installation
+          # token) as the standard fix: a token that is NOT GITHUB_TOKEN
+          # doesn't trip the suppression, so `pull_request` runs fire
+          # normally. `secrets.REGEN_PR_PAT` is checked first with a
+          # fallback to the default token, so nothing here breaks before the
+          # secret exists — but until an owner adds a fine-grained PAT (repo
+          # scope: contents:write, pull-requests:write) as
+          # `REGEN_PR_PAT` in repo settings, this workflow keeps producing
+          # PRs that never go green. See docs/CI_RUNBOOK.md for how to
+          # rerun/rescue an auto-regen PR by hand in the meantime.
+          token: ${{ secrets.REGEN_PR_PAT || secrets.GITHUB_TOKEN }}
           commit-message: |
             docs: regen inventory blocks
 
