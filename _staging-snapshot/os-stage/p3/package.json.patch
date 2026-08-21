@@ -1,0 +1,27 @@
+Adds the four spec §33 release-machinery scripts (release:status,
+release:budget, release:prepare, release:check) to package.json's "scripts"
+block, placed right after the knowledge:* group they depend on
+(mapChangedFilesToFeatures in scripts/release/lib/release-common.mjs reuses
+scripts/knowledge/lib/registry.mjs). Deliberately does NOT add release:prod
+or deploy:prod — spec §33 is explicit that production mutation stays behind
+.github/workflows/production-release.yml and owner approval, never a local
+npm script in the routine allowlist.
+
+Apply with: git apply package.json.patch  (from the repo root)
+Or by hand: insert the four "release:*" lines below into package.json's
+"scripts" block, immediately after "knowledge:report" and before
+"baseball:route-coverage".
+
+--- a/package.json
++++ b/package.json
+@@ -34,6 +34,10 @@
+     "knowledge:context": "node scripts/knowledge/generate-context-pack.mjs",
+     "knowledge:check": "node scripts/knowledge/check.mjs",
+     "knowledge:report": "node scripts/knowledge/workflow-report.mjs",
++    "release:status": "node scripts/release/status.mjs",
++    "release:budget": "node scripts/release/check-release-budget.mjs",
++    "release:prepare": "node scripts/release/build-release-candidate.mjs",
++    "release:check": "node scripts/release/check-release-candidate.mjs",
+     "baseball:route-coverage": "tsx scripts/baseball/generate-route-coverage-report.ts",
+     "evals": "promptfoo eval -c evals/round-review.yaml",
+     "evals:view": "promptfoo view",

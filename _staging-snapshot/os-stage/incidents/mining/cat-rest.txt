@@ -1,0 +1,117 @@
+520	2026-06-30	security,rls,baseball	BaseballHelm: enforce team-match in practice block/attendance RLS policies (follow-up to #517)
+519	2026-06-30	security,high-risk,database,baseball	BaseballHelm: harden authenticated-role grants on phase-1 RLS tables (follow-up to #517)
+516	2026-06-30	bug,security,high-risk	P0 SECURITY: production Supabase service_role key hardcoded in 9 tracked scripts
+513	2026-06-30	bug,security,baseball	BaseballHelm: Enforce auth/capability checks on unwrapped academics server actions
+512	2026-06-30	bug,baseball	BaseballHelm: Surface timeline acknowledgement state on the coach player profile
+511	2026-06-30	bug,baseball	BaseballHelm: Add player-visible scope control when coaches author notes
+510	2026-06-30	bug,security,coachhelm,baseball	BaseballHelm: Block approveAiOutput from bypassing player-visible AI policy
+509	2026-06-30	bug,baseball	BaseballHelm: Scope academics eligibility reads and defaults to the active team
+508	2026-06-30	bug,baseball	BaseballHelm: Allow college programs to reach the Academics dashboard
+507	2026-06-30	bug,baseball	BaseballHelm: Fix Player Today coach-notes query against wrong table columns
+506	2026-06-30	bug,baseball	BaseballHelm: Expose can_manage_documents in the staff capability matrix
+505	2026-06-30	bug,baseball	BaseballHelm: Align Staff Settings edit affordance with can_invite_staff server gate
+504	2026-06-30	bug,baseball	BaseballHelm: Enforce program module toggles (academics/travel) beyond settings storage
+503	2026-06-30	bug,baseball	BaseballHelm: Enforce season module toggles at runtime, not just in settings storage
+502	2026-06-30	bug,security,baseball	BaseballHelm: Enforce team join policy (closed/approval-required) on join code redemption
+501	2026-06-30	bug,security,high-risk,baseball	BaseballHelm: Cap staff capability grants to the inviter's own permissions
+500	2026-06-30	bug,baseball	BaseballHelm: Do not increment scout-packet view_count on CSV downloads
+499	2026-06-30	bug,baseball	BaseballHelm: Preserve Compare player column order from URL players param
+498	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Stop labeling stable practice-effectiveness reviews as "Moved the wrong way"
+497	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Align Decision Room insights disposition filter with signal inbox dispositions
+496	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Fix Decision Room "Players to discuss" read-model shape
+495	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Map Decision Room ledger rows to kind/label/detail/at
+494	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Map Decision Room agenda rows to kind: 'meeting_item' and correct UI fields
+493	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Fix Decision Room agenda detail crash when sourceRefs is null
+492	2026-06-30	bug,baseball	BaseballHelm: Deduplicate publishLiftDay assignments for the same program day and date
+491	2026-06-30	bug,baseball	BaseballHelm: Treat empty Lift Builder player selection as "assign to none," not whole team
+490	2026-06-30	bug,baseball	BaseballHelm: Swap or return displaced player when dropping into an occupied lineup slot
+489	2026-06-30	bug,baseball	BaseballHelm: Check saveLineup result before showing roster success toast
+488	2026-06-30	bug,baseball	BaseballHelm: Refresh Video Library after upload/edit/delete mutations
+487	2026-06-30	bug,baseball	BaseballHelm: Wire Video Library uploads through saveMyVideo server action
+486	2026-06-30	bug,high-risk,baseball	BaseballHelm: Route program publishes into the table player lift surfaces actually read
+485	2026-06-30	bug,baseball,mobile	BaseballHelm: Align calendar full-height layout with shell chrome offsets
+484	2026-06-30	bug,baseball,mobile	BaseballHelm: Reduce Player Today to one contextual primary CTA on mobile
+483	2026-06-30	bug,baseball,mobile	BaseballHelm: Add safe-area-top padding to the baseball shell sticky bar
+482	2026-06-30	bug,baseball,mobile	BaseballHelm: Compact the public player profile mobile hero and fix shared-link navigation
+481	2026-06-30	bug,baseball,mobile	BaseballHelm: Fix message surfaces' viewport math and loading chrome drift
+480	2026-06-30	bug,baseball,mobile	BaseballHelm: Show hub sub-navigation on mobile for Team/Stats routes
+479	2026-06-30	bug,baseball,mobile	BaseballHelm: Eliminate stacked mobile top chrome (shell bar + legacy Header)
+478	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Collapse competing development_milestone insights to one per player
+477	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Preserve postgame item disposition on regenerate upsert
+476	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Preserve practice-effectiveness review disposition on re-measure upsert
+475	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Honor player_visible in Practice Intelligence Board visibility
+474	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Render CoachHelm insight body on player profile (body vs description)
+473	2026-06-30	bug,coachhelm,baseball	BaseballHelm: Stop CoachHelm engine upsert from reactivating coach-dismissed insights
+472	2026-06-30	bug,high-risk,coachhelm,baseball	BaseballHelm: Fix insight dismiss/feedback auth comparing coach_id to auth user.id
+471	2026-06-30	bug,baseball	BaseballHelm: Persist or remove cosmetic coach plan selection during onboarding
+470	2026-06-30	bug,high-risk,baseball	BaseballHelm: Fix privacy settings field mapping so saves match baseball_player_settings schema
+469	2026-06-30	bug,baseball	BaseballHelm: Align coach onboarding password validation with server validatePassword
+468	2026-06-30	bug,baseball	BaseballHelm: Block coach onboarding "Yes — invite S&C coach" unless email is provided
+467	2026-06-30	bug,baseball	BaseballHelm: Repair or remove dead demo-mode settings deep link
+466	2026-06-30	bug,baseball	BaseballHelm: Stop faking coach notification preference saves on account Settings
+465	2026-06-30	bug,baseball	BaseballHelm: Fix password-reset success redirect to use login message codes
+464	2026-06-30	bug,high-risk,baseball	BaseballHelm: Wire player onboarding completion through completePlayerOnboarding UPSERT
+463	2026-06-30	bug,baseball	BaseballHelm: Align teamless handling on timeline/passport with Today
+462	2026-06-30	bug,baseball	BaseballHelm: Use recruiting ProfileEditor for JUCO on dashboard/profile
+461	2026-06-30	bug,baseball	BaseballHelm: Revert Daily Contract optimistic toggles on server failure
+460	2026-06-30	bug,baseball	BaseballHelm: Point Today practice CTAs to /baseball/player/practice
+459	2026-06-30	bug,baseball	BaseballHelm: Wire activate page to activateRecruitingExposure server action
+458	2026-06-30	bug,baseball	BaseballHelm: Pass team-tz todayIso into getPlayerToday
+457	2026-06-30	bug,baseball	BaseballHelm: Join practice events in getPlayerPractices for calendar times
+456	2026-06-30	bug,high-risk,baseball	BaseballHelm: Unify Today lift/readiness reads onto helm_lifting tables
+455	2026-06-30	bug,baseball	BaseballHelm: Update read receipts when the other party reads messages
+454	2026-06-30	bug,baseball	BaseballHelm: Persist notification preference toggles and honor them for message delivery
+453	2026-06-30	bug,baseball	BaseballHelm: Wire documents upload and new-version flows end-to-end
+452	2026-06-30	bug,baseball	BaseballHelm: Refresh announcements list after create/delete on client page
+451	2026-06-30	bug,baseball	BaseballHelm: Clear conversation unread badges when a thread is opened
+450	2026-06-30	bug,baseball	BaseballHelm: Treat failed message sends as failures in useMessages
+449	2026-06-30	bug,baseball	BaseballHelm: Show announcement acknowledge CTA before any other player has acked
+448	2026-06-30	bug,high-risk,baseball	BaseballHelm: Let players complete dev-plan goals with player-scoped actions
+447	2026-06-30	bug,baseball	BaseballHelm: Fix camp date display off-by-one for date-only values
+446	2026-06-30	bug,baseball	BaseballHelm: Align travel trip past/upcoming classification with display dates
+445	2026-06-30	bug,baseball	BaseballHelm: Persist and surface requires_rsvp for baseball calendar events
+444	2026-06-30	bug,baseball	BaseballHelm: Stop infinite loading on Events when coach has zero teams
+443	2026-06-30	bug,baseball	BaseballHelm: Exclude cancelled camp registrations from capacity counts
+442	2026-06-30	bug,high-risk,baseball	BaseballHelm: Enforce camp capacity atomically on registration
+441	2026-06-30	bug,baseball	BaseballHelm: Fix showcase Teams "Copy invite link" URL path
+440	2026-06-30	bug,high-risk,baseball	BaseballHelm: Route direct join_code confirmations through joinTeamByCode
+439	2026-06-30	bug,stats,baseball	BaseballHelm: Wire season-year selector on legacy season stats page
+438	2026-06-30	bug,stats,baseball	BaseballHelm: Count ties as ties in games W-L summary
+437	2026-06-30	bug,stats,import,baseball	BaseballHelm: CSV box-score upload must complete game and refresh season stats
+436	2026-06-30	bug,stats,baseball	BaseballHelm: Compute OBP/SLG/OPS in legacy aggregate recalculation
+435	2026-06-30	bug,stats,baseball	BaseballHelm: Scope player game log to the selected season year
+434	2026-06-30	bug,stats,baseball	BaseballHelm: Sum innings pitched in outs, not as base-10 decimals
+433	2026-06-30	bug,high-risk,stats,baseball	BaseballHelm: Preload existing box-score lines when editing a completed game
+432	2026-06-30	bug,baseball	BaseballHelm: Fix PlayerDetailModal message navigation path
+431	2026-06-30	bug,baseball	BaseballHelm: Apply Discover player sort on the server across all pages
+430	2026-06-30	bug,baseball	BaseballHelm: Fix Discover Teams pagination and total counts
+429	2026-06-30	bug,baseball	BaseballHelm: Revert Discover watchlist UI when server actions fail
+428	2026-06-30	bug,baseball	BaseballHelm: Stop showing pipeline drag success when stage update fails
+427	2026-06-30	bug,baseball	BaseballHelm: Fix pipeline drag-and-drop stage resolution
+426	2026-06-30	bug,baseball	BaseballHelm: Align pipeline stage UI with the 5-stage server contract
+425	2026-06-30	bug,baseball	BaseballHelm: Route pipeline recruits to public profile, not roster-only dashboard player page
+418	2026-06-30	bug,tech-debt,database,baseball	BaseballHelm: prevent demo seeds from creating recruitable college players
+405	2026-06-30	bug,tech-debt,baseball	BaseballHelm: exclude inactive staff from active context and read RLS
+397	2026-06-30	tech-debt,baseball,ci	BaseballHelm: add action integrity checks for merge artifacts and stale type drift
+394	2026-06-30	tech-debt,security,high-risk,baseball	BaseballHelm: finish migrating legacy server actions to shared active-team/capability guards
+392	2026-06-30	security,high-risk,auth,baseball	BaseballHelm: replace shared public demo-account login with isolated demo sessions
+391	2026-06-30	tech-debt,security,high-risk,baseball	BaseballHelm: remove hardcoded real/demo credentials from scripts and rotate exposed accounts
+389	2026-06-30	tech-debt,docs,ci	CI: clear stale CodeRabbit changes-requested state after config fixes
+387	2026-06-30	bug,tech-debt,ci	CI: repair lint-ratchet baseline or warning regressions on main
+383	2026-06-30	bug,tech-debt,baseball	BaseballHelm: remove old/new navigation strata after route registry consolidation
+382	2026-06-30	bug,tech-debt,baseball	BaseballHelm: create seeded production smoke for Rini/demo stats surfaces
+379	2026-06-30	bug,tech-debt,baseball	BaseballHelm: reconcile seeded stats with the canonical Stats Center read model
+378	2026-06-30	bug,tech-debt,baseball	BaseballHelm: enforce canonical create/new route aliases and stale-link detection
+377	2026-06-30	bug,tech-debt,baseball	BaseballHelm: add business/product-truth contracts for stats, CoachHelm, and source trust
+373	2026-06-30	bug,tech-debt,baseball	BaseballHelm: extend route crawler to authenticated Baseball coach and player sessions
+372	2026-06-30	bug,tech-debt,baseball	BaseballHelm: make authenticated coach/player smoke tests mandatory in CI
+355	2026-06-29		P2 Decide whether to untrack generated Capacitor iOS public bundle
+354	2026-06-29		P2: Harden cleanup secret-scan reports so raw secret-like values are never written
+353	2026-06-29		P2: Retire legacy .helm task-system references from tools
+352	2026-06-29		P1: Migrate dense legacy raw-button surfaces to design-system primitives
+351	2026-06-29		P1: Stabilize Playwright full suite before promoting it to a hard gate
+350	2026-06-29		P1: Apply branch protection to new independent CI checks
+349	2026-06-29		P0: Supabase local stack fails before RLS tests run
+109	2026-05-27	tech-debt	Audit remaining 6 semgrep WARNING-level findings for action-missing-revalidate
+108	2026-05-27	tech-debt,security	Investigate golf_shots.shot_type distinct values on prod (verify CHECK constraint compatibility)
+107	2026-05-27	tech-debt,security	Agent B parallel work did not land: 15 CREATE TABLE without same-file RLS still flagged

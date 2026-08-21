@@ -1,0 +1,37 @@
+417	2026-06-30	bug,tech-debt,security,baseball,fixed-in-pr-421	BaseballHelm: make legacy stats seed non-destructive and environment-gated
+416	2026-06-30	bug,tech-debt,auth,baseball,fixed-in-pr-421	BaseballHelm: revalidate persisted shell auth before rendering protected routes
+415	2026-06-30	bug,high-risk,import,baseball,fixed-in-pr-421	BaseballHelm: recompute event-import review bands server-side before commit
+414	2026-06-30	tech-debt,database,baseball,fixed-in-pr-421	BaseballHelm: complete demo seed coverage for production-critical surfaces
+413	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: add explicit failure states for client-loaded legacy pages
+412	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: make Command Center consume one canonical read model
+411	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: migrate Roster to server active-context read model
+410	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: server-redirect coaches away from My Stats player route
+409	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: drive command palette routes from nav registry and resolved context
+408	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: align Performance navigation visibility with route capabilities
+407	2026-06-30	bug,tech-debt,import,baseball,fixed-in-pr-421	BaseballHelm: block preview and commit for disabled import sources
+406	2026-06-30	bug,tech-debt,database,baseball,fixed-in-pr-421	BaseballHelm: wire staff player-scope RLS to scope_player_ids columns
+404	2026-06-30	bug,security,baseball,fixed-in-pr-421	BaseballHelm: derive Discover map count scope server-side
+403	2026-06-30	bug,database,baseball,fixed-in-pr-421	BaseballHelm: derive college-interest metadata from organization source of truth
+402	2026-06-30	bug,security,baseball,fixed-in-pr-421	BaseballHelm: require recruitability checks before watchlist and engagement writes
+401	2026-06-30	bug,security,high-risk,baseball,fixed-in-pr-421	BaseballHelm: enforce public-profile visibility before rendering player profile routes
+400	2026-06-30	bug,stats,coachhelm,baseball,fixed-in-pr-421	BaseballHelm: add product-trust contracts for empty/error/no-permission states
+399	2026-06-30	high-risk,database,stats,baseball,fixed-in-pr-421	BaseballHelm: make box-score saves atomic before feeding stats and CoachHelm
+398	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: remove single-team organization assumptions from team management
+396	2026-06-30	bug,security,baseball,fixed-in-pr-421	BaseballHelm: make public scout packet CSV failures explicit and auditable
+395	2026-06-30	bug,auth,database,baseball,fixed-in-pr-421	BaseballHelm: fix team join code lifecycle and invitation-use accounting
+393	2026-06-30	security,high-risk,database,baseball,fixed-in-pr-421	BaseballHelm: migrate document actions to shared guard and private storage model
+390	2026-06-30	tech-debt,docs,ci,fixed-in-pr-421	CI: classify pending PR checks and add rerun/runbook guidance
+388	2026-06-30	bug,ci,fixed-in-pr-421	CI: investigate failing CircleCI lighthouse-preview status on PRs
+386	2026-06-30	bug,high-risk,rls,database,ci,fixed-in-pr-421	CI: fix Supabase migration replay failure on baseball_staff_invitations.accepted_by_user_id
+384	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: add product-truth tests for stat-derived CoachHelm claims
+381	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: consolidate legacy flat stats, box-score stats, and elite stat-event imports
+380	2026-06-30	bug,tech-debt,security,baseball,fixed-in-pr-421	BaseballHelm: replace ad hoc stats seeding script with env-scoped safe seed tooling
+376	2026-06-30	documentation,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: create feature readiness matrix for post-#344/#345 production gaps
+375	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: replace skipped Camps/Pipeline/Box Score E2E with seeded production flows
+374	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: create route/shell contract tests from nav registry, hubs, and server guards
+371	2026-06-30	bug,security,baseball,fixed-in-pr-421	BaseballHelm: require reauthentication before password changes
+370	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: filter hub subnav tabs by role, program type, and capabilities
+369	2026-06-30	bug,security,baseball,fixed-in-pr-421	BaseballHelm: normalize Calendar and Event mutations behind shared action guards
+368	2026-06-30	bug,baseball,fixed-in-pr-421	BaseballHelm: fix player Calendar team resolution
+367	2026-06-30	bug,tech-debt,baseball,fixed-in-pr-421	BaseballHelm: stop non-showcase coaches from seeing showcase Organization routes
+110	2026-05-27	tech-debt,fixed-in-pr-421	Semgrep rule scope: helmv3-security-definer-without-search-path can't see ALTER FUNCTION repair migrations

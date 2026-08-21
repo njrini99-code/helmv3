@@ -1,0 +1,7 @@
+365	2026-06-30	security,automated	P3: Run production DB audit with read-only database URL
+364	2026-06-30	tech-debt,automated	P2: Reduce JSCPD duplication hotspots
+363	2026-06-30	tech-debt,security,automated	P2: Triage custom Semgrep advisory findings
+362	2026-06-30	tech-debt,automated	P2: Untangle dependency-cruiser architecture boundary findings
+361	2026-06-30	bug,automated	P2: Fix or suppress stale route/link radar findings
+360	2026-06-30	security,automated,dependencies	P1: Triage OSV dependency vulnerabilities from package-lock
+359	2026-06-30	security,automated	P0: Triage and remediate 81 redacted Gitleaks secret candidates

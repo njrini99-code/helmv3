@@ -1,0 +1,318 @@
+name: Production Release
+
+# spec: docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md §15, §21, §22, §27
+#
+# workflow_dispatch ONLY — this workflow never triggers itself, and it is the
+# ONLY path allowed to promote to https://helmsportslabs.com. Vercel's git
+# auto-deploy stays disabled (vercel.json -> git.deploymentEnabled: {"*": false}).
+#
+# REQUIRED SECRETS (see the steps below for exactly where each is used):
+#   VERCEL_TOKEN      - NEW. A Vercel token with deploy rights on this project.
+#                        Does not exist in this repo today.
+#   VERCEL_ORG_ID     - NEW. This Vercel team/org id. scripts/deploy-prod.sh
+#                        reads the equivalent value from the gitignored
+#                        .vercel/project.json for a local promote; CI has no
+#                        such file, so this must be a secret.
+#   VERCEL_PROJECT_ID - REUSES the existing secret of this name (already used
+#                        read-only by ci.yml's "Bridge env drift" job).
+#   RELEASE_LEDGER_PAT - NEW, OPTIONAL. A fine-grained PAT with `contents:
+#                        write` on this repo, used only to push the ledger
+#                        commit after a verified deploy. See the checkout
+#                        step below for why this may be required rather than
+#                        optional in practice.
+#
+# GITHUB ENVIRONMENT REQUIRED FOR THE APPROVAL GATE TO BE REAL: see the
+# `deploy` job's `environment:` block comment before trusting that this
+# workflow enforces owner approval end-to-end.
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: >-
+          Exact commit SHA on main to release. Must already have a report at
+          docs/releases/<sha>.md (run `npm run release:prepare -- --sha <sha>` first).
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # Only one production release in flight at a time, repo-wide. Never cancel
+  # a deploy that has started — cancelling mid-`vercel deploy` can leave the
+  # alias pointed at a half-uploaded build with no clean recovery.
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  readiness:
+    name: Release readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check release budget
+        run: npm run release:budget -- --json
+
+      # Fail-closed gate (spec §22): budget, candidate SHA identified + on
+      # main lineage, required CI green on that SHA, repo:doctor clean,
+      # knowledge:check clean, release report present with its included
+      # queue items verified, production deploy identity resolvable. Exit
+      # code is the COUNT of hard failures — any nonzero exit fails this
+      # step, which fails this job, which blocks `deploy` below via `needs:`.
+      - name: Check release readiness
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: npm run release:check -- --sha "$CANDIDATE_SHA"
+
+  deploy:
+    name: Deploy to production
+    needs: readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # THIS is the human-approval gate spec §15/§26 requires. It only exists
+    # if a GitHub Environment named "production" is configured at this
+    # repo's Settings -> Environments, with Required reviewers set to the
+    # owner. Configure it before relying on this workflow for a real release.
+    #
+    # HONESTY CHECK, do not skip: if that Environment does NOT exist yet,
+    # this `environment:` block does nothing — GitHub runs this job
+    # immediately once `readiness` passes, ungated. In that case the only
+    # approval that exists is "a human chose to run workflow_dispatch,"
+    # which is real but weaker than a reviewed, blocking gate. Verify the
+    # Environment exists (and has reviewers) rather than assuming this
+    # comment made it so. If Environments are unavailable on the current
+    # GitHub plan, say so plainly in the release report (spec §15's own
+    # fallback: "the production CLI invocation stays owner-run outside the
+    # daily routine") rather than treating this workflow as sufficient.
+    environment:
+      name: production
+      url: https://helmsportslabs.com
+    permissions:
+      contents: write # to append the deployment ledger entry after a verified deploy
+    outputs:
+      deployment_id: ${{ steps.inspect.outputs.deployment_id }}
+    steps:
+      # Defense in depth before `candidate_sha` is used anywhere, including
+      # as a checkout `ref:` below: `readiness` already proved it resolves
+      # to a real commit via `git rev-parse --verify` (release:check's
+      # candidate-sha-resolvable check), but that ran in a separate job with
+      # no state carried forward, so re-validate the literal string's shape
+      # here rather than trust that a prior job's success implies this one's
+      # input is still well-formed.
+      - name: Validate candidate SHA format
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "::error::candidate_sha \"$CANDIDATE_SHA\" is not a plain hex commit SHA (7-40 hex chars) — refusing to use it as a checkout ref."
+            exit 1
+          fi
+
+      - name: Checkout candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: true # subsequent `git` steps need this to push the ledger commit
+          token: ${{ secrets.RELEASE_LEDGER_PAT || github.token }}
+          # RELEASE_LEDGER_PAT (see header): `main`'s branch protection
+          # currently permits direct push only for the repo owner
+          # (CLAUDE.md "Branch & deploy"), and it is NOT verified here
+          # whether the default GITHUB_TOKEN is treated as owner-equivalent
+          # for that rule. If the "Record deployment in ledger" step below
+          # fails to push, that is almost certainly why — add this PAT
+          # (same pattern as the already-documented REGEN_PR_PAT fallback)
+          # rather than loosening branch protection to work around it.
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `--archive=tgz`: this repo is over the Vercel CLI's 15,000-file
+      # upload cap (.claude/rules/shipping.md "Vercel") — without it
+      # `vercel deploy` fails outright on a repo this size. Vercel runs the
+      # actual `next build` remotely, so no local build step is needed here.
+      #
+      # `--build-env`/`--env NEXT_PUBLIC_SENTRY_RELEASE=<sha>` mirrors
+      # scripts/deploy-prod.sh exactly. That script's own comment explains
+      # why it is required, not cosmetic: without it, src/instrumentation.ts
+      # falls back to VERCEL_GIT_COMMIT_SHA, which a CLI/archive deploy never
+      # sets, and production Sentry events keep whatever release tag the
+      # LAST deploy happened to stamp — a real incident on 2026-08-16 traced
+      # to exactly this gap.
+      - name: Deploy exact SHA to production
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          DEPLOY_URL="$(vercel deploy --prod --yes --archive=tgz \
+            --token="$VERCEL_TOKEN" \
+            --scope="$VERCEL_ORG_ID" \
+            --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" \
+            --env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" | tail -1)"
+          echo "deployment_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $DEPLOY_URL"
+
+      - name: Verify alias moved to this deployment
+        id: inspect
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        run: |
+          set -euo pipefail
+          echo "--- vercel inspect helmsportslabs.com ---"
+          vercel inspect helmsportslabs.com --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID" | tee inspect.txt
+          DEPLOY_ID="$(grep -m1 -oE 'dpl_[A-Za-z0-9]+' inspect.txt || true)"
+          if [ -z "$DEPLOY_ID" ]; then
+            echo "::error::Could not extract a deployment id from 'vercel inspect helmsportslabs.com' output — cannot confirm the alias moved. Treat this deploy as UNVERIFIED and check manually before trusting it."
+            exit 1
+          fi
+          echo "deployment_id=$DEPLOY_ID" >> "$GITHUB_OUTPUT"
+          echo "$DEPLOY_ID" > deployment_id.txt
+
+      # Best-effort, non-blocking. Mirrors the exact method
+      # scripts/deploy-prod.sh already asks a HUMAN to run by hand after a
+      # manual promote — automated here because this path has no human
+      # watching the terminal. Grepping for the SHA in a JS bundle (not the
+      # HTML — NEXT_PUBLIC_* is inlined into chunks, not server-rendered
+      # markup) is the only method that script's own comments say has
+      # actually been verified to catch a stale release tag.
+      - name: Confirm release SHA reached the bundle (best-effort)
+        env:
+          SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          FOUND=0
+          for CHUNK in $(curl -s https://helmsportslabs.com/ | grep -o '/_next/static/chunks/[^"]*\.js' | sort -u | head -40); do
+            if curl -s "https://helmsportslabs.com$CHUNK" | grep -q "$SHA"; then
+              echo "release stamp found in $CHUNK"
+              FOUND=1
+              break
+            fi
+          done
+          if [ "$FOUND" -ne 1 ]; then
+            echo "::warning::Release SHA $SHA was not found in the first 40 JS chunks scanned. This is a best-effort check (deploy-prod.sh's manual version carries the same 'may need more chunks' caveat) — it does NOT fail the deploy, but confirm manually before trusting the release tag on new Sentry events."
+          fi
+
+      # Records against the CURRENT tip of main, not the candidate-SHA
+      # checkout above — main may have moved since the candidate was chosen,
+      # and this must not silently rewind it. One retry on a rejected push:
+      # this workflow's own concurrency group already serializes releases,
+      # but main can still move from an unrelated, everyday merge in the gap
+      # between "readiness passed" and "this step running."
+      - name: Record deployment in ledger
+        env:
+          SHA: ${{ inputs.candidate_sha }}
+          ACTOR: ${{ github.actor }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          DEPLOY_ID="$(cat deployment_id.txt 2>/dev/null || echo unknown)"
+          export DEPLOY_ID
+          cat > /tmp/record-ledger.mjs <<'EOF'
+          import { appendLedgerEntry } from './scripts/release/lib/release-common.mjs';
+          import { writeFileSync } from 'node:fs';
+
+          const updated = appendLedgerEntry(process.cwd(), {
+            dateUtc: new Date().toISOString(),
+            sha: process.env.SHA,
+            shortSha: (process.env.SHA ?? '').slice(0, 7),
+            vercelDeploymentId: process.env.DEPLOY_ID,
+            type: 'routine',
+            initiatedBy: process.env.ACTOR,
+            notes: `via production-release.yml run ${process.env.RUN_ID}`,
+          });
+          writeFileSync('memory/ledgers/deployments.md', updated, 'utf-8');
+          EOF
+
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git checkout -B ledger-update origin/main
+            node /tmp/record-ledger.mjs
+            git -c user.name="helm-release-bot" -c user.email="release-bot@users.noreply.github.com" \
+              add memory/ledgers/deployments.md
+            git -c user.name="helm-release-bot" -c user.email="release-bot@users.noreply.github.com" \
+              commit -m "chore(release): record production deploy ${SHA} [skip ci]"
+            if git push origin ledger-update:main; then
+              echo "ledger recorded"
+              break
+            fi
+            echo "push rejected (main moved since fetch), retrying (${attempt}/3)..."
+            git reset --hard origin/main
+            sleep 3
+          done
+          # If all 3 attempts failed, this is almost certainly the
+          # branch-protection gap documented on the checkout step above
+          # (RELEASE_LEDGER_PAT) — NOT a reason to force-push or loosen
+          # protection. The deploy has already happened; add the ledger row
+          # by hand and fix the token before the next release.
+
+  verify:
+    name: Post-deploy verification
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Smoke check /
+        id: smoke_root
+        run: |
+          CODE="$(curl -s -o /dev/null -w '%{http_code}' https://helmsportslabs.com/)"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "GET / -> $CODE"
+          [ "$CODE" = "200" ]
+
+      - name: Smoke check /golf/login
+        id: smoke_login
+        run: |
+          CODE="$(curl -s -o /dev/null -w '%{http_code}' https://helmsportslabs.com/golf/login)"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "GET /golf/login -> $CODE"
+          [ "$CODE" = "200" ]
+
+      - name: Write summary
+        if: always()
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          {
+            echo "## Production release — $CANDIDATE_SHA"
+            echo ""
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| GET / | ${{ steps.smoke_root.outputs.code }} |"
+            echo "| GET /golf/login | ${{ steps.smoke_login.outputs.code }} |"
+            echo "| Vercel deployment | ${{ needs.deploy.outputs.deployment_id }} |"
+            echo ""
+            echo "This is the AUTOMATED half of spec §27 post-deploy verification"
+            echo "(deployment healthy, both smoke routes 200). Sentry release"
+            echo "activity, Bridge feature health, and confirming targeted"
+            echo "incidents stopped recurring remain manual per spec §27 — a"
+            echo "green smoke check is not production evidence for those by itself."
+          } >> "$GITHUB_STEP_SUMMARY"

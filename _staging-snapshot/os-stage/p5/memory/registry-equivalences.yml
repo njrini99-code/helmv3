@@ -1,0 +1,330 @@
+# memory/registry-equivalences.yml
+#
+# Ground truth for scripts/knowledge/check-registry-consistency.mjs. Declares
+# the relationship between memory/registry.yml's 19 coarse feature ids and
+# src/lib/admin/feature-registry.ts's 86 fine-grained runtime FeatureKeys, and
+# every concrete file whose two owners genuinely disagree.
+#
+# THIS FILE RECORDS REALITY, NOT ASPIRATION. It was seeded by running
+# check-registry-consistency.mjs's comparison against the live repo (P0 audit
+# 2026-08-20/21 + P5 verification 2026-08-21) with an EMPTY map first, so
+# every entry below reflects something actually observed, not a guess at
+# what "should" be true. Where the two registries genuinely disagree and
+# nobody has reconciled it yet, that is written down as
+# `status: divergent`, not silently normalized away. Fixing the underlying
+# disagreement (moving a file's ownership, splitting an action file, editing
+# memory/registry.yml's action lists) is separate follow-up work — this file
+# is the checkable record of the CURRENT state, so the day someone fixes one
+# of these, deleting its entry here is how they prove it.
+#
+# Two sections:
+#
+#   id_relationships  — for a memory/registry.yml feature id, which
+#     feature-registry.ts FeatureKey(s) count as "the same feature, more
+#     finely observed." `relationship` is descriptive only (read by humans,
+#     not branched on by the checker):
+#       same                      — identical scope (none of the 4 exact-id
+#                                    matches actually qualify — see §3b of
+#                                    the P0 audit; kept in the vocabulary for
+#                                    a future case where one does)
+#       registry-is-superset      — the registry.yml id is a deliberate
+#                                    coarse grouping of several ts keys
+#       runtime-is-finer          — ts key(s) genuinely correspond to this
+#                                    registry id, but at least one file under
+#                                    it ALSO diverges (see file_divergences)
+#       distinct-despite-name     — sharing a string is coincidence or
+#                                    aspiration, not shared ownership
+#     `members` is the FeatureKey allowlist the checker unions into
+#     "allowed owners" for every file this registry id claims. Omitting an
+#     id here defaults its member set to itself only ({id}), which is
+#     correct for the majority of ids that need no help.
+#
+#   file_divergences  — concrete file paths where, even after id_relationships
+#     members are applied, the two sides still disagree. `status: divergent`
+#     = two real, different owners, tracked, not reconciled. `status:
+#     missing_on_disk` = memory/registry.yml names a path that does not
+#     exist. Declaring a file here makes the checker WARN instead of FAIL on
+#     it; anything NOT declared here (or covered by id_relationships) that
+#     the checker finds is a FAIL — a NEW divergence nobody has looked at.
+#
+# Scope note: this is a FILE-level comparison restricted to
+# memory/registry.yml's `code.actions` lists (server-action files) against
+# feature-registry.ts's `actions` manifests, because that is the only
+# code-path category feature-registry.ts tracks at all (it wraps server
+# actions via withAdminObserved; it has no equivalent for routes/components/
+# services/db migrations). routes/components/services/db entries in
+# registry.yml are out of scope for this specific checker — they have no ts
+# counterpart to diverge FROM.
+version: 1
+
+id_relationships:
+  # ---- The 4 exact-id-string matches (P0 audit §3b headline finding) ----
+  # All 4 share a spelling with a feature-registry.ts key. None of the 4 are
+  # a clean match once file ownership is walked — each needs either extra
+  # members or file-level tracked divergences, usually both.
+  calendar_events:
+    relationship: runtime-is-finer
+    members: [calendar_events]
+    notes: >
+      Deliberately does NOT include academics_classes as a member, even
+      though calendar-sync.ts and 2 of recurring-events.ts's 6 exports
+      belong to it at runtime. academics_classes is its own registry.yml
+      feature-shaped concept (class↔calendar sync) that memory/registry.yml
+      currently has no entry for at all — folding it in here would hide
+      that gap rather than surface it. See file_divergences for the 4
+      concrete files (calendar-sync.ts, event-lifecycle.ts,
+      recurring-events.ts, golf.ts) where this id's claims and ts's
+      ownership disagree.
+
+  qualifiers:
+    relationship: runtime-is-finer
+    members: [qualifiers, my_qualifiers]
+    notes: >
+      registry.yml folds coach qualifiers (dashboard/qualifiers) and the
+      player-facing surface (dashboard/my-qualifiers) into one feature; ts
+      splits them (qualifiers tier med primaryTable golf_qualifiers vs
+      my_qualifiers tier low primaryTable golf_qualifier_entries). Both are
+      real facets of the same product feature, so both are declared members
+      here — this is the P0 audit's own worked example for the relationship
+      shape. golf.ts (which both keys partially own) still needs a
+      file_divergences entry for its OTHER escaped owners.
+
+  stats_analytics:
+    relationship: runtime-is-finer
+    members: [stats_analytics]
+    notes: >
+      stats.ts/stats-data.ts/stats-data-types.ts/stats-intelligence.ts match
+      cleanly (registry-only stats-data-types.ts has no ts owner at all —
+      not a conflict). The break is two OTHER registry ids' files landing on
+      ts's stats_analytics/my_game_profile: shot-analytics.ts (claimed by
+      registry.yml's shot_tracking, not stats_analytics) resolves entirely
+      to ts's stats_analytics; player-profile-stats.ts (claimed by
+      registry.yml's stats_analytics itself) resolves to a DIFFERENT ts key,
+      my_game_profile. Both tracked in file_divergences.
+
+  player_hub:
+    relationship: distinct-despite-name
+    members: [player_hub]
+    notes: >
+      registry.yml's player_hub.code.actions claims dashboard-data.ts (whole
+      file), travel.ts (whole file), tasks.ts (whole file), attendance.ts
+      (whole file) as direct ownership. ts assigns each of those 4 files to
+      a DIFFERENT key: dashboard-data.ts mostly to coach_dashboard (player_hub
+      only owns 2 of its exports), travel.ts to travel, tasks.ts to
+      task_management, attendance.ts to calendar_events. This checker does
+      not FAIL on any of those 4 files today only because team_operations
+      and calendar_events ALSO (correctly) claim them and this checker unions
+      allowed owners across every registry id that claims a file — so
+      team_operations's registry-is-superset declaration below absorbs the
+      escape. That is a mechanical pass, not a clean bill of health:
+      registry.yml's player_hub block itself is internally inconsistent
+      (its own `integrations:` field already lists team_operations,
+      calendar, team_communications as RELATED-not-owned, which is the
+      correct shape — `code.actions` contradicts it). Fixing
+      memory/registry.yml's player_hub.code.actions to drop these 4 files
+      (leaving only the 2 dashboard-data.ts exports it actually owns) is
+      real follow-up work this file does not perform.
+
+  # ---- Coarse registry.yml groupings with a clean, deliberate ts split ----
+  # (P0 audit: "That granularity mismatch is by design and not itself a
+  # bug" — verified here by walking every file each id claims, not assumed.)
+  coach_intelligence_triage:
+    relationship: registry-is-superset
+    members:
+      - intelligence_dashboard
+      - alerts_system
+      - patterns_dashboard
+      - insights_management
+      - coachhelm_analytics
+      - coaching_intelligence_settings
+    notes: >
+      One registry.yml feature (29 code-path entries) intentionally covers
+      6 of feature-registry.ts's 13 CoachHelm-coach-side keys. Every file
+      this id claims (alerts.ts, pattern-management.ts,
+      insight-management.ts, insight-evidence.ts, coachhelm-analytics.ts,
+      coaching-philosophy.ts, intelligence-dashboard.ts) resolves cleanly to
+      one of these 6 once declared.
+
+  player_coachhelm_development:
+    relationship: registry-is-superset
+    members: [player_coachhelm_dashboard, development_plans_coach, my_development, round_review_ai]
+    notes: >
+      Covers the player-facing CoachHelm surfaces: player-feedback.ts ->
+      player_coachhelm_dashboard, development.ts -> development_plans_coach
+      + my_development (ts splits by named export, registry.yml claims the
+      whole file — same shape as qualifiers/calendar_events but with no
+      remaining escape once both exports' keys are declared), round-reviews.ts
+      -> round_review_ai. ts's drills_practice_rx and coachhelm_v3_goals keys
+      have no registry.yml-claimed file at all (visible only via the
+      tsOnly id-set diff, not a file-level conflict).
+
+  team_communications:
+    relationship: registry-is-superset
+    members: [messaging, announcements]
+    notes: >
+      message-attachments.ts -> messaging; announcements.ts and
+      communication.ts both -> announcements (ts folds general team
+      broadcast copy into the same key as formal announcements).
+
+  team_operations:
+    relationship: registry-is-superset
+    members: [task_management, documents, travel, coach_dashboard]
+    notes: >
+      tasks.ts/task-templates.ts/task-reminders.ts -> task_management;
+      documents.ts -> documents; travel.ts -> travel; dashboard-data.ts's
+      non-player_hub exports -> coach_dashboard. team_operations and
+      player_hub both list travel.ts/tasks.ts/dashboard-data.ts in
+      registry.yml (see player_hub's notes above) — declaring the members
+      here is what actually makes those files resolve; player_hub's own
+      declared member set intentionally stays empty of them.
+
+  roster_team:
+    relationship: registry-is-superset
+    members: [roster_management]
+    notes: roster.ts -> roster_management. Clean once declared.
+
+  team_access_control:
+    relationship: registry-is-superset
+    members: [team_info, join_team_flow]
+    notes: >
+      teams.ts is jointly claimed by registry.yml's roster_team,
+      settings_preferences and team_access_control; ts splits its exports
+      between team_info and join_team_flow. Declared under
+      team_access_control since both ts keys are fundamentally
+      access/membership concepts, but the union-of-claimants means placement
+      among the 3 co-claimants is a documentation choice, not a mechanical
+      requirement.
+
+  auth_onboarding_join:
+    relationship: registry-is-superset
+    members: [auth_onboarding]
+    notes: auth.ts, onboarding.ts, access-code.ts all -> ts's single auth_onboarding key.
+
+  settings_preferences:
+    relationship: registry-is-superset
+    members: [settings]
+    notes: v3/notification-prefs.ts -> settings. coaching_intelligence_settings (also co-claimed via coaching-philosophy.ts) is declared under coach_intelligence_triage instead — see that entry.
+
+  recruiting:
+    relationship: registry-is-superset
+    members: [recruiting_prospect_tracking]
+    notes: recruiting.ts and recruit-documents.ts both -> ts's single recruiting_prospect_tracking key.
+
+  # ---- Ids with NO clean ts equivalent — declared for documentation, not
+  # because the checker needs members to pass (their escapes are tracked as
+  # file_divergences instead, since there is no honest "these ts keys ARE
+  # this feature" statement to make). ----
+  shot_tracking:
+    relationship: distinct-despite-name
+    members: []
+    notes: >
+      feature-registry.ts has NO key for shot_tracking at all (verified:
+      absent from the full 86-key FeatureKey union). Its 3 registry-claimed
+      files each resolve to a DIFFERENT existing ts key instead of any
+      shot_tracking-shaped key: golf.ts (partial, see its file_divergences
+      entry), round-drafts.ts -> round_tracking, shot-analytics.ts ->
+      stats_analytics. shot_tracking's runtime health is invisibly bundled
+      into stats_analytics's and round_tracking's health signals today.
+
+# ---------------------------------------------------------------------------
+# Concrete file-level divergences that survive id_relationships. Every entry
+# here is either genuinely irreconcilable-by-grouping (a file split across
+# unrelated feature identities) or a dead registry-claimed path.
+# ---------------------------------------------------------------------------
+file_divergences:
+  - path: src/app/golf/actions/calendar-sync.ts
+    registry_owner: calendar_events
+    runtime_owner: academics_classes
+    status: divergent
+    tracked: >
+      P0 audit (2026-08-20/21) finding. memory/registry.yml's
+      calendar_events.code.actions lists this file whole; ts assigns it
+      entirely to academics_classes, a runtime feature memory/registry.yml
+      has no entry for. Not reconciled — either give academics_classes its
+      own memory/registry.yml feature (it has a real, distinct doc surface:
+      class-import/exclusion sync) or move this file's claim off
+      calendar_events.
+
+  - path: src/app/golf/actions/event-lifecycle.ts
+    registry_owner: calendar_events
+    runtime_owner: null
+    status: missing_on_disk
+    tracked: >
+      Listed in memory/registry.yml's calendar_events.code.actions; does not
+      exist on disk (verified: `ls` returns No such file or directory).
+      Already tracked independently by docs:path-drift via
+      memory/features/calendar-events.md's reference to the same path
+      (.doc-path-baseline.json). Not a runtime-ownership disagreement —
+      feature-registry.ts has no entry for it either, since it cannot wrap
+      an export of a file that does not exist. Remove the dead entry from
+      memory/registry.yml's action list when convenient; not urgent since
+      docs:path-drift already has it on a may-only-go-down baseline.
+
+  - path: src/app/golf/actions/recurring-events.ts
+    registry_owner: calendar_events
+    runtime_owner: [calendar_events, academics_classes]
+    status: divergent
+    tracked: >
+      memory/registry.yml claims the whole file under calendar_events. ts
+      splits it by export: createRecurringEvent/editRecurringEvent/
+      deleteRecurringEvent/getExpandedEvents -> calendar_events (agrees);
+      createAcademicExclusion/deleteAcademicExclusion -> academics_classes
+      (memory/registry.yml is silent about these 2 exports belonging to a
+      different feature). Same underlying gap as calendar-sync.ts above.
+
+  - path: src/app/golf/actions/golf.ts
+    registry_owner: [golf_round_lifecycle, qualifiers, shot_tracking]
+    runtime_owner:
+      - round_tracking
+      - calendar_events
+      - roster_management
+      - announcements
+      - course_library
+      - notifications
+    status: divergent
+    tracked: >
+      golf.ts is the largest shared server-action file in the repo — ts
+      spreads its named exports across 8 FeatureKeys total (qualifiers and
+      my_qualifiers resolve cleanly via this id_relationships entry above;
+      the 6 listed here do not). memory/registry.yml claims the whole file
+      under 3 coarse ids (golf_round_lifecycle, qualifiers, shot_tracking),
+      none of which has a member relationship to round_tracking,
+      calendar_events, roster_management, announcements, course_library, or
+      notifications. Neither side is simply "wrong": memory/registry.yml's
+      whole-file granularity cannot represent a file this shared without
+      either splitting golf.ts's registry claim by export (mirroring ts) or
+      accepting this as a permanent, tracked, many-owners file. Flagged
+      rather than silently passed.
+
+  - path: src/app/golf/actions/shot-analytics.ts
+    registry_owner: [golf_round_lifecycle, shot_tracking, player_coachhelm_development]
+    runtime_owner: stats_analytics
+    status: divergent
+    tracked: >
+      memory/registry.yml's shot_tracking.code.actions (and
+      golf_round_lifecycle's, player_coachhelm_development's) lists this
+      file; ts assigns it entirely to stats_analytics — consistent with
+      shot_tracking having no ts key of its own (see that id's notes above).
+
+  - path: src/app/golf/actions/round-drafts.ts
+    registry_owner: shot_tracking
+    runtime_owner: round_tracking
+    status: divergent
+    tracked: >
+      memory/registry.yml's shot_tracking claims this file; ts assigns it to
+      round_tracking. Whether shot_tracking and round_tracking are meant to
+      be the same product feature under two different names, or genuinely
+      distinct (in-round shot capture vs. round lifecycle/submission), was
+      not resolved by the P0 audit or this seeding pass — recorded as
+      divergent rather than guessed at.
+
+  - path: src/app/golf/actions/player-profile-stats.ts
+    registry_owner: [stats_analytics, roster_team]
+    runtime_owner: my_game_profile
+    status: divergent
+    tracked: >
+      memory/registry.yml's stats_analytics.code.actions lists this file; ts
+      assigns it to a distinct key, my_game_profile (same primaryTable:
+      golf_player_stats_cache, different feature identity and tier — tier
+      high for stats_analytics, my_game_profile has no declared tier
+      override visible from the actions manifest alone).

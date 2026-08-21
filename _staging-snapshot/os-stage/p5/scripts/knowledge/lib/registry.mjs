@@ -1,0 +1,1 @@
+/Users/ricknini/Downloads/helmv3/scripts/knowledge/lib/registry.mjs

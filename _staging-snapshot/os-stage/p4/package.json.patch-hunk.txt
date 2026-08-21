@@ -1,0 +1,24 @@
+BONUS, not one of the 7 requested files — staged because both SKILL.md
+deliverables (golfhelm-daily-reliability, golfhelm-release-manager) name
+these npm scripts, and they don't exist in package.json yet. Not authored by
+P4 alone: the release:* commands' targets (scripts/release/*.mjs) are a
+Phase 3 deliverable, so this hunk should land whenever P3 and P4 are both
+merged, whichever PR does it last. Apply by hand — do not blind-patch, the
+surrounding lines may have moved.
+
+--- a/package.json
++++ b/package.json
+@@ scripts block, after "knowledge:report" (package.json:36) @@
+     "knowledge:report": "node scripts/knowledge/workflow-report.mjs",
++    "reliability:collect": "node scripts/operations/daily-health/collect.mjs",
++    "reliability:report": "node scripts/operations/daily-health/report.mjs",
++    "release:status": "node scripts/release/status.mjs",
++    "release:budget": "node scripts/release/check-release-budget.mjs",
++    "release:prepare": "node scripts/release/build-release-candidate.mjs",
++    "release:check": "node scripts/release/check-release-candidate.mjs",
+
+Deliberately NOT added (spec §33 — keep production mutation out of the
+routine allowlist):
+  "release:prod" / "deploy:prod" — the only sanctioned production trigger is
+  the owner-run `.github/workflows/production-release.yml` workflow_dispatch
+  (or scripts/deploy-prod.sh, owner-run, outside any Claude routine).

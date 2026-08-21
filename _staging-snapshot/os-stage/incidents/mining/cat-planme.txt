@@ -1,0 +1,118 @@
+1300	2026-08-07	tech-debt,stats,plan-me	GolfHelm: Missing stats verifier for SG column family coherence
+1299	2026-08-07	bug,coachhelm,ci,plan-me	GolfHelm unit test: insight celebration revalidatePath() fails in test context
+1298	2026-08-07	bug,golf,plan-me	GolfHelm: getPlayerProfile() 'recent 30' orders ascending (oldest first)
+1297	2026-08-07	bug,stats,coachhelm,plan-me	GolfHelm/CoachHelm: SG source mismatch breaks stats coherence
+1271	2026-08-03	security,high-risk,auth,database,plan-me,severity:p1	[HIGH] Public unauthenticated Edge Function 'create-admin-user' mints a confirmed admin with a hardcoded password — the account it made is live and signed in yesterday
+1270	2026-08-03	golf,plan-me,severity:p1	[HIGH — needs 60s human confirmation] "Create qualifier" does nothing: no request, no row, no error message
+1269	2026-08-03	security,high-risk,ci,plan-me,severity:p0	[CRITICAL] Production is 35h/5 commits behind main — unauthenticated push endpoints AND unauthenticated privilege escalation are live; both fixed on main, neither deployed
+1268	2026-08-03	security,high-risk,database,golf,plan-me,severity:p1	[HIGH] Two more SECURITY DEFINER RPCs trust a caller-supplied id — any player's full stats profile is readable across organizations
+1267	2026-08-03	security,high-risk,database,baseball,plan-me,severity:p1	[HIGH] get_baseball_conversations_with_details returns ANY user's conversations and message bodies to any authenticated caller — SECURITY DEFINER with no ownership check
+1266	2026-08-03	coachhelm,golf,plan-me,severity:p3	[LOW] A focus-area target that moves the wrong way is accepted and renders "100% there" — needs a write-time directional guard
+1265	2026-08-03	golf,baseball,plan-me,severity:p3	[LOW] Player team page shows task due dates one day early (reproduced) — DATE columns parsed as UTC midnight at 4 client-side sites
+1264	2026-08-03	tech-debt,golf,plan-me,severity:p3	[LOW] 2,808 lines of components are unreachable from any route — 4 of 5 have green test suites, and Knip cannot see them
+1263	2026-08-03	baseball,plan-me,surface:calendar,severity:p3	[LOW] Baseball calendar renders a Documents panel wired to golf tables — always empty, and its coach 'Attach document' control cannot work
+1262	2026-08-03	security,high-risk,rls,database,plan-me,severity:p1	[HIGH] Every uploaded document is readable+deletable by any authenticated user across both sports — the team-scoping migration was merged but never applied to prod
+1261	2026-08-03	tech-debt,baseball,plan-me,severity:p2	[MEDIUM] Baseball video upload targets a storage bucket that does not exist — and the guard test that should catch it passes on a table-name collision
+1260	2026-08-03	golf,plan-me,design-system,severity:p3	[LOW] Every role-denial screen renders its heading and message twice — FeatureUnavailable feeds the same strings to ViewHeader and EmptyState
+1259	2026-08-03	golf,plan-me,severity:p2	[MEDIUM] Golf document attachments are undownloadable — file_url uses the public endpoint of a private bucket (NoSuchBucket)
+1258	2026-08-03	security,rls,golf,plan-me,severity:p2	[MEDIUM] Every authenticated user can read every golf coach's name, email and phone — golf_coaches SELECT policy is USING (true)
+1257	2026-08-03	security,high-risk,rls,golf,plan-me,severity:p1	[HIGH] Any authenticated player can read every team's join_code and join any team without it — RLS predicate is 'join_code IS NOT NULL'
+1256	2026-08-03	bug,coachhelm,plan-me,surface:telemetry,severity:p2	[MEDIUM] CoachHelm AI has been 100% template-fallback for 8 days and no dashboard shows it — the availability data already exists, nothing reads it
+1255	2026-08-03	bug,plan-me,surface:billing,severity:p2	[MEDIUM] /admin/billing shows a fully working invoice form, but production has zero Stripe env vars — the failure only appears after the admin fills in the whole invoice
+1254	2026-08-03	bug,plan-me,severity:p1,performance	[HIGH] Lift Lab athlete on /lifting/dashboard hits an infinite reload loop — 173 HTTP req/sec, 37 document loads per 10s (coach: 1)
+1253	2026-08-03	bug,rls,database,plan-me,severity:p1	[HIGH] Lift Lab coach onboarding is impossible — helm_lifting_coaches has no INSERT policy, so even an invited coach gets 'Failed to save profile'
+1252	2026-08-03	bug,plan-me,design-system,severity:p3	[LOW] public/helm-lifting-logo.png does not exist — all 19 Lift Lab pages 400 on the logo, including the sign-in screen
+1251	2026-08-03	bug,golf,dashboard,plan-me,severity:p1	[HIGH] React #310 on 100% of coach visits to /team-hub and /settings/notifications — the known redirect-crash fix cannot cover a role-conditional redirect
+1250	2026-08-03	tech-debt,golf,plan-me,severity:p3	[LOW] completeCoachOnboarding INSERTs unconditionally — a pre-existing coach row would dead-end the wizard unrecoverably (latent, not reachable today)
+1249	2026-08-03	bug,golf,mobile,plan-me,design-system,severity:p2	[MEDIUM] Roster per-row actions are 20-24px tall on phones — primary controls are half the 44px touch floor
+1248	2026-08-03	tech-debt,dependencies,ci,plan-me,severity:p3	Four dev-dependency majors need individual upgrades — TypeScript 7 is blocked upstream by typescript-eslint
+1245	2026-08-02	bug,auth,plan-me,product:platform,surface:auth,severity:p2	[MEDIUM] Login form hydration race submits an empty email — user is told "Invalid email or password" and the failure is logged against a blank identity
+1244	2026-08-02	bug,coachhelm,golf,plan-me,product:golfhelm,severity:p3	[LOW] Auto-created goals have baseline_value = NULL — 9 of 19 goals (incl. the only active one) render no progress bar at all
+1243	2026-08-02	bug,coachhelm,golf,plan-me,product:golfhelm,severity:p1	[HIGH] Focus-area and goal progress only advances on the nightly cron — finishing a round moves nothing until the next day
+1242	2026-08-02	bug,coachhelm,golf,plan-me,product:golfhelm,severity:p1	[HIGH] Focus-area progress bar inverts for unrecognized lower-is-better metrics — a player 56% worse than target renders "100% there"
+1241	2026-08-02	bug,coachhelm,golf,plan-me,product:golfhelm,severity:p3	[LOW] Focus-area Trend is permanently "—" — areas persist only a scalar current_value, with no snapshot history to trend
+1240	2026-08-02	bug,coachhelm,golf,plan-me,product:golfhelm,severity:p2	[MEDIUM] Focus-area progress bar is current/target, not progress from baseline — a new area reads "92% there" on day zero
+1239	2026-08-02	bug,coachhelm,golf,plan-me,product:golfhelm,severity:p2	[MEDIUM] 8 of 10 targeted active focus areas can never track — target_metric holds ids that match neither the catalog nor the v3 registry
+1238	2026-08-02	enhancement,golf,plan-me,product:golfhelm	[FEATURE GAP] Recurring tasks are not supported — no recurrence columns, no UI, no expansion logic
+1237	2026-08-02	bug,golf,plan-me,design-system,product:golfhelm	[LOW] UI polish batch: "1 players" / "1 expenses" pluralization, recovery prompt offering an empty draft, stale "Action needed" badge after acknowledgement
+1236	2026-08-02	bug,golf,plan-me,product:golfhelm	[LOW] 1:1 direct messages are labelled "Group conversation" (is_team_chat=true on a 2-participant DM)
+1235	2026-08-02	bug,security,auth,database,plan-me,surface:auth	[MEDIUM] check_rate_limit_atomic RPC does not exist in production — migration 20260801100000 is unapplied and auth rate limiting is degraded
+1234	2026-08-02	bug,tech-debt,database,golf,plan-me	[LOW] golf_player_stats_cache.round_ids_included is season-scoped, not calculation provenance — its name and COMMENT are both wrong
+1233	2026-08-02	bug,golf,plan-me,product:golfhelm	[MEDIUM] Travel expenses: date renders one day early and totals silently drop cents
+1232	2026-08-02	bug,golf,plan-me,product:golfhelm	[MEDIUM] Tasks created from the UI get no category, so they are invisible under every category filter
+1231	2026-08-02	bug,golf,plan-me,product:golfhelm	[MEDIUM] Task reminders fire for already-completed tasks — no completion check anywhere in the reminder path, and golf_tasks.status never rolls up
+1230	2026-08-02	bug,golf,plan-me,product:golfhelm	[MEDIUM] Announcements send push notifications but have no push toggle — silently governed by the "Events & reminders" switch
+1229	2026-08-02	bug,security,rls,golf,plan-me,product:golfhelm	[MEDIUM] Targeted announcements are hidden only by an app-layer filter — RLS lets any teammate read announcements targeted away from them
+1228	2026-08-02	bug,tech-debt,ci,plan-me	[HIGH] 4ad0ccc5f regressed 14 tests: maybeCaptureRlsDenial reports captured=true while logging nothing
+1227	2026-08-02	bug,stats,coachhelm,golf,plan-me,product:golfhelm	[HIGH] Shot type is assigned by ordinal, not distance — layups and post-penalty tee shots are recorded as approach misses and corrupt approach stats
+1226	2026-08-02	bug,plan-me,severity:p2	New Round: 9-hole selection is silently overridden to 18 holes; duplicate/malformed course records in the library
+1225	2026-08-02	bug,plan-me,severity:p1	Class schedule import silently syncs nothing: hardcoded 'Spring 2026' fallback, discarded sync results, and parser producing phantom classes
+1224	2026-08-02	bug,plan-me,severity:p2	[UI/UX] Calendar toolbar duplicated in DOM, inconsistent salutation, sub-32px tap targets, minor clipping
+1223	2026-08-02	bug,plan-me,severity:p1	Add `next build` to the gate set — typecheck+lint+8755 tests all passed while the calendar and tasks pages were 500ing
+1222	2026-08-02	security,plan-me,severity:p1	[RLS] golf_announcement_recipients coach policies grant cross-tenant read/insert/delete to any coach (correlated-subquery bug)
+1219	2026-08-02	security,plan-me,severity:p2	[MEDIUM] Unauthenticated Server Actions allow forging incident/error records and poisoning Sentry
+1218	2026-08-02	security,plan-me,severity:p2	[MEDIUM] generateRoundReview() derives all player-level output from a caller-supplied playerId decoupled from roundId (unsafe admin-client contract)
+1217	2026-08-02	security,plan-me,severity:p2	[MEDIUM] sendEventInvitations writes attendance + injects notifications for players outside the event's team (cross-team within an org)
+1216	2026-08-02	security,plan-me,severity:p2	[MEDIUM] Service-role RLS-bypass gate is keyed on caller-controlled source_type, not on event kind — documented 'cannot smuggle a coach note through service-role' invariant is not actually enforced
+1215	2026-08-02	security,plan-me,severity:p2	[MEDIUM] assignPlayerToTeam attaches an arbitrary player id to the coach's roster with no subject/tenant check
+1214	2026-08-02	security,plan-me,severity:p2	[MEDIUM] Per-IP demo rate-limit key derived from the client-influenceable leftmost X-Forwarded-For token
+1213	2026-08-02	security,plan-me,severity:p2	[MEDIUM] Unauthenticated external email content is persisted to the admin-facing crm_replies table with no rate limiting or sender validation
+1212	2026-08-02	security,plan-me,severity:p2	[MEDIUM] Rate limit on the anonymous error-ingest endpoint is bypassable via spoofable X-Forwarded-For (and per-instance in-memory store)
+1211	2026-08-02	security,plan-me,severity:p2	[MEDIUM] CRON_SECRET compared with non-constant-time `!==` (timing-unsafe secret comparison)
+1210	2026-08-02	security,plan-me,severity:p2	[MEDIUM] CRON_SECRET compared with non-constant-time `!==` (timing-unsafe secret comparison)
+1209	2026-08-02	security,plan-me,severity:p2	[MEDIUM] Unsubscribe token HMAC key falls back to a hardcoded, source-visible secret — tokens are forgeable
+1208	2026-08-02	security,plan-me,severity:p2	[MEDIUM] Public unauthenticated endpoint performs service-role DB writes behind a spoofable per-IP limiter
+1207	2026-08-02	security,plan-me,severity:p2	[MEDIUM] LLM daily-budget cap is a check-then-act race with no per-request rate limit
+1206	2026-08-02	security,plan-me,severity:p2	[MEDIUM] Feed bearer token (feed_token) persisted to error_logs, admin_events, and Sentry via request.url
+1205	2026-08-02	security,plan-me,severity:p2	[MEDIUM] Coach feed bearer token persisted to error_logs, admin_events, and Sentry via request.url
+1204	2026-08-02	bug,plan-me,severity:p1	[HIGH_BUG] Transient Arccos/network error permanently strands a player's auto-ingest connection
+1203	2026-08-02	bug,plan-me,severity:p1	[HIGH_BUG] Shot-dispersion rows can be silently deactivated by the round-level miner's supersede (victim side; same root cause as the pattern-miner.ts finding)
+1202	2026-08-02	bug,plan-me,severity:p1	[HIGH_BUG] Round-level pattern supersede deactivates shot-dispersion patterns (missing pattern_type scope on shared table)
+1201	2026-08-02	bug,plan-me,severity:p1	[HIGH_BUG] Non-atomic account deletion: messages irreversibly deleted before a users-delete that can fail, leaving a half-deleted account
+1200	2026-08-02	security,plan-me,severity:p1	[HIGH] Push-notification Server Actions are unauthenticated public POST endpoints (arbitrary-user push spoofing + paid-API abuse)
+1199	2026-08-02	security,plan-me,severity:p1	[HIGH] completeCoachOnboarding trusts a client-supplied identity object, bypassing auth for service-role writes
+1198	2026-08-02	security,plan-me,severity:p1	[HIGH] Stored (blind) SSRF via unvalidated Web Push `endpoint`
+1196	2026-08-01	plan-me	A paid live invoice is not mirrored into billing_invoices — Stripe webhook 500s for want of two env vars
+1194	2026-08-01	plan-me	44 guards in scripts/__tests__/ run under nothing — 20 pass, 20 fail, and at least one was hiding a real defect
+1186	2026-08-01	plan-me	GolfHelm has no mobile-viewport regression coverage — the gate is baseball-only
+1185	2026-08-01	plan-me	The App Store Guideline 3.1.1 marketing-route guard has no test
+1183	2026-08-01	plan-me	calculate_grad_year_percentiles / calculate_player_match_score were never written — decide sunset vs build
+1182	2026-08-01	plan-me	Supabase preview branches have been unable to validate migrations since 2026-07-03
+1179	2026-08-01	plan-me	Two crons dropped by a temporary diagnostic (#93) were never restored — decide whether they should be
+1175	2026-08-01	plan-me	Two edge functions run in production with no source in the repo; both need an authz review
+1173	2026-08-01	plan-me	bug(baseball): video upload targets a storage bucket that does not exist
+1172	2026-08-01	plan-me	perf(rls): golf_shots has 4 overlapping permissive SELECT policies; 2 materialise id sets
+1042	2026-07-24	plan-me,agent:needs-human-review	🤝 Weekly Partner Update (DRAFT) — 2026-07-24 [review before any send]
+989	2026-07-20	enhancement,plan-me,product:golfhelm,source:claude	CRM product opportunities — ranked backlog from the 2026-07-20 full audit
+988	2026-07-20	question,plan-me,product:golfhelm,source:claude,needs-partner-decision	CRM: crm_events is written by 3 modals but read by nothing (0 rows in prod) — keep or cut?
+987	2026-07-20	tech-debt,ci,plan-me,source:claude	CRM tooling: className const-strings evade no-arbitrary-bg-white / no-banned-color lint walkers
+986	2026-07-20	bug,plan-me,product:golfhelm,severity:p2,source:claude	CRM: text-warm-400 secondary text fails WCAG AA contrast (~2.3:1) — 244 usages
+985	2026-07-20	bug,mobile,plan-me,product:golfhelm,severity:p2,source:claude	CRM: ConferenceGroupView + SchoolGroupView have no mobile card fallback (raw tables on phones)
+982	2026-07-20	bug,stats,plan-me,product:golfhelm,severity:p3,source:claude	Make-rate heatmap repeats n= column totals; roster cards duplicate class ('26 + Class of 2026)
+981	2026-07-20	bug,plan-me,product:golfhelm,surface:ai,severity:p2,source:claude	Shot analytics: '-- yd from target' placeholders, 'shots shots' typo, degenerate SG radar, empty Today card
+980	2026-07-20	bug,plan-me,product:golfhelm,surface:dashboard,severity:p2,source:claude	Player dashboard strip: metric scale mismatch, duplicated 'strokes/round' caption, 'SCORING TREND 0'
+979	2026-07-20	bug,plan-me,product:coachhelm,severity:p2,source:claude	Effectiveness page: contradictory surfaced-insight counts (0/1 vs 132) + degenerate denominators
+978	2026-07-20	bug,plan-me,product:golfhelm,severity:p1,source:claude	Round Review: stored narrative goes stale when round score is edited
+976	2026-07-19	plan-me	CoachHelm audit — out-of-scope residuals from batch fix (#975)
+974	2026-07-19	plan-me	[player-coachhelm][content] Focus Areas: two different shot bands show identical generic copy + "0 yd from target"
+973	2026-07-19	plan-me	[player-coachhelm][honesty] GAME STRENGTH sub-scores look like placeholder ~50 defaults
+972	2026-07-19	plan-me	[player-coachhelm][data] Cockpit shows "Warming up" but the player HAS shot data — initialShotAnalytics vs shotData source mismatch
+971	2026-07-19	plan-me	[player-coachhelm] FORM/trend self-contradicts: "scoring is sliding" vs "4-round hot streak, 23.5 strokes below average" (+ implausible number)
+970	2026-07-19	plan-me	[player-coachhelm][mobile] Ring gauge renders as a broken C-shape — track stroke is invisible (GAME STRENGTH + Resilience)
+969	2026-07-19	plan-me	[player-coachhelm][architecture] Lower half of the page is the un-redesigned "old shell" — unify into the Fairway cockpit language
+968	2026-07-19	plan-me	[player-coachhelm][mobile] Putting make-rate chart: x-axis labels collide and y-axis labels clip off-screen
+953	2026-07-18	plan-me	e2e chromium job killed by 45-min timeout at test 206 — tests 207+ never run; remaining spec-drift backlog from the unmasking
+952	2026-07-18	plan-me	Baseball create-game submit can hang forever at 'Creating…' — no error handling on createGame(); e2e redirect regex also matches /create
+951	2026-07-18	plan-me	Demo data hygiene beyond the seed scripts: 6 stranded in_progress rounds, June overdue tasks, cloned per-player stats
+950	2026-07-18	plan-me	Visual/copy bundle: 'C(' avatar initials, 'Good morning' at 1AM, 6-8s gate reveal, blank course-card images, Yds digits collide, library-edit affordances, calibrating design, chart domains
+949	2026-07-18	plan-me	Stats surfaces: cockpit chart draws in 15% of canvas, value/label overlap, Signals tile semantics (Showing 13 vs Open 10), constant 'high bleed', empty docked preview
+948	2026-07-18	plan-me	Ask page: 'Threads' heading double-renders over its eyebrow, rail truncates every title, stored thread shows question with NO answer, generic page title
+947	2026-07-18	plan-me	CoachHelm shell: h1 streams in late (ghost title flash) + scroll position carries across route changes + inner scroller ignores keyboard
+946	2026-07-18	plan-me	Team Brief hero: eyebrow/title text collision, unlabeled −0.52 vs −0.55, long-game distance band cited under PUTTING, 'trending up' chip under DRAGGING
+945	2026-07-18	plan-me	Trend glyph/label conventions contradict across ≥4 surfaces; dashboard Team Pulse not on canonical trend (3/0/4 vs 2/0/5)
+944	2026-07-18	plan-me	Signal card metric strip: stroke-cost rendered as '+2.50/round meaningful · gained' on leak cards + cloned identical numbers across players
+943	2026-07-18	plan-me	CoachHelm engine content speaks player voice on coach surfaces (Brief + Signals) — #915 class via the insight-content path
+942	2026-07-18	plan-me	Systemic: white-on-primary-600 CTAs fail WCAG contrast (3.29:1) — Button primary/success variants need design decision
+919	2026-07-17	plan-me,agent:needs-human-review	🤝 Weekly Partner Update (DRAFT) — 2026-07-17 [review before any send]
+785	2026-07-04	plan-me,ben-leah,kind:bug,priority:normal,category:BaseballHelm	[Ben + Leah] Bug: there was a bug in the bug where the bug was
+772	2026-07-03	documentation,tech-debt,dependencies,rls,database,plan-me,surface:database,surface:docs,source:claude,agent:ready,risk:medium	Repo cleanup consolidation: Repomix, Knip, generated drift, Supabase linked lint

@@ -1,0 +1,41 @@
+1133	2026-07-30	plan-me,agent:needs-triage,workflow:bug	[Sentry] Class-schedule image import fails in production — AI Gateway rejects the model on free tier (JAVASCRIPT-NEXTJS-H9)
+1132	2026-07-30	plan-me,agent:needs-triage,workflow:bug	[Sentry] RLS refuses INSERT on golf_conversations in production — messaging createConversation (JAVASCRIPT-NEXTJS-H6)
+1131	2026-07-30	plan-me,agent:needs-triage,workflow:bug	[Sentry] Inngest "404 Event key not found" in production — round submit silently loses the durable path (JAVASCRIPT-NEXTJS-HS)
+1130	2026-07-30	plan-me,agent:needs-triage,workflow:bug	[Sentry] Stripe webhook 500s in production — escalating, 29 events, still firing (JAVASCRIPT-NEXTJS-J4)
+1044	2026-07-24	plan-me,agent:needs-triage,workflow:bug	[Sentry] No-FOUC ThemeScript renders client-side on soft nav — script never executes (JAVASCRIPT-NEXTJS-GA/GB)
+1016	2026-07-23	plan-me,agent:needs-triage,workflow:bug	[Supabase] Postgres: permission denied for function heartbeat — anon presence RPC (use-presence.ts)
+1015	2026-07-23	plan-me,agent:needs-triage,workflow:bug	[Sentry] AuthApiError: Request rate limit reached — GET /golf/dashboard/calendar (JAVASCRIPT-NEXTJS-G8)
+922	2026-07-17	plan-me	[Design] CoachHelm Brief rebuild: template prose + 1,986-line pre-Fairway embed are why it feels old
+921	2026-07-17	plan-me	[Design] Player stats tabs: uneven cards + monochrome walls have single-point fixes (FairwayStatsCockpit)
+920	2026-07-17	plan-me	[QA] Why insights go stale — five concrete causes, ranked (safety-net cron weekly, silent posture, legacy dedup, cache race, sweep skip)
+918	2026-07-17	plan-me	[QA] Demo session expires mid-exploration (~30 min) and dumps the visitor at the login screen
+917	2026-07-17	plan-me	[QA] Stats cross-page mismatches + CoachHelm polish leftovers
+916	2026-07-17	plan-me	[QA] Rounds data hygiene: free-text course names, off-by-one date, back nine labeled OUT, orphaned qualifier rounds
+915	2026-07-17	plan-me	[QA] Player-voice copy rendered on coach surfaces + inverted good/bad styling
+914	2026-07-17	plan-me	[QA] CoachHelm tells four different stories about the same team — cross-surface number coherence
+913	2026-07-17	plan-me	[QA] Cloud course library: all 24 courses share ONE template of tee/hole data
+912	2026-07-17	plan-me	[QA] Baseball public demo contradicts its own pitch — 'fully-populated' but empty
+911	2026-07-17	plan-me	[QA] Baseball dashboard polish: duplicate Standing-by cards, calendar truncation
+910	2026-07-17	plan-me	[QA] Golf demo-data & copy polish: calendar, messages, rounds, roster, courses
+909	2026-07-17	plan-me	[QA] Ask CoachHelm: demo thread shows question with no answer + raw question echo above tabs
+908	2026-07-17	plan-me	[QA] Baseball Stats Center: 'Saved views unavailable' error toast for demo users + 'On the record' contradiction
+907	2026-07-17	plan-me	[QA] Golf CoachHelm Signals: 'Unknown player' join + incoherent counts + −26.4 str/rd mislabel
+906	2026-07-17	plan-me	[QA] Reduce Motion breaks reveal animations: baseball demo gate renders invisible form
+905	2026-07-17	plan-me	[QA] Baseball mobile shell: header/nav clipped on ALL dashboard routes (320/390/430px)
+903	2026-07-17	plan-me,agent:needs-triage,workflow:bug	[Sentry] RSC function-prop crash on /admin/utilization (NEXTJS-CJ + NEXTJS-7) — fix merged in #902, awaiting prod promotion
+896	2026-07-17	plan-me,agent:needs-triage,workflow:bug	[Supabase] Postgres: 3 new "column does not exist" errors (e.coach_id / type / created_at) — schema drift
+895	2026-07-17	plan-me,agent:needs-triage,workflow:bug	[Sentry] Error: Unauthorized flood on POST /golf/admin/crm — auth-guard throws captured as errors (NEXTJS-CC/CD/CE/CF)
+893	2026-07-16	plan-me,agent:needs-triage,workflow:bug	[Supabase] get_platform_health_stats RPC returns 403 Forbidden to admin dashboard (permission gap)
+892	2026-07-16	plan-me,agent:needs-triage,workflow:bug	[Sentry] Server trace error — POST /golf/admin/crm (NEXTJS-CA)
+891	2026-07-16	plan-me,agent:needs-triage,workflow:bug	[Sentry] realtime postgres_changes callbacks added after subscribe() — /golf/admin (admin-realtime-events)
+888	2026-07-16	plan-me,agent:needs-triage,workflow:bug	[Supabase] Postgres error: permission denied for table baseball_team_members (~02:14 UTC 2026-07-16)
+887	2026-07-16	plan-me,agent:needs-triage,workflow:bug	[Supabase] Postgres error: column b.hits does not exist (~02:26 UTC 2026-07-16)
+886	2026-07-16	plan-me,agent:needs-triage,workflow:bug	[Sentry] Error fetching conversations: [object Object] — /baseball/dashboard/messages (JAVASCRIPT-NEXTJS-1H)
+870	2026-07-16	plan-me,agent:needs-triage,workflow:bug	[Sentry] Server trace error — coachhelm-roster-sweep cron logs min-sample insight refusal as an error (JAVASCRIPT-NEXTJS-C8)
+791	2026-07-08	plan-me,agent:needs-triage,workflow:bug	[Supabase] Postgres: permission denied for table crm_coaches (~16:32 UTC 2026-07-07)
+790	2026-07-08	plan-me,agent:needs-triage,workflow:bug	[Supabase] Postgres deadlock detected during CoachHelm refresh cron (~03:45 UTC 2026-07-08)
+732	2026-07-03	agent:needs-triage,workflow:bug	[Supabase] Postgres error: public.rate_limits relation + expires_at column missing (~02:04 UTC 2026-07-03)
+728	2026-07-02	agent:needs-triage,workflow:bug	[Supabase] recalculate_baseball_season_stats live body drifted to stale column b.so — broke all callers (RESOLVED via hotfix; needs drift guard)
+652	2026-07-01	agent:needs-triage,workflow:bug	[Supabase] baseball_announcements RLS policy — infinite recursion (42P17) in production
+651	2026-07-01	agent:needs-triage,workflow:bug	[Supabase] Baseball schema drift — 12 columns queried by code are missing in prod DB
+632	2026-07-01	source:partner,agent:needs-triage,workflow:bug	[Partner] GolfHelm: Calendar

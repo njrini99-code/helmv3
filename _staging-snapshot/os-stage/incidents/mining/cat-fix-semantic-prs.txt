@@ -1,0 +1,85 @@
+16	2026-05-21	P0: Close RLS Criticals (S-CRIT-1, S-CRIT-2) + scrub leaked credential
+26	2026-05-21	P1: Test harness baseline (Findings 3 + 8, T-CRIT-1/2)
+18	2026-05-21	P1: CoachHelm evidence contract (Finding 1 + Q-NEW-1/2/3/5/12 + A-NEW-3 + S-HIGH-1)
+19	2026-05-21	P1: Round-loop hardening (Finding 2 + A-NEW-6 + P-HIGH-1/4 + P-CRIT-2)
+20	2026-05-21	P1: Calendar correctness (Finding 4 + Q-NEW-7/14)
+28	2026-05-22	hotfix(P0): unblock coach insight actions + signup + partial CoachHelm runs
+29	2026-05-23	hotfix(P1): runtime-broken refs, RLS hardening, write-path checks, disclosure sanitize
+31	2026-05-24	hotfix(coachhelm): P0 sweep — 16 fixes from 2026-05-23 audit
+33	2026-05-24	hotfix(coachhelm): Wave 4 cleanup — head_coach RPC + cron unify + boundaries + index dedupe
+35	2026-05-24	hotfix(coachhelm): Wave 5 a11y + UX + reliability
+36	2026-05-24	hotfix(coachhelm): Wave 6 — 22 dep tables + Tier-1 philosophy filter
+106	2026-05-27	hotfix(inngest): align with v4 API to unblock Vercel production deploys
+115	2026-05-27	feat(security): harden 4 anon-executable SECURITY DEFINER RPCs (Codex P1)
+118	2026-05-28	fix(ci): migration-lockdown false-positive on archive renames
+119	2026-05-28	feat(security): body-level guards on baseball-recalc RPCs (Codex P1 follow-up)
+139	2026-05-28	fix(ui): restore warm-cream glass cards (gray-card regression)
+160	2026-05-28	refactor(ui): W2F — migrate to Radix DropdownMenu + Sonner; delete hand-rolled dropdown/toast
+207	2026-06-02	Consolidate Fairway redesign + P0–P3 data-correctness onto main (72 commits)
+222	2026-06-06	fix(coachhelm): critical+security cluster (C1/S1/C3) + CRM archive follow-ups
+249	2026-06-09	chore(security,docs): dep-vuln fixes (1 critical, 12 high) + to-95 audit closeout
+257	2026-06-10	fix(stats): accuracy + population audit — pagination caps, weighted math, null-honesty, up_and_down writer, staleness safety net
+277	2026-06-11	fix(resilience): cooldown-spaced chunk-error recovery + edge pre-warm tool
+327	2026-06-21	fix(golf): Wave A — DB/security hardening (IDOR + RLS + anon grants)
+335	2026-06-22	Premium remediation + CoachHelm engine: 302-finding scrub, P1-12 effectiveness ledger, P410 IA
+341	2026-06-23	feat(coachhelm): team intelligence pass — strengths/weaknesses drill-down, dev-plan redesign, review fixes
+518	2026-07-01	chore(repo): governance scaffolding (PR/issue templates, SECURITY, CONTRIBUTING, Dependabot coverage)
+521	2026-07-01	ci: harden workflows — actionlint RCE fix, pin downloads, timeouts/permissions/concurrency
+576	2026-07-01	fix(baseball): wire documents upload/new-version + serve fresh signed download URLs (#453)
+589	2026-07-01	fix(baseball): revert Daily Contract optimistic toggles on save failure (#461)
+676	2026-07-02	fix(baseball): make 'use server' messages barrel export async wrappers (P0 build-breaker)
+653	2026-07-02	fix(baseball): close self-terminating CSS comment in globals.css (P0 build-blocker)
+739	2026-07-03	Telemetry: prod-only incident feed, Next control-flow filter, demo-sessions force-dynamic, retention mirror
+737	2026-07-03	P1: fix /golf/dashboard RSC function-serialization crash (digest 3173807121)
+736	2026-07-03	P0: stop baseball onboarding demoting admins + honest Bridge panel fallback
+763	2026-07-03	Hotfix: restore @visx subpackages + postgres (Vercel build broken by umbrella-package prune)
+768	2026-07-03	Lift Lab unification → helm, CRM fixes, admin badge, e2e stabilization, Bridge incident fixes
+770	2026-07-03	fix(ci): green main — CI-env test leakage, semgrep requireAdmin recognition
+774	2026-07-03	fix(security): remove live hardcoded service-role secrets from scripts (#516)
+776	2026-07-03	test(baseball): regression pack for #477, #442/#443, #415 (zero prior coverage)
+793	2026-07-09	DB security hardening: gate leaking RPCs, repair CSV upload, schema-drift columns
+795	2026-07-10	Production-readiness mission: 8-tab IA everywhere, golf Fairway-only, baseball Living Annual complete, security wave
+799	2026-07-10	Mobile hotfixes: bottom-sheet compose flows, FAB/nav collisions, Brief card overlap + sign bug
+803	2026-07-11	fix: error-overview sweep — TDZ import cycle, expired-session UX, Sentry double-reports, miner deadlock retry
+835	2026-07-15	fix(mobile): Lift Lab nav-leak correctness bug + phone-ify weight-room/program/group split panes
+808	2026-07-15	chore(ci): import-cycle ratchet + mobile viewport regression suite
+842	2026-07-15	fix(ui): portal Select dropdown, forward wrapper className, 44px coarse-pointer floor
+883	2026-07-16	Lane 10: fix player-affordance leaks (desktop Add Event leak + blank-name-input data-loss risk)
+873	2026-07-16	fix(baseball): P0 privacy — gate player-peek behind Discover's authorization policy
+889	2026-07-16	Visual-audit fix batch: P0 privacy + idle-timeout + 12 UI/feature/honesty fixes
+897	2026-07-17	fix(bridge): triaged incident fixes + release-aware auto-resolution
+938	2026-07-18	Merge train: QA burn-down #905-#922 (15 PRs, validated as one tree)
+959	2026-07-18	fix(fairway): mobile composition — Action Items overflow, aspect drill-down sheet, Signals toolbar glass/cram, hero card sizing
+960	2026-07-18	Audit Wave 1 — 9 criticals + top trust bugs (10 root-caused fixes)
+990	2026-07-20	CRM once-over: full 10-lens audit, 4 criticals + 30 fixes
+1035	2026-07-24	fix: morning defect batch — products/pricing marketing + standing bars + leak band
+1086	2026-07-28	chore(security): ignore Momentic auth state
+1087	2026-07-29	Helm Bridge: classify incidents by kind, deepen error tracking
+1098	2026-07-29	hotfix(auth): stop the degraded-auth fallback from taking the whole site down
+1092	2026-07-29	BaseballHelm: close two cross-tenant data leaks, sunset recruiting, fix the Lift Lab sync
+1102	2026-07-29	db: close five cross-tenant leaks in production, and record how it was verified
+1105	2026-07-29	db(rls): scope baseball_coaches to the caller's org — the last P0, audit done (NOT applied)
+1120	2026-07-30	docs(qa): land the Helm QA foundation without #1075's dependency reverts
+1124	2026-07-30	docs: the last P0 is closed — record both migrations as APPLIED, not pending
+1128	2026-07-30	docs(overnight): the resume instructions pointed at a branch that would revert prod
+1129	2026-07-30	docs(overnight): FINAL_REPORT addendum 3 — the last P0 closed, and what CI found
+1159	2026-08-01	chore(deps): npm audit fix — 21 vulnerabilities down to 8
+1167	2026-08-01	fix(db): refresh_crm_coach_engagement leaked a session-level advisory lock
+1168	2026-08-01	feat(security): detect secret-shaped env vars with hardcoded literal fallbacks
+1221	2026-08-02	fix(security): close authorization and integrity holes found by deepsec wave 2
+1272	2026-08-03	fix: close 20 issues from the overnight audit — security, a dead Create button, and honest degradation
+1291	2026-08-06	fix(bridge): the incident queue was ranking stale over live, and replaying closed errors
+1301	2026-08-07	fix(golf,baseball): join idempotency, honest class-sync results, academic-term windows (P0)
+1317	2026-08-07	fix(db): a private DM was joinable by anyone sharing its team_id — dual-squad leak
+1335	2026-08-08	fix(golf): restore four read guards that #1326 silently reverted
+1338	2026-08-08	fix(golf): development guards called an outage "not found" and "not on your team"
+1352	2026-08-08	fix(billing): a failed read let a stale Stripe event downgrade a paid invoice
+1357	2026-08-08	fix(baseball): a failed snapshot meant rollback would delete instead of restore
+1414	2026-08-09	chore(lint): re-baseline reads 1086 → 1085 after two parallel paydowns collided
+1416	2026-08-09	fix(golf): an unreadable leak map rendered as a clean scorecard
+1420	2026-08-09	chore(lint): re-baseline reads 1082 → 1080 after a second parallel-paydown collision
+1442	2026-08-09	fix(security): message search escaped wildcards but not the escape character
+1456	2026-08-16	docs(cron): the weekly coach email needs a decision before re-enabling, not a revert
+1459	2026-08-16	docs(rules): the budget rule told reviewers to revert a correct fix
+1466	2026-08-16	fix: CSV stat corruption, two timezone bugs, unreachable insight text, unusable date picker
+1467	2026-08-16	feat(coachhelm): surface the downhill short-putt penalty — the real one, not the confounded one

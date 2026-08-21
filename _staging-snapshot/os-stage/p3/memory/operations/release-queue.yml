@@ -1,0 +1,48 @@
+# memory/operations/release-queue.yml
+#
+# spec: docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md §17
+#
+# Machine-readable state for VERIFIED REPAIR UNITS awaiting the release
+# train — not raw telemetry, not "open Sentry issues." A raw signal does not
+# enter this file; a verified repair does (spec §18: dedupe before
+# work-item creation — primary identity is feature_id + stable fingerprint +
+# root-cause/invariant class, not one row per occurrence).
+#
+# Read by scripts/release/*.mjs via loadReleaseQueue() in
+# scripts/release/lib/release-common.mjs — status.mjs summarizes it,
+# build-release-candidate.mjs pulls items to include in a release report,
+# check-release-candidate.mjs verifies every item a report says it includes
+# is actually in an acceptable status here. Written by the daily-reliability
+# routine (spec §23-26, a later phase — not yet built) and/or by hand during
+# this bootstrap period.
+#
+# Schema per item under `items:`:
+#   id:                  stable string id, e.g. "RQ-2026-08-21-001"
+#   feature_id:          a memory/registry.yml feature id this repair belongs to
+#   root_cause:          short description of the CONFIRMED root cause
+#   incident_id:         memory/incidents/<feature_id>/INC-....md id, once that tree exists (spec §29)
+#   status:              one of: observed, triaging, reproduced, repairing,
+#                         verification_failed, verified, queued_for_release,
+#                         released, verified_in_production, blocked,
+#                         wont_fix, expected, duplicate
+#                         (kept in sync with RELEASE_QUEUE_STATUSES in
+#                         scripts/release/lib/release-common.mjs — update both
+#                         together if this list ever changes)
+#   risk:                R0 | R1 | R2 | R3 (spec §28)
+#   sha:                 commit sha of the fix, once merged (used by
+#                         build-release-candidate.mjs to match a "verified"
+#                         item against the commits in a candidate's range)
+#   pr:                  PR number, once opened
+#   regression_tests:    list of test file paths covering this repair
+#   queued_for_release:  bool — explicit opt-in to the next release candidate,
+#                         independent of `status` (an item can be `verified`
+#                         without being queued yet)
+#   first_seen:          ISO 8601 date the underlying issue was first observed
+#
+# `check-release-candidate.mjs`'s "queue-items-verified" check only accepts
+# items whose `status` is `verified` or `queued_for_release` when a release
+# report claims to include them — everything else (e.g. `repairing`,
+# `blocked`) fails that check by design.
+
+version: 1
+items: []
