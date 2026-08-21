@@ -259,6 +259,14 @@ jobs:
     # longer matched src/lib/stripe/server.ts, so `npm run typecheck` started
     # failing on a file nobody had touched. A type gate must not mutate the
     # tree it is checking.
+    #
+    # It also passes --minimum-dependency-age=120 (minutes). Deno's default
+    # 24h supply-chain age policy failed this job on 2026-08-21 when rollup
+    # published 4.62.5 upstream — a red CI day for a docs-only merge, with no
+    # code change on our side. 2h keeps the protection against
+    # just-published/compromised versions without a day-long outage every
+    # time a floating transitive dep ships a release. Owner decision
+    # 2026-08-21.
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
