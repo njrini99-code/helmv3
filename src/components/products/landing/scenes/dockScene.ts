@@ -245,6 +245,21 @@ export function dockScene(ctx: SceneContext): void | (() => void) {
   // 3. Interpolate FIRST → LAST, scrubbed. `ease: none` because on a scrubbed
   //    timeline the reader's scroll IS the easing; adding a curve on top makes
   //    the tiles feel like they are fighting the wheel.
+  //
+  // `scale: true` — without it, Flip's default is to tween actual `width`/
+  // `height` from the scattered box to the docked one. Probed directly against
+  // the installed Flip build: at 50% progress that default path writes real
+  // inline `width`/`height` onto the tile; `scale: true` writes a `transform:
+  // scale()` instead and leaves size alone. The flagship "Qualifying & Travel
+  // Selection" tile sets `overflow: hidden` for its rounded corners — with the
+  // default sizing, its own CSS height is still short of its content's natural
+  // height for the first half of the dock, so the standings box's bottom row
+  // and the travel-cut line render CLIPPED until the tile's real box catches
+  // up (caught as the qualifier card's bottom row rendering cut off mid-dock).
+  // `scale: true` keeps every tile at its true final `offsetWidth`/`Height`
+  // throughout — nothing to clip against — and only its paint transform moves,
+  // consistent with the scatter phase two lines above already being a
+  // transform-only `scale`, not a real resize.
   const dockTl = Flip.from(scattered, {
     duration: 1,
     ease: EASE.none,
@@ -252,6 +267,7 @@ export function dockScene(ctx: SceneContext): void | (() => void) {
     // identically every time the reader scrolls back through it.
     stagger: { each: STAGGER.wideStep },
     absolute: true,
+    scale: true,
     paused: true,
   });
 
@@ -508,7 +524,15 @@ function operateBoard(
   if (cutRule) cutTl.to(cutRule, { scaleX: 1, duration: DUR.medium, ease: EASE.glide }, 0);
   // "Travel cut", the row washes, and "Squad locked" all carry copy, so every
   // one of them snaps rather than ramps (caught parked at 0.62 and 0.80).
-  if (cutLabel) arrive(cutTl, [cutLabel], 0.24);
+  //
+  // `cutLabel` snaps at 0, the SAME position `cutRule` starts growing from,
+  // not partway through its draw. It used to arrive at 0.24 while the rule
+  // began at 0 — for that whole 0.24s window a growing, unlabeled bar sat
+  // between rank 4 and rank 5 with no "Travel cut" text next to it, which is
+  // exactly what a mid-scrub screenshot caught. The label is copy, so per the
+  // rule above it must be legible or absent, never explaining a rule that
+  // already started drawing without it.
+  if (cutLabel) arrive(cutTl, [cutLabel], 0);
   if (washes.length) arrive(cutTl, washes, 0.3);
   if (checks.length) {
     arrive(cutTl, checks, 0.34, { scale: 1, duration: DUR.short, ease: EASE.emphasized });
