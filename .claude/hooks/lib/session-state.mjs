@@ -76,6 +76,7 @@ export function foldState(events) {
   const unmappedAcknowledged = new Set();
   const touchedFiles = new Map(); // path -> {feature_ids, ts}
   const noMemoryChangeReasons = [];
+  const delegatedVerifications = new Map(); // path -> {pr, evidence, ts}
   let sessionStart = null;
 
   for (const e of events) {
@@ -94,6 +95,13 @@ export function foldState(events) {
       case 'no_memory_change':
         noMemoryChangeReasons.push(e);
         break;
+      case 'delegated_verification':
+        // A different session/branch (a subagent's own PR, a teammate's
+        // worker session) already ran this path's gates and CI — recorded
+        // here so THIS session's Stop gate doesn't re-demand local
+        // verification for work it never did and has no context to redo.
+        if (e.path) delegatedVerifications.set(e.path, { pr: e.pr, evidence: e.evidence, ts: e.ts });
+        break;
       default:
         // Unknown/future event type — preserved in the raw log, ignored here.
         break;
@@ -107,6 +115,7 @@ export function foldState(events) {
     unmappedAcknowledged,
     touchedFiles,
     noMemoryChangeReasons,
+    delegatedVerifications,
   };
 }
 

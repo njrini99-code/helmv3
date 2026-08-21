@@ -42,6 +42,26 @@ export function toRepoRelative(repoRoot, filePath) {
   return rel.replace(/^\.\//, '');
 }
 
+/**
+ * True only when `filePath` resolves to somewhere INSIDE `repoRoot`. Session
+ * scratchpad/staging directories (e.g. /private/tmp/claude-.../scratchpad/)
+ * are absolute paths that never start with the repo root, so `toRepoRelative`
+ * leaves them unchanged (still absolute) rather than stripping a prefix that
+ * isn't there — that unchanged-absolute-path shape is exactly the signal
+ * this checks for. Live incident, 2026-08-21: the pre-rebuild stop-verify.sh
+ * counted scratchpad `.ts`/`.mjs` files an orchestrating session wrote as
+ * "touched, unverified" and demanded gates be run against them — there is
+ * nothing there to gate, they are not repo state.
+ */
+export function isWithinRepo(repoRoot, filePath) {
+  if (!filePath) return false;
+  const rel = toRepoRelative(repoRoot, filePath);
+  // A genuine repo-relative result never starts with `/`; `toRepoRelative`
+  // leaves a path unchanged (still absolute) exactly when it found no
+  // repoRoot prefix to strip, which is the "outside the repo" signal.
+  return typeof rel === 'string' && !rel.startsWith('/');
+}
+
 export async function mapPathToFeatures(repoRoot, filePath) {
   const registry = await getRegistry(repoRoot);
   const relPath = toRepoRelative(repoRoot, filePath);
