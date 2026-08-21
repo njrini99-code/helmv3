@@ -75,6 +75,9 @@ counts; writing a flag does not).
 - Update `memory/ledgers/tests/<feature-id>.md` when guarantees change.
 - Update/create `memory/incidents/<feature-id>/INC-*.md` when incident-driven.
 - Create `memory/decisions/ADR-*.md` for architecture decisions.
+- Every entry above carries an explicit `YYYY-MM-DD` date (owner directive,
+  2026-08-21) — the Stop gate checks for one in what a session actually wrote
+  to a ledger/incident/decision file this turn and rejects an undated entry.
 
 Non-behavioral changes record a structured reason instead:
 `node .claude/hooks/lib/record-event.mjs no-memory-change --reason <r>`;

@@ -234,6 +234,100 @@ describe('stop-verify.sh — rebuilt Stop gate', () => {
     expect(decision.decision).toBe('block');
     expect(decision.reason).toContain('npm run build');
     expect(decision.reason).toContain('REQUIRED');
+    fixture.commitAll('advance past dynamic-route test'); // see mapping-gap test's comment
+  });
+
+  it('a delegated_verification event satisfies verification for that path — no gaps, reason notes it as delegated', () => {
+    // Addendum, 2026-08-21: an orchestrating session whose subagent/worker
+    // did the actual branch+PR work must not be flagged for files it never
+    // verified locally — those files ARE verified, by the worker's own
+    // pre-commit gates + CI on the worker's PR.
+    dirtyFile(fixture, 'src/app/golf/actions/feature-a-one.ts', 'export const one = 6;\n');
+    appendEventRaw(fixture, 'sess-delegated', {
+      type: 'touch',
+      path: 'src/app/golf/actions/feature-a-one.ts',
+      feature_ids: ['feature_a'],
+    });
+    execFileSync(
+      'node',
+      [join(fixture.dir, '.claude/hooks/lib/record-event.mjs'), 'delegated-verification', '--path', 'src/app/golf/actions/feature-a-one.ts', '--pr', '4242'],
+      { cwd: fixture.dir, env: { ...process.env, CLAUDE_PROJECT_DIR: fixture.dir, CLAUDE_CODE_SESSION_ID: 'sess-delegated' }, encoding: 'utf8' },
+    );
+
+    const result = runStopVerify(fixture, 'sess-delegated');
+    // No context_load, no memory-doc touch were ever recorded for feature_a
+    // in THIS session — if delegation didn't work, this would MAPPING/CONTEXT/
+    // MEMORY gap. It must not, because the file is fully delegated.
+    expect(result.stdout.trim()).toBe('');
+    fixture.commitAll('advance past delegated-verification test');
+  });
+
+  it('a foreign file dirty in the tree (never in this session\'s touch events) is never attributed, even when this session has its own touches', () => {
+    // Simulates another agent's in-flight branch leaving a file dirty in
+    // this shared working tree. Session-owned state must be the ONLY source
+    // for what gets reported — git's whole-tree view must never leak a file
+    // this session never touched into the block reason.
+    dirtyFile(fixture, 'src/app/golf/actions/feature-a-one.ts', 'export const one = 7;\n');
+    dirtyFile(fixture, 'src/app/golf/actions/feature-b-one.ts', 'export const one = 999;\n'); // NOT touched by sess-foreign-check
+    appendEventRaw(fixture, 'sess-foreign-check', {
+      type: 'context_load',
+      source: 'read',
+      path: 'memory/features/feature-a.md',
+      feature_ids: ['feature_a'],
+    });
+    appendEventRaw(fixture, 'sess-foreign-check', {
+      type: 'touch',
+      path: 'src/app/golf/actions/feature-a-one.ts',
+      feature_ids: ['feature_a'],
+    });
+    appendEventRaw(fixture, 'sess-foreign-check', {
+      type: 'touch',
+      path: 'memory/features/feature-a.md',
+      feature_ids: [],
+    });
+
+    const result = runStopVerify(fixture, 'sess-foreign-check');
+    const decision = JSON.parse(result.stdout);
+    expect(decision.decision).toBe('block');
+    expect(decision.reason).toContain('feature-a-one.ts');
+    expect(decision.reason).not.toContain('feature-b-one.ts'); // the foreign file
+    fixture.git('checkout', '--', 'src/app/golf/actions/feature-b-one.ts'); // leave the foreign edit un-committed by us
+    fixture.commitAll('advance past foreign-file test (feature-a-one.ts only)');
+  });
+
+  it('BLOCKS with a DATE GAP when a touched ledger entry has no explicit YYYY-MM-DD date, and clears once one is added', () => {
+    // Owner directive, 2026-08-21: explicit dates on everything.
+    const ledgerDir = join(fixture.dir, 'memory/ledgers/changes');
+    mkdirSync(ledgerDir, { recursive: true });
+    const ledgerRel = 'memory/ledgers/changes/feature-a.md';
+    writeFileSync(join(fixture.dir, ledgerRel), '## Change entry\nDid a thing, no date here.\n');
+    appendEventRaw(fixture, 'sess-date-gap', { type: 'touch', path: ledgerRel, feature_ids: [] });
+
+    const undated = runStopVerify(fixture, 'sess-date-gap');
+    const undatedDecision = JSON.parse(undated.stdout);
+    expect(undatedDecision.decision).toBe('block');
+    expect(undatedDecision.reason).toContain('DATE GAP');
+    expect(undatedDecision.reason).toContain(ledgerRel);
+
+    // Commit the undated version so HEAD advances before the second edit —
+    // otherwise this file's two near-identical single-line diffs can hash to
+    // the SAME loop-safety state (HEAD + status + diff --stat), and the
+    // second stop-verify call would silently allow instead of re-evaluating.
+    // Same reasoning as the mapping-gap test's comment above.
+    fixture.commitAll('undated ledger entry (fixture)');
+
+    // Same session, dirty the SAME file again — this time with a date.
+    writeFileSync(join(fixture.dir, ledgerRel), '## Change entry — 2026-08-21\nDid a thing, dated this time.\n');
+
+    // A dated ledger .md file alone has NO outstanding gap of any kind — it
+    // is not a SRC_RE file (no code-verification reminder applies to it by
+    // itself), and mapping/context/memory/date all clear. Unlike the other
+    // gap tests, there is nothing left to demand, so this correctly ALLOWS
+    // SILENTLY rather than still blocking once — the same "doc-only touch
+    // must not trip the source-verification gate" principle this rebuild's
+    // first fix round established, now applied to the date dimension too.
+    const dated = runStopVerify(fixture, 'sess-date-gap');
+    expect(dated.stdout.trim()).toBe('');
   });
 });
 
