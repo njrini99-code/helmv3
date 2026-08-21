@@ -60,7 +60,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Invoices, Stripe posture' },
 
   // INTAKE
-  { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Submit bugs, changes, additions', meta: 'issues' },
+  { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Log tester-reported bugs on their behalf', meta: 'issues' },
 ] as const;
 
 /** Quick links in the Overview command header — must be real ADMIN_NAV routes. */
