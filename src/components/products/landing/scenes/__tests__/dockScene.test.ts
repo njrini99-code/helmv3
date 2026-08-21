@@ -59,6 +59,10 @@ function buildBoard(): HTMLElement {
           <div data-row="5"><span>R. Costa</span></div>
         </div>
       </div>
+      <div data-dock="tile" data-op-target="travel"><span data-op="readout">Travel booked</span></div>
+      <div data-dock="tile" data-op-target="calendar"><span data-op="readout">3 events added</span></div>
+      <div data-dock="tile" data-op-target="announcements"><span data-op="readout">Posted to team</span></div>
+      <div data-dock="tile" data-op-target="tasks"><span data-op="readout">4 tasks assigned</span></div>
     </div>
   `;
   document.body.appendChild(root);
@@ -156,6 +160,43 @@ describe('dockScene — the qualifier card renders complete', () => {
     // Both scheduled at the timeline's start — never a gap where the rule has
     // begun drawing and the label has not yet been told to appear.
     expect(labelTween!.startTime()).toBe(ruleTween!.startTime());
+
+    cleanup?.();
+  });
+
+  it('mobile readouts reveal via autoAlpha, not bare opacity, so visibility actually clears', () => {
+    // The other bug the owner's screenshot did NOT show, but a source-level
+    // sweep for the same defect class caught: on mobile/compact
+    // (`compact: true`, so `wire` is false — see `!wire` in operateBoard),
+    // each program surface's readout is hidden with `gsap.set(l.readout, {
+    // autoAlpha: 0, y: 10 })` and used to be revealed with `gsap.to(l.readout,
+    // { opacity: 1, ... })`. `autoAlpha` writes `visibility: hidden` alongside
+    // `opacity: 0`; a tween that only animates `opacity` never clears
+    // `visibility`, so the readout reached `opacity: 1` while staying
+    // `visibility: hidden` forever — invisible regardless of scroll position.
+    const root = buildBoard();
+    const readouts = [...root.querySelectorAll('[data-op="readout"]')] as HTMLElement[];
+    expect(readouts.length).toBe(4);
+
+    const cleanup = dockScene(makeContext(root, { reduced: false, compact: true }));
+
+    readouts.forEach((readout) => {
+      // Base state actually hidden — `visibility`, not just `opacity`.
+      expect(getComputedStyle(readout).visibility).toBe('hidden');
+
+      const tweens = gsap.getTweensOf(readout);
+      expect(tweens.length).toBeGreaterThan(0);
+      const revealTween = tweens.find((t) => (t.vars as gsap.TweenVars).autoAlpha === 1);
+      expect(revealTween, 'reveal tween must animate autoAlpha, not bare opacity').toBeDefined();
+      expect((revealTween!.vars as gsap.TweenVars).opacity).toBeUndefined();
+
+      // Run the tween to completion and confirm visibility actually clears —
+      // the exact mismatch the bug produced: `opacity: 1` while
+      // `visibility` stayed stuck on `hidden`.
+      revealTween!.progress(1);
+      expect(getComputedStyle(readout).visibility).toBe('visible');
+      expect(gsap.getProperty(readout, 'opacity')).toBe(1);
+    });
 
     cleanup?.();
   });
