@@ -550,8 +550,18 @@ function operateBoard(
     // telling the reader.
     links.forEach((link) => {
       if (!link.readout) return;
+      // `autoAlpha`, not bare `opacity`. This readout's HIDDEN state, set above
+      // in "Initial state: nothing decided", is `gsap.set(l.readout, {
+      // autoAlpha: 0, y: 10 })` — `autoAlpha` writes `visibility: hidden`
+      // alongside `opacity: 0`. A tween that only animates `opacity` back to 1
+      // never touches `visibility`, which GSAP leaves exactly where the
+      // earlier `set()` left it — so on mobile this readout reached
+      // `opacity: 1` while staying `visibility: hidden` forever, regardless of
+      // scroll position, browser, or anything else. Not a race: a permanent,
+      // deterministic mismatch between the property the base state used and
+      // the property the reveal animated.
       gsap.to(link.readout, {
-        opacity: 1,
+        autoAlpha: 1,
         y: 0,
         duration: DUR.medium,
         ease: EASE.glide,
