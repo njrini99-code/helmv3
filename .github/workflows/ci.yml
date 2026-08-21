@@ -11,8 +11,14 @@ on:
   pull_request:
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Per-COMMIT groups on main (playwright.yml's pattern): two merges landing
+  # seconds apart used to cancel the first commit's suite mid-flight, and the
+  # always()-running aggregate then FAILED on its cancelled needs — every
+  # stacked merge painted a red X on a superseded main commit (owner report
+  # 2026-08-20 22:15). On PR branches the old behavior stands: a new push
+  # supersedes the previous run.
+  group: ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
