@@ -3,13 +3,13 @@ import { LandingView } from '@/components/landing/LandingView'
 import { NativeRedirect } from '@/components/NativeRedirect'
 
 export const metadata: Metadata = {
-  title: 'GolfHelm — College Golf Operating System',
+  title: 'Helm Sports Labs — College Golf Intelligence',
   description:
-    'GolfHelm turns every round, shot, and stat into the next coaching decision. Fewer spreadsheets. Clearer decisions. Faster recruiting.',
+    'GolfHelm is the operating system for college golf coaches — rounds, players, shots, and coaching intelligence in one coherent view.',
   openGraph: {
-    title: 'GolfHelm — College Golf Operating System',
+    title: 'Helm Sports Labs — College Golf Intelligence',
     description:
-      'GolfHelm turns every round, shot, and stat into the next coaching decision. Fewer spreadsheets. Clearer decisions. Faster recruiting.',
+      'GolfHelm is the operating system for college golf coaches — rounds, players, shots, and coaching intelligence in one coherent view.',
     type: 'website',
     url: '/',
     images: [
@@ -17,15 +17,15 @@ export const metadata: Metadata = {
         url: '/og/home.png',
         width: 1200,
         height: 630,
-        alt: 'GolfHelm — the operating system for college golf coaches',
+        alt: 'Helm Sports Labs logo on white background',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'GolfHelm — College Golf Operating System',
+    title: 'Helm Sports Labs — College Golf Intelligence',
     description:
-      'GolfHelm turns every round, shot, and stat into the next coaching decision. Fewer spreadsheets. Clearer decisions. Faster recruiting.',
+      'GolfHelm is the operating system for college golf coaches — rounds, players, shots, and coaching intelligence in one coherent view.',
     images: ['/og/home.png'],
   },
 }
