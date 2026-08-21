@@ -38,6 +38,13 @@ async function handleRead(repoRoot, sessionId, input) {
   const filePath = input.tool_input?.file_path;
   if (!filePath) return;
   const relPath = toRepoRelative(repoRoot, filePath);
+  // Every registry docs.feature value lives under memory/ or docs/ (verified
+  // live against the real registry — one feature's canonical doc,
+  // feature_awareness_system's, is the sole docs/ exception to the memory/
+  // convention). Skip the registry parse entirely for anything else — this
+  // is a PostToolUse hook on every Read in the repo, and most reads are
+  // source code, not a feature doc.
+  if (!relPath.startsWith('memory/') && !relPath.startsWith('docs/')) return;
   const docIndex = await buildFeatureDocIndex(repoRoot);
   const featureId = docIndex.get(relPath);
   if (!featureId) return;

@@ -42,6 +42,24 @@ describe('stop-verify.sh — rebuilt Stop gate', () => {
     expect(result.stdout.trim()).toBe('');
   });
 
+  it('ALLOWS silently for a session that touched ONLY a non-source file (e.g. a memory doc) — regression for TOUCHED_COUNT vs TOUCHED_SRC_COUNT', () => {
+    // This is exactly the shape the MEMORY GAP remedy instructs: "update the
+    // doc." A session whose only touch this turn is memory/features/*.md
+    // must not itself trip the "unverified source" gate — the OLD script
+    // never fired for doc-only changes (SRC_RE excludes .md), and the
+    // rebuild must preserve that or every governed edit becomes a
+    // double-block loop (block for the code touch, update memory, block
+    // AGAIN for the memory touch).
+    appendEventRaw(fixture, 'sess-doc-only-touch', {
+      type: 'touch',
+      path: 'memory/features/feature-a.md',
+      feature_ids: [],
+    });
+    const result = runStopVerify(fixture, 'sess-doc-only-touch');
+    expect(result.code).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
   it('stays ADVISORY (non-blocking) when git shows unattributed dirt but this session touched nothing', () => {
     // Dirty a file WITHOUT recording any session-state touch — simulates
     // either a peer session's change or a hook-wiring gap. Same session id
@@ -178,6 +196,44 @@ describe('stop-verify.sh — rebuilt Stop gate', () => {
     const decision = JSON.parse(result.stdout);
     expect(decision.decision).toBe('block'); // still blocks once for the base verification reminder
     expect(decision.reason).not.toContain('MEMORY GAP'); // but the memory dimension is satisfied
+    fixture.commitAll('advance past valid-reason test');
+  });
+
+  it("detects a 'use server' change in a file whose path contains a dynamic route segment like [id]", () => {
+    // This repo's routes use `[id]`-style segments. An UNQUOTED shell
+    // expansion of a touched-files list hands bash a literal `[id]` as a
+    // glob CHARACTER CLASS, not a path component — guard-bash.sh's own `-f`
+    // (noglob) flag exists specifically because of this trap. stop-verify.sh
+    // does not set `-f` script-wide, so this path is built as a bash ARRAY
+    // instead; this test is the regression guard for that fix actually
+    // detecting the 'use server' directive rather than silently no-op'ing.
+    dirtyFile(
+      fixture,
+      'src/app/golf/actions/feature-a-[id].ts',
+      "'use server';\nexport const byId = 5;\n",
+    );
+    appendEventRaw(fixture, 'sess-dynamic-route', {
+      type: 'context_load',
+      source: 'read',
+      path: 'memory/features/feature-a.md',
+      feature_ids: ['feature_a'],
+    });
+    appendEventRaw(fixture, 'sess-dynamic-route', {
+      type: 'touch',
+      path: 'src/app/golf/actions/feature-a-[id].ts',
+      feature_ids: ['feature_a'],
+    });
+    appendEventRaw(fixture, 'sess-dynamic-route', {
+      type: 'touch',
+      path: 'memory/features/feature-a.md',
+      feature_ids: [],
+    });
+
+    const result = runStopVerify(fixture, 'sess-dynamic-route');
+    const decision = JSON.parse(result.stdout);
+    expect(decision.decision).toBe('block');
+    expect(decision.reason).toContain('npm run build');
+    expect(decision.reason).toContain('REQUIRED');
   });
 });
 

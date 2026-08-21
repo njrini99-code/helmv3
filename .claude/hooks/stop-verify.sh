@@ -71,13 +71,22 @@ MEMORY_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.memoryGaps | length')
 GITDIR=$(git rev-parse --git-dir 2>/dev/null || echo ".git")
 BASE="$GITDIR/claude-stop-baseline-$SESSION_ID_SAFE"
 
-# ── FALLBACK PATH: this session's own ledger shows nothing touched ─────────
+# ── FALLBACK PATH: this session's own ledger shows nothing SOURCE touched ──
 # Either genuinely nothing changed, or the recording hooks did not fire. The
 # old git-baseline-diff logic still runs here, but ONLY as an advisory signal
 # — it must never block, because it cannot attribute correctly under
 # concurrency (that is exactly the bug this rebuild fixes). Preserved mostly
 # unchanged from the prior version of this file.
-if [ "${TOUCHED_COUNT:-0}" -eq 0 ] && [ "${MAPPING_GAP_COUNT:-0}" -eq 0 ] \
+#
+# Gated on TOUCHED_SRC_COUNT, not TOUCHED_COUNT — the OLD script only ever
+# cared about SRC_RE-matching files (ts/tsx/js/jsx/mjs/cjs/sql/css); a
+# doc-only session (e.g. touching ONLY memory/features/<id>.md, which is
+# exactly the memory-update step the MEMORY GAP message below instructs) must
+# not itself trip the "unverified source" gate control-plane loop. A real gap
+# (mapping/context/memory) still reaches the main path regardless, because a
+# non-source file CAN carry a real gap — package.json maps to
+# feature_awareness_system via its code.services glob, for one.
+if [ "${TOUCHED_SRC_COUNT:-0}" -eq 0 ] && [ "${MAPPING_GAP_COUNT:-0}" -eq 0 ] \
    && [ "${CONTEXT_GAP_COUNT:-0}" -eq 0 ] && [ "${MEMORY_GAP_COUNT:-0}" -eq 0 ]; then
   DIRTY_NOW=$(git status --porcelain 2>/dev/null | grep -E "$SRC_RE" | awk '{print $NF}' | sort)
   if [ ! -f "$BASE" ]; then
@@ -123,9 +132,22 @@ TOUCHED_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.touchedFiles[]' | head -
 # which files are ours). Same real incident this guards against: an
 # `export type` inside a 'use server' module passed typecheck AND unit tests,
 # then threw ReferenceError at runtime, past 8,763 green tests.
+#
+# Built as an ARRAY, not a bare unquoted variable expansion — this repo's
+# routes include `[id]`-style dynamic segments, which an unquoted `$VAR`
+# expansion hands to bash as a glob character class, not a literal path.
+# guard-bash.sh's `-f` (noglob) exists for exactly this reason; this script
+# does not set `-f` script-wide (it would change every other expansion
+# here too), so the array form is the locally-scoped equivalent — each
+# element is passed to `git diff` as one already-delimited argument, immune
+# to both word-splitting and glob expansion regardless of its contents.
+TOUCHED_TS_FILES=()
+while IFS= read -r line; do
+  [ -n "$line" ] && TOUCHED_TS_FILES+=("$line")
+done < <(printf '%s' "$STOP_CHECK_JSON" | jq -r --arg re '\.(ts|tsx)$' '.touchedFiles[] | select(test($re))')
+
 SERVER_ACTION=""
-TOUCHED_TS_FILES=$(printf '%s' "$STOP_CHECK_JSON" | jq -r --arg re '\.(ts|tsx)$' '.touchedFiles[] | select(test($re))')
-if [ -n "$TOUCHED_TS_FILES" ] && git diff -- $TOUCHED_TS_FILES 2>/dev/null | grep -q "'use server'"; then
+if [ "${#TOUCHED_TS_FILES[@]}" -gt 0 ] && git diff -- "${TOUCHED_TS_FILES[@]}" 2>/dev/null | grep -q "'use server'"; then
   SERVER_ACTION="
 A 'use server' module this session touched changed. \`npm run build\` is
 REQUIRED here — typecheck and unit tests both pass while an \`export type\` in

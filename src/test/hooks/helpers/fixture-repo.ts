@@ -87,6 +87,13 @@ export function createFixtureRepo(): FixtureRepo {
   mkdirSync(join(dir, 'src/app/golf/actions'), { recursive: true });
   writeFileSync(join(dir, 'src/app/golf/actions/feature-a-one.ts'), 'export const one = 1;\n');
   writeFileSync(join(dir, 'src/app/golf/actions/feature-b-one.ts'), 'export const one = 1;\n');
+  // Pre-committed so later tests can MODIFY it (git diff needs a prior
+  // committed version to show a delta against — a brand-new untracked file
+  // shows nothing via plain `git diff`). Filename deliberately contains a
+  // `[id]`-style dynamic route segment, real in this repo's route tree, to
+  // regression-test stop-verify.sh's array-based (not unquoted-string)
+  // handling of touched-file paths in the 'use server' detector.
+  writeFileSync(join(dir, 'src/app/golf/actions/feature-a-[id].ts'), 'export const byId = 1;\n');
 
   mkdirSync(join(dir, '.claude'), { recursive: true });
   symlinkSync(join(REPO_ROOT, '.claude/hooks'), join(dir, '.claude/hooks'));
