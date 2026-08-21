@@ -75,3 +75,36 @@ describe('todayIsoInZone', () => {
     expect(todayIsoInZone('', EVENING_IN_NY)).toBe('2026-08-18');
   });
 });
+
+/**
+ * The output shape is load-bearing: `isGolfTaskOverdueInZone` and every other
+ * caller does a plain LEXICOGRAPHIC compare against this string
+ * (`dueDay < todayIsoInZone(...)`), so it only sorts correctly as a date if
+ * the shape is exactly `YYYY-MM-DD` — zero-padded, hyphen-separated, that
+ * field order. The previous implementation got that shape by asking
+ * `Intl.DateTimeFormat('en-CA', ...)` to `.format()` directly and trusting
+ * that `en-CA` happens to render dates that way. It is a locale CONVENTION,
+ * not a contract `Intl.DateTimeFormat` guarantees, and locale data ships with
+ * the JS engine, not this repo — a future Node/ICU update changing `en-CA`'s
+ * separator or field order would silently start comparing dates wrong on some
+ * tasks and not others, with no exception to catch. Reading the parts by
+ * TYPE (`formatToParts`) and assembling `YYYY-MM-DD` by hand removes that
+ * dependency: the shape comes from this function's own string template, not
+ * from a locale continuing to format the way it happens to today.
+ */
+describe('todayIsoInZone — output shape does not depend on en-CA formatting YYYY-MM-DD', () => {
+  it('is always zero-padded, hyphen-separated YYYY-MM-DD', () => {
+    // A single-digit month AND day — the case where a non-padded or
+    // differently-ordered locale rendering would be most visible.
+    const earlyInYear = new Date('2026-01-05T12:00:00Z');
+    expect(todayIsoInZone('America/New_York', earlyInYear)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(todayIsoInZone('America/New_York', earlyInYear)).toBe('2026-01-05');
+  });
+
+  it('sorts correctly as a plain string, the property every caller relies on', () => {
+    const zone = 'Pacific/Honolulu';
+    const jan5 = todayIsoInZone(zone, new Date('2026-01-05T20:00:00Z'));
+    const jan9 = todayIsoInZone(zone, new Date('2026-01-10T05:00:00Z'));
+    expect(jan5 < jan9).toBe(true);
+  });
+});
