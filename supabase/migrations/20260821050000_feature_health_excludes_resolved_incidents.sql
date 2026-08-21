@@ -5,8 +5,9 @@
 -- displayed reason text ("2 error fingerprint(s) in the last 24h.") reading
 -- as an open problem. Both underlying admin_events rows are already
 -- `resolved = true`. Root cause: `events_24h.errors` / `.fingerprints` and
--- the two 24h-ago comparison windows (`errors_prev_24h`, `fingerprints_prev_24h`)
--- never filtered on `resolved` — only `critical_unresolved` did.
+-- the two 24h-ago comparison windows (`errors_prev_24h`,
+-- `fingerprints_prev_24h`) never filtered on `resolved` — only
+-- `critical_unresolved` did.
 --
 -- FIX — filter the current-instability aggregates by `resolved IS NOT TRUE`:
 --   * events_24h.errors, events_24h.fingerprints
@@ -36,13 +37,20 @@
 -- trading one inaccuracy for a worse one. `total` is a raw traffic count,
 -- not an instability signal.
 --
--- Everything else below is a verbatim copy of the 20260807020000 body so a
--- future reader diffing the two files sees exactly this one class of change.
+-- Everything else below matches the 20260807020000 body clause-for-clause
+-- (same logic, same order) so a future reader diffing the two files sees
+-- exactly this one class of change. A few lines are reformatted rather than
+-- byte-identical — the prior file's whitespace already carried sqlfluff
+-- violations (long lines, indented continuation lines, mixed-case PUBLIC)
+-- that were grandfathered as existing debt; copying that formatting into a
+-- NEW file would have added fresh violations instead of reusing debt
+-- already on the books, which the repo's sql-lint-ratchet correctly blocks.
 
-CREATE OR REPLACE FUNCTION public.get_feature_health(p_features jsonb) RETURNS jsonb
-    LANGUAGE plpgsql STABLE SECURITY DEFINER
-    SET search_path TO 'public', 'pg_temp'
-    AS $fn$
+CREATE OR REPLACE FUNCTION public.get_feature_health(p_features jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $fn$
 DECLARE
   v_result jsonb := '[]'::jsonb;
   f jsonb;
@@ -169,25 +177,26 @@ END;
 $fn$;
 
 COMMENT ON FUNCTION public.get_feature_health(jsonb) IS
-  'Helm Bridge feature-health rollup (W15). p_features: jsonb array of '
-  '{"key","heartbeat_table","heartbeat_column"} descriptors, max 500 — built '
-  'by rpcInput() in src/lib/admin/feature-registry.ts. heartbeat_table must be '
-  'golf_*, baseball_*, helm_lifting_*, admin_events or error_logs AND actually '
-  'carry heartbeat_column (default created_at); anything else resolves NULL, '
-  'which makes the caller skip the staleness rule entirely rather than assume '
-  'freshness. events_24h.errors/.fingerprints/.rls_denials*, errors_prev_24h '
-  'and fingerprints_prev_24h all exclude resolved=true rows (20260821050000) — '
-  'fingerprints_7d and total deliberately do not, since fingerprints_7d feeds '
-  'hasNoFeatureData and filtering it would misclassify a freshly-cleared '
-  'feature as having no data at all.';
+'Helm Bridge feature-health rollup (W15). p_features: jsonb array of '
+'{"key","heartbeat_table","heartbeat_column"} descriptors, max 500 — built '
+'by rpcInput() in src/lib/admin/feature-registry.ts. heartbeat_table must be '
+'golf_*, baseball_*, helm_lifting_*, admin_events or error_logs AND actually '
+'carry heartbeat_column (default created_at); anything else resolves NULL, '
+'which makes the caller skip the staleness rule entirely rather than assume '
+'freshness. events_24h.errors/.fingerprints/.rls_denials*, errors_prev_24h '
+'and fingerprints_prev_24h all exclude resolved=true rows (20260821050000) — '
+'fingerprints_7d and total deliberately do not, since fingerprints_7d feeds '
+'hasNoFeatureData and filtering it would misclassify a freshly-cleared '
+'feature as having no data at all.';
 
 -- ── Safety rails (W3 pattern) ───────────────────────────────────────────────
 -- CREATE OR REPLACE preserves the existing ACL, so this is a re-assertion
 -- rather than a change. service_role is inert here by design: the internal
 -- is_super_admin() gate reads auth.uid(), which is NULL under service_role, so
 -- a service_role call still gets 42501.
-REVOKE EXECUTE ON FUNCTION public.get_feature_health(jsonb) FROM PUBLIC, anon;
-GRANT  EXECUTE ON FUNCTION public.get_feature_health(jsonb) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.get_feature_health(jsonb) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.get_feature_health(jsonb)
+TO authenticated, service_role;
 
 DO $guard$
 DECLARE
