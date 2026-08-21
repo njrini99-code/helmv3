@@ -15,8 +15,9 @@
  *
  *   1. SYMPTOM   — "3.2 three-putts per round" arrives as masked words.
  *   2. CANDIDATES— every plausible explanation is put on the table at once.
- *   3. ELIMINATE — they are struck through one at a time, each with the test it
- *                  failed: no temporal precedence, no dose–response, confounded.
+ *   3. ELIMINATE — they are struck through one at a time, each with the plain-
+ *                  language reason it failed (timing doesn't line up, amount
+ *                  didn't matter, tangled up with travel).
  *   4. SURVIVOR  — one cause is left standing and lights up.
  *   5. CAUSE     — only now does the "Caused by —" sentence resolve.
  *   6. EVIDENCE  — the supporting rows land with their real sample sizes.
