@@ -203,4 +203,78 @@ describe('describeError', () => {
       }
     });
   });
+
+  /**
+   * postgrest-js's OTHER fallback for an unparseable 2xx body: when
+   * `JSON.parse(body)` throws (a truncated/malformed response), it sets
+   * `error = { message: body }` — the RAW response text, not a real error.
+   * For a row-returning query that body is a JSON array of near-complete rows.
+   *
+   * Real production text, 2026-08-03 (`insight-delivery.getInsightsForCoach`):
+   * `getInsightsForCoach failed: [{"id":"0138a7f6-8015-465c-93a6-0c1781ee6c70",
+   * "player_id":"faced578-…` — a coach's entire insight feed, including a
+   * player's putting percentages and coaching evidence, landed in
+   * `error_logs.message` because the response simply failed to finish
+   * streaming. Every occurrence carries different row content, so — same harm
+   * as the HTML gateway page above — each one would mint its own incident
+   * group instead of collapsing into one.
+   */
+  describe('raw JSON response-body dumps', () => {
+    const rowDump = (n: number) =>
+      '[' +
+      Array.from({ length: n }, (_, i) =>
+        `{"id":"0138a7f6-8015-465c-93a6-0c1781ee6c${i}","player_id":"faced578-b271-416f-b757-ac3aee5bd9e5","category":"putting","content":"padding-to-simulate-a-real-row-payload"}`,
+      ).join(',') +
+      ']';
+
+    it('collapses a large JSON row dump to one stable summary line', () => {
+      // describeError is called directly on the caught error object — its
+      // `.message` IS the raw payload, with no caller-added prefix (a manual
+      // prefix only exists once a caller interpolates the result into its own
+      // template string, which is what collapseEmbeddedRawJsonDump below
+      // handles). Matches collapseHtmlErrorBody's existing behavior here.
+      const out = describeError(new Error(rowDump(5)));
+      expect(out).toBe(
+        'upstream response body could not be parsed as JSON — looks like a truncated row dump, not an error message',
+      );
+    });
+
+    it('leaks no row content (player/insight data) into the collapsed message', () => {
+      const out = describeError(new Error(rowDump(5)));
+      expect(out).not.toContain('faced578');
+      expect(out).not.toContain('putting');
+      expect(out).not.toContain('"id"');
+    });
+
+    it('produces BYTE-IDENTICAL output for two occurrences with a DIFFERENT number of rows', () => {
+      // Real occurrences of this failure never truncate at the same row count —
+      // a length- or content-bearing summary would still mint a new incident
+      // group per occurrence, exactly the fragmentation this fix exists to stop.
+      const first = describeError(new Error(rowDump(3)));
+      const second = describeError(new Error(rowDump(40)));
+      expect(first).toBe(second);
+    });
+
+    it('handles the Supabase plain-object shape — postgrest-js\'s actual `{ message: body }` fallback', () => {
+      const out = describeError({ message: rowDump(5) });
+      expect(out).toBe(
+        'upstream response body could not be parsed as JSON — looks like a truncated row dump, not an error message',
+      );
+    });
+
+    it('does not fire on a short, genuine jsonb-detail error message', () => {
+      const short = 'Key (metadata)=({"a":1}) already exists.';
+      expect(describeError(new Error(short))).toBe(short);
+    });
+
+    it('leaves non-dump messages completely alone', () => {
+      for (const plain of [
+        'canceling statement due to statement timeout',
+        'new row violates row-level security policy for table "golf_rounds"',
+        'duplicate key value violates unique constraint "golf_events_pkey"',
+      ]) {
+        expect(describeError(new Error(plain))).toBe(plain);
+      }
+    });
+  });
 });
