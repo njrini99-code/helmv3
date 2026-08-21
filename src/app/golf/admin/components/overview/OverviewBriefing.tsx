@@ -24,6 +24,20 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+/**
+ * A no-score round counts as "stuck" for this briefing card only within a
+ * 2h-48h idle window: under 2h it's just in progress, not yet a concern;
+ * past 48h it's not "stuck" worth nudging on, it's abandoned, and — with no
+ * other staleness check on this card — would otherwise sit here forever.
+ * Extracted so the bound is unit-testable without rendering.
+ */
+export function isBriefingStuckRound(round: { total_score: number | null; created_at: string | null }, now: number = Date.now()): boolean {
+  if (round.total_score != null) return false; // completed
+  if (!round.created_at) return false;
+  const idleHours = Math.floor((now - new Date(round.created_at).getTime()) / 3600000);
+  return idleHours >= 2 && idleHours < 48;
+}
+
 function getWeekRangeHeader(): string {
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0=Sun
@@ -63,13 +77,7 @@ export function OverviewBriefing({ data }: OverviewBriefingProps) {
   const roundsThisWeek = Number(health.roundsThisWeek);
 
   // Stuck rounds: find in-progress rounds (no score yet) from recent rounds
-  const stuckRounds = data.activity.recentRounds.filter((r) => {
-    if (r.total_score != null) return false; // completed
-    if (!r.created_at) return false;
-    const idleMs = Date.now() - new Date(r.created_at).getTime();
-    const idleHours = Math.floor(idleMs / 3600000);
-    return idleHours >= 2; // idle 2+ hours counts as stuck
-  });
+  const stuckRounds = data.activity.recentRounds.filter((r) => isBriefingStuckRound(r));
 
   // Errors — only show card if there are OPEN incidents
   const unresolvedIncidents = Number(errorLogs.incidentCounts.open);
