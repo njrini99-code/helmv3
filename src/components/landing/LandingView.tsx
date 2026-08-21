@@ -49,13 +49,14 @@ function ThesisSection() {
           className="mt-[26px] text-[clamp(1.7rem,3.6vw,3rem)] leading-[1.12] tracking-[-0.02em] text-text-primary [text-wrap:balance]"
           style={{ fontWeight: 560 }}
         >
-          Shot data that drives coaching decisions.
+          A clear view of every round, every player, and what to do next.
         </p>
         <p
           data-thesis="body"
           className="mt-[26px] max-w-[38em] text-[clamp(1.02rem,1.4vw,1.2rem)] leading-relaxed text-text-secondary [text-wrap:pretty]"
         >
-          Every shot gets logged live. Every round becomes 85 measured stats. Every insight ties to development plans your players can act on — no spreadsheets, no guesswork.
+          GolfHelm turns a program&apos;s rounds, shots, and statistics into one coherent operating view — so the next
+          decision is always the clear one.
         </p>
       </div>
     </section>

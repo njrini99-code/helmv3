@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 import { PricingView } from '@/components/landing/PricingView'
 
 export const metadata: Metadata = {
-  title: 'Pricing — GolfHelm',
+  title: 'Pricing',
   description:
-    'GolfHelm pricing is a conversation. Tell us about your program, and we\'ll show you how GolfHelm fits.',
+    'Helm Sports Labs is built for all levels and all budgets. Set up a quick call to see how Helm fits your program.',
   openGraph: {
-    title: 'Pricing — GolfHelm',
+    title: 'Pricing — Helm Sports Labs',
     description:
-      'GolfHelm pricing is a conversation. Tell us about your program, and we\'ll show you how GolfHelm fits.',
+      'Helm Sports Labs is built for all levels and all budgets. Set up a quick call to see how Helm fits your program.',
     type: 'website',
     url: '/pricing',
   },

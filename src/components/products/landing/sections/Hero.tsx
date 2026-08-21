@@ -71,7 +71,7 @@ export function Hero() {
             textWrap: 'balance',
           }}
         >
-          College golf intelligence, built for coaches.
+          Everything a program needs, in one system.
         </h1>
         <p
           data-open="body"
@@ -84,7 +84,8 @@ export function Hero() {
             textWrap: 'pretty',
           }}
         >
-          GolfHelm turns every round, shot, and stat into the next coaching move. Fewer spreadsheets. Clearer decisions. Faster recruiting.
+          Track every shot, turn one round into 85 measured stats, and let CoachHelm find the root — all
+          from a single operating view built for college coaches.
         </p>
         <div
           data-open="actions"

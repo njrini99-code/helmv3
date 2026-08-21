@@ -357,7 +357,21 @@ export function TeamManagement() {
             className={styles.threads}
           />
 
-          {/* Flagship tile — Qualifying & Travel Selection */}
+          {/* Flagship tile — Qualifying & Travel Selection.
+              NOT `overflow: hidden` on this outer tile. Everything inside it
+              is inset by the header block's and standings wrapper's own
+              padding — nothing bleeds to this div's edges, so the rounded
+              corners never needed a clip (the standings box two levels down
+              has its own `overflow: hidden` for ITS rounded corners, and that
+              one is fine: it's a static-height child, never Flip-resized).
+              This tile IS Flip-resized (`dockScene`'s dock transition tweens
+              its real width/height from the scattered box up to this docked
+              size), and `overflow: hidden` here clipped the standings box's
+              last row and the travel-cut line while the tile's real height
+              was still short of its content mid-transition — the owner's
+              screenshot of the qualifier card's bottom row rendering cut off
+              mid-dock. Dropping it removes the clip boundary entirely rather
+              than changing how the dock animates. */}
           <div
             data-dock="tile"
             data-op="source"
@@ -369,7 +383,6 @@ export function TeamManagement() {
               border: '1px solid var(--line)',
               borderRadius: 22,
               boxShadow: 'var(--soft)',
-              overflow: 'hidden',
             }}
           >
             <div style={{ padding: 'clamp(24px,2.6vw,34px) clamp(24px,2.6vw,34px) clamp(16px,2vw,22px)' }}>

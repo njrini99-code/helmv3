@@ -35,12 +35,13 @@ export function FinalCta() {
           }}
         />
         <div style={{ position: 'relative' }} data-reveal>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'oklch(0.724 0.132 150)' }}>Your Next Move</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'oklch(0.724 0.132 150)' }}>Get started</div>
           <h2 data-open="headline" style={{ margin: '18px auto 0', fontSize: 'clamp(2rem,4.4vw,3.4rem)', lineHeight: 1.04, letterSpacing: '-0.022em', fontWeight: 600, color: 'var(--onacc)', maxWidth: '15em', textWrap: 'balance' }}>
-            See where strokes are lost, clearly.
+            See the platform with your program in mind.
           </h2>
           <p data-open="body" style={{ margin: '18px auto 0', fontSize: 'clamp(1rem,1.4vw,1.18rem)', lineHeight: 1.55, color: 'oklch(0.82 0.008 85)', maxWidth: '34em', textWrap: 'pretty' }}>
-            Bring your roster and a season of rounds. We&apos;ll show you the leak, the fix, who needs what, and your actual recruiting strength.
+            Bring your roster and a season of rounds — we&apos;ll show you the 85 stats, the root-cause
+            insights, and the development plans built for college programs.
           </p>
           <div data-open="actions" style={{ margin: '32px 0 0', display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center' }}>
             <button
