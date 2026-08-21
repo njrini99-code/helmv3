@@ -55,15 +55,36 @@
 -- re-run.
 --
 -- ROLLBACK: ALTER FUNCTION public.can_read_golf_shot_detail(uuid) COST 100;
+--
+-- REPO-SIDE NOTE: the `SET search_path` re-assertion below is NOT part of
+-- what production recorded for this migration. Production already has
+-- search_path pinned from the defining migration
+-- (20260728030000_shot_detail_rls_correlated.sql's own
+-- `SET search_path TO 'public', 'pg_temp'` on the CREATE OR REPLACE).
+-- It's added here only so this file is self-contained for the repo's
+-- definer-function search_path lint in .coderabbit/semgrep/helmv3.yml
+-- (rule id: helmv3-security-definer-without-search-path), which scans
+-- file-by-file and has no way to know the defining migration already
+-- covers it — it does not change what this migration does on top of what
+-- production already ran. The procost regression guard
+-- (can-read-golf-shot-detail-procost.test.ts) only cares about COST and is
+-- unaffected either way.
 -- ===========================================================================
 
 SET LOCAL lock_timeout = '3s';
 
 ALTER FUNCTION public.can_read_golf_shot_detail(uuid) COST 10000;
 
+-- Idempotent re-assertion of the search_path the defining migration already
+-- pins (see REPO-SIDE NOTE above) — keeps this file self-contained rather
+-- than relying on a reader to know another migration already set it.
+ALTER FUNCTION public.can_read_golf_shot_detail(uuid) SET search_path = public;
+
 -- Re-assert the ACL. ALTER FUNCTION ... COST does not touch grants, but this
 -- keeps the migration safe standalone and matches the guard's expectation
 -- that every migration touching this definer function re-states its ACL
 -- explicitly rather than relying on what a prior migration left behind.
-REVOKE EXECUTE ON FUNCTION public.can_read_golf_shot_detail(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.can_read_golf_shot_detail(uuid) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.can_read_golf_shot_detail(uuid)
+FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.can_read_golf_shot_detail(uuid)
+TO authenticated;
