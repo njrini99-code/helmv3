@@ -122,6 +122,11 @@ function TeamSection({
           )}
         />
         <span className="text-sm font-semibold text-warm-900">{team.teamName}</span>
+        {team.isDemo && (
+          <span className="px-1.5 py-0.5 rounded-full text-micro font-semibold uppercase bg-violet-50 text-violet-700 flex-shrink-0">
+            Demo
+          </span>
+        )}
         {team.season && <span className="text-micro text-warm-400">{team.season}</span>}
         <span className="text-xs text-warm-400 font-medium">{team.memberCount} members</span>
         <div className="ml-auto flex items-center gap-2">

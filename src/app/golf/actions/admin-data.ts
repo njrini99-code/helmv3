@@ -722,6 +722,9 @@ export interface AdminDashboardData {
       avgRoundsPerPlayer: number;
       lastTeamActivity: string | null;
       healthStatus: 'healthy' | 'warning' | 'critical';
+      /** Seed/demo team (audit finding F2) — excluded from platform totals,
+       *  flagged rather than filtered so the owner can still see it. */
+      isDemo: boolean;
       members: {
         id: string;
         email: string;
@@ -1932,10 +1935,20 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   const featureAdoption = rollupA.featureAdoption;
   const coachhelm = rollupA.coachhelm;
 
-  const totalCoaches = users.totalCoaches;
-  const totalPlayers = users.totalPlayers;
-  const coachOnboarded = users.coachesOnboarded;
-  const playerOnboarded = users.playersOnboarded;
+  // Audit finding F2 (2026-08-20): `coach_counts`/`player_counts` in
+  // get_admin_users_rollup count ALL golf_coaches/golf_players rows,
+  // including the two seed/demo teams (DEMO_TEAM_IDS) — 4 of 21 coaches and
+  // 14 of 96 players. Subtract rollupC's demo-team counts here, the single
+  // point every consumer of totalCoaches/totalPlayers/*Onboarded reads from
+  // (OverviewTab headcount, BI activation rates, onboarding-rate math),
+  // rather than patching each consumer separately. Subtract the onboarded
+  // numerators too — demo accounts ship fully onboarded, so leaving them in
+  // the numerator while removing them from the denominator would inflate
+  // the onboarding/activation rate instead of correcting it.
+  const totalCoaches = users.totalCoaches - rollupC.demoExclusions.coaches;
+  const totalPlayers = users.totalPlayers - rollupC.demoExclusions.players;
+  const coachOnboarded = users.coachesOnboarded - rollupC.demoExclusions.coachesOnboarded;
+  const playerOnboarded = users.playersOnboarded - rollupC.demoExclusions.playersOnboarded;
   const totalRoundsCount = rounds.totalRounds;
   const totalShotsCount = dataQualityRaw.totalShots;
   const completedRoundsCount = rounds.completedRounds;
