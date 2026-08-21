@@ -38,6 +38,50 @@ export interface ExposureRow {
   rank_score?: number;
 }
 
+// ---------------------------------------------------------------------------
+// Dedup (#1506) — one exposure row per (insight, coach, surface, day)
+// ---------------------------------------------------------------------------
+//
+// `recordExposureForReturned` fires on every server render of a feed —
+// navigation, refresh, revalidatePath, any refetch — not once per view.
+// Measured against production 2026-08-18: grouping coach_feed by
+// (insight, coach, day) averaged 28.3 rows per bucket, max 349 in one day.
+// That is what feeds inverse-exposure ranking, so an unbounded render count
+// would de-rank insights belonging to coaches who simply navigate more.
+//
+// Fix is issue #1506's Option 1: collapse to one row per
+// (insight_id, coach_id, surface) per day. This is the app-level,
+// "racy-but-adequate" form — a concurrent request can still double-write
+// between the read and the insert. The robust version needs a unique index,
+// which is a migration on the shared production DB and an owner decision
+// (tracked in #1506); this only needs to cut ~350x amplification down to ~1x,
+// not make it atomic.
+
+/** The (insight, coach, surface) identity a day's worth of exposure collapses to. */
+export function exposureDedupeKey(row: {
+  insight_id: string;
+  coach_id?: string | null;
+  surface?: string | null;
+}): string {
+  return `${row.insight_id}::${row.coach_id ?? ''}::${row.surface ?? ''}`;
+}
+
+/**
+ * Drop rows whose (insight_id, coach_id, surface) key is already in
+ * `alreadyRecordedKeys` — i.e. already written today. Pure and order-preserving
+ * so it can run directly on the payload right before insert.
+ */
+export function dedupeExposureRows<
+  T extends { insight_id: string; coach_id: string | null; surface: string | null },
+>(rows: readonly T[], alreadyRecordedKeys: ReadonlySet<string>): T[] {
+  return rows.filter((row) => !alreadyRecordedKeys.has(exposureDedupeKey(row)));
+}
+
+/** Start of "today" in UTC, as an ISO timestamp — the dedup window boundary. */
+export function startOfUtcDayIso(now: Date = new Date()): string {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+}
+
 export interface SurfacedInsight {
   id: string;
   player_id: string;
