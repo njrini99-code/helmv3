@@ -4,6 +4,8 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import { fullName } from '@/lib/admin/data/activity';
 import { FAILURE_SEVERITIES } from '@/lib/admin/severity';
+import { DEMO_TEAM_IDS } from '@/app/golf/actions/admin/demo-teams';
+import { STUCK_HOURS_THRESHOLD, STUCK_TIER_MAX_IDLE_HOURS } from '@/lib/golf/tracer-round-activity';
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -24,17 +26,18 @@ type AdminClient = ReturnType<typeof createAdminClient>;
  * insertion order or a database's incidental row order.
  *
  * SCHEMA-DRIFT FINDINGS (verified against src/lib/types/database.ts):
- *   - `golf_rounds.status` has no DB enum — 'in_progress'/'completed' are
- *     plain strings by codebase convention (same as `golf.ts`,
- *     `admin-tracer-data.ts`). "Stuck" mirrors the legacy tracer's own
- *     threshold (1+ hour untouched) — a validated business rule, not a
- *     number invented here.
+ *   - `golf_rounds.status` has no DB enum — 'in_progress'/'completed'/'draft'
+ *     are plain strings by codebase convention (same as `golf.ts`,
+ *     `admin-tracer-data.ts`). "Stuck" mirrors the legacy Tracer feed's own
+ *     tiering (`tracer-round-activity.ts`: idle 1h–24h) — a validated
+ *     business rule, not a number invented here.
  *   - `login_attempts` has no `user_id` — only `email`. Naming the identity
  *     for a href means a second, single-row `users` lookup keyed by the
  *     ONE winning email (not a lookup per candidate row).
- *   - `users.role = 'coach'` is the honest way to scope "coaches inactive
- *     >14d" — `golf_coaches` has no `last_seen` of its own; that lives on
- *     `users` (one-to-one via `user_id`).
+ *   - `users.role = 'coach'` alone is NOT sport-scoped — `users` carries no
+ *     sport column, so it also matches BaseballHelm coaches. `golf_coaches`
+ *     (joined via `user_id`) is what actually scopes "golf coach"; `users`
+ *     is still where `last_seen` lives (`golf_coaches` has none of its own).
  */
 
 export type BriefingSeverity = 'attention' | 'watch';
@@ -151,8 +154,12 @@ export function topErrorCluster(
   return best && best.occurrences >= MIN_ERROR_CLUSTER_SIZE ? best : null;
 }
 
-const STUCK_ROUND_HOURS = 1;
-const STUCK_ONBOARDING_DAYS = 7;
+const STUCK_ONBOARDING_MIN_DAYS = 7;
+// Upper bound so a signup abandoned months ago (the two current rows on
+// production were from February and March) doesn't sit at the top of "Needs
+// your eyes" forever — bounds this check to the SAME "stuck, not archaeology"
+// window as checkStuckRounds/checkNewlyDormantTeams below.
+const STUCK_ONBOARDING_MAX_DAYS = 30;
 const COACH_INACTIVE_DAYS = 14;
 const WOW_DELTA_THRESHOLD = 0.25;
 const AUTH_FAILURE_THRESHOLD = 5;
@@ -163,17 +170,35 @@ function isoHoursAgo(hours: number): string {
 function isoDaysAgo(days: number): string {
   return new Date(Date.now() - days * 86400_000).toISOString();
 }
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? '' : 's'}`;
+/** Naive `+s` produced "1 coachs" for every `plural(n, 'coach')` call above 1 —
+ *  "ch"/"sh"/"s"/"x"/"z" endings pluralize with "-es", not a bare "-s". Every
+ *  other word used with this helper (round, signup, occurrence, team, failed
+ *  sign-in) is unaffected by the added branch. Exported for direct unit
+ *  testing rather than only indirectly through a headline string. */
+export function plural(n: number, word: string): string {
+  if (n === 1) return `1 ${word}`;
+  const needsEs = /(ch|sh|s|x|z)$/i.test(word);
+  return `${n} ${word}${needsEs ? 'es' : 's'}`;
 }
 
 async function checkStuckRounds(admin: AdminClient): Promise<BriefingCandidate | null> {
-  const cutoff = isoHoursAgo(STUCK_ROUND_HOURS);
+  // Bounds this to the SAME window as the Tracer activity feed's "stuck" tier
+  // (tracer-round-activity.ts) — idle 1h–24h. Below 1h it's plausibly still
+  // being played; past 24h it stops meaning "just halted" and becomes
+  // "quietly dead," which is the quieter "abandoned" tier the golf-side UI
+  // shows separately, not urgent news. Without the upper bound this counted
+  // every in_progress round idle 1h+ with no ceiling — including rounds idle
+  // thousands of hours (weeks-old abandoned drafts nobody will ever resume),
+  // which is exactly what inflated this briefing's count above the Tracer
+  // page's own "stuck" count for the same data.
+  const stuckSince = isoHoursAgo(STUCK_HOURS_THRESHOLD);
+  const stuckUntil = isoHoursAgo(STUCK_TIER_MAX_IDLE_HOURS);
   const { data, count, error } = await admin
     .from('golf_rounds')
     .select('id, player_id, course_name, updated_at, golf_players(first_name, last_name)', { count: 'exact' })
     .eq('status', 'in_progress')
-    .lt('updated_at', cutoff)
+    .lt('updated_at', stuckSince)
+    .gte('updated_at', stuckUntil)
     .order('updated_at', { ascending: true })
     .limit(5);
   if (error) throw new Error(error.message);
@@ -196,12 +221,13 @@ async function checkStuckRounds(admin: AdminClient): Promise<BriefingCandidate |
 }
 
 async function checkStuckOnboarding(admin: AdminClient): Promise<BriefingCandidate | null> {
-  const cutoff = isoDaysAgo(STUCK_ONBOARDING_DAYS);
+  const stuckSince = isoDaysAgo(STUCK_ONBOARDING_MIN_DAYS);
+  const stuckUntil = isoDaysAgo(STUCK_ONBOARDING_MAX_DAYS);
   const [playersRes, coachesRes] = await Promise.all([
     admin.from('golf_players').select('id', { count: 'exact', head: true })
-      .eq('onboarding_completed', false).lt('created_at', cutoff),
+      .eq('onboarding_completed', false).lt('created_at', stuckSince).gte('created_at', stuckUntil),
     admin.from('golf_coaches').select('id', { count: 'exact', head: true })
-      .eq('onboarding_completed', false).lt('created_at', cutoff),
+      .eq('onboarding_completed', false).lt('created_at', stuckSince).gte('created_at', stuckUntil),
   ]);
   if (playersRes.error) throw new Error(playersRes.error.message);
   if (coachesRes.error) throw new Error(coachesRes.error.message);
@@ -210,19 +236,43 @@ async function checkStuckOnboarding(admin: AdminClient): Promise<BriefingCandida
   return {
     severity: 'watch',
     priority: 7,
-    headline: `${plural(total, 'signup')} stuck in onboarding for over ${STUCK_ONBOARDING_DAYS} days`,
+    headline: `${plural(total, 'signup')} stuck in onboarding for ${STUCK_ONBOARDING_MIN_DAYS}-${STUCK_ONBOARDING_MAX_DAYS} days`,
     href: '/admin/users',
   };
 }
 
 async function checkInactiveCoaches(admin: AdminClient): Promise<BriefingCandidate | null> {
+  // `users.role = 'coach'` is shared with BaseballHelm — `users` carries no
+  // sport column — so a straight role filter also counts baseball-only
+  // coaches. `golf_coaches` is the ground truth for "this user actually has a
+  // golf coaching relationship" (same F1 pattern as
+  // rollup-c.shared.ts's computeDemoExclusions), and the two seed/demo teams
+  // (DEMO_TEAM_IDS) get their coaches excluded the same way rollup-c does —
+  // via golf_team_coach_staff, bounded to just those 2 team ids rather than a
+  // full-table scan.
+  const [coachesRes, demoStaffRes] = await Promise.all([
+    admin.from('golf_coaches').select('id, user_id'),
+    admin.from('golf_team_coach_staff').select('coach_id').in('team_id', [...DEMO_TEAM_IDS]),
+  ]);
+  if (coachesRes.error) throw new Error(coachesRes.error.message);
+  if (demoStaffRes.error) throw new Error(demoStaffRes.error.message);
+
+  const demoCoachIds = new Set(
+    ((demoStaffRes.data ?? []) as Array<{ coach_id: string }>).map((s) => s.coach_id),
+  );
+  const golfCoachUserIds = ((coachesRes.data ?? []) as Array<{ id: string; user_id: string }>)
+    .filter((c) => !demoCoachIds.has(c.id))
+    .map((c) => c.user_id);
+  if (golfCoachUserIds.length === 0) return null;
+
   const cutoff = isoDaysAgo(COACH_INACTIVE_DAYS);
   const { count, error } = await admin
     .from('users')
     .select('id', { count: 'exact', head: true })
     .eq('role', 'coach')
     .not('last_seen', 'is', null)
-    .lt('last_seen', cutoff);
+    .lt('last_seen', cutoff)
+    .in('id', golfCoachUserIds);
   if (error) throw new Error(error.message);
   if (!count || count === 0) return null;
   return {
@@ -285,11 +335,18 @@ async function checkNewlyDormantTeams(admin: AdminClient): Promise<BriefingCandi
       lastActivityByTeam.set(r.team_id, r.created_at);
     }
   }
-  const teams = ((teamsRes.data ?? []) as Array<{ id: string; name: string }>).map((t) => ({
-    teamId: t.id,
-    name: t.name,
-    lastActivity: lastActivityByTeam.get(t.id) ?? null,
-  }));
+  const teams = ((teamsRes.data ?? []) as Array<{ id: string; name: string }>)
+    // The two seed/demo teams (DEMO_TEAM_IDS) never have real rounds, so
+    // every scan naturally reads them as "no known activity" — filtered out
+    // by findNewlyDormantTeams' `!!lastActivity` guard already, EXCEPT the
+    // one where a demo team happens to have a leftover completed round from
+    // seeding; excluding by id here means that can't slip through either.
+    .filter((t) => !DEMO_TEAM_IDS.has(t.id))
+    .map((t) => ({
+      teamId: t.id,
+      name: t.name,
+      lastActivity: lastActivityByTeam.get(t.id) ?? null,
+    }));
 
   const newlyDormant = findNewlyDormantTeams(teams, new Date());
   if (newlyDormant.length === 0) return null;
