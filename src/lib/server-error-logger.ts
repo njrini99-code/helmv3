@@ -26,7 +26,7 @@ import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incid
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { getRequestId } from '@/lib/admin/request-context';
-import { collapseEmbeddedHtml } from '@/lib/utils/describe-error';
+import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump } from '@/lib/utils/describe-error';
 import { redactSensitiveUrl } from '@/lib/security/redact-url';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
@@ -506,6 +506,14 @@ async function captureServerTrace(
   // collapseEmbeddedHtml keeps the caller's prefix (which says WHICH call
   // failed) and replaces only the HTML with a byte-stable summary, so an outage
   // collapses to one incident with a count instead of dozens of singletons.
+  //
+  // Same fix, same shape, different upstream failure: collapseEmbeddedRawJsonDump
+  // covers postgrest-js's OTHER fallback for an unparseable 2xx body — a
+  // truncated JSON response, which puts the raw (near-complete) row payload into
+  // `error.message` instead of a page of markup. Found 2026-08-03:
+  // `getInsightsForCoach failed: [{"id":"0138a7f6-…` dumped an entire coach's
+  // insight feed — a player's putting stats, coaching evidence — into
+  // error_logs because the response body simply failed to finish streaming.
   // Then mask email addresses in the message. Measured 2026-08-19: 11 files
   // interpolate a raw address into a trace message, among them
   // send-password-reset.ts, task-reminders.ts, webhooks/resend/route.ts and
@@ -524,7 +532,9 @@ async function captureServerTrace(
   // structured admin-only column that retention prunes. That is a design
   // decision and is left exactly as it is -- this masks free text, never the
   // columns built to hold identity.
-  const message = maskEmails(collapseEmbeddedHtml(rawMessage) ?? rawMessage);
+  const message = maskEmails(
+    collapseEmbeddedHtml(rawMessage) ?? collapseEmbeddedRawJsonDump(rawMessage) ?? rawMessage,
+  );
   const enriched = enrichTraceContext(message, context);
   const normalizedError = error ?? syntheticTraceError(message);
 
