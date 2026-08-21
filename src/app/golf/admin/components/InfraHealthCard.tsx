@@ -28,6 +28,11 @@ interface InfraHealthCardProps {
     p95ResponseMs: number;
     errorRate: number;
     totalClientErrors7d: number;
+    /** False whenever admin_api_perf_log has never been written to (always,
+     *  today — nothing in the app writes to it). avgResponseMs/p95ResponseMs
+     *  are both 0 in that state, and MUST be rendered as "Not measured"
+     *  rather than a genuine, fast 0ms. */
+    measured: boolean;
   };
 }
 
@@ -85,10 +90,10 @@ export default function InfraHealthCard({
               <p
                 className={cn(
                   'text-lg font-semibold',
-                  responseTimeColor(totals.avgResponseMs)
+                  totals.measured ? responseTimeColor(totals.avgResponseMs) : 'text-warm-400'
                 )}
               >
-                {totals.avgResponseMs.toFixed(0)}ms
+                {totals.measured ? `${totals.avgResponseMs.toFixed(0)}ms` : 'Not measured'}
               </p>
             </div>
             <div>
@@ -96,10 +101,10 @@ export default function InfraHealthCard({
               <p
                 className={cn(
                   'text-lg font-semibold',
-                  responseTimeColor(totals.p95ResponseMs)
+                  totals.measured ? responseTimeColor(totals.p95ResponseMs) : 'text-warm-400'
                 )}
               >
-                {totals.p95ResponseMs.toFixed(0)}ms
+                {totals.measured ? `${totals.p95ResponseMs.toFixed(0)}ms` : 'Not measured'}
               </p>
             </div>
             <div>

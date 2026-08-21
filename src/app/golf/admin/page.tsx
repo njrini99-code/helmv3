@@ -433,20 +433,29 @@ function AdminDashboardContent() {
         {
           key: 'latency',
           label: 'Data Fetch',
-          value: (() => {
-            const ms = Math.round(data.infraHealth?.totals?.avgResponseMs ?? 0);
-            return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
-          })(),
-          detail: (data.infraHealth?.totals?.avgResponseMs ?? 0) > 6000
-            ? 'Server query time is slow — investigate'
-            : (data.infraHealth?.totals?.avgResponseMs ?? 0) > 3000
-              ? 'Server query time is elevated'
-              : 'Server query time is healthy',
-          tone: (data.infraHealth?.totals?.avgResponseMs ?? 0) > 6000
-            ? 'critical'
-            : (data.infraHealth?.totals?.avgResponseMs ?? 0) > 3000
-              ? 'warning'
-              : 'healthy',
+          // Nothing writes to admin_api_perf_log yet, so avgResponseMs is
+          // always 0 — that used to render as "0ms, healthy" (a fabricated
+          // measurement), not "we've never measured this."
+          value: !data.infraHealth?.totals?.measured
+            ? '—'
+            : (() => {
+                const ms = Math.round(data.infraHealth.totals.avgResponseMs);
+                return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+              })(),
+          detail: !data.infraHealth?.totals?.measured
+            ? 'Not measured — no API performance samples recorded yet'
+            : data.infraHealth.totals.avgResponseMs > 6000
+              ? 'Server query time is slow — investigate'
+              : data.infraHealth.totals.avgResponseMs > 3000
+                ? 'Server query time is elevated'
+                : 'Server query time is healthy',
+          tone: !data.infraHealth?.totals?.measured
+            ? 'neutral'
+            : data.infraHealth.totals.avgResponseMs > 6000
+              ? 'critical'
+              : data.infraHealth.totals.avgResponseMs > 3000
+                ? 'warning'
+                : 'healthy',
         },
       ] as const
     : null;

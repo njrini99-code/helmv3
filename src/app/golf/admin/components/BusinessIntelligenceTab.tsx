@@ -387,7 +387,16 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
       </div>
 
       {/* Vercel visitors card (if available) */}
-      {bi.vercel && (
+      {bi.vercel && bi.vercel.status === 'unavailable' && (
+        <GlassCard className="text-center py-6">
+          <p className="text-sm font-medium text-amber-600">Web analytics unavailable</p>
+          <p className="mt-1 text-xs text-warm-400">
+            The Vercel API rejected the request (credential expired/invalid, or rate-limited) — this is a broken
+            integration, not zero traffic.
+          </p>
+        </GlassCard>
+      )}
+      {bi.vercel && bi.vercel.status === 'ok' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <GlassCard className="text-center">
             <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">Visitors 24h</p>

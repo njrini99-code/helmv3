@@ -8,7 +8,6 @@ import {
   IconGauge,
   IconLock,
   IconWarning,
-  IconChartBar,
   IconCheckCircle2,
   IconClock,
   IconGlobe,
@@ -174,9 +173,16 @@ function SystemOverviewBar({ data }: { data: AdminDashboardData }) {
           />
           <StatTile
             label="API Latency"
-            value={`${Math.round(data.infraHealth?.totals?.avgResponseMs ?? 0)}ms`}
-            tone={(data.infraHealth?.totals?.avgResponseMs ?? 0) > 3000 ? 'warn' : 'ok'}
+            value={data.infraHealth?.totals?.measured ? `${Math.round(data.infraHealth.totals.avgResponseMs)}ms` : 'Not measured'}
+            tone={
+              !data.infraHealth?.totals?.measured
+                ? 'default'
+                : data.infraHealth.totals.avgResponseMs > 3000
+                  ? 'warn'
+                  : 'ok'
+            }
             icon={<IconGauge size={12} />}
+            tooltip={data.infraHealth?.totals?.measured ? undefined : 'Nothing writes to admin_api_perf_log yet — no calls have ever been recorded.'}
           />
           <StatTile
             label="Data Quality"
@@ -366,13 +372,13 @@ const SYSTEM_JOBS: SystemJobConfig[] = [
     icon: IconBrain,
     getLastRun: (data) => data.health.lastInsightGenerated ?? null,
   },
-  {
-    name: 'Platform Metrics Snapshot',
-    expectedInterval: '24h',
-    expectedIntervalMs: 24 * 60 * 60 * 1000,
-    icon: IconChartBar,
-    getLastRun: (data) => data.health.lastRoundSubmitted ?? null,
-  },
+  // "Platform Metrics Snapshot" was removed here (Bridge audit 2026-08-21):
+  // no such job exists anywhere in the repo (grepped src/ and supabase/ for
+  // any cron/inngest function resembling the name — zero matches), and its
+  // getLastRun just re-read data.health.lastRoundSubmitted, the same
+  // timestamp already shown in the unrelated "Last Round" stat tile above.
+  // The tile read green/"ok" any time any player submitted any round,
+  // regardless of whether any metrics-snapshot process had ever run.
 ];
 
 function getJobStatus(lastRun: string | null, expectedIntervalMs: number): {
@@ -393,21 +399,27 @@ function getJobStatus(lastRun: string | null, expectedIntervalMs: number): {
 
 // ─── External Services Config ───────────────────────────────────────────────
 
-const SERVICES = [
-  { name: 'Supabase', status: 'operational' },
-  { name: 'Vercel', status: 'operational' },
-  { name: 'Sentry', status: 'operational' },
-];
+// Bridge audit 2026-08-21: this used to hardcode `status: 'operational'` for
+// all three and render it unconditionally — given #1568 (Vercel API token
+// known-invalid at the time), this card still said "Vercel — Operational"
+// because it never asked Vercel anything. None of these three services has a
+// live reachability check wired to this card: `integration-health.ts`
+// records a durable admin_events row when an UPSTREAM READ elsewhere in the
+// app fails (Sentry/Vercel/GitHub calls made for other reasons), it doesn't
+// run its own health probe — and there's no per-tab plumbing today that
+// surfaces "any provider_<id>_* row in the last N minutes" here. Rather than
+// fabricate a color from data this card doesn't have, show the honest state:
+// not checked. (A future pass could wire the admin_events read described
+// above; that's real plumbing work, not a one-line fix.)
+const SERVICES = [{ name: 'Supabase' }, { name: 'Vercel' }, { name: 'Sentry' }];
 
 // ─── Root Export ─────────────────────────────────────────────────────────────
 
 export function SystemTab({ data }: Props) {
   const { errorLogs, dataQuality, usage } = data;
 
-  // Storage quota calculations
+  // Measured DB size — real, from pg_database_size via get_platform_health_stats.
   const dbSizeGb = (data.health?.dbSizeBytes || 0) / (1024 * 1024 * 1024);
-  const quotaGb = 8; // Supabase free tier default
-  const usagePct = Math.min((dbSizeGb / quotaGb) * 100, 100);
 
   return (
     <div className="space-y-6">
@@ -500,44 +512,22 @@ export function SystemTab({ data }: Props) {
             <DataQualityRing quality={dataQuality} />
             <InfraSnapshotPanel health={data.health} infraHealth={data.infraHealth} />
 
-            {/* Storage Quota */}
+            {/* Database Size — a progress bar against an 8 GB "free tier
+                default" ceiling used to render here, but nothing in the code
+                ever verifies which Supabase plan this project is actually on.
+                Show the real, measured number only; no assumed capacity
+                limit presented as a fact. */}
             <div className="rounded-2xl border border-warm-200/40 bg-cream-50 p-4">
               <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">
-                Storage Quota
+                Database Size
               </p>
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-warm-700">Database</span>
-                  <span
-                    className={cn(
-                      'text-xs font-bold tabular-nums',
-                      usagePct > 80
-                        ? 'text-red-600'
-                        : usagePct > 60
-                          ? 'text-amber-600'
-                          : 'text-primary-600'
-                    )}
-                  >
-                    {dbSizeGb.toFixed(1)} GB / {quotaGb} GB
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-warm-100">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all duration-500',
-                      usagePct > 80
-                        ? 'bg-red-500'
-                        : usagePct > 60
-                          ? 'bg-amber-500'
-                          : 'bg-primary-500'
-                    )}
-                    style={{ width: `${Math.max(usagePct, 1)}%` }}
-                  />
-                </div>
-                <p className="mt-1.5 text-eyebrow text-warm-400">
-                  {usagePct.toFixed(1)}% of {quotaGb} GB quota used
-                </p>
+              <div className="mt-3 flex items-baseline justify-between">
+                <span className="text-xs font-medium text-warm-700">Measured</span>
+                <span className="text-xs font-bold tabular-nums text-warm-900">{dbSizeGb.toFixed(1)} GB</span>
               </div>
+              <p className="mt-1.5 text-eyebrow text-warm-400">
+                Plan/quota is not verified against Supabase — this is pg_database_size only.
+              </p>
             </div>
           </div>
         </div>
@@ -557,9 +547,12 @@ export function SystemTab({ data }: Props) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-warm-900 truncate">{service.name}</p>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="h-2 w-2 rounded-full bg-primary-500" />
-                  <span className="text-xs text-primary-600 font-medium">Operational</span>
+                <div
+                  className="flex items-center gap-1.5 shrink-0"
+                  title="No live reachability check is wired to this card yet — see /admin/jobs or the deploys page for the closest real signal."
+                >
+                  <span className="h-2 w-2 rounded-full bg-warm-300" />
+                  <span className="text-xs text-warm-500 font-medium">Not checked</span>
                 </div>
               </div>
             ))}
@@ -601,6 +594,7 @@ function InfraSnapshotPanel({ health, infraHealth }: { health: AdminDashboardDat
     },
   };
 
+  const latencyMeasured = infraHealth?.totals?.measured ?? false;
   const apiLatencyMs = Math.round(infraHealth?.totals?.avgResponseMs ?? 0);
 
   const tiles = [
@@ -609,8 +603,8 @@ function InfraSnapshotPanel({ health, infraHealth }: { health: AdminDashboardDat
     { label: 'Sessions', value: health.activeSessions },
     {
       label: 'Avg Latency',
-      value: `${apiLatencyMs}ms`,
-      warn: apiLatencyMs > 3000,
+      value: latencyMeasured ? `${apiLatencyMs}ms` : 'Not measured',
+      warn: latencyMeasured && apiLatencyMs > 3000,
     },
   ];
 
