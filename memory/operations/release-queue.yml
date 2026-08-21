@@ -1,0 +1,28 @@
+# GolfHelm release queue — verified repair units, not raw telemetry.
+#
+# Schema (spec: docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md §17;
+# runtime contract: memory/system/golfhelm-engineering-os.md "Release queue").
+# A raw Sentry/Vercel/Bridge event does not belong here — only a verified
+# repair unit does. Populated by the release routine once
+# npm run reliability:collect / release:* land (not yet — see the compact
+# OS's Build status note); empty until then, not a placeholder for
+# hand-written entries.
+#
+# Per-item fields:
+#   id:                 stable identifier for this repair unit
+#   feature_id:         memory/registry.yml feature id this repair belongs to
+#   root_cause:          the verified root cause, not a symptom description
+#   incident_id:        memory/incidents/<feature_id>/INC-*.md this resolves
+#   status:              observed | triaging | reproduced | repairing |
+#                        verification_failed | verified | queued_for_release |
+#                        released | verified_in_production | blocked |
+#                        wont_fix | expected | duplicate
+#   risk:                R0 | R1 | R2 | R3 (memory/system/golfhelm-engineering-os.md "Risk tiers")
+#   sha:                 commit SHA carrying the fix, once merged
+#   pr:                  PR URL or number
+#   regression_tests:    list of test file paths added/updated to cover this
+#   queued_for_release:  boolean — true once prepared for the next release window
+#   first_seen:          ISO 8601 timestamp of the first observed occurrence
+
+version: 1
+items: []

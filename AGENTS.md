@@ -23,6 +23,18 @@
 - If a feature is missing from `memory/registry.yml`, say so and either add the mapping or explicitly mark the feature-awareness gap.
 - Do not silently change business behavior without updating the relevant `memory/features/*` current-state doc or explaining why no doc update is needed.
 
+## GolfHelm Engineering Operating System
+
+All agents working on GolfHelm or GolfHelm-facing CoachHelm code must operate
+through `memory/system/golfhelm-engineering-os.md`.
+
+`memory/registry.yml` is the semantic router.
+`memory/features/*` is the canonical current-state feature corpus.
+Generated/live/code truth outranks prose.
+
+Production monitoring and production deployment are separate workflows.
+A daily reliability run MUST NOT deploy production.
+
 ## Mobile UI rules
 
 - **Canonical design sources, in authority order:** `src/styles/design-tokens.css`
