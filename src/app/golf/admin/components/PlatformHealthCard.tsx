@@ -187,7 +187,7 @@ export function PlatformHealthCard({
         </div>
         <div className="bg-cream-50 rounded-xl p-2.5 sm:p-3 text-center overflow-hidden">
           <p className="text-base sm:text-xl font-semibold text-warm-900 tabular-nums truncate">
-            {Math.round(infraHealth?.totals?.avgResponseMs ?? 0)}ms
+            {infraHealth?.totals?.measured ? `${Math.round(infraHealth.totals.avgResponseMs)}ms` : 'Not measured'}
           </p>
           <p className="text-eyebrow sm:text-label text-warm-500 mt-0.5 leading-tight">
             API Latency

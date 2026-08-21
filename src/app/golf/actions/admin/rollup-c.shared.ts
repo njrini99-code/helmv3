@@ -83,6 +83,7 @@ export const EMPTY_ROLLUP_C: RollupC = {
       p95ResponseMs: 0,
       errorRate: 0,
       totalClientErrors7d: 0,
+      measured: false,
     },
   },
   errorDetection: {

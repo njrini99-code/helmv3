@@ -11,6 +11,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { classifyInProgressActivity } from '@/lib/golf/tracer-round-activity';
+import { fetchVercelWebInsights } from '@/lib/admin/vercel-api';
 import {
   computeActivation,
   computeMedianTTFV,
@@ -662,7 +663,7 @@ export interface AdminDashboardData {
     apiPerf: { actionName: string; avgDurationMs: number; p95DurationMs: number; callCount: number; errorRate: number }[];
     clientErrors: { message: string; occurrences: number; lastSeen: string; affectedPages: string[] }[];
     dbHealth: { activeConnections: number; idleConnections: number; dbSizeBytes: number; largestTables: { tableName: string; sizeBytes: number; rowCount: number }[] };
-    totals: { totalApiCalls7d: number; avgResponseMs: number; p95ResponseMs: number; errorRate: number; totalClientErrors7d: number };
+    totals: { totalApiCalls7d: number; avgResponseMs: number; p95ResponseMs: number; errorRate: number; totalClientErrors7d: number; measured: boolean };
   };
   // Data freshness alerts
   freshnessAlerts: {
@@ -1560,7 +1561,17 @@ export interface BIDashboardData {
     atRiskAccounts: BIAtRiskAccount[];
     conversionProxies: BIConversionProxy[];
   };
-  vercel: { visitors24h: number; visitors7d: number; visitors30d: number } | null;
+  vercel: {
+    visitors24h: number;
+    visitors7d: number;
+    visitors30d: number;
+    /** 'unavailable' when the Vercel API rejected the request (expired/bad
+     *  token, rate limit, etc) for at least one of the three periods — the
+     *  visitor numbers above are NOT trustworthy in that state (they read 0,
+     *  which is indistinguishable from "genuinely no traffic" on its own)
+     *  and the UI must render a distinct unavailable state, not the number. */
+    status: 'ok' | 'unavailable';
+  } | null;
 }
 
 export interface BIFunnelStep {
@@ -1648,37 +1659,25 @@ function todayStart(): string {
 // VERCEL ANALYTICS HELPER
 // ============================================
 
-async function fetchVercelAnalytics(): Promise<{ visitors24h: number; visitors7d: number; visitors30d: number } | null> {
-  const token = process.env.VERCEL_API_TOKEN;
-  const projectId = process.env.VERCEL_PROJECT_ID;
-  if (!token || !projectId) return null;
-
-  try {
-    const teamId = process.env.VERCEL_TEAM_ID;
-    const baseUrl = 'https://api.vercel.com/v1/web/insights/stats';
-
-    const fetchPeriod = async (from: string, to: string) => {
-      const params = new URLSearchParams({ projectId, from, to });
-      if (teamId) params.set('teamId', teamId);
-      const res = await fetch(`${baseUrl}?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        next: { revalidate: 900 },
-      });
-      if (!res.ok) return 0;
-      const data = await res.json();
-      return data?.data?.visitors ?? data?.visitors ?? 0;
-    };
-
-    const now = new Date().toISOString();
-    const [v24h, v7d, v30d] = await Promise.all([
-      fetchPeriod(daysAgo(1), now),
-      fetchPeriod(daysAgo(7), now),
-      fetchPeriod(daysAgo(30), now),
-    ]);
-    return { visitors24h: v24h, visitors7d: v7d, visitors30d: v30d };
-  } catch {
-    return null;
+// Was a standalone duplicate of `fetchVercelWebInsights` (@/lib/admin/vercel-api)
+// that predated it and never got repointed — its own doc comment even says
+// "Port of the legacy fetchVercelAnalytics (admin-data.ts:1562)". The
+// duplicate mapped `!res.ok` (expired/bad token, rate limit) to `0`, so a
+// known-invalid Vercel token (#1568) rendered this card as "0 / 0 / 0
+// visitors" — indistinguishable from genuinely zero traffic. The shared
+// implementation already carries the fail-soft `AdminFetchResult` contract
+// that treats an HTTP failure as `status: 'error'`, not a silent zero; this
+// is now a thin adapter from that contract to the shape this module's BI
+// section expects, rather than a second copy of the fetch logic.
+async function fetchVercelAnalytics(): Promise<
+  { visitors24h: number; visitors7d: number; visitors30d: number; status: 'ok' | 'unavailable' } | null
+> {
+  const res = await fetchVercelWebInsights();
+  if (res.status === 'unconfigured') return null;
+  if (res.status !== 'ok' || !res.data) {
+    return { visitors24h: 0, visitors7d: 0, visitors30d: 0, status: 'unavailable' };
   }
+  return { ...res.data, status: 'ok' };
 }
 
 // ============================================
@@ -1905,7 +1904,7 @@ interface AssemblyInput {
   rollupA: RollupA;
   rollupB: RollupB;
   rollupC: RollupC;
-  vercelAnalytics: { visitors24h: number; visitors7d: number; visitors30d: number } | null;
+  vercelAnalytics: { visitors24h: number; visitors7d: number; visitors30d: number; status: 'ok' | 'unavailable' } | null;
   platformHealth: PlatformHealthStatsResult | null;
   dataQualityRaw: {
     totalShots: number;
@@ -1917,7 +1916,7 @@ interface AssemblyInput {
 }
 
 function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
-  const { rollupA, rollupB, rollupC, vercelAnalytics, platformHealth, dataQualityRaw, responseTime } = parts;
+  const { rollupA, rollupB, rollupC, vercelAnalytics, platformHealth, dataQualityRaw } = parts;
 
   const now = Date.now();
   const ago24h = daysAgo(1);
@@ -3167,6 +3166,13 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
         ? Math.round((totalErrors7d / rollupC.infraHealth.totals.totalApiCalls7d) * 10000) / 100
         : 0,
       totalClientErrors7d: totalErrors7d,
+      // Nothing in the app writes to admin_api_perf_log (checked: zero
+      // `.insert()`-style writes to it anywhere in src/), so apiPerf is
+      // always []. Without this flag, avgResponseMs/p95ResponseMs read as a
+      // genuine "0ms, fast" measurement instead of "never measured" — the UI
+      // uses it to render an honest "Not measured" state instead of a green
+      // 0ms.
+      measured: totalCallsFromPerf > 0,
     },
   };
 
@@ -3710,9 +3716,13 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       insightsThisWeek: coachhelm.insightsThisWeek,
       systemErrors7d: systemErrors,
       // Real call-weighted avg from admin_api_perf_log (same source as
-      // infraHealth.totals.avgResponseMs). Falls back to the dashboard fetch
-      // wall-time only when no perf samples are available.
-      avgResponseTimeMs: weightedAvgResponseMs > 0 ? weightedAvgResponseMs : responseTime,
+      // infraHealth.totals.avgResponseMs / .measured). No consumer reads
+      // this field today, but it used to fall back to the dashboard fetch's
+      // own wall-clock time whenever there were no perf samples — i.e.
+      // always, since nothing writes to admin_api_perf_log — which is
+      // exactly the fabricated-latency shape infraHealth.totals.measured
+      // exists to stop. 0 here means "not measured," same as its sibling.
+      avgResponseTimeMs: weightedAvgResponseMs,
       dataFreshness,
       lastRoundSubmitted: lastRoundTimestamp,
       lastInsightGenerated: lastInsightTimestamp,

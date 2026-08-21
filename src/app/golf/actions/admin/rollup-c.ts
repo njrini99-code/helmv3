@@ -1056,6 +1056,10 @@ async function fetchAdminRollupCImpl(
         ? Math.round((data.errors7d / totalPageViews7d) * 10_000) / 100
         : 0,
       totalClientErrors7d: data.errors7d,
+      // Placeholder like the rest of this shell — admin-data.ts recomputes
+      // the real `measured` flag from apiPerf once it merges, same as it
+      // recomputes avgResponseMs/p95ResponseMs.
+      measured: false,
     },
   };
 
