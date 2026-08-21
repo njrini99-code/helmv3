@@ -357,7 +357,11 @@ describe('FEATURE_REGISTRY completeness', () => {
     // stuck-rounds query for the admin overview "Rounds" card. admin-data.ts
     // is already 'ALL'-mapped, so scanExports picks it up with no manifest
     // edit needed.
-    expect(total).toBe(438);
+    // 439 as of #1485 (+1): +getPlayerTrajectory, added to insights.ts's
+    // explicit array under coachhelm_ai_engine (insights.ts is one of the
+    // six non-'ALL' multi-feature files, so unlike admin-data.ts above this
+    // one DID need a manifest edit — manifest.length grows by 1 here).
+    expect(total).toBe(439);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

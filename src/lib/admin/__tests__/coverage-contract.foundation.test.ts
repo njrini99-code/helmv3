@@ -341,6 +341,13 @@ describe('global tripwire', () => {
     //   with no score from a genuinely stuck one. admin-data.ts is already
     //   'ALL'-mapped to admin_dashboard, so this live scan picks it up with
     //   no manifest edit needed.
-    expect(total).toBe(446);
+    // 447 as of #1485 (+1): getPlayerTrajectory (insights.ts) — TrajectoryForecaster's
+    //   first consumer, a coach-only read that calls the forecaster directly
+    //   (not the full analyzePlayer orchestrator). withAdminObserved-wrapped.
+    //   insights.ts is one of the six explicit (non-'ALL') multi-feature
+    //   files in FEATURE_REGISTRY, so it needed a manifest edit too — added
+    //   to coachhelm_ai_engine's array alongside its siblings analyzePlayer/
+    //   generateTournamentPrep/getPlayerPatterns (see feature-registry.ts).
+    expect(total).toBe(447);
   });
 });

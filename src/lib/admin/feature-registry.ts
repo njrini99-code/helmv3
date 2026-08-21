@@ -656,6 +656,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'generateTeamInsight',
         'generatePracticeRecommendations',
         'generateTournamentPrep',
+        'getPlayerTrajectory',
         'getPlayerPatterns',
         'recordInteraction',
         'getCoachHelmStatus',
