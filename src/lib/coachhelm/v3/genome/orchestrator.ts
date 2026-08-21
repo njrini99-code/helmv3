@@ -200,15 +200,39 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
     }
   }
 
-  // NO VALID DIMENSIONS — persisting here would write an all-null vector (e.g. a
-  // zero-round player), which is exactly the trust-eroding state P2-21 calls out.
-  // Skip the upsert: leave any existing row untouched and create nothing new.
-  if (result.dimensions_computed === 0) {
+  // NO VALID DIMENSIONS — every dimension refused. `result.skipped_reason`
+  // stays the honest label for this outcome regardless of what happens next.
+  const hasValidDimension = result.dimensions_computed > 0;
+  if (!hasValidDimension) {
     result.skipped_reason = 'no_valid_dimensions';
-    return result;
   }
 
-  // --- Upsert (only profiles with ≥1 valid dimension) ---
+  // --- Upsert ---
+  //
+  // Written UNCONDITIONALLY now, even in the no-valid-dimension case (#1503).
+  // This is NOT the all-null vector P2-21 forbids reappearing: every slot in
+  // `vector` is already labeled `{value: null, confidence: null, label:
+  // 'Needs more rounds'}` by the loop above — the same honest-empty shape
+  // P2-21 already requires for one missing dimension, just persisted instead
+  // of discarded for all of them.
+  //
+  // The reason to persist it: `computed_at` is the ONLY signal
+  // `selectGenomeRefreshChunk` has for "never computed", and writing nothing
+  // left a structurally-uncomputable-but-eligible player (enough rounds to
+  // pass the cron's "has ≥1 round" pre-filter, but not the RIGHT rounds for
+  // any single dimension — e.g. 6 tournament rounds with no sand shots) sorted
+  // to the front of the queue again the next night, and the night after that.
+  // Measured in production 2026-08-18: 7 of every 25 nightly slots burned
+  // permanently on players who could never clear this branch.
+  //
+  // `result.persisted` stays tied to `hasValidDimension`, NOT to whether this
+  // upsert ran — a refusal marker is not a genome, and no caller (the
+  // compute-now button in particular) should read one as "your genome is
+  // ready". loadGenome/loadGenomes (loader.ts) additionally treat a stored
+  // vector with zero non-null dimensions as still-uncomputed for any
+  // coach/player-facing read, so this marker never surfaces as a genome — it
+  // only stops the nightly selector from re-queuing a player who cannot
+  // produce one.
   const { error: upsertErr } = await supabase
     .from('golf_player_genome')
     .upsert(
@@ -228,6 +252,6 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
     return result;
   }
 
-  result.persisted = true;
+  result.persisted = hasValidDimension;
   return result;
 }

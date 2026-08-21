@@ -2,12 +2,22 @@
  * P2-21 — genome orchestrator persistence guards.
  *
  * The orchestrator must NOT:
- *   (a) write an all-null vector (e.g. a zero-round player), and
+ *   (a) claim an all-null vector (e.g. a zero-round player) as a real genome
+ *       — `result.persisted` stays false, and (see #1503 below) the row it
+ *       writes for that case must not surface as one either, and
  *   (b) overwrite the last good vector when a source load fails.
  *
  * It MUST persist a vector when at least one dimension is valid, and label the
  * unavailable slots explicitly. These are deterministic unit tests over a mocked
  * Supabase admin client + mocked row loaders (no real DB).
+ *
+ * #1503 changed (a)'s mechanics without changing the invariant: the
+ * orchestrator now WRITES a refusal marker (computed_at set, every dimension
+ * labeled null) for the zero-round case instead of writing nothing, so
+ * `selectGenomeRefreshChunk` stops reading that player as never-computed and
+ * re-queuing them every night forever. `result.persisted` still reads false —
+ * a marker is not a genome — and `loadGenome`/`loadGenomes` (loader.ts) treat
+ * that row as still-uncomputed for any coach/player-facing read.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -76,15 +86,38 @@ beforeEach(() => {
 });
 
 describe('genome orchestrator — persistence guards (P2-21)', () => {
-  it('does NOT upsert an all-null vector for a zero-round player', async () => {
+  it('records a refusal marker (not a genome) for a zero-round player — #1503', async () => {
     roundsResponse = { data: [], error: null }; // no rounds → every dim null
 
     const result = await computeGenomeForPlayer('player-zero');
 
     expect(result.dimensions_computed).toBe(0);
-    expect(result.persisted).toBe(false);
     expect(result.skipped_reason).toBe('no_valid_dimensions');
-    expect(upsertMock).not.toHaveBeenCalled();
+    // Not a real genome — no caller (the compute-now button in particular)
+    // should read this as "your genome is ready".
+    expect(result.persisted).toBe(false);
+
+    // But it DOES write a marker now — a stamped computed_at is the only
+    // signal the nightly selector has for "we already tried this player".
+    // Before #1503 this was `expect(upsertMock).not.toHaveBeenCalled()`,
+    // which is exactly what let a structurally-uncomputable-but-eligible
+    // player sort to the front of the chunk every single night.
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    const payload = (upsertMock.mock.calls as unknown as Array<Array<{
+      player_id: string;
+      computed_at: string;
+      rounds_basis: number;
+      vector: Record<string, { value: unknown; label?: string }>;
+    }>>)[0]![0]!;
+    expect(payload.player_id).toBe('player-zero');
+    expect(payload.computed_at).toBeTruthy();
+    // Every slot is explicitly labeled, never a bare null — the same P2-21
+    // requirement the real-vector case pins below.
+    for (const slot of Object.values(payload.vector)) {
+      expect(slot.value).toBeNull();
+      expect(typeof slot.label).toBe('string');
+      expect(slot.label!.length).toBeGreaterThan(0);
+    }
   });
 
   it('does NOT overwrite the last good vector when the rounds load fails', async () => {

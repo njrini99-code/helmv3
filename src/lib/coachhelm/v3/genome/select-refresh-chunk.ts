@@ -47,6 +47,20 @@
  *
  * This does not paper over the skip path, which is correct and stays. It stops
  * feeding it inputs that are guaranteed to skip.
+ *
+ * ── THE NEXT LAYER (#1503) ──────────────────────────────────────────────────
+ *
+ * "Has ≥1 completed round in the window" and "produces ≥1 valid dimension"
+ * are DIFFERENT predicates — a player can clear the first and still fail
+ * every dimension (6 rounds, none with a sand shot, none a tournament round —
+ * `rounds_basis: 6, dimensions_computed: 0` in production). Those players are
+ * eligible here, still sort never-computed-first, still refuse in
+ * `computeGenomeForPlayer`, and — as of this fix — that refusal now WRITES a
+ * marker row (`computed_at` set, every dimension explicitly labeled null) so
+ * this selector stops reading them as never-computed the next night. Before
+ * this fix they burned 7 of 25 nightly slots, permanently, the moment the
+ * eligible pool exceeded the chunk size. See `orchestrator.ts` for the write,
+ * `loader.ts` for why the marker never surfaces as a real genome.
  */
 
 /**
