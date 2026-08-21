@@ -3,8 +3,9 @@
 > **Read this entire file before writing ANY code.**
 
 @AGENTS.md
+@memory/system/golfhelm-engineering-os.md
 
-> The line above is a real import, not a pointer. Claude Code reads `CLAUDE.md`
+> The lines above are real imports, not pointers. Claude Code reads `CLAUDE.md`
 > and does **not** read `AGENTS.md` on its own, so without it this repo had two
 > independent instruction documents that already disagreed — AGENTS routed
 > feature work through `memory/registry.yml` → `memory/features/*`, while the
@@ -36,6 +37,27 @@
 
 ---
 
+## GolfHelm Engineering OS
+
+GolfHelm and GolfHelm-facing CoachHelm work is governed by
+`memory/system/golfhelm-engineering-os.md`.
+
+Full architecture: `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md`.
+Advanced reliability layer:
+`docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md`.
+
+For feature work:
+
+1. resolve `memory/registry.yml`;
+2. load mapped `memory/features/*` context;
+3. operate against verified code/generated truth;
+4. update feature memory, tests, and history when behavior changes.
+
+Daily reliability work never deploys production. Production releases are
+owner-approved and limited by `config/release-policy.yml`.
+
+---
+
 ## CONTEXT ROUTING — Where to Look
 
 > **Before starting any GolfHelm task, read the file(s) that match your task type.**
@@ -58,8 +80,9 @@ What the machine checks found, and what it means for you:
   and `pg_type`. They are rendered with full columns, FKs and RLS policy names,
   formatted identically to the real ones. Baseline: `.doc-schema-baseline.json`.
   Gate: `npm run docs:schema-drift`.
-- **46 file paths** named in these same docs **do not resolve**. Baseline:
-  `.doc-path-baseline.json`. Gate: `npm run docs:path-drift`.
+- **File paths** named in these same docs **do not resolve** — count lives
+  in `.doc-path-baseline.json` (don't hand-copy it; it rots). Gate:
+  `npm run docs:path-drift`.
 - Both gates run in CI and **fail on anything new**. The existing counts may only
   go DOWN. A doc that names a table or a file is not evidence that either exists;
   the gates are what make that claim checkable.
@@ -211,6 +234,7 @@ Detail that used to live here now loads only when relevant, via `paths` frontmat
 | golf-feature-ownership | src/app/golf, src/lib/golf, src/components/golf, src/app/api/golf |
 | golf-review | same paths as golf-feature-ownership (review checklist) |
 | coachhelm-review | src/lib/coachhelm, golf round-review actions, api/coachhelm |
+| golfhelm-engineering-os | golf/coachhelm code + migrations + registry.yml |
 | baseball-roles | src/app/baseball, src/lib/baseball, src/components/baseball |
 | baseball-review | those plus src/lib/recruiting, api/baseball (review checklist) |
 | database | supabase/migrations, any .sql, src/lib/supabase, scripts/db |
@@ -258,8 +282,8 @@ npm run docs:schema-drift  # Fails when memory/**, CLAUDE.md, AGENTS.md or
                      # .doc-schema-baseline.json (59) — may only go DOWN.
 npm run docs:path-drift    # Fails when those same docs name a FILE PATH that
                      # doesn't resolve. CI: "Check navigation docs for dead
-                     # file paths". Baseline .doc-path-baseline.json (46) —
-                     # may only go DOWN.
+                     # file paths". Baseline: .doc-path-baseline.json itself
+                     # (not this comment) — may only go DOWN.
                      #
                      # These two are what make the knowledge base checkable
                      # rather than merely confident. docs:check runs both.

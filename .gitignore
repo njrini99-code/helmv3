@@ -209,6 +209,11 @@ android/keystore.properties
 .claude/*.bak-*
 SECURITY_REVIEW_*.json
 
+# GolfHelm Engineering OS session-state (per-session JSONL; Phase 2 of the
+# engineering-OS build writes here, added ahead of that so the path is never
+# accidentally tracked once it starts).
+.claude/session-state/
+
 # Per-machine Claude Code settings. This lived only in ~/.config/git/ignore,
 # which does not travel with the repo — so a fresh clone, a worktree, or CI
 # had no rule at all. That gap is how a 93-entry shell allowlist

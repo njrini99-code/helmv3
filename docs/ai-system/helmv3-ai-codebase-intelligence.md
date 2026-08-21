@@ -1,5 +1,14 @@
 # Helmv3 AI-Native Codebase Intelligence System
 
+> **Superseded routing, kept for mechanics.** The Source Of Truth table below
+> named a stale path for feature inventory; fixed below to route through
+> `memory/registry.yml` → `memory/features/*.md`. The governing document for
+> the feature-awareness + engineering-OS system is now
+> `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md`, with the
+> compact runtime contract at `memory/system/golfhelm-engineering-os.md`. The
+> mechanics this file documents (map-changed-files to registry to
+> context-pack to review, the PR workflow) remain accurate.
+
 Helmv3 already has the hard parts of an AI-native engineering system: `AGENTS.md`, `CLAUDE.md`, CodeRabbit, the external review bot, GitHub Actions, CircleCI, Supabase tests, Playwright, and a curated `memory/` folder. This layer makes those parts act like one operating system.
 
 ## Source Of Truth
@@ -8,7 +17,7 @@ Use `memory/` as the repo intelligence source. Do not create a parallel `/knowle
 
 | Need | Helmv3 Source |
 | --- | --- |
-| Feature inventory | `memory/context/golfhelm-features.md` |
+| Feature inventory | `memory/registry.yml` → `memory/features/*` |
 | Routes and actions | `memory/projects/golfhelm.md` |
 | Tables and enums | `memory/glossary.md` |
 | Full database columns | `memory/context/golfhelm-database.md` |
