@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { weekStart } from '@/lib/admin/data/baseball';
+import { DEMO_ORGANIZATION_IDS } from '@/lib/admin/data/lifting-demo-orgs';
 
 /**
  * Lift Lab rollup — the third product's parity counterpart to
@@ -21,6 +22,17 @@ import { weekStart } from '@/lib/admin/data/baseball';
 export interface LiftingWeekBucket {
   week: string;
   count: number;
+}
+
+/**
+ * Pure so it's directly unit-testable without mocking the two Supabase
+ * count queries behind it. `totalSessionsCount === 0` (an empty platform)
+ * is "no data," not "100% demo data" — those are different honest states,
+ * and the /admin/lifting banner exists to warn about the second one
+ * specifically, not to fire on an empty table.
+ */
+export function computeAllSessionsAreDemoOrgs(totalSessionsCount: number, demoOrgSessionsCount: number): boolean {
+  return totalSessionsCount > 0 && demoOrgSessionsCount === totalSessionsCount;
 }
 
 export interface LiftingSessionFeedRow {
@@ -51,6 +63,13 @@ export interface LiftingRollup {
    *  the sport-scoped halves of this same number). */
   activeAthletes30d: number;
   recentSessions: LiftingSessionFeedRow[];
+  /** True when every helm_lifting_sessions row that has EVER existed
+   *  belongs to a seed/demo organization (lifting-demo-orgs.ts). Confirmed
+   *  live 2026-08-21: 100% today (Rini University 56, Demo University 32,
+   *  no other org has ever logged a session). Every KPI above is honestly
+   *  computed — the numbers aren't wrong — but nothing on the page said
+   *  "this is entirely test data" until this flag existed. */
+  allSessionsAreDemoOrgs: boolean;
 }
 
 type SessionSlimRow = { created_at: string };
@@ -90,8 +109,16 @@ export async function fetchLiftingTab(): Promise<LiftingRollup> {
   const ago30d = daysAgoIso(30);
   const ago84d = daysAgoIso(84); // 12 weeks
 
-  const [sessionsRes, prsThisWeekRes, prs30dRes, activeProgramsRes, activeAthletesRes, recentSessionsRes] =
-    await Promise.all([
+  const [
+    sessionsRes,
+    prsThisWeekRes,
+    prs30dRes,
+    activeProgramsRes,
+    activeAthletesRes,
+    recentSessionsRes,
+    totalSessionsCountRes,
+    demoOrgSessionsCountRes,
+  ] = await Promise.all([
       // Paginate past the PostgREST 1000-row cap — an unpaginated fetch would
       // silently under-count sessionsToday/sessionsThisWeek/sessionsByWeek
       // once trailing-84d cross-sport lift session volume passes 1000.
@@ -133,6 +160,20 @@ export async function fetchLiftingTab(): Promise<LiftingRollup> {
         )
         .order('created_at', { ascending: false })
         .limit(20),
+      // All-time (not windowed like the queries above) — the "100% test
+      // data" question is about the platform's whole history, not just the
+      // trailing 84 days. head:true counts never hit the PostgREST row cap.
+      // `.in()` rather than `.not(...'in'...)`: a row with organization_id
+      // IS NULL is FALSE under `IN (...)`, correctly excluding it from "is
+      // demo" — the NOT-IN form would instead evaluate to NULL (neither
+      // true nor false) for that row and silently drop it from the count,
+      // which would make an unknown-org session invisible to this check
+      // rather than correctly counting as "not confirmed demo."
+      admin.from('helm_lifting_sessions').select('id', { count: 'exact', head: true }),
+      admin
+        .from('helm_lifting_sessions')
+        .select('id', { count: 'exact', head: true })
+        .in('organization_id', [...DEMO_ORGANIZATION_IDS]),
     ]);
 
   // Fail loud on a real backend error rather than letting `?? []`/`?? 0`
@@ -147,6 +188,12 @@ export async function fetchLiftingTab(): Promise<LiftingRollup> {
   }
   if (recentSessionsRes.error) {
     throw new Error(`fetchLiftingTab: recent sessions query failed: ${recentSessionsRes.error.message}`);
+  }
+  if (totalSessionsCountRes.error) {
+    throw new Error(`fetchLiftingTab: total session count failed: ${totalSessionsCountRes.error.message}`);
+  }
+  if (demoOrgSessionsCountRes.error) {
+    throw new Error(`fetchLiftingTab: demo-org session count failed: ${demoOrgSessionsCountRes.error.message}`);
   }
 
   const sessions = (sessionsRes.data ?? []) as SessionSlimRow[];
@@ -189,6 +236,9 @@ export async function fetchLiftingTab(): Promise<LiftingRollup> {
     },
   );
 
+  const totalSessionsCount = totalSessionsCountRes.count ?? 0;
+  const demoOrgSessionsCount = demoOrgSessionsCountRes.count ?? 0;
+
   return {
     sessionsToday,
     sessionsThisWeek,
@@ -199,5 +249,6 @@ export async function fetchLiftingTab(): Promise<LiftingRollup> {
     activePrograms: activeProgramsRes.count ?? 0,
     activeAthletes30d: activeAthleteIds.size,
     recentSessions,
+    allSessionsAreDemoOrgs: computeAllSessionsAreDemoOrgs(totalSessionsCount, demoOrgSessionsCount),
   };
 }

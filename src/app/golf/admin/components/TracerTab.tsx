@@ -297,6 +297,7 @@ export function TracerTab() {
           alerts={alerts}
           activityFeed={data.activityFeed}
           sparklineData={sparklineData}
+          truncated={data.truncated}
           onNavigate={setActiveTab}
         />
       )}

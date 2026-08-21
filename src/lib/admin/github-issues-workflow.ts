@@ -13,7 +13,13 @@ import {
 
 const BEN_LEAH_REPO_LABEL = {
   name: 'ben-leah',
-  color: '16A34A',
+  // Bridge audit 2026-08-21: the live GitHub label's actual color is
+  // ededed, not 16A34A — createLabelIfMissing silently no-ops on a color
+  // mismatch for an already-existing label (GitHub returns 422, swallowed
+  // as "already there"), so this constant drifting from reality never
+  // surfaced as an error. Matched to the live value rather than re-asserted,
+  // since there's no evidence 16A34A was ever the intended color.
+  color: 'ededed',
   description: 'Submitted from Helm Bridge Ben + Leah',
 } as const;
 
@@ -92,6 +98,25 @@ export async function setBenLeahIssueWorkflow(
   const { owner, repo } = githubIssuesRepo();
   const labels = applyWorkflowSelection(currentLabels, selection);
 
+  // Bridge audit 2026-08-21: the sidebar copy states `status:wontfix` means
+  // "closed without shipping", but this PATCH used to touch only `labels` —
+  // an admin selecting "Won't fix" could leave the GitHub issue open while
+  // the Bridge UI implied it was closed. `state` is now touched in exactly
+  // the two cases that keep it in sync with the label, and left untouched
+  // otherwise (so this can never reopen an issue closed for an unrelated
+  // reason, e.g. #785, closed `completed` outside this workflow entirely):
+  //   - newly selecting wont_fix  -> close (state_reason: not_planned)
+  //   - moving AWAY from wont_fix -> reopen, since the issue may still need
+  //     work and a closed-but-"in progress"-labeled issue would be its own
+  //     inconsistency (deriveBenLeahTrackStatus would read it as shipped).
+  const wasWontFix = currentLabels.includes('status:wontfix');
+  const movingToWontFix = selection === 'wont_fix';
+  const stateFields = movingToWontFix
+    ? { state: 'closed' as const, state_reason: 'not_planned' as const }
+    : wasWontFix
+      ? { state: 'open' as const }
+      : {};
+
   const res = await fetch(
     `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${issueNumber}`,
     {
@@ -100,7 +125,7 @@ export async function setBenLeahIssueWorkflow(
         ...githubIssuesHeaders(token),
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ labels }),
+      body: JSON.stringify({ labels, ...stateFields }),
     },
   );
 

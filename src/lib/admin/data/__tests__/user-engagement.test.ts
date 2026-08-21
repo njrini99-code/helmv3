@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import { computeEngagementScore, engagementBand } from '@/lib/admin/data/user-engagement';
 
 const now = new Date('2026-07-02T12:00:00Z');
@@ -51,6 +53,35 @@ describe('computeEngagementScore', () => {
     );
     expect(score).toBeGreaterThanOrEqual(0);
     expect(score).toBeLessThanOrEqual(100);
+  });
+});
+
+/**
+ * Bridge audit 2026-08-21 (Finding 6): `insightsEngaged30d`'s own doc comment
+ * defines it as "5 pts/insight engaged (delivered-to or acted-on)", but the
+ * query that filled it (both the player branch and the coach branch) counted
+ * every insight GENERATED in the window, with no filter on `acknowledged_at`
+ * or `action_taken` — the codebase already used `acknowledged_at IS NOT
+ * NULL` correctly for the team-level "Acknowledged %" stat two files over
+ * (team-page-extras.ts), this per-user field just never got the same filter.
+ * Live-checked: every one of the platform's 15 most-recently-insighted
+ * players had 0 acknowledged — this wasn't a corner case, it was universal.
+ * `computeEngagementScore` itself is unchanged (still pure, still tested
+ * above); this is a source-text guard on the query that feeds it, since
+ * `fetchUserEngagement` fans out across ~10 parallel Supabase reads and
+ * isn't separately exported for isolated mocking.
+ */
+describe('fetchUserEngagement — insightsEngaged30d counts acknowledged/acted-on, not merely generated', () => {
+  const src = fs.readFileSync(
+    path.join(process.cwd(), 'src/lib/admin/data/user-engagement.ts'),
+    'utf8',
+  );
+
+  it('filters golf_coach_insights by acknowledged_at OR action_taken', () => {
+    const occurrences = src.split('acknowledged_at.not.is.null,action_taken.eq.true').length - 1;
+    // Once for the player branch, once for the coach branch — a count check
+    // (not just presence) so a fix that only reached one branch still fails.
+    expect(occurrences).toBe(2);
   });
 });
 

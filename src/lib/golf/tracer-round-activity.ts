@@ -7,8 +7,12 @@
  */
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const STUCK_HOURS_THRESHOLD = 1;
+/** Upper bound on idle time for the loud "stuck" tier. A round idle less
+ *  than this was plausibly touched today and then halted — worth an urgent
+ *  badge. Past it, "stuck" stops meaning "just halted" and starts meaning
+ *  "quietly dead," which is what the quieter "abandoned" tier is for. */
+const STUCK_TIER_MAX_IDLE_HOURS = 24;
 
 export type InProgressActivityType = 'round_in_progress' | 'round_stuck' | 'round_abandoned';
 
@@ -25,16 +29,23 @@ export type InProgressActivityType = 'round_in_progress' | 'round_stuck' | 'roun
  *
  * Within the window, a round idle 1h+ only counts as "stuck" — the loud,
  * highest-priority state that should sort to the top with a red badge — if
- * it was ALSO started recently. A round idle 1h+ that was started 7+ days
- * ago wasn't recently active then halted; it was abandoned a while back, so
- * it renders as the quieter "abandoned" tier instead. Without this split,
- * an old abandoned round (created May, touched once, never resumed) reads
- * identically to a round that halted an hour ago — which is what let 10
- * months-old abandoned rounds sort to the top of every admin surface as
- * "stuck" forever.
+ * it has ALSO been idle less than STUCK_TIER_MAX_IDLE_HOURS. Idle longer
+ * than that, it renders as the quieter "abandoned" tier instead.
+ *
+ * PR #1559 originally gated this on the round's `created_at` instead
+ * (`createdAt` within the last 7 days) — a proxy for "was this recently
+ * active," not the thing itself. Verified against production 2026-08-21:
+ * 3 of 10 live in-progress rounds, created within the last 6 days but idle
+ * 88–133 hours, still tiered "stuck" under that proxy — a round created
+ * recently but abandoned days ago read identically to one that halted an
+ * hour ago. Idle duration (already computed below as `hoursInactive`) is a
+ * direct measure of "recently active", so `createdAt` is no longer part of
+ * this decision at all — an old round touched 10 minutes ago is exactly as
+ * "stuck" as a brand-new one touched 10 minutes ago, and a round created
+ * yesterday but idle for days is exactly as "abandoned" as one created
+ * months ago.
  */
 export function classifyInProgressActivity(
-  createdAt: string | null,
   updatedAt: string,
   now: number = Date.now()
 ): InProgressActivityType | null {
@@ -44,6 +55,5 @@ export function classifyInProgressActivity(
   const hoursInactive = (now - updatedAtMs) / (1000 * 60 * 60);
   if (hoursInactive < STUCK_HOURS_THRESHOLD) return 'round_in_progress';
 
-  const createdRecently = !!createdAt && now - new Date(createdAt).getTime() <= SEVEN_DAYS_MS;
-  return createdRecently ? 'round_stuck' : 'round_abandoned';
+  return hoursInactive < STUCK_TIER_MAX_IDLE_HOURS ? 'round_stuck' : 'round_abandoned';
 }

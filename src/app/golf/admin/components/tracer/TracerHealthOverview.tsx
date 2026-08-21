@@ -35,6 +35,9 @@ interface TracerHealthOverviewProps {
   alerts: TracerAlert[];
   activityFeed: TracerActivityEvent[];
   sparklineData?: { rounds: number[]; errors: number[] };
+  /** TracerData.truncated — the rounds query behind these KPIs hit its cap.
+   *  Passed straight through to TracerKPICards' "first 500 rounds" caveat. */
+  truncated?: boolean;
   onNavigate: (tab: TracerSubTab) => void;
 }
 
@@ -202,6 +205,7 @@ export default function TracerHealthOverview({
   alerts,
   activityFeed,
   sparklineData,
+  truncated,
   onNavigate,
 }: TracerHealthOverviewProps) {
   const prefersReducedMotion = useReducedMotion();
@@ -245,6 +249,7 @@ export default function TracerHealthOverview({
         critical7d={critical7d}
         statsMismatches={statsMismatches}
         sparklineData={sparklineData}
+        truncated={truncated}
       />
 
       {/* ------------------------------------------------------------------ */}

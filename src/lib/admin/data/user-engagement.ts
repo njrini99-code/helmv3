@@ -157,6 +157,16 @@ export async function fetchUserEngagement(userId: string): Promise<UserEngagemen
           .from('golf_coach_insights')
           .select('id', { count: 'exact', head: true })
           .eq('player_id', playerId)
+          // "Engaged" means delivered-to-and-acted-on, not merely generated
+          // — matches the team-level "Acknowledged %" stat's existing filter
+          // in team-page-extras.ts (.not('acknowledged_at', 'is', null)),
+          // widened to OR action_taken since either is evidence the player
+          // actually did something with the insight. Without this, every
+          // insight ever GENERATED counted as "engaged": live-checked
+          // 2026-08-21, 0 of the platform's most-recently-generated insights
+          // had acknowledged_at set, so this bucket was silently just
+          // "insights delivered."
+          .or('acknowledged_at.not.is.null,action_taken.eq.true')
           .gte('created_at', ago30d),
         admin
           .from('golf_round_reviews')
@@ -216,6 +226,9 @@ export async function fetchUserEngagement(userId: string): Promise<UserEngagemen
         .from('golf_coach_insights')
         .select('id', { count: 'exact', head: true })
         .eq('coach_id', coachId)
+        // Same fix as the player branch above — "engaged" means
+        // acknowledged/acted-on, not merely generated for this coach.
+        .or('acknowledged_at.not.is.null,action_taken.eq.true')
         .gte('created_at', ago30d),
       admin
         .from('golf_round_reviews')

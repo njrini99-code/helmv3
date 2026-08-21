@@ -261,6 +261,10 @@ async function fetchUserThread(admin: AdminClient, userId: string): Promise<Enti
   if (golfPlayerId || golfCoachId) {
     sources.golf_roster = async () => {
       const events: ThreadEvent[] = [];
+      // Two independent, independently-capped queries feed this one source
+      // (roster membership + coaching staff) — hitCap must be true if EITHER
+      // one came back at its limit, not hardcoded false regardless.
+      let hitCap = false;
       if (golfPlayerId) {
         const { data, error } = await admin
           .from('golf_team_members')
@@ -268,6 +272,7 @@ async function fetchUserThread(admin: AdminClient, userId: string): Promise<Enti
           .eq('player_id', golfPlayerId)
           .limit(ROSTER_LIMIT);
         if (error) throw new Error(error.message);
+        if ((data ?? []).length >= ROSTER_LIMIT) hitCap = true;
         for (const row of (data ?? []) as unknown as Array<{ id: string; team_id: string; joined_at: string | null; created_at: string | null; golf_teams: { name: string } | null }>) {
           const ts = row.joined_at ?? row.created_at;
           if (!ts) continue;
@@ -290,6 +295,7 @@ async function fetchUserThread(admin: AdminClient, userId: string): Promise<Enti
           .eq('coach_id', golfCoachId)
           .limit(ROSTER_LIMIT);
         if (error) throw new Error(error.message);
+        if ((data ?? []).length >= ROSTER_LIMIT) hitCap = true;
         for (const row of (data ?? []) as unknown as Array<{ id: string; team_id: string; created_at: string | null; is_primary: boolean | null; golf_teams: { name: string } | null }>) {
           if (!row.created_at) continue;
           events.push({
@@ -304,13 +310,16 @@ async function fetchUserThread(admin: AdminClient, userId: string): Promise<Enti
           });
         }
       }
-      return { events, hitCap: false };
+      return { events, hitCap };
     };
   }
 
   if (baseballPlayerId || baseballCoachId) {
     sources.baseball_roster = async () => {
       const events: ThreadEvent[] = [];
+      // Same shape as golf_roster above: two independently-capped queries
+      // feed this one source, so hitCap must OR across both.
+      let hitCap = false;
       if (baseballPlayerId) {
         const { data, error } = await admin
           .from('baseball_team_members')
@@ -318,6 +327,7 @@ async function fetchUserThread(admin: AdminClient, userId: string): Promise<Enti
           .eq('player_id', baseballPlayerId)
           .limit(ROSTER_LIMIT);
         if (error) throw new Error(error.message);
+        if ((data ?? []).length >= ROSTER_LIMIT) hitCap = true;
         for (const row of (data ?? []) as unknown as Array<{ id: string; team_id: string; joined_at: string | null; created_at: string | null; baseball_teams: { name: string } | null }>) {
           const ts = row.joined_at ?? row.created_at;
           if (!ts) continue;
@@ -340,6 +350,7 @@ async function fetchUserThread(admin: AdminClient, userId: string): Promise<Enti
           .eq('coach_id', baseballCoachId)
           .limit(ROSTER_LIMIT);
         if (error) throw new Error(error.message);
+        if ((data ?? []).length >= ROSTER_LIMIT) hitCap = true;
         for (const row of (data ?? []) as unknown as Array<{ id: string; team_id: string; created_at: string | null; baseball_teams: { name: string } | null }>) {
           if (!row.created_at) continue;
           events.push({
@@ -354,7 +365,7 @@ async function fetchUserThread(admin: AdminClient, userId: string): Promise<Enti
           });
         }
       }
-      return { events, hitCap: false };
+      return { events, hitCap };
     };
   }
 
@@ -596,7 +607,10 @@ async function fetchTeamThread(admin: AdminClient, teamId: string): Promise<Enti
           };
         })
         .filter((e): e is ThreadEvent => e !== null),
-      hitCap: false,
+      // rows.length is the raw fetched-row count, before the null-timestamp
+      // filter above — that's the right thing to check against the query
+      // cap, not the post-filter event count.
+      hitCap: rows.length >= ROSTER_LIMIT,
     };
   };
 
