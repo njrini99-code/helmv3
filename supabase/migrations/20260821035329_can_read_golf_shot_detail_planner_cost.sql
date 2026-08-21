@@ -66,28 +66,45 @@
 -- (rule id: helmv3-security-definer-without-search-path), which scans
 -- file-by-file and has no way to know the defining migration already
 -- covers it — it does not change what this migration does on top of what
--- production already ran. The re-assertion below MUST carry both
--- entries, public AND pg_temp: an earlier draft of this file re-asserted
--- only `public`, which in migration replay NARROWS the defining
--- migration's pin rather than restating it, and pgTAP caught it — RLS
--- test 18 of supabase/tests/rls/golf_shot_detail_visibility.sql (the
--- "stays pinned to public+pg_temp" assertion on this function) failed
--- against that version. The procost regression guard
--- (can-read-golf-shot-detail-procost.test.ts) only cares about COST and
--- is unaffected either way.
+-- production already ran.
+--
+-- The re-assertion below took two earlier wrong shapes, both caught by
+-- RLS test 18 of supabase/tests/rls/golf_shot_detail_visibility.sql (this
+-- function stays pinned to public+pg_temp), so both are recorded here to
+-- save the next person the same two round trips:
+--   1. `SET search_path = public;` (public only) NARROWS the defining
+--      migration's pin instead of restating it — pg_temp silently drops.
+--   2. `SET search_path = 'public, pg_temp';` (one quoted string) is
+--      valid Postgres and DOES keep both schemas resolvable, but it
+--      stores as a single quoted token, so pg_proc.proconfig renders it
+--      `search_path="public, pg_temp"` (with the embedded quote) rather
+--      than the defining migration's own unquoted, two-element rendering
+--      `search_path=public, pg_temp` — and pgTAP's assertion is exact
+--      string equality against the latter, so this shape failed too even
+--      though it is functionally equivalent.
+-- The form below — `SET ... TO 'public', 'pg_temp'`, byte-identical to
+-- the defining migration's own clause — is the only one that reproduces
+-- BOTH the correct resolution behavior AND the exact proconfig string
+-- pgTAP checks. It needs the inline `-- noqa: PRS` because sqlfluff's
+-- postgres dialect cannot PARSE a multi-value `ALTER FUNCTION ... SET
+-- x TO 'a', 'b'` clause (a parser gap, not a style violation — verified
+-- empirically: the single-value forms above parse fine, only the
+-- two-value TO form trips a PRS "unparsable section" error). It is that
+-- parser limitation being suppressed, not the semgrep security rule —
+-- the search_path IS set, correctly, to the value production actually
+-- needs.
 -- ===========================================================================
 
 SET LOCAL lock_timeout = '3s';
 
 ALTER FUNCTION public.can_read_golf_shot_detail(uuid) COST 10000;
 
--- Idempotent re-assertion of the EXACT search_path the defining migration
--- already pins (see REPO-SIDE NOTE above) — both entries, public AND
--- pg_temp — keeps this file self-contained rather than relying on a
--- reader to know another migration already set it. Dropping pg_temp here
--- would narrow the pin the defining migration set, not just restate it.
+-- Idempotent re-assertion, byte-identical to the defining migration's own
+-- clause (see REPO-SIDE NOTE above for why it must be exactly this form,
+-- not a narrower or differently-rendered equivalent, and why the trailing
+-- inline suppression below silences a parser gap, not a real finding).
 ALTER FUNCTION public.can_read_golf_shot_detail(uuid)
-SET search_path = 'public, pg_temp';
+SET search_path TO 'public', 'pg_temp';  -- noqa: PRS
 
 -- Re-assert the ACL. ALTER FUNCTION ... COST does not touch grants, but this
 -- keeps the migration safe standalone and matches the guard's expectation
