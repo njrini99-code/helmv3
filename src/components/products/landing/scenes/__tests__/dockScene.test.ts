@@ -4,23 +4,23 @@
  * ============================================================================
  * dockScene — the qualifier card's "travel cut" beat
  * ----------------------------------------------------------------------------
- * Regression coverage for two bugs the owner caught on a live mobile
- * screenshot of the "Qualifying & Travel Selection" card: a stray, unlabeled
- * dash sitting between rank 4 and rank 5 in the standings, and the card's
- * bottom row clipped mid-render.
+ * Regression coverage for one of the two bugs the owner caught on a live
+ * mobile screenshot of the "Qualifying & Travel Selection" card: a stray,
+ * unlabeled dash sitting between rank 4 and rank 5 in the standings.
  *
- * Root causes (see dockScene.ts for the full analysis):
- *   1. `cutLabel` ("Travel cut") used to snap in at timeline position 0.24
- *      while `cutRule` (the divider bar) started growing at position 0 — a
- *      0.24s window where a growing/grown bar rendered with no label next to
- *      it. Fixed by moving `cutLabel`'s arrival to position 0.
- *   2. `Flip.from()` was called without `scale: true`, so GSAP's default is to
- *      tween real `width`/`height` from the scattered box to the docked one.
- *      The flagship tile sets `overflow: hidden` for its rounded corners, so
- *      while its real height was still short of its content's natural height
- *      mid-dock, the standings box's bottom row rendered clipped. Fixed by
- *      passing `scale: true`, which uses a `transform: scale()` instead and
- *      never shrinks the tile's real box.
+ * `cutLabel` ("Travel cut") used to snap in at timeline position 0.24 while
+ * `cutRule` (the divider bar) started growing at position 0 — a 0.24s window
+ * where a growing/grown bar rendered with no label next to it. Fixed by
+ * moving `cutLabel`'s arrival to position 0.
+ *
+ * The card's OTHER symptom — its bottom row clipping mid-dock — is fixed in
+ * TeamManagement.tsx (dropping the flagship tile's `overflow: hidden`, which
+ * had nothing inside it that needed clipping) and covered by
+ * `TeamManagement.test.tsx`, not here. An earlier version of this fix tried
+ * `Flip.from(scattered, { scale: true })`, which looked plausible but risked
+ * stacking a second scale transform on top of the one this scene already
+ * tracks for the tile's own scatter effect (see the comment at the
+ * `Flip.from` call) — reverted before it shipped.
  *
  * `dockScene` is a plain function of `{root, reduced, compact}` (see
  * `SceneContext`), so it is called directly here rather than through
@@ -29,7 +29,7 @@
  * ========================================================================== */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Flip, ScrollTrigger, gsap } from '@/lib/motion/gsap/register';
+import { ScrollTrigger, gsap } from '@/lib/motion/gsap/register';
 import { dockScene } from '../dockScene';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
 
@@ -116,24 +116,6 @@ describe('dockScene — the qualifier card renders complete', () => {
     const locked = root.querySelector('[data-op="locked"]') as HTMLElement;
     expect(getComputedStyle(pending).display).toBe('none');
     expect(gsap.getProperty(locked, 'autoAlpha')).toBe(1);
-
-    cleanup?.();
-  });
-
-  it('docks tiles with scale:true so a growing box never clips overflow:hidden content mid-transition', () => {
-    const root = buildBoard();
-    const flipFromSpy = vi.spyOn(Flip, 'from');
-
-    const cleanup = dockScene(makeContext(root, { reduced: false }));
-
-    expect(flipFromSpy).toHaveBeenCalled();
-    const [, flipVars] = flipFromSpy.mock.calls[0]!;
-    // Without this, Flip's default is to tween real width/height — verified
-    // directly against the installed Flip build (see dockScene.ts's comment)
-    // — which is what let the flagship tile's own `overflow: hidden` clip its
-    // last standings row while the tile's real box was still short of its
-    // content's natural height.
-    expect(flipVars).toMatchObject({ scale: true });
 
     cleanup?.();
   });

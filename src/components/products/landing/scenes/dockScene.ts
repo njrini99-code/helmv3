@@ -246,20 +246,17 @@ export function dockScene(ctx: SceneContext): void | (() => void) {
   //    timeline the reader's scroll IS the easing; adding a curve on top makes
   //    the tiles feel like they are fighting the wheel.
   //
-  // `scale: true` — without it, Flip's default is to tween actual `width`/
-  // `height` from the scattered box to the docked one. Probed directly against
-  // the installed Flip build: at 50% progress that default path writes real
-  // inline `width`/`height` onto the tile; `scale: true` writes a `transform:
-  // scale()` instead and leaves size alone. The flagship "Qualifying & Travel
-  // Selection" tile sets `overflow: hidden` for its rounded corners — with the
-  // default sizing, its own CSS height is still short of its content's natural
-  // height for the first half of the dock, so the standings box's bottom row
-  // and the travel-cut line render CLIPPED until the tile's real box catches
-  // up (caught as the qualifier card's bottom row rendering cut off mid-dock).
-  // `scale: true` keeps every tile at its true final `offsetWidth`/`Height`
-  // throughout — nothing to clip against — and only its paint transform moves,
-  // consistent with the scatter phase two lines above already being a
-  // transform-only `scale`, not a real resize.
+  // NOT `scale: true`. It looks like the fix for the flagship tile's content
+  // clipping mid-dock (see TeamManagement.tsx's `overflow: hidden` note for
+  // the actual fix), but this scene already tracks the tile's OWN `scale`
+  // (0.72/0.82 → 1) as an extra Flip prop two blocks up — `getState(tiles,
+  // { props: 'rotate,scale' })` — and that measurement runs AFTER the manual
+  // scale is applied, so the FIRST bounding rect Flip records is already
+  // shrunk by it. Adding `scale: true` here would ask Flip to ALSO express
+  // its own first→last size reconciliation as a transform scale, stacking a
+  // second scale on top of a ratio the first one already accounts for —
+  // untestable in jsdom (every rect is 0 there) and not worth the risk to a
+  // transition that took four attempts to get the wiring measurement right.
   const dockTl = Flip.from(scattered, {
     duration: 1,
     ease: EASE.none,
@@ -267,7 +264,6 @@ export function dockScene(ctx: SceneContext): void | (() => void) {
     // identically every time the reader scrolls back through it.
     stagger: { each: STAGGER.wideStep },
     absolute: true,
-    scale: true,
     paused: true,
   });
 
