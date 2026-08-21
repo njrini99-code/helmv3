@@ -2835,11 +2835,16 @@ async function getPlayerTrajectoryImpl(playerId: string): Promise<{
     // extraction + one 100-row golf_rounds query, no writes.
     const trajectory = await new TrajectoryForecaster(playerId).forecastTrajectory();
     if (!trajectory) {
-      return {
-        success: false,
-        error: 'Not enough round history for a trajectory forecast',
-        insufficientHistory: true,
-      };
+      // success: true, not false — this is a NORMAL, common outcome (any
+      // player under 10 rounds: early season, a new signee, a redshirt),
+      // not an error. withAdminObserved (below, no observeSoftFailures
+      // override) records every `{success: false}` return as an admin_events
+      // soft failure — returning false here would file one on every such
+      // page view, the same "an unconfigured team gets treated as broken"
+      // class of bug coachhelm-review.md's budget-resolution note warns
+      // about. `insufficientHistory` carries the reason for a caller that
+      // wants to distinguish it from a genuine "nothing to show" result.
+      return { success: true, insufficientHistory: true };
     }
 
     // Trimmed to what the card renders — see PlayerTrajectorySummary's

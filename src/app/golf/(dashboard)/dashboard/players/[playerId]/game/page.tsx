@@ -484,16 +484,14 @@ export default async function PlayerGamePage({
       ? (trendRes.data as unknown as Record<string, unknown>)
       : null;
   // #1485 — TrajectoryCard renders a DIFFERENT honest message for each of
-  // these, so preserve the distinction rather than collapsing every failure
-  // to one state: a real forecast; `null` only when the forecaster itself
-  // found too little round history (`insufficientHistory`); `undefined` for
+  // these, so preserve the distinction rather than collapsing every outcome
+  // to one state: a real forecast; `null` when the action succeeded but the
+  // forecaster itself found too little round history (getPlayerTrajectory
+  // returns `{success: true, insufficientHistory: true}` for that case, NOT
+  // success: false — see that action's own comment on why); `undefined` for
   // every other outcome (thrown fetch, auth/rate-limit/disabled/unexpected —
   // "not enough rounds" would be a false claim in those cases).
-  const trajectory = trajectoryRes?.success
-    ? (trajectoryRes.trajectory ?? null)
-    : trajectoryRes?.insufficientHistory
-      ? null
-      : undefined;
+  const trajectory = trajectoryRes?.success ? (trajectoryRes.trajectory ?? null) : undefined;
 
   const insightProps: FairwayPlayerInsightProps = {
     player,
