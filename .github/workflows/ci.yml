@@ -1,6 +1,10 @@
 name: CI
 
 on:
+  # merge_group: required for GitHub's merge queue — a queued merge re-runs
+  # these checks on the speculative merge result; without this trigger the
+  # queue waits forever for contexts that never arrive and every merge times out.
+  merge_group:
   push:
     branches:
       - main
@@ -28,6 +32,7 @@ jobs:
   detect-changes:
     name: Detect code-relevant paths
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       code: ${{ steps.classify.outputs.code }}
     steps:

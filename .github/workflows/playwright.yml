@@ -6,6 +6,10 @@ name: Playwright E2E
 # SECURITY: zero untrusted user input in run: blocks except github.sha.
 
 on:
+  # merge_group: required for GitHub's merge queue — a queued merge re-runs
+  # these checks on the speculative merge result; without this trigger the
+  # queue waits forever for contexts that never arrive and every merge times out.
+  merge_group:
   push:
     branches: [main]
   pull_request:
@@ -81,7 +85,7 @@ env:
 jobs:
   smoke:
     name: Smoke checks
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
