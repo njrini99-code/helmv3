@@ -35,12 +35,23 @@ describe('recordDeployMarker', () => {
   });
   afterEach(() => vi.unstubAllEnvs());
 
-  it('writes a deploy event for a new production sha', async () => {
+  it('writes a deploy event for a new production sha, already resolved', async () => {
+    // A deploy marker is a pure activity record, not an incident — nothing
+    // ever triages or resolves event_type='deploy' (both auto-resolve.ts and
+    // the triage UI filter event_type='error'), so it sat resolved=false
+    // forever with no consumer that cared. Born resolved instead.
+    //
+    // Both assertions live in ONE test: `attemptedThisBoot` is process-wide
+    // module state with no reset hook, so only the FIRST successful insert in
+    // this file ever actually reaches the insert() call — a second test
+    // expecting its own fresh insert would silently see nothing.
     await recordDeployMarker();
     expect(mocks.inserted[0]).toMatchObject({
       event_type: 'deploy',
       source: 'system',
       title: expect.stringContaining('abc123d'),
+      resolved: true,
+      resolved_at: expect.any(String),
     });
   });
 
