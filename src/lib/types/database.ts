@@ -19999,6 +19999,36 @@ export type Database = {
           },
         ]
       }
+      schema_migrations_pruned_20260820: {
+        Row: {
+          created_by: string | null
+          idempotency_key: string | null
+          name: string | null
+          pruned_at: string | null
+          rollback: string[] | null
+          statements: string[] | null
+          version: string
+        }
+        Insert: {
+          created_by?: string | null
+          idempotency_key?: string | null
+          name?: string | null
+          pruned_at?: string | null
+          rollback?: string[] | null
+          statements?: string[] | null
+          version: string
+        }
+        Update: {
+          created_by?: string | null
+          idempotency_key?: string | null
+          name?: string | null
+          pruned_at?: string | null
+          rollback?: string[] | null
+          statements?: string[] | null
+          version?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null
