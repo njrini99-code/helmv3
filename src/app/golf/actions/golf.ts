@@ -984,6 +984,41 @@ function getPreservedRoundSubmitError(backupPersisted: boolean): string {
 }
 
 /**
+ * True when getUser() failed to REACH the auth server, as opposed to the auth
+ * server rejecting the session.
+ *
+ * `const { data: { user } } = await supabase.auth.getUser()` conflates two
+ * different facts behind `user === null`:
+ *   - the session is genuinely invalid (GoTrue answered 401/403), and
+ *   - the auth check itself failed in transit (abort, network, 5xx) — GoTrue
+ *     never ruled on the session at all.
+ *
+ * On 2026-08-19 the second case fired 6 times across 4 Guilford rounds and was
+ * logged as "user session expired mid-round". It wasn't: every affected player
+ * held a valid, unexpired access token at that moment (verified against
+ * auth.refresh_tokens rotation chains), the failures exist ONLY inside the
+ * DB-contention window of the round-submit incident, and GoTrue shares the
+ * contended Postgres — the old 10s client abort was killing the /auth/v1/user
+ * round trip. Treating that as "signed out" tells a mid-round player their
+ * session died when nothing is wrong with it.
+ *
+ * Discriminator: a real rejection carries a 4xx status. Everything else —
+ * AuthRetryableFetchError (status 0), missing status, 5xx, fetch/abort
+ * message shapes — is transit failure, and the only honest answer is "retry".
+ */
+function isTransientAuthCheckFailure(
+  error: { status?: number; name?: string; message?: string } | null | undefined
+): boolean {
+  if (!error) {
+    return false;
+  }
+  if (typeof error.status === 'number' && error.status >= 400 && error.status < 500) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * True when a write failed in a way that leaves the transaction's OUTCOME UNKNOWN.
  *
  * An HTTP abort (the `AbortSignal.timeout` in `src/lib/supabase/server.ts`)
@@ -1359,8 +1394,23 @@ async function submitGolfRoundComprehensiveImpl(
 
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authCheckError } = await supabase.auth.getUser();
     if (!user) {
+      // Transit failure ≠ dead session. The player is mid-round with (almost
+      // always) a perfectly valid token; telling them to sign in would cost
+      // them the flow for nothing. Their data is intact locally either way.
+      if (isTransientAuthCheckFailure(authCheckError)) {
+        void logServerError('Round submit auth check failed in transit (NOT a session expiry) — retryable', {
+          action: 'submitGolfRoundComprehensive',
+          featureArea: 'shot_tracking',
+          errorDetails: authCheckError?.message,
+          extra: { courseName: data.courseName, holesCount: data.holes?.length, authStatus: authCheckError?.status ?? null },
+        }, 'warning');
+        return {
+          success: false,
+          error: 'Could not verify your session — check your connection and submit again. Your round is still saved on this device.',
+        };
+      }
       void logServerError('Round submit failed: user session expired or not signed in', {
         action: 'submitGolfRoundComprehensive',
         featureArea: 'shot_tracking',
@@ -5549,8 +5599,23 @@ async function savePartialRoundImpl(
 
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authCheckError } = await supabase.auth.getUser();
     if (!user) {
+      // See isTransientAuthCheckFailure: on 2026-08-19 this branch logged
+      // "session expired mid-round" 6 times for players holding valid tokens,
+      // because the auth round trip died in transit during DB contention. A
+      // background auto-save must treat that like 'busy' — silent skip, the
+      // next tick re-sends everything — not like a sign-out.
+      if (isTransientAuthCheckFailure(authCheckError)) {
+        void logServerError('Auto-save auth check failed in transit (NOT a session expiry) — skipped, next tick covers', {
+          action: 'savePartialRound',
+          featureArea: 'shot_tracking',
+          roundId: existingRoundId,
+          errorDetails: authCheckError?.message,
+          extra: { courseName: data.courseName, currentHole: data.currentHole, authStatus: authCheckError?.status ?? null },
+        }, 'warning');
+        return { success: false, error: 'retry' };
+      }
       void logServerError('Auto-save failed: user session expired mid-round', {
         action: 'savePartialRound',
         featureArea: 'shot_tracking',

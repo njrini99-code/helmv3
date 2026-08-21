@@ -1247,7 +1247,7 @@ export default function NewRoundClient() {
           }
         } else if (result.error === 'conflict') {
           void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-        } else if (result.error === 'busy') {
+        } else if (result.error === 'busy' || result.error === 'retry') {
           // Single-flight skip — another save for this round holds the row
           // server-side; the next tick re-sends the full state. Not a failure.
         } else if (isCompletedRoundError(result.error)) {
@@ -1431,7 +1431,7 @@ export default function NewRoundClient() {
             }
           } else if (result.error === 'conflict') {
             void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-          } else if (result.error === 'busy') {
+          } else if (result.error === 'busy' || result.error === 'retry') {
             // Single-flight skip: another save for this round already holds the
             // row server-side (FOR UPDATE NOWAIT). Not a failure — the next
             // tick re-sends the full state — so it must not advance the
@@ -1624,7 +1624,7 @@ export default function NewRoundClient() {
     // 'busy' = an auto-save for this round is mid-flight server-side. This is a
     // user-initiated save, so don't fail it on a coalescing skip — wait for the
     // in-flight save to release the row and try once more with current state.
-    if (!result.success && result.error === 'busy') {
+    if (!result.success && (result.error === 'busy' || result.error === 'retry')) {
       await new Promise((resolve) => setTimeout(resolve, 1_500));
       result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
     }

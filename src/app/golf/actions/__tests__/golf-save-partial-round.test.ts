@@ -355,3 +355,83 @@ describe('savePartialRound — single-flight busy skip', () => {
     expect(logServerEvent).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Transient auth-check failures are NOT session expiry (2026-08-19,
+ * fingerprint 836ce3b6). Six times in one evening, getUser() failed in
+ * transit during DB contention — GoTrue shares the contended Postgres and
+ * the then-10s client abort killed the round trip — and the discarded error
+ * meant `!user` was logged as "session expired mid-round" for players whose
+ * rotation chains prove they held valid, unexpired tokens. A background
+ * auto-save must treat transit failure like 'busy' (silent skip, next tick
+ * covers), and reserve the sign-in message for a real 4xx rejection.
+ */
+describe('savePartialRound — transient auth-check failure is not a sign-out', () => {
+  function seedRound() {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-auth',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_A,
+      course_name: 'Bryan Park Champs',
+      round_date: '2026-08-19',
+      status: 'in_progress',
+      updated_at: '2026-08-19T22:00:00Z',
+    });
+    fake = createFakeSupabase({ user: { id: 'u-p1' }, tables });
+    adminFake = fake;
+    return tables;
+  }
+
+  const partialData = {
+    courseName: 'Bryan Park Champs',
+    courseId: COURSE_A,
+    roundType: 'practice' as const,
+    roundDate: '2026-08-19',
+    currentHole: 15,
+    holesToPlay: 18,
+    holes: [],
+  };
+
+  it("returns 'retry' (not a sign-in demand) when the auth check dies in transit", async () => {
+    seedRound();
+    // AuthRetryableFetchError shape: user null, status 0 — GoTrue never ruled.
+    fake.auth.getUser = async () => ({
+      data: { user: null },
+      error: { name: 'AuthRetryableFetchError', status: 0, message: 'fetch failed' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
+
+    const result = await savePartialRound(partialData, 'round-auth');
+    expect(result).toEqual({ success: false, error: 'retry' });
+
+    // Logged as a WARNING with the transit language — never as the
+    // "session expired mid-round" error that misled the incident triage.
+    const { logServerError } = await import('@/lib/server-error-logger');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calls = (logServerError as any).mock.calls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0]).toContain('NOT a session expiry');
+    expect(calls[0][2]).toBe('warning');
+  });
+
+  it('still demands sign-in on a REAL 401 rejection', async () => {
+    seedRound();
+    fake.auth.getUser = async () => ({
+      data: { user: null },
+      error: { name: 'AuthApiError', status: 401, message: 'invalid JWT' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
+
+    const result = await savePartialRound(partialData, 'round-auth');
+    expect(result).toEqual({ success: false, error: 'You must be signed in' });
+
+    const { logServerError } = await import('@/lib/server-error-logger');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calls = (logServerError as any).mock.calls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0]).toContain('session expired mid-round');
+    expect(calls[0][2]).toBe('error');
+  });
+});
