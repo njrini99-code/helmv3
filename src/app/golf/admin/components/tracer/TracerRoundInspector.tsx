@@ -20,6 +20,7 @@ import type { FlatRound, TracerIncident } from './tracer-types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
+import { classifyInProgressActivity, type InProgressActivityType } from '@/lib/golf/tracer-round-activity';
 
 // ============================================================================
 // TYPES
@@ -37,18 +38,37 @@ type StatusFilter = 'all' | 'completed' | 'in_progress' | 'draft';
 // HELPERS
 // ============================================================================
 
-function isStuckRound(round: FlatRound): boolean {
-  return (
-    round.status === 'in_progress' &&
-    !!round.updated_at &&
-    Date.now() - new Date(round.updated_at).getTime() > 1 * 60 * 60 * 1000
-  );
+/**
+ * A round's activity tier: 'not_in_progress' for anything that isn't
+ * currently `in_progress` (or has no `updated_at` to classify from), else
+ * whatever classifyInProgressActivity resolves to — 'round_stuck' only for
+ * an in_progress round that was ALSO created recently (recently-active-then-
+ * halted); a round idle 1h+ that was started long ago is 'round_abandoned'
+ * instead, so it doesn't sort to the top with a red Critical badge forever.
+ * A round outside the 30-day recency window (classifyInProgressActivity
+ * returns null) still needs a tier here — the round table shows every round
+ * regardless of age, unlike the activity feed — so it falls back to
+ * 'round_abandoned', the correct low-priority tier for something even older
+ * than the window that produces 'round_abandoned' on its own.
+ */
+function roundActivityTier(round: FlatRound): InProgressActivityType | 'not_in_progress' {
+  if (round.status !== 'in_progress' || !round.updated_at) return 'not_in_progress';
+  return classifyInProgressActivity(round.created_at, round.updated_at) ?? 'round_abandoned';
+}
+
+export function isStuckRound(round: FlatRound): boolean {
+  return roundActivityTier(round) === 'round_stuck';
+}
+
+export function isAbandonedRound(round: FlatRound): boolean {
+  return roundActivityTier(round) === 'round_abandoned';
 }
 
 function getChecks(round: FlatRound) {
   const isComplete = round.status === 'completed';
   const isInProgress = round.status === 'in_progress';
   const stuck = isStuckRound(round);
+  const abandoned = isAbandonedRound(round);
 
   return [
     { label: 'Holes Recorded', ok: round.actual_holes > 0, detail: `${round.actual_holes}/${round.expected_holes}` },
@@ -56,7 +76,15 @@ function getChecks(round: FlatRound) {
     {
       label: 'Status',
       ok: isComplete,
-      detail: isComplete ? 'Submitted' : stuck ? `Stuck (${Math.round((Date.now() - new Date(round.updated_at!).getTime()) / 3600000)}h)` : isInProgress ? 'In Progress' : 'Draft',
+      detail: isComplete
+        ? 'Submitted'
+        : stuck
+          ? `Stuck (${Math.round((Date.now() - new Date(round.updated_at!).getTime()) / 3600000)}h)`
+          : abandoned
+            ? 'Abandoned'
+            : isInProgress
+              ? 'In Progress'
+              : 'Draft',
     },
     { label: 'Putts', ok: round.has_putts, detail: round.has_putts ? 'Yes' : 'No' },
     { label: 'Fairways', ok: round.has_fairways, detail: round.has_fairways ? 'Yes' : 'No' },
@@ -72,9 +100,14 @@ function getIssueCount(round: FlatRound): number {
   return round.errors.length;
 }
 
-function computePriority(round: FlatRound): { level: 'critical' | 'high' | 'medium' | 'low'; score: number } {
+export function computePriority(round: FlatRound): { level: 'critical' | 'high' | 'medium' | 'low'; score: number } {
   let score = 0;
+  // Stuck (recently-active-then-halted) is the loud, actionable signal and
+  // keeps the largest weight. Abandoned (idle 1h+ but started long ago) gets
+  // a small weight below the real signals below — it's stale, not urgent,
+  // and shouldn't sort to the top with a red Critical badge on every load.
   if (isStuckRound(round)) score += 40;
+  else if (isAbandonedRound(round)) score += 5;
   if (round.errors.length > 0) score += 20 * round.errors.length;
   if (!round.stats_cached) score += 15;
   if (round.actual_holes < round.expected_holes) score += 10;
@@ -408,6 +441,7 @@ function RoundRow({
 }) {
   const prefersReducedMotion = useReducedMotion();
   const stuck = isStuckRound(round);
+  const abandoned = isAbandonedRound(round);
   const checks = getChecks(round);
   const issueCount = round.errors.length;
   const priority = computePriority(round);
@@ -498,7 +532,7 @@ function RoundRow({
 
         {/* Status */}
         <td className="px-4 py-3.5 text-center">
-          <StatusBadge status={round.status} stuck={stuck} currentHole={round.current_hole} expectedHoles={round.expected_holes} updatedAt={round.updated_at} />
+          <StatusBadge status={round.status} stuck={stuck} abandoned={abandoned} currentHole={round.current_hole} expectedHoles={round.expected_holes} updatedAt={round.updated_at} />
         </td>
 
         {/* Holes */}
@@ -655,7 +689,7 @@ function RoundRow({
 // STATUS BADGE
 // ============================================================================
 
-function StatusBadge({ status, stuck, currentHole, expectedHoles, updatedAt }: { status: string; stuck: boolean; currentHole?: number | null; expectedHoles?: number; updatedAt?: string | null }) {
+function StatusBadge({ status, stuck, abandoned, currentHole, expectedHoles, updatedAt }: { status: string; stuck: boolean; abandoned?: boolean; currentHole?: number | null; expectedHoles?: number; updatedAt?: string | null }) {
   if (status === 'completed') {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-eyebrow font-semibold bg-primary-50 text-primary-700">
@@ -669,25 +703,25 @@ function StatusBadge({ status, stuck, currentHole, expectedHoles, updatedAt }: {
       <div className="inline-flex flex-col items-center gap-0.5">
         <span className={cn(
           'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-eyebrow font-semibold',
-          stuck ? 'bg-red-100 text-red-800' : 'bg-amber-50 text-amber-700'
+          stuck ? 'bg-red-100 text-red-800' : abandoned ? 'bg-warm-100 text-warm-500' : 'bg-amber-50 text-amber-700'
         )}>
           <span className={cn(
             'w-1.5 h-1.5 rounded-full',
-            stuck ? 'bg-red-500 animate-pulse' : 'bg-amber-400'
+            stuck ? 'bg-red-500 animate-pulse' : abandoned ? 'bg-warm-300' : 'bg-amber-400'
           )} />
-          {stuck ? 'Stuck' : 'Active'}
+          {stuck ? 'Stuck' : abandoned ? 'Abandoned' : 'Active'}
         </span>
         {currentHole != null && currentHole > 0 && (
           <span className={cn(
             'text-eyebrow font-medium tabular-nums',
-            stuck ? 'text-red-500' : 'text-warm-500'
+            stuck ? 'text-red-500' : abandoned ? 'text-warm-400' : 'text-warm-500'
           )}>
             Hole {currentHole}{expectedHoles ? `/${expectedHoles}` : ''}
           </span>
         )}
-        {stuck && updatedAt && (
+        {(stuck || abandoned) && updatedAt && (
           <span
-            className="text-eyebrow text-red-400 tabular-nums"
+            className={cn('text-eyebrow tabular-nums', stuck ? 'text-red-400' : 'text-warm-400')}
             title={new Date(updatedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
           >
             {timeAgo(updatedAt)}

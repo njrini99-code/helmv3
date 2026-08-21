@@ -11,10 +11,12 @@ import {
   checkAdminAccess,
   getAdminDashboardData,
   getAdminDashboardRollup,
+  getAdminStuckRounds,
 } from '@/app/golf/actions/admin-data';
 import type {
   AdminDashboardData,
   AdminDashboardRollup,
+  AdminStuckRound,
 } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { useAnalyticsTracking } from '@/hooks/useAnalyticsTracking';
@@ -226,6 +228,7 @@ function AdminDashboardContent() {
   // Cached, single-RPC rollup used for quick stats. Full legacy fetch is
   // retained until all tabs are migrated off AdminDashboardData.
   const [rollup, setRollup] = useState<AdminDashboardRollup | null>(null);
+  const [stuckRounds, setStuckRounds] = useState<AdminStuckRound[]>([]);
   const { trackFeature } = useAnalyticsTracking();
   const supabase = useMemo(() => createClient(), []);
 
@@ -282,7 +285,7 @@ function AdminDashboardContent() {
       // legacy fetch is ~95 queries and stays until every tab is migrated.
       const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
-      const [result, rollupResult, crmResult] = await Promise.all([
+      const [result, rollupResult, crmResult, stuckRoundsResult] = await Promise.all([
         getAdminDashboardData(),
         getAdminDashboardRollup().catch(() => null),
         // Exclude archived coaches from the 90-day CRM KPIs (NULL-safe; mirrors
@@ -292,10 +295,18 @@ function AdminDashboardContent() {
           .select('status')
           .gte('created_at', ninetyDaysAgo)
           .or('is_archived.is.null,is_archived.eq.false'),
+        // Status/updated_at-correct stuck-rounds snapshot for the Overview
+        // "Rounds" card — degrades to empty rather than failing the whole
+        // page load. null (thrown or a failed underlying read, see
+        // getAdminStuckRounds in admin-data.ts) and [] (checked, nothing
+        // stuck) both render as "nothing to show" here — there's no
+        // permission at stake in this list, just display data.
+        getAdminStuckRounds().catch(() => null),
       ]);
 
       setData(result);
       if (rollupResult) setRollup(rollupResult);
+      setStuckRounds(stuckRoundsResult ?? []);
       setLastRefresh(new Date());
       setError(null);
 
@@ -975,6 +986,7 @@ function AdminDashboardContent() {
                 <OverviewTab
                   data={data}
                   rollup={rollup}
+                  stuckRounds={stuckRounds}
                   onNavigateTab={handleNavigateTab}
                 />
               )}

@@ -10,6 +10,7 @@ import { EMPTY_ROLLUP_C, type RollupC } from './admin/rollup-c.shared';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { classifyInProgressActivity } from '@/lib/golf/tracer-round-activity';
 import {
   computeActivation,
   computeMedianTTFV,
@@ -3904,4 +3905,118 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     errorSummaryDegraded,
     adminEventSummaryDegraded,
   };
+}
+
+// ============================================
+// STUCK ROUNDS SNAPSHOT (Overview "Rounds" card)
+// ============================================
+//
+// A small, purpose-built query for the admin overview's "Stuck" rounds
+// list. Separate from the recent_rounds CTE inside get_admin_dashboard_rollup
+// (activity.recentRounds above) — that CTE only selects id/total_score/
+// score_to_par/round_type/course_name/created_at, so it can't distinguish
+// "still in progress" from "completed with no score", or "halted an hour
+// ago" from "abandoned since May". Adding status/updated_at there means
+// touching the production rollup RPC via a migration, which this surface
+// doesn't need — a direct query is enough.
+//
+// Mirrors admin-tracer-data.ts's getTracerEnrichedDataImpl (status =
+// 'in_progress', idle measured from updated_at, bounded to the last 30
+// days) and shares its classifyInProgressActivity tiering so this card and
+// the Tracer tab's stuck-rounds surfaces can't drift into disagreement
+// again. Only the 'round_stuck' tier (recently active, then halted) is
+// returned — an abandoned round shouldn't scream on the very first card an
+// admin sees any more than it should on an alert panel.
+
+export interface AdminStuckRound {
+  round_id: string;
+  player_name: string;
+  course_name: string | null;
+  current_hole: number | null;
+  updated_at: string;
+  hours_idle: number;
+}
+
+async function getAdminStuckRoundsImpl(): Promise<AdminStuckRound[] | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const { data: userRow, error: userErr } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (userErr || (userRow?.role as string) !== 'admin') throw new Error('Forbidden');
+
+  const adminDb = createAdminClient();
+  const ago30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const oneHourAgo = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
+
+  const { data: rows, error } = await adminDb
+    .from('golf_rounds')
+    .select('id, player_id, course_name, current_hole, created_at, updated_at')
+    .eq('status', 'in_progress')
+    .lt('updated_at', oneHourAgo)
+    .gte('updated_at', ago30d)
+    .order('updated_at', { ascending: true });
+
+  if (error) {
+    void logServerError(
+      `[admin-data] getAdminStuckRounds errored: ${describeError(error)}`,
+      { action: 'admin_data.getAdminStuckRounds', featureArea: 'admin' },
+    );
+    // null (not []) — this list is purely additive display data, not a
+    // security allow/exclude set, but a failed read must still be
+    // distinguishable from "checked, nothing stuck" rather than silently
+    // collapsing into it. The caller decides what null means (currently:
+    // treat it the same as empty, since there is no permission at stake).
+    return null;
+  }
+
+  const candidates = (rows ?? []).filter(
+    (r): r is typeof r & { updated_at: string } => r.updated_at != null
+  );
+
+  const playerIds = [...new Set(candidates.map((r) => r.player_id))];
+  const playerNameMap = new Map<string, string>();
+  if (playerIds.length > 0) {
+    const { data: players, error: playersError } = await adminDb
+      .from('golf_players')
+      .select('id, first_name, last_name')
+      .in('id', playerIds);
+    if (playersError) {
+      // Non-fatal: the round-level rows are already fetched, and every
+      // lookup below already falls back to 'Unknown' on a missing map entry.
+      // Log and degrade rather than fail the whole card over a name lookup.
+      void logServerError(
+        `[admin-data] getAdminStuckRounds player lookup errored: ${describeError(playersError)}`,
+        { action: 'admin_data.getAdminStuckRounds', featureArea: 'admin' },
+      );
+    }
+    for (const p of players || []) {
+      playerNameMap.set(p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown');
+    }
+  }
+
+  return candidates
+    .filter((r) => classifyInProgressActivity(r.created_at, r.updated_at) === 'round_stuck')
+    .map((r) => ({
+      round_id: r.id,
+      player_name: playerNameMap.get(r.player_id) || 'Unknown',
+      course_name: r.course_name,
+      current_hole: r.current_hole ?? null,
+      updated_at: r.updated_at,
+      hours_idle: (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60),
+    }));
+}
+
+const observedGetAdminStuckRounds = withAdminObserved(
+  'getAdminStuckRounds',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  getAdminStuckRoundsImpl,
+);
+
+export async function getAdminStuckRounds(): Promise<AdminStuckRound[] | null> {
+  return observedGetAdminStuckRounds();
 }

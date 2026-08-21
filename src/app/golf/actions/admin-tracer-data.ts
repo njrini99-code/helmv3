@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { normalizeIncidentRoute } from '@/lib/admin/incident-grouping';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { classifyInProgressActivity } from '@/lib/golf/tracer-round-activity';
 
 // ============================================
 // TYPES
@@ -117,7 +118,14 @@ interface TracerAdminEventRecord {
 }
 
 export interface TracerActivityEvent {
-  type: 'round_started' | 'round_completed' | 'round_in_progress' | 'round_stuck' | 'round_error' | 'detail_warning';
+  type:
+    | 'round_started'
+    | 'round_completed'
+    | 'round_in_progress'
+    | 'round_stuck'
+    | 'round_abandoned'
+    | 'round_error'
+    | 'detail_warning';
   player_name: string;
   player_id: string;
   round_id: string | null;
@@ -126,7 +134,7 @@ export interface TracerActivityEvent {
   score_to_par: number | null;
   error_message: string | null;
   timestamp: string;
-  /** Current hole for in-progress/stuck rounds */
+  /** Current hole for in-progress/stuck/abandoned rounds */
   current_hole?: number | null;
   /** Expected holes (9 or 18) */
   expected_holes?: number;
@@ -134,7 +142,7 @@ export interface TracerActivityEvent {
   actual_holes?: number;
   /** Total shots recorded so far */
   total_shots?: number;
-  /** Hours stuck (only for round_stuck type) */
+  /** Hours idle (only for round_stuck / round_abandoned types) */
   hours_stuck?: number;
 }
 
@@ -833,26 +841,38 @@ async function getTracerDataImpl(): Promise<TracerData> {
       });
     }
 
-    // Activity: round in progress or stuck
+    // Activity: round in progress, stuck, or abandoned. Gated the same way
+    // as round_started above — classifyInProgressActivity returns null for
+    // anything untouched in 30+ days, so a round nobody has touched since
+    // May doesn't sit in "recent activity" forever. Within that window, only
+    // a round that was ALSO started recently renders as "stuck" (loud, red,
+    // highest priority); one started long ago renders as the quieter
+    // "abandoned" tier instead of screaming stuck/critical on every load.
     if (r.status === 'in_progress' && r.updated_at) {
-      const hoursInactive = (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60);
-      const isStuck = hoursInactive >= 1; // 1+ hours = stuck
-      activityFeed.push({
-        type: isStuck ? 'round_stuck' : 'round_in_progress',
-        player_name: playerName,
-        player_id: r.player_id,
-        round_id: r.id,
-        course_name: r.course_name,
-        score: null,
-        score_to_par: null,
-        error_message: isStuck
-          ? `Stuck at hole ${r.current_hole ?? '?'} for ${Math.round(hoursInactive)}h — no activity since ${new Date(r.updated_at).toLocaleString()}`
-          : null,
-        timestamp: r.updated_at,
-        current_hole: r.current_hole ?? null,
-        expected_holes: r.holes_played || 18,
-        hours_stuck: isStuck ? hoursInactive : undefined,
-      });
+      const activityType = classifyInProgressActivity(r.created_at, r.updated_at);
+      if (activityType) {
+        const hoursInactive = (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60);
+        const isStuck = activityType === 'round_stuck';
+        const isAbandoned = activityType === 'round_abandoned';
+        activityFeed.push({
+          type: activityType,
+          player_name: playerName,
+          player_id: r.player_id,
+          round_id: r.id,
+          course_name: r.course_name,
+          score: null,
+          score_to_par: null,
+          error_message: isStuck
+            ? `Stuck at hole ${r.current_hole ?? '?'} for ${Math.round(hoursInactive)}h — no activity since ${new Date(r.updated_at).toLocaleString()}`
+            : isAbandoned
+              ? `Abandoned at hole ${r.current_hole ?? '?'} — no activity since ${new Date(r.updated_at).toLocaleString()}`
+              : null,
+          timestamp: r.updated_at,
+          current_hole: r.current_hole ?? null,
+          expected_holes: r.holes_played || 18,
+          hours_stuck: isStuck || isAbandoned ? hoursInactive : undefined,
+        });
+      }
     }
   }
 
@@ -1209,12 +1229,19 @@ async function getTracerEnrichedDataImpl(): Promise<TracerEnrichedData> {
       .gte('created_at', ago30d)
       .order('created_at', { ascending: true }),
 
-    // Stuck rounds (in_progress with updated_at > 1 hour ago)
+    // Candidate stuck rounds (in_progress, updated_at > 1 hour ago, within
+    // the same 30-day window as everything else here). `created_at` is
+    // selected so classifyInProgressActivity below can tell a recently-
+    // started round that halted (stuck — belongs on this alert panel) apart
+    // from one abandoned long ago (not alert-worthy — see the `.filter`
+    // below). The `.gte` bound also keeps rows this query returns from
+    // growing unboundedly as abandoned rounds accumulate over time.
     adminDb
       .from('golf_rounds')
-      .select('id, player_id, course_name, current_hole, holes_played, updated_at')
+      .select('id, player_id, course_name, current_hole, holes_played, created_at, updated_at')
       .eq('status', 'in_progress')
-      .lt('updated_at', oneHourAgo),
+      .lt('updated_at', oneHourAgo)
+      .gte('updated_at', ago30d),
   ]);
 
   // Aggregate into daily counts
@@ -1253,8 +1280,17 @@ async function getTracerEnrichedDataImpl(): Promise<TracerEnrichedData> {
     }
   }
 
+  // Only the 'round_stuck' tier belongs on this dataset — it feeds admin
+  // alert panels (TracerAlertPanel's generateAlerts, StuckRoundsPanel on
+  // /admin/golf/tracer) that treat every row as urgent and actionable. A
+  // round abandoned long ago (classifyInProgressActivity's 'round_abandoned'
+  // tier, or null when even further outside the window) isn't that — it
+  // stays visible and resolvable via the Tracer round inspector table
+  // (TracerRoundInspector's own abandoned tier), just not screaming on an
+  // alert panel forever.
   const stuckRounds = stuckData
     .filter((r): r is typeof r & { updated_at: string } => r.updated_at != null)
+    .filter((r) => classifyInProgressActivity(r.created_at, r.updated_at) === 'round_stuck')
     .map((r) => ({
       round_id: r.id,
       player_id: r.player_id,

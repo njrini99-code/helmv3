@@ -1,6 +1,6 @@
 'use client';
 
-import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
+import type { AdminDashboardData, AdminStuckRound } from '@/app/golf/actions/admin-data';
 import {
   IconUsers,
   IconTarget,
@@ -8,9 +8,17 @@ import {
   IconTrendingUp,
   IconBrain,
 } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+import { shouldRollupStuckRounds, formatStuckRollupLabel } from '@/lib/golf/stuck-rounds-rollup';
 
 interface OverviewBriefingProps {
   data: AdminDashboardData;
+  /** Status/updated_at-correct snapshot from getAdminStuckRounds — already
+   *  filtered to the 'round_stuck' tier (recently active, then halted), so
+   *  this component never re-derives "stuck" from the recentRounds payload
+   *  (which carries neither status nor updated_at). */
+  stuckRounds: AdminStuckRound[];
+  onNavigateTab?: (tab: string) => void;
 }
 
 function StatRow({ label, value }: { label: string; value: string | number }) {
@@ -22,6 +30,11 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
       </span>
     </div>
   );
+}
+
+export function formatStuckRoundIdle(hoursIdle: number): string {
+  const hours = Math.floor(hoursIdle);
+  return hours >= 24 ? `${Math.floor(hours / 24)}d idle` : `${hours}h idle`;
 }
 
 function getWeekRangeHeader(): string {
@@ -41,7 +54,7 @@ function getWeekRangeHeader(): string {
   return `${fmt(startOfWeek)} \u2014 ${fmt(endOfWeek)}${yearSuffix}, ${endOfWeek.getFullYear()}`;
 }
 
-export function OverviewBriefing({ data }: OverviewBriefingProps) {
+export function OverviewBriefing({ data, stuckRounds, onNavigateTab }: OverviewBriefingProps) {
   const { users, health, growth, errorLogs, errorDetection, playerFunnel } = data;
 
   // Platform stats
@@ -61,15 +74,6 @@ export function OverviewBriefing({ data }: OverviewBriefingProps) {
 
   // Rounds
   const roundsThisWeek = Number(health.roundsThisWeek);
-
-  // Stuck rounds: find in-progress rounds (no score yet) from recent rounds
-  const stuckRounds = data.activity.recentRounds.filter((r) => {
-    if (r.total_score != null) return false; // completed
-    if (!r.created_at) return false;
-    const idleMs = Date.now() - new Date(r.created_at).getTime();
-    const idleHours = Math.floor(idleMs / 3600000);
-    return idleHours >= 2; // idle 2+ hours counts as stuck
-  });
 
   // Errors — only show card if there are OPEN incidents
   const unresolvedIncidents = Number(errorLogs.incidentCounts.open);
@@ -168,21 +172,31 @@ export function OverviewBriefing({ data }: OverviewBriefingProps) {
           <div className="space-y-0">
             <StatRow label="This week" value={roundsThisWeek || '\u2014'} />
             {stuckRounds.length > 0 &&
-              stuckRounds.map((r) => {
-                const idleMs = Date.now() - new Date(r.created_at!).getTime();
-                const idleHours = Math.floor(idleMs / 3600000);
-                const idleLabel =
-                  idleHours >= 24
-                    ? `${Math.floor(idleHours / 24)}d idle`
-                    : `${idleHours}h idle`;
-                return (
+              (shouldRollupStuckRounds(stuckRounds.length) ? (
+                <div className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="text-sm text-warm-600">Stuck</span>
+                  {onNavigateTab ? (
+                    <Button variant="ghost"
+                      onClick={() => onNavigateTab('tracer')}
+                      className="text-sm font-semibold text-warm-900 hover:text-primary-600 transition-colors tabular-nums"
+                    >
+                      {formatStuckRollupLabel(stuckRounds.length)}
+                    </Button>
+                  ) : (
+                    <span className="text-sm font-semibold text-warm-900 tabular-nums">
+                      {formatStuckRollupLabel(stuckRounds.length)}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                stuckRounds.map((r) => (
                   <StatRow
-                    key={r.id}
+                    key={r.round_id}
                     label="Stuck"
-                    value={`${r.player_name}${r.course_name ? ` at ${r.course_name}` : ''} — ${idleLabel}`}
+                    value={`${r.player_name}${r.course_name ? ` at ${r.course_name}` : ''} \u2014 ${formatStuckRoundIdle(r.hours_idle)}`}
                   />
-                );
-              })}
+                ))
+              ))}
           </div>
         </div>
 

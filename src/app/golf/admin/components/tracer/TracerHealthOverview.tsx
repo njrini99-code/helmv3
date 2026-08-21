@@ -70,6 +70,12 @@ const ACTIVITY_CONFIG: Record<
     bg: 'bg-red-50',
     label: 'Stuck',
   },
+  round_abandoned: {
+    icon: IconCircleDot,
+    color: 'text-warm-400',
+    bg: 'bg-warm-100',
+    label: 'Abandoned',
+  },
   round_error: {
     icon: IconXCircle,
     color: 'text-red-500',
@@ -93,6 +99,7 @@ function ActivityRow({ event }: { event: TracerActivityEvent }) {
   const Icon = cfg.icon;
   const isStuck = event.type === 'round_stuck';
   const isInProgress = event.type === 'round_in_progress';
+  const isAbandoned = event.type === 'round_abandoned';
 
   return (
     <div className={cn(
@@ -142,24 +149,27 @@ function ActivityRow({ event }: { event: TracerActivityEvent }) {
               )}
             </span>
           )}
-          {/* Hole progress for in-progress/stuck */}
-          {(isInProgress || isStuck) && event.current_hole != null && (
+          {/* Hole progress for in-progress/stuck/abandoned */}
+          {(isInProgress || isStuck || isAbandoned) && event.current_hole != null && (
             <span className={cn(
               'text-xs font-medium tabular-nums',
-              isStuck ? 'text-red-500' : 'text-amber-600'
+              isStuck ? 'text-red-500' : isAbandoned ? 'text-warm-400' : 'text-amber-600'
             )}>
               hole {event.current_hole}/{event.expected_holes ?? 18}
             </span>
           )}
-          {/* Hours stuck */}
-          {isStuck && event.hours_stuck != null && (
-            <span className="text-xs font-semibold text-red-500 tabular-nums">
+          {/* Hours idle (stuck or abandoned) */}
+          {(isStuck || isAbandoned) && event.hours_stuck != null && (
+            <span className={cn(
+              'text-xs font-semibold tabular-nums',
+              isStuck ? 'text-red-500' : 'text-warm-400'
+            )}>
               {Math.round(event.hours_stuck)}h idle
             </span>
           )}
         </div>
         {event.error_message && (
-          <p className={cn('text-xs mt-1 leading-relaxed break-words', isStuck ? 'text-red-600' : 'text-red-500')}>
+          <p className={cn('text-xs mt-1 leading-relaxed break-words', isStuck ? 'text-red-600' : isAbandoned ? 'text-warm-400' : 'text-red-500')}>
             {event.error_message}
           </p>
         )}

@@ -11,7 +11,7 @@ interface RecentActivityFeedProps {
 
 type FeedItemKind = 'round' | 'error' | 'login' | 'signup' | 'insight' | 'audit';
 
-interface FeedItem {
+export interface FeedItem {
   id: string;
   kind: FeedItemKind;
   text: string;
@@ -26,6 +26,15 @@ interface FeedItem {
 }
 
 const VISIBLE_LIMIT = 15;
+
+/**
+ * A round with no recorded score is ambiguous from this payload alone (see
+ * the comment in buildFeedItems below) — it could be genuinely in progress
+ * or completed with no score saved. Either way, once it's this old it isn't
+ * "recent activity" — drop it rather than show a false "in progress" that
+ * never goes away.
+ */
+const STALE_NO_SCORE_HOURS = 48;
 
 /**
  * Pattern-miner threshold-starvation events fire once per player per analyze
@@ -104,140 +113,163 @@ function KindDot({ kind }: { kind: FeedItemKind }) {
   return <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5', color)} />;
 }
 
+/**
+ * Builds the sorted, deduped activity feed from the admin activity payload.
+ * Pulled out of the component's useMemo so the round-labeling and
+ * staleness rules are unit-testable without rendering.
+ */
+export function buildFeedItems(activity: AdminDashboardData['activity']): FeedItem[] {
+  const feed: FeedItem[] = [];
+
+  // Round events — priority 0 (highest)
+  for (const r of activity.recentRounds) {
+    if (!r.created_at) continue;
+    const hasScore = r.total_score != null;
+
+    // `recentRounds` doesn't carry the round's `status` column (see the
+    // recent_rounds CTE in admin-data.ts / the underlying migration) — a
+    // null total_score means either "still in progress" or "completed with
+    // no score recorded", and this payload can't tell which. Never claim
+    // "in progress" from a null score alone. And once a no-score round is
+    // stale, it isn't recent activity either way — drop it instead of
+    // showing a false "in progress" that never goes away.
+    if (!hasScore) {
+      const ageHours = (Date.now() - new Date(r.created_at).getTime()) / 3600000;
+      if (ageHours > STALE_NO_SCORE_HOURS) continue;
+    }
+
+    const toPar =
+      r.total_to_par != null
+        ? r.total_to_par === 0
+          ? 'E'
+          : r.total_to_par > 0
+            ? `+${r.total_to_par}`
+            : String(r.total_to_par)
+        : null;
+    const courseStr = r.course_name ? ` at ${r.course_name}` : '';
+    const text = hasScore
+      ? `${r.player_name} shot ${r.total_score}${toPar ? ` (${toPar})` : ''}${courseStr}`
+      : `${r.player_name} started a round${courseStr} — no score yet`;
+    feed.push({
+      id: `round-${r.id}`,
+      kind: 'round',
+      text,
+      timestamp: r.created_at,
+      toPar: r.total_to_par,
+      score: r.total_score,
+      sortPriority: 0,
+    });
+  }
+
+  // Signup events — priority 1
+  for (const s of activity.recentSignups) {
+    if (!s.created_at) continue;
+    feed.push({
+      id: `signup-${s.id}`,
+      kind: 'signup',
+      text: `${s.email} signed up`,
+      detail: s.role,
+      timestamp: s.created_at,
+      sortPriority: 1,
+    });
+  }
+
+  // Insight events — priority 2
+  for (const ins of activity.recentInsights) {
+    if (!ins.created_at) continue;
+    feed.push({
+      id: `insight-${ins.id}`,
+      kind: 'insight',
+      text: `${ins.insights_generated ?? 0} insight${(ins.insights_generated ?? 0) !== 1 ? 's' : ''} generated`,
+      detail: ins.insight_type,
+      timestamp: ins.created_at,
+      sortPriority: 2,
+    });
+  }
+
+  // Admin / error events — priority 3 (errors) or 2 (audit)
+  for (const e of activity.recentAdminEvents) {
+    const isError = e.severity === 'error' || e.severity === 'critical';
+    feed.push({
+      id: `event-${e.id}`,
+      kind: isError ? 'error' : 'audit',
+      text: isError ? simplifyErrorMessage(e.title) : e.title,
+      detail: e.message ? simplifyErrorMessage(e.message.slice(0, 120)) : null,
+      timestamp: e.createdAt,
+      sortPriority: isError ? 3 : 2,
+    });
+  }
+
+  // Collapse pattern-miner threshold-starvation spam: when 2+ rows fall in
+  // the same hour bucket, render ONE row with the player count. Original
+  // rows stay in admin_events for debugging.
+  const patternMinerBuckets = new Map<string, FeedItem[]>();
+  const collapsed: FeedItem[] = [];
+  for (const item of feed) {
+    if (isPatternMinerStarvation(item)) {
+      const key = hourBucketKey(item.timestamp);
+      const bucket = patternMinerBuckets.get(key);
+      if (bucket) {
+        bucket.push(item);
+      } else {
+        patternMinerBuckets.set(key, [item]);
+      }
+      continue;
+    }
+    collapsed.push(item);
+  }
+  for (const [key, bucket] of patternMinerBuckets) {
+    const head = bucket[0];
+    if (!head) continue;
+    if (bucket.length === 1) {
+      collapsed.push(head);
+      continue;
+    }
+    // Newest timestamp wins for the surfaced row; sortPriority/kind/style
+    // mirror the source rows so it visually slots in with other audit lines.
+    let newest: FeedItem = head;
+    for (const cur of bucket) {
+      if (new Date(cur.timestamp).getTime() > new Date(newest.timestamp).getTime()) {
+        newest = cur;
+      }
+    }
+    const playerCount = bucket.length;
+    collapsed.push({
+      id: `pattern-miner-bucket-${key}`,
+      kind: 'audit',
+      text: `Pattern miner produced 0 patterns for ${playerCount} players (last 1h)`,
+      detail: 'pattern-miner.thresholds.starvation',
+      timestamp: newest.timestamp,
+      sortPriority: 2,
+    });
+  }
+  feed.length = 0;
+  feed.push(...collapsed);
+
+  // Sort: within same day, show rounds/signups first (lower sortPriority),
+  // then by timestamp descending
+  feed.sort((a, b) => {
+    // First group by day
+    const dayA = new Date(a.timestamp).toDateString();
+    const dayB = new Date(b.timestamp).toDateString();
+    if (dayA !== dayB) {
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    }
+    // Within the same day, sort by priority first
+    if (a.sortPriority !== b.sortPriority) {
+      return a.sortPriority - b.sortPriority;
+    }
+    // Then by timestamp descending
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+  });
+
+  return feed;
+}
+
 export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
   const [showAll, setShowAll] = useState(false);
 
-  const allItems = useMemo(() => {
-    const feed: FeedItem[] = [];
-
-    // Round events — priority 0 (highest)
-    for (const r of activity.recentRounds) {
-      if (!r.created_at) continue;
-      const toPar =
-        r.total_to_par != null
-          ? r.total_to_par === 0
-            ? 'E'
-            : r.total_to_par > 0
-              ? `+${r.total_to_par}`
-              : String(r.total_to_par)
-          : null;
-      const scoreStr = r.total_score != null ? String(r.total_score) : 'in progress';
-      const courseStr = r.course_name ? ` at ${r.course_name}` : '';
-      feed.push({
-        id: `round-${r.id}`,
-        kind: 'round',
-        text: `${r.player_name} shot ${scoreStr}${toPar ? ` (${toPar})` : ''}${courseStr}`,
-        timestamp: r.created_at,
-        toPar: r.total_to_par,
-        score: r.total_score,
-        sortPriority: 0,
-      });
-    }
-
-    // Signup events — priority 1
-    for (const s of activity.recentSignups) {
-      if (!s.created_at) continue;
-      feed.push({
-        id: `signup-${s.id}`,
-        kind: 'signup',
-        text: `${s.email} signed up`,
-        detail: s.role,
-        timestamp: s.created_at,
-        sortPriority: 1,
-      });
-    }
-
-    // Insight events — priority 2
-    for (const ins of activity.recentInsights) {
-      if (!ins.created_at) continue;
-      feed.push({
-        id: `insight-${ins.id}`,
-        kind: 'insight',
-        text: `${ins.insights_generated ?? 0} insight${(ins.insights_generated ?? 0) !== 1 ? 's' : ''} generated`,
-        detail: ins.insight_type,
-        timestamp: ins.created_at,
-        sortPriority: 2,
-      });
-    }
-
-    // Admin / error events — priority 3 (errors) or 2 (audit)
-    for (const e of activity.recentAdminEvents) {
-      const isError = e.severity === 'error' || e.severity === 'critical';
-      feed.push({
-        id: `event-${e.id}`,
-        kind: isError ? 'error' : 'audit',
-        text: isError ? simplifyErrorMessage(e.title) : e.title,
-        detail: e.message ? simplifyErrorMessage(e.message.slice(0, 120)) : null,
-        timestamp: e.createdAt,
-        sortPriority: isError ? 3 : 2,
-      });
-    }
-
-    // Collapse pattern-miner threshold-starvation spam: when 2+ rows fall in
-    // the same hour bucket, render ONE row with the player count. Original
-    // rows stay in admin_events for debugging.
-    const patternMinerBuckets = new Map<string, FeedItem[]>();
-    const collapsed: FeedItem[] = [];
-    for (const item of feed) {
-      if (isPatternMinerStarvation(item)) {
-        const key = hourBucketKey(item.timestamp);
-        const bucket = patternMinerBuckets.get(key);
-        if (bucket) {
-          bucket.push(item);
-        } else {
-          patternMinerBuckets.set(key, [item]);
-        }
-        continue;
-      }
-      collapsed.push(item);
-    }
-    for (const [key, bucket] of patternMinerBuckets) {
-      const head = bucket[0];
-      if (!head) continue;
-      if (bucket.length === 1) {
-        collapsed.push(head);
-        continue;
-      }
-      // Newest timestamp wins for the surfaced row; sortPriority/kind/style
-      // mirror the source rows so it visually slots in with other audit lines.
-      let newest: FeedItem = head;
-      for (const cur of bucket) {
-        if (new Date(cur.timestamp).getTime() > new Date(newest.timestamp).getTime()) {
-          newest = cur;
-        }
-      }
-      const playerCount = bucket.length;
-      collapsed.push({
-        id: `pattern-miner-bucket-${key}`,
-        kind: 'audit',
-        text: `Pattern miner produced 0 patterns for ${playerCount} players (last 1h)`,
-        detail: 'pattern-miner.thresholds.starvation',
-        timestamp: newest.timestamp,
-        sortPriority: 2,
-      });
-    }
-    feed.length = 0;
-    feed.push(...collapsed);
-
-    // Sort: within same day, show rounds/signups first (lower sortPriority),
-    // then by timestamp descending
-    feed.sort((a, b) => {
-      // First group by day
-      const dayA = new Date(a.timestamp).toDateString();
-      const dayB = new Date(b.timestamp).toDateString();
-      if (dayA !== dayB) {
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-      }
-      // Within the same day, sort by priority first
-      if (a.sortPriority !== b.sortPriority) {
-        return a.sortPriority - b.sortPriority;
-      }
-      // Then by timestamp descending
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-    });
-
-    return feed;
-  }, [activity]);
+  const allItems = useMemo(() => buildFeedItems(activity), [activity]);
 
   if (allItems.length === 0) {
     return (
