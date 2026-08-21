@@ -311,6 +311,9 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
         .select('team_id, created_at, severity')
         .eq('event_type', 'error')
         .not('team_id', 'is', null)
+        // A resolved incident isn't part of the current EKG — matches
+        // /admin/errors' `.eq('resolved', false)` convention.
+        .eq('resolved', false)
         .gte('created_at', ago30d)
         .order('id', { ascending: true })
         .range(from, to),
@@ -321,6 +324,9 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
         .select('user_id, created_at, severity')
         .eq('event_type', 'error')
         .is('team_id', null)
+        // Same resolved-exclusion as the team-tagged branch above — this is
+        // the OTHER half of the same union, not a separate signal.
+        .eq('resolved', false)
         .gte('created_at', ago30d)
         .in('user_id', batch)
         .order('id', { ascending: true })

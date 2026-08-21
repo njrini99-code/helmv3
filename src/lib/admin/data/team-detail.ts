@@ -478,6 +478,11 @@ export async function fetchTeamDetail(teamId: string): Promise<TeamDetailResult>
         .eq('event_type', 'error')
         // severity is NOT NULL, so .neq cannot silently drop untyped rows.
         .in('severity', INCIDENT_SEVERITIES)
+        // A resolved incident isn't a current problem — matches
+        // /admin/errors' `.eq('resolved', false)` convention (errors.ts:201).
+        // Without this, the cluster list, the grade, and the computed-insight
+        // badge above all read fully-closed incidents as live.
+        .eq('resolved', false)
         .order('created_at', { ascending: false })
         .limit(TEAM_ERRORS_LIMIT);
       return excludeAuthNoise(q);

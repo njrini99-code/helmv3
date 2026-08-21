@@ -368,7 +368,12 @@ export async function fetchUsersTab(filters: { q?: string; role?: string; team?:
           // narration like "no completed rounds yet". Of the users actually
           // rendered, 31 were painted danger-red where 11 had a real error: a
           // 65% false-positive rate on the console's primary attention column.
-          .in('severity', INCIDENT_SEVERITIES),
+          .in('severity', INCIDENT_SEVERITIES)
+          // A resolved incident isn't a current risk signal — matches
+          // /admin/errors' `.eq('resolved', false)` convention. Without this,
+          // PlayerWatchlist paints a player `danger` red on fully-closed
+          // events (e.g. 13 resolved events, 0 open, still topped the list).
+          .eq('resolved', false),
       )
         .gte('created_at', ago7d)
         .order('id', { ascending: true })

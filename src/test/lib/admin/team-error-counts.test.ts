@@ -120,3 +120,28 @@ describe('resolveTeamErrorCounts contract', () => {
     expect(src).toContain('excludeAuthNoise');
   });
 });
+
+/**
+ * Bridge audit 2026-08-21: every one of these surfaces filtered
+ * `event_type = 'error'` + severity, but never `admin_events.resolved`.
+ * Live check that day: 456 of 456 error/warning/critical rows in the trailing
+ * 7 days were already `resolved = true` — a team's "errors this week" tile,
+ * its grade, its computed-insight badge, the Teams pulse EKG, and
+ * PlayerWatchlist's danger badge were all reading fully-closed incidents as
+ * current. `/admin/errors` already does this correctly (errors.ts:201,
+ * `.eq('resolved', false)`); these four files just never picked up the
+ * convention.
+ */
+describe('team/player error counts exclude resolved incidents', () => {
+  const RESOLVED_EXCLUSION_SOURCES = [
+    'team-scope.ts', // resolveTeamErrorCounts — feeds golf.ts, users.ts, team-page-extras.ts
+    'team-detail.ts', // team detail page's own error cluster list + grade + insight strip
+    'pulse-grid.ts', // Teams pulse page's errors30d / criticalErrors30d EKG
+    'users.ts', // per-player errors7d feeding PlayerWatchlist
+  ];
+
+  it.each(RESOLVED_EXCLUSION_SOURCES)('%s filters admin_events errors to resolved = false', (file) => {
+    const src = fs.readFileSync(path.join(MODULE_DIR, file), 'utf8');
+    expect(src).toContain(`.eq('resolved', false)`);
+  });
+});
