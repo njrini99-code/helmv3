@@ -99,14 +99,16 @@ describe('checkScheduleConflicts — scope gate id-kind contract', () => {
     // The gate exists for a reason: conflict results leak names, avatars and
     // busy-titles. A foreign id must stay denied.
     const result = await check([FOREIGN_PLAYER]);
-    expect(result.success).toBe(false);
+    // Narrow the discriminated union before reading `.error` — tsc checks
+    // tests in this repo, and expect() narrows nothing for the compiler.
+    if (result.success) throw new Error('expected a denial');
     expect(String(result.error)).toMatch(/not authorized/i);
   });
 
   it('answers RETRY, not denial, when the roster read fails', async () => {
     state.membersError = { message: 'statement timeout' };
     const result = await check([ROSTER_PLAYER]);
-    expect(result.success).toBe(false);
+    if (result.success) throw new Error('expected a retry answer');
     expect(String(result.error)).toMatch(/try again/i);
     expect(String(result.error)).not.toMatch(/not authorized/i);
   });
