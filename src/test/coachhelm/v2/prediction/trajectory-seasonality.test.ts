@@ -1,13 +1,22 @@
 /**
  * `seasonalAdjustmentFor` — the bucket boundaries, read in UTC.
  *
- * The forecaster's projection points carry `date` as
- * `futureDate.toISOString().split('T')[0]` — a UTC calendar day. The old code
- * read it back with `new Date(s).getMonth()`, which parses at UTC midnight and
- * then answers in the RUNTIME zone. West of UTC that made every 1st-of-month
- * resolve to the previous month, so 1 May, 1 Oct and 1 Nov — all three bucket
- * boundaries — picked up the wrong seasonal adjustment, a 0.3-0.4 stroke swing
- * on the projection. Vercel (UTC) and a browser in Eastern disagreed.
+ * As of the 2026-08-21 fix (#1485), the forecaster's projection points carry
+ * `date` as a bare `YYYY-MM-DD` LOCAL calendar day, built by `localDayIso`
+ * (see `projectedPointDate` and its own test,
+ * `trajectory-forecaster.date-label.test.ts`). Before that fix, `date` was
+ * `futureDate.toISOString().split('T')[0]` — a UTC calendar day — and the old
+ * code here read it back with `new Date(s).getMonth()`, which parses at UTC
+ * midnight and then answers in the RUNTIME zone. West of UTC that made every
+ * 1st-of-month resolve to the previous month, so 1 May, 1 Oct and 1 Nov — all
+ * three bucket boundaries — picked up the wrong seasonal adjustment, a
+ * 0.3-0.4 stroke swing on the projection. Vercel (UTC) and a browser in
+ * Eastern disagreed.
+ *
+ * `seasonalAdjustmentFor` itself did NOT need to change: appending `T00:00:00Z`
+ * and reading `getUTCMonth()` is a pure decode of the calendar digits in the
+ * string, immune to the runtime zone either way — see the updated docblock on
+ * the function. What changed is what produces `point.date` upstream.
  *
  * `seasonalProjection` is private and had no test of any kind; the boundary
  * logic was extracted so it could have one.

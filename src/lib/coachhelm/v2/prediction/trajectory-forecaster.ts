@@ -19,6 +19,7 @@ import type {
   ExtractedFeatures,
 } from '../types';
 import { extractAllFeatures } from '../features';
+import { localDayIso } from '@/lib/golf/local-day';
 
 interface HistoricalPoint {
   date: string;
@@ -36,17 +37,42 @@ interface HistoricalPoint {
  * NEGATIVE score-to-par adjustment); Nov–Mar is off season; April and October
  * are shoulder months with no adjustment.
  *
- * READS THE DATE IN UTC, deliberately. `point.date` is produced by
- * `futureDate.toISOString().split('T')[0]` — a UTC calendar day. Reading it
- * back with `new Date(s).getMonth()` parses at UTC midnight and then answers in
- * the RUNTIME zone, so anywhere west of UTC every 1st-of-month resolved to the
- * PREVIOUS month. On Vercel (UTC) it happened to be right; in a browser in
- * Eastern it was not, and the two disagreed about 1 May, 1 Oct and 1 Nov —
- * each a bucket boundary, so the adjustment flipped by a full 0.3–0.4 strokes.
+ * PARSES THE DATE AS UTC, deliberately — this is a decode, not a rezone.
+ * `point.date` (as of the 2026-08-21 fix, #1485) is a bare `YYYY-MM-DD`
+ * calendar day built from `localDayIso`, carrying no time-of-day or offset.
+ * `new Date(\`${isoDate}T00:00:00Z\`).getUTCMonth()` just reads the month
+ * digits back out of that string — appending a `Z` and reading with the
+ * matching UTC getter is what makes the read a pure decode, immune to the
+ * runtime zone, rather than `new Date(isoDate).getMonth()`, which would parse
+ * at UTC midnight and then answer in local time — the same
+ * write-in-one-zone/read-in-another mismatch `point.date` itself used to have
+ * (see the fix note on `linearProjection`'s `date:` line below).
  *
  * Exported so the boundaries are testable without reaching through the class;
  * `seasonalProjection` is private and had no coverage of any kind.
  */
+/**
+ * The calendar-day label for a projection point `week` weeks after
+ * `startDate` — the FIX for the landmine documented on `linearProjection`'s
+ * `date:` line below (#1485).
+ *
+ * Constructs the future `Date` the same way `linearProjection` always did
+ * (`new Date(startDate)` + `setDate(+= week * 7)`, both RUNTIME-zone
+ * operations) and reads the label back with `localDayIso`, which uses the
+ * SAME local getters — so the write and the read always agree, whatever zone
+ * the process happens to run in. The bug this replaces wrote in local time
+ * and read back in UTC (`toISOString().split('T')[0]`), which is what let a
+ * write/read mismatch appear at all.
+ *
+ * Exported so the fix is directly testable without reaching through the
+ * class or mocking Supabase — same rationale as `seasonalAdjustmentFor`.
+ */
+export function projectedPointDate(startDate: Date, week: number): string {
+  const futureDate = new Date(startDate);
+  futureDate.setDate(futureDate.getDate() + week * 7);
+  return localDayIso(futureDate);
+}
+
 export function seasonalAdjustmentFor(isoDate: string): number {
   const month = new Date(`${isoDate}T00:00:00Z`).getUTCMonth();
   if (Number.isNaN(month)) return 0;
@@ -140,6 +166,7 @@ export class TrajectoryForecaster {
       opportunities,
       modelConfidence,
       primaryModel,
+      roundsAnalyzed: rounds.length,
     };
   }
 
@@ -200,9 +227,6 @@ export class TrajectoryForecaster {
     const weeksToForecast = Math.ceil(horizonDays / 7);
 
     for (let week = 0; week <= weeksToForecast; week++) {
-      const futureDate = new Date(startDate);
-      futureDate.setDate(futureDate.getDate() + week * 7);
-
       // Project the cumulative average
       const projectedIndex = n + week * intervalsPerWeek;
       const projectedValue = slope * projectedIndex + intercept;
@@ -211,30 +235,21 @@ export class TrajectoryForecaster {
       const uncertainty = 0.5 + week * 0.15;
 
       points.push({
-        // LANDMINE — READ BEFORE WIRING A CONSUMER.
-        //
-        // `new Date()` and `setDate` resolve in the RUNTIME zone; `toISOString`
-        // then converts to UTC before the day is sliced off. Local getter, UTC
-        // consumer, one expression. Run this at 8pm Pacific and the first point
-        // is labelled TOMORROW — every point in the series is off by one day
-        // west of Greenwich for the last hours of the local day.
-        //
-        // This is not a live bug, because NOTHING READS THESE POINTS. Traced
-        // 2026-08-17: `TrajectoryForecast.projections` has no consumer in the
-        // repo; the orchestrator sets `AnalysisResult.trajectory` (L644) and no
-        // caller reads that field. The forecaster only runs at all under
-        // `includeTrajectory || depth === 'deep'`, and the sole site passing
-        // either is `generateTournamentPrep` — a server action with no UI
-        // importer, which then returns only `prediction`/`keyFactors`/
-        // `recommendations` and drops the trajectory it just asked for. Every
-        // `depth:` assignment in `src` is a string literal, so no runtime value
-        // can reach 'deep' by another route.
-        //
-        // Build the label from the LOCAL calendar day before rendering it —
-        // `toLocalIsoDate`-style Y/M/D from local getters, never a UTC slice.
-        // See `src/lib/golf/task-overdue.ts` for the same class of fix, and
-        // `src/lib/calendar/ical.ts:270` for the other latent site.
-        date: futureDate.toISOString().split('T')[0] ?? '',
+        // FIXED 2026-08-21 (#1485), as part of wiring the first consumer of
+        // these points (a coach-facing Trajectory card). This used to build
+        // `futureDate` here and label it with
+        // `futureDate.toISOString().split('T')[0]` — `new Date()`/`setDate`
+        // resolve in the RUNTIME zone, but `toISOString` converts to UTC
+        // before the day is sliced off. Local getter in, UTC getter out, one
+        // expression: at 8pm Pacific the first point was labelled TOMORROW,
+        // and every point in the series was off by one day west of Greenwich
+        // for the last hours of the local day. Harmless until now because
+        // nothing read `TrajectoryForecast.projections` (traced 2026-08-17 —
+        // see #1485). `projectedPointDate` rebuilds the same date and reads
+        // it back with `localDayIso` (same local getters `setDate` wrote
+        // through), so the label always matches the date that was actually
+        // constructed, regardless of runtime zone. See its docblock + test.
+        date: projectedPointDate(startDate, week),
         metric: 'scoring_average',
         value: projectedValue,
         rangeLow: projectedValue - uncertainty,

@@ -30,6 +30,7 @@ import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { getPlayerTrendAnalysis } from '@/app/golf/actions/coachhelm-data';
+import { getPlayerTrajectory } from '@/app/golf/actions/insights';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -201,6 +202,7 @@ export default async function PlayerGamePage({
     themesResult,
     countsRes,
     trendRes,
+    trajectoryRes,
   ] = await Promise.all([
     getPlayerFingerprint(playerId),
 
@@ -284,6 +286,19 @@ export default async function PlayerGamePage({
     // page. They are independent, so start them with the rest of the batch.
     getAlertCounts(coach.id),
     getPlayerTrendAnalysis(playerId).catch(() => null),
+
+    // #1485 — TrajectoryForecaster's first consumer. Best-effort: any THROWN
+    // failure degrades to `undefined` below (TrajectoryCard's neutral
+    // "unavailable" state) — a returned `{success:false, insufficientHistory}`
+    // is a normal, expected outcome, not an error, and is handled separately
+    // where `trajectory` is computed below.
+    getPlayerTrajectory(playerId).catch((err) => {
+      void logServerError(
+        `player game-deep-dive trajectory fetch failed (continuing without it): ${describeError(err)}`,
+        { action: 'players-game-page.getPlayerTrajectory', featureArea: 'coachhelm', playerId },
+      ).catch(() => undefined);
+      return undefined;
+    }),
   ]);
 
   if (!fingerprint) notFound();
@@ -468,6 +483,15 @@ export default async function PlayerGamePage({
     trendRes && trendRes.success
       ? (trendRes.data as unknown as Record<string, unknown>)
       : null;
+  // #1485 — TrajectoryCard renders a DIFFERENT honest message for each of
+  // these, so preserve the distinction rather than collapsing every outcome
+  // to one state: a real forecast; `null` when the action succeeded but the
+  // forecaster itself found too little round history (getPlayerTrajectory
+  // returns `{success: true, insufficientHistory: true}` for that case, NOT
+  // success: false — see that action's own comment on why); `undefined` for
+  // every other outcome (thrown fetch, auth/rate-limit/disabled/unexpected —
+  // "not enough rounds" would be a false claim in those cases).
+  const trajectory = trajectoryRes?.success ? (trajectoryRes.trajectory ?? null) : undefined;
 
   const insightProps: FairwayPlayerInsightProps = {
     player,
@@ -482,6 +506,7 @@ export default async function PlayerGamePage({
     predictions,
     themes,
     trendData,
+    trajectory,
     signalCount,
   };
 
