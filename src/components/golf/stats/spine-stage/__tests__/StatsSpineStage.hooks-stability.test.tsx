@@ -45,6 +45,17 @@ vi.mock('@/app/golf/actions/insights', () => ({
   getPlayerPatterns: vi.fn(),
 }));
 
+const getPlayerRoundOptions = vi.fn();
+
+// The scope-picker round list (StatsSpineStage.tsx:192) is a SEPARATE fetch
+// from the stats bundle above — loaded in its own effect, independent of
+// `getPlayerStatsDashboardBundle`. Left unmocked, it falls through to the
+// real `stats-data.ts` implementation, which does a live env-var-dependent
+// Supabase read — a race under CI load, not a jsdom-safe stub (#1484).
+vi.mock('@/app/golf/actions/stats-data', () => ({
+  getPlayerRoundOptions: (...args: unknown[]) => getPlayerRoundOptions(...args),
+}));
+
 const ok = <T,>(value: T) => ({ ok: true as const, value });
 
 function fixtureStats(overrides: Partial<GolfStats> = {}): GolfStats {
@@ -248,6 +259,8 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', { t
   beforeEach(() => {
     getPlayerStatsDashboardBundle.mockReset();
     mockHealthyBundle();
+    getPlayerRoundOptions.mockReset();
+    getPlayerRoundOptions.mockResolvedValue([]);
     window.history.replaceState({}, '', '/golf/dashboard/stats');
   });
 
