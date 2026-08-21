@@ -35,6 +35,17 @@ const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
   /^player profile not found$/i,
   /^only coaches can/i,
   /^you do not have permission/i,
+  // Round submit's single-flight guard (submit_round_atomic, see
+  // supabase/migrations/20260821043500_single_flight_round_submit.sql):
+  // a same-round auto-save (or a second submit) still held the row past the
+  // RPC's bounded 3s wait. `submitGolfRoundComprehensive` is
+  // withAdminObserved-wrapped, unlike `savePartialRound`'s identical 'busy'
+  // carve-out, so this wrapper's own auto-log is the only thing standing
+  // between this outcome and an 'error'-severity admin_events/Sentry write —
+  // the golf.ts call sites deliberately skip their own logServerError call
+  // for it. Without this pattern, contention that resolves itself on the
+  // next tap would page as an incident.
+  /^another save for this round is just finishing/i,
 ];
 
 /**

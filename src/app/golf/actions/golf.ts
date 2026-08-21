@@ -1907,6 +1907,15 @@ async function submitGolfRoundComprehensiveImpl(
         round = { id: existingRoundId };
       } else {
         if (rpcResult && !rpcResult.success) {
+          // 'busy' = single-flight guard: a same-round auto-save (or a second
+          // submit) still held the row past the RPC's bounded 3s wait
+          // (supabase/migrations/20260821043500_single_flight_round_submit.sql).
+          // Expected under concurrent-save load, not a failure — no
+          // error-severity log, and 'busy' !== 'internal_error' so this can
+          // never reach attemptDirectSubmitFallback.
+          if (rpcResult.error === 'busy') {
+            return { success: false, error: 'Another save for this round is just finishing — try again in a moment.' };
+          }
           const isInternalError = rpcResult.error === 'internal_error';
           await logServerError(`Round submit RPC returned failure: ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
             action: 'submitGolfRoundComprehensive',
@@ -2045,6 +2054,15 @@ async function submitGolfRoundComprehensiveImpl(
       } else {
         if (rpcResult && !rpcResult.success) {
           // Do NOT delete — the round is preserved as a draft for retry
+          // 'busy' = single-flight guard: a same-round auto-save (or a second
+          // submit) still held the row past the RPC's bounded 3s wait
+          // (supabase/migrations/20260821043500_single_flight_round_submit.sql).
+          // Expected under concurrent-save load, not a failure — no
+          // error-severity log, and 'busy' !== 'internal_error' so this can
+          // never reach attemptDirectSubmitFallback.
+          if (rpcResult.error === 'busy') {
+            return { success: false, error: 'Another save for this round is just finishing — try again in a moment.' };
+          }
           const isInternalError = rpcResult.error === 'internal_error';
           await logServerError(`Round submit RPC returned failure (new round): ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
             action: 'submitGolfRoundComprehensive',
