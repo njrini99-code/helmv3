@@ -48,6 +48,7 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
     // being painted and then snatched back. Release them below, the moment this
     // hook has written its own hidden state — never before, or they flash.
     let io: IntersectionObserver | undefined;
+    let onRevealScroll: (() => void) | undefined;
     if (!reduce && typeof IntersectionObserver === 'function') {
       // TWO PASSES, AND THE ORDER IS THE WHOLE POINT.
       //
@@ -77,13 +78,19 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
         const delay = compact ? Math.min(Math.round(authoredDelay * 0.3), 80) : authoredDelay;
         if (delay) el.style.transitionDelay = `${delay}ms`;
       });
+      const pendingReveals = new Set(reveals);
+      const settleReveal = (el: HTMLElement) => {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+        pendingReveals.delete(el);
+      };
+
       io = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               const el = entry.target as HTMLElement;
-              el.style.opacity = '1';
-              el.style.transform = 'none';
+              settleReveal(el);
               io?.unobserve(el);
             }
           });
@@ -93,6 +100,30 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
           : { threshold: 0.1, rootMargin: '0px 0px -2% 0px' },
       );
       reveals.forEach((el) => io?.observe(el));
+
+      // FAIL-VISIBLE SAFETY NET. iOS Safari's dynamic toolbar resizes the
+      // visual viewport mid-scroll, and IntersectionObserver has a documented
+      // history of not re-firing against that resize — a card can visually
+      // pass through the viewport and never report `isIntersecting`, leaving
+      // it at `opacity: 0` forever. This is what shipped as the invisible
+      // "ROOT CAUSE · PUTTING" card on production: its whole `[data-reveal]`
+      // wrapper never got word it had arrived. If an element's bottom has
+      // already scrolled above the viewport without ever settling, the reader
+      // is already past it — settle it on the next scroll tick rather than
+      // leave it hidden for the rest of the session.
+      onRevealScroll = () => {
+        pendingReveals.forEach((el) => {
+          if (el.getBoundingClientRect().bottom <= 0) {
+            settleReveal(el);
+            io?.unobserve(el);
+          }
+        });
+        if (!pendingReveals.size && onRevealScroll) {
+          window.removeEventListener('scroll', onRevealScroll);
+          onRevealScroll = undefined;
+        }
+      };
+      window.addEventListener('scroll', onRevealScroll, { passive: true });
     }
     // Every reveal now carries its own inline `opacity: 0` (or, under reduced
     // motion, was never hidden at all), so the CSS gate has nothing left to do
@@ -177,7 +208,14 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
         fx.forEach((el) => {
           if (done.has(el)) return;
           const r = el.getBoundingClientRect();
-          if (r.top > vh * (compact ? 0.98 : 0.92) || r.bottom < 0) return;
+          // Only "not there yet" (top still below the fold) skips. This used to
+          // also skip `r.bottom < 0` ("already above the viewport"), which is
+          // wrong: a fast fling that jumps straight past an element's whole
+          // visible window means it never re-enters and never gets marked
+          // `done`, so a `[data-si]` row or count-up stays at its hidden state
+          // (opacity 0 / "0") for the rest of the session. Once it's scrolled
+          // past, settle it on the next tick instead of skipping it forever.
+          if (r.top > vh * (compact ? 0.98 : 0.92)) return;
           done.add(el);
           const kind = el.getAttribute('data-fx');
           if (kind === 'count') countUp(el);
@@ -208,6 +246,7 @@ export function useProductsEffects(rootRef: RefObject<HTMLElement | null>): void
       rafIds.forEach((id) => cancelAnimationFrame(id));
       io?.disconnect();
       if (onScroll) window.removeEventListener('scroll', onScroll);
+      if (onRevealScroll) window.removeEventListener('scroll', onRevealScroll);
       // Re-gate. This effect also re-runs on a `compact` change (a resize
       // across 767px), and without this the reveals would be left released but
       // un-prepped for one paint. See unmarkAnimReady.
