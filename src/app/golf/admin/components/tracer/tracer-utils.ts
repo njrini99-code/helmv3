@@ -17,6 +17,7 @@ import type {
   FixType,
   PlayerQualityScore,
 } from './tracer-types';
+import { shouldRollupStuckRounds, formatStuckRollupLabel } from '@/lib/golf/stuck-rounds-rollup';
 
 // ============================================================================
 // HEALTH SCORE (composite: completion + data quality + error rate)
@@ -617,19 +618,31 @@ export function generateAlerts(
 ): TracerAlert[] {
   const alerts: TracerAlert[] = [];
 
-  // Stuck rounds
-  for (const stuck of stuckRounds) {
-    const holeInfo = stuck.current_hole != null
-      ? `hole ${stuck.current_hole}/${stuck.expected_holes}`
-      : `hole ?/${stuck.expected_holes}`;
+  // Stuck rounds — one card per round reads fine for a couple, but stacks
+  // into a wall the moment there are several; collapse to one summary card
+  // above the threshold (mirrors the admin overview "Rounds" card).
+  if (shouldRollupStuckRounds(stuckRounds.length)) {
     alerts.push({
-      id: `stuck-${stuck.round_id}`,
+      id: 'stuck-rounds-rollup',
       severity: 'warning',
-      title: 'Stuck round',
-      detail: `${stuck.player_name} at ${stuck.course_name || 'unknown course'} — stuck on ${holeInfo}, ${Math.round(stuck.hours_stuck)}h since last update`,
+      title: 'Stuck rounds',
+      detail: formatStuckRollupLabel(stuckRounds.length),
       navigateTo: 'rounds',
-      roundId: stuck.round_id,
     });
+  } else {
+    for (const stuck of stuckRounds) {
+      const holeInfo = stuck.current_hole != null
+        ? `hole ${stuck.current_hole}/${stuck.expected_holes}`
+        : `hole ?/${stuck.expected_holes}`;
+      alerts.push({
+        id: `stuck-${stuck.round_id}`,
+        severity: 'warning',
+        title: 'Stuck round',
+        detail: `${stuck.player_name} at ${stuck.course_name || 'unknown course'} — stuck on ${holeInfo}, ${Math.round(stuck.hours_stuck)}h since last update`,
+        navigateTo: 'rounds',
+        roundId: stuck.round_id,
+      });
+    }
   }
 
   // Critical errors

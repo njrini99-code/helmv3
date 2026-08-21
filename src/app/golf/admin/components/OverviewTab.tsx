@@ -4,6 +4,7 @@ import { lazy, Suspense } from 'react';
 import type {
   AdminDashboardData,
   AdminDashboardRollup,
+  AdminStuckRound,
 } from '@/app/golf/actions/admin-data';
 import {
   StatusBar,
@@ -41,6 +42,10 @@ interface Props {
   /** Optional: fast cached rollup (1 RPC). When present we can prefer its
    *  numbers over the legacy fetch. Left optional while tabs are migrated. */
   rollup?: AdminDashboardRollup | null;
+  /** Status/updated_at-correct stuck-rounds snapshot (getAdminStuckRounds) —
+   *  passed to OverviewBriefing instead of it deriving "stuck" from the
+   *  status/updated_at-less recentRounds payload. */
+  stuckRounds?: AdminStuckRound[];
   onNavigateTab?: (tab: string) => void;
 }
 
@@ -75,7 +80,7 @@ function KpiCard({
   );
 }
 
-export function OverviewTab({ data, rollup: _rollup, onNavigateTab }: Props) {
+export function OverviewTab({ data, rollup: _rollup, stuckRounds = [], onNavigateTab }: Props) {
   // _rollup: reserved for wave-3 migration away from the 95-query AdminDashboardData.
   // Presence at this layer lets us start swapping KpiCard sources without
   // touching the tab's callers again.
@@ -127,7 +132,7 @@ export function OverviewTab({ data, rollup: _rollup, onNavigateTab }: Props) {
         />
       </div>
 
-      <OverviewBriefing data={data} />
+      <OverviewBriefing data={data} stuckRounds={stuckRounds} />
 
       <NeedsAttentionSection
         items={data.needsAttention}
