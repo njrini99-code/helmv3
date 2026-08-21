@@ -222,11 +222,15 @@ export function PeopleTab({ data }: Props) {
 
   // Coaches + players is the population that appears in the team/unassigned
   // directory below. summary.totalUsers (from data.users) also counts admins
-  // and any user rows without a coach/player record, so the two numbers will
-  // disagree on screens like the "never logged in" alert. Use the directory
-  // population as the canonical "user" count throughout this tab so the KPIs,
-  // tab badges, and alert math stay consistent (51 = 51, not 51 in one spot
-  // and 61 elsewhere).
+  // and any user rows without a coach/player record, so the two numbers can
+  // still disagree on screens like the "never logged in" alert. Use the
+  // directory population as the canonical "user" count throughout this tab
+  // so the KPIs, tab badges, and alert math stay consistent.
+  //
+  // `data.users` itself is now golf-scoped upstream (rollup-c.ts filters out
+  // BaseballHelm-only accounts before this ever reaches the client — audit
+  // finding F1); the gap this comment describes is narrower than it used to
+  // be (admins/unlinked-golf-rows only, not cross-sport pollution).
   const directoryUserCount = coachCount + playerCount;
 
   const viewTabs: { label: string; value: ViewMode; count?: number }[] = [
