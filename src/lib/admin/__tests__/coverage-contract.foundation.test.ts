@@ -335,6 +335,12 @@ describe('global tripwire', () => {
     // 445: listTeamCoachingStaff (teams.ts) — the coaching staff of a team,
     //   head coach first. Added when assistants started joining at signup and
     //   were visible nowhere on the Team page.
-    expect(total).toBe(445);
+    // 446: getAdminStuckRounds (admin-data.ts) — status='in_progress' +
+    //   updated_at-correct stuck-rounds query for the admin overview "Rounds"
+    //   card, replacing a filter that couldn't distinguish a completed round
+    //   with no score from a genuinely stuck one. admin-data.ts is already
+    //   'ALL'-mapped to admin_dashboard, so this live scan picks it up with
+    //   no manifest edit needed.
+    expect(total).toBe(446);
   });
 });

@@ -3937,7 +3937,7 @@ export interface AdminStuckRound {
   hours_idle: number;
 }
 
-async function getAdminStuckRoundsImpl(): Promise<AdminStuckRound[]> {
+async function getAdminStuckRoundsImpl(): Promise<AdminStuckRound[] | null> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
@@ -3966,7 +3966,12 @@ async function getAdminStuckRoundsImpl(): Promise<AdminStuckRound[]> {
       `[admin-data] getAdminStuckRounds errored: ${describeError(error)}`,
       { action: 'admin_data.getAdminStuckRounds', featureArea: 'admin' },
     );
-    return [];
+    // null (not []) — this list is purely additive display data, not a
+    // security allow/exclude set, but a failed read must still be
+    // distinguishable from "checked, nothing stuck" rather than silently
+    // collapsing into it. The caller decides what null means (currently:
+    // treat it the same as empty, since there is no permission at stake).
+    return null;
   }
 
   const candidates = (rows ?? []).filter(
@@ -3976,10 +3981,19 @@ async function getAdminStuckRoundsImpl(): Promise<AdminStuckRound[]> {
   const playerIds = [...new Set(candidates.map((r) => r.player_id))];
   const playerNameMap = new Map<string, string>();
   if (playerIds.length > 0) {
-    const { data: players } = await adminDb
+    const { data: players, error: playersError } = await adminDb
       .from('golf_players')
       .select('id, first_name, last_name')
       .in('id', playerIds);
+    if (playersError) {
+      // Non-fatal: the round-level rows are already fetched, and every
+      // lookup below already falls back to 'Unknown' on a missing map entry.
+      // Log and degrade rather than fail the whole card over a name lookup.
+      void logServerError(
+        `[admin-data] getAdminStuckRounds player lookup errored: ${describeError(playersError)}`,
+        { action: 'admin_data.getAdminStuckRounds', featureArea: 'admin' },
+      );
+    }
     for (const p of players || []) {
       playerNameMap.set(p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown');
     }
@@ -4003,6 +4017,6 @@ const observedGetAdminStuckRounds = withAdminObserved(
   getAdminStuckRoundsImpl,
 );
 
-export async function getAdminStuckRounds(): Promise<AdminStuckRound[]> {
+export async function getAdminStuckRounds(): Promise<AdminStuckRound[] | null> {
   return observedGetAdminStuckRounds();
 }

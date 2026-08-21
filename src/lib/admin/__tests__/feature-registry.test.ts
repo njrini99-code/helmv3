@@ -353,7 +353,11 @@ describe('FEATURE_REGISTRY completeness', () => {
     // invited to join a program. auth.ts is already 'ALL'-mapped.
     // 437: +listTeamCoachingStaff — the coaching-staff list added when
     // assistants began joining at signup and were visible nowhere.
-    expect(total).toBe(437);
+    // 438: +getAdminStuckRounds (admin-data.ts) — status/updated_at-correct
+    // stuck-rounds query for the admin overview "Rounds" card. admin-data.ts
+    // is already 'ALL'-mapped, so scanExports picks it up with no manifest
+    // edit needed.
+    expect(total).toBe(438);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

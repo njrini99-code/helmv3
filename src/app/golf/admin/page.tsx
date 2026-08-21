@@ -297,13 +297,16 @@ function AdminDashboardContent() {
           .or('is_archived.is.null,is_archived.eq.false'),
         // Status/updated_at-correct stuck-rounds snapshot for the Overview
         // "Rounds" card — degrades to empty rather than failing the whole
-        // page load (see getAdminStuckRounds in admin-data.ts).
-        getAdminStuckRounds().catch(() => []),
+        // page load. null (thrown or a failed underlying read, see
+        // getAdminStuckRounds in admin-data.ts) and [] (checked, nothing
+        // stuck) both render as "nothing to show" here — there's no
+        // permission at stake in this list, just display data.
+        getAdminStuckRounds().catch(() => null),
       ]);
 
       setData(result);
       if (rollupResult) setRollup(rollupResult);
-      setStuckRounds(stuckRoundsResult);
+      setStuckRounds(stuckRoundsResult ?? []);
       setLastRefresh(new Date());
       setError(null);
 
