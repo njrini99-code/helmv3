@@ -1,71 +1,17 @@
 import { parseDateOnly } from '@/lib/golf/date-only';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 
-/**
- * Is a golf task's due date in the past — meaning the day it was due has ENDED?
- *
- * `golf_tasks.due_date` is a DATE column (verified 2026-08-17; all 16 rows with
- * a due date are bare `YYYY-MM-DD`), and two surfaces compared that calendar
- * date against an instant:
- *
- *   FairwayTeamInfo.tsx:343   parseDateOnly(task.due_date) < now  // local midnight
- *   team-hub/page.tsx:249     new Date(t.due_date) < new Date()   // UTC midnight
- *
- * Measured in America/New_York for a task due 2026-08-17:
- *
- *   evening BEFORE due date (Aug 16, 9pm)   TeamInfo false   TeamHub TRUE
- *   morning OF due date     (Aug 17, 8am)   TeamInfo TRUE    TeamHub TRUE
- *   afternoon OF due date   (Aug 17, 3pm)   TeamInfo TRUE    TeamHub TRUE
- *
- * The right answer is false in all three. A due date means "due by the END of
- * that day", so the comparison has to be day-vs-day, not day-vs-instant. Team
- * Hub was the worse of the two: `new Date('2026-08-17')` is UTC midnight, so in
- * US zones the task flipped to overdue the evening BEFORE it was due.
- *
- * BOTH SIDES ARE REDUCED TO A LOCAL CALENDAR DAY. The due date's Y/M/D come from
- * the string itself (never from a zone-shifted `new Date`), and "today" comes
- * from the viewer's own clock — so the answer changes at the reader's midnight,
- * which is what a coach looking at a due date means by it.
- *
- * DO NOT APPLY THIS TO BASEBALL. `baseball_tasks.due_date` is `timestamptz` and
- * its values carry real times of day, so `parseDateOnly(due) < now` there is
- * correctly instant-vs-instant. The same expression is a bug in one sport and
- * right in the other, decided entirely by the column type. A previous attempt to
- * "fix" the baseball side was a regression and was reverted.
- *
- * ONLY USABLE IN THE BROWSER. "Today" comes from the ambient clock, which on a
- * server component or server action is the deploy's zone — UTC on Vercel — not
- * the team's. Use `isGolfTaskOverdueInZone` for anything that runs on the
- * server; see its docblock for the measured difference.
- *
- * AND IT IS NOT THE PRODUCT'S RULE, ONLY THE ONE THIS SURFACE CAN REACH.
- * `dashboard-data.ts:292` and both hub surfaces decide overdue on the TEAM's
- * zone, deliberately: a coach setting "due Aug 17" means Aug 17 where the team
- * is, not where the reader happens to be standing. This function answers on the
- * VIEWER's zone, so for a player travelling outside the team's zone the same
- * task can carry a different badge here than on their hub — up to one day apart.
- *
- * Its one call site (`FairwayTeamInfo.tsx`, a client component) is stuck with
- * that because its `team` prop carries only `{id, name, season, created_at}` —
- * no timezone — and threading one through means touching `TeamForClient`, three
- * `golf_teams` selects and seven test call sites. Tracked; until then this is a
- * known divergence, not the intended rule. Prefer the zone form wherever a zone
- * is reachable.
- *
- * Callers combine this with completion status; it answers only the date question.
- */
-export function isGolfTaskOverdue(
-  dueDate: string | null | undefined,
-  now: Date = new Date(),
-): boolean {
-  const parts = parseDateOnly(dueDate);
-  // Unknown is not overdue — and never throw, these render inside components.
-  if (!parts) return false;
-
-  const dueDay = new Date(parts.year, parts.month - 1, parts.day);
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return dueDay < startOfToday;
-}
+// `isGolfTaskOverdue` (viewer-ambient-clock overdue check) was removed
+// 2026-08-20 (#1487). It existed only because `FairwayTeamInfo.tsx`'s `team`
+// prop carried no timezone, so its one call site was stuck deciding overdue
+// on the READER's clock instead of the team's — a known divergence from every
+// other surface (`dashboard-data.ts:292`, Team Hub's Tasks tab, the player
+// hub), which all decide on the TEAM's wall clock: a coach setting "due Aug
+// 17" means Aug 17 where the team is, not where a travelling player happens
+// to be standing. Threading `timezone` through `TeamForClient`'s selects and
+// into `FairwayTeamInfo` let that call site switch to `isGolfTaskOverdueInZone`
+// below, leaving this function with zero callers. See
+// `git log -- src/lib/golf/task-overdue.ts` for the removed implementation.
 
 /**
  * A golf task's due date, formatted for a human, in ANY runtime zone.

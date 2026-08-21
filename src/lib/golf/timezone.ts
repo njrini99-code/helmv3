@@ -110,8 +110,18 @@ export function wallClockInZone(day: Date, time: string, timeZone: string | null
  * `overdue: true`; the correct answer is false. East of UTC the error inverts
  * and a genuinely late task is not flagged yet.
  *
- * `en-CA` is used because it formats as `YYYY-MM-DD` natively, so the parts do
- * not have to be reassembled by hand.
+ * `en-CA` is passed because it formats as `YYYY-MM-DD` in every ICU build this
+ * has been checked against — but that is a LOCALE CONVENTION, not a format
+ * option `Intl.DateTimeFormat` contractually guarantees, and locale data ships
+ * with the JS engine rather than this repo: a Node/V8 update that changes
+ * `en-CA`'s ordering or separator (or runs against an ICU build with different
+ * CLDR data) would silently hand this function a string that ISN'T `YYYY-MM-DD`
+ * — and every caller does a lexicographic compare against it (see
+ * `isGolfTaskOverdueInZone`), so a reordered string doesn't throw, it just
+ * starts comparing wrong on some tasks and not others. `formatToParts` reads
+ * the year/month/day VALUES directly and this function assembles the `-`
+ * separators and field order itself, so the output shape no longer depends on
+ * `en-CA` continuing to format the way it happens to today.
  *
  * An unknown or empty zone falls back to the UTC day — the previous behaviour —
  * rather than throwing, because a bad `golf_teams.timezone` must not take a
@@ -120,12 +130,17 @@ export function wallClockInZone(day: Date, time: string, timeZone: string | null
 export function todayIsoInZone(timeZone: string | null | undefined, now: Date = new Date()): string {
   if (!timeZone) return now.toISOString().slice(0, 10);
   try {
-    return new Intl.DateTimeFormat('en-CA', {
+    const parts = new Intl.DateTimeFormat('en-CA', {
       timeZone,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).format(now);
+    }).formatToParts(now);
+    const year = parts.find((p) => p.type === 'year')?.value;
+    const month = parts.find((p) => p.type === 'month')?.value;
+    const day = parts.find((p) => p.type === 'day')?.value;
+    if (!year || !month || !day) return now.toISOString().slice(0, 10);
+    return `${year}-${month}-${day}`;
   } catch {
     return now.toISOString().slice(0, 10);
   }
