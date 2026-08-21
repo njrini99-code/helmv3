@@ -7,12 +7,16 @@
  */
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-const STUCK_HOURS_THRESHOLD = 1;
+/** Exported so other "is this round genuinely stuck" callers (the admin
+ *  Bridge briefing's `checkStuckRounds`) use the SAME idle-window definition
+ *  as this classifier, rather than a second, independently-drifting pair of
+ *  numbers. */
+export const STUCK_HOURS_THRESHOLD = 1;
 /** Upper bound on idle time for the loud "stuck" tier. A round idle less
  *  than this was plausibly touched today and then halted — worth an urgent
  *  badge. Past it, "stuck" stops meaning "just halted" and starts meaning
  *  "quietly dead," which is what the quieter "abandoned" tier is for. */
-const STUCK_TIER_MAX_IDLE_HOURS = 24;
+export const STUCK_TIER_MAX_IDLE_HOURS = 24;
 
 export type InProgressActivityType = 'round_in_progress' | 'round_stuck' | 'round_abandoned';
 
