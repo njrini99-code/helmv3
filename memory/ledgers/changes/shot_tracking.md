@@ -2,7 +2,7 @@
 
 ## 2026-08-22 — serialize local shot mutations
 
-- SHA: uncommitted; pending review and commit.
+- SHA: 31cf3f845f19af7ff962b362837210f333fc4fe5 (implementation repair commit).
 - Incident: `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md`.
 - Change: Undo, Edit Shot save, and Edit Shot delete now share one in-flight
   mutation guard. A server-confirmed absent shot reconciles the stale local

@@ -2,7 +2,7 @@
 
 ## 2026-08-22 — active-round stale-shot reconciliation
 
-- SHA: uncommitted; pending review and commit.
+- SHA: 31cf3f845f19af7ff962b362837210f333fc4fe5 (implementation repair commit).
 - Incident: `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md`.
 - Change: server-side `deleteShot` now returns the stable `shot_not_found`
   code when the user-scoped lookup finds no row. Undo and Edit Shot use a
