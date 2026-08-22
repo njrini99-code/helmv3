@@ -81,6 +81,10 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 ## Known Risk Areas
 
 - Race conditions between save draft, submit, and recovery.
+- Undo, edit, and delete actions share a local single-flight guard. If the
+  authorized server lookup confirms a shot is already absent, the client
+  reconciles only its stale local reference instead of replaying a destructive
+  delete or leaving the active round blocked.
 - Bad route revalidation after acknowledgement or player feedback.
 - Hook-order or hydration issues in round-entry and review screens.
 - Schema replay drift in Supabase migrations touching round/shot/review tables.

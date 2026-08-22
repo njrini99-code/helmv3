@@ -124,6 +124,12 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
   // whereas the empty-state codes describe an outcome that was never a
   // failure at all.
   'engine_no_team_membership',
+  // A round-entry client can legitimately retain a shot ID when a concurrent
+  // delete (another tab, a recovered retry, or Undo vs. Edit) already removed
+  // it. The action keeps returning a failure envelope so callers reconcile
+  // explicitly, while the Bridge records it as a handled warning rather than
+  // sending a misleading server-error event to Sentry.
+  'shot_not_found',
 ]);
 
 /*

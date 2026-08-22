@@ -75,7 +75,7 @@ async function resolveCourseId(supabase: any, courseName: string, providedCourse
  */
 export type ActionResult<T = void> =
   | { success: true; data: T }
-  | { success: false; error: string };
+  | { success: false; error: string; code?: string };
 
 // ============================================================================
 // ACTION RESULT DATA TYPES
@@ -7621,7 +7621,12 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
       .single();
 
     if (shotError || !shot) {
-      return { success: false, error: 'Shot not found' };
+      // The caller may still hold a locally persisted ID after another tab,
+      // an earlier retry, or a successfully committed request deleted it.
+      // Keep the user-scoped/RLS-safe message (do not disclose row
+      // existence), but give round-entry clients a stable reconciliation code
+      // so they can remove only their stale local reference.
+      return { success: false, error: 'Shot not found', code: 'shot_not_found' };
     }
 
     // Verify the round belongs to this player and is still in progress
