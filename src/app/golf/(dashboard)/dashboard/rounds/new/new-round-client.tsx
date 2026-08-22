@@ -38,7 +38,7 @@ import type { HoleConfig } from '@/lib/types/golf-course';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import {
   emergencySave,
-  loadEmergencySave,
+  loadLatestEmergencySave,
   clearEmergencySave,
   isRecoverableRoundSubmitError,
   type EmergencySaveData
@@ -339,9 +339,12 @@ export default function NewRoundClient() {
     showToast(fallbackMessage, 'error');
   }, [redirectToCompletedRound, showToast]);
 
-  // Check for emergency save on mount (for new rounds saved under _new key)
+  // Check for the freshest emergency save on mount. A local copy keyed by a
+  // former server round ID is still recoverable when that server row is no
+  // longer available; restore it as a fresh round so the next save can create
+  // a durable parent again.
   useEffect(() => {
-    const emergencyData = loadEmergencySave(null);
+    const emergencyData = loadLatestEmergencySave();
     if (!emergencyData) return;
     // Only show recovery if there's meaningful data (at least some holes
     // completed or shots tracked).
@@ -978,6 +981,76 @@ export default function NewRoundClient() {
     return null;
   }, [setupData, selectedQualifierId, selectedRoundNumber]);
 
+  /**
+   * Establish the durable parent before a player can record a shot. This is
+   * the Continue Round contract: a started round is already an in-progress
+   * server row, never a browser-only attempt that depends on a later autosave.
+   */
+  const persistRoundStart = useCallback(async (
+    initialHoles: Hole[],
+    configuredHoles: HoleConfig[],
+  ): Promise<boolean> => {
+    const initialData: PartialRoundData = {
+      courseName: setupData.courseName,
+      courseId: resolvedCourseIdRef.current || undefined,
+      teeId: selectedTeeIdRef.current || undefined,
+      courseCity: setupData.courseCity || undefined,
+      courseState: setupData.courseState || undefined,
+      courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
+      courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
+      teesPlayed: setupData.teesPlayed || undefined,
+      roundType: setupData.roundType,
+      roundDate: setupData.roundDate,
+      qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
+      qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
+      currentHole: 1,
+      holesToPlay: configuredHoles.length as 9 | 18,
+      holes: [],
+      inProgressShots: [],
+      holeConfigs: configuredHoles.map((hole) => ({
+        holeNumber: hole.holeNumber,
+        par: hole.par,
+        yardage: hole.yardage,
+      })),
+    };
+
+    if (!navigator.onLine) {
+      setError('Connect to the internet before starting so this round can be saved and resumed.');
+      return false;
+    }
+
+    try {
+      const result = await savePartialRound(initialData);
+      if (!result.success) {
+        setError(result.error || 'Unable to save this round. Please try again before tracking.');
+        return false;
+      }
+
+      savedRoundIdRef.current = result.data.roundId;
+      setSavedRoundId(result.data.roundId);
+      if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+      setHoles(initialHoles);
+      setCompletedHoleStats([]);
+      setInProgressShotsByHole({});
+      setCurrentHoleIndex(0);
+      activeProgressHoleRef.current = 0;
+      emergencySave({
+        roundId: result.data.roundId,
+        timestamp: Date.now(),
+        setupData,
+        holes: initialHoles,
+        completedHoleStats: [],
+        inProgressShotsByHole: {},
+        currentHoleIndex: 0,
+        holesPerRound: configuredHoles.length as 9 | 18,
+      });
+      return true;
+    } catch {
+      setError('Unable to save this round. Please try again before tracking.');
+      return false;
+    }
+  }, [selectedQualifierId, selectedRoundNumber, setupData]);
+
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1015,8 +1088,11 @@ export default function NewRoundClient() {
         yardage: h.yardage,
         score: null,
       }));
-      setHoles(initialHoles);
-      setCompletedHoleStats([]);
+      const persisted = await persistRoundStart(initialHoles, configs);
+      if (!persisted) {
+        setIsStartingRound(false);
+        return;
+      }
       // Grow the shared Cloud Course Library from a CURATED saved course that
       // skipped hole-config and isn't in the cloud yet (saved-course origin →
       // selectedCourseId set, but no resolved cloud course/tee). Curated origin =
@@ -1067,6 +1143,7 @@ export default function NewRoundClient() {
       return;
     }
     setError('');
+    setIsStartingRound(true);
     await handleHolesSave(configuredHoles);
   };
 
@@ -1078,8 +1155,11 @@ export default function NewRoundClient() {
       yardage: h.yardage,
       score: null,
     }));
-    setHoles(initialHoles);
-    setCompletedHoleStats([]);
+    const persisted = await persistRoundStart(initialHoles, configuredHoles);
+    if (!persisted) {
+      setIsStartingRound(false);
+      return;
+    }
 
     // Save course configuration if user opted in
     if (saveCourseChecked && setupData.courseName) {
@@ -1180,6 +1260,57 @@ export default function NewRoundClient() {
     };
   }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData, selectedQualifierId, selectedRoundNumber]);
 
+  /**
+   * A completed hole is a durable checkpoint, not a best-effort background
+   * task. Coalesce any older shot save, wait for its lock to clear, then keep
+   * the player on the hole until this complete snapshot is acknowledged.
+   */
+  const persistCompletedHole = useCallback(async (saveData: PartialRoundData): Promise<boolean> => {
+    pendingServerSaveRef.current = null;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const waitDeadline = Date.now() + 10_000;
+      while (serverSaveInProgressRef.current && Date.now() < waitDeadline) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      if (serverSaveInProgressRef.current) break;
+
+      serverSaveInProgressRef.current = true;
+      try {
+        const result = await savePartialRound(saveData, savedRoundIdRef.current ?? undefined);
+        if (result.success) {
+          consecutiveSaveFailuresRef.current = 0;
+          if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+          if (!savedRoundIdRef.current) {
+            savedRoundIdRef.current = result.data.roundId;
+            setSavedRoundId(result.data.roundId);
+          }
+          return true;
+        }
+        if (result.error === 'conflict') {
+          await handleRoundSyncConflict('This round was updated on another device. Please reload.');
+          return false;
+        }
+        if (isCompletedRoundError(result.error)) {
+          redirectToCompletedRound();
+          return false;
+        }
+        if (result.error !== 'busy' && result.error !== 'retry') break;
+      } catch {
+        // Retry the finite checkpoint sequence below before asking the player
+        // to intervene. The in-progress parent remains durable throughout.
+      } finally {
+        serverSaveInProgressRef.current = false;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+
+    consecutiveSaveFailuresRef.current++;
+    setError('This hole has not saved yet. Keep this screen open and try again.');
+    showAutoSaveWarning();
+    return false;
+  }, [handleRoundSyncConflict, isCompletedRoundError, redirectToCompletedRound, showAutoSaveWarning]);
+
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
     // Detect re-edit: hole already had completed stats before this call
     const isReEdit = !!completedHoleStats[holeIndex]?.score;
@@ -1221,103 +1352,11 @@ export default function NewRoundClient() {
       holesPerRound,
     });
 
-    // Fire-and-forget: persist completed hole data to database (non-blocking)
-    // Uses the same queue pattern as handleAutoSave to avoid silently dropping saves
-    void (async () => {
-      const nextHole = isReEdit ? activeProgressHoleRef.current : holeIndex + 1;
-      const saveData = buildPartialRoundData(updatedStats, nextHole, inProgressAfter);
-
-      if (serverSaveInProgressRef.current) {
-        // Queue — will be picked up when current save completes
-        pendingServerSaveRef.current = { shots: [], holeIndex: -1, roundData: saveData };
-        return;
-      }
-      serverSaveInProgressRef.current = true;
-      try {
-        const result = await savePartialRound(
-          saveData,
-          savedRoundIdRef.current ?? undefined
-        );
-        if (result.success) {
-          consecutiveSaveFailuresRef.current = 0;
-          if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
-          if (!savedRoundIdRef.current) {
-            savedRoundIdRef.current = result.data.roundId;
-            setSavedRoundId(result.data.roundId);
-          }
-        } else if (result.error === 'conflict') {
-          void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-        } else if (result.error === 'busy' || result.error === 'retry') {
-          // Single-flight skip — another save for this round holds the row
-          // server-side; the next tick re-sends the full state. Not a failure.
-        } else if (isCompletedRoundError(result.error)) {
-          redirectToCompletedRound();
-        } else {
-          consecutiveSaveFailuresRef.current++;
-          if (consecutiveSaveFailuresRef.current >= 2) {
-            showAutoSaveWarning();
-          }
-        }
-      } catch {
-        consecutiveSaveFailuresRef.current++;
-        if (consecutiveSaveFailuresRef.current >= 2) {
-          showAutoSaveWarning();
-        }
-      } finally {
-        serverSaveInProgressRef.current = false;
-        // If a newer save was queued while we were saving, execute it now
-        const pending = pendingServerSaveRef.current;
-        if (pending) {
-          pendingServerSaveRef.current = null;
-          if (pending.roundData) {
-            // Queued from handleHoleComplete — save the pre-built round data
-            void (async () => {
-              serverSaveInProgressRef.current = true;
-              try {
-                const r = await savePartialRound(pending.roundData!, savedRoundIdRef.current ?? undefined);
-                if (r.success) {
-                  consecutiveSaveFailuresRef.current = 0;
-                  if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
-                  if (!savedRoundIdRef.current) {
-                    savedRoundIdRef.current = r.data.roundId;
-                    setSavedRoundId(r.data.roundId);
-                  }
-                } else if (r.error === 'conflict') {
-                  void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-                } else if (isCompletedRoundError(r.error)) {
-                  redirectToCompletedRound();
-                }
-              } catch { /* non-critical */ } finally {
-                serverSaveInProgressRef.current = false;
-              }
-            })();
-          } else if (pending.holeIndex >= 0) {
-            // Queued from handleAutoSave — execute with current state
-            void (async () => {
-              serverSaveInProgressRef.current = true;
-              try {
-                const autoSaveData = buildPartialRoundData();
-                const r = await savePartialRound(autoSaveData, savedRoundIdRef.current ?? undefined);
-                if (r.success) {
-                  consecutiveSaveFailuresRef.current = 0;
-                  if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
-                  if (!savedRoundIdRef.current) {
-                    savedRoundIdRef.current = r.data.roundId;
-                    setSavedRoundId(r.data.roundId);
-                  }
-                } else if (r.error === 'conflict') {
-                  void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-                } else if (isCompletedRoundError(r.error)) {
-                  redirectToCompletedRound();
-                }
-              } catch { /* non-critical */ } finally {
-                serverSaveInProgressRef.current = false;
-              }
-            })();
-          }
-        }
-      }
-    })();
+    const nextHole = isReEdit ? activeProgressHoleRef.current : holeIndex + 1;
+    const checkpointed = await persistCompletedHole(
+      buildPartialRoundData(updatedStats, nextHole, inProgressAfter),
+    );
+    if (!checkpointed) return;
 
     // Navigate after completion
     // Check if every hole now has a score (all completed)

@@ -49,7 +49,11 @@ type Hole = RoundHole;
 interface ShotTrackingProps {
   holes: Hole[];
   currentHoleIndex: number;
-  onHoleComplete: (holeIndex: number, stats: HoleStats) => void;
+  /**
+   * A hole is only considered complete once its parent has durably checkpointed
+   * the score and every shot. The caller resolves after that write succeeds.
+   */
+  onHoleComplete: (holeIndex: number, stats: HoleStats) => Promise<void>;
   onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats) => void;
   onSaveShot?: (shot: ShotRecord) => void;
   onExit?: () => void;
@@ -223,10 +227,10 @@ export default function FairwayShotTracking({
     }
   }, [pendingNavHoleIndex, onNavigateToHole]);
 
-  const completeHole = (shots: ShotRecord[]) => {
+  const completeHole = async (shots: ShotRecord[]) => {
     if (!currentHole) return;
     const holeStats = calculateHoleStats(shots, currentHole);
-    onHoleComplete(currentHoleIndex, holeStats);
+    await onHoleComplete(currentHoleIndex, holeStats);
   };
 
   // ============================================================================
@@ -288,7 +292,7 @@ export default function FairwayShotTracking({
     dispatch({ type: 'HANDLE_RESULT_SELECT', payload: { result, isTeeShot, isPutting, isApproachOrAroundGreen } });
   };
 
-  const handleNextShot = () => {
+  const handleNextShot = async () => {
     if (!resultOfShot) return;
 
     // Concurrency guard: prevent double-tap from recording duplicate shots
@@ -393,7 +397,7 @@ export default function FairwayShotTracking({
 
     // Check if hole complete
     if (isHoleComplete) {
-      completeHole(updatedHistory);
+      await completeHole(updatedHistory);
     }
 
     if (!isHoleComplete) {

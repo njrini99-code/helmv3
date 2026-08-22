@@ -57,7 +57,6 @@ import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { FairwayRoundRow } from './FairwayRoundRow';
 import { FairwayUnfinishedBanner } from './FairwayUnfinishedBanner';
-import { FairwayUnsyncedRoundBanner } from './FairwayUnsyncedRoundBanner';
 import { parseDateOnly, dateOnlyToUtcDate, type DateOnlyParts } from '@/lib/golf/date-only';
 
 // ── Types ────────────────────────────────────────────────────────────────--
@@ -529,14 +528,6 @@ export function FairwayRoundsLibrary({
 
       {/* ── 1. (player only) In-progress banner ───────────────────────────--*/}
       {showUnfinished && <FairwayUnfinishedBanner rounds={dedupedInProgressRounds} />}
-
-      {/* ── 1b. (player only) Never-synced device recovery breadcrumb ──────--*/}
-      {/* Surfaces a `_new` localStorage round that never reached the server
-          (hard-offline session → boot). Self-suppresses when a SERVER
-          in-progress round exists, so it never duplicates the banner above. */}
-      {!isCoach && (
-        <FairwayUnsyncedRoundBanner hasServerInProgress={dedupedInProgressRounds.length > 0} />
-      )}
 
       {/* ── Honest empty: zero completed rounds ───────────────────────────--*/}
       {rounds.length === 0 ? (

@@ -123,6 +123,58 @@ export function loadEmergencySave(roundId?: string | null): EmergencySaveData | 
 }
 
 /**
+ * Load the freshest unexpired emergency save from this browser.
+ *
+ * A round can receive a server ID after its first successful auto-save. If a
+ * later child write fails, the emergency copy is keyed by that ID rather than
+ * `_new`; after the server row is unavailable, recovery must still be able to
+ * find that local copy. Callers restore it as a fresh round unless they have
+ * independently confirmed that the server round still exists.
+ */
+export function loadLatestEmergencySave(): EmergencySaveData | null {
+  try {
+    let latest: EmergencySaveData | null = null;
+    const keys: string[] = [];
+
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key?.startsWith(`${EMERGENCY_SAVE_PREFIX}_`)) keys.push(key);
+    }
+
+    // Snapshot keys before removing expired entries. Mutating localStorage
+    // during indexed iteration shifts the following item into the current
+    // slot and otherwise skips a valid, recoverable save.
+    for (const key of keys) {
+
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+
+        const parsed = JSON.parse(raw) as EmergencySaveData;
+        const isFreshTimestamp = Number.isFinite(parsed.timestamp)
+          && Date.now() - parsed.timestamp < MAX_AGE_MS;
+
+        if (!isFreshTimestamp) {
+          localStorage.removeItem(key);
+          continue;
+        }
+
+        if (!latest || parsed.timestamp > latest.timestamp) {
+          latest = parsed;
+        }
+      } catch {
+        // Skip malformed saves. Do not let one corrupt key hide another
+        // recoverable round on the same device.
+      }
+    }
+
+    return latest;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Clear emergency save for a given round.
  */
 export function clearEmergencySave(roundId?: string | null): void {
