@@ -6,6 +6,8 @@
 - First seen: 2026-08-22
 - Last seen: 2026-08-22
 - Bridge fingerprint: `dec06c7d` (`Load failed`, client, auto-save initial attempt)
+- External tracker: https://github.com/njrini99-code/helmv3/issues/1602
+- Repair SHA: `f06c9bf34b72e9b368d49db79fa9c0c88dc0e659`
 
 ## User impact
 

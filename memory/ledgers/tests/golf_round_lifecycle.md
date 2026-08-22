@@ -1,5 +1,13 @@
 # Golf Round Lifecycle test ledger
 
+## 2026-08-22 — child-write round preservation contract
+
+- SHA: `f06c9bf34b72e9b368d49db79fa9c0c88dc0e659`.
+- Added action-level regressions for failed hole and shot persistence against
+  an existing recoverable round, plus emergency-save discovery coverage.
+- Guarantees: child-write errors do not erase an in-progress parent; the next
+  retry or device recovery retains the prior durable state.
+
 ## 2026-08-22 — stale delete recovery contract
 
 - SHA: 31cf3f845f19af7ff962b362837210f333fc4fe5 (implementation repair commit).
