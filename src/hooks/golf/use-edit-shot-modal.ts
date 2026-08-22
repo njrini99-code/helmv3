@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
-import { updateShot, deleteShot, type ShotUpdateData } from '@/app/golf/actions/golf';
+import { updateShot, deleteShot, type ActionResult, type ShotUpdateData } from '@/app/golf/actions/golf';
 import { deriveLieAfter, calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import type { ShotTrackingState, ShotAction, EditFormData } from './use-shot-state-machine';
 
@@ -12,6 +12,8 @@ interface UseEditShotModalParams {
   onAutoSave?: (shots: ShotRecord[], currentHoleIndex: number) => Promise<void>;
   onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats) => void;
   calculateHoleStats: (shots: ShotRecord[], hole: RoundHole) => HoleStats;
+  /** Shared with Undo so one local round cannot mutate the same shot twice. */
+  shotMutationInFlightRef: React.MutableRefObject<boolean>;
 }
 
 export function useEditShotModal({
@@ -22,6 +24,7 @@ export function useEditShotModal({
   onAutoSave,
   onHoleStatsUpdate,
   calculateHoleStats,
+  shotMutationInFlightRef,
 }: UseEditShotModalParams) {
   // Refs to avoid stale closures in async callbacks
   const stateRef = useRef(state);
@@ -63,7 +66,9 @@ export function useEditShotModal({
   const handleSaveEditedShot = useCallback(async () => {
     const { editingShot, editFormData } = stateRef.current;
     if (!editingShot || !editFormData) return;
+    if (shotMutationInFlightRef.current) return;
 
+    shotMutationInFlightRef.current = true;
     dispatch({ type: 'EDIT_SAVE_START' });
 
     try {
@@ -153,6 +158,7 @@ export function useEditShotModal({
       );
       if (editedIdx >= 0 && editedIdx < updatedHistory.length - 1) {
         updatedHistory = [...updatedHistory];
+        const cascadeUpdates: Array<Promise<ActionResult<void>>> = [];
 
         // Walk through all downstream shots and cascade distanceToHoleBefore
         // Each shot's distanceToHoleBefore should match the previous shot's distanceToHoleAfter
@@ -169,17 +175,25 @@ export function useEditShotModal({
               distanceUnitBefore: expectedUnit,
             };
 
-            // Persist cascade to DB (fire-and-forget)
+            // Persist every cascade before releasing the shared mutation gate.
+            // A later Undo must not delete a shot while one of these writes is
+            // still targeting it.
             if (currentShot.id) {
-              updateShot(currentShot.id, {
+              cascadeUpdates.push(updateShot(currentShot.id, {
                 distance_to_hole_before: expectedBefore,
                 distance_unit_before: expectedUnit,
-              }).catch((err) => { console.warn('[ShotTracking] Cascade distance update failed:', err); });
+              }));
             }
           } else {
             // Once we find a shot that already matches, downstream shots are consistent
             break;
           }
+        }
+
+        const cascadeResults = await Promise.all(cascadeUpdates);
+        if (cascadeResults.some((result) => !result.success)) {
+          dispatch({ type: 'EDIT_SAVE_ERROR', payload: 'Could not save all shot distance updates. Please try again.' });
+          return;
         }
       }
 
@@ -198,19 +212,26 @@ export function useEditShotModal({
     } catch (error) {
       console.error('Error updating shot:', error instanceof Error ? error.message : String(error));
       dispatch({ type: 'EDIT_SAVE_ERROR', payload: 'An unexpected error occurred' });
+    } finally {
+      shotMutationInFlightRef.current = false;
     }
-  }, [dispatch, calculateHoleStats]);
+  }, [dispatch, calculateHoleStats, shotMutationInFlightRef]);
 
   const handleDeleteShot = useCallback(async () => {
     const { editingShot } = stateRef.current;
     if (!editingShot) return;
+    if (shotMutationInFlightRef.current) return;
 
+    shotMutationInFlightRef.current = true;
     dispatch({ type: 'EDIT_SAVE_START' });
 
     try {
       if (editingShot.id) {
         const result = await deleteShot(editingShot.id);
-        if (!result.success) {
+        // The row may already have been deleted by a concurrent local action
+        // or an earlier request whose response was lost. Reconcile this
+        // client's stale history, but never retry or bypass server auth.
+        if (!result.success && result.code !== 'shot_not_found') {
           dispatch({ type: 'EDIT_SAVE_ERROR', payload: result.error || 'Failed to delete shot' });
           return;
         }
@@ -236,8 +257,10 @@ export function useEditShotModal({
     } catch (error) {
       console.error('Error deleting shot:', error instanceof Error ? error.message : String(error));
       dispatch({ type: 'EDIT_SAVE_ERROR', payload: 'An unexpected error occurred' });
+    } finally {
+      shotMutationInFlightRef.current = false;
     }
-  }, [dispatch, calculateHoleStats]);
+  }, [dispatch, calculateHoleStats, shotMutationInFlightRef]);
 
   return {
     handleEditShot,

@@ -142,6 +142,10 @@ describe('observe-action-result', () => {
     expect(isExpectedSoftFailureMessage('anything at all', 'some_other_code')).toBe(false);
   });
 
+  it('keeps a stale deleted-shot reconciliation out of Sentry while preserving a warning', () => {
+    expect(isExpectedSoftFailureMessage('Shot not found', 'shot_not_found')).toBe(true);
+  });
+
   it('classifies engine_no_recent_rounds as an empty-state code, not a generic soft failure', () => {
     expect(isExpectedEmptyStateCode('engine_no_recent_rounds')).toBe(true);
     expect(isExpectedEmptyStateCode('engine_session_expired')).toBe(false);

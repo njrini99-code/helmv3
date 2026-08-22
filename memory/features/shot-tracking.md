@@ -10,6 +10,12 @@ Shot tracking is the round-entry flow where players record hole-by-hole and shot
 
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Offline shot sync exists as an architectural idea, but DB auto-save is the reliable path right now.
 
+Undo and Edit Shot share one local in-flight mutation guard. When an authorized
+delete lookup confirms a shot is already absent, the client removes only its
+stale local reference; it does not retry the delete or bypass server ownership
+checks. The Bridge records that reconciliation as a handled warning rather than
+an error sent to Sentry.
+
 ## Primary Entry Points
 
 ### Routes
@@ -77,6 +83,9 @@ Round setup
 ## Known Risk Areas
 
 - Draft JSON currently lives in `golf_rounds.notes`, which can collide with user notes.
+- Cross-device/session ordering can still produce stale local shot IDs; the
+  client reconciles a server-confirmed absent shot, while authorization and
+  in-progress-round validation remain enforced on the server.
 - Offline shot sync is disabled because of `ShotRecord` to `OfflineShot` type mismatch; DB auto-save is the path to trust.
 - Strokes-gained columns exist but are not populated from shot data.
 - Putts-per-GIR is not properly implemented.

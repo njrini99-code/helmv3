@@ -173,6 +173,10 @@ export default function FairwayShotTracking({
 
   // Local ref for scroll-to-shot in pills
   const shotHistoryRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  // Undo and Edit Shot are separate sub-hooks with separate UI saving flags.
+  // This shared ref serializes their server mutations so a double click or a
+  // modal/undo overlap cannot apply two local-history removals to one shot.
+  const shotMutationInFlightRef = useRef(false);
 
   // ============================================================================
   // SUB-HOOKS — must be called before any early return (Rules of Hooks)
@@ -185,11 +189,11 @@ export default function FairwayShotTracking({
   });
 
   const { handleEditShot, handleCloseEditModal, handleSaveEditedShot, handleDeleteShot } = useEditShotModal({
-    state, dispatch, currentHole: currentHole as RoundHole, currentHoleIndex, onAutoSave, onHoleStatsUpdate, calculateHoleStats,
+    state, dispatch, currentHole: currentHole as RoundHole, currentHoleIndex, onAutoSave, onHoleStatsUpdate, calculateHoleStats, shotMutationInFlightRef,
   });
 
   const { handleUndoLastShot } = useUndoManager({
-    state, dispatch, currentHole: currentHole as RoundHole, currentHoleIndex, onAutoSave, onHoleStatsUpdate, calculateHoleStats,
+    state, dispatch, currentHole: currentHole as RoundHole, currentHoleIndex, onAutoSave, onHoleStatsUpdate, calculateHoleStats, shotMutationInFlightRef,
   });
 
   // ============================================================================
