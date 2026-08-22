@@ -31,6 +31,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
+import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 
 let fake: FakeSupabase;
 let adminFake: FakeSupabase;
@@ -109,6 +110,55 @@ function seedAs(userId: string, tables: SeedTables) {
   adminFake = fake;
 }
 
+function completedHole(overrides: Partial<HoleStats> = {}): HoleStats {
+  return {
+    holeNumber: 1,
+    par: 4,
+    yardage: 400,
+    score: 4,
+    putts: 2,
+    fairwayHit: true,
+    greenInRegulation: true,
+    drivingDistance: null,
+    usedDriver: true,
+    driveMissDirection: null,
+    approachDistance: 150,
+    approachLie: 'fairway',
+    approachProximity: 10,
+    approachMissDirection: null,
+    scrambleAttempt: false,
+    scrambleMade: false,
+    sandSaveAttempt: false,
+    sandSaveMade: false,
+    penaltyStrokes: 0,
+    firstPuttDistance: null,
+    firstPuttLeave: null,
+    firstPuttBreak: null,
+    firstPuttSlope: null,
+    firstPuttMissDirection: null,
+    holedOutDistance: null,
+    holedOutType: null,
+    shots: [],
+    ...overrides,
+  };
+}
+
+function trackedShot(): ShotRecord {
+  return {
+    shotNumber: 1,
+    shotType: 'tee',
+    clubType: 'driver',
+    lieBefore: 'tee',
+    distanceToHoleBefore: 400,
+    distanceUnitBefore: 'yards',
+    result: 'fairway',
+    distanceToHoleAfter: 150,
+    distanceUnitAfter: 'yards',
+    shotDistance: 250,
+    isPenalty: false,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -183,6 +233,88 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
     if (result.success) {
       expect(result.data.roundId).toBe('round-same');
     }
+  });
+});
+
+/**
+ * P0 regression: a transient child write failure must NEVER delete an
+ * in-progress round. A player whose client lost its local round ID reaches
+ * this fallback path after signing back in; deleting the parent here made a
+ * recoverable retry appear as though the whole round had vanished.
+ */
+describe('savePartialRound — child-write failures preserve the round', () => {
+  function seedRecoverableRound() {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-preserve',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_A,
+      course_name: 'Same Course',
+      round_date: '2026-08-22',
+      status: 'in_progress',
+      qualifier_id: null,
+      qualifier_round_number: null,
+      updated_at: '2026-08-22T10:00:00Z',
+    });
+    seedAs('u-p1', tables);
+    return tables;
+  }
+
+  function failUpsert(
+    client: FakeSupabase,
+    table: string,
+    error: { code?: string; message: string },
+  ) {
+    const origFrom = client.from.bind(client);
+    client.from = ((requestedTable: string) => {
+      const api = origFrom(requestedTable);
+      if (requestedTable !== table) return api;
+      return {
+        ...api,
+        upsert: () => ({
+          select: async () => ({ data: null, error }),
+        }),
+      };
+    }) as typeof client.from;
+  }
+
+  const baseSaveData = {
+    courseName: 'Same Course',
+    courseId: COURSE_A,
+    roundType: 'practice' as const,
+    roundDate: '2026-08-22',
+    currentHole: 2,
+    holesToPlay: 18 as const,
+    holeConfigs: [{ holeNumber: 1, par: 4, yardage: 400 }],
+  };
+
+  it('preserves the existing round when hole persistence fails', async () => {
+    const tables = seedRecoverableRound();
+    failUpsert(fake, 'golf_holes', { code: '08006', message: 'connection reset' });
+
+    const result = await savePartialRound({
+      ...baseSaveData,
+      holes: [completedHole()],
+    });
+
+    expect(result.success).toBe(false);
+    expect(tables.golf_rounds).toHaveLength(1);
+    expect(tables.golf_rounds[0]?.id).toBe('round-preserve');
+  });
+
+  it('preserves the existing round when shot persistence fails', async () => {
+    const tables = seedRecoverableRound();
+    failUpsert(fake, 'golf_shots', { code: '08006', message: 'connection reset' });
+
+    const result = await savePartialRound({
+      ...baseSaveData,
+      holes: [completedHole({ shots: [trackedShot()] })],
+    });
+
+    expect(result.success).toBe(false);
+    expect(tables.golf_rounds).toHaveLength(1);
+    expect(tables.golf_rounds[0]?.id).toBe('round-preserve');
   });
 });
 

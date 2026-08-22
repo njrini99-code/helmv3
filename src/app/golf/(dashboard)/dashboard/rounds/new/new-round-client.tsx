@@ -38,7 +38,7 @@ import type { HoleConfig } from '@/lib/types/golf-course';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import {
   emergencySave,
-  loadEmergencySave,
+  loadLatestEmergencySave,
   clearEmergencySave,
   isRecoverableRoundSubmitError,
   type EmergencySaveData
@@ -339,9 +339,12 @@ export default function NewRoundClient() {
     showToast(fallbackMessage, 'error');
   }, [redirectToCompletedRound, showToast]);
 
-  // Check for emergency save on mount (for new rounds saved under _new key)
+  // Check for the freshest emergency save on mount. A local copy keyed by a
+  // former server round ID is still recoverable when that server row is no
+  // longer available; restore it as a fresh round so the next save can create
+  // a durable parent again.
   useEffect(() => {
-    const emergencyData = loadEmergencySave(null);
+    const emergencyData = loadLatestEmergencySave();
     if (!emergencyData) return;
     // Only show recovery if there's meaningful data (at least some holes
     // completed or shots tracked).

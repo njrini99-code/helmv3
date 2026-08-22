@@ -530,10 +530,10 @@ export function FairwayRoundsLibrary({
       {/* ── 1. (player only) In-progress banner ───────────────────────────--*/}
       {showUnfinished && <FairwayUnfinishedBanner rounds={dedupedInProgressRounds} />}
 
-      {/* ── 1b. (player only) Never-synced device recovery breadcrumb ──────--*/}
-      {/* Surfaces a `_new` localStorage round that never reached the server
-          (hard-offline session → boot). Self-suppresses when a SERVER
-          in-progress round exists, so it never duplicates the banner above. */}
+      {/* ── 1b. (player only) Device recovery breadcrumb ───────────────────*/}
+      {/* Surfaces the freshest local emergency save when no in-progress server
+          round remains. Self-suppresses when a SERVER round exists, so it
+          never duplicates the banner above. */}
       {!isCoach && (
         <FairwayUnsyncedRoundBanner hasServerInProgress={dedupedInProgressRounds.length > 0} />
       )}

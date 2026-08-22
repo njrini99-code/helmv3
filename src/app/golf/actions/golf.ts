@@ -6042,7 +6042,10 @@ async function savePartialRoundImpl(
       }
 
       if (!round) {
-        // Create new round with cleanup on partial failure
+        // Create the parent round first. If a subsequent child write fails,
+        // preserve this in-progress row and every previously durable child so
+        // the next auto-save (or local recovery) can retry without losing the
+        // player's round.
         const { data: newRound, error: roundError } = await supabase
           .from('golf_rounds')
           .insert(roundData)
@@ -6102,19 +6105,9 @@ async function savePartialRoundImpl(
             errorCode: holesError.code,
             errorDetails: holesError.details,
           });
-          // Only clean up in_progress rounds — never delete a completed round
-          const { error: cleanupErr } = await supabase
-            .from('golf_rounds')
-            .delete()
-            .eq('id', roundId)
-            .eq('status', 'in_progress');
-          if (cleanupErr) {
-            await logServerError(`Auto-save cleanup delete (holes) failed: ${cleanupErr.message}`, {
-              action: 'savePartialRound.insertHoles.cleanup',
-              roundId,
-              errorCode: cleanupErr.code,
-            });
-          }
+          // Do NOT clean up the parent round here. A network or database
+          // failure while saving holes is recoverable; deleting the
+          // in-progress round turns that transient failure into data loss.
           return { success: false, error: 'Failed to save hole data. Please try again.' };
         }
 
@@ -6155,19 +6148,9 @@ async function savePartialRoundImpl(
                 errorDetails: shotsError.details,
                 extra: { holeNumber: group.hole_number },
               });
-              // Only clean up in_progress rounds — never delete a completed round
-              const { error: cleanupErr } = await supabase
-                .from('golf_rounds')
-                .delete()
-                .eq('id', roundId)
-                .eq('status', 'in_progress');
-              if (cleanupErr) {
-                await logServerError(`Auto-save cleanup delete (shots) failed: ${cleanupErr.message}`, {
-                  action: 'savePartialRound.insertShots.cleanup',
-                  roundId,
-                  errorCode: cleanupErr.code,
-                });
-              }
+              // Do NOT clean up the parent round here. A network or database
+              // failure while saving shots is recoverable; deleting the
+              // in-progress round turns that transient failure into data loss.
               return { success: false, error: 'Failed to save shot data. Please try again.' };
             }
 

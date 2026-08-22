@@ -7,14 +7,14 @@
  * Closes the discoverability gap behind the 2026-06-10 round-loss incident.
  *
  * The shot-tracking screens always write a SYNCHRONOUS localStorage
- * emergencySave under the `_new` key. When a player's server saves never landed
- * (hard-offline session) and they were then booted, that localStorage copy was
- * the ONLY surviving record — but nothing surfaced it. The server-driven
- * FairwayUnfinishedBanner only knows about rounds that reached the database, so
- * a never-synced round was invisible and felt lost.
+ * emergencySave in localStorage. When a player's server save never landed or a
+ * later server failure made the in-progress row unavailable, that local copy
+ * was the ONLY surviving record — but nothing surfaced it. The server-driven
+ * FairwayUnfinishedBanner only knows about rounds that remain in the database,
+ * so an otherwise recoverable round felt lost.
  *
- * This banner reads that `_new` emergencySave on the /rounds page and offers an
- * honest "Resume" breadcrumb back to /new, where the existing recovery dialog
+ * This banner reads the freshest emergencySave on the /rounds page and offers
+ * an honest "Resume" breadcrumb back to /new, where the recovery dialog
  * restores the holes into the tracking view so the player keeps playing.
  *
  * DEDUP / HONESTY:
@@ -37,7 +37,7 @@ import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Button } from '@/components/fairway/controls/button';
 import {
-  loadEmergencySave,
+  loadLatestEmergencySave,
   clearEmergencySave,
   type EmergencySaveData,
 } from '@/lib/utils/emergency-save';
@@ -70,7 +70,7 @@ export function FairwayUnsyncedRoundBanner({ hasServerInProgress }: FairwayUnsyn
   React.useEffect(() => {
     // The server banner owns resume when a DB round exists — don't double-surface.
     if (hasServerInProgress) return;
-    const found = loadEmergencySave(null); // the `_new` (never-synced) key
+    const found = loadLatestEmergencySave();
     if (hasRecoverableData(found)) setData(found);
   }, [hasServerInProgress]);
 
@@ -80,7 +80,9 @@ export function FairwayUnsyncedRoundBanner({ hasServerInProgress }: FairwayUnsyn
   const courseName = data.setupData?.courseName?.trim() || 'Unsaved round';
 
   const handleDiscard = () => {
-    clearEmergencySave(null);
+    // The freshest recovery may be keyed by a former server round ID, not
+    // only `_new`. Clear exactly the backup the player explicitly discards.
+    clearEmergencySave(data.roundId);
     setDismissed(true);
   };
 
