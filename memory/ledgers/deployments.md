@@ -40,6 +40,7 @@ records the exact deployed commit) is open follow-up work, not done here.
 | 2026-08-20 ~22:32 | unknown | unknown | routine (backfill) | not recorded | Same. |
 | 2026-08-21 09:17 (13:17 UTC) | `helmv3-bnlc2wvx5` | unknown | routine (backfill) | not recorded | Deployment ID given directly; nearest `main` commit by timestamp is `4336062bf` (12:58:34 UTC, ~19 min before promote) but that is a timing correlation, not a confirmed deployed SHA — not recorded as `sha` for that reason. |
 | 2026-08-21 14:10 (18:10 UTC) | `helmv3-4ildzo7g3` | `a4e68d37a` | routine (backfill) | not recorded | SHA given directly by operator context; confirmed to exist in `git log` as `docs: regen inventory blocks (#1577)`, committed 2026-08-21T17:05:27Z — about 65 min before the reported promote time, consistent with a promote of a just-merged commit. |
+| 2026-08-22 15:32 (19:32 UTC) | `dpl_3cEBhP4RZ72qXbY2W8UWW19Svnkp` | `5eececafc930c1d10718371bd2954c9ec32e758c` | routine | immediate smoke passed; 24h Sentry observation pending | PR #1601 / issue #1598 stale active-round deletion recovery. Built from a pristine checkout pinned to this SHA; homepage 200, protected continuation route redirected to login, and no error-level runtime logs were present after smoke requests. |
 
 ## How to backfill the `unknown` cells
 
