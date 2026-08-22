@@ -1,5 +1,15 @@
 # Golf Round Lifecycle test ledger
 
+## 2026-08-22 — server checkpoint verification
+
+- SHA: pending commit on `codex/shot-tracking-durable-save`.
+- Coverage: targeted partial-save and round-tracking regressions, typecheck,
+  preflight, and production build for the start and completed-hole checkpoint
+  contract.
+- Guarantees: a committed in-progress parent survives until explicit discard or
+  completion, and a player cannot advance past a completed hole before the
+  server has acknowledged its persisted data.
+
 ## 2026-08-22 — child-write round preservation contract
 
 - SHA: `f06c9bf34b72e9b368d49db79fa9c0c88dc0e659`.

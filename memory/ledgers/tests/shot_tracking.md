@@ -1,5 +1,15 @@
 # Shot Tracking test ledger
 
+## 2026-08-22 — durable checkpoint release verification
+
+- SHA: pending commit on `codex/shot-tracking-durable-save`.
+- Coverage: targeted round-save, emergency-save, shot-state-machine, and
+  rounds-library tests; typecheck, preflight, and production build run for the
+  changed start/checkpoint contract.
+- Guarantees: a new round has a server parent before tracking begins, a hole
+  completion is acknowledged before advancing, and unfinished server rounds
+  use Continue Round rather than a routine local-only recovery banner.
+
 ## 2026-08-22 — partial-save preservation and device recovery coverage
 
 - SHA: `f06c9bf34b72e9b368d49db79fa9c0c88dc0e659`.

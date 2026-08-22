@@ -58,3 +58,13 @@ holes scored and 81 stored shots. Under explicit owner direction it was marked
 completed with its stored totals, linked to the existing qualifier entry, and
 recalculated into the round statistics cache. Post-write verification confirmed
 that it is visible in the completed-round query and qualifier record.
+
+## Durability follow-up — 2026-08-22
+
+The initial repair preserved an existing parent round, but a new round could
+still enter tracking before that parent had been committed and a completed-hole
+save was launched without awaiting its acknowledgement. The follow-up makes
+server parent creation a prerequisite to tracking, checkpoints every completed
+hole before advancing, and removes the normal-library device-only recovery
+banner. This closes the gap that made the banner appear during ordinary play
+instead of reserving local storage for exceptional recovery.

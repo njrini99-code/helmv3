@@ -1,5 +1,15 @@
 # Golf Round Lifecycle change ledger
 
+## 2026-08-22 — require server-backed start and completed-hole checkpoints
+
+- SHA: pending commit on `codex/shot-tracking-durable-save`.
+- Incident: `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`.
+- Change: the round parent is persisted before tracking starts, completed-hole
+  writes are acknowledged before the player advances, and Continue Round is
+  the normal unfinished-round recovery surface.
+- Why: transient saves, app backgrounding, or browser closure must not make a
+  started round disappear from the player’s server-backed round list.
+
 ## 2026-08-22 — preserve parent rounds on child-write failure
 
 - SHA: `f06c9bf34b72e9b368d49db79fa9c0c88dc0e659`.

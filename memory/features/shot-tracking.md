@@ -11,10 +11,11 @@ Shot tracking is the round-entry flow where players record hole-by-hole and shot
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Offline shot sync exists as an architectural idea, but DB auto-save is the reliable path right now.
 
 As of 2026-08-22, a failed hole or shot child write preserves the parent
-`in_progress` round and every previously durable child row. The rounds library
-also surfaces the freshest unexpired device emergency save when no server
-in-progress round remains; restoring it starts a fresh durable save rather
-than retrying against a missing server round.
+`in_progress` round and every previously durable child row. Entering tracking
+now creates that parent row first, and completing a hole waits for a confirmed
+server checkpoint of its score and shots before advancing. The Continue Round
+surface is the sole normal recovery path for any unfinished server round;
+device emergency storage is a private fallback, not a routine user banner.
 
 Undo and Edit Shot share one local in-flight mutation guard. When an authorized
 delete lookup confirms a shot is already absent, the client removes only its
@@ -76,6 +77,10 @@ Round setup
 - Do not use DELETE-then-INSERT for save or submit paths.
 - A failed child upsert must not delete its in-progress parent round; failure
   returns a retryable error while durable server and device state remain intact.
+- Do not enter tracking until the in-progress parent has been created on the
+  server. Each completed hole must be acknowledged by the server before the
+  player advances; a save failure keeps the player on that hole and preserves
+  the existing Continue Round record.
 - Shot records must preserve sequence, hole, lie, type, club, distance, result, miss direction, and putting detail where captured.
 - Continuing a round must reconstruct shot sequences and current-hole progress from persisted data.
 - Qualifier-linked rounds must retain `qualifier_id` through draft, continue, and submit.

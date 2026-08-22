@@ -424,6 +424,52 @@ export default function ContinueRoundClient({
     };
   }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData]);
 
+  /**
+   * Completing a hole is a server checkpoint. Do not advance the player until
+   * the full hole-and-shots snapshot is acknowledged by the existing round.
+   */
+  const persistCompletedHole = useCallback(async (saveData: PartialRoundData): Promise<boolean> => {
+    pendingServerSaveRef.current = null;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const waitDeadline = Date.now() + 10_000;
+      while (serverSaveInProgressRef.current && Date.now() < waitDeadline) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      if (serverSaveInProgressRef.current) break;
+
+      serverSaveInProgressRef.current = true;
+      try {
+        const result = await savePartialRound(saveData, roundId);
+        if (result.success) {
+          consecutiveSaveFailuresRef.current = 0;
+          if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+          return true;
+        }
+        if (result.error === 'conflict') {
+          await handleRoundSyncConflict('This round was updated on another device. Please reload.');
+          return false;
+        }
+        if (isCompletedRoundError(result.error)) {
+          redirectToCompletedRound();
+          return false;
+        }
+        if (result.error !== 'busy' && result.error !== 'retry') break;
+      } catch {
+        // Retry the finite checkpoint sequence below before asking the player
+        // to intervene. The in-progress parent remains durable throughout.
+      } finally {
+        serverSaveInProgressRef.current = false;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+
+    consecutiveSaveFailuresRef.current++;
+    setError('This hole has not saved yet. Keep this screen open and try again.');
+    showAutoSaveWarning();
+    return false;
+  }, [handleRoundSyncConflict, isCompletedRoundError, redirectToCompletedRound, roundId, showAutoSaveWarning]);
+
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
     // Detect re-edit: hole already had completed stats before this call
     const isReEdit = !!completedHoleStats[holeIndex]?.score;
@@ -464,68 +510,11 @@ export default function ContinueRoundClient({
       currentHoleIndex: isReEdit ? activeProgressHoleRef.current : holeIndex + 1,
     });
 
-    // Fire-and-forget: persist completed hole data to database (non-blocking)
-    // Uses queue pattern to avoid silently dropping saves
-    void (async () => {
-      const nextHole = isReEdit ? activeProgressHoleRef.current : holeIndex + 1;
-      const saveData = buildPartialRoundData(updatedStats, nextHole, inProgressAfter);
-
-      if (serverSaveInProgressRef.current) {
-        // Queue — will be picked up when current save completes
-        pendingServerSaveRef.current = { shots: [], holeIndex: -1, roundData: saveData };
-        return;
-      }
-      serverSaveInProgressRef.current = true;
-      try {
-        const result = await savePartialRound(saveData, roundId);
-        if (result.success) {
-          consecutiveSaveFailuresRef.current = 0;
-          if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
-        } else if (result.error === 'conflict') {
-          void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-        } else if (result.error === 'busy' || result.error === 'retry') {
-          // Single-flight skip: another save for this round already holds the
-          // row server-side. Not a failure — the next tick re-sends the full
-          // state — so it must not advance the circuit breaker or warn.
-        } else if (isCompletedRoundError(result.error)) {
-          redirectToCompletedRound();
-        } else {
-          consecutiveSaveFailuresRef.current++;
-          if (consecutiveSaveFailuresRef.current >= 2) {
-            showAutoSaveWarning();
-          }
-        }
-      } catch {
-        consecutiveSaveFailuresRef.current++;
-        if (consecutiveSaveFailuresRef.current >= 2) {
-          showAutoSaveWarning();
-        }
-      } finally {
-        serverSaveInProgressRef.current = false;
-        // If a newer save was queued while we were saving, execute it now
-        const pending = pendingServerSaveRef.current;
-        if (pending) {
-          pendingServerSaveRef.current = null;
-          const pendingData = pending.roundData ?? buildPartialRoundData();
-          void (async () => {
-            serverSaveInProgressRef.current = true;
-            try {
-              const r = await savePartialRound(pendingData, roundId);
-              if (r.success) {
-                consecutiveSaveFailuresRef.current = 0;
-                if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
-              } else if (r.error === 'conflict') {
-                void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-              } else if (isCompletedRoundError(r.error)) {
-                redirectToCompletedRound();
-              }
-            } catch { /* non-critical */ } finally {
-              serverSaveInProgressRef.current = false;
-            }
-          })();
-        }
-      }
-    })();
+    const nextHole = isReEdit ? activeProgressHoleRef.current : holeIndex + 1;
+    const checkpointed = await persistCompletedHole(
+      buildPartialRoundData(updatedStats, nextHole, inProgressAfter),
+    );
+    if (!checkpointed) return;
 
     // Navigate after completion
     // Check if every hole now has a score (all completed)

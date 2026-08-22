@@ -23,8 +23,10 @@ The golf round lifecycle covers creating a round, saving drafts, continuing in-p
 This is one of the highest-risk product areas because a broken write path can lose user-entered golf data, corrupt stats, or feed bad evidence into CoachHelm.
 
 As of 2026-08-22, partial-save child failures preserve the in-progress parent
-round for retry, and the player rounds library can surface the freshest
-unexpired local emergency save when no server in-progress round remains.
+round for retry. A player cannot enter tracking until that parent is committed,
+and each completed hole waits for its server checkpoint before the player
+advances. Every unfinished committed round appears through Continue Round;
+local emergency storage is fallback-only and is not a routine library surface.
 
 ## Primary Entry Points
 
@@ -71,6 +73,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Do not use DELETE-then-INSERT for save, submit, or sync paths. Use idempotent upserts or a safe stage-and-swap pattern.
 - Child-write failures must preserve the `in_progress` parent round and prior
   durable children so interruption recovery can retry without data loss.
+- A player may begin tracking only after an `in_progress` parent exists in the
+  database. Completing a hole is a durable database checkpoint; it may not be
+  treated as a fire-and-forget background write.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
 - Round review and CoachHelm triggers must use committed round data, not stale draft state.

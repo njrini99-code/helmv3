@@ -1,5 +1,15 @@
 # Shot Tracking change ledger
 
+## 2026-08-22 — make round start and hole completion durable checkpoints
+
+- SHA: pending commit on `codex/shot-tracking-durable-save`.
+- Incident: `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`.
+- Change: tracking begins only after an in-progress server row is created;
+  completed holes await a successful server checkpoint before advancing; the
+  device-only recovery banner is no longer a normal rounds-library surface.
+- Why: every started round must be resumable through Continue Round, and every
+  completed hole must have a database-backed score and shot history.
+
 ## 2026-08-22 — preserve rounds after partial-save child failures
 
 - SHA: `f06c9bf34b72e9b368d49db79fa9c0c88dc0e659`.
