@@ -1,6 +1,6 @@
 # INC-2026-08-22 — partial-save child failure could delete an active round
 
-- Feature: `shot_tracking` (also affects `golf_round_lifecycle`)
+- Feature: `shot_tracking` (also affects the Golf Round Lifecycle feature)
 - Status: verified — release and production verification pending
 - Risk: R2 — active player workflow and persisted scoring data
 - First seen: 2026-08-22
@@ -50,3 +50,11 @@ create or resume a round, but it must never erase player-entered scoring data.
 - Remaining before release: full static preflight, production build, PR CI,
   release approval/window, and post-deploy monitoring of fingerprint
   `dec06c7d` plus any `savePartialRound` child-write failures.
+
+## Customer recovery — 2026-08-22
+
+The affected qualifier round was confirmed intact in production with all 18
+holes scored and 81 stored shots. Under explicit owner direction it was marked
+completed with its stored totals, linked to the existing qualifier entry, and
+recalculated into the round statistics cache. Post-write verification confirmed
+that it is visible in the completed-round query and qualifier record.
