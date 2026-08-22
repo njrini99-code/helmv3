@@ -2,7 +2,7 @@
 
 ## 2026-08-22 — server checkpoint verification
 
-- SHA: pending commit on `codex/shot-tracking-durable-save`.
+- SHA: `a68d7c299` (implementation commit; amended after ledger stamping).
 - Coverage: targeted partial-save and round-tracking regressions, typecheck,
   preflight, and production build for the start and completed-hole checkpoint
   contract.

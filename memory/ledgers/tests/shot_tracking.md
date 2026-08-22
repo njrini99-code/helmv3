@@ -2,7 +2,7 @@
 
 ## 2026-08-22 — durable checkpoint release verification
 
-- SHA: pending commit on `codex/shot-tracking-durable-save`.
+- SHA: `a68d7c299` (implementation commit; amended after ledger stamping).
 - Coverage: targeted round-save, emergency-save, shot-state-machine, and
   rounds-library tests; typecheck, preflight, and production build run for the
   changed start/checkpoint contract.

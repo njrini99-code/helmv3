@@ -2,7 +2,7 @@
 
 ## 2026-08-22 — require server-backed start and completed-hole checkpoints
 
-- SHA: pending commit on `codex/shot-tracking-durable-save`.
+- SHA: `a68d7c299` (implementation commit; amended after ledger stamping).
 - Incident: `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`.
 - Change: the round parent is persisted before tracking starts, completed-hole
   writes are acknowledged before the player advances, and Continue Round is
