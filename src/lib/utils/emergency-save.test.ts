@@ -1,10 +1,24 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   loadLatestEmergencySave,
   type EmergencySaveData,
 } from './emergency-save';
 
 const PREFIX = 'golf_emergency_save';
+
+function createMemoryStorage(): Storage {
+  const values = new Map<string, string>();
+  return {
+    get length() {
+      return values.size;
+    },
+    clear: () => values.clear(),
+    getItem: (key) => values.get(key) ?? null,
+    key: (index) => Array.from(values.keys())[index] ?? null,
+    removeItem: (key) => values.delete(key),
+    setItem: (key, value) => values.set(key, String(value)),
+  };
+}
 
 function savedRound(timestamp: number, roundId: string | null): EmergencySaveData {
   return {
@@ -27,11 +41,16 @@ function savedRound(timestamp: number, roundId: string | null): EmergencySaveDat
   };
 }
 
+beforeEach(() => {
+  vi.stubGlobal('localStorage', createMemoryStorage());
+});
+
 afterEach(() => {
-  for (let index = localStorage.length - 1; index >= 0; index -= 1) {
-    const key = localStorage.key(index);
+  for (let index = globalThis.localStorage.length - 1; index >= 0; index -= 1) {
+    const key = globalThis.localStorage.key(index);
     if (key?.startsWith(PREFIX)) localStorage.removeItem(key);
   }
+  vi.unstubAllGlobals();
 });
 
 describe('loadLatestEmergencySave', () => {
