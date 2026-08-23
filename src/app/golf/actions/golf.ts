@@ -1313,6 +1313,13 @@ async function submitRoundDirectFallback({
   return { success: true, warnings };
 }
 
+// The destructive fallback is intentionally not callable from the submit
+// workflow. Keep this historical implementation temporarily for forensic
+// rollback review, but make that non-use explicit to TypeScript and future
+// maintainers; the protected atomic RPC is the only live submission path.
+void isIndeterminateWriteFailure;
+void submitRoundDirectFallback;
+
 type GolfEventUpdateData = {
   updated_at: string;
   title?: string;
@@ -1763,153 +1770,15 @@ async function submitGolfRoundComprehensiveImpl(
     const shotsCount = shotsPayload.reduce((sum, group) => sum + group.shots.length, 0);
 
     const attemptDirectSubmitFallback = async (
-      roundId: string,
-      path: 'existing_round' | 'new_round_rpc',
-      trigger: Record<string, unknown>,
+      _roundId: string,
+      _path: 'existing_round' | 'new_round_rpc',
+      _trigger: Record<string, unknown>,
       backupPersisted: boolean
     ): Promise<{ success: true; warnings?: string[] } | { success: false; error: string }> => {
       // A direct delete-and-reinsert submit path can never prove that an
-      // indeterminate RPC did not already commit. Keep the preserved server
-      // draft and its local recovery payload instead; recovery retries only
-      // the protected atomic RPC. The legacy implementation remains below
-      // temporarily for audit history but is unreachable.
-      void roundId;
-      void path;
-      void trigger;
+      // indeterminate RPC did not already commit. Preserve the server draft
+      // and local recovery payload; recovery retries only the atomic RPC.
       return { success: false, error: getPreservedRoundSubmitError(backupPersisted) };
-
-      // GUARD — single choke point, deliberately here rather than at the four
-      // call sites so a future caller cannot skip it.
-      //
-      // The fallback rebuilds the round by DELETEing holes+shots and re-inserting.
-      // That is only safe when we KNOW the RPC's transaction rolled back. When the
-      // failure was a client-side abort we know nothing — and in practice the RPC
-      // usually committed, because it grants itself a statement_timeout well above
-      // the client's abort budget. Rebuilding on top of a successful commit is what
-      // destroyed round 8e89c73e on 2026-08-20 (18 holes, 72 shots, gone).
-      // Read the round back and reconcile instead of assuming failure.
-      if (
-        trigger.source === 'rpc_error'
-        && isIndeterminateWriteFailure({
-          code: typeof trigger.code === 'string' ? trigger.code : null,
-          message: typeof trigger.message === 'string' ? trigger.message : null,
-        })
-      ) {
-        const { count: holeCount, error: holeCountError } = await supabase
-          .from('golf_holes')
-          .select('id', { count: 'exact', head: true })
-          .eq('round_id', roundId);
-        const { data: reconciled, error: reconcileError } = await fromUntyped(supabase, 'golf_rounds')
-          .select('id, status')
-          .eq('id', roundId)
-          .eq('player_id', player.id)
-          .maybeSingle();
-
-        // A failed reconciliation read is NOT "zero holes" — it is "outcome
-        // still unknown", which takes the refuse-to-delete branch below. The
-        // distinction matters: this guard exists because a round was destroyed
-        // by treating an unknown outcome as a failure.
-        const reconcileReadFailed = Boolean(holeCountError || reconcileError);
-
-        if (!reconcileReadFailed && reconciled?.status === 'completed' && (holeCount ?? 0) > 0) {
-          // The RPC committed after we gave up listening. The round is fine.
-          await logServerError(
-            'Round submit aborted client-side but COMMITTED server-side — reconciled, destructive fallback SKIPPED',
-            {
-              action: 'submitGolfRoundComprehensive',
-              roundId,
-              playerId: player.id,
-              userId: user.id,
-              userEmail: user.email,
-              holesCount: holeCount ?? 0,
-              shotsCount,
-              extra: { path, trigger, backupPersisted, reconciled: 'committed' },
-            },
-            'warning'
-          );
-          return { success: true };
-        }
-
-        // Outcome still unknown — the transaction may be mid-commit. Refuse to
-        // delete anything. A round that needs a retry beats a round destroyed.
-        await logServerError(
-          'Round submit aborted client-side and could not be reconciled — destructive fallback SKIPPED, round left intact',
-          {
-            action: 'submitGolfRoundComprehensive',
-            roundId,
-            playerId: player.id,
-            userId: user.id,
-            userEmail: user.email,
-            holesCount: holeCount ?? 0,
-            shotsCount,
-            extra: {
-              path,
-              trigger,
-              backupPersisted,
-              reconciled: reconciled?.status ?? 'unknown',
-              reconcileReadFailed,
-              reconcileReadError: holeCountError?.message ?? reconcileError?.message ?? null,
-            },
-          },
-          'critical'
-        );
-        return { success: false, error: getPreservedRoundSubmitError(backupPersisted) };
-      }
-
-      const fallbackResult = await submitRoundDirectFallback({
-        supabase,
-        roundId,
-        playerId: player.id,
-        roundData,
-        holesPayload,
-        shotsPayload,
-        puttDetailsPayload,
-        approachDetailsPayload,
-        submissionBackup,
-      });
-
-      if (!fallbackResult.success) {
-        await logServerError(
-          `Direct round submit fallback failed: ${fallbackResult.error}`,
-          {
-            action: 'submitGolfRoundComprehensive',
-            roundId,
-            playerId: player.id,
-            userId: user.id,
-            userEmail: user.email,
-            holesCount: holesPayload.length,
-            shotsCount,
-            extra: { path, trigger, backupPersisted },
-          },
-          'critical'
-        );
-        return { success: false, error: getPreservedRoundSubmitError(backupPersisted) };
-      }
-
-      await logServerError(
-        'Direct round submit fallback used after RPC failure',
-        {
-          action: 'submitGolfRoundComprehensive',
-          roundId,
-          playerId: player.id,
-          userId: user.id,
-          userEmail: user.email,
-          holesCount: holesPayload.length,
-          shotsCount,
-          extra: {
-            path,
-            trigger,
-            backupPersisted,
-            warnings: fallbackResult.warnings,
-          },
-        },
-        'warning'
-      );
-
-      return {
-        success: true,
-        warnings: fallbackResult.warnings.length > 0 ? fallbackResult.warnings : undefined,
-      };
     };
 
     let round: { id: string };
