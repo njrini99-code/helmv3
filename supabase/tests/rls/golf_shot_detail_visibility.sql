@@ -39,7 +39,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(21);
+SELECT plan(22);
 
 -- ============================================================================
 -- Seed as service_role (RLS bypassed for setup).
@@ -173,6 +173,14 @@ BEGIN
     (v_shot_appr, 'long')
   ON CONFLICT DO NOTHING;
 END $$;
+
+-- The recalculation RPC may refresh only derived strokes-gained values after
+-- completion. This protects the cache path while the lifecycle guard continues
+-- to reject all user-controlled score/history mutations.
+SELECT lives_ok(
+  $$SELECT public.recalculate_round_strokes_gained('00000000-0000-0000-0000-00000000d046'::uuid)$$,
+  'server SG recalculation can refresh derived data on a completed round'
+);
 
 -- ----------------------------------------------------------------------------
 -- Row-count probes for the write assertions.
