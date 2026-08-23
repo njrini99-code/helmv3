@@ -45,6 +45,25 @@ import {
 
 // Dynamic import to avoid lib/ → app/ circular dependency
 type RoundDraftData = import('@/app/golf/actions/round-drafts').RoundDraftData;
+type TerminalRoundSubmissionData = import('@/app/golf/actions/round-drafts').TerminalRoundSubmissionData;
+
+function readTerminalRoundSubmission(
+  draftData: Record<string, unknown>,
+): TerminalRoundSubmissionData | null {
+  const candidate = draftData.terminalSubmission;
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
+  const value = candidate as Record<string, unknown>;
+  if (
+    typeof value.courseName !== 'string'
+    || value.courseName.length === 0
+    || !Array.isArray(value.holes)
+    || !['practice', 'tournament', 'qualifier'].includes(String(value.roundType))
+    || typeof value.roundDate !== 'string'
+  ) {
+    return null;
+  }
+  return value as unknown as TerminalRoundSubmissionData;
+}
 
 // ============================================================================
 // TYPES
@@ -587,13 +606,22 @@ class SyncEngine {
 
     let pendingRounds: Awaited<ReturnType<typeof legacy.getPendingRounds>>;
     try {
-      pendingRounds = await legacy.getPendingRounds();
+      const [pending, failedRecords] = await Promise.all([
+        legacy.getPendingRounds(),
+        legacy.getFailedRounds(),
+      ]);
+      // A v1 failure must remain recoverable after its retry budget. Keep it
+      // visible to this drain (and the recovery screen) rather than letting a
+      // status flip make a terminal scorecard disappear from every path.
+      pendingRounds = [...pending, ...failedRecords]
+        .filter((round, index, all) => all.findIndex((item) => item.id === round.id) === index);
     } catch {
       // v1 DB unreadable (e.g. unsupported environment) — skip silently.
       return { synced, failed, errors };
     }
 
     const { saveRoundDraft } = await import('@/app/golf/actions/round-drafts');
+    const { submitGolfRoundComprehensive } = await import('@/app/golf/actions/golf');
 
     for (const round of pendingRounds) {
       if (this.syncAbortController?.signal.aborted) {
@@ -646,7 +674,19 @@ class SyncEngine {
           ...((round.draftData as Partial<RoundDraftData>) || {}),
         } as RoundDraftData;
 
-        const result = await saveRoundDraft(draftData, round.serverRoundId);
+        const isTerminalSubmission = draftData.submissionIntent === 'submit';
+        const result = isTerminalSubmission
+          ? await (async () => {
+              const terminalSubmission = readTerminalRoundSubmission(round.draftData);
+              if (!terminalSubmission || !round.serverRoundId) {
+                return {
+                  success: false as const,
+                  error: 'Your completed round is safely stored on this device, but it needs an in-app recovery before it can be submitted.',
+                };
+              }
+              return submitGolfRoundComprehensive(terminalSubmission, round.serverRoundId);
+            })()
+          : await saveRoundDraft(draftData, round.serverRoundId);
 
         if (result.success) {
           // Non-destructive: flip status + dequeue, keep the row.

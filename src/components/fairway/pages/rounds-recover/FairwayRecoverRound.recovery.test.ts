@@ -15,12 +15,25 @@ describe('round recovery behavior', () => {
   });
 
   it('restores partial work with savePartialRound and opens Continue Round', () => {
-    const partialRecoveryStart = source.indexOf("if (draft.submissionIntent !== 'submit' || !allHolesScored)");
+    const partialRecoveryStart = source.indexOf("draft.submissionIntent !== 'submit'");
     const submitRecoveryStart = source.indexOf('const roundData =');
     const partialRecoverySource = source.slice(partialRecoveryStart, submitRecoveryStart);
 
     expect(partialRecoveryStart).toBeGreaterThanOrEqual(0);
     expect(partialRecoverySource).toContain('await savePartialRound(partialData');
     expect(partialRecoverySource).toContain('router.push(`/golf/dashboard/rounds/continue/${partialResult.data.roundId}`)');
+  });
+
+  it('keeps failed IndexedDB submissions recoverable and requires the exact terminal payload', () => {
+    expect(source).toContain('getFailedRounds as getModernFailedRounds');
+    expect(source).toContain('terminalSubmission?: TerminalRoundSubmissionData');
+    expect(source).toContain('|| !terminalSubmission');
+    expect(source).toContain('const roundData = terminalSubmission;');
+  });
+
+  it('never clears a newer backup after an older recovery succeeds', () => {
+    expect(source).toContain('clearEmergencySaveThrough(existingRoundId ?? null, playerId, round.timestamp)');
+    expect(source).toContain('deleteModernOfflineRoundThrough(round.id, round.timestamp)');
+    expect(source).toContain('clearRoundRecoverySnapshotThrough(existingRoundId ?? null, playerId, round.timestamp)');
   });
 });

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound, type PartialRoundData } from '@/app/golf/actions/golf';
-import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
+import { checkRoundStaleness, type TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import { getRoundRecoverySnapshot } from '@/lib/offline/shot-storage';
@@ -62,6 +62,8 @@ function hasAllHolesScored(holeStats: HoleStats[], roundHoles: Hole[]): boolean 
 
 interface RoundSetupData {
   courseName: string;
+  courseId?: string;
+  teeId?: string;
   courseCity: string;
   courseState: string;
   courseRating: string;
@@ -241,6 +243,21 @@ export default function ContinueRoundClient({
     allHoleStats: HoleStats[],
     recoverySetupData: RoundSetupData = setupData,
   ) => {
+    const terminalSubmission: TerminalRoundSubmissionData = {
+      courseName: recoverySetupData.courseName,
+      courseId: recoverySetupData.courseId,
+      teeId: recoverySetupData.teeId,
+      courseCity: recoverySetupData.courseCity || undefined,
+      courseState: recoverySetupData.courseState || undefined,
+      courseRating: recoverySetupData.courseRating ? parseFloat(recoverySetupData.courseRating) : undefined,
+      courseSlope: recoverySetupData.courseSlope ? parseInt(recoverySetupData.courseSlope) : undefined,
+      teesPlayed: recoverySetupData.teesPlayed || undefined,
+      roundType: recoverySetupData.roundType,
+      roundDate: recoverySetupData.roundDate,
+      holes: allHoleStats,
+      qualifierId: recoverySetupData.qualifierId,
+      qualifierRoundNumber: recoverySetupData.qualifierRoundNumber,
+    };
     emergencySave({
       playerId,
       roundId,
@@ -251,6 +268,7 @@ export default function ContinueRoundClient({
       inProgressShotsByHole: {},
       currentHoleIndex: Math.max(0, holes.length - 1),
       submissionIntent: 'submit',
+      terminalSubmission,
     });
 
     try {
@@ -267,6 +285,7 @@ export default function ContinueRoundClient({
           currentHoleIndex: Math.max(0, holes.length - 1),
           inProgressShots: {},
           submissionIntent: 'submit',
+          terminalSubmission,
         },
       });
     } catch {
@@ -404,7 +423,10 @@ export default function ContinueRoundClient({
         roundDate: setupData.roundDate,
         currentHole: Math.max(1, Math.min(currentHole + 1, holesSnapshot.length)),
         holesToPlay: holesSnapshot.length as 9 | 18,
-        holes: statsSnapshot,
+        holes: Array.from(
+          { length: holesSnapshot.length },
+          (_, index) => statsSnapshot[index] ?? null,
+        ),
         inProgressShots: inProgressArr,
         holeConfigs: holesSnapshot.map(hole => ({
           holeNumber: hole.number,
@@ -485,7 +507,10 @@ export default function ContinueRoundClient({
       qualifierRoundNumber: setupData.qualifierRoundNumber,
       currentHole: Math.max(1, Math.min(holeIndexToUse + 1, roundHoles.length)),
       holesToPlay: roundHoles.length as 9 | 18,
-      holes: statsToUse,
+      holes: Array.from(
+        { length: roundHoles.length },
+        (_, index) => statsToUse[index] ?? null,
+      ),
       inProgressShots: inProgressShotsArr,
       holeConfigs: roundHoles.map(hole => ({
         holeNumber: hole.number,
@@ -921,6 +946,8 @@ export default function ContinueRoundClient({
 
       const roundData = {
         courseName: submitSetupData.courseName,
+        courseId: submitSetupData.courseId,
+        teeId: submitSetupData.teeId,
         courseCity: submitSetupData.courseCity || undefined,
         courseState: submitSetupData.courseState || undefined,
         courseRating: submitSetupData.courseRating ? parseFloat(submitSetupData.courseRating) : undefined,

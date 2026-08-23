@@ -1768,6 +1768,16 @@ async function submitGolfRoundComprehensiveImpl(
       trigger: Record<string, unknown>,
       backupPersisted: boolean
     ): Promise<{ success: true; warnings?: string[] } | { success: false; error: string }> => {
+      // A direct delete-and-reinsert submit path can never prove that an
+      // indeterminate RPC did not already commit. Keep the preserved server
+      // draft and its local recovery payload instead; recovery retries only
+      // the protected atomic RPC. The legacy implementation remains below
+      // temporarily for audit history but is unreachable.
+      void roundId;
+      void path;
+      void trigger;
+      return { success: false, error: getPreservedRoundSubmitError(backupPersisted) };
+
       // GUARD — single choke point, deliberately here rather than at the four
       // call sites so a future caller cannot skip it.
       //
@@ -5622,7 +5632,10 @@ export interface PartialRoundData {
   currentHole: number;
   holesToPlay: number; // 9 or 18
   // Completed holes data
-  holes: HoleStats[];
+  // Sparse browser arrays cross the Server Action boundary as `undefined`
+  // entries. The persistence contract represents an uncompleted hole as an
+  // explicit null instead, so every transport can validate the same shape.
+  holes: Array<HoleStats | null>;
   // In-progress holes with recorded shots
   inProgressShots?: Array<{
     holeNumber: number;
@@ -5727,6 +5740,34 @@ async function savePartialRoundImpl(
     const teamId = await getPlayerTeamId(supabase, player.id);
     const resolvedCourseId = await resolveCourseId(supabase, data.courseName, data.courseId);
 
+    // A lost browser-side round id must never turn a qualifier restart into an
+    // update of a different persisted attempt. The client normally redirects
+    // to Continue Round before it reaches this action; this server check is
+    // the independent backstop for stale clients and direct callers.
+    if (!existingRoundId && data.qualifierId && data.qualifierRoundNumber != null) {
+      const { data: activeQualifierRounds, error: activeQualifierRoundsError } = await supabase
+        .from('golf_rounds')
+        .select('id')
+        .eq('player_id', player.id)
+        .eq('qualifier_id', data.qualifierId)
+        .eq('qualifier_round_number', data.qualifierRoundNumber)
+        .eq('status', 'in_progress')
+        .limit(2);
+
+      if (activeQualifierRoundsError) {
+        return {
+          success: false,
+          error: 'We could not verify your saved qualifier round. Please try again before starting.',
+        };
+      }
+      if ((activeQualifierRounds?.length ?? 0) > 0) {
+        return {
+          success: false,
+          error: `Qualifier round ${data.qualifierRoundNumber} is already saved. Use Continue Round so its scorecard stays intact.`,
+        };
+      }
+    }
+
     const roundData = {
       player_id: player.id,
       team_id: teamId,
@@ -5814,6 +5855,7 @@ async function savePartialRoundImpl(
     // Build shots payload — grouped by hole_number
     const holesWithShotsByNumber = new Map<number, ShotRecord[]>();
     for (const hole of data.holes) {
+      if (!hole) continue;
       if (hole?.shots && hole.shots.length > 0) {
         holesWithShotsByNumber.set(hole.holeNumber, hole.shots);
       }
@@ -6632,7 +6674,12 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
  */
 async function getNextQualifierRoundNumberImpl(
   qualifierId: string
-): Promise<ActionResult<{ nextRoundNumber: number; availableRounds: number[] }>> {
+): Promise<ActionResult<{
+  nextRoundNumber: number;
+  availableRounds: number[];
+  /** A started qualifier round is never replaced by a blank new-round save. */
+  activeRoundId?: string;
+}>> {
   try {
     const supabase = await createClient();
 
@@ -6678,6 +6725,40 @@ async function getNextQualifierRoundNumberImpl(
     }
     if (qualifier.status === 'completed') {
       return { success: false, error: 'This qualifier has been closed by the coach.' };
+    }
+
+    // A started qualifier round owns its number until it is submitted or
+    // explicitly discarded. Returning it here lets the client resume the
+    // durable parent instead of creating a second parent or overwriting the
+    // existing scorecard with a blank setup payload.
+    const { data: activeRounds, error: activeRoundsError } = await supabase
+      .from('golf_rounds')
+      .select('id, qualifier_round_number')
+      .eq('qualifier_id', qualifierId)
+      .eq('player_id', player.id)
+      .eq('status', 'in_progress')
+      .order('updated_at', { ascending: false })
+      .limit(2);
+
+    if (activeRoundsError) {
+      return { success: false, error: 'We could not verify your saved qualifier round. Please try again before starting.' };
+    }
+    if ((activeRounds?.length ?? 0) > 1) {
+      return {
+        success: false,
+        error: 'You have more than one saved round for this qualifier. Do not start another one; use Continue Round so your existing scorecards stay intact.',
+      };
+    }
+    if (activeRounds?.[0]) {
+      const active = activeRounds[0];
+      return {
+        success: true,
+        data: {
+          nextRoundNumber: active.qualifier_round_number ?? 1,
+          availableRounds: [],
+          activeRoundId: active.id,
+        },
+      };
     }
 
     // Get completed rounds for this player in this qualifier
@@ -6741,7 +6822,11 @@ const observedGetNextQualifierRoundNumber = withAdminObserved(
 
 export async function getNextQualifierRoundNumber(
   qualifierId: string
-): Promise<ActionResult<{ nextRoundNumber: number; availableRounds: number[] }>> {
+): Promise<ActionResult<{
+  nextRoundNumber: number;
+  availableRounds: number[];
+  activeRoundId?: string;
+}>> {
   return observedGetNextQualifierRoundNumber(qualifierId);
 }
 

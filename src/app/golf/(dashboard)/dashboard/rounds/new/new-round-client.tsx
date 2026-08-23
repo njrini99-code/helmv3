@@ -22,7 +22,7 @@ import {
 } from '@/app/golf/actions/golf';
 import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/FairwayCoursePicker';
 import { contributeCourseFromRound, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
-import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
+import { checkRoundStaleness, type TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
@@ -487,7 +487,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         roundDate: setup.roundDate,
         currentHole: Math.min(currentHole + 1, holesSnapshot.length),
         holesToPlay: holesSnapshot.length as 9 | 18,
-        holes: statsSnapshot,
+        holes: Array.from(
+          { length: holesSnapshot.length },
+          (_, index) => statsSnapshot[index] ?? null,
+        ),
         inProgressShots: inProgressArr,
         holeConfigs: holesSnapshot.map(hole => ({
           holeNumber: hole.number,
@@ -570,6 +573,21 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const persistFailedSubmission = useCallback(async (allHoleStats: HoleStats[]) => {
     const recoverySetupData = buildRecoverySetupData();
     const currentRoundId = savedRoundIdRef.current;
+    const terminalSubmission: TerminalRoundSubmissionData = {
+      courseName: recoverySetupData.courseName,
+      courseId: resolvedCourseIdRef.current || undefined,
+      teeId: selectedTeeIdRef.current || undefined,
+      courseCity: recoverySetupData.courseCity || undefined,
+      courseState: recoverySetupData.courseState || undefined,
+      courseRating: recoverySetupData.courseRating ? parseFloat(recoverySetupData.courseRating) : undefined,
+      courseSlope: recoverySetupData.courseSlope ? parseInt(recoverySetupData.courseSlope) : undefined,
+      teesPlayed: recoverySetupData.teesPlayed || undefined,
+      roundType: recoverySetupData.roundType,
+      roundDate: recoverySetupData.roundDate,
+      holes: allHoleStats,
+      qualifierId: recoverySetupData.qualifierId,
+      qualifierRoundNumber: recoverySetupData.qualifierRoundNumber,
+    };
 
     emergencySave({
       playerId,
@@ -582,6 +600,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       currentHoleIndex: Math.max(0, holes.length - 1),
       holesPerRound,
       submissionIntent: 'submit',
+      terminalSubmission,
     });
 
     try {
@@ -598,6 +617,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           currentHoleIndex: Math.max(0, holes.length - 1),
           inProgressShots: {},
           submissionIntent: 'submit',
+          terminalSubmission,
         },
       });
     } catch {
@@ -733,6 +753,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
             return;
           }
           if (result.data) {
+            if (result.data.activeRoundId) {
+              // The server found a durable qualifier parent. Resume it instead
+              // of letting a blank new-round setup race or overwrite that
+              // player's existing scorecard.
+              router.replace(`/golf/dashboard/rounds/continue/${result.data.activeRoundId}`);
+              return;
+            }
             setAvailableRounds(result.data.availableRounds);
             // Auto-select the next round number
             if (result.data.nextRoundNumber > 0) {
@@ -758,7 +785,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [selectedQualifierId, qualifierRoundRetry]);
+  }, [selectedQualifierId, qualifierRoundRetry, router]);
 
   const retryQualifierRound = useCallback(() => {
     setQualifierRoundRetry((value) => value + 1);
@@ -1315,7 +1342,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
       currentHole: Math.min(holeIndexToUse + 1, roundHoles.length),
       holesToPlay: roundHoles.length as 9 | 18,
-      holes: statsToUse,
+      holes: Array.from(
+        { length: roundHoles.length },
+        (_, index) => statsToUse[index] ?? null,
+      ),
       inProgressShots: inProgressShotsArr,
       holeConfigs: roundHoles.map(hole => ({
         holeNumber: hole.number,

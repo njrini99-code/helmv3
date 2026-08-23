@@ -24,7 +24,20 @@ export function beaconPartialSave(data: PartialRoundData, roundId?: string): boo
 
   let payload: string;
   try {
-    payload = JSON.stringify({ data, roundId: roundId ?? null });
+    // Array holes are easy to create while a player jumps to or re-edits a
+    // hole. React/Flight preserves an empty slot as `undefined`, but the
+    // server contract deliberately accepts only explicit `null` placeholders.
+    // Normalize at the final unload boundary too, so a backgrounded tab can
+    // never turn a valid checkpoint into a rejected `holes.N` payload.
+    const holesToSerialize = Math.max(data.holesToPlay ?? 0, data.holes.length);
+    const normalizedData: PartialRoundData = {
+      ...data,
+      holes: Array.from(
+        { length: holesToSerialize },
+        (_, index) => data.holes[index] ?? null,
+      ),
+    };
+    payload = JSON.stringify({ data: normalizedData, roundId: roundId ?? null });
   } catch {
     return false;
   }
