@@ -39,7 +39,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(20);
+SELECT plan(21);
 
 -- ============================================================================
 -- Seed as service_role (RLS bypassed for setup).
@@ -126,8 +126,18 @@ BEGIN
     (v_team_x, v_player, 'active')
   ON CONFLICT DO NOTHING;
 
+  -- The player-write assertions below exercise an in-progress round. Keep the
+  -- cross-round compatibility row completed so this fixture also verifies the
+  -- normal terminal-state read path without treating completed history as
+  -- editable data.
+  --
+  -- Completed rows are normally created only by the SECURITY DEFINER submit
+  -- RPC. The fixture is running as that function owner, so opt into its
+  -- transaction-local guard marker instead of weakening the production guard.
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
+
   INSERT INTO public.golf_rounds (id, player_id, team_id, round_date, status) VALUES
-    (v_round,   v_player, v_team_x, CURRENT_DATE, 'completed'),
+    (v_round,   v_player, v_team_x, CURRENT_DATE, 'in_progress'),
     (v_round_y, v_player, v_team_y, CURRENT_DATE, 'completed')
   ON CONFLICT DO NOTHING;
 
@@ -330,6 +340,14 @@ SELECT is(
   pg_temp.update_putt_rows('00000000-0000-0000-0000-00000000d045', true),
   1,
   'player CAN update their own putt_details'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.putt_details SET made = true
+    WHERE shot_id = '00000000-0000-0000-0000-00000000d047'$$,
+  '55000',
+  'This round is already completed and its saved shot details cannot be changed.',
+  'player CANNOT change putt_details on their completed round'
 );
 
 RESET role;

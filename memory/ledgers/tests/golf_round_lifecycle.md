@@ -56,3 +56,22 @@
 - Verification: targeted unit coverage, TypeScript, and ESLint are required
   before merge. The direct-RPC pgTAP suite remains pending a database-enabled
   runner.
+
+## 2026-08-23 — completed-round database guard regression
+
+- The shot-detail visibility RLS fixture keeps its normal player-write scenario
+  in progress, seeds only its history scenario through the postgres-owner
+  lifecycle marker used by the atomic round RPCs, and asserts that a player
+  cannot mutate details on that completed history row.
+- The database suite therefore verifies both sides of the contract on a clean
+  local stack: player-owned in-progress details remain editable and
+  completed-round details remain immutable.
+
+## 2026-08-23 — lost terminal-response reconciliation contract
+
+- Added action coverage for an atomic `submit_round_atomic` commit whose HTTP
+  response times out or is reported as Safari/WKWebView `Load failed`. The
+  action confirms the authenticated round's completed state and returns success
+  without executing any destructive fallback.
+- An unconfirmed abort remains safely retryable: its in-progress parent,
+  holes, shots, and persisted recovery backup are left untouched.

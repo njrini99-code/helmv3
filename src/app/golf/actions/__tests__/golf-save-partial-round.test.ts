@@ -164,6 +164,55 @@ beforeEach(() => {
 });
 
 describe('savePartialRound — no-existingRoundId fallback', () => {
+  it('materializes sparse legacy holes as explicit empty checkpoints', async () => {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-sparse',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_B,
+      course_name: 'New Course',
+      round_date: '2026-07-10',
+      status: 'in_progress',
+      updated_at: '2026-07-10T10:00:00Z',
+    });
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: {
+        save_partial_round_atomic: async () => ({
+          data: { success: true, updated_at: '2026-07-10T10:00:01Z' },
+          error: null,
+        }),
+      },
+    });
+    adminFake = fake;
+
+    // Older mobile bundles serialized an incomplete scorecard as a sparse
+    // array. Server Action transport presents the empty slot as undefined;
+    // that must be treated exactly like an explicit uncompleted (null) hole.
+    const legacySparseHoles: Array<HoleStats | null> = new Array(3);
+    legacySparseHoles[0] = completedHole();
+    legacySparseHoles[2] = completedHole({ holeNumber: 3 });
+    const result = await savePartialRound({
+      courseName: 'New Course',
+      courseId: COURSE_B,
+      roundType: 'practice',
+      roundDate: '2026-07-10',
+      currentHole: 3,
+      holesToPlay: 18,
+      holes: legacySparseHoles,
+      holeConfigs: [
+        { holeNumber: 1, par: 4, yardage: 400 },
+        { holeNumber: 2, par: 4, yardage: 400 },
+        { holeNumber: 3, par: 4, yardage: 400 },
+      ],
+    }, 'round-sparse');
+
+    expect(result.success).toBe(true);
+    expect(tables.golf_rounds).toHaveLength(1);
+  });
+
   it('does NOT repurpose an unrelated in_progress round at a different course/date', async () => {
     const tables = baseTables();
     tables.golf_rounds.push({

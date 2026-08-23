@@ -73,3 +73,27 @@
   editing a no-longer-existent shot. Treating that condition as an ordinary
   save failure falsely told golfers their action was broken and invited unsafe
   retries.
+
+## 2026-08-23 — harden legacy checkpoint transport and background re-saves
+
+- SHA: pending commit for the production checkpoint guard.
+- Incident: `Client error: Completed hole checkpoint failed`, including the
+  18:19 EDT occurrence from a cached iPhone bundle.
+- Change: `savePartialRound` materializes every sparse client hole slot as
+  `null` before validation. New Round and Continue Round no longer turn a
+  transient background re-save of an already-completed hole into a second
+  player-facing error; the direct hole-out checkpoint still blocks advance and
+  keeps its focused retry affordance.
+- Why: a deployed browser shell can retain an older payload shape, and its
+  overlapping periodic save could emit a false checkpoint incident despite a
+  later successful durable write.
+
+## 2026-08-23 — reconcile committed terminal submissions after response loss
+
+- Change: a timeout or transport abort from `submit_round_atomic` now performs
+  an authenticated read of that exact player round. A confirmed completed row
+  is acknowledged as success; an unconfirmed result leaves all server and
+  browser recovery copies untouched for retry.
+- Why: an HTTP response can be lost after Postgres has committed its atomic
+  scorecard transaction. Treating that as a simple failure falsely asks the
+  player to submit again and produces an avoidable production error.

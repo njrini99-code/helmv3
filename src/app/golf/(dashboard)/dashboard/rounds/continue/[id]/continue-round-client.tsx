@@ -528,6 +528,7 @@ export default function ContinueRoundClient({
   const persistCompletedHole = useCallback(async (
     saveData: PartialRoundData,
     emergencyTimestamp: number,
+    surfaceFailure = true,
   ): Promise<boolean> => {
     pendingServerSaveRef.current = null;
 
@@ -565,9 +566,14 @@ export default function ContinueRoundClient({
       await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
     }
 
-    consecutiveSaveFailuresRef.current++;
-    setError('This hole has not saved yet. Keep this screen open and try again.');
-    showAutoSaveWarning();
+    // Only a direct hole-out checkpoint should surface a retry state. The
+    // periodic saver can race it while replaying the same complete snapshot;
+    // that transient coalescing must not create a second false alarm.
+    if (surfaceFailure) {
+      consecutiveSaveFailuresRef.current++;
+      setError('This hole has not saved yet. Keep this screen open and try again.');
+      showAutoSaveWarning();
+    }
     return false;
   }, [handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, roundId, showAutoSaveWarning]);
 
@@ -771,17 +777,15 @@ export default function ContinueRoundClient({
       // Editing a completed hole persists the revised complete scorecard, not
       // a contradictory in-progress copy of that same hole.
       if (hasCompletedHole) {
-        const checkpointed = await persistCompletedHole(
+        await persistCompletedHole(
           buildPartialRoundData(
             completedHoleStatsRef.current,
             activeProgressHoleRef.current,
             allInProgressShots,
           ),
           emergencyTimestamp,
+          false,
         );
-        if (!checkpointed) {
-          throw new Error('Completed hole checkpoint failed');
-        }
         return;
       }
       if (serverSaveInProgressRef.current) {

@@ -27,6 +27,12 @@ repeated client errors or deleting any browser recovery data.
 If a completed-hole checkpoint cannot be confirmed, the tracker remains on that
 hole and exposes one in-context retry action; it does not advance, report the
 hole as safely saved, or create a persistent general-purpose unsynced banner.
+The partial-save action also normalizes sparse legacy hole arrays at its server
+boundary: a cached mobile bundle's `undefined` slot becomes the explicit `null`
+used for an uncompleted hole before validation. A periodic re-save of an
+already-completed hole is recovery work, not a second player-facing checkpoint
+failure; direct completion remains the only path that can present the focused
+retry state.
 Editing or deleting the final holed shot clears that hole's completed-scorecard
 slot before autosave, so the subsequent server snapshot treats it as
 in-progress rather than carrying contradictory completed and active versions.

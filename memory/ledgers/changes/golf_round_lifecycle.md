@@ -66,3 +66,13 @@
 - Why: a delayed browser-database clear could erase a newer snapshot, while an
   unowned shared-device cache could be shown or accidentally re-homed by a
   recovery fallback.
+
+## 2026-08-23 — protect completed round writes at the database boundary
+
+- SHA: pending PR #1609 merge.
+- Change: completed rounds and their child records reject direct writes. The
+  atomic round RPCs set a transaction-local marker while running as their
+  postgres owner; ordinary application roles cannot use that marker to bypass
+  the guard.
+- Why: a stale client, direct API write, or later feature must not overwrite
+  completed score history or re-target a saved qualifier round.

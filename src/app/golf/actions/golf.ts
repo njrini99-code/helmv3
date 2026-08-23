@@ -1049,7 +1049,39 @@ function isIndeterminateWriteFailure(
     || message.includes('timeouterror')
     || message.includes('the operation was aborted')
     || message.includes('fetch failed')
+    // Safari/WKWebView's opaque Fetch rejection. This has no SQLSTATE and
+    // carries the same unknown-commit semantics as AbortSignal.timeout.
+    || message.includes('load failed')
     || message.includes('network');
+}
+
+/**
+ * A client-side timeout only tells us that the HTTP response was lost, not
+ * whether Postgres committed the atomic transaction. Never infer a commit from
+ * the error alone: confirm the authenticated player's own round transitioned
+ * to completed before acknowledging success. If that read cannot confirm the
+ * state, the existing recovery path keeps every durable copy intact and asks
+ * the player to retry.
+ */
+async function hasConfirmedRoundSubmission(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  roundId: string,
+  playerId: string
+): Promise<boolean> {
+  try {
+    const { data, error } = await fromUntyped(supabase, 'golf_rounds')
+      .select('id, status')
+      .eq('id', roundId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+
+    return !error && data?.status === 'completed';
+  } catch {
+    // A failed confirmation is deliberately treated as unknown. The caller
+    // must preserve the round and recovery backup rather than guess.
+    return false;
+  }
 }
 
 async function persistRoundSubmissionBackup(
@@ -1317,7 +1349,6 @@ async function submitRoundDirectFallback({
 // workflow. Keep this historical implementation temporarily for forensic
 // rollback review, but make that non-use explicit to TypeScript and future
 // maintainers; the protected atomic RPC is the only live submission path.
-void isIndeterminateWriteFailure;
 void submitRoundDirectFallback;
 
 type GolfEventUpdateData = {
@@ -1821,38 +1852,49 @@ async function submitGolfRoundComprehensiveImpl(
       );
 
       if (rpcError) {
-        await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc' });
-        await logServerError(`Round submit RPC failed: ${rpcError.message}`, {
-          action: 'submitGolfRoundComprehensive',
-          roundId: existingRoundId,
-          playerId: player.id,
-          userId: user.id,
-          userEmail: user.email,
-          holesCount: holesPayload.length,
-          shotsCount,
-          errorCode: rpcError.code,
-          errorHint: rpcError.hint,
-          errorDetails: rpcError.details,
-          extra: { path: 'existing_round', courseName: data.courseName },
-        }, 'critical');
-        const fallbackResult = await attemptDirectSubmitFallback(
-          existingRoundId,
-          'existing_round',
-          {
-            source: 'rpc_error',
-            code: rpcError.code,
-            message: rpcError.message,
-            hint: rpcError.hint,
-            details: rpcError.details,
-          },
-          backupPersisted
-        );
-        if (!fallbackResult.success) {
-          return fallbackResult;
-        }
+        const submissionCommitted = isIndeterminateWriteFailure(rpcError)
+          && await hasConfirmedRoundSubmission(supabase, existingRoundId, player.id);
 
-        detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
-        round = { id: existingRoundId };
+        if (submissionCommitted) {
+          // The atomic RPC completed after the client lost its response. Its
+          // transaction guarantees the scorecard and shots committed together,
+          // so acknowledge the actual durable result instead of inviting a
+          // duplicate submit or emitting a false production error.
+          round = { id: existingRoundId };
+        } else {
+          await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc' });
+          await logServerError(`Round submit RPC failed: ${rpcError.message}`, {
+            action: 'submitGolfRoundComprehensive',
+            roundId: existingRoundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            holesCount: holesPayload.length,
+            shotsCount,
+            errorCode: rpcError.code,
+            errorHint: rpcError.hint,
+            errorDetails: rpcError.details,
+            extra: { path: 'existing_round', courseName: data.courseName },
+          }, 'critical');
+          const fallbackResult = await attemptDirectSubmitFallback(
+            existingRoundId,
+            'existing_round',
+            {
+              source: 'rpc_error',
+              code: rpcError.code,
+              message: rpcError.message,
+              hint: rpcError.hint,
+              details: rpcError.details,
+            },
+            backupPersisted
+          );
+          if (!fallbackResult.success) {
+            return fallbackResult;
+          }
+
+          detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
+          round = { id: existingRoundId };
+        }
       } else {
         if (rpcResult && !rpcResult.success) {
           // 'busy' = single-flight guard: a same-round auto-save (or a second
@@ -1964,41 +2006,48 @@ async function submitGolfRoundComprehensiveImpl(
       );
 
       if (rpcError) {
-        // Do NOT delete the round — preserve it so the user can retry.
-        // Deleting here caused permanent data loss when the RPC failed
-        // (e.g., trigger errors, network timeouts, race conditions).
-        await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc.new' });
-        await logServerError(`Round submit RPC failed (new round): ${rpcError.message}`, {
-          action: 'submitGolfRoundComprehensive',
-          roundId: newRound.id,
-          playerId: player.id,
-          userId: user.id,
-          userEmail: user.email,
-          holesCount: holesPayload.length,
-          shotsCount,
-          errorCode: rpcError.code,
-          errorHint: rpcError.hint,
-          errorDetails: rpcError.details,
-          extra: { path: 'new_round_rpc', courseName: data.courseName },
-        }, 'critical');
-        const fallbackResult = await attemptDirectSubmitFallback(
-          newRound.id,
-          'new_round_rpc',
-          {
-            source: 'rpc_error',
-            code: rpcError.code,
-            message: rpcError.message,
-            hint: rpcError.hint,
-            details: rpcError.details,
-          },
-          true
-        );
-        if (!fallbackResult.success) {
-          return fallbackResult;
-        }
+        const submissionCommitted = isIndeterminateWriteFailure(rpcError)
+          && await hasConfirmedRoundSubmission(supabase, newRound.id, player.id);
 
-        detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
-        round = { id: newRound.id };
+        if (submissionCommitted) {
+          round = { id: newRound.id };
+        } else {
+          // Do NOT delete the round — preserve it so the user can retry.
+          // Deleting here caused permanent data loss when the RPC failed
+          // (e.g., trigger errors, network timeouts, race conditions).
+          await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc.new' });
+          await logServerError(`Round submit RPC failed (new round): ${rpcError.message}`, {
+            action: 'submitGolfRoundComprehensive',
+            roundId: newRound.id,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            holesCount: holesPayload.length,
+            shotsCount,
+            errorCode: rpcError.code,
+            errorHint: rpcError.hint,
+            errorDetails: rpcError.details,
+            extra: { path: 'new_round_rpc', courseName: data.courseName },
+          }, 'critical');
+          const fallbackResult = await attemptDirectSubmitFallback(
+            newRound.id,
+            'new_round_rpc',
+            {
+              source: 'rpc_error',
+              code: rpcError.code,
+              message: rpcError.message,
+              hint: rpcError.hint,
+              details: rpcError.details,
+            },
+            true
+          );
+          if (!fallbackResult.success) {
+            return fallbackResult;
+          }
+
+          detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
+          round = { id: newRound.id };
+        }
       } else {
         if (rpcResult && !rpcResult.success) {
           // Do NOT delete — the round is preserved as a draft for retry
@@ -5537,7 +5586,24 @@ async function savePartialRoundImpl(
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
   try {
-    // Validate input with Zod
+    // A browser may retain an older JS bundle across a deployment. Those older
+    // bundles built this array sparsely; Server Action transport preserves the
+    // empty slots as `undefined`, while the durable persistence contract uses
+    // explicit `null` for an uncompleted hole. Normalize at the server boundary
+    // as well as in current clients so a cached mobile bundle cannot turn a
+    // completed-hole checkpoint into a validation failure.
+    //
+    // `Array.prototype.map` preserves sparse slots, so use Array.from to visit
+    // every index and materialize `null` values before Zod sees the payload.
+    const normalizedData = {
+      ...data,
+      holes: Array.isArray(data?.holes)
+        ? Array.from({ length: data.holes.length }, (_, index) => data.holes[index] ?? null)
+        : data?.holes,
+    } as PartialRoundData;
+    data = normalizedData;
+
+    // Validate input with Zod after normalizing legacy transport holes.
     const validated = partialRoundSchema.safeParse(data);
     if (!validated.success) {
       const firstError = validated.error.issues[0];

@@ -1364,6 +1364,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const persistCompletedHole = useCallback(async (
     saveData: PartialRoundData,
     emergencyTimestamp: number,
+    surfaceFailure = true,
   ): Promise<boolean> => {
     pendingServerSaveRef.current = null;
 
@@ -1405,9 +1406,15 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
     }
 
-    consecutiveSaveFailuresRef.current++;
-    setError('This hole has not saved yet. Keep this screen open and try again.');
-    showAutoSaveWarning();
+    // A direct hole-out checkpoint must keep the player on the hole and expose
+    // a retry affordance. A background re-save of an already checkpointed hole
+    // uses the same durable local snapshot, but must not manufacture a second
+    // player-facing failure or a Sentry error while another save is coalescing.
+    if (surfaceFailure) {
+      consecutiveSaveFailuresRef.current++;
+      setError('This hole has not saved yet. Keep this screen open and try again.');
+      showAutoSaveWarning();
+    }
     return false;
   }, [handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, showAutoSaveWarning]);
 
@@ -1603,17 +1610,15 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       // in-progress duplicate. This keeps the scorecard and shot map in one
       // coherent server snapshot.
       if (hasCompletedHole) {
-        const checkpointed = await persistCompletedHole(
+        await persistCompletedHole(
           buildPartialRoundData(
             completedHoleStatsRef.current,
             activeProgressHoleRef.current,
             allInProgressShots,
           ),
           emergencyTimestamp,
+          false,
         );
-        if (!checkpointed) {
-          throw new Error('Completed hole checkpoint failed');
-        }
         return;
       }
       if (serverSaveInProgressRef.current) {

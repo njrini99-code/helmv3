@@ -62,3 +62,11 @@
 - Added a focused hook regression proving that a server-confirmed missing shot
   removes only the stale local reference and does not surface an Edit save
   error or recreate the shot.
+
+## 2026-08-23 — legacy sparse-checkpoint regression
+
+- Added action-level coverage that a sparse legacy scorecard array reaches the
+  atomic partial-save RPC as an explicit uncompleted-hole slot rather than
+  failing validation.
+- Verification: focused round persistence/recovery coverage, TypeScript, and
+  ESLint pass before release.
