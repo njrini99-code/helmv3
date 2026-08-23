@@ -1,6 +1,6 @@
 # INC-2026-08-22 — confirmed scorecard shown as unsaved recovery
 
-- Feature: `shot_tracking` (also affects `golf_round_lifecycle`)
+- Feature: `shot_tracking` (also affects the Golf Round Lifecycle feature)
 - Status: released — production health verification passed; recurrence observation pending
 - Risk: R2 — active player completion workflow
 - First seen: 2026-08-22
