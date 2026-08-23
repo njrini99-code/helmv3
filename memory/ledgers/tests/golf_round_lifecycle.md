@@ -59,7 +59,10 @@
 
 ## 2026-08-23 — completed-round database guard regression
 
-- The shot-detail visibility RLS fixture now seeds completed rows only through
-  the postgres-owner lifecycle marker used by the atomic round RPCs.
-- The database suite verifies that the migration applies to a clean local
-  stack without weakening its completed-round write boundary for normal roles.
+- The shot-detail visibility RLS fixture keeps its normal player-write scenario
+  in progress, seeds only its history scenario through the postgres-owner
+  lifecycle marker used by the atomic round RPCs, and asserts that a player
+  cannot mutate details on that completed history row.
+- The database suite therefore verifies both sides of the contract on a clean
+  local stack: player-owned in-progress details remain editable and
+  completed-round details remain immutable.
