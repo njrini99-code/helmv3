@@ -109,6 +109,8 @@ from public, anon, authenticated;
 
 comment on function helm_private.guard_golf_round_lifecycle()
 is
-'Blocks direct completion, deletion, mutation, and qualifier retargeting outside protected round RPCs; permits only service-derived strokes-gained cache refreshes.';
+'Blocks direct completion, deletion, mutation, and qualifier retargeting
+outside protected round RPCs; permits only service-derived strokes-gained
+cache refreshes.';
 
 commit;
