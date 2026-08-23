@@ -8,6 +8,7 @@
  * server actions (savePartialRound) may be killed by the browser.
  */
 
+import type { TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import {
   clearRoundRecoverySnapshotThrough,
@@ -70,6 +71,12 @@ export interface EmergencySaveData {
   holesPerRound?: 9 | 18;
   /** Present only when a completed round could not be submitted. */
   submissionIntent?: 'submit';
+  /**
+   * The exact terminal submission payload. This lets a recovered completed
+   * round retain its course and qualifier identity instead of guessing it
+   * from a partial local draft.
+   */
+  terminalSubmission?: TerminalRoundSubmissionData;
 }
 
 /**

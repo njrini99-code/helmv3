@@ -524,6 +524,35 @@ export async function getFailedRounds(): Promise<OfflineRound[]> {
 }
 
 /**
+ * Remove an offline draft only when it is no newer than the server state that
+ * was just acknowledged. This prevents a recovery action from deleting a
+ * pagehide save written concurrently on the same device.
+ */
+export async function deleteOfflineRoundThrough(
+  id: string,
+  acknowledgedTimestamp: number,
+): Promise<void> {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(ROUNDS_STORE, 'readwrite');
+    const store = transaction.objectStore(ROUNDS_STORE);
+    const getRequest = store.get(id);
+
+    getRequest.onsuccess = () => {
+      const current = getRequest.result as OfflineRound | undefined;
+      if (!current || current.timestamp > acknowledgedTimestamp) return;
+      const deleteRequest = store.delete(id);
+      deleteRequest.onerror = () => reject(new Error('Failed to clear acknowledged offline round'));
+    };
+    getRequest.onerror = () => reject(new Error('Failed to read offline round for acknowledged cleanup'));
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(new Error('Failed to clear acknowledged offline round'));
+    transaction.onabort = () => reject(new Error('Acknowledged offline round cleanup aborted'));
+  });
+}
+
+/**
  * Get the count of pending rounds in this (v1) database.
  *
  * Used by the v2 stats/sync layer so that rounds stranded here by

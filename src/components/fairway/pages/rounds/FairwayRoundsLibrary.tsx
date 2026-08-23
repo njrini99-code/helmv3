@@ -242,38 +242,15 @@ export function FairwayRoundsLibrary({
 
   const isCoach = userRole === 'coach';
 
-  // #129/#145 — dedupe pixel-identical "in progress" drafts before they ever
-  // reach the banner. Multiple in-progress rows for the same course/hole/type
-  // (an emergency-save retry, a double-tap on "New round", etc.) render as
-  // indistinguishable clutter above the real history with no way to tell them
-  // apart. This is a DISPLAY-layer resolve only — it never deletes anything
-  // server-side (Golf's no-destructive-writes rule); it just keeps the single
-  // most-recently-updated draft per distinct (course, current hole, holes
-  // target, round type) fingerprint so a player sees ONE resumable card per
-  // actual in-progress attempt.
-  const dedupedInProgressRounds = React.useMemo(() => {
-    const bestByKey = new Map<string, RoundLibraryRound>();
-    for (const r of inProgressRounds) {
-      const key = [
-        r.course_name ?? '',
-        r.current_hole ?? 0,
-        r.holes_played ?? 18,
-        r.round_type ?? '',
-      ].join('|');
-      const existing = bestByKey.get(key);
-      if (!existing) {
-        bestByKey.set(key, r);
-        continue;
-      }
-      const existingTs = existing.updated_at ?? existing.created_at ?? '';
-      const candidateTs = r.updated_at ?? r.created_at ?? '';
-      if (candidateTs > existingTs) bestByKey.set(key, r);
-    }
-    return Array.from(bestByKey.values());
-  }, [inProgressRounds]);
+  // Every durable in-progress parent must remain discoverable. Rows that look
+  // alike can still be distinct rounds (including a qualifier recovery), and
+  // hiding an older card makes a player's saved progress unreachable.
+  // Server-side identity protections prevent future duplicates; the UI never
+  // chooses a winner or silently removes a Continue Round link.
+  const visibleInProgressRounds = inProgressRounds;
 
   // Coaches NEVER get the in-progress section or the New-round CTA.
-  const showUnfinished = !isCoach && dedupedInProgressRounds.length > 0;
+  const showUnfinished = !isCoach && visibleInProgressRounds.length > 0;
 
   // P210 — coach-only player roster derived from the rounds in memory. Built as
   // de-duped, alphabetically-sorted options so a coach can scope to one player.
@@ -530,7 +507,7 @@ export function FairwayRoundsLibrary({
 
       {/* ── 1. (player only) In-progress banner ───────────────────────────--*/}
       {showUnfinished && playerId && (
-        <FairwayUnfinishedBanner rounds={dedupedInProgressRounds} playerId={playerId} />
+        <FairwayUnfinishedBanner rounds={visibleInProgressRounds} playerId={playerId} />
       )}
 
       {/* ── Honest empty: zero completed rounds ───────────────────────────--*/}

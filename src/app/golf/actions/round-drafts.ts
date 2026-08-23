@@ -38,6 +38,27 @@ interface RoundSetupForm {
 
 type Hole = RoundHole;
 
+/**
+ * The complete payload required to finish a round after an indeterminate
+ * submit result. This is intentionally stored alongside the emergency copy;
+ * replaying it as a draft would falsely acknowledge an unfinished round.
+ */
+export interface TerminalRoundSubmissionData {
+  courseName: string;
+  courseCity?: string;
+  courseState?: string;
+  courseRating?: number;
+  courseSlope?: number;
+  teesPlayed?: string;
+  courseId?: string;
+  teeId?: string;
+  roundType: 'practice' | 'tournament' | 'qualifier';
+  roundDate: string;
+  holes: HoleStats[];
+  qualifierId?: string;
+  qualifierRoundNumber?: number;
+}
+
 export interface RoundDraftData {
   step: 'setup' | 'holes' | 'tracking' | 'submitting';
   setupData: RoundSetupForm;
@@ -48,6 +69,8 @@ export interface RoundDraftData {
   selectedRoundNumber?: number | null;
   inProgressShots?: Record<number, ShotRecord[]>;
   holesPerRound?: 9 | 18;
+  submissionIntent?: 'draft' | 'submit';
+  terminalSubmission?: TerminalRoundSubmissionData;
 }
 
 export interface DraftInfo {

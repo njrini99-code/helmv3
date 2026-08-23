@@ -259,6 +259,14 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     }, 'critical');
   }
 
+  // A Continue Round session must never treat an unread scorecard as an empty
+  // scorecard. Mounting the tracker with fallback arrays would let the next
+  // auto-save replace durable holes/shots with that empty snapshot. Keep the
+  // saved round untouched and use the route boundary's real retry instead.
+  if (holesError || shotsError) {
+    throw new Error("Couldn't load this round's saved scorecard. Nothing was changed; please try again.");
+  }
+
   if (courseHolesError) {
     await logServerError(`Continue round course-hole load failed: ${courseHolesError.message}`, {
       action: 'continueRoundPage.courseHoles',
@@ -328,6 +336,13 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       }, 'warning');
     }
 
+    // Shot-detail rows are part of the authoritative round graph. A partial
+    // read is unsafe because a subsequent full snapshot save could erase
+    // details that this client did not receive.
+    if (puttRes?.error || approachRes?.error) {
+      throw new Error("Couldn't load this round's shot details. Nothing was changed; please try again.");
+    }
+
     for (const pd of (puttRes?.data || [])) {
       puttDetailsByShot.set(pd.shot_id, { miss_tags: pd.miss_tags });
     }
@@ -339,8 +354,6 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       });
     }
   }
-
-  // Errors are handled gracefully - holes/shots will be empty if fetch fails
 
   // Group shots by hole number for easy lookup
   const shotsByHole = new Map<number, GolfShot[]>();
@@ -499,6 +512,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   // Setup data from round
   const setupData = {
     courseName: round.course_name || 'Unknown Course',
+    courseId: round.course_id ?? undefined,
+    teeId: round.tee_id ?? undefined,
     courseCity: round.course_city || '',
     courseState: round.course_state || '',
     courseRating: round.course_rating?.toString() || '',
