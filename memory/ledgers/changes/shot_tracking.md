@@ -87,3 +87,13 @@
 - Why: a deployed browser shell can retain an older payload shape, and its
   overlapping periodic save could emit a false checkpoint incident despite a
   later successful durable write.
+
+## 2026-08-23 — reconcile committed terminal submissions after response loss
+
+- Change: a timeout or transport abort from `submit_round_atomic` now performs
+  an authenticated read of that exact player round. A confirmed completed row
+  is acknowledged as success; an unconfirmed result leaves all server and
+  browser recovery copies untouched for retry.
+- Why: an HTTP response can be lost after Postgres has committed its atomic
+  scorecard transaction. Treating that as a simple failure falsely asks the
+  player to submit again and produces an avoidable production error.

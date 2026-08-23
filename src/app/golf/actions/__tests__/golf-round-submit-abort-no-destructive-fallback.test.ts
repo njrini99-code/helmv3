@@ -202,7 +202,8 @@ function seed(committed: boolean) {
         // on and committed. Model that by applying the commit's visible effect
         // BEFORE handing back the abort the caller actually observed.
         if (committed) {
-          const round = tables.golf_rounds?.[0];
+          const round = tables.golf_rounds?.find((candidate) => candidate.status === 'draft')
+            ?? tables.golf_rounds?.[0];
           if (round) {
             round.status = 'completed';
             round.draft_data = null;
@@ -284,5 +285,15 @@ describe('submitGolfRoundComprehensive — abort must not trigger the destructiv
     expect(shotsLeft()).toBe(HOLE_COUNT);
 
     expect(result.success).toBe(false);
+  });
+
+  it('acknowledges a new-round atomic commit when only its response is lost', async () => {
+    seed(true);
+
+    const result = await submitGolfRoundComprehensive(makeRoundInput());
+
+    expect(deletesAgainst('golf_holes')).toBe(0);
+    expect(deletesAgainst('golf_shots')).toBe(0);
+    expect(result.success).toBe(true);
   });
 });

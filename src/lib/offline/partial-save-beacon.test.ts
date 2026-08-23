@@ -27,6 +27,11 @@ const sampleData = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
+const serializedSampleData = {
+  ...sampleData,
+  holes: Array.from({ length: sampleData.holesToPlay }, () => null),
+};
+
 describe('beaconPartialSave', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -61,7 +66,7 @@ describe('beaconPartialSave', () => {
     expect(init.method).toBe('POST');
     expect(init.keepalive).toBe(true);
     expect(init.credentials).toBe('same-origin');
-    expect(JSON.parse(init.body)).toEqual({ data: sampleData, roundId: 'round-123' });
+    expect(JSON.parse(init.body)).toEqual({ data: serializedSampleData, roundId: 'round-123' });
   });
 
   it('falls back to a keepalive fetch when sendBeacon rejects the payload', () => {
@@ -77,7 +82,7 @@ describe('beaconPartialSave', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [, init] = fetchSpy.mock.calls[0]!;
     // Omitted roundId (brand-new round) serializes as null, not undefined.
-    expect(JSON.parse(init.body)).toEqual({ data: sampleData, roundId: null });
+    expect(JSON.parse(init.body)).toEqual({ data: serializedSampleData, roundId: null });
   });
 
   it('returns false when neither transport is available (localStorage is the backstop)', () => {
