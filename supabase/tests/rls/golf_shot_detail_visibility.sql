@@ -126,6 +126,11 @@ BEGIN
     (v_team_x, v_player, 'active')
   ON CONFLICT DO NOTHING;
 
+  -- Completed rows are normally created only by the SECURITY DEFINER submit
+  -- RPC. The fixture is running as that function owner, so opt into its
+  -- transaction-local guard marker instead of weakening the production guard.
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
+
   INSERT INTO public.golf_rounds (id, player_id, team_id, round_date, status) VALUES
     (v_round,   v_player, v_team_x, CURRENT_DATE, 'completed'),
     (v_round_y, v_player, v_team_y, CURRENT_DATE, 'completed')

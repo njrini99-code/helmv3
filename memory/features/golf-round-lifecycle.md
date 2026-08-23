@@ -111,6 +111,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   choices from the authenticated server and asks the player to select one at
   final submit; it never invents a qualifier result from a browser backup.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
+- Direct database writes cannot create, mutate, or delete a completed round
+  or its child shots. Only the postgres-owned SECURITY DEFINER round RPCs may
+  carry the transaction-local lifecycle marker needed for their atomic write.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
 - Browser recovery state is a durable fallback, not a time-limited cache.
   Normal active snapshots must survive extended interruptions and be cleared

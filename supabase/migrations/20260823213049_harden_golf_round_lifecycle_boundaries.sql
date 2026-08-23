@@ -68,7 +68,8 @@ begin
   -- submit_round_atomic is SECURITY DEFINER and executes as postgres. It is
   -- the sole terminal writer and remains able to atomically replace its child
   -- graph. Every ordinary browser/API role is blocked after completion.
-  if current_setting('helm.golf_lifecycle_write', true) = 'atomic' then
+  if current_user = 'postgres'
+    and current_setting('helm.golf_lifecycle_write', true) = 'atomic' then
     return coalesce(new, old);
   end if;
 
@@ -114,7 +115,8 @@ declare
   old_shot_id uuid;
   new_shot_id uuid;
 begin
-  if current_setting('helm.golf_lifecycle_write', true) = 'atomic' then
+  if current_user = 'postgres'
+    and current_setting('helm.golf_lifecycle_write', true) = 'atomic' then
     return coalesce(new, old);
   end if;
   old_shot_id := case when tg_op = 'INSERT' then null else old.shot_id end;
@@ -157,7 +159,8 @@ language plpgsql
 set search_path = public, pg_temp
 as $$
 begin
-  if current_setting('helm.golf_lifecycle_write', true) = 'atomic' then
+  if current_user = 'postgres'
+    and current_setting('helm.golf_lifecycle_write', true) = 'atomic' then
     return coalesce(new, old);
   end if;
 

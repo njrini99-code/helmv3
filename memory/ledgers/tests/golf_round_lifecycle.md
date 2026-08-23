@@ -56,3 +56,10 @@
 - Verification: targeted unit coverage, TypeScript, and ESLint are required
   before merge. The direct-RPC pgTAP suite remains pending a database-enabled
   runner.
+
+## 2026-08-23 — completed-round database guard regression
+
+- `golf_shot_detail_visibility.sql` now seeds completed fixtures only through
+  the postgres-owner lifecycle marker used by the atomic round RPCs.
+- The database suite verifies that the migration applies to a clean local
+  stack without weakening its completed-round write boundary for normal roles.
