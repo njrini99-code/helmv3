@@ -28,6 +28,9 @@ import {
   type Row,
 } from "./__fixtures__/fake-indexeddb";
 
+const mocks = vi.hoisted(() => ({ logError: vi.fn() }));
+vi.mock('@/lib/error-logging', () => ({ logError: mocks.logError }));
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -36,6 +39,7 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
   beforeEach(() => {
     databases.clear();
     vi.resetModules();
+    mocks.logError.mockClear();
     installFakeIndexedDB();
   });
 
@@ -172,7 +176,7 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
     expect(recoveryStore.rows.has(`round:${roundId}`)).toBe(false);
   });
 
-  it('logs an IndexedDB request error instead of the opaque Event wrapper', async () => {
+  it('does not send a transient IndexedDB abort to the console error stream', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const shotStorage = await import('./shot-storage');
     await expect(shotStorage.getPendingShots()).resolves.toEqual([]);
@@ -191,8 +195,9 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
 
     db.onerror?.(databaseEvent as never);
 
-    expect(consoleError).toHaveBeenCalledWith('Database error:', requestError);
-    expect(consoleError).not.toHaveBeenCalledWith('Database error:', databaseEvent);
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(mocks.logError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it('markOfflineRoundSynced is non-destructive: row retained, status synced, dequeued (no longer pending)', async () => {

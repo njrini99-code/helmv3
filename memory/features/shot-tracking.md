@@ -20,6 +20,10 @@ Each newly entered shot is synchronously snapshotted to localStorage and
 mirrored to the v2 browser recovery store before the deferred network save.
 Active snapshots do not expire by age; they clear only after the matching
 server acknowledgement, a successful final submission, or an explicit delete.
+The v2 browser-mirror reader retries one WebKit-aborted or inactive readonly
+transaction on a fresh connection. If the browser still cannot read its local
+mirror, that tab degrades once to the server-backed Continue Round flow without
+repeated client errors or deleting any browser recovery data.
 If a completed-hole checkpoint cannot be confirmed, the tracker remains on that
 hole and exposes one in-context retry action; it does not advance, report the
 hole as safely saved, or create a persistent general-purpose unsynced banner.
