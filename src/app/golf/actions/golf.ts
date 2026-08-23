@@ -40,6 +40,7 @@ import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provid
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
+import { hasQualifierEndDatePassed } from '@/lib/golf/qualifier-lifecycle';
 
 // ============================================================================
 // COURSE ID RESOLUTION
@@ -7096,7 +7097,7 @@ async function advanceQualifierOnRoundSubmit(
 ): Promise<void> {
   const { data: qualifier } = await supabase
     .from('golf_qualifiers')
-    .select('status, num_rounds, end_date')
+    .select('status, num_rounds, end_date, team_id')
     .eq('id', qualifierId)
     .maybeSingle();
 
@@ -7136,7 +7137,12 @@ async function advanceQualifierOnRoundSubmit(
   const numRounds = qualifier.num_rounds ?? 1;
   const everyEntrantDone =
     !!entries && entries.length > 0 && entries.every((e) => (e.rounds_completed ?? 0) >= numRounds);
-  const deadlinePassed = !!qualifier.end_date && new Date(qualifier.end_date) < new Date();
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('timezone')
+    .eq('id', qualifier.team_id)
+    .maybeSingle();
+  const deadlinePassed = hasQualifierEndDatePassed(qualifier.end_date, team?.timezone);
 
   if (!everyEntrantDone && !deadlinePassed) return;
 

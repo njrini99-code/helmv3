@@ -88,6 +88,9 @@ Leaderboard reads qualifier
 
 - Leaderboard totals can drift if entry stats are updated outside round submission.
 - Qualifier round entry can regress if `qualifier_id` is lost through draft/continue/recover flows.
+- `end_date` is inclusive in the team's local calendar. Lifecycle code must compare
+  date-only values to the team's local date, never to a UTC timestamp, or an
+  active qualifier can close during the preceding local evening.
 - CoachHelm V3 qualifying views may evolve faster than the older qualifier pages; update both docs and registry when new paths land.
 - Calendar integration means deleting or rescheduling qualifiers can affect event views.
 
