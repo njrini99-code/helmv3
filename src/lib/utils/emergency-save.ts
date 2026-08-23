@@ -60,6 +60,48 @@ export interface EmergencySaveData {
 }
 
 /**
+ * The portion of a round that determines whether a local emergency copy has
+ * anything the server does not already have. Deliberately excludes navigation
+ * state and timestamps: neither is player-entered progress.
+ */
+export interface EmergencySaveProgress {
+  holes: RoundHole[];
+  completedHoleStats: HoleStats[];
+  inProgressShotsByHole: Record<number, ShotRecord[]>;
+}
+
+/**
+ * Compare persisted progress independent of server-generated shot IDs and
+ * object key order. This is intentionally strict about every other field:
+ * when there is any doubt that local data differs, recovery remains available.
+ */
+export function isEmergencySaveEquivalentToProgress(
+  emergencySaveData: EmergencySaveData,
+  serverProgress: EmergencySaveProgress,
+): boolean {
+  return canonicalizeProgress({
+    holes: emergencySaveData.holes,
+    completedHoleStats: emergencySaveData.completedHoleStats,
+    inProgressShotsByHole: emergencySaveData.inProgressShotsByHole,
+  }) === canonicalizeProgress(serverProgress);
+}
+
+/**
+ * Remove an emergency save only when it is no newer than the snapshot the
+ * server has acknowledged. A pagehide or later edit may have written a newer
+ * copy while an async save was in flight; that copy must remain recoverable.
+ */
+export function clearEmergencySaveThrough(
+  roundId: string | null | undefined,
+  acknowledgedTimestamp: number,
+): void {
+  const current = loadEmergencySave(roundId);
+  if (!current || current.timestamp <= acknowledgedTimestamp) {
+    clearEmergencySave(roundId);
+  }
+}
+
+/**
  * Synchronously save round data to localStorage.
  * This is safe to call in visibilitychange/pagehide handlers because
  * localStorage.setItem is synchronous and completes before the page freezes.
@@ -191,6 +233,30 @@ export function clearEmergencySave(roundId?: string | null): void {
   } catch {
     // Ignore
   }
+}
+
+function canonicalizeProgress(progress: EmergencySaveProgress): string {
+  return JSON.stringify(canonicalize(progress));
+}
+
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(canonicalize);
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        // Database reads attach stable server IDs to shots. IDs do not change
+        // the golfer's progress and must not make an otherwise identical
+        // fallback look newer than the server.
+        .filter(([key, nestedValue]) => key !== 'id' && nestedValue !== undefined)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, nestedValue]) => [key, canonicalize(nestedValue)]),
+    );
+  }
+
+  return value;
 }
 
 /**

@@ -12,6 +12,8 @@ import {
   emergencySave,
   loadEmergencySave,
   clearEmergencySave,
+  clearEmergencySaveThrough,
+  isEmergencySaveEquivalentToProgress,
   isRecoverableRoundSubmitError,
   type EmergencySaveData
 } from '@/lib/utils/emergency-save';
@@ -55,6 +57,11 @@ const FairwayRoundSummarySheet = dynamic(
 );
 
 type Hole = RoundHole;
+
+function hasAllHolesScored(holeStats: HoleStats[], roundHoles: Hole[]): boolean {
+  return holeStats.length === roundHoles.length
+    && roundHoles.every((_, index) => holeStats[index]?.score != null);
+}
 
 interface RoundSetupData {
   courseName: string;
@@ -133,7 +140,12 @@ export default function ContinueRoundClient({
 
   // Concurrency lock for background server saves
   const serverSaveInProgressRef = useRef(false);
-  const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: PartialRoundData } | null>(null);
+  const pendingServerSaveRef = useRef<{
+    shots: ShotRecord[];
+    holeIndex: number;
+    roundData?: PartialRoundData;
+    emergencyTimestamp?: number;
+  } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const lastAutoSaveWarningRef = useRef(0);
   const isSubmittingRef = useRef(false);
@@ -141,6 +153,12 @@ export default function ContinueRoundClient({
   const lastServerUpdatedAtRef = useRef<string | undefined>(serverDataTimestamp);
   // Track the furthest hole the player has naturally progressed to (for re-edit navigation)
   const activeProgressHoleRef = useRef(startHoleIndex);
+  // A full scorecard is already durable one hole at a time. Do not create a
+  // redundant local "recovery" copy while the player is deciding whether to
+  // submit it; it is still available from Continue Round until submitted.
+  const allHolesCheckpointedRef = useRef(
+    hasAllHolesScored(initialCompletedStats, initialHoles),
+  );
   // Ref for stale closure prevention in async saves
   const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
   inProgressShotsByHoleRef.current = inProgressShotsByHole;
@@ -250,6 +268,22 @@ export default function ContinueRoundClient({
     const emergencyData = loadEmergencySave(roundId);
     if (!emergencyData) return;
 
+    const serverInProgress = initialInProgressShotsByHole
+      ?? (initialShots.length > 0 ? { [startHoleIndex]: initialShots } : {});
+
+    // A phone can write its safety snapshot after the server has accepted the
+    // exact same hole data. Timestamp-only logic mistakes that safe duplicate
+    // for unsaved work on the next load. Compare progress first; never hide a
+    // fallback that contains any distinct player-entered data.
+    if (isEmergencySaveEquivalentToProgress(emergencyData, {
+      holes: initialHoles,
+      completedHoleStats: initialCompletedStats,
+      inProgressShotsByHole: serverInProgress,
+    })) {
+      clearEmergencySave(roundId);
+      return;
+    }
+
     // If server data is newer, discard stale local data
     if (serverDataTimestamp) {
       const serverTime = new Date(serverDataTimestamp).getTime();
@@ -269,8 +303,7 @@ export default function ContinueRoundClient({
   // but auto-save had captured all scores), immediately show the submit dialog.
   // Without this, the user is stuck — submit only triggers from handleHoleComplete.
   useEffect(() => {
-    const allScored = initialCompletedStats.length === initialHoles.length
-      && initialHoles.every((_, i) => initialCompletedStats[i]?.score != null);
+    const allScored = hasAllHolesScored(initialCompletedStats, initialHoles);
     if (allScored) {
       setPendingFinalStats(initialCompletedStats);
       setShowFinishConfirm(true);
@@ -284,7 +317,7 @@ export default function ContinueRoundClient({
     // that could be lost (mirrors new-round-client's gate). No data → no warning,
     // and never warn while the round is mid-submit.
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isSubmittingRef.current) return;
+      if (isSubmittingRef.current || allHolesCheckpointedRef.current) return;
       const hasUnsavedChanges =
         completedHoleStatsRef.current.some((s) => s != null) ||
         Object.keys(inProgressShotsByHoleRef.current).length > 0;
@@ -297,7 +330,7 @@ export default function ContinueRoundClient({
     // Trigger SYNCHRONOUS localStorage save + async server save when app goes to background
     const handlePageHide = () => {
       // Skip save if round is being submitted — prevents "already completed" errors
-      if (isSubmittingRef.current) return;
+      if (isSubmittingRef.current || allHolesCheckpointedRef.current) return;
 
       const mergedInProgress = { ...inProgressShotsByHoleRef.current };
       const holesSnapshot = holesRef.current;
@@ -428,7 +461,10 @@ export default function ContinueRoundClient({
    * Completing a hole is a server checkpoint. Do not advance the player until
    * the full hole-and-shots snapshot is acknowledged by the existing round.
    */
-  const persistCompletedHole = useCallback(async (saveData: PartialRoundData): Promise<boolean> => {
+  const persistCompletedHole = useCallback(async (
+    saveData: PartialRoundData,
+    emergencyTimestamp: number,
+  ): Promise<boolean> => {
     pendingServerSaveRef.current = null;
 
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -444,6 +480,7 @@ export default function ContinueRoundClient({
         if (result.success) {
           consecutiveSaveFailuresRef.current = 0;
           if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+          clearEmergencySaveThrough(roundId, emergencyTimestamp);
           return true;
         }
         if (result.error === 'conflict') {
@@ -471,6 +508,7 @@ export default function ContinueRoundClient({
   }, [handleRoundSyncConflict, isCompletedRoundError, redirectToCompletedRound, roundId, showAutoSaveWarning]);
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
+    allHolesCheckpointedRef.current = false;
     // Detect re-edit: hole already had completed stats before this call
     const isReEdit = !!completedHoleStats[holeIndex]?.score;
 
@@ -500,9 +538,10 @@ export default function ContinueRoundClient({
     });
 
     // Immediate localStorage backup of completed hole (synchronous, guaranteed)
+    const emergencyTimestamp = Date.now();
     emergencySave({
       roundId,
-      timestamp: Date.now(),
+      timestamp: emergencyTimestamp,
       setupData,
       holes: updatedHoles,
       completedHoleStats: updatedStats,
@@ -513,12 +552,14 @@ export default function ContinueRoundClient({
     const nextHole = isReEdit ? activeProgressHoleRef.current : holeIndex + 1;
     const checkpointed = await persistCompletedHole(
       buildPartialRoundData(updatedStats, nextHole, inProgressAfter),
+      emergencyTimestamp,
     );
     if (!checkpointed) return;
 
     // Navigate after completion
     // Check if every hole now has a score (all completed)
-    const allHolesScored = updatedStats.length === holes.length && updatedStats.every(s => s?.score != null);
+    const allHolesScored = hasAllHolesScored(updatedStats, holes);
+    allHolesCheckpointedRef.current = allHolesScored;
 
     if (allHolesScored && holeIndex === holes.length - 1) {
       // Last hole (re-)completed and all holes scored — always show finish confirmation
@@ -546,6 +587,7 @@ export default function ContinueRoundClient({
   };
 
   const handleHoleStatsUpdate = useCallback((holeIndex: number, holeStats: HoleStats) => {
+    allHolesCheckpointedRef.current = false;
     setHoles(prev => {
       const updated = [...prev];
       updated[holeIndex] = { ...updated[holeIndex]!, score: holeStats.score };
@@ -563,6 +605,7 @@ export default function ContinueRoundClient({
       return;
     }
 
+    allHolesCheckpointedRef.current = false;
     setInProgressShotsByHole((prev) => {
       const existing = prev[currentHoleIndex] ?? [];
       // Prevent duplicate shots when navigating back to an uncompleted hole
@@ -595,9 +638,10 @@ export default function ContinueRoundClient({
     });
 
     // SYNCHRONOUS localStorage backup — always runs, always completes
+    const emergencyTimestamp = Date.now();
     emergencySave({
       roundId,
-      timestamp: Date.now(),
+      timestamp: emergencyTimestamp,
       setupData,
       holes: holesRef.current,
       completedHoleStats: completedHoleStatsRef.current,
@@ -642,9 +686,13 @@ export default function ContinueRoundClient({
     if (offlineSyncState.isOnline) {
       if (serverSaveInProgressRef.current) {
         // Queue this save — it will execute after the current one completes
-        pendingServerSaveRef.current = { shots, holeIndex };
+        pendingServerSaveRef.current = { shots, holeIndex, emergencyTimestamp };
       } else {
-        const executeServerSave = async (saveShots: ShotRecord[], saveHoleIndex: number) => {
+        const executeServerSave = async (
+          saveShots: ShotRecord[],
+          saveHoleIndex: number,
+          saveEmergencyTimestamp: number,
+        ) => {
           serverSaveInProgressRef.current = true;
           try {
             const mergedInProgress = { ...inProgressShotsByHoleRef.current, [saveHoleIndex]: saveShots };
@@ -655,6 +703,7 @@ export default function ContinueRoundClient({
             if (result.success) {
               consecutiveSaveFailuresRef.current = 0;
               if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+              clearEmergencySaveThrough(roundId, saveEmergencyTimestamp);
             } else if (result.error === 'conflict') {
               void handleRoundSyncConflict('This round was updated on another device. Please reload.');
             } else if (result.error === 'busy' || result.error === 'retry') {
@@ -698,12 +747,16 @@ export default function ContinueRoundClient({
                   }
                 })();
               } else {
-                void executeServerSave(pending.shots, pending.holeIndex);
+                void executeServerSave(
+                  pending.shots,
+                  pending.holeIndex,
+                  pending.emergencyTimestamp ?? Date.now(),
+                );
               }
             }
           }
         };
-        void executeServerSave(shots, holeIndex);
+        void executeServerSave(shots, holeIndex, emergencyTimestamp);
       }
     }
   }, [
