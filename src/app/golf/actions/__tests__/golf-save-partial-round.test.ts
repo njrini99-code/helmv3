@@ -83,7 +83,7 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
-import { savePartialRound } from '../golf';
+import { getNextQualifierRoundNumber, savePartialRound } from '../golf';
 
 type Row = Record<string, unknown>;
 interface SeedTables extends Record<string, Row[]> {
@@ -233,6 +233,20 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
     if (result.success) {
       expect(result.data.roundId).toBe('round-same');
     }
+  });
+});
+
+describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
+  it('refuses a stale link after a coach has explicitly closed the qualifier', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'completed' }];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result.success).toBe(false);
+    expect(result.success === false && result.error).toMatch(/closed by the coach/i);
   });
 });
 

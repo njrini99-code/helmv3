@@ -1438,12 +1438,20 @@ async function submitGolfRoundComprehensiveImpl(
       return { success: false, error: 'Player profile not found' };
     }
 
+    // Existing in-progress rows are the authority for their identity. A browser
+    // can be old, resumed from recovery, or have lost setup state while it was
+    // backgrounded; it must never be able to detach or retarget a started
+    // qualifier round when it submits the scorecard.
+    let effectiveRoundType = data.roundType;
+    let effectiveQualifierId = data.qualifierId;
+    let effectiveQualifierRoundNumber = data.qualifierRoundNumber;
+
     // If updating an existing round, verify ownership and that it's not already completed
     if (existingRoundId) {
       // SECURITY: Verify the round belongs to this player and is not already completed
       const { data: existingRound, error: verifyError } = await supabase
         .from('golf_rounds')
-        .select('id, player_id, status')
+        .select('id, player_id, status, round_type, qualifier_id, qualifier_round_number')
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
         .single();
@@ -1472,15 +1480,65 @@ async function submitGolfRoundComprehensiveImpl(
         }, 'warning');
         return { success: false, error: 'This round has already been submitted. It cannot be submitted again.' };
       }
+
+      effectiveRoundType = (existingRound.round_type ?? data.roundType) as GolfRoundInputComprehensive['roundType'];
+      const persistedQualifierId = existingRound.qualifier_id;
+      const persistedQualifierRoundNumber = existingRound.qualifier_round_number;
+
+      if (persistedQualifierId) {
+        if (data.qualifierId && data.qualifierId !== persistedQualifierId) {
+          void logServerError('Round submit rejected: stale client tried to retarget an existing qualifier round', {
+            action: 'submitGolfRoundComprehensive.qualifierIdentity',
+            featureArea: 'qualifiers',
+            roundId: existingRoundId,
+            playerId: player.id,
+            extra: { persistedQualifierId, submittedQualifierId: data.qualifierId },
+          }, 'warning');
+          return { success: false, error: 'This round belongs to a different qualifier. Reload it and try again.' };
+        }
+        if (
+          data.qualifierRoundNumber != null &&
+          persistedQualifierRoundNumber != null &&
+          data.qualifierRoundNumber !== persistedQualifierRoundNumber
+        ) {
+          void logServerError('Round submit rejected: stale client tried to change an existing qualifier round number', {
+            action: 'submitGolfRoundComprehensive.qualifierIdentity',
+            featureArea: 'qualifiers',
+            roundId: existingRoundId,
+            playerId: player.id,
+            extra: {
+              persistedQualifierId,
+              persistedQualifierRoundNumber,
+              submittedQualifierRoundNumber: data.qualifierRoundNumber,
+            },
+          }, 'warning');
+          return { success: false, error: 'This round belongs to a different qualifier round. Reload it and try again.' };
+        }
+
+        // A stored qualifier link is always a qualifier round. This also
+        // normalizes legacy parents whose type was incorrectly left as
+        // "practice" while their qualifier_id was already durable.
+        effectiveRoundType = 'qualifier';
+        effectiveQualifierId = persistedQualifierId;
+        // Older parents can have the qualifier link but lack the round number.
+        // Keep the durable number when present; otherwise validate the supplied
+        // number instead of silently erasing it at completion.
+        effectiveQualifierRoundNumber = persistedQualifierRoundNumber ?? data.qualifierRoundNumber;
+      } else if (existingRound.round_type !== 'qualifier' && data.qualifierId) {
+        // A completed scorecard is not the place to reclassify a practice or
+        // tournament round. Coaches use updateRoundType, which validates the
+        // qualifier and leaves a clear audit trail.
+        return { success: false, error: 'This started round is not a qualifier round. Ask a coach to update its type before submitting.' };
+      }
     }
 
     // Server-side qualifier validation
-    if (data.qualifierId) {
+    if (effectiveQualifierId) {
       // Verify qualifier exists and is not completed
       const { data: qualifierRaw, error: qualifierError } = await supabase
         .from('golf_qualifiers')
         .select('id, status, num_rounds')
-        .eq('id', data.qualifierId)
+        .eq('id', effectiveQualifierId)
         .single();
 
       const qualifier = qualifierRaw as { id: string; status: string; num_rounds: number } | null;
@@ -1497,7 +1555,7 @@ async function submitGolfRoundComprehensiveImpl(
       const { data: qualifierEntry, error: entryError } = await supabase
         .from('golf_qualifier_entries')
         .select('id')
-        .eq('qualifier_id', data.qualifierId)
+        .eq('qualifier_id', effectiveQualifierId)
         .eq('player_id', player.id)
         .single();
 
@@ -1510,26 +1568,26 @@ async function submitGolfRoundComprehensiveImpl(
       // long ago but this read/cap-check path never was, so a qualifier
       // configured for e.g. 1 round never stopped accepting round 2, 3, 4...).
       const numRounds = qualifier.num_rounds ?? 1;
-      if (data.qualifierRoundNumber && data.qualifierRoundNumber > numRounds) {
+      if (effectiveQualifierRoundNumber && effectiveQualifierRoundNumber > numRounds) {
         return {
           success: false,
-          error: `This qualifier only has ${numRounds} round${numRounds === 1 ? '' : 's'}. Round ${data.qualifierRoundNumber} is beyond the configured count.`,
+          error: `This qualifier only has ${numRounds} round${numRounds === 1 ? '' : 's'}. Round ${effectiveQualifierRoundNumber} is beyond the configured count.`,
         };
       }
 
       // Prevent duplicate qualifier round numbers
-      if (data.qualifierRoundNumber) {
+      if (effectiveQualifierRoundNumber) {
         const { data: existingRound } = await supabase
           .from('golf_rounds')
           .select('id')
-          .eq('qualifier_id', data.qualifierId)
+          .eq('qualifier_id', effectiveQualifierId)
           .eq('player_id', player.id)
-          .eq('qualifier_round_number', data.qualifierRoundNumber)
+          .eq('qualifier_round_number', effectiveQualifierRoundNumber)
           .neq('status', 'abandoned')
           .maybeSingle();
 
         if (existingRound && existingRound.id !== existingRoundId) {
-          return { success: false, error: `You have already submitted round ${data.qualifierRoundNumber} for this qualifier.` };
+          return { success: false, error: `You have already submitted round ${effectiveQualifierRoundNumber} for this qualifier.` };
         }
       }
     }
@@ -1579,7 +1637,7 @@ async function submitGolfRoundComprehensiveImpl(
       course_slope: data.courseSlope ?? null,
       tees_played: data.teesPlayed || null,
       tee_id: data.teeId || null,
-      round_type: data.roundType,
+      round_type: effectiveRoundType,
       round_date: data.roundDate,
       holes_played: data.holes.length,
       total_score: totalScore,
@@ -1593,8 +1651,8 @@ async function submitGolfRoundComprehensiveImpl(
       front_nine: frontNine,
       back_nine: backNine,
       status: 'completed' as const, // Mark as completed when all holes are done
-      qualifier_id: data.qualifierId || null,
-      qualifier_round_number: data.qualifierRoundNumber || null,
+      qualifier_id: effectiveQualifierId || null,
+      qualifier_round_number: effectiveQualifierRoundNumber || null,
     };
 
     // Build hole/shot/detail payloads for RPC or manual insert
@@ -2127,9 +2185,9 @@ async function submitGolfRoundComprehensiveImpl(
     // auto-advance its start only (F029/F138). The first completed round
     // transitions upcoming→in_progress. Completion is intentionally manual:
     // neither entrant progress nor scheduled dates can close a qualifier.
-    if (data.qualifierId) {
+    if (effectiveQualifierId) {
       try {
-        await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
+        await updateQualifierEntryStats(effectiveQualifierId, player.id);
       } catch (err) {
         await logServerError(`Failed to update qualifier entry stats after round submit: ${describeError(err)}`, {
           action: 'submitGolfRoundComprehensive.qualifierStats',
@@ -2139,14 +2197,14 @@ async function submitGolfRoundComprehensiveImpl(
           userId: user.id,
           userEmail: user.email,
           extra: {
-            qualifierId: data.qualifierId,
+            qualifierId: effectiveQualifierId,
             stack: err instanceof Error ? err.stack : undefined,
           },
         }, 'warning');
       }
 
       try {
-        await advanceQualifierOnRoundSubmit(supabase, data.qualifierId);
+        await advanceQualifierOnRoundSubmit(supabase, effectiveQualifierId);
       } catch (err) {
         await logServerError(`Failed to auto-advance qualifier status after round submit: ${describeError(err)}`, {
           action: 'submitGolfRoundComprehensive.qualifierAutoAdvance',
@@ -2155,7 +2213,7 @@ async function submitGolfRoundComprehensiveImpl(
           playerId: player.id,
           userId: user.id,
           userEmail: user.email,
-          extra: { qualifierId: data.qualifierId },
+          extra: { qualifierId: effectiveQualifierId },
         }, 'warning');
       }
     }
@@ -2367,9 +2425,9 @@ async function submitGolfRoundComprehensiveImpl(
       updateTag(CACHE_TAGS.ROUNDS);
       updateTag(CACHE_TAGS.STATS);
 
-      if (data.qualifierId) {
+      if (effectiveQualifierId) {
         revalidatePath('/golf/dashboard/qualifiers');
-        revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
+        revalidatePath(`/golf/dashboard/qualifiers/${effectiveQualifierId}`);
       }
     } catch (cacheErr) {
       await logServerError(`Next cache revalidation failed after round submit: ${describeError(cacheErr)}`, {
@@ -2380,7 +2438,7 @@ async function submitGolfRoundComprehensiveImpl(
         userId: user.id,
         userEmail: user.email,
         extra: {
-          qualifierId: data.qualifierId ?? null,
+          qualifierId: effectiveQualifierId ?? null,
           stack: cacheErr instanceof Error ? cacheErr.stack : undefined,
         },
       }, 'warning');
@@ -2391,7 +2449,7 @@ async function submitGolfRoundComprehensiveImpl(
       courseName: data.courseName,
       totalScore,
       scoreToPar: totalToPar,
-      roundType: data.roundType,
+      roundType: effectiveRoundType,
       holesPlayed: data.holes.length,
     }).catch((err) => {
       logServerError(`logRoundSubmitted failed: ${describeError(err)}`, {
@@ -6603,15 +6661,20 @@ async function getNextQualifierRoundNumberImpl(
       return { success: false, error: 'You are not entered in this qualifier' };
     }
 
-    // Verify qualifier exists
+    // Verify qualifier exists and remains coach-open. Scheduled dates never
+    // close a qualifier, but an explicit coach completion must stop stale
+    // direct links before they can start another round.
     const { data: qualifier } = await supabase
       .from('golf_qualifiers')
-      .select('id, num_rounds')
+      .select('id, num_rounds, status')
       .eq('id', qualifierId)
       .single();
 
     if (!qualifier) {
       return { success: false, error: 'Qualifier not found' };
+    }
+    if (qualifier.status === 'completed') {
+      return { success: false, error: 'This qualifier has been closed by the coach.' };
     }
 
     // Get completed rounds for this player in this qualifier
@@ -6977,53 +7040,54 @@ export async function getQualifierLeaderboard(
  * This is called automatically after submitGolfRoundComprehensive
  */
 async function updateQualifierEntryStats(
-  supabase: Awaited<ReturnType<typeof createClient>>,
   qualifierId: string,
   playerId: string
 ): Promise<void> {
-  try {
-    // Get all completed rounds for this player in this qualifier
-    const roundsResult = await supabase
-      .from('golf_rounds')
-      .select('total_score, score_to_par')
-      .eq('qualifier_id', qualifierId)
-      .eq('player_id', playerId)
-      .eq('status', 'completed');
+  // Use one privileged client for both the source rounds and the aggregate
+  // write. A player is allowed to submit their own score, but never to update
+  // the coach-owned qualifier-entry aggregate directly. Most importantly,
+  // inspect every result: PostgREST can report a zero-row UPDATE with no
+  // error, which previously left production aggregates stale without a log.
+  const admin = createAdminClient();
+  const { data: rounds, error: roundsError } = await admin
+    .from('golf_rounds')
+    .select('total_score, score_to_par')
+    .eq('qualifier_id', qualifierId)
+    .eq('player_id', playerId)
+    .eq('status', 'completed');
 
-    const rounds = (roundsResult.data as unknown) as Array<{
-      total_score: number | null;
-      score_to_par: number | null;
-    }> | null;
+  if (roundsError) {
+    throw new Error(`Could not read completed qualifier rounds: ${roundsError.message}`);
+  }
 
-    if (!rounds) return;
+  // Filter out rounds with null total_score to avoid summing 0 in place of missing data
+  const scoredRounds = ((rounds ?? []) as Array<{
+    total_score: number | null;
+    score_to_par: number | null;
+  }>).filter((round): round is { total_score: number; score_to_par: number | null } => round.total_score != null);
 
-    // Filter out rounds with null total_score to avoid summing 0 in place of missing data
-    const scoredRounds = rounds.filter((r): r is typeof r & { total_score: number } => r.total_score != null);
+  const totalScore = scoredRounds.reduce((sum, round) => sum + round.total_score, 0);
+  const totalToPar = scoredRounds.reduce((sum, round) => sum + (round.score_to_par ?? 0), 0);
+  const roundsCompleted = scoredRounds.length;
 
-    const totalScore = scoredRounds.reduce((sum, r) => sum + r.total_score, 0);
-    const totalToPar = scoredRounds.reduce((sum, r) => sum + (r.score_to_par ?? 0), 0);
-    const roundsCompleted = scoredRounds.length;
+  const { data: updatedEntry, error: updateError } = await admin
+    .from('golf_qualifier_entries')
+    .update({
+      score: totalScore,
+      total_score: totalScore,
+      total_to_par: totalToPar,
+      rounds_completed: roundsCompleted,
+    })
+    .eq('qualifier_id', qualifierId)
+    .eq('player_id', playerId)
+    .select('id')
+    .maybeSingle();
 
-    // Update all aggregate columns on the qualifier entry. Uses the admin
-    // client for the write: golf_qualifier_entries_update_coach RLS only
-    // grants UPDATE to the team's coach, but this aggregate refresh is
-    // triggered by a PLAYER submitting their OWN round — a player-session
-    // client would match 0 rows here (no error, just a silent no-op), so
-    // rounds_completed/total_score/total_to_par never actually persisted.
-    const admin = createAdminClient();
-    await admin
-      .from('golf_qualifier_entries')
-      .update({
-        score: totalScore,
-        total_score: totalScore,
-        total_to_par: totalToPar,
-        rounds_completed: roundsCompleted,
-      })
-      .eq('qualifier_id', qualifierId)
-      .eq('player_id', playerId);
-
-  } catch {
-    // Non-critical — continue
+  if (updateError) {
+    throw new Error(`Could not update qualifier entry aggregate: ${updateError.message}`);
+  }
+  if (!updatedEntry) {
+    throw new Error('Qualifier entry aggregate update matched no row');
   }
 }
 

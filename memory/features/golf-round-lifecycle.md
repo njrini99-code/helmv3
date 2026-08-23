@@ -80,6 +80,10 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - A player may begin tracking only after an `in_progress` parent exists in the
   database. Completing a hole is a durable database checkpoint; it may not be
   treated as a fire-and-forget background write.
+- The durable parent is also the authority for immutable start-time identity
+  such as qualifier link and qualifier round number. Final submission may use
+  recovery data for scorecard content, but must not let stale client metadata
+  detach or retarget the started round.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
 - Local recovery UI may appear only when its scorecard or shot data differs
