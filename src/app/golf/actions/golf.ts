@@ -497,10 +497,10 @@ const golfQualifierSchema = z
     // Travel-squad selection model (omit → DB defaults 5 total / 1 coach-pick).
     selectionSlotsTotal: z.number().int().min(1).max(50).optional(),
     selectionSlotsCoachPick: z.number().int().min(0).max(50).optional(),
-    // Feature G — number of rounds + per-round course assignments. Both optional
-    // (omit → DB default num_rounds = 1, no per-round courses) so the legacy
-    // single-round create path stays byte-identical.
-    numRounds: z.number().int().min(1).max(50).optional(),
+    // The round cap controls whether a player may enter another result; it
+    // must be explicit so a caller can never silently create a one-round
+    // qualifier by omitting it.
+    numRounds: z.number().int().min(1).max(50),
     roundCourses: z.array(qualifierRoundCourseSchema).max(50).optional(),
   })
   .refine(
@@ -723,8 +723,8 @@ interface GolfQualifierInput {
   selectionSlotsTotal?: number;
   /** Coach's discretionary picks within the squad (omit → DB default 1). */
   selectionSlotsCoachPick?: number;
-  /** Feature G — how many rounds the qualifier runs (omit → DB default 1). */
-  numRounds?: number;
+  /** How many rounds the qualifier runs; this is the enforced player cap. */
+  numRounds: number;
   /** Feature G — the course assigned to each round (omit → none). */
   roundCourses?: QualifierRoundCourseInput[];
 }
@@ -3486,6 +3486,11 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
         end_date: validatedData.endDate || null,
         status: 'upcoming',
         created_by: coach.id,
+        // The round cap is an entry rule, not optional follow-up metadata.
+        // Persist it in the same write as the qualifier so a transient
+        // secondary UPDATE can never leave a multi-round qualifier capped at
+        // the database default of one round.
+        num_rounds: validatedData.numRounds,
         // Only set when provided so omitted values fall back to DB defaults
         // (5 total / 1 coach-pick) — keeps the legacy create path byte-identical.
         ...(validatedData.selectionSlotsTotal !== undefined
@@ -3502,31 +3507,13 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
       return { success: false, error: 'Failed to create qualifier. Please try again.' };
     }
 
-    // Feature G — set num_rounds when the coach split the qualifier across
-    // multiple rounds. Done as a follow-up update through fromUntyped because the
-    // column is not yet in the generated Database types (migration unapplied);
-    // omitting it leaves the DB default (num_rounds = 1) so the legacy
-    // single-round create path stays byte-identical.
-    if (validatedData.numRounds !== undefined && validatedData.numRounds !== 1) {
-      const { error: numRoundsError } = await fromUntyped(supabase, 'golf_qualifiers')
-        .update({ num_rounds: validatedData.numRounds })
-        .eq('id', qualifier.id);
-
-      if (numRoundsError) {
-        await logServerError(
-          `createGolfQualifier num_rounds write failed: ${numRoundsError.message}`,
-          { action: 'createGolfQualifier.numRounds', featureArea: 'qualifiers' },
-        );
-      }
-    }
-
     // Feature G — persist the per-round course assignments. Best-effort write
     // through fromUntyped (golf_qualifier_round_courses is not yet in the
     // generated Database types; the migration is unapplied). A failure here must
     // NOT roll back the qualifier the coach already created — surface it and move
     // on so courses can be re-assigned via setQualifierRoundCourses().
     if (validatedData.roundCourses && validatedData.roundCourses.length > 0) {
-      const numRounds = validatedData.numRounds ?? 1;
+      const numRounds = validatedData.numRounds;
       const rows = validatedData.roundCourses
         // Defensive: never write a round beyond the declared count.
         .filter((rc) => rc.roundNumber >= 1 && rc.roundNumber <= numRounds)
@@ -3716,7 +3703,13 @@ async function setQualifierRoundCoursesImpl(
       return { success: false, error: 'You must be signed in to edit a qualifier' };
     }
 
-    const safeNumRounds = Math.min(Math.max(Math.trunc(numRounds), 1), 50);
+    // Never coerce a malformed update into a one-round qualifier. That turns a
+    // client bug into a live cap that can strand players after their next
+    // completed round. Reject it and preserve the existing configuration.
+    if (!Number.isInteger(numRounds) || numRounds < 1 || numRounds > 50) {
+      return { success: false, error: 'Round count must be between 1 and 50.' };
+    }
+    const safeNumRounds = numRounds;
 
     // Keep golf_qualifiers.num_rounds in sync. RLS (coach-only UPDATE) gates
     // this — and `.select('id')` is what makes that gate observable. A
@@ -6715,7 +6708,11 @@ async function getNextQualifierRoundNumberImpl(
     // flow could always request maxCompletedRound+1 even past the qualifier's
     // configured round count.
     if (maxCompletedRound >= numRounds) {
-      return { success: false, error: 'You have already completed every round for this qualifier.' };
+      const roundLabel = numRounds === 1 ? 'round' : 'rounds';
+      return {
+        success: false,
+        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${maxCompletedRound} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
+      };
     }
 
     const nextRoundNumber = maxCompletedRound + 1;

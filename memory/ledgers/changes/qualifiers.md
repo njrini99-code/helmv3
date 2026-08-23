@@ -1,5 +1,19 @@
 # Qualifiers change ledger
 
+## 2026-08-23 — make qualifier round caps explicit and non-regressive
+
+- App/UX SHA: pending commit on PR #1605; not deployed.
+- `createGolfQualifier()` now includes `num_rounds` in its initial
+  `golf_qualifiers` INSERT instead of creating a one-round qualifier and then
+  attempting a best-effort follow-up update.
+- The server rejects a missing round cap, and the coach creation screen requires
+  a deliberate acknowledgement before a one-round qualifier can be created.
+- Why: a failed second write could return a successful creation response while
+  silently capping all entered players at one completed round.
+- Production database: `guard_golf_qualifier_round_caps` is applied. It enforces
+  the valid 1–50 range and refuses to lower a cap below a submitted or
+  in-progress qualifier round. It does not change status, scores, or entries.
+
 ## 2026-08-22 — require manual qualifier completion
 
 - Removed all automatic qualifier completion and the page-view lifecycle
