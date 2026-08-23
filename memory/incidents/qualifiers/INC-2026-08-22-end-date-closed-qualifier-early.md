@@ -34,6 +34,12 @@ coach can complete it manually.
 - Removed automatic completion from the lifecycle entirely, including the
   page-view lifecycle reconciliation path.
 - Added a regression test proving no automatic completion transition exists.
+- The 2026-08-23 Shenandoah incident exposed a separate creation-write gap:
+  its description declared four or five rounds while the persisted cap was
+  one. The live record was corrected to five after validating that intent; the
+  permanent repair writes `num_rounds` atomically at creation rather than
+  relying on a best-effort second update. The production database now also
+  rejects invalid caps and any cap reduction below a recorded round.
 
 ## Verification
 
@@ -41,4 +47,5 @@ coach can complete it manually.
 - The permanent lifecycle code has no automatic `completed` write; completion
   remains an authorized coach action.
 - `src/lib/golf/__tests__/qualifier-lifecycle.test.ts`
+- `src/app/golf/actions/__tests__/create-qualifier-round-count.test.ts`
 - `npm run typecheck`

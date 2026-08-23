@@ -78,6 +78,14 @@ Leaderboard reads qualifier
 - Qualifier rounds must remain normal rounds too; do not fork scoring logic.
 - Leaderboard aggregation must handle ties and incomplete entries consistently.
 - Round submission is the source of truth for qualifier progress; do not manually drift entry stats away from linked rounds.
+- The configured `num_rounds` cap is an entry rule and must be written atomically
+  with the qualifier itself. A multi-round qualifier must never be created as a
+  one-round qualifier and repaired later in a best-effort follow-up write.
+- A coach must explicitly acknowledge the one-round cap in the creation UI;
+  missing `numRounds` is rejected by the server action rather than defaulted.
+- Round-cap edits must reject, rather than coerce, a missing, fractional, or
+  out-of-range value. The database also rejects a cap reduction below a
+  submitted or in-progress qualifier round, regardless of the caller.
 - An existing in-progress round's persisted qualifier identity is authoritative.
   A stale or recovered client may not remove, change, or silently overwrite its
   round type, qualifier link, or qualifier round number during final
@@ -106,6 +114,15 @@ Leaderboard reads qualifier
   never prevent a player from entering, continuing, or submitting a qualifier
   round. Entrant progress also never closes a qualifier automatically; only a
   coach's explicit manual completion action can do that.
+- A mismatch between the coach's intended number of rounds and `num_rounds`
+  blocks the next result by design, so creation and edit saves must surface a
+  failed cap write rather than reporting success.
+- The new-qualifier form must state that the cap is enforced and make a
+  single-round configuration an affirmative choice, not an invisible default.
+- A coach-open qualifier that has reached its configured cap remains visible in
+  round setup. It must show server-derived `submitted/cap` progress and an
+  actionable coach-update message; it must never disappear as if closed or be
+  mislabeled as a completed qualifier.
 - CoachHelm V3 qualifying views may evolve faster than the older qualifier pages; update both docs and registry when new paths land.
 - Calendar integration means deleting or rescheduling qualifiers can affect event views.
 

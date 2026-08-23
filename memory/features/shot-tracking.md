@@ -20,6 +20,10 @@ Each newly entered shot is synchronously snapshotted to localStorage and
 mirrored to the v2 browser recovery store before the deferred network save.
 Active snapshots do not expire by age; they clear only after the matching
 server acknowledgement, a successful final submission, or an explicit delete.
+The v2 browser-mirror reader retries one WebKit-aborted or inactive readonly
+transaction on a fresh connection. If the browser still cannot read its local
+mirror, that tab degrades once to the server-backed Continue Round flow without
+repeated client errors or deleting any browser recovery data.
 If a completed-hole checkpoint cannot be confirmed, the tracker remains on that
 hole and exposes one in-context retry action; it does not advance, report the
 hole as safely saved, or create a persistent general-purpose unsynced banner.
@@ -32,6 +36,9 @@ delete lookup confirms a shot is already absent, the client removes only its
 stale local reference; it does not retry the delete or bypass server ownership
 checks. The Bridge records that reconciliation as a handled warning rather than
 an error sent to Sentry.
+An edit or delete read failure is deliberately different: the client keeps its
+local shot intact and asks the player to retry. Only the database's explicit
+no-visible-row result may trigger stale-reference reconciliation.
 
 ## Primary Entry Points
 
@@ -135,7 +142,12 @@ Round setup
 - Draft JSON currently lives in `golf_rounds.notes`, which can collide with user notes.
 - Cross-device/session ordering can still produce stale local shot IDs; the
   client reconciles a server-confirmed absent shot, while authorization and
-  in-progress-round validation remain enforced on the server.
+  in-progress-round validation remain enforced on the server. Both Edit and
+  Delete use the stable `shot_not_found` reconciliation signal: the stale
+  local row is removed, hole state is recalculated from the remaining shots,
+  and the client never recreates a row the server has confirmed is absent.
+  Transport and database read failures never use that signal, so temporary
+  outages cannot make the client hide valid local progress.
 - Offline shot sync is disabled because of `ShotRecord` to `OfflineShot` type mismatch; DB auto-save is the path to trust.
 - Strokes-gained columns exist but are not populated from shot data.
 - Putts-per-GIR is not properly implemented.

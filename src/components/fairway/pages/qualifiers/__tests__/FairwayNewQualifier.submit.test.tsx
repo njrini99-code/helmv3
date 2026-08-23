@@ -46,6 +46,12 @@ const players = [
   { id: 'p2', first_name: 'Grace', last_name: 'Hopper' },
 ];
 
+function confirmSingleRoundCap() {
+  fireEvent.click(
+    screen.getByRole('checkbox', { name: /intentionally allows one 18-hole round/i }),
+  );
+}
+
 describe('FairwayNewQualifier — submit reaches the server action (#1270)', () => {
   beforeEach(() => {
     createGolfQualifier.mockReset();
@@ -62,6 +68,7 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
     const startDate = document.querySelector<HTMLInputElement>('input[name="startDate"]');
     expect(startDate).toBeTruthy();
     fireEvent.change(startDate!, { target: { value: '2026-09-15' } });
+    confirmSingleRoundCap();
 
     fireEvent.click(screen.getByRole('button', { name: /Create qualifier/i }));
 
@@ -81,6 +88,7 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
     fireEvent.change(document.querySelector<HTMLInputElement>('input[name="startDate"]')!, {
       target: { value: '2026-09-15' },
     });
+    confirmSingleRoundCap();
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Ada Lovelace' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Grace Hopper' }));
@@ -113,6 +121,24 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
     });
     const errorRow = document.querySelector('input[name="name"]')?.parentElement?.textContent ?? '';
     expect(errorRow.trim().length).toBeGreaterThan(0);
+    expect(createGolfQualifier).not.toHaveBeenCalled();
+  });
+
+  it('requires the coach to explicitly choose the round cap', async () => {
+    render(<FairwayNewQualifier players={players} />);
+
+    fireEvent.change(screen.getByRole('textbox', { name: /Qualifier name/i }), {
+      target: { value: 'Fall Qualifying' },
+    });
+    fireEvent.change(document.querySelector<HTMLInputElement>('input[name="startDate"]')!, {
+      target: { value: '2026-09-15' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Create qualifier/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/confirm that this qualifier intentionally allows one round/i)).toBeTruthy();
+    });
     expect(createGolfQualifier).not.toHaveBeenCalled();
   });
 });

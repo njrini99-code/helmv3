@@ -248,6 +248,28 @@ describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
     expect(result.success).toBe(false);
     expect(result.success === false && result.error).toMatch(/closed by the coach/i);
   });
+
+  it('explains an open qualifier round cap without falsely calling the qualifier completed', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 1, status: 'in_progress' }];
+    tables.golf_rounds = [{
+      id: 'round-1',
+      qualifier_id: 'qualifier-1',
+      player_id: 'player-1',
+      qualifier_round_number: 1,
+      status: 'completed',
+    }];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result.success).toBe(false);
+    expect(result.success === false && result.error).toMatch(/1 of 1/i);
+    expect(result.success === false && result.error).toMatch(/still open/i);
+    expect(result.success === false && result.error).toMatch(/coach.*raise.*round/i);
+    expect(result.success === false && result.error).not.toMatch(/completed every round/i);
+  });
 });
 
 /**

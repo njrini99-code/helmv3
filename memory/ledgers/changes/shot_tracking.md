@@ -61,3 +61,15 @@
   same synchronous in-flight guard as normal shot submission.
 - Why: rapid repeat taps could enqueue duplicate checkpoints, and an old
   asynchronous cache delete could otherwise remove a later recoverable shot.
+
+## 2026-08-23 — reconcile a stale Edit Shot reference safely
+
+- SHA: pending commit on the stale-edit reconciliation release.
+- Change: `updateShot` now returns the same stable `shot_not_found` code as
+  `deleteShot` when the row has already been removed. Edit Shot closes its
+  stale editor, removes only that local row, and recomputes the affected
+  hole's state from the remaining server-backed history.
+- Why: an Undo, second tab, or disconnected response could leave a browser
+  editing a no-longer-existent shot. Treating that condition as an ordinary
+  save failure falsely told golfers their action was broken and invited unsafe
+  retries.

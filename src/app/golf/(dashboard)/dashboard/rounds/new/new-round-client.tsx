@@ -558,6 +558,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const [selectedRoundNumber, setSelectedRoundNumber] = useState<number | null>(null);
   const [availableRounds, setAvailableRounds] = useState<number[]>([]);
   const [qualifierError, setQualifierError] = useState<string | null>(null);
+  const [qualifierRoundError, setQualifierRoundError] = useState<string | null>(null);
+  const [qualifierRoundRetry, setQualifierRoundRetry] = useState(0);
 
   const buildRecoverySetupData = useCallback(() => ({
     ...setupData,
@@ -676,13 +678,15 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           setQualifierError(result.error);
           return;
         }
-        // Filter to only active/in-progress qualifiers with remaining rounds
+        // Keep every coach-open qualifier visible. A reached cap is a distinct,
+        // actionable state; filtering it away made an open qualifier look as
+        // though it had vanished and hid the server's precise explanation.
         const activeQualifiers = result.data.filter(
-          q => q.status !== 'completed' && q.roundsCompleted < q.numRounds
+          q => q.status !== 'completed'
         );
         setQualifiers(activeQualifiers);
         if (activeQualifiers.length === 0) {
-          setQualifierError('You have no active qualifiers to enter rounds for.');
+          setQualifierError('You have no coach-open qualifiers to enter rounds for.');
         }
       })
       .catch((err: Error) => {
@@ -710,33 +714,55 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       setSelectedRoundNumber(null);
       setAvailableRounds([]);
       setQualifierError(null);
+      setQualifierRoundError(null);
     }
   }, [setupData.roundType, loadQualifiers]);
 
   // Fetch available round numbers when qualifier is selected
   useEffect(() => {
+    let cancelled = false;
     if (selectedQualifierId) {
+      setAvailableRounds([]);
+      setSelectedRoundNumber(null);
+      setQualifierRoundError(null);
       getNextQualifierRoundNumber(selectedQualifierId)
         .then(result => {
-          if (result.success && result.data) {
+          if (cancelled) return;
+          if (!result.success) {
+            setQualifierRoundError(result.error);
+            return;
+          }
+          if (result.data) {
             setAvailableRounds(result.data.availableRounds);
             // Auto-select the next round number
             if (result.data.nextRoundNumber > 0) {
               setSelectedRoundNumber(result.data.nextRoundNumber);
             }
+            return;
           }
+          setQualifierRoundError('We could not verify your next qualifier round. Try again before starting.');
         })
         .catch((err: Error) => {
+          if (cancelled) return;
           if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
             window.location.reload();
             return;
           }
+          setQualifierRoundError('We could not verify your next qualifier round. Try again before starting.');
         });
     } else {
       setAvailableRounds([]);
       setSelectedRoundNumber(null);
+      setQualifierRoundError(null);
     }
-  }, [selectedQualifierId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedQualifierId, qualifierRoundRetry]);
+
+  const retryQualifierRound = useCallback(() => {
+    setQualifierRoundRetry((value) => value + 1);
+  }, []);
 
   // Fetch saved courses on mount
   useEffect(() => {
@@ -1941,6 +1967,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           onRetryQualifiers={loadQualifiers}
           selectedQualifierId={selectedQualifierId}
           setSelectedQualifierId={setSelectedQualifierId}
+          qualifierRoundError={qualifierRoundError}
+          onRetryQualifierRound={retryQualifierRound}
           availableRounds={availableRounds}
           selectedRoundNumber={selectedRoundNumber}
           setSelectedRoundNumber={setSelectedRoundNumber}

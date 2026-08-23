@@ -31,7 +31,9 @@ BEGIN
 
   INSERT INTO public.users (id, email, role) VALUES
     (v_user_one, 'pgtap-submit-identity-one@helm.test', 'player'),
-    (v_user_two, 'pgtap-submit-identity-two@helm.test', 'player');
+    (v_user_two, 'pgtap-submit-identity-two@helm.test', 'player')
+  ON CONFLICT (id) DO UPDATE
+  SET role = EXCLUDED.role;
 
   INSERT INTO public.organizations (id, name, type)
   VALUES (v_org, 'pgtap-submit-identity-org', 'college');

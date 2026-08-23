@@ -153,7 +153,11 @@ let dbInstance: IDBDatabase | null = null;
 let dbInitPromise: Promise<IDBDatabase> | null = null;
 
 /**
- * Set once `indexedDB.open()` itself fails — a device-level condition
+ * Set once browser storage becomes unavailable for this tab — either an
+ * `indexedDB.open()` failure or an exhausted read-transaction retry. Both are
+ * device-level conditions from the app's perspective: retrying each recovery
+ * read only repeats the same OS-level round-trip and can never be allowed to
+ * block the server-backed Continue Round flow.
  * ("Internal error opening backing store", 5 production events from WebKit's
  * storage-eviction/quota quirks), not a stale-connection race. This is
  * distinct from `dbInstance`/`dbInitPromise`: those get reset and retried
@@ -207,6 +211,30 @@ function isClosingConnectionError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   return error.name === 'InvalidStateError'
     || /(?:connection|database).*(?:closed|closing)|(?:closed|closing).*(?:connection|database)/i.test(error.message);
+}
+
+/**
+ * Safari/WebKit can abort a just-created read transaction while a page is
+ * resuming or another tab upgrades the database. Reads are safe to replay on
+ * a fresh connection; writes deliberately are not, because replaying a write
+ * after an ambiguous abort could duplicate player progress.
+ */
+function isRetryableReadTransactionError(error: unknown): boolean {
+  const candidate = error as { name?: unknown; message?: unknown } | null;
+  const name = typeof candidate?.name === 'string' ? candidate.name : '';
+  const message = typeof candidate?.message === 'string' ? candidate.message : '';
+
+  return name === 'AbortError'
+    || name === 'InvalidStateError'
+    || name === 'TransactionInactiveError'
+    || (name === 'UnknownError' && /(?:without an in-progress transaction|transaction.*(?:aborted|inactive|finished))/i.test(message))
+    || /(?:without an in-progress transaction|transaction.*(?:aborted|inactive|finished))/i.test(message);
+}
+
+function asIndexedDbError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  const message = (error as { message?: unknown } | null)?.message;
+  return new Error(typeof message === 'string' ? message : 'IndexedDB request failed without an error detail');
 }
 
 function resetShotDatabase(expected?: IDBDatabase): void {
@@ -263,15 +291,17 @@ async function openShotDatabase(): Promise<IDBDatabase> {
       dbInstance = opened;
 
       // IDBDatabase.onerror receives an Event whose target is the failed
-      // IDBRequest. Logging the Event itself stringifies to "[object Event]",
-      // which hides the request's DOMException and creates an unactionable
-      // Sentry issue. Log the actual request error instead.
+      // IDBRequest. A read transaction can be invalidated by WebKit while an
+      // app is resuming; the caller retries that read below. Do not turn that
+      // recoverable browser condition into a console.error/Sentry issue.
       opened.onerror = (event) => {
         const requestError = (event.target as IDBRequest | null)?.error;
-        console.error(
-          'Database error:',
-          requestError ?? new Error('IndexedDB request failed without an error detail'),
-        );
+        const error = asIndexedDbError(requestError);
+        if (isRetryableReadTransactionError(error)) {
+          resetShotDatabase(opened);
+          return;
+        }
+        reportIdbUnavailableOnce(error);
       };
 
       // Handle version change (another tab upgraded the DB)
@@ -367,9 +397,10 @@ async function openShotDatabase(): Promise<IDBDatabase> {
  * THE FIX: resolve the database handle first — that await is safe, no
  * transaction exists yet to go stale — then create the transaction AND place
  * every request on it SYNCHRONOUSLY inside `runOnTransaction`, in the same
- * microtask as `db.transaction(...)`. Only transaction SETUP is retried;
- * request/transaction failures after `runOnTransaction` starts are left to the
- * caller, so writes are never replayed ambiguously.
+ * microtask as `db.transaction(...)`. Transaction setup is retried, and an
+ * explicit inactive/aborted read request gets one fresh-connection retry.
+ * Writes are never replayed after `runOnTransaction` starts, so they remain
+ * unambiguous and cannot duplicate player progress.
  */
 async function withShotTransaction<T>(
   stores: string | string[],
@@ -386,7 +417,22 @@ async function withShotTransaction<T>(
       resetShotDatabase(db);
       continue;
     }
-    return runOnTransaction(transaction);
+    try {
+      return await runOnTransaction(transaction);
+    } catch (error) {
+      if (mode === 'readonly' && attempt === 0 && isRetryableReadTransactionError(error)) {
+        resetShotDatabase(db);
+        continue;
+      }
+
+      // An exhausted readonly retry means browser recovery is unavailable for
+      // this tab. Preserve all existing local rows, switch callers to the
+      // server-backed flow, and report the condition once at low severity.
+      if (mode === 'readonly' && isRetryableReadTransactionError(error)) {
+        reportIdbUnavailableOnce(asIndexedDbError(error));
+      }
+      throw error;
+    }
   }
   throw new Error('Failed to open IndexedDB transaction');
 }

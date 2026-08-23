@@ -112,6 +112,9 @@ export interface FairwayNewRoundEntryProps {
   onRetryQualifiers: () => void;
   selectedQualifierId: string | null;
   setSelectedQualifierId: (id: string | null) => void;
+  /** Exact server reason the selected, coach-open qualifier has no next round. */
+  qualifierRoundError: string | null;
+  onRetryQualifierRound: () => void;
   availableRounds: number[];
   selectedRoundNumber: number | null;
   setSelectedRoundNumber: (n: number | null) => void;
@@ -367,6 +370,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
     loadingQualifiers,
     qualifierError,
     selectedQualifierId,
+    qualifierRoundError,
     availableRounds,
     selectedRoundNumber,
     holesPerRound,
@@ -928,6 +932,24 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         className={fwInputCls}
                       />
                     </div>
+                    {selectedQualifierId && qualifierRoundError ? (
+                      <InlineNotice
+                        tone="warning"
+                        title="Round setup needs a coach update"
+                        action={
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={props.onRetryQualifierRound}
+                          >
+                            Try again
+                          </Button>
+                        }
+                      >
+                        {qualifierRoundError}
+                      </InlineNotice>
+                    ) : null}
                     {selectedQualifierId && availableRounds.length > 0 && (
                       <div>
                         <Select
@@ -1000,7 +1022,12 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
               <Button variant="secondary" type="button" onClick={props.onCancel} disabled={props.isStartingRound} className="flex-1">
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" disabled={props.isStartingRound} className="flex-[2]">
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={props.isStartingRound || Boolean(selectedQualifierId && qualifierRoundError)}
+                className="flex-[2]"
+              >
                 {props.isStartingRound
                   ? 'Starting…'
                   : seededHoles

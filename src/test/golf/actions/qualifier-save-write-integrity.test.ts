@@ -174,6 +174,15 @@ describe('qualifier saves report failure when the write matched no rows', () => 
     expect(result.success).toBe(true);
   });
 
+  it('setQualifierRoundCourses rejects an invalid cap instead of silently turning it into one round', async () => {
+    const result = await setQualifierRoundCourses('q1', 0, []);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/round count must be between 1 and 50/i);
+    }
+  });
+
   it('updateGolfQualifierDetails still short-circuits an empty patch', async () => {
     // No fields sent → nothing to write → success without touching the table.
     // This must NOT start failing just because "no rows were updated".

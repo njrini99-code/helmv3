@@ -87,6 +87,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
 
   // Feature G — number of rounds + the course assigned to each.
   const [numRounds, setNumRounds] = useState<number | null>(1);
+  const [singleRoundConfirmed, setSingleRoundConfirmed] = useState(false);
   const [roundCourses, setRoundCourses] = useState<RoundCourseDraft[]>([]);
   // Which round's course-picker is open (null = closed).
   const [pickerRound, setPickerRound] = useState<number | null>(null);
@@ -150,6 +151,10 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
     }
     if (!startDate) {
       setError('Pick a start date.');
+      return;
+    }
+    if (rounds === 1 && !singleRoundConfirmed) {
+      setError('Confirm that this qualifier intentionally allows one round.');
       return;
     }
     // Block incoherent windows up front — the inline field errors already
@@ -296,16 +301,32 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <FormField
                 label="Rounds"
-                help="How many rounds count toward this qualifier."
+                help="Choose how many 18-hole rounds players may submit. This is the enforced cap."
               >
                 <NumberField
                   value={numRounds}
-                  onValueChange={setNumRounds}
+                  onValueChange={(value) => {
+                    setNumRounds(value);
+                    setSingleRoundConfirmed(false);
+                  }}
                   min={1}
                   max={50}
                   unit="rounds"
                 />
               </FormField>
+              {rounds === 1 ? (
+                <CheckboxGroup
+                  value={singleRoundConfirmed ? ['confirmed'] : []}
+                  onValueChange={(value) => setSingleRoundConfirmed(value.includes('confirmed'))}
+                >
+                  <Checkbox
+                    value="confirmed"
+                    aria-label="This qualifier intentionally allows one 18-hole round"
+                    label="This qualifier intentionally allows one 18-hole round."
+                    description="Players who finish it cannot enter another qualifier round unless you raise the cap."
+                  />
+                </CheckboxGroup>
+              ) : null}
               {/* Single-round qualifiers keep the simple free-text venue. */}
               {!isMultiRound ? (
                 <FormField label="Course" showOptional>
