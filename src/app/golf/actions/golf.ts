@@ -7759,7 +7759,11 @@ async function updateShotImpl(
       .single();
 
     if (shotError || !shot) {
-      return { success: false, error: 'Shot not found' };
+      // An edit can race with an Undo, a second tab, or a request whose
+      // successful response never reached this browser. Keep ownership/RLS
+      // opaque, but give the round-entry UI the same stable reconciliation
+      // signal as deleteShot so it removes only its stale local reference.
+      return { success: false, error: 'Shot not found', code: 'shot_not_found' };
     }
 
     // Verify the round belongs to this player and is still in progress

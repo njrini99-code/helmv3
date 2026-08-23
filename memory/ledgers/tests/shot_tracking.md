@@ -56,3 +56,9 @@
   visible only to their player without deleting another account's cache.
 - Added coverage for compatibility recovery of an authorized pre-owner server
   snapshot and for clearing the corresponding legacy IndexedDB record.
+
+## 2026-08-23 — stale Edit Shot reconciliation regression
+
+- Added a focused hook regression proving that a server-confirmed missing shot
+  removes only the stale local reference and does not surface an Edit save
+  error or recreate the shot.

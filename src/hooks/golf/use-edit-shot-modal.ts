@@ -142,6 +142,25 @@ export function useEditShotModal({
 
         const result = await updateShot(editingShot.id, updateData);
         if (!result.success) {
+          // A server-confirmed missing row is a stale local reference, not a
+          // failed edit. Reconcile only that shot and deliberately do not
+          // auto-save it back to the server: another request or device has
+          // already established the server as authoritative.
+          if (result.code === 'shot_not_found') {
+            const newHistory = stateRef.current.shotHistory
+              .filter((shot) => shot.id !== editingShot.id)
+              .map((shot, index) => ({ ...shot, shotNumber: index + 1 }));
+            dispatch({ type: 'RECONCILE_MISSING_SHOT', payload: { newHistory } });
+
+            const isStillComplete = newHistory.length > 0 && newHistory[newHistory.length - 1]?.result === 'hole';
+            if (onHoleStatsUpdateRef.current) {
+              const holeStats = isStillComplete
+                ? calculateHoleStats(newHistory, currentHoleRef.current)
+                : null;
+              await onHoleStatsUpdateRef.current(currentHoleIndexRef.current, holeStats);
+            }
+            return;
+          }
           dispatch({ type: 'EDIT_SAVE_ERROR', payload: result.error || 'Failed to update shot' });
           return;
         }

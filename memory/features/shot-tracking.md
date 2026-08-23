@@ -135,7 +135,10 @@ Round setup
 - Draft JSON currently lives in `golf_rounds.notes`, which can collide with user notes.
 - Cross-device/session ordering can still produce stale local shot IDs; the
   client reconciles a server-confirmed absent shot, while authorization and
-  in-progress-round validation remain enforced on the server.
+  in-progress-round validation remain enforced on the server. Both Edit and
+  Delete use the stable `shot_not_found` reconciliation signal: the stale
+  local row is removed, hole state is recalculated from the remaining shots,
+  and the client never recreates a row the server has confirmed is absent.
 - Offline shot sync is disabled because of `ShotRecord` to `OfflineShot` type mismatch; DB auto-save is the path to trust.
 - Strokes-gained columns exist but are not populated from shot data.
 - Putts-per-GIR is not properly implemented.
