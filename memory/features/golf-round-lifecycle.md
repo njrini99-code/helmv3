@@ -32,6 +32,13 @@ is cleared without a recovery prompt. Once all holes have been server
 checkpointed, app backgrounding does not create a redundant final-scorecard
 snapshot while the player is deciding whether to submit.
 
+Every newly-entered shot also creates a synchronous browser recovery snapshot
+and a best-effort v2 IndexedDB mirror before the normal network autosave. Those
+unfinished snapshots do not expire by time: they are removed only after the
+server confirms that same or newer progress, final submission succeeds, or the
+player explicitly deletes the round. A partial recovery saves an in-progress
+round and opens Continue Round; it never marks an unfinished round complete.
+
 ## Primary Entry Points
 
 ### Routes
@@ -86,6 +93,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   detach or retarget the started round.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
+- Browser recovery state is a durable fallback, not a time-limited cache.
+  Normal active snapshots must survive extended interruptions and be cleared
+  only after confirmed server progress, completion, or explicit deletion.
 - Local recovery UI may appear only when its scorecard or shot data differs
   from the server's persisted progress; a newer timestamp alone is not proof
   of unsaved work.

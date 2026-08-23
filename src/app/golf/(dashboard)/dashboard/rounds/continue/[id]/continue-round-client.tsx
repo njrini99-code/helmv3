@@ -8,6 +8,7 @@ import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound, 
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
+import { getRoundRecoverySnapshot } from '@/lib/offline/shot-storage';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import {
   emergencySave,
@@ -229,6 +230,7 @@ export default function ContinueRoundClient({
       completedHoleStats: allHoleStats,
       inProgressShotsByHole: {},
       currentHoleIndex: Math.max(0, holes.length - 1),
+      submissionIntent: 'submit',
     });
 
     try {
@@ -261,8 +263,16 @@ export default function ContinueRoundClient({
   // Check for emergency save on mount — recover data that was saved to localStorage
   // when the async server save was killed by iOS page freeze
   useEffect(() => {
-    const emergencyData = loadEmergencySave(roundId);
-    if (!emergencyData) return;
+    let cancelled = false;
+    void (async () => {
+      const localSnapshot = loadEmergencySave(roundId);
+      const indexedDbSnapshot = await getRoundRecoverySnapshot(roundId)
+        .then((snapshot) => snapshot?.data ?? null)
+        .catch(() => null);
+      const emergencyData = [localSnapshot, indexedDbSnapshot]
+        .filter((snapshot): snapshot is EmergencySaveData => snapshot != null)
+        .sort((left, right) => right.timestamp - left.timestamp)[0];
+      if (!emergencyData || cancelled) return;
 
     const serverInProgress = initialInProgressShotsByHole
       ?? (initialShots.length > 0 ? { [startHoleIndex]: initialShots } : {});
@@ -292,6 +302,10 @@ export default function ContinueRoundClient({
     // Emergency save is newer — show recovery dialog
     setShowRecoveryDialog(true);
     setRecoveryData(emergencyData);
+    })();
+    return () => {
+      cancelled = true;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on mount
   }, []);
 
@@ -602,17 +616,28 @@ export default function ContinueRoundClient({
     }
 
     allHolesCheckpointedRef.current = false;
-    setInProgressShotsByHole((prev) => {
-      const existing = prev[currentHoleIndex] ?? [];
-      // Prevent duplicate shots when navigating back to an uncompleted hole
-      const duplicateIndex = existing.findIndex(s => s.shotNumber === shot.shotNumber);
-      if (duplicateIndex >= 0) {
-        const updated = [...existing];
-        updated[duplicateIndex] = shot;
-        return { ...prev, [currentHoleIndex]: updated };
-      }
-      return { ...prev, [currentHoleIndex]: [...existing, shot] };
+    const currentInProgress = inProgressShotsByHoleRef.current;
+    const existing = currentInProgress[currentHoleIndex] ?? [];
+    const duplicateIndex = existing.findIndex((candidate) => candidate.shotNumber === shot.shotNumber);
+    const updatedShots = duplicateIndex >= 0
+      ? existing.map((candidate, index) => index === duplicateIndex ? shot : candidate)
+      : [...existing, shot];
+    const nextInProgress = { ...currentInProgress, [currentHoleIndex]: updatedShots };
+
+    // Do not wait for React or the 15s autosave timer. Once a golfer records
+    // a shot, its full round snapshot is synchronously recoverable before a
+    // phone lock, app switch, crash, or connectivity drop can interrupt it.
+    inProgressShotsByHoleRef.current = nextInProgress;
+    emergencySave({
+      roundId,
+      timestamp: Date.now(),
+      setupData,
+      holes: holesRef.current,
+      completedHoleStats: completedHoleStatsRef.current,
+      inProgressShotsByHole: nextInProgress,
+      currentHoleIndex,
     });
+    setInProgressShotsByHole(nextInProgress);
   };
 
   /**
@@ -627,16 +652,15 @@ export default function ContinueRoundClient({
     // Skip auto-save entirely if the round has been submitted or is being submitted
     if (isSubmittingRef.current || completedRoundId) return;
 
-    // Sync parent's in-progress shots so hole navigation stays consistent after edits/deletes
-    let allInProgressShots: Record<number, ShotRecord[]> = {};
-    setInProgressShotsByHole(prev => {
-      const existing = prev[holeIndex];
-      const updated = (existing && existing.length === shots.length && existing === shots)
-        ? prev
-        : { ...prev, [holeIndex]: shots };
-      allInProgressShots = updated;
-      return updated;
-    });
+    // Update the ref before React schedules its render. Recovery writes below
+    // must include other in-progress holes too; a setState updater is not
+    // guaranteed to execute before this synchronous snapshot is created.
+    const allInProgressShots = {
+      ...inProgressShotsByHoleRef.current,
+      [holeIndex]: shots,
+    };
+    inProgressShotsByHoleRef.current = allInProgressShots;
+    setInProgressShotsByHole(allInProgressShots);
 
     // SYNCHRONOUS localStorage backup — always runs, always completes
     const emergencyTimestamp = Date.now();
@@ -646,7 +670,7 @@ export default function ContinueRoundClient({
       setupData,
       holes: holesRef.current,
       completedHoleStats: completedHoleStatsRef.current,
-      inProgressShotsByHole: { ...allInProgressShots, [holeIndex]: shots },
+      inProgressShotsByHole: allInProgressShots,
       currentHoleIndex: holeIndex,
     });
 

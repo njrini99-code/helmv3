@@ -12,8 +12,8 @@
  * It owns NO send/edit/delete logic — the parent FairwayMessages drives those
  * through the UNCHANGED useGolfMessages hook + server actions and passes the
  * handlers + state down. This pane is PRESENTATION + LAYOUT only:
- *   • smooth auto-scroll to newest, gated on near-bottom (PRESERVES the legacy
- *     messagesContainerRef near-bottom check exactly)
+ *   • each newly opened thread starts at its newest message; subsequent
+ *     realtime messages auto-scroll only while the reader is near the bottom
  *   • own-vs-other bubble tint, message grouping by consecutive sender, time +
  *     read receipt on the last message of a group (tabular-nums)
  *   • edit mode (inline textarea) + delete confirmation, desktop hover / mobile
@@ -118,6 +118,28 @@ function formatTime(dateStr: string | null | undefined): string {
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+/**
+ * A thread must enter at its latest message, but it must never force-scroll a
+ * reader who has deliberately moved upward in an already-open thread. Stale
+ * messages from the previously selected conversation are not a safe signal
+ * that the new thread has finished loading.
+ */
+export function shouldScrollThreadToLatestOnOpen(
+  pendingConversationId: string | null,
+  conversationId: string | undefined,
+  loading: boolean,
+  messages: Pick<MessageWithReadStatus, 'conversation_id'>[],
+): boolean {
+  return Boolean(
+    pendingConversationId
+      && conversationId
+      && pendingConversationId === conversationId
+      && !loading
+      && messages.length > 0
+      && messages.every((message) => message.conversation_id === conversationId),
+  );
 }
 
 /** Quiet text read receipt — "Read" / "Sent" (color is never the only channel). */
@@ -279,6 +301,8 @@ export function MessageThreadPane({
   const reduceMotion = useReducedMotion() ?? false;
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
+  const observedConversationIdRef = React.useRef<string | null>(null);
+  const pendingInitialScrollConversationIdRef = React.useRef<string | null>(null);
   // P259: per-message anchors so a search hit can scroll its bubble into view.
   const messageRefs = React.useRef<Map<string, HTMLDivElement | null>>(new Map());
 
@@ -348,6 +372,38 @@ export function MessageThreadPane({
   const retryAttachments = React.useCallback(() => {
     setAttachmentRetryNonce((n) => n + 1);
   }, []);
+
+  // On every conversation switch, begin at the newest loaded message. The
+  // previous implementation only used the "near bottom" rule below; a fresh
+  // scroll container begins at scrollTop=0, so long group threads opened at
+  // their oldest message and made the player manually scroll to today.
+  //
+  // Use a layout effect so the correct position is set before the thread is
+  // painted. Wait until the hook has replaced any stale prior-thread messages,
+  // and defer to an explicit search-result target when one was requested.
+  React.useLayoutEffect(() => {
+    const conversationId = conversation?.id ?? null;
+    if (observedConversationIdRef.current !== conversationId) {
+      observedConversationIdRef.current = conversationId;
+      pendingInitialScrollConversationIdRef.current = conversationId;
+    }
+
+    if (scrollToMessageId) return;
+    if (!shouldScrollThreadToLatestOnOpen(
+      pendingInitialScrollConversationIdRef.current,
+      conversationId ?? undefined,
+      loading,
+      messages,
+    )) {
+      return;
+    }
+
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+    pendingInitialScrollConversationIdRef.current = null;
+  }, [conversation?.id, loading, messages, scrollToMessageId]);
 
   // Auto-scroll to bottom on new messages — ONLY when near the bottom.
   // PRESERVES the legacy near-bottom check (scrollTop + clientHeight >= scrollHeight - 100).

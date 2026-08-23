@@ -69,15 +69,16 @@ describe('loadLatestEmergencySave', () => {
     expect(loadLatestEmergencySave()).toEqual(latest);
   });
 
-  it('ignores expired saves instead of offering stale data for recovery', () => {
+  it('keeps unfinished saves recoverable even after more than a day', () => {
     const now = Date.now();
-    const expired = savedRound(now - (25 * 60 * 60 * 1000), '00000000-0000-4000-8000-000000000002');
+    const earlier = savedRound(now - (25 * 60 * 60 * 1000), '00000000-0000-4000-8000-000000000002');
     const valid = savedRound(now - 1_000, null);
 
-    localStorage.setItem(`${PREFIX}_${expired.roundId}`, JSON.stringify(expired));
+    localStorage.setItem(`${PREFIX}_${earlier.roundId}`, JSON.stringify(earlier));
     localStorage.setItem(`${PREFIX}_new`, JSON.stringify(valid));
 
     expect(loadLatestEmergencySave()).toEqual(valid);
+    expect(loadEmergencySave(earlier.roundId)).toEqual(earlier);
   });
 });
 

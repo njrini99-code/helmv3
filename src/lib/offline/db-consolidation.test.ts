@@ -98,6 +98,55 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
     expect(db.transactionCalls).toBeGreaterThanOrEqual(3);
   });
 
+  it('keeps the newest active-round recovery snapshot outside the sync queue', async () => {
+    const shotStorage = await import('./shot-storage');
+    const roundId = '00000000-0000-4000-8000-000000000001';
+    const firstTimestamp = 1_700_000_000_000;
+    const secondTimestamp = firstTimestamp + 1;
+    const snapshot = (timestamp: number) => ({
+      roundId,
+      timestamp,
+      setupData: {
+        courseName: 'Recovery Test', courseCity: '', courseState: '', courseRating: '',
+        courseSlope: '', teesPlayed: 'White', roundType: 'practice' as const, roundDate: '2026-08-22',
+      },
+      holes: [{ number: 1, par: 4, yardage: 400, score: null }],
+      completedHoleStats: [],
+      inProgressShotsByHole: {
+        0: [{
+          shotNumber: 1,
+          shotType: 'tee' as const,
+          clubType: 'driver' as const,
+          lieBefore: 'tee' as const,
+          distanceToHoleBefore: 400,
+          distanceUnitBefore: 'yards' as const,
+          result: 'fairway' as const,
+          distanceToHoleAfter: 150,
+          distanceUnitAfter: 'yards' as const,
+          shotDistance: 250,
+          isPenalty: false,
+        }],
+      },
+      currentHoleIndex: 0,
+    });
+
+    await shotStorage.saveRoundRecoverySnapshot(snapshot(firstTimestamp));
+    await shotStorage.saveRoundRecoverySnapshot(snapshot(secondTimestamp));
+
+    expect(await shotStorage.getRoundRecoverySnapshot(roundId)).toMatchObject({
+      roundId,
+      timestamp: secondTimestamp,
+      data: { inProgressShotsByHole: { 0: [{ shotNumber: 1 }] } },
+    });
+    expect((await shotStorage.getOfflineStats()).pendingRounds).toBe(0);
+
+    await shotStorage.clearRoundRecoverySnapshotThrough(roundId, firstTimestamp);
+    expect(await shotStorage.getRoundRecoverySnapshot(roundId)).toMatchObject({ timestamp: secondTimestamp });
+
+    await shotStorage.clearRoundRecoverySnapshotThrough(roundId, secondTimestamp);
+    expect(await shotStorage.getRoundRecoverySnapshot(roundId)).toBeNull();
+  });
+
   it('logs an IndexedDB request error instead of the opaque Event wrapper', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const shotStorage = await import('./shot-storage');

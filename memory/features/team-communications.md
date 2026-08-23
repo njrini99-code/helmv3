@@ -8,6 +8,11 @@
 
 Team Communications covers realtime team messaging and coach-to-team announcements. Messaging is conversational and realtime; announcements are structured broadcasts with urgency, targeting, linked documents, inline tasks, and acknowledgement tracking.
 
+When a player or coach opens a conversation, the thread starts at the newest
+loaded message. Later realtime messages preserve a reader's position unless
+they are already near the bottom; an explicit search result takes precedence
+and opens at its matched message instead.
+
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 
 ## Primary Entry Points
@@ -20,6 +25,7 @@ These surfaces are operationally important because they touch files, notificatio
 ### Components
 
 - `src/components/golf/messages/**`
+- `src/components/fairway/pages/messages/**`
 - `src/components/golf/announcements/**`
 
 ### Actions
@@ -73,6 +79,8 @@ Announcement create
 ## UI Contract
 
 - Messaging needs realtime update behavior, attachment preview, read state, and empty conversation states.
+- Opening a conversation must land at its newest message without forcing a
+  reader back to the bottom after they scroll upward.
 - Announcement coach view needs creation, targeting, urgency, documents, tasks, and acknowledgement tracking.
 - Announcement player view needs compact cards, clear acknowledgement action, linked documents/tasks, and urgency state.
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.

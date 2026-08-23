@@ -34,4 +34,15 @@ describe('Continue Round offline persistence', () => {
     expect(source.match(/saveOfflineRound\(/g)).toHaveLength(1);
     expect(source).toContain('const persistFailedSubmission');
   });
+
+  it('captures each entered shot before the deferred network auto-save', () => {
+    const saveShotStart = source.indexOf('const handleSaveShot');
+    const autoSaveStart = source.indexOf('const handleAutoSave');
+    const saveShotSource = source.slice(saveShotStart, autoSaveStart);
+
+    expect(saveShotStart).toBeGreaterThanOrEqual(0);
+    expect(autoSaveStart).toBeGreaterThan(saveShotStart);
+    expect(saveShotSource).toContain('inProgressShotsByHoleRef.current = nextInProgress');
+    expect(saveShotSource).toContain('emergencySave({');
+  });
 });

@@ -611,6 +611,7 @@ features:
         - src/app/golf/(dashboard)/dashboard/announcements/**
       components:
         - src/components/golf/messages/**
+        - src/components/fairway/pages/messages/**
         - src/components/golf/announcements/**
       api:
         - src/app/api/messages/**

@@ -9,9 +9,13 @@
  */
 
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
+import {
+  clearRoundRecoverySnapshotThrough,
+  deleteRoundRecoverySnapshot,
+  saveRoundRecoverySnapshot,
+} from '@/lib/offline/shot-storage';
 
 const EMERGENCY_SAVE_PREFIX = 'golf_emergency_save';
-const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 const NON_RECOVERABLE_SUBMIT_ERROR_PATTERNS = [
   'already been completed',
   'already been submitted',
@@ -57,6 +61,8 @@ export interface EmergencySaveData {
   inProgressShotsByHole: Record<number, ShotRecord[]>;
   currentHoleIndex: number;
   holesPerRound?: 9 | 18;
+  /** Present only when a completed round could not be submitted. */
+  submissionIntent?: 'submit';
 }
 
 /**
@@ -68,6 +74,70 @@ export interface EmergencySaveProgress {
   holes: RoundHole[];
   completedHoleStats: HoleStats[];
   inProgressShotsByHole: Record<number, ShotRecord[]>;
+}
+
+const queuedRecoverySnapshots = new Map<string, EmergencySaveData>();
+let recoverySnapshotDrain: Promise<void> | null = null;
+
+function recoverySnapshotKey(roundId?: string | null): string {
+  return roundId ?? 'new';
+}
+
+/**
+ * IndexedDB cannot be awaited from pagehide, but it can still mirror the
+ * latest synchronous localStorage snapshot while the page is alive. Coalesce
+ * repeated shot edits so a slow browser writes the newest state, not a noisy
+ * queue of stale copies.
+ */
+function queueRecoverySnapshot(data: EmergencySaveData): void {
+  queuedRecoverySnapshots.set(recoverySnapshotKey(data.roundId), data);
+  if (recoverySnapshotDrain) return;
+
+  recoverySnapshotDrain = (async () => {
+    while (queuedRecoverySnapshots.size > 0) {
+      const next = queuedRecoverySnapshots.entries().next().value as
+        | [string, EmergencySaveData]
+        | undefined;
+      if (!next) break;
+      const [key, snapshot] = next;
+      queuedRecoverySnapshots.delete(key);
+      try {
+        await saveRoundRecoverySnapshot(snapshot);
+      } catch {
+        // localStorage is the synchronous primary fallback. IndexedDB failures
+        // are intentionally non-fatal and are already rate-limited by the
+        // storage layer when a browser backing store is unavailable.
+      }
+    }
+  })().finally(() => {
+    recoverySnapshotDrain = null;
+    if (queuedRecoverySnapshots.size > 0) {
+      const next = queuedRecoverySnapshots.values().next().value as EmergencySaveData | undefined;
+      if (next) queueRecoverySnapshot(next);
+    }
+  });
+}
+
+function clearQueuedRecoverySnapshot(roundId?: string | null): Promise<void> {
+  queuedRecoverySnapshots.delete(recoverySnapshotKey(roundId));
+  return (recoverySnapshotDrain ?? Promise.resolve()).then(
+    () => deleteRoundRecoverySnapshot(roundId),
+    () => deleteRoundRecoverySnapshot(roundId),
+  ).catch(() => {
+    // The localStorage clear below is still authoritative when IndexedDB is
+    // unavailable. Never surface a cache-cleanup failure to a golfer.
+  });
+}
+
+function clearQueuedRecoverySnapshotThrough(
+  roundId: string | null | undefined,
+  acknowledgedTimestamp: number,
+): void {
+  void (recoverySnapshotDrain ?? Promise.resolve())
+    .then(() => clearRoundRecoverySnapshotThrough(roundId, acknowledgedTimestamp))
+    .catch(() => {
+      // Same best-effort semantics as the IndexedDB mirror above.
+    });
 }
 
 /**
@@ -97,8 +167,18 @@ export function clearEmergencySaveThrough(
 ): void {
   const current = loadEmergencySave(roundId);
   if (!current || current.timestamp <= acknowledgedTimestamp) {
-    clearEmergencySave(roundId);
+    try {
+      localStorage.removeItem(
+        roundId
+          ? `${EMERGENCY_SAVE_PREFIX}_${roundId}`
+          : `${EMERGENCY_SAVE_PREFIX}_new`,
+      );
+    } catch {
+      // A browser storage failure must not prevent the IndexedDB comparison
+      // below from preserving any newer recovery copy.
+    }
   }
+  clearQueuedRecoverySnapshotThrough(roundId, acknowledgedTimestamp);
 }
 
 /**
@@ -107,6 +187,12 @@ export function clearEmergencySaveThrough(
  * localStorage.setItem is synchronous and completes before the page freezes.
  */
 export function emergencySave(data: EmergencySaveData): boolean {
+  // Start the independent browser-database mirror before the local write. The
+  // promise is deliberately not awaited: localStorage must remain synchronous
+  // for phone lock/app-switch safety, while the mirror protects against quota
+  // pressure or a later localStorage eviction.
+  queueRecoverySnapshot(data);
+
   try {
     const key = data.roundId
       ? `${EMERGENCY_SAVE_PREFIX}_${data.roundId}`
@@ -140,7 +226,7 @@ export function loadEmergencySave(roundId?: string | null): EmergencySaveData | 
       const data = localStorage.getItem(`${EMERGENCY_SAVE_PREFIX}_${roundId}`);
       if (data) {
         const parsed = JSON.parse(data) as EmergencySaveData;
-        if (Date.now() - parsed.timestamp < MAX_AGE_MS) {
+        if (Number.isFinite(parsed.timestamp)) {
           return parsed;
         }
         localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_${roundId}`);
@@ -152,7 +238,7 @@ export function loadEmergencySave(roundId?: string | null): EmergencySaveData | 
     const newData = localStorage.getItem(`${EMERGENCY_SAVE_PREFIX}_new`);
     if (newData) {
       const parsed = JSON.parse(newData) as EmergencySaveData;
-      if (Date.now() - parsed.timestamp < MAX_AGE_MS) {
+      if (Number.isFinite(parsed.timestamp)) {
         return parsed;
       }
       localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_new`);
@@ -165,7 +251,7 @@ export function loadEmergencySave(roundId?: string | null): EmergencySaveData | 
 }
 
 /**
- * Load the freshest unexpired emergency save from this browser.
+ * Load the freshest emergency save from this browser.
  *
  * A round can receive a server ID after its first successful auto-save. If a
  * later child write fails, the emergency copy is keyed by that ID rather than
@@ -183,7 +269,7 @@ export function loadLatestEmergencySave(): EmergencySaveData | null {
       if (key?.startsWith(`${EMERGENCY_SAVE_PREFIX}_`)) keys.push(key);
     }
 
-    // Snapshot keys before removing expired entries. Mutating localStorage
+    // Snapshot keys before removing malformed entries. Mutating localStorage
     // during indexed iteration shifts the following item into the current
     // slot and otherwise skips a valid, recoverable save.
     for (const key of keys) {
@@ -193,10 +279,7 @@ export function loadLatestEmergencySave(): EmergencySaveData | null {
         if (!raw) continue;
 
         const parsed = JSON.parse(raw) as EmergencySaveData;
-        const isFreshTimestamp = Number.isFinite(parsed.timestamp)
-          && Date.now() - parsed.timestamp < MAX_AGE_MS;
-
-        if (!isFreshTimestamp) {
+        if (!Number.isFinite(parsed.timestamp)) {
           localStorage.removeItem(key);
           continue;
         }
@@ -220,6 +303,7 @@ export function loadLatestEmergencySave(): EmergencySaveData | null {
  * Clear emergency save for a given round.
  */
 export function clearEmergencySave(roundId?: string | null): void {
+  void clearQueuedRecoverySnapshot(roundId);
   try {
     if (roundId) {
       // Clear ONLY this round's key. Do NOT touch the `_new` draft — that may be
@@ -277,7 +361,9 @@ export function isRecoverableRoundSubmitError(message?: string): boolean {
 }
 
 /**
- * Remove emergency saves older than MAX_AGE_MS.
+ * Remove only malformed emergency saves. Active rounds do not expire: a
+ * golfer's unfinished shots remain recoverable until the player completes or
+ * deletes the round (or explicitly clears browser storage).
  */
 function cleanupOldEmergencySaves(): void {
   try {
@@ -289,7 +375,7 @@ function cleanupOldEmergencySaves(): void {
           const raw = localStorage.getItem(key);
           if (raw) {
             const parsed = JSON.parse(raw);
-            if (Date.now() - parsed.timestamp > MAX_AGE_MS) {
+            if (!Number.isFinite(parsed.timestamp)) {
               keysToRemove.push(key);
             }
           }
