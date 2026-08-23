@@ -1,5 +1,16 @@
 # Golf Round Lifecycle change ledger
 
+## 2026-08-22 — suppress duplicate recovery after a confirmed scorecard
+
+- SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.
+- Incident: `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md`.
+- Change: Continue Round now compares a local emergency snapshot to the
+  server scorecard before offering recovery, clears only snapshots covered by
+  an acknowledgement, and skips page-hide backup after all holes are durable.
+- Why: iOS backgrounding after a confirmed 18-hole scorecard created a newer
+  but identical fallback that blocked the submission summary with a false
+  "Recover Unsaved Progress?" drawer.
+
 ## 2026-08-22 — require server-backed start and completed-hole checkpoints
 
 - SHA: `a68d7c299` (implementation commit; amended after ledger stamping).

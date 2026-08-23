@@ -1,5 +1,15 @@
 # Golf Round Lifecycle test ledger
 
+## 2026-08-22 — confirmed-snapshot recovery contract
+
+- SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.
+- Added `src/lib/utils/emergency-save.test.ts` coverage for acknowledged-save
+  clearing, preservation of a newer concurrent fallback, equivalent server
+  progress with server-generated shot IDs, and non-equivalent scorecards.
+- Verification: targeted emergency-save tests (6), golf schema tests (25),
+  TypeScript, and ESLint passed. The repository-wide static preflight remains
+  blocked by an unrelated unchecked-Supabase-read baseline of 1050 vs 1049.
+
 ## 2026-08-22 — server checkpoint verification
 
 - SHA: `a68d7c299` (implementation commit; amended after ledger stamping).

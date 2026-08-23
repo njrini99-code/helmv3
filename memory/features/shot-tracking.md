@@ -83,6 +83,10 @@ Round setup
   the existing Continue Round record.
 - Shot records must preserve sequence, hole, lie, type, club, distance, result, miss direction, and putting detail where captured.
 - Continuing a round must reconstruct shot sequences and current-hole progress from persisted data.
+- An emergency local snapshot must be silently cleared when it is equivalent
+  to the persisted round (ignoring server-generated shot IDs). A full
+  server-checkpointed scorecard remains resumable through Continue Round, not
+  through a misleading recovery prompt.
 - Qualifier-linked rounds must retain `qualifier_id` through draft, continue, and submit.
 - Shot data is evidence for stats and CoachHelm; avoid transforming it into lossy summaries too early.
 

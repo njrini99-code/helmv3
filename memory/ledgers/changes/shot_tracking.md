@@ -1,5 +1,15 @@
 # Shot Tracking change ledger
 
+## 2026-08-22 — distinguish a real fallback from a confirmed snapshot
+
+- SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.
+- Incident: `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md`.
+- Change: acknowledged local backups are cleared race-safely, database shot
+  IDs are excluded from snapshot equivalence, and a full checkpointed
+  scorecard no longer writes a page-hide backup before final submission.
+- Why: a timestamp-only recovery decision treated a safe duplicate as unsaved
+  work and intercepted the completion flow.
+
 ## 2026-08-22 — make round start and hole completion durable checkpoints
 
 - SHA: `a68d7c299` (implementation commit; amended after ledger stamping).

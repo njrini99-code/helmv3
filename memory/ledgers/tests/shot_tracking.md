@@ -1,5 +1,16 @@
 # Shot Tracking test ledger
 
+## 2026-08-22 — false recovery drawer regression coverage
+
+- SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.
+- Added emergency-save regression coverage that proves a matching 18-hole
+  server snapshot is not recoverable work, while any different scorecard
+  remains available for recovery.
+- Verification: targeted emergency-save tests (6), golf schema tests (25),
+  TypeScript, and ESLint passed. Full local production build is environment
+  blocked after generated-output storage exhausted; the source compilation
+  completed before the storage failure.
+
 ## 2026-08-22 — durable checkpoint release verification
 
 - SHA: `a68d7c299` (implementation commit; amended after ledger stamping).

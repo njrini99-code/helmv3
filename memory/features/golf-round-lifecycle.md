@@ -27,6 +27,10 @@ round for retry. A player cannot enter tracking until that parent is committed,
 and each completed hole waits for its server checkpoint before the player
 advances. Every unfinished committed round appears through Continue Round;
 local emergency storage is fallback-only and is not a routine library surface.
+An emergency snapshot that contains the same persisted progress as the server
+is cleared without a recovery prompt. Once all holes have been server
+checkpointed, app backgrounding does not create a redundant final-scorecard
+snapshot while the player is deciding whether to submit.
 
 ## Primary Entry Points
 
@@ -78,6 +82,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   treated as a fire-and-forget background write.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
+- Local recovery UI may appear only when its scorecard or shot data differs
+  from the server's persisted progress; a newer timestamp alone is not proof
+  of unsaved work.
 - Round review and CoachHelm triggers must use committed round data, not stale draft state.
 - Cache invalidation must include player-facing and coach-facing views that reflect the round.
 - Score, hole, shot, lie, and strokes-gained calculations must stay consistent with `docs/v3-research-golf-domain.md`.
