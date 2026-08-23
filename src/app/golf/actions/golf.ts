@@ -7600,7 +7600,16 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
       .eq('id', shotId)
       .single();
 
-    if (shotError || !shot) {
+    // Supabase returns PGRST116 when `.single()` found no visible row. That
+    // is the one case the client may safely reconcile as a stale local ID.
+    // A transport/database error must remain a normal failure: treating it as
+    // a missing shot would make an offline player temporarily hide valid
+    // progress from their own scorecard.
+    if (shotError && shotError.code !== 'PGRST116') {
+      return { success: false, error: 'Failed to verify shot. Please try again.' };
+    }
+
+    if (!shot) {
       // The caller may still hold a locally persisted ID after another tab,
       // an earlier retry, or a successfully committed request deleted it.
       // Keep the user-scoped/RLS-safe message (do not disclose row
@@ -7758,7 +7767,14 @@ async function updateShotImpl(
       .eq('id', shotId)
       .single();
 
-    if (shotError || !shot) {
+    // Match deleteShot's reconciliation contract: only an explicit no-row
+    // response is stale local state. A transient lookup failure must preserve
+    // the local shot and let the player retry.
+    if (shotError && shotError.code !== 'PGRST116') {
+      return { success: false, error: 'Failed to verify shot. Please try again.' };
+    }
+
+    if (!shot) {
       // An edit can race with an Undo, a second tab, or a request whose
       // successful response never reached this browser. Keep ownership/RLS
       // opaque, but give the round-entry UI the same stable reconciliation

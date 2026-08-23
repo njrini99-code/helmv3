@@ -123,6 +123,24 @@ describe('shot mutation recovery', () => {
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'UNDO_FAIL' }));
   });
 
+  it('does not remove a shot when Undo cannot verify it on the server', async () => {
+    const shot = makeShot();
+    const dispatch = vi.fn<React.Dispatch<ShotAction>>();
+    actionMocks.deleteShot.mockResolvedValueOnce({
+      success: false,
+      error: 'Failed to verify shot. Please try again.',
+    });
+
+    const { result } = renderHook(() => useDeleteHandlers(makeState(shot), dispatch));
+
+    await act(async () => {
+      await result.current.undo();
+    });
+
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'UNDO_FAIL' }));
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'UNDO_COMPLETE' }));
+  });
+
   it('removes a server-deleted shot from Edit instead of surfacing a false save failure', async () => {
     const shot = makeShot();
     const dispatch = vi.fn<React.Dispatch<ShotAction>>();
@@ -163,6 +181,38 @@ describe('shot mutation recovery', () => {
       payload: { newHistory: [] },
     });
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'EDIT_SAVE_ERROR' }));
+  });
+
+  it('keeps the local shot intact when the server could not verify it', async () => {
+    const shot = makeShot();
+    const dispatch = vi.fn<React.Dispatch<ShotAction>>();
+    actionMocks.updateShot.mockResolvedValueOnce({
+      success: false,
+      error: 'Failed to verify shot. Please try again.',
+    });
+    const state = {
+      ...makeState(shot),
+      editFormData: {
+        clubType: 'driver', lieBefore: 'tee', result: 'fairway',
+        distanceToHoleBefore: '400', distanceUnitBefore: 'yards',
+        distanceToHoleAfter: '150', distanceUnitAfter: 'yards',
+        missDirection: null, puttBreak: null, puttSlope: null,
+        isPenalty: false, penaltyType: null, puttMissTags: [],
+        approachMissDirection: null, approachMissLieType: undefined,
+      },
+    } as ShotTrackingState;
+
+    const { result } = renderHook(() => useEditSaveHandler(state, dispatch));
+
+    await act(async () => {
+      await result.current();
+    });
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'EDIT_SAVE_ERROR',
+      payload: 'Failed to verify shot. Please try again.',
+    });
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'RECONCILE_MISSING_SHOT' }));
   });
 
   it('clears the parent completed-hole slot when deleting the final holed shot', async () => {

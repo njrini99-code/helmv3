@@ -32,6 +32,9 @@ delete lookup confirms a shot is already absent, the client removes only its
 stale local reference; it does not retry the delete or bypass server ownership
 checks. The Bridge records that reconciliation as a handled warning rather than
 an error sent to Sentry.
+An edit or delete read failure is deliberately different: the client keeps its
+local shot intact and asks the player to retry. Only the database's explicit
+no-visible-row result may trigger stale-reference reconciliation.
 
 ## Primary Entry Points
 
@@ -139,6 +142,8 @@ Round setup
   Delete use the stable `shot_not_found` reconciliation signal: the stale
   local row is removed, hole state is recalculated from the remaining shots,
   and the client never recreates a row the server has confirmed is absent.
+  Transport and database read failures never use that signal, so temporary
+  outages cannot make the client hide valid local progress.
 - Offline shot sync is disabled because of `ShotRecord` to `OfflineShot` type mismatch; DB auto-save is the path to trust.
 - Strokes-gained columns exist but are not populated from shot data.
 - Putts-per-GIR is not properly implemented.
