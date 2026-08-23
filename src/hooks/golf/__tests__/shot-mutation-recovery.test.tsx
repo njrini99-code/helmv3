@@ -110,4 +110,33 @@ describe('shot mutation recovery', () => {
     });
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'UNDO_FAIL' }));
   });
+
+  it('clears the parent completed-hole slot when deleting the final holed shot', async () => {
+    const shot: ShotRecord = { ...makeShot(), result: 'hole', distanceToHoleAfter: 0, distanceUnitAfter: 'feet' };
+    const dispatch = vi.fn<React.Dispatch<ShotAction>>();
+    const onHoleStatsUpdate = vi.fn();
+    const onAutoSave = vi.fn().mockResolvedValue(undefined);
+    actionMocks.deleteShot.mockResolvedValueOnce({ success: true, data: undefined });
+
+    const { result } = renderHook(() => {
+      const shotMutationInFlightRef = useRef(false);
+      return useEditShotModal({
+        state: makeState(shot),
+        dispatch,
+        currentHole: {} as RoundHole,
+        currentHoleIndex: 0,
+        calculateHoleStats: vi.fn(),
+        onHoleStatsUpdate,
+        onAutoSave,
+        shotMutationInFlightRef,
+      }).handleDeleteShot;
+    });
+
+    await act(async () => {
+      await result.current();
+    });
+
+    expect(onHoleStatsUpdate).toHaveBeenCalledWith(0, null);
+    expect(onAutoSave).toHaveBeenCalledWith([], 0);
+  });
 });

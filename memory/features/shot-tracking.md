@@ -20,6 +20,12 @@ Each newly entered shot is synchronously snapshotted to localStorage and
 mirrored to the v2 browser recovery store before the deferred network save.
 Active snapshots do not expire by age; they clear only after the matching
 server acknowledgement, a successful final submission, or an explicit delete.
+If a completed-hole checkpoint cannot be confirmed, the tracker remains on that
+hole and exposes one in-context retry action; it does not advance, report the
+hole as safely saved, or create a persistent general-purpose unsynced banner.
+Editing or deleting the final holed shot clears that hole's completed-scorecard
+slot before autosave, so the subsequent server snapshot treats it as
+in-progress rather than carrying contradictory completed and active versions.
 
 Undo and Edit Shot share one local in-flight mutation guard. When an authorized
 delete lookup confirms a shot is already absent, the client removes only its
@@ -41,6 +47,8 @@ an error sent to Sentry.
 - `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx`
 - `src/components/golf/rounds/**`
+- `src/components/fairway/pages/rounds-tracking/**`
+- `src/components/fairway/pages/rounds-recover/**`
 
 ### Actions And Services
 
@@ -84,7 +92,11 @@ Round setup
 - Do not enter tracking until the in-progress parent has been created on the
   server. Each completed hole must be acknowledged by the server before the
   player advances; a save failure keeps the player on that hole and preserves
-  the existing Continue Round record.
+  the existing Continue Round record. The player must receive a focused retry
+  control for that exact checkpoint, rather than a noisy general sync banner.
+- A completed hole and an in-progress shot map are mutually exclusive for the
+  same hole. An edit/delete that removes the final holed shot clears the
+  completed score before the next partial save carries its remaining shots.
 - Each new shot must enter the local recovery snapshot synchronously before
   React rendering or the deferred network autosave. The independent v2 browser
   mirror is recovery-only and must never become a second normal sync queue.
@@ -106,6 +118,9 @@ Round setup
 - Submit and auto-save states must be clear enough that players do not duplicate or abandon rounds unnecessarily.
 - Recovery screens must distinguish local/draft recovery from completed server submissions.
 - Error states must preserve user confidence that entered shots are not silently discarded.
+- Continue Round uses a compact course/progress context header, a neutral
+  save-and-exit affordance, Fairway modal recovery, and a single primary action
+  in the thumb zone. A checkpoint retry appears only on the affected hole.
 
 ## Known Risk Areas
 

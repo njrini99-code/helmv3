@@ -297,6 +297,8 @@ features:
       components:
         - src/components/golf/ShotTrackingComprehensive.tsx
         - src/components/golf/rounds/**
+        - src/components/fairway/pages/rounds-tracking/**
+        - src/components/fairway/pages/rounds-recover/**
       api:
         - src/app/api/rounds/**
       actions:

@@ -52,4 +52,19 @@ describe('New Round shot recovery boundary', () => {
     expect(restoreSource).toContain('await savePartialRound(recoveryData');
     expect(restoreSource).toContain('router.push(`/golf/dashboard/rounds/continue/${result.data.roundId}`)');
   });
+
+  it('keeps a completed-hole retry distinct from a deliberate re-edit and reopens a scorecard slot correctly', () => {
+    const completionStart = source.indexOf('const handleHoleComplete');
+    const statsUpdateStart = source.indexOf('const handleHoleStatsUpdate');
+    const autoSaveStart = source.indexOf('const handleAutoSave');
+    const completionSource = source.slice(completionStart, statsUpdateStart);
+    const statsAndAutoSaveSource = source.slice(statsUpdateStart, autoSaveStart + 1800);
+
+    expect(completionSource).toContain('pendingHoleCheckpointRef');
+    expect(completionSource).toContain('inProgressShotsByHoleRef.current = inProgressAfter');
+    expect(completionSource).toContain('return false');
+    expect(statsAndAutoSaveSource).toContain('holeStats: HoleStats | null');
+    expect(statsAndAutoSaveSource).toContain('delete updatedStats[holeIndex]');
+    expect(statsAndAutoSaveSource).toContain('const hasCompletedHole');
+  });
 });

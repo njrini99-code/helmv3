@@ -264,6 +264,14 @@ export default function NewRoundClient() {
   // Ref to track the furthest hole the player has naturally progressed to.
   // Used to navigate back correctly after re-editing a completed hole (#21).
   const activeProgressHoleRef = useRef(0);
+  // A retry must keep the intent of the original completion attempt. Otherwise
+  // the optimistic local score makes a first-time checkpoint retry look like a
+  // re-edit, leaving the player on a hole that did successfully save.
+  const pendingHoleCheckpointRef = useRef<{
+    holeIndex: number;
+    wasReEdit: boolean;
+    activeProgressHoleIndex: number;
+  } | null>(null);
 
   // Ref for stale closure prevention in async auto-save (#20)
   const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
@@ -1240,14 +1248,15 @@ export default function NewRoundClient() {
     overrideCurrentHole?: number,
     overrideInProgress?: Record<number, ShotRecord[]>,
   ) => {
-    const statsToUse = overrideStats ?? completedHoleStats;
-    const holeIndexToUse = overrideCurrentHole ?? currentHoleIndex;
-    const inProgressMap = overrideInProgress ?? inProgressShotsByHole;
+    const statsToUse = overrideStats ?? completedHoleStatsRef.current;
+    const holeIndexToUse = overrideCurrentHole ?? currentHoleIndexRef.current;
+    const inProgressMap = overrideInProgress ?? inProgressShotsByHoleRef.current;
+    const roundHoles = holesRef.current;
 
     const inProgressShotsArr = Object.entries(inProgressMap)
       .filter(([, shots]) => shots.length > 0)
       .map(([idx, shots]) => ({
-        holeNumber: holes[Number(idx)]?.number ?? Number(idx) + 1,
+        holeNumber: roundHoles[Number(idx)]?.number ?? Number(idx) + 1,
         shots,
       }));
 
@@ -1267,18 +1276,18 @@ export default function NewRoundClient() {
       roundDate: setupData.roundDate,
       qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
       qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
-      currentHole: Math.min(holeIndexToUse + 1, holes.length),
-      holesToPlay: holes.length as 9 | 18,
+      currentHole: Math.min(holeIndexToUse + 1, roundHoles.length),
+      holesToPlay: roundHoles.length as 9 | 18,
       holes: statsToUse,
       inProgressShots: inProgressShotsArr,
-      holeConfigs: holes.map(hole => ({
+      holeConfigs: roundHoles.map(hole => ({
         holeNumber: hole.number,
         par: hole.par,
         yardage: hole.yardage,
       })),
       expectedUpdatedAt: lastServerUpdatedAtRef.current,
     };
-  }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData, selectedQualifierId, selectedRoundNumber]);
+  }, [selectedQualifierId, selectedRoundNumber, setupData]);
 
   /**
    * A completed hole is a durable checkpoint, not a best-effort background
@@ -1335,34 +1344,43 @@ export default function NewRoundClient() {
     return false;
   }, [handleRoundSyncConflict, isCompletedRoundError, redirectToCompletedRound, showAutoSaveWarning]);
 
-  const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
-    // Detect re-edit: hole already had completed stats before this call
-    const isReEdit = !!completedHoleStats[holeIndex]?.score;
+  const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats): Promise<boolean> => {
+    const pendingCheckpoint = pendingHoleCheckpointRef.current;
+    const isCheckpointRetry = pendingCheckpoint?.holeIndex === holeIndex;
+    const isReEdit = isCheckpointRetry
+      ? pendingCheckpoint.wasReEdit
+      : !!completedHoleStatsRef.current[holeIndex]?.score;
+    const activeProgressHoleIndex = isCheckpointRetry
+      ? pendingCheckpoint.activeProgressHoleIndex
+      : activeProgressHoleRef.current;
+    if (!isCheckpointRetry) {
+      pendingHoleCheckpointRef.current = {
+        holeIndex,
+        wasReEdit: isReEdit,
+        activeProgressHoleIndex,
+      };
+    }
 
     // Update holes with score
-    const updatedHoles = [...holes];
+    const updatedHoles = [...holesRef.current];
     updatedHoles[holeIndex] = {
       ...updatedHoles[holeIndex]!,
       score: holeStats.score,
     };
+    holesRef.current = updatedHoles;
     setHoles(updatedHoles);
 
     // Store completed hole stats
-    const updatedStats = [...completedHoleStats];
+    const updatedStats = [...completedHoleStatsRef.current];
     updatedStats[holeIndex] = holeStats;
+    completedHoleStatsRef.current = updatedStats;
     setCompletedHoleStats(updatedStats);
 
     // Remove completed hole from in-progress map (capture snapshot for server save)
-    const inProgressAfter = { ...inProgressShotsByHole };
+    const inProgressAfter = { ...inProgressShotsByHoleRef.current };
     delete inProgressAfter[holeIndex];
-    setInProgressShotsByHole((prev) => {
-      if (!prev[holeIndex]) {
-        return prev;
-      }
-      const next = { ...prev };
-      delete next[holeIndex];
-      return next;
-    });
+    inProgressShotsByHoleRef.current = inProgressAfter;
+    setInProgressShotsByHole(inProgressAfter);
 
     // Immediate localStorage backup of completed hole (synchronous, guaranteed)
     const emergencyTimestamp = Date.now();
@@ -1373,16 +1391,17 @@ export default function NewRoundClient() {
       holes: updatedHoles,
       completedHoleStats: updatedStats,
       inProgressShotsByHole: inProgressAfter,
-      currentHoleIndex: isReEdit ? activeProgressHoleRef.current : holeIndex + 1,
+      currentHoleIndex: isReEdit ? activeProgressHoleIndex : holeIndex + 1,
       holesPerRound,
     });
 
-    const nextHole = isReEdit ? activeProgressHoleRef.current : holeIndex + 1;
+    const nextHole = isReEdit ? activeProgressHoleIndex : holeIndex + 1;
     const checkpointed = await persistCompletedHole(
       buildPartialRoundData(updatedStats, nextHole, inProgressAfter),
       emergencyTimestamp,
     );
-    if (!checkpointed) return;
+    if (!checkpointed) return false;
+    pendingHoleCheckpointRef.current = null;
 
     // Navigate after completion
     // Check if every hole now has a score (all completed)
@@ -1400,26 +1419,43 @@ export default function NewRoundClient() {
         setShowFinishConfirm(true);
         break;
       case 'return-to-frontier':
-        setCurrentHoleIndex(activeProgressHoleRef.current);
+        setCurrentHoleIndex(activeProgressHoleIndex);
         break;
       case 'advance':
         setCurrentHoleIndex(decision.nextHoleIndex);
         activeProgressHoleRef.current = decision.nextHoleIndex;
         break;
     }
+    return true;
   };
 
-  const handleHoleStatsUpdate = useCallback((holeIndex: number, holeStats: HoleStats) => {
-    setHoles(prev => {
-      const updated = [...prev];
-      updated[holeIndex] = { ...updated[holeIndex]!, score: holeStats.score };
-      return updated;
-    });
-    setCompletedHoleStats(prev => {
-      const updated = [...prev];
-      updated[holeIndex] = holeStats;
-      return updated;
-    });
+  const handleHoleStatsUpdate = useCallback((holeIndex: number, holeStats: HoleStats | null) => {
+    const updatedHoles = [...holesRef.current];
+    const updatedStats = [...completedHoleStatsRef.current];
+    if (holeStats) {
+      updatedHoles[holeIndex] = { ...updatedHoles[holeIndex]!, score: holeStats.score };
+      updatedStats[holeIndex] = holeStats;
+      const withoutCompletedHole = { ...inProgressShotsByHoleRef.current };
+      delete withoutCompletedHole[holeIndex];
+      inProgressShotsByHoleRef.current = withoutCompletedHole;
+      setInProgressShotsByHole(withoutCompletedHole);
+    } else {
+      updatedHoles[holeIndex] = { ...updatedHoles[holeIndex]!, score: null };
+      delete updatedStats[holeIndex];
+    }
+    holesRef.current = updatedHoles;
+    completedHoleStatsRef.current = updatedStats;
+    setHoles(updatedHoles);
+    setCompletedHoleStats(updatedStats);
+    const allHolesScored = updatedHoles.every((_, index) => updatedStats[index]?.score != null);
+    if (allHolesScored) {
+      // Keep an already-opened/dismissed finish prompt aligned with an edited
+      // scorecard instead of submitting stale per-hole stats.
+      setPendingFinalStats(updatedStats);
+    } else {
+      setPendingFinalStats(null);
+      setShowFinishConfirm(false);
+    }
   }, []);
 
   const handleSaveShot = (shot: ShotRecord) => {
@@ -1463,10 +1499,13 @@ export default function NewRoundClient() {
     // Update the ref before React schedules its render. The synchronous backup
     // below needs a complete cross-hole snapshot, not a setState updater that
     // may run later in the event loop.
-    const allInProgressShots = {
-      ...inProgressShotsByHoleRef.current,
-      [holeIndex]: shots,
-    };
+    const hasCompletedHole = completedHoleStatsRef.current[holeIndex]?.score != null;
+    const allInProgressShots = { ...inProgressShotsByHoleRef.current };
+    if (hasCompletedHole) {
+      delete allInProgressShots[holeIndex];
+    } else {
+      allInProgressShots[holeIndex] = shots;
+    }
     inProgressShotsByHoleRef.current = allInProgressShots;
     setInProgressShotsByHole(allInProgressShots);
 
@@ -1490,6 +1529,23 @@ export default function NewRoundClient() {
     // localStorage backup above already succeeded, so throwing here is safe and
     // lets the hook track consecutive failures to engage the circuit breaker.
     if (navigator.onLine) {
+      // A completed-hole edit is another complete checkpoint, never an
+      // in-progress duplicate. This keeps the scorecard and shot map in one
+      // coherent server snapshot.
+      if (hasCompletedHole) {
+        const checkpointed = await persistCompletedHole(
+          buildPartialRoundData(
+            completedHoleStatsRef.current,
+            activeProgressHoleRef.current,
+            allInProgressShots,
+          ),
+          emergencyTimestamp,
+        );
+        if (!checkpointed) {
+          throw new Error('Completed hole checkpoint failed');
+        }
+        return;
+      }
       if (serverSaveInProgressRef.current) {
         // Queue this save — it will execute after the current one completes.
         // Don't throw here: the queued save will be picked up after the in-flight one finishes.
@@ -1579,6 +1635,7 @@ export default function NewRoundClient() {
     completedRoundId,
     handleRoundSyncConflict,
     isCompletedRoundError,
+    persistCompletedHole,
     redirectToCompletedRound,
     showAutoSaveWarning,
   ]);

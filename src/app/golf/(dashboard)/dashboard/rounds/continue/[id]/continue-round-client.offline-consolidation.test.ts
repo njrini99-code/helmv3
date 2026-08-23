@@ -45,4 +45,19 @@ describe('Continue Round offline persistence', () => {
     expect(saveShotSource).toContain('inProgressShotsByHoleRef.current = nextInProgress');
     expect(saveShotSource).toContain('emergencySave({');
   });
+
+  it('keeps a failed completed-hole checkpoint retryable without reintroducing its shots as in-progress data', () => {
+    const completionStart = source.indexOf('const handleHoleComplete');
+    const statsUpdateStart = source.indexOf('const handleHoleStatsUpdate');
+    const autoSaveStart = source.indexOf('const handleAutoSave');
+    const completionSource = source.slice(completionStart, statsUpdateStart);
+    const statsAndAutoSaveSource = source.slice(statsUpdateStart, autoSaveStart + 1600);
+
+    expect(completionSource).toContain('pendingHoleCheckpointRef');
+    expect(completionSource).toContain('inProgressShotsByHoleRef.current = inProgressAfter');
+    expect(completionSource).toContain('return false');
+    expect(statsAndAutoSaveSource).toContain('holeStats: HoleStats | null');
+    expect(statsAndAutoSaveSource).toContain('delete updatedStats[holeIndex]');
+    expect(statsAndAutoSaveSource).toContain('const hasCompletedHole');
+  });
 });
