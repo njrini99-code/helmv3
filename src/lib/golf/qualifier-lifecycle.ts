@@ -1,14 +1,11 @@
-import { todayIsoInZone } from '@/lib/golf/timezone';
-
 /**
- * A qualifier's `end_date` is a DATE-only, inclusive calendar boundary in the
- * team's timezone. Comparing it to a timestamp parses the date as UTC midnight
- * and can close an East Coast qualifier during the preceding local evening.
+ * The only automatic qualifier lifecycle transition is the first submitted
+ * round starting an `upcoming` qualifier. There is intentionally no automatic
+ * transition to `completed`: scheduled dates and entrant progress never close
+ * a qualifier. A coach must explicitly use the manual close action.
  */
-export function hasQualifierEndDatePassed(
-  endDate: string | null | undefined,
-  teamTimezone: string | null | undefined,
-  now: Date = new Date(),
-): boolean {
-  return !!endDate && endDate < todayIsoInZone(teamTimezone, now);
+export function getQualifierAutomaticTransition(
+  status: string | null | undefined,
+): 'in_progress' | null {
+  return status === 'upcoming' ? 'in_progress' : null;
 }

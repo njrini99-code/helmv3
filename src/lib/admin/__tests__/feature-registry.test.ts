@@ -315,17 +315,18 @@ describe('FEATURE_REGISTRY completeness', () => {
   // insights.ts's explicit array, which still lists the now-private
   // triggerPlayerInsightsAfterRound by name) are unaffected since this count
   // sums `manifest.length` for those, not a live export scan.
-  // 2026-07-10 feature-flow sweep: +2 to 421. The qualifiers manifest gains
-  // `updateGolfQualifierDetails` (the previously-missing edit-qualifier flow)
-  // and `reconcileQualifierStatus` (view-time lifecycle self-heal) — both new
-  // withAdminObserved-wrapped exports in golf.ts.
+  // 2026-07-10 feature-flow sweep: qualifiers manifest gained
+  // `updateGolfQualifierDetails` (the previously-missing edit-qualifier flow).
+  // The old `reconcileQualifierStatus` page-view mutation was intentionally
+  // removed on 2026-08-22: qualifiers now close only through the coach's
+  // explicit manual action.
   // 2026-07-17 course-library-owner-gate fix (#913): +1 to 422. New read
   // action `getCourseTeeHoles` (course-library.ts) powers the course detail
   // sheet's read-only "Holes" summary. course-library.ts is already
   // 'ALL'-mapped to `course_library`, so this new withAdminObserved-wrapped
   // export is picked up by the live `scanExports` count with no manifest
   // edit required.
-  it('total manifest size is exactly 437 (excludes the CRM row)', () => {
+  it('total manifest size is exactly 438 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -361,7 +362,10 @@ describe('FEATURE_REGISTRY completeness', () => {
     // explicit array under coachhelm_ai_engine (insights.ts is one of the
     // six non-'ALL' multi-feature files, so unlike admin-data.ts above this
     // one DID need a manifest edit — manifest.length grows by 1 here).
-    expect(total).toBe(439);
+    // 2026-08-22: -1 removes reconcileQualifierStatus. It was an implicit
+    // page-view lifecycle mutation; qualifiers now close only by a coach's
+    // explicit action.
+    expect(total).toBe(438);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

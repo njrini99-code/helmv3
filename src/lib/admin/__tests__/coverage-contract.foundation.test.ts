@@ -269,11 +269,9 @@ describe('global tripwire', () => {
     // public, directly-POSTable action regardless of who actually imports it.
     // 425 - 1 - 1 - 4 = 419.
     //
-    // 421 as of the 2026-07-10 feature-flow sweep (+2): golf.ts gains
-    // `updateGolfQualifierDetails` (the previously-missing qualifier edit
-    // flow) and `reconcileQualifierStatus` (view-time lifecycle self-heal on
-    // the qualifier detail page) — both withAdminObserved-wrapped and listed
-    // in FEATURE_REGISTRY's qualifiers manifest.
+    // 2026-07-10 feature-flow sweep added qualifier editing. The old
+    // `reconcileQualifierStatus` page-view mutation was removed on
+    // 2026-08-22: only coaches may close a qualifier explicitly.
     //
     // 422 as of the 2026-07-17 course-library-owner-gate fix (#913, +1):
     // course-library.ts (already 'ALL'-mapped to `course_library`) gains
@@ -348,6 +346,8 @@ describe('global tripwire', () => {
     //   files in FEATURE_REGISTRY, so it needed a manifest edit too — added
     //   to coachhelm_ai_engine's array alongside its siblings analyzePlayer/
     //   generateTournamentPrep/getPlayerPatterns (see feature-registry.ts).
-    expect(total).toBe(447);
+    // 2026-08-22: -1 removes reconcileQualifierStatus. Qualifier closure is
+    // a coach-only explicit action, not a page-view side effect.
+    expect(total).toBe(446);
   });
 });

@@ -152,10 +152,8 @@ export function FairwayQualifyingWorkspace({ workspace }: FairwayQualifyingWorks
 /* ───────────────────────────────────────────────────────────────────────────
  * 4 · Conclude qualifier — the missing caller for updateQualifierStatus.
  * Only reachable once the roster is committed (selection_state === 'selected').
- * A best-effort auto-transition also runs from the round-submit path once
- * every entrant has posted every round (see advanceQualifierOnRoundSubmit in
- * golf.ts) — this button is the manual override for a coach who doesn't want
- * to wait for stragglers, or who never lets that auto-transition fire.
+ * The qualifier remains open after players finish their rounds. This is the
+ * sole completion path: only a coach can explicitly conclude the qualifier.
  * ────────────────────────────────────────────────────────────────────────── */
 function ConcludeQualifier({ qualifierId, status }: { qualifierId: string; status: string }) {
   const router = useRouter();

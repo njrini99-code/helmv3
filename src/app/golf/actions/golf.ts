@@ -40,7 +40,7 @@ import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provid
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
-import { hasQualifierEndDatePassed } from '@/lib/golf/qualifier-lifecycle';
+import { getQualifierAutomaticTransition } from '@/lib/golf/qualifier-lifecycle';
 
 // ============================================================================
 // COURSE ID RESOLUTION
@@ -2124,11 +2124,9 @@ async function submitGolfRoundComprehensiveImpl(
     }
 
     // If this is a qualifier round, update the qualifier entry stats and
-    // auto-advance the qualifier lifecycle (F029/F138). The first completed
-    // round transitions upcoming→in_progress; once every entrant has posted
-    // num_rounds completed rounds (or end_date has passed) it auto-closes to
-    // completed too, so a qualifier never gets stuck 'in_progress' forever
-    // even if no coach opens the selections workspace to conclude it manually.
+    // auto-advance its start only (F029/F138). The first completed round
+    // transitions upcoming→in_progress. Completion is intentionally manual:
+    // neither entrant progress nor scheduled dates can close a qualifier.
     if (data.qualifierId) {
       try {
         await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
@@ -7037,12 +7035,10 @@ async function updateQualifierEntryStats(
  * without it the leaderboard's realtime "Live" pill (status === 'in_progress')
  * never illuminated once play actually started.
  *
- * P0 follow-up: an 'in_progress' qualifier now ALSO auto-closes to 'completed'
- * once every entrant has posted at least num_rounds completed rounds, or the
- * qualifier's end_date has passed — a backstop so a qualifier isn't left
- * stuck forever if no coach ever opens the selections workspace. A coach can
- * still close a qualifier early/manually via updateQualifierStatus (the
- * qualifying workspace's "Conclude qualifier" action).
+ * Its calendar dates and entrant progress are scheduling/reporting metadata,
+ * never a player lockout. A coach closes a qualifier manually via
+ * updateQualifierStatus (the qualifying workspace's "Conclude qualifier"
+ * action); there is deliberately no automatic `completed` transition.
  *
  * Uses the admin client for both status writes below: this is a system
  * transition triggered by a PLAYER's round submission, and
@@ -7051,107 +7047,28 @@ async function updateQualifierEntryStats(
  *
  * Best-effort and non-fatal: a failure here must never block the round submit.
  */
-/**
- * View-time lifecycle reconcile (F029/F138 follow-up). The auto-advance
- * below only runs when a round is SUBMITTED — so an 'in_progress' qualifier
- * whose entrants simply stopped playing was never re-checked after its
- * end_date passed; the deadline backstop was dead in exactly the scenario
- * it exists for. The qualifier detail page calls this before rendering:
- * a no-op unless an objective transition (all entrants done / deadline
- * passed) is due, and best-effort — it never blocks the page.
- */
-async function reconcileQualifierStatusImpl(qualifierId: string): Promise<void> {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    // DS: this is a view-time reconcile reachable by ANY team member who
-    // opens the qualifier detail page (not just coaches), but the write
-    // below goes through the service-role client and previously bypassed
-    // golf_qualifiers_update_coach unconditionally. Restrict the page-view
-    // path to the objective 'completed' transition only (deadline passed /
-    // every entrant done) — the unconditional 'upcoming' -> 'in_progress'
-    // flip stays reserved for the real round-submit trigger at
-    // submitGolfRoundComprehensive, which calls this with
-    // allowUpcomingTransition: true below.
-    await advanceQualifierOnRoundSubmit(supabase, qualifierId, { allowUpcomingTransition: false });
-  } catch {
-    // Best-effort — never block the page render.
-  }
-}
-
-const observedReconcileQualifierStatus = withAdminObserved(
-  'reconcileQualifierStatus',
-  { sport: 'golf', feature: 'qualifiers' },
-  reconcileQualifierStatusImpl,
-);
-
-export async function reconcileQualifierStatus(qualifierId: string): Promise<void> {
-  return observedReconcileQualifierStatus(qualifierId);
-}
-
 async function advanceQualifierOnRoundSubmit(
   supabase: Awaited<ReturnType<typeof createClient>>,
   qualifierId: string,
-  options: { allowUpcomingTransition?: boolean } = { allowUpcomingTransition: true },
 ): Promise<void> {
   const { data: qualifier } = await supabase
     .from('golf_qualifiers')
-    .select('status, num_rounds, end_date, team_id')
+    .select('status')
     .eq('id', qualifierId)
     .maybeSingle();
 
-  if (!qualifier) return;
+  const automaticTransition = getQualifierAutomaticTransition(qualifier?.status);
+  if (!automaticTransition) return;
 
+  // This is the one permitted system transition. It starts play after a
+  // verified submitted round; it never closes a qualifier.
   const admin = createAdminClient();
-
-  if (qualifier.status === 'upcoming') {
-    // DS: this unconditional service-role write bypasses
-    // golf_qualifiers_update_coach (UPDATE is coach-only under RLS). Only the
-    // real round-submit caller (which just posted a completed round) may
-    // trigger it — the view-time reconcile above passes
-    // allowUpcomingTransition: false so merely opening the qualifier page
-    // can no longer flip 'upcoming' -> 'in_progress' on a coach's behalf.
-    if (!options.allowUpcomingTransition) return;
-    await admin
-      .from('golf_qualifiers')
-      .update({ status: 'in_progress' })
-      .eq('id', qualifierId)
-      // Guard against a concurrent transition (only advance from 'upcoming').
-      .eq('status', 'upcoming');
-    // NO early return: fall through to the completion check. For a
-    // single-entrant, num_rounds=1 qualifier (the DB default — both live
-    // examples in prod are this shape) the submission that starts the
-    // qualifier is also the one that finishes it; returning here would
-    // strand it at 'in_progress' forever, since num_rounds now caps further
-    // submissions and no later call would ever re-run the check.
-  } else if (qualifier.status !== 'in_progress') {
-    return; // completed / cancelled — nothing to advance
-  }
-
-  const { data: entries } = await supabase
-    .from('golf_qualifier_entries')
-    .select('rounds_completed')
-    .eq('qualifier_id', qualifierId);
-
-  const numRounds = qualifier.num_rounds ?? 1;
-  const everyEntrantDone =
-    !!entries && entries.length > 0 && entries.every((e) => (e.rounds_completed ?? 0) >= numRounds);
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('timezone')
-    .eq('id', qualifier.team_id)
-    .maybeSingle();
-  const deadlinePassed = hasQualifierEndDatePassed(qualifier.end_date, team?.timezone);
-
-  if (!everyEntrantDone && !deadlinePassed) return;
-
   await admin
     .from('golf_qualifiers')
-    .update({ status: 'completed' })
+    .update({ status: automaticTransition })
     .eq('id', qualifierId)
-    // Guard against a concurrent transition (only close from 'in_progress').
-    .eq('status', 'in_progress');
+    // Guard against a concurrent transition (only start from 'upcoming').
+    .eq('status', 'upcoming');
 }
 
 // ============================================================================

@@ -225,7 +225,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'setQualifierRoundCourses',
         'updateQualifierStatus',
         'updateGolfQualifierDetails',
-        'reconcileQualifierStatus',
         'getNextQualifierRoundNumber',
         'getQualifierLeaderboard',
       ],
