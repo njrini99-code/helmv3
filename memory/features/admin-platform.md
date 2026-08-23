@@ -14,11 +14,13 @@ This area is high criticality because it often uses broader access patterns, ope
 
 ### Routes
 
+- `src/app/admin/**` (Helm Bridge)
 - `src/app/golf/admin/**`
 - `src/app/golf/admin/crm/**`
 
 ### Components
 
+- `src/app/admin/_components/**` (Helm Bridge shell and controls)
 - `src/app/golf/admin/components/**`
 - `src/app/golf/admin/crm/components/**`
 
@@ -44,6 +46,9 @@ This area is high criticality because it often uses broader access patterns, ope
 ## Business Rules
 
 - Admin access must remain explicit and server-side; service-role behavior must not leak into client bundles.
+- Helm Bridge uses the authenticated GolfHelm session. Its shell must expose a
+  usable sign-out control on both the desktop rail and the mobile More sheet;
+  sign-out clears the active-team selection before revoking that session.
 - Admin dashboards can read broad platform state, but mutations still need authorization and auditability.
 - CRM automation/suppression behavior must respect opt-out and reply-stop logic.
 - Operational charts should not be treated as source of truth if rollups are stale.
@@ -55,6 +60,9 @@ This area is high criticality because it often uses broader access patterns, ope
 - Health, errors, data freshness, and needs-attention states should be visible without hunting.
 - CRM screens need clear pipeline, task, suppression, reply, sequence, and timeline states.
 - Loading/error states should avoid blank admin pages; operational users need partial data when available.
+- The desktop rail and mobile More sheet expose the same sign-out outcome, with
+  an in-place pending state and a visible retryable error if session revocation
+  fails.
 
 ## Known Risk Areas
 
