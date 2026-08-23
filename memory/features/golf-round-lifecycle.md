@@ -43,6 +43,10 @@ single retry action while the device backup remains intact. Reopening a hole by
 editing or deleting its final holed shot clears its completed-scorecard entry
 before the next partial save, so a server snapshot never contains both a
 completed score and active shots for that hole.
+The partial-save server boundary materializes sparse legacy hole entries as
+explicit uncompleted values before validation, so a cached client cannot reject
+a checkpoint merely because it predates the current payload shape. Background
+re-saves do not duplicate a direct checkpoint's player-facing failure state.
 
 ## Primary Entry Points
 

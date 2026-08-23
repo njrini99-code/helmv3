@@ -73,3 +73,17 @@
   editing a no-longer-existent shot. Treating that condition as an ordinary
   save failure falsely told golfers their action was broken and invited unsafe
   retries.
+
+## 2026-08-23 — harden legacy checkpoint transport and background re-saves
+
+- SHA: pending commit for the production checkpoint guard.
+- Incident: `Client error: Completed hole checkpoint failed`, including the
+  18:19 EDT occurrence from a cached iPhone bundle.
+- Change: `savePartialRound` materializes every sparse client hole slot as
+  `null` before validation. New Round and Continue Round no longer turn a
+  transient background re-save of an already-completed hole into a second
+  player-facing error; the direct hole-out checkpoint still blocks advance and
+  keeps its focused retry affordance.
+- Why: a deployed browser shell can retain an older payload shape, and its
+  overlapping periodic save could emit a false checkpoint incident despite a
+  later successful durable write.

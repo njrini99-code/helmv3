@@ -5537,7 +5537,24 @@ async function savePartialRoundImpl(
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
   try {
-    // Validate input with Zod
+    // A browser may retain an older JS bundle across a deployment. Those older
+    // bundles built this array sparsely; Server Action transport preserves the
+    // empty slots as `undefined`, while the durable persistence contract uses
+    // explicit `null` for an uncompleted hole. Normalize at the server boundary
+    // as well as in current clients so a cached mobile bundle cannot turn a
+    // completed-hole checkpoint into a validation failure.
+    //
+    // `Array.prototype.map` preserves sparse slots, so use Array.from to visit
+    // every index and materialize `null` values before Zod sees the payload.
+    const normalizedData = {
+      ...data,
+      holes: Array.isArray(data?.holes)
+        ? Array.from({ length: data.holes.length }, (_, index) => data.holes[index] ?? null)
+        : data?.holes,
+    } as PartialRoundData;
+    data = normalizedData;
+
+    // Validate input with Zod after normalizing legacy transport holes.
     const validated = partialRoundSchema.safeParse(data);
     if (!validated.success) {
       const firstError = validated.error.issues[0];
