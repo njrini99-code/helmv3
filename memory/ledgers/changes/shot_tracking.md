@@ -39,3 +39,16 @@
   entry without replaying a destructive request.
 - Why: active golfers could be blocked by a stale ID after a concurrent or
   completed delete, and downstream edit writes could outlive the visible edit.
+
+## 2026-08-22 — retry failed hole checkpoints without contradictory snapshots
+
+- SHA: `4276cec7e2556aa4b1dffc92851ba780d2a67b1a`.
+- Change: a completed-hole checkpoint now holds the golfer on the affected
+  hole until the server acknowledges it and exposes one focused retry control
+  if that acknowledgement fails. The tracking controllers synchronously keep
+  their completed-hole and in-progress-shot references mutually exclusive.
+  Editing or deleting a final hole-out clears that hole's completed scorecard
+  slot before its remaining shots can be autosaved.
+- Why: a rejected checkpoint could otherwise leave the interface looking
+  complete while deferred autosave retained both old completed data and a new
+  in-progress version of the same hole.

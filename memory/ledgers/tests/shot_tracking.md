@@ -38,3 +38,13 @@
 - Added regression coverage for Undo/Edit overlap and stale-shot reconciliation.
 - Updated `src/lib/admin/__tests__/observe-action-result.test.ts` to guarantee
   that `shot_not_found` remains a handled warning and is not captured by Sentry.
+
+## 2026-08-22 — failed checkpoint and reopened-hole regression coverage
+
+- SHA: `4276cec7e2556aa4b1dffc92851ba780d2a67b1a`.
+- Added `FairwayCompletedHole.checkpoint.test.tsx` for a rejected completion
+  checkpoint and retry, plus hook/controller regressions for reopening a
+  completed hole after editing or deleting its final hole-out.
+- Verification: 68 focused round-recovery, tracking, persistence, mutation,
+  and schema tests passed; TypeScript, ESLint, and the local production build
+  passed.

@@ -42,3 +42,15 @@
 - Why: concurrent Undo/Edit actions could apply multiple local-history
   removals, while an already-completed delete surfaced as a misleading
   production server error to the golfer.
+
+## 2026-08-22 — keep Continue Round on the durable checkpoint path
+
+- SHA: `4276cec7e2556aa4b1dffc92851ba780d2a67b1a`.
+- Change: New Round and Continue Round advance only after a completed-hole
+  save succeeds. A retry preserves the original forward/return intent, and a
+  later shot edit or delete removes its now-invalid completed score before
+  any partial save. The Continue Round surface now uses the compact Fairway
+  course/progress header and a neutral save-and-exit control.
+- Why: active rounds need a single comprehensible persistence path and must
+  never serialize both the old completed version and reopened progress of the
+  same hole.

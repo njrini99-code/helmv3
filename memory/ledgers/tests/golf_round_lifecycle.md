@@ -36,3 +36,14 @@
 - Guarantees: only one local destructive shot mutation can run at a time, and
   Undo reconciles a server-confirmed `shot_not_found` response instead of
   leaving the active round blocked.
+
+## 2026-08-22 — durable checkpoint navigation contract
+
+- SHA: `4276cec7e2556aa4b1dffc92851ba780d2a67b1a`.
+- Coverage: focused UI, recovery, offline-consolidation, mutation, and schema
+  tests exercise retry-on-failure, no navigation before acknowledgement, and
+  clearing a reopened hole's completed state before persistence.
+- Verification: 68 focused tests, TypeScript, ESLint, and the local production
+  build passed. The repository-wide preflight remains blocked only by its
+  unrelated stale unchecked-Supabase-read baseline (1,047 observed vs 1,049
+  expected), which this change intentionally does not rewrite.
