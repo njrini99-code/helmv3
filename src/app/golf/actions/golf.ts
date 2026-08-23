@@ -1049,6 +1049,9 @@ function isIndeterminateWriteFailure(
     || message.includes('timeouterror')
     || message.includes('the operation was aborted')
     || message.includes('fetch failed')
+    // Safari/WKWebView's opaque Fetch rejection. This has no SQLSTATE and
+    // carries the same unknown-commit semantics as AbortSignal.timeout.
+    || message.includes('load failed')
     || message.includes('network');
 }
 

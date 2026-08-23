@@ -70,7 +70,8 @@
 ## 2026-08-23 — lost terminal-response reconciliation contract
 
 - Added action coverage for an atomic `submit_round_atomic` commit whose HTTP
-  response times out. The action confirms the authenticated round's completed
-  state and returns success without executing any destructive fallback.
+  response times out or is reported as Safari/WKWebView `Load failed`. The
+  action confirms the authenticated round's completed state and returns success
+  without executing any destructive fallback.
 - An unconfirmed abort remains safely retryable: its in-progress parent,
   holes, shots, and persisted recovery backup are left untouched.

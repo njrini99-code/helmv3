@@ -47,7 +47,8 @@ The partial-save server boundary materializes sparse legacy hole entries as
 explicit uncompleted values before validation, so a cached client cannot reject
 a checkpoint merely because it predates the current payload shape. Background
 re-saves do not duplicate a direct checkpoint's player-facing failure state.
-If a terminal atomic submit commits after its HTTP response is lost, the action
+If a terminal atomic submit commits after its HTTP response is lost (including
+Safari/WKWebView's opaque `Load failed` transport rejection), the action
 confirms the authenticated player's completed round before returning success;
 an unconfirmed outcome preserves the in-progress round and recovery backup for
 an explicit retry rather than guessing or rebuilding it.

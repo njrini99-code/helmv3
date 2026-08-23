@@ -176,7 +176,10 @@ function existingShotRows() {
  * @param committed whether the aborted RPC went on to COMMIT server-side —
  *   the case that actually destroyed a round in production.
  */
-function seed(committed: boolean) {
+function seed(
+  committed: boolean,
+  rpcError = ABORT_ERROR,
+) {
   tables = {
     golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
     golf_team_members: [],
@@ -209,7 +212,7 @@ function seed(committed: boolean) {
             round.draft_data = null;
           }
         }
-        return { data: null, error: ABORT_ERROR };
+        return { data: null, error: rpcError };
       },
     },
   });
@@ -291,6 +294,16 @@ describe('submitGolfRoundComprehensive — abort must not trigger the destructiv
     seed(true);
 
     const result = await submitGolfRoundComprehensive(makeRoundInput());
+
+    expect(deletesAgainst('golf_holes')).toBe(0);
+    expect(deletesAgainst('golf_shots')).toBe(0);
+    expect(result.success).toBe(true);
+  });
+
+  it('treats Safari/WKWebView "Load failed" as an unknown commit outcome', async () => {
+    seed(true, { message: 'Load failed', code: '', hint: '', details: 'Load failed' });
+
+    const result = await submitGolfRoundComprehensive(makeRoundInput(), ROUND_ID);
 
     expect(deletesAgainst('golf_holes')).toBe(0);
     expect(deletesAgainst('golf_shots')).toBe(0);
