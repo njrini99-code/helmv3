@@ -8,6 +8,7 @@ import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound, 
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
+import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import {
   emergencySave,
   loadEmergencySave,
@@ -23,7 +24,6 @@ import {
   DrawerContent,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
 import { useToast } from '@/components/ui/sonner';
@@ -106,15 +106,11 @@ export default function ContinueRoundClient({
   // exit-sheet + submit overlay as a fresh round.
   const ExitRoundModal = FairwaySaveRoundModal;
   const SubmitOverlay = FairwayRoundSubmitOverlay;
-
-  // IndexedDB-based offline sync for shot-level persistence
-  const [offlineSyncState, offlineSyncActions] = useOfflineSync({
-    autoSyncInterval: 30000,
-    syncOnReconnect: true,
-    onSyncComplete: (_success, _count) => {
-      // Offline data synced successfully
-    },
-  });
+  // The dashboard-level OfflineProvider owns the one v2 sync engine. Continue
+  // Round must observe that shared state rather than start the legacy v1 hook:
+  // the old hook wrote every auto-save into a second queue, which then raced
+  // the provider to sync the same round and could leave a stale restore prompt.
+  const syncStatus = useOfflineSyncStatus();
 
   const [currentHoleIndex, setCurrentHoleIndex] = useState(startHoleIndex);
   const [holes, setHoles] = useState<Hole[]>(initialHoles);
@@ -620,7 +616,12 @@ export default function ContinueRoundClient({
   };
 
   /**
-   * Auto-save handler for shot tracking - persists to localStorage + IndexedDB + server
+   * Auto-save handler for shot tracking - persists to localStorage + server.
+   *
+   * The emergency snapshot is the immediate local fallback. The legacy v1
+   * IndexedDB bridge is deliberately reserved for a failed final submission
+   * (persistFailedSubmission), where the shared v2 sync engine can recover it
+   * non-destructively. Do not enqueue normal in-progress shots there.
    */
   const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
     // Skip auto-save entirely if the round has been submitted or is being submitted
@@ -649,41 +650,9 @@ export default function ContinueRoundClient({
       currentHoleIndex: holeIndex,
     });
 
-    // Save to IndexedDB for offline redundancy — include ALL in-progress holes, not just current
-    if (offlineSyncState.isIndexedDBReady) {
-      try {
-        const draftData = {
-          step: 'tracking' as const,
-          setupData,
-          holes,
-          completedHoleStats,
-          currentHoleIndex: holeIndex,
-          inProgressShots: allInProgressShots,
-        };
-        await offlineSyncActions.saveRoundOffline(
-          roundId,
-          '', // Player ID will be determined by the server
-          draftData
-        );
-      } catch {
-        // Silently ignore offline save errors
-      }
-    }
-
-    // Queue individual shots for offline sync if we're offline
-    if (!offlineSyncState.isOnline && offlineSyncState.isIndexedDBReady) {
-      for (const shot of shots) {
-        try {
-          await offlineSyncActions.queueShot(shot, roundId, holes[holeIndex]?.number || holeIndex + 1);
-        } catch {
-          // Silently ignore offline queue errors
-        }
-      }
-    }
-
     // Background save to database — protects mid-hole shot data
     // Uses ref-based data to avoid stale closure, plus queue for concurrent saves
-    if (offlineSyncState.isOnline) {
+    if (navigator.onLine) {
       if (serverSaveInProgressRef.current) {
         // Queue this save — it will execute after the current one completes
         pendingServerSaveRef.current = { shots, holeIndex, emergencyTimestamp };
@@ -761,14 +730,9 @@ export default function ContinueRoundClient({
     }
   }, [
     buildPartialRoundData,
-    completedHoleStats,
     completedRoundId,
     handleRoundSyncConflict,
-    holes,
     isCompletedRoundError,
-    offlineSyncState.isIndexedDBReady,
-    offlineSyncState.isOnline,
-    offlineSyncActions,
     redirectToCompletedRound,
     roundId,
     setupData,
@@ -1007,14 +971,18 @@ export default function ContinueRoundClient({
           (a shared primitive outside this fix's ownership). */}
       <div className="[&>div]:!top-[var(--scorecard-height,105px)]">
         <OfflineIndicator
-          isOnline={offlineSyncState.isOnline}
-          isSyncing={offlineSyncState.isSyncing}
-          pendingCount={offlineSyncState.pendingCount}
-          lastSuccessfulSync={offlineSyncState.lastSuccessfulSync}
-          syncError={offlineSyncState.syncError}
-          onSyncNow={offlineSyncActions.syncNow}
-          onRetrySync={offlineSyncActions.retryFailedSync}
-          onDismissError={offlineSyncActions.clearSyncError}
+          isOnline={syncStatus.isOnline}
+          isSyncing={syncStatus.isSyncing}
+          pendingCount={syncStatus.pendingCount}
+          lastSuccessfulSync={syncStatus.lastSuccessfulSync}
+          syncError={syncStatus.syncError}
+          onSyncNow={() => {
+            void useOfflineSyncStore.getState().startSync();
+          }}
+          onRetrySync={() => {
+            void useOfflineSyncStore.getState().retrySync();
+          }}
+          onDismissError={() => useOfflineSyncStore.getState().clearSyncError()}
           variant="full"
           position="header"
         />
