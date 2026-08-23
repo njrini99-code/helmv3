@@ -1,7 +1,7 @@
 # INC-2026-08-22 — confirmed scorecard shown as unsaved recovery
 
 - Feature: `shot_tracking` (also affects `golf_round_lifecycle`)
-- Status: verified — queued for an owner-approved production release
+- Status: released — production health verification passed; recurrence observation pending
 - Risk: R2 — active player completion workflow
 - First seen: 2026-08-22
 - Last seen: 2026-08-22
@@ -52,3 +52,6 @@ read back successfully. The qualifier lifecycle was not changed.
   Supabase-read baseline (1050 vs 1049); no database reads were added here.
 - A local full build is environment-blocked by generated-output disk
   exhaustion after source compilation; production will use a fresh builder.
+- Production deployment `dpl_Dyi1PUxGBTjoQvoZAza25wwRhZP4` built successfully
+  from the repair state and is aliased to `https://helmsportslabs.com`.
+  Its health check returned HTTP 200 with a healthy database.

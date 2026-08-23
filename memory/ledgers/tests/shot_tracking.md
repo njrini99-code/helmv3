@@ -9,7 +9,7 @@
 - Verification: targeted emergency-save tests (6), golf schema tests (25),
   TypeScript, and ESLint passed. Full local production build is environment
   blocked after generated-output storage exhausted; the source compilation
-  completed before the storage failure.
+  completed before the storage failure. The Vercel production build passed.
 
 ## 2026-08-22 — durable checkpoint release verification
 

@@ -30,11 +30,11 @@ items:
     feature_id: shot_tracking
     root_cause: timestamp-only recovery treated a confirmed iOS page-hide snapshot as unsaved work
     incident_id: memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md
-    status: queued_for_release
+    status: verified_in_production
     risk: R2
     sha: 48b41e1c4d8c86f12f5a2becd11454f5bd3899e2
     pr: null
     regression_tests:
       - src/lib/utils/emergency-save.test.ts
-    queued_for_release: true
+    queued_for_release: false
     first_seen: '2026-08-22T21:00:00-04:00'

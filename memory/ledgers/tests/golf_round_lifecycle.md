@@ -9,6 +9,7 @@
 - Verification: targeted emergency-save tests (6), golf schema tests (25),
   TypeScript, and ESLint passed. The repository-wide static preflight remains
   blocked by an unrelated unchecked-Supabase-read baseline of 1050 vs 1049.
+  The Vercel production build for the deployed repair passed.
 
 ## 2026-08-22 — server checkpoint verification
 
