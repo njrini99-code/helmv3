@@ -101,9 +101,11 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
   it('keeps the newest active-round recovery snapshot outside the sync queue', async () => {
     const shotStorage = await import('./shot-storage');
     const roundId = '00000000-0000-4000-8000-000000000001';
+    const playerId = '00000000-0000-4000-8000-000000000099';
     const firstTimestamp = 1_700_000_000_000;
     const secondTimestamp = firstTimestamp + 1;
     const snapshot = (timestamp: number) => ({
+      playerId,
       roundId,
       timestamp,
       setupData: {
@@ -133,18 +135,41 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
     await shotStorage.saveRoundRecoverySnapshot(snapshot(firstTimestamp));
     await shotStorage.saveRoundRecoverySnapshot(snapshot(secondTimestamp));
 
-    expect(await shotStorage.getRoundRecoverySnapshot(roundId)).toMatchObject({
+    expect(await shotStorage.getRoundRecoverySnapshot(roundId, playerId)).toMatchObject({
       roundId,
       timestamp: secondTimestamp,
       data: { inProgressShotsByHole: { 0: [{ shotNumber: 1 }] } },
     });
     expect((await shotStorage.getOfflineStats()).pendingRounds).toBe(0);
 
-    await shotStorage.clearRoundRecoverySnapshotThrough(roundId, firstTimestamp);
-    expect(await shotStorage.getRoundRecoverySnapshot(roundId)).toMatchObject({ timestamp: secondTimestamp });
+    await shotStorage.clearRoundRecoverySnapshotThrough(roundId, playerId, firstTimestamp);
+    expect(await shotStorage.getRoundRecoverySnapshot(roundId, playerId)).toMatchObject({ timestamp: secondTimestamp });
 
-    await shotStorage.clearRoundRecoverySnapshotThrough(roundId, secondTimestamp);
-    expect(await shotStorage.getRoundRecoverySnapshot(roundId)).toBeNull();
+    await shotStorage.clearRoundRecoverySnapshotThrough(roundId, playerId, secondTimestamp);
+    expect(await shotStorage.getRoundRecoverySnapshot(roundId, playerId)).toBeNull();
+
+    // A browser that wrote the cache before snapshots were player-scoped used
+    // only `round:<id>`. Continue Round reaches this path only after its
+    // server page verifies the current player owns `roundId`.
+    const { playerId: _legacyPlayerId, ...legacyData } = snapshot(secondTimestamp);
+    const db = databases.get('golfhelm_offline_v2')!;
+    const recoveryStore = db.stores.get('round_recovery_snapshots')!;
+    recoveryStore.put({
+      key: `round:${roundId}`,
+      roundId,
+      timestamp: secondTimestamp,
+      data: legacyData,
+    });
+
+    expect(await shotStorage.getRoundRecoverySnapshot(roundId, playerId)).toBeNull();
+    expect(await shotStorage.getRoundRecoverySnapshot(
+      roundId,
+      playerId,
+      { allowLegacyServerSnapshot: true },
+    )).toMatchObject({ data: { playerId } });
+
+    await shotStorage.clearRoundRecoverySnapshotThrough(roundId, playerId, secondTimestamp);
+    expect(recoveryStore.rows.has(`round:${roundId}`)).toBe(false);
   });
 
   it('logs an IndexedDB request error instead of the opaque Event wrapper', async () => {

@@ -55,3 +55,16 @@ read back successfully. The qualifier lifecycle was not changed.
 - Production deployment `dpl_Dyi1PUxGBTjoQvoZAza25wwRhZP4` built successfully
   from the repair state and is aliased to `https://helmsportslabs.com`.
   Its health check returned HTTP 200 with a healthy database.
+
+## Follow-up hardening — 2026-08-23 (pending PR #1604, not deployed)
+
+- Owner-bind local browser recovery snapshots so a shared device never exposes
+  or deletes another player's backup during recovery discovery.
+- Order IndexedDB mirror saves and acknowledgement cleanup so an old cleanup
+  cannot erase a later snapshot.
+- Preserve pre-owner snapshots only on an already-authorized Continue Round
+  route for the exact server round; this maintains recovery for pre-upgrade
+  data without making unknown shared-device drafts visible.
+- Add direct database-RPC coverage for immutable started-round qualifier
+  identity, manual qualifier closure, duplicate-number prevention, and a
+  synchronous retry lock for duplicate hole checkpoints.

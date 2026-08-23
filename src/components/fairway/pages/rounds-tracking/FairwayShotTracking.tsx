@@ -434,15 +434,26 @@ export default function FairwayShotTracking({
   };
 
   const handleRetryHoleCheckpoint = useCallback(async () => {
-    if (holeCheckpointStatus === 'saving' || shotHistory.length === 0) return;
+    // State updates are asynchronous, so the status alone cannot block two taps
+    // in the same event turn. Reuse the shot-submit lock so a retry cannot
+    // duplicate a completed-hole checkpoint while the first request is pending.
+    if (
+      isProcessingShotRef.current
+      || holeCheckpointStatus === 'saving'
+      || shotHistory.length === 0
+    ) return;
+
+    isProcessingShotRef.current = true;
     setHoleCheckpointStatus('saving');
     try {
       const checkpointed = await completeHole(shotHistory);
       setHoleCheckpointStatus(checkpointed ? 'idle' : 'failed');
     } catch {
       setHoleCheckpointStatus('failed');
+    } finally {
+      isProcessingShotRef.current = false;
     }
-  }, [holeCheckpointStatus, shotHistory, completeHole]);
+  }, [holeCheckpointStatus, shotHistory, completeHole, isProcessingShotRef]);
 
   const handleSelectShot = useCallback((shotNumber: number) => {
     dispatch({ type: 'SELECT_SHOT', payload: shotNumber });

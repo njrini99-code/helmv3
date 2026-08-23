@@ -42,6 +42,13 @@ const RECOVERABLE_SUBMIT_ERROR_PATTERNS = [
 ];
 
 export interface EmergencySaveData {
+  /**
+   * The authenticated golf-player record that created this local backup.
+   * Recovery storage is shared by every account that signs in on the same
+   * browser profile, so this is required to prevent one player's shots from
+   * appearing in another player's recovery flow.
+   */
+  playerId: string;
   roundId: string | null;
   timestamp: number;
   setupData: {
@@ -76,11 +83,65 @@ export interface EmergencySaveProgress {
   inProgressShotsByHole: Record<number, ShotRecord[]>;
 }
 
-const queuedRecoverySnapshots = new Map<string, EmergencySaveData>();
+type RecoverySnapshotOperation =
+  | { type: 'save'; data: EmergencySaveData }
+  | { type: 'clear'; roundId: string | null | undefined; playerId: string }
+  | {
+    type: 'clear-through';
+    roundId: string | null | undefined;
+    playerId: string;
+    acknowledgedTimestamp: number;
+  };
+
+const queuedRecoverySnapshotOperations: RecoverySnapshotOperation[] = [];
 let recoverySnapshotDrain: Promise<void> | null = null;
 
-function recoverySnapshotKey(roundId?: string | null): string {
-  return roundId ?? 'new';
+function recoverySnapshotKey(roundId: string | null | undefined, playerId: string): string {
+  return `${roundId ?? 'new'}:${playerId}`;
+}
+
+function emergencySaveStorageKey(roundId: string | null | undefined, playerId: string): string {
+  // Server round IDs are globally unique. A pre-persistence new-round draft
+  // has no such identity, so its key must include the account owner.
+  return roundId
+    ? `${EMERGENCY_SAVE_PREFIX}_${roundId}`
+    : `${EMERGENCY_SAVE_PREFIX}_new_${playerId}`;
+}
+
+function startRecoverySnapshotDrain(): Promise<void> {
+  if (recoverySnapshotDrain) return recoverySnapshotDrain;
+
+  recoverySnapshotDrain = (async () => {
+    while (queuedRecoverySnapshotOperations.length > 0) {
+      const operation = queuedRecoverySnapshotOperations.shift();
+      if (!operation) continue;
+
+      try {
+        if (operation.type === 'save') {
+          await saveRoundRecoverySnapshot(operation.data);
+        } else if (operation.type === 'clear') {
+          await deleteRoundRecoverySnapshot(operation.roundId, operation.playerId);
+        } else {
+          await clearRoundRecoverySnapshotThrough(
+            operation.roundId,
+            operation.playerId,
+            operation.acknowledgedTimestamp,
+          );
+        }
+      } catch {
+        // localStorage is the synchronous primary fallback. IndexedDB failures
+        // are intentionally non-fatal and are already rate-limited by the
+        // storage layer when a browser backing store is unavailable.
+      }
+    }
+  })().finally(() => {
+    recoverySnapshotDrain = null;
+    if (queuedRecoverySnapshotOperations.length > 0) {
+      void startRecoverySnapshotDrain();
+    }
+  });
+
+  return recoverySnapshotDrain;
 }
 
 /**
@@ -90,40 +151,28 @@ function recoverySnapshotKey(roundId?: string | null): string {
  * queue of stale copies.
  */
 function queueRecoverySnapshot(data: EmergencySaveData): void {
-  queuedRecoverySnapshots.set(recoverySnapshotKey(data.roundId), data);
-  if (recoverySnapshotDrain) return;
-
-  recoverySnapshotDrain = (async () => {
-    while (queuedRecoverySnapshots.size > 0) {
-      const next = queuedRecoverySnapshots.entries().next().value as
-        | [string, EmergencySaveData]
-        | undefined;
-      if (!next) break;
-      const [key, snapshot] = next;
-      queuedRecoverySnapshots.delete(key);
-      try {
-        await saveRoundRecoverySnapshot(snapshot);
-      } catch {
-        // localStorage is the synchronous primary fallback. IndexedDB failures
-        // are intentionally non-fatal and are already rate-limited by the
-        // storage layer when a browser backing store is unavailable.
-      }
-    }
-  })().finally(() => {
-    recoverySnapshotDrain = null;
-    if (queuedRecoverySnapshots.size > 0) {
-      const next = queuedRecoverySnapshots.values().next().value as EmergencySaveData | undefined;
-      if (next) queueRecoverySnapshot(next);
-    }
-  });
+  const key = recoverySnapshotKey(data.roundId, data.playerId);
+  const previous = queuedRecoverySnapshotOperations.at(-1);
+  // Consecutive edits of the same round are safely coalesced, but a clear is
+  // an ordering barrier: a later write must happen after that clear so a new
+  // shot can never be erased by an older submit/delete cleanup.
+  if (
+    previous?.type === 'save'
+    && recoverySnapshotKey(previous.data.roundId, previous.data.playerId) === key
+  ) {
+    previous.data = data;
+  } else {
+    queuedRecoverySnapshotOperations.push({ type: 'save', data });
+  }
+  void startRecoverySnapshotDrain();
 }
 
-function clearQueuedRecoverySnapshot(roundId?: string | null): Promise<void> {
-  queuedRecoverySnapshots.delete(recoverySnapshotKey(roundId));
-  return (recoverySnapshotDrain ?? Promise.resolve()).then(
-    () => deleteRoundRecoverySnapshot(roundId),
-    () => deleteRoundRecoverySnapshot(roundId),
-  ).catch(() => {
+function clearQueuedRecoverySnapshot(
+  roundId: string | null | undefined,
+  playerId: string,
+): Promise<void> {
+  queuedRecoverySnapshotOperations.push({ type: 'clear', roundId, playerId });
+  return startRecoverySnapshotDrain().catch(() => {
     // The localStorage clear below is still authoritative when IndexedDB is
     // unavailable. Never surface a cache-cleanup failure to a golfer.
   });
@@ -131,13 +180,16 @@ function clearQueuedRecoverySnapshot(roundId?: string | null): Promise<void> {
 
 function clearQueuedRecoverySnapshotThrough(
   roundId: string | null | undefined,
+  playerId: string,
   acknowledgedTimestamp: number,
 ): void {
-  void (recoverySnapshotDrain ?? Promise.resolve())
-    .then(() => clearRoundRecoverySnapshotThrough(roundId, acknowledgedTimestamp))
-    .catch(() => {
-      // Same best-effort semantics as the IndexedDB mirror above.
-    });
+  queuedRecoverySnapshotOperations.push({
+    type: 'clear-through',
+    roundId,
+    playerId,
+    acknowledgedTimestamp,
+  });
+  void startRecoverySnapshotDrain();
 }
 
 /**
@@ -163,22 +215,19 @@ export function isEmergencySaveEquivalentToProgress(
  */
 export function clearEmergencySaveThrough(
   roundId: string | null | undefined,
+  playerId: string,
   acknowledgedTimestamp: number,
 ): void {
-  const current = loadEmergencySave(roundId);
+  const current = loadEmergencySave(roundId, playerId);
   if (!current || current.timestamp <= acknowledgedTimestamp) {
     try {
-      localStorage.removeItem(
-        roundId
-          ? `${EMERGENCY_SAVE_PREFIX}_${roundId}`
-          : `${EMERGENCY_SAVE_PREFIX}_new`,
-      );
+      localStorage.removeItem(emergencySaveStorageKey(roundId, playerId));
     } catch {
       // A browser storage failure must not prevent the IndexedDB comparison
       // below from preserving any newer recovery copy.
     }
   }
-  clearQueuedRecoverySnapshotThrough(roundId, acknowledgedTimestamp);
+  clearQueuedRecoverySnapshotThrough(roundId, playerId, acknowledgedTimestamp);
 }
 
 /**
@@ -194,9 +243,7 @@ export function emergencySave(data: EmergencySaveData): boolean {
   queueRecoverySnapshot(data);
 
   try {
-    const key = data.roundId
-      ? `${EMERGENCY_SAVE_PREFIX}_${data.roundId}`
-      : `${EMERGENCY_SAVE_PREFIX}_new`;
+    const key = emergencySaveStorageKey(data.roundId, data.playerId);
     localStorage.setItem(key, JSON.stringify(data));
     return true;
   } catch {
@@ -204,9 +251,7 @@ export function emergencySave(data: EmergencySaveData): boolean {
     try {
       // Remove old emergency saves to free space, then retry
       cleanupOldEmergencySaves();
-      const key = data.roundId
-        ? `${EMERGENCY_SAVE_PREFIX}_${data.roundId}`
-        : `${EMERGENCY_SAVE_PREFIX}_new`;
+      const key = emergencySaveStorageKey(data.roundId, data.playerId);
       localStorage.setItem(key, JSON.stringify(data));
       return true;
     } catch {
@@ -218,32 +263,37 @@ export function emergencySave(data: EmergencySaveData): boolean {
 /**
  * Load the most recent emergency save for a given round (or new round).
  */
-export function loadEmergencySave(roundId?: string | null): EmergencySaveData | null {
+export function loadEmergencySave(
+  roundId: string | null | undefined,
+  playerId: string,
+  options?: { allowLegacyServerSnapshot?: boolean },
+): EmergencySaveData | null {
   try {
-    if (roundId) {
-      // When a specific round ID is provided, ONLY check that key.
-      // Don't fall through to _new — that could be a different round entirely.
-      const data = localStorage.getItem(`${EMERGENCY_SAVE_PREFIX}_${roundId}`);
-      if (data) {
-        const parsed = JSON.parse(data) as EmergencySaveData;
-        if (Number.isFinite(parsed.timestamp)) {
-          return parsed;
-        }
-        localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_${roundId}`);
-      }
-      return null;
+    const key = emergencySaveStorageKey(roundId, playerId);
+    const data = localStorage.getItem(key);
+    if (!data) return null;
+    const parsed = JSON.parse(data) as EmergencySaveData;
+    if (Number.isFinite(parsed.timestamp) && parsed.playerId === playerId) {
+      return parsed;
     }
 
-    // Only check _new key when no roundId is provided
-    const newData = localStorage.getItem(`${EMERGENCY_SAVE_PREFIX}_new`);
-    if (newData) {
-      const parsed = JSON.parse(newData) as EmergencySaveData;
-      if (Number.isFinite(parsed.timestamp)) {
-        return parsed;
-      }
-      localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_new`);
+    // Backups made before player ownership was recorded can only be restored
+    // after the server has verified that the signed-in player owns this exact
+    // server round. That keeps pre-upgrade shots recoverable without exposing
+    // an unowned shared-device draft in the general recovery flow.
+    if (
+      options?.allowLegacyServerSnapshot
+      && roundId
+      && parsed.roundId === roundId
+      && Number.isFinite(parsed.timestamp)
+      && !parsed.playerId
+    ) {
+      return { ...parsed, playerId };
     }
-
+    // A shared browser profile may contain a valid recovery snapshot for a
+    // different player. It is not this account's data, but it is still that
+    // player's only local recovery copy, so never delete it while filtering.
+    if (!Number.isFinite(parsed.timestamp)) localStorage.removeItem(key);
     return null;
   } catch {
     return null;
@@ -259,7 +309,7 @@ export function loadEmergencySave(roundId?: string | null): EmergencySaveData | 
  * find that local copy. Callers restore it as a fresh round unless they have
  * independently confirmed that the server round still exists.
  */
-export function loadLatestEmergencySave(): EmergencySaveData | null {
+export function loadLatestEmergencySave(playerId: string): EmergencySaveData | null {
   try {
     let latest: EmergencySaveData | null = null;
     const keys: string[] = [];
@@ -284,6 +334,10 @@ export function loadLatestEmergencySave(): EmergencySaveData | null {
           continue;
         }
 
+        // This browser can be used by more than one golfer. Hide another
+        // account's snapshot without making that player's shots unrecoverable.
+        if (parsed.playerId !== playerId) continue;
+
         if (!latest || parsed.timestamp > latest.timestamp) {
           latest = parsed;
         }
@@ -302,18 +356,13 @@ export function loadLatestEmergencySave(): EmergencySaveData | null {
 /**
  * Clear emergency save for a given round.
  */
-export function clearEmergencySave(roundId?: string | null): void {
-  void clearQueuedRecoverySnapshot(roundId);
+export function clearEmergencySave(
+  roundId: string | null | undefined,
+  playerId: string,
+): void {
+  void clearQueuedRecoverySnapshot(roundId, playerId);
   try {
-    if (roundId) {
-      // Clear ONLY this round's key. Do NOT touch the `_new` draft — that may be
-      // a separate in-progress new round, and removing it here would wipe it
-      // (cross-draft data loss).
-      localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_${roundId}`);
-      return;
-    }
-    // No roundId → we're clearing the new-round draft.
-    localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_new`);
+    localStorage.removeItem(emergencySaveStorageKey(roundId, playerId));
   } catch {
     // Ignore
   }

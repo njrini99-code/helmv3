@@ -99,14 +99,26 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   hole must never be persisted together. Removing a final hole-out clears the
   former before the remaining shots are saved as in-progress progress.
 - The durable parent is also the authority for immutable start-time identity
-  such as qualifier link and qualifier round number. Final submission may use
-  recovery data for scorecard content, but must not let stale client metadata
-  detach or retarget the started round.
+  such as round type, qualifier link, and qualifier round number. Final
+  submission may use recovery data for scorecard content, but must not let
+  stale client metadata change persisted identity. A legacy missing qualifier
+  round number may be filled only after the database verifies the same entrant,
+  an open qualifier, and an unused valid number. Continue Round obtains those
+  choices from the authenticated server and asks the player to select one at
+  final submit; it never invents a qualifier result from a browser backup.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
 - Browser recovery state is a durable fallback, not a time-limited cache.
   Normal active snapshots must survive extended interruptions and be cleared
   only after confirmed server progress, completion, or explicit deletion.
+- Recovery snapshots are owner-bound to the authenticated golf-player record
+  in localStorage and IndexedDB. A shared browser must neither surface another
+  player's shots nor delete that player's valid backup while filtering.
+  Pre-owner snapshots remain recoverable only on an already-authorized
+  Continue Round route for their exact persisted server round.
+- Browser-mirror save and clear operations are causally ordered. A confirmed
+  older save may clear only that version; a later shot snapshot remains
+  recoverable even if browser-database work finishes later.
 - Local recovery UI may appear only when its scorecard or shot data differs
   from the server's persisted progress; a newer timestamp alone is not proof
   of unsaved work.

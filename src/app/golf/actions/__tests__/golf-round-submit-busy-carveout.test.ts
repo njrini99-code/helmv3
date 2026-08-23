@@ -348,4 +348,33 @@ describe('submitGolfRoundComprehensive — persisted qualifier identity', () => 
     expect(result.success).toBe(true);
     expect(rpc).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps a legacy qualifier round resumable when its missing number cannot be safely submitted', async () => {
+    const rpc = vi.fn(async () => ({ data: { success: true, warnings: [] }, error: null }));
+    tables = {
+      golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
+      golf_team_members: [],
+      golf_rounds: [{
+        id: ROUND_ID,
+        player_id: 'player-1',
+        status: 'in_progress',
+        round_type: 'qualifier',
+        qualifier_id: QUALIFIER_A,
+        qualifier_round_number: null,
+      }],
+      golf_qualifiers: [{ id: QUALIFIER_A, status: 'in_progress', num_rounds: 2 }],
+      golf_qualifier_entries: [{ id: 'entry-1', qualifier_id: QUALIFIER_A, player_id: 'player-1' }],
+    };
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: { submit_round_atomic: rpc },
+    });
+
+    const result = await submitGolfRoundComprehensive(makeRoundInput(), ROUND_ID);
+
+    expect(result.success).toBe(false);
+    expect(result.success === false && result.error).toMatch(/valid qualifier round number/i);
+    expect(rpc).not.toHaveBeenCalled();
+  });
 });

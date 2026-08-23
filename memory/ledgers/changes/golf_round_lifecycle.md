@@ -54,3 +54,15 @@
 - Why: active rounds need a single comprehensible persistence path and must
   never serialize both the old completed version and reopened progress of the
   same hole.
+
+## 2026-08-23 — owner-bind and order device recovery snapshots
+
+- SHA: pending commit on PR #1604; not deployed.
+- Change: localStorage and IndexedDB snapshots now carry the authenticated
+  golf-player identity, shared-device scans hide but do not delete another
+  player's data, and browser-mirror saves/clears run in causal order.
+  Pre-owner snapshots remain recoverable only for the exact server round after
+  Continue Round has verified that player's ownership.
+- Why: a delayed browser-database clear could erase a newer snapshot, while an
+  unowned shared-device cache could be shown or accidentally re-homed by a
+  recovery fallback.

@@ -388,7 +388,13 @@ export function MessageThreadPane({
       pendingInitialScrollConversationIdRef.current = conversationId;
     }
 
-    if (scrollToMessageId) return;
+    if (scrollToMessageId) {
+      // An explicit search target owns the initial placement. Clear the open
+      // sentinel so later renders cannot jump the player back to a stale top or
+      // bottom position after the search result has been focused.
+      pendingInitialScrollConversationIdRef.current = null;
+      return;
+    }
     if (!shouldScrollThreadToLatestOnOpen(
       pendingInitialScrollConversationIdRef.current,
       conversationId ?? undefined,

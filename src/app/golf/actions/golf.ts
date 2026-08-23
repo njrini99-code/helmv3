@@ -1568,6 +1568,16 @@ async function submitGolfRoundComprehensiveImpl(
       // long ago but this read/cap-check path never was, so a qualifier
       // configured for e.g. 1 round never stopped accepting round 2, 3, 4...).
       const numRounds = qualifier.num_rounds ?? 1;
+      if (
+        effectiveQualifierRoundNumber == null
+        || !Number.isInteger(effectiveQualifierRoundNumber)
+        || effectiveQualifierRoundNumber < 1
+      ) {
+        return {
+          success: false,
+          error: 'This started qualifier round needs a valid qualifier round number. Reload it and try again.',
+        };
+      }
       if (effectiveQualifierRoundNumber && effectiveQualifierRoundNumber > numRounds) {
         return {
           success: false,

@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { createElement } from 'react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -98,5 +100,18 @@ describe('MessageThreadPane initial thread position', () => {
     rerender(createElement(MessageThreadPane, { ...props, loading: false }));
 
     expect(scrollContainer!.scrollTop).toBe(640);
+  });
+
+  it('yields the first scroll to an explicit search target instead of retaining an old-thread sentinel', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'src/components/fairway/pages/messages/MessageThreadPane.tsx'),
+      'utf8',
+    );
+    const initialScrollStart = source.indexOf('React.useLayoutEffect(() => {');
+    const initialScrollSource = source.slice(initialScrollStart, source.indexOf('// Auto-scroll to bottom'));
+
+    expect(initialScrollStart).toBeGreaterThanOrEqual(0);
+    expect(initialScrollSource).toContain('if (scrollToMessageId) {');
+    expect(initialScrollSource).toContain('pendingInitialScrollConversationIdRef.current = null');
   });
 });

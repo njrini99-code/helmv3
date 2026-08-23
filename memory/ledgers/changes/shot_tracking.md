@@ -52,3 +52,12 @@
 - Why: a rejected checkpoint could otherwise leave the interface looking
   complete while deferred autosave retained both old completed data and a new
   in-progress version of the same hole.
+
+## 2026-08-23 — serialize recovery cleanup and checkpoint retries
+
+- SHA: pending commit on PR #1604; not deployed.
+- Change: device backups are player-scoped, acknowledgement cleanup cannot
+  overtake a later snapshot, and the explicit completed-hole retry shares the
+  same synchronous in-flight guard as normal shot submission.
+- Why: rapid repeat taps could enqueue duplicate checkpoints, and an old
+  asynchronous cache delete could otherwise remove a later recoverable shot.

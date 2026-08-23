@@ -11,7 +11,8 @@ Team Communications covers realtime team messaging and coach-to-team announcemen
 When a player or coach opens a conversation, the thread starts at the newest
 loaded message. Later realtime messages preserve a reader's position unless
 they are already near the bottom; an explicit search result takes precedence
-and opens at its matched message instead.
+and opens at its matched message instead. The search target consumes the
+initial-open sentinel so it cannot be overwritten by a stale initial scroll.
 
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 

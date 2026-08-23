@@ -76,7 +76,12 @@ interface RoundSetupData {
 
 interface ContinueRoundClientProps {
   roundId: string;
+  playerId: string;
   setupData: RoundSetupData;
+  /** Safe, server-derived choices for a legacy qualifier row missing its number. */
+  qualifierRoundNumberOptions?: number[];
+  /** Explains why a legacy row cannot currently choose a safe result number. */
+  qualifierRoundNumberUnavailableReason?: string;
   holes: Hole[];
   completedHoleStats: HoleStats[];
   startHoleIndex: number;
@@ -88,7 +93,10 @@ interface ContinueRoundClientProps {
 
 export default function ContinueRoundClient({
   roundId,
+  playerId,
   setupData,
+  qualifierRoundNumberOptions = [],
+  qualifierRoundNumberUnavailableReason,
   holes: initialHoles,
   completedHoleStats: initialCompletedStats,
   startHoleIndex,
@@ -130,6 +138,10 @@ export default function ContinueRoundClient({
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [completedRoundId, setCompletedRoundId] = useState<string | null>(null);
+  const [selectedQualifierRoundNumber, setSelectedQualifierRoundNumber] = useState<number | undefined>(
+    setupData.qualifierRoundNumber,
+  );
+  const [showQualifierRoundNumberDialog, setShowQualifierRoundNumberDialog] = useState(false);
 
   // Concurrency lock for background server saves
   const serverSaveInProgressRef = useRef(false);
@@ -225,11 +237,15 @@ export default function ContinueRoundClient({
     showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
   }, [showToast]);
 
-  const persistFailedSubmission = useCallback(async (allHoleStats: HoleStats[]) => {
+  const persistFailedSubmission = useCallback(async (
+    allHoleStats: HoleStats[],
+    recoverySetupData: RoundSetupData = setupData,
+  ) => {
     emergencySave({
+      playerId,
       roundId,
       timestamp: Date.now(),
-      setupData,
+      setupData: recoverySetupData,
       holes,
       completedHoleStats: allHoleStats,
       inProgressShotsByHole: {},
@@ -240,12 +256,12 @@ export default function ContinueRoundClient({
     try {
       await saveOfflineRound({
         id: roundId,
-        playerId: '',
+        playerId,
         serverRoundId: roundId,
         draftData: {
           step: 'tracking',
           roundId,
-          setupData,
+          setupData: recoverySetupData,
           holes,
           completedHoleStats: allHoleStats,
           currentHoleIndex: Math.max(0, holes.length - 1),
@@ -256,7 +272,7 @@ export default function ContinueRoundClient({
     } catch {
       // localStorage emergency save above remains the hard fallback
     }
-  }, [holes, roundId, setupData]);
+  }, [holes, playerId, roundId, setupData]);
 
   useRoundStatusSync({
     roundId,
@@ -269,8 +285,15 @@ export default function ContinueRoundClient({
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const localSnapshot = loadEmergencySave(roundId);
-      const indexedDbSnapshot = await getRoundRecoverySnapshot(roundId)
+      // The server page has already checked that this player owns `roundId`,
+      // so it is safe to include a pre-owner browser backup for this exact
+      // round while users transition from the older cache format.
+      const localSnapshot = loadEmergencySave(roundId, playerId, { allowLegacyServerSnapshot: true });
+      const indexedDbSnapshot = await getRoundRecoverySnapshot(
+        roundId,
+        playerId,
+        { allowLegacyServerSnapshot: true },
+      )
         .then((snapshot) => snapshot?.data ?? null)
         .catch(() => null);
       const emergencyData = [localSnapshot, indexedDbSnapshot]
@@ -290,7 +313,7 @@ export default function ContinueRoundClient({
       completedHoleStats: initialCompletedStats,
       inProgressShotsByHole: serverInProgress,
     })) {
-      clearEmergencySave(roundId);
+      clearEmergencySave(roundId, playerId);
       return;
     }
 
@@ -298,7 +321,7 @@ export default function ContinueRoundClient({
     if (serverDataTimestamp) {
       const serverTime = new Date(serverDataTimestamp).getTime();
       if (emergencyData.timestamp <= serverTime) {
-        clearEmergencySave(roundId);
+        clearEmergencySave(roundId, playerId);
         return;
       }
     }
@@ -353,6 +376,7 @@ export default function ContinueRoundClient({
 
       // 1. SYNCHRONOUS localStorage write — guaranteed to complete before page freeze
       emergencySave({
+        playerId,
         roundId,
         timestamp: Date.now(),
         setupData,
@@ -409,7 +433,7 @@ export default function ContinueRoundClient({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handlePageHide);
     };
-  }, [roundId, setupData]); // Only stable values — holes/stats/holeIndex read from refs
+  }, [playerId, roundId, setupData]); // Only stable values — holes/stats/holeIndex read from refs
 
   // Browser back button protection — prevents accidental data loss
   useEffect(() => {
@@ -495,7 +519,7 @@ export default function ContinueRoundClient({
         if (result.success) {
           consecutiveSaveFailuresRef.current = 0;
           if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
-          clearEmergencySaveThrough(roundId, emergencyTimestamp);
+          clearEmergencySaveThrough(roundId, playerId, emergencyTimestamp);
           return true;
         }
         if (result.error === 'conflict') {
@@ -520,7 +544,7 @@ export default function ContinueRoundClient({
     setError('This hole has not saved yet. Keep this screen open and try again.');
     showAutoSaveWarning();
     return false;
-  }, [handleRoundSyncConflict, isCompletedRoundError, redirectToCompletedRound, roundId, showAutoSaveWarning]);
+  }, [handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, roundId, showAutoSaveWarning]);
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats): Promise<boolean> => {
     allHolesCheckpointedRef.current = false;
@@ -567,6 +591,7 @@ export default function ContinueRoundClient({
     // Immediate localStorage backup of completed hole (synchronous, guaranteed)
     const emergencyTimestamp = Date.now();
     emergencySave({
+      playerId,
       roundId,
       timestamp: emergencyTimestamp,
       setupData,
@@ -665,6 +690,7 @@ export default function ContinueRoundClient({
     // phone lock, app switch, crash, or connectivity drop can interrupt it.
     inProgressShotsByHoleRef.current = nextInProgress;
     emergencySave({
+      playerId,
       roundId,
       timestamp: Date.now(),
       setupData,
@@ -704,6 +730,7 @@ export default function ContinueRoundClient({
     // SYNCHRONOUS localStorage backup — always runs, always completes
     const emergencyTimestamp = Date.now();
     emergencySave({
+      playerId,
       roundId,
       timestamp: emergencyTimestamp,
       setupData,
@@ -751,7 +778,7 @@ export default function ContinueRoundClient({
             if (result.success) {
               consecutiveSaveFailuresRef.current = 0;
               if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
-              clearEmergencySaveThrough(roundId, saveEmergencyTimestamp);
+              clearEmergencySaveThrough(roundId, playerId, saveEmergencyTimestamp);
             } else if (result.error === 'conflict') {
               void handleRoundSyncConflict('This round was updated on another device. Please reload.');
             } else if (result.error === 'busy' || result.error === 'retry') {
@@ -813,14 +840,21 @@ export default function ContinueRoundClient({
     handleRoundSyncConflict,
     isCompletedRoundError,
     persistCompletedHole,
+    playerId,
     redirectToCompletedRound,
     roundId,
     setupData,
     showAutoSaveWarning,
   ]);
 
-  const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
+  const handleRoundSubmit = async (
+    allHoleStats: HoleStats[],
+    qualifierRoundNumberOverride?: number,
+  ) => {
     if (isSubmittingRef.current) return;
+    const submitSetupData = qualifierRoundNumberOverride == null
+      ? setupData
+      : { ...setupData, qualifierRoundNumber: qualifierRoundNumberOverride };
     isSubmittingRef.current = true;
     setSubmitting(true);
     setError('');
@@ -830,9 +864,10 @@ export default function ContinueRoundClient({
     try {
       // Save pre-submit snapshot to localStorage as insurance
       emergencySave({
+        playerId,
         roundId,
         timestamp: Date.now(),
-        setupData,
+        setupData: submitSetupData,
         holes,
         completedHoleStats: allHoleStats,
         inProgressShotsByHole: {},
@@ -885,17 +920,17 @@ export default function ContinueRoundClient({
       }
 
       const roundData = {
-        courseName: setupData.courseName,
-        courseCity: setupData.courseCity || undefined,
-        courseState: setupData.courseState || undefined,
-        courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
-        courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
-        teesPlayed: setupData.teesPlayed || undefined,
-        roundType: setupData.roundType,
-        roundDate: setupData.roundDate,
+        courseName: submitSetupData.courseName,
+        courseCity: submitSetupData.courseCity || undefined,
+        courseState: submitSetupData.courseState || undefined,
+        courseRating: submitSetupData.courseRating ? parseFloat(submitSetupData.courseRating) : undefined,
+        courseSlope: submitSetupData.courseSlope ? parseInt(submitSetupData.courseSlope) : undefined,
+        teesPlayed: submitSetupData.teesPlayed || undefined,
+        roundType: submitSetupData.roundType,
+        roundDate: submitSetupData.roundDate,
         holes: allHoleStats,
-        qualifierId: setupData.qualifierId,
-        qualifierRoundNumber: setupData.qualifierRoundNumber,
+        qualifierId: submitSetupData.qualifierId,
+        qualifierRoundNumber: submitSetupData.qualifierRoundNumber,
       };
 
       const result = await submitGolfRoundComprehensive(roundData, roundId);
@@ -908,7 +943,7 @@ export default function ContinueRoundClient({
       }
 
       // Clean up IndexedDB draft data and emergency save for this round
-      clearEmergencySave(roundId);
+      clearEmergencySave(roundId, playerId);
       try {
         await deleteOfflineRound(roundId);
       } catch {
@@ -920,7 +955,7 @@ export default function ContinueRoundClient({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to submit round';
       if (isRecoverableRoundSubmitError(message)) {
-        await persistFailedSubmission(allHoleStats);
+        await persistFailedSubmission(allHoleStats, submitSetupData);
         isSubmittingRef.current = false;
         setSubmitting(false);
         setError('');
@@ -935,6 +970,25 @@ export default function ContinueRoundClient({
       isSubmittingRef.current = false;
       // Stay in submitting state so the overlay shows the error
     }
+  };
+
+  const requestRoundSubmission = async (allHoleStats: HoleStats[]) => {
+    // Legacy rows created before qualifier_round_number became durable must
+    // explicitly identify their configured result before the guarded terminal
+    // submit. The choices came from the authenticated server page; do not
+    // infer one from the scorecard or silently create a duplicate result.
+    if (
+      setupData.qualifierId
+      && setupData.qualifierRoundNumber == null
+      && selectedQualifierRoundNumber == null
+    ) {
+      setPendingFinalStats(allHoleStats);
+      setShowFinishConfirm(false);
+      setShowQualifierRoundNumberDialog(true);
+      return;
+    }
+
+    await handleRoundSubmit(allHoleStats, selectedQualifierRoundNumber);
   };
 
   const handleSaveForLater = async () => {
@@ -986,7 +1040,7 @@ export default function ContinueRoundClient({
         showToast?.(result.error || 'Failed to delete round. Please try again.', 'error');
         return;
       }
-      clearEmergencySave(roundId);
+        clearEmergencySave(roundId, playerId);
       setShowExitModal(false);
       router.push('/golf/dashboard/rounds');
     } catch {
@@ -1148,7 +1202,7 @@ export default function ContinueRoundClient({
             <div className="flex gap-3">
               <FwButton variant="secondary"
                 onClick={() => {
-                  clearEmergencySave(roundId);
+                  clearEmergencySave(roundId, playerId);
                   setShowRecoveryDialog(false);
                   setRecoveryData(null);
                 }}
@@ -1185,6 +1239,81 @@ export default function ContinueRoundClient({
           </div>
       </ModalShell>
 
+      {/* A small number of legacy qualifier parents predate the durable round
+          number. The scorecard stays saved; the player supplies one of the
+          server-derived unused choices before the terminal guard fills it. */}
+      <ModalShell
+        open={showQualifierRoundNumberDialog}
+        onOpenChange={(next) => {
+          setShowQualifierRoundNumberDialog(next);
+          if (!next && pendingFinalStats) setShowFinishConfirm(true);
+        }}
+        size="sm"
+        title="Choose qualifier round"
+      >
+        <div className="px-6 pb-6 pt-2">
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            This saved scorecard needs its qualifier round number before it can be submitted.
+            Your shots and completed holes remain saved.
+          </p>
+
+          {qualifierRoundNumberOptions.length > 0 ? (
+            <div className="mt-5 space-y-2" role="radiogroup" aria-label="Qualifier round number">
+              {qualifierRoundNumberOptions.map((roundNumber) => {
+                const selected = selectedQualifierRoundNumber === roundNumber;
+                return (
+                  <FwButton
+                    key={roundNumber}
+                    type="button"
+                    variant={selected ? 'primary' : 'secondary'}
+                    className="w-full justify-between"
+                    aria-pressed={selected}
+                    onClick={() => setSelectedQualifierRoundNumber(roundNumber)}
+                  >
+                    <span className="flex w-full items-center justify-between gap-3">
+                      <span>Qualifier round {roundNumber}</span>
+                      <span className="font-fw-mono text-body-sm">{selected ? 'Selected' : ''}</span>
+                    </span>
+                  </FwButton>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-5 rounded-fw-md bg-fw-warning-bg px-4 py-3 font-fw-sans text-body-sm text-fw-warning-ink">
+              {qualifierRoundNumberUnavailableReason
+                ?? 'No unused qualifier round is available right now. Your scorecard remains saved.'}
+            </p>
+          )}
+
+          <div className="mt-6 flex gap-3">
+            <FwButton
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => {
+                setShowQualifierRoundNumberDialog(false);
+                if (pendingFinalStats) setShowFinishConfirm(true);
+              }}
+            >
+              Back
+            </FwButton>
+            <FwButton
+              type="button"
+              variant="primary"
+              className="flex-1"
+              disabled={selectedQualifierRoundNumber == null || !pendingFinalStats}
+              onClick={() => {
+                if (!pendingFinalStats || selectedQualifierRoundNumber == null) return;
+                setShowQualifierRoundNumberDialog(false);
+                void handleRoundSubmit(pendingFinalStats, selectedQualifierRoundNumber);
+              }}
+            >
+              Submit Round
+            </FwButton>
+          </div>
+        </div>
+      </ModalShell>
+
       {/* Finish Round — Premium Round Summary, mirroring new-round-client. */}
       <FairwayRoundSummarySheet
         open={Boolean(showFinishConfirm && pendingFinalStats)}
@@ -1197,7 +1326,7 @@ export default function ContinueRoundClient({
         onSubmit={async () => {
           if (!pendingFinalStats) return;
           setShowFinishConfirm(false);
-          await handleRoundSubmit(pendingFinalStats);
+          await requestRoundSubmission(pendingFinalStats);
         }}
       />
 
@@ -1222,7 +1351,7 @@ export default function ContinueRoundClient({
         onRetry={pendingFinalStats ? () => {
           setError('');
           isSubmittingRef.current = false;
-          void handleRoundSubmit(pendingFinalStats);
+          void requestRoundSubmission(pendingFinalStats);
         } : undefined}
         onSaveAndExit={async () => {
           setError('');

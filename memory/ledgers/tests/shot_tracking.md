@@ -48,3 +48,11 @@
 - Verification: 68 focused round-recovery, tracking, persistence, mutation,
   and schema tests passed; TypeScript, ESLint, and the local production build
   passed.
+
+## 2026-08-23 — retry lock and recovery journal regressions
+
+- Added coverage that the explicit completed-hole retry uses the controller's
+  synchronous in-flight lock, and that owner-scoped recovery snapshots stay
+  visible only to their player without deleting another account's cache.
+- Added coverage for compatibility recovery of an authorized pre-owner server
+  snapshot and for clearing the corresponding legacy IndexedDB record.

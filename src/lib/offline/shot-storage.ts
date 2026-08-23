@@ -741,8 +741,15 @@ export async function markRoundFailed(offlineId: string, errorMessage: string): 
 // LOCAL-ONLY ROUND RECOVERY SNAPSHOTS
 // ============================================================================
 
-function recoverySnapshotKey(roundId?: string | null): string {
-  return `round:${roundId ?? 'new'}`;
+function recoverySnapshotKey(
+  roundId: string | null | undefined,
+  playerId?: string,
+): string {
+  // New-round drafts have no server UUID, so their durable cache identity
+  // must include the player. Keep the legacy key form only for explicit
+  // cleanup of pre-owner snapshots; new writes always include playerId.
+  if (!playerId) return `round:${roundId ?? 'new'}`;
+  return `round:${roundId ?? 'new'}:${playerId}`;
 }
 
 /**
@@ -754,7 +761,7 @@ function recoverySnapshotKey(roundId?: string | null): string {
  */
 export async function saveRoundRecoverySnapshot(data: EmergencySaveData): Promise<void> {
   const snapshot: RoundRecoverySnapshot = {
-    key: recoverySnapshotKey(data.roundId),
+    key: recoverySnapshotKey(data.roundId, data.playerId),
     roundId: data.roundId,
     timestamp: data.timestamp,
     data,
@@ -771,11 +778,42 @@ export async function saveRoundRecoverySnapshot(data: EmergencySaveData): Promis
 
 /** Return the newest local snapshot for one in-progress round, if any. */
 export async function getRoundRecoverySnapshot(
-  roundId?: string | null,
+  roundId: string | null | undefined,
+  playerId: string,
+  options?: { allowLegacyServerSnapshot?: boolean },
 ): Promise<RoundRecoverySnapshot | null> {
   return withShotTransaction(RECOVERY_SNAPSHOTS_STORE, 'readonly', (transaction) => new Promise((resolve, reject) => {
-    const request = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE).get(recoverySnapshotKey(roundId));
-    request.onsuccess = () => resolve((request.result as RoundRecoverySnapshot | undefined) ?? null);
+    const store = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE);
+    const request = store.get(recoverySnapshotKey(roundId, playerId));
+    request.onsuccess = () => {
+      const ownedSnapshot = request.result as RoundRecoverySnapshot | undefined;
+      if (ownedSnapshot || !options?.allowLegacyServerSnapshot || !roundId) {
+        resolve(ownedSnapshot ?? null);
+        return;
+      }
+
+      // Pre-owner snapshots were keyed only by their globally unique server
+      // round ID. The caller must have already verified ownership server-side
+      // before opting into this compatibility path.
+      const legacyRequest = store.get(recoverySnapshotKey(roundId));
+      legacyRequest.onsuccess = () => {
+        const legacySnapshot = legacyRequest.result as RoundRecoverySnapshot | undefined;
+        if (
+          !legacySnapshot
+          || legacySnapshot.roundId !== roundId
+          || legacySnapshot.data.playerId
+        ) {
+          resolve(null);
+          return;
+        }
+        resolve({
+          ...legacySnapshot,
+          key: recoverySnapshotKey(roundId, playerId),
+          data: { ...legacySnapshot.data, playerId },
+        });
+      };
+      legacyRequest.onerror = () => reject(new Error('Failed to get legacy round recovery snapshot'));
+    };
     request.onerror = () => reject(new Error('Failed to get round recovery snapshot'));
   }));
 }
@@ -794,9 +832,16 @@ export async function getRoundRecoverySnapshots(): Promise<RoundRecoverySnapshot
 }
 
 /** Delete a local recovery snapshot after a confirmed submit/delete. */
-export async function deleteRoundRecoverySnapshot(roundId?: string | null): Promise<void> {
+export async function deleteRoundRecoverySnapshot(
+  roundId: string | null | undefined,
+  playerId?: string,
+): Promise<void> {
   await withShotTransaction(RECOVERY_SNAPSHOTS_STORE, 'readwrite', (transaction) => new Promise<void>((resolve, reject) => {
-    const request = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE).delete(recoverySnapshotKey(roundId));
+    const store = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE);
+    const request = store.delete(recoverySnapshotKey(roundId, playerId));
+    // A confirmed save/delete against an authenticated server round can also
+    // remove the legacy unowned key for that same globally unique round.
+    if (roundId && playerId) store.delete(recoverySnapshotKey(roundId));
     request.onerror = () => reject(new Error('Failed to delete round recovery snapshot'));
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(new Error('Failed to delete round recovery snapshot'));
@@ -810,21 +855,26 @@ export async function deleteRoundRecoverySnapshot(roundId?: string | null): Prom
  */
 export async function clearRoundRecoverySnapshotThrough(
   roundId: string | null | undefined,
+  playerId: string,
   acknowledgedTimestamp: number,
 ): Promise<void> {
   await withShotTransaction(RECOVERY_SNAPSHOTS_STORE, 'readwrite', (transaction) => new Promise<void>((resolve, reject) => {
     const store = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE);
-    const getRequest = store.get(recoverySnapshotKey(roundId));
-
-    getRequest.onsuccess = () => {
-      const current = getRequest.result as RoundRecoverySnapshot | undefined;
-      if (!current || current.timestamp > acknowledgedTimestamp) {
-        return;
-      }
-      const deleteRequest = store.delete(current.key);
-      deleteRequest.onerror = () => reject(new Error('Failed to clear acknowledged recovery snapshot'));
+    const clearIfAcknowledged = (key: string) => {
+      const getRequest = store.get(key);
+      getRequest.onsuccess = () => {
+        const current = getRequest.result as RoundRecoverySnapshot | undefined;
+        if (!current || current.timestamp > acknowledgedTimestamp) return;
+        const deleteRequest = store.delete(key);
+        deleteRequest.onerror = () => reject(new Error('Failed to clear acknowledged recovery snapshot'));
+      };
+      getRequest.onerror = () => reject(new Error('Failed to read round recovery snapshot'));
     };
-    getRequest.onerror = () => reject(new Error('Failed to read round recovery snapshot'));
+
+    clearIfAcknowledged(recoverySnapshotKey(roundId, playerId));
+    // The legacy key is only possible for a persisted server round. An
+    // acknowledgement for that round is an authoritative, scoped cleanup.
+    if (roundId) clearIfAcknowledged(recoverySnapshotKey(roundId));
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(new Error('Failed to clear acknowledged recovery snapshot'));
     transaction.onabort = () => reject(new Error('Round recovery snapshot clear aborted'));

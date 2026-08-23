@@ -204,7 +204,7 @@ function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
         // Active rounds intentionally do not expire. A valid timestamp is
         // enough; recovery is removed only after the golfer completes or
         // deletes the round (or clears browser storage themselves).
-        if (!Number.isFinite(parsed.timestamp)) continue;
+        if (!Number.isFinite(parsed.timestamp) || typeof parsed.playerId !== 'string') continue;
         const completedHoleStats = Array.isArray(parsed.completedHoleStats)
           ? parsed.completedHoleStats
           : [];
@@ -222,7 +222,7 @@ function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
         const roundId = key.replace(`${EMERGENCY_SAVE_PREFIX}_`, '') || `ls_${Date.now()}_${i}`;
         results.push({
           id: `localStorage_${roundId}`,
-          playerId: '',
+          playerId: parsed.playerId,
           storageSource: 'localstorage',
           draftData: {
             step: 'tracking',
@@ -286,7 +286,7 @@ function mapRecoverySnapshot(snapshot: RoundRecoverySnapshot): OfflineRoundData 
   const data = snapshot.data;
   return {
     id: `recoveryCache_${snapshot.key}`,
-    playerId: '',
+    playerId: data.playerId,
     storageSource: 'recovery-cache',
     serverRoundId: data.roundId ?? undefined,
     draftData: {
@@ -346,6 +346,13 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
 
         for (const round of [...recoveryCacheRounds, ...modernRounds, ...legacyRounds, ...emergencySaves]
           .sort((left, right) => right.timestamp - left.timestamp)) {
+          // Browser storage belongs to the device, not the account. Never
+          // offer a local backup unless it was created by this signed-in
+          // player; otherwise a shared iPad can surface another golfer's
+          // shots and the recovery action can incorrectly create a new round.
+          if (round.playerId !== playerId) {
+            continue;
+          }
           if (!hasRecoverableProgress(round)) {
             continue;
           }
@@ -373,8 +380,11 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
       })
       .catch(() => {
         const emergencySaves = getEmergencySavesFromLocalStorage();
-        if (emergencySaves.length > 0) {
-          setRounds(emergencySaves.filter(hasRecoverableProgress));
+        const ownedEmergencySaves = emergencySaves.filter(
+          (round) => round.playerId === playerId && hasRecoverableProgress(round),
+        );
+        if (ownedEmergencySaves.length > 0) {
+          setRounds(ownedEmergencySaves);
         } else {
           setError('Could not access offline storage. Make sure you are using the same browser and device.');
         }
@@ -384,7 +394,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
 
   const cleanupRecoveredRound = async (round: OfflineRoundData): Promise<void> => {
     const existingRoundId = getExistingRoundId(round);
-    clearEmergencySave(existingRoundId ?? null);
+    clearEmergencySave(existingRoundId ?? null, playerId);
 
     if (round.storageSource === 'localstorage') {
       const lsKey = round.id.replace('localStorage_', '');
@@ -398,7 +408,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
     }
 
     if (round.storageSource === 'recovery-cache') {
-      await deleteRoundRecoverySnapshot(existingRoundId ?? null);
+      await deleteRoundRecoverySnapshot(existingRoundId ?? null, playerId);
       return;
     }
 
@@ -463,10 +473,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
           })),
         };
 
-        let partialResult = await savePartialRound(partialData, existingRoundId);
-        if (!partialResult.success && existingRoundId && /round not found or you do not have permission/i.test(partialResult.error)) {
-          partialResult = await savePartialRound(partialData);
-        }
+        const partialResult = await savePartialRound(partialData, existingRoundId);
 
         if (!partialResult.success) {
           setError(partialResult.error || 'Failed to restore round progress.');
@@ -494,11 +501,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
         holes: stats,
       };
 
-      let result = await submitGolfRoundComprehensive(roundData, existingRoundId);
-
-      if (!result.success && existingRoundId && /round not found or you do not have permission/i.test(result.error)) {
-        result = await submitGolfRoundComprehensive(roundData);
-      }
+      const result = await submitGolfRoundComprehensive(roundData, existingRoundId);
 
       if (!result.success) {
         if (existingRoundId && isCompletedRoundError(result.error)) {

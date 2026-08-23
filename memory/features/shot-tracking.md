@@ -100,6 +100,12 @@ Round setup
 - Each new shot must enter the local recovery snapshot synchronously before
   React rendering or the deferred network autosave. The independent v2 browser
   mirror is recovery-only and must never become a second normal sync queue.
+- Recovery snapshots are player-bound in both browser stores. Shared devices
+  hide another account's cache without deleting it; a pre-owner entry can be
+  restored only through an already-authorized Continue Round for its exact
+  persisted server round.
+- Browser-mirror saves and cleanup are ordered so an old acknowledgement
+  cannot erase a later recoverable shot snapshot.
 - Do not silently expire unfinished-round recovery data. Partial recovery
   restores progress with `savePartialRound` and returns to Continue Round; only
   a failed final submit of a fully-scored round may submit automatically.
@@ -110,6 +116,8 @@ Round setup
   server-checkpointed scorecard remains resumable through Continue Round, not
   through a misleading recovery prompt.
 - Qualifier-linked rounds must retain `qualifier_id` through draft, continue, and submit.
+- Terminal submit keeps the persisted `round_type`, `qualifier_id`, and
+  `qualifier_round_number` authoritative, including for a direct stale RPC.
 - Shot data is evidence for stats and CoachHelm; avoid transforming it into lossy summaries too early.
 
 ## UI Contract

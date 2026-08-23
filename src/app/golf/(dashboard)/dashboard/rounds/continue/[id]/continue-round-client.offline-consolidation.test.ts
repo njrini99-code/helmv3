@@ -60,4 +60,18 @@ describe('Continue Round offline persistence', () => {
     expect(statsAndAutoSaveSource).toContain('delete updatedStats[holeIndex]');
     expect(statsAndAutoSaveSource).toContain('const hasCompletedHole');
   });
+
+  it('does not strand a legacy qualifier round that is missing only its round number', () => {
+    const submitStart = source.indexOf('const requestRoundSubmission');
+    const saveForLaterStart = source.indexOf('const handleSaveForLater');
+    const submitRequestSource = source.slice(submitStart, saveForLaterStart);
+
+    expect(submitStart).toBeGreaterThanOrEqual(0);
+    expect(saveForLaterStart).toBeGreaterThan(submitStart);
+    expect(submitRequestSource).toContain('selectedQualifierRoundNumber == null');
+    expect(submitRequestSource).toContain('setShowQualifierRoundNumberDialog(true)');
+    expect(source).toContain('qualifierRoundNumberOptions');
+    expect(source).toContain('This saved scorecard needs its qualifier round number');
+    expect(source).toContain('handleRoundSubmit(pendingFinalStats, selectedQualifierRoundNumber)');
+  });
 });

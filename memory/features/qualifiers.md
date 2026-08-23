@@ -79,8 +79,13 @@ Leaderboard reads qualifier
 - Leaderboard aggregation must handle ties and incomplete entries consistently.
 - Round submission is the source of truth for qualifier progress; do not manually drift entry stats away from linked rounds.
 - An existing in-progress round's persisted qualifier identity is authoritative.
-  A stale or recovered client may not remove, change, or silently overwrite it
-  during final submission.
+  A stale or recovered client may not remove, change, or silently overwrite its
+  round type, qualifier link, or qualifier round number during final
+  submission. The terminal database RPC also rejects closed qualifiers and
+  duplicate numbers; only a verified legacy missing-number row may be filled.
+  Continue Round presents that legacy player with only server-derived unused
+  round numbers before final submit; it never guesses a result number from
+  local recovery state.
 - Qualifier events can feed calendar/team surfaces, so date/course changes can have downstream UI impact.
 
 ## UI Contract

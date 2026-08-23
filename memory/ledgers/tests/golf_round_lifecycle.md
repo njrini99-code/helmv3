@@ -47,3 +47,12 @@
   build passed. The repository-wide preflight remains blocked only by its
   unrelated stale unchecked-Supabase-read baseline (1,047 observed vs 1,049
   expected), which this change intentionally does not rewrite.
+
+## 2026-08-23 — scoped recovery ownership and ordering contract
+
+- Added localStorage and IndexedDB regressions for shared-device isolation,
+  safe recovery of authorized pre-owner server snapshots, and acknowledged
+  snapshot cleanup that leaves a newer recovery copy intact.
+- Verification: targeted unit coverage, TypeScript, and ESLint are required
+  before merge. The direct-RPC pgTAP suite remains pending a database-enabled
+  runner.

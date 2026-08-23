@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { FairwayCompletedHole } from './FairwayCompletedHole';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
@@ -73,5 +75,18 @@ describe('FairwayCompletedHole checkpoint recovery', () => {
 
     expect(screen.getByText('Saving this hole…')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /tee/i })).toBeDisabled();
+  });
+
+  it('uses the same synchronous in-flight lock for retry taps as new-shot saves', () => {
+    const trackingSource = readFileSync(
+      join(process.cwd(), 'src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx'),
+      'utf8',
+    );
+    const retryStart = trackingSource.indexOf('const handleRetryHoleCheckpoint');
+    const retrySource = trackingSource.slice(retryStart, trackingSource.indexOf('const handleSelectShot'));
+
+    expect(retryStart).toBeGreaterThanOrEqual(0);
+    expect(retrySource).toContain('isProcessingShotRef.current');
+    expect(retrySource).toContain('finally');
   });
 });
