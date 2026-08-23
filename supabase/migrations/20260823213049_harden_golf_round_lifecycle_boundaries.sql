@@ -30,8 +30,8 @@ begin
   end if;
   fn_definition := regexp_replace(
     fn_definition,
-    E'\\nBEGIN\\n',
-    E'\\nBEGIN\\n  PERFORM set_config(''helm.golf_lifecycle_write'', ''atomic'', true);\\n',
+    E'\nBEGIN\n',
+    E'\nBEGIN\n  PERFORM set_config(''helm.golf_lifecycle_write'', ''atomic'', true);\n',
     1, 1, ''
   );
   fn_definition := replace(
@@ -49,8 +49,8 @@ begin
   end if;
   fn_definition := regexp_replace(
     fn_definition,
-    E'\\nBEGIN\\n',
-    E'\\nBEGIN\\n  PERFORM set_config(''helm.golf_lifecycle_write'', ''atomic'', true);\\n',
+    E'\nBEGIN\n',
+    E'\nBEGIN\n  PERFORM set_config(''helm.golf_lifecycle_write'', ''atomic'', true);\n',
     1, 1, ''
   );
   execute fn_definition;
