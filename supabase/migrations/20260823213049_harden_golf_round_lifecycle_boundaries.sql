@@ -87,17 +87,23 @@ begin
 end;
 $$;
 
-revoke all on function helm_private.reject_completed_round_child_mutation() from public, anon, authenticated;
+revoke all on function
+helm_private.reject_completed_round_child_mutation()
+from public, anon, authenticated;
 
-drop trigger if exists golf_holes_reject_completed_round_mutation on public.golf_holes;
+drop trigger if exists golf_holes_reject_completed_round_mutation
+on public.golf_holes;
 create trigger golf_holes_reject_completed_round_mutation
 before insert or update or delete on public.golf_holes
-for each row execute function helm_private.reject_completed_round_child_mutation();
+for each row
+execute function helm_private.reject_completed_round_child_mutation();
 
-drop trigger if exists golf_shots_reject_completed_round_mutation on public.golf_shots;
+drop trigger if exists golf_shots_reject_completed_round_mutation
+on public.golf_shots;
 create trigger golf_shots_reject_completed_round_mutation
 before insert or update or delete on public.golf_shots
-for each row execute function helm_private.reject_completed_round_child_mutation();
+for each row
+execute function helm_private.reject_completed_round_child_mutation();
 
 create or replace function helm_private.reject_completed_round_detail_mutation()
 returns trigger
@@ -127,17 +133,23 @@ begin
 end;
 $$;
 
-revoke all on function helm_private.reject_completed_round_detail_mutation() from public, anon, authenticated;
+revoke all on function
+helm_private.reject_completed_round_detail_mutation()
+from public, anon, authenticated;
 
-drop trigger if exists putt_details_reject_completed_round_mutation on public.putt_details;
+drop trigger if exists putt_details_reject_completed_round_mutation
+on public.putt_details;
 create trigger putt_details_reject_completed_round_mutation
 before insert or update or delete on public.putt_details
-for each row execute function helm_private.reject_completed_round_detail_mutation();
+for each row
+execute function helm_private.reject_completed_round_detail_mutation();
 
-drop trigger if exists approach_miss_details_reject_completed_round_mutation on public.approach_miss_details;
+drop trigger if exists approach_miss_details_reject_completed_round_mutation
+on public.approach_miss_details;
 create trigger approach_miss_details_reject_completed_round_mutation
 before insert or update or delete on public.approach_miss_details
-for each row execute function helm_private.reject_completed_round_detail_mutation();
+for each row
+execute function helm_private.reject_completed_round_detail_mutation();
 
 create or replace function helm_private.guard_golf_round_lifecycle()
 returns trigger
@@ -189,7 +201,8 @@ begin
 end;
 $$;
 
-revoke all on function helm_private.guard_golf_round_lifecycle() from public, anon, authenticated;
+revoke all on function helm_private.guard_golf_round_lifecycle()
+from public, anon, authenticated;
 
 drop trigger if exists golf_rounds_guard_lifecycle on public.golf_rounds;
 create trigger golf_rounds_guard_lifecycle
@@ -246,24 +259,32 @@ begin
 end;
 $$;
 
-revoke all on function helm_private.prevent_active_round_stranding() from public, anon, authenticated;
+revoke all on function helm_private.prevent_active_round_stranding()
+from public, anon, authenticated;
 
-drop trigger if exists golf_qualifier_entries_prevent_active_round_stranding on public.golf_qualifier_entries;
+drop trigger if exists golf_qualifier_entries_prevent_active_round_stranding
+on public.golf_qualifier_entries;
 create trigger golf_qualifier_entries_prevent_active_round_stranding
 before delete on public.golf_qualifier_entries
-for each row execute function helm_private.prevent_active_round_stranding();
+for each row
+execute function helm_private.prevent_active_round_stranding();
 
-drop trigger if exists golf_qualifiers_prevent_active_round_stranding on public.golf_qualifiers;
+drop trigger if exists golf_qualifiers_prevent_active_round_stranding
+on public.golf_qualifiers;
 create trigger golf_qualifiers_prevent_active_round_stranding
 before delete on public.golf_qualifiers
-for each row execute function helm_private.prevent_active_round_stranding();
+for each row
+execute function helm_private.prevent_active_round_stranding();
 
-drop trigger if exists golf_team_members_prevent_active_round_stranding on public.golf_team_members;
+drop trigger if exists golf_team_members_prevent_active_round_stranding
+on public.golf_team_members;
 create trigger golf_team_members_prevent_active_round_stranding
 before delete on public.golf_team_members
-for each row execute function helm_private.prevent_active_round_stranding();
+for each row
+execute function helm_private.prevent_active_round_stranding();
 
-create or replace function helm_private.prevent_active_team_member_deactivation()
+create or replace function
+helm_private.prevent_active_team_member_deactivation()
 returns trigger
 language plpgsql
 set search_path = public, pg_temp
@@ -283,21 +304,31 @@ begin
 end;
 $$;
 
-revoke all on function helm_private.prevent_active_team_member_deactivation() from public, anon, authenticated;
+revoke all on function
+helm_private.prevent_active_team_member_deactivation()
+from public, anon, authenticated;
 
-drop trigger if exists golf_team_members_prevent_active_round_deactivation on public.golf_team_members;
+drop trigger if exists golf_team_members_prevent_active_round_deactivation
+on public.golf_team_members;
 create trigger golf_team_members_prevent_active_round_deactivation
 before update of status on public.golf_team_members
-for each row execute function helm_private.prevent_active_team_member_deactivation();
+for each row
+execute function helm_private.prevent_active_team_member_deactivation();
 
-drop trigger if exists golf_teams_prevent_active_round_stranding on public.golf_teams;
+drop trigger if exists golf_teams_prevent_active_round_stranding
+on public.golf_teams;
 create trigger golf_teams_prevent_active_round_stranding
 before delete on public.golf_teams
-for each row execute function helm_private.prevent_active_round_stranding();
+for each row
+execute function helm_private.prevent_active_round_stranding();
 
-comment on function helm_private.guard_golf_round_lifecycle() is
-'Blocks direct completion, deletion, mutation, and qualifier retargeting outside the protected round RPCs.';
-comment on function helm_private.prevent_active_round_stranding() is
-'Prevents destructive team or qualifier changes that would strand an in-progress player round.';
+comment on function helm_private.guard_golf_round_lifecycle()
+is
+'Blocks direct completion, deletion, mutation, and qualifier retargeting
+outside the protected round RPCs.';
+comment on function helm_private.prevent_active_round_stranding()
+is
+'Prevents destructive team or qualifier changes that would strand an
+in-progress player round.';
 
 commit;
