@@ -1,8 +1,8 @@
 # INC-2026-08-22 — qualifier closed before its final local day
 
 - Feature: `qualifiers`
-- Status: production data repaired; permanent manual-close-only code verified
-  locally and queued for an owner-approved emergency release.
+- Status: production data repaired; permanent manual-close-only code deployed
+  and verified in production (`dpl_Cb4MZWPLPfZ5EDAMJcG3Pgg1zggQ`).
 - Risk: R1 — active competition workflow blocked for entered players.
 - First seen: 2026-08-22
 - Affected workflow: players beginning later rounds of an active multi-round qualifier.
