@@ -13,10 +13,10 @@
 
 ## 2026-08-23 — terminal qualifier identity RPC regression suite
 
-- Added `supabase/tests/rls/golf_round_submit_identity.sql` with direct
-  authenticated RPC coverage for stale qualifier metadata, duplicate legacy
-  numbers, a manually closed qualifier, malformed/oversized numbers, and
-  cross-player denial.
+- Added a direct authenticated RLS regression suite for persisted
+  round-submission identity, covering stale qualifier metadata, duplicate
+  legacy numbers, a manually closed qualifier, malformed/oversized numbers,
+  and cross-player denial.
 - The Continue Round source regression also verifies that a legacy
   missing-number scorecard opens the constrained chooser instead of failing
   final submission with no recovery path.
