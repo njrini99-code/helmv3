@@ -85,7 +85,7 @@ DECLARE
   ) THEN
     PERFORM pg_advisory_xact_lock(hashtextextended(
       (SELECT r.qualifier_id::TEXT FROM golf_rounds r WHERE r.id = p_round_id)
-        || ':' || v_player_id::TEXT || ':' || p_round_data->>'qualifier_round_number',
+        || ':' || v_player_id::TEXT || ':' || (p_round_data->>'qualifier_round_number'),
       0
     ));
 
@@ -141,21 +141,25 @@ $$;
 -- The dynamic rewrite preserves the function's existing configuration, and
 -- this explicit setting keeps the SECURITY DEFINER boundary pinned even if a
 -- future function definition omits it.
-ALTER FUNCTION public.submit_round_atomic(uuid, jsonb, jsonb, jsonb, jsonb, jsonb)
-  SET search_path TO 'public';
+ALTER FUNCTION public.submit_round_atomic(
+    uuid, jsonb, jsonb, jsonb, jsonb, jsonb
+)
+SET search_path TO 'public';
 
 -- The terminal RPC and normal action path share this one qualifier-result
 -- uniqueness contract. Existing historical duplicates block deployment for
 -- explicit remediation instead of letting the migration choose a score to hide.
 CREATE UNIQUE INDEX IF NOT EXISTS golf_rounds_qualifier_player_round_number_uq
-  ON public.golf_rounds (qualifier_id, player_id, qualifier_round_number)
-  WHERE qualifier_id IS NOT NULL
-    AND qualifier_round_number IS NOT NULL
-    AND status IS DISTINCT FROM 'abandoned';
+ON public.golf_rounds (qualifier_id, player_id, qualifier_round_number)
+WHERE qualifier_id IS NOT NULL
+AND qualifier_round_number IS NOT NULL
+AND status IS DISTINCT FROM 'abandoned';
 
-COMMENT ON FUNCTION public.submit_round_atomic(uuid, jsonb, jsonb, jsonb, jsonb, jsonb) IS
-  'Terminal round submit. A started round retains its persisted qualifier '
-  'link and type even if a stale client retry omits or changes identity '
-  'fields. A legacy missing qualifier round number may be filled only for '
-  'the same entered player, open configured qualifier, and an unused valid '
-  'round number.';
+COMMENT ON FUNCTION public.submit_round_atomic(
+    uuid, jsonb, jsonb, jsonb, jsonb, jsonb
+) IS
+'Terminal round submit. A started round retains its persisted qualifier '
+'link and type even if a stale client retry omits or changes identity '
+'fields. A legacy missing qualifier round number may be filled only for '
+'the same entered player, open configured qualifier, and an unused valid '
+'round number.';
