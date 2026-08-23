@@ -138,6 +138,12 @@ BEGIN
 END;
 $$;
 
+-- The dynamic rewrite preserves the function's existing configuration, and
+-- this explicit setting keeps the SECURITY DEFINER boundary pinned even if a
+-- future function definition omits it.
+ALTER FUNCTION public.submit_round_atomic(uuid, jsonb, jsonb, jsonb, jsonb, jsonb)
+  SET search_path TO 'public';
+
 -- The terminal RPC and normal action path share this one qualifier-result
 -- uniqueness contract. Existing historical duplicates block deployment for
 -- explicit remediation instead of letting the migration choose a score to hide.
@@ -148,6 +154,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS golf_rounds_qualifier_player_round_number_uq
     AND status IS DISTINCT FROM 'abandoned';
 
 COMMENT ON FUNCTION public.submit_round_atomic(uuid, jsonb, jsonb, jsonb, jsonb, jsonb) IS
-'Terminal round submit. A started round retains its persisted qualifier link and type even if a stale
-client retry omits or changes identity fields. A legacy missing qualifier round number may be filled
-only for the same entered player, open configured qualifier, and an unused valid round number.';
+  'Terminal round submit. A started round retains its persisted qualifier '
+  'link and type even if a stale client retry omits or changes identity '
+  'fields. A legacy missing qualifier round number may be filled only for '
+  'the same entered player, open configured qualifier, and an unused valid '
+  'round number.';

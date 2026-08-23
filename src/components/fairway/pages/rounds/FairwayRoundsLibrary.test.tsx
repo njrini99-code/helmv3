@@ -133,6 +133,7 @@ describe('FairwayRoundsLibrary — #129/#145 in-progress draft dedup', () => {
           { ...dup, id: 'draft-b', updated_at: '2026-06-15T11:00:00.000Z' },
         ]}
         userRole="player"
+        playerId="player-1"
         stats={null}
       />,
     );
@@ -166,6 +167,7 @@ describe('FairwayRoundsLibrary — #129/#145 in-progress draft dedup', () => {
           }),
         ]}
         userRole="player"
+        playerId="player-1"
         stats={null}
       />,
     );
