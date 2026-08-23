@@ -133,9 +133,9 @@ describe('CoachHelm V2 SG column family (#1297 / #1300)', () => {
     expect(CUMULATIVE_APPROACH_SG).toBeCloseTo(PER_ROUND_APPROACH_SG * ROUNDS_IN_CALCULATION, 5);
   });
 
-  it('buildStatInsightsForTeam quotes the per-round SG figure, never the cumulative one', () => {
+  it('buildStatInsightsForTeam quotes the per-round SG figure, never the cumulative one', async () => {
     const rows = [makeStatsRow()];
-    const insights = buildStatInsightsForTeam(players, rows, makePhilosophy());
+    const insights = await buildStatInsightsForTeam(players, rows, makePhilosophy());
 
     expect(insights.length).toBeGreaterThan(0);
     const text = insights.map((i) => `${i.headline} ${i.body}`).join(' | ');
@@ -147,7 +147,7 @@ describe('CoachHelm V2 SG column family (#1297 / #1300)', () => {
     expect(text).not.toContain('-85.80');
   });
 
-  it('does not fire a team-weakness alert on noise once cumulative sums are gone', () => {
+  it('does not fire a team-weakness alert on noise once cumulative sums are gone', async () => {
     // A team of players whose true per-round SG is a harmless -0.1 (well
     // above the -0.3 "team weakness" gate) must not fire, even though the
     // old cumulative-SUM code path would have produced a wildly negative
@@ -160,7 +160,7 @@ describe('CoachHelm V2 SG column family (#1297 / #1300)', () => {
       { id: 'p1', first_name: 'A', last_name: 'One' },
       { id: 'p2', first_name: 'B', last_name: 'Two' },
     ];
-    const insights = buildStatInsightsForTeam(mildPlayers, mildRows, makePhilosophy());
+    const insights = await buildStatInsightsForTeam(mildPlayers, mildRows, makePhilosophy());
     const teamWeaknessInsight = insights.find((i) => i.category === 'team_trend');
     expect(teamWeaknessInsight).toBeUndefined();
   });
