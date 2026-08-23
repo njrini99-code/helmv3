@@ -2436,7 +2436,7 @@ async function generateTeamInsightImpl(): Promise<{
     // succeed — the coach still sees per-player insights even if team-level
     // rollups are degraded.
     try {
-      const statInsights = await buildStatInsightsForTeam(
+      const statInsights = buildStatInsightsForTeam(
         players as TeamPlayerRow[],
         statsRows ?? [],
         philosophy
@@ -3631,7 +3631,7 @@ function computeInsightConfidence(rounds: number | null | undefined): number {
   return clampNumber(0.45 + normalized * 0.4, 0.45, 0.85);
 }
 
-export async function buildStatInsightsForTeam(
+function buildStatInsightsForTeam(
   players: TeamPlayerRow[],
   statsRows: PlayerStatsCacheRow[],
   philosophy: CoachPhilosophy

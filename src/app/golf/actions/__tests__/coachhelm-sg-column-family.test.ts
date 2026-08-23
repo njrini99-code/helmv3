@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildStatInsightsForTeam, type PlayerStatsCacheRow, type TeamPlayerRow } from '../insights';
+import { readFileSync } from 'node:fs';
 import { generateTeamPatterns, type StatsRow } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
-import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
-import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 
 /**
  * Regression coverage for #1297 / #1300 — "GolfHelm/CoachHelm: SG source
@@ -28,63 +26,22 @@ import type { CoachPhilosophy } from '@/lib/coachhelm/types';
  * per-round rate, while the dashboard and CoachHelm v3 chat metrics catalog
  * correctly read the per-round family.
  *
- * These tests build a mock stats-cache row where
- * strokes_gained_total = sg_total_per_round * rounds_in_calculation (using
- * the incident's own -6.6 / -85.8 / 13 numbers) and assert that every
- * coach-facing output only ever quotes the per-round figure.
+ * The insights action keeps its statistic composer private so it cannot become
+ * a publicly callable server action. Its source contract therefore asserts the
+ * exact per-round read sites, while the public pattern and forecast helpers
+ * below exercise the same column-family behavior with fixtures.
  */
 
 const PER_ROUND_APPROACH_SG = -6.6;
 const ROUNDS_IN_CALCULATION = 13;
 const CUMULATIVE_APPROACH_SG = -85.8; // -6.6 * 13 — the incident's own arithmetic
-
-function makePhilosophy(overrides: Partial<CoachPhilosophy> = {}): CoachPhilosophy {
-  return {
-    id: 'test-philosophy',
-    coachId: 'coach-1',
-    ...PHILOSOPHY_DEFAULTS,
-    alertScoringDecline: true,
-    alertStatRegression: true,
-    alertTournamentPressure: true,
-    alertPlateau: false,
-    alertBubblePlayer: true,
-    alertSurgePlayer: true,
-    alertStreaks: true,
-    alertRecurringWeakness: true,
-    alertClosingHoles: false,
-    alertPar3Issues: false,
-    showStrokesGained: true,
-    showAdvancedStats: false,
-    insightVerbosity: 'detailed',
-    minInsightConfidence: 0.3,
-    minRoundsForSignal: 3,
-    alertDigest: 'immediate',
-    minHolePlaysForRanking: 3,
-    patternLookbackDays: 90,
-    statsBenchmarkWindowDays: 30,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    ...overrides,
-  };
-}
-
-function makeStatsRow(overrides: Partial<PlayerStatsCacheRow> = {}): PlayerStatsCacheRow {
-  return {
-    player_id: 'player-1',
-    rounds_in_calculation: ROUNDS_IN_CALCULATION,
-    sg_total_per_round: PER_ROUND_APPROACH_SG,
-    sg_tee_per_round: 0,
-    sg_approach_per_round: PER_ROUND_APPROACH_SG,
-    sg_around_green_per_round: 0,
-    sg_putting_per_round: 0,
-    gir_percentage: null,
-    driving_accuracy_percentage: null,
-    scrambling_percentage: null,
-    putts_per_round: null,
-    approach_proximity_average: null,
-    ...overrides,
-  } as PlayerStatsCacheRow;
-}
+const insightsSource = readFileSync(new URL('../insights.ts', import.meta.url), 'utf8');
+const buildStatInsightsStart = insightsSource.indexOf('function buildStatInsightsForTeam(');
+const buildStatInsightsEnd = insightsSource.indexOf(
+  '// ============================================================================\n// ACKNOWLEDGE COMPOSED INSIGHT',
+  buildStatInsightsStart,
+);
+const buildStatInsightsSource = insightsSource.slice(buildStatInsightsStart, buildStatInsightsEnd);
 
 /** Full StatsRow fixture for generateTeamPatterns/generateTeamForecasts — a
  * wider shape than PlayerStatsCacheRow (mirrors the real Supabase select,
@@ -126,43 +83,32 @@ function makeFullStatsRow(overrides: Partial<StatsRow> = {}): StatsRow {
   };
 }
 
-const players: TeamPlayerRow[] = [{ id: 'player-1', first_name: 'Sam', last_name: 'Player' }];
-
 describe('CoachHelm V2 SG column family (#1297 / #1300)', () => {
   it('reproduces the incident arithmetic: cumulative SUM = per-round AVG * rounds', () => {
     expect(CUMULATIVE_APPROACH_SG).toBeCloseTo(PER_ROUND_APPROACH_SG * ROUNDS_IN_CALCULATION, 5);
   });
 
-  it('buildStatInsightsForTeam quotes the per-round SG figure, never the cumulative one', async () => {
-    const rows = [makeStatsRow()];
-    const insights = await buildStatInsightsForTeam(players, rows, makePhilosophy());
+  it('reads every team SG average from the per-round column family', () => {
+    expect(buildStatInsightsStart).toBeGreaterThanOrEqual(0);
+    expect(buildStatInsightsEnd).toBeGreaterThan(buildStatInsightsStart);
 
-    expect(insights.length).toBeGreaterThan(0);
-    const text = insights.map((i) => `${i.headline} ${i.body}`).join(' | ');
+    for (const column of [
+      'sg_total_per_round',
+      'sg_tee_per_round',
+      'sg_approach_per_round',
+      'sg_around_green_per_round',
+      'sg_putting_per_round',
+    ]) {
+      expect(buildStatInsightsSource).toContain(`statsRows.map((row) => row.${column})`);
+    }
 
-    // The per-round value must appear (rounded to 1 decimal by formatSigned).
-    expect(text).toMatch(/-6\.6/);
-    // The cumulative value must never leak into coach-facing text.
-    expect(text).not.toMatch(/-85\.8/);
-    expect(text).not.toContain('-85.80');
+    expect(buildStatInsightsSource).not.toContain('statsRows.map((row) => row.strokes_gained_');
   });
 
-  it('does not fire a team-weakness alert on noise once cumulative sums are gone', async () => {
-    // A team of players whose true per-round SG is a harmless -0.1 (well
-    // above the -0.3 "team weakness" gate) must not fire, even though the
-    // old cumulative-SUM code path would have produced a wildly negative
-    // "team average" for any roster with double-digit rounds played.
-    const mildRows = [
-      makeStatsRow({ player_id: 'p1', sg_approach_per_round: -0.1 }),
-      makeStatsRow({ player_id: 'p2', sg_approach_per_round: -0.05 }),
-    ];
-    const mildPlayers: TeamPlayerRow[] = [
-      { id: 'p1', first_name: 'A', last_name: 'One' },
-      { id: 'p2', first_name: 'B', last_name: 'Two' },
-    ];
-    const insights = await buildStatInsightsForTeam(mildPlayers, mildRows, makePhilosophy());
-    const teamWeaknessInsight = insights.find((i) => i.category === 'team_trend');
-    expect(teamWeaknessInsight).toBeUndefined();
+  it('keeps the team-weakness threshold on the per-round team average', () => {
+    expect(buildStatInsightsSource).toContain('value: teamAverages.sgApproach');
+    expect(buildStatInsightsSource).toContain('if ((teamWeakness.value as number) < -0.3)');
+    expect(buildStatInsightsSource).toContain('per round');
   });
 
   it('generateTeamPatterns compares SG against the per-round team average, not a cumulative sum', () => {
