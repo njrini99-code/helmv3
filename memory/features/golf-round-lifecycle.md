@@ -32,6 +32,18 @@ is cleared without a recovery prompt. Once all holes have been server
 checkpointed, app backgrounding does not create a redundant final-scorecard
 snapshot while the player is deciding whether to submit.
 
+Every newly-entered shot also creates a synchronous browser recovery snapshot
+and a best-effort v2 IndexedDB mirror before the normal network autosave. Those
+unfinished snapshots do not expire by time: they are removed only after the
+server confirms that same or newer progress, final submission succeeds, or the
+player explicitly deletes the round. A partial recovery saves an in-progress
+round and opens Continue Round; it never marks an unfinished round complete.
+When a completed-hole checkpoint fails, the player stays on that hole with a
+single retry action while the device backup remains intact. Reopening a hole by
+editing or deleting its final holed shot clears its completed-scorecard entry
+before the next partial save, so a server snapshot never contains both a
+completed score and active shots for that hole.
+
 ## Primary Entry Points
 
 ### Routes
@@ -80,8 +92,33 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - A player may begin tracking only after an `in_progress` parent exists in the
   database. Completing a hole is a durable database checkpoint; it may not be
   treated as a fire-and-forget background write.
+- A failed completed-hole checkpoint must be retryable from the affected hole
+  without advancing the player. Retrying retains the original navigation
+  intent; it must not be misclassified as a later score edit.
+- A completed-scorecard slot and an in-progress shot collection for the same
+  hole must never be persisted together. Removing a final hole-out clears the
+  former before the remaining shots are saved as in-progress progress.
+- The durable parent is also the authority for immutable start-time identity
+  such as round type, qualifier link, and qualifier round number. Final
+  submission may use recovery data for scorecard content, but must not let
+  stale client metadata change persisted identity. A legacy missing qualifier
+  round number may be filled only after the database verifies the same entrant,
+  an open qualifier, and an unused valid number. Continue Round obtains those
+  choices from the authenticated server and asks the player to select one at
+  final submit; it never invents a qualifier result from a browser backup.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
+- Browser recovery state is a durable fallback, not a time-limited cache.
+  Normal active snapshots must survive extended interruptions and be cleared
+  only after confirmed server progress, completion, or explicit deletion.
+- Recovery snapshots are owner-bound to the authenticated golf-player record
+  in localStorage and IndexedDB. A shared browser must neither surface another
+  player's shots nor delete that player's valid backup while filtering.
+  Pre-owner snapshots remain recoverable only on an already-authorized
+  Continue Round route for their exact persisted server round.
+- Browser-mirror save and clear operations are causally ordered. A confirmed
+  older save may clear only that version; a later shot snapshot remains
+  recoverable even if browser-database work finishes later.
 - Local recovery UI may appear only when its scorecard or shot data differs
   from the server's persisted progress; a newer timestamp alone is not proof
   of unsaved work.
@@ -95,6 +132,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Draft/recovery screens must clearly distinguish recoverable local/session state from submitted server state.
 - Submission should make progress and failure states visible enough to prevent duplicate or uncertain submits.
 - Empty states should say whether the player has no rounds, no unfinished rounds, or no review yet.
+- Continue Round uses the shared Fairway mobile header, scorecard controls,
+  buttons, and recovery modal. Its save-and-exit action is secondary; the live
+  shot/complete control is the only primary action in the thumb zone.
 
 ## Known Risk Areas
 

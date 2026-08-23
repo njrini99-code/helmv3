@@ -9,6 +9,8 @@ import {
 } from './emergency-save';
 
 const PREFIX = 'golf_emergency_save';
+const PLAYER_ID = '00000000-0000-4000-8000-000000000099';
+const OTHER_PLAYER_ID = '00000000-0000-4000-8000-000000000100';
 
 function createMemoryStorage(): Storage {
   const values = new Map<string, string>();
@@ -26,6 +28,7 @@ function createMemoryStorage(): Storage {
 
 function savedRound(timestamp: number, roundId: string | null): EmergencySaveData {
   return {
+    playerId: PLAYER_ID,
     roundId,
     timestamp,
     setupData: {
@@ -63,21 +66,46 @@ describe('loadLatestEmergencySave', () => {
     const older = savedRound(now - 10_000, null);
     const latest = savedRound(now - 1_000, '00000000-0000-4000-8000-000000000001');
 
-    localStorage.setItem(`${PREFIX}_new`, JSON.stringify(older));
-    localStorage.setItem(`${PREFIX}_${latest.roundId}`, JSON.stringify(latest));
+    emergencySave(older);
+    emergencySave(latest);
 
-    expect(loadLatestEmergencySave()).toEqual(latest);
+    expect(loadLatestEmergencySave(PLAYER_ID)).toEqual(latest);
   });
 
-  it('ignores expired saves instead of offering stale data for recovery', () => {
+  it('keeps unfinished saves recoverable even after more than a day', () => {
     const now = Date.now();
-    const expired = savedRound(now - (25 * 60 * 60 * 1000), '00000000-0000-4000-8000-000000000002');
+    const earlier = savedRound(now - (25 * 60 * 60 * 1000), '00000000-0000-4000-8000-000000000002');
     const valid = savedRound(now - 1_000, null);
 
-    localStorage.setItem(`${PREFIX}_${expired.roundId}`, JSON.stringify(expired));
-    localStorage.setItem(`${PREFIX}_new`, JSON.stringify(valid));
+    emergencySave(earlier);
+    emergencySave(valid);
 
-    expect(loadLatestEmergencySave()).toEqual(valid);
+    expect(loadLatestEmergencySave(PLAYER_ID)).toEqual(valid);
+    expect(loadEmergencySave(earlier.roundId, PLAYER_ID)).toEqual(earlier);
+  });
+
+  it('does not show or delete another player\'s valid recovery copy on a shared device', () => {
+    const otherPlayersSave = {
+      ...savedRound(Date.now(), null),
+      playerId: OTHER_PLAYER_ID,
+    };
+
+    emergencySave(otherPlayersSave);
+
+    expect(loadLatestEmergencySave(PLAYER_ID)).toBeNull();
+    expect(loadLatestEmergencySave(OTHER_PLAYER_ID)).toEqual(otherPlayersSave);
+  });
+
+  it('can recover a pre-owner server backup only after server ownership is verified', () => {
+    const legacyRoundId = '00000000-0000-4000-8000-000000000007';
+    const { playerId: _legacyPlayerId, ...legacySave } = savedRound(Date.now(), legacyRoundId);
+    localStorage.setItem(`${PREFIX}_${legacyRoundId}`, JSON.stringify(legacySave));
+
+    expect(loadEmergencySave(legacyRoundId, PLAYER_ID)).toBeNull();
+    expect(loadEmergencySave(legacyRoundId, PLAYER_ID, { allowLegacyServerSnapshot: true })).toEqual({
+      ...legacySave,
+      playerId: PLAYER_ID,
+    });
   });
 });
 
@@ -87,9 +115,9 @@ describe('confirmed emergency saves', () => {
     const save = savedRound(timestamp, '00000000-0000-4000-8000-000000000003');
 
     emergencySave(save);
-    clearEmergencySaveThrough(save.roundId, timestamp);
+    clearEmergencySaveThrough(save.roundId, PLAYER_ID, timestamp);
 
-    expect(loadEmergencySave(save.roundId)).toBeNull();
+    expect(loadEmergencySave(save.roundId, PLAYER_ID)).toBeNull();
   });
 
   it('retains a newer snapshot written while an older save was in flight', () => {
@@ -98,9 +126,9 @@ describe('confirmed emergency saves', () => {
     const newerSave = savedRound(Date.now(), roundId);
 
     emergencySave(newerSave);
-    clearEmergencySaveThrough(roundId, acknowledgedAt);
+    clearEmergencySaveThrough(roundId, PLAYER_ID, acknowledgedAt);
 
-    expect(loadEmergencySave(roundId)).toEqual(newerSave);
+    expect(loadEmergencySave(roundId, PLAYER_ID)).toEqual(newerSave);
   });
 
   it('recognizes matching server progress even when server shots have IDs', () => {

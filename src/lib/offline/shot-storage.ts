@@ -14,6 +14,7 @@
 
 import type { GolfShot, GolfHole, GolfRound } from '@/lib/types/golf';
 import type { Json } from '@/lib/types/database';
+import type { EmergencySaveData } from '@/lib/utils/emergency-save';
 import { logError } from '@/lib/error-logging';
 
 // ============================================================================
@@ -99,6 +100,18 @@ export interface SyncResult {
   errors: string[];
 }
 
+/**
+ * A complete, local-only round snapshot. This is deliberately separate from
+ * the sync queue: a safety copy must never be mistaken for a server write and
+ * replayed by the sync engine.
+ */
+export interface RoundRecoverySnapshot {
+  key: string;
+  roundId: string | null;
+  timestamp: number;
+  data: EmergencySaveData;
+}
+
 interface OfflineStats {
   pendingRounds: number;
   pendingHoles: number;
@@ -115,13 +128,14 @@ interface OfflineStats {
 // ============================================================================
 
 const DB_NAME = 'golfhelm_offline_v2';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 // Store names
 const SHOTS_STORE = 'offline_shots';
 const HOLES_STORE = 'offline_holes';
 const ROUNDS_STORE = 'offline_rounds';
 const SYNC_META_STORE = 'sync_metadata';
+const RECOVERY_SNAPSHOTS_STORE = 'round_recovery_snapshots';
 
 // Retry configuration (exponential backoff)
 const INITIAL_RETRY_DELAY_MS = 1000; // 1 second
@@ -313,6 +327,15 @@ async function openShotDatabase(): Promise<IDBDatabase> {
       if (oldVersion < 2) {
         // Add any new indexes or stores for v2
         // For now, v2 is structurally the same as v1
+      }
+
+      // Version 3: a local-only, complete snapshot for active rounds. This is
+      // never read by the sync queue; it survives an interrupted foreground
+      // save and gives recovery a second durable browser store alongside the
+      // synchronous localStorage snapshot.
+      if (oldVersion < 3 && !db.objectStoreNames.contains(RECOVERY_SNAPSHOTS_STORE)) {
+        const recoveryStore = db.createObjectStore(RECOVERY_SNAPSHOTS_STORE, { keyPath: 'key' });
+        recoveryStore.createIndex('timestamp', 'timestamp', { unique: false });
       }
     };
   });
@@ -715,6 +738,150 @@ export async function markRoundFailed(offlineId: string, errorMessage: string): 
 }
 
 // ============================================================================
+// LOCAL-ONLY ROUND RECOVERY SNAPSHOTS
+// ============================================================================
+
+function recoverySnapshotKey(
+  roundId: string | null | undefined,
+  playerId?: string,
+): string {
+  // New-round drafts have no server UUID, so their durable cache identity
+  // must include the player. Keep the legacy key form only for explicit
+  // cleanup of pre-owner snapshots; new writes always include playerId.
+  if (!playerId) return `round:${roundId ?? 'new'}`;
+  return `round:${roundId ?? 'new'}:${playerId}`;
+}
+
+/**
+ * Mirror the latest full progress snapshot to the v2 browser database.
+ *
+ * The record intentionally has no sync status. It is a recovery journal, not
+ * a draft for the sync engine to replay; foreground and completed-hole saves
+ * remain the only server-write paths.
+ */
+export async function saveRoundRecoverySnapshot(data: EmergencySaveData): Promise<void> {
+  const snapshot: RoundRecoverySnapshot = {
+    key: recoverySnapshotKey(data.roundId, data.playerId),
+    roundId: data.roundId,
+    timestamp: data.timestamp,
+    data,
+  };
+
+  await withShotTransaction(RECOVERY_SNAPSHOTS_STORE, 'readwrite', (transaction) => new Promise<void>((resolve, reject) => {
+    const request = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE).put(snapshot);
+    request.onerror = () => reject(new Error('Failed to save round recovery snapshot'));
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(new Error('Failed to save round recovery snapshot'));
+    transaction.onabort = () => reject(new Error('Round recovery snapshot transaction aborted'));
+  }));
+}
+
+/** Return the newest local snapshot for one in-progress round, if any. */
+export async function getRoundRecoverySnapshot(
+  roundId: string | null | undefined,
+  playerId: string,
+  options?: { allowLegacyServerSnapshot?: boolean },
+): Promise<RoundRecoverySnapshot | null> {
+  return withShotTransaction(RECOVERY_SNAPSHOTS_STORE, 'readonly', (transaction) => new Promise((resolve, reject) => {
+    const store = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE);
+    const request = store.get(recoverySnapshotKey(roundId, playerId));
+    request.onsuccess = () => {
+      const ownedSnapshot = request.result as RoundRecoverySnapshot | undefined;
+      if (ownedSnapshot || !options?.allowLegacyServerSnapshot || !roundId) {
+        resolve(ownedSnapshot ?? null);
+        return;
+      }
+
+      // Pre-owner snapshots were keyed only by their globally unique server
+      // round ID. The caller must have already verified ownership server-side
+      // before opting into this compatibility path.
+      const legacyRequest = store.get(recoverySnapshotKey(roundId));
+      legacyRequest.onsuccess = () => {
+        const legacySnapshot = legacyRequest.result as RoundRecoverySnapshot | undefined;
+        if (
+          !legacySnapshot
+          || legacySnapshot.roundId !== roundId
+          || legacySnapshot.data.playerId
+        ) {
+          resolve(null);
+          return;
+        }
+        resolve({
+          ...legacySnapshot,
+          key: recoverySnapshotKey(roundId, playerId),
+          data: { ...legacySnapshot.data, playerId },
+        });
+      };
+      legacyRequest.onerror = () => reject(new Error('Failed to get legacy round recovery snapshot'));
+    };
+    request.onerror = () => reject(new Error('Failed to get round recovery snapshot'));
+  }));
+}
+
+/** Return every local recovery snapshot, newest first. */
+export async function getRoundRecoverySnapshots(): Promise<RoundRecoverySnapshot[]> {
+  return withShotTransaction(RECOVERY_SNAPSHOTS_STORE, 'readonly', (transaction) => new Promise((resolve, reject) => {
+    const request = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE).getAll();
+    request.onsuccess = () => {
+      const snapshots = request.result as RoundRecoverySnapshot[];
+      snapshots.sort((left, right) => right.timestamp - left.timestamp);
+      resolve(snapshots);
+    };
+    request.onerror = () => reject(new Error('Failed to get round recovery snapshots'));
+  }));
+}
+
+/** Delete a local recovery snapshot after a confirmed submit/delete. */
+export async function deleteRoundRecoverySnapshot(
+  roundId: string | null | undefined,
+  playerId?: string,
+): Promise<void> {
+  await withShotTransaction(RECOVERY_SNAPSHOTS_STORE, 'readwrite', (transaction) => new Promise<void>((resolve, reject) => {
+    const store = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE);
+    const request = store.delete(recoverySnapshotKey(roundId, playerId));
+    // A confirmed save/delete against an authenticated server round can also
+    // remove the legacy unowned key for that same globally unique round.
+    if (roundId && playerId) store.delete(recoverySnapshotKey(roundId));
+    request.onerror = () => reject(new Error('Failed to delete round recovery snapshot'));
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(new Error('Failed to delete round recovery snapshot'));
+    transaction.onabort = () => reject(new Error('Round recovery snapshot delete aborted'));
+  }));
+}
+
+/**
+ * Clear a snapshot only when the server has acknowledged that exact version
+ * or something newer. A concurrent newer local write must win this race.
+ */
+export async function clearRoundRecoverySnapshotThrough(
+  roundId: string | null | undefined,
+  playerId: string,
+  acknowledgedTimestamp: number,
+): Promise<void> {
+  await withShotTransaction(RECOVERY_SNAPSHOTS_STORE, 'readwrite', (transaction) => new Promise<void>((resolve, reject) => {
+    const store = transaction.objectStore(RECOVERY_SNAPSHOTS_STORE);
+    const clearIfAcknowledged = (key: string) => {
+      const getRequest = store.get(key);
+      getRequest.onsuccess = () => {
+        const current = getRequest.result as RoundRecoverySnapshot | undefined;
+        if (!current || current.timestamp > acknowledgedTimestamp) return;
+        const deleteRequest = store.delete(key);
+        deleteRequest.onerror = () => reject(new Error('Failed to clear acknowledged recovery snapshot'));
+      };
+      getRequest.onerror = () => reject(new Error('Failed to read round recovery snapshot'));
+    };
+
+    clearIfAcknowledged(recoverySnapshotKey(roundId, playerId));
+    // The legacy key is only possible for a persisted server round. An
+    // acknowledgement for that round is an authoritative, scoped cleanup.
+    if (roundId) clearIfAcknowledged(recoverySnapshotKey(roundId));
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(new Error('Failed to clear acknowledged recovery snapshot'));
+    transaction.onabort = () => reject(new Error('Round recovery snapshot clear aborted'));
+  }));
+}
+
+// ============================================================================
 // SYNC METADATA OPERATIONS
 // ============================================================================
 
@@ -878,7 +1045,7 @@ export async function clearAllOfflineData(): Promise<void> {
 
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(
-      [ROUNDS_STORE, HOLES_STORE, SHOTS_STORE, SYNC_META_STORE],
+      [ROUNDS_STORE, HOLES_STORE, SHOTS_STORE, SYNC_META_STORE, RECOVERY_SNAPSHOTS_STORE],
       'readwrite'
     );
 
@@ -886,6 +1053,7 @@ export async function clearAllOfflineData(): Promise<void> {
     transaction.objectStore(HOLES_STORE).clear();
     transaction.objectStore(SHOTS_STORE).clear();
     transaction.objectStore(SYNC_META_STORE).clear();
+    transaction.objectStore(RECOVERY_SNAPSHOTS_STORE).clear();
 
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(new Error('Failed to clear offline data'));

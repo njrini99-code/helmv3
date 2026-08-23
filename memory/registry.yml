@@ -297,6 +297,8 @@ features:
       components:
         - src/components/golf/ShotTrackingComprehensive.tsx
         - src/components/golf/rounds/**
+        - src/components/fairway/pages/rounds-tracking/**
+        - src/components/fairway/pages/rounds-recover/**
       api:
         - src/app/api/rounds/**
       actions:
@@ -611,6 +613,7 @@ features:
         - src/app/golf/(dashboard)/dashboard/announcements/**
       components:
         - src/components/golf/messages/**
+        - src/components/fairway/pages/messages/**
         - src/components/golf/announcements/**
       api:
         - src/app/api/messages/**
@@ -988,8 +991,10 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
+        - src/app/admin/**
         - src/app/golf/admin/**
       components:
+        - src/app/admin/_components/**
         - src/app/golf/admin/components/**
         - src/app/golf/admin/crm/components/**
       api:

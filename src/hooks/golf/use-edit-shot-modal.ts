@@ -10,7 +10,8 @@ interface UseEditShotModalParams {
   currentHole: RoundHole;
   currentHoleIndex: number;
   onAutoSave?: (shots: ShotRecord[], currentHoleIndex: number) => Promise<void>;
-  onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats) => void;
+  /** `null` means an edit reopened a previously completed hole. */
+  onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats | null) => void | Promise<void>;
   calculateHoleStats: (shots: ShotRecord[], hole: RoundHole) => HoleStats;
   /** Shared with Undo so one local round cannot mutate the same shot twice. */
   shotMutationInFlightRef: React.MutableRefObject<boolean>;
@@ -199,11 +200,16 @@ export function useEditShotModal({
 
       dispatch({ type: 'EDIT_SAVE_COMPLETE', payload: { updatedHistory } });
 
-      // Recalculate parent stats if hole is still complete
+      // Keep the parent scorecard coherent for BOTH outcomes. An edit can turn
+      // the final holed shot back into an in-progress shot; retaining the old
+      // completed stat in that case would make a partial save contain a
+      // contradictory score and shot map for one hole.
       const isStillComplete = updatedHistory.length > 0 && updatedHistory[updatedHistory.length - 1]?.result === 'hole';
-      if (isStillComplete && onHoleStatsUpdateRef.current) {
-        const holeStats = calculateHoleStats(updatedHistory, currentHoleRef.current);
-        onHoleStatsUpdateRef.current(currentHoleIndexRef.current, holeStats);
+      if (onHoleStatsUpdateRef.current) {
+        const holeStats = isStillComplete
+          ? calculateHoleStats(updatedHistory, currentHoleRef.current)
+          : null;
+        await onHoleStatsUpdateRef.current(currentHoleIndexRef.current, holeStats);
       }
 
       if (onAutoSaveRef.current) {
@@ -244,11 +250,14 @@ export function useEditShotModal({
 
       dispatch({ type: 'DELETE_COMPLETE', payload: { newHistory } });
 
-      // Recalculate if hole was complete
+      // Deleting the final holed shot reopens the hole. Clear the parent
+      // scorecard slot before the next auto-save replays the remaining shots.
       const isStillComplete = newHistory.length > 0 && newHistory[newHistory.length - 1]?.result === 'hole';
-      if (isStillComplete && onHoleStatsUpdateRef.current) {
-        const holeStats = calculateHoleStats(newHistory, currentHoleRef.current);
-        onHoleStatsUpdateRef.current(currentHoleIndexRef.current, holeStats);
+      if (onHoleStatsUpdateRef.current) {
+        const holeStats = isStillComplete
+          ? calculateHoleStats(newHistory, currentHoleRef.current)
+          : null;
+        await onHoleStatsUpdateRef.current(currentHoleIndexRef.current, holeStats);
       }
 
       if (onAutoSaveRef.current) {

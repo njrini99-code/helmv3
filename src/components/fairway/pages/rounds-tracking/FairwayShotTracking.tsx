@@ -20,7 +20,7 @@
  * guard release. Result selection ONLY ever dispatches HANDLE_RESULT_SELECT.
  * ========================================================================== */
 
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
@@ -53,8 +53,13 @@ interface ShotTrackingProps {
    * A hole is only considered complete once its parent has durably checkpointed
    * the score and every shot. The caller resolves after that write succeeds.
    */
-  onHoleComplete: (holeIndex: number, stats: HoleStats) => Promise<void>;
-  onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats) => void;
+  /** Resolves true only after the complete hole is durably checkpointed. */
+  onHoleComplete: (holeIndex: number, stats: HoleStats) => Promise<boolean>;
+  /**
+   * Keeps the parent scorecard coherent when a completed hole is edited back
+   * into progress. `null` means the hole is no longer holed out.
+   */
+  onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats | null) => void | Promise<void>;
   onSaveShot?: (shot: ShotRecord) => void;
   onExit?: () => void;
   onNavigateToHole?: (holeIndex: number) => void;
@@ -181,6 +186,7 @@ export default function FairwayShotTracking({
   // This shared ref serializes their server mutations so a double click or a
   // modal/undo overlap cannot apply two local-history removals to one shot.
   const shotMutationInFlightRef = useRef(false);
+  const [holeCheckpointStatus, setHoleCheckpointStatus] = useState<'idle' | 'saving' | 'failed'>('idle');
 
   // ============================================================================
   // SUB-HOOKS — must be called before any early return (Rules of Hooks)
@@ -227,11 +233,17 @@ export default function FairwayShotTracking({
     }
   }, [pendingNavHoleIndex, onNavigateToHole]);
 
-  const completeHole = async (shots: ShotRecord[]) => {
-    if (!currentHole) return;
+  const completeHole = useCallback(async (shots: ShotRecord[]): Promise<boolean> => {
+    if (!currentHole) return false;
     const holeStats = calculateHoleStats(shots, currentHole);
-    await onHoleComplete(currentHoleIndex, holeStats);
-  };
+    return onHoleComplete(currentHoleIndex, holeStats);
+  }, [currentHole, currentHoleIndex, onHoleComplete]);
+
+  // A checkpoint belongs to one hole only. Once navigation moves to a new
+  // hole, do not leave stale “saving” or “retry” chrome behind.
+  useEffect(() => {
+    setHoleCheckpointStatus('idle');
+  }, [currentHoleIndex]);
 
   // ============================================================================
   // DERIVED VALUES & VALIDATION
@@ -395,22 +407,53 @@ export default function FairwayShotTracking({
 
     onSaveShot?.(shotRecord);
 
-    // Check if hole complete
-    if (isHoleComplete) {
-      await completeHole(updatedHistory);
+    try {
+      // A hole-out is visible immediately, but it is not eligible to advance
+      // until the parent confirms its durable checkpoint. If that save cannot
+      // complete, keep the hole review visible with one explicit retry affordance
+      // rather than pretending it was saved or showing a persistent banner.
+      if (isHoleComplete) {
+        setHoleCheckpointStatus('saving');
+        const checkpointed = await completeHole(updatedHistory);
+        setHoleCheckpointStatus(checkpointed ? 'idle' : 'failed');
+        if (!checkpointed) return;
+      } else {
+        // Update state for next shot
+        const newLie = resultOfShot as 'fairway' | 'rough' | 'sand' | 'green' | 'other';
+        dispatch({ type: 'UPDATE_AFTER_SHOT', payload: { distanceAfter, unitAfter, newLie } });
+      }
+    } catch {
+      if (isHoleComplete) setHoleCheckpointStatus('failed');
+    } finally {
+      // Release the double-tap guard even when a checkpoint rejects. The local
+      // snapshot remains intact and the player can use the explicit retry.
+      queueMicrotask(() => {
+        isProcessingShotRef.current = false;
+      });
     }
-
-    if (!isHoleComplete) {
-      // Update state for next shot
-      const newLie = resultOfShot as 'fairway' | 'rough' | 'sand' | 'green' | 'other';
-      dispatch({ type: 'UPDATE_AFTER_SHOT', payload: { distanceAfter, unitAfter, newLie } });
-    }
-
-    // Release concurrency guard after dispatches are batched
-    queueMicrotask(() => {
-      isProcessingShotRef.current = false;
-    });
   };
+
+  const handleRetryHoleCheckpoint = useCallback(async () => {
+    // State updates are asynchronous, so the status alone cannot block two taps
+    // in the same event turn. Reuse the shot-submit lock so a retry cannot
+    // duplicate a completed-hole checkpoint while the first request is pending.
+    if (
+      isProcessingShotRef.current
+      || holeCheckpointStatus === 'saving'
+      || shotHistory.length === 0
+    ) return;
+
+    isProcessingShotRef.current = true;
+    setHoleCheckpointStatus('saving');
+    try {
+      const checkpointed = await completeHole(shotHistory);
+      setHoleCheckpointStatus(checkpointed ? 'idle' : 'failed');
+    } catch {
+      setHoleCheckpointStatus('failed');
+    } finally {
+      isProcessingShotRef.current = false;
+    }
+  }, [holeCheckpointStatus, shotHistory, completeHole, isProcessingShotRef]);
 
   const handleSelectShot = useCallback((shotNumber: number) => {
     dispatch({ type: 'SELECT_SHOT', payload: shotNumber });
@@ -529,10 +572,12 @@ export default function FairwayShotTracking({
             <FairwayCompletedHole
               shotHistory={shotHistory}
               currentHole={currentHole}
+              checkpointStatus={holeCheckpointStatus}
               showBackToCurrentHole={showBackToCurrentHole}
               nextUnplayedIdx={nextUnplayedIdx}
               onEditShot={handleEditShot}
               onNavigateToHole={handleNavigateToHole}
+              onRetryCheckpoint={handleRetryHoleCheckpoint}
             />
           ) : (
             <FairwayShotEntry

@@ -82,6 +82,12 @@ function derivePuttDistanceFeet(shot: GolfShot): number | undefined {
   return Math.min(feet, 500);
 }
 
+function parsePositiveRoundNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : undefined;
+}
+
 function mapShotToRecord(
   shot: GolfShot,
   puttDetail?: { miss_tags: string[] | null },
@@ -411,6 +417,74 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     }
   }
 
+  // Some older in-progress qualifier rows predate the durable
+  // qualifier_round_number field. Keep a valid number from their existing
+  // server-backed draft when it is still available; otherwise give the player
+  // an explicit, constrained choice at final submit. Never guess a qualifier
+  // result number from a client cache.
+  let qualifierRoundNumber = round.qualifier_round_number ?? undefined;
+  let qualifierRoundNumberOptions: number[] = [];
+  let qualifierRoundNumberUnavailableReason: string | undefined;
+  if (round.qualifier_id && qualifierRoundNumber == null) {
+    const [qualifierResult, playerRoundResult] = await Promise.all([
+      supabase
+        .from('golf_qualifiers')
+        .select('num_rounds, status')
+        .eq('id', round.qualifier_id)
+        .maybeSingle(),
+      supabase
+        .from('golf_rounds')
+        .select('id, status, qualifier_round_number')
+        .eq('qualifier_id', round.qualifier_id)
+        .eq('player_id', player.id),
+    ]);
+
+    if (qualifierResult.error || playerRoundResult.error || !qualifierResult.data) {
+      qualifierRoundNumberUnavailableReason =
+        'We could not verify the available qualifier rounds. Reload before submitting.';
+      await logServerError('Continue round legacy qualifier number lookup failed', {
+        action: 'continueRoundPage.qualifierRoundNumber',
+        source: 'server_component',
+        featureArea: 'qualifiers',
+        route: `/golf/dashboard/rounds/continue/${id}`,
+        roundId: id,
+        playerId: player.id,
+        userId: session.userId,
+        errorCode: qualifierResult.error?.code ?? playerRoundResult.error?.code,
+        errorHint: qualifierResult.error?.hint ?? playerRoundResult.error?.hint,
+        errorDetails: qualifierResult.error?.details ?? playerRoundResult.error?.details,
+      }, 'warning');
+    } else if (qualifierResult.data.status === 'completed') {
+      qualifierRoundNumberUnavailableReason =
+        'This qualifier is closed. Your scorecard remains saved until a coach reopens it.';
+    } else {
+      const configuredRounds = parsePositiveRoundNumber(qualifierResult.data.num_rounds) ?? 1;
+      const usedRoundNumbers = new Set(
+        (playerRoundResult.data ?? [])
+          .filter((candidate) => candidate.id !== id && candidate.status !== 'abandoned')
+          .map((candidate) => parsePositiveRoundNumber(candidate.qualifier_round_number))
+          .filter((candidate): candidate is number => candidate != null),
+      );
+      qualifierRoundNumberOptions = Array.from(
+        { length: configuredRounds },
+        (_, index) => index + 1,
+      ).filter((candidate) => !usedRoundNumbers.has(candidate));
+
+      const draftSetupData = draftData?.setupData;
+      const draftRoundNumber = draftSetupData && typeof draftSetupData === 'object'
+        ? parsePositiveRoundNumber(
+          (draftSetupData as Record<string, unknown>).qualifierRoundNumber,
+        )
+        : undefined;
+      if (draftRoundNumber && qualifierRoundNumberOptions.includes(draftRoundNumber)) {
+        qualifierRoundNumber = draftRoundNumber;
+      } else if (qualifierRoundNumberOptions.length === 0) {
+        qualifierRoundNumberUnavailableReason =
+          'Every configured qualifier round is already saved for you. Your scorecard remains safe; ask a coach to correct the qualifier setup.';
+      }
+    }
+  }
+
   const allHoles = Array.from({ length: totalHoles }, (_, i) => {
     const existingHole = holeConfigMap.get(i + 1);
     const draftHole = draftHoleConfigs?.find(h => h.number === i + 1);
@@ -433,7 +507,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     roundType: roundTypeFromDb(round.round_type || 'practice'),
     roundDate: round.round_date,
     qualifierId: round.qualifier_id || undefined,
-    qualifierRoundNumber: round.qualifier_round_number || undefined,
+    qualifierRoundNumber,
   };
 
   // Determine the starting hole index
@@ -483,6 +557,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       <AnimatedItem>
         <ContinueRoundClient
           roundId={id}
+          playerId={player.id}
           setupData={setupData}
           holes={allHoles}
           completedHoleStats={completedHoleStats}
@@ -491,6 +566,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
           initialShotNumber={startShotNumber}
           initialInProgressShotsByHole={allInProgressShots}
           serverDataTimestamp={round.updated_at ?? undefined}
+          qualifierRoundNumberOptions={qualifierRoundNumberOptions}
+          qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
         />
       </AnimatedItem>
     </AnimatedPage>

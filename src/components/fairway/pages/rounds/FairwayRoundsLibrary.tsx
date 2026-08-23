@@ -107,6 +107,7 @@ export interface FairwayRoundsLibraryProps {
   rounds: RoundLibraryRound[];
   inProgressRounds: RoundLibraryRound[];
   userRole: 'coach' | 'player';
+  playerId?: string;
   stats: RoundStats | null;
 }
 
@@ -227,6 +228,7 @@ export function FairwayRoundsLibrary({
   rounds,
   inProgressRounds,
   userRole,
+  playerId,
   stats,
 }: FairwayRoundsLibraryProps) {
   const [grouping, setGrouping] = React.useState<Grouping>('month');
@@ -527,7 +529,9 @@ export function FairwayRoundsLibrary({
       )}
 
       {/* ── 1. (player only) In-progress banner ───────────────────────────--*/}
-      {showUnfinished && <FairwayUnfinishedBanner rounds={dedupedInProgressRounds} />}
+      {showUnfinished && playerId && (
+        <FairwayUnfinishedBanner rounds={dedupedInProgressRounds} playerId={playerId} />
+      )}
 
       {/* ── Honest empty: zero completed rounds ───────────────────────────--*/}
       {rounds.length === 0 ? (

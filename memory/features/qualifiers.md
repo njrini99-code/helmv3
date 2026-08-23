@@ -57,10 +57,14 @@ Coach creates qualifier
 
 Player enters a qualifier round
   -> rounds/new with qualifier context
-  -> submitGolfRoundComprehensive()
-  -> WRITE golf_rounds.qualifier_id
+  -> savePartialRound() establishes an in-progress parent with qualifier identity
+  -> submitGolfRoundComprehensive() resolves that persisted identity before
+     validating or writing the completed scorecard
+  -> WRITE golf_rounds.qualifier_id / qualifier_round_number (never clear or
+     retarget a started round from stale browser recovery data)
   -> WRITE golf_holes and golf_shots
-  -> updateQualifierEntryStats()
+  -> updateQualifierEntryStats() reads completed linked rounds and verifies its
+     privileged aggregate write affected the entrant row
 
 Leaderboard reads qualifier
   -> getQualifierLeaderboard()
@@ -74,6 +78,14 @@ Leaderboard reads qualifier
 - Qualifier rounds must remain normal rounds too; do not fork scoring logic.
 - Leaderboard aggregation must handle ties and incomplete entries consistently.
 - Round submission is the source of truth for qualifier progress; do not manually drift entry stats away from linked rounds.
+- An existing in-progress round's persisted qualifier identity is authoritative.
+  A stale or recovered client may not remove, change, or silently overwrite its
+  round type, qualifier link, or qualifier round number during final
+  submission. The terminal database RPC also rejects closed qualifiers and
+  duplicate numbers; only a verified legacy missing-number row may be filled.
+  Continue Round presents that legacy player with only server-derived unused
+  round numbers before final submit; it never guesses a result number from
+  local recovery state.
 - Qualifier events can feed calendar/team surfaces, so date/course changes can have downstream UI impact.
 
 ## UI Contract
@@ -87,6 +99,8 @@ Leaderboard reads qualifier
 ## Known Risk Areas
 
 - Leaderboard totals can drift if entry stats are updated outside round submission.
+  The aggregate refresh must check both its source read and affected-row write;
+  an error-free zero-row PostgREST update is still a failure that must be logged.
 - Qualifier round entry can regress if `qualifier_id` is lost through draft/continue/recover flows.
 - `start_date` and `end_date` describe the planned schedule only. They must
   never prevent a player from entering, continuing, or submitting a qualifier

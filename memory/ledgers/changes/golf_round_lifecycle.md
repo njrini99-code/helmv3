@@ -42,3 +42,27 @@
 - Why: concurrent Undo/Edit actions could apply multiple local-history
   removals, while an already-completed delete surfaced as a misleading
   production server error to the golfer.
+
+## 2026-08-22 — keep Continue Round on the durable checkpoint path
+
+- SHA: `4276cec7e2556aa4b1dffc92851ba780d2a67b1a`.
+- Change: New Round and Continue Round advance only after a completed-hole
+  save succeeds. A retry preserves the original forward/return intent, and a
+  later shot edit or delete removes its now-invalid completed score before
+  any partial save. The Continue Round surface now uses the compact Fairway
+  course/progress header and a neutral save-and-exit control.
+- Why: active rounds need a single comprehensible persistence path and must
+  never serialize both the old completed version and reopened progress of the
+  same hole.
+
+## 2026-08-23 — owner-bind and order device recovery snapshots
+
+- SHA: pending commit on PR #1604; not deployed.
+- Change: localStorage and IndexedDB snapshots now carry the authenticated
+  golf-player identity, shared-device scans hide but do not delete another
+  player's data, and browser-mirror saves/clears run in causal order.
+  Pre-owner snapshots remain recoverable only for the exact server round after
+  Continue Round has verified that player's ownership.
+- Why: a delayed browser-database clear could erase a newer snapshot, while an
+  unowned shared-device cache could be shown or accidentally re-homed by a
+  recovery fallback.

@@ -303,7 +303,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
             ← Prev
           </Button>
           {onExit && (
-            <Button variant="danger" size="sm" onClick={onExit}>
+            <Button variant="secondary" size="sm" onClick={onExit} aria-label="Save progress and exit round tracking">
               Exit
             </Button>
           )}
