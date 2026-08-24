@@ -341,6 +341,34 @@ const golfRoundComprehensiveSchema = z.object({
   qualifierRoundNumber: z.number().int().min(1).optional(),
 });
 
+/**
+ * One completed hole in an auto-save payload.
+ *
+ * Named (rather than inlined into `partialRoundSchema`) so a validation
+ * failure can be re-run against THIS schema alone. When the array element
+ * fails, Zod reports the issue at the element path (`holes.16`) and — for a
+ * nullable/union wrapper — collapses the reason to a bare "Invalid input"
+ * with no field path. Production logged exactly that three times on
+ * 2026-08-23 (`holes.1`, `holes.6`, `holes.16`, each at `currentHole - 1`),
+ * which told nobody which field was actually wrong. See
+ * `describeHoleValidationFailure`.
+ */
+const partialHoleSchema = z.object({
+  holeNumber: z.number().int().min(1).max(18),
+  par: z.number().int().min(3).max(6),
+  yardage: z.number().min(0),
+  score: z.number().int().min(1).max(20).optional().nullable(),
+  putts: z.number().int().min(0).max(10).optional().nullable(),
+  fairwayHit: z.boolean().optional().nullable(),
+  greenInRegulation: z.boolean().optional().nullable(),
+  penaltyStrokes: z.number().int().min(0).max(10).optional().nullable(),
+  scrambleAttempt: z.boolean().optional().nullable(),
+  scrambleMade: z.boolean().optional().nullable(),
+  sandSaveAttempt: z.boolean().optional().nullable(),
+  sandSaveMade: z.boolean().optional().nullable(),
+  shots: z.array(comprehensiveShotSchema).optional(),
+}).passthrough();
+
 const partialRoundSchema = z.object({
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
@@ -363,21 +391,7 @@ const partialRoundSchema = z.object({
   holesToPlay: z.union([z.literal(9), z.literal(18)]).optional().nullable(),
   qualifierId: z.string().uuid().optional().nullable(),
   qualifierRoundNumber: z.number().int().min(1).optional().nullable(),
-  holes: z.array(z.object({
-    holeNumber: z.number().int().min(1).max(18),
-    par: z.number().int().min(3).max(6),
-    yardage: z.number().min(0),
-    score: z.number().int().min(1).max(20).optional().nullable(),
-    putts: z.number().int().min(0).max(10).optional().nullable(),
-    fairwayHit: z.boolean().optional().nullable(),
-    greenInRegulation: z.boolean().optional().nullable(),
-    penaltyStrokes: z.number().int().min(0).max(10).optional().nullable(),
-    scrambleAttempt: z.boolean().optional().nullable(),
-    scrambleMade: z.boolean().optional().nullable(),
-    sandSaveAttempt: z.boolean().optional().nullable(),
-    sandSaveMade: z.boolean().optional().nullable(),
-    shots: z.array(comprehensiveShotSchema).optional(),
-  }).passthrough().nullable()).max(18),
+  holes: z.array(partialHoleSchema.nullable()).max(18),
   inProgressShots: z.array(z.object({
     holeNumber: z.number().int().min(1).max(18),
     shots: z.array(comprehensiveShotSchema),
@@ -388,6 +402,65 @@ const partialRoundSchema = z.object({
     yardage: z.number().min(0).optional().nullable(),
   })).optional(),
 });
+
+type ZodIssueLike = { path: readonly PropertyKey[]; message: string };
+
+function formatIssuePath(path: readonly PropertyKey[]): string {
+  return path.map(String).join('.');
+}
+
+/**
+ * Recover the real cause behind a masked `holes.<n>` validation failure.
+ *
+ * Zod reports a failing array element at the element path. Depending on how
+ * the element is wrapped (`.nullable()`, a union, a refine) the reason can
+ * collapse to a bare "Invalid input" with no field path — which is exactly
+ * what production logged, and exactly why three successive repairs to this
+ * code path could not identify what was wrong. Re-validating the single hole
+ * against `partialHoleSchema` restores the field-level issue.
+ *
+ * Diagnostic only: it never changes what is accepted or rejected.
+ */
+function describeHoleValidationFailure(
+  issues: readonly ZodIssueLike[],
+  holes: unknown,
+): string[] {
+  const described: string[] = [];
+
+  for (const issue of issues.slice(0, 10)) {
+    const path = formatIssuePath(issue.path);
+    const elementOnly = /^holes\.(\d+)$/.exec(path);
+
+    if (!elementOnly || !Array.isArray(holes)) {
+      described.push(`${path || '(root)'}: ${issue.message}`);
+      continue;
+    }
+
+    const index = Number(elementOnly[1]);
+    const hole: unknown = holes[index];
+
+    if (hole === null || hole === undefined) {
+      described.push(
+        `${path}: hole slot is ${hole === null ? 'null' : 'undefined'} — no data for hole ${index + 1}`,
+      );
+      continue;
+    }
+
+    const inner = partialHoleSchema.safeParse(hole);
+    if (inner.success) {
+      // The element parses fine on its own, so the wrapper rejected it.
+      described.push(`${path}: ${issue.message} (element valid in isolation)`);
+      continue;
+    }
+
+    for (const innerIssue of inner.error.issues.slice(0, 5)) {
+      const suffix = innerIssue.path.length ? `.${formatIssuePath(innerIssue.path)}` : '';
+      described.push(`${path}${suffix}: ${innerIssue.message}`);
+    }
+  }
+
+  return described;
+}
 
 const shotUpdateSchema = z.object({
   shot_type: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']).optional(),
@@ -5606,15 +5679,34 @@ async function savePartialRoundImpl(
     // Validate input with Zod after normalizing legacy transport holes.
     const validated = partialRoundSchema.safeParse(data);
     if (!validated.success) {
+      // Drill through the element-level mask BEFORE building the message, so
+      // the log names the offending field rather than "holes.16 — Invalid
+      // input". Falls back to the raw issue when nothing needs unmasking.
+      const described = describeHoleValidationFailure(validated.error.issues, data?.holes);
       const firstError = validated.error.issues[0];
-      const detail = `${firstError?.path.join('.')} — ${firstError?.message}`;
+      const rawDetail = `${formatIssuePath(firstError?.path ?? [])} — ${firstError?.message ?? 'unknown'}`;
+      const detail = described[0] ?? rawDetail;
+
       void logServerError(`Auto-save validation failed: ${detail}`, {
         action: 'savePartialRound',
         featureArea: 'shot_tracking',
         extra: {
           courseName: data.courseName,
           currentHole: data.currentHole,
-          zodErrors: validated.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`),
+          // Unmasked, field-level issues — the thing that was missing.
+          zodErrors: described,
+          // The raw issue kept alongside so a wrapper-level change is still
+          // visible if the two ever disagree.
+          zodErrorsRaw: validated.error.issues
+            .slice(0, 5)
+            .map(i => `${formatIssuePath(i.path)}: ${i.message}`),
+          holesCount: Array.isArray(data?.holes) ? data.holes.length : null,
+          emptyHoleSlots: Array.isArray(data?.holes)
+            ? data.holes.reduce<number[]>(
+                (acc, hole, index) => (hole === null || hole === undefined ? [...acc, index] : acc),
+                [],
+              )
+            : null,
         },
       }, 'warning');
       return { success: false, error: `Validation error: ${detail}` };
