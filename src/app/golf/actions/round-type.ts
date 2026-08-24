@@ -62,6 +62,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { logServerError } from '@/lib/server-error-logger';
 // NOT declared here: this file is `'use server'`, and such a module may export
 // only async functions — every export becomes a server-action endpoint. A bare
 // `export const` is a build error. See lib/golf/round-type-options.ts.
@@ -253,13 +254,90 @@ async function updateRoundTypeImpl(
       update.qualifier_round_number = null;
     }
 
-    const { error: updateError } = await supabase
-      .from('golf_rounds')
-      .update(update)
-      .eq('id', roundId);
+    // A completed round cannot be updated directly: `golf_rounds` carries a
+    // BEFORE-UPDATE lifecycle guard that rejects it with SQLSTATE 55000. That
+    // guard is right about scores and was over-broad about classification —
+    // re-typing a round changes what it COUNTS TOWARD, not a single stroke of
+    // it, and on 2026-08-23 it stranded four Guilford players who had recorded
+    // qualifier rounds as practice rounds.
+    //
+    // `reclassify_golf_round` is the narrow, marker-gated RPC that owns this
+    // write (migration 20260824030000). It re-checks permission itself
+    // (round owner or team coach) because SECURITY DEFINER bypasses RLS, and
+    // the guard still refuses the write if ANY column other than round_type /
+    // qualifier_id / qualifier_round_number differs.
+    //
+    // The narrow cast is because `src/lib/types/database.ts` is generated and
+    // does not know this function yet. Regenerate the types and this collapses
+    // to a plain `supabase.rpc('reclassify_golf_round', ...)`. Deliberately a
+    // precise signature rather than `any`, so a rename or an argument change
+    // still fails the build.
+    type ReclassifyRpc = (
+      fn: 'reclassify_golf_round',
+      args: {
+        p_round_id: string;
+        p_round_type: EditableRoundType;
+        p_qualifier_id: string | null;
+        p_qualifier_round_number: number | null;
+      },
+    ) => Promise<{
+      data: string | null;
+      error: { code?: string; message: string; hint?: string; details?: string } | null;
+    }>;
+
+    const callReclassify = supabase.rpc as unknown as ReclassifyRpc;
+
+    const { data: reclassifiedId, error: updateError } = await callReclassify(
+      'reclassify_golf_round',
+      {
+        p_round_id: roundId,
+        p_round_type: roundType,
+        p_qualifier_id: update.qualifier_id ?? null,
+        p_qualifier_round_number: update.qualifier_round_number ?? null,
+      },
+    );
+
+    // A null id means the round vanished between the read above and the write.
+    if (!updateError && !reclassifiedId) {
+      return { success: false, error: 'That round no longer exists.' };
+    }
 
     if (updateError) {
-      return { success: false, error: describeError(updateError) };
+      // `golf_rounds` carries a BEFORE-UPDATE lifecycle guard
+      // (helm_private.guard_golf_round_lifecycle) that rejects ANY update to a
+      // completed round with SQLSTATE 55000. Reclassifying a round changes
+      // what it counts toward, not a single stroke of it, so the guard is
+      // over-broad here — but until it grows a narrow exception, the coach at
+      // least gets a sentence they can act on instead of the raw
+      // "code=55000 msg=Completed rounds are permanent history and cannot be
+      // changed." that was being rendered verbatim in the round editor.
+      if (updateError.code === '42501') {
+        return { success: false, error: "You don't have permission to change this round." };
+      }
+      if (updateError.code === '22023') {
+        return { success: false, error: 'Pick which qualifier and round number this counts as.' };
+      }
+      if (updateError.code === '55000') {
+        // Should be unreachable now that the RPC owns this write; kept so a
+        // future guard change surfaces as readable copy rather than SQLSTATE.
+        return {
+          success: false,
+          error:
+            "This round's scores are locked as submitted history, so it can't be re-typed right now. The scores themselves are safe and unchanged.",
+        };
+      }
+      // Never surface a raw driver string to a coach. describeError() is for
+      // logs; the UI gets copy written for a person.
+      void logServerError(`updateRoundType failed: ${describeError(updateError)}`, {
+        action: 'updateRoundType',
+        featureArea: 'round_tracking',
+        roundId,
+        errorCode: updateError.code,
+      }, 'error');
+      return {
+        success: false,
+        error: "Couldn't change this round's type. Please try again.",
+      };
     }
 
     revalidatePath(`/golf/dashboard/rounds/${roundId}`);
