@@ -60,7 +60,7 @@ The current architecture uses cached stats for performance. Cache invalidation m
 Round completion
   -> invalidateOnRoundComplete()
   -> mark golf_player_stats_cache stale
-  -> attempt non-critical SG recalculation RPCs
+  -> trusted SG recalculation refreshes only derived strokes-gained columns
   -> next stats read refreshes cache lazily
   -> player stats, team stats, roster profile, CoachHelm reads consume cache/source data
 ```
@@ -68,6 +68,9 @@ Round completion
 ## Business Rules
 
 - Round and shot data remain the source of truth; cached stats are derived.
+- A completed round's score, identity, status, holes, and shots are immutable;
+  only the server-side strokes-gained recalculation may refresh its five derived
+  strokes-gained columns.
 - Stats shown to coaches must be scoped to their team/player access.
 - Player stats pages should show only the authenticated player's allowed data.
 - Strokes-gained and putting tendency gaps should be called out rather than silently treated as complete.

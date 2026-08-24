@@ -21201,6 +21201,15 @@ export type Database = {
         Returns: undefined
       }
       recompute_team_sg: { Args: { p_team_id: string }; Returns: undefined }
+      record_round_coachhelm_terminal_state: {
+        Args: {
+          p_analyzed_at: string
+          p_failed_at: string
+          p_failure_reason: string
+          p_round_id: string
+        }
+        Returns: string
+      }
       refresh_crm_coach_engagement: { Args: never; Returns: undefined }
       refresh_player_standing: {
         Args: { p_team_ids: string[] }

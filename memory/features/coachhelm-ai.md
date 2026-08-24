@@ -90,6 +90,9 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 - Generated insight evidence can drift from real data if adapters or fallback paths skip citation validation.
 - Safety-net fallback behavior can mask generator failures if logs are ignored.
+- A completed round's CoachHelm terminal state is written only through the
+  service-only `record_round_coachhelm_terminal_state` RPC. It may update
+  processing metadata but cannot modify score, shots, identity, or status.
 - Round-review feedback and player acknowledgement paths can become stale if revalidation misses player or coach routes.
 - V3 feature surface is expanding quickly; registry/docs must be updated when new generators, tables, or cron routes land.
 
