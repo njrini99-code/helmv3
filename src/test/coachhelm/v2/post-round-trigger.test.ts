@@ -37,6 +37,31 @@ vi.mock('@/lib/server-error-logger', () => ({
 
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 
+function createPostRoundFake(rounds: Array<Record<string, unknown>>) {
+  return createFakeSupabase({
+    tables: { golf_rounds: rounds },
+    rpc: {
+      record_round_coachhelm_terminal_state: async (rawArgs) => {
+        const args = rawArgs as {
+          p_round_id: string;
+          p_analyzed_at: string | null;
+          p_failed_at: string | null;
+          p_failure_reason: string | null;
+        };
+        const round = rounds.find((row) => row.id === args.p_round_id);
+        if (!round) return { data: null, error: null };
+
+        Object.assign(round, {
+          coachhelm_analyzed_at: args.p_analyzed_at,
+          coachhelm_failed_at: args.p_failed_at,
+          coachhelm_failure_reason: args.p_failure_reason,
+        });
+        return { data: args.p_round_id, error: null };
+      },
+    },
+  });
+}
+
 describe('postRoundTrigger', () => {
   beforeEach(() => {
     mockTrigger.mockReset();
@@ -45,13 +70,9 @@ describe('postRoundTrigger', () => {
   });
 
   it('sets coachhelm_analyzed_at and clears failure fields on success', async () => {
-    const admin = createFakeSupabase({
-      tables: {
-        golf_rounds: [
-          { id: 'r1', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
-        ],
-      },
-    });
+    const admin = createPostRoundFake([
+      { id: 'r1', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+    ]);
     mockTrigger.mockResolvedValue({ success: true, insights_created: 3 });
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r1' });
@@ -63,11 +84,9 @@ describe('postRoundTrigger', () => {
   });
 
   it('sets coachhelm_failed_at + reason when trigger returns success: false', async () => {
-    const admin = createFakeSupabase({
-      tables: {
-        golf_rounds: [{ id: 'r2', player_id: 'p1', coachhelm_analyzed_at: null }],
-      },
-    });
+    const admin = createPostRoundFake([
+      { id: 'r2', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+    ]);
     mockTrigger.mockResolvedValue({ success: false, error: 'team disabled coachhelm' });
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r2' });
@@ -82,11 +101,9 @@ describe('postRoundTrigger', () => {
   });
 
   it('sets coachhelm_failed_at + reason when trigger throws', async () => {
-    const admin = createFakeSupabase({
-      tables: {
-        golf_rounds: [{ id: 'r3', player_id: 'p1', coachhelm_analyzed_at: null }],
-      },
-    });
+    const admin = createPostRoundFake([
+      { id: 'r3', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+    ]);
     mockTrigger.mockRejectedValue(new Error('engine_boom'));
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r3' });
@@ -100,11 +117,7 @@ describe('postRoundTrigger', () => {
 
   it('truncates failure reason to 500 chars', async () => {
     const long = 'x'.repeat(2000);
-    const admin = createFakeSupabase({
-      tables: {
-        golf_rounds: [{ id: 'r4', player_id: 'p1' }],
-      },
-    });
+    const admin = createPostRoundFake([{ id: 'r4', player_id: 'p1', status: 'completed' }]);
     mockTrigger.mockRejectedValue(new Error(long));
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r4' });
@@ -114,7 +127,7 @@ describe('postRoundTrigger', () => {
   });
 
   it('never throws — fire-and-forget safe from after()', async () => {
-    const admin = createFakeSupabase({ tables: { golf_rounds: [{ id: 'r5', player_id: 'p1' }] } });
+    const admin = createPostRoundFake([{ id: 'r5', player_id: 'p1', status: 'completed' }]);
     mockTrigger.mockRejectedValue(new Error('boom'));
 
     await expect(postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r5' })).resolves.not.toThrow();
@@ -122,9 +135,9 @@ describe('postRoundTrigger', () => {
 
   describe('engine-failure severity classification (verdict-softfail-severity)', () => {
     it('code: engine_no_recent_rounds logs via logServerEvent at info + skipSentry, never logServerError', async () => {
-      const admin = createFakeSupabase({
-        tables: { golf_rounds: [{ id: 'r6', player_id: 'p1', coachhelm_analyzed_at: null }] },
-      });
+      const admin = createPostRoundFake([
+        { id: 'r6', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
       mockTrigger.mockResolvedValue({
         success: false,
         error: 'No completed rounds in the last 90 days yet — insights will populate after the next round',
@@ -146,9 +159,9 @@ describe('postRoundTrigger', () => {
     });
 
     it('code: engine_session_expired logs via logServerError at warning + skipSentry (handled, not a live Sentry exception)', async () => {
-      const admin = createFakeSupabase({
-        tables: { golf_rounds: [{ id: 'r7', player_id: 'p1', coachhelm_analyzed_at: null }] },
-      });
+      const admin = createPostRoundFake([
+        { id: 'r7', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
       mockTrigger.mockResolvedValue({
         success: false,
         error: 'Player analysis failed (likely session expired in background context)',
@@ -165,9 +178,9 @@ describe('postRoundTrigger', () => {
     });
 
     it('code: engine_no_team_membership logs at warning + skipSentry — an un-rostered player is a roster state, not an incident', async () => {
-      const admin = createFakeSupabase({
-        tables: { golf_rounds: [{ id: 'r9', player_id: 'p1', coachhelm_analyzed_at: null }] },
-      });
+      const admin = createPostRoundFake([
+        { id: 'r9', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
       mockTrigger.mockResolvedValue({
         success: false,
         error: 'No active team membership for player',
@@ -184,9 +197,9 @@ describe('postRoundTrigger', () => {
     });
 
     it('hands the engine code back to the caller so the safety-net cron can reach the same verdict', async () => {
-      const admin = createFakeSupabase({
-        tables: { golf_rounds: [{ id: 'r10', player_id: 'p1', coachhelm_analyzed_at: null }] },
-      });
+      const admin = createPostRoundFake([
+        { id: 'r10', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
       mockTrigger.mockResolvedValue({
         success: false,
         error: 'No active team membership for player',
@@ -199,9 +212,9 @@ describe('postRoundTrigger', () => {
     });
 
     it('omits `code` entirely when the engine did not classify the failure', async () => {
-      const admin = createFakeSupabase({
-        tables: { golf_rounds: [{ id: 'r11', player_id: 'p1', coachhelm_analyzed_at: null }] },
-      });
+      const admin = createPostRoundFake([
+        { id: 'r11', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
       mockTrigger.mockResolvedValue({ success: false, error: 'team disabled coachhelm' });
 
       const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r11' });
@@ -211,9 +224,9 @@ describe('postRoundTrigger', () => {
     });
 
     it('regression guard: an unrecognized code/message still logs at default error severity with no skipSentry', async () => {
-      const admin = createFakeSupabase({
-        tables: { golf_rounds: [{ id: 'r8', player_id: 'p1', coachhelm_analyzed_at: null }] },
-      });
+      const admin = createPostRoundFake([
+        { id: 'r8', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
       mockTrigger.mockResolvedValue({ success: false, error: 'team disabled coachhelm' });
 
       await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r8' });

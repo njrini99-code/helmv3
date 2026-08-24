@@ -119,6 +119,10 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Direct database writes cannot create, mutate, or delete a completed round
   or its child shots. Only the postgres-owned SECURITY DEFINER round RPCs may
   carry the transaction-local lifecycle marker needed for their atomic write.
+- CoachHelm completion bookkeeping uses a separate service-only RPC that can
+  change exactly `coachhelm_analyzed_at`, `coachhelm_failed_at`, and
+  `coachhelm_failure_reason` on an already completed round; it cannot alter
+  the recorded round, its identity, or its children.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
 - A client-side abort after terminal submit is an unknown transport outcome,
   not proof of a database rollback. The action may report success only after
