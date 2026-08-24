@@ -81,6 +81,23 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: vi.fn(async () => ({ data: { user: state.user }, error: null })) },
     from: vi.fn((name: string) => table(name)),
+    // The write moved off `.update()` and onto the `reclassify_golf_round`
+    // RPC (migration 20260824030000), because the lifecycle guard on
+    // `golf_rounds` rejects every direct UPDATE to a completed round — which
+    // is what stopped players fixing a qualifier round they had recorded as
+    // practice. Recorded into `state.written` in the same shape the direct
+    // update used, so every assertion below still asserts the same thing:
+    // what actually gets persisted.
+    rpc: vi.fn(async (fn: string, args: Record<string, unknown>) => {
+      if (fn !== 'reclassify_golf_round') return { data: null, error: null };
+      if (state.updateError) return { data: null, error: state.updateError };
+      state.written = {
+        round_type: args.p_round_type,
+        qualifier_id: args.p_qualifier_id,
+        qualifier_round_number: args.p_qualifier_round_number,
+      };
+      return { data: 'round-1', error: null };
+    }),
   })),
 }));
 
