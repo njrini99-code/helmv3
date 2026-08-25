@@ -1,0 +1,21 @@
+fileType: momentic/test/v2
+id: golf-hell-round-one-direct-shot
+name: GolfHelm qualifier hell - direct current-hole autosave
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.PLAYER_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.PLAYER_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - waitForUrl: /golf/dashboard
+  - navigate: https://helmsportslabs.com/golf/dashboard/rounds
+  - checkPageContains: "{{ env.QA_COURSE_R1 }}"
+  - click: Continue
+  - waitForUrl: /golf/dashboard/rounds/continue/
+  - click: Driver option under Club off tee
+  - click: Fairway option under Shot result
+  - click: Next shot
+  - checkPageContains: Shot 2

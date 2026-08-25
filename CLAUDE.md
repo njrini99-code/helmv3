@@ -148,9 +148,10 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 
 ## CRITICAL RULES
 
-### 0. Branch & deploy — `main` is the working branch
+### 0. Branch & deploy — preserve the current task branch
+Do not assume `main` is currently checked out. Run `git branch --show-current` and preserve the current task branch/worktree unless the user explicitly asks to switch branches.
 
-Work directly on `main`. Owner decision, 2026-08-15.
+
 
 **A push to `main` ships nothing.** `vercel.json` has carried
 `"git": {"deploymentEnabled": {"*": false}}` since 2026-07-08 (#789 /
@@ -308,9 +309,9 @@ npm run lighthouse        # Lighthouse CI against PREVIEW_URL (or localhost:3000
 # Inngest (durable workflows — replaces scattered cron + retry loops)
 npx inngest-cli@latest dev  # Local dev server on :8288 (auto-discovers /api/inngest)
 
-# Platform CLIs (installed via brew)
-supabase --version   # Supabase CLI (>= 2.101.0)
-vercel --version     # Vercel CLI (>= 54.x)
+# Platform CLIs (repo-local; do not assume global binaries)
+./node_modules/.bin/supabase --version  # project-pinned Supabase CLI
+./node_modules/.bin/vercel --version    # project-pinned Vercel CLI
 ```
 
 ## Auto-regen inventory docs
@@ -334,3 +335,19 @@ CI behavior: `.github/workflows/docs-regen.yml` runs on every push to
 `main` that touches a source of truth, and opens an auto-PR titled
 "docs: regen inventory blocks" if the regenerated content drifts.
 Approve and squash-merge.
+
+<!-- HELM_AGENT_CANONICALITY_START -->
+## Helm agent canonicality
+
+The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
+
+- Preserve the currently checked-out task branch. Never assume `main` is the active working branch.
+- Do not create a git worktree unless the user explicitly requests one for the current task.
+- If an explicitly requested temporary worktree is created, remove it when the task is complete.
+- `archive/**` and `docs/archive/**` are historical evidence only. Never use them as the source of truth for current architecture, schema, routes, configuration, features, or implementation.
+- Current source code, current migrations, current tests, `AGENTS.md`, `CLAUDE.md`, and active non-archive documentation outrank archived material.
+- Use repo-local platform CLIs: `./node_modules/.bin/supabase` and `./node_modules/.bin/vercel`. Do not assume global Supabase or Vercel binaries.
+- Production Supabase MCP access must remain project-scoped and read-only. Schema changes belong in the local development stack and reviewed migrations.
+- Never treat an agent memory/index/cache as more authoritative than the current repository and current database evidence.
+- Never deploy/promote/rollback Vercel production unless the user explicitly requests that production action.
+<!-- HELM_AGENT_CANONICALITY_END -->

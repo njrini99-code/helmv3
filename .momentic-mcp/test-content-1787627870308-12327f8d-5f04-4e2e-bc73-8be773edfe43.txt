@@ -1,0 +1,283 @@
+Name: 02e-round-one-complete-hole-three
+
+Main Steps:
+```json
+[
+  {
+    "id": "723f6403-4e39-45a2-86b6-cc26e2a65fd6",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "TYPE",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Email"
+      },
+      "value": "{{ env.PLAYER_EMAIL }}"
+    },
+    "parentStepIdChain": [],
+    "index": 0
+  },
+  {
+    "id": "14838b81-a973-4229-a47e-4c32bf46758f",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "TYPE",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Password"
+      },
+      "value": "{{ env.PLAYER_PASSWORD }}"
+    },
+    "parentStepIdChain": [],
+    "index": 1
+  },
+  {
+    "id": "7b552d41-7b67-48a5-8d34-8083d501628e",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Sign in"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 2
+  },
+  {
+    "id": "48d6b0a6-ff62-498e-af7c-3f3546bb655b",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "WAIT_FOR_URL",
+      "matcher": {
+        "type": "SUBSTRING",
+        "url": "/golf/dashboard"
+      },
+      "negated": false
+    },
+    "parentStepIdChain": [],
+    "index": 3
+  },
+  {
+    "id": "a0f8cd0c-f6db-4578-9523-ed33621f1863",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "NAVIGATE",
+      "url": "https://helmsportslabs.com/golf/dashboard/rounds"
+    },
+    "parentStepIdChain": [],
+    "index": 4
+  },
+  {
+    "id": "989bb341-617f-46db-9c23-a530d8388588",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "PAGE_CHECK",
+      "assertion": {
+        "type": "CONTENT",
+        "value": "{{ env.QA_COURSE_R1 }}"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 5
+  },
+  {
+    "id": "58417175-4405-4560-adc2-a2fdd5c6dbf3",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Continue"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 6
+  },
+  {
+    "id": "067f9d1f-0b53-4532-a1d6-377fcffdef65",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "WAIT_FOR_URL",
+      "matcher": {
+        "type": "SUBSTRING",
+        "url": "/golf/dashboard/rounds/continue/"
+      },
+      "negated": false
+    },
+    "parentStepIdChain": [],
+    "index": 7
+  },
+  {
+    "id": "76bb05d2-ed9d-433e-846b-0be8178a4bed",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "PAGE_CHECK",
+      "assertion": {
+        "type": "CONTENT",
+        "value": "Hole 2"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 8
+  },
+  {
+    "id": "21097fc0-254f-492d-a048-de6e0693a4f8",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Driver option under Club off tee"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 9
+  },
+  {
+    "id": "d5bee988-45dd-4264-b596-0fff8e8ddde4",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Fairway option under Shot result"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 10
+  },
+  {
+    "id": "2eb95383-4fc1-4cd7-a071-65bcc259935f",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Next shot"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 11
+  },
+  {
+    "id": "4435a76b-14a5-4adc-9820-0830126eee43",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "TYPE",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Distance remaining input"
+      },
+      "value": "150"
+    },
+    "parentStepIdChain": [],
+    "index": 12
+  },
+  {
+    "id": "780bcc2f-37d9-400a-9dec-8a63ed8f2c42",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Green option under Shot result"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 13
+  },
+  {
+    "id": "6c2b8327-9742-4140-afbf-386bf6171976",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "TYPE",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Distance remaining input"
+      },
+      "value": "20"
+    },
+    "parentStepIdChain": [],
+    "index": 14
+  },
+  {
+    "id": "30ea20bd-7fa2-4972-8c49-9b5bd96a9f87",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Next shot"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 15
+  },
+  {
+    "id": "bef90161-f5f3-4ed6-96e6-cfbdfd95d0e1",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Straight break option"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 16
+  },
+  {
+    "id": "e1d8c702-b1a5-466c-a493-1e4c3411e646",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Level slope option"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 17
+  },
+  {
+    "id": "208f4e1c-f14b-45c8-b930-be048ea8ccb5",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Hole putt result"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 18
+  },
+  {
+    "id": "b5196529-551d-467c-97e5-6536cdd991a1",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "CLICK",
+      "target": {
+        "type": "description",
+        "elementDescriptor": "Complete hole"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 19
+  },
+  {
+    "id": "8b18f915-05f4-4292-b9af-d2577e509aac",
+    "type": "PRESET_ACTION",
+    "command": {
+      "type": "PAGE_CHECK",
+      "assertion": {
+        "type": "CONTENT",
+        "value": "Hole 3"
+      }
+    },
+    "parentStepIdChain": [],
+    "index": 20
+  }
+]
+```

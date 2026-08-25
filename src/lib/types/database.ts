@@ -21300,6 +21300,10 @@ export type Database = {
         }
         Returns: Json
       }
+      save_round_ai_recap: {
+        Args: { p_recap: string; p_round_id: string }
+        Returns: Json
+      }
       select_stalest_teams: {
         Args: { p_limit: number }
         Returns: {

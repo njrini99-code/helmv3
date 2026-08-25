@@ -1,4 +1,6 @@
+import '@supabase/supabase-js/tracing';
 import { createServerClient } from '@supabase/ssr';
+import * as Sentry from '@sentry/nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/lib/types/database';
 
@@ -49,7 +51,7 @@ export async function createClient() {
   }
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
+  const client = createServerClient<Database>(
     url,
     anonKey,
     {
@@ -75,6 +77,12 @@ export async function createClient() {
           return fetch(fetchUrl, { ...options, signal });
         },
       },
+      tracePropagation: {
+        enabled: true,
+        respectSamplingDecision: false,
+      },
     }
   );
+  Sentry.instrumentSupabaseClient(client, { sendOperationData: false });
+  return client;
 }

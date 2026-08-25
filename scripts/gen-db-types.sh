@@ -5,7 +5,7 @@
 # -----------------------------------
 # `db:types` used to be a bare npm script:
 #
-#     npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/types/database.ts
+#     ./node_modules/.bin/supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/types/database.ts
 #
 # That has a destructive failure mode. The shell performs the `>` redirect
 # BEFORE running the command, so `database.ts` is truncated to zero bytes
@@ -26,6 +26,13 @@
 set -euo pipefail
 
 OUT="src/lib/types/database.ts"
+SUPABASE_CLI="./node_modules/.bin/supabase"
+
+if [ ! -x "$SUPABASE_CLI" ]; then
+  echo "❌ Repository Supabase CLI not found at $SUPABASE_CLI — refusing to run."
+  echo "   $OUT has NOT been modified."
+  exit 1
+fi
 
 # ── Resolve the project id (mirrors scripts/apply-migration.sh) ──────────────
 if [ -z "${SUPABASE_PROJECT_ID:-}" ]; then
@@ -44,7 +51,7 @@ if [ -z "${SUPABASE_PROJECT_ID:-}" ]; then
     echo "❌ SUPABASE_PROJECT_ID not found — refusing to run."
     echo "   $OUT has NOT been modified."
     echo "   Set it in .env.local, export it, or pass --project-id explicitly:"
-    echo "     npx supabase gen types typescript --project-id <id> > $OUT"
+    echo "     $SUPABASE_CLI gen types typescript --project-id <id> > $OUT"
     exit 1
   fi
 fi
@@ -55,7 +62,7 @@ echo "🔑 Generating types with project id: ${SUPABASE_PROJECT_ID:0:10}…"
 TMP=$(mktemp -t database-types)
 trap 'rm -f "$TMP"' EXIT
 
-if ! npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID" > "$TMP"; then
+if ! "$SUPABASE_CLI" gen types typescript --project-id "$SUPABASE_PROJECT_ID" > "$TMP"; then
   echo "❌ supabase gen types failed — $OUT left untouched."
   exit 1
 fi

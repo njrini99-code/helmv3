@@ -68,6 +68,9 @@ Round completion
 ## Business Rules
 
 - Round and shot data remain the source of truth; cached stats are derived.
+- `recalculate_round_strokes_gained` is the protected derived-write path for
+  completed rounds. It may change only the five stored strokes-gained fields;
+  it must never require a general exception to completed-round immutability.
 - Stats shown to coaches must be scoped to their team/player access.
 - Player stats pages should show only the authenticated player's allowed data.
 - Strokes-gained and putting tendency gaps should be called out rather than silently treated as complete.

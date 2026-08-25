@@ -18,3 +18,20 @@
 - Evidence before promotion: focused round tests, local Supabase lifecycle/RLS
   SQL suites, typecheck, lint, and production build; the release run records
   final command outcomes against the promoted SHA.
+
+## 2026-08-25 — atomic snapshot integrity regression
+
+- Status: uncommitted local reliability repair; not deployed.
+- Added `supabase/tests/rls/golf_atomic_snapshot_integrity.sql`.
+- Guarantees: both atomic RPCs reject an unmatched shot-group/hole pair before
+  replacing data; a rejected partial save keeps its durable shot, and a
+  rejected submit keeps the round in progress with its durable hole and shot.
+
+## 2026-08-25 — failed submission/checkpoint durability
+
+- Status: uncommitted local reliability repair; not deployed.
+- Added regression coverage for a SQL-returned submit RPC failure and a
+  fallback hole-upsert failure against an existing in-progress round.
+- Guarantees: neither condition issues a destructive delete. A committed
+  submit is reconciled by read-back; an uncommitted one remains recoverable,
+  and every prior checkpoint remains visible in Continue Round.

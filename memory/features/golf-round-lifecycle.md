@@ -67,6 +67,13 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Do not use DELETE-then-INSERT for save, submit, or sync paths. Use idempotent upserts or a safe stage-and-swap pattern.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
+- The protected atomic submit RPC is the only live completion writer. On every
+  RPC failure, application code must preserve the server/device backups and
+  either reconcile a committed result or return the player to retry/recovery;
+  it must never delete and rebuild a saved round graph.
+- Atomic save and submit snapshots must reject any shot group whose hole is not
+  present in the supplied hole snapshot before replacing durable data. A
+  rejected snapshot leaves the existing round in progress and recoverable.
 - Valid local emergency saves remain recoverable until an explicit discard or
   confirmed completion; recovery data must not expire merely because time has
   passed.

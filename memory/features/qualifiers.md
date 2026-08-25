@@ -74,6 +74,20 @@ Leaderboard reads qualifier
 - Qualifier rounds must remain normal rounds too; do not fork scoring logic.
 - Leaderboard aggregation must handle ties and incomplete entries consistently.
 - Round submission is the source of truth for qualifier progress; do not manually drift entry stats away from linked rounds.
+- Scheduled dates and end dates are calendar metadata, never an automatic
+  player-entry deadline. A player can be blocked from entering only when a
+  coach explicitly closes the qualifier or when the coach-configured round
+  count has been reached.
+- Every entry refusal must name the corrective action: resume the saved round,
+  ask the coach to reopen the qualifier, or ask the coach to raise the round
+  count. It must never present a generic failure or imply that a calendar date
+  closed the qualifier.
+- For a multi-round qualifier, players advance through the first unused
+  configured slot (1 -> 2 -> 3). A recovered out-of-order historical record
+  must fill its missing slot rather than skip to a new number or strand the
+  player at the cap.
+- A coach who can explicitly close a qualifier must be able to reopen it from
+  the qualifier workspace; closing is not a one-way lockout.
 - Qualifier events can feed calendar/team surfaces, so date/course changes can have downstream UI impact.
 - Correcting an already completed round's type or qualifier linkage must use
   `reclassify_golf_round`; a direct `golf_rounds` update is not a permitted
@@ -93,6 +107,8 @@ Leaderboard reads qualifier
 - Qualifier round entry can regress if `qualifier_id` is lost through draft/continue/recover flows.
 - CoachHelm V3 qualifying views may evolve faster than the older qualifier pages; update both docs and registry when new paths land.
 - Calendar integration means deleting or rescheduling qualifiers can affect event views.
+- A date-based entry gate is a release-blocking regression: it strands an
+  eligible player and contradicts the coach-controlled qualifier lifecycle.
 
 ## Tests To Prefer
 

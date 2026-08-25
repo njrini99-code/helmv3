@@ -64,10 +64,30 @@ Round setup
   -> update qualifier entry if qualifier_id exists
 ```
 
+## Flight Recorder
+
+The highest-risk autosave and submit paths now create a fail-open Helm trace
+with an opaque UUID. The trace links Server Action validation/auth/player
+resolution, the atomic Supabase RPC, read-only round/hole/shot verification,
+qualifier transition, stats invalidation, and CoachHelm post-round work.
+
+The private `helm_debug` schema stores the visual tree through service-role
+facades only. The atomic RPCs additionally emit `HELM_TRACE` PostgreSQL log
+checkpoints, so Docker's optional `npm run trace:db` collector can preserve the
+last database checkpoint after a business transaction rolls back. Production
+recording remains opt-in; tracing cannot block a player save or submit.
+
 ## Business Rules
 
 - Do not lose user-entered shots. Save/submit/recover paths must be idempotent and interruption-tolerant.
 - Do not use DELETE-then-INSERT for save or submit paths.
+- A failed checkpoint must retain its parent in-progress round and prior saved
+  holes/shots. The next checkpoint is an idempotent upsert; cleanup must never
+  make Continue Round disappear after a temporary child-write failure.
+- Before an atomic snapshot replaces persisted round data, every supplied shot
+  group must map to a supplied hole. A mismatched snapshot must return a safe
+  failure before durable holes or shots change; it must never be acknowledged
+  as saved while silently omitting shots.
 - Shot records must preserve sequence, hole, lie, type, club, distance, result, miss direction, and putting detail where captured.
 - Continuing a round must reconstruct shot sequences and current-hole progress from persisted data.
 - Qualifier-linked rounds must retain `qualifier_id` through draft, continue, and submit.

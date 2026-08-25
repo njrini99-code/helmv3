@@ -680,6 +680,12 @@ export default function NewRoundClient() {
         .then(result => {
           if (result.success && result.data) {
             setQualifierError(null);
+            if (result.data.activeRoundId) {
+              // The server found the already-durable parent. Never let this
+              // new-round screen create a second qualifier round over it.
+              router.replace(`/golf/dashboard/rounds/continue/${result.data.activeRoundId}`);
+              return;
+            }
             setAvailableRounds(result.data.availableRounds);
             // Auto-select the next round number
             if (result.data.nextRoundNumber > 0) {
@@ -708,7 +714,7 @@ export default function NewRoundClient() {
       setAvailableRounds([]);
       setSelectedRoundNumber(null);
     }
-  }, [selectedQualifierId]);
+  }, [router, selectedQualifierId]);
 
   // Fetch saved courses on mount
   useEffect(() => {

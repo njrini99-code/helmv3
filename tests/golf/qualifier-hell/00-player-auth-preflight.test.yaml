@@ -1,0 +1,15 @@
+fileType: momentic/test/v2
+id: golf-hell-player-check
+name: GolfHelm qualifier hell - player QA account preflight
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.PLAYER_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.PLAYER_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - waitForUrl: /golf/dashboard
+  - checkPageContains: GolfHelm
+  - checkPageDoesNotContain: Log in to GolfHelm
