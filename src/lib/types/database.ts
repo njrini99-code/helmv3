@@ -21196,11 +21196,29 @@ export type Database = {
         Args: { p_season_year?: number; p_team_id: string }
         Returns: undefined
       }
+      reclassify_golf_round: {
+        Args: {
+          p_qualifier_id: string
+          p_qualifier_round_number: number
+          p_round_id: string
+          p_round_type: string
+        }
+        Returns: string
+      }
       recompute_golf_round_totals: {
         Args: { p_round_id: string }
         Returns: undefined
       }
       recompute_team_sg: { Args: { p_team_id: string }; Returns: undefined }
+      record_round_coachhelm_terminal_state: {
+        Args: {
+          p_analyzed_at: string
+          p_failed_at: string
+          p_failure_reason: string
+          p_round_id: string
+        }
+        Returns: string
+      }
       refresh_crm_coach_engagement: { Args: never; Returns: undefined }
       refresh_player_standing: {
         Args: { p_team_ids: string[] }

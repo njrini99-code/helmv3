@@ -376,7 +376,7 @@ const partialRoundSchema = z.object({
     sandSaveAttempt: z.boolean().optional().nullable(),
     sandSaveMade: z.boolean().optional().nullable(),
     shots: z.array(comprehensiveShotSchema).optional(),
-  }).passthrough().nullable()).max(18),
+  }).passthrough().nullish()).max(18),
   inProgressShots: z.array(z.object({
     holeNumber: z.number().int().min(1).max(18),
     shots: z.array(comprehensiveShotSchema),
@@ -1489,7 +1489,11 @@ async function submitGolfRoundComprehensiveImpl(
       }
 
       if (qualifier.status === 'completed') {
-        return { success: false, error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
+        return {
+          success: false,
+          code: 'qualifier_closed',
+          error: 'This qualifier is closed by the coach. New rounds cannot be submitted.',
+        };
       }
 
       // Verify the player has an entry in this qualifier
@@ -1512,6 +1516,7 @@ async function submitGolfRoundComprehensiveImpl(
       if (data.qualifierRoundNumber && data.qualifierRoundNumber > numRounds) {
         return {
           success: false,
+          code: 'qualifier_round_limit_reached',
           error: `This qualifier only has ${numRounds} round${numRounds === 1 ? '' : 's'}. Round ${data.qualifierRoundNumber} is beyond the configured count.`,
         };
       }
@@ -1528,7 +1533,11 @@ async function submitGolfRoundComprehensiveImpl(
           .maybeSingle();
 
         if (existingRound && existingRound.id !== existingRoundId) {
-          return { success: false, error: `You have already submitted round ${data.qualifierRoundNumber} for this qualifier.` };
+          return {
+            success: false,
+            code: 'qualifier_round_already_exists',
+            error: `You have already submitted round ${data.qualifierRoundNumber} for this qualifier.`,
+          };
         }
       }
     }
@@ -2122,12 +2131,9 @@ async function submitGolfRoundComprehensiveImpl(
       }
     }
 
-    // If this is a qualifier round, update the qualifier entry stats and
-    // auto-advance the qualifier lifecycle (F029/F138). The first completed
-    // round transitions upcoming→in_progress; once every entrant has posted
-    // num_rounds completed rounds (or end_date has passed) it auto-closes to
-    // completed too, so a qualifier never gets stuck 'in_progress' forever
-    // even if no coach opens the selections workspace to conclude it manually.
+    // If this is a qualifier round, update the qualifier entry stats and mark
+    // a never-started qualifier live. Completion is deliberately coach-only:
+    // dates and participant progress are information, never automatic closure.
     if (data.qualifierId) {
       try {
         await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
@@ -3811,13 +3817,24 @@ async function updateQualifierStatusImpl(
       return { success: false, error: 'Unauthorized' };
     }
 
-    const { error } = await supabase
+    // An UPDATE filtered by RLS is not an error in PostgREST: it succeeds with
+    // zero returned rows. Select the affected id so the UI never tells a coach
+    // that a manual status change happened when it did not.
+    const { data: updatedQualifiers, error } = await supabase
       .from('golf_qualifiers')
       .update({ status })
-      .eq('id', qualifierId);
+      .eq('id', qualifierId)
+      .select('id');
 
     if (error) {
       return { success: false, error: 'Failed to update qualifier status. Please try again.' };
+    }
+
+    if (!updatedQualifiers || updatedQualifiers.length !== 1) {
+      return {
+        success: false,
+        error: "Couldn't update this qualifier — it may have been deleted, or you may not have edit access to this team.",
+      };
     }
 
     revalidatePath('/golf/dashboard/qualifiers');
@@ -5561,8 +5578,9 @@ export interface PartialRoundData {
   // Progress tracking
   currentHole: number;
   holesToPlay: number; // 9 or 18
-  // Completed holes data
-  holes: HoleStats[];
+  // Completed-hole slots can briefly be sparse while a recovered round is
+  // reconciling. The server validates then normalizes them before persistence.
+  holes: Array<HoleStats | null | undefined>;
   // In-progress holes with recorded shots
   inProgressShots?: Array<{
     holeNumber: number;
@@ -5591,12 +5609,12 @@ export interface PartialRoundData {
  * the original name so no caller changes.
  */
 async function savePartialRoundImpl(
-  data: PartialRoundData,
+  input: PartialRoundData,
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
   try {
     // Validate input with Zod
-    const validated = partialRoundSchema.safeParse(data);
+    const validated = partialRoundSchema.safeParse(input);
     if (!validated.success) {
       const firstError = validated.error.issues[0];
       const detail = `${firstError?.path.join('.')} — ${firstError?.message}`;
@@ -5604,13 +5622,25 @@ async function savePartialRoundImpl(
         action: 'savePartialRound',
         featureArea: 'shot_tracking',
         extra: {
-          courseName: data.courseName,
-          currentHole: data.currentHole,
+          courseName: input.courseName,
+          currentHole: input.currentHole,
           zodErrors: validated.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`),
         },
       }, 'warning');
       return { success: false, error: `Validation error: ${detail}` };
     }
+
+    // A sparse slot is an implementation detail of a restored/re-edited React
+    // array, never a completed hole. Treat it exactly like the null placeholder
+    // serialized by JSON/beacon saves, so a harmless hole 7 slot cannot reject
+    // the full checkpoint payload (`holes.6 — Invalid input`). Use Zod's
+    // normalized current-hole value too, rather than accidentally continuing
+    // with the pre-validation zero from an older client.
+    const data: PartialRoundData = {
+      ...input,
+      currentHole: validated.data.currentHole ?? 0,
+      holes: validated.data.holes.filter((hole): hole is NonNullable<typeof hole> => hole != null) as unknown as HoleStats[],
+    };
 
     // Bug #3: Clamp currentHole to holesToPlay for 9-hole rounds
     if (data.currentHole && data.holesToPlay) {
@@ -6660,7 +6690,11 @@ async function getNextQualifierRoundNumberImpl(
     // flow could always request maxCompletedRound+1 even past the qualifier's
     // configured round count.
     if (maxCompletedRound >= numRounds) {
-      return { success: false, error: 'You have already completed every round for this qualifier.' };
+      return {
+        success: false,
+        code: 'qualifier_round_limit_reached',
+        error: 'You have already completed every configured round for this qualifier.',
+      };
     }
 
     const nextRoundNumber = maxCompletedRound + 1;
@@ -7046,123 +7080,34 @@ async function updateQualifierEntryStats(
 }
 
 /**
- * Auto-advance a qualifier's lifecycle when a round is submitted (F029/F138).
+ * Start a qualifier when a real player round is submitted.
  *
- * The first completed round flips an 'upcoming' qualifier to 'in_progress'.
- * This is the missing server-side caller that updateQualifierStatus never had:
- * without it the leaderboard's realtime "Live" pill (status === 'in_progress')
- * never illuminated once play actually started.
- *
- * P0 follow-up: an 'in_progress' qualifier now ALSO auto-closes to 'completed'
- * once every entrant has posted at least num_rounds completed rounds, or the
- * qualifier's end_date has passed — a backstop so a qualifier isn't left
- * stuck forever if no coach ever opens the selections workspace. A coach can
- * still close a qualifier early/manually via updateQualifierStatus (the
- * qualifying workspace's "Conclude qualifier" action).
- *
- * Uses the admin client for both status writes below: this is a system
- * transition triggered by a PLAYER's round submission, and
- * golf_qualifiers_update_coach RLS only grants UPDATE to the team's coach —
- * a player-session client would silently no-op (0 rows matched, no error).
- *
- * Best-effort and non-fatal: a failure here must never block the round submit.
+ * A qualifier can become live when play starts, but it must never become
+ * completed because every entrant finished or an arbitrary date passed. Only
+ * a coach's explicit updateQualifierStatus(..., 'completed') closes it.
+ * This transition uses the admin client because the submitting player cannot
+ * update the coach-owned qualifier row under RLS. It is intentionally
+ * best-effort and must not affect the already-committed round submission.
  */
-/**
- * View-time lifecycle reconcile (F029/F138 follow-up). The auto-advance
- * below only runs when a round is SUBMITTED — so an 'in_progress' qualifier
- * whose entrants simply stopped playing was never re-checked after its
- * end_date passed; the deadline backstop was dead in exactly the scenario
- * it exists for. The qualifier detail page calls this before rendering:
- * a no-op unless an objective transition (all entrants done / deadline
- * passed) is due, and best-effort — it never blocks the page.
- */
-async function reconcileQualifierStatusImpl(qualifierId: string): Promise<void> {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    // DS: this is a view-time reconcile reachable by ANY team member who
-    // opens the qualifier detail page (not just coaches), but the write
-    // below goes through the service-role client and previously bypassed
-    // golf_qualifiers_update_coach unconditionally. Restrict the page-view
-    // path to the objective 'completed' transition only (deadline passed /
-    // every entrant done) — the unconditional 'upcoming' -> 'in_progress'
-    // flip stays reserved for the real round-submit trigger at
-    // submitGolfRoundComprehensive, which calls this with
-    // allowUpcomingTransition: true below.
-    await advanceQualifierOnRoundSubmit(supabase, qualifierId, { allowUpcomingTransition: false });
-  } catch {
-    // Best-effort — never block the page render.
-  }
-}
-
-const observedReconcileQualifierStatus = withAdminObserved(
-  'reconcileQualifierStatus',
-  { sport: 'golf', feature: 'qualifiers' },
-  reconcileQualifierStatusImpl,
-);
-
-export async function reconcileQualifierStatus(qualifierId: string): Promise<void> {
-  return observedReconcileQualifierStatus(qualifierId);
-}
-
 async function advanceQualifierOnRoundSubmit(
   supabase: Awaited<ReturnType<typeof createClient>>,
   qualifierId: string,
-  options: { allowUpcomingTransition?: boolean } = { allowUpcomingTransition: true },
 ): Promise<void> {
   const { data: qualifier } = await supabase
     .from('golf_qualifiers')
-    .select('status, num_rounds, end_date')
+    .select('status')
     .eq('id', qualifierId)
     .maybeSingle();
 
-  if (!qualifier) return;
+  if (!qualifier || qualifier.status !== 'upcoming') return;
 
-  const admin = createAdminClient();
-
-  if (qualifier.status === 'upcoming') {
-    // DS: this unconditional service-role write bypasses
-    // golf_qualifiers_update_coach (UPDATE is coach-only under RLS). Only the
-    // real round-submit caller (which just posted a completed round) may
-    // trigger it — the view-time reconcile above passes
-    // allowUpcomingTransition: false so merely opening the qualifier page
-    // can no longer flip 'upcoming' -> 'in_progress' on a coach's behalf.
-    if (!options.allowUpcomingTransition) return;
-    await admin
-      .from('golf_qualifiers')
-      .update({ status: 'in_progress' })
-      .eq('id', qualifierId)
-      // Guard against a concurrent transition (only advance from 'upcoming').
-      .eq('status', 'upcoming');
-    // NO early return: fall through to the completion check. For a
-    // single-entrant, num_rounds=1 qualifier (the DB default — both live
-    // examples in prod are this shape) the submission that starts the
-    // qualifier is also the one that finishes it; returning here would
-    // strand it at 'in_progress' forever, since num_rounds now caps further
-    // submissions and no later call would ever re-run the check.
-  } else if (qualifier.status !== 'in_progress') {
-    return; // completed / cancelled — nothing to advance
-  }
-
-  const { data: entries } = await supabase
-    .from('golf_qualifier_entries')
-    .select('rounds_completed')
-    .eq('qualifier_id', qualifierId);
-
-  const numRounds = qualifier.num_rounds ?? 1;
-  const everyEntrantDone =
-    !!entries && entries.length > 0 && entries.every((e) => (e.rounds_completed ?? 0) >= numRounds);
-  const deadlinePassed = !!qualifier.end_date && new Date(qualifier.end_date) < new Date();
-
-  if (!everyEntrantDone && !deadlinePassed) return;
-
-  await admin
+  await createAdminClient()
     .from('golf_qualifiers')
-    .update({ status: 'completed' })
+    .update({ status: 'in_progress' })
     .eq('id', qualifierId)
-    // Guard against a concurrent transition (only close from 'in_progress').
-    .eq('status', 'in_progress');
+    // A concurrent coach decision wins; never reopen a manually completed
+    // qualifier and never let an ordinary page view alter its lifecycle.
+    .eq('status', 'upcoming');
 }
 
 // ============================================================================
@@ -7618,7 +7563,7 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
       .from('golf_shots')
       .select('id, round_id, hole_number')
       .eq('id', shotId)
-      .single();
+      .maybeSingle();
 
     if (shotError || !shot) {
       // The caller may still hold a locally persisted ID after another tab,
@@ -7776,10 +7721,13 @@ async function updateShotImpl(
       .from('golf_shots')
       .select('id, round_id')
       .eq('id', shotId)
-      .single();
+      .maybeSingle();
 
     if (shotError || !shot) {
-      return { success: false, error: 'Shot not found' };
+      // A locally retained ID can legitimately be absent after a successful
+      // save from another tab/device. Keep the absence RLS-safe and give the
+      // editor the same deterministic reconciliation contract as Undo.
+      return { success: false, error: 'Shot not found', code: 'shot_not_found' };
     }
 
     // Verify the round belongs to this player and is still in progress

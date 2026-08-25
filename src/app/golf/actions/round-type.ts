@@ -72,6 +72,26 @@ import {
   type UpdateRoundTypeResult,
 } from '@/lib/golf/round-type-options';
 
+/**
+ * This RPC is introduced by a migration that can arrive before the generated
+ * Supabase types are refreshed. Keep its narrow contract here rather than
+ * weakening the entire client with an `any` cast.
+ */
+type ReclassifyRoundRpcClient = {
+  rpc: (
+    fn: 'reclassify_golf_round',
+    args: {
+      p_round_id: string;
+      p_round_type: string;
+      p_qualifier_id: string | null;
+      p_qualifier_round_number: number | null;
+    },
+  ) => Promise<{
+    data: string | null;
+    error: { message: string; code?: string | null } | null;
+  }>;
+};
+
 
 async function updateRoundTypeImpl(
   input: UpdateRoundTypeInput,
@@ -253,13 +273,24 @@ async function updateRoundTypeImpl(
       update.qualifier_round_number = null;
     }
 
-    const { error: updateError } = await supabase
-      .from('golf_rounds')
-      .update(update)
-      .eq('id', roundId);
+    // Completed scores are immutable. Classification is deliberately a
+    // separate, capability-checked write in Postgres, so correcting a
+    // qualifier label cannot be rejected by the completed-round lifecycle
+    // guard (or accidentally edit any score fields).
+    const lifecycleClient = supabase as unknown as ReclassifyRoundRpcClient;
+    const { data: updatedRoundId, error: updateError } = await lifecycleClient
+      .rpc('reclassify_golf_round', {
+        p_round_id: roundId,
+        p_round_type: update.round_type,
+        p_qualifier_id: update.qualifier_id ?? null,
+        p_qualifier_round_number: update.qualifier_round_number ?? null,
+      });
 
     if (updateError) {
       return { success: false, error: describeError(updateError) };
+    }
+    if (!updatedRoundId) {
+      return { success: false, error: 'Round not found or could not be updated.' };
     }
 
     revalidatePath(`/golf/dashboard/rounds/${roundId}`);

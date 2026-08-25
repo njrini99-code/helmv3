@@ -82,13 +82,14 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
-import { savePartialRound } from '../golf';
+import { deleteShot, savePartialRound, updateShot } from '../golf';
 
 type Row = Record<string, unknown>;
 interface SeedTables extends Record<string, Row[]> {
   golf_players: Row[];
   golf_team_members: Row[];
   golf_rounds: Row[];
+  golf_shots: Row[];
 }
 
 const COURSE_A = '11111111-1111-4111-8111-111111111111';
@@ -101,6 +102,7 @@ function baseTables(): SeedTables {
       { id: 'm-1', team_id: 'team-1', player_id: 'player-1', status: 'active' },
     ],
     golf_rounds: [],
+    golf_shots: [],
   };
 }
 
@@ -183,6 +185,99 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
     if (result.success) {
       expect(result.data.roundId).toBe('round-same');
     }
+  });
+
+  it('normalizes sparse recovered-hole slots before checkpoint validation', async () => {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-sparse',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_A,
+      course_name: 'Recovered Course',
+      round_date: '2026-07-10',
+      status: 'in_progress',
+    });
+    let rpcArgs: Record<string, unknown> | undefined;
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: {
+        save_partial_round_atomic: async (args) => {
+          rpcArgs = args as Record<string, unknown>;
+          return { data: { success: true, round_id: 'round-sparse' }, error: null };
+        },
+      },
+    });
+    adminFake = fake;
+    const restoredHoles = new Array(7) as Array<undefined>;
+
+    const result = await savePartialRound({
+      courseName: 'Recovered Course',
+      courseId: COURSE_A,
+      roundType: 'practice',
+      roundDate: '2026-07-10',
+      currentHole: 7,
+      holesToPlay: 18,
+      holes: restoredHoles,
+    }, 'round-sparse');
+
+    expect(result.success).toBe(true);
+    // The undefined array slot that previously surfaced as
+    // "holes.6 — Invalid input" cannot enter the persisted checkpoint.
+    expect(rpcArgs?.p_holes).toEqual([]);
+  });
+});
+
+describe('shot actions — already absent shot reconciliation', () => {
+  function forceAbsentShotLookup(client: FakeSupabase) {
+    const originalFrom = client.from.bind(client);
+    let maybeSingleCalls = 0;
+
+    client.from = ((table: string) => {
+      const api = originalFrom(table);
+      if (table !== 'golf_shots') return api;
+      return {
+        ...api,
+        select: () => {
+          const lookup: Record<string, unknown> = {};
+          lookup.eq = () => lookup;
+          lookup.maybeSingle = async () => {
+            maybeSingleCalls += 1;
+            return { data: null, error: null };
+          };
+          lookup.single = async () => {
+            throw new Error('stale-shot lookup must use maybeSingle');
+          };
+          return lookup;
+        },
+      };
+    }) as typeof client.from;
+
+    return () => maybeSingleCalls;
+  }
+
+  it('returns a deterministic code from delete without generating a PostgREST single-row error', async () => {
+    seedAs('u-p1', baseTables());
+    const getMaybeSingleCalls = forceAbsentShotLookup(fake);
+
+    const result = await deleteShot('33333333-3333-4333-8333-333333333333');
+
+    expect(result).toEqual({ success: false, error: 'Shot not found', code: 'shot_not_found' });
+    expect(getMaybeSingleCalls()).toBe(1);
+  });
+
+  it('gives Edit the same deterministic stale-shot contract', async () => {
+    seedAs('u-p1', baseTables());
+    const getMaybeSingleCalls = forceAbsentShotLookup(fake);
+
+    const result = await updateShot(
+      '33333333-3333-4333-8333-333333333333',
+      { club_type: 'driver' },
+    );
+
+    expect(result).toEqual({ success: false, error: 'Shot not found', code: 'shot_not_found' });
+    expect(getMaybeSingleCalls()).toBe(1);
   });
 });
 

@@ -11,7 +11,6 @@
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 
 const EMERGENCY_SAVE_PREFIX = 'golf_emergency_save';
-const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 const NON_RECOVERABLE_SUBMIT_ERROR_PATTERNS = [
   'already been completed',
   'already been submitted',
@@ -74,8 +73,10 @@ export function emergencySave(data: EmergencySaveData): boolean {
   } catch {
     // localStorage may be full or unavailable (private browsing) — try compacting
     try {
-      // Remove old emergency saves to free space, then retry
-      cleanupOldEmergencySaves();
+      // Preserve every valid recovery artifact.  If storage contains
+      // malformed leftovers, removing only those may make room without
+      // silently expiring a player's unfinished round.
+      cleanupMalformedEmergencySaves();
       const key = data.roundId
         ? `${EMERGENCY_SAVE_PREFIX}_${data.roundId}`
         : `${EMERGENCY_SAVE_PREFIX}_new`;
@@ -98,10 +99,7 @@ export function loadEmergencySave(roundId?: string | null): EmergencySaveData | 
       const data = localStorage.getItem(`${EMERGENCY_SAVE_PREFIX}_${roundId}`);
       if (data) {
         const parsed = JSON.parse(data) as EmergencySaveData;
-        if (Date.now() - parsed.timestamp < MAX_AGE_MS) {
-          return parsed;
-        }
-        localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_${roundId}`);
+        return parsed;
       }
       return null;
     }
@@ -110,10 +108,7 @@ export function loadEmergencySave(roundId?: string | null): EmergencySaveData | 
     const newData = localStorage.getItem(`${EMERGENCY_SAVE_PREFIX}_new`);
     if (newData) {
       const parsed = JSON.parse(newData) as EmergencySaveData;
-      if (Date.now() - parsed.timestamp < MAX_AGE_MS) {
-        return parsed;
-      }
-      localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_new`);
+      return parsed;
     }
 
     return null;
@@ -159,9 +154,10 @@ export function isRecoverableRoundSubmitError(message?: string): boolean {
 }
 
 /**
- * Remove emergency saves older than MAX_AGE_MS.
+ * Remove only malformed emergency-save records. Valid data remains available
+ * until explicit discard or confirmed completion, regardless of age.
  */
-function cleanupOldEmergencySaves(): void {
+function cleanupMalformedEmergencySaves(): void {
   try {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -170,10 +166,7 @@ function cleanupOldEmergencySaves(): void {
         try {
           const raw = localStorage.getItem(key);
           if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Date.now() - parsed.timestamp > MAX_AGE_MS) {
-              keysToRemove.push(key);
-            }
+            JSON.parse(raw);
           }
         } catch {
           keysToRemove.push(key);

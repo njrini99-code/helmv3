@@ -892,10 +892,14 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                   <p className="font-fw-sans text-body-sm text-text-tertiary">Loading your qualifiers…</p>
                 ) : qualifierError ? (
                   // "no active qualifiers" is an empty-state (quiet info, no retry);
-                  // anything else is a genuine fetch failure → InlineNotice with an
-                  // inline "Try again" so the player never has to refresh the page.
+                  // a capacity/coach-closure result is a correct player-facing
+                  // answer (not a fetch failure); anything else is retriable.
                   /no active qualifiers/i.test(qualifierError) ? (
                     <p className="font-fw-sans text-body-sm text-text-tertiary">{qualifierError}</p>
+                  ) : /completed every configured round|closed by the coach|only has \d+ round/i.test(qualifierError) ? (
+                    <InlineNotice tone="warning" title="This qualifier is not available for a new round">
+                      {qualifierError}
+                    </InlineNotice>
                   ) : (
                     <InlineNotice
                       tone="danger"

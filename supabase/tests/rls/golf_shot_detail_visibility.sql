@@ -127,8 +127,11 @@ BEGIN
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.golf_rounds (id, player_id, team_id, round_date, status) VALUES
-    (v_round,   v_player, v_team_x, CURRENT_DATE, 'completed'),
-    (v_round_y, v_player, v_team_y, CURRENT_DATE, 'completed')
+    -- This is a write-visibility test, so its fixtures must stay editable.
+    -- Completed score history is deliberately immutable under the lifecycle
+    -- contract and is covered by golf_round_lifecycle_contract.sql.
+    (v_round,   v_player, v_team_x, CURRENT_DATE, 'in_progress'),
+    (v_round_y, v_player, v_team_y, CURRENT_DATE, 'in_progress')
   ON CONFLICT DO NOTHING;
 
   -- golf_holes fires golf_holes_recompute_round_totals_fn ->
@@ -162,6 +165,7 @@ BEGIN
   INSERT INTO public.approach_miss_details (shot_id, miss_direction) VALUES
     (v_shot_appr, 'long')
   ON CONFLICT DO NOTHING;
+
 END $$;
 
 -- ----------------------------------------------------------------------------

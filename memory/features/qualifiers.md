@@ -75,6 +75,9 @@ Leaderboard reads qualifier
 - Leaderboard aggregation must handle ties and incomplete entries consistently.
 - Round submission is the source of truth for qualifier progress; do not manually drift entry stats away from linked rounds.
 - Qualifier events can feed calendar/team surfaces, so date/course changes can have downstream UI impact.
+- Correcting an already completed round's type or qualifier linkage must use
+  `reclassify_golf_round`; a direct `golf_rounds` update is not a permitted
+  way to change completed score history.
 
 ## UI Contract
 

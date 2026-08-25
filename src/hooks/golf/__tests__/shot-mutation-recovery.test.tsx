@@ -42,6 +42,29 @@ function makeState(shot: ShotRecord): ShotTrackingState {
   } as ShotTrackingState;
 }
 
+function makeEditingState(shot: ShotRecord): ShotTrackingState {
+  return {
+    ...makeState(shot),
+    editFormData: {
+      clubType: shot.clubType,
+      lieBefore: shot.lieBefore,
+      result: shot.result,
+      distanceToHoleBefore: String(shot.distanceToHoleBefore),
+      distanceUnitBefore: shot.distanceUnitBefore,
+      distanceToHoleAfter: String(shot.distanceToHoleAfter),
+      distanceUnitAfter: shot.distanceUnitAfter,
+      missDirection: null,
+      puttBreak: null,
+      puttSlope: null,
+      isPenalty: false,
+      penaltyType: null,
+      puttMissTags: [],
+      approachMissDirection: null,
+      approachMissLieType: undefined,
+    },
+  } as ShotTrackingState;
+}
+
 function useDeleteHandlers(state: ShotTrackingState, dispatch: React.Dispatch<ShotAction>) {
   const shotMutationInFlightRef = useRef(false);
   const common = {
@@ -58,6 +81,19 @@ function useDeleteHandlers(state: ShotTrackingState, dispatch: React.Dispatch<Sh
   return {
     undo: useUndoManager(common as never).handleUndoLastShot,
     deleteFromEditor: useEditShotModal(common as never).handleDeleteShot,
+  };
+}
+
+function useEditHandlers(state: ShotTrackingState, dispatch: React.Dispatch<ShotAction>) {
+  return {
+    save: useEditShotModal({
+      state,
+      dispatch,
+      currentHole: {} as RoundHole,
+      currentHoleIndex: 0,
+      calculateHoleStats: vi.fn(),
+      shotMutationInFlightRef: useRef(false),
+    } as never).handleSaveEditedShot,
   };
 }
 
@@ -109,5 +145,28 @@ describe('shot mutation recovery', () => {
       payload: { newHistory: [] },
     });
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'UNDO_FAIL' }));
+  });
+
+  it('reconciles an already-absent server shot from Edit without retrying the stale ID', async () => {
+    const shot = makeShot();
+    const dispatch = vi.fn<React.Dispatch<ShotAction>>();
+    actionMocks.updateShot.mockResolvedValueOnce({
+      success: false,
+      error: 'Shot not found',
+      code: 'shot_not_found',
+    });
+
+    const { result } = renderHook(() => useEditHandlers(makeEditingState(shot), dispatch));
+
+    await act(async () => {
+      await result.current.save();
+    });
+
+    expect(actionMocks.updateShot).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'DELETE_COMPLETE',
+      payload: { newHistory: [] },
+    });
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'EDIT_SAVE_ERROR' }));
   });
 });

@@ -31,7 +31,7 @@ const state = {
   qualifier: { id: 'qual-1', status: 'in_progress', num_rounds: 3 } as Record<string, unknown> | null,
   entry: { id: 'entry-1' } as { id: string } | null,
   clash: null as { id: string } | null,
-  /** What the action actually wrote. The point of the whole file. */
+  /** What the protected reclassification RPC actually received. */
   written: null as Record<string, unknown> | null,
   updateError: null as { message: string } | null,
   /**
@@ -69,11 +69,6 @@ function table(name: string) {
     }
   });
 
-  chain.update = vi.fn((payload: Record<string, unknown>) => {
-    state.written = payload;
-    return { eq: vi.fn(async () => ({ error: state.updateError })) };
-  });
-
   return chain;
 }
 
@@ -81,6 +76,13 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: vi.fn(async () => ({ data: { user: state.user }, error: null })) },
     from: vi.fn((name: string) => table(name)),
+    rpc: vi.fn(async (name: string, payload: Record<string, unknown>) => {
+      if (name === 'reclassify_golf_round') {
+        state.written = payload;
+        return { data: state.updateError ? null : 'round-1', error: state.updateError };
+      }
+      return { data: null, error: { message: `Unexpected RPC: ${name}` } };
+    }),
   })),
 }));
 
@@ -118,11 +120,13 @@ describe('updateRoundType — the coach-reported case', () => {
     });
 
     expect(res.success).toBe(true);
-    // Both columns, together. Type alone would be the silent failure.
+    // Both columns are sent together through the protected RPC. Type alone
+    // would be the silent failure, and a direct update would violate the
+    // completed-round lifecycle guard.
     expect(state.written).toMatchObject({
-      round_type: 'qualifier',
-      qualifier_id: 'qual-1',
-      qualifier_round_number: 2,
+      p_round_type: 'qualifier',
+      p_qualifier_id: 'qual-1',
+      p_qualifier_round_number: 2,
     });
   });
 
@@ -142,9 +146,9 @@ describe('updateRoundType — the coach-reported case', () => {
 
     expect(res.success).toBe(true);
     expect(state.written).toMatchObject({
-      round_type: 'practice',
-      qualifier_id: null,
-      qualifier_round_number: null,
+      p_round_type: 'practice',
+      p_qualifier_id: null,
+      p_qualifier_round_number: null,
     });
   });
 });

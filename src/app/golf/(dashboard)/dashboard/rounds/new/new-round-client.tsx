@@ -679,11 +679,20 @@ export default function NewRoundClient() {
       getNextQualifierRoundNumber(selectedQualifierId)
         .then(result => {
           if (result.success && result.data) {
+            setQualifierError(null);
             setAvailableRounds(result.data.availableRounds);
             // Auto-select the next round number
             if (result.data.nextRoundNumber > 0) {
               setSelectedRoundNumber(result.data.nextRoundNumber);
             }
+          } else {
+            // The server is the authority for capacity and coach closure.
+            // Clear a stale selection rather than silently leaving a player
+            // on an impossible round number.
+            setAvailableRounds([]);
+            setSelectedRoundNumber(null);
+            const reason = 'error' in result ? result.error : undefined;
+            setQualifierError(reason || 'This qualifier is not available for a new round.');
           }
         })
         .catch((err: Error) => {
@@ -691,6 +700,9 @@ export default function NewRoundClient() {
             window.location.reload();
             return;
           }
+          setAvailableRounds([]);
+          setSelectedRoundNumber(null);
+          setQualifierError('Could not verify this qualifier right now. Please try again.');
         });
     } else {
       setAvailableRounds([]);

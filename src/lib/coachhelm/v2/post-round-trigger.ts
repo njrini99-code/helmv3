@@ -50,6 +50,26 @@ type FailureCode =
   | 'engine_error';
 
 /**
+ * This protected RPC is intentionally narrower than the generated client
+ * during the migration/type-generation gap. Keeping the exact wire contract
+ * here prevents a broad `any` escape hatch around the admin client.
+ */
+type TerminalStateRpcClient = {
+  rpc: (
+    fn: 'record_round_coachhelm_terminal_state',
+    args: {
+      p_round_id: string;
+      p_analyzed_at: string | null;
+      p_failed_at: string | null;
+      p_failure_reason: string | null;
+    },
+  ) => Promise<{
+    data: string | null;
+    error: { message: string; code?: string | null } | null;
+  }>;
+};
+
+/**
  * Partial-success marker (P0-04). When the engine succeeded OVERALL but one or
  * more mandatory generators threw, the round IS analyzed but is NOT clean — we
  * stamp `coachhelm_analyzed_at` (so the safety-net cron stops re-running it) AND
@@ -85,8 +105,10 @@ function sanitizeFailureReason(reason: string): FailureCode {
 }
 
 /**
- * Helper: write terminal state and report any RLS / row-count failures.
- * Defeats the original PR #19 hardening if we silently lose the write.
+ * Helper: write terminal state through the completed-round lifecycle RPC and
+ * report any failures. Direct updates are intentionally rejected after a
+ * round is completed; this protected RPC is the one capability granted to
+ * CoachHelm's derived terminal markers.
  */
 async function writeTerminalState(
   admin: SupabaseClient,
@@ -98,11 +120,16 @@ async function writeTerminalState(
   // Supabase SDK versions drop the count when a chained .select() isn't
   // present or when the role's RLS returns empty without an error. Reading
   // data.length is the authoritative signal that a row was actually written.
-  const { data, error } = await admin
-    .from('golf_rounds')
-    .update(patch)
-    .eq('id', roundId)
-    .select('id');
+  const lifecycleClient = admin as unknown as TerminalStateRpcClient;
+  const { data, error } = await lifecycleClient.rpc(
+    'record_round_coachhelm_terminal_state',
+    {
+      p_round_id: roundId,
+      p_analyzed_at: patch.coachhelm_analyzed_at ?? null,
+      p_failed_at: patch.coachhelm_failed_at ?? null,
+      p_failure_reason: patch.coachhelm_failure_reason ?? null,
+    },
+  );
 
   if (error) {
     await logServerError(
@@ -115,9 +142,9 @@ async function writeTerminalState(
     );
     return;
   }
-  if (!data || data.length === 0) {
+  if (!data) {
     await logServerError(
-      `[postRoundTrigger] terminal-state write affected 0 rows (RLS or missing round)`,
+      `[postRoundTrigger] terminal-state RPC affected no round (missing or not completed)`,
       {
         action: contextAction,
         featureArea: 'coachhelm',

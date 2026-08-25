@@ -51,7 +51,6 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 
 // Emergency save localStorage key prefix (must match emergency-save.ts)
 const EMERGENCY_SAVE_PREFIX = 'golf_emergency_save';
-const EMERGENCY_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 type StorageSource = 'legacy-indexeddb' | 'modern-indexeddb' | 'localstorage';
 
@@ -185,7 +184,7 @@ async function deleteLegacyOfflineRoundById(roundId: string): Promise<void> {
  * This is a fallback for when IndexedDB data is unavailable (e.g. cleared by browser,
  * different storage partition) but the synchronous localStorage emergency save survived.
  */
-function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
+export function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
   const results: OfflineRoundData[] = [];
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -195,8 +194,6 @@ function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
         const raw = localStorage.getItem(key);
         if (!raw) continue;
         const parsed = JSON.parse(raw);
-        // Skip expired saves
-        if (Date.now() - parsed.timestamp > EMERGENCY_MAX_AGE_MS) continue;
         // Must have completed hole stats with actual scores
         if (!parsed.completedHoleStats || !Array.isArray(parsed.completedHoleStats)) continue;
         const completedCount = parsed.completedHoleStats.filter(

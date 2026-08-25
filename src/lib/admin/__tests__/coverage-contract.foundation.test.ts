@@ -270,10 +270,10 @@ describe('global tripwire', () => {
     // 425 - 1 - 1 - 4 = 419.
     //
     // 421 as of the 2026-07-10 feature-flow sweep (+2): golf.ts gains
-    // `updateGolfQualifierDetails` (the previously-missing qualifier edit
-    // flow) and `reconcileQualifierStatus` (view-time lifecycle self-heal on
-    // the qualifier detail page) — both withAdminObserved-wrapped and listed
-    // in FEATURE_REGISTRY's qualifiers manifest.
+    // `updateGolfQualifierDetails` and the now-retired
+    // `reconcileQualifierStatus`. The latter was removed on 2026-08-25 because
+    // a view must not close a coach-owned qualifier based on a date or entrant
+    // count; the live scanner total falls by one with that public action.
     //
     // 422 as of the 2026-07-17 course-library-owner-gate fix (#913, +1):
     // course-library.ts (already 'ALL'-mapped to `course_library`) gains
@@ -348,6 +348,6 @@ describe('global tripwire', () => {
     //   files in FEATURE_REGISTRY, so it needed a manifest edit too — added
     //   to coachhelm_ai_engine's array alongside its siblings analyzePlayer/
     //   generateTournamentPrep/getPlayerPatterns (see feature-registry.ts).
-    expect(total).toBe(447);
+    expect(total).toBe(446);
   });
 });

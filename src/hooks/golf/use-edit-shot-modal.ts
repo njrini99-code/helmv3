@@ -141,6 +141,16 @@ export function useEditShotModal({
 
         const result = await updateShot(editingShot.id, updateData);
         if (!result.success) {
+          if (result.code === 'shot_not_found') {
+            // The authoritative server state already removed this shot. Never
+            // retry an edit against a stale ID or auto-save it back into the
+            // round; reconcile just this local reference and close the editor.
+            const newHistory = stateRef.current.shotHistory
+              .filter((shot) => shot.id !== editingShot.id)
+              .map((shot, index) => ({ ...shot, shotNumber: index + 1 }));
+            dispatch({ type: 'DELETE_COMPLETE', payload: { newHistory } });
+            return;
+          }
           dispatch({ type: 'EDIT_SAVE_ERROR', payload: result.error || 'Failed to update shot' });
           return;
         }

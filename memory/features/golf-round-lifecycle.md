@@ -67,9 +67,18 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Do not use DELETE-then-INSERT for save, submit, or sync paths. Use idempotent upserts or a safe stage-and-swap pattern.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
+- Valid local emergency saves remain recoverable until an explicit discard or
+  confirmed completion; recovery data must not expire merely because time has
+  passed.
 - Round review and CoachHelm triggers must use committed round data, not stale draft state.
 - Cache invalidation must include player-facing and coach-facing views that reflect the round.
 - Score, hole, shot, lie, and strokes-gained calculations must stay consistent with `docs/v3-research-golf-domain.md`.
+- Completed score history is immutable. Any post-submit derived write must use
+  its explicit protected database capability: strokes gained through
+  `recalculate_round_strokes_gained`, CoachHelm markers through
+  `record_round_coachhelm_terminal_state`, and recap text through
+  `save_round_ai_recap`. App code must never update a completed
+  `golf_rounds` row directly.
 
 ## UI Contract
 
@@ -89,12 +98,17 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Hook-order or hydration issues in round-entry and review screens.
 - Schema replay drift in Supabase migrations touching round/shot/review tables.
 - Stats cache mismatch after edits or recomputation.
+- Lifecycle migrations that introduce a completed-round guard can strand older
+  direct writers unless their compatible RPC path and regression tests ship in
+  the same release.
 
 ## Tests To Prefer
 
 - Unit tests for schemas and calculation helpers.
 - Action tests for draft, submit, feedback, and revalidation behavior.
 - RLS tests for round and shot ownership.
+- Regression coverage for every explicit completed-round write capability and
+  a migration replay/RLS suite for its grants and security boundary.
 - Playwright smoke for new round, continue round, submit/review, and mobile recovery.
 
 ## Related Docs
