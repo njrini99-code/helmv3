@@ -35,84 +35,39 @@ runtimes. This single fact drives the whole design:
 | Runtime | Sentry OTel propagator | So propagation comes from | supabase-js `tracePropagation` |
 |---|---|---|---|
 | Node (server actions, RSC, routes) | Yes — `@sentry/node` `sdk/initOtel.js` | Sentry propagator, read by supabase-js | **Enabled** |
-| Edge (`src/proxy.ts` → middleware) | Yes — `@sentry/vercel-edge` `setGlobalPropagator(new SentryPropagator())` | same | **Enabled — co-location unverified, see below** |
+| Middleware/proxy (`src/proxy.ts`) — runs as Node.js on Vercel, confirmed via live runtime logs, not the legacy Edge runtime | Yes — `@sentry/node` `sdk/initOtel.js` | Sentry propagator, read by supabase-js | **Enabled — confirmed same runtime as everything else, see below** |
 | Browser | **No** — `@sentry/browser` 10.68.0 contains zero OpenTelemetry references | Sentry's own fetch/XHR instrumentation | **Deliberately off** |
 
-### Open risk: does the Edge `register()` actually share an isolate with middleware on Vercel?
+### RESOLVED: does the middleware/proxy runtime share instrumentation.ts's tracing setup on Vercel?
 
-`import '@supabase/supabase-js/tracing'` sits in `instrumentation.ts`, which is a
-webpack entry **separate from** `src/proxy.ts` / `middleware.ts`. Checked in a
-real local build (`next build --webpack`, no `VERCEL` env — this repo's local
-default): `.next/server/middleware.js` contains supabase-js's *reader* logic
-(the `traceContextExtractor` symbol lookup, the warning strings) because that
-ships as part of the base package, but **not** the tracing runtime's own code
-(`propagation.inject`, from the `/tracing` subpath) — that only appears in
-`.next/server/instrumentation.js`, a wholly separate output file.
+Verified against a real preview deploy (dpl_CDDDPVjnxECMEQrLnHPaeQv2rYTX,
+2026-08-25), not inferred. Vercel's runtime logs for actual requests through
+`src/proxy.ts` (`GET /golf/login`, the `/api/inngest` preflight) both show
+source `serverless-middleware` — Vercel's own log source enum distinguishes
+this from `edge-middleware`. Cross-checked twice with different `source`
+filters on the query, same result both times.
 
-That specific build is the **self-hosted** (`next start`) wiring, where a single
-Node.js host process calls every runtime's `register()` once at boot through
-`ensureInstrumentationRegistered` (`instrumentation-globals.external.js`) before
-serving anything — module globals are then shared process-wide, so it would
-work there. This repo does not deploy that way: `vercel.json` and CLAUDE.md
-both establish Vercel as the actual target, and Vercel's Build Output API
-bundles Edge Functions (middleware included) through its own pipeline, not
-through `next build --webpack`.
+This matches Vercel's current platform behavior for Next.js Proxy/Middleware:
+it runs on the Node.js/Fluid Compute runtime, not the legacy V8-isolate Edge
+Runtime, unless a route explicitly opts into `runtime = 'edge'` (this repo's
+`src/proxy.ts` does not). That resolves the concern this section used to raise
+speculatively: there is no separate Edge isolate for `import
+'@supabase/supabase-js/tracing'` to fail to reach — middleware requests run in
+the same Node.js instrumentation graph as everything else, registered via
+`instrumentation.ts`'s unconditional top-level import.
 
-Whether Vercel's pipeline co-locates `instrumentation.ts`'s edge `register()`
-with the middleware bundle in the **same** edge isolate is the load-bearing
-question, and it is **unverified** — this environment has no linked Vercel
-project/token to produce that exact artifact. Two things temper the risk
-without resolving it:
+No crash, no runtime error, and no `console.warn` about a missing tracing
+runtime appeared in the logs for either request. `get_runtime_errors` over the
+same window returned zero errors.
 
-- This is the **existing, unmodified** architecture, not something this change
-  introduced. `Sentry.wrapMiddlewareWithSentry` (from `next.config.mjs`'s
-  `withSentryConfig`) already assumes Sentry is initialized before it runs —
-  if `register()` genuinely never ran for middleware requests, the pre-existing
-  edge `Sentry.init()` block (unchanged in shape here) would never have taken
-  effect either, which is Sentry's own canonical documented pattern for Next.js
-  Edge middleware, not a Helm-specific gamble.
-- `supabase-js`'s failure mode here is a **console.warn, not a crash** — if the
-  runtime genuinely isn't loaded in the middleware isolate, the proxy Supabase
-  client keeps working exactly as before; it simply doesn't attach
-  `traceparent`, and the warning is a directly observable symptom.
-
-**Verification step for the first real deploy:** in a preview, trigger a
-request through `src/proxy.ts` (any authenticated page load) and check whether
-its Supabase API Gateway log carries a `trace_id`. If not, and the browser
-`console.warn` about a missing tracing runtime appears in Vercel's Edge
-Function logs, `import '@supabase/supabase-js/tracing'` needs to move directly
-into `src/proxy.ts` (or `middleware.ts`) as a second, redundant import — cheap
-insurance, not yet added because it should be justified by an observed gap
-rather than added speculatively to a file that otherwise has zero other
-Sentry/tracing concerns.
-
-Enabling `tracePropagation` in the browser would inject nothing *and* emit a
-one-time `console.warn` that `consoleLoggingIntegration` would forward to Sentry
-as noise. The browser still sends `traceparent` — via `propagateTraceparent` +
-`tracePropagationTargets`.
-
-Supabase's own guide corroborates the approach: vendor SDKs "inject only their
-proprietary headers by default and need extra configuration to also emit the
-standard `traceparent` header." `propagateTraceparent: true` is that
-configuration.
-
-### The five instrumented client factories
-
-Every Supabase client in the repo routes through one helper, so the privacy
-decision is made once:
-
-- `src/lib/supabase/client.ts` — browser
-- `src/lib/supabase/server.ts` — SSR / server actions
-- `src/lib/supabase/admin.ts` — service role
-- `src/lib/supabase/middleware.ts` — proxy/edge
-- `src/lib/auth/supabase-rate-limit.ts` — service role, rate limiter
-
-### Sampling (unchanged)
-
-`tracesSampleRate` is still **0.2 in production, 0.1 in dev**, on all runtimes.
-This change did not touch it. See §8 for why, and for the safe way to raise it.
-
----
+**Still not directly observed in this pass:** the `traceparent` header on an
+actual outbound Supabase request from middleware, and a matching `trace_id` in
+a Supabase API Gateway log line — that needs a real authenticated
+round-tracking flow (login, add shots, autosave, submit), which needs a real
+test account and browser session neither available in this environment. The
+runtime-log evidence above answers the *architecture* question (do these two
+things share a runtime); it does not replace the end-to-end trace-id match in
+§17 of the original brief, which remains the one live check still owed.
 
 ## 3. Privacy rules
 
@@ -332,16 +287,20 @@ against Logs Ingest.
 | APIs exist and are exported | **Verified** against installed packages |
 | `sendOperationData: false` suppresses query/body | **Verified** by reading the SDK source |
 | Guard skips plain-object mocks | **Verified** by test |
-| typecheck / full unit suite (10,942 tests) / production build | **Verified green** |
-| Spans appear in a real Sentry trace | **NOT verified** — needs a deploy |
-| `trace_id` appears in a real Supabase API log | **NOT verified** — needs a deploy |
-| Edge `register()` shares an isolate with `middleware.js` on Vercel | **NOT verified** — see §2's open-risk note; local build uses a different wiring path than Vercel's |
-| Replay ↔ trace linkage | **NOT verified** — needs a deploy |
+| typecheck / full unit suite (1180 files, 10,962 tests) / production build | **Verified green** |
+| `roundStage()` wired into the real submit + autosave paths, canonical outcome taxonomy | **Verified** — 20 tests lock the taxonomy; see §10 below |
+| `trace_id` correlation into Golf Tracer / admin_events | **Verified** — `server-error-logger.ts` captures `Sentry.getActiveSpan()?.spanContext().traceId`, defensively; full suite confirms it doesn't break the 21 tests that mock `@sentry/nextjs` |
+| Preview deploy succeeds on Vercel, app boots, real pages render | **Verified** — `dpl_CDDDPVjnxECMEQrLnHPaeQv2rYTX`, `GET /golf/login` → 200, correct title, zero runtime errors in `get_runtime_errors` |
+| Middleware/proxy runs on the same Node.js runtime as everything else (not a separate Edge isolate) | **Verified** — live runtime logs, source `serverless-middleware`, not `edge-middleware` |
+| Spans appear in a real Sentry trace | **NOT verified** — needs an authenticated round-submit click-through, which needs a real test account + browser session not available in this pass |
+| `trace_id` appears in a real Supabase API log | **NOT verified** — same reason |
+| Replay ↔ trace linkage | **NOT verified** — same reason |
 | Profiling attaches in the Vercel runtime | **NOT verified** |
-| RPC stage spans (§10 of the original brief: `validate_input`, `resolve_player`, `submit_round_atomic`, …) | **NOT implemented.** `src/lib/observability/spans.ts` defines the vocabulary and a `roundStage()` helper; nothing calls it yet. `submitGolfRoundComprehensive` carries no custom stage spans today — only the automatic `db` spans from the Sentry Supabase integration |
-| Breadcrumbs for shot entry (§11 of the original brief) | **NOT implemented** |
+| Breadcrumbs for shot entry (§3 of the census brief) | **NOT implemented** — deferred; see the session report |
 
-The live half (§34/§35 of the brief: one controlled round submission in a
-preview environment, then matching the Sentry trace id to a Supabase API log
-line) is **not done**. It requires a deploy, and deploys here are an owner-run,
-budgeted action. That verification is the last step and it is still owed.
+The live half that's left (§34/§35 of the original brief and §17's mandatory
+check: one controlled, AUTHENTICATED round submission in the preview, then
+matching the Sentry trace id to a Supabase API log line) still needs a real
+test account and a browser session — the preview itself is up and verified
+reachable, error-free, and running the right runtime; what's left is clicking
+through it as a real user.
