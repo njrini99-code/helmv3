@@ -20,9 +20,23 @@ import { logServerError } from '@/lib/server-error-logger';
  *   3. Add to Vercel env (Preview + Production)
  *   4. Deploy — Inngest auto-syncs functions from the production URL.
  */
+/**
+ * The canonical production domain is deliberately code-owned.
+ *
+ * `INNGEST_SERVE_ORIGIN` otherwise overrides the URL registered with Inngest.
+ * A stale preview/deployment URL there makes Inngest call an old deployment,
+ * whose credentials can legitimately differ from the live app. That produces
+ * the misleading loop of rotating valid keys while signature validation keeps
+ * failing. Preview and local environments retain normal request-based origin
+ * discovery.
+ */
+const productionServeOrigin =
+  process.env.VERCEL_ENV === 'production' ? 'https://helmsportslabs.com' : undefined;
+
 const handlers = serve({
   client: inngest,
   functions,
+  ...(productionServeOrigin ? { serveOrigin: productionServeOrigin } : {}),
 });
 
 /**

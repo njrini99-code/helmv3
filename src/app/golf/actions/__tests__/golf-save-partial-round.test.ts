@@ -283,6 +283,46 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
       expect(result.data.roundId).toBe('round-same');
     }
   });
+
+  it('does not invent a qualifier slot when the completed-round read fails', async () => {
+    const tables = baseTables();
+    seedAs('u-p1', tables);
+
+    const originalFrom = fake.from.bind(fake);
+    fake.from = ((table: string) => {
+      const api = originalFrom(table);
+      if (table !== 'golf_rounds') return api;
+
+      const unavailable = { data: null, error: { code: '08006', message: 'connection reset' } };
+      const builder: Record<string, unknown> = {};
+      builder.eq = () => builder;
+      builder.then = (
+        onfulfilled?: (value: unknown) => unknown,
+        onrejected?: (reason: unknown) => unknown,
+      ) => Promise.resolve(unavailable).then(onfulfilled, onrejected);
+
+      // This intentionally returns a minimal thenable error result, rather
+      // than a full Supabase query builder.  Keep that test double isolated
+      // from the production builder type.
+      return { ...api, select: () => builder } as unknown as typeof api;
+    }) as typeof fake.from;
+
+    const result = await savePartialRound({
+      courseName: 'Qualifier Course',
+      courseId: COURSE_A,
+      roundType: 'qualifier',
+      qualifierId: '33333333-3333-4333-8333-333333333333',
+      roundDate: '2026-08-25',
+      currentHole: 1,
+      holesToPlay: 18,
+      holes: [],
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'We could not determine your qualifier round number. Please try again before starting.',
+    });
+  });
 });
 
 describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
@@ -318,6 +358,27 @@ describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
     expect(result.success === false && result.error).toMatch(/still open/i);
     expect(result.success === false && result.error).toMatch(/coach.*raise.*round/i);
     expect(result.success === false && result.error).not.toMatch(/completed every round/i);
+  });
+
+  it('does not use a scheduled end date to close an in-progress qualifier', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{
+      id: 'qualifier-1',
+      num_rounds: 2,
+      status: 'in_progress',
+      // This date is intentionally historical. Only an explicit coach status
+      // change may close a qualifier.
+      end_date: '2020-01-01',
+    }];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 1, availableRounds: [1] },
+    });
   });
 });
 

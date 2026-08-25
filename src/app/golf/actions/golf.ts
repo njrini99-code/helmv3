@@ -5905,12 +5905,22 @@ async function savePartialRoundImpl(
     // Deriving the number costs one read and removes the state entirely.
     let resolvedQualifierRoundNumber = data.qualifierRoundNumber ?? null;
     if (data.qualifierId && !resolvedQualifierRoundNumber) {
-      const { data: priorRounds } = await supabase
+      const { data: priorRounds, error: priorRoundsError } = await supabase
         .from('golf_rounds')
         .select('qualifier_round_number')
         .eq('qualifier_id', data.qualifierId)
         .eq('player_id', player.id)
         .eq('status', 'completed');
+
+      // Never derive slot 1 from a failed history read. That would allow a
+      // temporary outage to collide with a submitted qualifier round and turn
+      // a recoverable retry into an ambiguous scorecard state.
+      if (priorRoundsError) {
+        return {
+          success: false,
+          error: 'We could not determine your qualifier round number. Please try again before starting.',
+        };
+      }
 
       const usedNumbers = (priorRounds ?? [])
         .map(r => r.qualifier_round_number)

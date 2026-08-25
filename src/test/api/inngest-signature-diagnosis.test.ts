@@ -13,6 +13,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const logServerError = vi.fn(async (_message: string, _context?: unknown) => {});
 const sdkGet = vi.fn(async () => new Response(JSON.stringify({ message: 'Unauthorized' }), { status: 401 }));
+const serve = vi.fn(() => ({ GET: sdkGet, POST: sdkGet, PUT: sdkGet }));
 
 /** The real handler is typed for Next's (req, ctx) shape; only `req` matters here. */
 const call = (handler: unknown, req: Request) =>
@@ -22,7 +23,7 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError }));
 vi.mock('@/lib/inngest/client', () => ({ inngest: {} }));
 vi.mock('@/lib/inngest/functions', () => ({ functions: [] }));
 vi.mock('inngest/next', () => ({
-  serve: () => ({ GET: sdkGet, POST: sdkGet, PUT: sdkGet }),
+  serve,
 }));
 
 function request(signature?: string) {
@@ -38,6 +39,20 @@ describe('/api/inngest signature diagnosis', () => {
   beforeEach(() => {
     logServerError.mockClear();
     sdkGet.mockClear();
+    serve.mockClear();
+  });
+
+  it('pins production discovery to the canonical domain, never a stale deployment URL', async () => {
+    vi.resetModules();
+    vi.stubEnv('VERCEL_ENV', 'production');
+
+    await import('@/app/api/inngest/route');
+
+    expect(serve).toHaveBeenCalledWith(
+      expect.objectContaining({ serveOrigin: 'https://helmsportslabs.com' }),
+    );
+
+    vi.unstubAllEnvs();
   });
 
   it('answers an unsigned probe 401 without reporting it, and without waking the SDK', async () => {

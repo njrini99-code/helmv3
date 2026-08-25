@@ -40,7 +40,8 @@ in-progress rather than carrying contradictory completed and active versions.
 Undo and Edit Shot share one local in-flight mutation guard. When an authorized
 delete lookup confirms a shot is already absent, the client removes only its
 stale local reference; it does not retry the delete or bypass server ownership
-checks. The Bridge records that reconciliation as a handled warning rather than
+checks. The Bridge records that reconciliation as handled informational
+telemetry rather than treating a successfully recovered state as a warning or
 an error sent to Sentry.
 An edit or delete read failure is deliberately different: the client keeps its
 local shot intact and asks the player to retry. Only the database's explicit
@@ -154,6 +155,10 @@ Round setup
   and the client never recreates a row the server has confirmed is absent.
   Transport and database read failures never use that signal, so temporary
   outages cannot make the client hide valid local progress.
+- Continue Round background status polling is separate from the save path.
+  A transient polling failure is retried silently; only a sustained outage is
+  reported once with its accurate status-sync context, while the committed
+  server round remains the source of truth for recovery.
 - Offline shot sync is disabled because of `ShotRecord` to `OfflineShot` type mismatch; DB auto-save is the path to trust.
 - Strokes-gained columns exist but are not populated from shot data.
 - Putts-per-GIR is not properly implemented.
