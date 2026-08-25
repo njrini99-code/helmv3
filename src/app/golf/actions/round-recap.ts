@@ -46,6 +46,7 @@ import { pct } from '@/lib/golf/stat-formulas';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
+import { logServerError } from '@/lib/server-error-logger';
 
 interface RoundContext {
   id: string;
@@ -150,22 +151,33 @@ async function generateRoundRecapImpl(
   // gated or on error.
   const recap = await generateLLMRecap(round, stats, coachId, deterministic);
 
-  // 4. Persist. Cast through unknown until the generated DB types pick up
-  // the new ai_recap columns (migration 20260503000000_golf_round_ai_recap).
-  // DS: chain .select('id') and treat a 0-row result as a failed persist —
-  // the ownership gate above should make this unreachable now, but a silent
-  // RLS-filtered no-op here previously meant a recap was generated on every
-  // call and never cached.
-  const { data: persisted } = await supabase
-    .from('golf_rounds')
-    .update({
-      ai_recap: recap,
-      ai_recap_generated_at: new Date().toISOString(),
-    } as unknown as never)
-    .eq('id', roundId)
-    .select('id');
+  // 6. Persist the derived recap through the dedicated lifecycle RPC. Completed
+  // round score history is immutable, so a direct `golf_rounds.update()` is
+  // rightly rejected by the guard even though a recap is not a scoring change.
+  // The RPC permits precisely the two recap columns, rechecks player/coach
+  // access in the database, and records the write under its own lifecycle
+  // capability. Do not replace this with a broader completed-round exception.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: persisted, error: persistError } = await (supabase as any).rpc(
+    'save_round_ai_recap',
+    { p_round_id: roundId, p_recap: recap },
+  );
 
-  if (!persisted || (persisted as unknown[]).length === 0) {
+  if (persistError || persisted?.success !== true) {
+    await logServerError(
+      `Round recap persistence failed: ${persistError?.message ?? 'the database did not confirm the write'}`,
+      {
+        action: 'generateRoundRecap.persist',
+        featureArea: 'round_review_ai',
+        roundId,
+        playerId: round.player_id,
+        userId: user.id,
+        errorCode: persistError?.code,
+        errorHint: persistError?.hint,
+        errorDetails: persistError?.details,
+      },
+      'warning',
+    );
     return { recap: null, cached: false };
   }
 

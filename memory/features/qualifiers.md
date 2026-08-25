@@ -95,6 +95,9 @@ Leaderboard reads qualifier
   round numbers before final submit; it never guesses a result number from
   local recovery state.
 - Qualifier events can feed calendar/team surfaces, so date/course changes can have downstream UI impact.
+- Correcting an already completed round's type or qualifier linkage must use
+  `reclassify_golf_round`; a direct `golf_rounds` update is not a permitted
+  way to change completed score history.
 
 ## UI Contract
 

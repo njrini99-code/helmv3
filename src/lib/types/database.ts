@@ -21196,6 +21196,15 @@ export type Database = {
         Args: { p_season_year?: number; p_team_id: string }
         Returns: undefined
       }
+      reclassify_golf_round: {
+        Args: {
+          p_qualifier_id: string
+          p_qualifier_round_number: number
+          p_round_id: string
+          p_round_type: string
+        }
+        Returns: string
+      }
       recompute_golf_round_totals: {
         Args: { p_round_id: string }
         Returns: undefined
@@ -21289,6 +21298,10 @@ export type Database = {
           p_round_id: string
           p_shots: Json
         }
+        Returns: Json
+      }
+      save_round_ai_recap: {
+        Args: { p_recap: string; p_round_id: string }
         Returns: Json
       }
       select_stalest_teams: {
