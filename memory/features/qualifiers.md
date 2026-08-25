@@ -86,6 +86,15 @@ Leaderboard reads qualifier
 - Round-cap edits must reject, rather than coerce, a missing, fractional, or
   out-of-range value. The database also rejects a cap reduction below a
   submitted or in-progress qualifier round, regardless of the caller.
+- Scheduled dates are calendar metadata, never a player-entry deadline. A
+  qualifier remains open until a coach explicitly closes it. When entry is
+  unavailable, the player-facing error must explain the accurate next step:
+  continue a saved round, ask the coach to reopen it, or ask the coach to raise
+  the configured round count.
+- Multi-round progression always returns the first unused configured round
+  number (1 → 2 → 3). It must not use `max(completed) + 1`, because historic or
+  out-of-order rows can contain a gap that should be repaired rather than
+  skipped.
 - An existing in-progress round's persisted qualifier identity is authoritative.
   A stale or recovered client may not remove, change, or silently overwrite its
   round type, qualifier link, or qualifier round number during final

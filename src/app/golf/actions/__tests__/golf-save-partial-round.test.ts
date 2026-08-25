@@ -319,6 +319,42 @@ describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
     expect(result.success === false && result.error).toMatch(/coach.*raise.*round/i);
     expect(result.success === false && result.error).not.toMatch(/completed every round/i);
   });
+
+  it('returns the first missing configured round instead of skipping over a legacy gap', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
+    tables.golf_rounds = [
+      { id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed' },
+      { id: 'round-3', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 3, status: 'completed' },
+    ];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 2, availableRounds: [2] },
+    });
+  });
+
+  it('progresses a three-round qualifier in order', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
+    tables.golf_rounds = [
+      { id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed' },
+      { id: 'round-2', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 2, status: 'completed' },
+    ];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 3, availableRounds: [3] },
+    });
+  });
 });
 
 /**

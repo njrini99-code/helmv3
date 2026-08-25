@@ -6941,31 +6941,29 @@ async function getNextQualifierRoundNumberImpl(
         .map((r) => r.qualifier_round_number as number)
     );
 
-    // Calculate the next round number (max completed + 1, or 1 if none completed)
-    const maxCompletedRound = completedRoundNumbers.size > 0
-      ? Math.max(...completedRoundNumbers)
-      : 0;
     const numRounds = qualifier.num_rounds ?? 1;
 
-    // The cap check that was missing end-to-end: without it, the "Enter Round"
-    // flow could always request maxCompletedRound+1 even past the qualifier's
-    // configured round count.
-    if (maxCompletedRound >= numRounds) {
+    // Qualifier progression is the first configured number the player has not
+    // submitted, not `max(completed) + 1`. The latter skips a recoverable gap
+    // in legacy/out-of-order data (for example 1 and 3 becoming 4) and can
+    // falsely report that a player has exhausted their configured rounds.
+    const unusedConfiguredRounds = Array.from(
+      { length: numRounds },
+      (_, index) => index + 1,
+    ).filter((roundNumber) => !completedRoundNumbers.has(roundNumber));
+    const nextRoundNumber = unusedConfiguredRounds[0];
+
+    if (nextRoundNumber === undefined) {
       const roundLabel = numRounds === 1 ? 'round' : 'rounds';
       return {
         success: false,
-        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${maxCompletedRound} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
+        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${numRounds} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
       };
     }
 
-    const nextRoundNumber = maxCompletedRound + 1;
-
-    // Available rounds start from the next round number
-    const availableRounds = [nextRoundNumber];
-
     return {
       success: true,
-      data: { nextRoundNumber, availableRounds }
+      data: { nextRoundNumber, availableRounds: [nextRoundNumber] }
     };
 
   } catch {
