@@ -1,5 +1,9 @@
 'use server';
 
+import {
+  isShotTrackingAction,
+  isShotTrackingFeatureArea,
+} from '@/lib/golf/shot-tracking-classification';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
@@ -214,13 +218,6 @@ const TRACER_SEVERITY_ORDER: Record<TracerIncident['severity'], number> = {
   info: 3,
 };
 
-const SHOT_TRACKING_ACTION_PREFIXES = [
-  'submitgolfroundcomprehensive',
-  'savepartialround',
-  'continueroundpage',
-  'invalidateonroundcomplete',
-];
-
 function asObject(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -320,11 +317,6 @@ function getTracerEventMessage(event: TracerAdminEventRecord): string {
   );
 }
 
-function isShotTrackingAction(action: string | null): boolean {
-  const normalizedAction = action?.toLowerCase() ?? '';
-  return SHOT_TRACKING_ACTION_PREFIXES.some((prefix) => normalizedAction.startsWith(prefix));
-}
-
 function isShotTrackingTracerEvent(
   event: TracerAdminEventRecord,
   context: TracerIncidentContext = buildTracerIncidentContext(event.metadata),
@@ -336,7 +328,7 @@ function isShotTrackingTracerEvent(
   const normalizedUrl = normalizeTracerPath(context.route ?? context.url ?? event.url).toLowerCase();
   const message = `${event.title} ${event.message ?? ''}`.toLowerCase();
 
-  if (featureArea === 'shot_tracking') return true;
+  if (isShotTrackingFeatureArea(featureArea)) return true;
   if (isShotTrackingAction(action)) return true;
   if (featureArea === 'stats_cache' && (!!context.roundId || isShotTrackingAction(action) || action.startsWith('invalidateonroundcomplete'))) {
     return true;
