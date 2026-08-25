@@ -1,6 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { Database } from '@/lib/types/database';
+import {
+  SUPABASE_TRACE_PROPAGATION,
+  withSupabaseTracing,
+} from '@/lib/observability/supabase-tracing';
 
 /**
  * The HTTP abort is a BACKSTOP, not the request budget. The invariant that
@@ -49,32 +53,41 @@ export async function createClient() {
   }
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
-    url,
-    anonKey,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
+  return withSupabaseTracing(
+    createServerClient<Database>(
+      url,
+      anonKey,
+      {
+        // W3C `traceparent` onto every Supabase request, so the Supabase API
+        // Gateway log for this call carries the SAME trace id as the Sentry
+        // trace. Works here because @sentry/node installs a global
+        // OpenTelemetry propagator (sdk/initOtel.js) for supabase-js to read.
+        // `respectSamplingDecision` is left at its default — see
+        // SUPABASE_TRACE_PROPAGATION.
+        tracePropagation: SUPABASE_TRACE_PROPAGATION,
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
         },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
+        global: {
+          fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
+            const signal = options.signal ?? AbortSignal.timeout(timeoutForRequest(fetchUrl));
+            return fetch(fetchUrl, { ...options, signal });
+          },
         },
-      },
-      global: {
-        fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
-          const signal = options.signal ?? AbortSignal.timeout(timeoutForRequest(fetchUrl));
-          return fetch(fetchUrl, { ...options, signal });
-        },
-      },
-    }
+      }
+    )
   );
 }

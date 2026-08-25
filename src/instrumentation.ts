@@ -1,3 +1,22 @@
+// Opt-in OpenTelemetry runtime for supabase-js `tracePropagation`. The IMPORT
+// ITSELF is the opt-in — the module has no exports; it registers a process-wide
+// trace-context extractor built on @opentelemetry/api. Without it, a client
+// configured with `tracePropagation` logs a one-time warning and sends requests
+// with no trace headers at all.
+//
+// This file is Next's instrumentation hook and is evaluated once per SERVER
+// runtime — Node and Edge each get their own module graph and therefore their
+// own registration, which is exactly the "once per runtime" placement supabase
+// documents. Both runtimes have a Sentry OpenTelemetry propagator for it to
+// read from (@sentry/node sdk/initOtel.js; @sentry/vercel-edge
+// `propagation.setGlobalPropagator(new SentryPropagator())`).
+//
+// The BROWSER is deliberately not covered here: @sentry/browser registers no
+// OpenTelemetry propagator, so there would be nothing to extract. The browser
+// propagates `traceparent` through Sentry's own fetch instrumentation instead —
+// see `propagateTraceparent` / `tracePropagationTargets` in
+// src/instrumentation-client.ts.
+import '@supabase/supabase-js/tracing';
 import * as Sentry from '@sentry/nextjs';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { getAppBaseUrl } from '@/lib/app-base-url';
@@ -138,6 +157,13 @@ export async function register() {
       profileSessionSampleRate: isDev ? 0 : 0.3,
       profileLifecycle: 'trace',
 
+      // Emit W3C `traceparent` in addition to Sentry's own `sentry-trace`, and
+      // — because @sentry/node's propagator is the global OpenTelemetry
+      // propagator — make that same trace id available to supabase-js's
+      // `tracePropagation`. This is the join key between a Sentry trace and a
+      // Supabase API Gateway log line.
+      propagateTraceparent: true,
+
       beforeSend: scrubPii,
       ignoreErrors: sharedIgnoreErrors,
     });
@@ -167,6 +193,10 @@ export async function register() {
       ],
       enableLogs: true,
       tracesSampleRate: isDev ? 0.1 : 0.2,
+      // Same W3C propagation as the Node runtime. @sentry/vercel-edge installs
+      // a SentryPropagator as the global OpenTelemetry propagator, so the
+      // proxy/middleware Supabase client can read the active trace too.
+      propagateTraceparent: true,
       beforeSend: scrubPii,
       ignoreErrors: sharedIgnoreErrors,
     });

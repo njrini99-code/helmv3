@@ -24,6 +24,46 @@ const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN
 // BUILD time — so a local `next build` ships the literal string "production"
 // in the bundle. The only signal that can still tell the truth at runtime is
 // where the browser actually is; a deployed host never matches.
+/**
+ * The Supabase project ORIGIN, derived from the env var rather than hardcoding
+ * a project ref. `new URL(...).origin` normalises away a trailing slash or a
+ * stray path segment, either of which would break the substring match Sentry
+ * performs (`isMatchingPattern` -> `value.includes(pattern)` for string
+ * patterns). Returns undefined for an unset or malformed value so we fall back to
+ * Sentry's default behaviour instead of shipping a broken target.
+ */
+function resolveSupabaseOrigin(rawUrl: string | undefined): string | undefined {
+  const trimmed = rawUrl?.trim();
+  if (!trimmed) return undefined;
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    return undefined;
+  }
+}
+
+const supabaseOrigin = resolveSupabaseOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL);
+
+/**
+ * Extend — never replace — Sentry's default propagation scope.
+ *
+ * Verified in @sentry/browser 10.68.0 (tracing/request.js `shouldAttachHeaders`):
+ * with `tracePropagationTargets` UNSET the rule is simply
+ * `return isSameOriginRequest`. Handing Sentry an explicit array therefore
+ * REPLACES that rule, and a naive `[supabaseOrigin]` would silently stop
+ * propagating trace headers on every same-origin request in the app — a
+ * regression no typecheck, test, or build would catch.
+ *
+ * `/^\//` restores the default: for a same-origin request Sentry also tests
+ * `resolvedUrl.pathname`, and a URL pathname always begins with "/". It cannot
+ * widen anything — a cross-origin absolute URL never starts with "/", and that
+ * second test is gated on `isSameOriginRequest`.
+ *
+ * Net effect: same-origin (unchanged) + the Supabase project origin, and
+ * nothing else. Third-party domains still receive no trace headers.
+ */
+const tracePropagationTargets = supabaseOrigin ? [/^\//, supabaseOrigin] : undefined;
+
 const environment = resolveClientEnvironment(
   {
     NEXT_PUBLIC_VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV,
@@ -40,6 +80,18 @@ Sentry.init({
 
   // Never enable debug — it floods the console
   debug: false,
+
+  // Emit the W3C `traceparent` header alongside Sentry's own `sentry-trace`.
+  // This is what lets a browser-initiated request land in Supabase's API
+  // Gateway log carrying the same trace id Sentry recorded, so a Helm trace and
+  // a Supabase log line can be joined on one value.
+  propagateTraceparent: true,
+
+  // Same-origin (Sentry's default) PLUS the Supabase project origin. See
+  // `tracePropagationTargets` above for why the regex is required rather than
+  // optional. `undefined` here means "no Supabase URL configured" and restores
+  // Sentry's built-in default rather than propagating to nothing.
+  tracePropagationTargets,
 
   // 20% in prod keeps trace cost sane while still surfacing slow paths.
   // 10% in dev to reduce overhead.

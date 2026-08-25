@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/lib/types/database';
+import { withSupabaseTracing } from '@/lib/observability/supabase-tracing';
 
 /**
  * Per-request HTTP abort budget.
@@ -49,18 +50,33 @@ export function createClient() {
   if (!anonKey) {
     throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Check Vercel env.');
   }
-  return createBrowserClient<Database>(
-    url,
-    anonKey,
-    {
-      global: {
-        fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
-          // See timeoutForRequest: DB/auth keep the 10s backstop, Storage does
-          // not — an upload is bounded by the uplink, not by statement_timeout.
-          const signal = options.signal ?? AbortSignal.timeout(timeoutForRequest(fetchUrl));
-          return fetch(fetchUrl, { ...options, signal });
+  // NO `tracePropagation` here, and that is a measured decision rather than an
+  // oversight. supabase-js reads the active trace from the OpenTelemetry API
+  // (`propagation.inject(context.active(), carrier)`), and @sentry/browser
+  // 10.68.0 registers no OpenTelemetry propagator — the package contains no
+  // OpenTelemetry reference at all. Enabling it here would inject nothing, and
+  // would additionally emit a one-time `console.warn` (supabase-js index.mjs:
+  // "tracePropagation is enabled but the tracing runtime is not loaded") that
+  // `consoleLoggingIntegration` would faithfully forward to Sentry as noise.
+  //
+  // The browser still propagates W3C `traceparent` to Supabase — Sentry's own
+  // fetch instrumentation does it, driven by `propagateTraceparent` +
+  // `tracePropagationTargets` in src/instrumentation-client.ts. Same header,
+  // same trace id, from the layer that actually holds the trace.
+  return withSupabaseTracing(
+    createBrowserClient<Database>(
+      url,
+      anonKey,
+      {
+        global: {
+          fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
+            // See timeoutForRequest: DB/auth keep the 10s backstop, Storage does
+            // not — an upload is bounded by the uplink, not by statement_timeout.
+            const signal = options.signal ?? AbortSignal.timeout(timeoutForRequest(fetchUrl));
+            return fetch(fetchUrl, { ...options, signal });
+          },
         },
-      },
-    }
+      }
+    )
   );
 }
