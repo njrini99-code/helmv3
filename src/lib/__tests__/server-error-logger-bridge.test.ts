@@ -28,6 +28,7 @@ vi.mock('@sentry/nextjs', () => ({
     }),
   captureException: vi.fn(),
   captureMessage: vi.fn(),
+  getActiveSpan: vi.fn(() => undefined),
 }));
 
 import { logServerError } from '@/lib/server-error-logger';

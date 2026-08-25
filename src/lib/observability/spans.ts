@@ -99,10 +99,80 @@ export function describeDbErrorForSpan(error: unknown): Record<string, string> {
  * On throw, the failure class is recorded on the stage span before rethrowing,
  * so "which stage failed" is answerable from the trace alone.
  */
+/**
+ * A resolved value shaped like supabase-js's `{ data, error }` RPC response.
+ * The RPC promise only ever REJECTS on a network/abort failure; a genuine
+ * Postgres/PostgREST failure (a SQLSTATE, an RLS denial, a lifecycle guard
+ * exception) comes back as a RESOLVED value with `error` populated. Without
+ * this check, `roundStage` would show `result: success` on a span for
+ * exactly the failures this instrumentation exists to surface.
+ */
+function isSupabaseErrorShaped(value: unknown): value is { error: unknown } {
+  return Boolean(value) && typeof value === 'object' && 'error' in (value as object)
+    && (value as { error: unknown }).error != null;
+}
+
+/**
+ * The full set of outcomes a shot-tracking write is normalized to, wherever
+ * this vocabulary is used (autosave, submit, and — once wired — the Golf
+ * Tracer). `rpc_failed` covers a resolved `{error}` from PostgREST that
+ * `classifyOutcome` didn't map to something more specific; `unknown_commit`
+ * is reserved for an abort/timeout raced against the RPC's own commit — the
+ * one outcome that must NEVER be inferred from a thrown error alone, since
+ * the transaction may have completed server-side regardless of what the
+ * client observed.
+ */
+export type RoundStageOutcome =
+  | 'success'
+  | 'validation_failed'
+  | 'auth_expired'
+  | 'busy'
+  | 'timeout'
+  | 'network_failed'
+  | 'rpc_failed'
+  | 'unknown_commit';
+
+/**
+ * Classifies a save_partial_round_atomic-shaped RPC response
+ * (`{ data: { success, error }, error }`) into the canonical autosave
+ * outcome taxonomy. Exported so both the call site and its tests use the
+ * exact same mapping — the taxonomy only means something if it is applied
+ * consistently everywhere an autosave result is observed.
+ *
+ * `busy` and `conflict` are normal, expected outcomes (single-flight guard /
+ * optimistic-lock race) and are NOT errors from the tracer's point of view —
+ * they classify as their own named outcome rather than 'rpc_failed' so a
+ * dashboard can tell "healthy coalescing" apart from "broken".
+ */
+export function classifyAutosaveOutcome(
+  value: { data?: { success?: boolean; error?: unknown } | null; error?: { code?: string; message?: string } | null },
+): RoundStageOutcome | undefined {
+  if (value.error) return undefined; // let the generic DB-error path classify + attach SQLSTATE
+  const businessError = value.data?.error;
+  if (value.data?.success === false && typeof businessError === 'string') {
+    if (businessError === 'busy') return 'busy';
+    if (businessError === 'conflict') return 'busy';
+    if (businessError.toLowerCase().includes('already been completed')) return 'busy';
+    if (businessError.toLowerCase().includes('permission') || businessError.toLowerCase().includes('not found')) {
+      return 'auth_expired';
+    }
+    return 'rpc_failed';
+  }
+  return 'success';
+}
+
 export async function roundStage<T>(
   stage: string,
   attributes: Record<string, SpanAttributeValue>,
   fn: () => Promise<T>,
+  /**
+   * Inspect the resolved value and return a specific RoundStageOutcome, or
+   * undefined to fall back to the generic success/error heuristic below.
+   * Needed because a business-level outcome (autosave's 'busy'/'conflict')
+   * lives INSIDE a successfully-resolved RPC response, not in `.error` —
+   * the generic heuristic alone cannot see it.
+   */
+  classifyOutcome?: (value: T) => RoundStageOutcome | undefined,
 ): Promise<T> {
   return Sentry.startSpan(
     {
@@ -118,10 +188,31 @@ export async function roundStage<T>(
     async (span) => {
       try {
         const value = await fn();
-        span?.setAttribute(RESULT, 'success');
+        const classified = classifyOutcome?.(value);
+        if (classified) {
+          span?.setAttribute(RESULT, classified);
+        } else if (isSupabaseErrorShaped(value)) {
+          span?.setAttribute(RESULT, 'rpc_failed' satisfies RoundStageOutcome);
+          for (const [key, attrValue] of Object.entries(describeDbErrorForSpan(value.error))) {
+            span?.setAttribute(key, attrValue);
+          }
+        } else {
+          span?.setAttribute(RESULT, 'success' satisfies RoundStageOutcome);
+        }
         return value;
       } catch (error) {
-        span?.setAttribute(RESULT, 'error');
+        // A thrown error here is a network/abort failure, not a Postgres
+        // response — supabase-js's RPC promise only rejects on those. See
+        // `unknown_commit` above: distinguishing a genuine client-side abort
+        // from a request whose commit already happened server-side is NOT
+        // possible from this signal alone, so this stays classified as
+        // network_failed rather than guessing at the DB outcome.
+        span?.setAttribute(
+          RESULT,
+          (error instanceof Error && /timeout|aborted/i.test(error.message)
+            ? 'timeout'
+            : 'network_failed') satisfies RoundStageOutcome,
+        );
         for (const [key, value] of Object.entries(describeDbErrorForSpan(error))) {
           span?.setAttribute(key, value);
         }
