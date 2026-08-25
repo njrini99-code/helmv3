@@ -1,6 +1,6 @@
 # INC-2026-08-25 — round recap persist denied at helm_private boundary
 
-- Feature: `golf_round_lifecycle` (surface: round_review_ai recap persist)
+- Feature: Golf Round Lifecycle (surface: round_review_ai recap persist)
 - Status: repairing — fix verified against a local reproduction; production
   apply in progress
 - Risk: R1 repair of an R3-introduced regression (grants/definer only; no data
@@ -35,7 +35,7 @@ actually CALL it as the `authenticated` role, not only assert catalog facts.
   wrapper as SECURITY DEFINER, pinned search_path, EXECUTE revoked from
   PUBLIC/anon, granted to authenticated + service_role. No schema grants added;
   `helm_private` stays locked.
-- `supabase/tests/rls/golf_round_recap_lifecycle.sql`: flipped the INVOKER
+- The round-recap lifecycle suite in `supabase/tests/rls/`: flipped the INVOKER
   assertion to definer, added a wrapper search_path pin check, and added a
   call-path regression test executed as `authenticated` (10/10 pass locally
   against an exact reproduction of the broken state).

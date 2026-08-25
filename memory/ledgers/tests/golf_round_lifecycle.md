@@ -78,7 +78,8 @@
 
 ## 2026-08-25 — recap wrapper guarantee flipped, call-path now exercised
 
-- `golf_round_recap_lifecycle.sql` previously asserted the public recap
+- The round-recap lifecycle pgTAP suite (`supabase/tests/rls/`) previously
+  asserted the public recap
   endpoint "remains SECURITY INVOKER" — that assertion enshrined the 42501
   schema-permission bug. It now asserts the definer boundary + pinned
   search_path, and a new test executes the endpoint as the `authenticated`

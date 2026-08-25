@@ -87,5 +87,6 @@
 - Why: the invoker wrapper resolved `helm_private.save_round_ai_recap` with
   the caller's privileges, and 20260825052141's schema lockdown made that
   impossible for every authenticated user — all production recap persists
-  failed 42501 (Sentry JAVASCRIPT-NEXTJS-PT, 9 users). See
-  memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md.
+  failed 42501 (Sentry JAVASCRIPT-NEXTJS-PT, 9 users). See incident
+  INC-2026-08-25-recap-persist-schema-permission in this feature's
+  incidents directory.
