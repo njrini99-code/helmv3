@@ -15,6 +15,7 @@ import { describeError } from '@/lib/utils/describe-error';
 interface RosterActionResult {
   success: boolean;
   error?: string;
+  code?: string;
 }
 
 // ============================================================================
@@ -108,6 +109,26 @@ async function removePlayerFromTeamImpl(playerId: string): Promise<RosterActionR
     .eq('team_id', teamId);
 
   if (deleteError) {
+    // A database lifecycle guard deliberately blocks this delete while the
+    // player has a recoverable in-progress round.  Returning the generic
+    // retry copy hid that safety outcome behind a "Server trace error" and
+    // encouraged coaches to keep retrying a request that must not succeed.
+    if (
+      deleteError.code === '55000' &&
+      /saved (qualifier )?round/i.test(deleteError.message ?? '')
+    ) {
+      await logServerError(
+        `Roster removal protected an in-progress round: ${describeError(deleteError)}`,
+        { action: 'roster.removePlayerFromTeam' },
+        'warning',
+      );
+      return {
+        success: false,
+        error: 'This player has a saved in-progress round. Have them finish or discard it before removing them from the team.',
+        code: 'active_round_in_progress',
+      };
+    }
+
     await logServerError(`Failed to remove player from team: ${describeError(deleteError)}`, { action: 'roster.removePlayerFromTeam' });
     return { success: false, error: 'Failed to remove player. Please try again.' };
   }

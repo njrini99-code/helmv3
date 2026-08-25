@@ -3893,13 +3893,29 @@ async function updateQualifierStatusImpl(
       return { success: false, error: 'Unauthorized' };
     }
 
-    const { error } = await supabase
+    // PostgREST reports an RLS-filtered UPDATE as a successful request with
+    // zero returned rows. Select the id so the coach is never told a manual
+    // close worked when the qualifier was not actually changed.
+    const { data: updatedQualifiers, error } = await supabase
       .from('golf_qualifiers')
       .update({ status })
-      .eq('id', qualifierId);
+      .eq('id', qualifierId)
+      .select('id');
 
     if (error) {
       return { success: false, error: 'Failed to update qualifier status. Please try again.' };
+    }
+
+    if (!updatedQualifiers || updatedQualifiers.length !== 1) {
+      await logServerError(
+        `qualifier status update matched no row for ${qualifierId}`,
+        { action: 'golf.updateQualifierStatus', featureArea: 'qualifiers' },
+        'warning',
+      );
+      return {
+        success: false,
+        error: "Couldn't update this qualifier — it may have been deleted, or you may not have edit access to this team.",
+      };
     }
 
     revalidatePath('/golf/dashboard/qualifiers');

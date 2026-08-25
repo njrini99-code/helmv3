@@ -130,6 +130,16 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
   // explicitly, while the Bridge records it as a handled warning rather than
   // sending a misleading server-error event to Sentry.
   'shot_not_found',
+  // These are server-protected qualifier lifecycle outcomes. The player sees
+  // an exact message and keeps all saved round data; they are not production
+  // faults and should not mint Sentry incidents.
+  'qualifier_closed',
+  'qualifier_round_limit_reached',
+  'qualifier_round_already_exists',
+  // A roster delete was correctly stopped because it would strand an
+  // unfinished player round. The action provides the coach's next step and
+  // keeps the round intact, so this is a handled warning, not a Sentry error.
+  'active_round_in_progress',
 ]);
 
 /*
