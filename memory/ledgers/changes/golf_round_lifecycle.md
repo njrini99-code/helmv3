@@ -76,3 +76,16 @@
   the guard.
 - Why: a stale client, direct API write, or later feature must not overwrite
   completed score history or re-target a saved qualifier round.
+
+## 2026-08-25 — recap persist crosses helm_private as a definer boundary
+
+- SHA: pending commit (migration 20260825233000).
+- Change: `public.save_round_ai_recap` is now SECURITY DEFINER with a pinned
+  search_path; EXECUTE stays revoked from PUBLIC/anon and granted to
+  authenticated + service_role. `helm_private` remains fully locked — no
+  schema grants were added.
+- Why: the invoker wrapper resolved `helm_private.save_round_ai_recap` with
+  the caller's privileges, and 20260825052141's schema lockdown made that
+  impossible for every authenticated user — all production recap persists
+  failed 42501 (Sentry JAVASCRIPT-NEXTJS-PT, 9 users). See
+  memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md.

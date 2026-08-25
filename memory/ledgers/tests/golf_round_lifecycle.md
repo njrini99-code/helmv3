@@ -75,3 +75,13 @@
   without executing any destructive fallback.
 - An unconfirmed abort remains safely retryable: its in-progress parent,
   holes, shots, and persisted recovery backup are left untouched.
+
+## 2026-08-25 — recap wrapper guarantee flipped, call-path now exercised
+
+- `golf_round_recap_lifecycle.sql` previously asserted the public recap
+  endpoint "remains SECURITY INVOKER" — that assertion enshrined the 42501
+  schema-permission bug. It now asserts the definer boundary + pinned
+  search_path, and a new test executes the endpoint as the `authenticated`
+  role, proving the call reaches the private implementation instead of dying
+  at the schema boundary. Catalog-only suites cannot catch grant/visibility
+  regressions; the call-path test is the load-bearing guarantee.
