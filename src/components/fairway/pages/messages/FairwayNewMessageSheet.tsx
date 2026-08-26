@@ -78,6 +78,10 @@ export function FairwayNewMessageSheet({
   currentUserRole,
   teamId,
 }: FairwayNewMessageSheetProps) {
+  // Desktop-only autofocus: on touch, focusing search as the sheet opens
+  // summons the iOS keyboard over the recipient list the user is about to
+  // tap (owner TestFlight report, 2026-08-26). Type-ahead stays on desktop.
+  const finePointer = useMediaQuery('(pointer: fine)');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [results, setResults] = React.useState<SearchResult[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -349,7 +353,7 @@ export function FairwayNewMessageSheet({
             leading={<Search aria-hidden />}
             aria-label={`Search ${noun}s`}
             // eslint-disable-next-line jsx-a11y/no-autofocus
-            autoFocus
+            autoFocus={finePointer}
           />
         )}
 

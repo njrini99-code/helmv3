@@ -158,6 +158,25 @@ function ModalShellRoot({
     [contentNode],
   );
 
+  // Keyboard-on-open guard (owner TestFlight report, 2026-08-26): Radix's
+  // FocusScope autofocuses the first TABBABLE element on open. In a form modal
+  // that is a text input, and on a touch device focusing an input summons the
+  // software keyboard over the modal the user just opened — the New-event
+  // editor opened with the iOS keyboard burying everything below the name
+  // field. On coarse pointers we cancel that input autofocus and land focus on
+  // the panel itself (`tabIndex={-1}` below) — still INSIDE the dialog, so the
+  // focus trap, Escape, and Tab order are unchanged; the keyboard now waits
+  // for an intentional tap. Fine pointers keep Radix's default: first-field
+  // focus is correct on desktop, and the select-focus jsdom tests (where the
+  // matchMedia mock always reports `matches: false`) pin that path.
+  const handleOpenAutoFocus = React.useCallback((event: Event) => {
+    if (!window.matchMedia('(pointer: coarse)').matches) return;
+    event.preventDefault();
+    // `event.target` is the FocusScope container (the panel div) — the state
+    // `contentNode` may not have committed yet when this fires.
+    (event.target as HTMLElement | null)?.focus({ preventScroll: true });
+  }, []);
+
   const titleIsString = typeof title === 'string';
 
   return (
@@ -190,11 +209,16 @@ function ModalShellRoot({
               className="fairway-ds"
               aria-describedby={description ? undefined : ''}
               onEscapeKeyDown={handleContentEscapeKeyDown}
+              onOpenAutoFocus={handleOpenAutoFocus}
             >
               <motion.div
                 ref={setContentNode}
                 data-slot={dataSlot}
                 role="dialog"
+                // Focus target for the coarse-pointer open path (see
+                // handleOpenAutoFocus) — a dialog panel is the one place a
+                // negative tabindex on a div is the a11y-correct move.
+                tabIndex={-1}
                 // `position: fixed` is set inline because `.fw-glass-strong` is an
                 // UNLAYERED rule that sets `position: relative` — and unlayered CSS
                 // wins over Tailwind's `@layer utilities` `.fixed`. Centering uses

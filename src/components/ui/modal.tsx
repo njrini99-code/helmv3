@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { X, AlertTriangle, HelpCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { isCoarsePointer } from '@/lib/utils/pointer';
 
 interface ModalProps {
   open?: boolean;
@@ -118,6 +119,15 @@ export function Modal({
 
     const timer = setTimeout(() => {
       if (modalRef.current) {
+        // Touch devices: focusing the first focusable (often a text input)
+        // summons the iOS keyboard over the modal on open. Land focus on the
+        // panel itself instead (tabIndex -1 on the dialog div) — still inside
+        // the trap; the keyboard waits for a tap. Desktop keeps first-field
+        // focus.
+        if (isCoarsePointer()) {
+          modalRef.current.focus({ preventScroll: true });
+          return;
+        }
         const focusableElements = getFocusableElements(modalRef.current);
         focusableElements[0]?.focus();
       }
@@ -165,6 +175,9 @@ export function Modal({
         ref={modalRef}
         role="dialog"
         aria-modal="true"
+        // Focus target for the coarse-pointer open path (see the focus effect
+        // above) — keeps focus inside the dialog without opening the keyboard.
+        tabIndex={-1}
         aria-labelledby={title ? 'modal-title' : undefined}
         aria-describedby={description ? 'modal-description' : undefined}
         className={cn(

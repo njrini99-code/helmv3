@@ -71,8 +71,11 @@ export function FairwayCreateFromTemplateModal({
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  // `e` is optional — ModalShell.Footer's "Create task" button lives outside
+  // the <form> element (see the render below), so it invokes this directly
+  // via onClick with no event, the same dual-wire FairwayCreateTaskModal uses.
+  async function handleSubmit(e?: React.FormEvent<HTMLFormElement>) {
+    e?.preventDefault();
     if (loading) return;
     if (assignMode === 'specific' && selectedPlayers.length === 0) {
       fairwayToast.warning('Select at least one player, or assign to everyone.');
@@ -112,7 +115,14 @@ export function FairwayCreateFromTemplateModal({
       title="Create task from template"
       description="Tune the title, due date, and who it goes to before assigning."
     >
-      <Form spacing="cozy" onSubmit={handleSubmit} className="px-6 pb-6 pt-2">
+      {/* Body-wraps-Form / Footer-outside — the FairwayCreateTaskModal
+          composition. Before this, <Form> was a direct child of the panel
+          (max-h-capped, overflow-hidden) with the buttons inside it: once
+          summary + fields + roster checkboxes outgrew the panel, Cancel /
+          Create task were clipped off-screen with no scroll to reach them.
+          ModalShell.Body owns the scroll; the footer stays pinned. */}
+      <ModalShell.Body>
+        <Form spacing="cozy" onSubmit={handleSubmit}>
         {/* Template summary */}
         <Surface elevation="border" padding="sm" className="bg-surface-sunken">
           <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
@@ -210,15 +220,23 @@ export function FairwayCreateFromTemplateModal({
             </CheckboxGroup>
           ))}
 
-        <div className="flex items-center justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" busy={loading} leftIcon={<IconCheck size={16} />}>
-            Create task
-          </Button>
-        </div>
-      </Form>
+        </Form>
+      </ModalShell.Body>
+
+      <ModalShell.Footer>
+        <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          busy={loading}
+          leftIcon={<IconCheck size={16} />}
+          onClick={() => void handleSubmit()}
+        >
+          Create task
+        </Button>
+      </ModalShell.Footer>
     </ModalShell>
   );
 }

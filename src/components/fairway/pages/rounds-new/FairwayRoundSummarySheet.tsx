@@ -84,14 +84,23 @@ export function FairwayRoundSummarySheet({
       title="Round Complete"
       hideTitle
       hideClose
-      className="p-0 overflow-y-auto"
+      className="p-0"
     >
       <LazyMotion features={loadFeatures}>
+        {/* Scroll lives on the region ABOVE the footer, so Submit Round is
+            always on screen: before this the whole panel scrolled as one
+            (`overflow-y-auto` on the shell) and the primary CTA of the entire
+            create-round flow was simply the last thing in the scroll — off
+            screen on shorter devices / larger text, with no affordance that
+            anything sat below the fold. `flex-auto min-h-0`, not `flex-1`,
+            per ModalShell.Body's iOS percentage-basis note. */}
         <m.div
+          className="flex min-h-0 flex-col"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
         >
+          <div className="min-h-0 flex-auto overflow-y-auto">
           {/* Celebration header */}
           <div className="relative overflow-hidden rounded-t-fw-lg bg-accent-600 px-6 pb-5 pt-6 text-center">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.16),transparent_60%)]" />
@@ -157,7 +166,6 @@ export function FairwayRoundSummarySheet({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.3 }}
-              className="mb-6"
             >
               <p className="mb-2 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary">Scorecard</p>
               <div className="overflow-x-auto overflow-hidden rounded-fw-md border border-border-subtle">
@@ -210,12 +218,18 @@ export function FairwayRoundSummarySheet({
               </div>
             </m.div>
 
-            {/* Action dock */}
+          </div>
+          </div>
+
+          {/* Action dock — pinned below the scroll region so the primary CTA
+              is always visible; ModalShell.Footer also carries the
+              home-indicator safe-area padding. */}
+          <ModalShell.Footer className="border-t border-border-subtle sm:flex-row">
             <m.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.4, duration: 0.3 }}
-              className="flex gap-3"
+              className="flex w-full gap-3"
             >
               <Button variant="secondary" className="flex-1" onClick={onGoBack}>
                 Go Back
@@ -224,7 +238,7 @@ export function FairwayRoundSummarySheet({
                 Submit Round
               </Button>
             </m.div>
-          </div>
+          </ModalShell.Footer>
         </m.div>
       </LazyMotion>
     </ModalShell>

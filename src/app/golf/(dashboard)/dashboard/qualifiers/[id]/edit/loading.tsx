@@ -86,6 +86,7 @@ export default function EditQualifierLoading() {
               <FieldSkeleton labelWidth="w-14" />
               <FieldSkeleton labelWidth="w-24" />
             </div>
+            <FieldSkeleton labelWidth="w-16" />
             <FieldSkeleton labelWidth="w-24" controlHeight="h-16" />
           </SectionSkeleton>
 

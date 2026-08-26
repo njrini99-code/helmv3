@@ -21,8 +21,8 @@ const SUBNAV_TAB_WIDTH = 84;
  * CoachHelmSubNav strip so it doesn't pop in once FairwayPlayerStats
  * hydrates, and the Spine & Stage `300px 1fr` two-block skeleton
  * StatsSpineStage renders for its own client-side loading state (see
- * StatsSpineStage.tsx ~L210-217) so the route fallback and the in-component
- * fallback are visually identical.
+ * StatsSpineStage.tsx, the `if (loading)` branch) so the route fallback and
+ * the in-component fallback are visually identical.
  */
 export default function Loading() {
   return (

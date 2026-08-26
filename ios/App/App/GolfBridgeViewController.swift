@@ -12,6 +12,13 @@ class GolfBridgeViewController: CAPBridgeViewController {
 
     private var urlObservation: NSKeyValueObservation?
 
+    /// App-local Capacitor plugins register here (the documented hook for
+    /// plugins that live in the app target rather than a package — CapApp-SPM's
+    /// manifest is CLI-managed, so it cannot host first-party targets).
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(HelmHapticsPlugin())
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
 

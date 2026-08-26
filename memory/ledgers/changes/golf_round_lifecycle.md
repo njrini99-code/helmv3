@@ -239,3 +239,14 @@
 - Why: owner directives during live morning QA ("highlighted should turn
   green — no contrast"; "that cream isn't the right cream"). Presentation
   only; no round state machine, autosave, or scoring logic touched.
+
+## 2026-08-26 — round summary: Submit Round pinned, always visible
+
+- SHA: f4216fef8.
+- Change: FairwayRoundSummarySheet split into a scrollable stats/scorecard
+  region and a pinned ModalShell.Footer action dock (Go Back / Submit
+  Round) with home-indicator safe-area padding. Previously the whole panel
+  scrolled as one and the flow's primary CTA was simply the last thing in
+  the scroll — off-screen on shorter devices or larger text.
+- Why: sweep finding (wf_07e7042d-6fa, rounds area) — no scroll affordance
+  signalled a CTA below the fold.

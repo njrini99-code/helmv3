@@ -45,6 +45,7 @@ import { useRouter } from 'next/navigation';
 import { Clock, CheckCircle2, Target } from 'lucide-react';
 
 import { fairwayScope } from '@/lib/redesign/flag';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   Button,
   Surface,
@@ -167,6 +168,10 @@ function LogProgressDrawer({
 }) {
   const router = useRouter();
   const { addToast } = useToast();
+  // Desktop-only autofocus for the measurement field: on touch, focusing it
+  // as the drawer opens summons the iOS keyboard over the form (owner
+  // TestFlight report, 2026-08-26). The keyboard waits for a tap.
+  const finePointer = useMediaQuery('(pointer: fine)');
   const fa = state?.focusArea;
   const [newValue, setNewValue] = useState('');
   const [note, setNote] = useState('');
@@ -313,7 +318,7 @@ function LogProgressDrawer({
               required
               aria-invalid={valueError ? true : undefined}
               // eslint-disable-next-line jsx-a11y/no-autofocus
-              autoFocus
+              autoFocus={finePointer}
             />
           </FormField>
 

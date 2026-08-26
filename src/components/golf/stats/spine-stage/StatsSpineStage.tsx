@@ -343,8 +343,8 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     return (
       <div className={cn('flex flex-col gap-4', className)} aria-busy="true">
         {roundPicker}
-        <div className="flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr]">
-          <Skeleton className="h-[480px] rounded-fw-lg" />
+        <div className="flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start">
+          <Skeleton className="h-[480px] rounded-fw-lg min-[940px]:sticky min-[940px]:top-20" />
           <Skeleton className="h-[480px] rounded-fw-lg" />
         </div>
       </div>

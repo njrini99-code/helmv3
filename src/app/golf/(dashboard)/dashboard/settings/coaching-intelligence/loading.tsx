@@ -24,9 +24,11 @@ export default function CoachingIntelligenceLoading() {
         {/* Back-to-Settings link */}
         <Skeleton className="mb-4 h-8 w-24" />
 
-        {/* ViewHeader */}
+        {/* ViewHeader — no eyebrow: #1318 dropped it as a redundant third
+            "Settings" label (see FairwaySettingsCoachingIntelligence.tsx),
+            so ViewHeader never receives an `eyebrow` prop here and its
+            eyebrow slot never renders. */}
         <div className="flex flex-col gap-2">
-          <Skeleton className="h-3 w-16" />
           <Skeleton className="h-9 w-64 max-w-full" />
           <Skeleton className="h-4 w-full max-w-lg" />
         </div>
