@@ -18,6 +18,8 @@ interface FromCall {
   gte: [string, unknown][];
   order: [string, { ascending: boolean }][];
   limit?: number;
+  range?: [number, number];
+  rangeCalls?: number;
 }
 
 const mocks = vi.hoisted(() => ({
@@ -31,6 +33,8 @@ const mocks = vi.hoisted(() => ({
 function makeQueryBuilder(table: string) {
   const call: FromCall = { table, eq: [], gte: [], order: [] };
   mocks.fromCalls.push(call);
+  let pagedFrom: number | null = null;
+  let pagedTo = 0;
   const builder = {
     select: (_cols: string) => builder,
     eq: (col: string, val: unknown) => {
@@ -49,11 +53,26 @@ function makeQueryBuilder(table: string) {
       call.limit = n;
       return builder;
     },
-    then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
-      Promise.resolve(mocks.fromResponses[table] ?? { data: [], error: null }).then(
-        resolve,
-        reject,
-      ),
+    // The error-trend read is PAGED (fetchAllRowsResult) rather than
+    // `.limit(N)`, because PostgREST truncates any single response at 1000
+    // rows — so a bare limit above that silently returns 1000 and the
+    // truncation flag could never fire. This mock therefore has to serve
+    // ranges, and serve a SHORT final page, or the pager would loop.
+    range: (from: number, to: number) => {
+      call.range = [from, to];
+      call.rangeCalls = (call.rangeCalls ?? 0) + 1;
+      pagedFrom = from;
+      pagedTo = to;
+      return builder;
+    },
+    then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) => {
+      const base = mocks.fromResponses[table] ?? { data: [], error: null };
+      let payload = base;
+      if (pagedFrom !== null && Array.isArray(base.data)) {
+        payload = { ...base, data: base.data.slice(pagedFrom, pagedTo + 1) };
+      }
+      return Promise.resolve(payload).then(resolve, reject);
+    },
   };
   return builder;
 }

@@ -170,9 +170,11 @@ type UntypedRow = Record<string, unknown>;
 type UntypedResult = { data: UntypedRow[] | null; error: unknown };
 interface UntypedQueryBuilder extends PromiseLike<UntypedResult> {
   select: (columns: string) => UntypedQueryBuilder;
+  eq: (column: string, value: unknown) => UntypedQueryBuilder;
   gte: (column: string, value: string) => UntypedQueryBuilder;
   order: (column: string, opts: { ascending: boolean }) => UntypedQueryBuilder;
   limit: (n: number) => UntypedQueryBuilder;
+  range: (from: number, to: number) => UntypedQueryBuilder;
 }
 
 // Bound on how many `admin_events` error rows `deriveErrorTrend` reads for
@@ -180,6 +182,59 @@ interface UntypedQueryBuilder extends PromiseLike<UntypedResult> {
 // the cap exists so a future error spike can't turn this into an unbounded
 // fetch, mirroring the `background_job_logs` 500-row cap above.
 const ERROR_TREND_ROW_CAP = 20000;
+// PostgREST caps any single response at 1000 rows, so the paged reader above
+// walks the window a page at a time and ERROR_TREND_ROW_CAP is the ceiling on
+// the ACCUMULATED total, not a value LIMIT could ever be given directly.
+const ERROR_TREND_PAGE_SIZE = 1000;
+
+/**
+ * Paged, and BOUNDED at ERROR_TREND_ROW_CAP accumulated rows.
+ *
+ * Not `fetchAllRowsResult`: that helper drains until the source is exhausted,
+ * which would make ERROR_TREND_ROW_CAP decorative — a future error storm
+ * would pull every row in the window into memory for a dashboard tab. Not
+ * `.limit(ERROR_TREND_ROW_CAP)` either: PostgREST truncates any single
+ * response at 1000 rows, so a larger LIMIT silently returns 1000 and the
+ * `rows.length >= cap` truncation check could never fire (CI's
+ * audit:paginated-reads gate catches exactly this).
+ *
+ * So: walk the window a PostgREST-sized page at a time, stop at the cap, and
+ * let the caller see `rows.length >= cap` to know it was cut short.
+ */
+async function fetchErrorTrendRows(
+  adminDb: ReturnType<typeof createAdminClient>,
+  since: string,
+): Promise<{ data: AdminErrorEventRow[] | null; error: { message: string } | null }> {
+  const all: AdminErrorEventRow[] = [];
+
+  while (all.length < ERROR_TREND_ROW_CAP) {
+    const remaining = ERROR_TREND_ROW_CAP - all.length;
+    const pageSize = Math.min(ERROR_TREND_PAGE_SIZE, remaining);
+    const from = all.length;
+
+    const { data, error } = (await (adminDb as unknown as {
+      from: (t: string) => UntypedQueryBuilder;
+    })
+      .from('admin_events')
+      .select('created_at, severity, user_id')
+      .eq('event_type', 'error')
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1)) as unknown as {
+      data: AdminErrorEventRow[] | null;
+      error: { message: string } | null;
+    };
+
+    if (error) return { data: null, error };
+    const page = data ?? [];
+    all.push(...page);
+    // A short page means the source is drained. Without this the loop would
+    // spin forever on an empty final page.
+    if (page.length < pageSize) break;
+  }
+
+  return { data: all, error: null };
+}
 
 interface AdminErrorEventRow {
   created_at: string | null;
@@ -304,20 +359,21 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
       // `UntypedRow`/`UntypedQueryBuilder` types for why this isn't
       // `error_rate_hourly`.
       //
-      // `ascending: false` is load-bearing, not cosmetic: if a spike ever
-      // pushes the 7-day window past ERROR_TREND_ROW_CAP, LIMIT keeps
-      // whichever end `order` put first. Descending keeps the MOST RECENT
-      // rows and truncates the oldest end of the window — ascending would
-      // truncate the newest hours instead, turning a real spike into a
-      // fabricated "0 errors" right when someone opens this tab to look at
-      // it. `errorTrendTruncated` (set below) signals when this fires.
-      adminDb
-        .from('admin_events')
-        .select('created_at, severity, user_id')
-        .eq('event_type', 'error')
-        .gte('created_at', ago7d)
-        .order('created_at', { ascending: false })
-        .limit(ERROR_TREND_ROW_CAP),
+      // PAGED, not `.limit(ERROR_TREND_ROW_CAP)`. PostgREST truncates every
+      // response at 1000 rows regardless of what LIMIT asks for, so a bare
+      // `.limit(20000)` returns 1000 and the `rows.length >= 20000`
+      // truncation check could never fire — the trend would silently show
+      // the most recent 1000 errors as if it were the whole week, with the
+      // honesty flag stuck at false. Production carries ~2.4k error rows in
+      // a 7-day window (measured 2026-08-26), so that is not a hypothetical
+      // ceiling: it would truncate most of the window, every time.
+      //
+      // `ascending: false` stays load-bearing for the same reason it always
+      // was: if the window ever exceeds ERROR_TREND_ROW_CAP, the rows kept
+      // are the MOST RECENT ones. Truncating the newest hours instead would
+      // turn a live spike into a fabricated "0 errors" exactly when someone
+      // opened this tab to look at it. `errorTrendTruncated` signals it.
+      fetchErrorTrendRows(adminDb, ago7d),
 
       (adminDb.from('auth_metrics_hourly' as never) as unknown as UntypedQueryBuilder)
         .select('*')
