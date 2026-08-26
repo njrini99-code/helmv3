@@ -1,5 +1,50 @@
 # Admin Platform change ledger
 
+## 2026-08-26 — reliability collector: three sources, one correlated view
+
+- SHA: recorded on merge of `feat/reliability-collector`.
+- Change: new cron `/api/cron/reliability-triage` (`0 */3 * * *`, registered in
+  both `vercel.json` and `cron-registry.ts` at `cadenceMinutes: 180`) reads
+  Sentry, Supabase `admin_events` and Vercel deployments, folds them into one
+  deduped signal set, and writes a single `background_job_logs` row with
+  `job_type='reliability-triage'`. New Bridge tab `/admin/reliability` renders
+  that row live. Collector core is `src/lib/reliability/**`.
+- Correlation reuses `buildIncidentSignature` — the SAME function whose output
+  is already stored write-time in `admin_events.fingerprint` — rather than
+  inventing a second scheme, so a Sentry issue and an app error row for one
+  root cause collapse to one entry, and this tab cannot disagree with the
+  Errors tab or the Golf Tracer about what one incident is.
+- Storage is `background_job_logs.metadata`, NOT a new table. A new table is R3
+  (owner-applied migration) and would have blocked the pipeline on a production
+  schema change. A CI-committed JSON artifact was rejected on a harder
+  constraint: production pins to the last released SHA and releases are capped
+  at 2/week, so a committed file would be up to a week stale in the Bridge.
+  Precedent for this store: `ingest-gmail-replies` ("the only cross-invocation"
+  store), `coachhelm-validation`, `helm-debug-prune`.
+- A blind source is never rendered as zero problems. Each arm returns
+  `{status, reason, signals}`; the run's status is the WORST arm, and the jobs
+  board shows `failed` when any arm could not be read. As of this date
+  `SENTRY_READ_TOKEN` and a Vercel token are absent from GitHub Actions
+  secrets, and `VERCEL_API_TOKEN` is unverified in production env — so arms can
+  legitimately start blind and must say so.
+- The self-feeding read is closed at the query: this collector is a cron that
+  reads the table crons write failures to, so `collectSupabase` excludes both
+  `event_type='rca_analysis'` and any row naming its own job type. Guarded by a
+  test that fails when either filter is removed (verified red/green).
+- Registry gap closed in the same change: `src/lib/admin/**` and
+  `src/lib/reliability/**` previously mapped to NO feature, so `knowledge:map`
+  resolved a Bridge page to `admin_platform` while resolving the data module
+  that page reads to nothing.
+- **Phase 1 is read-and-record only.** It opens no issues, files no PRs and
+  merges nothing. The correlation is keyed on a signature whose real
+  cross-source distribution has never been observed, and wiring an auto-fix
+  loop to an unvalidated dedupe rule is how a system opens noise PRs against
+  production every three hours. What this job records is the evidence the next
+  phase gets designed from.
+- Why: error tracking existed per-source and nothing correlated across them, so
+  one root cause read as three unrelated problems, and no surface answered
+  "which sources could we actually read just now".
+
 ## 2026-08-26 — integration fixes across the follow-up sweep
 
 - SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.

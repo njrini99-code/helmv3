@@ -1,5 +1,36 @@
 # Admin Platform test ledger
 
+## 2026-08-26 — reliability collector: degradation and the self-feeding read
+
+- SHA: recorded on merge of `feat/reliability-collector`.
+- New: `src/lib/reliability/__tests__/normalize.test.ts` and
+  `src/lib/reliability/__tests__/sources.test.ts` — 31 tests, plus the two
+  existing contract tests this change had to satisfy
+  (`cron-registry.test.ts`, `admin-nav.test.ts`).
+- Guarantees now covered:
+  - **A blind source can never present as a clean run.** `worstStatus` degrades
+    blind > partial > ok, and one test asserts that a healthy-empty arm and a
+    blind-empty arm — both carrying zero signals — stay distinguishable. This
+    is the OS contract's `error→[]` prohibition in executable form.
+  - **The self-feeding read stays closed.** `collectSupabase` must exclude
+    `event_type='rca_analysis'` and any row naming its own job type. Verified
+    red/green: deleting the two `.not()` filters turns the suite red (1 failed
+    / 10 passed); restoring them turns it green. The guard is load-bearing, not
+    decorative.
+  - **Cross-source folding.** One root cause seen by Sentry and Supabase with
+    different round ids in the route collapses to a single signal with summed
+    count, both sources listed, and both evidence refs retained.
+  - **Bounded coverage is counted, never silent** (quality-gates §1).
+  - **Redaction at the boundary.** Emails in a title or message do not survive
+    into stored signal text.
+  - **Privileged work is never proposed as low risk.** Anything naming auth,
+    RLS, billing, migrations, secrets or sessions proposes R3 — including when
+    the keyword appears only in the title and the route looks innocuous.
+- Not covered, deliberately: nothing asserts the collector's behaviour against
+  live Sentry or Vercel, because neither token is available to CI. The arms are
+  tested through mocked clients, so the first production run is the first real
+  exercise of the network paths.
+
 ## 2026-08-26 — error_rate_hourly → admin_events error-trend derivation coverage
 
 - SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.
