@@ -9,11 +9,20 @@
   deduped signal set, and writes a single `background_job_logs` row with
   `job_type='reliability-triage'`. New Bridge tab `/admin/reliability` renders
   that row live. Collector core is `src/lib/reliability/**`.
-- Correlation reuses `buildIncidentSignature` — the SAME function whose output
-  is already stored write-time in `admin_events.fingerprint` — rather than
-  inventing a second scheme, so a Sentry issue and an app error row for one
-  root cause collapse to one entry, and this tab cannot disagree with the
-  Errors tab or the Golf Tracer about what one incident is.
+- Correlation reuses `buildIncidentSignature`'s normalisation rather than
+  inventing a second scheme, but calls it through `correlationSignature` with a
+  FIXED severity. Caught in review: `buildIncidentSignature` folds severity into
+  its key, so a Sentry `error` and an `admin_events` `warning` describing one
+  root cause would have produced two signatures, two entries, and never the
+  "confirmed by 2 sources" badge that is the tab's entire reason to exist apart
+  from the Errors tab. The first draft shipped a test that asserted the severity
+  ratchet using two rows of the SAME severity — it could not fail, and its own
+  comment noted the awkwardness instead of following it. Replaced with a test
+  that folds `error` + `warning` and asserts one entry; verified red/green.
+- Consequence recorded precisely, since the looser claim would rot: what is
+  shared with the Errors tab and the Golf Tracer is the normalisation and the
+  notion of "same failure", NOT the literal hash. The correlation signature is
+  deliberately not equal to the stored `admin_events.fingerprint`.
 - Storage is `background_job_logs.metadata`, NOT a new table. A new table is R3
   (owner-applied migration) and would have blocked the pipeline on a production
   schema change. A CI-committed JSON artifact was rejected on a harder

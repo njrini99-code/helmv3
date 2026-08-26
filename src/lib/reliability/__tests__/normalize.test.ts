@@ -31,7 +31,7 @@ function sourceResult(overrides: Partial<SourceResult> = {}): SourceResult {
     status: 'ok',
     reason: null,
     signals: [],
-    droppedCount: 0,
+    bounded: false,
     durationMs: 5,
     ...overrides,
   };
@@ -111,17 +111,56 @@ describe('correlateSignals — cross-source folding', () => {
     expect(signals).toHaveLength(2);
   });
 
-  it('ratchets to the worst severity across sources', () => {
+  it('correlates one root cause even when sources RATE IT DIFFERENTLY', () => {
+    // The common real case, and the one a severity-bearing key silently breaks:
+    // Sentry says `error` for plenty of conditions this app logs as `warning`.
+    // If severity were part of the correlation key these would be two entries
+    // and the "confirmed by 2 sources" badge — the reason this tab exists apart
+    // from the Errors tab — would never fire.
     const { signals } = correlateSignals([
-      sourceResult({ signals: [rawSignal({ severity: 'error' })] }),
+      sourceResult({ source: 'sentry', signals: [rawSignal({ source: 'sentry', severity: 'error' })] }),
       sourceResult({
         source: 'supabase',
-        // Same severity in the key would change the signature, so this asserts
-        // the ratchet on a bucket reached via an identical key.
-        signals: [rawSignal({ source: 'supabase', severity: 'error' })],
+        signals: [rawSignal({ source: 'supabase', severity: 'warning' })],
       }),
     ]);
+
+    expect(signals).toHaveLength(1);
+    expect(signals[0]!.sources.sort()).toEqual(['sentry', 'supabase']);
+    // And the fold keeps the WORSE of the two, never the last one written.
     expect(signals[0]!.severity).toBe('error');
+  });
+
+  it('ratchets to the worst severity regardless of arrival order', () => {
+    const lowThenHigh = correlateSignals([
+      sourceResult({ source: 'sentry', signals: [rawSignal({ source: 'sentry', severity: 'info' })] }),
+      sourceResult({ source: 'supabase', signals: [rawSignal({ source: 'supabase', severity: 'critical' })] }),
+    ]);
+    const highThenLow = correlateSignals([
+      sourceResult({ source: 'sentry', signals: [rawSignal({ source: 'sentry', severity: 'critical' })] }),
+      sourceResult({ source: 'supabase', signals: [rawSignal({ source: 'supabase', severity: 'info' })] }),
+    ]);
+    // The length assertions are not decoration. Without them these two pass
+    // under a BROKEN implementation: a severity-bearing key splits each pair
+    // into two entries, and the sort puts `critical` first, so reading only
+    // signals[0].severity finds 'critical' either way. Asserting the fold
+    // happened at all is what makes this test able to fail.
+    expect(lowThenHigh.signals).toHaveLength(1);
+    expect(highThenLow.signals).toHaveLength(1);
+    expect(lowThenHigh.signals[0]!.severity).toBe('critical');
+    expect(highThenLow.signals[0]!.severity).toBe('critical');
+  });
+
+  it('re-derives the risk tier after a severity ratchet', () => {
+    // proposeRisk reads severity, so a bucket whose severity worsened during
+    // the fold must not keep the tier computed from the first row seen.
+    const { signals } = correlateSignals([
+      sourceResult({ source: 'sentry', signals: [rawSignal({ source: 'sentry', severity: 'info' })] }),
+      sourceResult({ source: 'supabase', signals: [rawSignal({ source: 'supabase', severity: 'critical' })] }),
+    ]);
+    expect(signals).toHaveLength(1);
+    expect(signals[0]!.severity).toBe('critical');
+    expect(signals[0]!.proposedRisk).toBe('R2');
   });
 
   it('ranks cross-source corroboration above a single loud source', () => {
@@ -206,12 +245,12 @@ describe('proposeRisk — privileged work is never proposed as low risk', () => 
 describe('summarizeSources', () => {
   it('drops the signal payload but keeps the diagnosis', () => {
     const summary = summarizeSources([
-      sourceResult({ status: 'blind', reason: 'no token', signals: [rawSignal()], droppedCount: 3 }),
+      sourceResult({ status: 'blind', reason: 'no token', signals: [rawSignal()], bounded: true }),
     ]);
     expect(summary[0]).not.toHaveProperty('signals');
     expect(summary[0]!.status).toBe('blind');
     expect(summary[0]!.reason).toBe('no token');
-    expect(summary[0]!.droppedCount).toBe(3);
+    expect(summary[0]!.bounded).toBe(true);
   });
 });
 

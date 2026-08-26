@@ -88,7 +88,7 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
       status: 'blind' as const,
       reason: outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason),
       signals: [],
-      droppedCount: 0,
+      bounded: false,
       durationMs: 0,
     };
   });

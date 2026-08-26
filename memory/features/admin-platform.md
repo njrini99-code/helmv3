@@ -109,11 +109,22 @@ them would have broken those routes, not the dead one.
   out `event_type='rca_analysis'` AND any row naming `reliability-triage`. This
   is the same shape as the `rca_analysis` bug above, which is why the fix is the
   same fix; do not remove either filter.
-- **One incident-grouping algorithm, now across sources too.** The reliability
-  collector correlates Sentry, Vercel and Supabase signals with
-  `buildIncidentSignature` — the same function stored write-time in
-  `admin_events.fingerprint` — so cross-source folding cannot disagree with the
-  Errors tab or the Tracer about what constitutes one incident.
+- **Cross-source correlation drops severity from the key, and must.**
+  `buildIncidentSignature` folds severity INTO its key
+  (`severity::errorCode::route::messagePrefix`), which is right for its original
+  callers — they group rows arriving from one source through one writer. It is
+  wrong across sources: Sentry rates as `error` plenty of conditions this app
+  logs to `admin_events` as `warning`, so the severity-bearing key splits one
+  root cause into two entries and the "confirmed by N sources" badge never
+  fires. `correlationSignature` in `src/lib/reliability/normalize.ts` therefore
+  calls the same function with a FIXED severity and lets `pickWorseSeverity`
+  carry severity across the fold instead.
+  Be precise about what this shares with the other views, because the looser
+  claim rots: the reliability tab reuses the **normalisation** — and therefore
+  the notion of what counts as the same failure — but its signature value is
+  **not** equal to the row's stored `admin_events.fingerprint`, which was
+  computed with that row's real severity. Within the Supabase arm, rows are
+  still pre-grouped on the stored fingerprint before correlation runs.
 - **Error text is redacted before it is stored**, not only before it reaches
   Sentry, and `stack` / `message` / `title` count as error text — not just
   `url` and `context`. URL query strings and fragments can carry magic-link

@@ -41,7 +41,7 @@ export type RiskTier = 'R0' | 'R1' | 'R2' | 'R3';
  * Why an arm produced what it produced.
  *
  * - `ok`      — reached the provider, results are complete for the window.
- * - `partial` — reached it, but truncated (see `droppedCount`). Still useful.
+ * - `partial` — reached it, but truncated (see `bounded`). Still useful.
  * - `blind`   — could not read it at all. Signals from this arm are ABSENT,
  *               not zero. Never render a blind arm as healthy.
  */
@@ -54,12 +54,20 @@ export interface SourceResult {
   reason: string | null;
   signals: RawSignal[];
   /**
-   * How many items this arm deliberately did not return (top-N cap, window
-   * bound, page limit). Surfaced in the Bridge because quality-gates §1
-   * requires bounded coverage to say what it dropped — silent truncation reads
-   * as "covered everything".
+   * Whether this arm stopped short of the true total (top-N cap, window bound,
+   * page limit) — NOT how many it dropped.
+   *
+   * The honest shape is a flag, because none of the three sources tells us the
+   * count we did not fetch: a bounded PostgREST read that comes back full and
+   * one that happens to end exactly at the limit are indistinguishable, and
+   * Sentry's pager reports only that another page exists. An earlier version of
+   * this field was named `droppedCount` and assigned `truncated ? 1 : 0` — a
+   * boolean wearing a count's name, which would have rendered "1 dropped" for a
+   * page that omitted thousands. Surfaced in the Bridge either way, because
+   * quality-gates §1 requires bounded coverage to say so rather than read as
+   * "covered everything".
    */
-  droppedCount: number;
+  bounded: boolean;
   /** Milliseconds spent in this arm, for spotting the one that is timing out. */
   durationMs: number;
 }
@@ -89,12 +97,20 @@ export interface RawSignal {
 /**
  * A raw signal folded across sources by shared signature.
  *
- * `signature` comes from `buildIncidentSignature` — the SAME function whose
- * output is already stored write-time in `admin_events.fingerprint`. Reusing it
- * rather than inventing a second scheme is what lets a Sentry issue and a
- * Supabase error row for one root cause collapse into one entry here, and it
- * keeps this view consistent with the Errors tab and the Golf Tracer, which the
- * admin-platform feature doc requires be a single grouping algorithm.
+ * `signature` comes from `correlationSignature`, which calls the SAME
+ * `buildIncidentSignature` the Errors tab and Golf Tracer group by — but with a
+ * fixed severity, so the key reduces to `errorCode::route::messagePrefix`.
+ *
+ * That difference is deliberate and load-bearing. `buildIncidentSignature`
+ * folds severity into its key, which is correct when grouping rows from one
+ * writer and wrong across sources: Sentry rates as `error` plenty of conditions
+ * this app logs as `warning`, so the severity-bearing key would split one root
+ * cause into two entries and the cross-source badge would never appear.
+ *
+ * So what is shared with those other views is the normalisation and therefore
+ * the notion of what counts as "the same failure" — NOT the literal hash. This
+ * value is not equal to the row's stored `admin_events.fingerprint`, and no doc
+ * should claim it is.
  */
 export interface CorrelatedSignal {
   signature: string;

@@ -20,6 +20,15 @@
   - **Cross-source folding.** One root cause seen by Sentry and Supabase with
     different round ids in the route collapses to a single signal with summed
     count, both sources listed, and both evidence refs retained.
+  - **Folding survives sources disagreeing about severity** — Sentry `error` +
+    Supabase `warning` for one root cause must be ONE entry with the worse
+    severity kept. The first draft's version of this test passed two rows of the
+    same severity and therefore could not fail; the replacement was verified
+    red/green against the severity-bearing key (22 pass → 1 fail).
+    Two neighbouring ratchet tests also gained `toHaveLength(1)` assertions:
+    without them they passed under the broken implementation, because splitting
+    a pair into two entries left `critical` first in the sort order and reading
+    only `signals[0].severity` found it either way.
   - **Bounded coverage is counted, never silent** (quality-gates §1).
   - **Redaction at the boundary.** Emails in a title or message do not survive
     into stored signal text.

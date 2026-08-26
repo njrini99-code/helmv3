@@ -146,7 +146,7 @@ function RunPanel({ row }: { row: ReliabilityRunRow }) {
             <p className="mt-1.5 text-xs text-warm-500">
               {source.reason
                 ? source.reason
-                : `${source.durationMs}ms${source.droppedCount > 0 ? ' · bounded' : ''}`}
+                : `${source.durationMs}ms${source.bounded ? ' · bounded' : ''}`}
             </p>
           </div>
         ))}

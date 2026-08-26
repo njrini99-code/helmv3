@@ -97,7 +97,7 @@ export async function collectSentry(): Promise<SourceResult> {
     status,
     reason,
     signals,
-    droppedCount: res.truncated ? 1 : 0,
+    bounded: res.truncated === true,
     durationMs: Date.now() - startedAt,
   };
 }
@@ -145,7 +145,7 @@ export async function collectSupabase(windowStartIso: string): Promise<SourceRes
       status: 'blind',
       reason: error.message,
       signals: [],
-      droppedCount: 0,
+      bounded: false,
       durationMs: Date.now() - startedAt,
     };
   }
@@ -197,7 +197,7 @@ export async function collectSupabase(windowStartIso: string): Promise<SourceRes
     status: truncated ? 'partial' : 'ok',
     reason: truncated ? `row cap ${SUPABASE_ROW_LIMIT} reached for this window` : null,
     signals: Array.from(byFingerprint.values()),
-    droppedCount: truncated ? 1 : 0,
+    bounded: truncated,
     durationMs: Date.now() - startedAt,
   };
 }
@@ -259,7 +259,7 @@ export async function collectVercel(): Promise<SourceResult> {
     status,
     reason,
     signals,
-    droppedCount: 0,
+    bounded: false,
     durationMs: Date.now() - startedAt,
   };
 }

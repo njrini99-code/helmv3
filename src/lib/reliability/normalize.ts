@@ -94,6 +94,45 @@ function pickWorseSeverity(a: ReliabilitySeverity, b: ReliabilitySeverity): Reli
 }
 
 /**
+ * The severity used to build a correlation key. Its VALUE is irrelevant — what
+ * matters is that it is constant.
+ */
+const CORRELATION_SEVERITY: ReliabilitySeverity = 'error';
+
+/**
+ * Severity-independent correlation key.
+ *
+ * `buildIncidentSignature` folds severity INTO its key
+ * (`severity::errorCode::route::messagePrefix`). That is right for its original
+ * callers, which group rows arriving from a single source through a single
+ * writer. It is wrong for cross-source correlation, and quietly so: Sentry
+ * reports `level: 'error'` for plenty of conditions this app logs to
+ * `admin_events` as `warning`, so one root cause would produce two signatures,
+ * two entries, and never the "confirmed by 2 sources" badge that is the entire
+ * reason this tab exists separately from the Errors tab.
+ *
+ * Passing a FIXED severity yields the `errorCode::route::messagePrefix` half of
+ * the same key, under the same normalisation rules (route ids collapsed, UUIDs
+ * and long hex masked, 80-char message prefix), and lets `pickWorseSeverity`
+ * carry severity across the fold instead of the key silently partitioning on it.
+ *
+ * Consequence worth being precise about, because a doc claiming otherwise would
+ * rot: the value returned here is deliberately NOT equal to the row's stored
+ * `admin_events.fingerprint`, which was computed with that row's real severity.
+ * What is shared with the Errors tab and the Golf Tracer is the normalisation
+ * function and therefore the notion of what counts as "the same failure" — not
+ * the literal hash. Within the Supabase arm, rows are still pre-grouped on the
+ * stored fingerprint before they ever reach this function.
+ */
+export function correlationSignature(input: {
+  errorCode: string | null;
+  route: string | null;
+  message: string;
+}): string {
+  return buildIncidentSignature({ ...input, severity: CORRELATION_SEVERITY });
+}
+
+/**
  * Fold every arm's raw signals into one deduped, severity-ratcheted set.
  *
  * Correlation key is `buildIncidentSignature` — the same signature already
@@ -113,8 +152,10 @@ export function correlateSignals(
 
   for (const result of results) {
     for (const raw of result.signals) {
-      const signature = buildIncidentSignature({
-        severity: raw.severity,
+      // Severity-independent on purpose — see `correlationSignature`. Using
+      // the severity-bearing key here would partition one root cause across
+      // sources that rate it differently, which is the common case.
+      const signature = correlationSignature({
         errorCode: raw.errorCode,
         route: raw.route,
         message: raw.message,
