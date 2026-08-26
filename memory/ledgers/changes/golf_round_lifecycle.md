@@ -175,3 +175,14 @@
 - Also same date: `FairwayHoleConfig` par chips now fire `fwHaptic('selection')`
   (grammar §32 gap found by live bridge-log QA — chip toggled silently);
   yardage typing stays silent. eslint 0 / typecheck 0.
+
+## 2026-08-26 (morning addendum) — dark-mode chrome refinements touching round surfaces
+
+- What: `Segmented` (shared control used by round entry's Front9/Back9 and
+  9/18-hole selectors) gains a dark-scope accent-green selected thumb and
+  full-contrast inactive labels; light mode unchanged. Launch splash gains a
+  dark variant and both grounds are now token-exact to `--fw-color-canvas`,
+  so entering a round from a cold launch no longer flashes off-brand cream.
+- Why: owner directives during live morning QA ("highlighted should turn
+  green — no contrast"; "that cream isn't the right cream"). Presentation
+  only; no round state machine, autosave, or scoring logic touched.

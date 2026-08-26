@@ -121,3 +121,9 @@
 - What/Why: shot-entry surfaces render under `FairwayScorecardHeader`, which
   now carries the iOS status-bar inset (see golf_round_lifecycle.md entry of
   this date). No shot state machine, save path, or haptic logic changed.
+
+## 2026-08-26 (morning addendum) — inherited dark-chrome refinements
+
+- What/Why: shot-entry surfaces use the shared `Segmented`/splash chrome
+  refined this morning (see golf_round_lifecycle.md entry of this date).
+  No shot-tracking logic changed.
