@@ -89,7 +89,7 @@
 
 ## 2026-08-25 — lifecycle privilege-contract suite
 
-- Added `supabase/tests/rls/golf_lifecycle_privilege_contracts.sql`: the
+- Added the lifecycle privilege-contract suite in `supabase/tests/rls/`: the
   privilege contract of the whole lifecycle RPC surface asserted at the
   catalog level (schema USAGE, EXECUTE grants, owner, definer mode, pinned
   search_path), plus two zero tripwires — no public definer function is

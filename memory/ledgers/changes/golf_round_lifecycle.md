@@ -94,7 +94,7 @@
 ## 2026-08-25 — privilege-contract suite, anon-grant normalization, rollback captures
 
 - SHA: pending commit on fix/save-round-ai-recap-definer-facade.
-- Change: added `supabase/tests/rls/golf_lifecycle_privilege_contracts.sql`
+- Change: added the lifecycle privilege-contract suite in `supabase/tests/rls/`
   (25 catalog-level assertions: helm_private schema closure; definer mode,
   owner, pinned search_path and role grants for the recap pair, heartbeat,
   submit_round_atomic and save_partial_round_atomic; the lifecycle guard
