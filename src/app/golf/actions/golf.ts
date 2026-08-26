@@ -43,6 +43,7 @@ import type { Database, Json } from '@/lib/types/database';
 import { getQualifierAutomaticTransition } from '@/lib/golf/qualifier-lifecycle';
 import {
   createHelmFlightRecorder,
+  recordRescuedStepOutcome,
   type HelmFlightRecorder,
   type StartHelmFlightRecorderInput,
 } from '@/lib/observability/helm-flight-recorder';
@@ -2032,8 +2033,6 @@ async function submitGolfRoundComprehensiveImpl(
           void flightRecorder.finalize('success');
           round = { id: existingRoundId };
         } else {
-          void flightRecorder.fail('db.submit_round_atomic', { errorCode: rpcError.code, errorSummary: rpcError.message });
-          void flightRecorder.finalize('failure');
           await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc', helmTraceId: flightRecorder.traceId, traceStep: 'db.submit_round_atomic' });
           await logServerError(`Round submit RPC failed: ${rpcError.message}`, {
             action: 'submitGolfRoundComprehensive',
@@ -2062,6 +2061,17 @@ async function submitGolfRoundComprehensiveImpl(
             },
             backupPersisted
           );
+          // Deferred until AFTER the fallback resolves — see
+          // recordRescuedStepOutcome's own doc. Marking db.submit_round_atomic
+          // failed before this point would poison finalize() into reporting
+          // 'failure' even if the fallback above had just saved the round.
+          void recordRescuedStepOutcome(flightRecorder, {
+            failedStepKey: 'db.submit_round_atomic',
+            fallbackStepKey: 'db.direct_submit_fallback',
+            rescued: fallbackResult.success,
+            stepInput: { errorCode: rpcError.code, errorSummary: rpcError.message },
+            fallbackStepInput: { observed: { round_id: existingRoundId } },
+          });
           if (!fallbackResult.success) {
             return fallbackResult;
           }
@@ -2189,8 +2199,6 @@ async function submitGolfRoundComprehensiveImpl(
           // Do NOT delete the round — preserve it so the user can retry.
           // Deleting here caused permanent data loss when the RPC failed
           // (e.g., trigger errors, network timeouts, race conditions).
-          void flightRecorder.fail('db.submit_round_atomic', { errorCode: rpcError.code, errorSummary: rpcError.message });
-          void flightRecorder.finalize('failure');
           await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc.new', helmTraceId: flightRecorder.traceId, traceStep: 'db.submit_round_atomic' });
           await logServerError(`Round submit RPC failed (new round): ${rpcError.message}`, {
             action: 'submitGolfRoundComprehensive',
@@ -2219,6 +2227,17 @@ async function submitGolfRoundComprehensiveImpl(
             },
             true
           );
+          // Deferred until AFTER the fallback resolves — see
+          // recordRescuedStepOutcome's own doc. Marking db.submit_round_atomic
+          // failed before this point would poison finalize() into reporting
+          // 'failure' even if the fallback above had just saved the round.
+          void recordRescuedStepOutcome(flightRecorder, {
+            failedStepKey: 'db.submit_round_atomic',
+            fallbackStepKey: 'db.direct_submit_fallback',
+            rescued: fallbackResult.success,
+            stepInput: { errorCode: rpcError.code, errorSummary: rpcError.message },
+            fallbackStepInput: { observed: { round_id: newRound.id } },
+          });
           if (!fallbackResult.success) {
             return fallbackResult;
           }

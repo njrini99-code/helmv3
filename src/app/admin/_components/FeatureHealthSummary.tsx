@@ -84,7 +84,7 @@ export function FeatureHealthSummary({
         <Link
           key={c.key}
           href={`/admin/errors?feature=${c.key}`}
-          className="rounded-full transition-opacity hover:opacity-80"
+          className="inline-flex min-h-11 items-center rounded-full transition-opacity hover:opacity-80"
         >
           <StatusPill tone={c.tone} dot size="sm">
             {c.label}

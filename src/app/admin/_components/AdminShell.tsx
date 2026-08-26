@@ -234,11 +234,13 @@ export function AdminShell({
   email: string;
   /** Bridge bottom-nav Errors badge — 0 renders no badge (honest-only). */
   errorCount: number;
-  /** Bridge bottom-nav Health badge — count of RED features, 0 renders no
-   *  badge (honest-only). Computed in layout.tsx via the existing
-   *  feature-health rollup fetch (see its doc comment there for the cost
-   *  tradeoff on non-Overview routes). */
-  healthCount: number;
+  /** Bridge bottom-nav Health badge — count of RED features, computed in
+   *  layout.tsx via fetchFeatureHealthRedCount() (see its doc comment for
+   *  the DB-only, Sentry-free cost tradeoff). `null` means the pipeline was
+   *  degraded/unreachable — "unknown" must never render like "zero", so
+   *  both `null` and `0` render no badge, and only a real positive count
+   *  shows one (honest-only). */
+  healthCount: number | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -426,7 +428,7 @@ export function AdminShell({
         badge:
           href === '/admin/errors' && errorCount > 0
             ? errorCount
-            : href === '/admin/health' && healthCount > 0
+            : href === '/admin/health' && healthCount !== null && healthCount > 0
               ? healthCount
               : undefined,
       })),

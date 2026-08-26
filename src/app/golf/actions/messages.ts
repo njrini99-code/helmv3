@@ -15,7 +15,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
-import { withGolfAction } from '@/lib/golf/with-golf-action';
+import { withGolfAction, captureGolfActionError } from '@/lib/golf/with-golf-action';
 import { describeError } from '@/lib/utils/describe-error';
 import {
   sendGolfMessage,
@@ -200,15 +200,25 @@ async function resolveGolfTeamAudience(teamId: string): Promise<Set<string> | nu
  *
  * Wrapped in `withGolfAction` (see src/lib/golf/with-golf-action.ts) for the
  * shared classify -> RLS-denial-capture -> log sequence this file used to
- * hand-roll at the two `logServerError`-then-`throw` sites below (now
- * dropped — the wrapper's catch covers the identical failure once, not
- * twice). `sanitizeUnexpectedErrors: false` keeps every thrown message here
- * exactly as authored: none of them are raw DB output (`AUDIENCE_UNAVAILABLE`
- * and the two denials below are hand-written, user-safe strings), and
- * callers read `error.message` directly, so the wrapper's default
- * generic-message sanitization would only replace a specific, actionable
- * denial with a useless one. The failure is still fully logged either way —
- * this only controls what the caller sees.
+ * hand-roll at the two `logServerError`-then-`throw` sites below.
+ * `sanitizeUnexpectedErrors: false` keeps every thrown message here exactly
+ * as authored: none of them are raw DB output (`AUDIENCE_UNAVAILABLE` and
+ * the two denials below are hand-written, user-safe strings), and callers
+ * read `error.message` directly, so the wrapper's default generic-message
+ * sanitization would only replace a specific, actionable denial with a
+ * useless one.
+ *
+ * The two tenancy denials below (not `AUDIENCE_UNAVAILABLE`, which is a real
+ * infra failure, not a denial) additionally call `captureGolfActionError`
+ * immediately before throwing — a second, deliberate log call, not
+ * redundancy left over from the retrofit. The wrapper's own catch classifies
+ * and logs every throw generically, but its `contextFrom` only sees the
+ * ORIGINAL call args (`participantUserIds`, `teamId`); it cannot see
+ * `user.id` or the resolved `outsiders` list, both computed here inside
+ * `fn`. Losing who was denied and which recipients were rejected on an
+ * authorization-denial path is a worse outcome than one extra
+ * `logServerException` row per denial, so this file captures that identity
+ * explicitly rather than relying on the generic wrapper log to carry it.
  */
 async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {
   const supabase = await createClient();
@@ -228,12 +238,44 @@ async function createGolfConversationImpl(participantUserIds: string[], teamId?:
     }
 
     if (!audience.has(user.id)) {
-      throw new Error('You do not have access to this team');
+      // withGolfAction's own catch below still logs this throw, but its
+      // `contextFrom` only sees the ORIGINAL call args (participantUserIds,
+      // teamId) — it has no way to see `user.id`, which is resolved here
+      // inside `fn`. On a security-relevant denial like this, losing WHO was
+      // denied is worse than one extra admin_events row for the same event,
+      // so capture the identity explicitly before throwing.
+      const error = new Error('You do not have access to this team');
+      captureGolfActionError(error, {
+        action: ACTION,
+        featureArea: 'golf-messaging',
+        feature: 'messaging',
+        userId: user.id,
+        userEmail: user.email,
+        teamId,
+        rls: { table: 'golf_conversation_participants', verb: 'insert' },
+      });
+      throw error;
     }
 
     const outsiders = requestedIds.filter((id) => !audience.has(id));
     if (outsiders.length > 0) {
-      throw new Error('One or more recipients are not on this team');
+      // Same gap as above, plus the actual target: `outsiders` only exists
+      // inside `fn` and is lost the moment this throws unless captured here.
+      // Never put the ids in the thrown MESSAGE — `sanitizeUnexpectedErrors:
+      // false` on the wrapper rethrows this unsanitized to the caller, and
+      // the ids belong in server-side telemetry, not in a response body.
+      const error = new Error('One or more recipients are not on this team');
+      captureGolfActionError(error, {
+        action: ACTION,
+        featureArea: 'golf-messaging',
+        feature: 'messaging',
+        userId: user.id,
+        userEmail: user.email,
+        teamId,
+        rls: { table: 'golf_conversation_participants', verb: 'insert' },
+        metadata: { outsiderCount: outsiders.length, outsiderIds: outsiders },
+      });
+      throw error;
     }
   }
 

@@ -141,6 +141,36 @@ function environmentForTrace(value: string | undefined): string {
 }
 
 /**
+ * The trace-start write is opt-in diagnostics, not a request dependency — it
+ * must never be the thing that makes a round save slow. Recorder writes are
+ * enabled by default in dev/test and are opt-in in production (see `enabled`
+ * below), which means the one time this write actually happens in production
+ * is mid-incident: exactly when a hung RPC would otherwise stack extra
+ * latency onto every round write. `persistStart`'s own `failOpen` wrapper
+ * only guards against a REJECTION; a hang that never settles at all would
+ * still block the caller forever without this.
+ */
+export const PERSIST_START_TIMEOUT_MS = 1500;
+
+/**
+ * Resolves 'settled' once `promise` settles, or 'timeout' after `ms` —
+ * whichever comes first. Never rejects: `promise` here is always the return
+ * of `failOpen(...)`, whose own try/catch guarantees it resolves rather than
+ * rejects, but the `.catch` below is kept as a second line of defense so a
+ * future edit to that guarantee can't turn this into an unhandled rejection.
+ */
+function raceAgainstTimeout(promise: Promise<void>, ms: number): Promise<'settled' | 'timeout'> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve('timeout'), ms);
+    const settle = () => {
+      clearTimeout(timer);
+      resolve('settled');
+    };
+    promise.then(settle, settle);
+  });
+}
+
+/**
  * Creates a fail-open recorder. It is intentionally server-only because the
  * private helm_debug schema can only be accessed through service-role RPCs.
  * Browser actions pass the opaque UUID to the Server Action; the server owns
@@ -204,12 +234,56 @@ export async function createHelmFlightRecorder(
     }
   };
 
-  await failOpen('start', () => dependencies.persistStart({
-    traceId,
-    workflow: input.workflow,
-    environment: environmentForTrace(input.environment),
-    metadata: baseMetadata,
-  }));
+  /**
+   * `RecorderSpan.setStatus`/`.end()` are synchronous, caller-supplied
+   * (Sentry today, a test double in tests) — nothing here guarantees they
+   * can't throw. Every call site is either inside a `void`-called async
+   * function (`finalize`) or a fire-and-forget degrade path, so an
+   * unguarded throw here becomes an unhandled promise rejection on the
+   * round-save hot path instead of a caught, reported one.
+   */
+  const closeSpanSafely = (status: 'ok' | 'internal_error') => {
+    try {
+      span.setStatus(status);
+      span.end();
+    } catch (error) {
+      dependencies.onRecorderFailure(error, { operation: 'span_close', trace_id: traceId, workflow: input.workflow });
+    }
+  };
+
+  const startOutcome = await raceAgainstTimeout(
+    failOpen('start', () => dependencies.persistStart({
+      traceId,
+      workflow: input.workflow,
+      environment: environmentForTrace(input.environment),
+      metadata: baseMetadata,
+    })),
+    PERSIST_START_TIMEOUT_MS,
+  );
+
+  if (startOutcome === 'timeout') {
+    // The write is still running in the background — failOpen's own
+    // try/catch means it can only ever resolve, so there is nothing to await
+    // or cancel here. Degrade THIS trace to the same inert no-op shape the
+    // disabled-mode branch above returns, and close out the Sentry span we
+    // already opened so it doesn't leak as permanently "in progress".
+    dependencies.onRecorderFailure(
+      new Error(`persistStart exceeded ${PERSIST_START_TIMEOUT_MS}ms`),
+      { operation: 'start_timeout', trace_id: traceId, workflow: input.workflow, timeout_ms: PERSIST_START_TIMEOUT_MS },
+    );
+    closeSpanSafely('internal_error');
+    const noop = async () => undefined;
+    return {
+      traceId,
+      workflow: input.workflow,
+      start: noop,
+      complete: noop,
+      fail: noop,
+      warn: noop,
+      skip: noop,
+      finalize: noop,
+    };
+  }
 
   const transition = async (
     stepKey: string,
@@ -273,8 +347,51 @@ export async function createHelmFlightRecorder(
           } : {}),
         }),
       }));
-      span.setStatus(finalStatus === 'failure' ? 'internal_error' : 'ok');
-      span.end();
+      closeSpanSafely(finalStatus === 'failure' ? 'internal_error' : 'ok');
     },
   };
+}
+
+export interface RescuedStepOutcomeInput {
+  /** The step that failed at the transport/RPC layer. */
+  failedStepKey: string;
+  /** The step recording the fallback write that may have rescued the save. */
+  fallbackStepKey: string;
+  /** True when the fallback actually saved the data the failed step could not. */
+  rescued: boolean;
+  /** Attached to the failed step's `fail`/`warn` call either way (error code/summary). */
+  stepInput?: FlightRecorderStepInput;
+  /** Attached to the fallback step's `complete` call — only used when `rescued`. */
+  fallbackStepInput?: FlightRecorderStepInput;
+}
+
+/**
+ * Records the correct trace outcome for a required step that failed at the
+ * transport layer but may have been rescued by a fallback write — call this
+ * only AFTER the fallback has resolved, never before it starts.
+ *
+ * `finalize()` above intentionally overrides its `status` argument to
+ * 'failure' whenever ANY recorded step carries status 'failure' (see the
+ * `trace.steps().find` above). Marking the failed step `fail()` before a
+ * fallback runs — then `finalize('success')` once the fallback saves the
+ * data — would still report the whole trace as a failure, because the
+ * earlier `fail()` call already poisoned it; the diagnostic record would lie
+ * about a round that was genuinely saved. Downgrading the step to a warning
+ * and recording the fallback as its own completed step keeps the trace
+ * honest whichever way the fallback resolves, without ever hiding that the
+ * primary path failed.
+ */
+export async function recordRescuedStepOutcome(
+  recorder: HelmFlightRecorder,
+  input: RescuedStepOutcomeInput,
+): Promise<void> {
+  if (!input.rescued) {
+    await recorder.fail(input.failedStepKey, input.stepInput);
+    await recorder.finalize('failure');
+    return;
+  }
+  await recorder.warn(input.failedStepKey, input.stepInput);
+  await recorder.start(input.fallbackStepKey);
+  await recorder.complete(input.fallbackStepKey, input.fallbackStepInput);
+  await recorder.finalize('success');
 }

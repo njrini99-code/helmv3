@@ -84,6 +84,15 @@ describe('AdminShell bottom-nav Health badge', () => {
     expect(screen.getByText('Health:3')).toBeInTheDocument();
   });
 
+  it('renders no badge — never a fake 0 — when the health count is unknown (degraded pipeline)', () => {
+    render(
+      <AdminShell email="admin@helm.test" errorCount={0} healthCount={null}>
+        <div>Bridge content</div>
+      </AdminShell>,
+    );
+    expect(screen.getByText('Health:none')).toBeInTheDocument();
+  });
+
   it('keeps the Errors and Health badges independent of each other', () => {
     render(
       <AdminShell email="admin@helm.test" errorCount={5} healthCount={2}>

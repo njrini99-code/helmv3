@@ -77,8 +77,36 @@ describe('withGolfAction observability', () => {
       source: 'server_action',
       handled: false,
       skipSentry: false,
-      fingerprint: ['server_action', 'golf-round-tracking', 'saveGolfRoundHole'],
+      fingerprint: ['server_action', 'golf-round-tracking', 'saveGolfRoundHole', 'error'],
     });
+  });
+
+  // Regression guard: the 4th fingerprint element is what keeps two different
+  // causes for the same action in two different incidents. Passing an explicit
+  // fingerprint short-circuits buildFingerprint's shared default, so if this
+  // ever drops back to 3 elements the forensics page silently starts showing
+  // one incident with a mixed history — and an RCA run reasons over both
+  // causes at once. Cheap to assert, invisible until it matters.
+  it('separates distinct causes for one action into distinct fingerprints', async () => {
+    // Two SQLSTATEs on the same action — a unique-violation and a
+    // serialization failure. Same action, genuinely different bugs.
+    const failing = (message: string, code: string) =>
+      withGolfAction('removePlayerFromTeam', { featureArea: 'golf-roster' }, async () => {
+        throw Object.assign(new Error(message), { code });
+      });
+
+    await expect(failing('duplicate key value', '23505')()).rejects.toThrow();
+    await expect(failing('could not serialize access', '40001')()).rejects.toThrow();
+
+    const fingerprints = mocks.logServerException.mock.calls.map(
+      (call) => (call[1] as { fingerprint: string[] }).fingerprint,
+    );
+    expect(fingerprints).toHaveLength(2);
+    expect(fingerprints[0]).not.toEqual(fingerprints[1]);
+    for (const fp of fingerprints) {
+      expect(fp.slice(0, 3)).toEqual(['server_action', 'golf-roster', 'removePlayerFromTeam']);
+      expect(fp).toHaveLength(4);
+    }
   });
 
   it('rethrows an expected/benign failure as the ORIGINAL error, logged as a handled warning', async () => {

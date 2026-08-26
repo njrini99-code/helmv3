@@ -11,7 +11,11 @@ import {
   getTraceRoute,
   type TraceSport,
 } from '@/lib/error-trace-classification';
-import { redactPiiDeep, maskEmails, collapseEmailsForGrouping } from '@/lib/observability/redact-pii';
+import {
+  redactPiiDeep,
+  collapseEmailsForGrouping,
+  redactFreeTextForStorage,
+} from '@/lib/observability/redact-pii';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 import type { Json } from '@/lib/types/database';
 
@@ -54,6 +58,26 @@ function stripUrlSecrets(value: string): string {
     value.startsWith('#');
   if (!looksLikeUrl) return value;
   return value.replace(/[?#].*$/, '');
+}
+
+/**
+ * Report a redaction failure without becoming one. The shared
+ * `redactFreeTextForStorage` returns a withheld-content placeholder either
+ * way — this is telemetry about the failure, never the thing that decides
+ * whether the row gets written.
+ */
+function reportRedactionFailure(error: unknown, field: 'message' | 'stack'): void {
+  console.error(
+    `[log-error route] ${field} redaction failed; persisting a placeholder instead of the raw value`,
+    error,
+  );
+  try {
+    Sentry.captureException(error, {
+      tags: { component: 'log-error-route-redaction', field },
+    });
+  } catch {
+    // Reporting must never block the write path.
+  }
 }
 
 /** Bounds the recursive walk below — a pathological client payload must not turn this into a hang. */
@@ -111,6 +135,7 @@ function redactClientPayloadForStorage(rawUrl: string | null, rawContext: unknow
     };
   }
 }
+
 
 /**
  * 30 requests / 60s per IP — the WRITE-tier budget this route has always
@@ -223,8 +248,21 @@ export async function POST(request: NextRequest) {
     // raw would mask the same address in one place on the row and not the
     // other. Mirrors server-error-logger.ts's writeAdminTables, the other
     // write path into these same two tables.
-    const message = maskEmails(String(errorReport.message || 'Unknown error').slice(0, 2000));
-    const stack = errorReport.stack ? errorReport.stack.slice(0, 8000) : null;
+    //
+    // Both `message` and `stack` get the SAME redactFreeTextForStorage
+    // treatment (see its doc comment) — `message` also feeds
+    // `admin_events.title` below, so redacting it here covers both columns
+    // in one place.
+    const message = redactFreeTextForStorage(
+      String(errorReport.message || 'Unknown error'),
+      2000,
+      (err) => reportRedactionFailure(err, 'message'),
+    );
+    const stack = errorReport.stack
+      ? redactFreeTextForStorage(errorReport.stack, 8000, (err) =>
+          reportRedactionFailure(err, 'stack'),
+        )
+      : null;
 
     // Redact BEFORE anything downstream touches this data. The client
     // controls both `url` and `context` entirely, and `context` typically

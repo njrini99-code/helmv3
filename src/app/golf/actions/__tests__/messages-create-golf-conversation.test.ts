@@ -4,11 +4,23 @@
  * `createGolfConversation` throws hand-authored, user-safe messages (not raw
  * DB output) that callers read via `error.message` — see the docstring on
  * the export in ../messages.ts. withGolfAction is configured with
- * `sanitizeUnexpectedErrors: false` so those messages survive verbatim even
- * though none of them match the shared classifier's "expected" patterns
- * (the classifier tiers a real access denial as severity 'error'). These
- * tests pin that behavior, plus the two `logServerError`-then-throw sites
- * that used to be hand-rolled inline and are now the wrapper's job.
+ * `sanitizeUnexpectedErrors: false`, and the two tenancy-denial messages
+ * below are also anchored in observe-action-result.ts's
+ * EXPECTED_SOFT_FAILURE_PATTERNS (severity 'warning', not 'error') — either
+ * one is enough on its own to rethrow the original message unsanitized;
+ * together they mean this denial no longer pages Sentry for routine misuse.
+ *
+ * The retrofit initially DROPPED the two `logServerError`-then-throw sites
+ * this file used to hand-roll, on the theory that withGolfAction's own catch
+ * covers the identical failure once, not twice. That went too far: the
+ * wrapper's `contextFrom` only sees the ORIGINAL call args
+ * (participantUserIds, teamId) and cannot see `user.id` or the resolved
+ * `outsiders` list, both computed inside `fn` — so the denial's forensic
+ * detail (who was denied, which recipients were rejected) was lost, not just
+ * duplicated. createGolfConversationImpl now calls `captureGolfActionError`
+ * with that detail immediately before each throw, so TWO logServerException
+ * calls land per denial: the wrapper's generic one, and this identity-
+ * carrying one. These tests pin both messages AND that pairing.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
@@ -59,7 +71,7 @@ vi.mock('@/app/golf/actions/message-attachments', () => ({
 }));
 
 import { createGolfConversation } from '../messages';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerException } from '@/lib/server-error-logger';
 
 const TEAM_ID = 'team-1';
 
@@ -104,9 +116,24 @@ describe('createGolfConversation — withGolfAction retrofit', () => {
     await expect(createGolfConversation(['roster-user'], TEAM_ID)).rejects.toThrow(
       'You do not have access to this team',
     );
-    // No more hand-rolled inline log for this denial — withGolfAction's own
-    // catch is now the single place this failure gets recorded.
+    // Never the hand-rolled logServerError this file used before the
+    // withGolfAction retrofit.
     expect(logServerError).not.toHaveBeenCalled();
+
+    // withGolfAction's own catch records this denial generically, but its
+    // contextFrom only sees the ORIGINAL call args — it cannot see `user.id`,
+    // resolved inside fn. createGolfConversationImpl captures that identity
+    // explicitly via captureGolfActionError before throwing, so it must NOT
+    // be the wrapper's single log for this denial: two logServerException
+    // calls, one carrying the denied caller's identity.
+    expect(logServerException).toHaveBeenCalledTimes(2);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calls = (logServerException as any).mock.calls as Array<[Error, Record<string, unknown>, string?]>;
+    const identityCall = calls.find(([, ctx]) => ctx.userId === 'outsider-user');
+    expect(identityCall).toBeDefined();
+    expect(identityCall?.[1]).toMatchObject({ teamId: TEAM_ID, featureArea: 'golf-messaging' });
+    // The wrapper's own generic call still fires, without that identity.
+    expect(calls.some(([, ctx]) => ctx.userId == null)).toBe(true);
   });
 
   it('throws the exact "recipients not on this team" message, unsanitized, for an outsider participant', async () => {
@@ -114,6 +141,19 @@ describe('createGolfConversation — withGolfAction retrofit', () => {
       'One or more recipients are not on this team',
     );
     expect(logServerError).not.toHaveBeenCalled();
+
+    // Same identity gap as above, plus the actual rejected recipient ids —
+    // `outsiders` only exists inside fn and is otherwise lost the moment
+    // this throws.
+    expect(logServerException).toHaveBeenCalledTimes(2);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calls = (logServerException as any).mock.calls as Array<[Error, Record<string, unknown>, string?]>;
+    const identityCall = calls.find(([, ctx]) => ctx.userId === 'coach-user');
+    expect(identityCall).toBeDefined();
+    expect(identityCall?.[1]).toMatchObject({
+      teamId: TEAM_ID,
+      metadata: { outsiderCount: 1, outsiderIds: ['stranger-user'] },
+    });
   });
 
   it('preserves the find-existing short-circuit when no teamId is given (nothing validated, nothing new written)', async () => {

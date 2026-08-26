@@ -1,5 +1,43 @@
 # Admin Platform test ledger
 
+## 2026-08-26 — review-round coverage
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-observability`.
+- Added coverage:
+  - `with-golf-action.test.ts` — two SQLSTATEs on one action (`23505` and
+    `40001`) must produce two different fingerprints. This is the guard that
+    keeps the forensics page from showing one incident with a mixed history;
+    the defect it catches is invisible until an operator is mid-incident.
+  - `feature-health.test.ts` — `fetchFeatureHealthRedCount` returns a real
+    count from DB signals alone with the Sentry fetch never called, and
+    returns `null` (never `0`) when the RPC fails.
+  - `admin-shell-health-badge.test.tsx` — a null count renders no badge.
+  - `helm-flight-recorder.test.ts` — the rescued-outcome ordering proven
+    against the real (unmocked) recorder, so it exercises the actual
+    forced-failure override; plus a hung `persistStart` degrading cleanly
+    under fake timers without hanging the caller.
+  - `golf-round-submit-fallback-flight-recorder.test.ts` (new) — both submit
+    branches still finalize `failure` in the right order when the fallback
+    also fails.
+  - `observe-action-result.test.ts` — the two messaging denials classify as
+    expected soft failures, and the infrastructure failure beside them
+    deliberately does not.
+  - `RecentTimelines.test.tsx` — empty state asserts the real empty state
+    rather than the old click hint.
+  - `log-error.test.ts` / `server-error-logger.test.ts` — 21 tests over the
+    shared `redactFreeTextForStorage`: URL secrets in stack, message and the
+    serialized Postgres cause; path-segment tokens; the slice-before-mask
+    ordering (masking silently no-ops above 20k, so the wrong order would let
+    a fat payload skip masking entirely); title inheriting the fix; and both
+    fail-open paths. The fail-open tests force the throw through
+    `redactSensitiveUrl` rather than `maskEmails` — once the redaction moved
+    into `redact-pii.ts`, the mask call stopped crossing a module boundary and
+    a mock on it could no longer reach inside. Worth knowing before anyone
+    "fixes" that mock back.
+- Guarantees now held by tests: one incident per cause rather than per action;
+  a failed feature-health lookup can never render as "no red features"; the
+  flight recorder can neither stall a save nor mislabel a rescued round.
+
 ## 2026-08-26 — observability refit coverage
 
 - SHA: recorded in the follow-up ledger commit on `feat/bridge-refit`.

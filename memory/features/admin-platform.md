@@ -64,9 +64,17 @@ This area is high criticality because it often uses broader access patterns, ope
   under the analyzed fingerprint. Every incident query must exclude that event
   type, or an analysis is counted as an occurrence of the thing it analyzes
   (inflating occurrence counts and moving last-seen).
-- **Client-reported error context is redacted before it is stored**, not only
-  before it reaches Sentry. URL query strings and fragments can carry
-  magic-link tokens, OTPs, and OAuth codes.
+- **Error text is redacted before it is stored**, not only before it reaches
+  Sentry, and `stack` / `message` / `title` count as error text — not just
+  `url` and `context`. URL query strings and fragments can carry magic-link
+  tokens, OTPs and OAuth codes; a stack embeds them mid-string
+  (`new Error(url)`), and a Postgres message echoes offending values.
+  `redactFreeTextForStorage` in `src/lib/observability/redact-pii.ts` is the
+  single implementation, called by BOTH write paths (the client ingest route
+  and the server logger). Keep it that way: both write the same two columns,
+  both are read back by the RCA action and forwarded to a third-party model,
+  and a second copy is one that eventually stops matching — silently, on the
+  half nobody is looking at.
 
 ## UI Contract
 

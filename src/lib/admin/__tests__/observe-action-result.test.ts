@@ -73,6 +73,20 @@ describe('observe-action-result', () => {
     expect(isExpectedSoftFailureMessage('Another save for this round is just finishing — try again in a moment.')).toBe(true);
   });
 
+  // createGolfConversationImpl's tenancy gate (src/app/golf/actions/
+  // messages.ts) throws these two exact strings on an ordinary authorization
+  // denial. Neither previously matched an anchored pattern — the closest,
+  // `/^you do not have permission/i`, is a different wording — so both
+  // classified as 'error' and paged Sentry for a routine "not on this team"
+  // rejection.
+  it('classifies the golf-messaging tenancy denials as expected soft failures', () => {
+    expect(isExpectedSoftFailureMessage('You do not have access to this team')).toBe(true);
+    expect(isExpectedSoftFailureMessage('One or more recipients are not on this team')).toBe(true);
+    // A genuine infrastructure failure from the same gate (the audience
+    // probe itself failing) must NOT be swallowed alongside them.
+    expect(isExpectedSoftFailureMessage('Could not verify team access. Please try again.')).toBe(false);
+  });
+
   it('keeps expected qualifier lifecycle protections out of the error incident feed', () => {
     for (const code of ['qualifier_closed', 'qualifier_round_limit_reached', 'qualifier_round_already_exists']) {
       expect(isExpectedSoftFailureMessage('A qualifier lifecycle response', code)).toBe(true);

@@ -84,6 +84,12 @@ const WORKFLOW_DEFINITIONS: Readonly<Record<GolfRoundWorkflow, readonly FlightSt
   'golf.round.submit': [
     ...SHARED_MUTATION_STEPS,
     { key: 'db.submit_round_atomic', layer: 'postgres', requiredness: 'required' },
+    // Only attempted (and only ever reaches 'success') when the atomic RPC
+    // fails at the transport level and a direct-submit fallback rescues the
+    // write. 'best_effort' — not 'required' — because it must never appear
+    // in missing_required_steps for the overwhelming majority of submits
+    // that never touch this path at all.
+    { key: 'db.direct_submit_fallback', layer: 'supabase', requiredness: 'best_effort' },
     { key: 'verify.round', layer: 'verification', requiredness: 'required' },
     { key: 'verify.holes', layer: 'verification', requiredness: 'required' },
     { key: 'verify.shots', layer: 'verification', requiredness: 'required' },
@@ -94,6 +100,7 @@ const WORKFLOW_DEFINITIONS: Readonly<Record<GolfRoundWorkflow, readonly FlightSt
   'golf.qualifier.submit': [
     ...SHARED_MUTATION_STEPS,
     { key: 'db.submit_round_atomic', layer: 'postgres', requiredness: 'required' },
+    { key: 'db.direct_submit_fallback', layer: 'supabase', requiredness: 'best_effort' },
     { key: 'verify.round', layer: 'verification', requiredness: 'required' },
     { key: 'verify.holes', layer: 'verification', requiredness: 'required' },
     { key: 'verify.shots', layer: 'verification', requiredness: 'required' },

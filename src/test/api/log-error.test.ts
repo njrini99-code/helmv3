@@ -9,24 +9,39 @@ vi.mock('@/lib/supabase/admin', () => ({
 }));
 
 // Real implementation by default (so the redaction-success tests exercise the
-// actual scrubber) — one test below overrides it with mockImplementationOnce
-// to prove the route's redaction step is fail-open.
+// actual scrubber) — some tests below override redactPiiDeep or maskEmails
+// with mockImplementationOnce to prove the route's redaction steps are
+// fail-open.
 vi.mock('@/lib/observability/redact-pii', async () => {
   const actual = await vi.importActual<typeof import('@/lib/observability/redact-pii')>(
     '@/lib/observability/redact-pii',
   );
-  return { ...actual, redactPiiDeep: vi.fn(actual.redactPiiDeep) };
+  return { ...actual, redactPiiDeep: vi.fn(actual.redactPiiDeep), maskEmails: vi.fn(actual.maskEmails) };
 });
 
 import { POST } from '@/app/api/log-error/route';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
+// `redactFreeTextForStorage` now lives in redact-pii.ts and calls
+// `maskEmails` internally, so mocking that export cannot reach inside it.
+// `redactSensitiveUrl` is the one dependency it crosses a module boundary
+// for, which makes it the honest seam for forcing the fail-open path.
+const mockRealRedactUrlHolder = vi.hoisted<{ fn?: (u: string) => string }>(() => ({}));
+vi.mock('@/lib/security/redact-url', async () => {
+  const actual =
+    await vi.importActual<typeof import('@/lib/security/redact-url')>('@/lib/security/redact-url');
+  mockRealRedactUrlHolder.fn = actual.redactSensitiveUrl as (u: string) => string;
+  return { ...actual, redactSensitiveUrl: vi.fn(actual.redactSensitiveUrl) };
+});
+
 import { redactPiiDeep } from '@/lib/observability/redact-pii';
 
 const createClientMock = vi.mocked(createClient);
 const createAdminMock = vi.mocked(createAdminClient);
 const redactPiiDeepMock = vi.mocked(redactPiiDeep);
+import { redactSensitiveUrl } from '@/lib/security/redact-url';
+const redactSensitiveUrlMock = vi.mocked(redactSensitiveUrl);
 
 function request(body: string) {
   return new Request('http://x/api/log-error', {
@@ -297,6 +312,175 @@ describe('POST /api/log-error', () => {
       expect(serialized).not.toContain(secret);
       expect(contextSerialized).not.toContain(secret);
     }
+  });
+
+  it('redacts URL-shaped secrets embedded in the stack trace and message before persisting', async () => {
+    // Previously `stack` bypassed ALL redaction (unlike `url`/`context`
+    // above) and `message` got only maskEmails, never stripUrlSecrets — so a
+    // magic-link/OAuth token riding in a client-supplied stack or message
+    // reached error_logs/admin_events verbatim. Since the admin RCA action
+    // started reading stack_trace verbatim into an Anthropic prompt, that
+    // gap stopped being purely internal.
+    mockAnonymousUser();
+
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
+
+    const stack = [
+      'Error: https://app.golfhelm.com/auth/confirm?token_hash=stack-secret-token',
+      '    at Object.<anonymous> (/app/src/foo.ts:10:5)',
+      '    reported by coach@school.edu',
+    ].join('\n');
+
+    const res = await POST(request(JSON.stringify({
+      message: 'redirect failed for /confirm?access_token=message-secret-token',
+      stack,
+      severity: 'medium',
+    })));
+
+    expect(res.status).toBe(200);
+    const errorLog = inserts.find((i) => i.table === 'error_logs');
+    const adminEvent = inserts.find((i) => i.table === 'admin_events');
+
+    // The write still happens — redaction is not a reason to drop the log.
+    expect(errorLog).toBeTruthy();
+    expect(adminEvent).toBeTruthy();
+
+    expect(errorLog?.payload.stack).toContain('https://app.golfhelm.com/auth/confirm');
+    expect(errorLog?.payload.stack).not.toContain('token_hash');
+    expect(errorLog?.payload.stack).toContain('c***@school.edu');
+    expect(errorLog?.payload.stack).not.toContain('coach@school.edu');
+    expect(adminEvent?.payload.stack_trace).toBe(errorLog?.payload.stack);
+
+    expect(errorLog?.payload.message).not.toContain('access_token');
+    expect(adminEvent?.payload.title).not.toContain('access_token');
+
+    for (const secret of ['stack-secret-token', 'message-secret-token', 'coach@school.edu']) {
+      expect(JSON.stringify(errorLog?.payload)).not.toContain(secret);
+      expect(JSON.stringify(adminEvent?.payload)).not.toContain(secret);
+    }
+  });
+
+  it('redacts a path-segment credential (no query string) embedded in the stack trace', async () => {
+    // stripUrlSecrets alone only truncates at the first `?`/`#` — a live
+    // PATH-segment credential has neither. redact-url.ts's own doc comment:
+    // "path-segment tokens: /api/calendar/(coach|feeds)/<bearer>... both
+    // are live credentials". `url` already gets this treatment via
+    // redactSensitiveUrl; the embedded-in-stack scan must too.
+    mockAnonymousUser();
+
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
+
+    const stack = [
+      'Error: calendar feed fetch failed',
+      '    at f (https://app.golfhelm.com/api/calendar/coach/LIVE_BEARER_TOKEN)',
+    ].join('\n');
+
+    const res = await POST(request(JSON.stringify({
+      message: 'calendar feed fetch failed',
+      stack,
+      severity: 'medium',
+    })));
+
+    expect(res.status).toBe(200);
+    const errorLog = inserts.find((i) => i.table === 'error_logs');
+    expect(errorLog).toBeTruthy();
+    expect(errorLog?.payload.stack).not.toContain('LIVE_BEARER_TOKEN');
+    expect(errorLog?.payload.stack).toContain('/api/calendar/coach/[redacted]');
+  });
+
+  it('still masks an email inside the storage budget when a client-supplied stack exceeds the email-masker length guard', async () => {
+    // maskEmails silently no-ops on input over 20,000 chars (redact-pii.ts's
+    // MAX_STRING guard). redactFreeTextForStorage must slice to the storage
+    // budget BEFORE masking — masking an oversized string first would skip
+    // masking entirely, and slicing afterward would still keep the
+    // (still-unmasked) prefix. The client fully controls stack length here.
+    mockAnonymousUser();
+
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
+
+    const padding = 'x'.repeat(25_000);
+    const stack = `Error: padded failure\n    reported by someone@example.com\n${padding}`;
+
+    const res = await POST(request(JSON.stringify({
+      message: 'padded failure',
+      stack,
+      severity: 'medium',
+    })));
+
+    expect(res.status).toBe(200);
+    const errorLog = inserts.find((i) => i.table === 'error_logs');
+    expect(errorLog).toBeTruthy();
+    const storedStack = errorLog?.payload.stack as string;
+    expect(storedStack.length).toBeLessThanOrEqual(8000);
+    expect(storedStack).not.toContain('someone@example.com');
+    expect(storedStack).toContain('s***@example.com');
+  });
+
+  it('never persists the raw stack/message when redaction of that text itself throws (fail-open)', async () => {
+    mockAnonymousUser();
+
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
+
+    // Simulate the email-masking half of redactFreeTextForStorage blowing up
+    // on the very first call (the `message` field). A partial fallback like
+    // cutting at the first `?`/`#` would not help here since this message
+    // has neither — a fixed placeholder is the only fallback that can never
+    // leak the raw text.
+    redactSensitiveUrlMock.mockImplementation((url) => {
+      if (typeof url === 'string' && url.includes('fail-open-probe')) {
+        throw new Error('redaction blew up');
+      }
+      return mockRealRedactUrlHolder.fn!(url as string);
+    });
+
+    const res = await POST(request(JSON.stringify({
+      message: 'crash reported by someone@example.com https://x.test/?fail-open-probe=1',
+      stack: 'Error: https://app.golfhelm.com/reset?token_hash=stack-secret\n    at foo',
+      severity: 'medium',
+    })));
+
+    expect(res.status).toBe(200);
+    const errorLog = inserts.find((i) => i.table === 'error_logs');
+    const adminEvent = inserts.find((i) => i.table === 'admin_events');
+
+    // The write still happens even though redaction threw.
+    expect(errorLog).toBeTruthy();
+    expect(adminEvent).toBeTruthy();
+    expect(errorLog?.payload.message).not.toContain('someone@example.com');
+    expect(errorLog?.payload.message).toMatch(/redaction failed/);
+    expect(adminEvent?.payload.title).not.toContain('someone@example.com');
   });
 
   it('never drops the log when redaction itself throws (fail-open)', async () => {

@@ -45,6 +45,40 @@
 // Never changes the result: the SAME `result` object is returned, unmutated,
 // whether or not anything was logged. Fire-and-forget — the log write never
 // blocks or can fail the caller's read.
+// -----------------------------------------------------------------------------
+//
+// STATUS (2026-08-26): intentionally NOT wired into any call site yet.
+//
+// The archetype call site — a read of the caller's own active team
+// membership, immediately after their auth check — was evaluated against
+// src/app/golf/actions/roster.ts and rejected. removePlayerFromTeamImpl's
+// membership check (`golf_team_members` by `player_id`+`team_id`) does not
+// filter on `status`, but the RLS predicate that would gate the coach's
+// subsequent read of that player's `golf_players` row —
+// `user_is_coach_of_golf_player()` — requires `status = 'active'` (verified
+// against production: both are `SECURITY DEFINER` functions read via
+// `pg_get_functiondef`). A coach removing a player whose membership row is
+// any other status (e.g. still pending) would see a real, legitimate empty
+// read there — exactly the false-positive this module's own header warns
+// against manufacturing. Nothing else in roster.ts or messages.ts clears the
+// "guaranteed" bar either: the remaining reads either check role membership
+// that can legitimately be absent for a non-coach caller, or (in
+// messages.ts's resolveGolfTeamAudience) run entirely through the
+// service-role admin client, which bypasses RLS and so cannot exhibit the
+// silent-RLS-empty-result shape this module exists to catch.
+//
+// First genuinely intended call site: the authenticated caller's own
+// `golf_players` row, read by `user_id = auth.uid()` — the unconditional
+// first clause of the `golf_players_select` RLS policy, with no team/status
+// predicate attached. `submitGolfRoundComprehensiveImpl`
+// (src/app/golf/actions/golf.ts, the player-resolution read right after the
+// auth check) reads exactly this row today, but via `.single()`, which
+// already turns a zero-row result into an explicit PostgREST error
+// (`PGRST116`) rather than the silent `{ data: null, error: null }` shape
+// this module targets — a different, already-handled signal. Wiring
+// `expectRows` there would require switching that call to `.maybeSingle()`
+// first, which is a behavior change outside this module's scope to make
+// unilaterally.
 // =============================================================================
 
 import 'server-only';

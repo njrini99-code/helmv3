@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { checkSuperAdminAccess } from '@/lib/admin/require-super-admin';
 import { fetchBridgeErrorBadge } from '@/lib/admin/data/overview';
-import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
+import { fetchFeatureHealthRedCount } from '@/lib/admin/data/feature-health';
 import { AdminNativeGuard } from '@/components/golf/AdminNativeGuard';
 import { AdminMotionProvider } from './_motion-provider';
 import { AdminShell } from './_components/AdminShell';
@@ -26,34 +26,31 @@ export default async function AdminLayout({
   // every navigation + `router.refresh()` under this force-dynamic layout.
   const errorCount = await fetchBridgeErrorBadge();
 
-  // bridge-refit: the Health badge — count of RED features, via the SAME
-  // rollup Overview's own Feature command map panel computes
-  // (fetchFeatureHealth() + summarizeFeatureHealth(), React `cache()`-
-  // memoised per request — see feature-health.ts's doc comment). On the
-  // Overview page itself this is free: FeatureHealthPanel asks for the exact
-  // same rollup on the exact same render, so the RPC + per-feature Sentry
-  // sweep run once, not twice.
+  // bridge-refit: the Health badge — count of RED features. This layout
+  // re-executes on EVERY navigation AND every `<AutoRefresh />` tick (30s on
+  // admin/page.tsx, 60s on the tracer), so an idle open Bridge tab polls this
+  // continuously — it previously called fetchFeatureHealth(), whose dominant
+  // cost is a ~15-round sequential per-feature Sentry sweep (85 features, 6
+  // concurrent workers) with no success-path cooldown. `fetchFeatureHealthRedCount()`
+  // (feature-health.ts) is the DB-only subset: one get_feature_health() RPC
+  // call, zero Sentry round-trips, and PROVABLY the same red count — see its
+  // doc comment for why the classifier's RED branch never depends on Sentry
+  // data. It still can't be wrapped in `unstable_cache()` like
+  // `fetchBridgeErrorBadge` above (the RPC gates on `auth.uid()` via the
+  // USER-scoped client, which `unstable_cache()` cannot read cookies for),
+  // but the per-navigation cost is now one cheap RPC, not an external API
+  // fan-out.
   //
-  // COST NOTE for every OTHER /admin/* route (the 12 tabs that don't already
-  // call fetchFeatureHealth() on their own page): this IS a genuinely new,
-  // uncached cost paid on every navigation. When Sentry is configured,
-  // fetchFeatureHealth() runs a ~15-round sequential per-feature Sentry
-  // sweep (85 features, 6 concurrent workers — see fetchSentryFeatureCounts
-  // in src/lib/admin/sentry-api.ts), and there is no success-path cooldown —
-  // `featureCountCooldownUntil` is only set on FAILURE, never after a
-  // healthy sweep. It can't be wrapped in the same `unstable_cache()` as
-  // `fetchBridgeErrorBadge` above: `fetchFeatureHealth()` reads the
-  // USER-scoped client (its RPC gates on `auth.uid()`), and
-  // `unstable_cache()` cannot read cookies. Fail-soft to no badge rather
-  // than let a broken pipeline throw here; the real fix is a service-role,
-  // `unstable_cache()`-able red-count fetcher in feature-health.ts (flagged
-  // to the file's owner — not edited here, out of this change's ownership).
-  let healthCount = 0;
+  // Honest-only: `null` — never `0` — means "couldn't find out", so a
+  // degraded/failed pipeline can never render as a clean badge (the bug this
+  // replaces: `catch { healthCount = 0 }` made a rate-limited Sentry sweep
+  // indistinguishable from "0 red features"). AdminShell only shows a badge
+  // when the count is a positive number.
+  let healthCount: number | null = null;
   try {
-    const raw = await fetchFeatureHealth();
-    healthCount = summarizeFeatureHealth(raw, new Date()).red;
+    healthCount = await fetchFeatureHealthRedCount();
   } catch {
-    healthCount = 0;
+    healthCount = null;
   }
 
   // AdminNativeGuard hides /admin from the iOS Capacitor shell (App Store

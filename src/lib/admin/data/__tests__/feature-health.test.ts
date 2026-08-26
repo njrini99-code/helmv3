@@ -1,8 +1,31 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// fetchFeatureHealthRedCount() (below) is the DB-only red-count fetcher the
+// admin layout badge now calls instead of the full fetchFeatureHealth() +
+// Sentry sweep. These mocks let it be exercised end-to-end — RPC in, count
+// out — without a real Supabase/Sentry round-trip, mirroring the
+// `vi.mock('@/lib/supabase/server', ...)` pattern used across
+// src/lib/admin/__tests__/*.
+const mocks = vi.hoisted(() => ({
+  rpc: vi.fn(),
+  fetchSentryFeatureCounts: vi.fn(async () => ({})),
+  logServerError: vi.fn(async () => {}),
+}));
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(async () => ({ rpc: mocks.rpc })),
+}));
+vi.mock('@/lib/admin/sentry-api', () => ({
+  fetchSentryFeatureCounts: mocks.fetchSentryFeatureCounts,
+}));
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: mocks.logServerError,
+}));
+
 import {
   computeFeatureStatus,
   summarizeFeatureHealth,
   computeFeatureHealthBanner,
+  fetchFeatureHealthRedCount,
   type FeatureHealthInputs,
   type FeatureHealth,
 } from '@/lib/admin/data/feature-health';
@@ -328,6 +351,58 @@ describe('summarizeFeatureHealth + computeFeatureHealthBanner — banner discipl
     const summary = summarizeFeatureHealth({ features, generatedAt: NOW.toISOString(), degraded: false }, NOW);
     expect(summary).toMatchObject({ green: 2, amber: 0, red: 0, neutral: 1 });
     expect(computeFeatureHealthBanner(summary).contributes).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchFeatureHealthRedCount — the admin layout's Health badge fetcher.
+// bridge-refit Finding 1: the previous layout.tsx called the FULL
+// fetchFeatureHealth() (RPC + ~15-round Sentry sweep across 85 features) on
+// every navigation and AutoRefresh tick, and swallowed any failure as `0` —
+// indistinguishable from "0 red features". fetchFeatureHealthRedCount() is
+// the DB-only replacement: one get_feature_health() RPC call, zero Sentry
+// round-trips, and `null` (never `0`) when the pipeline is degraded.
+// ---------------------------------------------------------------------------
+describe('fetchFeatureHealthRedCount — DB-only, no Sentry', () => {
+  beforeEach(() => {
+    mocks.rpc.mockReset();
+    mocks.fetchSentryFeatureCounts.mockClear();
+    mocks.logServerError.mockClear();
+  });
+
+  it('is 0 when the RPC returns no rows for any feature — RED needs real signal, never a bare default', async () => {
+    mocks.rpc.mockResolvedValue({ data: [], error: null });
+    await expect(fetchFeatureHealthRedCount()).resolves.toBe(0);
+    expect(mocks.fetchSentryFeatureCounts).not.toHaveBeenCalled();
+  });
+
+  it('counts a feature RED from a DB-only signal (unresolved critical) with zero Sentry round-trips', async () => {
+    mocks.rpc.mockResolvedValue({
+      data: [
+        {
+          key: 'round_tracking',
+          events_24h: {
+            total: 1,
+            errors: 1,
+            critical_unresolved: 1,
+            warnings: 0,
+            fingerprints: 1,
+            rls_denials: 0,
+            rls_denial_fingerprints: 0,
+            rls_denial_users: 0,
+          },
+        },
+      ],
+      error: null,
+    });
+    await expect(fetchFeatureHealthRedCount()).resolves.toBe(1);
+    expect(mocks.fetchSentryFeatureCounts).not.toHaveBeenCalled();
+  });
+
+  it('returns null — never 0 — when the RPC fails, so a degraded pipeline can never read as a clean badge', async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { message: 'connection refused' } });
+    await expect(fetchFeatureHealthRedCount()).resolves.toBeNull();
+    expect(mocks.fetchSentryFeatureCounts).not.toHaveBeenCalled();
   });
 });
 

@@ -1,5 +1,32 @@
 # Golf Round Lifecycle change ledger
 
+## 2026-08-26 — a rescued round records as rescued, not failed
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-observability`.
+- Change: the submit path marked the flight-trace RPC step failed *before*
+  `attemptDirectSubmitFallback` ran. `finalize()` forces a trace to `failure`
+  whenever any step carries `failure`, so a round the fallback successfully
+  saved was still recorded as a failed submit. The outcome is now deferred
+  until the fallback resolves: on rescue the RPC step is downgraded to a
+  warning, a new `db.direct_submit_fallback` step (requiredness
+  `best_effort`, so it never appears in `missing_required_steps` for the
+  overwhelming majority of submits) records the recovery, and the trace
+  finalizes `success`. Only a fallback that also fails produces `failure`.
+- Also: `persistStart` was awaited without a bound. It now races a 1500ms
+  timeout and degrades to the inert no-op recorder, closing its Sentry span
+  rather than leaking it — the recorder gets switched on mid-incident, which
+  is exactly when a hung diagnostic RPC would be least welcome on a save.
+- Why: the recovered-from-a-transient-failure case is precisely what the new
+  forensics and RCA surfaces exist to explain, and it was the one case the
+  trace described wrongly.
+- Reachability, stated plainly: `attemptDirectSubmitFallback` is currently a
+  stub that always returns failure — neutered after the 2026-08-20
+  round-destruction incident and held there by the no-destructive-write rule —
+  so the rescued path is not reachable through the public action today. The
+  success ordering is therefore proven directly against the real recorder
+  rather than through the action, and both currently-reachable branches keep
+  regression coverage.
+
 ## 2026-08-26 — arm the flight recorder on submit and autosave
 
 - SHA: recorded in the follow-up ledger commit on `feat/bridge-refit`.

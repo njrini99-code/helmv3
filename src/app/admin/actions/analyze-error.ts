@@ -41,19 +41,22 @@ type FingerprintEvent = Awaited<ReturnType<typeof fetchFingerprintDetail>>['even
 const RCA_TITLE_PREFIX = 'RCA analysis: ';
 
 /**
- * `fetchFingerprintDetail` (data/errors.ts) scopes every one of its three
- * queries by fingerprint alone — its select never includes `event_type` and
- * applies no `resolved` filter — so an `rca_analysis` row this action
- * persists under the SAME fingerprint comes back on the next run as just
- * another occurrence: it can become `last` (a self-referential report titled
- * "RCA analysis: …", classified `telemetry` off its own `severity: 'info'`
- * instead of the real incident's severity), inflate the occurrence count,
- * and shift `lastSeen`. errors.ts needs a real `event_type` fix (flagged
- * crossFile — this file cannot filter what it was never selected: no
- * `event_type` column is fetched). This recognizes rows by the exact
- * source/feature/title-prefix shape `persistRcaAnalysis` below writes — data
- * this action fully controls, so the recognition can't collide with a real
- * incident, but it is a defensive backstop, not the fix.
+ * Defence in depth, no longer the only defence.
+ *
+ * An `rca_analysis` row is persisted under the SAME fingerprint as the
+ * incident it explains, so anything counting occurrences by fingerprint alone
+ * would read it back as one more occurrence of that incident — becoming
+ * `last` (a self-referential report titled "RCA analysis: …", classified
+ * `telemetry` off its own `severity: 'info'` rather than the real incident's
+ * severity), inflating the count, and shifting `lastSeen`.
+ *
+ * `fetchFingerprintDetail` (data/errors.ts) now excludes `event_type =
+ * 'rca_analysis'` on every query it runs, which is the real fix and landed
+ * alongside this file. This recognizer stays as a second line: it matches the
+ * exact source/feature/title-prefix shape `persistRcaAnalysis` writes — data
+ * this action fully controls, so it cannot collide with a real incident — and
+ * it keeps the guarantee local if a future reader of `admin_events` forgets
+ * the `event_type` filter.
  */
 function isOwnRcaAnalysisRow(event: Pick<FingerprintEvent, 'source' | 'feature' | 'title'>): boolean {
   return (

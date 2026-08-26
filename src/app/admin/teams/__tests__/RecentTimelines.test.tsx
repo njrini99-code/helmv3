@@ -70,9 +70,9 @@ describe('RecentTimelines', () => {
     expect(screen.getAllByRole('link')).toHaveLength(6);
   });
 
-  it('falls back to the honest explainer line when no team has recent activity', () => {
+  it('renders an honest empty state — not a click hint pointing at nothing — when no team has recent activity', () => {
     render(<RecentTimelines teams={[team({ lastActivityDate: null, halo: 'silent' })]} />);
-    expect(screen.getByText('Rows open a full timeline →')).toBeInTheDocument();
+    expect(screen.getByText('No recent timelines')).toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

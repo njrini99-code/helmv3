@@ -288,7 +288,20 @@ async function logGolfActionFailure(
         teamId: ctx.teamId ?? null,
         route: ctx.route ?? null,
         metadata: ctx.metadata,
-        fingerprint: ['server_action', ctx.featureArea, ctx.action],
+        // The 4th element is load-bearing and must match buildFingerprint's
+        // shared default in server-error-logger.ts. Passing an explicit
+        // fingerprint short-circuits that default, and a 3-element one
+        // collapses every distinct cause for an action into a single
+        // incident — removePlayerFromTeam failing on an in-progress round
+        // and failing on a dropped connection would share one fingerprint,
+        // so the detail page would show a mixed history and an RCA run
+        // would reason over two unrelated causes at once.
+        fingerprint: [
+          'server_action',
+          ctx.featureArea,
+          ctx.action,
+          classified.code ?? classified.severity,
+        ],
       },
       // logServerException's severity param intentionally excludes 'info'
       // (that tier belongs to logServerEvent) — a thrown error classified
