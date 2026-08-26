@@ -136,6 +136,7 @@ export default async function GolfAnnouncementsPage() {
         announcements={announcements}
         players={players}
         documents={documents}
+        teamId={teamId}
         isCoach={isCoach}
         playerId={playerId}
         recentCount={recentCount}

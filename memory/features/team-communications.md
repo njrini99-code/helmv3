@@ -61,6 +61,9 @@ Message send
   -> Supabase Realtime pushes to participants
 
 Announcement create
+  -> optional direct file upload from the composer (uploadGolfDocument ->
+     createGolfDocument: file lands in the team document library, then the
+     new document id joins documentIds)
   -> createEnrichedAnnouncement()
   -> INSERT golf_announcements
   -> INSERT targeted recipients or broadcast metadata
@@ -83,6 +86,7 @@ Announcement create
 - Opening a conversation must land at its newest message without forcing a
   reader back to the bottom after they scroll upward.
 - Announcement coach view needs creation, targeting, urgency, documents, tasks, and acknowledgement tracking.
+- The composer's Attachments section renders for any coach with a team (2026-08-26): it offers direct device upload (25 MB cap, mirrors the Documents-page accept list) plus the library picker; it must NOT be hidden just because the team library is empty.
 - Announcement player view needs compact cards, clear acknowledgement action, linked documents/tasks, and urgency state.
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.
 
