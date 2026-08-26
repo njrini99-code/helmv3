@@ -37,12 +37,15 @@
 -- VERIFIED: cannot verify prod state for a table this migration's own
 -- dependency has not yet created (see DEPENDS ON above). Once
 -- 20260825200811 is live, verify with:
---   select count(*) from helm_debug.trace_runs where started_at < now() - interval '30 days';
+--   select count(*) from helm_debug.trace_runs
+--   where started_at < now() - interval '30 days';
 --
 -- ROLLBACK: DROP FUNCTION public.helm_debug_prune(integer); — safe, this
 -- file defines no tables and no other migration calls this function.
 
-create or replace function public.helm_debug_prune(p_retention_days integer default 30)
+create or replace function public.helm_debug_prune(
+    p_retention_days integer default 30
+)
 returns jsonb
 language plpgsql
 security definer
@@ -83,7 +86,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_debug_prune(integer) from public, anon, authenticated;
+revoke execute on function public.helm_debug_prune(integer)
+from public, anon, authenticated;
 grant execute on function public.helm_debug_prune(integer) to service_role;
 
 -- Standard ACL-assertion tripwire (matches 20260704130000's
@@ -93,19 +97,21 @@ grant execute on function public.helm_debug_prune(integer) to service_role;
 -- an arbitrary matching row instead of failing loud. The ::regprocedure
 -- cast itself raises if no function matches the exact signature, and can
 -- never resolve to more than one row.
-DO $$
-DECLARE v_fn oid := 'public.helm_debug_prune(integer)'::regprocedure;
-BEGIN
-  IF has_function_privilege('public', v_fn, 'EXECUTE')
-     OR has_function_privilege('anon', v_fn, 'EXECUTE')
-     OR has_function_privilege('authenticated', v_fn, 'EXECUTE') THEN
-    RAISE EXCEPTION 'ACL check failed: helm_debug_prune(integer) callable by public/anon/authenticated';
-  END IF;
+do $$
+declare v_fn oid := 'public.helm_debug_prune(integer)'::regprocedure;
+begin
+  if has_function_privilege('public', v_fn, 'EXECUTE')
+     or has_function_privilege('anon', v_fn, 'EXECUTE')
+     or has_function_privilege('authenticated', v_fn, 'EXECUTE') then
+    raise exception
+      'ACL check failed: helm_debug_prune(integer) callable by public/anon/authenticated';
+  end if;
 
-  IF NOT has_function_privilege('service_role', v_fn, 'EXECUTE') THEN
-    RAISE EXCEPTION 'ACL check failed: helm_debug_prune(integer) not executable by service_role';
-  END IF;
-END $$;
+  if not has_function_privilege('service_role', v_fn, 'EXECUTE') then
+    raise exception
+      'ACL check failed: helm_debug_prune(integer) not executable by service_role';
+  end if;
+end $$;
 
 -- Scheduling options for the owner (nothing below is executed by this
 -- migration — pick one, or wire it up separately, once both this file and
@@ -126,9 +132,11 @@ END $$;
 -- service-role client (keeps scheduling out of the database):
 --
 --   // vercel.json
---   { "crons": [{ "path": "/api/cron/helm-debug-prune", "schedule": "30 4 * * *" }] }
+--   { "crons": [{ "path": "/api/cron/helm-debug-prune",
+--                "schedule": "30 4 * * *" }] }
 --
 --   // src/app/api/cron/helm-debug-prune/route.ts (sketch — verify the
 --   // shared cron-auth check used by other /api/cron routes before shipping)
 --   const supabase = createAdminClient();
---   const { data, error } = await supabase.rpc('helm_debug_prune', { p_retention_days: 30 });
+--   const { data, error } = await supabase
+--     .rpc('helm_debug_prune', { p_retention_days: 30 });
