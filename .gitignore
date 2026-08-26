@@ -128,6 +128,9 @@ playwright/.auth/
 /momentic/auth/*.json
 /momentic/auth/.momentic.env
 !/momentic/auth/.gitkeep
+# Momentic captures environment values, including test-account credentials.
+/.momentic-mcp/environment-variables-*.json
+/tests/golf/qualifier-hell/.momentic-mcp/environment-variables-*.json
 # Local product-audit browser states use several historical layouts. Keep the
 # generated JSON out of Git even when an audit writes outside playwright/.auth/.
 /audit/**/auth/*.json
@@ -240,3 +243,16 @@ deno.lock
 __pycache__/
 *.pyc
 *.pyo
+# Env files: explicit list, NOT a bare .env* — a blanket glob silently
+# blocks future templates like .env.example (tracked) from ever changing
+# hands without -f. Local secret files only.
+.env
+.env.local
+.env.*.local
+# Orphaned agent-framework state (untracked 2026-08-26): stale
+# UNDERSTANDING/ISSUES/spec files that read as authoritative but are not.
+# The canonicality rule in AGENTS.md is the durable statement; this makes
+# it mechanical. Files remain on disk; also excluded from search via .ignore.
+.helm/
+.ultracode/
+.superpowers/

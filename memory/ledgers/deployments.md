@@ -45,6 +45,25 @@ records the exact deployed commit) is open follow-up work, not done here.
 | 2026-08-22 22:24 (02:24 UTC) | `dpl_Cb4MZWPLPfZ5EDAMJcG3Pgg1zggQ` | `82aaa3bf7c26fe7b956f6310e9f7f18ac6029323` | owner-directed emergency hotfix | health check passed | Qualifier lifecycle now permits only `upcoming` → `in_progress` after a submitted round. Scheduled dates and player progress cannot complete a qualifier; only a coach's explicit action can. Vercel build, remote TypeScript, and production health/database checks passed. |
 | 2026-08-23 20:56 (00:56 UTC) | `dpl_BMemdtccwZX5F3w24NyWLkWWRkoE` | `e84b9eac777360593103f2637b70aa2ab6ad1872` | owner-directed emergency hotfix | health check and targeted Bridge scan passed | PR #1610 applied the scoped completed-round derived-stats and CoachHelm-terminal-state safeguards. Production alias, public homepage, and target database invariants were verified. |
 | 2026-08-23 21:05 (01:05 UTC) | `dpl_4p7QHBj7FRFeKEVPZNV5UvrSNaUw` | `e84b9eac777360593103f2637b70aa2ab6ad1872` | owner-directed emergency configuration rollout | health check and targeted Bridge/runtime scans passed | Same validated application SHA redeployed after replacing the stale Vercel `INNGEST_SIGNING_KEY` with the current Inngest Production signing key. `helmsportslabs.com` aliases this deployment. |
+| 2026-08-24 21:37 | `dpl_6FqjhTCq3UnSjT7Ch4pMJRwLegtJ` | `f6a4c0da2` | promote (backfill 2026-08-25) | not recorded at the time | Promote of a preview built from branch `observability/sentry-supabase-tracing` (round-submit/autosave spans, outcome taxonomy, trace_id correlation). Initiator recorded by Vercel as `claude-code_2-1-241_agent`. Backfilled from the Vercel deployments API (the canonical deployment record); ID and SHA are Vercel's own, not inferred. |
+| 2026-08-25 09:10 | `dpl_GuZkC9VZU9wQGTe7VpyY5jcQHj9g` | `c652a9e35` | emergency (backfill 2026-08-25) | not recorded at the time | `fix(golf): harden round lifecycle reliability (#1614)` from `main`. Initiator recorded by Vercel as `codex`. Backfilled from the Vercel deployments API. |
+| 2026-08-25 10:11 | `dpl_9EfiJZog8gXWjGQdXotKm2ubUnyk` | `c652a9e35` | emergency (backfill 2026-08-25) | not recorded at the time | Same SHA re-deployed. Initiator `codex`. Backfilled from the Vercel deployments API. |
+| 2026-08-25 10:27 | `dpl_61SdCkv4v4Ffc22AHyDrbY3HUDza` | `c652a9e35` | emergency (backfill 2026-08-25) | not recorded at the time | Same SHA re-deployed. Initiator `codex`. Backfilled from the Vercel deployments API. |
+| 2026-08-25 12:20 | `dpl_5hg86XihiF3FVuS1hcgd38e2ovJ8` | `92de87184` | emergency (backfill 2026-08-25) | serving production as of 2026-08-25 evening | `fix(golf): preserve qualifier round progression` — `main`'s tip at deploy time. Initiator `codex`. Backfilled from the Vercel deployments API. |
+
+**Canonical-source note (2026-08-25):** the Vercel deployments API is the
+canonical record of what deployed, when, from which SHA, and by which
+initiator — every backfilled row above was copied from it, not inferred.
+This ledger is the curated mirror that adds what Vercel cannot know:
+approval source, verification outcome, and release context. Until the
+`release:*` scripts automate the append, any promote that reaches this
+file late must be backfilled from the Vercel record within a day. The five
+rows above were recorded 12 hours to 4 days late — that gap, not any single
+deploy, is the control-plane defect (tracked as the open
+deployment-provenance item). Budget note: the four 2026-08-25 deploys were
+owner-attended emergency work during the round-lifecycle incident; the
+≤2/week routine ceiling stands, and the owner's explicit record of this
+exception is this sentence.
 
 ## How to backfill the `unknown` cells
 

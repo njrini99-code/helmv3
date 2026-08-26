@@ -36,15 +36,13 @@ if [ "${WT:-1}" -gt 1 ]; then
 - worktrees: ${WT} (work may be happening in another checkout of this repo)"
 fi
 
-# main is the working branch here by owner decision (2026-08-15). It does NOT
-# deploy — vercel.json has carried "git": {"deploymentEnabled": {"*": false}}
-# since 2026-07-08, so production is an on-demand CLI promote and a push to
-# main ships nothing. The old "you are on main, branch before editing" warning
-# was guarding a fact that had been false for five weeks.
+# Branch policy is AGENTS.md canonicality: work on the currently checked-out
+# branch; never switch unless asked. A push to main ships nothing (vercel.json
+# deploymentEnabled all-false; production is an on-demand promote).
 if [ "$BRANCH" != "main" ]; then
   CTX="${CTX}
-- NOTE: you are on '${BRANCH}', not main. main is the working branch in this
-  repo — check this is deliberate before building on it."
+- NOTE: you are on task branch '${BRANCH}'. Work here; do not switch to main
+  unless asked. Merging to main does not deploy."
 fi
 
 jq -nc --arg ctx "$CTX" \

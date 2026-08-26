@@ -62,6 +62,7 @@ import {
   loadEngineEventRows,
   eventDerivedVelocityForPlayer,
 } from '@/lib/baseball/coachhelm/engine-event-derived';
+import { logServerError } from '@/lib/server-error-logger';
 import { parseSignalSourceRefs } from '@/lib/types/baseball-signals';
 import type { BaseballActionOutcomeVerdict } from '@/lib/types/baseball-coachhelm-v10';
 
@@ -227,7 +228,28 @@ export async function buildActionOutcomeSeed(
   // never fire a team-wide, unbounded scan of the whole pitch/batted-ball
   // history just to resolve one player's velocity scalar (mirrors the
   // box-score read's own `[playerId]` scope immediately above).
-  const { data: eventRows } = await loadEngineEventRows(supabase, teamId, [playerId]);
+  const { data: eventRows, error: eventRowsErr } = await loadEngineEventRows(
+    supabase,
+    teamId,
+    [playerId],
+  );
+  if (eventRowsErr) {
+    await logServerError(
+      `[baseballActionBaseline] event telemetry read failed; the action baseline used only available non-event metrics: ${eventRowsErr.message}`,
+      {
+        action: 'baseball.actionBaseline.loadEventTelemetry',
+        featureArea: 'coachhelm',
+        source: 'server_action',
+        sport: 'baseball',
+        teamId,
+        playerId,
+        errorCode: eventRowsErr.code ?? undefined,
+        errorDetails: eventRowsErr.message,
+        dbFingerprint: 'baseball-coachhelm-baseline-event-telemetry-read',
+      },
+      'warning',
+    );
+  }
   const eventDerived = eventRows
     ? eventDerivedVelocityForPlayer(playerId, eventRows.pitches, eventRows.battedBalls)
     : null;

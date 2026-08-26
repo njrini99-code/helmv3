@@ -73,6 +73,21 @@ describe('observe-action-result', () => {
     expect(isExpectedSoftFailureMessage('Another save for this round is just finishing — try again in a moment.')).toBe(true);
   });
 
+  it('keeps expected qualifier lifecycle protections out of the error incident feed', () => {
+    for (const code of ['qualifier_closed', 'qualifier_round_limit_reached', 'qualifier_round_already_exists']) {
+      expect(isExpectedSoftFailureMessage('A qualifier lifecycle response', code)).toBe(true);
+    }
+  });
+
+  it('keeps an active-round roster safety guard out of Sentry', () => {
+    expect(
+      isExpectedSoftFailureMessage(
+        'This player has a saved in-progress round. Have them finish or discard it before removing them from the team.',
+        'active_round_in_progress',
+      ),
+    ).toBe(true);
+  });
+
   // Two identical outcomes reached the Bridge at two different severities
   // purely because of punctuation and synonym drift between emitters:
   // `Not authenticated.` (insight-delivery.ts) and `Not authorized` (~30 golf

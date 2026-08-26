@@ -11,7 +11,6 @@
 > Removing this is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
 
-
 ## Status
 
 - active
@@ -68,6 +67,9 @@ Round completion
 ## Business Rules
 
 - Round and shot data remain the source of truth; cached stats are derived.
+- `recalculate_round_strokes_gained` is the protected derived-write path for
+  completed rounds. It may change only the five stored strokes-gained fields;
+  it must never require a general exception to completed-round immutability.
 - A completed round's score, identity, status, holes, and shots are immutable;
   only the server-side strokes-gained recalculation may refresh its five derived
   strokes-gained columns.

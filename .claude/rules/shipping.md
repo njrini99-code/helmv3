@@ -17,7 +17,9 @@ is what makes working fast here safe.
 ### 1. Documentation — the rot rule
 
 An audit on 2026-08-19/20 found the knowledge base naming **59 database objects
-that do not exist in production** and **46 file paths that do not resolve**,
+that do not exist in production** and **file paths that do not resolve**
+(current counts live in `.doc-schema-baseline.json` / `.doc-path-baseline.json`
+— never in prose),
 each rendered with full detail and formatted identically to the real ones. A
 session that obeyed the docs produced fluent, confident, broken work. The fix is
 mechanical, and these are the habits that keep it fixed.
@@ -50,10 +52,12 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 2. Git and commits
 
-- **`main` is the working branch** (owner decision 2026-08-15). Work on it
-  directly. **A push to `main` ships nothing** — `vercel.json` has carried
-  `"git": {"deploymentEnabled": {"*": false}}` since 2026-07-08, so no branch
-  auto-deploys.
+- **Work on the currently checked-out branch; `main` is home.** Never switch
+  branches or create worktrees unless asked; return to clean `main` only when
+  the task is merged and verified — the resting-state policy is AGENTS.md's
+  canonicality section, stated once there. **A push to `main` ships nothing** —
+  `vercel.json` carries `"git": {"deploymentEnabled": {"*": false}}`, so no
+  branch auto-deploys; production is an on-demand promote.
 - **`git add <explicit paths>`. Never `git add -A`.** Every agent in this repo
   shares one working tree, one index, one `HEAD`. `-A` sweeps in whatever
   another agent has half-written.

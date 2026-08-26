@@ -266,14 +266,35 @@ export interface BlockedTimePeriod {
 // VALIDATION SCHEMAS (Zod)
 // ============================================================================
 
+/**
+ * This codebase has two words for the same patch of sand, and they are not
+ * interchangeable by field:
+ *
+ *   lieBefore / result        accept 'sand'   and NOT 'bunker'
+ *   approachMissLieType       accepts 'bunker' and NOT 'sand'
+ *
+ * Verified 2026-08-24 against production `golf_shots`: every stored lie is in
+ * the 'sand' vocabulary, so nothing is corrupt today — but the UI layer maps
+ * between the two in at least three places (`parseApproachMissLieType`,
+ * `FairwayEditShotModal`, `approach-analytics`), and a single missed mapping
+ * sends 'bunker' into a `lieBefore` that rejects it. That is a validation
+ * failure caused entirely by our own inconsistent naming, and the player pays
+ * for it mid-round.
+ *
+ * Accept both spellings and normalize. Reconciling the vocabulary properly is
+ * still worth doing; until then this stops the mismatch reaching a player.
+ */
+const toLieVocabulary = (value: unknown) => (value === 'bunker' ? 'sand' : value);
+const toMissLieVocabulary = (value: unknown) => (value === 'sand' ? 'bunker' : value);
+
 const comprehensiveShotSchema = z.object({
   shotNumber: z.number().int().min(1),
   shotType: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']),
   clubType: z.string().min(1),
-  lieBefore: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other']),
+  lieBefore: z.preprocess(toLieVocabulary, z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other'])),
   distanceToHoleBefore: z.number().min(0).max(1000),
   distanceUnitBefore: z.enum(['yards', 'feet']),
-  result: z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty']),
+  result: z.preprocess(toLieVocabulary, z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty'])),
   distanceToHoleAfter: z.number().min(0),
   distanceUnitAfter: z.enum(['yards', 'feet']),
   shotDistance: z.number().min(0),
@@ -285,7 +306,7 @@ const comprehensiveShotSchema = z.object({
   puttMissTags: z.array(z.string()).optional(),
   puttDistanceFeet: z.number().min(0).optional(),
   approachMissDirection: z.string().optional(),
-  approachMissLieType: z.enum(['fairway', 'rough', 'bunker', 'hazard']).optional(),
+  approachMissLieType: z.preprocess(toMissLieVocabulary, z.enum(['fairway', 'rough', 'bunker', 'hazard']).optional()),
 });
 
 const comprehensiveHoleSchema = z.object({
@@ -341,6 +362,34 @@ const golfRoundComprehensiveSchema = z.object({
   qualifierRoundNumber: z.number().int().min(1).optional(),
 });
 
+/**
+ * One completed hole in an auto-save payload.
+ *
+ * Named (rather than inlined into `partialRoundSchema`) so a validation
+ * failure can be re-run against THIS schema alone. When the array element
+ * fails, Zod reports the issue at the element path (`holes.16`) and — for a
+ * nullable/union wrapper — collapses the reason to a bare "Invalid input"
+ * with no field path. Production logged exactly that three times on
+ * 2026-08-23 (`holes.1`, `holes.6`, `holes.16`, each at `currentHole - 1`),
+ * which told nobody which field was actually wrong. See
+ * `describeHoleValidationFailure`.
+ */
+const partialHoleSchema = z.object({
+  holeNumber: z.number().int().min(1).max(18),
+  par: z.number().int().min(3).max(6),
+  yardage: z.number().min(0),
+  score: z.number().int().min(1).max(20).optional().nullable(),
+  putts: z.number().int().min(0).max(10).optional().nullable(),
+  fairwayHit: z.boolean().optional().nullable(),
+  greenInRegulation: z.boolean().optional().nullable(),
+  penaltyStrokes: z.number().int().min(0).max(10).optional().nullable(),
+  scrambleAttempt: z.boolean().optional().nullable(),
+  scrambleMade: z.boolean().optional().nullable(),
+  sandSaveAttempt: z.boolean().optional().nullable(),
+  sandSaveMade: z.boolean().optional().nullable(),
+  shots: z.array(comprehensiveShotSchema).optional(),
+}).passthrough();
+
 const partialRoundSchema = z.object({
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
@@ -363,21 +412,7 @@ const partialRoundSchema = z.object({
   holesToPlay: z.union([z.literal(9), z.literal(18)]).optional().nullable(),
   qualifierId: z.string().uuid().optional().nullable(),
   qualifierRoundNumber: z.number().int().min(1).optional().nullable(),
-  holes: z.array(z.object({
-    holeNumber: z.number().int().min(1).max(18),
-    par: z.number().int().min(3).max(6),
-    yardage: z.number().min(0),
-    score: z.number().int().min(1).max(20).optional().nullable(),
-    putts: z.number().int().min(0).max(10).optional().nullable(),
-    fairwayHit: z.boolean().optional().nullable(),
-    greenInRegulation: z.boolean().optional().nullable(),
-    penaltyStrokes: z.number().int().min(0).max(10).optional().nullable(),
-    scrambleAttempt: z.boolean().optional().nullable(),
-    scrambleMade: z.boolean().optional().nullable(),
-    sandSaveAttempt: z.boolean().optional().nullable(),
-    sandSaveMade: z.boolean().optional().nullable(),
-    shots: z.array(comprehensiveShotSchema).optional(),
-  }).passthrough().nullable()).max(18),
+  holes: z.array(partialHoleSchema.nullable()).max(18),
   inProgressShots: z.array(z.object({
     holeNumber: z.number().int().min(1).max(18),
     shots: z.array(comprehensiveShotSchema),
@@ -388,6 +423,65 @@ const partialRoundSchema = z.object({
     yardage: z.number().min(0).optional().nullable(),
   })).optional(),
 });
+
+type ZodIssueLike = { path: readonly PropertyKey[]; message: string };
+
+function formatIssuePath(path: readonly PropertyKey[]): string {
+  return path.map(String).join('.');
+}
+
+/**
+ * Recover the real cause behind a masked `holes.<n>` validation failure.
+ *
+ * Zod reports a failing array element at the element path. Depending on how
+ * the element is wrapped (`.nullable()`, a union, a refine) the reason can
+ * collapse to a bare "Invalid input" with no field path — which is exactly
+ * what production logged, and exactly why three successive repairs to this
+ * code path could not identify what was wrong. Re-validating the single hole
+ * against `partialHoleSchema` restores the field-level issue.
+ *
+ * Diagnostic only: it never changes what is accepted or rejected.
+ */
+function describeHoleValidationFailure(
+  issues: readonly ZodIssueLike[],
+  holes: unknown,
+): string[] {
+  const described: string[] = [];
+
+  for (const issue of issues.slice(0, 10)) {
+    const path = formatIssuePath(issue.path);
+    const elementOnly = /^holes\.(\d+)$/.exec(path);
+
+    if (!elementOnly || !Array.isArray(holes)) {
+      described.push(`${path || '(root)'}: ${issue.message}`);
+      continue;
+    }
+
+    const index = Number(elementOnly[1]);
+    const hole: unknown = holes[index];
+
+    if (hole === null || hole === undefined) {
+      described.push(
+        `${path}: hole slot is ${hole === null ? 'null' : 'undefined'} — no data for hole ${index + 1}`,
+      );
+      continue;
+    }
+
+    const inner = partialHoleSchema.safeParse(hole);
+    if (inner.success) {
+      // The element parses fine on its own, so the wrapper rejected it.
+      described.push(`${path}: ${issue.message} (element valid in isolation)`);
+      continue;
+    }
+
+    for (const innerIssue of inner.error.issues.slice(0, 5)) {
+      const suffix = innerIssue.path.length ? `.${formatIssuePath(innerIssue.path)}` : '';
+      described.push(`${path}${suffix}: ${innerIssue.message}`);
+    }
+  }
+
+  return described;
+}
 
 const shotUpdateSchema = z.object({
   shot_type: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']).optional(),
@@ -1635,7 +1729,11 @@ async function submitGolfRoundComprehensiveImpl(
           .maybeSingle();
 
         if (existingRound && existingRound.id !== existingRoundId) {
-          return { success: false, error: `You have already submitted round ${effectiveQualifierRoundNumber} for this qualifier.` };
+          // `code` keys the Bridge's expected-soft-failure classification
+          // (EXPECTED_SOFT_FAILURE_CODES in observe-action-result.ts) — the
+          // registry knew this code but no envelope carried it, so this
+          // by-design rejection minted error-severity incidents.
+          return { success: false, code: 'qualifier_round_already_exists', error: `You have already submitted round ${effectiveQualifierRoundNumber} for this qualifier.` };
         }
       }
     }
@@ -3799,13 +3897,29 @@ async function updateQualifierStatusImpl(
       return { success: false, error: 'Unauthorized' };
     }
 
-    const { error } = await supabase
+    // PostgREST reports an RLS-filtered UPDATE as a successful request with
+    // zero returned rows. Select the id so the coach is never told a manual
+    // close worked when the qualifier was not actually changed.
+    const { data: updatedQualifiers, error } = await supabase
       .from('golf_qualifiers')
       .update({ status })
-      .eq('id', qualifierId);
+      .eq('id', qualifierId)
+      .select('id');
 
     if (error) {
       return { success: false, error: 'Failed to update qualifier status. Please try again.' };
+    }
+
+    if (!updatedQualifiers || updatedQualifiers.length !== 1) {
+      await logServerError(
+        `qualifier status update matched no row for ${qualifierId}`,
+        { action: 'golf.updateQualifierStatus', featureArea: 'qualifiers' },
+        'warning',
+      );
+      return {
+        success: false,
+        error: "Couldn't update this qualifier — it may have been deleted, or you may not have edit access to this team.",
+      };
     }
 
     revalidatePath('/golf/dashboard/qualifiers');
@@ -5606,18 +5720,97 @@ async function savePartialRoundImpl(
     // Validate input with Zod after normalizing legacy transport holes.
     const validated = partialRoundSchema.safeParse(data);
     if (!validated.success) {
+      // Drill through the element-level mask BEFORE building the message, so
+      // the log names the offending field rather than "holes.16 — Invalid
+      // input". Falls back to the raw issue when nothing needs unmasking.
+      const described = describeHoleValidationFailure(validated.error.issues, data?.holes);
       const firstError = validated.error.issues[0];
-      const detail = `${firstError?.path.join('.')} — ${firstError?.message}`;
+      const rawDetail = `${formatIssuePath(firstError?.path ?? [])} — ${firstError?.message ?? 'unknown'}`;
+      const detail = described[0] ?? rawDetail;
+
       void logServerError(`Auto-save validation failed: ${detail}`, {
         action: 'savePartialRound',
         featureArea: 'shot_tracking',
         extra: {
           courseName: data.courseName,
           currentHole: data.currentHole,
-          zodErrors: validated.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`),
+          // Unmasked, field-level issues — the thing that was missing.
+          zodErrors: described,
+          // The raw issue kept alongside so a wrapper-level change is still
+          // visible if the two ever disagree.
+          zodErrorsRaw: validated.error.issues
+            .slice(0, 5)
+            .map(i => `${formatIssuePath(i.path)}: ${i.message}`),
+          holesCount: Array.isArray(data?.holes) ? data.holes.length : null,
+          emptyHoleSlots: Array.isArray(data?.holes)
+            ? data.holes.reduce<number[]>(
+                (acc, hole, index) => (hole === null || hole === undefined ? [...acc, index] : acc),
+                [],
+              )
+            : null,
         },
       }, 'warning');
-      return { success: false, error: `Validation error: ${detail}` };
+
+      // A payload mismatch must NEVER cost the player their shot.
+      //
+      // This used to `return { success: false }`, which threw away the WHOLE
+      // round — 17 good holes discarded because hole 18 had one field the
+      // schema didn't like — and surfaced as "Error updating shot" / "Error
+      // deleting shot" mid-round. The mismatch is ours to reconcile on the
+      // server, not the player's to lose data over.
+      //
+      // So: keep every hole that validates, null out the ones that don't (the
+      // array is positional, so a hole is nulled rather than removed — dropping
+      // it would renumber everything after it), and carry on with the save. The
+      // discarded holes are logged above with their real field-level cause, so
+      // the defect is still visible and still gets fixed — just not by the
+      // player, mid-round, on the course.
+      const salvagedHoles = Array.isArray(data.holes)
+        ? data.holes.map((hole) =>
+            hole === null || hole === undefined || partialHoleSchema.safeParse(hole).success
+              ? hole ?? null
+              : null,
+          )
+        : data.holes;
+
+      const salvaged = partialRoundSchema.safeParse({ ...data, holes: salvagedHoles });
+
+      if (!salvaged.success) {
+        // The failure is outside `holes` (course name, round type, dates) —
+        // nothing to salvage, and retrying the identical payload would just
+        // fail again. Report `retry` so the caller treats it like a transient
+        // skip rather than telling the player their round is broken.
+        void logServerError(
+          `Auto-save unsalvageable (failure outside holes): ${describeHoleValidationFailure(salvaged.error.issues, salvagedHoles)[0] ?? detail}`,
+          {
+            action: 'savePartialRound',
+            featureArea: 'shot_tracking',
+            extra: { courseName: data.courseName, currentHole: data.currentHole },
+          },
+          'error',
+        );
+        return { success: false, error: 'retry' };
+      }
+
+      const droppedHoles = Array.isArray(data.holes)
+        ? data.holes.reduce<number[]>(
+            (acc, hole, index) =>
+              hole != null && (salvagedHoles as unknown[])[index] === null ? [...acc, index + 1] : acc,
+            [],
+          )
+        : [];
+
+      void logServerEvent(
+        `Auto-save salvaged: saved the round without ${droppedHoles.length} unparseable hole(s)`,
+        {
+          action: 'savePartialRound.salvage',
+          featureArea: 'shot_tracking',
+          extra: { courseName: data.courseName, currentHole: data.currentHole, droppedHoles },
+        },
+        'warning',
+      );
+
+      data = { ...data, holes: salvagedHoles } as PartialRoundData;
     }
 
     // Bug #3: Clamp currentHole to holesToPlay for 9-hole rounds
@@ -5703,6 +5896,61 @@ async function savePartialRoundImpl(
       }
     }
 
+    // An active qualifier round MUST carry its round number.
+    //
+    // A NULL here is a deadlock with no in-app way out: the cap check in
+    // `getNextQualifierRoundNumber` counts the player's COMPLETED round numbers,
+    // so a player who has used up the qualifier's rounds cannot start another —
+    // and a numberless active round cannot be submitted either, because it has
+    // no slot to submit into. Observed 2026-08-24: one player on a one-round
+    // qualifier sat stuck for 33 hours with 46 shots recorded, reachable only
+    // by a direct database write.
+    //
+    // Deriving the number costs one read and removes the state entirely.
+    let resolvedQualifierRoundNumber = data.qualifierRoundNumber ?? null;
+    if (data.qualifierId && !resolvedQualifierRoundNumber) {
+      const { data: priorRounds, error: priorRoundsError } = await supabase
+        .from('golf_rounds')
+        .select('qualifier_round_number')
+        .eq('qualifier_id', data.qualifierId)
+        .eq('player_id', player.id)
+        .eq('status', 'completed');
+
+      if (priorRoundsError) {
+        // A failed read must not masquerade as "no prior rounds": deriving
+        // number 1 from an outage could claim a slot the player already
+        // holds. Skip derivation — the save proceeds numberless exactly as
+        // before this feature, and the next auto-save retries the read.
+        void logServerEvent(
+          'Auto-save could not read prior qualifier rounds; skipping round-number derivation this save',
+          {
+            action: 'savePartialRound.deriveQualifierRoundNumber',
+            featureArea: 'shot_tracking',
+            playerId: player.id,
+            extra: { qualifierId: data.qualifierId, errorCode: priorRoundsError.code },
+          },
+          'warning',
+        );
+      } else {
+        const usedNumbers = (priorRounds ?? [])
+          .map(r => r.qualifier_round_number)
+          .filter((n): n is number => typeof n === 'number');
+
+        resolvedQualifierRoundNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
+
+        void logServerEvent(
+          `Auto-save derived a missing qualifier round number (${resolvedQualifierRoundNumber})`,
+          {
+            action: 'savePartialRound.deriveQualifierRoundNumber',
+            featureArea: 'shot_tracking',
+            playerId: player.id,
+            extra: { qualifierId: data.qualifierId, usedNumbers },
+          },
+          'info',
+        );
+      }
+    }
+
     const roundData = {
       player_id: player.id,
       team_id: teamId,
@@ -5722,7 +5970,7 @@ async function savePartialRoundImpl(
       current_hole: data.currentHole || null,
       holes_played: data.holesToPlay || 18,
       qualifier_id: data.qualifierId || null,
-      qualifier_round_number: data.qualifierRoundNumber || null,
+      qualifier_round_number: resolvedQualifierRoundNumber,
       total_score: null,
       score_to_par: null,
       total_putts: null,
@@ -6659,7 +6907,9 @@ async function getNextQualifierRoundNumberImpl(
       return { success: false, error: 'Qualifier not found' };
     }
     if (qualifier.status === 'completed') {
-      return { success: false, error: 'This qualifier has been closed by the coach.' };
+      // See qualifier_round_already_exists above: the code routes this
+      // expected lifecycle outcome to 'warning', not a Sentry error.
+      return { success: false, code: 'qualifier_closed', error: 'This qualifier has been closed by the coach.' };
     }
 
     // A started qualifier round owns its number until it is submitted or
@@ -6714,31 +6964,34 @@ async function getNextQualifierRoundNumberImpl(
         .map((r) => r.qualifier_round_number as number)
     );
 
-    // Calculate the next round number (max completed + 1, or 1 if none completed)
-    const maxCompletedRound = completedRoundNumbers.size > 0
-      ? Math.max(...completedRoundNumbers)
-      : 0;
     const numRounds = qualifier.num_rounds ?? 1;
 
-    // The cap check that was missing end-to-end: without it, the "Enter Round"
-    // flow could always request maxCompletedRound+1 even past the qualifier's
-    // configured round count.
-    if (maxCompletedRound >= numRounds) {
+    // Qualifier progression is the first configured number the player has not
+    // submitted, not `max(completed) + 1`. The latter skips a recoverable gap
+    // in legacy/out-of-order data (for example 1 and 3 becoming 4) and can
+    // falsely report that a player has exhausted their configured rounds.
+    const unusedConfiguredRounds = Array.from(
+      { length: numRounds },
+      (_, index) => index + 1,
+    ).filter((roundNumber) => !completedRoundNumbers.has(roundNumber));
+    const nextRoundNumber = unusedConfiguredRounds[0];
+
+    if (nextRoundNumber === undefined) {
       const roundLabel = numRounds === 1 ? 'round' : 'rounds';
+      // See qualifier_round_already_exists above: the code routes this
+      // expected lifecycle outcome to 'warning', not a Sentry error
+      // (observed live 2026-08-25 as Sentry JAVASCRIPT-NEXTJS-P8 / Bridge
+      // fingerprint 709e5658 — a player at their configured limit).
       return {
         success: false,
-        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${maxCompletedRound} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
+        code: 'qualifier_round_limit_reached',
+        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${numRounds} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
       };
     }
 
-    const nextRoundNumber = maxCompletedRound + 1;
-
-    // Available rounds start from the next round number
-    const availableRounds = [nextRoundNumber];
-
     return {
       success: true,
-      data: { nextRoundNumber, availableRounds }
+      data: { nextRoundNumber, availableRounds: [nextRoundNumber] }
     };
 
   } catch {

@@ -1,0 +1,46 @@
+fileType: momentic/test/v2
+id: golf-hell-round-four-chaos
+name: GolfHelm qualifier hell - round four recovery and submit
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.PLAYER_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.PLAYER_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - waitForUrl: /golf/dashboard
+  - navigate: https://helmsportslabs.com/golf/dashboard/qualifiers
+  - click: "{{ env.QA_QUALIFIER_NAME }}"
+  - act: >-
+      Start exactly Round 4 of {{ env.QA_QUALIFIER_NAME }} using a unique
+      18-hole par-72 manual course named {{ env.QA_COURSE_R4 }}. Complete nine
+      legal holes toward an eventual 84, retaining qualifier identity and every
+      completed-hole acknowledgement. Before an early checkpoint becomes durable,
+      leave valid visible current-hole shots ready for the offline drill.
+  - offline
+  - act: >-
+      While offline, attempt that completed-hole checkpoint through the real UI.
+      The player must remain on the same hole, see an accurate retry/error state,
+      and retain entered shots. Do not accept navigation or a claim that the
+      hole saved durably.
+  - online
+  - act: >-
+      Retry the checkpoint exactly once online and verify it succeeds exactly
+      once. Continue through the round. At mid-round, create valid current-hole
+      state, go through Save & exit while offline only if the UI offers it,
+      verify no false durable-save claim, restore connectivity, save through the
+      normal UI, Continue the same round, and verify all acknowledged state.
+      Near hole 12, use a second tab to log out through the real app, attempt an
+      autosave/checkpoint in the first tab, and verify a clear auth failure with
+      no silent data loss; log in and recover the same round. Repeat one smaller
+      stale two-tab mutation. Finish all 18 holes for exactly 84. While offline
+      attempt final Submit Round and prove it does not falsely complete; restore
+      online, submit, deliberately rapid-double-invoke only the successful
+      submission control, and prove exactly one completed Round 4 exists.
+  - checkPageContains: Round Complete
+  - checkPageContains: "84"
+  - navigate: https://helmsportslabs.com/golf/dashboard/my-qualifiers
+  - checkPageContains: "{{ env.QA_QUALIFIER_NAME }}"
+  - checkPageContains: 4/4

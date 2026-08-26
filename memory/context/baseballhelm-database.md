@@ -751,9 +751,9 @@ RLS: originally defined in `supabase/migrations/20260624000040_baseball_timeline
 
 ### baseball_timeline_event_acks
 Purpose: Acknowledgement of a `baseball_player_timeline_events` row (NOT a calendar event) — e.g. a coach marking "I've seen this stat milestone/AI insight." Deliberately a separate table from `baseball_event_acknowledgements` because the FK target and visibility scoping differ.
-Key columns: id, timeline_event_id, user_id, acknowledged_at; UNIQUE(timeline_event_id, user_id)
-FKs: timeline_event_id → baseball_player_timeline_events.id (CASCADE); user_id → auth.users.id (CASCADE)
-RLS: RLS enabled, no anon grant; write invariant `user_id = auth.uid()`; visibility mirrors the underlying timeline event's own SELECT policy (a player can never ack a `staff_only` row they can't read). [`supabase/migrations/20260624000430_baseball_timeline_event_acks.sql`]
+Key columns: id, timeline_event_id, team_id, player_id, user_id/acked_by, acknowledged_at/acked_at; UNIQUE(timeline_event_id, user_id) and UNIQUE(timeline_event_id, acked_by) during the compatibility window.
+FKs: timeline_event_id → baseball_player_timeline_events.id (CASCADE); team_id → baseball_teams.id (CASCADE); player_id → baseball_players.id (CASCADE); user_id/acked_by → auth.users.id (CASCADE)
+RLS: RLS enabled, no anon grant; write invariant binds both `user_id` and `acked_by` to `auth.uid()` during the production/local compatibility window. Visibility mirrors the underlying timeline event's own SELECT policy (a player can never ack a `staff_only` row they can't read); the owner-only DELETE policy supports a player withdrawing their own acknowledgement. The live contract carries the event's `team_id`/`player_id` plus both `acked_at`/`acknowledged_at` timestamp aliases. [`supabase/migrations/20260825222432_reconcile_baseball_timeline_ack_contract.sql`]
 
 ### baseball_tasks
 Purpose: A to-do/assignment issued by a coach to the team (conditioning, academic, admin, practice, game-prep).

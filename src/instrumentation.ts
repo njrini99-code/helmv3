@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
@@ -111,6 +112,9 @@ export async function register() {
       release,
       environment,
       debug: false,
+      // Supabase JS uses the W3C traceparent header when its tracing runtime
+      // is loaded. Sentry must emit that header instead of only sentry-trace.
+      propagateTraceparent: true,
 
       integrations: [
         ...(!isDev && profilingIntegration ? [profilingIntegration] : []),
@@ -152,7 +156,11 @@ export async function register() {
       .then((m) => m.recordDeployMarker())
       .catch(() => {});
 
-    registerProcessErrorHandlers();
+    // `process.on` is a Node-only API. Load the handler module only from the
+    // Node runtime so Edge builds never evaluate that implementation.
+    void import('@/lib/observability/register-process-error-handlers')
+      .then((m) => m.registerProcessErrorHandlers())
+      .catch(() => {});
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {
@@ -161,6 +169,7 @@ export async function register() {
       release,
       environment,
       debug: false,
+      propagateTraceparent: true,
       integrations: [
         Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] }),
         Sentry.captureConsoleIntegration({ levels: ['error'] }),
@@ -320,81 +329,4 @@ export async function onRequestError(
   } catch {
     // Bridge write must never break Next's own error handling.
   }
-}
-
-// --- process-level fallback: catches errors that never flow through Next's
-// request lifecycle at all (detached timers, fire-and-forget promises,
-// background job code). nodejs runtime only — process doesn't exist on edge.
-let processHandlersRegistered = false;
-
-// Shared 20-writes/minute ceiling across both handlers so a rejection storm
-// (e.g. a bad dependency spinning on a promise) can't flood admin_events.
-const BRIDGE_PROCESS_WRITE_LIMIT = 20;
-let bridgeProcessWindowStart = Date.now();
-let bridgeProcessWriteCount = 0;
-
-function allowBridgeProcessWrite(): boolean {
-  const now = Date.now();
-  if (now - bridgeProcessWindowStart > 60_000) {
-    bridgeProcessWindowStart = now;
-    bridgeProcessWriteCount = 0;
-  }
-  bridgeProcessWriteCount += 1;
-  return bridgeProcessWriteCount <= BRIDGE_PROCESS_WRITE_LIMIT;
-}
-
-function logProcessErrorToBridge(action: string, error: Error, metadata?: Record<string, unknown>): void {
-  if (!allowBridgeProcessWrite()) return;
-  void import('@/lib/server-error-logger')
-    .then((m) =>
-      m.logServerException(
-        error,
-        { action, source: 'background_job', handled: false, ...(metadata ? { metadata } : {}) },
-        'error'
-      )
-    )
-    .catch(() => {});
-}
-
-function registerProcessErrorHandlers(): void {
-  if (processHandlersRegistered) return;
-  processHandlersRegistered = true;
-
-  process.on('unhandledRejection', (reason) => {
-    let error: Error;
-    if (reason instanceof Error) {
-      error = reason;
-    } else {
-      // Non-Error rejection reasons (a promise rejected with a string,
-      // plain object, number, etc.) used to become `new Error(String(reason))`
-      // — that Error's OWN stack always points at THIS handler, so Next dev's
-      // code-frame overlay blamed instrumentation.ts for every such
-      // rejection instead of the real throw site. console.error the RAW
-      // reason FIRST (before any synthesis) so the true payload is never
-      // masked, then build a clearly-labeled synthetic Error: `name` marks
-      // it as synthetic (not a real thrown Error) rather than masquerading
-      // as one, the message is PREFIXED with the stringified reason so it
-      // still reads naturally in Sentry/logs, and the untouched original
-      // reason is preserved in the Bridge metadata for anyone triaging the
-      // admin_events row (a stringified reason alone can lose structure —
-      // e.g. a plain `{ code, message }` rejection collapses to
-      // "[object Object]").
-      console.error('[instrumentation] unhandledRejection: non-Error reason', reason);
-      error = new Error(`${String(reason)} (unhandled promise rejection with a non-Error reason)`);
-      error.name = 'UnhandledRejection';
-    }
-    Sentry.captureException(error);
-    logProcessErrorToBridge(
-      'process.unhandledRejection',
-      error,
-      reason instanceof Error ? undefined : { reason }
-    );
-  });
-
-  process.on('uncaughtException', (error) => {
-    Sentry.captureException(error);
-    logProcessErrorToBridge('process.uncaughtException', error);
-    // Do NOT process.exit() or rethrow here — Sentry's own uncaughtException
-    // integration (wired via Sentry.init above) owns fatality/exit behavior.
-  });
 }

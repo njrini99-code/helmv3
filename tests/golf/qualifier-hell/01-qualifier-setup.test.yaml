@@ -1,0 +1,41 @@
+fileType: momentic/test/v2
+id: golf-hell-qualifier-setup
+name: GolfHelm qualifier hell - create four-round QA qualifier
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.COACH_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.COACH_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - navigate: https://helmsportslabs.com/golf/dashboard/qualifiers/new
+  - checkPageContains: Create a qualifier.
+  - type:
+      text: "{{ env.QA_QUALIFIER_NAME }}"
+      into: Qualifier name
+  - type:
+      text: "Automated QA qualifier torture run {{ env.QA_RUN_ID }}. Synthetic data. Do not use for selection."
+      into: Description
+  - type:
+      text: "{{ env.QA_START_DATE }}"
+      into: Start date
+  - type:
+      text: "{{ env.QA_END_DATE }}"
+      into: End date
+  - type:
+      text: "{{ env.QA_START_DATE }}"
+      into: Entry deadline
+  - click: the plus button in the Rounds control
+  - click: the plus button in the Rounds control
+  - click: the plus button in the Rounds control
+  - checkPageContains: Round 4
+  - click: Cole Bennett
+  - click: Create qualifier
+  - waitForUrl: /golf/dashboard/qualifiers
+  - checkPageContains: "{{ env.QA_QUALIFIER_NAME }}"
+  - click: "{{ env.QA_QUALIFIER_NAME }}"
+  - waitForUrl: /golf/dashboard/qualifiers/
+  - checkPageContains: Cole Bennett
+  - checkPageContains: 0/4

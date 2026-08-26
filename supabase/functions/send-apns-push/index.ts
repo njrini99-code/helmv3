@@ -201,13 +201,32 @@ Deno.serve(async (req: Request) => {
     const errorBody = await response.text();
     const statusCode = response.status;
 
-    // Handle common APNs errors
-    if (statusCode === 410 || statusCode === 400) {
-      // Token is invalid or expired — caller should deactivate it
+    // Deactivate ONLY on true dead-token signals. Apple returns 400 for
+    // roughly fourteen unrelated reasons (BadTopic, MissingTopic,
+    // PayloadEmpty, TopicDisallowed, InvalidPushType, …), and a config fault
+    // is by nature identical for every token in a sweep — a bare-400 match
+    // here would mass-deactivate every live device the first time someone
+    // mistyped a bundle id. 410 is safe on status alone: Apple only returns
+    // it for Unregistered, which is per-token by construction. This mirrors
+    // DEAD_TOKEN_REASONS in src/lib/notifications/push.ts; keep the two in
+    // step. (The previously deployed v5 predates this file — do not redeploy
+    // any copy that sets shouldDeactivateToken on a bare 400.)
+    let apnsReason = "";
+    try {
+      apnsReason = (JSON.parse(errorBody) as { reason?: string }).reason ?? "";
+    } catch {
+      /* non-JSON APNs body — no reason available */
+    }
+    const DEAD_TOKEN_REASONS = ["Unregistered", "BadDeviceToken", "DeviceTokenNotForTopic"];
+    const isDeadToken = statusCode === 410 || DEAD_TOKEN_REASONS.includes(apnsReason);
+
+    if (isDeadToken) {
       return new Response(
         JSON.stringify({
           success: false,
           error: `APNs error ${statusCode}: ${errorBody}`,
+          reason: apnsReason || undefined,
+          apnsStatus: statusCode,
           shouldDeactivateToken: true,
         }),
         { status: statusCode, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -215,7 +234,12 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ success: false, error: `APNs error ${statusCode}: ${errorBody}` }),
+      JSON.stringify({
+        success: false,
+        error: `APNs error ${statusCode}: ${errorBody}`,
+        reason: apnsReason || undefined,
+        apnsStatus: statusCode,
+      }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

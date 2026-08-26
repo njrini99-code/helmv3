@@ -125,7 +125,7 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 | If you're working on... | Read this file FIRST |
 |------------------------|---------------------|
 | **Any golf feature** (understanding behavior, fixing bugs, adding to it) | `memory/context/golfhelm-features.md` — Find the feature by name, get data flow, files, tables, dependencies, gaps |
-| **Database queries** (writing SQL, adding columns, debugging data) | `memory/context/golfhelm-database.md` — Every column of every table |
+| **Database queries** (writing SQL, adding columns, debugging data) | `npm run schema -- <table>` (columns+FKs from generated production types, ~300 tokens), `npm run schema -- --grep <substr>` to discover, `--enums [name]` for enums. `memory/context/golfhelm-database.md` is the legacy prose rendering — prefer the command |
 | **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — **use its AUTOGEN blocks, not its narrative index.** `AUTOGEN:tables` and `AUTOGEN:enums` are generated from `src/lib/types/database.ts` and are complete. The hand-written by-feature index above them was last verified 2026-02-13 and named 20 tables that do not exist in production. Do not hand-copy the counts elsewhere, they rot |
 | **CoachHelm AI** (insights, patterns, predictions, reviews, philosophy) | `memory/context/coachhelm-ai.md` — V2 engine architecture, pipeline, components |
 | **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all action files, component directories |
@@ -148,9 +148,8 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 
 ## CRITICAL RULES
 
-### 0. Branch & deploy — `main` is the working branch
-
-Work directly on `main`. Owner decision, 2026-08-15.
+### 0. Branch & deploy — preserve the current task branch
+Do not assume `main` is currently checked out. Run `git branch --show-current` and preserve the current task branch/worktree unless the user explicitly asks to switch branches.
 
 **A push to `main` ships nothing.** `vercel.json` has carried
 `"git": {"deploymentEnabled": {"*": false}}` since 2026-07-08 (#789 /
@@ -308,9 +307,9 @@ npm run lighthouse        # Lighthouse CI against PREVIEW_URL (or localhost:3000
 # Inngest (durable workflows — replaces scattered cron + retry loops)
 npx inngest-cli@latest dev  # Local dev server on :8288 (auto-discovers /api/inngest)
 
-# Platform CLIs (installed via brew)
-supabase --version   # Supabase CLI (>= 2.101.0)
-vercel --version     # Vercel CLI (>= 54.x)
+# Platform CLIs (repo-local; do not assume global binaries)
+./node_modules/.bin/supabase --version  # project-pinned Supabase CLI
+./node_modules/.bin/vercel --version    # project-pinned Vercel CLI
 ```
 
 ## Auto-regen inventory docs
@@ -334,3 +333,12 @@ CI behavior: `.github/workflows/docs-regen.yml` runs on every push to
 `main` that touches a source of truth, and opens an auto-PR titled
 "docs: regen inventory blocks" if the regenerated content drifts.
 Approve and squash-merge.
+
+<!-- HELM_AGENT_CANONICALITY_START -->
+## Helm agent canonicality
+
+The binding canonicality rules live in ONE place: `AGENTS.md` → "Helm agent
+canonicality" (imported above). This block exists only so tooling that greps
+for the marker finds it; it deliberately restates nothing — a second copy of
+the rules is a second place for them to rot.
+<!-- HELM_AGENT_CANONICALITY_END -->
