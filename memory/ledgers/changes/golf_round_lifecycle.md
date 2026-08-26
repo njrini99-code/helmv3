@@ -172,3 +172,6 @@
   headings off retired warm-* tokens (unreadable in dark scope). Presentation
   only; light mode and all control semantics unchanged. Gates: eslint 0,
   typecheck 0, controls suite 34/34.
+- Also same date: `FairwayHoleConfig` par chips now fire `fwHaptic('selection')`
+  (grammar §32 gap found by live bridge-log QA — chip toggled silently);
+  yardage typing stays silent. eslint 0 / typecheck 0.
