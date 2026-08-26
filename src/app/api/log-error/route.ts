@@ -113,20 +113,23 @@ function stripUrlSecretsDeep(value: unknown, depth = 0): unknown {
   if (typeof value === 'string') return stripUrlSecrets(value);
   if (Array.isArray(value)) return value.map((item) => stripUrlSecretsDeep(item, depth + 1));
   if (value && typeof value === 'object') {
-    // Null-prototype, and prototype-bearing keys dropped rather than copied.
-    // The keys here are whatever an unauthenticated client sent, and writing
-    // `out[key]` for `__proto__` / `constructor` / `prototype` is how a
-    // rebuild like this becomes prototype pollution (CodeQL
-    // js/remote-property-injection). Nothing legitimate reports diagnostics
-    // under those names, so dropping them loses no telemetry.
-    const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+    // Accumulated in a Map, not by assigning `out[key]`. Every key here is a
+    // string an unauthenticated client chose, and a dynamic property write is
+    // how a rebuild like this becomes prototype pollution (CodeQL
+    // js/remote-property-injection). `Map.set` has no prototype chain to walk
+    // into, so the dangerous names are inert as map keys rather than merely
+    // filtered — the guarantee holds even if the denylist below is ever
+    // wrong about which names are dangerous. The denylist stays as well, so
+    // those names never reach the rebuilt object at all: nothing legitimate
+    // reports diagnostics under them, so dropping them loses no telemetry.
+    const out = new Map<string, unknown>();
     for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-      out[key] = stripUrlSecretsDeep(nested, depth + 1);
+      out.set(key, stripUrlSecretsDeep(nested, depth + 1));
     }
     // Back to a plain object so JSON.stringify and the Supabase client see a
     // normal shape downstream.
-    return { ...out };
+    return Object.fromEntries(out);
   }
   return value;
 }
