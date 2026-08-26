@@ -29,6 +29,7 @@
     "trace:db": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/trace-db.ts",
     "docs:regen": "node scripts/regen-docs.mjs",
     "docs:check": "npm run docs:regen && npm run docs:diff-check && npm run docs:schema-drift && npm run docs:path-drift && npm run knowledge:globs",
+    "doctor": "node scripts/doctor.mjs",
     "repo:doctor": "node scripts/repo-doctor/cli.mjs",
     "orphans:mounts": "node scripts/find-orphan-mounts.mjs",
     "knowledge:map": "node scripts/knowledge/map-changed-files.mjs",
