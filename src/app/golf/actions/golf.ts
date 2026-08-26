@@ -5905,29 +5905,46 @@ async function savePartialRoundImpl(
     // Deriving the number costs one read and removes the state entirely.
     let resolvedQualifierRoundNumber = data.qualifierRoundNumber ?? null;
     if (data.qualifierId && !resolvedQualifierRoundNumber) {
-      const { data: priorRounds } = await supabase
+      const { data: priorRounds, error: priorRoundsError } = await supabase
         .from('golf_rounds')
         .select('qualifier_round_number')
         .eq('qualifier_id', data.qualifierId)
         .eq('player_id', player.id)
         .eq('status', 'completed');
 
-      const usedNumbers = (priorRounds ?? [])
-        .map(r => r.qualifier_round_number)
-        .filter((n): n is number => typeof n === 'number');
+      if (priorRoundsError) {
+        // A failed read must not masquerade as "no prior rounds": deriving
+        // number 1 from an outage could claim a slot the player already
+        // holds. Skip derivation — the save proceeds numberless exactly as
+        // before this feature, and the next auto-save retries the read.
+        void logServerEvent(
+          'Auto-save could not read prior qualifier rounds; skipping round-number derivation this save',
+          {
+            action: 'savePartialRound.deriveQualifierRoundNumber',
+            featureArea: 'shot_tracking',
+            playerId: player.id,
+            extra: { qualifierId: data.qualifierId, errorCode: priorRoundsError.code },
+          },
+          'warning',
+        );
+      } else {
+        const usedNumbers = (priorRounds ?? [])
+          .map(r => r.qualifier_round_number)
+          .filter((n): n is number => typeof n === 'number');
 
-      resolvedQualifierRoundNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
+        resolvedQualifierRoundNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
 
-      void logServerEvent(
-        `Auto-save derived a missing qualifier round number (${resolvedQualifierRoundNumber})`,
-        {
-          action: 'savePartialRound.deriveQualifierRoundNumber',
-          featureArea: 'shot_tracking',
-          playerId: player.id,
-          extra: { qualifierId: data.qualifierId, usedNumbers },
-        },
-        'info',
-      );
+        void logServerEvent(
+          `Auto-save derived a missing qualifier round number (${resolvedQualifierRoundNumber})`,
+          {
+            action: 'savePartialRound.deriveQualifierRoundNumber',
+            featureArea: 'shot_tracking',
+            playerId: player.id,
+            extra: { qualifierId: data.qualifierId, usedNumbers },
+          },
+          'info',
+        );
+      }
     }
 
     const roundData = {
