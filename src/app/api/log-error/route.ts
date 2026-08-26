@@ -49,15 +49,39 @@ function readContextSport(context: unknown): TraceSport | null {
  * Non-URL strings (an incidental '?' or '#' in the middle of prose) pass
  * through untouched.
  */
+/**
+ * Scheme check without a regex. `/^[a-z][a-z0-9+.-]*:\/\//` backtracks across
+ * a long scheme-shaped run before failing, and every string here is
+ * client-supplied and unauthenticated (CodeQL js/polynomial-redos). A scheme
+ * is short by definition, so scanning a bounded prefix is both linear and
+ * a truer statement of the rule.
+ */
+const MAX_SCHEME_LEN = 32;
+function hasUrlScheme(value: string): boolean {
+  const limit = Math.min(value.length, MAX_SCHEME_LEN);
+  for (let i = 0; i < limit; i++) {
+    const c = value[i]!;
+    if (c === ':') return i > 0 && value.startsWith('://', i);
+    const isAlpha = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    const isSchemeChar = isAlpha || (c >= '0' && c <= '9') || c === '+' || c === '.' || c === '-';
+    if (i === 0 ? !isAlpha : !isSchemeChar) return false;
+  }
+  return false;
+}
+
 function stripUrlSecrets(value: string): string {
-  if (!value.includes('?') && !value.includes('#')) return value;
+  const q = value.indexOf('?');
+  const h = value.indexOf('#');
+  if (q === -1 && h === -1) return value;
   const looksLikeUrl =
-    /^[a-z][a-z0-9+.-]*:\/\//i.test(value) ||
+    hasUrlScheme(value) ||
     value.startsWith('/') ||
     value.startsWith('?') ||
     value.startsWith('#');
   if (!looksLikeUrl) return value;
-  return value.replace(/[?#].*$/, '');
+  // Index math rather than /[?#].*$/ — same cut, no scanning.
+  const cut = q === -1 ? h : h === -1 ? q : Math.min(q, h);
+  return value.slice(0, cut);
 }
 
 /**
@@ -89,11 +113,20 @@ function stripUrlSecretsDeep(value: unknown, depth = 0): unknown {
   if (typeof value === 'string') return stripUrlSecrets(value);
   if (Array.isArray(value)) return value.map((item) => stripUrlSecretsDeep(item, depth + 1));
   if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {};
+    // Null-prototype, and prototype-bearing keys dropped rather than copied.
+    // The keys here are whatever an unauthenticated client sent, and writing
+    // `out[key]` for `__proto__` / `constructor` / `prototype` is how a
+    // rebuild like this becomes prototype pollution (CodeQL
+    // js/remote-property-injection). Nothing legitimate reports diagnostics
+    // under those names, so dropping them loses no telemetry.
+    const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
       out[key] = stripUrlSecretsDeep(nested, depth + 1);
     }
-    return out;
+    // Back to a plain object so JSON.stringify and the Supabase client see a
+    // normal shape downstream.
+    return { ...out };
   }
   return value;
 }

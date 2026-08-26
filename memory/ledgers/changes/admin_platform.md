@@ -1,5 +1,39 @@
 # Admin Platform change ledger
 
+## 2026-08-26 — four CodeQL findings on the refit's own new code
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-observability`.
+- CodeQL flagged 4 alerts (1 critical, 3 high) on code this branch added. None
+  were in the required-check set, so none would have blocked the merge
+  mechanically. All four were real and all four are fixed.
+- **Critical — SSRF in the new Sentry resolve action.** `updateSentryIssueStatus`
+  interpolated the caller-supplied issue id straight into a URL path segment,
+  on a request carrying a Sentry token far more privileged than the operator
+  holding it. `../../` walks to a different endpoint; a leading `//`
+  re-points the request at another host entirely. Now validated against
+  `^[A-Za-z0-9_-]{1,64}$` and encoded — super-admin gating is not a reason to
+  skip validation when the credential outranks the caller.
+- **High — polynomial ReDoS on an unauthenticated route.** The shared
+  redaction regex ran across the *entire* client payload before truncation, so
+  a megabyte of attacker-chosen text on `/api/log-error` was scanned in full.
+  Fixed structurally (truncate to the storage budget FIRST, so nothing scans
+  more than we agreed to keep) and locally (the key-name quantifier is bounded
+  at 256 — the part that actually backtracks; the URL alternative stays
+  unbounded on purpose, since it is greedy with nothing required after it and
+  bounding it would leave the tail of a long URL, where tokens sit, unredacted).
+- **High — a second ReDoS in the route's own `stripUrlSecrets`.** The scheme
+  test and the query cut were both regex scans over client text; both are now
+  index math and a bounded prefix scan, which is also a truer statement of the
+  rule (a scheme is short by definition).
+- **High — prototype pollution.** The context-tree walker rebuilt objects with
+  `out[key] = …` using keys an unauthenticated client chose. Now a
+  null-prototype accumulator that drops `__proto__` / `constructor` /
+  `prototype` outright. Ordinary keys still survive — this drops dangerous
+  names, not telemetry.
+- Worth stating: these were introduced by this branch's own work, and three of
+  the four sit on a public, unauthenticated ingest endpoint. The observability
+  code got the same scrutiny it exists to provide.
+
 ## 2026-08-26 — review round on the observability refit
 
 - SHA: recorded in the follow-up ledger commit on `feat/bridge-observability`.

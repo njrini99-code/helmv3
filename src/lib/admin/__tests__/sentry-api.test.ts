@@ -350,4 +350,34 @@ describe('updateSentryIssueStatus', () => {
     const init = fetchMock.mock.calls[0]![1] as RequestInit;
     expect(init.body).toBe(JSON.stringify({ status: 'ignored' }));
   });
+
+  // The id is interpolated into a URL PATH, and the request carries a token
+  // far more privileged than the operator holding it. `../../` walks to
+  // another endpoint and a leading `//` re-points the host outright, so a
+  // malformed id must never reach fetch() at all.
+  it.each([
+    ['path traversal', '../../../organizations/other/issues/1'],
+    ['protocol-relative host', '//evil.example.com/x'],
+    ['encoded traversal', '..%2F..%2Fadmin'],
+    ['absolute url', 'https://evil.example.com/'],
+    ['backslash', 'a\\b'],
+    ['newline', '123\n456'],
+    ['whitespace-only', '   '],
+  ])('refuses a malformed issue id (%s) before any request', async (_label, badId) => {
+    const res = await updateSentryIssueStatus(badId, 'resolved');
+
+    expect(res.status).not.toBe('ok');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts a Sentry short-id and encodes it into the path', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: 'HELMV3-4C', status: 'resolved' }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const res = await updateSentryIssueStatus('HELMV3-4C', 'resolved');
+
+    expect(res.status).toBe('ok');
+    const url = String(fetchMock.mock.calls[0]![0]);
+    expect(url).toContain('/issues/HELMV3-4C/');
+  });
 });

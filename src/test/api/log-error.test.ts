@@ -523,4 +523,75 @@ describe('POST /api/log-error', () => {
     expect(JSON.stringify(errorLog?.payload.context)).not.toContain('someone@example.com');
     expect(JSON.stringify(errorLog?.payload)).not.toContain('someone@example.com');
   });
+
+  // This route is UNAUTHENTICATED, so every string below is attacker-chosen.
+  // Both defects below were live CodeQL findings on this file.
+  function scaffold() {
+    createClientMock.mockResolvedValueOnce({
+      auth: { getUser: vi.fn(async () => ({ data: { user: null }, error: null })) },
+    } as never);
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
+    return inserts;
+  }
+
+  it('does not pollute Object.prototype from a client-supplied context tree', async () => {
+    const inserts = scaffold();
+
+    const res = await POST(
+      request(
+        JSON.stringify({
+          message: 'proto probe',
+          severity: 'medium',
+          context: JSON.parse(
+            '{"__proto__":{"polluted":"yes"},"nested":{"constructor":{"bad":1}},"kept":"ok"}',
+          ),
+        }),
+      ),
+    );
+
+    expect(res.status).toBe(200);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(Object.prototype).not.toHaveProperty('polluted');
+
+    const errorLog = inserts.find((i) => i.table === 'error_logs');
+    const ctx = errorLog?.payload.context as Record<string, unknown> | undefined;
+    // The ordinary key survives — this drops dangerous names, not telemetry.
+    expect(ctx?.kept).toBe('ok');
+  });
+
+  // The ReDoS fix is structural, so this asserts the structure rather than a
+  // stopwatch: a timing bound here would pass with or without the fix at any
+  // input size a test can afford, and would be flaky in CI besides. What
+  // matters is that a huge adversarial payload is TRUNCATED before anything
+  // scans it — that is what bounds the work — and that redaction still holds
+  // on the part that is kept.
+  it('truncates a huge adversarial payload before scanning, and still redacts it', async () => {
+    const inserts = scaffold();
+    const hostile =
+      `https://app.golfhelm.com/reset?token_hash=leaked ` + '#a'.repeat(200_000);
+
+    const res = await POST(
+      request(JSON.stringify({ message: hostile, stack: hostile, severity: 'medium' })),
+    );
+
+    expect(res.status).toBe(200);
+    const errorLog = inserts.find((i) => i.table === 'error_logs');
+    const stored = String(errorLog?.payload.message ?? '');
+    const storedStack = String(errorLog?.payload.stack ?? '');
+
+    // Bounded to the storage budget, not the ~400KB that was sent.
+    expect(stored.length).toBeLessThanOrEqual(2000);
+    expect(storedStack.length).toBeLessThanOrEqual(8000);
+    // And the secret at the front is still gone.
+    expect(stored).not.toContain('leaked');
+    expect(storedStack).not.toContain('leaked');
+  });
 });

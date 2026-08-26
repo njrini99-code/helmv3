@@ -350,7 +350,18 @@ export async function updateSentryIssueStatus(
   const trimmedId = (issueId ?? '').trim();
   if (!trimmedId) return failed('A Sentry issue id is required');
 
-  const url = `${API}/organizations/${cfg.org}/issues/${trimmedId}/`;
+  // The id lands in a URL PATH segment, so it is validated rather than merely
+  // trimmed. Sentry issue ids are numeric ids or short-ids like `HELMV3-4C`;
+  // nothing legitimate needs a slash, a dot segment, a backslash or an
+  // encoded one. Without this, `../../` walks to a different endpoint and a
+  // leading `//` re-points the request at another host entirely — with an
+  // Authorization header attached. Super-admin-gated is not a reason to skip
+  // it: the token is far more privileged than the operator holding it.
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(trimmedId)) {
+    return failed('Invalid Sentry issue id');
+  }
+
+  const url = `${API}/organizations/${encodeURIComponent(cfg.org)}/issues/${encodeURIComponent(trimmedId)}/`;
   const doPut = () =>
     fetch(url, {
       method: 'PUT',

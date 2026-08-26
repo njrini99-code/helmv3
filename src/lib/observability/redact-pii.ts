@@ -141,8 +141,18 @@ export function collapseEmailsForGrouping(input: string): string {
  * URL, or a bare `?key=value` / `#key=value` fragment sent as its own field.
  * Neither `\s` nor the excluded quote/bracket characters can appear inside a
  * URL, so this is line-safe across a multi-line stack without splitting it.
+ *
+ * The key-name run is BOUNDED at 256 on purpose. Unbounded, `…{1,}=` backtracks
+ * once per candidate start, and text like `#aaa…#aaa…` with no `=` turns that
+ * into quadratic work — on input a client fully controls, reaching an
+ * unauthenticated ingest route (CodeQL js/polynomial-redos). A query-string KEY
+ * longer than 256 characters is not a real key, so the bound costs nothing.
+ * The URL alternative stays unbounded deliberately: it is greedy with nothing
+ * required after it, so it cannot backtrack, and bounding it would leave the
+ * TAIL of a very long URL — the end a token usually sits at — unredacted.
  */
-const EMBEDDED_URL_SECRET_RE = /https?:\/\/[^\s"'<>)]+|[?#][A-Za-z0-9_.[\]-]+=[^\s"'<>)]*/gi;
+const EMBEDDED_URL_SECRET_RE =
+  /https?:\/\/[^\s"'<>)]+|[?#][A-Za-z0-9_.[\]-]{1,256}=[^\s"'<>)]*/gi;
 
 /**
  * Redact free text before it is persisted to `error_logs.message` / `.stack`
@@ -180,10 +190,18 @@ export function redactFreeTextForStorage(
   onError?: (error: unknown) => void,
 ): string {
   try {
-    const stripped = value.replace(EMBEDDED_URL_SECRET_RE, (match) =>
+    // Truncate FIRST, so nothing downstream ever scans more than the caller
+    // agreed to store. The old order ran the scan across the whole payload —
+    // a megabyte of attacker-chosen text on an unauthenticated route — and
+    // only then cut it to a couple of kilobytes. Bounding the input is the
+    // structural half of the ReDoS fix; the bounded key-name quantifier above
+    // is the other half. It also keeps `maskEmails` under its own 20k no-op
+    // guard, which is why the slice had to precede it either way.
+    const bounded = value.slice(0, maxLength);
+    const stripped = bounded.replace(EMBEDDED_URL_SECRET_RE, (match) =>
       (redactSensitiveUrl(match) ?? match).replace(/[?#].*$/, ''),
     );
-    return maskEmails(stripped.slice(0, maxLength));
+    return maskEmails(stripped);
   } catch (error) {
     try {
       onError?.(error);

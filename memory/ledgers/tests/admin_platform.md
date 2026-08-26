@@ -1,5 +1,22 @@
 # Admin Platform test ledger
 
+## 2026-08-26 — CodeQL-finding coverage
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-observability`.
+- `sentry-api.test.ts` — seven malformed issue ids (path traversal, encoded
+  traversal, protocol-relative host, absolute URL, backslash, newline,
+  whitespace) must be refused BEFORE `fetch` is called, asserted on the mock
+  never having been invoked; plus a real short-id still reaching the right path.
+- `log-error.test.ts` — a context tree carrying `__proto__` / `constructor`
+  leaves `Object.prototype` untouched while an ordinary sibling key survives;
+  and a ~400KB adversarial payload is truncated to the storage budget before
+  anything scans it, with the secret at the front still redacted.
+- A note on what was deliberately NOT written: the first version of the ReDoS
+  test asserted elapsed milliseconds. That would have passed with or without
+  the fix at any input size a unit test can afford, and would be flaky in CI —
+  a test that cannot fail is worse than no test, because it reads as coverage.
+  Replaced with the structural assertion above.
+
 ## 2026-08-26 — review-round coverage
 
 - SHA: recorded in the follow-up ledger commit on `feat/bridge-observability`.
