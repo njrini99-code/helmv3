@@ -47,7 +47,13 @@
       "Glob",
       "Grep",
       "WebFetch",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh api:*)",
+      "Bash(gh run rerun:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(supabase:*)",
+      "Bash(docker:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [
       "Bash(supabase config push:*)",
@@ -65,7 +71,8 @@
       "Read(./.momentic-mcp/**)",
       "Read(./secrets/**)",
       "Read(./credentials/**)",
-      "Read(./supabase/.temp/**)"
+      "Bash(supabase db push:*)",
+      "Bash(supabase migration up:*)"
     ]
   },
   "hooks": {
