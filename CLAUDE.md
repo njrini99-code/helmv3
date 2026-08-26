@@ -339,15 +339,8 @@ Approve and squash-merge.
 <!-- HELM_AGENT_CANONICALITY_START -->
 ## Helm agent canonicality
 
-The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
-
-- Preserve the currently checked-out task branch. Never assume `main` is the active working branch.
-- Do not create a git worktree unless the user explicitly requests one for the current task.
-- If an explicitly requested temporary worktree is created, remove it when the task is complete.
-- `archive/**` and `docs/archive/**` are historical evidence only. Never use them as the source of truth for current architecture, schema, routes, configuration, features, or implementation.
-- Current source code, current migrations, current tests, `AGENTS.md`, `CLAUDE.md`, and active non-archive documentation outrank archived material.
-- Use repo-local platform CLIs: `./node_modules/.bin/supabase` and `./node_modules/.bin/vercel`. Do not assume global Supabase or Vercel binaries.
-- Production Supabase MCP access must remain project-scoped and read-only. Schema changes belong in the local development stack and reviewed migrations.
-- Never treat an agent memory store, code index, or cache as more authoritative than the current repository and current database evidence.
-- Never deploy/promote/rollback Vercel production unless the user explicitly requests that production action.
+The binding canonicality rules live in ONE place: `AGENTS.md` → "Helm agent
+canonicality" (imported above). This block exists only so tooling that greps
+for the marker finds it; it deliberately restates nothing — a second copy of
+the rules is a second place for them to rot.
 <!-- HELM_AGENT_CANONICALITY_END -->

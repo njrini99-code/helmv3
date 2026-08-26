@@ -5,19 +5,9 @@
 > designing changes TO this system, not for daily work. If this file and the
 > long spec disagree, the long spec wins and this file is the one to fix.
 
-> **Build status (verified 2026-08-21, updated P2):** Live today:
-> `knowledge:map` / `knowledge:context` / `knowledge:check` / `knowledge:report`,
-> `repo:doctor`, `preflight`, `config/release-policy.yml`, this file, the
-> `.claude/rules/golfhelm-engineering-os.md` path-scoped pointer,
-> `.claude/session-state/<session_id>.jsonl` event recording, the
-> `guard-feature-context` PreToolUse gate, and the session-owned Stop gate
-> (mapping/context/memory checks, see "Session mechanics" below). **Not built
-> yet** (later phases of the same install): `knowledge:registry-check`,
-> `reliability:collect`/`report`, `release:status`/`budget`/`prepare`/`check`,
-> the `golfhelm-daily-reliability`/`golfhelm-release-manager` skills, and the
-> 12 new `repo:doctor` OS-wiring checks. Where this file still says a rule
-> "will" enforce something, that phrasing has not caught up for the items
-> just listed as live — read it as already in force for those.
+> **Everything in this file is live and in force** except where a line says
+> "planned" — planned items exist only in the long spec, and the "Planned
+> extensions" section at the end is the complete list of what is not built.
 
 ## Source-of-truth hierarchy (highest first)
 
@@ -165,12 +155,13 @@ product decision. More accurate truth, not quieter dashboards.
 
 ```text
 npm run knowledge:map / knowledge:context / knowledge:check   # live
-npm run knowledge:registry-check    # router vs runtime registry — planned
-npm run reliability:collect         # daily telemetry, read-only — planned
-npm run release:status | release:budget | release:prepare | release:check  # planned
-npm run repo:doctor                 # live; OS-wiring checks arrive with the checks above
+npm run repo:doctor                 # live
 npm run preflight                   # live — the blocking static gate set
 ```
+
+Planned commands (`knowledge:registry-check`, `reliability:collect`,
+`release:*`) are specified in the long spec; they do not exist yet and
+nothing should be described as depending on them.
 
 ## Session mechanics (live)
 
@@ -185,39 +176,14 @@ memory evidence against your session's own state before allowing the turn to
 end (`stop-verify.sh` + `lib/stop-check.mjs`); git is a fallback cross-check
 only, used solely when a session's own ledger recorded zero touches.
 
-## Advanced Reliability Layer
+## Planned extensions (none wired — specs only)
 
-Extends this OS — same `feature_id` vocabulary, no new sources of truth, no
-second memory system, no second release process, no duplicate registry.
-Detail: `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md`.
+Two future layers are specified but have no live command, registry, file, or
+gate in this repo today. This contract describes what is in force; the specs
+describe what is planned:
 
-Sixteen additions, all keyed by the existing `feature_id`: a live
-dependency/blast-radius graph
-(`memory/graph/feature-dependencies.yml` — not present yet); golden-path
-product health and outcome contracts; executable production data
-invariants; an incident replay lab (recorded failure fixtures a repair
-must pass against); automated change-risk scoring; feature flags + kill
-switches + lifecycle governance; staged/canary release inside existing
-release windows; a rollback recommendation engine; a known-good scenario
-library; flaky-test intelligence; per-feature performance and cost
-baselines; CoachHelm AI evaluation memory; product-analytics/behavioral
-anomaly signals; repair-quality scoring; reliability-learning metrics.
+- Advanced Reliability Layer → `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md`
+- Autonomy Control Plane → `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md`
 
-Same hard wall as the base OS: daily reliability may analyze, replay,
-score, and prepare — never deploy, promote, or roll back production. Canary
-and flag-gated rollouts happen only inside an owner-approved release
-window, never as a standalone daily action.
-
-**Implementation status: phased rollout pending — see the extension doc.**
-None of this is wired yet — no graph file, no invariant registry, no replay
-fixtures, no risk model, no flag registry, no baselines, no eval registry
-exist in the repo today. Nothing above is a live command, registry, or gate
-until its phase lands; treat every noun in this section as planned, not
-present.
-
-### Autonomy Control Plane (arc 3, pending)
-
-Deep-research extension beyond the layer above: world model, agent flight
-recorder, verification ensemble, earned autonomy, and more — detail at
-`docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md`. Sequenced after this base OS
-and the Advanced Reliability Layer; nothing in it is wired yet.
+Both inherit this OS's hard wall: daily reliability never deploys, promotes,
+or rolls back production.
