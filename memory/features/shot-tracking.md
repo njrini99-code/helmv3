@@ -207,7 +207,7 @@ across round entry (front/back nine, 9/18 holes) — gained a dark-scope
 accent-green selected thumb and full-contrast inactive labels
 (`src/components/fairway/controls/segmented.tsx`); light mode unchanged.
 The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
-`warm-*` text tokens that rendered unreadable in dark scope.
+`warm-*` text tokens that rendered unreadable in dark scope. The new-round hole editor's par chips fire the selection detent as of the same date (§32 gap closed by live bridge-log QA).
 
 ## Related Docs
 
