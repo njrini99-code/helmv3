@@ -23,3 +23,14 @@
 - Why: premium plan §22 — signature moments the UIFeedbackGenerator grammar
   cannot express. Not wired into product flows until the owner's
   physical-device feel pass (§13/§72).
+
+## 2026-08-26 — haptic feel lab (§72 harness)
+
+- What: unlinked dev route `/golf/dashboard/dev/haptics` (mapped in the
+  registry under this feature's routes) firing every production haptic path —
+  triggerHaptic stock styles, fwHaptic/fwHapticSequence grammar, and the
+  Helm signatures via playHelmSignature — with a native-identity/capability
+  readout and the §72 evaluation questions on-screen. No new haptic plumbing;
+  the lab measures the real paths.
+- Why: the owner's physical-device feel pass (§13/§72) needs a TestFlight
+  surface; signatures stay out of product flows until that sign-off.

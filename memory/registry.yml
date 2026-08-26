@@ -1106,6 +1106,8 @@ features:
       business_logic:
         - docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md
     code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/dev/**
       components:
         - src/components/golf/PushPermissionSoftAsk.tsx
         - src/components/providers/CapacitorProvider.tsx
