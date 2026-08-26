@@ -86,3 +86,16 @@
   role, proving the call reaches the private implementation instead of dying
   at the schema boundary. Catalog-only suites cannot catch grant/visibility
   regressions; the call-path test is the load-bearing guarantee.
+
+## 2026-08-25 — lifecycle privilege-contract suite
+
+- Added the lifecycle privilege-contract suite in `supabase/tests/rls/`: the
+  privilege contract of the whole lifecycle RPC surface asserted at the
+  catalog level (schema USAGE, EXECUTE grants, owner, definer mode, pinned
+  search_path), plus two zero tripwires — no public definer function is
+  anon-executable, and none is left on default PUBLIC ACLs.
+- Exists because the recap outage passed behavioral testing locally while
+  production denied the same privilege path (P1-10): catalog assertions
+  hold identically in every environment built from this chain, so a grant
+  regression fails CI even where local runtime behavior is lax. This suite
+  is the complement to the call-path test above, not a replacement for it.

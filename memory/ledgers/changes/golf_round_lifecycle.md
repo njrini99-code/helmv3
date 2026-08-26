@@ -90,3 +90,23 @@
   failed 42501 (Sentry JAVASCRIPT-NEXTJS-PT, 9 users). See incident
   INC-2026-08-25-recap-persist-schema-permission in this feature's
   incidents directory.
+
+## 2026-08-25 — privilege-contract suite, anon-grant normalization, rollback captures
+
+- SHA: pending commit on fix/save-round-ai-recap-definer-facade.
+- Change: added the lifecycle privilege-contract suite in `supabase/tests/rls/`
+  (25 catalog-level assertions: helm_private schema closure; definer mode,
+  owner, pinned search_path and role grants for the recap pair, heartbeat,
+  submit_round_atomic and save_partial_round_atomic; the lifecycle guard
+  stays private; two surface-wide zero tripwires). Added migration
+  `20260825235900_revoke_anon_from_secdef_admin_helpers.sql` aligning
+  `log_crm_stage_transition()` / `unresolve_admin_event(uuid[])` to
+  production's no-anon contract. Added `supabase/rollbacks/` with the
+  verbatim pre-fix production definition of `public.save_round_ai_recap`.
+- Why: the 20260825233000 outage proved behavioral tests alone cannot be
+  trusted for grant contracts here — local Postgres permitted an
+  invoker-wrapper path production denied (open investigation P1-10).
+  Contracts are now asserted against the catalog, the chain is aligned to
+  the production privilege contract rather than the reverse, and a
+  production rollback never requires git archaeology. Contract source: the
+  live production catalog, read 2026-08-25.

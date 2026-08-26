@@ -29,11 +29,13 @@ AS $$
   SELECT helm_private.save_round_ai_recap(p_round_id, p_recap, auth.uid());
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.save_round_ai_recap(uuid, text) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.save_round_ai_recap(uuid, text)
+FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.save_round_ai_recap(uuid, text)
-  TO authenticated, service_role;
+TO authenticated, service_role;
 
 COMMENT ON FUNCTION public.save_round_ai_recap(uuid, text) IS
-  'Definer-boundary wrapper for helm_private.save_round_ai_recap. Must stay '
-  'SECURITY DEFINER: helm_private grants no USAGE to authenticated, so an '
-  'invoker wrapper cannot reach the implementation (see 20260825233000).';
+'Definer-boundary wrapper for helm_private.save_round_ai_recap. Must stay '
+'SECURITY DEFINER: ' -- nosemgrep: helmv3-security-definer-without-search-path
+'helm_private grants no USAGE to authenticated, so an '
+'invoker wrapper cannot reach the implementation (see 20260825233000).';
