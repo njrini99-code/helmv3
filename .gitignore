@@ -256,3 +256,9 @@ __pycache__/
 .helm/
 .ultracode/
 .superpowers/
+
+# Momentic MCP scratch — screenshots, videos, captured env. Never track:
+# a background scan found captured credentials in the env JSONs (never
+# committed), and screenshots of auth flows are risky to publish.
+.momentic-mcp/
+tests/**/.momentic-mcp/
