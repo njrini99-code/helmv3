@@ -21,11 +21,14 @@ export interface ApiRoutePerf {
   p99Ms: number;
 }
 
+// `userFacingErrors` (present until 2026-08-26) was dropped, not renamed —
+// see `deriveErrorTrend`'s doc comment for why.
 export interface ErrorRateEntry {
   hour: string;
   totalErrors: number;
   criticalErrors: number;
-  userFacingErrors: number;
+  /** Distinct users with an attributable `user_id` — a lower bound, not a
+   *  full count. See `deriveErrorTrend`'s doc comment. */
   affectedUsers: number;
 }
 
@@ -68,6 +71,16 @@ export interface DbTelemetry {
 export interface SystemTabData {
   apiPerformance: ApiRoutePerf[];
   errorTrend: ErrorRateEntry[];
+  /**
+   * True when `errorTrend`'s source query hit `ERROR_TREND_ROW_CAP` and was
+   * truncated to the most recent rows — the trailing (oldest-in-window)
+   * hours of `errorTrend` are then a LOWER bound, not a real zero, for as
+   * many hours as the cap displaced. False for every normal-volume fetch.
+   * Mirrors the `{ truncated, unavailable }` idiom in
+   * `src/lib/admin/data/errors.ts` rather than letting a capped fetch look
+   * identical to a genuinely quiet window.
+   */
+  errorTrendTruncated: boolean;
   authMetrics: AuthMetricsEntry[];
   backgroundJobs: BackgroundJobEntry[];
   systemHealth: SystemHealthCheck[];
@@ -91,6 +104,7 @@ function emptySystemTabData(): SystemTabData {
   return {
     apiPerformance: [],
     errorTrend: [],
+    errorTrendTruncated: false,
     authMetrics: [],
     backgroundJobs: [],
     systemHealth: [],
@@ -135,12 +149,23 @@ function daysAgo(n: number): string {
   return d.toISOString();
 }
 
-// The tables/RPCs queried below (error_rate_hourly, auth_metrics_hourly,
-// background_job_logs, get_api_performance_summary, get_enhanced_system_health)
-// are telemetry objects that intentionally aren't part of the generated
-// `Database` types, so the Supabase client's `.from()`/`.rpc()` overloads
-// can't infer a row shape. These narrow helper types describe just the
-// chain shape we actually use, without falling back to `any`.
+// The tables/RPCs queried below (auth_metrics_hourly, background_job_logs,
+// get_api_performance_summary, get_enhanced_system_health) are telemetry
+// objects that intentionally aren't part of the generated `Database` types,
+// so the Supabase client's `.from()`/`.rpc()` overloads can't infer a row
+// shape. These narrow helper types describe just the chain shape we
+// actually use, without falling back to `any`.
+//
+// `error_rate_hourly` used to be queried the same way here. It isn't
+// anymore: the table has a schema, RLS policies and a service-role write
+// grant (supabase/migrations/20260527000000_prod_public_baseline.sql), but
+// nothing in this repo ever writes to it — no INSERT, no trigger, no
+// pg_cron job, no Edge Function — and a direct production query on
+// 2026-08-26 confirmed 0 rows. Reading it rendered a permanently-empty
+// rollup indistinguishably from a real "0 errors this hour". See
+// `deriveErrorTrend` below, which computes the same shape from
+// `admin_events` — a table app code actually writes — and
+// `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`.
 type UntypedRow = Record<string, unknown>;
 type UntypedResult = { data: UntypedRow[] | null; error: unknown };
 interface UntypedQueryBuilder extends PromiseLike<UntypedResult> {
@@ -148,6 +173,85 @@ interface UntypedQueryBuilder extends PromiseLike<UntypedResult> {
   gte: (column: string, value: string) => UntypedQueryBuilder;
   order: (column: string, opts: { ascending: boolean }) => UntypedQueryBuilder;
   limit: (n: number) => UntypedQueryBuilder;
+}
+
+// Bound on how many `admin_events` error rows `deriveErrorTrend` reads for
+// the trailing 7-day window. Normal 7-day volume today is well under this;
+// the cap exists so a future error spike can't turn this into an unbounded
+// fetch, mirroring the `background_job_logs` 500-row cap above.
+const ERROR_TREND_ROW_CAP = 20000;
+
+interface AdminErrorEventRow {
+  created_at: string | null;
+  severity: string | null;
+  user_id: string | null;
+}
+
+/**
+ * Hourly error trend, derived from `admin_events` rows already scoped to
+ * `event_type = 'error'` and the trailing-7-day window by the caller's
+ * query. Produces one entry per hour across the full window — including
+ * hours with zero matching rows — so a genuinely quiet hour and an
+ * unmeasured one are both representable, but neither looks like the other:
+ * every entry here reflects a real query result, unlike the old
+ * `error_rate_hourly` read this replaced (see the comment above the
+ * `UntypedRow`/`UntypedQueryBuilder` types).
+ *
+ * `userFacingErrors` — a field the old (always-empty) `error_rate_hourly`
+ * row shape carried — has no counterpart here on purpose. Nothing in this
+ * codebase classifies an `admin_events` row as "user-facing" vs. not: 91%
+ * of `event_type = 'error'` rows in production carry `source: null`
+ * (verified 2026-08-26), so any split would be invented, not derived.
+ * Dropping the field is honest; inventing a rule to fill it would repeat
+ * the exact failure this fix removes.
+ *
+ * `affectedUsers` is real but partial: it counts DISTINCT non-null
+ * `user_id` values per hour, and roughly 54% of `event_type = 'error'` rows
+ * in the trailing 7-day window carry a null `user_id` (verified 2026-08-26)
+ * — server-side/unauthenticated failures the row can't attribute to a
+ * signed-in user. Read this as "identified affected users", a lower bound,
+ * not a full affected-user count.
+ */
+function deriveErrorTrend(
+  rows: readonly AdminErrorEventRow[],
+  sinceIso: string,
+  nowMs: number,
+): ErrorRateEntry[] {
+  const HOUR_MS = 3_600_000;
+  const startMs = Math.floor(Date.parse(sinceIso) / HOUR_MS) * HOUR_MS;
+  const endMs = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs) {
+    return [];
+  }
+  const hourCount = Math.round((endMs - startMs) / HOUR_MS) + 1;
+
+  const buckets = new Map<number, { total: number; critical: number; users: Set<string> }>();
+  for (const row of rows) {
+    const t = row.created_at ? Date.parse(row.created_at) : NaN;
+    if (!Number.isFinite(t)) continue;
+    const bucketMs = Math.floor(t / HOUR_MS) * HOUR_MS;
+    let bucket = buckets.get(bucketMs);
+    if (!bucket) {
+      bucket = { total: 0, critical: 0, users: new Set<string>() };
+      buckets.set(bucketMs, bucket);
+    }
+    bucket.total += 1;
+    if (row.severity === 'critical') bucket.critical += 1;
+    if (row.user_id) bucket.users.add(row.user_id);
+  }
+
+  const entries: ErrorRateEntry[] = [];
+  for (let i = 0; i < hourCount; i++) {
+    const bucketMs = startMs + i * HOUR_MS;
+    const bucket = buckets.get(bucketMs);
+    entries.push({
+      hour: new Date(bucketMs).toISOString(),
+      totalErrors: bucket?.total ?? 0,
+      criticalErrors: bucket?.critical ?? 0,
+      affectedUsers: bucket?.users.size ?? 0,
+    });
+  }
+  return entries;
 }
 
 // ============================================
@@ -183,7 +287,7 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
     const [
       apiPerfSettled,
       systemHealthSettled,
-      errorTrendSettled,
+      errorEventsSettled,
       authMetricsSettled,
       backgroundJobsSettled,
       dbTelemetrySettled,
@@ -192,11 +296,28 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
       (adminDb.rpc('get_api_performance_summary' as never, { period_days: 7 } as never) as unknown) as Promise<UntypedResult>,
       (adminDb.rpc('get_enhanced_system_health' as never) as unknown) as Promise<UntypedResult>,
 
-      // Direct table queries for hourly data
-      (adminDb.from('error_rate_hourly' as never) as unknown as UntypedQueryBuilder)
-        .select('*')
-        .gte('hour', ago7d)
-        .order('hour', { ascending: true }),
+      // Error trend source rows — real `admin_events`, typed via the
+      // generated `Database` schema (no `as never` needed, unlike the
+      // telemetry-only tables below). Bucketed into hours by
+      // `deriveErrorTrend` after this settles (bucketing is order-
+      // independent — a Map keyed by hour). See the comment above the
+      // `UntypedRow`/`UntypedQueryBuilder` types for why this isn't
+      // `error_rate_hourly`.
+      //
+      // `ascending: false` is load-bearing, not cosmetic: if a spike ever
+      // pushes the 7-day window past ERROR_TREND_ROW_CAP, LIMIT keeps
+      // whichever end `order` put first. Descending keeps the MOST RECENT
+      // rows and truncates the oldest end of the window — ascending would
+      // truncate the newest hours instead, turning a real spike into a
+      // fabricated "0 errors" right when someone opens this tab to look at
+      // it. `errorTrendTruncated` (set below) signals when this fires.
+      adminDb
+        .from('admin_events')
+        .select('created_at, severity, user_id')
+        .eq('event_type', 'error')
+        .gte('created_at', ago7d)
+        .order('created_at', { ascending: false })
+        .limit(ERROR_TREND_ROW_CAP),
 
       (adminDb.from('auth_metrics_hourly' as never) as unknown as UntypedQueryBuilder)
         .select('*')
@@ -241,9 +362,38 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
 
     const apiPerfRes = { data: unwrapList('get_api_performance_summary', apiPerfSettled) };
     const systemHealthRes = { data: unwrapList('get_enhanced_system_health', systemHealthSettled) };
-    const errorTrendRes = { data: unwrapList('error_rate_hourly', errorTrendSettled) };
     const authMetricsRes = { data: unwrapList('auth_metrics_hourly', authMetricsSettled) };
     const backgroundJobsRes = { data: unwrapList('background_job_logs', backgroundJobsSettled) };
+
+    // Error trend — handled separately from unwrapList because the source
+    // rows are real admin_events (typed, not UntypedRow) and get bucketed
+    // by hour via deriveErrorTrend rather than mapped 1:1.
+    let errorTrend: ErrorRateEntry[] = [];
+    let errorTrendTruncated = false;
+    if (errorEventsSettled.status === 'fulfilled') {
+      const { data, error } = errorEventsSettled.value;
+      if (error) {
+        void logServerError(
+          `[admin-system-data] admin_events (error trend) errored: ${describeError(error)}`,
+          { action: 'admin_system_data.getSystemTabData' },
+        );
+      } else {
+        const rows = (data ?? []) as AdminErrorEventRow[];
+        errorTrendTruncated = rows.length >= ERROR_TREND_ROW_CAP;
+        if (errorTrendTruncated) {
+          void logServerError(
+            `[admin-system-data] admin_events (error trend) truncated at ERROR_TREND_ROW_CAP=${ERROR_TREND_ROW_CAP}`,
+            { action: 'admin_system_data.getSystemTabData' },
+          );
+        }
+        errorTrend = deriveErrorTrend(rows, ago7d, Date.now());
+      }
+    } else {
+      void logServerError(
+        `[admin-system-data] admin_events (error trend) rejected: ${describeError(errorEventsSettled.reason)}`,
+        { action: 'admin_system_data.getSystemTabData' },
+      );
+    }
 
     // DB telemetry — single jsonb row. Falls back to empty shape on failure
     // so the System tab still renders the rest of the panel.
@@ -276,17 +426,6 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
         p50Ms: Number(row.p50_ms ?? 0),
         p95Ms: Number(row.p95_ms ?? 0),
         p99Ms: Number(row.p99_ms ?? 0),
-      })
-    );
-
-    // Parse error trend (hourly)
-    const errorTrend: ErrorRateEntry[] = (errorTrendRes.data ?? []).map(
-      (row: Record<string, unknown>) => ({
-        hour: String(row.hour ?? ''),
-        totalErrors: Number(row.total_errors ?? 0),
-        criticalErrors: Number(row.critical_errors ?? 0),
-        userFacingErrors: Number(row.user_facing_errors ?? 0),
-        affectedUsers: Number(row.affected_users ?? 0),
       })
     );
 
@@ -360,6 +499,7 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
     return {
       apiPerformance,
       errorTrend,
+      errorTrendTruncated,
       authMetrics,
       backgroundJobs,
       systemHealth,

@@ -69,7 +69,6 @@ describe('date-only call sites do not regress to a naive new Date()', () => {
     ['src/components/fairway/pages/team/FairwayTeamInfo.tsx', ['due_date']],
     ['src/components/baseball/player-profile/PlayerProfileClient.tsx', ['due_date']],
     ['src/components/baseball/dev-plans/PlanDetail.tsx', ['target_date']],
-    ['src/app/golf/admin/components/tracer/DataQualityIssueRow.tsx', ['round_date']],
     ['src/app/baseball/(dashboard)/dashboard/tasks/TasksClient.tsx', ['due_date']],
     ['src/components/baseball/tasks/TaskCard.tsx', ['due_date']],
     ['src/components/baseball/tasks/TasksList.tsx', ['due_date']],

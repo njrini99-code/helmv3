@@ -38,6 +38,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { expectRows } from '@/lib/supabase/expect-rows';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
 import { getQualifierAutomaticTransition } from '@/lib/golf/qualifier-lifecycle';
@@ -1610,12 +1611,40 @@ async function submitGolfRoundComprehensiveImpl(
       return { success: false, error: 'You must be signed in to submit rounds' };
     }
 
-    // Get player record
-    const { data: player } = await supabase
+    // Get player record.
+    //
+    // This is the archetype `expectRows` call site (see the header of
+    // src/lib/supabase/expect-rows.ts): the block below already classified
+    // an empty read here as an 'error'-severity `logServerError` call
+    // BEFORE expectRows existed — i.e. the code's own pre-existing judgment
+    // is that "no golf_players row for this authenticated user" is an
+    // anomaly at this exact call site, not a benign "still onboarding"
+    // empty state. (Every route that can invoke this action also sits
+    // under the `(dashboard)` layout, which redirects to `/golf/player`
+    // unless `player.onboarding_completed` is true — corroborating, though
+    // that's a page-render gate, not a guarantee the server action itself
+    // re-checks.) And `golf_players_select`'s first RLS clause is the
+    // unconditional `user_id = auth.uid()` (verified against production,
+    // no team/status predicate), so for a caller reading their OWN row by
+    // that exact user_id, RLS can never be the reason a row that exists
+    // comes back hidden — the read is "guaranteed-context" in the sense
+    // expectRows requires.
+    // `.maybeSingle()` (not `.single()`) so a silent `{ data: null, error:
+    // null }` reaches expectRows instead of being pre-converted to a
+    // PGRST116 Postgres error — same downstream `if (!player)` branch
+    // either way, since only `data` was ever destructured here.
+    const playerLookupResult = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+    const { data: player } = expectRows(playerLookupResult, {
+      action: 'submitGolfRoundComprehensive',
+      featureArea: 'shot_tracking',
+      feature: 'round_tracking',
+      table: 'golf_players',
+      userId: user.id,
+    });
 
     if (!player) {
       void logServerError('Round submit failed: player profile not found', {

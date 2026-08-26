@@ -33,6 +33,7 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   // continuously between its real, on-schedule 4-hour runs.
   { jobType: 'refresh-engagement', path: '/api/cron/refresh-engagement', cadenceMinutes: 4 * 60 },
   { jobType: 'ingest-gmail-replies', path: '/api/cron/ingest-gmail-replies', cadenceMinutes: 30 },
+  { jobType: 'helm-debug-prune', path: '/api/cron/helm-debug-prune', cadenceMinutes: DAILY },
 ] as const;
 
 export type CronBoardStatus = 'ok' | 'overdue' | 'never-ran' | 'failed';

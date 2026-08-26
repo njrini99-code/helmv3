@@ -1,5 +1,175 @@
 # Admin Platform change ledger
 
+## 2026-08-26 — integration fixes across the follow-up sweep
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.
+- Found by the adversarial review over the combined diff, not by the agents
+  that made the individual changes — each was correct in isolation and wrong
+  in combination.
+- **Six `revalidatePath('/golf/admin')` calls were pointing at a route that no
+  longer renders.** Five sit inside the round-repair actions in
+  `admin-tracer-data.ts`, which the LIVE Bridge calls through
+  `src/app/admin/actions/golf-tracer.ts` — so after an operator repaired a
+  round, the page they were looking at did not refresh. Repointed to
+  `/admin/golf/tracer`. The sixth, in `demo-request.ts`, refreshes the CRM
+  lead list: repointed to `/golf/admin/crm`, because `revalidatePath` does
+  not cascade to children and the CRM page is a child of the removed route.
+- **`resolveDashboardIncident` in `admin-data.ts` is now uncalled** — its only
+  consumer was the deleted ErrorFeed. Annotated in place rather than removed:
+  deleting exports there moves a count that
+  `coverage-contract.foundation.test.ts` pins, so it belongs in a deliberate
+  dead-action sweep, not as a side effect of a UI deletion.
+- **Three docs pointed at deleted files**, failing `docs:path-drift` (a
+  required check). `REPO_MAP.md`'s error-boundary note now records that the
+  class boundary is gone and names the Bridge's `PanelBoundary` instead;
+  `golfhelm-features.md`'s Admin Dashboard row repoints to
+  `src/app/admin/page.tsx`; this ledger's own deletion entry is phrased as
+  "was removed", which is both accurate and the gate's documented escape for
+  history that legitimately names an absent file.
+- **`memory/registry.yml` still routed `src/app/golf/admin/components/**`** —
+  a dead entry means live code maps to no feature while a retired path still
+  demands ceremony. Removed; the CRM components path stays.
+- Baseline moved DOWN, and was locked in: unchecked Supabase reads 1046 → 1044
+  (the audit refuses to leave slack, because slack is room for a fix to be
+  silently reverted).
+
+## 2026-08-26 — System-tab error trend now reads admin_events, not the never-written error_rate_hourly
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.
+- Change: `getSystemTabData()` (`src/app/golf/actions/admin-system-data.ts`)
+  no longer queries `public.error_rate_hourly`. That table has a schema, RLS
+  policies, and a service-role write grant, but a production read-only check
+  (2026-08-26) confirmed 0 rows, no `pg_cron` job, no trigger, and no
+  function referencing it anywhere — nothing in this repo or the live
+  database ever writes to it. The hourly error trend is now derived
+  in-process, by a new pure helper `deriveErrorTrend`, from `admin_events`
+  rows (`event_type = 'error'`, same trailing-7-day window) — the table app
+  code actually writes (96,426 rows / 93,829 `event_type='error'` at
+  verification time). `ErrorRateEntry.userFacingErrors` is removed rather
+  than faked: nothing in the codebase classifies an `admin_events` row as
+  user-facing, and 91% of error rows carry `source: null`, so there is no
+  genuinely equivalent number to compute for that one field.
+- Two honesty follow-ups from review, both landed in the same change:
+  `SystemTabData` gained `errorTrendTruncated: boolean` — the query orders
+  `created_at` DESCENDING with a 20,000-row cap, so a future spike drops the
+  OLDEST rows in the 7-day window and keeps the most recent ones (the
+  ordering is load-bearing: ascending would instead fabricate zeros in the
+  newest, most-watched hours right when a spike made someone open the tab).
+  `affectedUsers`' doc comment now states plainly that it is a lower bound —
+  ~54% of `event_type='error'` rows in the trailing 7-day window carry a
+  null `user_id` (verified 2026-08-26), same class of gap as
+  `userFacingErrors` but real enough (46% attributable) to keep rather than
+  drop, with the caveat stated instead of implied.
+- Why: a permanently-empty rollup was being read and rendered exactly like
+  measured data — "0 errors this hour" that was actually "never measured".
+  See `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`
+  for the full verification trail.
+- Scope note: `getSystemTabData`/`SystemTabData` had zero consumers anywhere
+  in the repo at the time of this fix — confirmed by repo-wide grep, and
+  since corroborated by the concurrent deletion of `SystemTab.tsx` recorded
+  below. `src/app/api/admin/debug-rollup/route.ts` was checked and does not
+  consume this file — untouched. `auth_metrics_hourly`, queried a few lines
+  below in the same file, is *also* empty in production with the same
+  absent-writer shape; out of this fix's named scope (`error_rate_hourly`
+  only) and left as-is, flagged in the incident doc so it isn't mistaken for
+  checked.
+
+## 2026-08-26 — Legacy `/golf/admin` dashboard shell deleted
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.
+- Change: `src/app/golf/admin/page.tsx` was removed, along with the entire
+  `src/app/golf/admin/components/**` directory (90 files: TracerTab and its
+  10-file `tracer/` sub-tree, SystemTab, OverviewTab + its `overview/`
+  sub-tree, PeopleTab, GrowthTab, BusinessIntelligenceTab,
+  AdminRealtimeProvider, and ~65 shared cards/charts/badges). The route was
+  unreachable — `next.config.mjs` 308-redirects the exact `/golf/admin` path
+  to `/admin` (Helm Bridge) — but still shipped in the client bundle and held
+  live Supabase Realtime subscriptions.
+- Kept, deliberately, despite sitting directly in `src/app/golf/admin/`
+  outside `crm/`/`demo-sessions/`: `layout.tsx` (the auth gate — redirects to
+  `/golf/login` when unauthenticated or non-admin — plus
+  `SessionActivityProvider`/`AdminNativeGuard`/`AdminMotionProvider`),
+  `loading.tsx` (the Suspense boundary wrapping that layout's async auth
+  check), `error.tsx`, and `_motion-provider.tsx` (imported by layout.tsx).
+  Next.js App Router makes a segment's `layout.tsx` an unskippable ancestor
+  of every nested route, and `demo-sessions/` has no `layout.tsx`/`loading.tsx`
+  /`error.tsx` of its own — it relies entirely on these. Deleting them would
+  have taken down the two LIVE Bridge sub-surfaces this task was required to
+  leave untouched.
+- Fixed after deletion (files outside `src/app/golf/admin/` that referenced
+  deleted paths):
+  - `src/lib/utils/date-only.test.ts` — removed the pinned call-site entry for
+    the deleted `tracer/DataQualityIssueRow.tsx`.
+  - `scripts/__tests__/admin-tables-mobile.test.mjs`,
+    `scripts/__tests__/badge-consolidation.test.mjs` — dropped the deleted
+    files from their target lists (both currently run under `node --test`
+    only, which nothing in this repo invokes — see vitest.config.ts's own
+    comment on that — so neither was breaking CI, but both stayed accurate).
+  - `.duplicate-exports-baseline.json` — regenerated via
+    `node scripts/check-duplicate-exports.mjs --update`: 32 → 27 known
+    duplicates. Deleting the legacy copies resolved `ActivityFeed`,
+    `LiveActivityFeed`, and `generateAlerts` (the surviving copy is now the
+    only export of that name) and fully removed the `isStuckRound` pair (both
+    sides of that duplicate lived in `tracer/`). `AdminMotionProvider`'s
+    duplicate with `src/app/admin/_motion-provider.tsx` remains — the
+    golf-admin copy survives as ancestor-layout infrastructure.
+- Not ported (see review below) — logic present in the legacy tree with no
+  live equivalent in `src/app/admin/golf/tracer/`, flagged rather than
+  silently discarded:
+  - The hole-by-hole shot browser and in-place incident resolve — both already
+    named as deliberately dropped in `src/app/admin/golf/tracer/page.tsx`'s own
+    port-strategy comment (resolve moved to `/admin/errors`, since Tracer
+    incidents are `admin_events` rows; the shot browser has no Bridge
+    equivalent yet).
+  - Fleet-wide data-quality analytics with no equivalent in the live port:
+    `TracerDataQuality.tsx` (cached-vs-computed stats-accuracy comparison
+    across every player, `SCORING_THRESHOLD`/`PUTTS_THRESHOLD`/
+    `FAIRWAY_THRESHOLD`/`GIR_THRESHOLD` mismatch detection) plus
+    `tracer-utils.ts`'s `computeCompleteness` / `detectDataQualityIssues` /
+    `computePlayerQualityScores` / outlier detection. The live port's
+    `bridgeGetTracerRoundDiagnostic` is per-round, not fleet-wide across all
+    players' cached stats — this capability has no equivalent at any
+    granularity. Reported for deliberate triage, not ported (out of this
+    task's ownership — `src/app/admin/**` and `src/app/golf/actions/**`
+    belong to other agents).
+
+## 2026-08-26 — Tracer now groups incidents by the same write-time fingerprint as the Errors tab
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.
+- Change: the Golf Tracer (`admin-tracer-data.ts`'s `buildTracerIncidents`)
+  stopped recomputing its own read-time grouping key
+  (`normalizeTracerIncidentKey` — normalized message + normalized route + raw
+  `action` + `errorCode`, both deleted) and now groups `admin_events` rows by
+  the SAME write-time `fingerprint` column the Errors tab's triage queue
+  groups by (`mergeTriage` in `src/lib/admin/data/triage.ts`, set once at
+  insert by `buildIncidentSignature()` in `src/lib/admin/incident-grouping.ts`).
+  A new pure helper, `tracerIncidentGroupKey(fingerprint, id)` in
+  `tracer-shared.ts`, holds the key derivation — `fingerprint`, or a synthetic
+  `row:<id>` for a NULL fingerprint (pre-column rows), matching
+  `mergeTriage`'s own `row.fingerprint ?? \`row:${row.id}\`` fallback exactly
+  rather than inventing a second convention. The three `admin_events` selects
+  in `admin-tracer-data.ts` now fetch `fingerprint`. The Tracer's
+  shot-tracking LENS (`isShotTrackingTracerEvent` — featureArea/action-prefix/
+  route filtering) is unchanged and still applied to the raw event list
+  BEFORE grouping; it is now a filter over the shared grouping, not a second
+  grouping algorithm.
+- Why: two views of the same `admin_events` rows were bucketing them into
+  incidents two different ways, so the Tracer's and the Errors tab's
+  open/resolved counts for the same underlying failures could disagree.
+- **Visible-count impact, stated plainly (not discovered):** the new key
+  drops `action` as a grouping dimension (the write-time fingerprint doesn't
+  carry it), truncates the message component to 80 chars instead of the full
+  normalized message, and collapses every `provider_*` errorCode to one
+  incident regardless of route/message/severity. Net effect is that grouping
+  gets COARSER — some rows that showed as separate Tracer incidents before
+  (same route/errorCode/message-prefix, different `action`, or long messages
+  sharing an 80-char prefix) now merge into one, so the Tracer's incident
+  count can go DOWN and per-incident occurrence counts up. Since
+  `admin_events.fingerprint` has been populated since 2026-07-01 and the
+  Tracer's error window is 45 days, this mostly isn't the NULL-fallback path
+  firing — it's the two signature *shapes* differing, now removed by
+  consuming one shape instead of two.
+
 ## 2026-08-26 — four CodeQL findings on the refit's own new code
 
 - SHA: recorded in the follow-up ledger commit on `feat/bridge-observability`.
