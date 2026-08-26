@@ -11,7 +11,6 @@
 > Removing this is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
 
-
 > Route/feature inventory + data flows for the BaseballHelm product (college/JUCO/HS/showcase baseball recruiting + team/player ops + Helm Lifting Lab).
 > Traced from source on branch mirroring origin/main, 2026-06-30. Cross-checked against `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`, `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md`, and `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md`.
 > POINT-IN-TIME: BaseballHelm is under active rework — trust DB enums/RLS as ground truth; treat route/behavior detail as current-state, not a frozen contract.
@@ -170,7 +169,8 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 Authoritative: `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` + `stat-layer-manifest.ts` + `__tests__/stat-layer-contract.test.ts`.
 - **Layer 1 (legacy, DEPRECATED, grandfathered reads only)**: `baseball_player_stats`, `baseball_player_aggregates`.
 - **Layer 2 (CANONICAL)**: `baseball_games`, `baseball_box_score_batting/_pitching` → RPC `recalculate_baseball_season_stats` → `baseball_player_season_stats`. **Writer risk**: `saveBoxScoreBatting/Pitching` do unwrapped DELETE-then-INSERT (data-loss on partial failure) but are **UI-dead**; live path is `saveFullBoxScore` → atomic RPC `save_baseball_full_box_score`.
-- **Layer 3 (CANONICAL, elite)**: `baseball_pitch_events`, `baseball_batted_ball_events`, `baseball_swing_events` (+ `baseball_stat_sources`); ~22 v10 chart families with sample-size honesty.
+- **Layer 3 (CANONICAL, elite)**: `baseball_pitch_events`, `baseball_batted_ball_events`, `baseball_swing_events` (+ `baseball_stat_sources`); ~22 v10 chart families with sample-size honesty. **Current release note (2026-08-25):** the deployed older event tables require the additive production-compatibility migration `20260825223149_reconcile_baseball_event_telemetry_production_contract.sql` before CoachHelm/Stat Visuals can safely select the rich pitch and workload fields. Until it is released, the new structured warning path makes this degraded state visible instead of silently treating failed reads as empty data.
+- **Active-read contract note (2026-08-25):** `20260825224803_reconcile_baseball_active_read_contracts.sql` adds the camp registration timestamps that the shipped detail/check-in UI already uses, and reproduces the deployed note/import-source/signal/video columns required by the current Baseball read models. It is forward-only and preserves legacy local columns; it must be reviewed and released before the camp timestamp writes can be relied upon in production.
 
 ### 9. Performance / Helm Lifting Lab ⚠️
 - Staff-gated `can_manage_lifting`/`can_view_readiness`; players self-only. `lifting-v11.ts` (30 exports: groups/programs/publish/session lifecycle), `lift-builder.ts` (stage-and-swap). Model migrated legacy `baseball_lift_*` → unified `helm_lifting_*` ("W2 REWIRE"); baseball reads via adapter. `baseball_lift_*` kept read-only legacy (dual-schema — see database G1).

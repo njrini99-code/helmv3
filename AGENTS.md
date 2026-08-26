@@ -172,3 +172,24 @@ a CA, Chrome must be restarted to pick it up.
 `npm run test:rls` / `npm run test:integration` require the local Supabase
 stack running (steps 1–2 above). See `README.md` / `CLAUDE.md` "Commands" for
 the full list.
+
+<!-- HELM_AGENT_CANONICALITY_START -->
+## Helm agent canonicality
+
+The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
+
+- **Git resting-state policy:** `main` is home — the normal clean resting
+  branch. Task branches are temporary active work. Never silently switch away
+  from a dirty task branch or from work not yet represented on `main`. Once a
+  task is merged and verified, retire its branch/worktree and return the
+  canonical checkout to clean `main`. Never assume `main` is what is currently
+  checked out.
+- Do not create a git worktree unless the user explicitly requests one for the current task.
+- If an explicitly requested temporary worktree is created, remove it when the task is complete.
+- `archive/**` and `docs/archive/**` are historical evidence only. Never use them as the source of truth for current architecture, schema, routes, configuration, features, or implementation.
+- Current source code, current migrations, current tests, `AGENTS.md`, `CLAUDE.md`, and active non-archive documentation outrank archived material.
+- Use repo-local platform CLIs: `./node_modules/.bin/supabase` and `./node_modules/.bin/vercel`. Do not assume global Supabase or Vercel binaries.
+- Production Supabase MCP access must remain project-scoped and read-only. Schema changes belong in the local development stack and reviewed migrations.
+- Never treat an agent memory store, code index, or cache as more authoritative than the current repository and current database evidence.
+- Never deploy/promote/rollback Vercel production unless the user explicitly requests that production action.
+<!-- HELM_AGENT_CANONICALITY_END -->

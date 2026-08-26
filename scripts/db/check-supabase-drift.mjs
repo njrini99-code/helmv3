@@ -62,6 +62,31 @@ const REQUIRED_651_COLUMNS = [
   ['baseball_decision_log', 'detail'],
 ];
 
+// 2026-08-25 reconciliation: these are literal fields selected by shipped
+// Baseball actions/read models. Checking only the old #651 subset gave a false
+// green while PostgREST rejected the acknowledgement, CoachHelm telemetry, and
+// workload reads in production. Keep this list limited to active query shapes,
+// not every optional field from the newer local event model.
+const REQUIRED_ACTIVE_BASEBALL_QUERY_COLUMNS = [
+  ['baseball_timeline_event_acks', 'team_id'],
+  ['baseball_timeline_event_acks', 'player_id'],
+  ['baseball_timeline_event_acks', 'acked_by'],
+  ['baseball_timeline_event_acks', 'acked_at'],
+  ['baseball_timeline_event_acks', 'user_id'],
+  ['baseball_timeline_event_acks', 'acknowledged_at'],
+  ['baseball_pitch_events', 'batter_id'],
+  ['baseball_pitch_events', 'player_id'],
+  ['baseball_pitch_events', 'pitch_type_classified'],
+  ['baseball_pitch_events', 'is_called_strike'],
+  ['baseball_pitch_events', 'count_state'],
+  ['baseball_workload_events', 'count'],
+  ['baseball_workload_events', 'high_intent_count'],
+  ['baseball_camp_registrations', 'registered_at'],
+  ['baseball_camp_registrations', 'attended_at'],
+  ['crm_coaches', 'role_level'],
+  ['crm_coaches', 'is_primary_contact'],
+];
+
 // Historical golf drift (pre-2026-07 sessions) — kept as a framework
 // extension point per the drift report's recommendation, not because any
 // of these are currently suspected broken.
@@ -110,6 +135,26 @@ const CHECKS = [
       return missing.length === 0
         ? { ok: true, detail: `all ${REQUIRED_651_COLUMNS.length} columns present` }
         : { ok: false, detail: `missing: ${missing.join(', ')}` };
+    },
+  },
+  {
+    name: 'active Baseball acknowledgement, CoachHelm, and workload query columns exist',
+    async run(sql) {
+      const rows = await sql`
+        select table_name, column_name
+        from information_schema.columns
+        where table_schema = 'public'
+      `;
+      const present = new Set(rows.map((r) => `${r.table_name}.${r.column_name}`));
+      const missing = REQUIRED_ACTIVE_BASEBALL_QUERY_COLUMNS
+        .map(([t, c]) => `${t}.${c}`)
+        .filter((k) => !present.has(k));
+      return missing.length === 0
+        ? { ok: true, detail: `all ${REQUIRED_ACTIVE_BASEBALL_QUERY_COLUMNS.length} active-query columns present` }
+        : {
+            ok: false,
+            detail: `missing active-query columns: ${missing.join(', ')}. These fields are selected by timeline acknowledgements, CoachHelm telemetry, or the workload view.`,
+          };
     },
   },
   {
@@ -237,7 +282,9 @@ const CHECKS = [
       const rows = await sql`
         select p.proname
         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public' and pg_get_functiondef(p.oid) ilike '%public.rate_limits%'
+        where n.nspname = 'public'
+          and p.prokind = 'f'
+          and pg_get_functiondef(p.oid) ilike '%public.rate_limits%'
       `;
       return rows.length === 0
         ? { ok: true, detail: 'no function references public.rate_limits; public.rate_limits does not exist' }
@@ -268,7 +315,10 @@ const CHECKS = [
           and (proname = any(${ADMIN_ROLLUP_FUNCTIONS}) or proname = '__admin_rollup_b_gate')
       `;
       const inconsistent = rows
-        .filter((r) => !stripLineComments(r.def).includes('is_super_admin'))
+        .filter((r) => {
+          const executable = stripLineComments(r.def);
+          return !executable.includes('is_super_admin') && !executable.includes('__admin_rollup_b_gate');
+        })
         .map((r) => r.proname);
       return inconsistent.length === 0
         ? { ok: true, detail: 'every rollup gate (directly or via __admin_rollup_b_gate) checks is_super_admin()' }
@@ -334,7 +384,15 @@ async function main() {
     process.exit(2);
   }
 
-  const sql = postgres(connectionString, { ssl: 'require', max: 1, prepare: false });
+  // Supabase production poolers require TLS. The local Docker/Postgres port
+  // intentionally does not, and forcing TLS there makes every read-only
+  // invariant look like a database failure before the first query executes.
+  const isLocalConnection = /(?:localhost|127\.0\.0\.1|\[::1\])/.test(connectionString);
+  const sql = postgres(connectionString, {
+    ssl: isLocalConnection ? false : 'require',
+    max: 1,
+    prepare: false,
+  });
   let failures = 0;
 
   console.log('Supabase drift guard — read-only checks\n' + '='.repeat(60));

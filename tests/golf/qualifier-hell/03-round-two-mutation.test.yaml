@@ -1,0 +1,39 @@
+fileType: momentic/test/v2
+id: golf-hell-round-two-mutation
+name: GolfHelm qualifier hell - round two mutation and resume
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.PLAYER_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.PLAYER_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - waitForUrl: /golf/dashboard
+  - navigate: https://helmsportslabs.com/golf/dashboard/qualifiers
+  - click: "{{ env.QA_QUALIFIER_NAME }}"
+  - act: >-
+      Start exactly Round 2 of {{ env.QA_QUALIFIER_NAME }} using a unique
+      18-hole par-72 manual course named {{ env.QA_COURSE_R2 }}. Complete it
+      for an exact 76. Exercise the durable mutation paths: edit an acknowledged
+      shot then hard-refresh and verify the edit persisted; acknowledge then undo
+      a shot and re-enter a different legal shot without a duplicate number;
+      rapidly change one distance 180 to 179 to 181 and verify 181 persists;
+      add a penalty, undo it, then add one different final penalty (cover
+      Unplayable Lie and Lost Ball across the test); double-invoke a next-shot
+      control once and prove only one logical shot is recorded. After holes 3,
+      6, 9, 12 and 15 use the real Save & exit flow, return to rounds, Continue
+      this exact course, and verify scored holes and history survived. After
+      holes 4, 10 and 16 hard-refresh and verify the same round, qualifier, and
+      round number remain. At least once open the same Continue Round URL in a
+      second tab, make an acknowledged mutation in the first tab, then attempt a
+      stale action in the second tab; only explicit reconciliation, busy/retry,
+      or refreshed server truth is acceptable. Never accept lost data, duplicate
+      shot numbers, a duplicated qualifier round, an incorrect completed hole,
+      silent overwrite, or false success.
+  - checkPageContains: Round Complete
+  - checkPageContains: "76"
+  - navigate: https://helmsportslabs.com/golf/dashboard/my-qualifiers
+  - checkPageContains: "{{ env.QA_QUALIFIER_NAME }}"
+  - checkPageContains: 2/4

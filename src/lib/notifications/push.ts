@@ -245,6 +245,18 @@ export async function sendPushNotification(
         // rejection only bumps failed_count, so it fails silently forever.
         // Anything not explicitly 'android' keeps the historical APNs path —
         // rows predating platform-aware registration are iOS.
+        //
+        // DEPLOY GATE (verified against production 2026-08-26): `send-fcm-push`
+        // is NOT deployed — the live function list has only send-apns-push,
+        // create-admin-user, personalize-email, verify-emails. An 'android'
+        // token therefore invokes a nonexistent slug, the Functions gateway
+        // answers with its HTML 404 page, the non-JSON body is classified as a
+        // transient failure below, and the token is retried forever without
+        // ever being deactivated. Harmless today (device_tokens holds zero
+        // android rows) but a guaranteed silent total-failure for the first
+        // Android user: `supabase functions deploy send-fcm-push` MUST ship
+        // before any Android build reaches users. Tracked as RISK-041 in
+        // docs/qa/helm-bug-risk-register.md.
         const fn = deviceToken.platform === 'android' ? 'send-fcm-push' : 'send-apns-push';
         const { error: invokeError } = await supabase.functions.invoke(fn, {
           body: {

@@ -1,4 +1,6 @@
+import '@supabase/supabase-js/tracing';
 import { createClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/nextjs';
 import type { Database } from '@/lib/types/database';
 
 export function createAdminClient() {
@@ -12,10 +14,16 @@ export function createAdminClient() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing for admin client.');
   }
 
-  return createClient<Database>(url, serviceRoleKey, {
+  const client = createClient<Database>(url, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
+    tracePropagation: {
+      enabled: true,
+      respectSamplingDecision: false,
+    },
   });
+  Sentry.instrumentSupabaseClient(client, { sendOperationData: false });
+  return client;
 }

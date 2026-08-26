@@ -179,6 +179,13 @@ jobs:
       - name: Check navigation docs for dead file paths
         run: npm run docs:path-drift
 
+      # The feature router (memory/registry.yml) gates governed edits, but
+      # path-drift scans only .md files and skips globs — so the one map the
+      # edit gate consults was the one map no gate checked. Fails on any
+      # registry entry that resolves to nothing; baseline is ZERO.
+      - name: Check the feature router against the tree
+        run: npm run knowledge:globs
+
   # Helm Bridge integration env drift.
   #
   # Runs in --drift mode, which is a no-op while NONE of these secrets are

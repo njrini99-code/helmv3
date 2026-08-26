@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { bridgeGetTracerData, bridgeGetTracerEnrichedData } from '@/app/admin/actions/golf-tracer';
+import { bridgeGetTracerData, bridgeGetTracerEnrichedData, bridgeListFlightTraces } from '@/app/admin/actions/golf-tracer';
 import { Surface, InlineNotice, Sparkline, StatStrip } from '@/components/fairway';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
@@ -10,6 +10,7 @@ import { AutoRefresh } from '../../_components/AutoRefresh';
 import { StuckRoundsPanel } from './StuckRoundsPanel';
 import { TracerPlayerList } from './TracerPlayerList';
 import { TracerIncidentRow } from './TracerIncidentRow';
+import { FlightTraceExplorer } from './FlightTraceExplorer';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,7 @@ export const dynamic = 'force-dynamic';
  */
 
 async function TracerBody() {
-  const [data, enriched] = await Promise.all([bridgeGetTracerData(), bridgeGetTracerEnrichedData()]);
+  const [data, enriched, traces] = await Promise.all([bridgeGetTracerData(), bridgeGetTracerEnrichedData(), bridgeListFlightTraces()]);
 
   const sortedPlayers = [...data.playerSummaries].sort((a, b) => b.total_rounds - a.total_rounds);
   const dailyRounds = enriched.dailyRoundCounts.map((d) => d.count);
@@ -96,6 +97,8 @@ async function TracerBody() {
           </div>
         </div>
       </Surface>
+
+      <FlightTraceExplorer traces={traces} />
 
       <Surface padding="sm" id="stuck-rounds">
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">

@@ -1729,7 +1729,11 @@ async function submitGolfRoundComprehensiveImpl(
           .maybeSingle();
 
         if (existingRound && existingRound.id !== existingRoundId) {
-          return { success: false, error: `You have already submitted round ${effectiveQualifierRoundNumber} for this qualifier.` };
+          // `code` keys the Bridge's expected-soft-failure classification
+          // (EXPECTED_SOFT_FAILURE_CODES in observe-action-result.ts) — the
+          // registry knew this code but no envelope carried it, so this
+          // by-design rejection minted error-severity incidents.
+          return { success: false, code: 'qualifier_round_already_exists', error: `You have already submitted round ${effectiveQualifierRoundNumber} for this qualifier.` };
         }
       }
     }
@@ -5912,32 +5916,39 @@ async function savePartialRoundImpl(
         .eq('player_id', player.id)
         .eq('status', 'completed');
 
-      // Never derive slot 1 from a failed history read. That would allow a
-      // temporary outage to collide with a submitted qualifier round and turn
-      // a recoverable retry into an ambiguous scorecard state.
       if (priorRoundsError) {
-        return {
-          success: false,
-          error: 'We could not determine your qualifier round number. Please try again before starting.',
-        };
+        // A failed read must not masquerade as "no prior rounds": deriving
+        // number 1 from an outage could claim a slot the player already
+        // holds. Skip derivation — the save proceeds numberless exactly as
+        // before this feature, and the next auto-save retries the read.
+        void logServerEvent(
+          'Auto-save could not read prior qualifier rounds; skipping round-number derivation this save',
+          {
+            action: 'savePartialRound.deriveQualifierRoundNumber',
+            featureArea: 'shot_tracking',
+            playerId: player.id,
+            extra: { qualifierId: data.qualifierId, errorCode: priorRoundsError.code },
+          },
+          'warning',
+        );
+      } else {
+        const usedNumbers = (priorRounds ?? [])
+          .map(r => r.qualifier_round_number)
+          .filter((n): n is number => typeof n === 'number');
+
+        resolvedQualifierRoundNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
+
+        void logServerEvent(
+          `Auto-save derived a missing qualifier round number (${resolvedQualifierRoundNumber})`,
+          {
+            action: 'savePartialRound.deriveQualifierRoundNumber',
+            featureArea: 'shot_tracking',
+            playerId: player.id,
+            extra: { qualifierId: data.qualifierId, usedNumbers },
+          },
+          'info',
+        );
       }
-
-      const usedNumbers = (priorRounds ?? [])
-        .map(r => r.qualifier_round_number)
-        .filter((n): n is number => typeof n === 'number');
-
-      resolvedQualifierRoundNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
-
-      void logServerEvent(
-        `Auto-save derived a missing qualifier round number (${resolvedQualifierRoundNumber})`,
-        {
-          action: 'savePartialRound.deriveQualifierRoundNumber',
-          featureArea: 'shot_tracking',
-          playerId: player.id,
-          extra: { qualifierId: data.qualifierId, usedNumbers },
-        },
-        'info',
-      );
     }
 
     const roundData = {
@@ -6896,7 +6907,9 @@ async function getNextQualifierRoundNumberImpl(
       return { success: false, error: 'Qualifier not found' };
     }
     if (qualifier.status === 'completed') {
-      return { success: false, error: 'This qualifier has been closed by the coach.' };
+      // See qualifier_round_already_exists above: the code routes this
+      // expected lifecycle outcome to 'warning', not a Sentry error.
+      return { success: false, code: 'qualifier_closed', error: 'This qualifier has been closed by the coach.' };
     }
 
     // A started qualifier round owns its number until it is submitted or
@@ -6951,31 +6964,34 @@ async function getNextQualifierRoundNumberImpl(
         .map((r) => r.qualifier_round_number as number)
     );
 
-    // Calculate the next round number (max completed + 1, or 1 if none completed)
-    const maxCompletedRound = completedRoundNumbers.size > 0
-      ? Math.max(...completedRoundNumbers)
-      : 0;
     const numRounds = qualifier.num_rounds ?? 1;
 
-    // The cap check that was missing end-to-end: without it, the "Enter Round"
-    // flow could always request maxCompletedRound+1 even past the qualifier's
-    // configured round count.
-    if (maxCompletedRound >= numRounds) {
+    // Qualifier progression is the first configured number the player has not
+    // submitted, not `max(completed) + 1`. The latter skips a recoverable gap
+    // in legacy/out-of-order data (for example 1 and 3 becoming 4) and can
+    // falsely report that a player has exhausted their configured rounds.
+    const unusedConfiguredRounds = Array.from(
+      { length: numRounds },
+      (_, index) => index + 1,
+    ).filter((roundNumber) => !completedRoundNumbers.has(roundNumber));
+    const nextRoundNumber = unusedConfiguredRounds[0];
+
+    if (nextRoundNumber === undefined) {
       const roundLabel = numRounds === 1 ? 'round' : 'rounds';
+      // See qualifier_round_already_exists above: the code routes this
+      // expected lifecycle outcome to 'warning', not a Sentry error
+      // (observed live 2026-08-25 as Sentry JAVASCRIPT-NEXTJS-P8 / Bridge
+      // fingerprint 709e5658 — a player at their configured limit).
       return {
         success: false,
-        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${maxCompletedRound} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
+        code: 'qualifier_round_limit_reached',
+        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${numRounds} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
       };
     }
 
-    const nextRoundNumber = maxCompletedRound + 1;
-
-    // Available rounds start from the next round number
-    const availableRounds = [nextRoundNumber];
-
     return {
       success: true,
-      data: { nextRoundNumber, availableRounds }
+      data: { nextRoundNumber, availableRounds: [nextRoundNumber] }
     };
 
   } catch {
