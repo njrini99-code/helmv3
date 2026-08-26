@@ -90,6 +90,30 @@ if printf '%s' "$CMD" | grep -Eq 'supabase[[:space:]]+db[[:space:]]+reset'; then
 If you mean the LOCAL stack, stop and confirm which database is linked first."
 fi
 
+# 7b. `supabase db push` / `migration up` — applies EVERY pending migration,
+#     and cannot be aimed at one. Measured 2026-08-26: 56 pending, three of
+#     which supabase/migrations/HELD.md forbids applying — including
+#     20260528011000_harden_coach_insights_update_grants.sql, marked "do NOT
+#     apply, and do NOT stamp". It would also re-run migrations already live
+#     by effect but never recorded (20260821043500's lock handler is in the
+#     live function body). Local and remote histories have diverged badly:
+#     551 production records have no local file.
+#
+#     This lives in the hook, not only in settings.json's deny list, because
+#     settings.json is version-controlled and therefore BRANCH-SCOPED — a
+#     `git checkout` of any older branch silently removes that protection.
+#     Hooks run regardless.
+#
+#     To apply ONE migration deliberately, stage a directory containing only
+#     that file, or use the Supabase MCP apply_migration (which guard-sql.sh
+#     inspects). Reconciling the history is docs/operations/2026-08-26-
+#     migration-history-drift.md.
+if printf '%s' "$CMD" | grep -Eq 'supabase[[:space:]]+(db[[:space:]]+push|migration[[:space:]]+up)'; then
+  block "BLOCKED: 'supabase db push' / 'supabase migration up' applies EVERY pending migration and cannot be aimed at one.
+As of 2026-08-26 that is 56 migrations, three of them listed in supabase/migrations/HELD.md as do-not-apply.
+Apply a single migration deliberately instead — see docs/operations/2026-08-26-migration-history-drift.md."
+fi
+
 # 8. Destructive SQL through the CLI. guard-sql.sh only sees Write/Edit of .sql
 #    files and the MCP apply_migration/execute_sql payloads — a raw psql or
 #    `supabase db execute` call bypasses it entirely.
