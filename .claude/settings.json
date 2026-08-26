@@ -57,7 +57,14 @@
       "Bash(./node_modules/.bin/vercel inspect:*)",
       "Bash(./node_modules/.bin/vercel ls:*)",
       "Bash(./node_modules/.bin/vercel logs:*)",
-      "Bash(./node_modules/.bin/vercel env ls:*)"
+      "Bash(./node_modules/.bin/vercel env ls:*)",
+      "Bash(./node_modules/.bin/supabase migration list:*)",
+      "Bash(./node_modules/.bin/supabase db dump:*)",
+      "Bash(./node_modules/.bin/supabase db diff:*)",
+      "Bash(./node_modules/.bin/supabase projects list:*)",
+      "Bash(./node_modules/.bin/supabase status:*)",
+      "Bash(./node_modules/.bin/supabase inspect db:*)",
+      "Bash(./node_modules/.bin/supabase functions list:*)"
     ],
     "deny": [
       "Bash(supabase config push:*)",
