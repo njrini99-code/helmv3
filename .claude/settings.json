@@ -61,6 +61,8 @@
       "Read(./.env)",
       "Read(./.env.local)",
       "Read(./.env.*.local)",
+      "Read(./context7.json)",
+      "Read(./.momentic-mcp/**)",
       "Read(./secrets/**)",
       "Read(./credentials/**)",
       "Read(./supabase/.temp/**)"
