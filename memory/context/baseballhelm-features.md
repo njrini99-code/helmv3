@@ -11,7 +11,6 @@
 > Removing this is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
 
-
 > Route/feature inventory + data flows for the BaseballHelm product (college/JUCO/HS/showcase baseball recruiting + team/player ops + Helm Lifting Lab).
 > Traced from source on branch mirroring origin/main, 2026-06-30. Cross-checked against `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`, `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md`, and `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md`.
 > POINT-IN-TIME: BaseballHelm is under active rework — trust DB enums/RLS as ground truth; treat route/behavior detail as current-state, not a frozen contract.

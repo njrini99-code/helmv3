@@ -151,8 +151,6 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 ### 0. Branch & deploy — preserve the current task branch
 Do not assume `main` is currently checked out. Run `git branch --show-current` and preserve the current task branch/worktree unless the user explicitly asks to switch branches.
 
-
-
 **A push to `main` ships nothing.** `vercel.json` has carried
 `"git": {"deploymentEnabled": {"*": false}}` since 2026-07-08 (#789 /
 `d29deea4`), so no branch auto-deploys and production is an on-demand CLI
