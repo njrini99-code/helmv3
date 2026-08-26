@@ -249,3 +249,10 @@ __pycache__/
 .env
 .env.local
 .env.*.local
+# Orphaned agent-framework state (untracked 2026-08-26): stale
+# UNDERSTANDING/ISSUES/spec files that read as authoritative but are not.
+# The canonicality rule in AGENTS.md is the durable statement; this makes
+# it mechanical. Files remain on disk; also excluded from search via .ignore.
+.helm/
+.ultracode/
+.superpowers/
