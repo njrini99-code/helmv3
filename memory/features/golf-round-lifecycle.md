@@ -11,7 +11,6 @@
 > Removing this is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
 
-
 ## Status
 
 - active

@@ -1,6 +1,5 @@
 # Golf Round Lifecycle change ledger
 
-
 ## 2026-08-22 — suppress duplicate recovery after a confirmed scorecard
 
 - SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.

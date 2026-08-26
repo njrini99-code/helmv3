@@ -8,11 +8,15 @@
 begin;
 
 alter table public.baseball_pitch_events
-  add column if not exists player_id uuid references public.baseball_players(id) on delete set null,
-  add column if not exists batter_id uuid references public.baseball_players(id) on delete set null,
-  add column if not exists pitch_type_classified text,
-  add column if not exists is_called_strike boolean,
-  add column if not exists count_state text;
+add column if not exists player_id uuid references public.baseball_players (
+    id
+) on delete set null,
+add column if not exists batter_id uuid references public.baseball_players (
+    id
+) on delete set null,
+add column if not exists pitch_type_classified text,
+add column if not exists is_called_strike boolean,
+add column if not exists count_state text;
 
 -- The legacy pitch type and called-strike flag are exact predecessors of the
 -- compatibility fields. `player_id` is the legacy pitcher-side identity and
@@ -42,8 +46,8 @@ end
 $$;
 
 alter table public.baseball_workload_events
-  add column if not exists count integer,
-  add column if not exists high_intent_count integer;
+add column if not exists count integer,
+add column if not exists high_intent_count integer;
 
 -- Legacy workload rows distinguish pitch and throw totals rather than a single
 -- normalized count. Prefer pitch_count when both are present; high-intent has
@@ -87,12 +91,16 @@ end
 $$;
 
 comment on column public.baseball_pitch_events.batter_id is
-  'Batter-side player identity for the rich event contract. Historical player_id is not backfilled because its role is ambiguous.';
+'Batter-side player identity for the rich event contract. Historical '
+'player_id is not backfilled because its role is ambiguous.';
 comment on column public.baseball_pitch_events.player_id is
-  'Legacy pitcher-side identity, retained for production-compatible administrative reads.';
+'Legacy pitcher-side identity, retained for production-compatible '
+'administrative reads.';
 comment on column public.baseball_workload_events.count is
-  'Normalized workload count. Backfilled from legacy pitch_count, then throw_count when available.';
+'Normalized workload count. Backfilled from legacy pitch_count, then '
+'throw_count when available.';
 comment on column public.baseball_workload_events.high_intent_count is
-  'High-intent workload count. NULL for legacy rows without a trustworthy source.';
+'High-intent workload count. NULL for legacy rows without a trustworthy '
+'source.';
 
 commit;

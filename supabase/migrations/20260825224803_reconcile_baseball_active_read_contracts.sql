@@ -10,35 +10,35 @@ BEGIN;
 -- feature was introduced.  created_at is the only safe historic source for
 -- the initial registration timestamp.
 ALTER TABLE public.baseball_camp_registrations
-  ADD COLUMN IF NOT EXISTS registered_at timestamptz,
-  ADD COLUMN IF NOT EXISTS attended_at timestamptz;
+ADD COLUMN IF NOT EXISTS registered_at timestamptz,
+ADD COLUMN IF NOT EXISTS attended_at timestamptz;
 
 UPDATE public.baseball_camp_registrations
 SET registered_at = created_at
 WHERE registered_at IS NULL;
 
 ALTER TABLE public.baseball_camp_registrations
-  ALTER COLUMN registered_at SET DEFAULT now();
+ALTER COLUMN registered_at SET DEFAULT now();
 
 -- Production's coach-note contract is the one the action/read-model layer
 -- already uses.  Preserve the richer local soft-delete aliases rather than
 -- removing them; this forward migration only adds the canonical fields.
 ALTER TABLE public.baseball_coach_notes
-  ADD COLUMN IF NOT EXISTS title text,
-  ADD COLUMN IF NOT EXISTS tags text[],
-  ADD COLUMN IF NOT EXISTS source_refs jsonb NOT NULL DEFAULT '{}'::jsonb,
-  ADD COLUMN IF NOT EXISTS pinned boolean NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS archived_at timestamptz,
-  ADD COLUMN IF NOT EXISTS created_by uuid,
-  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+ADD COLUMN IF NOT EXISTS title text,
+ADD COLUMN IF NOT EXISTS tags text[],
+ADD COLUMN IF NOT EXISTS source_refs jsonb NOT NULL DEFAULT '{}'::jsonb,
+ADD COLUMN IF NOT EXISTS pinned boolean NOT NULL DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS archived_at timestamptz,
+ADD COLUMN IF NOT EXISTS created_by uuid,
+ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 
 -- Local import-source rows predate the production registry vocabulary.  The
 -- aliases are populated from the only semantically equivalent legacy fields;
 -- config_json is intentionally empty rather than fabricated.
 ALTER TABLE public.baseball_import_sources
-  ADD COLUMN IF NOT EXISTS adapter_key text,
-  ADD COLUMN IF NOT EXISTS config_json jsonb NOT NULL DEFAULT '{}'::jsonb,
-  ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true;
+ADD COLUMN IF NOT EXISTS adapter_key text,
+ADD COLUMN IF NOT EXISTS config_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT TRUE;
 
 DO $$
 BEGIN
@@ -68,8 +68,8 @@ $$;
 -- Decision Room reads production's body/status signal contract.  Historic
 -- local signal rows remain visible as active until a user resolves them.
 ALTER TABLE public.baseball_signals
-  ADD COLUMN IF NOT EXISTS body text,
-  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
+ADD COLUMN IF NOT EXISTS body text,
+ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
 
 UPDATE public.baseball_signals
 SET status = 'active'
@@ -79,7 +79,7 @@ WHERE status IS NULL;
 -- the previous local schema had a real external URL; do not invent a link for
 -- an otherwise incomplete legacy row.
 ALTER TABLE public.baseball_video_events
-  ADD COLUMN IF NOT EXISTS video_url text;
+ADD COLUMN IF NOT EXISTS video_url text;
 
 DO $$
 BEGIN
@@ -100,7 +100,7 @@ $$;
 -- no local predecessor, so defaults preserve the existing "non-primary,
 -- unclassified" meaning rather than inventing a role classification.
 ALTER TABLE public.crm_coaches
-  ADD COLUMN IF NOT EXISTS role_level text,
-  ADD COLUMN IF NOT EXISTS is_primary_contact boolean NOT NULL DEFAULT false;
+ADD COLUMN IF NOT EXISTS role_level text,
+ADD COLUMN IF NOT EXISTS is_primary_contact boolean NOT NULL DEFAULT FALSE;
 
 COMMIT;

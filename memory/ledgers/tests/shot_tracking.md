@@ -1,6 +1,5 @@
 # Shot Tracking test ledger
 
-
 ## 2026-08-22 — false recovery drawer regression coverage
 
 - SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.

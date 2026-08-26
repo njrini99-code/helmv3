@@ -29,7 +29,7 @@ const REGISTRY = 'memory/registry.yml';
 const BASELINE = '.registry-globs-baseline.json';
 
 const text = readFileSync(REGISTRY, 'utf8');
-const entryRe = /^\s+-\s+([A-Za-z0-9._/\[\]()@-]+(?:\/\*{1,2})?)\s*$/;
+const entryRe = /^\s+-\s+([A-Za-z0-9._/[\]()@-]+(?:\/\*{1,2})?)\s*$/;
 
 const dead = [];
 let checked = 0;
