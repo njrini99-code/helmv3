@@ -202,6 +202,13 @@ shot entry are unchanged and remain wired at the control primitives
 tabs additionally fire the selection haptic as of this date (grammar
 alignment, FairwayBottomNav).
 
+Addendum (same date, live owner QA): the shared `Segmented` control — used
+across round entry (front/back nine, 9/18 holes) — gained a dark-scope
+accent-green selected thumb and full-contrast inactive labels
+(`src/components/fairway/controls/segmented.tsx`); light mode unchanged.
+The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
+`warm-*` text tokens that rendered unreadable in dark scope.
+
 ## Related Docs
 
 - `memory/context/golfhelm-features.md`

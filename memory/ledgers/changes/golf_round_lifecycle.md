@@ -164,3 +164,11 @@
   'never'`), so shell-less round pages owned the status-bar zone and collided
   with system UI on the flagship screen. Neutral off-iOS by construction
   (env() = 0 → prior paddings). SHA: on feat/ios-premium-native-update.
+
+## 2026-08-26 (later, live owner QA) — dark-scope Segmented + push pre-prompt tokens
+
+- What: `segmented.tsx` selected thumb goes accent-600 in dark with
+  full-contrast labels (owner directive during coach QA); `PushPermissionSoftAsk.tsx`
+  headings off retired warm-* tokens (unreadable in dark scope). Presentation
+  only; light mode and all control semantics unchanged. Gates: eslint 0,
+  typecheck 0, controls suite 34/34.

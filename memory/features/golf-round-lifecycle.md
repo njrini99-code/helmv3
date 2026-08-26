@@ -207,6 +207,13 @@ prior paddings (env() = 0). No lifecycle, autosave, or navigation semantics
 changed. Context: docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
 (F-SAFEAREA-02/03/04); change ledger entry of the same date.
 
+Addendum (same date, live owner QA): the shared `Segmented` control — used
+across round entry (front/back nine, 9/18 holes) — gained a dark-scope
+accent-green selected thumb and full-contrast inactive labels
+(`src/components/fairway/controls/segmented.tsx`); light mode unchanged.
+The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
+`warm-*` text tokens that rendered unreadable in dark scope.
+
 ## Related Docs
 
 - `memory/context/golfhelm-features.md`
