@@ -150,8 +150,12 @@ export function segmentedItemClassName(
     // elevated pill and reads semibold + primary; everything else stays
     // medium-weight and secondary until hovered.
     selected
-      ? 'font-semibold text-text-primary'
-      : 'font-medium text-text-secondary hover:text-text-primary',
+      ? 'font-semibold text-text-primary dark:text-white'
+      : // Dark scope: inactive labels lift to primary — mid-gray on the
+        // sunken dark track sat near 3:1 (owner: "so dark, no contrast").
+        // Selection is carried by the accent thumb + weight, like the
+        // system dark segmented control. No alpha shorthand (see pill note).
+        'font-medium text-text-secondary hover:text-text-primary dark:text-text-primary',
   );
 }
 
@@ -205,7 +209,12 @@ export function SegmentedPill({ layoutId, reduceMotion }: SegmentedPillProps) {
     <motion.span
       layoutId={layoutId}
       aria-hidden="true"
-      className="absolute inset-0 -z-10 rounded-md border border-border-subtle bg-surface"
+      // Dark scope (owner directive 2026-08-26, live coach QA): the selected
+      // thumb turns accent green — the flipped `bg-surface` pill read as a
+      // stark white light-mode artifact on the dark track, and the 5px dot
+      // alone was too subtle to carry "selected = green". White-on-accent-600
+      // is the app's shipped button contrast pairing. Light mode unchanged.
+      className="absolute inset-0 -z-10 rounded-md border border-border-subtle bg-surface dark:border-accent-500 dark:bg-accent-600"
       style={{ boxShadow: PILL_SHADOW }}
       transition={
         reduceMotion
@@ -237,7 +246,7 @@ export function SegmentedPill({ layoutId, reduceMotion }: SegmentedPillProps) {
        */}
       <span
         aria-hidden="true"
-        className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-accent-600 ring-1 ring-surface"
+        className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-accent-600 ring-1 ring-surface dark:bg-text-on-accent dark:ring-accent-600"
       />
     </motion.span>
   );

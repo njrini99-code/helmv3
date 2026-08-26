@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Input } from '@/components/fairway/forms/Input';
 import type { HoleConfig } from '@/lib/types/golf-course';
@@ -234,7 +235,13 @@ export function FairwayHoleConfig({
                         type="button"
                         aria-label={`Hole ${hole.holeNumber} par ${par}`}
                         aria-pressed={selected}
-                        onClick={() => updateHole(hole.holeNumber, 'par', par)}
+                        // Par step = selection detent (grammar §19/§32; gap
+                        // found in live simulator QA 2026-08-26 — the chip
+                        // toggled silently). Yardage typing stays silent.
+                        onClick={() => {
+                          fwHaptic('selection');
+                          updateHole(hole.holeNumber, 'par', par);
+                        }}
                         className={cn(
                           'h-9 w-9 rounded-fw-md font-fw-mono text-body-sm font-semibold tabular-nums transition-colors',
                           selected

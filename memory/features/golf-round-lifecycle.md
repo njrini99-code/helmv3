@@ -199,6 +199,25 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   a migration replay/RLS suite for its grants and security boundary.
 - Playwright smoke for new round, continue round, submit/review, and mobile recovery.
 
+## iOS shell presentation (added 2026-08-26)
+
+The round chrome owns the iOS status-bar zone: the Capacitor WKWebView is
+edge-to-edge (`contentInset: 'never'`), so `FairwayScorecardHeader`'s sticky
+bar pads `env(safe-area-inset-top)` (inside the measured element — the
+published `--scorecard-height` var includes it), and both
+`FairwayNewRoundEntry` step wrappers plus `FairwayCoursePicker`'s floating
+Close fold the inset into their top offsets. Off-iOS these resolve to the
+prior paddings (env() = 0). No lifecycle, autosave, or navigation semantics
+changed. Context: docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
+(F-SAFEAREA-02/03/04); change ledger entry of the same date.
+
+Addendum (same date, live owner QA): the shared `Segmented` control — used
+across round entry (front/back nine, 9/18 holes) — gained a dark-scope
+accent-green selected thumb and full-contrast inactive labels
+(`src/components/fairway/controls/segmented.tsx`); light mode unchanged.
+The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
+`warm-*` text tokens that rendered unreadable in dark scope. The new-round hole editor's par chips fire the selection detent as of the same date (§32 gap closed by live bridge-log QA).
+
 ## Related Docs
 
 - `memory/context/golfhelm-features.md`
@@ -207,3 +226,15 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
 - `docs/ROUND_REVIEW_ACCURACY_REPORT.md`
 - `docs/v3-testing-standards.md`
+
+## iOS shell chrome (updated 2026-08-26)
+
+Round entry and tracking chrome are safe-area-native in the Capacitor shell:
+`FairwayScorecardHeader` pads `env(safe-area-inset-top)` (publishing
+`--scorecard-height` inclusive of the inset), both `FairwayNewRoundEntry`
+step wrappers fold the inset into top padding, and the course-picker close
+control sits below the status bar. The shared `Segmented` control renders an
+accent-green selected thumb in dark scope. Presentation layer only — no
+lifecycle contract change. Ledger: the round-lifecycle file under `memory/ledgers/changes/`
+(2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`
+(course picker, tee step, setup band, and scorecard header captures).

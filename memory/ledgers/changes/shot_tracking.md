@@ -115,3 +115,15 @@
 - Why: an HTTP response can be lost after Postgres has committed its atomic
   scorecard transaction. Treating that as a simple failure falsely asks the
   player to submit again and produces an avoidable production error.
+
+## 2026-08-26 — status-bar collision fix inherited from round chrome
+
+- What/Why: shot-entry surfaces render under `FairwayScorecardHeader`, which
+  now carries the iOS status-bar inset (see the round-lifecycle ledger entry of
+  this date). No shot state machine, save path, or haptic logic changed.
+
+## 2026-08-26 (morning addendum) — inherited dark-chrome refinements
+
+- What/Why: shot-entry surfaces use the shared `Segmented`/splash chrome
+  refined this morning (see the round-lifecycle ledger entry of this date).
+  No shot-tracking logic changed.

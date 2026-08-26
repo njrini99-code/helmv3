@@ -198,9 +198,32 @@ recording remains opt-in; tracing cannot block a player save or submit.
 - `src/test/coachhelm/v2/shot-analysis/**`
 - Browser validation on mobile viewports for changed round-entry screens.
 
+## iOS shell presentation (added 2026-08-26)
+
+Shot-entry surfaces render under the round chrome, which now carries the iOS
+status-bar inset (see golf-round-lifecycle.md, same-date section). Haptics on
+shot entry are unchanged and remain wired at the control primitives
+(`Button` → light impact, `Segmented` → selection); the app-shell bottom-nav
+tabs additionally fire the selection haptic as of this date (grammar
+alignment, FairwayBottomNav).
+
+Addendum (same date, live owner QA): the shared `Segmented` control — used
+across round entry (front/back nine, 9/18 holes) — gained a dark-scope
+accent-green selected thumb and full-contrast inactive labels
+(`src/components/fairway/controls/segmented.tsx`); light mode unchanged.
+The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
+`warm-*` text tokens that rendered unreadable in dark scope. The new-round hole editor's par chips fire the selection detent as of the same date (§32 gap closed by live bridge-log QA).
+
 ## Related Docs
 
 - `memory/context/golfhelm-features.md`
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
 - `docs/ROUND_REVIEW_ACCURACY_REPORT.md`
+
+## iOS shell chrome (updated 2026-08-26)
+
+Shot-entry surfaces render under the safe-area-corrected scorecard header
+(see golf-round-lifecycle.md, same date). No shot-tracking contract change.
+Evidence: `docs/audits/evidence/ios-premium-2026-08-25/` (active-round
+header collision before/after, shot-entry walkthrough captures).

@@ -290,7 +290,15 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
   );
 
   return (
-    <div ref={headerRef} className="sticky top-0 z-50 bg-elevated text-text-primary shadow-flat">
+    // pt safe-area: the WKWebView is edge-to-edge (contentInset 'never'), so this
+    // sticky bar owns the status-bar zone — without the inset pad the Prev/Exit/Next
+    // row renders under the clock and Dynamic Island (iOS premium audit 2026-08-25,
+    // F-SAFEAREA-04). Padding lives INSIDE the measured element so the published
+    // --scorecard-height var stays correct for the ShotPills sticky offset.
+    <div
+      ref={headerRef}
+      className="sticky top-0 z-50 bg-elevated pt-[env(safe-area-inset-top,0px)] text-text-primary shadow-flat"
+    >
       {/* Mobile control row */}
       <div className="flex items-center justify-between gap-2 border-b border-border-subtle px-3 py-2 lg:hidden">
         <div className="flex items-center gap-1.5">

@@ -329,7 +329,10 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   const baselineLabel = seededHoles ? (formattedCourseName || 'this course') : undefined;
   if (step === 'holes') {
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
+      // pt: max() folds in the iOS status-bar inset — the WKWebView is
+      // edge-to-edge, so without it the cockpit band collides with the clock
+      // (iOS premium audit 2026-08-25, F-SAFEAREA-02/03).
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pb-6 pt-[max(1.5rem,calc(env(safe-area-inset-top,0px)+0.75rem))] md:py-10">
         <m.div {...enter(0)}>
           <CockpitBand
             step="holes"
@@ -407,7 +410,8 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   const courseConfirmed = courseMode === 'saved' && (props.cloudPickActive || !!selectedCourse);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-10">
+    // pt: same safe-area fold-in as the holes step (F-SAFEAREA-02/03).
+    <div className="mx-auto w-full max-w-2xl px-4 pb-6 pt-[max(1.5rem,calc(env(safe-area-inset-top,0px)+0.75rem))] md:py-10">
       <div className="flex flex-col gap-6">
         <m.div {...enter(i++)}>
           <CockpitBand

@@ -202,3 +202,40 @@
   the production privilege contract rather than the reverse, and a
   production rollback never requires git archaeology. Contract source: the
   live production catalog, read 2026-08-25.
+
+## 2026-08-26 — iOS safe-area fixes on round entry + tracking chrome
+
+- What: `FairwayScorecardHeader` sticky bar now pads `env(safe-area-inset-top)`
+  (the Prev/Exit/Next row rendered under the clock/Dynamic Island in the
+  Capacitor shell); `FairwayNewRoundEntry` both step wrappers fold the inset
+  into their top padding; `FairwayCoursePicker`'s floating Close moved below
+  the status-bar zone. Presentation-only — no autosave/navigation/score logic
+  touched; the `--scorecard-height` publish keeps padding inside the measured
+  element so ShotPills sticky offsets stay correct.
+- Why: iOS premium audit 2026-08-25 (docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md,
+  F-SAFEAREA-02/03/04) — the WKWebView is edge-to-edge (`contentInset:
+  'never'`), so shell-less round pages owned the status-bar zone and collided
+  with system UI on the flagship screen. Neutral off-iOS by construction
+  (env() = 0 → prior paddings). SHA: on feat/ios-premium-native-update.
+
+## 2026-08-26 (later, live owner QA) — dark-scope Segmented + push pre-prompt tokens
+
+- What: `segmented.tsx` selected thumb goes accent-600 in dark with
+  full-contrast labels (owner directive during coach QA); `PushPermissionSoftAsk.tsx`
+  headings off retired warm-* tokens (unreadable in dark scope). Presentation
+  only; light mode and all control semantics unchanged. Gates: eslint 0,
+  typecheck 0, controls suite 34/34.
+- Also same date: `FairwayHoleConfig` par chips now fire `fwHaptic('selection')`
+  (grammar §32 gap found by live bridge-log QA — chip toggled silently);
+  yardage typing stays silent. eslint 0 / typecheck 0.
+
+## 2026-08-26 (morning addendum) — dark-mode chrome refinements touching round surfaces
+
+- What: `Segmented` (shared control used by round entry's Front9/Back9 and
+  9/18-hole selectors) gains a dark-scope accent-green selected thumb and
+  full-contrast inactive labels; light mode unchanged. Launch splash gains a
+  dark variant and both grounds are now token-exact to `--fw-color-canvas`,
+  so entering a round from a cold launch no longer flashes off-brand cream.
+- Why: owner directives during live morning QA ("highlighted should turn
+  green — no contrast"; "that cream isn't the right cream"). Presentation
+  only; no round state machine, autosave, or scoring logic touched.
