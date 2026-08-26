@@ -22,7 +22,7 @@
 ## 2026-08-25 — atomic snapshot integrity regression
 
 - Status: uncommitted local reliability repair; not deployed.
-- Added `supabase/tests/rls/golf_atomic_snapshot_integrity.sql`.
+- Added the atomic snapshot integrity suite in `supabase/tests/rls/`.
 - Guarantees: both atomic RPCs reject an unmatched shot-group/hole pair before
   replacing data; a rejected partial save keeps its durable shot, and a
   rejected submit keeps the round in progress with its durable hole and shot.

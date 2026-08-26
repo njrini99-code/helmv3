@@ -10,6 +10,6 @@
 ## 2026-08-25 — durable snapshot cross-array contract
 
 - Status: uncommitted local reliability repair; not deployed.
-- Added `supabase/tests/rls/golf_atomic_snapshot_integrity.sql` against the
+- Added the atomic snapshot integrity suite in `supabase/tests/rls/` against the
   real authenticated RPC boundary. It catches the regression where a snapshot
   could report success while omitting an unmatched shot group.

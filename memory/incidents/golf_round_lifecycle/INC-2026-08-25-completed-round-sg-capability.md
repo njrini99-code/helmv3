@@ -1,6 +1,6 @@
 # INC-2026-08-25 — completed-round SG recalculation rejected
 
-- Feature: `golf_round_lifecycle` and `stats_analytics`
+- Feature: Golf Round Lifecycle and Stats Analytics
 - Status: repairing locally; not deployed
 - Risk: R3 — protected database lifecycle / migration
 - First reproduced: 2026-08-25
@@ -20,5 +20,5 @@ therefore treated the intended derived write as a prohibited general edit.
 ## Repair and regression
 
 The RPC now declares the existing capability; the guard still compares the row
-and allows only the five SG columns. `golf_completed_round_sg_recalculation.sql`
+and allows only the five SG columns. The completed-round SG recalculation suite
 exercises that real database boundary.

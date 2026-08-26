@@ -1,6 +1,6 @@
 # INC-2026-08-25 — atomic snapshot shot-group mismatch
 
-- Feature: `shot_tracking` and `golf_round_lifecycle`
+- Feature: Shot Tracking and Golf Round Lifecycle
 - Status: repairing locally; not deployed
 - Risk: R3 — protected database lifecycle / migration
 - First reproduced: 2026-08-25
@@ -26,6 +26,6 @@ aborting fallback for any unexpected unmatched lookup after that preflight.
 
 ## Regression evidence
 
-`supabase/tests/rls/golf_atomic_snapshot_integrity.sql` runs both RPCs as an
+The atomic snapshot integrity suite in `supabase/tests/rls/` runs both RPCs as an
 authenticated player and verifies that partial save and submit preserve the
 prior hole/shot graph, with submit remaining `in_progress`.
