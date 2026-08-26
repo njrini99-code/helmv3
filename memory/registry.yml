@@ -80,6 +80,11 @@ features:
       actions:
         - src/app/golf/actions/coachhelm-*.ts
         - src/app/golf/actions/insight-*.ts
+        # `insight-*.ts` never matched `insights.ts` (no hyphen), so the
+        # largest insight action file in the tree — it owns the post-round
+        # generation trigger and its coach push — resolved to NO feature and
+        # every edit to it hit the guard as an unmapped governed path.
+        - src/app/golf/actions/insights.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/v3/**

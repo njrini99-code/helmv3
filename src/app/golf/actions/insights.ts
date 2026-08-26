@@ -4633,6 +4633,10 @@ async function triggerPlayerInsightsAfterRoundImpl(
             const { sendPushNotification } = await import('@/lib/notifications/push');
             await sendPushNotification('coachhelm_insight', coachUser.user_id, {
               insightTitle: `${newInsights.length} new insight${newInsights.length > 1 ? 's' : ''} after round`,
+              // Explicit even though it is the default — this recipient is the
+              // team COACH (resolved from golf_coaches above), and the payload
+              // picks a coach-vs-player destination off this field.
+              audience: 'coach',
             });
           }
         } catch (pushErr) {
