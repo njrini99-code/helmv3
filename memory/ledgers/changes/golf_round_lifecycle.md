@@ -149,3 +149,18 @@
   the production privilege contract rather than the reverse, and a
   production rollback never requires git archaeology. Contract source: the
   live production catalog, read 2026-08-25.
+
+## 2026-08-26 — iOS safe-area fixes on round entry + tracking chrome
+
+- What: `FairwayScorecardHeader` sticky bar now pads `env(safe-area-inset-top)`
+  (the Prev/Exit/Next row rendered under the clock/Dynamic Island in the
+  Capacitor shell); `FairwayNewRoundEntry` both step wrappers fold the inset
+  into their top padding; `FairwayCoursePicker`'s floating Close moved below
+  the status-bar zone. Presentation-only — no autosave/navigation/score logic
+  touched; the `--scorecard-height` publish keeps padding inside the measured
+  element so ShotPills sticky offsets stay correct.
+- Why: iOS premium audit 2026-08-25 (docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md,
+  F-SAFEAREA-02/03/04) — the WKWebView is edge-to-edge (`contentInset:
+  'never'`), so shell-less round pages owned the status-bar zone and collided
+  with system UI on the flagship screen. Neutral off-iOS by construction
+  (env() = 0 → prior paddings). SHA: on feat/ios-premium-native-update.
