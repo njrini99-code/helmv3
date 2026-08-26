@@ -243,4 +243,9 @@ deno.lock
 __pycache__/
 *.pyc
 *.pyo
-.env*
+# Env files: explicit list, NOT a bare .env* — a blanket glob silently
+# blocks future templates like .env.example (tracked) from ever changing
+# hands without -f. Local secret files only.
+.env
+.env.local
+.env.*.local

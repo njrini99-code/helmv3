@@ -375,8 +375,12 @@ not currently justified.
 - `src/lib/types/database.ts` — regenerated production type contract; adds
   `save_round_ai_recap`.
 
-`src/types/database.types.ts` is an untracked local audit artifact generated at
-the user's requested path; it is not the application’s canonical type import.
+The local-generation audit artifact now lives at
+`docs/audits/data-2026-08-25/local-database.types.ts` (it was briefly tracked
+at `src/types/database.types.ts`, which contradicted this paragraph and put a
+second, unreferenced type contract under `src/`); it is evidence only, not the
+application's canonical type import — that remains `src/lib/types/database.ts`,
+generated from production.
 
 ## Production Changes Proposed
 
