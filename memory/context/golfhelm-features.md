@@ -1260,7 +1260,7 @@ Features:
 ### Key Files
 | Type | Path |
 |------|------|
-| Route | `src/app/golf/admin/page.tsx` |
+| Route | `src/app/admin/page.tsx` (Helm Bridge — the `/golf/admin` shell was removed 2026-08-26) |
 | Actions | `src/app/golf/actions/admin-data.ts` |
 
 ### DB Tables

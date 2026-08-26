@@ -21,8 +21,19 @@ This area is high criticality because it often uses broader access patterns, ope
 ### Components
 
 - `src/app/admin/_components/**` (Helm Bridge shell and controls)
-- `src/app/golf/admin/components/**`
 - `src/app/golf/admin/crm/components/**`
+
+The legacy `/golf/admin` dashboard shell — `src/app/golf/admin/components/**`
+(89 files: OverviewTab/SystemTab/TracerTab/PeopleTab/GrowthTab and their
+children) plus its route `page.tsx` — was deleted 2026-08-26. It had been
+unreachable since `next.config.mjs` 308-redirected the exact `/golf/admin`
+path to `/admin` (Helm Bridge), but still shipped in the bundle and held live
+Supabase Realtime subscriptions via `AdminRealtimeProvider`. `layout.tsx`,
+`loading.tsx`, `error.tsx`, and `_motion-provider.tsx` directly under
+`src/app/golf/admin/` were KEPT — Next.js App Router makes them the ancestor
+route boundary (auth gate, Suspense fallback, error boundary, `LazyMotion`
+provider) for the still-live `crm/` and `demo-sessions/` sub-apps; deleting
+them would have broken those routes, not the dead one.
 
 ### Actions And Services
 
@@ -45,6 +56,23 @@ This area is high criticality because it often uses broader access patterns, ope
 
 ## Business Rules
 
+- One incident-grouping algorithm for `admin_events`, not two. As of
+  2026-08-26, the Golf Tracer (`admin-tracer-data.ts`'s `buildTracerIncidents`)
+  groups error rows by the same write-time `admin_events.fingerprint` column
+  the Errors tab's triage queue groups by (`mergeTriage` in
+  `src/lib/admin/data/triage.ts`; `fingerprint` is set once at insert by
+  `buildIncidentSignature()` in `src/lib/admin/incident-grouping.ts`). A NULL
+  fingerprint (rows written before that column existed) falls back to a
+  synthetic `row:<id>` key — the pure helper is
+  `tracerIncidentGroupKey` in `src/app/admin/golf/tracer/tracer-shared.ts`,
+  and its fallback deliberately mirrors `mergeTriage`'s own
+  `row.fingerprint ?? \`row:${row.id}\`` string-for-string. The Tracer's
+  shot-tracking LENS (`isShotTrackingTracerEvent` — featureArea/action-prefix/
+  route filtering) is a FILTER applied to the raw event list before this
+  grouping runs, not a second grouping algorithm. Before this date the Tracer
+  recomputed its own read-time key from normalized message + route + action +
+  errorCode, which could disagree with the Errors tab's grouping for the same
+  underlying rows.
 - Admin access must remain explicit and server-side; service-role behavior must not leak into client bundles.
 - Helm Bridge uses the authenticated GolfHelm session. Its shell must expose a
   usable sign-out control on both the desktop rail and the mobile More sheet;
@@ -108,6 +136,8 @@ This area is high criticality because it often uses broader access patterns, ope
 
 - `src/test/lib/cron/auth.test.ts`
 - `src/test/api/cron/shared-auth.test.ts`
+- `src/app/admin/golf/tracer/__tests__/tracer-shared.test.ts` — the Tracer's
+  pure grouping/rendering helpers, including `tracerIncidentGroupKey`.
 - Typecheck/build for admin UI changes.
 - Targeted smoke/browser checks for admin dashboards when changing route-level code.
 

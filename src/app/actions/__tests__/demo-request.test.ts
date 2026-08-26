@@ -417,7 +417,11 @@ describe('submitDemoRequest — fail-soft', () => {
     const result = await submitDemoRequest(EMAIL, FULL_DETAILS);
 
     expect(result.success).toBe(true);
-    expect(mocks.revalidatePath).toHaveBeenCalledWith('/golf/admin');
+    // The CRM lead list this refreshes lives at /golf/admin/crm. The old
+    // '/golf/admin' target became a 308 redirect when the legacy dashboard
+    // was removed, and revalidatePath does not cascade to children — so
+    // revalidating the parent refreshed nothing a person could see.
+    expect(mocks.revalidatePath).toHaveBeenCalledWith('/golf/admin/crm');
   });
 
   it('reports failure to the visitor only when demo_requests itself rejects the row', async () => {

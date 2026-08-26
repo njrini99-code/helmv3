@@ -994,7 +994,6 @@ features:
         - src/app/golf/admin/**
       components:
         - src/app/admin/_components/**
-        - src/app/golf/admin/components/**
         - src/app/golf/admin/crm/components/**
       api:
         - src/app/api/admin/**

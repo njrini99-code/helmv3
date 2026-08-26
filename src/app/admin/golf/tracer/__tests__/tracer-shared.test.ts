@@ -4,6 +4,7 @@ import {
   computeStepElapsedMs,
   flightStepStatusTone,
   isPlausibleTraceId,
+  tracerIncidentGroupKey,
   FLIGHT_LAYER_ORDER,
 } from '../tracer-shared';
 
@@ -218,5 +219,39 @@ describe('isPlausibleTraceId', () => {
     expect(isPlausibleTraceId('')).toBe(false);
     expect(isPlausibleTraceId(null)).toBe(false);
     expect(isPlausibleTraceId(undefined)).toBe(false);
+  });
+});
+
+describe('tracerIncidentGroupKey', () => {
+  // One incident-grouping algorithm, not two: this must match mergeTriage's
+  // own fallback in src/lib/admin/data/triage.ts —
+  // `row.fingerprint ?? \`row:${row.id}\`` — string for string.
+
+  it('returns the write-time fingerprint when present', () => {
+    expect(tracerIncidentGroupKey('a1b2c3d4', 'event-1')).toBe('a1b2c3d4');
+  });
+
+  it('two rows sharing a fingerprint produce the same key regardless of id', () => {
+    expect(tracerIncidentGroupKey('shared-fp', 'event-1'))
+      .toBe(tracerIncidentGroupKey('shared-fp', 'event-2'));
+  });
+
+  it('falls back to a synthetic row:<id> key on a NULL fingerprint (rows older than the column)', () => {
+    expect(tracerIncidentGroupKey(null, 'event-42')).toBe('row:event-42');
+  });
+
+  it('two NULL-fingerprint rows do NOT collapse into one incident — each keys off its own id', () => {
+    const a = tracerIncidentGroupKey(null, 'event-1');
+    const b = tracerIncidentGroupKey(null, 'event-2');
+    expect(a).not.toBe(b);
+    expect(a).toBe('row:event-1');
+    expect(b).toBe('row:event-2');
+  });
+
+  it('an empty-string fingerprint is used verbatim, not routed to the row: fallback', () => {
+    // `??` is nullish-only, so "" (unlike null/undefined) is NOT absent here.
+    // buildIncidentSignature always returns a non-empty 8-char hex string, so
+    // this should never occur in practice — documented for completeness.
+    expect(tracerIncidentGroupKey('', 'event-7')).toBe('');
   });
 });

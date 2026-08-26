@@ -37,6 +37,28 @@ export function formatStuckDuration(hours: number): string {
   return `${(hours / 24).toFixed(1)}d stuck`;
 }
 
+/**
+ * One incident-grouping algorithm, not two.
+ *
+ * The Errors tab (`mergeTriage` in `src/lib/admin/data/triage.ts`) buckets
+ * `admin_events` rows by the write-time `fingerprint` column — set once,
+ * when the row is written, by `buildIncidentSignature()`
+ * (`src/lib/admin/incident-grouping.ts`). The Tracer reads the SAME
+ * `admin_events` table (filtered to a shot-tracking-relevant subset — see
+ * `isShotTrackingTracerEvent` in `admin-tracer-data.ts`), so it must bucket
+ * those rows the SAME way, or the two views of one row can disagree about
+ * what counts as one incident and their open/resolved counts can diverge.
+ *
+ * `fingerprint` is `NULL` on rows written before that column existed.
+ * Falling back to a synthetic per-row key for those — `row:<id>` — mirrors
+ * `mergeTriage`'s own fallback (`row.fingerprint ?? \`row:${row.id}\``)
+ * exactly, so a NULL-fingerprint row lands as its own singleton incident in
+ * both places instead of inventing a second convention here.
+ */
+export function tracerIncidentGroupKey(fingerprint: string | null, id: string): string {
+  return fingerprint ?? `row:${id}`;
+}
+
 /* ────────────────────────────────────────────────────────────────────────
  * Flight Trace Explorer — step waterfall
  *

@@ -38,11 +38,14 @@ const BADGE_FILE = join(REPO_ROOT, 'src', 'components', 'ui', 'badge.tsx');
 // The pill/badge modules consolidated in W2D. Each must delegate its colored
 // shell to <Badge>. (StatusPill is the former parallel pill primitive; it now
 // wraps Badge for its soft/solid surfaces.)
+// StatusBadge.tsx and LifecycleBadge.tsx under src/app/golf/admin/components/
+// shared/ were part of the legacy `/golf/admin` dashboard, deleted along with
+// the rest of that unreachable tree (next.config.mjs 308-redirects
+// `/golf/admin` to `/admin`) — dropped from this list rather than left
+// dangling.
 const MIGRATED_PILLS = [
   'src/components/ui/status-pill.tsx',
   'src/components/golf/calendar/StatusBadge.tsx',
-  'src/app/golf/admin/components/shared/StatusBadge.tsx',
-  'src/app/golf/admin/components/shared/LifecycleBadge.tsx',
   'src/components/golf/roster/YearBadge.tsx',
   'src/components/golf/roster/PlayerStatusBadge.tsx',
   'src/components/golf/tasks/ReminderBadge.tsx',

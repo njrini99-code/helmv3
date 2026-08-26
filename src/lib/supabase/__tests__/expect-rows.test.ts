@@ -122,4 +122,26 @@ describe('expectRows', () => {
 
     expect(mocks.logServerEvent).toHaveBeenCalledTimes(2);
   });
+
+  it('fail-open: a SYNCHRONOUS throw from the emit path never propagates out of expectRows and the result is still returned unchanged', () => {
+    // Simulates a future/mocked logServerEvent that throws before returning
+    // a promise at all (a real `async function` cannot do this — an
+    // internal throw becomes a rejected promise — but the fail-open
+    // contract must not depend on that being true forever).
+    mocks.logServerEvent.mockImplementation(() => {
+      throw new Error('boom: logging pipeline unavailable');
+    });
+
+    const result = { data: null as { id: string } | null, error: null };
+    let returned: ReturnType<typeof expectRows<{ id: string }>> | undefined;
+    expect(() => {
+      returned = expectRows(result, {
+        action: 'getMyPlayerRow',
+        featureArea: 'golf-player-hub',
+        table: 'golf_players',
+      });
+    }).not.toThrow();
+
+    expect(returned).toBe(result);
+  });
 });

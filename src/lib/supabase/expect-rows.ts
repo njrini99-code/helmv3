@@ -47,7 +47,7 @@
 // blocks or can fail the caller's read.
 // -----------------------------------------------------------------------------
 //
-// STATUS (2026-08-26): intentionally NOT wired into any call site yet.
+// STATUS (2026-08-26): wired at ONE call site.
 //
 // The archetype call site — a read of the caller's own active team
 // membership, immediately after their auth check — was evaluated against
@@ -67,18 +67,30 @@
 // service-role admin client, which bypasses RLS and so cannot exhibit the
 // silent-RLS-empty-result shape this module exists to catch.
 //
-// First genuinely intended call site: the authenticated caller's own
-// `golf_players` row, read by `user_id = auth.uid()` — the unconditional
-// first clause of the `golf_players_select` RLS policy, with no team/status
-// predicate attached. `submitGolfRoundComprehensiveImpl`
+// LIVE CALL SITE: the authenticated caller's own `golf_players` row, read by
+// `user_id = auth.uid()`. `submitGolfRoundComprehensiveImpl`
 // (src/app/golf/actions/golf.ts, the player-resolution read right after the
-// auth check) reads exactly this row today, but via `.single()`, which
-// already turns a zero-row result into an explicit PostgREST error
-// (`PGRST116`) rather than the silent `{ data: null, error: null }` shape
-// this module targets — a different, already-handled signal. Wiring
-// `expectRows` there would require switching that call to `.maybeSingle()`
-// first, which is a behavior change outside this module's scope to make
-// unilaterally.
+// auth check) reads exactly this row and is now wrapped there, switched from
+// `.single()` to `.maybeSingle()` so the silent `{ data: null, error: null }`
+// shape reaches this module instead of being pre-converted to a `PGRST116`
+// Postgres error.
+//
+// Why this clears the "guaranteed" bar (see the block above): the
+// surrounding golf.ts code already classified an empty read here as
+// 'error'-severity via `logServerError`, BEFORE this module existed — the
+// code's own pre-existing judgment is that "no golf_players row for this
+// authenticated user" is an anomaly at this exact call site, never a benign
+// "still onboarding" empty state. That classification is corroborated (not
+// established) by every route that can invoke the action sitting under the
+// `(dashboard)` layout, which redirects to `/golf/player` unless
+// `player.onboarding_completed` is true — a page-render gate, not something
+// the server action itself re-verifies. And separately, `golf_players_select`'s
+// first RLS clause is the unconditional `user_id = auth.uid()` (re-verified
+// against production 2026-08-26: `pg_policy.polqual` is
+// `(user_id = auth.uid()) OR user_is_coach_of_... OR ...`, no team/status
+// predicate on that first disjunct), so for a caller reading their OWN row
+// by that exact user_id, RLS can never be the reason a row that exists
+// comes back hidden.
 // =============================================================================
 
 import 'server-only';
@@ -124,6 +136,19 @@ function isEmptyData<T>(data: T | null | undefined): boolean {
  * expectRows only ever fires on the SILENT empty-result shape a blocked
  * SELECT actually produces. See the module header before adding a new call
  * site: this must only wrap a read whose own auth context guarantees rows.
+ *
+ * FAIL-OPEN: the entire emit path is wrapped in try/catch, not just the
+ * `logServerEvent` promise. `shouldEmit`/`drainCollapsedCount` already
+ * guard themselves internally, and `logServerEvent` is an `async function`
+ * (so a JS `async function` can never throw SYNCHRONOUSLY at the call site —
+ * an internal throw becomes a rejected promise, caught by `.catch()` below),
+ * but this function's own contract — a caller's guaranteed-context read must
+ * never be disrupted by the observability side-effect — must hold regardless
+ * of how any of those three implementations change in the future. A caller
+ * of `expectRows` is typically NOT itself inside a try/catch built to
+ * distinguish "the read failed" from "the read succeeded but logging threw";
+ * an uncaught throw here would surface as an unrelated failure at the
+ * caller's own outer error handling instead.
  */
 export function expectRows<T>(
   result: ExpectRowsResult<T>,
@@ -132,31 +157,36 @@ export function expectRows<T>(
   if (result.error) return result;
   if (!isEmptyData(result.data)) return result;
 
-  const throttleKey = `expect_rows:${ctx.action}:${ctx.table}`;
-  if (shouldEmit(throttleKey)) {
-    const collapsedCount = drainCollapsedCount(throttleKey);
-    void logServerEvent(
-      `RLS denial (empty guaranteed-context read): ${ctx.table} returned no rows for ${ctx.action}`,
-      {
-        action: ctx.action,
-        source: 'rls_denial',
-        featureArea: ctx.featureArea,
-        feature: ctx.feature,
-        sport: 'golf',
-        userId: ctx.userId ?? null,
-        teamId: ctx.teamId ?? null,
-        playerId: ctx.playerId ?? null,
-        // A silent empty result is a weaker signal than an explicit 42501 —
-        // keep it admin-feed-only rather than opening a Sentry issue.
-        skipSentry: true,
-        metadata: {
-          table: ctx.table,
-          ...(collapsedCount > 0 ? { collapsed_count: collapsedCount } : {}),
-          ...ctx.metadata,
+  try {
+    const throttleKey = `expect_rows:${ctx.action}:${ctx.table}`;
+    if (shouldEmit(throttleKey)) {
+      const collapsedCount = drainCollapsedCount(throttleKey);
+      void logServerEvent(
+        `RLS denial (empty guaranteed-context read): ${ctx.table} returned no rows for ${ctx.action}`,
+        {
+          action: ctx.action,
+          source: 'rls_denial',
+          featureArea: ctx.featureArea,
+          feature: ctx.feature,
+          sport: 'golf',
+          userId: ctx.userId ?? null,
+          teamId: ctx.teamId ?? null,
+          playerId: ctx.playerId ?? null,
+          // A silent empty result is a weaker signal than an explicit 42501 —
+          // keep it admin-feed-only rather than opening a Sentry issue.
+          skipSentry: true,
+          metadata: {
+            table: ctx.table,
+            ...(collapsedCount > 0 ? { collapsed_count: collapsedCount } : {}),
+            ...ctx.metadata,
+          },
         },
-      },
-      'warning',
-    ).catch(() => {});
+        'warning',
+      ).catch(() => {});
+    }
+  } catch {
+    // Fail-open: never let the observability side-effect disrupt the
+    // caller's own (already-succeeded) read.
   }
 
   return result;

@@ -1,5 +1,99 @@
 # Admin Platform test ledger
 
+## 2026-08-26 — error_rate_hourly → admin_events error-trend derivation coverage
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.
+- New: `src/app/golf/actions/__tests__/admin-system-data.test.ts` (5 tests),
+  mocking `createAdminClient`/`createClient` end-to-end and exercising the
+  real exported `getSystemTabData()`:
+  - `error_rate_hourly` is never among the tables queried; `admin_events` is
+    queried with an `event_type = 'error'` filter, a `created_at` lower
+    bound, and — pinned explicitly, because getting this backwards would
+    reintroduce the same bug at the row cap — `order('created_at', {
+    ascending: false })`.
+  - Rows at distinct hours bucket into `totalErrors`/`criticalErrors`
+    (`severity = 'critical'`)/`affectedUsers` (deduped by `user_id`)
+    correctly, and each returned entry's key set is exactly `hour`,
+    `totalErrors`, `criticalErrors`, `affectedUsers` — no `userFacingErrors`
+    key survives.
+  - An `admin_events` query error degrades `errorTrend` to `[]` and logs,
+    without throwing and without affecting sibling fields
+    (`authMetrics`/`backgroundJobs`) — the existing `allSettled`
+    degrade-one-subtree contract, now proven for this field too.
+  - An empty `admin_events` result still produces one entry per hour across
+    the ~7-day window (167–170, allowing for wall-clock rounding at test
+    run time) with `totalErrors === 0` throughout and `errorTrendTruncated:
+    false` — a real measured zero, distinguishable in principle (a genuine
+    query result) from the old always-absent-data zero, not just in
+    appearance.
+  - A row count at `ERROR_TREND_ROW_CAP` (20,000, hardcoded in the test with
+    a comment pinning it to the source constant — the module is `'use
+    server'` and cannot export a sync helper to import instead) sets
+    `errorTrendTruncated: true` and logs a message containing `truncated at
+    ERROR_TREND_ROW_CAP`.
+- Guarantee now held by test: the System tab's hourly error trend cannot
+  regress back to reading `error_rate_hourly`; `userFacingErrors` cannot be
+  silently reintroduced as a fabricated field without a test failing on the
+  exact-key-set assertion; the row-cap ordering cannot flip back to
+  ascending (which would fabricate zeros in the newest hours on a future
+  spike) without the ordering assertion failing; a capped fetch cannot look
+  identical to a genuinely quiet window without `errorTrendTruncated`
+  catching it.
+- Verification: `./node_modules/.bin/vitest run --project unit
+  src/app/golf/actions/__tests__/admin-system-data.test.ts` — 5 passed.
+  `tsc --noEmit` — no errors attributable to this file. `eslint` on both
+  changed files — clean.
+
+## 2026-08-26 — Legacy `/golf/admin` dashboard shell deletion
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.
+- No new tests — this was a pure deletion of unreachable code (dead route,
+  next.config.mjs 308-redirects `/golf/admin` to `/admin`), not a behavior
+  change to any live surface. Deleted the 3 test files colocated with the
+  removed tree (`components/__tests__/AdminErrorBoundary.test.tsx`,
+  `components/__tests__/system-tab-accuracy.test.ts`,
+  `components/tracer/__tests__/truncated-flag-wiring.test.ts`,
+  `components/tracer/__tests__/generate-alerts-rollup.test.ts`,
+  `components/tracer/__tests__/round-priority.test.ts`) along with their
+  targets.
+- Updated 3 tests elsewhere that referenced deleted paths so they keep
+  asserting real, current targets:
+  `src/lib/utils/date-only.test.ts` (dropped the deleted
+  `tracer/DataQualityIssueRow.tsx` call-site pin — the other 6 pinned sites
+  are untouched and still guarded),
+  `scripts/__tests__/admin-tables-mobile.test.mjs`, and
+  `scripts/__tests__/badge-consolidation.test.mjs` (both dropped their now-
+  deleted TARGETS/MIGRATED_PILLS entries; neither is wired into any runner
+  today per vitest.config.ts's own note on `scripts/__tests__/`, so this was
+  hygiene, not a CI fix).
+- Verification: `./node_modules/.bin/tsc --noEmit -p tsconfig.json` (pre-
+  existing errors only, all in `src/app/golf/actions/golf.ts` and a test file
+  under concurrent edit by another agent — zero errors reference
+  `golf/admin`); `./node_modules/.bin/eslint` on the 3 changed test files
+  (0 errors, 1 pre-existing unrelated warning); full
+  `vitest run --project unit --project unit-dom`.
+
+## 2026-08-26 — Tracer/Errors-tab shared grouping key coverage
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.
+- `tracer-shared.test.ts` — new `tracerIncidentGroupKey` describe block:
+  returns the fingerprint verbatim when present; two rows sharing a
+  fingerprint produce the same key regardless of id; a NULL fingerprint falls
+  back to `row:<id>`; two NULL-fingerprint rows do NOT collapse into one
+  incident (each keys off its own id); an empty-string fingerprint is used
+  verbatim (documents `??`'s nullish-only semantics, since `buildIncidentSignature`
+  never actually emits `""`).
+- Guarantee now held by test: the Tracer's grouping fallback for a
+  NULL-fingerprint row is string-for-string identical to `mergeTriage`'s own
+  fallback in `src/lib/admin/data/triage.ts` — verified by the test asserting
+  the exact `row:<id>` shape, not just "some fallback string".
+- `buildTracerIncidents` itself (the async-context caller in
+  `admin-tracer-data.ts`, a `'use server'` file that may only export async
+  functions) is exercised indirectly through the existing `getTracerData`
+  auth-gate tests in `src/app/admin/__tests__/admin-gate-coverage.test.ts`;
+  the grouping logic itself is covered directly and exhaustively through the
+  now-extracted pure `tracerIncidentGroupKey`.
+
 ## 2026-08-26 — CodeQL-finding coverage
 
 - SHA: recorded in the follow-up ledger commit on `feat/bridge-observability`.

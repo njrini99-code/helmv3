@@ -32,10 +32,14 @@ import { join, resolve, relative } from 'node:path';
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
 
 // Files that must expose both a >=md desktop view and a <md mobile fallback.
+//
+// CoachIntelligenceCard.tsx and BusinessIntelligenceTab.tsx were the legacy
+// `/golf/admin` dashboard's own copies (src/app/golf/admin/components/**),
+// deleted with that unreachable tree (next.config.mjs 308-redirects
+// `/golf/admin` to `/admin`; Helm Bridge is the live admin surface now).
+// Dropped from TARGETS rather than left dangling.
 const TARGETS = [
-  'src/app/golf/admin/components/CoachIntelligenceCard.tsx',
   'src/app/golf/admin/crm/components/CoachTable.tsx',
-  'src/app/golf/admin/components/BusinessIntelligenceTab.tsx',
   'src/app/golf/(dashboard)/dashboard/qualifiers/[id]/QualifierRoundBreakdown.tsx',
   'src/components/golf/calendar/WeekView.tsx',
 ];
