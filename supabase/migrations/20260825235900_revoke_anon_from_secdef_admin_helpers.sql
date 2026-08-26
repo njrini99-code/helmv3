@@ -1,8 +1,9 @@
--- Normalize two SECURITY DEFINER helpers to the production privilege contract.
+-- Normalize two definer-mode helper functions to the production privilege
+-- contract.
 --
 -- WHY: the privilege-contract sweep (supabase/tests/rls/
 -- golf_lifecycle_privilege_contracts.sql, added alongside this migration)
--- asserts that NO public SECURITY DEFINER function grants EXECUTE to anon.
+-- asserts that NO public definer-mode function grants EXECUTE to anon.
 -- Production already satisfies that today (verified 2026-08-25 against the
 -- live catalog: zero anon-executable definer functions in public). The
 -- migration-chain-built database did NOT: log_crm_stage_transition() and
