@@ -220,3 +220,5 @@ The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 
 Shot-entry surfaces render under the safe-area-corrected scorecard header
 (see golf-round-lifecycle.md, same date). No shot-tracking contract change.
+Evidence: `docs/audits/evidence/ios-premium-2026-08-25/` (active-round
+header collision before/after, shot-entry walkthrough captures).
