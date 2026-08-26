@@ -12,7 +12,7 @@
 // wrote which file. git status --porcelain never could — it sees a dirty
 // tree shared by every session in this checkout, never who dirtied it.
 import { appendEvent } from './lib/session-state.mjs';
-import { mapPathToFeatures, toRepoRelative, resolveRepoRoot } from './lib/feature-map.mjs';
+import { mapPathToFeatures, toRepoRelative, resolveRepoRoot, isWithinRepo } from './lib/feature-map.mjs';
 
 async function main() {
   const input = await readStdinJson();
@@ -20,6 +20,16 @@ async function main() {
   const sessionId = input.session_id || `unknown-${process.pid}`;
   const filePath = input.tool_input?.file_path;
   if (!filePath) {
+    process.exit(0);
+    return;
+  }
+
+  // Session scratchpad/staging paths (e.g. /private/tmp/claude-.../scratchpad/)
+  // are not repo state — there is nothing there to gate, so no touch event is
+  // recorded for them at all. This is the fix for a live 2026-08-21 incident:
+  // the old git-diff-based stop-verify.sh counted such files as "touched,
+  // unverified" and demanded gates be run against paths outside the repo.
+  if (!isWithinRepo(repoRoot, filePath)) {
     process.exit(0);
     return;
   }

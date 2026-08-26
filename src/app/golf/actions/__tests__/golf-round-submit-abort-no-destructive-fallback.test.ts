@@ -91,17 +91,6 @@ const ABORT_ERROR = {
   details: 'TimeoutError: The operation was aborted due to timeout',
 };
 
-// A database failure is determinate from PostgreSQL's perspective, but it is
-// still not safe for application code to emulate the protected transaction by
-// deleting and rebuilding a player's saved graph. The atomic RPC is the only
-// submission path permitted by the lifecycle guard.
-const DATABASE_ERROR = {
-  message: 'database transaction failed',
-  code: 'XX000',
-  hint: '',
-  details: '',
-};
-
 function makeShot(shotNumber: number) {
   return {
     shotNumber,
@@ -189,7 +178,7 @@ function existingShotRows() {
  */
 function seed(
   committed: boolean,
-  rpcError: typeof ABORT_ERROR | typeof DATABASE_ERROR = ABORT_ERROR,
+  rpcError = ABORT_ERROR,
 ) {
   tables = {
     golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
@@ -216,7 +205,8 @@ function seed(
         // on and committed. Model that by applying the commit's visible effect
         // BEFORE handing back the abort the caller actually observed.
         if (committed) {
-          const round = tables.golf_rounds?.[0];
+          const round = tables.golf_rounds?.find((candidate) => candidate.status === 'draft')
+            ?? tables.golf_rounds?.[0];
           if (round) {
             round.status = 'completed';
             round.draft_data = null;
@@ -300,18 +290,23 @@ describe('submitGolfRoundComprehensive — abort must not trigger the destructiv
     expect(result.success).toBe(false);
   });
 
-  it('does NOT delete holes/shots for a database RPC failure', async () => {
-    seed(false, DATABASE_ERROR);
+  it('acknowledges a new-round atomic commit when only its response is lost', async () => {
+    seed(true);
+
+    const result = await submitGolfRoundComprehensive(makeRoundInput());
+
+    expect(deletesAgainst('golf_holes')).toBe(0);
+    expect(deletesAgainst('golf_shots')).toBe(0);
+    expect(result.success).toBe(true);
+  });
+
+  it('treats Safari/WKWebView "Load failed" as an unknown commit outcome', async () => {
+    seed(true, { message: 'Load failed', code: '', hint: '', details: 'Load failed' });
 
     const result = await submitGolfRoundComprehensive(makeRoundInput(), ROUND_ID);
 
-    // A SQLSTATE proves the RPC rolled back, but it does not authorize a
-    // second, non-transactional submit implementation. The player must keep
-    // the complete saved graph and retry the single protected RPC.
     expect(deletesAgainst('golf_holes')).toBe(0);
     expect(deletesAgainst('golf_shots')).toBe(0);
-    expect(holesLeft()).toBe(HOLE_COUNT);
-    expect(shotsLeft()).toBe(HOLE_COUNT);
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 });

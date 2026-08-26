@@ -440,13 +440,10 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
     warnings.push('Round SG recalculation threw an exception.');
   }
 
-  // The RPC above is the only authoritative round-SG writer. It updates both
-  // golf_round_stats_cache and immutable completed-round history inside one
-  // lifecycle-authorized transaction. A second client-side update cannot carry
-  // that transaction-local authorization and is correctly rejected by the
-  // completed-round guard.
-
-  // 4. Update player stats cache with aggregated SG values
+  // 4. Update player stats cache with aggregated SG values. The trusted
+  // recalculate_round_strokes_gained RPC already keeps the round's derived SG
+  // columns in sync; a second direct table write here would violate the
+  // completed-round immutability boundary and can hide a persistence error.
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: sgPlayerError } = await (supabase as any).rpc('update_player_stats_strokes_gained', { p_player_id: playerId });

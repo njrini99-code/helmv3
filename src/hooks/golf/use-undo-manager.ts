@@ -9,7 +9,8 @@ interface UseUndoManagerParams {
   currentHole: RoundHole;
   currentHoleIndex: number;
   onAutoSave?: (shots: ShotRecord[], currentHoleIndex: number) => Promise<void>;
-  onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats) => void;
+  /** `null` means the undo reopened a previously completed hole. */
+  onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats | null) => void | Promise<void>;
   calculateHoleStats: (shots: ShotRecord[], hole: RoundHole) => HoleStats;
   /** Shared with Edit Shot so one local round cannot mutate the same shot twice. */
   shotMutationInFlightRef: React.MutableRefObject<boolean>;
@@ -63,11 +64,14 @@ export function useUndoManager({
       const newHistory = stateRef.current.shotHistory.slice(0, -1);
       dispatch({ type: 'UNDO_COMPLETE', payload: { newHistory } });
 
-      // Recalculate if hole was complete
+      // Keep a reopened hole out of the parent completed-scorecard data. The
+      // next auto-save will carry its remaining shots as in-progress progress.
       const isStillComplete = newHistory.length > 0 && newHistory[newHistory.length - 1]?.result === 'hole';
-      if (isStillComplete && onHoleStatsUpdateRef.current) {
-        const holeStats = calculateHoleStats(newHistory, currentHoleRef.current);
-        onHoleStatsUpdateRef.current(currentHoleIndexRef.current, holeStats);
+      if (onHoleStatsUpdateRef.current) {
+        const holeStats = isStillComplete
+          ? calculateHoleStats(newHistory, currentHoleRef.current)
+          : null;
+        await onHoleStatsUpdateRef.current(currentHoleIndexRef.current, holeStats);
       }
 
       if (onAutoSaveRef.current) {

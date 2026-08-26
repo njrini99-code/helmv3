@@ -133,6 +133,91 @@ function stubIndexedDBWithRaceFakeDB(): RaceFakeDB {
   return db;
 }
 
+// WebKit can report an inactive transaction even when a read queues its first
+// request synchronously. Model that narrow race once, then provide a healthy
+// replacement connection for the retry.
+class FirstReadFailsTransaction extends DyingTransaction {
+  constructor(private readonly reportFailure?: (error: Error) => void) {
+    super();
+  }
+
+  override objectStore(name: string) {
+    const store = super.objectStore(name);
+    return {
+      ...store,
+      index: (indexName: string) => {
+        const index = store.index(indexName);
+        return {
+          ...index,
+          getAll: (_value: string) => {
+            const error = new Error('Attempt to get all index records from database without an in-progress transaction');
+            error.name = 'UnknownError';
+            this.reportFailure?.(error);
+            throw error;
+          },
+        };
+      },
+    };
+  }
+}
+
+class RetryReadFakeDB extends RaceFakeDB {
+  onerror: ((event: { target: { error: Error } }) => void) | null = null;
+
+  override transaction(_stores: unknown, _mode: unknown) {
+    this.transactionCalls++;
+    if (this.transactionCalls === 1) {
+      return new FirstReadFailsTransaction((error) => this.onerror?.({ target: { error } }));
+    }
+    return new DyingTransaction();
+  }
+}
+
+function stubIndexedDBWithRetryingReadDB(): RetryReadFakeDB {
+  const db = new RetryReadFakeDB();
+  vi.stubGlobal('indexedDB', {
+    open() {
+      const req: { onsuccess: (() => void) | null; onerror: (() => void) | null; result?: RetryReadFakeDB } = {
+        onsuccess: null,
+        onerror: null,
+      };
+      queueMicrotask(() => {
+        req.result = db;
+        req.onsuccess?.();
+      });
+      return req;
+    },
+  });
+  return db;
+}
+
+class AlwaysFailingReadFakeDB extends RaceFakeDB {
+  onerror: ((event: { target: { error: Error } }) => void) | null = null;
+
+  override transaction(_stores: unknown, _mode: unknown) {
+    this.transactionCalls++;
+    return new FirstReadFailsTransaction((error) => this.onerror?.({ target: { error } }));
+  }
+}
+
+function stubIndexedDBWithAlwaysFailingReadDB(): AlwaysFailingReadFakeDB {
+  const db = new AlwaysFailingReadFakeDB();
+  vi.stubGlobal('indexedDB', {
+    open() {
+      const req: { onsuccess: (() => void) | null; onerror: (() => void) | null; result?: AlwaysFailingReadFakeDB } = {
+        onsuccess: null,
+        onerror: null,
+      };
+      queueMicrotask(() => {
+        req.result = db;
+        req.onsuccess?.();
+      });
+      return req;
+    },
+  });
+  return db;
+}
+
 beforeEach(() => {
   vi.resetModules();
   mocks.logError.mockClear();
@@ -155,6 +240,42 @@ describe('shot-storage.ts (v2) — transaction-lifecycle race', () => {
     const shotStorage = await import('../shot-storage');
 
     await expect(shotStorage.getPendingShots()).resolves.toEqual([]);
+  });
+
+  it('retries a WebKit inactive-transaction read once without reporting a client error', async () => {
+    const db = stubIndexedDBWithRetryingReadDB();
+    const shotStorage = await import('../shot-storage');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await expect(shotStorage.getPendingRounds()).resolves.toEqual([]);
+      expect(db.transactionCalls).toBe(2);
+      expect(mocks.logError).not.toHaveBeenCalled();
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it('degrades to server-backed recovery after an exhausted retry instead of re-reporting the same WebKit failure', async () => {
+    const db = stubIndexedDBWithAlwaysFailingReadDB();
+    const shotStorage = await import('../shot-storage');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await expect(shotStorage.getPendingRounds()).rejects.toThrow(/without an in-progress transaction/);
+      expect(db.transactionCalls).toBe(2);
+      expect(shotStorage.isIdbUnavailableThisSession()).toBe(true);
+      expect(mocks.logError).toHaveBeenCalledTimes(1);
+      expect(mocks.logError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ component: 'shot-storage' }),
+        'low',
+      );
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });
 

@@ -38,12 +38,9 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { createAdminClient } from '@/lib/supabase/admin';
-import {
-  createHelmFlightRecorder,
-  type HelmFlightRecorder,
-} from '@/lib/observability/helm-flight-recorder';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
+import { getQualifierAutomaticTransition } from '@/lib/golf/qualifier-lifecycle';
 
 // ============================================================================
 // COURSE ID RESOLUTION
@@ -80,89 +77,6 @@ async function resolveCourseId(supabase: any, courseName: string, providedCourse
 export type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string; code?: string };
-
-/**
- * Read-only post-commit verifier used only by the opt-in flight recorder.
- * It deliberately observes mismatches rather than attempting a repair: a
- * successful write must never be followed by an unproven destructive fix.
- */
-async function verifyRoundFlightPersistence(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  flight: HelmFlightRecorder | undefined,
-  input: {
-    roundId: string;
-    playerId: string;
-    expectedStatus: 'in_progress' | 'completed';
-    expectedHoles: Array<{ hole_number: number }>;
-    expectedShots: Array<{ hole_number: number; shots: Array<{ shot_number: number }> }>;
-  },
-): Promise<void> {
-  if (!flight) return;
-
-  const expectedShotKeys = new Set(
-    input.expectedShots.flatMap((group) => group.shots.map((shot) => `${group.hole_number}:${shot.shot_number}`)),
-  );
-  try {
-    const [{ data: round, error: roundError }, { data: holes, error: holesError }, { data: shots, error: shotsError }] = await Promise.all([
-      supabase.from('golf_rounds').select('id, player_id, status').eq('id', input.roundId).maybeSingle(),
-      supabase.from('golf_holes').select('hole_number').eq('round_id', input.roundId),
-      supabase.from('golf_shots').select('hole_number, shot_number').eq('round_id', input.roundId),
-    ]);
-
-    if (roundError || !round || round.player_id !== input.playerId || round.status !== input.expectedStatus) {
-      await flight.warn('verify.round', {
-        errorCode: roundError?.code ?? 'ROUND_MISMATCH',
-        errorSummary: roundError?.message ?? 'Committed round did not match the expected owner or lifecycle state.',
-        expected: { round_id: input.roundId, player_id: input.playerId, status: input.expectedStatus },
-        observed: round ? { round_id: round.id, player_id: round.player_id, status: round.status } : { round_found: false },
-      });
-    } else {
-      await flight.complete('verify.round', {
-        expected: { status: input.expectedStatus },
-        observed: { round_id: round.id, status: round.status },
-      });
-    }
-
-    const expectedHoleNumbers: number[] = [...new Set<number>(input.expectedHoles.map((hole) => hole.hole_number))].sort((a, b) => a - b);
-    const actualHoleNumbers: number[] = [...new Set<number>((holes ?? []).map((hole: { hole_number: number }) => hole.hole_number))].sort((a, b) => a - b);
-    const missingHoles = expectedHoleNumbers.filter((hole) => !actualHoleNumbers.includes(hole));
-    if (holesError || missingHoles.length > 0 || actualHoleNumbers.length !== expectedHoleNumbers.length) {
-      await flight.warn('verify.holes', {
-        errorCode: holesError?.code ?? 'HOLE_COUNT_MISMATCH',
-        errorSummary: holesError?.message ?? 'Persisted holes differ from the submitted snapshot.',
-        expected: { hole_count: expectedHoleNumbers.length, hole_numbers: expectedHoleNumbers },
-        observed: { hole_count: actualHoleNumbers.length, hole_numbers: actualHoleNumbers, missing_holes: missingHoles },
-      });
-    } else {
-      await flight.complete('verify.holes', {
-        expected: { hole_count: expectedHoleNumbers.length },
-        observed: { hole_count: actualHoleNumbers.length },
-      });
-    }
-
-    const actualShotKeys = new Set((shots ?? []).map((shot: { hole_number: number; shot_number: number }) => `${shot.hole_number}:${shot.shot_number}`));
-    const missingShots = [...expectedShotKeys].filter((key) => !actualShotKeys.has(key));
-    if (shotsError || missingShots.length > 0 || actualShotKeys.size !== expectedShotKeys.size) {
-      await flight.warn('verify.shots', {
-        errorCode: shotsError?.code ?? 'SHOT_COUNT_MISMATCH',
-        errorSummary: shotsError?.message ?? 'Persisted shots differ from the submitted snapshot.',
-        expected: { shot_count: expectedShotKeys.size },
-        observed: { shot_count: actualShotKeys.size, missing_shots: missingShots.slice(0, 20) },
-      });
-    } else {
-      await flight.complete('verify.shots', {
-        expected: { shot_count: expectedShotKeys.size },
-        observed: { shot_count: actualShotKeys.size },
-      });
-    }
-  } catch (error) {
-    await flight.warn('verify.round', {
-      errorCode: 'VERIFICATION_UNAVAILABLE',
-      errorSummary: describeError(error),
-    });
-  }
-}
 
 // ============================================================================
 // ACTION RESULT DATA TYPES
@@ -352,14 +266,35 @@ export interface BlockedTimePeriod {
 // VALIDATION SCHEMAS (Zod)
 // ============================================================================
 
+/**
+ * This codebase has two words for the same patch of sand, and they are not
+ * interchangeable by field:
+ *
+ *   lieBefore / result        accept 'sand'   and NOT 'bunker'
+ *   approachMissLieType       accepts 'bunker' and NOT 'sand'
+ *
+ * Verified 2026-08-24 against production `golf_shots`: every stored lie is in
+ * the 'sand' vocabulary, so nothing is corrupt today — but the UI layer maps
+ * between the two in at least three places (`parseApproachMissLieType`,
+ * `FairwayEditShotModal`, `approach-analytics`), and a single missed mapping
+ * sends 'bunker' into a `lieBefore` that rejects it. That is a validation
+ * failure caused entirely by our own inconsistent naming, and the player pays
+ * for it mid-round.
+ *
+ * Accept both spellings and normalize. Reconciling the vocabulary properly is
+ * still worth doing; until then this stops the mismatch reaching a player.
+ */
+const toLieVocabulary = (value: unknown) => (value === 'bunker' ? 'sand' : value);
+const toMissLieVocabulary = (value: unknown) => (value === 'sand' ? 'bunker' : value);
+
 const comprehensiveShotSchema = z.object({
   shotNumber: z.number().int().min(1),
   shotType: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']),
   clubType: z.string().min(1),
-  lieBefore: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other']),
+  lieBefore: z.preprocess(toLieVocabulary, z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other'])),
   distanceToHoleBefore: z.number().min(0).max(1000),
   distanceUnitBefore: z.enum(['yards', 'feet']),
-  result: z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty']),
+  result: z.preprocess(toLieVocabulary, z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty'])),
   distanceToHoleAfter: z.number().min(0),
   distanceUnitAfter: z.enum(['yards', 'feet']),
   shotDistance: z.number().min(0),
@@ -371,7 +306,7 @@ const comprehensiveShotSchema = z.object({
   puttMissTags: z.array(z.string()).optional(),
   puttDistanceFeet: z.number().min(0).optional(),
   approachMissDirection: z.string().optional(),
-  approachMissLieType: z.enum(['fairway', 'rough', 'bunker', 'hazard']).optional(),
+  approachMissLieType: z.preprocess(toMissLieVocabulary, z.enum(['fairway', 'rough', 'bunker', 'hazard']).optional()),
 });
 
 const comprehensiveHoleSchema = z.object({
@@ -427,6 +362,34 @@ const golfRoundComprehensiveSchema = z.object({
   qualifierRoundNumber: z.number().int().min(1).optional(),
 });
 
+/**
+ * One completed hole in an auto-save payload.
+ *
+ * Named (rather than inlined into `partialRoundSchema`) so a validation
+ * failure can be re-run against THIS schema alone. When the array element
+ * fails, Zod reports the issue at the element path (`holes.16`) and — for a
+ * nullable/union wrapper — collapses the reason to a bare "Invalid input"
+ * with no field path. Production logged exactly that three times on
+ * 2026-08-23 (`holes.1`, `holes.6`, `holes.16`, each at `currentHole - 1`),
+ * which told nobody which field was actually wrong. See
+ * `describeHoleValidationFailure`.
+ */
+const partialHoleSchema = z.object({
+  holeNumber: z.number().int().min(1).max(18),
+  par: z.number().int().min(3).max(6),
+  yardage: z.number().min(0),
+  score: z.number().int().min(1).max(20).optional().nullable(),
+  putts: z.number().int().min(0).max(10).optional().nullable(),
+  fairwayHit: z.boolean().optional().nullable(),
+  greenInRegulation: z.boolean().optional().nullable(),
+  penaltyStrokes: z.number().int().min(0).max(10).optional().nullable(),
+  scrambleAttempt: z.boolean().optional().nullable(),
+  scrambleMade: z.boolean().optional().nullable(),
+  sandSaveAttempt: z.boolean().optional().nullable(),
+  sandSaveMade: z.boolean().optional().nullable(),
+  shots: z.array(comprehensiveShotSchema).optional(),
+}).passthrough();
+
 const partialRoundSchema = z.object({
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
@@ -449,21 +412,7 @@ const partialRoundSchema = z.object({
   holesToPlay: z.union([z.literal(9), z.literal(18)]).optional().nullable(),
   qualifierId: z.string().uuid().optional().nullable(),
   qualifierRoundNumber: z.number().int().min(1).optional().nullable(),
-  holes: z.array(z.object({
-    holeNumber: z.number().int().min(1).max(18),
-    par: z.number().int().min(3).max(6),
-    yardage: z.number().min(0),
-    score: z.number().int().min(1).max(20).optional().nullable(),
-    putts: z.number().int().min(0).max(10).optional().nullable(),
-    fairwayHit: z.boolean().optional().nullable(),
-    greenInRegulation: z.boolean().optional().nullable(),
-    penaltyStrokes: z.number().int().min(0).max(10).optional().nullable(),
-    scrambleAttempt: z.boolean().optional().nullable(),
-    scrambleMade: z.boolean().optional().nullable(),
-    sandSaveAttempt: z.boolean().optional().nullable(),
-    sandSaveMade: z.boolean().optional().nullable(),
-    shots: z.array(comprehensiveShotSchema).optional(),
-  }).passthrough().nullish()).max(18),
+  holes: z.array(partialHoleSchema.nullable()).max(18),
   inProgressShots: z.array(z.object({
     holeNumber: z.number().int().min(1).max(18),
     shots: z.array(comprehensiveShotSchema),
@@ -474,6 +423,65 @@ const partialRoundSchema = z.object({
     yardage: z.number().min(0).optional().nullable(),
   })).optional(),
 });
+
+type ZodIssueLike = { path: readonly PropertyKey[]; message: string };
+
+function formatIssuePath(path: readonly PropertyKey[]): string {
+  return path.map(String).join('.');
+}
+
+/**
+ * Recover the real cause behind a masked `holes.<n>` validation failure.
+ *
+ * Zod reports a failing array element at the element path. Depending on how
+ * the element is wrapped (`.nullable()`, a union, a refine) the reason can
+ * collapse to a bare "Invalid input" with no field path — which is exactly
+ * what production logged, and exactly why three successive repairs to this
+ * code path could not identify what was wrong. Re-validating the single hole
+ * against `partialHoleSchema` restores the field-level issue.
+ *
+ * Diagnostic only: it never changes what is accepted or rejected.
+ */
+function describeHoleValidationFailure(
+  issues: readonly ZodIssueLike[],
+  holes: unknown,
+): string[] {
+  const described: string[] = [];
+
+  for (const issue of issues.slice(0, 10)) {
+    const path = formatIssuePath(issue.path);
+    const elementOnly = /^holes\.(\d+)$/.exec(path);
+
+    if (!elementOnly || !Array.isArray(holes)) {
+      described.push(`${path || '(root)'}: ${issue.message}`);
+      continue;
+    }
+
+    const index = Number(elementOnly[1]);
+    const hole: unknown = holes[index];
+
+    if (hole === null || hole === undefined) {
+      described.push(
+        `${path}: hole slot is ${hole === null ? 'null' : 'undefined'} — no data for hole ${index + 1}`,
+      );
+      continue;
+    }
+
+    const inner = partialHoleSchema.safeParse(hole);
+    if (inner.success) {
+      // The element parses fine on its own, so the wrapper rejected it.
+      described.push(`${path}: ${issue.message} (element valid in isolation)`);
+      continue;
+    }
+
+    for (const innerIssue of inner.error.issues.slice(0, 5)) {
+      const suffix = innerIssue.path.length ? `.${formatIssuePath(innerIssue.path)}` : '';
+      described.push(`${path}${suffix}: ${innerIssue.message}`);
+    }
+  }
+
+  return described;
+}
 
 const shotUpdateSchema = z.object({
   shot_type: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']).optional(),
@@ -583,10 +591,10 @@ const golfQualifierSchema = z
     // Travel-squad selection model (omit → DB defaults 5 total / 1 coach-pick).
     selectionSlotsTotal: z.number().int().min(1).max(50).optional(),
     selectionSlotsCoachPick: z.number().int().min(0).max(50).optional(),
-    // Feature G — number of rounds + per-round course assignments. Both optional
-    // (omit → DB default num_rounds = 1, no per-round courses) so the legacy
-    // single-round create path stays byte-identical.
-    numRounds: z.number().int().min(1).max(50).optional(),
+    // The round cap controls whether a player may enter another result; it
+    // must be explicit so a caller can never silently create a one-round
+    // qualifier by omitting it.
+    numRounds: z.number().int().min(1).max(50),
     roundCourses: z.array(qualifierRoundCourseSchema).max(50).optional(),
   })
   .refine(
@@ -809,8 +817,8 @@ interface GolfQualifierInput {
   selectionSlotsTotal?: number;
   /** Coach's discretionary picks within the squad (omit → DB default 1). */
   selectionSlotsCoachPick?: number;
-  /** Feature G — how many rounds the qualifier runs (omit → DB default 1). */
-  numRounds?: number;
+  /** How many rounds the qualifier runs; this is the enforced player cap. */
+  numRounds: number;
   /** Feature G — the course assigned to each round (omit → none). */
   roundCourses?: QualifierRoundCourseInput[];
 }
@@ -1135,7 +1143,39 @@ function isIndeterminateWriteFailure(
     || message.includes('timeouterror')
     || message.includes('the operation was aborted')
     || message.includes('fetch failed')
+    // Safari/WKWebView's opaque Fetch rejection. This has no SQLSTATE and
+    // carries the same unknown-commit semantics as AbortSignal.timeout.
+    || message.includes('load failed')
     || message.includes('network');
+}
+
+/**
+ * A client-side timeout only tells us that the HTTP response was lost, not
+ * whether Postgres committed the atomic transaction. Never infer a commit from
+ * the error alone: confirm the authenticated player's own round transitioned
+ * to completed before acknowledging success. If that read cannot confirm the
+ * state, the existing recovery path keeps every durable copy intact and asks
+ * the player to retry.
+ */
+async function hasConfirmedRoundSubmission(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  roundId: string,
+  playerId: string
+): Promise<boolean> {
+  try {
+    const { data, error } = await fromUntyped(supabase, 'golf_rounds')
+      .select('id, status')
+      .eq('id', roundId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+
+    return !error && data?.status === 'completed';
+  } catch {
+    // A failed confirmation is deliberately treated as unknown. The caller
+    // must preserve the round and recovery backup rather than guess.
+    return false;
+  }
 }
 
 async function persistRoundSubmissionBackup(
@@ -1399,12 +1439,10 @@ async function submitRoundDirectFallback({
   return { success: true, warnings };
 }
 
-// Kept only as historical forensic reference while existing incident evidence
-// and fixtures still name it. The live submit workflow below must never call
-// it: a browser/server action cannot recreate the atomic database transaction
-// that owns score completion, and delete/reinsert recovery is unsafe even when
-// an RPC returned a determinate SQL error.
-void isIndeterminateWriteFailure;
+// The destructive fallback is intentionally not callable from the submit
+// workflow. Keep this historical implementation temporarily for forensic
+// rollback review, but make that non-use explicit to TypeScript and future
+// maintainers; the protected atomic RPC is the only live submission path.
 void submitRoundDirectFallback;
 
 type GolfEventUpdateData = {
@@ -1433,8 +1471,7 @@ type GolfEventUpdateData = {
  */
 async function submitGolfRoundComprehensiveImpl(
   data: GolfRoundInputComprehensive,
-  existingRoundId?: string,
-  flight?: HelmFlightRecorder,
+  existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; warnings?: string[] }>> {
   try {
     // Validate input
@@ -1451,12 +1488,8 @@ async function submitGolfRoundComprehensiveImpl(
           zodErrors: zodResult.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`),
         },
       }, 'warning');
-      await flight?.fail('server.validation', { errorCode: 'VALIDATION', errorSummary: detail });
       return { success: false, error: `Invalid round data: ${detail}` };
     }
-    await flight?.complete('server.validation', {
-      observed: { holes_count: data.holes.length },
-    });
 
     const incompleteHole = data.holes.find(
       (hole) => hole == null || hole.score == null || hole.putts == null
@@ -1506,7 +1539,6 @@ async function submitGolfRoundComprehensiveImpl(
           errorDetails: authCheckError?.message,
           extra: { courseName: data.courseName, holesCount: data.holes?.length, authStatus: authCheckError?.status ?? null },
         }, 'warning');
-        await flight?.fail('server.auth', { errorCode: authCheckError?.status?.toString() ?? 'AUTH_TRANSIENT', errorSummary: authCheckError?.message });
         return {
           success: false,
           error: 'Could not verify your session — check your connection and submit again. Your round is still saved on this device.',
@@ -1517,10 +1549,8 @@ async function submitGolfRoundComprehensiveImpl(
         featureArea: 'shot_tracking',
         extra: { courseName: data.courseName, holesCount: data.holes?.length },
       }, 'error');
-      await flight?.fail('server.auth', { errorCode: 'UNAUTHENTICATED' });
       return { success: false, error: 'You must be signed in to submit rounds' };
     }
-    await flight?.complete('server.auth');
 
     // Get player record
     const { data: player } = await supabase
@@ -1537,17 +1567,23 @@ async function submitGolfRoundComprehensiveImpl(
         userEmail: user.email,
         extra: { courseName: data.courseName },
       }, 'error');
-      await flight?.fail('server.player', { errorCode: 'PLAYER_NOT_FOUND' });
       return { success: false, error: 'Player profile not found' };
     }
-    await flight?.complete('server.player', { observed: { player_id: player.id } });
+
+    // Existing in-progress rows are the authority for their identity. A browser
+    // can be old, resumed from recovery, or have lost setup state while it was
+    // backgrounded; it must never be able to detach or retarget a started
+    // qualifier round when it submits the scorecard.
+    let effectiveRoundType = data.roundType;
+    let effectiveQualifierId = data.qualifierId;
+    let effectiveQualifierRoundNumber = data.qualifierRoundNumber;
 
     // If updating an existing round, verify ownership and that it's not already completed
     if (existingRoundId) {
       // SECURITY: Verify the round belongs to this player and is not already completed
       const { data: existingRound, error: verifyError } = await supabase
         .from('golf_rounds')
-        .select('id, player_id, status')
+        .select('id, player_id, status, round_type, qualifier_id, qualifier_round_number')
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
         .single();
@@ -1576,15 +1612,65 @@ async function submitGolfRoundComprehensiveImpl(
         }, 'warning');
         return { success: false, error: 'This round has already been submitted. It cannot be submitted again.' };
       }
+
+      effectiveRoundType = (existingRound.round_type ?? data.roundType) as GolfRoundInputComprehensive['roundType'];
+      const persistedQualifierId = existingRound.qualifier_id;
+      const persistedQualifierRoundNumber = existingRound.qualifier_round_number;
+
+      if (persistedQualifierId) {
+        if (data.qualifierId && data.qualifierId !== persistedQualifierId) {
+          void logServerError('Round submit rejected: stale client tried to retarget an existing qualifier round', {
+            action: 'submitGolfRoundComprehensive.qualifierIdentity',
+            featureArea: 'qualifiers',
+            roundId: existingRoundId,
+            playerId: player.id,
+            extra: { persistedQualifierId, submittedQualifierId: data.qualifierId },
+          }, 'warning');
+          return { success: false, error: 'This round belongs to a different qualifier. Reload it and try again.' };
+        }
+        if (
+          data.qualifierRoundNumber != null &&
+          persistedQualifierRoundNumber != null &&
+          data.qualifierRoundNumber !== persistedQualifierRoundNumber
+        ) {
+          void logServerError('Round submit rejected: stale client tried to change an existing qualifier round number', {
+            action: 'submitGolfRoundComprehensive.qualifierIdentity',
+            featureArea: 'qualifiers',
+            roundId: existingRoundId,
+            playerId: player.id,
+            extra: {
+              persistedQualifierId,
+              persistedQualifierRoundNumber,
+              submittedQualifierRoundNumber: data.qualifierRoundNumber,
+            },
+          }, 'warning');
+          return { success: false, error: 'This round belongs to a different qualifier round. Reload it and try again.' };
+        }
+
+        // A stored qualifier link is always a qualifier round. This also
+        // normalizes legacy parents whose type was incorrectly left as
+        // "practice" while their qualifier_id was already durable.
+        effectiveRoundType = 'qualifier';
+        effectiveQualifierId = persistedQualifierId;
+        // Older parents can have the qualifier link but lack the round number.
+        // Keep the durable number when present; otherwise validate the supplied
+        // number instead of silently erasing it at completion.
+        effectiveQualifierRoundNumber = persistedQualifierRoundNumber ?? data.qualifierRoundNumber;
+      } else if (existingRound.round_type !== 'qualifier' && data.qualifierId) {
+        // A completed scorecard is not the place to reclassify a practice or
+        // tournament round. Coaches use updateRoundType, which validates the
+        // qualifier and leaves a clear audit trail.
+        return { success: false, error: 'This started round is not a qualifier round. Ask a coach to update its type before submitting.' };
+      }
     }
 
     // Server-side qualifier validation
-    if (data.qualifierId) {
+    if (effectiveQualifierId) {
       // Verify qualifier exists and is not completed
       const { data: qualifierRaw, error: qualifierError } = await supabase
         .from('golf_qualifiers')
         .select('id, status, num_rounds')
-        .eq('id', data.qualifierId)
+        .eq('id', effectiveQualifierId)
         .single();
 
       const qualifier = qualifierRaw as { id: string; status: string; num_rounds: number } | null;
@@ -1594,18 +1680,14 @@ async function submitGolfRoundComprehensiveImpl(
       }
 
       if (qualifier.status === 'completed') {
-        return {
-          success: false,
-          code: 'qualifier_closed',
-          error: 'This qualifier is closed by the coach. New rounds cannot be submitted.',
-        };
+        return { success: false, error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
       }
 
       // Verify the player has an entry in this qualifier
       const { data: qualifierEntry, error: entryError } = await supabase
         .from('golf_qualifier_entries')
         .select('id')
-        .eq('qualifier_id', data.qualifierId)
+        .eq('qualifier_id', effectiveQualifierId)
         .eq('player_id', player.id)
         .single();
 
@@ -1618,31 +1700,36 @@ async function submitGolfRoundComprehensiveImpl(
       // long ago but this read/cap-check path never was, so a qualifier
       // configured for e.g. 1 round never stopped accepting round 2, 3, 4...).
       const numRounds = qualifier.num_rounds ?? 1;
-      if (data.qualifierRoundNumber && data.qualifierRoundNumber > numRounds) {
+      if (
+        effectiveQualifierRoundNumber == null
+        || !Number.isInteger(effectiveQualifierRoundNumber)
+        || effectiveQualifierRoundNumber < 1
+      ) {
         return {
           success: false,
-          code: 'qualifier_round_limit_reached',
-          error: `This qualifier only has ${numRounds} round${numRounds === 1 ? '' : 's'}. Round ${data.qualifierRoundNumber} is beyond the configured count.`,
+          error: 'This started qualifier round needs a valid qualifier round number. Reload it and try again.',
+        };
+      }
+      if (effectiveQualifierRoundNumber && effectiveQualifierRoundNumber > numRounds) {
+        return {
+          success: false,
+          error: `This qualifier only has ${numRounds} round${numRounds === 1 ? '' : 's'}. Round ${effectiveQualifierRoundNumber} is beyond the configured count.`,
         };
       }
 
       // Prevent duplicate qualifier round numbers
-      if (data.qualifierRoundNumber) {
+      if (effectiveQualifierRoundNumber) {
         const { data: existingRound } = await supabase
           .from('golf_rounds')
           .select('id')
-          .eq('qualifier_id', data.qualifierId)
+          .eq('qualifier_id', effectiveQualifierId)
           .eq('player_id', player.id)
-          .eq('qualifier_round_number', data.qualifierRoundNumber)
+          .eq('qualifier_round_number', effectiveQualifierRoundNumber)
           .neq('status', 'abandoned')
           .maybeSingle();
 
         if (existingRound && existingRound.id !== existingRoundId) {
-          return {
-            success: false,
-            code: 'qualifier_round_already_exists',
-            error: `You have already submitted round ${data.qualifierRoundNumber} for this qualifier.`,
-          };
+          return { success: false, error: `You have already submitted round ${effectiveQualifierRoundNumber} for this qualifier.` };
         }
       }
     }
@@ -1692,7 +1779,7 @@ async function submitGolfRoundComprehensiveImpl(
       course_slope: data.courseSlope ?? null,
       tees_played: data.teesPlayed || null,
       tee_id: data.teeId || null,
-      round_type: data.roundType,
+      round_type: effectiveRoundType,
       round_date: data.roundDate,
       holes_played: data.holes.length,
       total_score: totalScore,
@@ -1706,8 +1793,8 @@ async function submitGolfRoundComprehensiveImpl(
       front_nine: frontNine,
       back_nine: backNine,
       status: 'completed' as const, // Mark as completed when all holes are done
-      qualifier_id: data.qualifierId || null,
-      qualifier_round_number: data.qualifierRoundNumber || null,
+      qualifier_id: effectiveQualifierId || null,
+      qualifier_round_number: effectiveQualifierRoundNumber || null,
     };
 
     // Build hole/shot/detail payloads for RPC or manual insert
@@ -1808,56 +1895,14 @@ async function submitGolfRoundComprehensiveImpl(
     const shotsCount = shotsPayload.reduce((sum, group) => sum + group.shots.length, 0);
 
     const attemptDirectSubmitFallback = async (
-      roundId: string,
-      path: 'existing_round' | 'new_round_rpc',
-      trigger: Record<string, unknown>,
+      _roundId: string,
+      _path: 'existing_round' | 'new_round_rpc',
+      _trigger: Record<string, unknown>,
       backupPersisted: boolean
     ): Promise<{ success: true; warnings?: string[] } | { success: false; error: string }> => {
-      // The protected RPC is the only writer allowed to complete a round. A
-      // server action cannot prove a failed request did not commit, cannot
-      // preserve the RPC's transaction boundaries, and must never delete a
-      // player's durable graph to simulate a second submit attempt. Both the
-      // server-side submission backup and device recovery are already written
-      // before this path, so return the player to the safe retry flow instead.
-      //
-      // The only exception is a request abort with no SQLSTATE: PostgreSQL may
-      // have committed after the HTTP client stopped waiting. Re-read that
-      // committed state, but never try to repair it by writing holes or shots.
-      if (
-        trigger.source === 'rpc_error'
-        && isIndeterminateWriteFailure({
-          code: typeof trigger.code === 'string' ? trigger.code : null,
-          message: typeof trigger.message === 'string' ? trigger.message : null,
-        })
-      ) {
-        const { count: holeCount, error: holeCountError } = await supabase
-          .from('golf_holes')
-          .select('id', { count: 'exact', head: true })
-          .eq('round_id', roundId);
-        const { data: reconciled, error: reconcileError } = await fromUntyped(supabase, 'golf_rounds')
-          .select('id, status')
-          .eq('id', roundId)
-          .eq('player_id', player.id)
-          .maybeSingle();
-
-        if (!holeCountError && !reconcileError && reconciled?.status === 'completed' && (holeCount ?? 0) > 0) {
-          await logServerError(
-            'Round submit request ended early but the protected RPC committed — reconciled without a fallback write',
-            {
-              action: 'submitGolfRoundComprehensive',
-              roundId,
-              playerId: player.id,
-              userId: user.id,
-              holesCount: holeCount ?? 0,
-              shotsCount,
-              extra: { path, reconciled: 'committed' },
-            },
-            'warning',
-          );
-          return { success: true };
-        }
-      }
-
+      // A direct delete-and-reinsert submit path can never prove that an
+      // indeterminate RPC did not already commit. Preserve the server draft
+      // and local recovery payload; recovery retries only the atomic RPC.
       return { success: false, error: getPreservedRoundSubmitError(backupPersisted) };
     };
 
@@ -1887,20 +1932,12 @@ async function submitGolfRoundComprehensiveImpl(
       }
 
       // Use atomic RPC — wraps entire submit in a single transaction
-      await flight?.start('db.submit_round_atomic', {
-        functionName: 'submit_round_atomic',
-        expected: { holes_count: holesPayload.length, shots_count: shotsCount },
-      });
-      // RPC is deliberately not in the generated database types yet.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
         'submit_round_atomic',
         {
           p_round_id: existingRoundId,
-          p_round_data: {
-            ...roundData,
-            _helm_trace: flight ? { trace_id: flight.traceId, enabled: true, level: 2 } : undefined,
-          },
+          p_round_data: roundData,
           p_holes: holesPayload,
           p_shots: shotsPayload,
           p_putt_details: puttDetailsPayload,
@@ -1909,43 +1946,49 @@ async function submitGolfRoundComprehensiveImpl(
       );
 
       if (rpcError) {
-        await flight?.fail('db.submit_round_atomic', {
-          functionName: 'submit_round_atomic',
-          errorCode: rpcError.code,
-          errorSummary: rpcError.message,
-        });
-        await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc' });
-        await logServerError(`Round submit RPC failed: ${rpcError.message}`, {
-          action: 'submitGolfRoundComprehensive',
-          roundId: existingRoundId,
-          playerId: player.id,
-          userId: user.id,
-          userEmail: user.email,
-          holesCount: holesPayload.length,
-          shotsCount,
-          errorCode: rpcError.code,
-          errorHint: rpcError.hint,
-          errorDetails: rpcError.details,
-          extra: { path: 'existing_round', courseName: data.courseName },
-        }, 'critical');
-        const fallbackResult = await attemptDirectSubmitFallback(
-          existingRoundId,
-          'existing_round',
-          {
-            source: 'rpc_error',
-            code: rpcError.code,
-            message: rpcError.message,
-            hint: rpcError.hint,
-            details: rpcError.details,
-          },
-          backupPersisted
-        );
-        if (!fallbackResult.success) {
-          return fallbackResult;
-        }
+        const submissionCommitted = isIndeterminateWriteFailure(rpcError)
+          && await hasConfirmedRoundSubmission(supabase, existingRoundId, player.id);
 
-        detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
-        round = { id: existingRoundId };
+        if (submissionCommitted) {
+          // The atomic RPC completed after the client lost its response. Its
+          // transaction guarantees the scorecard and shots committed together,
+          // so acknowledge the actual durable result instead of inviting a
+          // duplicate submit or emitting a false production error.
+          round = { id: existingRoundId };
+        } else {
+          await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc' });
+          await logServerError(`Round submit RPC failed: ${rpcError.message}`, {
+            action: 'submitGolfRoundComprehensive',
+            roundId: existingRoundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            holesCount: holesPayload.length,
+            shotsCount,
+            errorCode: rpcError.code,
+            errorHint: rpcError.hint,
+            errorDetails: rpcError.details,
+            extra: { path: 'existing_round', courseName: data.courseName },
+          }, 'critical');
+          const fallbackResult = await attemptDirectSubmitFallback(
+            existingRoundId,
+            'existing_round',
+            {
+              source: 'rpc_error',
+              code: rpcError.code,
+              message: rpcError.message,
+              hint: rpcError.hint,
+              details: rpcError.details,
+            },
+            backupPersisted
+          );
+          if (!fallbackResult.success) {
+            return fallbackResult;
+          }
+
+          detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
+          round = { id: existingRoundId };
+        }
       } else {
         if (rpcResult && !rpcResult.success) {
           // 'busy' = single-flight guard: a same-round auto-save (or a second
@@ -2012,10 +2055,6 @@ async function submitGolfRoundComprehensiveImpl(
           }
 
           round = { id: existingRoundId };
-          await flight?.complete('db.submit_round_atomic', {
-            functionName: 'submit_round_atomic',
-            observed: { round_id: existingRoundId, holes_count: holesPayload.length, shots_count: shotsCount },
-          });
         }
       }
     } else {
@@ -2047,20 +2086,12 @@ async function submitGolfRoundComprehensiveImpl(
 
       // Atomically set status='completed' + insert holes/shots inside one transaction.
       // The stats trigger fires AFTER all hole data exists.
-      await flight?.start('db.submit_round_atomic', {
-        functionName: 'submit_round_atomic',
-        expected: { holes_count: holesPayload.length, shots_count: shotsCount },
-      });
-      // RPC is deliberately not in the generated database types yet.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
         'submit_round_atomic',
         {
           p_round_id: newRound.id,
-          p_round_data: {
-            ...roundData,
-            _helm_trace: flight ? { trace_id: flight.traceId, enabled: true, level: 2 } : undefined,
-          },
+          p_round_data: roundData,
           p_holes: holesPayload,
           p_shots: shotsPayload,
           p_putt_details: puttDetailsPayload,
@@ -2069,60 +2100,50 @@ async function submitGolfRoundComprehensiveImpl(
       );
 
       if (rpcError) {
-        await flight?.fail('db.submit_round_atomic', {
-          functionName: 'submit_round_atomic',
-          errorCode: rpcError.code,
-          errorSummary: rpcError.message,
-        });
-        // Do NOT delete the round — preserve it so the user can retry.
-        // Deleting here caused permanent data loss when the RPC failed
-        // (e.g., trigger errors, network timeouts, race conditions).
-        await logServerException(new Error(rpcError.message), {
-          action: 'submitGolfRoundComprehensive.rpc.new',
-          helmTraceId: flight?.traceId,
-          traceStep: 'db.submit_round_atomic',
-        });
-        await logServerError(`Round submit RPC failed (new round): ${rpcError.message}`, {
-          action: 'submitGolfRoundComprehensive',
-          helmTraceId: flight?.traceId,
-          traceStep: 'db.submit_round_atomic',
-          roundId: newRound.id,
-          playerId: player.id,
-          userId: user.id,
-          userEmail: user.email,
-          holesCount: holesPayload.length,
-          shotsCount,
-          errorCode: rpcError.code,
-          errorHint: rpcError.hint,
-          errorDetails: rpcError.details,
-          extra: { path: 'new_round_rpc', courseName: data.courseName },
-        }, 'critical');
-        const fallbackResult = await attemptDirectSubmitFallback(
-          newRound.id,
-          'new_round_rpc',
-          {
-            source: 'rpc_error',
-            code: rpcError.code,
-            message: rpcError.message,
-            hint: rpcError.hint,
-            details: rpcError.details,
-          },
-          true
-        );
-        if (!fallbackResult.success) {
-          return fallbackResult;
-        }
+        const submissionCommitted = isIndeterminateWriteFailure(rpcError)
+          && await hasConfirmedRoundSubmission(supabase, newRound.id, player.id);
 
-        detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
-        round = { id: newRound.id };
+        if (submissionCommitted) {
+          round = { id: newRound.id };
+        } else {
+          // Do NOT delete the round — preserve it so the user can retry.
+          // Deleting here caused permanent data loss when the RPC failed
+          // (e.g., trigger errors, network timeouts, race conditions).
+          await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc.new' });
+          await logServerError(`Round submit RPC failed (new round): ${rpcError.message}`, {
+            action: 'submitGolfRoundComprehensive',
+            roundId: newRound.id,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            holesCount: holesPayload.length,
+            shotsCount,
+            errorCode: rpcError.code,
+            errorHint: rpcError.hint,
+            errorDetails: rpcError.details,
+            extra: { path: 'new_round_rpc', courseName: data.courseName },
+          }, 'critical');
+          const fallbackResult = await attemptDirectSubmitFallback(
+            newRound.id,
+            'new_round_rpc',
+            {
+              source: 'rpc_error',
+              code: rpcError.code,
+              message: rpcError.message,
+              hint: rpcError.hint,
+              details: rpcError.details,
+            },
+            true
+          );
+          if (!fallbackResult.success) {
+            return fallbackResult;
+          }
+
+          detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
+          round = { id: newRound.id };
+        }
       } else {
         if (rpcResult && !rpcResult.success) {
-          await flight?.fail('db.submit_round_atomic', {
-            functionName: 'submit_round_atomic',
-            errorCode: rpcResult.error_code ?? 'RPC_RESULT',
-            errorSummary: rpcResult.error ?? 'Atomic round-submit returned failure',
-            metadata: { failed_step: rpcResult.step ?? null },
-          });
           // Do NOT delete — the round is preserved as a draft for retry
           // 'busy' = single-flight guard: a same-round auto-save (or a second
           // submit) still held the row past the RPC's bounded 3s wait
@@ -2136,8 +2157,6 @@ async function submitGolfRoundComprehensiveImpl(
           const isInternalError = rpcResult.error === 'internal_error';
           await logServerError(`Round submit RPC returned failure (new round): ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
             action: 'submitGolfRoundComprehensive',
-            helmTraceId: flight?.traceId,
-            traceStep: 'db.submit_round_atomic',
             roundId: newRound.id,
             playerId: player.id,
             userId: user.id,
@@ -2190,69 +2209,45 @@ async function submitGolfRoundComprehensiveImpl(
           }
 
           round = { id: newRound.id };
-          await flight?.complete('db.submit_round_atomic', {
-            functionName: 'submit_round_atomic',
-            observed: { round_id: newRound.id, holes_count: holesPayload.length, shots_count: shotsCount },
-          });
         }
       }
     }
 
-    await verifyRoundFlightPersistence(supabase, flight, {
-      roundId: round.id,
-      playerId: player.id,
-      expectedStatus: 'completed',
-      expectedHoles: holesPayload,
-      expectedShots: shotsPayload,
-    });
-
-    // If this is a qualifier round, update the qualifier entry stats and mark
-    // a never-started qualifier live. Completion is deliberately coach-only:
-    // dates and participant progress are information, never automatic closure.
-    if (data.qualifierId) {
-      let qualifierTransitionWarning = false;
-      await flight?.start('post.qualifier_transition', {
-        metadata: { qualifier_id: data.qualifierId },
-      });
+    // If this is a qualifier round, update the qualifier entry stats and
+    // auto-advance its start only (F029/F138). The first completed round
+    // transitions upcoming→in_progress. Completion is intentionally manual:
+    // neither entrant progress nor scheduled dates can close a qualifier.
+    if (effectiveQualifierId) {
       try {
-        await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
+        await updateQualifierEntryStats(effectiveQualifierId, player.id);
       } catch (err) {
-        qualifierTransitionWarning = true;
         await logServerError(`Failed to update qualifier entry stats after round submit: ${describeError(err)}`, {
           action: 'submitGolfRoundComprehensive.qualifierStats',
           featureArea: 'qualifiers',
-          helmTraceId: flight?.traceId,
-          traceStep: 'post.qualifier_transition',
           roundId: round.id,
           playerId: player.id,
           userId: user.id,
           userEmail: user.email,
           extra: {
-            qualifierId: data.qualifierId,
+            qualifierId: effectiveQualifierId,
             stack: err instanceof Error ? err.stack : undefined,
           },
         }, 'warning');
       }
 
       try {
-        await advanceQualifierOnRoundSubmit(supabase, data.qualifierId);
+        await advanceQualifierOnRoundSubmit(supabase, effectiveQualifierId);
       } catch (err) {
-        qualifierTransitionWarning = true;
         await logServerError(`Failed to auto-advance qualifier status after round submit: ${describeError(err)}`, {
           action: 'submitGolfRoundComprehensive.qualifierAutoAdvance',
           featureArea: 'qualifiers',
-          helmTraceId: flight?.traceId,
-          traceStep: 'post.qualifier_transition',
           roundId: round.id,
           playerId: player.id,
           userId: user.id,
           userEmail: user.email,
-          extra: { qualifierId: data.qualifierId },
+          extra: { qualifierId: effectiveQualifierId },
         }, 'warning');
       }
-      await (qualifierTransitionWarning
-        ? flight?.warn('post.qualifier_transition', { metadata: { qualifier_id: data.qualifierId } })
-        : flight?.complete('post.qualifier_transition', { metadata: { qualifier_id: data.qualifierId } }));
     }
 
     // 2026-05-17: closes audit P-HIGH-1. Previously this awaited the stats-
@@ -2274,19 +2269,14 @@ async function submitGolfRoundComprehensiveImpl(
     const cacheUserEmail = user.email;
     const backgroundPlayerId = player.id;
     const backgroundRoundId = round.id;
-    await flight?.start('post.stats', { metadata: { execution: 'after' } });
-    await flight?.start('post.coachhelm', { metadata: { execution: 'after' } });
     after(async () => {
       try {
         const cacheResult = await invalidateOnRoundComplete(cachePlayerId, cacheRoundId);
         if (cacheResult.warnings.length > 0) {
-          await flight?.warn('post.stats', { metadata: { warnings: cacheResult.warnings } });
           await logServerError(
             `Stats cache warnings after round submit: ${cacheResult.warnings.join(' | ')}`,
             {
               action: 'submitGolfRoundComprehensive',
-              helmTraceId: flight?.traceId,
-              traceStep: 'post.stats',
               roundId: cacheRoundId,
               playerId: cachePlayerId,
               userId: cacheUserId,
@@ -2297,18 +2287,11 @@ async function submitGolfRoundComprehensiveImpl(
             },
             'warning'
           );
-        } else {
-          await flight?.complete('post.stats');
         }
       } catch (err) {
-        await flight?.fail('post.stats', {
-          errorSummary: describeError(err),
-        });
         await logServerError(`Failed to invalidate stats cache after round submit: ${describeError(err)}`, {
           action: 'submitGolfRoundComprehensive.invalidateStatsCache',
           featureArea: 'stats_cache',
-          helmTraceId: flight?.traceId,
-          traceStep: 'post.stats',
           roundId: cacheRoundId,
           playerId: cachePlayerId,
           userId: cacheUserId,
@@ -2393,9 +2376,6 @@ async function submitGolfRoundComprehensiveImpl(
             name: 'coachhelm/round.submitted',
             data: { roundId: backgroundRoundId, playerId: backgroundPlayerId },
           });
-          await flight?.complete('post.coachhelm', {
-            metadata: { mode: 'inngest', status: 'scheduled' },
-          });
           return;
         } catch (err) {
           // A rotated/invalid INNGEST_EVENT_KEY is a provider-account fault, not
@@ -2408,11 +2388,6 @@ async function submitGolfRoundComprehensiveImpl(
           // lets that show up as one standing incident instead of one line per
           // round submitted.
           const fault = classifyProviderFault(err);
-          await flight?.warn('post.coachhelm', {
-            errorCode: fault?.code,
-            errorSummary: fault?.summary ?? describeError(err),
-            metadata: { mode: 'inngest_fallback' },
-          });
           await logServerError(
             fault
               ? `Round analysis lost its durable queue and ran inline instead: ${fault.summary}`
@@ -2461,32 +2436,11 @@ async function submitGolfRoundComprehensiveImpl(
       }
 
       const admin = createAdminClient();
-      try {
-        await postRoundTrigger(admin, {
-          playerId: backgroundPlayerId,
-          roundId: backgroundRoundId,
-          triggerReason: 'round_submitted',
-        });
-        await flight?.complete('post.coachhelm', {
-          metadata: { mode: 'inline_after', status: 'completed' },
-        });
-      } catch (err) {
-        await flight?.fail('post.coachhelm', {
-          errorSummary: describeError(err),
-          metadata: { mode: 'inline_after' },
-        });
-        await logServerError(`CoachHelm post-round trigger failed after a safely committed round: ${describeError(err)}`, {
-          action: 'submitGolfRoundComprehensive.postRoundTrigger',
-          featureArea: 'coachhelm',
-          helmTraceId: flight?.traceId,
-          traceStep: 'post.coachhelm',
-          roundId: backgroundRoundId,
-          playerId: backgroundPlayerId,
-          userId: cacheUserId,
-          userEmail: cacheUserEmail,
-          extra: { stack: err instanceof Error ? err.stack : undefined },
-        }, 'critical');
-      }
+      await postRoundTrigger(admin, {
+        playerId: backgroundPlayerId,
+        roundId: backgroundRoundId,
+        triggerReason: 'round_submitted',
+      });
     });
 
     try {
@@ -2503,9 +2457,9 @@ async function submitGolfRoundComprehensiveImpl(
       updateTag(CACHE_TAGS.ROUNDS);
       updateTag(CACHE_TAGS.STATS);
 
-      if (data.qualifierId) {
+      if (effectiveQualifierId) {
         revalidatePath('/golf/dashboard/qualifiers');
-        revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
+        revalidatePath(`/golf/dashboard/qualifiers/${effectiveQualifierId}`);
       }
     } catch (cacheErr) {
       await logServerError(`Next cache revalidation failed after round submit: ${describeError(cacheErr)}`, {
@@ -2516,7 +2470,7 @@ async function submitGolfRoundComprehensiveImpl(
         userId: user.id,
         userEmail: user.email,
         extra: {
-          qualifierId: data.qualifierId ?? null,
+          qualifierId: effectiveQualifierId ?? null,
           stack: cacheErr instanceof Error ? cacheErr.stack : undefined,
         },
       }, 'warning');
@@ -2527,7 +2481,7 @@ async function submitGolfRoundComprehensiveImpl(
       courseName: data.courseName,
       totalScore,
       scoreToPar: totalToPar,
-      roundType: data.roundType,
+      roundType: effectiveRoundType,
       holesPlayed: data.holes.length,
     }).catch((err) => {
       logServerError(`logRoundSubmitted failed: ${describeError(err)}`, {
@@ -2584,7 +2538,6 @@ async function submitGolfRoundComprehensiveImpl(
     }
     await logServerError(`Round submit unexpected error: ${describeError(error)}`, {
       action: 'submitGolfRoundComprehensive.catch',
-      helmTraceId: flight?.traceId,
       extra: {
         stack: error instanceof Error ? error.stack : undefined,
         courseName: data.courseName,
@@ -2605,21 +2558,7 @@ export async function submitGolfRoundComprehensive(
   data: GolfRoundInputComprehensive,
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; warnings?: string[] }>> {
-  const flight = await createHelmFlightRecorder({
-    workflow: data.qualifierId ? 'golf.qualifier.submit' : 'golf.round.submit',
-    roundId: existingRoundId,
-    qualifierId: data.qualifierId,
-    existingRoundId,
-    metadata: { hole_count: data.holes?.length ?? 0 },
-  });
-  let finalStatus: 'success' | 'failure' | 'warning' = 'failure';
-  try {
-    const result = await observedSubmitGolfRoundComprehensive(data, existingRoundId, flight);
-    finalStatus = result.success ? 'success' : 'warning';
-    return result;
-  } finally {
-    await flight.finalize(finalStatus);
-  }
+  return observedSubmitGolfRoundComprehensive(data, existingRoundId);
 }
 
 // ============================================================================
@@ -3569,6 +3508,11 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
         end_date: validatedData.endDate || null,
         status: 'upcoming',
         created_by: coach.id,
+        // The round cap is an entry rule, not optional follow-up metadata.
+        // Persist it in the same write as the qualifier so a transient
+        // secondary UPDATE can never leave a multi-round qualifier capped at
+        // the database default of one round.
+        num_rounds: validatedData.numRounds,
         // Only set when provided so omitted values fall back to DB defaults
         // (5 total / 1 coach-pick) — keeps the legacy create path byte-identical.
         ...(validatedData.selectionSlotsTotal !== undefined
@@ -3585,31 +3529,13 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
       return { success: false, error: 'Failed to create qualifier. Please try again.' };
     }
 
-    // Feature G — set num_rounds when the coach split the qualifier across
-    // multiple rounds. Done as a follow-up update through fromUntyped because the
-    // column is not yet in the generated Database types (migration unapplied);
-    // omitting it leaves the DB default (num_rounds = 1) so the legacy
-    // single-round create path stays byte-identical.
-    if (validatedData.numRounds !== undefined && validatedData.numRounds !== 1) {
-      const { error: numRoundsError } = await fromUntyped(supabase, 'golf_qualifiers')
-        .update({ num_rounds: validatedData.numRounds })
-        .eq('id', qualifier.id);
-
-      if (numRoundsError) {
-        await logServerError(
-          `createGolfQualifier num_rounds write failed: ${numRoundsError.message}`,
-          { action: 'createGolfQualifier.numRounds', featureArea: 'qualifiers' },
-        );
-      }
-    }
-
     // Feature G — persist the per-round course assignments. Best-effort write
     // through fromUntyped (golf_qualifier_round_courses is not yet in the
     // generated Database types; the migration is unapplied). A failure here must
     // NOT roll back the qualifier the coach already created — surface it and move
     // on so courses can be re-assigned via setQualifierRoundCourses().
     if (validatedData.roundCourses && validatedData.roundCourses.length > 0) {
-      const numRounds = validatedData.numRounds ?? 1;
+      const numRounds = validatedData.numRounds;
       const rows = validatedData.roundCourses
         // Defensive: never write a round beyond the declared count.
         .filter((rc) => rc.roundNumber >= 1 && rc.roundNumber <= numRounds)
@@ -3799,7 +3725,13 @@ async function setQualifierRoundCoursesImpl(
       return { success: false, error: 'You must be signed in to edit a qualifier' };
     }
 
-    const safeNumRounds = Math.min(Math.max(Math.trunc(numRounds), 1), 50);
+    // Never coerce a malformed update into a one-round qualifier. That turns a
+    // client bug into a live cap that can strand players after their next
+    // completed round. Reject it and preserve the existing configuration.
+    if (!Number.isInteger(numRounds) || numRounds < 1 || numRounds > 50) {
+      return { success: false, error: 'Round count must be between 1 and 50.' };
+    }
+    const safeNumRounds = numRounds;
 
     // Keep golf_qualifiers.num_rounds in sync. RLS (coach-only UPDATE) gates
     // this — and `.select('id')` is what makes that gate observable. A
@@ -3961,9 +3893,9 @@ async function updateQualifierStatusImpl(
       return { success: false, error: 'Unauthorized' };
     }
 
-    // An UPDATE filtered by RLS is not an error in PostgREST: it succeeds with
-    // zero returned rows. Select the affected id so the UI never tells a coach
-    // that a manual status change happened when it did not.
+    // PostgREST reports an RLS-filtered UPDATE as a successful request with
+    // zero returned rows. Select the id so the coach is never told a manual
+    // close worked when the qualifier was not actually changed.
     const { data: updatedQualifiers, error } = await supabase
       .from('golf_qualifiers')
       .update({ status })
@@ -3975,6 +3907,11 @@ async function updateQualifierStatusImpl(
     }
 
     if (!updatedQualifiers || updatedQualifiers.length !== 1) {
+      await logServerError(
+        `qualifier status update matched no row for ${qualifierId}`,
+        { action: 'golf.updateQualifierStatus', featureArea: 'qualifiers' },
+        'warning',
+      );
       return {
         success: false,
         error: "Couldn't update this qualifier — it may have been deleted, or you may not have edit access to this team.",
@@ -5722,9 +5659,11 @@ export interface PartialRoundData {
   // Progress tracking
   currentHole: number;
   holesToPlay: number; // 9 or 18
-  // Completed-hole slots can briefly be sparse while a recovered round is
-  // reconciling. The server validates then normalizes them before persistence.
-  holes: Array<HoleStats | null | undefined>;
+  // Completed holes data
+  // Sparse browser arrays cross the Server Action boundary as `undefined`
+  // entries. The persistence contract represents an uncompleted hole as an
+  // explicit null instead, so every transport can validate the same shape.
+  holes: Array<HoleStats | null>;
   // In-progress holes with recorded shots
   inProgressShots?: Array<{
     holeNumber: number;
@@ -5753,43 +5692,122 @@ export interface PartialRoundData {
  * the original name so no caller changes.
  */
 async function savePartialRoundImpl(
-  input: PartialRoundData,
-  existingRoundId?: string,
-  flight?: HelmFlightRecorder,
+  data: PartialRoundData,
+  existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
   try {
-    // Validate input with Zod
-    const validated = partialRoundSchema.safeParse(input);
+    // A browser may retain an older JS bundle across a deployment. Those older
+    // bundles built this array sparsely; Server Action transport preserves the
+    // empty slots as `undefined`, while the durable persistence contract uses
+    // explicit `null` for an uncompleted hole. Normalize at the server boundary
+    // as well as in current clients so a cached mobile bundle cannot turn a
+    // completed-hole checkpoint into a validation failure.
+    //
+    // `Array.prototype.map` preserves sparse slots, so use Array.from to visit
+    // every index and materialize `null` values before Zod sees the payload.
+    const normalizedData = {
+      ...data,
+      holes: Array.isArray(data?.holes)
+        ? Array.from({ length: data.holes.length }, (_, index) => data.holes[index] ?? null)
+        : data?.holes,
+    } as PartialRoundData;
+    data = normalizedData;
+
+    // Validate input with Zod after normalizing legacy transport holes.
+    const validated = partialRoundSchema.safeParse(data);
     if (!validated.success) {
+      // Drill through the element-level mask BEFORE building the message, so
+      // the log names the offending field rather than "holes.16 — Invalid
+      // input". Falls back to the raw issue when nothing needs unmasking.
+      const described = describeHoleValidationFailure(validated.error.issues, data?.holes);
       const firstError = validated.error.issues[0];
-      const detail = `${firstError?.path.join('.')} — ${firstError?.message}`;
+      const rawDetail = `${formatIssuePath(firstError?.path ?? [])} — ${firstError?.message ?? 'unknown'}`;
+      const detail = described[0] ?? rawDetail;
+
       void logServerError(`Auto-save validation failed: ${detail}`, {
         action: 'savePartialRound',
         featureArea: 'shot_tracking',
-        helmTraceId: flight?.traceId,
-        traceStep: 'server.validation',
         extra: {
-          courseName: input.courseName,
-          currentHole: input.currentHole,
-          zodErrors: validated.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`),
+          courseName: data.courseName,
+          currentHole: data.currentHole,
+          // Unmasked, field-level issues — the thing that was missing.
+          zodErrors: described,
+          // The raw issue kept alongside so a wrapper-level change is still
+          // visible if the two ever disagree.
+          zodErrorsRaw: validated.error.issues
+            .slice(0, 5)
+            .map(i => `${formatIssuePath(i.path)}: ${i.message}`),
+          holesCount: Array.isArray(data?.holes) ? data.holes.length : null,
+          emptyHoleSlots: Array.isArray(data?.holes)
+            ? data.holes.reduce<number[]>(
+                (acc, hole, index) => (hole === null || hole === undefined ? [...acc, index] : acc),
+                [],
+              )
+            : null,
         },
       }, 'warning');
-      await flight?.fail('server.validation', { errorCode: 'VALIDATION', errorSummary: detail });
-      return { success: false, error: `Validation error: ${detail}` };
-    }
-    await flight?.complete('server.validation', { observed: { holes_count: input.holes?.length ?? 0 } });
 
-    // A sparse slot is an implementation detail of a restored/re-edited React
-    // array, never a completed hole. Treat it exactly like the null placeholder
-    // serialized by JSON/beacon saves, so a harmless hole 7 slot cannot reject
-    // the full checkpoint payload (`holes.6 — Invalid input`). Use Zod's
-    // normalized current-hole value too, rather than accidentally continuing
-    // with the pre-validation zero from an older client.
-    const data: PartialRoundData = {
-      ...input,
-      currentHole: validated.data.currentHole ?? 0,
-      holes: validated.data.holes.filter((hole): hole is NonNullable<typeof hole> => hole != null) as unknown as HoleStats[],
-    };
+      // A payload mismatch must NEVER cost the player their shot.
+      //
+      // This used to `return { success: false }`, which threw away the WHOLE
+      // round — 17 good holes discarded because hole 18 had one field the
+      // schema didn't like — and surfaced as "Error updating shot" / "Error
+      // deleting shot" mid-round. The mismatch is ours to reconcile on the
+      // server, not the player's to lose data over.
+      //
+      // So: keep every hole that validates, null out the ones that don't (the
+      // array is positional, so a hole is nulled rather than removed — dropping
+      // it would renumber everything after it), and carry on with the save. The
+      // discarded holes are logged above with their real field-level cause, so
+      // the defect is still visible and still gets fixed — just not by the
+      // player, mid-round, on the course.
+      const salvagedHoles = Array.isArray(data.holes)
+        ? data.holes.map((hole) =>
+            hole === null || hole === undefined || partialHoleSchema.safeParse(hole).success
+              ? hole ?? null
+              : null,
+          )
+        : data.holes;
+
+      const salvaged = partialRoundSchema.safeParse({ ...data, holes: salvagedHoles });
+
+      if (!salvaged.success) {
+        // The failure is outside `holes` (course name, round type, dates) —
+        // nothing to salvage, and retrying the identical payload would just
+        // fail again. Report `retry` so the caller treats it like a transient
+        // skip rather than telling the player their round is broken.
+        void logServerError(
+          `Auto-save unsalvageable (failure outside holes): ${describeHoleValidationFailure(salvaged.error.issues, salvagedHoles)[0] ?? detail}`,
+          {
+            action: 'savePartialRound',
+            featureArea: 'shot_tracking',
+            extra: { courseName: data.courseName, currentHole: data.currentHole },
+          },
+          'error',
+        );
+        return { success: false, error: 'retry' };
+      }
+
+      const droppedHoles = Array.isArray(data.holes)
+        ? data.holes.reduce<number[]>(
+            (acc, hole, index) =>
+              hole != null && (salvagedHoles as unknown[])[index] === null ? [...acc, index + 1] : acc,
+            [],
+          )
+        : [];
+
+      void logServerEvent(
+        `Auto-save salvaged: saved the round without ${droppedHoles.length} unparseable hole(s)`,
+        {
+          action: 'savePartialRound.salvage',
+          featureArea: 'shot_tracking',
+          extra: { courseName: data.courseName, currentHole: data.currentHole, droppedHoles },
+        },
+        'warning',
+      );
+
+      data = { ...data, holes: salvagedHoles } as PartialRoundData;
+    }
 
     // Bug #3: Clamp currentHole to holesToPlay for 9-hole rounds
     if (data.currentHole && data.holesToPlay) {
@@ -5809,27 +5827,20 @@ async function savePartialRoundImpl(
         void logServerError('Auto-save auth check failed in transit (NOT a session expiry) — skipped, next tick covers', {
           action: 'savePartialRound',
           featureArea: 'shot_tracking',
-          helmTraceId: flight?.traceId,
-          traceStep: 'server.auth',
           roundId: existingRoundId,
           errorDetails: authCheckError?.message,
           extra: { courseName: data.courseName, currentHole: data.currentHole, authStatus: authCheckError?.status ?? null },
         }, 'warning');
-        await flight?.fail('server.auth', { errorCode: authCheckError?.status?.toString() ?? 'AUTH_TRANSIENT', errorSummary: authCheckError?.message });
         return { success: false, error: 'retry' };
       }
       void logServerError('Auto-save failed: user session expired mid-round', {
         action: 'savePartialRound',
         featureArea: 'shot_tracking',
-        helmTraceId: flight?.traceId,
-        traceStep: 'server.auth',
         roundId: existingRoundId,
         extra: { courseName: data.courseName, currentHole: data.currentHole },
       }, 'error');
-      await flight?.fail('server.auth', { errorCode: 'UNAUTHENTICATED' });
       return { success: false, error: 'You must be signed in' };
     }
-    await flight?.complete('server.auth');
 
     // Get player record
     const { data: player } = await supabase
@@ -5842,20 +5853,99 @@ async function savePartialRoundImpl(
       void logServerError('Auto-save failed: player profile not found', {
         action: 'savePartialRound',
         featureArea: 'shot_tracking',
-        helmTraceId: flight?.traceId,
-        traceStep: 'server.player',
         roundId: existingRoundId,
         userId: user.id,
         userEmail: user.email,
         extra: { courseName: data.courseName, currentHole: data.currentHole },
       }, 'error');
-      await flight?.fail('server.player', { errorCode: 'PLAYER_NOT_FOUND' });
       return { success: false, error: 'Player profile not found' };
     }
-    await flight?.complete('server.player', { observed: { player_id: player.id } });
 
     const teamId = await getPlayerTeamId(supabase, player.id);
     const resolvedCourseId = await resolveCourseId(supabase, data.courseName, data.courseId);
+
+    // A lost browser-side round id must never turn a qualifier restart into an
+    // update of a different persisted attempt. The client normally redirects
+    // to Continue Round before it reaches this action; this server check is
+    // the independent backstop for stale clients and direct callers.
+    if (!existingRoundId && data.qualifierId && data.qualifierRoundNumber != null) {
+      const { data: activeQualifierRounds, error: activeQualifierRoundsError } = await supabase
+        .from('golf_rounds')
+        .select('id')
+        .eq('player_id', player.id)
+        .eq('qualifier_id', data.qualifierId)
+        .eq('qualifier_round_number', data.qualifierRoundNumber)
+        .eq('status', 'in_progress')
+        .limit(2);
+
+      if (activeQualifierRoundsError) {
+        return {
+          success: false,
+          error: 'We could not verify your saved qualifier round. Please try again before starting.',
+        };
+      }
+      if ((activeQualifierRounds?.length ?? 0) > 0) {
+        return {
+          success: false,
+          error: `Qualifier round ${data.qualifierRoundNumber} is already saved. Use Continue Round so its scorecard stays intact.`,
+        };
+      }
+    }
+
+    // An active qualifier round MUST carry its round number.
+    //
+    // A NULL here is a deadlock with no in-app way out: the cap check in
+    // `getNextQualifierRoundNumber` counts the player's COMPLETED round numbers,
+    // so a player who has used up the qualifier's rounds cannot start another —
+    // and a numberless active round cannot be submitted either, because it has
+    // no slot to submit into. Observed 2026-08-24: one player on a one-round
+    // qualifier sat stuck for 33 hours with 46 shots recorded, reachable only
+    // by a direct database write.
+    //
+    // Deriving the number costs one read and removes the state entirely.
+    let resolvedQualifierRoundNumber = data.qualifierRoundNumber ?? null;
+    if (data.qualifierId && !resolvedQualifierRoundNumber) {
+      const { data: priorRounds, error: priorRoundsError } = await supabase
+        .from('golf_rounds')
+        .select('qualifier_round_number')
+        .eq('qualifier_id', data.qualifierId)
+        .eq('player_id', player.id)
+        .eq('status', 'completed');
+
+      if (priorRoundsError) {
+        // A failed read must not masquerade as "no prior rounds": deriving
+        // number 1 from an outage could claim a slot the player already
+        // holds. Skip derivation — the save proceeds numberless exactly as
+        // before this feature, and the next auto-save retries the read.
+        void logServerEvent(
+          'Auto-save could not read prior qualifier rounds; skipping round-number derivation this save',
+          {
+            action: 'savePartialRound.deriveQualifierRoundNumber',
+            featureArea: 'shot_tracking',
+            playerId: player.id,
+            extra: { qualifierId: data.qualifierId, errorCode: priorRoundsError.code },
+          },
+          'warning',
+        );
+      } else {
+        const usedNumbers = (priorRounds ?? [])
+          .map(r => r.qualifier_round_number)
+          .filter((n): n is number => typeof n === 'number');
+
+        resolvedQualifierRoundNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
+
+        void logServerEvent(
+          `Auto-save derived a missing qualifier round number (${resolvedQualifierRoundNumber})`,
+          {
+            action: 'savePartialRound.deriveQualifierRoundNumber',
+            featureArea: 'shot_tracking',
+            playerId: player.id,
+            extra: { qualifierId: data.qualifierId, usedNumbers },
+          },
+          'info',
+        );
+      }
+    }
 
     const roundData = {
       player_id: player.id,
@@ -5876,7 +5966,7 @@ async function savePartialRoundImpl(
       current_hole: data.currentHole || null,
       holes_played: data.holesToPlay || 18,
       qualifier_id: data.qualifierId || null,
-      qualifier_round_number: data.qualifierRoundNumber || null,
+      qualifier_round_number: resolvedQualifierRoundNumber,
       total_score: null,
       score_to_par: null,
       total_putts: null,
@@ -5944,6 +6034,7 @@ async function savePartialRoundImpl(
     // Build shots payload — grouped by hole_number
     const holesWithShotsByNumber = new Map<number, ShotRecord[]>();
     for (const hole of data.holes) {
+      if (!hole) continue;
       if (hole?.shots && hole.shots.length > 0) {
         holesWithShotsByNumber.set(hole.holeNumber, hole.shots);
       }
@@ -6040,10 +6131,7 @@ async function savePartialRoundImpl(
       // RPC not in generated types yet — use type escape
       const rpcParams: Record<string, unknown> = {
         p_round_id: existingRoundId,
-        p_round_data: {
-          ...roundData,
-          _helm_trace: flight ? { trace_id: flight.traceId, enabled: true, level: 2 } : undefined,
-        },
+        p_round_data: roundData,
         p_holes: holesPayload,
         p_shots: shotsPayload,
         p_putt_details: puttDetailsPayload,
@@ -6055,13 +6143,6 @@ async function savePartialRoundImpl(
         rpcParams.p_expected_updated_at = data.expectedUpdatedAt;
       }
 
-      await flight?.start('db.save_partial_round_atomic', {
-        functionName: 'save_partial_round_atomic',
-        expected: {
-          holes_count: holesPayload.length,
-          shots_count: shotsPayload.reduce((sum, group) => sum + group.shots.length, 0),
-        },
-      });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
         'save_partial_round_atomic',
@@ -6069,19 +6150,12 @@ async function savePartialRoundImpl(
       );
 
       if (rpcError) {
-        await flight?.fail('db.save_partial_round_atomic', {
-          functionName: 'save_partial_round_atomic',
-          errorCode: rpcError.code,
-          errorSummary: rpcError.message,
-        });
         // Single log call per failure — logServerError already carries the
         // richer domain context (roundId/playerId/errorCode/hint/details);
         // a paired logServerException here would just double-write the
         // same failure to admin_events.
         await logServerError(`Auto-save RPC failed: ${rpcError.message}`, {
           action: 'savePartialRound',
-          helmTraceId: flight?.traceId,
-          traceStep: 'db.save_partial_round_atomic',
           roundId: existingRoundId,
           playerId: player.id,
           userId: user.id,
@@ -6097,11 +6171,6 @@ async function savePartialRoundImpl(
       }
 
       if (rpcResult && !rpcResult.success) {
-        await flight?.fail('db.save_partial_round_atomic', {
-          functionName: 'save_partial_round_atomic',
-          errorCode: typeof rpcResult.error === 'string' ? 'RPC_RESULT' : 'RPC_RESULT',
-          errorSummary: typeof rpcResult.error === 'string' ? rpcResult.error : 'Atomic partial-save returned failure',
-        });
         // Return conflict errors with a distinct error key so the UI can prompt a reload
         if (rpcResult.error === 'conflict') {
           return { success: false, error: 'conflict', };
@@ -6121,11 +6190,9 @@ async function savePartialRoundImpl(
         if (typeof rpcResult.error === 'string' && rpcResult.error.includes('already been completed')) {
           return { success: false, error: rpcResult.error };
         }
-          void logServerError(`Auto-save RPC returned failure: ${rpcResult.error || 'unknown'}`, {
+        void logServerError(`Auto-save RPC returned failure: ${rpcResult.error || 'unknown'}`, {
           action: 'savePartialRound',
           featureArea: 'shot_tracking',
-          helmTraceId: flight?.traceId,
-          traceStep: 'db.save_partial_round_atomic',
           roundId: existingRoundId,
           playerId: player.id,
           userId: user.id,
@@ -6155,26 +6222,6 @@ async function savePartialRoundImpl(
       }
 
       roundId = existingRoundId;
-      await flight?.complete('db.save_partial_round_atomic', {
-        functionName: 'save_partial_round_atomic',
-        observed: {
-          round_id: roundId,
-          holes_count: holesPayload.length,
-          shots_count: shotsPayload.reduce((sum, group) => sum + group.shots.length, 0),
-        },
-      });
-
-      // A successful RPC response alone is not enough evidence that the
-      // complete checkpoint is durable. Verify even when the legacy RPC
-      // response lacks updated_at; that field is only an optimistic-locking
-      // convenience, not a correctness signal.
-      await verifyRoundFlightPersistence(supabase, flight, {
-        roundId,
-        playerId: player.id,
-        expectedStatus: 'in_progress',
-        expectedHoles: holesPayload,
-        expectedShots: shotsPayload,
-      });
 
       // Extract updated_at from RPC result for optimistic locking
       const rpcUpdatedAt = rpcResult?.updated_at as string | undefined;
@@ -6188,13 +6235,6 @@ async function savePartialRoundImpl(
         return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings } };
       }
     } else {
-      await flight?.start('db.create_or_update_draft', {
-        tableName: 'golf_rounds',
-        expected: {
-          holes_count: holesPayload.length,
-          shots_count: shotsPayload.reduce((sum, group) => sum + group.shots.length, 0),
-        },
-      });
       // Recover a session that lost its local roundId (e.g. a backgrounded/
       // killed tab) by looking for an in_progress round to resume — but
       // scope the match tightly (course + round date + qualifier context),
@@ -6249,11 +6289,6 @@ async function savePartialRoundImpl(
           .select()
           .maybeSingle();
         if (updateError) {
-          await flight?.fail('db.create_or_update_draft', {
-            tableName: 'golf_rounds',
-            errorCode: updateError.code,
-            errorSummary: updateError.message,
-          });
           // maybeCaptureRlsDenial fires first and reports whether it
           // already logged this failure under the rls_denial classification.
           // Only fall through to the generic logServerError when it did NOT
@@ -6288,7 +6323,10 @@ async function savePartialRoundImpl(
       }
 
       if (!round) {
-        // Create new round with cleanup on partial failure
+        // Create the parent round first. If a subsequent child write fails,
+        // preserve this in-progress row and every previously durable child so
+        // the next auto-save (or local recovery) can retry without losing the
+        // player's round.
         const { data: newRound, error: roundError } = await supabase
           .from('golf_rounds')
           .insert(roundData)
@@ -6296,11 +6334,6 @@ async function savePartialRoundImpl(
           .single();
 
         if (roundError) {
-          await flight?.fail('db.create_or_update_draft', {
-            tableName: 'golf_rounds',
-            errorCode: roundError.code,
-            errorSummary: roundError.message,
-          });
           // Same single-row-per-failure contract as the updateExisting
           // branch above: check RLS classification first, only log the
           // generic error when it wasn't already captured as a denial.
@@ -6342,11 +6375,6 @@ async function savePartialRoundImpl(
           .select('id, hole_number');
 
         if (holesError) {
-          await flight?.fail('db.create_or_update_draft', {
-            tableName: 'golf_holes',
-            errorCode: holesError.code,
-            errorSummary: holesError.message,
-          });
           // Single log call per failure (see updateExisting branch above).
           await logServerError(`Auto-save insert holes failed: ${holesError.message}`, {
             action: 'savePartialRound.insertHoles',
@@ -6358,11 +6386,9 @@ async function savePartialRoundImpl(
             errorCode: holesError.code,
             errorDetails: holesError.details,
           });
-          // Do not clean up the parent round. It may pre-date this request,
-          // and even a newly created parent is the durable recovery anchor for
-          // the device snapshot. A later successful checkpoint can upsert this
-          // hole; deleting it here would make Continue Round disappear after a
-          // temporary child-write failure.
+          // Do NOT clean up the parent round here. A network or database
+          // failure while saving holes is recoverable; deleting the
+          // in-progress round turns that transient failure into data loss.
           return { success: false, error: 'Failed to save hole data. Please try again.' };
         }
 
@@ -6390,11 +6416,6 @@ async function savePartialRoundImpl(
               .upsert(shotsData, { onConflict: 'round_id,hole_number,shot_number' })
               .select('id, hole_number, shot_number');
             if (shotsError) {
-              await flight?.fail('db.create_or_update_draft', {
-                tableName: 'golf_shots',
-                errorCode: shotsError.code,
-                errorSummary: shotsError.message,
-              });
               // Single log call per failure (see updateExisting branch above).
               await logServerError(`Auto-save insert shots failed: ${shotsError.message}`, {
                 action: 'savePartialRound.insertShots',
@@ -6408,9 +6429,9 @@ async function savePartialRoundImpl(
                 errorDetails: shotsError.details,
                 extra: { holeNumber: group.hole_number },
               });
-              // Same recovery rule as holes: preserve the parent and every
-              // prior durable shot. The next checkpoint is an idempotent
-              // upsert, so there is no correctness reason to delete progress.
+              // Do NOT clean up the parent round here. A network or database
+              // failure while saving shots is recoverable; deleting the
+              // in-progress round turns that transient failure into data loss.
               return { success: false, error: 'Failed to save shot data. Please try again.' };
             }
 
@@ -6501,24 +6522,6 @@ async function savePartialRoundImpl(
     // NOTE: Do NOT call revalidatePath/updateTag here — see comment in the
     // RPC path above. Auto-save should be invisible to the router.
 
-    if (!existingRoundId) {
-      await flight?.complete('db.create_or_update_draft', {
-        tableName: 'golf_rounds',
-        observed: {
-          round_id: roundId,
-          holes_count: holesPayload.length,
-          shots_count: shotsPayload.reduce((sum, group) => sum + group.shots.length, 0),
-        },
-      });
-      await verifyRoundFlightPersistence(supabase, flight, {
-        roundId,
-        playerId: player.id,
-        expectedStatus: 'in_progress',
-        expectedHoles: holesPayload,
-        expectedShots: shotsPayload,
-      });
-    }
-
     return { success: true, data: { roundId, updatedAt: undefined as string | undefined } };
 
   } catch (err) {
@@ -6528,8 +6531,6 @@ async function savePartialRoundImpl(
     // same unexpected error to admin_events.
     await logServerError(`Auto-save unexpected error: ${describeError(err)}`, {
       action: 'savePartialRound.catch',
-      helmTraceId: flight?.traceId,
-      traceStep: 'server.action',
       extra: { stack: err instanceof Error ? err.stack : undefined },
     }, 'critical');
     return {
@@ -6569,21 +6570,7 @@ export async function savePartialRound(
   data: PartialRoundData,
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
-  const flight = await createHelmFlightRecorder({
-    workflow: 'golf.round.autosave',
-    roundId: existingRoundId,
-    qualifierId: data.qualifierId,
-    existingRoundId,
-    metadata: { hole_count: data.holes?.filter(Boolean).length ?? 0 },
-  });
-  let finalStatus: 'success' | 'failure' | 'warning' = 'failure';
-  try {
-    const result = await observedSavePartialRound(data, existingRoundId, flight);
-    finalStatus = result.success ? 'success' : 'warning';
-    return result;
-  } finally {
-    await flight.finalize(finalStatus);
-  }
+  return observedSavePartialRound(data, existingRoundId);
 }
 
 /**
@@ -6869,7 +6856,7 @@ async function getNextQualifierRoundNumberImpl(
 ): Promise<ActionResult<{
   nextRoundNumber: number;
   availableRounds: number[];
-  /** A started qualifier round must be resumed, never replaced by a blank one. */
+  /** A started qualifier round is never replaced by a blank new-round save. */
   activeRoundId?: string;
 }>> {
   try {
@@ -6903,8 +6890,9 @@ async function getNextQualifierRoundNumberImpl(
       return { success: false, error: 'You are not entered in this qualifier' };
     }
 
-    // Calendar dates are display/scheduling metadata only. Entry is controlled
-    // exclusively by an explicit coach close and the configured round count.
+    // Verify qualifier exists and remains coach-open. Scheduled dates never
+    // close a qualifier, but an explicit coach completion must stop stale
+    // direct links before they can start another round.
     const { data: qualifier } = await supabase
       .from('golf_qualifiers')
       .select('id, num_rounds, status')
@@ -6918,9 +6906,10 @@ async function getNextQualifierRoundNumberImpl(
       return { success: false, error: 'This qualifier has been closed by the coach.' };
     }
 
-    // A durable started qualifier round owns its slot until it is submitted or
-    // explicitly discarded. Returning it prevents a blank new-round setup
-    // from creating a second parent or overwriting the existing scorecard.
+    // A started qualifier round owns its number until it is submitted or
+    // explicitly discarded. Returning it here lets the client resume the
+    // durable parent instead of creating a second parent or overwriting the
+    // existing scorecard with a blank setup payload.
     const { data: activeRounds, error: activeRoundsError } = await supabase
       .from('golf_rounds')
       .select('id, qualifier_round_number')
@@ -6931,10 +6920,7 @@ async function getNextQualifierRoundNumberImpl(
       .limit(2);
 
     if (activeRoundsError) {
-      return {
-        success: false,
-        error: 'We could not verify your saved qualifier round. Please try again before starting.',
-      };
+      return { success: false, error: 'We could not verify your saved qualifier round. Please try again before starting.' };
     }
     if ((activeRounds?.length ?? 0) > 1) {
       return {
@@ -6973,10 +6959,11 @@ async function getNextQualifierRoundNumberImpl(
     );
 
     const numRounds = qualifier.num_rounds ?? 1;
-    // Never derive from the maximum completed slot. Old recovered data can be
-    // non-contiguous (for example rounds 1 and 3), and max + 1 would strand
-    // the missing round 2 or invent an out-of-range round 4. The next valid
-    // round is always the first unused configured slot.
+
+    // Qualifier progression is the first configured number the player has not
+    // submitted, not `max(completed) + 1`. The latter skips a recoverable gap
+    // in legacy/out-of-order data (for example 1 and 3 becoming 4) and can
+    // falsely report that a player has exhausted their configured rounds.
     const unusedConfiguredRounds = Array.from(
       { length: numRounds },
       (_, index) => index + 1,
@@ -6987,14 +6974,12 @@ async function getNextQualifierRoundNumberImpl(
       const roundLabel = numRounds === 1 ? 'round' : 'rounds';
       return {
         success: false,
-        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted all ${numRounds}. Ask a coach to raise the round count before starting another round.`,
+        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${numRounds} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
       };
     }
 
     return {
       success: true,
-      // The UI offers only the next sequential slot; the complete unused set
-      // above exists solely to safely repair historical gaps.
       data: { nextRoundNumber, availableRounds: [nextRoundNumber] }
     };
 
@@ -7324,65 +7309,76 @@ export async function getQualifierLeaderboard(
  * This is called automatically after submitGolfRoundComprehensive
  */
 async function updateQualifierEntryStats(
-  supabase: Awaited<ReturnType<typeof createClient>>,
   qualifierId: string,
   playerId: string
 ): Promise<void> {
-  try {
-    // Get all completed rounds for this player in this qualifier
-    const roundsResult = await supabase
-      .from('golf_rounds')
-      .select('total_score, score_to_par')
-      .eq('qualifier_id', qualifierId)
-      .eq('player_id', playerId)
-      .eq('status', 'completed');
+  // Use one privileged client for both the source rounds and the aggregate
+  // write. A player is allowed to submit their own score, but never to update
+  // the coach-owned qualifier-entry aggregate directly. Most importantly,
+  // inspect every result: PostgREST can report a zero-row UPDATE with no
+  // error, which previously left production aggregates stale without a log.
+  const admin = createAdminClient();
+  const { data: rounds, error: roundsError } = await admin
+    .from('golf_rounds')
+    .select('total_score, score_to_par')
+    .eq('qualifier_id', qualifierId)
+    .eq('player_id', playerId)
+    .eq('status', 'completed');
 
-    const rounds = (roundsResult.data as unknown) as Array<{
-      total_score: number | null;
-      score_to_par: number | null;
-    }> | null;
+  if (roundsError) {
+    throw new Error(`Could not read completed qualifier rounds: ${roundsError.message}`);
+  }
 
-    if (!rounds) return;
+  // Filter out rounds with null total_score to avoid summing 0 in place of missing data
+  const scoredRounds = ((rounds ?? []) as Array<{
+    total_score: number | null;
+    score_to_par: number | null;
+  }>).filter((round): round is { total_score: number; score_to_par: number | null } => round.total_score != null);
 
-    // Filter out rounds with null total_score to avoid summing 0 in place of missing data
-    const scoredRounds = rounds.filter((r): r is typeof r & { total_score: number } => r.total_score != null);
+  const totalScore = scoredRounds.reduce((sum, round) => sum + round.total_score, 0);
+  const totalToPar = scoredRounds.reduce((sum, round) => sum + (round.score_to_par ?? 0), 0);
+  const roundsCompleted = scoredRounds.length;
 
-    const totalScore = scoredRounds.reduce((sum, r) => sum + r.total_score, 0);
-    const totalToPar = scoredRounds.reduce((sum, r) => sum + (r.score_to_par ?? 0), 0);
-    const roundsCompleted = scoredRounds.length;
+  const { data: updatedEntry, error: updateError } = await admin
+    .from('golf_qualifier_entries')
+    .update({
+      score: totalScore,
+      total_score: totalScore,
+      total_to_par: totalToPar,
+      rounds_completed: roundsCompleted,
+    })
+    .eq('qualifier_id', qualifierId)
+    .eq('player_id', playerId)
+    .select('id')
+    .maybeSingle();
 
-    // Update all aggregate columns on the qualifier entry. Uses the admin
-    // client for the write: golf_qualifier_entries_update_coach RLS only
-    // grants UPDATE to the team's coach, but this aggregate refresh is
-    // triggered by a PLAYER submitting their OWN round — a player-session
-    // client would match 0 rows here (no error, just a silent no-op), so
-    // rounds_completed/total_score/total_to_par never actually persisted.
-    const admin = createAdminClient();
-    await admin
-      .from('golf_qualifier_entries')
-      .update({
-        score: totalScore,
-        total_score: totalScore,
-        total_to_par: totalToPar,
-        rounds_completed: roundsCompleted,
-      })
-      .eq('qualifier_id', qualifierId)
-      .eq('player_id', playerId);
-
-  } catch {
-    // Non-critical — continue
+  if (updateError) {
+    throw new Error(`Could not update qualifier entry aggregate: ${updateError.message}`);
+  }
+  if (!updatedEntry) {
+    throw new Error('Qualifier entry aggregate update matched no row');
   }
 }
 
 /**
- * Start a qualifier when a real player round is submitted.
+ * Auto-advance a qualifier's lifecycle when a round is submitted (F029/F138).
  *
- * A qualifier can become live when play starts, but it must never become
- * completed because every entrant finished or an arbitrary date passed. Only
- * a coach's explicit updateQualifierStatus(..., 'completed') closes it.
- * This transition uses the admin client because the submitting player cannot
- * update the coach-owned qualifier row under RLS. It is intentionally
- * best-effort and must not affect the already-committed round submission.
+ * The first completed round flips an 'upcoming' qualifier to 'in_progress'.
+ * This is the missing server-side caller that updateQualifierStatus never had:
+ * without it the leaderboard's realtime "Live" pill (status === 'in_progress')
+ * never illuminated once play actually started.
+ *
+ * Its calendar dates and entrant progress are scheduling/reporting metadata,
+ * never a player lockout. A coach closes a qualifier manually via
+ * updateQualifierStatus (the qualifying workspace's "Conclude qualifier"
+ * action); there is deliberately no automatic `completed` transition.
+ *
+ * Uses the admin client for both status writes below: this is a system
+ * transition triggered by a PLAYER's round submission, and
+ * golf_qualifiers_update_coach RLS only grants UPDATE to the team's coach —
+ * a player-session client would silently no-op (0 rows matched, no error).
+ *
+ * Best-effort and non-fatal: a failure here must never block the round submit.
  */
 async function advanceQualifierOnRoundSubmit(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -7394,14 +7390,17 @@ async function advanceQualifierOnRoundSubmit(
     .eq('id', qualifierId)
     .maybeSingle();
 
-  if (!qualifier || qualifier.status !== 'upcoming') return;
+  const automaticTransition = getQualifierAutomaticTransition(qualifier?.status);
+  if (!automaticTransition) return;
 
-  await createAdminClient()
+  // This is the one permitted system transition. It starts play after a
+  // verified submitted round; it never closes a qualifier.
+  const admin = createAdminClient();
+  await admin
     .from('golf_qualifiers')
-    .update({ status: 'in_progress' })
+    .update({ status: automaticTransition })
     .eq('id', qualifierId)
-    // A concurrent coach decision wins; never reopen a manually completed
-    // qualifier and never let an ordinary page view alter its lifecycle.
+    // Guard against a concurrent transition (only start from 'upcoming').
     .eq('status', 'upcoming');
 }
 
@@ -7858,9 +7857,18 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
       .from('golf_shots')
       .select('id, round_id, hole_number')
       .eq('id', shotId)
-      .maybeSingle();
+      .single();
 
-    if (shotError || !shot) {
+    // Supabase returns PGRST116 when `.single()` found no visible row. That
+    // is the one case the client may safely reconcile as a stale local ID.
+    // A transport/database error must remain a normal failure: treating it as
+    // a missing shot would make an offline player temporarily hide valid
+    // progress from their own scorecard.
+    if (shotError && shotError.code !== 'PGRST116') {
+      return { success: false, error: 'Failed to verify shot. Please try again.' };
+    }
+
+    if (!shot) {
       // The caller may still hold a locally persisted ID after another tab,
       // an earlier retry, or a successfully committed request deleted it.
       // Keep the user-scoped/RLS-safe message (do not disclose row
@@ -8016,12 +8024,20 @@ async function updateShotImpl(
       .from('golf_shots')
       .select('id, round_id')
       .eq('id', shotId)
-      .maybeSingle();
+      .single();
 
-    if (shotError || !shot) {
-      // A locally retained ID can legitimately be absent after a successful
-      // save from another tab/device. Keep the absence RLS-safe and give the
-      // editor the same deterministic reconciliation contract as Undo.
+    // Match deleteShot's reconciliation contract: only an explicit no-row
+    // response is stale local state. A transient lookup failure must preserve
+    // the local shot and let the player retry.
+    if (shotError && shotError.code !== 'PGRST116') {
+      return { success: false, error: 'Failed to verify shot. Please try again.' };
+    }
+
+    if (!shot) {
+      // An edit can race with an Undo, a second tab, or a request whose
+      // successful response never reached this browser. Keep ownership/RLS
+      // opaque, but give the round-entry UI the same stable reconciliation
+      // signal as deleteShot so it removes only its stale local reference.
       return { success: false, error: 'Shot not found', code: 'shot_not_found' };
     }
 

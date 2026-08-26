@@ -235,6 +235,7 @@ export default async function RoundsPage() {
         rounds={rounds as unknown as FairwayRoundLibraryRound[]}
         inProgressRounds={inProgressRounds as unknown as FairwayRoundLibraryRound[]}
         userRole={userRole as 'coach' | 'player'}
+        playerId={player?.id}
         stats={roundStats}
       />
     </div>

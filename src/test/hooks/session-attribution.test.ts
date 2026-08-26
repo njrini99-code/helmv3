@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { join } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { createFixtureRepo, runHook, type FixtureRepo } from './helpers/fixture-repo';
 
 /**
@@ -70,5 +71,27 @@ describe('record-session-touch.mjs — session-owned attribution', () => {
     expect(state).toContain('"path":"src/app/golf/actions/feature-a-one.ts"');
     expect(state).not.toContain(fixture.dir);
     expect(state).toContain('"feature_ids":["feature_a"]');
+  });
+
+  it('records NO touch event at all for a path outside the repo root (e.g. a session scratchpad file)', () => {
+    // Live incident, 2026-08-21: the pre-rebuild stop-verify.sh counted
+    // scratchpad `.ts`/`.mjs` files an orchestrating session wrote as
+    // "touched, unverified" and demanded gates be run against them — there
+    // is nothing there to gate, they are not repo state. A genuinely
+    // OUTSIDE-the-repo temp directory (not just a subdirectory of the
+    // fixture) is used here so this can't accidentally pass because the
+    // path happened to still resolve inside the fixture.
+    const outsideDir = mkdtempSync(join(tmpdir(), 'golfhelm-os-scratchpad-test-'));
+    const scratchFile = join(outsideDir, 'some-script.ts');
+    const result = runHook(fixture, 'record-session-touch.mjs', {
+      session_id: 'session-scratchpad',
+      cwd: fixture.dir,
+      tool_input: { file_path: scratchFile },
+    });
+    expect(result.code).toBe(0);
+    const statePath = join(fixture.dir, '.claude/session-state/session-scratchpad.jsonl');
+    // No ledger file at all — not merely "no touch event in it". The path
+    // was rejected before any write happened.
+    expect(existsSync(statePath)).toBe(false);
   });
 });

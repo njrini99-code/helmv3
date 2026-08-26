@@ -315,10 +315,11 @@ describe('FEATURE_REGISTRY completeness', () => {
   // insights.ts's explicit array, which still lists the now-private
   // triggerPlayerInsightsAfterRound by name) are unaffected since this count
   // sums `manifest.length` for those, not a live export scan.
-  // 2026-07-10 feature-flow sweep: +2 to 421. The qualifiers manifest gained
-  // `updateGolfQualifierDetails` and the now-retired view-time reconcile.
-  // The reconcile action was removed 2026-08-25: only a coach may close a
-  // qualifier, not a date or entrant-count check during page rendering.
+  // 2026-07-10 feature-flow sweep: qualifiers manifest gained
+  // `updateGolfQualifierDetails` (the previously-missing edit-qualifier flow).
+  // The old `reconcileQualifierStatus` page-view mutation was intentionally
+  // removed on 2026-08-22: qualifiers now close only through the coach's
+  // explicit manual action.
   // 2026-07-17 course-library-owner-gate fix (#913): +1 to 422. New read
   // action `getCourseTeeHoles` (course-library.ts) powers the course detail
   // sheet's read-only "Holes" summary. course-library.ts is already
@@ -361,6 +362,9 @@ describe('FEATURE_REGISTRY completeness', () => {
     // explicit array under coachhelm_ai_engine (insights.ts is one of the
     // six non-'ALL' multi-feature files, so unlike admin-data.ts above this
     // one DID need a manifest edit — manifest.length grows by 1 here).
+    // 2026-08-22: -1 removes reconcileQualifierStatus. It was an implicit
+    // page-view lifecycle mutation; qualifiers now close only by a coach's
+    // explicit action.
     expect(total).toBe(438);
   });
 

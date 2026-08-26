@@ -22,6 +22,37 @@ The golf round lifecycle covers creating a round, saving drafts, continuing in-p
 
 This is one of the highest-risk product areas because a broken write path can lose user-entered golf data, corrupt stats, or feed bad evidence into CoachHelm.
 
+As of 2026-08-22, partial-save child failures preserve the in-progress parent
+round for retry. A player cannot enter tracking until that parent is committed,
+and each completed hole waits for its server checkpoint before the player
+advances. Every unfinished committed round appears through Continue Round;
+local emergency storage is fallback-only and is not a routine library surface.
+An emergency snapshot that contains the same persisted progress as the server
+is cleared without a recovery prompt. Once all holes have been server
+checkpointed, app backgrounding does not create a redundant final-scorecard
+snapshot while the player is deciding whether to submit.
+
+Every newly-entered shot also creates a synchronous browser recovery snapshot
+and a best-effort v2 IndexedDB mirror before the normal network autosave. Those
+unfinished snapshots do not expire by time: they are removed only after the
+server confirms that same or newer progress, final submission succeeds, or the
+player explicitly deletes the round. A partial recovery saves an in-progress
+round and opens Continue Round; it never marks an unfinished round complete.
+When a completed-hole checkpoint fails, the player stays on that hole with a
+single retry action while the device backup remains intact. Reopening a hole by
+editing or deleting its final holed shot clears its completed-scorecard entry
+before the next partial save, so a server snapshot never contains both a
+completed score and active shots for that hole.
+The partial-save server boundary materializes sparse legacy hole entries as
+explicit uncompleted values before validation, so a cached client cannot reject
+a checkpoint merely because it predates the current payload shape. Background
+re-saves do not duplicate a direct checkpoint's player-facing failure state.
+If a terminal atomic submit commits after its HTTP response is lost (including
+Safari/WKWebView's opaque `Load failed` transport rejection), the action
+confirms the authenticated player's completed round before returning success;
+an unconfirmed outcome preserves the in-progress round and recovery backup for
+an explicit retry rather than guessing or rebuilding it.
+
 ## Primary Entry Points
 
 ### Routes
@@ -65,7 +96,33 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 ## Business Rules
 
 - Do not use DELETE-then-INSERT for save, submit, or sync paths. Use idempotent upserts or a safe stage-and-swap pattern.
+- Child-write failures must preserve the `in_progress` parent round and prior
+  durable children so interruption recovery can retry without data loss.
+- A player may begin tracking only after an `in_progress` parent exists in the
+  database. Completing a hole is a durable database checkpoint; it may not be
+  treated as a fire-and-forget background write.
+- A failed completed-hole checkpoint must be retryable from the affected hole
+  without advancing the player. Retrying retains the original navigation
+  intent; it must not be misclassified as a later score edit.
+- A completed-scorecard slot and an in-progress shot collection for the same
+  hole must never be persisted together. Removing a final hole-out clears the
+  former before the remaining shots are saved as in-progress progress.
+- The durable parent is also the authority for immutable start-time identity
+  such as round type, qualifier link, and qualifier round number. Final
+  submission may use recovery data for scorecard content, but must not let
+  stale client metadata change persisted identity. A legacy missing qualifier
+  round number may be filled only after the database verifies the same entrant,
+  an open qualifier, and an unused valid number. Continue Round obtains those
+  choices from the authenticated server and asks the player to select one at
+  final submit; it never invents a qualifier result from a browser backup.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
+- Direct database writes cannot create, mutate, or delete a completed round
+  or its child shots. Only the postgres-owned SECURITY DEFINER round RPCs may
+  carry the transaction-local lifecycle marker needed for their atomic write.
+- CoachHelm completion bookkeeping uses a separate service-only RPC that can
+  change exactly `coachhelm_analyzed_at`, `coachhelm_failed_at`, and
+  `coachhelm_failure_reason` on an already completed round; it cannot alter
+  the recorded round, its identity, or its children.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
 - The protected atomic submit RPC is the only live completion writer. On every
   RPC failure, application code must preserve the server/device backups and
@@ -77,6 +134,24 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Valid local emergency saves remain recoverable until an explicit discard or
   confirmed completion; recovery data must not expire merely because time has
   passed.
+- A client-side abort after terminal submit is an unknown transport outcome,
+  not proof of a database rollback. The action may report success only after
+  an authenticated read confirms that exact round is completed; otherwise it
+  must preserve all recovery data and return a retryable result.
+- Browser recovery state is a durable fallback, not a time-limited cache.
+  Normal active snapshots must survive extended interruptions and be cleared
+  only after confirmed server progress, completion, or explicit deletion.
+- Recovery snapshots are owner-bound to the authenticated golf-player record
+  in localStorage and IndexedDB. A shared browser must neither surface another
+  player's shots nor delete that player's valid backup while filtering.
+  Pre-owner snapshots remain recoverable only on an already-authorized
+  Continue Round route for their exact persisted server round.
+- Browser-mirror save and clear operations are causally ordered. A confirmed
+  older save may clear only that version; a later shot snapshot remains
+  recoverable even if browser-database work finishes later.
+- Local recovery UI may appear only when its scorecard or shot data differs
+  from the server's persisted progress; a newer timestamp alone is not proof
+  of unsaved work.
 - Round review and CoachHelm triggers must use committed round data, not stale draft state.
 - Cache invalidation must include player-facing and coach-facing views that reflect the round.
 - Score, hole, shot, lie, and strokes-gained calculations must stay consistent with `docs/v3-research-golf-domain.md`.
@@ -93,6 +168,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Draft/recovery screens must clearly distinguish recoverable local/session state from submitted server state.
 - Submission should make progress and failure states visible enough to prevent duplicate or uncertain submits.
 - Empty states should say whether the player has no rounds, no unfinished rounds, or no review yet.
+- Continue Round uses the shared Fairway mobile header, scorecard controls,
+  buttons, and recovery modal. Its save-and-exit action is secondary; the live
+  shot/complete control is the only primary action in the thumb zone.
 
 ## Known Risk Areas
 

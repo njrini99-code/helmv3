@@ -112,8 +112,8 @@ describe('FairwayRoundsLibrary — #139 date-only-safe grouping', () => {
   });
 });
 
-describe('FairwayRoundsLibrary — #129/#145 in-progress draft dedup', () => {
-  it('collapses pixel-identical in-progress drafts (same course/hole/type) to ONE card', () => {
+describe('FairwayRoundsLibrary — in-progress round discoverability', () => {
+  it('keeps same-looking in-progress rounds separately resumable', () => {
     const dup: RoundLibraryRound = {
       ...makeRound({ round_date: '2026-06-15' }),
       status: 'in_progress',
@@ -128,23 +128,23 @@ describe('FairwayRoundsLibrary — #129/#145 in-progress draft dedup', () => {
         rounds={[]}
         inProgressRounds={[
           { ...dup, id: 'draft-a' },
-          // A genuine duplicate: same course, same current hole, same holes
-          // target, same round type — just a different id/timestamp.
+          // Same display attributes but a distinct durable parent. The player
+          // must keep both Continue Round links until a deliberate server-side
+          // resolution decides otherwise.
           { ...dup, id: 'draft-b', updated_at: '2026-06-15T11:00:00.000Z' },
         ]}
         userRole="player"
+        playerId="player-1"
         stats={null}
       />,
     );
 
     const heading = screen.getByRole('heading', { name: 'In progress' });
     expect(heading).toBeInTheDocument();
-    // The banner's own header count reflects the DEDUPED length, not the raw
-    // 2 rows handed in.
+    // The banner count reflects every durable row handed in.
     const header = heading.parentElement;
-    expect(header?.textContent).toContain('1');
-    // Only one "hole 7 of 18" readout renders, not two.
-    expect(screen.getAllByText('7')).toHaveLength(1);
+    expect(header?.textContent).toContain('2');
+    expect(screen.getAllByText('7')).toHaveLength(2);
   });
 
   it('keeps genuinely distinct in-progress drafts (different course) as separate cards', () => {
@@ -166,6 +166,7 @@ describe('FairwayRoundsLibrary — #129/#145 in-progress draft dedup', () => {
           }),
         ]}
         userRole="player"
+        playerId="player-1"
         stats={null}
       />,
     );

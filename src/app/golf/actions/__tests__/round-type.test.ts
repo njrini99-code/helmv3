@@ -31,7 +31,7 @@ const state = {
   qualifier: { id: 'qual-1', status: 'in_progress', num_rounds: 3 } as Record<string, unknown> | null,
   entry: { id: 'entry-1' } as { id: string } | null,
   clash: null as { id: string } | null,
-  /** What the protected reclassification RPC actually received. */
+  /** What the action actually wrote. The point of the whole file. */
   written: null as Record<string, unknown> | null,
   updateError: null as { message: string } | null,
   /**
@@ -69,6 +69,11 @@ function table(name: string) {
     }
   });
 
+  chain.update = vi.fn((payload: Record<string, unknown>) => {
+    state.written = payload;
+    return { eq: vi.fn(async () => ({ error: state.updateError })) };
+  });
+
   return chain;
 }
 
@@ -76,12 +81,22 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: vi.fn(async () => ({ data: { user: state.user }, error: null })) },
     from: vi.fn((name: string) => table(name)),
-    rpc: vi.fn(async (name: string, payload: Record<string, unknown>) => {
-      if (name === 'reclassify_golf_round') {
-        state.written = payload;
-        return { data: state.updateError ? null : 'round-1', error: state.updateError };
-      }
-      return { data: null, error: { message: `Unexpected RPC: ${name}` } };
+    // The write moved off `.update()` and onto the `reclassify_golf_round`
+    // RPC (migration 20260824030000), because the lifecycle guard on
+    // `golf_rounds` rejects every direct UPDATE to a completed round — which
+    // is what stopped players fixing a qualifier round they had recorded as
+    // practice. Recorded into `state.written` in the same shape the direct
+    // update used, so every assertion below still asserts the same thing:
+    // what actually gets persisted.
+    rpc: vi.fn(async (fn: string, args: Record<string, unknown>) => {
+      if (fn !== 'reclassify_golf_round') return { data: null, error: null };
+      if (state.updateError) return { data: null, error: state.updateError };
+      state.written = {
+        round_type: args.p_round_type,
+        qualifier_id: args.p_qualifier_id,
+        qualifier_round_number: args.p_qualifier_round_number,
+      };
+      return { data: 'round-1', error: null };
     }),
   })),
 }));
@@ -120,13 +135,11 @@ describe('updateRoundType — the coach-reported case', () => {
     });
 
     expect(res.success).toBe(true);
-    // Both columns are sent together through the protected RPC. Type alone
-    // would be the silent failure, and a direct update would violate the
-    // completed-round lifecycle guard.
+    // Both columns, together. Type alone would be the silent failure.
     expect(state.written).toMatchObject({
-      p_round_type: 'qualifier',
-      p_qualifier_id: 'qual-1',
-      p_qualifier_round_number: 2,
+      round_type: 'qualifier',
+      qualifier_id: 'qual-1',
+      qualifier_round_number: 2,
     });
   });
 
@@ -146,9 +159,9 @@ describe('updateRoundType — the coach-reported case', () => {
 
     expect(res.success).toBe(true);
     expect(state.written).toMatchObject({
-      p_round_type: 'practice',
-      p_qualifier_id: null,
-      p_qualifier_round_number: null,
+      round_type: 'practice',
+      qualifier_id: null,
+      qualifier_round_number: null,
     });
   });
 });

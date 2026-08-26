@@ -990,8 +990,10 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
+        - src/app/admin/**
         - src/app/golf/admin/**
       components:
+        - src/app/admin/_components/**
         - src/app/golf/admin/components/**
         - src/app/golf/admin/crm/components/**
       api:

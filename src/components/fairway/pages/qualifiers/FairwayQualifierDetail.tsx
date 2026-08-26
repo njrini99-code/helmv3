@@ -245,12 +245,6 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
         title: 'This qualifier is completed',
         body: 'Entries are closed and no further rounds can be posted. Review the final standings below.',
       };
-    } else if (entryDeadline && new Date(entryDeadline) < new Date()) {
-      playerNotice = {
-        tone: 'warning',
-        title: 'Entries are closed',
-        body: "The entry deadline has passed, so you can't be added now. Talk to your coach if you think this is a mistake.",
-      };
     } else {
       playerNotice = {
         tone: 'warning',

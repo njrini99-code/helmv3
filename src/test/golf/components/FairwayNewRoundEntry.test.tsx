@@ -77,6 +77,8 @@ function baseProps(overrides: Partial<FairwayNewRoundEntryProps> = {}): FairwayN
     onRetryQualifiers: vi.fn(),
     selectedQualifierId: null,
     setSelectedQualifierId: vi.fn(),
+    qualifierRoundError: null,
+    onRetryQualifierRound: vi.fn(),
     availableRounds: [],
     selectedRoundNumber: null,
     setSelectedRoundNumber: vi.fn(),
@@ -139,6 +141,43 @@ describe('FairwayNewRoundEntry — casing normalization (#157)', () => {
     );
 
     expect(screen.getByText('New round · Augusta National Golf Club')).toBeInTheDocument();
+  });
+});
+
+describe('FairwayNewRoundEntry — qualifier availability feedback', () => {
+  it('shows the exact open-cap explanation and prevents an opaque start attempt', () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry
+          {...baseProps({
+            setupData: { ...setupData, roundType: 'qualifier' },
+            qualifiers: [{
+              id: 'qualifier-1',
+              name: 'Fall Qualifier',
+              description: null,
+              courseName: null,
+              location: null,
+              numRounds: 1,
+              holesPerRound: 18,
+              startDate: '2026-08-23',
+              endDate: null,
+              status: 'in_progress',
+              roundsCompleted: 1,
+              completedRoundNumbers: [1],
+              totalScore: 74,
+              totalToPar: 2,
+              showLiveLeaderboard: true,
+            }],
+            selectedQualifierId: 'qualifier-1',
+            qualifierRoundError: 'This qualifier is still open, but your coach configured 1 round. You have submitted 1 of 1. Ask a coach to raise the round count before starting another round.',
+          })}
+        />
+      </LazyMotion>,
+    );
+
+    expect(screen.getByText(/this qualifier is still open/i)).toBeInTheDocument();
+    expect(screen.getByText(/you have submitted 1 of 1/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /next: configure holes/i })).toBeDisabled();
   });
 });
 

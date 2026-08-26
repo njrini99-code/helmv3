@@ -5,30 +5,29 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound, type PartialRoundData } from '@/app/golf/actions/golf';
-import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
+import { checkRoundStaleness, type TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
+import { getRoundRecoverySnapshot } from '@/lib/offline/shot-storage';
+import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import {
   emergencySave,
   loadEmergencySave,
   clearEmergencySave,
+  clearEmergencySaveThrough,
+  isEmergencySaveEquivalentToProgress,
   isRecoverableRoundSubmitError,
   type EmergencySaveData
 } from '@/lib/utils/emergency-save';
 
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
-import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
 import { useToast } from '@/components/ui/sonner';
-import { Button } from '@/components/ui/button';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 import { Skeleton } from '@/components/fairway';
+import { Button as FwButton } from '@/components/fairway/controls/button';
+import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
@@ -56,8 +55,15 @@ const FairwayRoundSummarySheet = dynamic(
 
 type Hole = RoundHole;
 
+function hasAllHolesScored(holeStats: HoleStats[], roundHoles: Hole[]): boolean {
+  return holeStats.length === roundHoles.length
+    && roundHoles.every((_, index) => holeStats[index]?.score != null);
+}
+
 interface RoundSetupData {
   courseName: string;
+  courseId?: string;
+  teeId?: string;
   courseCity: string;
   courseState: string;
   courseRating: string;
@@ -72,7 +78,12 @@ interface RoundSetupData {
 
 interface ContinueRoundClientProps {
   roundId: string;
+  playerId: string;
   setupData: RoundSetupData;
+  /** Safe, server-derived choices for a legacy qualifier row missing its number. */
+  qualifierRoundNumberOptions?: number[];
+  /** Explains why a legacy row cannot currently choose a safe result number. */
+  qualifierRoundNumberUnavailableReason?: string;
   holes: Hole[];
   completedHoleStats: HoleStats[];
   startHoleIndex: number;
@@ -84,7 +95,10 @@ interface ContinueRoundClientProps {
 
 export default function ContinueRoundClient({
   roundId,
+  playerId,
   setupData,
+  qualifierRoundNumberOptions = [],
+  qualifierRoundNumberUnavailableReason,
   holes: initialHoles,
   completedHoleStats: initialCompletedStats,
   startHoleIndex,
@@ -99,15 +113,11 @@ export default function ContinueRoundClient({
   // exit-sheet + submit overlay as a fresh round.
   const ExitRoundModal = FairwaySaveRoundModal;
   const SubmitOverlay = FairwayRoundSubmitOverlay;
-
-  // IndexedDB-based offline sync for shot-level persistence
-  const [offlineSyncState, offlineSyncActions] = useOfflineSync({
-    autoSyncInterval: 30000,
-    syncOnReconnect: true,
-    onSyncComplete: (_success, _count) => {
-      // Offline data synced successfully
-    },
-  });
+  // The dashboard-level OfflineProvider owns the one v2 sync engine. Continue
+  // Round must observe that shared state rather than start the legacy v1 hook:
+  // the old hook wrote every auto-save into a second queue, which then raced
+  // the provider to sync the same round and could leave a stale restore prompt.
+  const syncStatus = useOfflineSyncStatus();
 
   const [currentHoleIndex, setCurrentHoleIndex] = useState(startHoleIndex);
   const [holes, setHoles] = useState<Hole[]>(initialHoles);
@@ -130,10 +140,19 @@ export default function ContinueRoundClient({
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [completedRoundId, setCompletedRoundId] = useState<string | null>(null);
+  const [selectedQualifierRoundNumber, setSelectedQualifierRoundNumber] = useState<number | undefined>(
+    setupData.qualifierRoundNumber,
+  );
+  const [showQualifierRoundNumberDialog, setShowQualifierRoundNumberDialog] = useState(false);
 
   // Concurrency lock for background server saves
   const serverSaveInProgressRef = useRef(false);
-  const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: PartialRoundData } | null>(null);
+  const pendingServerSaveRef = useRef<{
+    shots: ShotRecord[];
+    holeIndex: number;
+    roundData?: PartialRoundData;
+    emergencyTimestamp?: number;
+  } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const lastAutoSaveWarningRef = useRef(0);
   const isSubmittingRef = useRef(false);
@@ -141,6 +160,20 @@ export default function ContinueRoundClient({
   const lastServerUpdatedAtRef = useRef<string | undefined>(serverDataTimestamp);
   // Track the furthest hole the player has naturally progressed to (for re-edit navigation)
   const activeProgressHoleRef = useRef(startHoleIndex);
+  // A failed completed-hole checkpoint can be retried from the same hole. Keep
+  // its original navigation intent so a retry does not get mistaken for a
+  // player deliberately re-editing a previously saved hole.
+  const pendingHoleCheckpointRef = useRef<{
+    holeIndex: number;
+    wasReEdit: boolean;
+    activeProgressHoleIndex: number;
+  } | null>(null);
+  // A full scorecard is already durable one hole at a time. Do not create a
+  // redundant local "recovery" copy while the player is deciding whether to
+  // submit it; it is still available from Continue Round until submitted.
+  const allHolesCheckpointedRef = useRef(
+    hasAllHolesScored(initialCompletedStats, initialHoles),
+  );
   // Ref for stale closure prevention in async saves
   const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
   inProgressShotsByHoleRef.current = inProgressShotsByHole;
@@ -206,37 +239,59 @@ export default function ContinueRoundClient({
     showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
   }, [showToast]);
 
-  const persistFailedSubmission = useCallback(async (allHoleStats: HoleStats[]) => {
+  const persistFailedSubmission = useCallback(async (
+    allHoleStats: HoleStats[],
+    recoverySetupData: RoundSetupData = setupData,
+  ) => {
+    const terminalSubmission: TerminalRoundSubmissionData = {
+      courseName: recoverySetupData.courseName,
+      courseId: recoverySetupData.courseId,
+      teeId: recoverySetupData.teeId,
+      courseCity: recoverySetupData.courseCity || undefined,
+      courseState: recoverySetupData.courseState || undefined,
+      courseRating: recoverySetupData.courseRating ? parseFloat(recoverySetupData.courseRating) : undefined,
+      courseSlope: recoverySetupData.courseSlope ? parseInt(recoverySetupData.courseSlope) : undefined,
+      teesPlayed: recoverySetupData.teesPlayed || undefined,
+      roundType: recoverySetupData.roundType,
+      roundDate: recoverySetupData.roundDate,
+      holes: allHoleStats,
+      qualifierId: recoverySetupData.qualifierId,
+      qualifierRoundNumber: recoverySetupData.qualifierRoundNumber,
+    };
     emergencySave({
+      playerId,
       roundId,
       timestamp: Date.now(),
-      setupData,
+      setupData: recoverySetupData,
       holes,
       completedHoleStats: allHoleStats,
       inProgressShotsByHole: {},
       currentHoleIndex: Math.max(0, holes.length - 1),
+      submissionIntent: 'submit',
+      terminalSubmission,
     });
 
     try {
       await saveOfflineRound({
         id: roundId,
-        playerId: '',
+        playerId,
         serverRoundId: roundId,
         draftData: {
           step: 'tracking',
           roundId,
-          setupData,
+          setupData: recoverySetupData,
           holes,
           completedHoleStats: allHoleStats,
           currentHoleIndex: Math.max(0, holes.length - 1),
           inProgressShots: {},
           submissionIntent: 'submit',
+          terminalSubmission,
         },
       });
     } catch {
       // localStorage emergency save above remains the hard fallback
     }
-  }, [holes, roundId, setupData]);
+  }, [holes, playerId, roundId, setupData]);
 
   useRoundStatusSync({
     roundId,
@@ -247,14 +302,45 @@ export default function ContinueRoundClient({
   // Check for emergency save on mount — recover data that was saved to localStorage
   // when the async server save was killed by iOS page freeze
   useEffect(() => {
-    const emergencyData = loadEmergencySave(roundId);
-    if (!emergencyData) return;
+    let cancelled = false;
+    void (async () => {
+      // The server page has already checked that this player owns `roundId`,
+      // so it is safe to include a pre-owner browser backup for this exact
+      // round while users transition from the older cache format.
+      const localSnapshot = loadEmergencySave(roundId, playerId, { allowLegacyServerSnapshot: true });
+      const indexedDbSnapshot = await getRoundRecoverySnapshot(
+        roundId,
+        playerId,
+        { allowLegacyServerSnapshot: true },
+      )
+        .then((snapshot) => snapshot?.data ?? null)
+        .catch(() => null);
+      const emergencyData = [localSnapshot, indexedDbSnapshot]
+        .filter((snapshot): snapshot is EmergencySaveData => snapshot != null)
+        .sort((left, right) => right.timestamp - left.timestamp)[0];
+      if (!emergencyData || cancelled) return;
+
+    const serverInProgress = initialInProgressShotsByHole
+      ?? (initialShots.length > 0 ? { [startHoleIndex]: initialShots } : {});
+
+    // A phone can write its safety snapshot after the server has accepted the
+    // exact same hole data. Timestamp-only logic mistakes that safe duplicate
+    // for unsaved work on the next load. Compare progress first; never hide a
+    // fallback that contains any distinct player-entered data.
+    if (isEmergencySaveEquivalentToProgress(emergencyData, {
+      holes: initialHoles,
+      completedHoleStats: initialCompletedStats,
+      inProgressShotsByHole: serverInProgress,
+    })) {
+      clearEmergencySave(roundId, playerId);
+      return;
+    }
 
     // If server data is newer, discard stale local data
     if (serverDataTimestamp) {
       const serverTime = new Date(serverDataTimestamp).getTime();
       if (emergencyData.timestamp <= serverTime) {
-        clearEmergencySave(roundId);
+        clearEmergencySave(roundId, playerId);
         return;
       }
     }
@@ -262,6 +348,10 @@ export default function ContinueRoundClient({
     // Emergency save is newer — show recovery dialog
     setShowRecoveryDialog(true);
     setRecoveryData(emergencyData);
+    })();
+    return () => {
+      cancelled = true;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on mount
   }, []);
 
@@ -269,8 +359,7 @@ export default function ContinueRoundClient({
   // but auto-save had captured all scores), immediately show the submit dialog.
   // Without this, the user is stuck — submit only triggers from handleHoleComplete.
   useEffect(() => {
-    const allScored = initialCompletedStats.length === initialHoles.length
-      && initialHoles.every((_, i) => initialCompletedStats[i]?.score != null);
+    const allScored = hasAllHolesScored(initialCompletedStats, initialHoles);
     if (allScored) {
       setPendingFinalStats(initialCompletedStats);
       setShowFinishConfirm(true);
@@ -284,7 +373,7 @@ export default function ContinueRoundClient({
     // that could be lost (mirrors new-round-client's gate). No data → no warning,
     // and never warn while the round is mid-submit.
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isSubmittingRef.current) return;
+      if (isSubmittingRef.current || allHolesCheckpointedRef.current) return;
       const hasUnsavedChanges =
         completedHoleStatsRef.current.some((s) => s != null) ||
         Object.keys(inProgressShotsByHoleRef.current).length > 0;
@@ -297,7 +386,7 @@ export default function ContinueRoundClient({
     // Trigger SYNCHRONOUS localStorage save + async server save when app goes to background
     const handlePageHide = () => {
       // Skip save if round is being submitted — prevents "already completed" errors
-      if (isSubmittingRef.current) return;
+      if (isSubmittingRef.current || allHolesCheckpointedRef.current) return;
 
       const mergedInProgress = { ...inProgressShotsByHoleRef.current };
       const holesSnapshot = holesRef.current;
@@ -306,6 +395,7 @@ export default function ContinueRoundClient({
 
       // 1. SYNCHRONOUS localStorage write — guaranteed to complete before page freeze
       emergencySave({
+        playerId,
         roundId,
         timestamp: Date.now(),
         setupData,
@@ -333,7 +423,10 @@ export default function ContinueRoundClient({
         roundDate: setupData.roundDate,
         currentHole: Math.max(1, Math.min(currentHole + 1, holesSnapshot.length)),
         holesToPlay: holesSnapshot.length as 9 | 18,
-        holes: statsSnapshot,
+        holes: Array.from(
+          { length: holesSnapshot.length },
+          (_, index) => statsSnapshot[index] ?? null,
+        ),
         inProgressShots: inProgressArr,
         holeConfigs: holesSnapshot.map(hole => ({
           holeNumber: hole.number,
@@ -362,7 +455,7 @@ export default function ContinueRoundClient({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handlePageHide);
     };
-  }, [roundId, setupData]); // Only stable values — holes/stats/holeIndex read from refs
+  }, [playerId, roundId, setupData]); // Only stable values — holes/stats/holeIndex read from refs
 
   // Browser back button protection — prevents accidental data loss
   useEffect(() => {
@@ -389,14 +482,15 @@ export default function ContinueRoundClient({
     overrideCurrentHole?: number,
     overrideInProgress?: Record<number, ShotRecord[]>,
   ) => {
-    const statsToUse = overrideStats ?? completedHoleStats;
-    const holeIndexToUse = overrideCurrentHole ?? currentHoleIndex;
-    const inProgressMap = overrideInProgress ?? inProgressShotsByHole;
+    const statsToUse = overrideStats ?? completedHoleStatsRef.current;
+    const holeIndexToUse = overrideCurrentHole ?? currentHoleIndexRef.current;
+    const inProgressMap = overrideInProgress ?? inProgressShotsByHoleRef.current;
+    const roundHoles = holesRef.current;
 
     const inProgressShotsArr = Object.entries(inProgressMap)
       .filter(([, shots]) => shots.length > 0)
       .map(([idx, shots]) => ({
-        holeNumber: holes[Number(idx)]?.number ?? Number(idx) + 1,
+        holeNumber: roundHoles[Number(idx)]?.number ?? Number(idx) + 1,
         shots,
       }));
 
@@ -411,125 +505,145 @@ export default function ContinueRoundClient({
       roundDate: setupData.roundDate,
       qualifierId: setupData.qualifierId,
       qualifierRoundNumber: setupData.qualifierRoundNumber,
-      currentHole: Math.max(1, Math.min(holeIndexToUse + 1, holes.length)),
-      holesToPlay: holes.length as 9 | 18,
-      holes: statsToUse,
+      currentHole: Math.max(1, Math.min(holeIndexToUse + 1, roundHoles.length)),
+      holesToPlay: roundHoles.length as 9 | 18,
+      holes: Array.from(
+        { length: roundHoles.length },
+        (_, index) => statsToUse[index] ?? null,
+      ),
       inProgressShots: inProgressShotsArr,
-      holeConfigs: holes.map(hole => ({
+      holeConfigs: roundHoles.map(hole => ({
         holeNumber: hole.number,
         par: hole.par,
         yardage: hole.yardage,
       })),
       expectedUpdatedAt: lastServerUpdatedAtRef.current,
     };
-  }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData]);
+  }, [setupData]);
 
-  const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
-    // Detect re-edit: hole already had completed stats before this call
-    const isReEdit = !!completedHoleStats[holeIndex]?.score;
+  /**
+   * Completing a hole is a server checkpoint. Do not advance the player until
+   * the full hole-and-shots snapshot is acknowledged by the existing round.
+   */
+  const persistCompletedHole = useCallback(async (
+    saveData: PartialRoundData,
+    emergencyTimestamp: number,
+    surfaceFailure = true,
+  ): Promise<boolean> => {
+    pendingServerSaveRef.current = null;
 
-    // Update holes with score
-    const updatedHoles = [...holes];
-    updatedHoles[holeIndex] = {
-      ...updatedHoles[holeIndex]!,
-      score: holeStats.score,
-    };
-    setHoles(updatedHoles);
-
-    // Store completed hole stats
-    const updatedStats = [...completedHoleStats];
-    updatedStats[holeIndex] = holeStats;
-    setCompletedHoleStats(updatedStats);
-
-    // Remove completed hole from in-progress map (capture snapshot for server save)
-    const inProgressAfter = { ...inProgressShotsByHole };
-    delete inProgressAfter[holeIndex];
-    setInProgressShotsByHole((prev) => {
-      if (!prev[holeIndex]) {
-        return prev;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const waitDeadline = Date.now() + 10_000;
+      while (serverSaveInProgressRef.current && Date.now() < waitDeadline) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      const next = { ...prev };
-      delete next[holeIndex];
-      return next;
-    });
+      if (serverSaveInProgressRef.current) break;
 
-    // Immediate localStorage backup of completed hole (synchronous, guaranteed)
-    emergencySave({
-      roundId,
-      timestamp: Date.now(),
-      setupData,
-      holes: updatedHoles,
-      completedHoleStats: updatedStats,
-      inProgressShotsByHole: inProgressAfter,
-      currentHoleIndex: isReEdit ? activeProgressHoleRef.current : holeIndex + 1,
-    });
-
-    // Fire-and-forget: persist completed hole data to database (non-blocking)
-    // Uses queue pattern to avoid silently dropping saves
-    void (async () => {
-      const nextHole = isReEdit ? activeProgressHoleRef.current : holeIndex + 1;
-      const saveData = buildPartialRoundData(updatedStats, nextHole, inProgressAfter);
-
-      if (serverSaveInProgressRef.current) {
-        // Queue — will be picked up when current save completes
-        pendingServerSaveRef.current = { shots: [], holeIndex: -1, roundData: saveData };
-        return;
-      }
       serverSaveInProgressRef.current = true;
       try {
         const result = await savePartialRound(saveData, roundId);
         if (result.success) {
           consecutiveSaveFailuresRef.current = 0;
           if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
-        } else if (result.error === 'conflict') {
-          void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-        } else if (result.error === 'busy' || result.error === 'retry') {
-          // Single-flight skip: another save for this round already holds the
-          // row server-side. Not a failure — the next tick re-sends the full
-          // state — so it must not advance the circuit breaker or warn.
-        } else if (isCompletedRoundError(result.error)) {
+          clearEmergencySaveThrough(roundId, playerId, emergencyTimestamp);
+          return true;
+        }
+        if (result.error === 'conflict') {
+          await handleRoundSyncConflict('This round was updated on another device. Please reload.');
+          return false;
+        }
+        if (isCompletedRoundError(result.error)) {
           redirectToCompletedRound();
-        } else {
-          consecutiveSaveFailuresRef.current++;
-          if (consecutiveSaveFailuresRef.current >= 2) {
-            showAutoSaveWarning();
-          }
+          return false;
         }
+        if (result.error !== 'busy' && result.error !== 'retry') break;
       } catch {
-        consecutiveSaveFailuresRef.current++;
-        if (consecutiveSaveFailuresRef.current >= 2) {
-          showAutoSaveWarning();
-        }
+        // Retry the finite checkpoint sequence below before asking the player
+        // to intervene. The in-progress parent remains durable throughout.
       } finally {
         serverSaveInProgressRef.current = false;
-        // If a newer save was queued while we were saving, execute it now
-        const pending = pendingServerSaveRef.current;
-        if (pending) {
-          pendingServerSaveRef.current = null;
-          const pendingData = pending.roundData ?? buildPartialRoundData();
-          void (async () => {
-            serverSaveInProgressRef.current = true;
-            try {
-              const r = await savePartialRound(pendingData, roundId);
-              if (r.success) {
-                consecutiveSaveFailuresRef.current = 0;
-                if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
-              } else if (r.error === 'conflict') {
-                void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-              } else if (isCompletedRoundError(r.error)) {
-                redirectToCompletedRound();
-              }
-            } catch { /* non-critical */ } finally {
-              serverSaveInProgressRef.current = false;
-            }
-          })();
-        }
       }
-    })();
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+
+    // Only a direct hole-out checkpoint should surface a retry state. The
+    // periodic saver can race it while replaying the same complete snapshot;
+    // that transient coalescing must not create a second false alarm.
+    if (surfaceFailure) {
+      consecutiveSaveFailuresRef.current++;
+      setError('This hole has not saved yet. Keep this screen open and try again.');
+      showAutoSaveWarning();
+    }
+    return false;
+  }, [handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, roundId, showAutoSaveWarning]);
+
+  const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats): Promise<boolean> => {
+    allHolesCheckpointedRef.current = false;
+    const pendingCheckpoint = pendingHoleCheckpointRef.current;
+    const isCheckpointRetry = pendingCheckpoint?.holeIndex === holeIndex;
+    // Retries retain the original intent. Without this, the retry sees the
+    // optimistic local score and treats a first-time completion as a re-edit,
+    // leaving the golfer stranded on a hole that did save successfully.
+    const isReEdit = isCheckpointRetry
+      ? pendingCheckpoint.wasReEdit
+      : !!completedHoleStatsRef.current[holeIndex]?.score;
+    const activeProgressHoleIndex = isCheckpointRetry
+      ? pendingCheckpoint.activeProgressHoleIndex
+      : activeProgressHoleRef.current;
+    if (!isCheckpointRetry) {
+      pendingHoleCheckpointRef.current = {
+        holeIndex,
+        wasReEdit: isReEdit,
+        activeProgressHoleIndex,
+      };
+    }
+
+    // Update holes with score
+    const updatedHoles = [...holesRef.current];
+    updatedHoles[holeIndex] = {
+      ...updatedHoles[holeIndex]!,
+      score: holeStats.score,
+    };
+    holesRef.current = updatedHoles;
+    setHoles(updatedHoles);
+
+    // Store completed hole stats
+    const updatedStats = [...completedHoleStatsRef.current];
+    updatedStats[holeIndex] = holeStats;
+    completedHoleStatsRef.current = updatedStats;
+    setCompletedHoleStats(updatedStats);
+
+    // Remove completed hole from in-progress map (capture snapshot for server save)
+    const inProgressAfter = { ...inProgressShotsByHoleRef.current };
+    delete inProgressAfter[holeIndex];
+    inProgressShotsByHoleRef.current = inProgressAfter;
+    setInProgressShotsByHole(inProgressAfter);
+
+    // Immediate localStorage backup of completed hole (synchronous, guaranteed)
+    const emergencyTimestamp = Date.now();
+    emergencySave({
+      playerId,
+      roundId,
+      timestamp: emergencyTimestamp,
+      setupData,
+      holes: updatedHoles,
+      completedHoleStats: updatedStats,
+      inProgressShotsByHole: inProgressAfter,
+      currentHoleIndex: isReEdit ? activeProgressHoleIndex : holeIndex + 1,
+    });
+
+    const nextHole = isReEdit ? activeProgressHoleIndex : holeIndex + 1;
+    const checkpointed = await persistCompletedHole(
+      buildPartialRoundData(updatedStats, nextHole, inProgressAfter),
+      emergencyTimestamp,
+    );
+    if (!checkpointed) return false;
+    pendingHoleCheckpointRef.current = null;
 
     // Navigate after completion
     // Check if every hole now has a score (all completed)
-    const allHolesScored = updatedStats.length === holes.length && updatedStats.every(s => s?.score != null);
+    const allHolesScored = hasAllHolesScored(updatedStats, holes);
+    allHolesCheckpointedRef.current = allHolesScored;
 
     if (allHolesScored && holeIndex === holes.length - 1) {
       // Last hole (re-)completed and all holes scored — always show finish confirmation
@@ -542,7 +656,7 @@ export default function ContinueRoundClient({
         setShowFinishConfirm(true);
       } else {
         // Re-editing a previously completed hole — return to the active frontier
-        setCurrentHoleIndex(activeProgressHoleRef.current);
+        setCurrentHoleIndex(activeProgressHoleIndex);
       }
     } else if (holeIndex < holes.length - 1) {
       // Normal progression — advance to next hole
@@ -554,19 +668,38 @@ export default function ContinueRoundClient({
       setPendingFinalStats(updatedStats);
       setShowFinishConfirm(true);
     }
+    return true;
   };
 
-  const handleHoleStatsUpdate = useCallback((holeIndex: number, holeStats: HoleStats) => {
-    setHoles(prev => {
-      const updated = [...prev];
-      updated[holeIndex] = { ...updated[holeIndex]!, score: holeStats.score };
-      return updated;
-    });
-    setCompletedHoleStats(prev => {
-      const updated = [...prev];
-      updated[holeIndex] = holeStats;
-      return updated;
-    });
+  const handleHoleStatsUpdate = useCallback((holeIndex: number, holeStats: HoleStats | null) => {
+    const updatedHoles = [...holesRef.current];
+    const updatedStats = [...completedHoleStatsRef.current];
+    if (holeStats) {
+      updatedHoles[holeIndex] = { ...updatedHoles[holeIndex]!, score: holeStats.score };
+      updatedStats[holeIndex] = holeStats;
+      const withoutCompletedHole = { ...inProgressShotsByHoleRef.current };
+      delete withoutCompletedHole[holeIndex];
+      inProgressShotsByHoleRef.current = withoutCompletedHole;
+      setInProgressShotsByHole(withoutCompletedHole);
+    } else {
+      updatedHoles[holeIndex] = { ...updatedHoles[holeIndex]!, score: null };
+      delete updatedStats[holeIndex];
+    }
+    holesRef.current = updatedHoles;
+    completedHoleStatsRef.current = updatedStats;
+    setHoles(updatedHoles);
+    setCompletedHoleStats(updatedStats);
+    const allHolesScored = hasAllHolesScored(updatedStats, updatedHoles);
+    allHolesCheckpointedRef.current = allHolesScored;
+    if (allHolesScored) {
+      // If the player revises a finished scorecard before submitting, carry
+      // the revised stats into the existing finish affordance.
+      setPendingFinalStats(updatedStats);
+    } else {
+      // Reopening the final holed shot invalidates any stale completion prompt.
+      setPendingFinalStats(null);
+      setShowFinishConfirm(false);
+    }
   }, []);
 
   const handleSaveShot = (shot: ShotRecord) => {
@@ -574,88 +707,96 @@ export default function ContinueRoundClient({
       return;
     }
 
-    setInProgressShotsByHole((prev) => {
-      const existing = prev[currentHoleIndex] ?? [];
-      // Prevent duplicate shots when navigating back to an uncompleted hole
-      const duplicateIndex = existing.findIndex(s => s.shotNumber === shot.shotNumber);
-      if (duplicateIndex >= 0) {
-        const updated = [...existing];
-        updated[duplicateIndex] = shot;
-        return { ...prev, [currentHoleIndex]: updated };
-      }
-      return { ...prev, [currentHoleIndex]: [...existing, shot] };
-    });
-  };
+    allHolesCheckpointedRef.current = false;
+    const currentInProgress = inProgressShotsByHoleRef.current;
+    const existing = currentInProgress[currentHoleIndex] ?? [];
+    const duplicateIndex = existing.findIndex((candidate) => candidate.shotNumber === shot.shotNumber);
+    const updatedShots = duplicateIndex >= 0
+      ? existing.map((candidate, index) => index === duplicateIndex ? shot : candidate)
+      : [...existing, shot];
+    const nextInProgress = { ...currentInProgress, [currentHoleIndex]: updatedShots };
 
-  /**
-   * Auto-save handler for shot tracking - persists to localStorage + IndexedDB + server
-   */
-  const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
-    // Skip auto-save entirely if the round has been submitted or is being submitted
-    if (isSubmittingRef.current || completedRoundId) return;
-
-    // Sync parent's in-progress shots so hole navigation stays consistent after edits/deletes
-    let allInProgressShots: Record<number, ShotRecord[]> = {};
-    setInProgressShotsByHole(prev => {
-      const existing = prev[holeIndex];
-      const updated = (existing && existing.length === shots.length && existing === shots)
-        ? prev
-        : { ...prev, [holeIndex]: shots };
-      allInProgressShots = updated;
-      return updated;
-    });
-
-    // SYNCHRONOUS localStorage backup — always runs, always completes
+    // Do not wait for React or the 15s autosave timer. Once a golfer records
+    // a shot, its full round snapshot is synchronously recoverable before a
+    // phone lock, app switch, crash, or connectivity drop can interrupt it.
+    inProgressShotsByHoleRef.current = nextInProgress;
     emergencySave({
+      playerId,
       roundId,
       timestamp: Date.now(),
       setupData,
       holes: holesRef.current,
       completedHoleStats: completedHoleStatsRef.current,
-      inProgressShotsByHole: { ...allInProgressShots, [holeIndex]: shots },
+      inProgressShotsByHole: nextInProgress,
+      currentHoleIndex,
+    });
+    setInProgressShotsByHole(nextInProgress);
+  };
+
+  /**
+   * Auto-save handler for shot tracking - persists to localStorage + server.
+   *
+   * The emergency snapshot is the immediate local fallback. The legacy v1
+   * IndexedDB bridge is deliberately reserved for a failed final submission
+   * (persistFailedSubmission), where the shared v2 sync engine can recover it
+   * non-destructively. Do not enqueue normal in-progress shots there.
+   */
+  const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
+    // Skip auto-save entirely if the round has been submitted or is being submitted
+    if (isSubmittingRef.current || completedRoundId) return;
+
+    // Update the ref before React schedules its render. Recovery writes below
+    // must include other in-progress holes too; a setState updater is not
+    // guaranteed to execute before this synchronous snapshot is created.
+    const hasCompletedHole = completedHoleStatsRef.current[holeIndex]?.score != null;
+    const allInProgressShots = { ...inProgressShotsByHoleRef.current };
+    if (hasCompletedHole) {
+      delete allInProgressShots[holeIndex];
+    } else {
+      allInProgressShots[holeIndex] = shots;
+    }
+    inProgressShotsByHoleRef.current = allInProgressShots;
+    setInProgressShotsByHole(allInProgressShots);
+
+    // SYNCHRONOUS localStorage backup — always runs, always completes
+    const emergencyTimestamp = Date.now();
+    emergencySave({
+      playerId,
+      roundId,
+      timestamp: emergencyTimestamp,
+      setupData,
+      holes: holesRef.current,
+      completedHoleStats: completedHoleStatsRef.current,
+      inProgressShotsByHole: allInProgressShots,
       currentHoleIndex: holeIndex,
     });
 
-    // Save to IndexedDB for offline redundancy — include ALL in-progress holes, not just current
-    if (offlineSyncState.isIndexedDBReady) {
-      try {
-        const draftData = {
-          step: 'tracking' as const,
-          setupData,
-          holes,
-          completedHoleStats,
-          currentHoleIndex: holeIndex,
-          inProgressShots: allInProgressShots,
-        };
-        await offlineSyncActions.saveRoundOffline(
-          roundId,
-          '', // Player ID will be determined by the server
-          draftData
-        );
-      } catch {
-        // Silently ignore offline save errors
-      }
-    }
-
-    // Queue individual shots for offline sync if we're offline
-    if (!offlineSyncState.isOnline && offlineSyncState.isIndexedDBReady) {
-      for (const shot of shots) {
-        try {
-          await offlineSyncActions.queueShot(shot, roundId, holes[holeIndex]?.number || holeIndex + 1);
-        } catch {
-          // Silently ignore offline queue errors
-        }
-      }
-    }
-
     // Background save to database — protects mid-hole shot data
     // Uses ref-based data to avoid stale closure, plus queue for concurrent saves
-    if (offlineSyncState.isOnline) {
+    if (navigator.onLine) {
+      // Editing a completed hole persists the revised complete scorecard, not
+      // a contradictory in-progress copy of that same hole.
+      if (hasCompletedHole) {
+        await persistCompletedHole(
+          buildPartialRoundData(
+            completedHoleStatsRef.current,
+            activeProgressHoleRef.current,
+            allInProgressShots,
+          ),
+          emergencyTimestamp,
+          false,
+        );
+        return;
+      }
       if (serverSaveInProgressRef.current) {
         // Queue this save — it will execute after the current one completes
-        pendingServerSaveRef.current = { shots, holeIndex };
+        pendingServerSaveRef.current = { shots, holeIndex, emergencyTimestamp };
       } else {
-        const executeServerSave = async (saveShots: ShotRecord[], saveHoleIndex: number) => {
+        const executeServerSave = async (
+          saveShots: ShotRecord[],
+          saveHoleIndex: number,
+          saveEmergencyTimestamp: number,
+        ) => {
           serverSaveInProgressRef.current = true;
           try {
             const mergedInProgress = { ...inProgressShotsByHoleRef.current, [saveHoleIndex]: saveShots };
@@ -666,6 +807,7 @@ export default function ContinueRoundClient({
             if (result.success) {
               consecutiveSaveFailuresRef.current = 0;
               if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+              clearEmergencySaveThrough(roundId, playerId, saveEmergencyTimestamp);
             } else if (result.error === 'conflict') {
               void handleRoundSyncConflict('This round was updated on another device. Please reload.');
             } else if (result.error === 'busy' || result.error === 'retry') {
@@ -709,32 +851,39 @@ export default function ContinueRoundClient({
                   }
                 })();
               } else {
-                void executeServerSave(pending.shots, pending.holeIndex);
+                void executeServerSave(
+                  pending.shots,
+                  pending.holeIndex,
+                  pending.emergencyTimestamp ?? Date.now(),
+                );
               }
             }
           }
         };
-        void executeServerSave(shots, holeIndex);
+        void executeServerSave(shots, holeIndex, emergencyTimestamp);
       }
     }
   }, [
     buildPartialRoundData,
-    completedHoleStats,
     completedRoundId,
     handleRoundSyncConflict,
-    holes,
     isCompletedRoundError,
-    offlineSyncState.isIndexedDBReady,
-    offlineSyncState.isOnline,
-    offlineSyncActions,
+    persistCompletedHole,
+    playerId,
     redirectToCompletedRound,
     roundId,
     setupData,
     showAutoSaveWarning,
   ]);
 
-  const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
+  const handleRoundSubmit = async (
+    allHoleStats: HoleStats[],
+    qualifierRoundNumberOverride?: number,
+  ) => {
     if (isSubmittingRef.current) return;
+    const submitSetupData = qualifierRoundNumberOverride == null
+      ? setupData
+      : { ...setupData, qualifierRoundNumber: qualifierRoundNumberOverride };
     isSubmittingRef.current = true;
     setSubmitting(true);
     setError('');
@@ -744,9 +893,10 @@ export default function ContinueRoundClient({
     try {
       // Save pre-submit snapshot to localStorage as insurance
       emergencySave({
+        playerId,
         roundId,
         timestamp: Date.now(),
-        setupData,
+        setupData: submitSetupData,
         holes,
         completedHoleStats: allHoleStats,
         inProgressShotsByHole: {},
@@ -799,17 +949,19 @@ export default function ContinueRoundClient({
       }
 
       const roundData = {
-        courseName: setupData.courseName,
-        courseCity: setupData.courseCity || undefined,
-        courseState: setupData.courseState || undefined,
-        courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
-        courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
-        teesPlayed: setupData.teesPlayed || undefined,
-        roundType: setupData.roundType,
-        roundDate: setupData.roundDate,
+        courseName: submitSetupData.courseName,
+        courseId: submitSetupData.courseId,
+        teeId: submitSetupData.teeId,
+        courseCity: submitSetupData.courseCity || undefined,
+        courseState: submitSetupData.courseState || undefined,
+        courseRating: submitSetupData.courseRating ? parseFloat(submitSetupData.courseRating) : undefined,
+        courseSlope: submitSetupData.courseSlope ? parseInt(submitSetupData.courseSlope) : undefined,
+        teesPlayed: submitSetupData.teesPlayed || undefined,
+        roundType: submitSetupData.roundType,
+        roundDate: submitSetupData.roundDate,
         holes: allHoleStats,
-        qualifierId: setupData.qualifierId,
-        qualifierRoundNumber: setupData.qualifierRoundNumber,
+        qualifierId: submitSetupData.qualifierId,
+        qualifierRoundNumber: submitSetupData.qualifierRoundNumber,
       };
 
       const result = await submitGolfRoundComprehensive(roundData, roundId);
@@ -822,7 +974,7 @@ export default function ContinueRoundClient({
       }
 
       // Clean up IndexedDB draft data and emergency save for this round
-      clearEmergencySave(roundId);
+      clearEmergencySave(roundId, playerId);
       try {
         await deleteOfflineRound(roundId);
       } catch {
@@ -834,7 +986,7 @@ export default function ContinueRoundClient({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to submit round';
       if (isRecoverableRoundSubmitError(message)) {
-        await persistFailedSubmission(allHoleStats);
+        await persistFailedSubmission(allHoleStats, submitSetupData);
         isSubmittingRef.current = false;
         setSubmitting(false);
         setError('');
@@ -849,6 +1001,25 @@ export default function ContinueRoundClient({
       isSubmittingRef.current = false;
       // Stay in submitting state so the overlay shows the error
     }
+  };
+
+  const requestRoundSubmission = async (allHoleStats: HoleStats[]) => {
+    // Legacy rows created before qualifier_round_number became durable must
+    // explicitly identify their configured result before the guarded terminal
+    // submit. The choices came from the authenticated server page; do not
+    // infer one from the scorecard or silently create a duplicate result.
+    if (
+      setupData.qualifierId
+      && setupData.qualifierRoundNumber == null
+      && selectedQualifierRoundNumber == null
+    ) {
+      setPendingFinalStats(allHoleStats);
+      setShowFinishConfirm(false);
+      setShowQualifierRoundNumberDialog(true);
+      return;
+    }
+
+    await handleRoundSubmit(allHoleStats, selectedQualifierRoundNumber);
   };
 
   const handleSaveForLater = async () => {
@@ -900,7 +1071,7 @@ export default function ContinueRoundClient({
         showToast?.(result.error || 'Failed to delete round. Please try again.', 'error');
         return;
       }
-      clearEmergencySave(roundId);
+        clearEmergencySave(roundId, playerId);
       setShowExitModal(false);
       router.push('/golf/dashboard/rounds');
     } catch {
@@ -919,27 +1090,27 @@ export default function ContinueRoundClient({
   // ============================================================================
   return (
     <>
-      {/* Header Banner — "Continuing Round" resume context, on Fairway tokens
-          inside .fairway-ds so it matches the warm-black scorecard band below it. */}
+      {/* Compact resume context. The scorecard owns live hole navigation, so this
+          header stays focused on the course and durable progress rather than
+          repeating a stale “starting hole” utility row. */}
       <div className={fairwayScope('bg-surface border-b border-border-subtle px-4 py-3')}>
         <div className="max-w-[720px] mx-auto flex items-center gap-3">
-          <div className="w-8 h-8 rounded-fw-md bg-accent-500 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-text-on-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-fw-md bg-accent-50 text-accent-700 ring-1 ring-accent-200">
+            <svg className="h-5 w-5 text-accent-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-fw-sans text-body-sm font-medium text-text-primary">
-              Continuing Round
-            </p>
-            <p className="font-fw-sans text-caption text-text-secondary">
-              {setupData.courseName} • Starting on hole {startHoleIndex + 1}
+            <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-tertiary">Continue round</p>
+            <p className="truncate font-fw-display text-body-lg font-semibold tracking-[-0.012em] text-text-primary">
+              {setupData.courseName}
             </p>
           </div>
-          <div className="text-right">
-            <p className="font-fw-sans text-caption font-medium text-text-secondary">
-              {completedHoleStats.filter(s => s != null).length} of {holes.length} holes
+          <div className="flex-shrink-0 rounded-fw-sm bg-surface-sunken px-2.5 py-1.5 text-right">
+            <p className="font-fw-mono text-caption font-medium tabular-nums text-text-secondary">
+              {completedHoleStats.filter(s => s != null).length}/{holes.length}
             </p>
+            <p className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">saved</p>
           </div>
         </div>
       </div>
@@ -965,14 +1136,18 @@ export default function ContinueRoundClient({
           (a shared primitive outside this fix's ownership). */}
       <div className="[&>div]:!top-[var(--scorecard-height,105px)]">
         <OfflineIndicator
-          isOnline={offlineSyncState.isOnline}
-          isSyncing={offlineSyncState.isSyncing}
-          pendingCount={offlineSyncState.pendingCount}
-          lastSuccessfulSync={offlineSyncState.lastSuccessfulSync}
-          syncError={offlineSyncState.syncError}
-          onSyncNow={offlineSyncActions.syncNow}
-          onRetrySync={offlineSyncActions.retryFailedSync}
-          onDismissError={offlineSyncActions.clearSyncError}
+          isOnline={syncStatus.isOnline}
+          isSyncing={syncStatus.isSyncing}
+          pendingCount={syncStatus.pendingCount}
+          lastSuccessfulSync={syncStatus.lastSuccessfulSync}
+          syncError={syncStatus.syncError}
+          onSyncNow={() => {
+            void useOfflineSyncStore.getState().startSync();
+          }}
+          onRetrySync={() => {
+            void useOfflineSyncStore.getState().retrySync();
+          }}
+          onDismissError={() => useOfflineSyncStore.getState().clearSyncError()}
           variant="full"
           position="header"
         />
@@ -984,13 +1159,14 @@ export default function ContinueRoundClient({
       {pendingFinalStats && !showFinishConfirm && !submitting && (
         <div className={fairwayScope('on-dark sticky top-[var(--golf-mobile-header-offset)] z-20 bg-nav-bg px-4 py-3 text-nav-text lg:top-[49px] flex items-center justify-between gap-3')}>
           <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes completed — ready to submit!</p>
-          <Button
+          <FwButton
             variant="primary"
+            size="sm"
             onClick={() => setShowFinishConfirm(true)}
-            className="flex-shrink-0 rounded-fw-md bg-accent-650 px-4 py-2 font-fw-sans text-body-sm font-medium text-text-on-accent transition-colors hover:bg-accent-800 active:bg-accent-600"
+            className="flex-shrink-0"
           >
             Submit Round
-          </Button>
+          </FwButton>
         </div>
       )}
 
@@ -1023,23 +1199,26 @@ export default function ContinueRoundClient({
       />
 
       {/* Emergency Save Recovery Dialog */}
-      <Drawer
+      <ModalShell
         open={Boolean(showRecoveryDialog && recoveryData)}
         onOpenChange={(next) => {
           if (!next) setShowRecoveryDialog(false);
         }}
+        size="sm"
+        title="Recover saved progress"
+        hideTitle
+        hideClose
       >
-        <DrawerContent className="sm:max-w-sm sm:mx-auto sm:rounded-3xl">
-          <div className="px-6 pb-6 pt-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="px-6 pb-6 pt-6">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-fw-md bg-fw-warning-bg">
+              <svg className="h-6 w-6 text-fw-warning-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <DrawerTitle className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
+            <h2 className="mb-2 text-center font-fw-display text-body-lg font-medium tracking-[-0.012em] text-text-primary">
               Recover Unsaved Progress?
-            </DrawerTitle>
-            <p className="text-sm text-warm-500 text-center mb-1">
+            </h2>
+            <p className="mb-1 text-center font-fw-sans text-body-sm text-text-tertiary">
               Found locally saved data from{' '}
               {recoveryData ? (() => {
                 const seconds = Math.floor((Date.now() - recoveryData.timestamp) / 1000);
@@ -1048,21 +1227,21 @@ export default function ContinueRoundClient({
                 return `${Math.floor(seconds / 3600)}h ago`;
               })() : ''}
             </p>
-            <p className="text-sm text-warm-500 text-center mb-6">
+            <p className="mb-6 text-center font-fw-sans text-body-sm text-text-tertiary">
               {recoveryData?.completedHoleStats.filter(h => h != null).length ?? 0} completed holes found in local backup.
             </p>
             <div className="flex gap-3">
-              <Button variant="ghost"
+              <FwButton variant="secondary"
                 onClick={() => {
-                  clearEmergencySave(roundId);
+                  clearEmergencySave(roundId, playerId);
                   setShowRecoveryDialog(false);
                   setRecoveryData(null);
                 }}
-                className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 transition-colors"
+                className="flex-1"
               >
                 Discard
-              </Button>
-              <Button variant="primary"
+              </FwButton>
+              <FwButton variant="primary"
                 onClick={() => {
                   // Restore data from emergency save
                   if (!recoveryData) return;
@@ -1083,14 +1262,88 @@ export default function ContinueRoundClient({
                   setRecoveryData(null);
                   // Don't clear emergency save yet — will be cleared after next successful server save
                 }}
-                className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
+                className="flex-1"
               >
                 Restore
-              </Button>
+              </FwButton>
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
+      </ModalShell>
+
+      {/* A small number of legacy qualifier parents predate the durable round
+          number. The scorecard stays saved; the player supplies one of the
+          server-derived unused choices before the terminal guard fills it. */}
+      <ModalShell
+        open={showQualifierRoundNumberDialog}
+        onOpenChange={(next) => {
+          setShowQualifierRoundNumberDialog(next);
+          if (!next && pendingFinalStats) setShowFinishConfirm(true);
+        }}
+        size="sm"
+        title="Choose qualifier round"
+      >
+        <div className="px-6 pb-6 pt-2">
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            This saved scorecard needs its qualifier round number before it can be submitted.
+            Your shots and completed holes remain saved.
+          </p>
+
+          {qualifierRoundNumberOptions.length > 0 ? (
+            <div className="mt-5 space-y-2" role="radiogroup" aria-label="Qualifier round number">
+              {qualifierRoundNumberOptions.map((roundNumber) => {
+                const selected = selectedQualifierRoundNumber === roundNumber;
+                return (
+                  <FwButton
+                    key={roundNumber}
+                    type="button"
+                    variant={selected ? 'primary' : 'secondary'}
+                    className="w-full justify-between"
+                    aria-pressed={selected}
+                    onClick={() => setSelectedQualifierRoundNumber(roundNumber)}
+                  >
+                    <span className="flex w-full items-center justify-between gap-3">
+                      <span>Qualifier round {roundNumber}</span>
+                      <span className="font-fw-mono text-body-sm">{selected ? 'Selected' : ''}</span>
+                    </span>
+                  </FwButton>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-5 rounded-fw-md bg-fw-warning-bg px-4 py-3 font-fw-sans text-body-sm text-fw-warning-ink">
+              {qualifierRoundNumberUnavailableReason
+                ?? 'No unused qualifier round is available right now. Your scorecard remains saved.'}
+            </p>
+          )}
+
+          <div className="mt-6 flex gap-3">
+            <FwButton
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => {
+                setShowQualifierRoundNumberDialog(false);
+                if (pendingFinalStats) setShowFinishConfirm(true);
+              }}
+            >
+              Back
+            </FwButton>
+            <FwButton
+              type="button"
+              variant="primary"
+              className="flex-1"
+              disabled={selectedQualifierRoundNumber == null || !pendingFinalStats}
+              onClick={() => {
+                if (!pendingFinalStats || selectedQualifierRoundNumber == null) return;
+                setShowQualifierRoundNumberDialog(false);
+                void handleRoundSubmit(pendingFinalStats, selectedQualifierRoundNumber);
+              }}
+            >
+              Submit Round
+            </FwButton>
+          </div>
+        </div>
+      </ModalShell>
 
       {/* Finish Round — Premium Round Summary, mirroring new-round-client. */}
       <FairwayRoundSummarySheet
@@ -1104,7 +1357,7 @@ export default function ContinueRoundClient({
         onSubmit={async () => {
           if (!pendingFinalStats) return;
           setShowFinishConfirm(false);
-          await handleRoundSubmit(pendingFinalStats);
+          await requestRoundSubmission(pendingFinalStats);
         }}
       />
 
@@ -1129,7 +1382,7 @@ export default function ContinueRoundClient({
         onRetry={pendingFinalStats ? () => {
           setError('');
           isSubmittingRef.current = false;
-          void handleRoundSubmit(pendingFinalStats);
+          void requestRoundSubmission(pendingFinalStats);
         } : undefined}
         onSaveAndExit={async () => {
           setError('');

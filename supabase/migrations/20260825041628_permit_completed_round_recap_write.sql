@@ -106,9 +106,9 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION helm_private.save_round_ai_recap(
-  p_round_id uuid,
-  p_recap text,
-  p_actor_user_id uuid
+    p_round_id uuid,
+    p_recap text,
+    p_actor_user_id uuid
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -159,11 +159,13 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION helm_private.save_round_ai_recap(uuid, text, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION helm_private.save_round_ai_recap(
+    uuid, text, uuid
+) FROM public;
 
 CREATE OR REPLACE FUNCTION public.save_round_ai_recap(
-  p_round_id uuid,
-  p_recap text
+    p_round_id uuid,
+    p_recap text
 )
 RETURNS jsonb
 LANGUAGE sql
@@ -173,5 +175,7 @@ AS $$
   SELECT helm_private.save_round_ai_recap(p_round_id, p_recap, auth.uid());
 $$;
 
-REVOKE ALL ON FUNCTION public.save_round_ai_recap(uuid, text) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.save_round_ai_recap(uuid, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.save_round_ai_recap(uuid, text) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.save_round_ai_recap(
+    uuid, text
+) TO authenticated;

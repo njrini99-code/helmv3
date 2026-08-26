@@ -7,7 +7,7 @@
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS helm_private;
-REVOKE ALL ON SCHEMA helm_private FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON SCHEMA helm_private FROM public, anon, authenticated;
 
 -- The protected save and submit RPCs are the only paths allowed to replace a
 -- round's child graph or transition it to completed. The transaction-local
@@ -88,17 +88,25 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION helm_private.reject_completed_round_child_mutation() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION
+helm_private.reject_completed_round_child_mutation()
+FROM public,
+anon,
+authenticated;
 
-DROP TRIGGER IF EXISTS golf_holes_reject_completed_round_mutation ON public.golf_holes;
+DROP TRIGGER IF EXISTS golf_holes_reject_completed_round_mutation
+ON public.golf_holes;
 CREATE TRIGGER golf_holes_reject_completed_round_mutation
 BEFORE INSERT OR UPDATE OR DELETE ON public.golf_holes
-FOR EACH ROW EXECUTE FUNCTION helm_private.reject_completed_round_child_mutation();
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.reject_completed_round_child_mutation();
 
-DROP TRIGGER IF EXISTS golf_shots_reject_completed_round_mutation ON public.golf_shots;
+DROP TRIGGER IF EXISTS golf_shots_reject_completed_round_mutation
+ON public.golf_shots;
 CREATE TRIGGER golf_shots_reject_completed_round_mutation
 BEFORE INSERT OR UPDATE OR DELETE ON public.golf_shots
-FOR EACH ROW EXECUTE FUNCTION helm_private.reject_completed_round_child_mutation();
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.reject_completed_round_child_mutation();
 
 CREATE OR REPLACE FUNCTION helm_private.reject_completed_round_detail_mutation()
 RETURNS trigger
@@ -129,17 +137,25 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION helm_private.reject_completed_round_detail_mutation() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION
+helm_private.reject_completed_round_detail_mutation()
+FROM public,
+anon,
+authenticated;
 
-DROP TRIGGER IF EXISTS putt_details_reject_completed_round_mutation ON public.putt_details;
+DROP TRIGGER IF EXISTS putt_details_reject_completed_round_mutation
+ON public.putt_details;
 CREATE TRIGGER putt_details_reject_completed_round_mutation
 BEFORE INSERT OR UPDATE OR DELETE ON public.putt_details
-FOR EACH ROW EXECUTE FUNCTION helm_private.reject_completed_round_detail_mutation();
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.reject_completed_round_detail_mutation();
 
-DROP TRIGGER IF EXISTS approach_miss_details_reject_completed_round_mutation ON public.approach_miss_details;
+DROP TRIGGER IF EXISTS approach_miss_details_reject_completed_round_mutation
+ON public.approach_miss_details;
 CREATE TRIGGER approach_miss_details_reject_completed_round_mutation
 BEFORE INSERT OR UPDATE OR DELETE ON public.approach_miss_details
-FOR EACH ROW EXECUTE FUNCTION helm_private.reject_completed_round_detail_mutation();
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.reject_completed_round_detail_mutation();
 
 CREATE OR REPLACE FUNCTION helm_private.guard_golf_round_lifecycle()
 RETURNS trigger
@@ -247,7 +263,9 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION helm_private.guard_golf_round_lifecycle() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION helm_private.guard_golf_round_lifecycle() FROM public,
+anon,
+authenticated;
 
 DROP TRIGGER IF EXISTS golf_rounds_guard_lifecycle ON public.golf_rounds;
 CREATE TRIGGER golf_rounds_guard_lifecycle
@@ -255,10 +273,10 @@ BEFORE INSERT OR UPDATE OR DELETE ON public.golf_rounds
 FOR EACH ROW EXECUTE FUNCTION helm_private.guard_golf_round_lifecycle();
 
 CREATE OR REPLACE FUNCTION public.record_round_coachhelm_terminal_state(
-  p_round_id uuid,
-  p_analyzed_at timestamptz,
-  p_failed_at timestamptz,
-  p_failure_reason text
+    p_round_id uuid,
+    p_analyzed_at timestamptz,
+    p_failed_at timestamptz,
+    p_failure_reason text
 )
 RETURNS uuid
 LANGUAGE plpgsql
@@ -279,16 +297,20 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.record_round_coachhelm_terminal_state(uuid, timestamptz, timestamptz, text)
-FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.record_round_coachhelm_terminal_state(uuid, timestamptz, timestamptz, text)
+REVOKE ALL ON FUNCTION public.record_round_coachhelm_terminal_state(
+    uuid, timestamptz, timestamptz, text
+)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_round_coachhelm_terminal_state(
+    uuid, timestamptz, timestamptz, text
+)
 TO service_role;
 
 CREATE OR REPLACE FUNCTION public.reclassify_golf_round(
-  p_round_id uuid,
-  p_round_type text,
-  p_qualifier_id uuid,
-  p_qualifier_round_number integer
+    p_round_id uuid,
+    p_round_type text,
+    p_qualifier_id uuid,
+    p_qualifier_round_number integer
 )
 RETURNS uuid
 LANGUAGE plpgsql
@@ -330,8 +352,13 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.reclassify_golf_round(uuid, text, uuid, integer) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.reclassify_golf_round(uuid, text, uuid, integer) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.reclassify_golf_round(
+    uuid, text, uuid, integer
+) FROM public,
+anon;
+GRANT EXECUTE ON FUNCTION public.reclassify_golf_round(
+    uuid, text, uuid, integer
+) TO authenticated;
 
 DO $$
 BEGIN
@@ -349,8 +376,8 @@ $$;
 CREATE UNIQUE INDEX IF NOT EXISTS golf_rounds_qualifier_player_round_number_uq
 ON public.golf_rounds (qualifier_id, player_id, qualifier_round_number)
 WHERE qualifier_id IS NOT NULL
-  AND qualifier_round_number IS NOT NULL
-  AND status IS DISTINCT FROM 'abandoned';
+AND qualifier_round_number IS NOT NULL
+AND status IS DISTINCT FROM 'abandoned';
 
 CREATE OR REPLACE FUNCTION public.prevent_golf_qualifier_round_cap_regression()
 RETURNS trigger
@@ -383,16 +410,21 @@ $$;
 DROP TRIGGER IF EXISTS guard_golf_qualifier_round_cap ON public.golf_qualifiers;
 CREATE TRIGGER guard_golf_qualifier_round_cap
 BEFORE INSERT OR UPDATE OF num_rounds ON public.golf_qualifiers
-FOR EACH ROW EXECUTE FUNCTION public.prevent_golf_qualifier_round_cap_regression();
+FOR EACH ROW
+EXECUTE FUNCTION public.prevent_golf_qualifier_round_cap_regression();
 
-CREATE OR REPLACE FUNCTION helm_private.prevent_active_team_member_deactivation()
+CREATE OR REPLACE FUNCTION
+helm_private.prevent_active_team_member_deactivation()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path TO pg_catalog, public
 AS $$
 BEGIN
-  IF OLD.status = 'active' AND NEW.status IS DISTINCT FROM 'active' AND EXISTS (
-    SELECT 1 FROM public.golf_rounds
+  IF OLD.status = 'active'
+    AND NEW.status IS DISTINCT FROM 'active'
+    AND EXISTS (
+      SELECT 1
+      FROM public.golf_rounds
     WHERE team_id = OLD.team_id
       AND player_id = OLD.player_id
       AND status = 'in_progress'
@@ -405,9 +437,11 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS golf_team_members_prevent_active_round_deactivation ON public.golf_team_members;
+DROP TRIGGER IF EXISTS golf_team_members_prevent_active_round_deactivation
+ON public.golf_team_members;
 CREATE TRIGGER golf_team_members_prevent_active_round_deactivation
 BEFORE UPDATE OF status ON public.golf_team_members
-FOR EACH ROW EXECUTE FUNCTION helm_private.prevent_active_team_member_deactivation();
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.prevent_active_team_member_deactivation();
 
 COMMIT;

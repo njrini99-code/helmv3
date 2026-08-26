@@ -24,13 +24,18 @@ describe('FairwayNewQualifier — form control accessible names (P192)', () => {
   it('gives every roster checkbox a non-empty accessible name matching the player', () => {
     render(<FairwayNewQualifier players={players} />);
 
-    const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes).toHaveLength(players.length);
+    const rosterCheckboxes = players.map((player) =>
+      screen.getByRole('checkbox', { name: `${player.first_name} ${player.last_name}` }),
+    );
 
-    expect(screen.getByRole('checkbox', { name: 'Ada Lovelace' })).toBeTruthy();
-    expect(screen.getByRole('checkbox', { name: 'Grace Hopper' })).toBeTruthy();
+    expect(rosterCheckboxes).toHaveLength(players.length);
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'This qualifier intentionally allows one 18-hole round',
+      }),
+    ).toBeTruthy();
 
-    for (const checkbox of checkboxes) {
+    for (const checkbox of rosterCheckboxes) {
       const name =
         checkbox.getAttribute('aria-label') ?? checkbox.getAttribute('aria-labelledby');
       expect(name).toBeTruthy();

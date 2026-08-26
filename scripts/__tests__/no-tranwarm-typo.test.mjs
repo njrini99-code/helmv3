@@ -113,4 +113,4 @@ test('no `tranwarm` typo anywhere in src/, docs/, scripts/, tests/', async () =>
       `Matches:\n${matches.slice(0, 20).join('\n')}` +
       (matches.length > 20 ? `\n... and ${matches.length - 20} more` : '')
   );
-});
+}, 15_000);

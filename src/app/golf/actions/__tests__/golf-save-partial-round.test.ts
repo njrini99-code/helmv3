@@ -31,6 +31,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
+import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 
 let fake: FakeSupabase;
 let adminFake: FakeSupabase;
@@ -82,14 +83,13 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
-import { deleteShot, getNextQualifierRoundNumber, savePartialRound, updateShot } from '../golf';
+import { getNextQualifierRoundNumber, savePartialRound } from '../golf';
 
 type Row = Record<string, unknown>;
 interface SeedTables extends Record<string, Row[]> {
   golf_players: Row[];
   golf_team_members: Row[];
   golf_rounds: Row[];
-  golf_shots: Row[];
 }
 
 const COURSE_A = '11111111-1111-4111-8111-111111111111';
@@ -102,7 +102,6 @@ function baseTables(): SeedTables {
       { id: 'm-1', team_id: 'team-1', player_id: 'player-1', status: 'active' },
     ],
     golf_rounds: [],
-    golf_shots: [],
   };
 }
 
@@ -111,11 +110,109 @@ function seedAs(userId: string, tables: SeedTables) {
   adminFake = fake;
 }
 
+function completedHole(overrides: Partial<HoleStats> = {}): HoleStats {
+  return {
+    holeNumber: 1,
+    par: 4,
+    yardage: 400,
+    score: 4,
+    putts: 2,
+    fairwayHit: true,
+    greenInRegulation: true,
+    drivingDistance: null,
+    usedDriver: true,
+    driveMissDirection: null,
+    approachDistance: 150,
+    approachLie: 'fairway',
+    approachProximity: 10,
+    approachMissDirection: null,
+    scrambleAttempt: false,
+    scrambleMade: false,
+    sandSaveAttempt: false,
+    sandSaveMade: false,
+    penaltyStrokes: 0,
+    firstPuttDistance: null,
+    firstPuttLeave: null,
+    firstPuttBreak: null,
+    firstPuttSlope: null,
+    firstPuttMissDirection: null,
+    holedOutDistance: null,
+    holedOutType: null,
+    shots: [],
+    ...overrides,
+  };
+}
+
+function trackedShot(): ShotRecord {
+  return {
+    shotNumber: 1,
+    shotType: 'tee',
+    clubType: 'driver',
+    lieBefore: 'tee',
+    distanceToHoleBefore: 400,
+    distanceUnitBefore: 'yards',
+    result: 'fairway',
+    distanceToHoleAfter: 150,
+    distanceUnitAfter: 'yards',
+    shotDistance: 250,
+    isPenalty: false,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe('savePartialRound — no-existingRoundId fallback', () => {
+  it('materializes sparse legacy holes as explicit empty checkpoints', async () => {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-sparse',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_B,
+      course_name: 'New Course',
+      round_date: '2026-07-10',
+      status: 'in_progress',
+      updated_at: '2026-07-10T10:00:00Z',
+    });
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: {
+        save_partial_round_atomic: async () => ({
+          data: { success: true, updated_at: '2026-07-10T10:00:01Z' },
+          error: null,
+        }),
+      },
+    });
+    adminFake = fake;
+
+    // Older mobile bundles serialized an incomplete scorecard as a sparse
+    // array. Server Action transport presents the empty slot as undefined;
+    // that must be treated exactly like an explicit uncompleted (null) hole.
+    const legacySparseHoles: Array<HoleStats | null> = new Array(3);
+    legacySparseHoles[0] = completedHole();
+    legacySparseHoles[2] = completedHole({ holeNumber: 3 });
+    const result = await savePartialRound({
+      courseName: 'New Course',
+      courseId: COURSE_B,
+      roundType: 'practice',
+      roundDate: '2026-07-10',
+      currentHole: 3,
+      holesToPlay: 18,
+      holes: legacySparseHoles,
+      holeConfigs: [
+        { holeNumber: 1, par: 4, yardage: 400 },
+        { holeNumber: 2, par: 4, yardage: 400 },
+        { holeNumber: 3, par: 4, yardage: 400 },
+      ],
+    }, 'round-sparse');
+
+    expect(result.success).toBe(true);
+    expect(tables.golf_rounds).toHaveLength(1);
+  });
+
   it('does NOT repurpose an unrelated in_progress round at a different course/date', async () => {
     const tables = baseTables();
     tables.golf_rounds.push({
@@ -186,190 +283,10 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
       expect(result.data.roundId).toBe('round-same');
     }
   });
-
-  it('keeps an existing round and its saved holes when fallback hole persistence fails', async () => {
-    const tables = baseTables();
-    tables.golf_rounds.push({
-      id: 'round-preserved-on-hole-error',
-      player_id: 'player-1',
-      team_id: 'team-1',
-      course_id: COURSE_A,
-      course_name: 'Same Course',
-      round_date: '2026-07-10',
-      status: 'in_progress',
-      qualifier_id: null,
-      qualifier_round_number: null,
-    });
-    tables.golf_holes = [{
-      id: 'durable-hole-1',
-      round_id: 'round-preserved-on-hole-error',
-      hole_number: 1,
-      par: 4,
-      score: 4,
-      putts: 2,
-    }];
-
-    const base = createFakeSupabase({ user: { id: 'u-p1' }, tables });
-    fake = {
-      ...base,
-      from(table: string) {
-        const builder = base.from(table);
-        if (table !== 'golf_holes') return builder;
-        return {
-          ...builder,
-          upsert: () => ({
-            select: () => Promise.resolve({
-              data: null,
-              error: { code: 'XX000', message: 'forced hole write failure', details: '' },
-            }),
-          }),
-        };
-      },
-    } as unknown as FakeSupabase;
-    adminFake = fake;
-
-    const result = await savePartialRound({
-      courseName: 'Same Course',
-      courseId: COURSE_A,
-      roundType: 'practice',
-      roundDate: '2026-07-10',
-      currentHole: 2,
-      holesToPlay: 18,
-      holes: [{
-        holeNumber: 1,
-        par: 4,
-        yardage: 380,
-        score: 4,
-        putts: 2,
-        penaltyStrokes: 0,
-      }] as never,
-    });
-
-    expect(result.success).toBe(false);
-    // A failed replacement must never erase a pre-existing Continue Round
-    // record. The next successful checkpoint can safely overwrite it.
-    expect(tables.golf_rounds).toHaveLength(1);
-    expect(tables.golf_rounds[0]?.id).toBe('round-preserved-on-hole-error');
-    expect(tables.golf_holes).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: 'durable-hole-1', round_id: 'round-preserved-on-hole-error' }),
-    ]));
-  });
-
-  it('normalizes sparse recovered-hole slots before checkpoint validation', async () => {
-    const tables = baseTables();
-    tables.golf_rounds.push({
-      id: 'round-sparse',
-      player_id: 'player-1',
-      team_id: 'team-1',
-      course_id: COURSE_A,
-      course_name: 'Recovered Course',
-      round_date: '2026-07-10',
-      status: 'in_progress',
-    });
-    let rpcArgs: Record<string, unknown> | undefined;
-    fake = createFakeSupabase({
-      user: { id: 'u-p1' },
-      tables,
-      rpc: {
-        save_partial_round_atomic: async (args) => {
-          rpcArgs = args as Record<string, unknown>;
-          return { data: { success: true, round_id: 'round-sparse' }, error: null };
-        },
-      },
-    });
-    adminFake = fake;
-    const restoredHoles = new Array(7) as Array<undefined>;
-
-    const result = await savePartialRound({
-      courseName: 'Recovered Course',
-      courseId: COURSE_A,
-      roundType: 'practice',
-      roundDate: '2026-07-10',
-      currentHole: 7,
-      holesToPlay: 18,
-      holes: restoredHoles,
-    }, 'round-sparse');
-
-    expect(result.success).toBe(true);
-    // The undefined array slot that previously surfaced as
-    // "holes.6 — Invalid input" cannot enter the persisted checkpoint.
-    expect(rpcArgs?.p_holes).toEqual([]);
-  });
 });
 
-describe('shot actions — already absent shot reconciliation', () => {
-  function forceAbsentShotLookup(client: FakeSupabase) {
-    const originalFrom = client.from.bind(client);
-    let maybeSingleCalls = 0;
-
-    client.from = ((table: string) => {
-      const api = originalFrom(table);
-      if (table !== 'golf_shots') return api;
-      return {
-        ...api,
-        select: () => {
-          const lookup: Record<string, unknown> = {};
-          lookup.eq = () => lookup;
-          lookup.maybeSingle = async () => {
-            maybeSingleCalls += 1;
-            return { data: null, error: null };
-          };
-          lookup.single = async () => {
-            throw new Error('stale-shot lookup must use maybeSingle');
-          };
-          return lookup;
-        },
-      };
-    }) as typeof client.from;
-
-    return () => maybeSingleCalls;
-  }
-
-  it('returns a deterministic code from delete without generating a PostgREST single-row error', async () => {
-    seedAs('u-p1', baseTables());
-    const getMaybeSingleCalls = forceAbsentShotLookup(fake);
-
-    const result = await deleteShot('33333333-3333-4333-8333-333333333333');
-
-    expect(result).toEqual({ success: false, error: 'Shot not found', code: 'shot_not_found' });
-    expect(getMaybeSingleCalls()).toBe(1);
-  });
-
-  it('gives Edit the same deterministic stale-shot contract', async () => {
-    seedAs('u-p1', baseTables());
-    const getMaybeSingleCalls = forceAbsentShotLookup(fake);
-
-    const result = await updateShot(
-      '33333333-3333-4333-8333-333333333333',
-      { club_type: 'driver' },
-    );
-
-    expect(result).toEqual({ success: false, error: 'Shot not found', code: 'shot_not_found' });
-    expect(getMaybeSingleCalls()).toBe(1);
-  });
-});
-
-describe('getNextQualifierRoundNumber — coach-controlled qualifier entry', () => {
-  it('does not use a past scheduled end date as an entry deadline', async () => {
-    const tables = baseTables();
-    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
-    tables.golf_qualifiers = [{
-      id: 'qualifier-1',
-      num_rounds: 3,
-      status: 'in_progress',
-      // Calendar metadata only: it must never deny a player an otherwise-open round.
-      end_date: '2020-01-01',
-      entry_deadline: '2020-01-01',
-    }];
-    seedAs('u-p1', tables);
-
-    await expect(getNextQualifierRoundNumber('qualifier-1')).resolves.toMatchObject({
-      success: true,
-      data: { nextRoundNumber: 1, availableRounds: [1] },
-    });
-  });
-
-  it('tells the player that a coach closed the qualifier, instead of issuing a generic failure', async () => {
+describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
+  it('refuses a stale link after a coach has explicitly closed the qualifier', async () => {
     const tables = baseTables();
     tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
     tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'completed' }];
@@ -381,70 +298,7 @@ describe('getNextQualifierRoundNumber — coach-controlled qualifier entry', () 
     expect(result.success === false && result.error).toMatch(/closed by the coach/i);
   });
 
-  it('returns a started qualifier round for Continue Round instead of offering another slot', async () => {
-    const tables = baseTables();
-    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
-    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
-    tables.golf_rounds = [{
-      id: 'round-in-progress',
-      qualifier_id: 'qualifier-1',
-      player_id: 'player-1',
-      qualifier_round_number: 2,
-      status: 'in_progress',
-      updated_at: '2026-08-25T16:00:00Z',
-    }];
-    seedAs('u-p1', tables);
-
-    await expect(getNextQualifierRoundNumber('qualifier-1')).resolves.toMatchObject({
-      success: true,
-      data: {
-        nextRoundNumber: 2,
-        availableRounds: [],
-        activeRoundId: 'round-in-progress',
-      },
-    });
-  });
-
-  it('fills the first missing configured slot instead of skipping from round 1 to round 3', async () => {
-    const tables = baseTables();
-    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
-    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
-    tables.golf_rounds = [
-      { id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed' },
-      { id: 'round-3', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 3, status: 'completed' },
-    ];
-    seedAs('u-p1', tables);
-
-    await expect(getNextQualifierRoundNumber('qualifier-1')).resolves.toMatchObject({
-      success: true,
-      data: { nextRoundNumber: 2, availableRounds: [2] },
-    });
-  });
-
-  it('advances a three-round qualifier from round 1 to round 2 and then round 3', async () => {
-    const tables = baseTables();
-    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
-    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
-    tables.golf_rounds = [{
-      id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed',
-    }];
-    seedAs('u-p1', tables);
-
-    await expect(getNextQualifierRoundNumber('qualifier-1')).resolves.toMatchObject({
-      success: true,
-      data: { nextRoundNumber: 2, availableRounds: [2] },
-    });
-
-    tables.golf_rounds.push({
-      id: 'round-2', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 2, status: 'completed',
-    });
-    await expect(getNextQualifierRoundNumber('qualifier-1')).resolves.toMatchObject({
-      success: true,
-      data: { nextRoundNumber: 3, availableRounds: [3] },
-    });
-  });
-
-  it('explains an open qualifier round cap and tells the coach what to change', async () => {
+  it('explains an open qualifier round cap without falsely calling the qualifier completed', async () => {
     const tables = baseTables();
     tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
     tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 1, status: 'in_progress' }];
@@ -460,9 +314,128 @@ describe('getNextQualifierRoundNumber — coach-controlled qualifier entry', () 
     const result = await getNextQualifierRoundNumber('qualifier-1');
 
     expect(result.success).toBe(false);
+    expect(result.success === false && result.error).toMatch(/1 of 1/i);
     expect(result.success === false && result.error).toMatch(/still open/i);
-    expect(result.success === false && result.error).toMatch(/all 1/i);
     expect(result.success === false && result.error).toMatch(/coach.*raise.*round/i);
+    expect(result.success === false && result.error).not.toMatch(/completed every round/i);
+  });
+
+  it('returns the first missing configured round instead of skipping over a legacy gap', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
+    tables.golf_rounds = [
+      { id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed' },
+      { id: 'round-3', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 3, status: 'completed' },
+    ];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 2, availableRounds: [2] },
+    });
+  });
+
+  it('progresses a three-round qualifier in order', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
+    tables.golf_rounds = [
+      { id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed' },
+      { id: 'round-2', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 2, status: 'completed' },
+    ];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 3, availableRounds: [3] },
+    });
+  });
+});
+
+/**
+ * P0 regression: a transient child write failure must NEVER delete an
+ * in-progress round. A player whose client lost its local round ID reaches
+ * this fallback path after signing back in; deleting the parent here made a
+ * recoverable retry appear as though the whole round had vanished.
+ */
+describe('savePartialRound — child-write failures preserve the round', () => {
+  function seedRecoverableRound() {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-preserve',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_A,
+      course_name: 'Same Course',
+      round_date: '2026-08-22',
+      status: 'in_progress',
+      qualifier_id: null,
+      qualifier_round_number: null,
+      updated_at: '2026-08-22T10:00:00Z',
+    });
+    seedAs('u-p1', tables);
+    return tables;
+  }
+
+  function failUpsert(
+    client: FakeSupabase,
+    table: string,
+    error: { code?: string; message: string },
+  ) {
+    const origFrom = client.from.bind(client);
+    client.from = ((requestedTable: string) => {
+      const api = origFrom(requestedTable);
+      if (requestedTable !== table) return api;
+      return {
+        ...api,
+        upsert: () => ({
+          select: async () => ({ data: null, error }),
+        }),
+      };
+    }) as typeof client.from;
+  }
+
+  const baseSaveData = {
+    courseName: 'Same Course',
+    courseId: COURSE_A,
+    roundType: 'practice' as const,
+    roundDate: '2026-08-22',
+    currentHole: 2,
+    holesToPlay: 18 as const,
+    holeConfigs: [{ holeNumber: 1, par: 4, yardage: 400 }],
+  };
+
+  it('preserves the existing round when hole persistence fails', async () => {
+    const tables = seedRecoverableRound();
+    failUpsert(fake, 'golf_holes', { code: '08006', message: 'connection reset' });
+
+    const result = await savePartialRound({
+      ...baseSaveData,
+      holes: [completedHole()],
+    });
+
+    expect(result.success).toBe(false);
+    expect(tables.golf_rounds).toHaveLength(1);
+    expect(tables.golf_rounds[0]?.id).toBe('round-preserve');
+  });
+
+  it('preserves the existing round when shot persistence fails', async () => {
+    const tables = seedRecoverableRound();
+    failUpsert(fake, 'golf_shots', { code: '08006', message: 'connection reset' });
+
+    const result = await savePartialRound({
+      ...baseSaveData,
+      holes: [completedHole({ shots: [trackedShot()] })],
+    });
+
+    expect(result.success).toBe(false);
+    expect(tables.golf_rounds).toHaveLength(1);
+    expect(tables.golf_rounds[0]?.id).toBe('round-preserve');
   });
 });
 

@@ -90,6 +90,8 @@ import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
 
 const COURSE_ID = '11111111-1111-4111-8111-111111111111';
 const ROUND_ID = 'a1b2c3d4-5047-4658-85b4-380250dc6245';
+const QUALIFIER_A = '11111111-1111-4111-8111-111111111112';
+const QUALIFIER_B = '11111111-1111-4111-8111-111111111113';
 const HOLE_COUNT = 9;
 const BUSY_MESSAGE = 'Another save for this round is just finishing — try again in a moment.';
 
@@ -276,5 +278,103 @@ describe('submitGolfRoundComprehensive — busy carve-out (new round / draft pat
     expect(logServerError).toHaveBeenCalledTimes(1);
     const [, , severity] = vi.mocked(logServerError).mock.calls[0]!;
     expect(severity).toBe('warning');
+  });
+});
+
+describe('submitGolfRoundComprehensive — persisted qualifier identity', () => {
+  it('rejects a stale client that tries to retarget an already-started qualifier round', async () => {
+    const rpc = vi.fn(async () => ({ data: { success: true, warnings: [] }, error: null }));
+    tables = {
+      golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
+      golf_team_members: [],
+      golf_rounds: [{
+        id: ROUND_ID,
+        player_id: 'player-1',
+        status: 'in_progress',
+        round_type: 'qualifier',
+        qualifier_id: QUALIFIER_A,
+        qualifier_round_number: 1,
+      }],
+    };
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: { submit_round_atomic: rpc },
+    });
+
+    const result = await submitGolfRoundComprehensive({
+      ...makeRoundInput(),
+      roundType: 'qualifier',
+      qualifierId: QUALIFIER_B,
+      qualifierRoundNumber: 1,
+    }, ROUND_ID);
+
+    expect(result.success).toBe(false);
+    expect(result.success === false && result.error).toMatch(/different qualifier/i);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('uses the started round identity when a stale client omits qualifier fields', async () => {
+    const rpc = vi.fn(async (args: unknown) => {
+      expect((args as Record<string, unknown>).p_round_data).toMatchObject({
+        round_type: 'qualifier',
+        qualifier_id: QUALIFIER_A,
+        qualifier_round_number: 1,
+      });
+      return { data: { success: true, warnings: [] }, error: null };
+    });
+    tables = {
+      golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
+      golf_team_members: [],
+      golf_rounds: [{
+        id: ROUND_ID,
+        player_id: 'player-1',
+        status: 'in_progress',
+        round_type: 'qualifier',
+        qualifier_id: QUALIFIER_A,
+        qualifier_round_number: 1,
+      }],
+      golf_qualifiers: [{ id: QUALIFIER_A, status: 'in_progress', num_rounds: 2 }],
+      golf_qualifier_entries: [{ id: 'entry-1', qualifier_id: QUALIFIER_A, player_id: 'player-1' }],
+    };
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: { submit_round_atomic: rpc },
+    });
+
+    const result = await submitGolfRoundComprehensive(makeRoundInput(), ROUND_ID);
+
+    expect(result.success).toBe(true);
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a legacy qualifier round resumable when its missing number cannot be safely submitted', async () => {
+    const rpc = vi.fn(async () => ({ data: { success: true, warnings: [] }, error: null }));
+    tables = {
+      golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
+      golf_team_members: [],
+      golf_rounds: [{
+        id: ROUND_ID,
+        player_id: 'player-1',
+        status: 'in_progress',
+        round_type: 'qualifier',
+        qualifier_id: QUALIFIER_A,
+        qualifier_round_number: null,
+      }],
+      golf_qualifiers: [{ id: QUALIFIER_A, status: 'in_progress', num_rounds: 2 }],
+      golf_qualifier_entries: [{ id: 'entry-1', qualifier_id: QUALIFIER_A, player_id: 'player-1' }],
+    };
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: { submit_round_atomic: rpc },
+    });
+
+    const result = await submitGolfRoundComprehensive(makeRoundInput(), ROUND_ID);
+
+    expect(result.success).toBe(false);
+    expect(result.success === false && result.error).toMatch(/valid qualifier round number/i);
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

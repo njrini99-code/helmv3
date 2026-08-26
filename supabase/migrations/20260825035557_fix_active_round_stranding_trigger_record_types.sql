@@ -23,7 +23,8 @@ BEGIN;
 -- before creating the replacement trigger functions below.
 CREATE SCHEMA IF NOT EXISTS helm_private;
 
-CREATE OR REPLACE FUNCTION helm_private.prevent_qualifier_entry_active_round_stranding()
+CREATE OR REPLACE FUNCTION
+helm_private.prevent_qualifier_entry_active_round_stranding()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path TO 'public', 'pg_temp'
@@ -45,7 +46,8 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION helm_private.prevent_qualifier_active_round_stranding()
+CREATE OR REPLACE FUNCTION
+helm_private.prevent_qualifier_active_round_stranding()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path TO 'public', 'pg_temp'
@@ -66,7 +68,8 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION helm_private.prevent_team_member_active_round_stranding()
+CREATE OR REPLACE FUNCTION
+helm_private.prevent_team_member_active_round_stranding()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path TO 'public', 'pg_temp'
@@ -88,7 +91,8 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION helm_private.prevent_team_active_round_stranding()
+CREATE OR REPLACE FUNCTION
+helm_private.prevent_team_active_round_stranding()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path TO 'public', 'pg_temp'
@@ -109,10 +113,14 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS golf_qualifier_entries_prevent_active_round_stranding ON public.golf_qualifier_entries;
-DROP TRIGGER IF EXISTS golf_qualifiers_prevent_active_round_stranding ON public.golf_qualifiers;
-DROP TRIGGER IF EXISTS golf_team_members_prevent_active_round_stranding ON public.golf_team_members;
-DROP TRIGGER IF EXISTS golf_teams_prevent_active_round_stranding ON public.golf_teams;
+DROP TRIGGER IF EXISTS golf_qualifier_entries_prevent_active_round_stranding
+ON public.golf_qualifier_entries;
+DROP TRIGGER IF EXISTS golf_qualifiers_prevent_active_round_stranding
+ON public.golf_qualifiers;
+DROP TRIGGER IF EXISTS golf_team_members_prevent_active_round_stranding
+ON public.golf_team_members;
+DROP TRIGGER IF EXISTS golf_teams_prevent_active_round_stranding
+ON public.golf_teams;
 
 CREATE TRIGGER golf_qualifier_entries_prevent_active_round_stranding
 BEFORE DELETE ON public.golf_qualifier_entries

@@ -25,4 +25,30 @@
 #   first_seen:          ISO 8601 timestamp of the first observed occurrence
 
 version: 1
-items: []
+items:
+  - id: qualifier-manual-close-only-2026-08-22
+    feature_id: qualifiers
+    root_cause: qualifier lifecycle allowed system-driven completion from schedule or entrant progress instead of requiring a coach action
+    incident_id: memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md
+    status: verified_in_production
+    risk: R1
+    sha: 82aaa3bf7c26fe7b956f6310e9f7f18ac6029323
+    pr: null
+    regression_tests:
+      - src/lib/golf/__tests__/qualifier-lifecycle.test.ts
+      - src/app/golf/actions/__tests__/golf-qualifier-progress.test.ts
+      - src/test/coachhelm/v3/qualifying.test.ts
+    queued_for_release: false
+    first_seen: '2026-08-22T21:00:00-04:00'
+  - id: confirmed-snapshot-recovery-prompt-2026-08-22
+    feature_id: shot_tracking
+    root_cause: timestamp-only recovery treated a confirmed iOS page-hide snapshot as unsaved work
+    incident_id: memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md
+    status: verified_in_production
+    risk: R2
+    sha: 48b41e1c4d8c86f12f5a2becd11454f5bd3899e2
+    pr: null
+    regression_tests:
+      - src/lib/utils/emergency-save.test.ts
+    queued_for_release: false
+    first_seen: '2026-08-22T21:00:00-04:00'

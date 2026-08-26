@@ -61,11 +61,20 @@ SESSION_ID_SAFE=$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')
 STOP_CHECK_JSON=$(node "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/lib/stop-check.mjs" "$SESSION_ID" 2>/dev/null)
 printf '%s' "$STOP_CHECK_JSON" | jq -e . >/dev/null 2>&1 || STOP_CHECK_JSON='{"touchedFiles":[]}'
 
-TOUCHED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.touchedFiles | length')
-TOUCHED_SRC_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq --arg re "$SRC_RE" '[.touchedFiles[] | select(test($re))] | length')
+# Counts/lists below are computed from .verifiableFiles, NOT .touchedFiles —
+# .touchedFiles includes files a delegated_verification event already covers
+# (a subagent's/worker session's own PR + CI verified them; this session has
+# no local context to redo that work) and .verifiableFiles is touchedFiles
+# minus those. Non-repo paths (e.g. session scratchpad artifacts) never
+# appear in EITHER list — record-session-touch.mjs excludes them at the
+# recording step, since there is nothing there to gate.
+TOUCHED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.verifiableFiles | length')
+TOUCHED_SRC_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq --arg re "$SRC_RE" '[.verifiableFiles[] | select(test($re))] | length')
 MAPPING_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.mappingGaps | length')
 CONTEXT_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.contextGaps | length')
 MEMORY_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.memoryGaps | length')
+DATE_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.dateGaps | length')
+DELEGATED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.delegatedFiles | length')
 
 # `.git` is a DIRECTORY in a normal clone and a FILE in a worktree.
 GITDIR=$(git rev-parse --git-dir 2>/dev/null || echo ".git")
@@ -87,7 +96,8 @@ BASE="$GITDIR/claude-stop-baseline-$SESSION_ID_SAFE"
 # non-source file CAN carry a real gap — package.json maps to
 # feature_awareness_system via its code.services glob, for one.
 if [ "${TOUCHED_SRC_COUNT:-0}" -eq 0 ] && [ "${MAPPING_GAP_COUNT:-0}" -eq 0 ] \
-   && [ "${CONTEXT_GAP_COUNT:-0}" -eq 0 ] && [ "${MEMORY_GAP_COUNT:-0}" -eq 0 ]; then
+   && [ "${CONTEXT_GAP_COUNT:-0}" -eq 0 ] && [ "${MEMORY_GAP_COUNT:-0}" -eq 0 ] \
+   && [ "${DATE_GAP_COUNT:-0}" -eq 0 ]; then
   DIRTY_NOW=$(git status --porcelain 2>/dev/null | grep -E "$SRC_RE" | awk '{print $NF}' | sort)
   if [ ! -f "$BASE" ]; then
     printf '%s\n' "$DIRTY_NOW" > "$BASE"
@@ -125,7 +135,7 @@ find "$GITDIR" -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 -delete 2>/de
 : > "$MARK"
 printf '%s\n' "$(git status --porcelain 2>/dev/null | grep -E "$SRC_RE" | awk '{print $NF}' | sort)" > "$BASE"
 
-TOUCHED_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.touchedFiles[]' | head -8 | tr '\n' ' ')
+TOUCHED_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.verifiableFiles[]' | head -8 | tr '\n' ' ')
 
 # 'use server' build trigger — scoped to THIS SESSION's touched .ts/.tsx
 # files (an improvement on the old whole-tree diff, now that we know exactly
@@ -144,7 +154,7 @@ TOUCHED_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.touchedFiles[]' | head -
 TOUCHED_TS_FILES=()
 while IFS= read -r line; do
   [ -n "$line" ] && TOUCHED_TS_FILES+=("$line")
-done < <(printf '%s' "$STOP_CHECK_JSON" | jq -r --arg re '\.(ts|tsx)$' '.touchedFiles[] | select(test($re))')
+done < <(printf '%s' "$STOP_CHECK_JSON" | jq -r --arg re '\.(ts|tsx)$' '.verifiableFiles[] | select(test($re))')
 
 SERVER_ACTION=""
 if [ "${#TOUCHED_TS_FILES[@]}" -gt 0 ] && git diff -- "${TOUCHED_TS_FILES[@]}" 2>/dev/null | grep -q "'use server'"; then
@@ -195,9 +205,26 @@ genuinely non-behavioral, record why:
   node .claude/hooks/lib/record-event.mjs no-memory-change --reason <format-only|generated-file-refresh|test-only-no-contract-change|comment-correction|mechanical-refactor-with-proven-equivalent-behavior>
 Bare \"not needed\" is never accepted."
 fi
+if [ "${DATE_GAP_COUNT:-0}" -gt 0 ]; then
+  DATE_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.dateGaps[] | "  - " + .')
+  GAP_SECTION="${GAP_SECTION}
+
+DATE GAP — ledger entr(y/ies) touched this session with no explicit YYYY-MM-DD date in the new content (owner directive: explicit dates on everything):
+${DATE_LIST}
+Add a YYYY-MM-DD date to the entry you just wrote."
+fi
+
+DELEGATED_NOTE=""
+if [ "${DELEGATED_COUNT:-0}" -gt 0 ]; then
+  DELEGATED_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.delegatedFiles[] | "  - " + .path + (if .pr then " (PR #" + (.pr|tostring) + ")" else "" end)')
+  DELEGATED_NOTE="
+
+${DELEGATED_COUNT} file(s) touched this session are DELEGATED (verified elsewhere, not re-demanded here):
+${DELEGATED_LIST}"
+fi
 
 REASON=$(cat <<EOF
-${TOUCHED_COUNT} file(s) touched by this session are unverified: ${TOUCHED_LIST}
+${TOUCHED_COUNT} file(s) touched by this session are unverified: ${TOUCHED_LIST}${DELEGATED_NOTE}
 
 Before ending the turn, run the gates that apply and report their real exit
 codes — do not infer them:

@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
   Radar, CreditCard,
-  RefreshCw, Dumbbell, Search,
+  RefreshCw, Dumbbell, Search, LogOut,
 } from 'lucide-react';
 import {
   AppShell,
@@ -23,6 +23,9 @@ import { FairwayBottomNav } from '@/components/fairway/app-shell/FairwayBottomNa
 import { selectOverflow, summarizeMoreTab } from '@/components/fairway/app-shell/more-nav';
 import type { NavItem } from '@/components/fairway/app-shell/types';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
+import { createClient } from '@/lib/supabase/client';
+import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
+import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import { ADMIN_NAV, hrefForShortcut, BRIDGE_BOTTOM_NAV_HREFS, BRIDGE_BOTTOM_NAV_LABELS } from './admin-nav';
 import { RelativeTime } from './RelativeTime';
@@ -180,6 +183,37 @@ function BridgeMoreSheetHeader({
 }
 
 /**
+ * Helm Bridge shares the authenticated GolfHelm session. Signing out must
+ * clear the active-team cookie as well as revoke the browser session: without
+ * it, the next person on a shared admin device could inherit an old team
+ * selection after they sign in. Cookie cleanup is best-effort so a transient
+ * server-action failure never traps an administrator in a signed-in session.
+ */
+function useBridgeSignOut() {
+  const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = useCallback(async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+
+    try {
+      await clearActiveTeam().catch(() => undefined);
+      const { error } = await createClient().auth.signOut();
+      if (error) throw error;
+
+      router.replace('/golf/login');
+      router.refresh();
+    } catch {
+      setIsSigningOut(false);
+      toast.error('Could not sign out', { description: 'Please try again.' });
+    }
+  }, [isSigningOut, router]);
+
+  return { isSigningOut, handleSignOut };
+}
+
+/**
  * Helm Bridge chrome: Fairway AppShell (warm-black rail + cream canvas) as
  * the neutral ops shell. Sport inks appear ONLY inside sport-scoped panes.
  * Keyboard: 1-9 then 0 jump the 10 tabs (see admin-nav.ts), R refreshes,
@@ -203,6 +237,7 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isSigningOut, handleSignOut } = useBridgeSignOut();
   const [commandOpen, setCommandOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -450,11 +485,40 @@ export function AdminShell({
   );
   const moreSheetFooter = useMemo(
     () => (
-      <p className="truncate font-fw-sans text-caption text-text-tertiary">
-        Signed in as {email}
-      </p>
+      <div className="space-y-2 border-t border-border-subtle pt-3">
+        <p className="truncate font-fw-sans text-caption text-text-tertiary">
+          Signed in as {email}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          fullWidth
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          leftIcon={<LogOut size={16} aria-hidden />}
+          className="justify-start text-text-secondary hover:bg-fw-danger/10 hover:text-fw-danger-ink"
+        >
+          {isSigningOut ? 'Signing out…' : 'Sign out'}
+        </Button>
+      </div>
     ),
-    [email],
+    [email, handleSignOut, isSigningOut],
+  );
+  const sidebarFooter = useMemo(
+    () => (
+      <Button
+        type="button"
+        variant="ghost"
+        fullWidth
+        onClick={handleSignOut}
+        disabled={isSigningOut}
+        leftIcon={<LogOut size={16} aria-hidden />}
+        className="justify-start text-nav-text-dim hover:bg-fw-danger/10 hover:text-fw-danger-ink"
+      >
+        {isSigningOut ? 'Signing out…' : 'Sign out'}
+      </Button>
+    ),
+    [handleSignOut, isSigningOut],
   );
 
   return (
@@ -464,6 +528,7 @@ export function AdminShell({
         sections={sections}
         brand={brand}
         user={shellUser}
+        sidebarFooter={sidebarFooter}
         pathname={pathname}
         linkComponent={Link}
         breadcrumbs={breadcrumbs}

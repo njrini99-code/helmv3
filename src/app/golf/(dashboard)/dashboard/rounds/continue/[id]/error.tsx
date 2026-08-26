@@ -16,7 +16,7 @@ export default function Error({
       route="/golf/dashboard/rounds/continue/[id]"
       component="ContinueRoundPage"
       title="Failed to load round"
-      message="We couldn't continue this round. Please try again."
+      message="We couldn't load your saved scorecard. Nothing was changed—please try again."
       homePath="/golf/dashboard/rounds"
     />
   );
