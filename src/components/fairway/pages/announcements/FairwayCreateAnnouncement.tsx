@@ -17,6 +17,9 @@
  *     the legacy validation.
  *   • require-acknowledgement Switch
  *   • document attachment from the `documents` prop (multi-select chips)
+ *   • direct file upload (photos/docs from the device) — uploads through the
+ *     documents pipeline (uploadGolfDocument + createGolfDocument) and lands
+ *     in the team library, then auto-attaches to this announcement
  *   • inline tasks (title required · optional description · optional due date) —
  *     same validation: all task titles must be filled.
  *   • live footer summary (recipients · docs · tasks · ack) — same vocabulary.
@@ -54,9 +57,11 @@ import {
   IconSearch,
   IconFile,
   IconCalendar,
+  IconUpload,
   IconX,
 } from '@/components/icons';
 import { createEnrichedAnnouncement } from '@/app/golf/actions/announcements';
+import { uploadGolfDocument, createGolfDocument } from '@/app/golf/actions/documents';
 
 /* ─── Types (identical to the legacy flow) ─────────────────────────────────── */
 
@@ -83,6 +88,8 @@ interface InlineTask {
 export interface FairwayCreateAnnouncementProps {
   players: Player[];
   documents: DocumentLite[];
+  /** Team id for direct upload. Null (no team) hides the upload control. */
+  teamId: string | null;
 }
 
 type Urgency = 'low' | 'normal' | 'high' | 'urgent';
@@ -94,6 +101,14 @@ const TITLE_MAX = 200;
 const BODY_MAX = 10000;
 /** Show the remaining-chars hint once the field is ≥90% of its max. */
 const COUNTER_THRESHOLD = 0.9;
+
+/* ─── Direct upload — same accept list as the Documents page uploader, and a
+ *     cap just under next.config.mjs's serverActions bodySizeLimit (26mb) so
+ *     an oversized phone video fails with an honest message instead of a
+ *     generic server-action 413. ─────────────────────────────────────────── */
+const UPLOAD_ACCEPT =
+  'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif,image/svg+xml,text/plain,text/markdown,text/csv,video/mp4,video/webm,video/quicktime,application/zip';
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 /** Subtle "N left" hint that only appears as the field nears its limit. */
 function charsLeftHelp(value: string, max: number): string | undefined {
@@ -131,7 +146,7 @@ function fileLabel(ft: string): string {
 
 /* ─── Trigger + Sheet ──────────────────────────────────────────────────────── */
 
-export function FairwayCreateAnnouncement({ players, documents }: FairwayCreateAnnouncementProps) {
+export function FairwayCreateAnnouncement({ players, documents, teamId }: FairwayCreateAnnouncementProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -144,6 +159,7 @@ export function FairwayCreateAnnouncement({ players, documents }: FairwayCreateA
         onOpenChange={setOpen}
         players={players}
         documents={documents}
+        teamId={teamId}
       />
     </>
   );
@@ -154,12 +170,14 @@ function CreateSheet({
   onOpenChange,
   players,
   documents,
+  teamId,
 }: FairwayCreateAnnouncementProps & {
   open: boolean;
   onOpenChange: (next: boolean) => void;
 }) {
   const router = useRouter();
   const titleRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
   // ── Form state (1:1 with the legacy flow) ─────────────────────────────────
@@ -168,6 +186,10 @@ function CreateSheet({
   const [urgency, setUrgency] = useState<Urgency>('normal');
   const [recipientPlayerIds, setRecipientPlayerIds] = useState<string[] | null>(null);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+  // Files uploaded from this sheet (already persisted to the team library) —
+  // merged ahead of the server-provided `documents` prop for chips/picker.
+  const [uploadedDocs, setUploadedDocs] = useState<DocumentLite[]>([]);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [inlineTasks, setInlineTasks] = useState<InlineTask[]>([]);
   const [requiresAcknowledgement, setRequiresAcknowledgement] = useState(false);
 
@@ -196,6 +218,7 @@ function CreateSheet({
       setUrgency('normal');
       setRecipientPlayerIds(null);
       setSelectedDocumentIds([]);
+      setUploadedDocs([]);
       setInlineTasks([]);
       setRequiresAcknowledgement(false);
       setShowPlayerPicker(false);
@@ -208,8 +231,9 @@ function CreateSheet({
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const isAllTeam = recipientPlayerIds === null;
-  const selectedDocs = documents.filter((d) => selectedDocumentIds.includes(d.id));
-  const availableDocs = documents.filter((d) => !selectedDocumentIds.includes(d.id));
+  const allDocs = [...uploadedDocs, ...documents];
+  const selectedDocs = allDocs.filter((d) => selectedDocumentIds.includes(d.id));
+  const availableDocs = allDocs.filter((d) => !selectedDocumentIds.includes(d.id));
   const filteredAvailableDocs = availableDocs.filter(
     (d) => !docSearch || d.title.toLowerCase().includes(docSearch.toLowerCase()),
   );
@@ -223,6 +247,51 @@ function CreateSheet({
   function handleClose() {
     if (loading) return;
     onOpenChange(false);
+  }
+
+  // Direct upload: persist each file into the team's document library via the
+  // Documents-page pipeline (upload → golf_documents row), then auto-attach it
+  // to this announcement. Sequential on purpose: phone uploads on cell data
+  // behave better one at a time, and per-file failures stay independent.
+  async function handleFilesChosen(chosen: File[]) {
+    if (!teamId || chosen.length === 0) return;
+    for (const file of chosen) {
+      if (file.size > MAX_UPLOAD_BYTES) {
+        fairwayToast.danger(`${file.name} is over the 25 MB limit`);
+        continue;
+      }
+      setUploadingCount((c) => c + 1);
+      try {
+        const uploaded = await uploadGolfDocument(file, teamId);
+        if (!uploaded.success || !uploaded.file_url) {
+          fairwayToast.danger(uploaded.error || `Could not upload ${file.name}`);
+          continue;
+        }
+        const created = await createGolfDocument({
+          team_id: teamId,
+          title: file.name.replace(/\.[^.]+$/, '') || file.name,
+          file_url: uploaded.file_url,
+          storage_path: uploaded.storage_path,
+          file_type: file.type || 'application/octet-stream',
+          file_size: file.size,
+          player_visible: true,
+        });
+        if (!created.success || !created.data) {
+          fairwayToast.danger(created.error || `Could not save ${file.name}`);
+          continue;
+        }
+        const doc = created.data;
+        setUploadedDocs((prev) => [
+          { id: doc.id, title: doc.title, file_type: doc.file_type ?? file.type, file_size: doc.file_size ?? file.size },
+          ...prev,
+        ]);
+        setSelectedDocumentIds((prev) => [...prev, doc.id]);
+      } catch {
+        fairwayToast.danger(`Could not upload ${file.name}`);
+      } finally {
+        setUploadingCount((c) => c - 1);
+      }
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -243,6 +312,10 @@ function CreateSheet({
     }
     if (recipientPlayerIds !== null && recipientPlayerIds.length === 0) {
       fairwayToast.danger('Please select at least one player or choose All Team');
+      return;
+    }
+    if (uploadingCount > 0) {
+      fairwayToast.danger('Wait for attachments to finish uploading');
       return;
     }
 
@@ -443,25 +516,60 @@ function CreateSheet({
                 description="Players must confirm they've read this announcement."
               />
 
-              {/* Documents */}
-              {documents.length > 0 && (
+              {/* Documents — direct upload (any coach with a team) + library picker.
+                  Previously this whole section was hidden when the team had no
+                  library documents yet, which read as "announcements can't have
+                  attachments" — the exact confusion a coach reported. */}
+              {(teamId !== null || documents.length > 0) && (
                 <div className="flex flex-col gap-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-fw-sans text-body-sm font-medium text-text-primary">
                       Attachments
                     </span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      leftIcon={<IconPaperclip size={14} />}
-                      onClick={() => setShowDocPicker((s) => !s)}
-                    >
-                      {selectedDocumentIds.length > 0
-                        ? `${selectedDocumentIds.length} attached`
-                        : 'Attach'}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {teamId !== null && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          leftIcon={<IconUpload size={14} />}
+                          disabled={uploadingCount > 0}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          {uploadingCount > 0 ? 'Uploading…' : 'Upload'}
+                        </Button>
+                      )}
+                      {allDocs.length > 0 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          leftIcon={<IconPaperclip size={14} />}
+                          onClick={() => setShowDocPicker((s) => !s)}
+                        >
+                          {selectedDocumentIds.length > 0
+                            ? `${selectedDocumentIds.length} attached`
+                            : 'Attach'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
+
+                  {teamId !== null && (
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept={UPLOAD_ACCEPT}
+                      className="hidden"
+                      aria-label="Upload attachment"
+                      onChange={(e) => {
+                        const chosen = Array.from(e.target.files ?? []);
+                        e.target.value = '';
+                        void handleFilesChosen(chosen);
+                      }}
+                    />
+                  )}
 
                   {selectedDocs.length > 0 && (
                     <div className="flex flex-wrap gap-2">

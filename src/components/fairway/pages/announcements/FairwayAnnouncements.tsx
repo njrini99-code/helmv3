@@ -138,6 +138,8 @@ export interface FairwayAnnouncementsProps {
   players: Player[];
   /** Team documents — coach create-flow attachments. */
   documents: DocumentLite[];
+  /** Team id — coach create-flow direct upload. Null when the coach has no team. */
+  teamId: string | null;
   /** Whether the viewer is a coach (gates create/delete + copy). */
   isCoach: boolean;
   /** The player's id (player view only). Null when missing → honest notice. */
@@ -150,6 +152,7 @@ export function FairwayAnnouncements({
   announcements,
   players,
   documents,
+  teamId,
   isCoach,
   playerId,
   recentCount,
@@ -214,7 +217,7 @@ export function FairwayAnnouncements({
     ) : undefined;
 
   const createCta = isCoach ? (
-    <FairwayCreateAnnouncement players={players} documents={documents} />
+    <FairwayCreateAnnouncement players={players} documents={documents} teamId={teamId} />
   ) : undefined;
 
   // The view tab — player gets All / Unread / Action needed; coach gets

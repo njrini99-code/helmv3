@@ -184,8 +184,20 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   task is merged and verified, retire its branch/worktree and return the
   canonical checkout to clean `main`. Never assume `main` is what is currently
   checked out.
-- Do not create a git worktree unless the user explicitly requests one for the current task.
-- If an explicitly requested temporary worktree is created, remove it when the task is complete.
+- **Concurrent sessions: one checkout cannot serialize them.** The
+  resting-state policy governs the canonical checkout; it cannot stop two
+  live sessions from moving one HEAD under each other. When more than one
+  agent session works in this repo at once, each session doing task work
+  takes its own worktree OUTSIDE the repo (`/private/tmp/helmv3-<task>` or
+  `~/worktrees/`) and leaves the canonical checkout alone. Deploys promote
+  from a worktree pinned at the exact merged `main` SHA, never from a
+  checkout another session may be mutating. Remove the worktree when the
+  task is merged and verified. (Added 2026-08-26 after three concurrent
+  sessions — iOS, bridge, hotfix — contended over one HEAD; the hotfix
+  session's worktree dodge is now the rule.)
+- A single active session may work in the canonical checkout directly; do
+  not create a worktree without a reason (concurrency above, or an explicit
+  user request), and remove any temporary worktree when its task completes.
 - `archive/**` and `docs/archive/**` are historical evidence only. Never use them as the source of truth for current architecture, schema, routes, configuration, features, or implementation.
 - Current source code, current migrations, current tests, `AGENTS.md`, `CLAUDE.md`, and active non-archive documentation outrank archived material.
 - Use repo-local platform CLIs: `./node_modules/.bin/supabase` and `./node_modules/.bin/vercel`. Do not assume global Supabase or Vercel binaries.
