@@ -201,5 +201,11 @@ describe('GET /api/cron/process-sequences — parent sequence is_active guard', 
     // Proceeds into the normal flow (reaches the coach lookup) rather than
     // being short-circuited by the guard.
     expect(calls.some((c) => c.table === 'crm_coaches')).toBe(true);
+
+    const coachSelection = calls
+      .find((c) => c.table === 'crm_coaches')
+      ?.args.find(([name]) => name === 'select')?.[1];
+    expect(coachSelection).not.toContain('first_name');
+    expect(coachSelection).not.toContain('last_name');
   });
 });

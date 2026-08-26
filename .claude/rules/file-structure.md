@@ -15,11 +15,17 @@ src/app/golf/
 ├── join/[code]/          # Team join flow
 └── admin/                # Admin panel
 
-src/components/golf/      # 256+ components
-├── coachhelm/            # 80+ CoachHelm AI components
-├── calendar/             # 30+ Calendar components
-├── player-hub/           # Player Hub home
-└── ...                   # roster/, rounds/, messages/, tasks/, stats/, etc.
+src/components/fairway/   # THE SHIPPED GOLF DASHBOARD UI — pages/ organized
+│                         # by surface (rounds-tracking, rounds-new, team-hub,
+│                         # settings, qualifiers, …) plus the shared kit
+│                         # (surfaces/, controls/, overlays/, charts/, …).
+│                         # New golf dashboard UI goes here.
+
+src/components/golf/      # Older component tree: coachhelm/ (CoachHelm AI),
+├── coachhelm/            # calendar/, player-hub/, and a mix of live and
+├── calendar/             # retired surfaces. Check whether a fairway/
+├── player-hub/           # equivalent exists before adding here.
+└── ...
 
 src/lib/
 ├── supabase/             # server.ts, client.ts
@@ -27,7 +33,9 @@ src/lib/
 │   ├── golf.ts           # Entity types
 │   └── golf-course.ts    # Course types
 ├── coachhelm/            # AI engine (see memory/context/coachhelm-ai.md)
-│   └── v2/               # V2: orchestrator, mining, prediction, learning, NLG
+│   ├── v2/               # V2: orchestrator, mining, prediction, learning, NLG
+│   └── v3/               # V3 engine generation — both are live; check the
+│                         # CoachHelm feature doc for which layer new work uses
 └── utils.ts              # cn(), formatters
 
 src/hooks/golf/           # Realtime, data, offline hooks (see memory/projects/golfhelm.md)

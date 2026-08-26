@@ -1,6 +1,7 @@
 {
   "skipped": [
     "@supabase/supabase-js",
+    "@supabase/supabase-js/tracing",
     "dotenv/config",
     "server-only"
   ],
@@ -17,16 +18,12 @@
     "components/baseball/living-annual/index.ts > components/baseball/living-annual/molecules/index.ts > components/baseball/living-annual/molecules/TearSheet.tsx",
     "components/baseball/living-annual/index.ts > components/baseball/living-annual/molecules/index.ts > components/baseball/living-annual/molecules/ToolRailStack.tsx",
     "components/baseball/stat-visuals/StatVisualsSection.tsx > components/baseball/stat-visuals/index.ts",
-    "components/fairway/cards-insight/themes/CauseRow.tsx > components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayPlayerCoachHelm.tsx > components/fairway/cards-insight/themes/index.ts",
-    "components/fairway/cards-insight/themes/ThemeCard.tsx > components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayPlayerCoachHelm.tsx > components/fairway/cards-insight/themes/index.ts",
-    "components/fairway/cards-insight/themes/ThemesPanel.tsx > components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayPlayerCoachHelm.tsx > components/fairway/cards-insight/themes/index.ts",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayEffectiveness.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx > components/fairway/pages/coachhelm/CausalWhyPanel.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx > components/fairway/pages/coachhelm/FocusAreaCard.tsx > components/fairway/pages/coachhelm/PracticeRxForInsight.tsx > components/fairway/pages/coachhelm/PracticeRxPanel.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx > components/fairway/pages/coachhelm/GoalsSection.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx > components/fairway/pages/coachhelm/GoalsSection.tsx > components/fairway/pages/coachhelm/FairwayGoalCard.tsx",
-    "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayPlayerCoachHelm.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/GenomeCompareView.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/GenomeDetailView.tsx",
     "components/fairway/index.ts > components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/PlayersGridView.tsx",

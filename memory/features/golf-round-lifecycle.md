@@ -11,7 +11,6 @@
 > Removing this is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
 
-
 ## Status
 
 - active
@@ -124,6 +123,16 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   `coachhelm_failure_reason` on an already completed round; it cannot alter
   the recorded round, its identity, or its children.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
+- The protected atomic submit RPC is the only live completion writer. On every
+  RPC failure, application code must preserve the server/device backups and
+  either reconcile a committed result or return the player to retry/recovery;
+  it must never delete and rebuild a saved round graph.
+- Atomic save and submit snapshots must reject any shot group whose hole is not
+  present in the supplied hole snapshot before replacing durable data. A
+  rejected snapshot leaves the existing round in progress and recoverable.
+- Valid local emergency saves remain recoverable until an explicit discard or
+  confirmed completion; recovery data must not expire merely because time has
+  passed.
 - A client-side abort after terminal submit is an unknown transport outcome,
   not proof of a database rollback. The action may report success only after
   an authenticated read confirms that exact round is completed; otherwise it
@@ -145,6 +154,12 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Round review and CoachHelm triggers must use committed round data, not stale draft state.
 - Cache invalidation must include player-facing and coach-facing views that reflect the round.
 - Score, hole, shot, lie, and strokes-gained calculations must stay consistent with `docs/v3-research-golf-domain.md`.
+- Completed score history is immutable. Any post-submit derived write must use
+  its explicit protected database capability: strokes gained through
+  `recalculate_round_strokes_gained`, CoachHelm markers through
+  `record_round_coachhelm_terminal_state`, and recap text through
+  `save_round_ai_recap`. App code must never update a completed
+  `golf_rounds` row directly.
 
 ## UI Contract
 
@@ -167,12 +182,17 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Hook-order or hydration issues in round-entry and review screens.
 - Schema replay drift in Supabase migrations touching round/shot/review tables.
 - Stats cache mismatch after edits or recomputation.
+- Lifecycle migrations that introduce a completed-round guard can strand older
+  direct writers unless their compatible RPC path and regression tests ship in
+  the same release.
 
 ## Tests To Prefer
 
 - Unit tests for schemas and calculation helpers.
 - Action tests for draft, submit, feedback, and revalidation behavior.
 - RLS tests for round and shot ownership.
+- Regression coverage for every explicit completed-round write capability and
+  a migration replay/RLS suite for its grants and security boundary.
 - Playwright smoke for new round, continue round, submit/review, and mobile recovery.
 
 ## Related Docs

@@ -26,20 +26,23 @@ because they buy false confidence.
 
 ### 1. The ratchet system
 
-Nine baseline files record known-bad counts so a fix can land green and the
-number can only shrink:
+Baseline files record known-bad counts so a fix can land green and the
+number can only shrink. The count lives in each baseline file — never in
+prose (this table once carried the numbers and every one of them rotted):
 
-| Baseline | Count | Guards |
-|---|---|---|
-| `.supabase-error-baseline.json` | 1052 | unchecked Supabase reads |
-| `.doc-schema-baseline.json` | 59 | doc-named DB objects that don't exist |
-| `.fail-open-baseline.json` | 51 | fail-open error paths |
-| `.doc-path-baseline.json` | 46 | doc-named file paths that don't resolve |
-| `.markdownlint-baseline.json` | 34 | markdown lint |
-| `.lint-baseline.json` | 12 | ESLint |
-| `.sqlfluff-baseline.json` | 12 | SQL lint |
-| `.paginated-read-baseline.json` | 12 | unpaginated PostgREST reads |
-| `.cycles-baseline.json` | 2 | import cycles |
+| Baseline | Guards |
+|---|---|
+| `.supabase-error-baseline.json` | unchecked Supabase reads |
+| `.doc-schema-baseline.json` | doc-named DB objects that don't exist |
+| `.fail-open-baseline.json` | fail-open error paths |
+| `.doc-path-baseline.json` | doc-named file paths that don't resolve |
+| `.registry-globs-baseline.json` | registry entries that resolve to nothing (held at ZERO) |
+| `.duplicate-exports-baseline.json` | same function name exported from two files under src/app |
+| `.markdownlint-baseline.json` | markdown lint |
+| `.lint-baseline.json` | ESLint |
+| `.sqlfluff-baseline.json` | SQL lint |
+| `.paginated-read-baseline.json` | unpaginated PostgREST reads |
+| `.cycles-baseline.json` | import cycles |
 
 **Rules:**
 

@@ -1,0 +1,39 @@
+fileType: momentic/test/v2
+id: golf-hell-resume-hole-three
+name: GolfHelm qualifier hell - resume review and checkpoint hole three
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.PLAYER_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.PLAYER_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - waitForUrl: /golf/dashboard
+  - navigate: https://helmsportslabs.com/golf/dashboard/rounds
+  - checkPageContains: "{{ env.QA_COURSE_R1 }}"
+  - click: Continue
+  - waitForUrl: /golf/dashboard/rounds/continue/
+  # Preconditions are created by the preceding recovery case: two holes have
+  # durable checkpoints. Continue opens the latest completed-hole review,
+  # which must offer an explicit route back to the live current hole.
+  - checkPageContains: 2/18
+  - checkPageContains: Back to Current Hole
+  - click: Back to Current Hole
+  - checkPageContains: Hole 3
+  - click: Green option under Shot result
+  - type:
+      text: "10"
+      into: Proximity to hole input
+  - click: Next shot
+  - click: Straight break option
+  - click: Level slope option
+  - click: Hole putt result
+  - click: Complete hole
+  # A completed-hole checkpoint is not complete merely because the review UI
+  # renders. The test waits for server-backed progress and the next live hole.
+  - wait:
+      ms: 12000
+  - checkPageContains: 3/18
+  - checkPageContains: Hole 4

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import type { Page as AxePage } from 'playwright-core';
 
 /**
  * Accessibility audit via axe-core.
@@ -26,6 +27,14 @@ interface PublicRoute {
    * short — every entry is technical debt.
    */
   disableRules?: string[];
+}
+
+// axe-core declares its peer on `playwright-core`, while Playwright Test owns
+// the runtime page. They are the same 1.62 API at runtime, but npm may keep
+// their patch releases in separate physical directories. The boundary is
+// intentionally isolated here instead of weakening the test types globally.
+function toAxePage(page: import('@playwright/test').Page): AxePage {
+  return page as unknown as AxePage;
 }
 
 /**
@@ -90,7 +99,7 @@ for (const route of PUBLIC_ROUTES) {
     // Fire every viewport-triggered reveal, then audit the whole document.
     await settleReveals(page);
 
-    let builder = new AxeBuilder({ page })
+    let builder = new AxeBuilder({ page: toAxePage(page) })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       // Exclude third-party widgets we don't control (Vercel toolbar,
       // Sentry feedback, etc.). Extend selectors here if more land in

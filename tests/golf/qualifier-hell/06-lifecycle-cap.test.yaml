@@ -1,0 +1,29 @@
+fileType: momentic/test/v2
+id: golf-hell-lifecycle-cap
+name: GolfHelm qualifier hell - cap and manual completion
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.COACH_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.COACH_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - waitForUrl: /golf/dashboard
+  - navigate: https://helmsportslabs.com/golf/dashboard/qualifiers
+  - click: "{{ env.QA_QUALIFIER_NAME }}"
+  - checkPageContains: Cole Bennett
+  - checkPageContains: 4/4
+  - checkPageContains: "64"
+  - checkPageContains: "76"
+  - checkPageContains: "72"
+  - checkPageContains: "84"
+  - checkPageContains: "296"
+  - act: >-
+      Prove the 4-round qualifier remains open and does not auto-complete at
+      its cap. Attempt to reduce its cap below recorded progress through the
+      real edit UI; it must be rejected with no false success and no changed
+      rounds. Then manually complete this exact qualifier through the real UI.
+      Confirm that the player history/results remain visible and no fifth round
+      can be started. Do not edit or complete any other qualifier.

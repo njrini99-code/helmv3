@@ -71,12 +71,15 @@ features:
         - src/components/golf/coachhelm/**
       api:
         - src/app/api/coachhelm/**
-        - src/app/api/cron/coachhelm/**
+        - src/app/api/cron/coachhelm-calibration/**
+        - src/app/api/cron/coachhelm-insight-lifecycle/**
+        - src/app/api/cron/coachhelm-roster-sweep/**
+        - src/app/api/cron/coachhelm-safety-net/**
+        - src/app/api/cron/coachhelm-validation/**
         - src/app/api/cron/v3/**
       actions:
         - src/app/golf/actions/coachhelm-*.ts
         - src/app/golf/actions/insight-*.ts
-        - src/app/golf/actions/insights.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/v3/**
@@ -89,7 +92,6 @@ features:
       tests:
         - src/test/coachhelm/**
         - src/test/api/cron/coachhelm*.test.ts
-        - src/test/app/golf/dashboard/coachhelm/**
     integrations:
       - supabase
       - sentry
@@ -181,10 +183,12 @@ features:
       routes:
         - src/app/golf/(dashboard)/dashboard/rounds/**
       components:
-        - src/components/golf/rounds/**
-        - src/components/golf/shot-tracking/**
+        - src/components/fairway/pages/rounds/**
+        - src/components/fairway/pages/rounds-new/**
+        - src/components/fairway/pages/rounds-recover/**
+        - src/components/fairway/pages/rounds-tracking/**
       api:
-        - src/app/api/rounds/**
+        - src/app/api/golf/rounds/**
       actions:
         - src/app/golf/actions/golf.ts
         - src/app/golf/actions/round-*.ts
@@ -242,10 +246,9 @@ features:
         - src/app/golf/(dashboard)/dashboard/my-qualifiers/**
         - src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**
       components:
-        - src/components/golf/qualifiers/**
-        - src/components/golf/coachhelm/v3/QualifyingBoard/**
+        - src/components/fairway/pages/qualifiers/**
+        - src/components/fairway/pages/my-qualifiers/**
       api:
-        - src/app/api/coachhelm/v3/qualifying/**
       actions:
         - src/app/golf/actions/golf.ts
         - src/app/golf/actions/v3/qualifying.ts
@@ -296,12 +299,12 @@ features:
         - src/app/golf/(dashboard)/dashboard/rounds/continue/**
         - src/app/golf/(dashboard)/dashboard/rounds/recover/**
       components:
-        - src/components/golf/ShotTrackingComprehensive.tsx
-        - src/components/golf/rounds/**
         - src/components/fairway/pages/rounds-tracking/**
+        - src/components/fairway/pages/rounds/**
+        - src/components/fairway/pages/rounds-new/**
         - src/components/fairway/pages/rounds-recover/**
       api:
-        - src/app/api/rounds/**
+        - src/app/api/golf/rounds/**
       actions:
         - src/app/golf/actions/golf.ts
         - src/app/golf/actions/round-drafts.ts
@@ -357,7 +360,6 @@ features:
       components:
         - src/components/golf/stats/**
       api:
-        - src/app/api/stats/**
       actions:
         - src/app/golf/actions/stats.ts
         - src/app/golf/actions/stats-data.ts
@@ -373,7 +375,7 @@ features:
         - supabase/migrations/*putting*.sql
       tests:
         - src/app/golf/actions/__tests__/stats-data.test.ts
-        - src/test/coachhelm/v2/stats/**
+        - src/test/coachhelm/v2/**
         - src/test/coachhelm/v2/shot-analysis/**
     integrations:
       - supabase
@@ -419,7 +421,6 @@ features:
         - src/app/golf/actions/calendar-feeds.ts
         - src/app/golf/actions/calendar-sync.ts
         - src/app/golf/actions/event-documents.ts
-        - src/app/golf/actions/event-lifecycle.ts
         - src/app/golf/actions/recurring-events.ts
       services:
         - src/lib/calendar/**
@@ -473,14 +474,18 @@ features:
         - src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**
         - src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/**
       components:
-        - src/components/golf/coachhelm/alerts/**
-        - src/components/golf/coachhelm/patterns/**
+        - src/components/golf/coachhelm/triage/**
+        - src/components/fairway/pages/coachhelm/**
         - src/components/golf/coachhelm/insights/**
-        - src/components/golf/coachhelm/analytics/**
+        - src/components/golf/coachhelm/coach/**
         - src/components/golf/coachhelm/settings/**
         - src/components/golf/coachhelm/v2/**
       api:
-        - src/app/api/cron/coachhelm/**
+        - src/app/api/cron/coachhelm-calibration/**
+        - src/app/api/cron/coachhelm-insight-lifecycle/**
+        - src/app/api/cron/coachhelm-roster-sweep/**
+        - src/app/api/cron/coachhelm-safety-net/**
+        - src/app/api/cron/coachhelm-validation/**
       actions:
         - src/app/golf/actions/alerts.ts
         - src/app/golf/actions/pattern-management.ts
@@ -546,13 +551,10 @@ features:
         - src/components/golf/coachhelm/player/**
         - src/components/golf/coachhelm/round-review/**
         - src/components/golf/coachhelm/insight-card/**
-        - src/components/golf/coachhelm/v3/GoalCard/**
         - src/components/golf/coachhelm/v3/GoalCreationModal/**
-        - src/components/golf/coachhelm/v3/IntentPill/**
-        - src/components/golf/coachhelm/v3/IntentDrawer/**
         - src/components/golf/coachhelm/v3/StandingBar/**
         - src/app/golf/(dashboard)/dashboard/my-standing/page.tsx
-        - src/components/golf/coachhelm/v3/HeroNarrativeCard.tsx
+        - src/components/fairway/pages/coachhelm/**
       api:
         - src/app/api/coachhelm/v3/**
       actions:
@@ -572,7 +574,7 @@ features:
         - supabase/migrations/*genome*.sql
         - supabase/migrations/*goal*.sql
       tests:
-        - src/test/app/golf/dashboard/coachhelm/**
+        - src/test/coachhelm/**
         - src/test/coachhelm/v3/**
         - src/test/coachhelm/v2/post-round-trigger.test.ts
     integrations:
@@ -614,11 +616,10 @@ features:
         - src/app/golf/(dashboard)/dashboard/announcements/**
       components:
         - src/components/golf/messages/**
-        - src/components/fairway/pages/messages/**
         - src/components/golf/announcements/**
       api:
-        - src/app/api/messages/**
-        - src/app/api/announcements/**
+        - src/components/fairway/pages/messages/**
+        - src/components/fairway/pages/announcements/**
       actions:
         - src/app/golf/actions/messages.ts
         - src/app/golf/actions/message-attachments.ts
@@ -674,15 +675,13 @@ features:
         - src/app/golf/(dashboard)/dashboard/hub/**
         - src/app/golf/(dashboard)/dashboard/team-hub/**
       components:
-        - src/components/golf/tasks/**
+        - src/components/fairway/pages/tasks/**
         - src/components/golf/documents/**
-        - src/components/golf/travel/**
+        - src/components/fairway/pages/travel/**
         - src/components/golf/player-hub/**
         - src/components/fairway/pages/team-hub/**
       api:
-        - src/app/api/tasks/**
-        - src/app/api/documents/**
-        - src/app/api/travel/**
+        - src/components/fairway/pages/documents/**
       actions:
         - src/app/golf/actions/tasks.ts
         - src/app/golf/actions/task-templates.ts
@@ -742,8 +741,9 @@ features:
         - src/components/golf/roster/**
         - src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx
       api:
-        - src/app/api/roster/**
-        - src/app/api/team/**
+        - src/app/api/golf/players/**
+        - src/components/fairway/pages/roster/**
+        - src/components/fairway/pages/team/**
       actions:
         - src/app/golf/actions/roster.ts
         - src/app/golf/actions/teams.ts
@@ -755,7 +755,6 @@ features:
         - supabase/migrations/*team*.sql
         - supabase/migrations/*coach_staff*.sql
       tests:
-        - e2e/roster.spec.ts
         - src/app/golf/actions/__tests__/dashboard-data.test.ts
     integrations:
       - supabase
@@ -790,7 +789,6 @@ features:
       routes:
         - src/app/golf/(dashboard)/dashboard/recruiting/**
       components:
-        - src/components/golf/recruiting/**
         - src/components/fairway/pages/recruiting/**
       api: []
       actions:
@@ -839,7 +837,7 @@ features:
         - src/components/golf/onboarding/**
         - src/components/golf/settings/JoinTeamSection.tsx
       api:
-        - src/app/api/auth/**
+        - src/app/api/golf/auth/**
       actions:
         - src/app/golf/actions/auth.ts
         - src/app/golf/actions/onboarding.ts
@@ -893,13 +891,13 @@ features:
         - src/components/golf/settings/**
         - src/components/golf/coachhelm/settings/**
       api:
-        - src/app/api/settings/**
+        - src/components/fairway/pages/settings/**
       actions:
         - src/app/golf/actions/v3/notification-prefs.ts
         - src/app/golf/actions/coaching-philosophy.ts
         - src/app/golf/actions/teams.ts
       services:
-        - src/lib/coachhelm/v3/foundation/flags.ts
+        - src/lib/coachhelm/v3/foundation/generator-toggles.ts
       db:
         - supabase/migrations/*settings*.sql
         - supabase/migrations/*notification*.sql
@@ -943,7 +941,7 @@ features:
       components:
         - src/components/golf/player-hub/**
       api:
-        - src/app/api/dashboard/**
+        - src/components/fairway/pages/hub/**
       actions:
         - src/app/golf/actions/dashboard-data.ts
         - src/app/golf/actions/travel.ts
@@ -1060,10 +1058,11 @@ features:
       components:
         - src/components/golf/settings/**
         - src/components/golf/roster/**
-        - src/components/golf/team/**
+        - src/components/fairway/pages/team/**
+        - src/components/fairway/pages/team-hub/**
       api:
         - src/app/api/admin/**
-        - src/app/api/auth/**
+        - src/app/api/golf/auth/**
       actions:
         - src/app/golf/actions/auth.ts
         - src/app/golf/actions/roster.ts

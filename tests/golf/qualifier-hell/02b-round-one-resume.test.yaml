@@ -1,0 +1,35 @@
+fileType: momentic/test/v2
+id: golf-hell-round-one-resume
+name: GolfHelm qualifier hell - resume round one to completion
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.PLAYER_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.PLAYER_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - waitForUrl: /golf/dashboard
+  - navigate: https://helmsportslabs.com/golf/dashboard/rounds
+  - checkPageContains: "{{ env.QA_COURSE_R1 }}"
+  - click: Continue
+  - waitForUrl: /golf/dashboard/rounds/continue/
+  - checkPageContains: Hole 3
+  - act: >-
+      Resume this exact tagged in-progress qualifier round from Hole 3 and
+      complete holes 3 through 18 using the real shot tracker. Keep every
+      sequence legal and wait for each autosave/completed-hole checkpoint before
+      progressing. Do not refresh, do not open another tab, and do not interact
+      with a Recover Unsaved Progress dialog in this resume pass. Use the
+      scorecard's visible current total to choose legal remaining hole scores
+      that produce a final 18-hole total of exactly 64; do not alter the
+      completed first two holes, create another round, use an API, or suppress
+      an error. Submit exactly once. Stop on a failed checkpoint,
+      duplicate shot, non-reconciled stale reference, unexpected mutation error,
+      or any state that says saved without durable progress.
+  - checkPageContains: Round Complete
+  - checkPageContains: "64"
+  - navigate: https://helmsportslabs.com/golf/dashboard/my-qualifiers
+  - checkPageContains: "{{ env.QA_QUALIFIER_NAME }}"
+  - checkPageContains: 1/4

@@ -58,6 +58,11 @@ interface RoundErrorContext {
   source?: ServerTraceSource;
   statusCode?: number | null;
   requestId?: string | null;
+  /** Opaque workflow correlation ID from the flight recorder. Never auth data. */
+  helmTraceId?: string | null;
+  /** Canonical expected workflow step active when the error was recorded. */
+  traceStep?: string | null;
+  parentTraceStep?: string | null;
   runtime?: 'nodejs' | 'edge' | 'unknown';
   handled?: boolean;
   roundId?: string | null;
@@ -111,6 +116,9 @@ function normalizeContext(context: RoundErrorContext, traceMessage?: string): Re
     source: context.source ?? 'server_action',
     statusCode: context.statusCode ?? null,
     requestId: context.requestId ?? null,
+    helmTraceId: context.helmTraceId ?? null,
+    traceStep: context.traceStep ?? null,
+    parentTraceStep: context.parentTraceStep ?? null,
     runtime: context.runtime ?? process.env.NEXT_RUNTIME ?? 'nodejs',
     handled: context.handled ?? true,
     roundId: context.roundId ?? null,
@@ -436,6 +444,8 @@ function captureSentryTrace(
     if (context.errorCode) scope.setTag('pg_error_code', context.errorCode);
     if (context.statusCode) scope.setTag('http_status', String(context.statusCode));
     if (context.requestId) scope.setTag('request_id', context.requestId);
+    if (context.helmTraceId) scope.setTag('helm.trace_id', context.helmTraceId);
+    if (context.traceStep) scope.setTag('helm.trace_step', context.traceStep);
 
     if (context.tags) {
       for (const [key, value] of Object.entries(context.tags)) {

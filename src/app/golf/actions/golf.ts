@@ -1729,7 +1729,11 @@ async function submitGolfRoundComprehensiveImpl(
           .maybeSingle();
 
         if (existingRound && existingRound.id !== existingRoundId) {
-          return { success: false, error: `You have already submitted round ${effectiveQualifierRoundNumber} for this qualifier.` };
+          // `code` keys the Bridge's expected-soft-failure classification
+          // (EXPECTED_SOFT_FAILURE_CODES in observe-action-result.ts) — the
+          // registry knew this code but no envelope carried it, so this
+          // by-design rejection minted error-severity incidents.
+          return { success: false, code: 'qualifier_round_already_exists', error: `You have already submitted round ${effectiveQualifierRoundNumber} for this qualifier.` };
         }
       }
     }
@@ -6903,7 +6907,9 @@ async function getNextQualifierRoundNumberImpl(
       return { success: false, error: 'Qualifier not found' };
     }
     if (qualifier.status === 'completed') {
-      return { success: false, error: 'This qualifier has been closed by the coach.' };
+      // See qualifier_round_already_exists above: the code routes this
+      // expected lifecycle outcome to 'warning', not a Sentry error.
+      return { success: false, code: 'qualifier_closed', error: 'This qualifier has been closed by the coach.' };
     }
 
     // A started qualifier round owns its number until it is submitted or
@@ -6972,8 +6978,13 @@ async function getNextQualifierRoundNumberImpl(
 
     if (nextRoundNumber === undefined) {
       const roundLabel = numRounds === 1 ? 'round' : 'rounds';
+      // See qualifier_round_already_exists above: the code routes this
+      // expected lifecycle outcome to 'warning', not a Sentry error
+      // (observed live 2026-08-25 as Sentry JAVASCRIPT-NEXTJS-P8 / Bridge
+      // fingerprint 709e5658 — a player at their configured limit).
       return {
         success: false,
+        code: 'qualifier_round_limit_reached',
         error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${numRounds} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
       };
     }

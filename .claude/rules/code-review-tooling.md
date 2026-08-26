@@ -8,9 +8,7 @@ verified: 2026-08-20-mechanical  # paths + table names machine-checked this date
 > their credit quota had become the slowest step in shipping, and the Review
 > Gate + CodeQL cover the same hard rules deterministically. `.coderabbit.yaml`
 > is now a disable stub, and the bots were removed from main's required status
-> checks. The GitHub Apps themselves still need an owner uninstall
-> (repo Settings → Integrations) — until that happens they keep posting
-> advisory checks on PRs. The custom rule packs under
+> checks. No bot checks appear on current PRs. The custom rule packs under
 > `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` REMAIN — CI consumes
 > them directly; treat that directory name as historical.
 

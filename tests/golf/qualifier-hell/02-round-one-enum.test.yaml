@@ -1,0 +1,38 @@
+fileType: momentic/test/v2
+id: golf-hell-round-one-enum
+name: GolfHelm qualifier hell - round one enum coverage
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.PLAYER_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.PLAYER_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - waitForUrl: /golf/dashboard
+  - navigate: https://helmsportslabs.com/golf/dashboard/qualifiers
+  - checkPageContains: "{{ env.QA_QUALIFIER_NAME }}"
+  - click: "{{ env.QA_QUALIFIER_NAME }}"
+  - act: >-
+      Start exactly Round 1 of the qualifier {{ env.QA_QUALIFIER_NAME }} through
+      the real player UI. Use a unique manual course named {{ env.QA_COURSE_R1 }}
+      and an 18-hole par-72 scorecard. Do not use any API, database, developer
+      tool, or another qualifier. Record and complete all 18 holes for a final
+      score of exactly 64. Across the round, cover the legal shot/result
+      vocabulary: tee, approach, around-green, putting and penalty; driver,
+      non-driver and putter; fairway, rough, sand, green, hole, other and
+      penalty results; tee misses left/right; every approach miss direction
+      including short-left, short-right, long-left and long-right; left-to-right,
+      right-to-left, straight and multiple putt breaks; uphill, downhill, level
+      and severe slopes; short/long/low/high putt-miss tags; a putt to rough,
+      a putt to sand, one ace, a par-4/5 tee result to green, water hazard,
+      out-of-bounds, and legal on-green proximity near 149 ft. Wait for each
+      server acknowledgement/checkpoint before advancing. If an error boundary,
+      non-reconciled Shot not found, unexpected mutation 4xx/5xx, or failed
+      completed-hole checkpoint appears, stop and fail rather than retrying.
+  - checkPageContains: Round Complete
+  - checkPageContains: "64"
+  - navigate: https://helmsportslabs.com/golf/dashboard/my-qualifiers
+  - checkPageContains: "{{ env.QA_QUALIFIER_NAME }}"
+  - checkPageContains: 1/4

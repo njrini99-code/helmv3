@@ -46,6 +46,12 @@ An edit or delete read failure is deliberately different: the client keeps its
 local shot intact and asks the player to retry. Only the database's explicit
 no-visible-row result may trigger stale-reference reconciliation.
 
+Undo and Edit Shot share one local in-flight mutation guard. When an authorized
+delete lookup confirms a shot is already absent, the client removes only its
+stale local reference; it does not retry the delete or bypass server ownership
+checks. The Bridge records that reconciliation as a handled warning rather than
+an error sent to Sentry.
+
 ## Primary Entry Points
 
 ### Routes
@@ -96,10 +102,30 @@ Round setup
   -> update qualifier entry if qualifier_id exists
 ```
 
+## Flight Recorder
+
+The highest-risk autosave and submit paths now create a fail-open Helm trace
+with an opaque UUID. The trace links Server Action validation/auth/player
+resolution, the atomic Supabase RPC, read-only round/hole/shot verification,
+qualifier transition, stats invalidation, and CoachHelm post-round work.
+
+The private `helm_debug` schema stores the visual tree through service-role
+facades only. The atomic RPCs additionally emit `HELM_TRACE` PostgreSQL log
+checkpoints, so Docker's optional `npm run trace:db` collector can preserve the
+last database checkpoint after a business transaction rolls back. Production
+recording remains opt-in; tracing cannot block a player save or submit.
+
 ## Business Rules
 
 - Do not lose user-entered shots. Save/submit/recover paths must be idempotent and interruption-tolerant.
 - Do not use DELETE-then-INSERT for save or submit paths.
+- A failed checkpoint must retain its parent in-progress round and prior saved
+  holes/shots. The next checkpoint is an idempotent upsert; cleanup must never
+  make Continue Round disappear after a temporary child-write failure.
+- Before an atomic snapshot replaces persisted round data, every supplied shot
+  group must map to a supplied hole. A mismatched snapshot must return a safe
+  failure before durable holes or shots change; it must never be acknowledged
+  as saved while silently omitting shots.
 - A failed child upsert must not delete its in-progress parent round; failure
   returns a retryable error while durable server and device state remain intact.
 - Do not enter tracking until the in-progress parent has been created on the
@@ -148,6 +174,7 @@ Round setup
 - Draft JSON currently lives in `golf_rounds.notes`, which can collide with user notes.
 - Cross-device/session ordering can still produce stale local shot IDs; the
   client reconciles a server-confirmed absent shot, while authorization and
+  in-progress-round validation remain enforced on the server.
   in-progress-round validation remain enforced on the server. Both Edit and
   Delete use the stable `shot_not_found` reconciliation signal: the stale
   local row is removed, hole state is recalculated from the remaining shots,

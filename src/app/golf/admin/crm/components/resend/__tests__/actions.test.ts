@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   bounced: vi.fn(),
   complained: vi.fn(),
   logServerError: vi.fn(async () => {}),
+  emailSelect: vi.fn(),
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -36,13 +37,16 @@ vi.mock('@/lib/supabase/server', () => ({
       }
       if (table === 'emails') {
         return {
-          select: () => ({
+          select: (...args: unknown[]) => {
+            mocks.emailSelect(...args);
+            return ({
             not: (column: string) => {
               if (column === 'bounced_at') return mocks.bounced();
               if (column === 'complained_at') return mocks.complained();
               throw new Error(`unexpected column ${column}`);
             },
-          }),
+            });
+          },
         };
       }
       throw new Error(`unexpected table ${table}`);
@@ -63,6 +67,7 @@ describe('getFailedEmailCounts', () => {
     mocks.bounced.mockReset();
     mocks.complained.mockReset();
     mocks.logServerError.mockClear();
+    mocks.emailSelect.mockClear();
   });
 
   it('returns {0, 0} without querying counts when unauthenticated', async () => {
@@ -96,6 +101,10 @@ describe('getFailedEmailCounts', () => {
     const result = await getFailedEmailCounts();
 
     expect(result).toEqual({ bounced: 412, complained: 7 });
+    expect(mocks.emailSelect).toHaveBeenCalledWith(
+      'resend_message_id',
+      { count: 'exact', head: true },
+    );
   });
 
   it('fails safe to {0, 0} and logs when a count query errors', async () => {
