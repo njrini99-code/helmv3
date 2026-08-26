@@ -7,19 +7,26 @@
 ## What's New (release notes)
 
 ```text
-GolfHelm 2.0 is a ground-up rebuild of the mobile experience.
+A complete rebuild of the app you already use.
 
-• A calmer, faster interface built for one-handed use on the course
-• Full dark mode, plus a new app icon that adapts to Light, Dark, and
-  Tinted Home Screens
-• Smarter CoachHelm: next-round predictions, priorities, and plain-English
-  insights from your tracked rounds
-• Shot-by-shot round tracking with reliable autosave — your round survives
-  weak signal, backgrounding, and interruptions
-• Team schedule, qualifiers, messaging, and stats — everything in one place
-• Tactile feedback tuned for iPhone: scoring and navigation respond with
-  subtle, precise haptics
-• Refined status-bar and Dynamic Island behavior across every screen
+• An entirely new interface — calmer, denser, and faster on every screen.
+• Full dark mode, with Light / Dark / System control in Settings.
+• CoachHelm rebuilt: a grounded command center that tells you what changed, why it changed, and what to do next.
+• A coach triage workspace that puts each day's signals in priority order.
+• Round review rebuilt with shot-by-shot visuals.
+• Navigation consolidated into a simpler set of coach hubs and player tabs — far less hunting.
+• Stats reorganized into a single cockpit with team and player views.
+• Development plans and focus areas redesigned, with progress tracked over the goal window rather than your all-time average.
+• Premium password reset and branded account emails.
+• Haptic feedback throughout, tuned per interaction.
+
+Refined this update:
+• Round entry and the scorecard no longer sit under the status bar or Dynamic Island — every screen now respects the full safe area on notched iPhones.
+• Tuned for the portrait, one-handed experience the app was actually designed for.
+• A new dark app icon so Helm fits your Home Screen whether you run Light, Dark, or Tinted mode.
+• Tab switches now use a lighter, more precise tap.
+
+Plus hundreds of fixes to performance, accessibility, and reliability.
 ```
 
 ## App Review notes (Guideline 4.2 / 4.2.2 positioning)

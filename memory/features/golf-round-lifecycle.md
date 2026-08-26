@@ -195,6 +195,18 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   a migration replay/RLS suite for its grants and security boundary.
 - Playwright smoke for new round, continue round, submit/review, and mobile recovery.
 
+## iOS shell presentation (added 2026-08-26)
+
+The round chrome owns the iOS status-bar zone: the Capacitor WKWebView is
+edge-to-edge (`contentInset: 'never'`), so `FairwayScorecardHeader`'s sticky
+bar pads `env(safe-area-inset-top)` (inside the measured element — the
+published `--scorecard-height` var includes it), and both
+`FairwayNewRoundEntry` step wrappers plus `FairwayCoursePicker`'s floating
+Close fold the inset into their top offsets. Off-iOS these resolve to the
+prior paddings (env() = 0). No lifecycle, autosave, or navigation semantics
+changed. Context: docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
+(F-SAFEAREA-02/03/04); change ledger entry of the same date.
+
 ## Related Docs
 
 - `memory/context/golfhelm-features.md`

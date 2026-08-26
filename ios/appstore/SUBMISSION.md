@@ -111,7 +111,7 @@ A complete rebuild of the app you already use.
   why it changed, and what to do next.
 • A coach triage workspace that puts each day's signals in priority order.
 • Round review rebuilt with shot-by-shot visuals.
-• Navigation consolidated to 8 coach hubs and 8 player tabs — far less hunting.
+• Navigation consolidated into a simpler set of coach hubs and player tabs — far less hunting.
 • Stats reorganized into a single cockpit with team and player views.
 • Development plans and focus areas redesigned, with progress tracked over the
   goal window rather than your all-time average.

@@ -193,6 +193,15 @@ recording remains opt-in; tracing cannot block a player save or submit.
 - `src/test/coachhelm/v2/shot-analysis/**`
 - Browser validation on mobile viewports for changed round-entry screens.
 
+## iOS shell presentation (added 2026-08-26)
+
+Shot-entry surfaces render under the round chrome, which now carries the iOS
+status-bar inset (see golf-round-lifecycle.md, same-date section). Haptics on
+shot entry are unchanged and remain wired at the control primitives
+(`Button` → light impact, `Segmented` → selection); the app-shell bottom-nav
+tabs additionally fire the selection haptic as of this date (grammar
+alignment, FairwayBottomNav).
+
 ## Related Docs
 
 - `memory/context/golfhelm-features.md`
