@@ -1093,6 +1093,46 @@ features:
         - npm run test:rls
         - supabase db lint --schema public
 
+  ios_native_shell:
+    name: iOS Native Shell
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/ios-native-shell.md
+      flows:
+        - docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
+        - ios/appstore/RELEASE_CANDIDATE_2.0-9.md
+      business_logic:
+        - docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md
+    code:
+      components:
+        - src/components/golf/PushPermissionSoftAsk.tsx
+        - src/components/providers/CapacitorProvider.tsx
+      services:
+        - src/lib/native/**
+        - src/lib/utils/capacitor.ts
+        - src/lib/utils/push-registration.ts
+        - src/lib/utils/haptics-pref.ts
+        - src/lib/fairway/haptics.ts
+      native:
+        - ios/App/App/**
+        - ios/App/CapApp-SPM/**
+        - capacitor.config.ts
+      tests:
+        - src/test/lib/native-capabilities.test.ts
+        - src/test/lib/haptics-pref.test.ts
+        - src/test/lib/push-registration-pending-token.test.ts
+    integrations:
+      - vercel
+      - supabase
+    review:
+      required_docs:
+        - memory/features/ios-native-shell.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/test/lib/native-capabilities.test.ts src/test/lib/haptics-pref.test.ts
+
 systems:
   supabase:
     docs: docs/setup/SUPABASE_MCP_SETUP.md
