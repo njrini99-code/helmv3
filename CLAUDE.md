@@ -265,7 +265,7 @@ Edit the rule file, not this one, when changing any of the above.
 ```bash
 npm run doctor       # Env sanity: node pin, pinned supabase CLI, Docker,
                      # local stack — with copy-pasteable fixes. RUN THIS FIRST
-                     # when supabase/node commands fail in a session.
+                     # when supabase or node commands fail in a session.
 npm run dev          # Dev server (localhost:3000)
 npm run typecheck    # TypeScript check
 npm run lint         # ESLint
