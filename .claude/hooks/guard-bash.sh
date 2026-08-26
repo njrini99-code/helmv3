@@ -285,15 +285,31 @@ fi
 #     but must never deploy, promote, roll back, or mutate production
 #     aliasing. Read shapes are deliberately NOT touched by any of the three
 #     checks below.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])vercel([[:space:]]|$)'; then
+#
+#     The `/` in the anchor class is load-bearing. All three checks below used
+#     to anchor on `(^|[;&|[:space:]])vercel`, so `vercel` had to begin the
+#     command or follow whitespace. But AGENTS.md mandates the repo-local
+#     binary -- `./node_modules/.bin/vercel` -- where the preceding character
+#     is `/`, matching none of them; and the permission layer missed it too,
+#     since `Bash(vercel promote:*)` is a command-PREFIX match and the
+#     repo-local path is a different prefix. Measured 2026-08-26: 8 of 16
+#     production-mutating shapes escaped BOTH layers, via exactly the
+#     invocation the constitution tells agents to use. Adding `/` (rather than
+#     dropping the anchor) keeps `vercel` from matching as a bare substring --
+#     the trailing ([[:space:]]|$) is what keeps `https://vercel.com/docs`
+#     from firing. Covered by src/test/hooks/guard-bash-worktree.test.ts,
+#     which asserts each of the three checks against each path form: fixing
+#     only the outer gate lets a command reach the block and fall through
+#     every inner check unblocked, while a gate-only harness goes green.
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/])vercel([[:space:]]|$)'; then
   if printf '%s' "$CMD" | grep -Eq -- '--prod([[:space:]]|=|$)'; then
     block "BLOCKED: 'vercel ... --prod'. Production deploy is an on-demand, owner-run CLI action outside the agent — this repo's Vercel automatic git deployment stays disabled on purpose.
 If a release is genuinely ready, prepare it (release candidate, verification, ledger update) and hand off; the owner runs the deploy."
   fi
-  if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])vercel[[:space:]]+(promote|rollback)([[:space:]]|$)'; then
+  if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/])vercel[[:space:]]+(promote|rollback)([[:space:]]|$)'; then
     block "BLOCKED: 'vercel promote/rollback'. Both mutate what production serves, and are owner-run CLI actions outside the agent — same reasoning as the --prod block above."
   fi
-  if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])vercel[[:space:]]+alias[[:space:]]+set([[:space:]]|$)'; then
+  if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/])vercel[[:space:]]+alias[[:space:]]+set([[:space:]]|$)'; then
     block "BLOCKED: 'vercel alias set'. This mutates production domain routing and is an owner-run CLI action outside the agent, same reasoning as the --prod block above."
   fi
 fi
