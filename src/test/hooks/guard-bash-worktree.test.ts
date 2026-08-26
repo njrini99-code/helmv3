@@ -112,3 +112,75 @@ describe('guard-bash rule 4 — force push', () => {
     expect(runGuard(cmd)).toBe('ALLOW');
   });
 });
+
+/**
+ * Rule 12 — vercel production shapes, reached by the CLI path AGENTS.md mandates.
+ *
+ * All three of rule 12's regexes anchored on `(^|[;&|[:space:]])vercel`, so
+ * `vercel` had to start the command or follow whitespace/a separator. But
+ * AGENTS.md ("Helm agent canonicality") instructs every agent to use the
+ * repo-local binary — `./node_modules/.bin/vercel` — where the preceding
+ * character is `/`. That form matched none of the three, and the permission
+ * layer did not cover it either: `Bash(vercel promote:*)` is a command-PREFIX
+ * match, and the repo-local path is a different prefix. So the one production-
+ * mutating CLI in this repo had ZERO coverage on BOTH layers, via exactly the
+ * invocation the constitution tells agents to use. Measured 2026-08-26: 8 of 16
+ * production-mutating shapes escaped.
+ *
+ * The fix adds `/` to the anchor class rather than removing the anchor, so
+ * `vercel` still does not match as a bare substring — the ALLOW cases below
+ * pin that, including URLs containing "vercel.com".
+ *
+ * WHY EVERY SHAPE IS ASSERTED SEPARATELY
+ * --------------------------------------
+ * Rule 12 nests: an outer gate, then three independent inner checks. Fixing
+ * only the outer gate lets a command reach the block and fall through every
+ * inner check UNBLOCKED — while a harness that tests just the gate goes green.
+ * A false green on a production-promote guard is the worst possible outcome,
+ * so each of `--prod`, `promote`, `rollback` and `alias set` is asserted
+ * against each path form.
+ */
+describe('guard-bash rule 12 — vercel production shapes', () => {
+  const PATH_FORMS = [
+    ['bare binary', 'vercel'],
+    ['repo-local (what AGENTS.md mandates)', './node_modules/.bin/vercel'],
+    ['absolute repo-local', `${REPO}/node_modules/.bin/vercel`],
+    ['npx', 'npx vercel'],
+  ] as const;
+
+  const PROD_SHAPES = [
+    ['deploy --prod', 'deploy --prod'],
+    ['promote', 'promote dpl_abc123'],
+    ['rollback', 'rollback'],
+    ['alias set', 'alias set x.vercel.app helm.app'],
+  ] as const;
+
+  for (const [formLabel, prefix] of PATH_FORMS) {
+    it.each(PROD_SHAPES.map(([s, args]) => [s, `${prefix} ${args}`]))(
+      `BLOCKS %s via ${formLabel}`,
+      (_shape, cmd) => {
+        expect(runGuard(cmd)).toBe('BLOCK');
+      },
+    );
+  }
+
+  it.each([
+    ['list deployments', 'vercel ls'],
+    ['inspect via repo-local', './node_modules/.bin/vercel inspect dpl_abc'],
+    ['env ls via repo-local', './node_modules/.bin/vercel env ls'],
+    ['logs via repo-local', './node_modules/.bin/vercel logs dpl_abc'],
+    ['projects ls via npx', 'npx vercel projects ls'],
+  ])('ALLOWS read-only %s', (_label, cmd) => {
+    // The daily reliability workflow reads Vercel; only mutation is barred.
+    expect(runGuard(cmd)).toBe('ALLOW');
+  });
+
+  it.each([
+    ['a docs URL', 'curl https://vercel.com/docs'],
+    ['a URL in prose', 'echo see https://vercel.com for details'],
+  ])('does not fire on %s', (_label, cmd) => {
+    // Adding `/` to the anchor must not turn every vercel.com mention into a
+    // block — the trailing ([[:space:]]|$) is what keeps this correct.
+    expect(runGuard(cmd)).toBe('ALLOW');
+  });
+});

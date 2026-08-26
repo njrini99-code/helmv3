@@ -59,7 +59,13 @@ fi
 echo "🔑 Generating types with project id: ${SUPABASE_PROJECT_ID:0:10}…"
 
 # ── Generate to a temp file; only replace $OUT on success ────────────────────
-TMP=$(mktemp -t database-types)
+# `mktemp -t NAME` looks portable and is not: BSD mktemp (macOS, where this runs)
+# resolves the -t template through confstr(_CS_DARWIN_USER_TEMP_DIR), NOT $TMPDIR,
+# so it always lands in /var/folders/… — which the agent sandbox denies. The script
+# then died on `mkstemp failed … Operation not permitted` before the CLI ever ran,
+# and exporting TMPDIR did nothing. An explicit template respects TMPDIR on both
+# BSD and GNU. (2026-08-26)
+TMP=$(mktemp "${TMPDIR:-/tmp}/database-types.XXXXXX")
 trap 'rm -f "$TMP"' EXIT
 
 if ! "$SUPABASE_CLI" gen types typescript --project-id "$SUPABASE_PROJECT_ID" > "$TMP"; then

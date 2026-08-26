@@ -53,7 +53,18 @@
       "Bash(gh pr merge:*)",
       "Bash(supabase:*)",
       "Bash(docker:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(./node_modules/.bin/vercel inspect:*)",
+      "Bash(./node_modules/.bin/vercel ls:*)",
+      "Bash(./node_modules/.bin/vercel logs:*)",
+      "Bash(./node_modules/.bin/vercel env ls:*)",
+      "Bash(./node_modules/.bin/supabase migration list:*)",
+      "Bash(./node_modules/.bin/supabase db dump:*)",
+      "Bash(./node_modules/.bin/supabase db diff:*)",
+      "Bash(./node_modules/.bin/supabase projects list:*)",
+      "Bash(./node_modules/.bin/supabase status:*)",
+      "Bash(./node_modules/.bin/supabase inspect db:*)",
+      "Bash(./node_modules/.bin/supabase functions list:*)"
     ],
     "deny": [
       "Bash(supabase config push:*)",
@@ -72,7 +83,19 @@
       "Read(./secrets/**)",
       "Read(./credentials/**)",
       "Bash(supabase db push:*)",
-      "Bash(supabase migration up:*)"
+      "Bash(supabase migration up:*)",
+      "Bash(./node_modules/.bin/vercel deploy --prod:*)",
+      "Bash(./node_modules/.bin/vercel promote:*)",
+      "Bash(./node_modules/.bin/vercel rollback:*)",
+      "Bash(./node_modules/.bin/vercel alias set:*)",
+      "Bash(./node_modules/.bin/supabase db push:*)",
+      "Bash(./node_modules/.bin/supabase migration up:*)",
+      "Bash(npx vercel deploy --prod:*)",
+      "Bash(npx vercel promote:*)",
+      "Bash(npx vercel rollback:*)",
+      "Bash(npx vercel alias set:*)",
+      "Bash(npx supabase db push:*)",
+      "Bash(npx supabase migration up:*)"
     ]
   },
   "hooks": {

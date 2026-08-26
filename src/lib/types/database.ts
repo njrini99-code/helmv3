@@ -21092,6 +21092,36 @@ export type Database = {
         Returns: boolean
       }
       heartbeat: { Args: never; Returns: undefined }
+      helm_debug_finalize_trace: {
+        Args: { p_metadata?: Json; p_status: string; p_trace_id: string }
+        Returns: undefined
+      }
+      helm_debug_get_trace: { Args: { p_trace_id: string }; Returns: Json }
+      helm_debug_list_traces: {
+        Args: { p_limit?: number; p_round_id?: string; p_workflow?: string }
+        Returns: Json
+      }
+      helm_debug_prune: { Args: { p_retention_days?: number }; Returns: Json }
+      helm_debug_record_trace_step: {
+        Args: {
+          p_layer: string
+          p_metadata?: Json
+          p_requiredness: string
+          p_status: string
+          p_step_key: string
+          p_trace_id: string
+        }
+        Returns: undefined
+      }
+      helm_debug_start_trace: {
+        Args: {
+          p_environment: string
+          p_metadata?: Json
+          p_trace_id: string
+          p_workflow: string
+        }
+        Returns: string
+      }
       helm_lifting_accept_invite: { Args: { p_token: string }; Returns: Json }
       helm_lifting_assign_team: {
         Args: {
