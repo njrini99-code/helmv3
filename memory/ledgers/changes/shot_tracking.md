@@ -127,3 +127,12 @@
 - What/Why: shot-entry surfaces use the shared `Segmented`/splash chrome
   refined this morning (see the round-lifecycle ledger entry of this date).
   No shot-tracking logic changed.
+
+## 2026-08-26 — edit-shot modal footer honours the home indicator
+
+- SHA: f4216fef8.
+- Change: FairwayEditShotModal's hand-rolled sticky footer now carries the
+  env(safe-area-inset-bottom) padding formula ModalShell.Footer uses.
+- Why: contentInset:'never' in the iOS shell means web code owns the
+  home-indicator inset; a tall shot form runs the panel to its max-height
+  cap where plain py-4 left Cancel/Save riding the indicator.

@@ -12,3 +12,14 @@
   2026-08-26 (Guilford coach, same photo posted three times, told it
   failed each time; zero server-side errors in Sentry). Same
   response-loss class the round submit already fixed, same after() idiom.
+
+## 2026-08-26 — messaging/announcement sheets stop autofocusing on touch
+
+- SHA: f4216fef8 (+ 596913022 for the sheets).
+- Change: FairwayNewMessageSheet search, FairwayTeamBroadcastSheet search +
+  group-name, and FairwayCreateAnnouncement's setTimeout title-focus are
+  gated on a fine pointer. MessageThreadPane's edit-in-place autofocus is
+  intentionally untouched (the user tapped Edit to type).
+- Why: on iPhone these sheets opened with the keyboard covering the
+  recipient list / the tallest form in the app (owner TestFlight report).
+  Desktop type-ahead unchanged.

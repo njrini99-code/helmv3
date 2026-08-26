@@ -34,3 +34,34 @@
   the lab measures the real paths.
 - Why: the owner's physical-device feel pass (§13/§72) needs a TestFlight
   surface; signatures stay out of product flows until that sign-off.
+
+## 2026-08-26 — mobile focus rule: no keyboard-on-open, sweep + primitive fixes
+
+- What: owner's TestFlight pass surfaced overlays opening with the iOS
+  keyboard burying the form. Root causes closed at every focus mechanism:
+  ModalShell + legacy ui/dialog now cancel Radix's first-tabbable autofocus
+  on coarse pointers (focus lands on the panel, tabIndex -1);
+  ui/modal + use-focus-trap (17 consumers) gate their imperative
+  first-focusable focus the same way; explicit `autoFocus` attrs and
+  setTimeout `.focus()` calls gated on `(pointer: fine)` across Ask
+  composer, create-task, new-message, broadcast (both steps),
+  announcements, both log-progress drawers, and baseball watchlist.
+  Shared util: `src/lib/utils/pointer.ts` `isCoarsePointer()`.
+  A 6-area Sonnet sweep (wf_07e7042d-6fa) audited every popup subscreen
+  and every dashboard loading.tsx; its skeleton-fidelity corrections
+  landed via wf_73417160-934 (team-hub rewrite off the retired tabbed
+  layout, travel/tasks/roster/settings/qualifiers/coachhelm/announcements/
+  stats shape fixes). Structural: FairwayCreateFromTemplateModal adopted
+  Body/Footer (buttons were clippable off-screen), FairwayRoundSummarySheet
+  pinned Submit Round, FairwayEditShotModal footer got the safe-area
+  formula.
+- Why: §28/§31/§34 of the premium plan — sheets must open readable, and a
+  skeleton must not promise chrome the page never paints (the Ask void).
+- Known gap (recorded per OS): `src/components/fairway/overlays/**`,
+  `src/components/ui/{modal,dialog}.tsx`, `src/hooks/use-focus-trap.ts`
+  map to NO feature in memory/registry.yml — the shared overlay kit is
+  unrouted. Mapping it is real work owed, not done here.
+- Deferred to the 2.1 binary: capacitor.config.ts `Keyboard.resize:'ionic'`
+  is a silent no-op (no <ion-app> in this DOM) — keyboard-avoidance needs
+  the on-device layout-viewport check before choosing 'native' vs 'body',
+  then ships with build 10.

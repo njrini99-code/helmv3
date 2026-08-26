@@ -8,9 +8,9 @@ import { Skeleton } from '@/components/fairway/feedback';
  * Task 8 (2026-07-19) moved this route onto the Spine & Stage chassis —
  * `PlayerCoachHelmHome` renders `PlayerSpine` beside a `StageRouter` whose
  * home view is `PlayerHomeBento`, no `CoachHelmShell` masthead/sub-nav wrapper
- * (see page.tsx: `fairwayScope(...)` → `mx-auto max-w-[1200px] px-4 py-6
- * md:px-6` → `<PlayerCoachHelmHome />` directly). This fallback reproduces
- * that exact container chain and the `300px 1fr` spine+stage grid.
+ * (see page.tsx:496: `fairwayScope(...)` → `mx-auto max-w-[1440px] px-4 py-5
+ * md:px-6 md:py-6` → `<PlayerCoachHelmHome />` directly). This fallback
+ * reproduces that exact container chain and the `300px 1fr` spine+stage grid.
  *
  * Visual-fidelity pass (2026-07-20): the two flat `h-[480px]` Skeleton slabs
  * are now shape-matched to what actually mounts inside them, so there is no
@@ -47,7 +47,7 @@ const SPINE_BAR = 'bg-text-on-accent/12';
 export default function CoachHelmLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans')}>
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
+      <div className="mx-auto w-full max-w-[1440px] px-4 py-5 md:px-6 md:py-6">
         <div
           role="status"
           aria-busy="true"
