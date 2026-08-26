@@ -6,6 +6,7 @@ import { CACHE_TAGS } from '@/lib/cache/tags';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { withGolfAction } from '@/lib/golf/with-golf-action';
 import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
@@ -160,10 +161,38 @@ async function removePlayerFromTeamImpl(playerId: string): Promise<RosterActionR
   return { success: true };
 }
 
+// withGolfAction is the centralized classify -> RLS-denial-capture ->
+// log sequence (see src/lib/golf/with-golf-action.ts). It has no
+// auth/demo-context layer of its own, so it is nested INSIDE
+// withAdminObserved rather than replacing it: withAdminObserved still runs
+// the demoSafe gate (assertGolfDemoWritable) and the request-context scope
+// BEFORE this ever runs, and its own catch already excludes
+// GolfDemoReadOnlyError from logging — nesting in this order means that
+// error class never reaches withGolfAction's classifier at all, so it can
+// never be misclassified as an unexpected 'error' or paged to Sentry.
+// `observeSoftFailures: false` on the outer wrapper hands the
+// `{ success: false }` soft-failure observation to withGolfAction instead,
+// so a single failure is recorded once, not twice.
+const golfActionRemovePlayerFromTeam = withGolfAction(
+  'removePlayerFromTeam',
+  {
+    featureArea: 'golf-roster',
+    feature: 'roster_management',
+    rlsContext: { table: 'golf_team_members', verb: 'delete' },
+    contextFrom: (playerId: string) => ({ playerId }),
+    // removePlayerFromTeamImpl never throws in normal operation (every
+    // failure path already returns a RosterActionResult) — toErrorResult is
+    // defense in depth for a genuinely unexpected exception, so a bug can no
+    // longer propagate a raw/unsanitized error out of this action.
+    toErrorResult: (message, code) => ({ success: false, error: message, code: code ?? undefined }),
+  },
+  removePlayerFromTeamImpl,
+);
+
 const observedRemovePlayerFromTeam = withAdminObserved(
   'removePlayerFromTeam',
-  { demoSafe: true, sport: 'golf', feature: 'roster_management' },
-  removePlayerFromTeamImpl,
+  { demoSafe: true, sport: 'golf', feature: 'roster_management', observeSoftFailures: false },
+  golfActionRemovePlayerFromTeam,
 );
 
 export async function removePlayerFromTeam(playerId: string): Promise<RosterActionResult> {

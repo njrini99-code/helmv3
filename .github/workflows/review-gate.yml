@@ -141,6 +141,17 @@ jobs:
             '^(src/lib/supabase/admin|src/lib/supabase/service|src/lib/auth/supabase-rate-limit|src/lib/notifications/push|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)' \
             'no-admin/scripts/edge'
 
+          # Server-action rule — a catch whose entire body returns []/null/{}
+          # swallows the failure with nothing an operator could ever see. This
+          # scan passes whole changed FILE paths, not diff hunks, so it can
+          # only be registered at `error` because the action tree is currently
+          # clean of the pattern (verified 2026-08-26). If a legitimate silent
+          # fallback is ever needed, log first, then return.
+          run_rule .coderabbit/ast-grep/no-silent-catch-fallback.yml \
+            '^src/app/.*/actions/.*\.tsx?$' \
+            '(\.test\.tsx?$|/__tests__/)' \
+            'actions-only'
+
           exit $fail
 
   semgrep:

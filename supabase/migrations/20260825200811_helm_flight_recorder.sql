@@ -80,6 +80,17 @@ create table if not exists helm_debug.trace_steps (
 create index if not exists trace_steps_trace_id_idx
   on helm_debug.trace_steps (trace_id, created_at, id);
 
+-- No row-level policies on helm_debug.trace_runs / trace_steps, intentionally:
+-- the schema is revoked from public/anon/authenticated above and is not in
+-- PostgREST's exposed schema list, so the only paths that ever reach these
+-- tables are the service-role-only owner-rights facades below. Row-level
+-- security exists to scope per-row access for roles that already hold
+-- table-level access through an RLS-aware client; service_role bypasses RLS
+-- unconditionally regardless, so a policy here would be dead code that
+-- could misleadingly read as "row-level scoping is enforced." If this
+-- schema is ever exposed to PostgREST, or a non-service-role grant is ever
+-- added, RLS must be added at that point — its absence today is a decision
+-- about this schema's isolation, not a precedent for other tables.
 revoke all on all tables in schema helm_debug from public;
 revoke all on all sequences in schema helm_debug from public;
 
@@ -401,55 +412,155 @@ grant execute on function public.helm_debug_finalize_trace(uuid, text, jsonb) to
 grant execute on function public.helm_debug_list_traces(integer, text, uuid) to service_role;
 grant execute on function public.helm_debug_get_trace(uuid) to service_role;
 
+-- ACL-assertion tripwire for the five public facades above, matching
+-- 20260826010000_helm_debug_retention.sql's (fixed) pattern: resolve each
+-- function by full signature -- never by name only, which is not STRICT and
+-- would silently accept an arbitrary overload if one is ever added -- and
+-- fail the migration outright on any drift from "service_role only".
+DO $$
+DECLARE
+  v_fn oid;
+  v_signatures text[] := ARRAY[
+    'public.helm_debug_start_trace(uuid,text,text,jsonb)',
+    'public.helm_debug_record_trace_step(uuid,text,text,text,text,jsonb)',
+    'public.helm_debug_finalize_trace(uuid,text,jsonb)',
+    'public.helm_debug_list_traces(integer,text,uuid)',
+    'public.helm_debug_get_trace(uuid)'
+  ];
+  v_sig text;
+BEGIN
+  FOREACH v_sig IN ARRAY v_signatures LOOP
+    v_fn := v_sig::regprocedure;
+
+    IF has_function_privilege('public', v_fn, 'EXECUTE')
+       OR has_function_privilege('anon', v_fn, 'EXECUTE')
+       OR has_function_privilege('authenticated', v_fn, 'EXECUTE') THEN
+      RAISE EXCEPTION 'ACL check failed: % callable by public/anon/authenticated', v_sig;
+    END IF;
+
+    IF NOT has_function_privilege('service_role', v_fn, 'EXECUTE') THEN
+      RAISE EXCEPTION 'ACL check failed: % not executable by service_role', v_sig;
+    END IF;
+  END LOOP;
+END $$;
+
 -- Keep the current production-shaped RPC definitions intact and add only
 -- checkpoint calls. The migration reads the live prior definition so it does
 -- not accidentally resurrect an older copy of these high-risk functions.
+--
+-- Every textual patch below is verified individually: each replace() call
+-- snapshots v_definition first and asserts it actually changed, naming the
+-- specific anchor if it did not. The previous version of this block checked
+-- only the aggregate outcome (all anchors vs. none), so if some anchors
+-- matched and one silently no-op'd on drift, CREATE OR REPLACE still ran and
+-- shipped a partially-instrumented function with no error. This file is
+-- all-or-nothing per function instead: any single unmatched anchor aborts
+-- the whole migration.
+--
+-- Before patching, each function's fetched definition is checked for an
+-- EXISTING top-level EXCEPTION section, because PL/pgSQL permits only one
+-- per block and the replace() below assumes there isn't one yet. The check
+-- looks only at the text AFTER the function's final success RETURN: both
+-- functions already contain several *nested* BEGIN/EXCEPTION/END blocks
+-- earlier in the body (per-shot detail-table inserts translating individual
+-- failures into warnings, e.g. `EXCEPTION WHEN OTHERS THEN` around the
+-- approach_miss_details insert) -- those are self-contained sibling blocks
+-- that close with their own END before the function's final RETURN, not the
+-- outer block's own exception handler, and must not trip this guard.
 do $do$
 declare
   v_definition text;
   v_original text;
+  v_step text;
+  v_tail text;
+  v_commit_anchor text;
 begin
   select pg_get_functiondef('public.submit_round_atomic(uuid,jsonb,jsonb,jsonb,jsonb,jsonb)'::regprocedure)
     into v_definition;
   v_original := v_definition;
 
   if position('helm_private.trace_checkpoint' in v_definition) = 0 then
+    v_commit_anchor := '  RETURN jsonb_build_object(''success'', true, ''round_id'', p_round_id, ''warnings'', v_warnings);';
+    if position(v_commit_anchor in v_original) = 0 then
+      raise exception 'Unable to add submit_round_atomic flight recorder checkpoints: commit anchor not found';
+    end if;
+    v_tail := substring(v_original from position(v_commit_anchor in v_original) + length(v_commit_anchor));
+    if position('EXCEPTION' in upper(v_tail)) > 0 then
+      raise exception 'submit_round_atomic already has a top-level EXCEPTION section after its commit RETURN; re-derive this flight-recorder patch by hand instead of appending a second one';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  PERFORM set_config(''helm.golf_lifecycle_write'', ''atomic'', true);',
       '  PERFORM set_config(''helm.golf_lifecycle_write'', ''atomic'', true);' || E'\n'
       || '  PERFORM helm_private.configure_trace_context(p_round_data);' || E'\n'
       || '  PERFORM helm_private.trace_checkpoint(''db.submit_round_atomic'', NULL, ''enter'', ''started'', jsonb_build_object(''function'', ''submit_round_atomic''));'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add submit_round_atomic flight recorder checkpoint at anchor "enter": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  UPDATE golf_rounds SET',
       '  PERFORM helm_private.trace_checkpoint(''db.submit_round_atomic.update_round'', ''db.submit_round_atomic'', ''before'', ''started'', jsonb_build_object(''table'', ''golf_rounds''));' || E'\n'
       || '  UPDATE golf_rounds SET'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add submit_round_atomic flight recorder checkpoint at anchor "update_round": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  DELETE FROM golf_shots WHERE round_id = p_round_id;',
       '  PERFORM helm_private.trace_checkpoint(''db.submit_round_atomic.replace_snapshot'', ''db.submit_round_atomic'', ''before'', ''started'', jsonb_build_object(''tables'', jsonb_build_array(''golf_shots'', ''golf_holes'')));' || E'\n'
       || '  DELETE FROM golf_shots WHERE round_id = p_round_id;'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add submit_round_atomic flight recorder checkpoint at anchor "replace_snapshot": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  IF p_holes IS NOT NULL AND jsonb_array_length(p_holes) > 0 THEN',
       '  PERFORM helm_private.trace_checkpoint(''db.submit_round_atomic.insert_holes'', ''db.submit_round_atomic'', ''before'', ''started'', jsonb_build_object(''expected_holes'', coalesce(jsonb_array_length(p_holes), 0)));' || E'\n'
       || '  IF p_holes IS NOT NULL AND jsonb_array_length(p_holes) > 0 THEN'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add submit_round_atomic flight recorder checkpoint at anchor "insert_holes": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  IF p_shots IS NOT NULL AND jsonb_array_length(p_shots) > 0 THEN',
       '  PERFORM helm_private.trace_checkpoint(''db.submit_round_atomic.insert_shots'', ''db.submit_round_atomic'', ''before'', ''started'', jsonb_build_object(''shot_groups'', coalesce(jsonb_array_length(p_shots), 0)));' || E'\n'
       || '  IF p_shots IS NOT NULL AND jsonb_array_length(p_shots) > 0 THEN'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add submit_round_atomic flight recorder checkpoint at anchor "insert_shots": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  PERFORM recalculate_round_strokes_gained(p_round_id);',
       '  PERFORM helm_private.trace_checkpoint(''db.submit_round_atomic.recalculate_strokes_gained'', ''db.submit_round_atomic'', ''before'', ''started'', jsonb_build_object(''round_id'', p_round_id));' || E'\n'
       || '  PERFORM recalculate_round_strokes_gained(p_round_id);'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add submit_round_atomic flight recorder checkpoint at anchor "recalculate_strokes_gained": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
-      '  RETURN jsonb_build_object(''success'', true, ''round_id'', p_round_id, ''warnings'', v_warnings);',
+      v_commit_anchor,
       '  PERFORM helm_private.trace_checkpoint(''db.submit_round_atomic.commit'', ''db.submit_round_atomic'', ''before_return'', ''success'', jsonb_build_object(''round_id'', p_round_id, ''holes'', jsonb_array_length(v_inserted_holes), ''shots'', jsonb_array_length(v_inserted_shots)));' || E'\n'
-      || '  RETURN jsonb_build_object(''success'', true, ''round_id'', p_round_id, ''warnings'', v_warnings);'
+      || v_commit_anchor
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add submit_round_atomic flight recorder checkpoint at anchor "commit": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       E'\nEND;\n$function$',
       E'\nEXCEPTION WHEN OTHERS THEN\n'
@@ -461,48 +572,89 @@ begin
       || 'END;' || E'\n'
       || '$function$'
     );
-
-    if v_definition = v_original then
-      raise exception 'Unable to add submit_round_atomic flight recorder checkpoints: expected anchors changed';
+    if v_definition = v_step then
+      raise exception 'Unable to add submit_round_atomic flight recorder checkpoint at anchor "exception_wrapper": pattern not found';
     end if;
+
     execute v_definition;
   end if;
 
   select pg_get_functiondef('public.save_partial_round_atomic(uuid,jsonb,jsonb,jsonb,jsonb,jsonb,timestamptz)'::regprocedure)
     into v_definition;
   v_original := v_definition;
+
   if position('helm_private.trace_checkpoint' in v_definition) = 0 then
+    v_commit_anchor := '  RETURN jsonb_build_object(' || E'\n' || '    ''success'', true,';
+    if position(v_commit_anchor in v_original) = 0 then
+      raise exception 'Unable to add save_partial_round_atomic flight recorder checkpoints: commit anchor not found';
+    end if;
+    v_tail := substring(v_original from position(v_commit_anchor in v_original) + length(v_commit_anchor));
+    if position('EXCEPTION' in upper(v_tail)) > 0 then
+      raise exception 'save_partial_round_atomic already has a top-level EXCEPTION section after its commit RETURN; re-derive this flight-recorder patch by hand instead of appending a second one';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  PERFORM set_config(''helm.golf_lifecycle_write'', ''atomic'', true);',
       '  PERFORM set_config(''helm.golf_lifecycle_write'', ''atomic'', true);' || E'\n'
       || '  PERFORM helm_private.configure_trace_context(p_round_data);' || E'\n'
       || '  PERFORM helm_private.trace_checkpoint(''db.save_partial_round_atomic'', NULL, ''enter'', ''started'', jsonb_build_object(''function'', ''save_partial_round_atomic''));'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add save_partial_round_atomic flight recorder checkpoint at anchor "enter": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  UPDATE golf_rounds SET',
       '  PERFORM helm_private.trace_checkpoint(''db.save_partial_round_atomic.update_round'', ''db.save_partial_round_atomic'', ''before'', ''started'', jsonb_build_object(''table'', ''golf_rounds''));' || E'\n'
       || '  UPDATE golf_rounds SET'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add save_partial_round_atomic flight recorder checkpoint at anchor "update_round": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  DELETE FROM golf_shots WHERE round_id = p_round_id;',
       '  PERFORM helm_private.trace_checkpoint(''db.save_partial_round_atomic.replace_snapshot'', ''db.save_partial_round_atomic'', ''before'', ''started'', jsonb_build_object(''tables'', jsonb_build_array(''golf_shots'', ''golf_holes'')));' || E'\n'
       || '  DELETE FROM golf_shots WHERE round_id = p_round_id;'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add save_partial_round_atomic flight recorder checkpoint at anchor "replace_snapshot": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  IF p_holes IS NOT NULL AND jsonb_array_length(p_holes) > 0 THEN',
       '  PERFORM helm_private.trace_checkpoint(''db.save_partial_round_atomic.insert_holes'', ''db.save_partial_round_atomic'', ''before'', ''started'', jsonb_build_object(''expected_holes'', coalesce(jsonb_array_length(p_holes), 0)));' || E'\n'
       || '  IF p_holes IS NOT NULL AND jsonb_array_length(p_holes) > 0 THEN'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add save_partial_round_atomic flight recorder checkpoint at anchor "insert_holes": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       '  IF p_shots IS NOT NULL AND jsonb_array_length(p_shots) > 0 THEN',
       '  PERFORM helm_private.trace_checkpoint(''db.save_partial_round_atomic.insert_shots'', ''db.save_partial_round_atomic'', ''before'', ''started'', jsonb_build_object(''shot_groups'', coalesce(jsonb_array_length(p_shots), 0)));' || E'\n'
       || '  IF p_shots IS NOT NULL AND jsonb_array_length(p_shots) > 0 THEN'
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add save_partial_round_atomic flight recorder checkpoint at anchor "insert_shots": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
-      '  RETURN jsonb_build_object(' || E'\n' || '    ''success'', true,',
+      v_commit_anchor,
       '  PERFORM helm_private.trace_checkpoint(''db.save_partial_round_atomic.commit'', ''db.save_partial_round_atomic'', ''before_return'', ''success'', jsonb_build_object(''round_id'', p_round_id, ''holes'', jsonb_array_length(v_inserted_holes), ''shots'', jsonb_array_length(v_inserted_shots)));' || E'\n'
-      || '  RETURN jsonb_build_object(' || E'\n' || '    ''success'', true,'
+      || v_commit_anchor
     );
+    if v_definition = v_step then
+      raise exception 'Unable to add save_partial_round_atomic flight recorder checkpoint at anchor "commit": pattern not found';
+    end if;
+
+    v_step := v_definition;
     v_definition := replace(v_definition,
       E'\nEND;\n$function$',
       E'\nEXCEPTION WHEN OTHERS THEN\n'
@@ -514,10 +666,10 @@ begin
       || 'END;' || E'\n'
       || '$function$'
     );
-
-    if v_definition = v_original then
-      raise exception 'Unable to add save_partial_round_atomic flight recorder checkpoints: expected anchors changed';
+    if v_definition = v_step then
+      raise exception 'Unable to add save_partial_round_atomic flight recorder checkpoint at anchor "exception_wrapper": pattern not found';
     end if;
+
     execute v_definition;
   end if;
 end;

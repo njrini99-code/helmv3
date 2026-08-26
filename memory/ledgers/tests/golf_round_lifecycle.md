@@ -1,5 +1,18 @@
 # Golf Round Lifecycle test ledger
 
+## 2026-08-26 — flight-recorder wiring contract
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-refit`.
+- Added `golf-round-submit-flight-recorder.test.ts` and
+  `golf-save-partial-round-flight-recorder.test.ts`.
+- Guarantees: the `_helm_trace` payload reaches the RPC argument; a recorder
+  that throws at any stage never fails or alters the save; `helmTraceId`
+  reaches the Bridge log context on the failure path.
+- Verification: the existing round-lifecycle suites were re-run unchanged —
+  inngest routing, save-partial-round, abort-no-destructive-fallback,
+  busy-carveout, and after-chain — alongside the full unit + unit-dom suite
+  (1210 files, 11,120 tests, 0 failures).
+
 ## 2026-08-22 — confirmed-snapshot recovery contract
 
 - SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.

@@ -312,6 +312,11 @@ async function syncClassToCalendarImpl(
     const tag = classTag(classId);
     const tzOffset = classData.timezoneOffset;
 
+    // Logged at most once per sync call (see offsetForDate below) — a bad
+    // IANA name is a per-sync condition, not a per-occurrence one, and this
+    // loop can run up to MAX_GENERATED_OCCURRENCES times.
+    let loggedInvalidTimezone = false;
+
     /**
      * The offset to stamp on a given occurrence. Prefers the caller's IANA zone
      * resolved AT THAT DATE, so a series spanning a daylight-saving change
@@ -323,6 +328,25 @@ async function syncClassToCalendarImpl(
       if (classData.timezone) {
         const resolved = offsetMinutesFor(date, time, classData.timezone);
         if (resolved !== null) return resolved;
+        // offsetMinutesFor's own catch silently returns null for an
+        // unrecognized zone name — the fallback below is correct and
+        // unchanged, but that failure previously had no observability at
+        // all. One warning per sync (not per occurrence) is enough to
+        // surface a stale/typoed timezone without spamming admin_events.
+        if (!loggedInvalidTimezone) {
+          loggedInvalidTimezone = true;
+          void logServerError(
+            `syncClassToCalendar: unrecognized IANA timezone "${classData.timezone}" — using the fixed saved-time offset for this and any remaining occurrences`,
+            {
+              action: 'syncClassToCalendar.offsetForDate',
+              feature: 'academics_classes',
+              sport: 'golf',
+              playerId,
+              teamId,
+            },
+            'warning',
+          );
+        }
       }
       return tzOffset;
     };

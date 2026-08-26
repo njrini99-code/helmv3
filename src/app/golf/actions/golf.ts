@@ -41,6 +41,12 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
 import { getQualifierAutomaticTransition } from '@/lib/golf/qualifier-lifecycle';
+import {
+  createHelmFlightRecorder,
+  recordRescuedStepOutcome,
+  type HelmFlightRecorder,
+  type StartHelmFlightRecorderInput,
+} from '@/lib/observability/helm-flight-recorder';
 
 // ============================================================================
 // COURSE ID RESOLUTION
@@ -1067,6 +1073,58 @@ function mergeRoundWarnings(...warningGroups: Array<string[] | undefined>): stri
   return merged.length > 0 ? merged : undefined;
 }
 
+/**
+ * Mirrors createHelmFlightRecorder's own production opt-in gate
+ * (src/lib/observability/helm-flight-recorder.ts: `enabled`) so the
+ * Postgres-side helm_private.trace_checkpoint() log volume follows the
+ * IDENTICAL policy as the JS-side helm_debug persistence, instead of firing
+ * on every round write in production while the JS side stays silently
+ * disabled (helm_private.configure_trace_context has no gate of its own —
+ * whatever _helm_trace.enabled the caller sends is what runs). This
+ * necessarily duplicates that file's expression rather than inventing a new
+ * one; see crossFile note asking the recorder to expose it instead.
+ */
+function shouldEmitHelmTraceContext(): boolean {
+  return process.env.VERCEL_ENV !== 'production' || process.env.HELM_FLIGHT_RECORDER_ENABLED === 'true';
+}
+
+/**
+ * The `_helm_trace` key shape helm_private.configure_trace_context expects
+ * (supabase/migrations/20260825200811_helm_flight_recorder.sql). Omitted
+ * entirely when tracing is off so the RPC's own no-op default applies —
+ * never sent as `enabled: false`, which would still cost a jsonb key lookup
+ * per checkpoint for zero benefit.
+ */
+function helmTracePayload(traceId: string): Record<string, unknown> {
+  return shouldEmitHelmTraceContext() ? { _helm_trace: { trace_id: traceId, enabled: true } } : {};
+}
+
+/**
+ * The flight recorder must NEVER fail or slow a round write. Every write
+ * createHelmFlightRecorder makes already fails open internally (see that
+ * file's `failOpen`), but this guards construction itself so an unexpected
+ * rejection there can't propagate into a round-lifecycle action. Returns a
+ * fully inert recorder on failure — same shape as the library's own
+ * disabled-mode no-op.
+ */
+async function createSafeFlightRecorder(input: StartHelmFlightRecorderInput): Promise<HelmFlightRecorder> {
+  try {
+    return await createHelmFlightRecorder(input);
+  } catch {
+    const noop = async () => undefined;
+    return {
+      traceId: input.traceId ?? 'unavailable',
+      workflow: input.workflow,
+      start: noop,
+      complete: noop,
+      fail: noop,
+      warn: noop,
+      skip: noop,
+      finalize: noop,
+    };
+  }
+}
+
 function getPreservedRoundSubmitError(backupPersisted: boolean): string {
   // Only promise preservation when a backup actually landed. On 2026-08-20 a
   // player was told "your round data was preserved... do not re-enter it" while
@@ -1913,6 +1971,18 @@ async function submitGolfRoundComprehensiveImpl(
     let round: { id: string };
     let detailWarnings: string[] | undefined;
 
+    // One recorder for the whole submit call, spanning both the
+    // existing-round and new-round branches below — a single trace per
+    // submit, correlated to the same db.submit_round_atomic step either way.
+    const flightRecorder = await createSafeFlightRecorder({
+      workflow: 'golf.round.submit',
+      roundId: existingRoundId ?? null,
+      teamId,
+      playerId: player.id,
+      qualifierId: effectiveQualifierId ?? null,
+      existingRoundId: existingRoundId ?? null,
+    });
+
     if (existingRoundId) {
       let backupPersisted = false;
       try {
@@ -1936,12 +2006,13 @@ async function submitGolfRoundComprehensiveImpl(
       }
 
       // Use atomic RPC — wraps entire submit in a single transaction
+      void flightRecorder.start('db.submit_round_atomic');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
         'submit_round_atomic',
         {
           p_round_id: existingRoundId,
-          p_round_data: roundData,
+          p_round_data: { ...roundData, ...helmTracePayload(flightRecorder.traceId) },
           p_holes: holesPayload,
           p_shots: shotsPayload,
           p_putt_details: puttDetailsPayload,
@@ -1958,9 +2029,11 @@ async function submitGolfRoundComprehensiveImpl(
           // transaction guarantees the scorecard and shots committed together,
           // so acknowledge the actual durable result instead of inviting a
           // duplicate submit or emitting a false production error.
+          void flightRecorder.complete('db.submit_round_atomic', { metadata: { reconciled_after_transport_error: true } });
+          void flightRecorder.finalize('success');
           round = { id: existingRoundId };
         } else {
-          await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc' });
+          await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc', helmTraceId: flightRecorder.traceId, traceStep: 'db.submit_round_atomic' });
           await logServerError(`Round submit RPC failed: ${rpcError.message}`, {
             action: 'submitGolfRoundComprehensive',
             roundId: existingRoundId,
@@ -1972,6 +2045,8 @@ async function submitGolfRoundComprehensiveImpl(
             errorCode: rpcError.code,
             errorHint: rpcError.hint,
             errorDetails: rpcError.details,
+            helmTraceId: flightRecorder.traceId,
+            traceStep: 'db.submit_round_atomic',
             extra: { path: 'existing_round', courseName: data.courseName },
           }, 'critical');
           const fallbackResult = await attemptDirectSubmitFallback(
@@ -1986,6 +2061,17 @@ async function submitGolfRoundComprehensiveImpl(
             },
             backupPersisted
           );
+          // Deferred until AFTER the fallback resolves — see
+          // recordRescuedStepOutcome's own doc. Marking db.submit_round_atomic
+          // failed before this point would poison finalize() into reporting
+          // 'failure' even if the fallback above had just saved the round.
+          void recordRescuedStepOutcome(flightRecorder, {
+            failedStepKey: 'db.submit_round_atomic',
+            fallbackStepKey: 'db.direct_submit_fallback',
+            rescued: fallbackResult.success,
+            stepInput: { errorCode: rpcError.code, errorSummary: rpcError.message },
+            fallbackStepInput: { observed: { round_id: existingRoundId } },
+          });
           if (!fallbackResult.success) {
             return fallbackResult;
           }
@@ -1999,13 +2085,25 @@ async function submitGolfRoundComprehensiveImpl(
           // submit) still held the row past the RPC's bounded 3s wait
           // (supabase/migrations/20260821043500_single_flight_round_submit.sql).
           // Expected under concurrent-save load, not a failure — no
-          // error-severity log, and 'busy' !== 'internal_error' so this can
-          // never reach attemptDirectSubmitFallback.
+          // error-severity log.
           if (rpcResult.error === 'busy') {
+            void flightRecorder.warn('db.submit_round_atomic', { errorSummary: 'busy' });
+            void flightRecorder.finalize('warning');
             return { success: false, error: 'Another save for this round is just finishing — try again in a moment.' };
           }
-          const isInternalError = rpcResult.error === 'internal_error';
-          await logServerError(`Round submit RPC returned failure: ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
+          // submit_round_atomic only ever returns {success:false, error:<a
+          // fixed validation/lock message>} — see supabase/migrations/
+          // 20260821043500_single_flight_round_submit.sql and
+          // 20260820170000_single_flight_partial_round_save.sql, its shared
+          // template. It never emits error_code/step/detail; a genuine
+          // internal fault surfaces as a transport `rpcError` (handled
+          // above, with a real SQLSTATE) instead. The prior isInternalError
+          // branch here — keyed on an `error === 'internal_error'` value
+          // this RPC has never produced — is removed rather than kept as
+          // dead code implying a response shape that isn't real.
+          void flightRecorder.fail('db.submit_round_atomic', { errorSummary: rpcResult.error });
+          void flightRecorder.finalize('failure');
+          await logServerError(`Round submit RPC returned failure: ${rpcResult.error}`, {
             action: 'submitGolfRoundComprehensive',
             roundId: existingRoundId,
             playerId: player.id,
@@ -2013,34 +2111,14 @@ async function submitGolfRoundComprehensiveImpl(
             userEmail: user.email,
             holesCount: holesPayload.length,
             shotsCount,
-            errorCode: rpcResult.error_code,
-            errorDetails: rpcResult.step,
+            helmTraceId: flightRecorder.traceId,
+            traceStep: 'db.submit_round_atomic',
             extra: { rpcResult, path: 'existing_round' },
-          }, isInternalError ? 'critical' : 'error');
-
-          if (isInternalError) {
-            const fallbackResult = await attemptDirectSubmitFallback(
-              existingRoundId,
-              'existing_round',
-              {
-                source: 'rpc_result',
-                error: rpcResult.error,
-                errorCode: rpcResult.error_code,
-                step: rpcResult.step,
-                detail: rpcResult.detail,
-              },
-              backupPersisted
-            );
-            if (!fallbackResult.success) {
-              return fallbackResult;
-            }
-
-            detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
-            round = { id: existingRoundId };
-          } else {
-            return { success: false, error: rpcResult.error || 'Failed to submit round.' };
-          }
+          }, 'error');
+          return { success: false, error: rpcResult.error || 'Failed to submit round.' };
         } else {
+          void flightRecorder.complete('db.submit_round_atomic', { observed: { round_id: existingRoundId } });
+          void flightRecorder.finalize('success');
           // Log warnings from resilient detail inserts (round saved successfully)
           if (rpcResult?.warnings?.length > 0) {
             detailWarnings = rpcResult.warnings as string[];
@@ -2052,6 +2130,7 @@ async function submitGolfRoundComprehensiveImpl(
                 playerId: player.id,
                 userId: user.id,
                 userEmail: user.email,
+                helmTraceId: flightRecorder.traceId,
                 extra: { warnings: rpcResult.warnings, path: 'existing_round' },
               },
               'warning'
@@ -2085,17 +2164,22 @@ async function submitGolfRoundComprehensiveImpl(
           errorDetails: roundError?.details,
           extra: { path: 'new_round_draft', courseName: data.courseName },
         }, 'critical');
+        // The draft insert never reached the RPC, so db.submit_round_atomic
+        // stays 'pending' (a missing required step) rather than being marked
+        // failed for a step that was never attempted.
+        void flightRecorder.finalize('failure');
         return { success: false, error: 'Failed to save round. Please try again.' };
       }
 
       // Atomically set status='completed' + insert holes/shots inside one transaction.
       // The stats trigger fires AFTER all hole data exists.
+      void flightRecorder.start('db.submit_round_atomic');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
         'submit_round_atomic',
         {
           p_round_id: newRound.id,
-          p_round_data: roundData,
+          p_round_data: { ...roundData, ...helmTracePayload(flightRecorder.traceId) },
           p_holes: holesPayload,
           p_shots: shotsPayload,
           p_putt_details: puttDetailsPayload,
@@ -2108,12 +2192,14 @@ async function submitGolfRoundComprehensiveImpl(
           && await hasConfirmedRoundSubmission(supabase, newRound.id, player.id);
 
         if (submissionCommitted) {
+          void flightRecorder.complete('db.submit_round_atomic', { metadata: { reconciled_after_transport_error: true } });
+          void flightRecorder.finalize('success');
           round = { id: newRound.id };
         } else {
           // Do NOT delete the round — preserve it so the user can retry.
           // Deleting here caused permanent data loss when the RPC failed
           // (e.g., trigger errors, network timeouts, race conditions).
-          await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc.new' });
+          await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc.new', helmTraceId: flightRecorder.traceId, traceStep: 'db.submit_round_atomic' });
           await logServerError(`Round submit RPC failed (new round): ${rpcError.message}`, {
             action: 'submitGolfRoundComprehensive',
             roundId: newRound.id,
@@ -2125,6 +2211,8 @@ async function submitGolfRoundComprehensiveImpl(
             errorCode: rpcError.code,
             errorHint: rpcError.hint,
             errorDetails: rpcError.details,
+            helmTraceId: flightRecorder.traceId,
+            traceStep: 'db.submit_round_atomic',
             extra: { path: 'new_round_rpc', courseName: data.courseName },
           }, 'critical');
           const fallbackResult = await attemptDirectSubmitFallback(
@@ -2139,6 +2227,17 @@ async function submitGolfRoundComprehensiveImpl(
             },
             true
           );
+          // Deferred until AFTER the fallback resolves — see
+          // recordRescuedStepOutcome's own doc. Marking db.submit_round_atomic
+          // failed before this point would poison finalize() into reporting
+          // 'failure' even if the fallback above had just saved the round.
+          void recordRescuedStepOutcome(flightRecorder, {
+            failedStepKey: 'db.submit_round_atomic',
+            fallbackStepKey: 'db.direct_submit_fallback',
+            rescued: fallbackResult.success,
+            stepInput: { errorCode: rpcError.code, errorSummary: rpcError.message },
+            fallbackStepInput: { observed: { round_id: newRound.id } },
+          });
           if (!fallbackResult.success) {
             return fallbackResult;
           }
@@ -2153,13 +2252,24 @@ async function submitGolfRoundComprehensiveImpl(
           // submit) still held the row past the RPC's bounded 3s wait
           // (supabase/migrations/20260821043500_single_flight_round_submit.sql).
           // Expected under concurrent-save load, not a failure — no
-          // error-severity log, and 'busy' !== 'internal_error' so this can
-          // never reach attemptDirectSubmitFallback.
+          // error-severity log.
           if (rpcResult.error === 'busy') {
+            void flightRecorder.warn('db.submit_round_atomic', { errorSummary: 'busy' });
+            void flightRecorder.finalize('warning');
             return { success: false, error: 'Another save for this round is just finishing — try again in a moment.' };
           }
-          const isInternalError = rpcResult.error === 'internal_error';
-          await logServerError(`Round submit RPC returned failure (new round): ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
+          // submit_round_atomic only ever returns {success:false,
+          // error:<a fixed validation/lock message>} — see
+          // supabase/migrations/20260821043500_single_flight_round_submit.sql.
+          // It never emits error_code/step/detail; a genuine internal fault
+          // surfaces as a transport `rpcError` (handled above, with a real
+          // SQLSTATE) instead. The prior isInternalError branch here is
+          // removed rather than kept as dead code implying a response shape
+          // that isn't real — see the mirrored comment on the existing-round
+          // branch above.
+          void flightRecorder.fail('db.submit_round_atomic', { errorSummary: rpcResult.error });
+          void flightRecorder.finalize('failure');
+          await logServerError(`Round submit RPC returned failure (new round): ${rpcResult.error}`, {
             action: 'submitGolfRoundComprehensive',
             roundId: newRound.id,
             playerId: player.id,
@@ -2167,34 +2277,14 @@ async function submitGolfRoundComprehensiveImpl(
             userEmail: user.email,
             holesCount: holesPayload.length,
             shotsCount,
-            errorCode: rpcResult.error_code,
-            errorDetails: rpcResult.step,
+            helmTraceId: flightRecorder.traceId,
+            traceStep: 'db.submit_round_atomic',
             extra: { rpcResult, path: 'new_round_rpc' },
-          }, isInternalError ? 'critical' : 'error');
-
-          if (isInternalError) {
-            const fallbackResult = await attemptDirectSubmitFallback(
-              newRound.id,
-              'new_round_rpc',
-              {
-                source: 'rpc_result',
-                error: rpcResult.error,
-                errorCode: rpcResult.error_code,
-                step: rpcResult.step,
-                detail: rpcResult.detail,
-              },
-              true
-            );
-            if (!fallbackResult.success) {
-              return fallbackResult;
-            }
-
-            detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
-            round = { id: newRound.id };
-          } else {
-            return { success: false, error: rpcResult.error || 'Failed to submit round.' };
-          }
+          }, 'error');
+          return { success: false, error: rpcResult.error || 'Failed to submit round.' };
         } else {
+          void flightRecorder.complete('db.submit_round_atomic', { observed: { round_id: newRound.id } });
+          void flightRecorder.finalize('success');
           // Log warnings from resilient detail inserts (round saved successfully)
           if (rpcResult?.warnings?.length > 0) {
             detailWarnings = rpcResult.warnings as string[];
@@ -2206,6 +2296,7 @@ async function submitGolfRoundComprehensiveImpl(
                 playerId: player.id,
                 userId: user.id,
                 userEmail: user.email,
+                helmTraceId: flightRecorder.traceId,
                 extra: { warnings: rpcResult.warnings, path: 'new_round_rpc' },
               },
               'warning'
@@ -3676,7 +3767,26 @@ async function getQualifierRoundCoursesImpl(
       .eq('qualifier_id', qualifierId)
       .order('round_number', { ascending: true });
 
-    if (error || !Array.isArray(data)) return [];
+    if (error || !Array.isArray(data)) {
+      // withAdminObserved cannot see this: it only inspects an ActionResult
+      // ({success:false}) shape, and Array.isArray(result) short-circuits
+      // extractActionSoftFailure to null for this function's return type —
+      // a real read failure here was silently indistinguishable from "no
+      // courses assigned yet". Observability only; the fallback [] is
+      // unchanged.
+      void logServerError(
+        `getQualifierRoundCourses read failed: ${error?.message ?? 'non-array data returned'}`,
+        {
+          action: 'getQualifierRoundCourses',
+          featureArea: 'qualifiers',
+          errorCode: error?.code,
+          errorDetails: error?.details,
+          extra: { qualifierId },
+        },
+        'warning'
+      );
+      return [];
+    }
 
     return (data as Array<{
       round_number: number;
@@ -3689,7 +3799,16 @@ async function getQualifierRoundCoursesImpl(
       courseName: row.course_name ?? null,
       teeId: row.tee_id ?? null,
     }));
-  } catch {
+  } catch (err) {
+    void logServerError(
+      `getQualifierRoundCourses threw: ${describeError(err)}`,
+      {
+        action: 'getQualifierRoundCourses',
+        featureArea: 'qualifiers',
+        extra: { qualifierId, stack: err instanceof Error ? err.stack : undefined },
+      },
+      'error'
+    );
     return [];
   }
 }
@@ -6131,11 +6250,20 @@ async function savePartialRoundImpl(
     let roundId: string;
 
     if (existingRoundId) {
+      const flightRecorder = await createSafeFlightRecorder({
+        workflow: 'golf.round.autosave',
+        roundId: existingRoundId,
+        teamId,
+        playerId: player.id,
+        qualifierId: data.qualifierId ?? null,
+        existingRoundId,
+      });
+
       // Use atomic RPC — wraps delete+insert in a single transaction
       // RPC not in generated types yet — use type escape
       const rpcParams: Record<string, unknown> = {
         p_round_id: existingRoundId,
-        p_round_data: roundData,
+        p_round_data: { ...roundData, ...helmTracePayload(flightRecorder.traceId) },
         p_holes: holesPayload,
         p_shots: shotsPayload,
         p_putt_details: puttDetailsPayload,
@@ -6147,6 +6275,7 @@ async function savePartialRoundImpl(
         rpcParams.p_expected_updated_at = data.expectedUpdatedAt;
       }
 
+      void flightRecorder.start('db.save_partial_round_atomic');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
         'save_partial_round_atomic',
@@ -6154,6 +6283,8 @@ async function savePartialRoundImpl(
       );
 
       if (rpcError) {
+        void flightRecorder.fail('db.save_partial_round_atomic', { errorCode: rpcError.code, errorSummary: rpcError.message });
+        void flightRecorder.finalize('failure');
         // Single log call per failure — logServerError already carries the
         // richer domain context (roundId/playerId/errorCode/hint/details);
         // a paired logServerException here would just double-write the
@@ -6169,6 +6300,8 @@ async function savePartialRoundImpl(
           errorCode: rpcError.code,
           errorHint: rpcError.hint,
           errorDetails: rpcError.details,
+          helmTraceId: flightRecorder.traceId,
+          traceStep: 'db.save_partial_round_atomic',
           extra: { courseName: data.courseName, currentHole: data.currentHole },
         });
         return { success: false, error: 'Failed to save round. Please try again.' };
@@ -6177,6 +6310,8 @@ async function savePartialRoundImpl(
       if (rpcResult && !rpcResult.success) {
         // Return conflict errors with a distinct error key so the UI can prompt a reload
         if (rpcResult.error === 'conflict') {
+          void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'conflict' });
+          void flightRecorder.finalize('warning');
           return { success: false, error: 'conflict', };
         }
         // 'busy' = single-flight skip: another save (or a submit) already holds
@@ -6187,13 +6322,19 @@ async function savePartialRoundImpl(
         // error event — 15 of these across one Guilford evening is healthy
         // coalescing, not 15 incidents.
         if (rpcResult.error === 'busy') {
+          void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'busy' });
+          void flightRecorder.finalize('warning');
           return { success: false, error: 'busy' };
         }
         // Already-completed rounds are an expected race condition (auto-save fires
         // after submit completes) — return early without logging an error event.
         if (typeof rpcResult.error === 'string' && rpcResult.error.includes('already been completed')) {
+          void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: rpcResult.error });
+          void flightRecorder.finalize('warning');
           return { success: false, error: rpcResult.error };
         }
+        void flightRecorder.fail('db.save_partial_round_atomic', { errorSummary: rpcResult.error });
+        void flightRecorder.finalize('failure');
         void logServerError(`Auto-save RPC returned failure: ${rpcResult.error || 'unknown'}`, {
           action: 'savePartialRound',
           featureArea: 'shot_tracking',
@@ -6201,10 +6342,15 @@ async function savePartialRoundImpl(
           playerId: player.id,
           userId: user.id,
           userEmail: user.email,
+          helmTraceId: flightRecorder.traceId,
+          traceStep: 'db.save_partial_round_atomic',
           extra: { rpcError: rpcResult.error, courseName: data.courseName, currentHole: data.currentHole },
         }, 'error');
         return { success: false, error: rpcResult.error || 'Failed to save round.' };
       }
+
+      void flightRecorder.complete('db.save_partial_round_atomic', { observed: { round_id: existingRoundId } });
+      void flightRecorder.finalize('success');
 
       // Log warnings from resilient detail inserts (round saved successfully)
       const partialWarnings = rpcResult?.warnings?.length > 0
@@ -6219,6 +6365,7 @@ async function savePartialRoundImpl(
             playerId: player.id,
             userId: user.id,
             userEmail: user.email,
+            helmTraceId: flightRecorder.traceId,
             extra: { warnings: partialWarnings, courseName: data.courseName },
           },
           'warning'

@@ -23,16 +23,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export function PlayerWatchlist({
   players,
   title = 'Player-by-player watchlist',
+  emptyDescription = 'Players with errors, quiet activity, or missing profiles appear here.',
 }: {
   players: RosterPlayerInsight[];
   title?: string;
+  emptyDescription?: string;
 }) {
   return (
     <Surface padding="sm">
       <SectionLabel>{title}</SectionLabel>
       <div className="mt-3 divide-y divide-warm-200/70">
         {players.length === 0 ? (
-          <PanelNoData label="No player watch items" description="Players with errors, quiet activity, or missing profiles appear here." />
+          <PanelNoData label="No player watch items" description={emptyDescription} />
         ) : (
           players.map((player) => (
             <div key={`${player.teamId}:${player.playerId}`} className="grid gap-3 py-3 2xl:grid-cols-[minmax(0,1fr)_120px_120px_120px] 2xl:items-center">

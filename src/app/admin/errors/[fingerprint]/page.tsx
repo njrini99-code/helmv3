@@ -11,6 +11,10 @@ import { CopyReportButton } from '../../_components/CopyReportButton';
 import { ResolveErrorButton } from '../../_components/ResolveErrorButton';
 import { SportBadge, type BridgeSport } from '../../_components/SportBadge';
 import { LocalTime } from '../../_components/LocalTime';
+import { ForensicsHeader } from '../_components/ForensicsHeader';
+import { TrendStrip } from '../_components/TrendStrip';
+import { RcaPanel } from '../_components/RcaPanel';
+import { FieldCopy } from '../_components/FieldCopy';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,9 +86,9 @@ export default async function FingerprintDetailPage({
   const fingerprint = decodeURIComponent(rawFingerprint);
 
   async function Body() {
-    const { events, report, summary } = await fetchFingerprintDetail(rawFingerprint);
+    const { events, report, summary, forensics, trend } = await fetchFingerprintDetail(rawFingerprint);
 
-    if (events.length === 0) {
+    if (events.length === 0 || !forensics) {
       return (
         <PanelNoData
           label="No events for this fingerprint"
@@ -94,7 +98,25 @@ export default async function FingerprintDetailPage({
     }
 
     return (
-      <>
+      <div className="space-y-3">
+        {/* Suspect deploy, elevated: the first thing an operator should read —
+            "what shipped right before this started" — not buried in the
+            bracketing-deploy list further down. */}
+        {forensics.suspectDeploy ? (
+          <Surface padding="sm" className="border border-fw-warning/30 bg-fw-warning/5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-warm-800">
+                First seen after deploy{' '}
+                <span className="font-fw-mono">
+                  {(forensics.suspectDeploy.sha ?? 'unknown-sha').slice(0, 7)}
+                </span>{' '}
+                (<LocalTime iso={forensics.suspectDeploy.time} variant="datetime" />)
+              </p>
+              <FieldCopy label="suspect deploy sha" value={forensics.suspectDeploy.sha} className="w-auto" />
+            </div>
+          </Surface>
+        ) : null}
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-warm-600">
             {summary.truncated
@@ -109,10 +131,12 @@ export default async function FingerprintDetailPage({
           </div>
         </div>
 
+        <ForensicsHeader forensics={forensics} />
+
         {/* Rollup the data layer already computed but previously discarded —
             an operator had to Copy the report and paste it elsewhere to see
             first-seen, unique users, or which deploys bracket the incident. */}
-        <Surface padding="sm" className="mt-3">
+        <Surface padding="sm">
           <StatStrip count={4} mdColumns={4} edgeBleedClassName="-mx-4 px-4" ariaLabel="Incident rollup">
             <div className="rounded-fw-md bg-surface-sunken px-3 py-2">
               <p className="text-caption uppercase tracking-widest text-warm-500">Occurrences</p>
@@ -128,7 +152,11 @@ export default async function FingerprintDetailPage({
                 {summary.truncated ? '+' : ''}
               </p>
               <p className="text-caption text-warm-500">
-                {summary.truncated ? 'lower bound' : 'distinct'}
+                {forensics.hasUnknownAffectedUsers
+                  ? 'unknown — no identity captured'
+                  : summary.truncated
+                    ? 'lower bound'
+                    : 'distinct'}
               </p>
             </div>
             <div className="rounded-fw-md bg-surface-sunken px-3 py-2">
@@ -158,7 +186,19 @@ export default async function FingerprintDetailPage({
           ) : null}
         </Surface>
 
-        <ul className="mt-3 space-y-3">
+        <Surface padding="sm">
+          <h2 className="text-eyebrow uppercase text-warm-500">7-day trend</h2>
+          <TrendStrip
+            buckets={trend.buckets}
+            truncated={trend.truncated}
+            unavailable={trend.unavailable}
+            className="mt-2"
+          />
+        </Surface>
+
+        <RcaPanel fingerprint={fingerprint} initialAnalysis={forensics.storedRca} />
+
+        <ul className="space-y-3">
           {events.map((e) => (
             <Surface as="li" key={e.id} padding="sm" className="min-w-0">
               <div className="flex min-w-0 items-start justify-between gap-3">
@@ -190,7 +230,7 @@ export default async function FingerprintDetailPage({
             </Surface>
           ))}
         </ul>
-      </>
+      </div>
     );
   }
 

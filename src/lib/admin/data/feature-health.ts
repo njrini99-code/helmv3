@@ -321,24 +321,18 @@ const STATUS_RANK: Record<FeatureStatus, number> = { red: 0, amber: 1, neutral: 
 /**
  * USER-SCOPED client — get_feature_health() gates on auth.uid() via
  * is_super_admin() and Forbids under service_role (by design, same as
- * get_active_sessions / revoke_user_sessions).
+ * get_active_sessions / revoke_user_sessions). Split out of
+ * `fetchFeatureHealth()` so `fetchFeatureHealthRedCount()` below can share
+ * this ONE round-trip with it (via `cache()`) instead of issuing a second RPC
+ * call on every render that needs both — see that function's doc comment.
  *
- * `cache()`-memoised per request. One render of /admin called this TWICE —
- * once inside `fetchOverviewSnapshot()` for the banner rollup, once again for
- * the "Feature command map" panel — and a single call is the
- * get_feature_health() RPC PLUS `fetchSentryFeatureCounts`, which issues one
- * Sentry search PER registry feature (85 non-excluded features, 6 at a time).
- * Paying that fan-out twice for one screen was the most expensive duplicate on
- * the page.
- *
- * Zero arguments, so it keys cleanly — no reference-identity trap (contrast
- * `cachedIncidentFeed` in data/incident-feed.ts, which exists ONLY because
- * `cache()` cannot key an object literal). Memoisation is scoped to a React
- * request, so route handlers and cron callers still get a fresh pull.
+ * `cache()`-memoised per request, zero-arg key (no reference-identity trap —
+ * contrast `cachedIncidentFeed` in data/incident-feed.ts, which exists ONLY
+ * because `cache()` cannot key an object literal). Route handlers and cron
+ * callers still get a fresh pull.
  */
-export const fetchFeatureHealth = cache(async (): Promise<{
-  features: FeatureHealth[];
-  generatedAt: string;
+const fetchFeatureHealthRows = cache(async (): Promise<{
+  rows: RawFeatureHealthRow[] | null;
   degraded: boolean;
   /** Why the RPC failed, verbatim, when `degraded` — null otherwise. The
    *  board short-circuits to a single all-neutral panel on degrade, so this
@@ -347,10 +341,6 @@ export const fetchFeatureHealth = cache(async (): Promise<{
    *  took before 20260806030000 raised it to 500). */
   degradedReason: string | null;
 }> => {
-  const now = new Date();
-  const registryFeatures = FEATURE_REGISTRY.filter((def) => !def.excluded);
-  const keys = registryFeatures.map((def) => def.key);
-
   let rows: RawFeatureHealthRow[] | null = null;
   let degraded = false;
   let degradedReason: string | null = null;
@@ -400,7 +390,33 @@ export const fetchFeatureHealth = cache(async (): Promise<{
       ).catch(() => {});
     }
   }
+  return { rows, degraded, degradedReason };
+});
 
+/**
+ * `cache()`-memoised per request. One render of /admin called this TWICE —
+ * once inside `fetchOverviewSnapshot()` for the banner rollup, once again for
+ * the "Feature command map" panel — and a single call is the
+ * get_feature_health() RPC PLUS `fetchSentryFeatureCounts`, which issues one
+ * Sentry search PER registry feature (85 non-excluded features, 6 at a time).
+ * Paying that fan-out twice for one screen was the most expensive duplicate on
+ * the page.
+ *
+ * Zero arguments, so it keys cleanly. Memoisation is scoped to a React
+ * request, so route handlers and cron callers still get a fresh pull.
+ */
+export const fetchFeatureHealth = cache(async (): Promise<{
+  features: FeatureHealth[];
+  generatedAt: string;
+  degraded: boolean;
+  /** Why the RPC failed, verbatim, when `degraded` — null otherwise. */
+  degradedReason: string | null;
+}> => {
+  const now = new Date();
+  const registryFeatures = FEATURE_REGISTRY.filter((def) => !def.excluded);
+  const keys = registryFeatures.map((def) => def.key);
+
+  const { rows, degraded, degradedReason } = await fetchFeatureHealthRows();
   const rowByKey = new Map((rows ?? []).map((r) => [r.key, r]));
 
   let sentryCounts: Record<string, { total: number; critical: number }> | null = null;
@@ -462,6 +478,47 @@ export const fetchFeatureHealth = cache(async (): Promise<{
   features.sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status]);
 
   return { features, generatedAt: now.toISOString(), degraded, degradedReason };
+});
+
+/**
+ * DB-only RED-feature count — no Sentry round-trip. Built for a root layout
+ * (`src/app/admin/layout.tsx`) that re-executes on every navigation AND every
+ * `<AutoRefresh />` tick: `fetchFeatureHealth()`'s dominant cost is
+ * `fetchSentryFeatureCounts`, a ~15-round sequential sweep across 85
+ * registry features, and an idle open Bridge tab was paying that sweep on a
+ * timer with no success-path cooldown. This function never runs it.
+ *
+ * Correctness: `computeFeatureStatus`'s RED branch (unresolved critical,
+ * failed integrity check, fingerprint-threshold breach — see the "── 2. RED"
+ * block above) never reads `sentryUnresolved`; only the AMBER branch does
+ * (unresolved non-critical Sentry issues). So a RED classification computed
+ * with `sentryUnresolved: null` is IDENTICAL to what `fetchFeatureHealth()`
+ * would produce for that feature — this is the exact same count, not an
+ * approximation, just without paying for the data that can't change it.
+ *
+ * Shares its RPC round-trip with `fetchFeatureHealth()` via
+ * `fetchFeatureHealthRows()` (`cache()`-memoised) when both are called in the
+ * same request — the Overview page does exactly that for its Feature command
+ * map panel, so that render still pays for get_feature_health() once.
+ *
+ * Returns `null` — never `0` — when the pipeline is degraded.
+ * "No red features" and "couldn't find out" must never render the same way
+ * (golfhelm-engineering-os.md: "Never: error→[], unknown→healthy").
+ */
+export const fetchFeatureHealthRedCount = cache(async (): Promise<number | null> => {
+  const { rows, degraded } = await fetchFeatureHealthRows();
+  if (degraded) return null;
+
+  const now = new Date();
+  const rowByKey = new Map((rows ?? []).map((r) => [r.key, r]));
+  const registryFeatures = FEATURE_REGISTRY.filter((def) => !def.excluded);
+
+  let red = 0;
+  for (const def of registryFeatures) {
+    const inputs = inputsForFeature(def, rowByKey.get(def.key), null, now);
+    if (computeFeatureStatus(inputs).status === 'red') red += 1;
+  }
+  return red;
 });
 
 // ---------------------------------------------------------------------------

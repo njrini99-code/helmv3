@@ -195,6 +195,11 @@ export async function queryAppErrorEvents(
     let query = admin
       .from('admin_events')
       .select(APP_EVENT_SELECT)
+      // Exact-match to 'error' already excludes every other event_type this
+      // table holds — 'deploy' markers, activity records, and an in-app RCA
+      // analysis (event_type='rca_analysis' — see @/lib/admin/rca) alike —
+      // so analyses can never surface as incidents here; no separate
+      // rca_analysis filter is needed on this query.
       .eq('event_type', 'error')
       .eq('resolved', false)
       .gte('created_at', since)
@@ -271,6 +276,13 @@ export async function queryPriorResolutions(
       // fired again looked like "a fix failed" — on 2026-08-05 all seven
       // resolutions behind the badged rows were cron sweeps, i.e. 100% false.
       .not('resolved_by', 'is', null)
+      // An in-app RCA analysis (event_type='rca_analysis' — see
+      // @/lib/admin/rca) shares its fingerprint with the incident it
+      // analyzed and is written born-resolved with no resolved_by, so the
+      // filter above already keeps it out. This is the explicit guard so
+      // that exclusion doesn't rest solely on an incidental side effect of
+      // how analyze-error.ts happens to persist rows today.
+      .neq('event_type', 'rca_analysis')
       .in('fingerprint', Array.from(chunk))
       .gte('resolved_at', since)
       .order('resolved_at', { ascending: false });
