@@ -246,7 +246,7 @@ export function SegmentedPill({ layoutId, reduceMotion }: SegmentedPillProps) {
        */}
       <span
         aria-hidden="true"
-        className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-accent-600 ring-1 ring-surface dark:bg-white dark:ring-accent-600"
+        className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-accent-600 ring-1 ring-surface dark:bg-text-on-accent dark:ring-accent-600"
       />
     </motion.span>
   );
