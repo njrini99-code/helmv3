@@ -1,5 +1,6 @@
 'use server';
 
+import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -137,11 +138,20 @@ async function sendGolfMessageWithAttachmentsImpl(
     // mirrors sendGolfMessageImpl's text-only fan-out (P1: this attachments
     // path previously fired none of these, so a photo/document send was
     // invisible to the recipient until they manually opened Messages).
-    await notifyGolfMessageRecipients(
-      conversationId,
-      user.id,
-      buildAttachmentPreview(content, attachments),
-    );
+    //
+    // 2026-08-26: runs via after(), NOT awaited in the response. Awaiting it
+    // inline meant a group send paid one email + one push edge-function call
+    // per participant before the sender heard back — on a 13-person team chat
+    // that pushed the action past what mobile Safari would wait for, the
+    // response was lost, and the composer reported failure for a send that
+    // had fully landed (observed live 2026-08-26: three copies of the same
+    // photo, each "failed" to the sender). Same response-loss class the round
+    // submit path fixed; same after() idiom golf.ts documents for it. The
+    // fan-out has its own internal try/catch and never throws.
+    const fanoutPreview = buildAttachmentPreview(content, attachments);
+    after(async () => {
+      await notifyGolfMessageRecipients(conversationId, user.id, fanoutPreview);
+    });
 
     return { success: true, messageId: message.id };
   } catch (err) {
