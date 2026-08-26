@@ -125,7 +125,7 @@ For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after genera
 | If you're working on... | Read this file FIRST |
 |------------------------|---------------------|
 | **Any golf feature** (understanding behavior, fixing bugs, adding to it) | `memory/context/golfhelm-features.md` — Find the feature by name, get data flow, files, tables, dependencies, gaps |
-| **Database queries** (writing SQL, adding columns, debugging data) | `memory/context/golfhelm-database.md` — Every column of every table |
+| **Database queries** (writing SQL, adding columns, debugging data) | `npm run schema -- <table>` (columns+FKs from generated production types, ~300 tokens), `npm run schema -- --grep <substr>` to discover, `--enums [name]` for enums. `memory/context/golfhelm-database.md` is the legacy prose rendering — prefer the command |
 | **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — **use its AUTOGEN blocks, not its narrative index.** `AUTOGEN:tables` and `AUTOGEN:enums` are generated from `src/lib/types/database.ts` and are complete. The hand-written by-feature index above them was last verified 2026-02-13 and named 20 tables that do not exist in production. Do not hand-copy the counts elsewhere, they rot |
 | **CoachHelm AI** (insights, patterns, predictions, reviews, philosophy) | `memory/context/coachhelm-ai.md` — V2 engine architecture, pipeline, components |
 | **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all action files, component directories |
