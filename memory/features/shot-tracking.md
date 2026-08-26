@@ -215,3 +215,8 @@ The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
 - `docs/ROUND_REVIEW_ACCURACY_REPORT.md`
+
+## iOS shell chrome (updated 2026-08-26)
+
+Shot-entry surfaces render under the safe-area-corrected scorecard header
+(see golf-round-lifecycle.md, same date). No shot-tracking contract change.

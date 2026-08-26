@@ -222,3 +222,14 @@ The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
 - `docs/ROUND_REVIEW_ACCURACY_REPORT.md`
 - `docs/v3-testing-standards.md`
+
+## iOS shell chrome (updated 2026-08-26)
+
+Round entry and tracking chrome are safe-area-native in the Capacitor shell:
+`FairwayScorecardHeader` pads `env(safe-area-inset-top)` (publishing
+`--scorecard-height` inclusive of the inset), both `FairwayNewRoundEntry`
+step wrappers fold the inset into top padding, and the course-picker close
+control sits below the status bar. The shared `Segmented` control renders an
+accent-green selected thumb in dark scope. Presentation layer only — no
+lifecycle contract change. Ledger: `memory/ledgers/changes/golf_round_lifecycle.md`
+(2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`.
