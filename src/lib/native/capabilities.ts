@@ -41,10 +41,12 @@ export type NativeCapability =
 /**
  * Minimum iOS build (CFBundleVersion) that ships each capability.
  * No entry may point at an unshipped build — see RELEASE RULE above.
- * Empty today: build 9 (the 2.0 release) predates every planned capability,
- * and 2.1's entries land with their native implementations.
  */
-const NATIVE_CAPABILITY_MIN_BUILD: Partial<Record<NativeCapability, number>> = {};
+const NATIVE_CAPABILITY_MIN_BUILD: Partial<Record<NativeCapability, number>> = {
+  // HelmHapticsPlugin (Core Haptics signatures) ships in the build-10 binary
+  // — this entry landed in the same change as the Swift (§ RELEASE RULE).
+  coreHapticsV1: 10,
+};
 
 export interface NativeAppInfo {
   /** 'ios' | 'android' (never 'web' — web resolves to null instead). */

@@ -41,9 +41,15 @@ Native surface today:
 - **Theme/status bar**: `CapacitorProvider.tsx` syncs the native status bar
   to the app theme reactively.
 
-Planned (2.1 arc, not yet shipped): Core Haptics signature plugin, badge
-bridge, notification categories/actions, active-round Live Activity — each
-gated behind a capability entry when its binary lands. Release process:
+In code for the build-10 binary (2.1 arc, unshipped until that build
+uploads): `HelmHapticsPlugin.swift` (Core Haptics signature patterns
+helmCommit/helmReject/helmMilestone; app-local plugin registered in
+`GolfBridgeViewController.capacitorDidLoad`) with the web bridge
+`src/lib/native/helm-haptics.ts` (`playHelmSignature`, preference + capability
++ hardware gated, stock-grammar fallback). Pattern curves await the owner's
+physical-device feel pass before any product flow wires them (§13/§72).
+Still planned: badge bridge, notification categories/actions, active-round
+Live Activity — each gated behind a capability entry when its binary lands. Release process:
 `ios/appstore/RELEASE_CANDIDATE_2.0-9.md`; audit:
 `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md`.
 

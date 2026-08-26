@@ -77,18 +77,26 @@ describe('hasNativeCapability', () => {
     expect(await hasNativeCapability('liveActivityV1')).toBe(false);
   });
 
-  it('is false on native for capabilities with no shipped min-build entry', async () => {
-    // The map is intentionally empty at build 9 (2.0): no capability may
-    // claim a build that hasn't shipped. This test pins that posture — when
-    // 2.1 adds entries, it should move to asserting the gating math instead.
+  it('gates a shipped capability on the min-build math', async () => {
+    // coreHapticsV1 ships in build 10 (HelmHapticsPlugin) — false on the
+    // build-9 binary, true from 10 up.
     isNativePlatform.mockReturnValue(true);
     getPlatform.mockReturnValue('ios');
     getInfo.mockResolvedValue({ name: 'x', id: 'y', version: '2.0', build: '9' });
-
     expect(await hasNativeCapability('coreHapticsV1')).toBe(false);
+
+    __resetNativeAppInfoCacheForTests();
+    getInfo.mockResolvedValue({ name: 'x', id: 'y', version: '2.1', build: '10' });
+    expect(await hasNativeCapability('coreHapticsV1')).toBe(true);
+  });
+
+  it('skips the bridge entirely for capabilities with no shipped entry', async () => {
+    isNativePlatform.mockReturnValue(true);
+    getPlatform.mockReturnValue('ios');
+
     expect(await hasNativeCapability('badgeV1')).toBe(false);
+    expect(await hasNativeCapability('liveActivityV1')).toBe(false);
     expect(await hasNativeCapability('notificationActionsV1')).toBe(false);
-    // The identity read still happened at most once for all probes.
     expect(getInfo).toHaveBeenCalledTimes(0);
   });
 });
