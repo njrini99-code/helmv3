@@ -33,6 +33,10 @@ export function useRoundStatusSync({
   const onRoundStaleRef = useRef(onRoundStale);
   // Track consecutive failures for exponential backoff
   const consecutiveFailuresRef = useRef(0);
+  // A background status poll is not a save. A single transport miss must not
+  // become a player-facing incident; report only a sustained outage and reset
+  // the report latch as soon as the authoritative server responds again.
+  const statusSyncFailureReportedRef = useRef(false);
 
   onRoundCompletedRef.current = onRoundCompleted;
   onRoundStaleRef.current = onRoundStale;
@@ -41,6 +45,7 @@ export function useRoundStatusSync({
     completionHandledRef.current = false;
     lastStaleVersionRef.current = null;
     consecutiveFailuresRef.current = 0;
+    statusSyncFailureReportedRef.current = false;
   }, [roundId]);
 
   useEffect(() => {
@@ -90,6 +95,7 @@ export function useRoundStatusSync({
 
         // Success — reset failure counter
         consecutiveFailuresRef.current = 0;
+        statusSyncFailureReportedRef.current = false;
 
         const { currentUpdatedAt, status, isStale } = result.data;
 
@@ -110,20 +116,31 @@ export function useRoundStatusSync({
           await onRoundStaleRef.current?.({ currentUpdatedAt, status });
         }
       } catch (error) {
-        logError(
-          error instanceof Error ? error : new Error(String(error)),
-          {
-            component: 'useRoundStatusSync',
-            action: 'checkRoundStaleness sync',
-            roundId,
-            expectedUpdatedAt: expectedUpdatedAtRef.current,
-            consecutiveFailures: consecutiveFailuresRef.current + 1,
-            syncIntervalMs,
-          },
-          'medium'
-        );
-        // Network error / "unexpected response" (e.g. deploy mismatch) — backoff
-        consecutiveFailuresRef.current++;
+        // Network error / "unexpected response" (e.g. a deployment transition)
+        // is harmless to the scorecard: saving uses a separate durable path.
+        // Do not emit raw browser wording such as "Load failed" per retry.
+        const consecutiveFailures = consecutiveFailuresRef.current + 1;
+        consecutiveFailuresRef.current = consecutiveFailures;
+        if (
+          consecutiveFailures >= SYNC_CIRCUIT_BREAKER_THRESHOLD &&
+          !statusSyncFailureReportedRef.current
+        ) {
+          statusSyncFailureReportedRef.current = true;
+          logError(
+            new Error('Round status synchronization has been unavailable for three attempts'),
+            {
+              component: 'useRoundStatusSync',
+              action: 'checkRoundStaleness sync',
+              roundId,
+              expectedUpdatedAt: expectedUpdatedAtRef.current,
+              consecutiveFailures,
+              syncIntervalMs,
+              lastTransportError: error instanceof Error ? error.message : String(error),
+              savePathAffected: false,
+            },
+            'medium'
+          );
+        }
       } finally {
         syncInFlightRef.current = false;
         // Schedule next sync with dynamic delay based on failure count

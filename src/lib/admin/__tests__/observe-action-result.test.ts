@@ -16,6 +16,7 @@ import {
   isExpectedEmptyStateCode,
   isUserInputRejection,
   observeActionSoftFailure,
+  classifySoftFailure,
 } from '@/lib/admin/observe-action-result';
 import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
 
@@ -171,8 +172,19 @@ describe('observe-action-result', () => {
     expect(isExpectedSoftFailureMessage('anything at all', 'some_other_code')).toBe(false);
   });
 
-  it('keeps a stale deleted-shot reconciliation out of Sentry while preserving a warning', () => {
+  it('records a stale deleted-shot reconciliation as info, not a warning incident', () => {
     expect(isExpectedSoftFailureMessage('Shot not found', 'shot_not_found')).toBe(true);
+    expect(classifySoftFailure('Shot not found', 'shot_not_found')).toEqual({
+      severity: 'info',
+      skipSentry: true,
+    });
+  });
+
+  it('records the expected native-session token retry as info, not a warning incident', () => {
+    expect(classifySoftFailure('Unauthorized', 'UNAUTHORIZED_RETRYABLE')).toEqual({
+      severity: 'info',
+      skipSentry: true,
+    });
   });
 
   it('classifies engine_no_recent_rounds as an empty-state code, not a generic soft failure', () => {
