@@ -52,8 +52,9 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 2. Git and commits
 
-- **Work on the currently checked-out branch.** Never switch branches or
-  create worktrees unless asked — the branch policy is AGENTS.md's
+- **Work on the currently checked-out branch; `main` is home.** Never switch
+  branches or create worktrees unless asked; return to clean `main` only when
+  the task is merged and verified — the resting-state policy is AGENTS.md's
   canonicality section, stated once there. **A push to `main` ships nothing** —
   `vercel.json` carries `"git": {"deploymentEnabled": {"*": false}}`, so no
   branch auto-deploys; production is an on-demand promote.

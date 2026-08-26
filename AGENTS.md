@@ -178,7 +178,12 @@ the full list.
 
 The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
 
-- Preserve the currently checked-out task branch. Never assume `main` is the active working branch.
+- **Git resting-state policy:** `main` is home — the normal clean resting
+  branch. Task branches are temporary active work. Never silently switch away
+  from a dirty task branch or from work not yet represented on `main`. Once a
+  task is merged and verified, retire its branch/worktree and return the
+  canonical checkout to clean `main`. Never assume `main` is what is currently
+  checked out.
 - Do not create a git worktree unless the user explicitly requests one for the current task.
 - If an explicitly requested temporary worktree is created, remove it when the task is complete.
 - `archive/**` and `docs/archive/**` are historical evidence only. Never use them as the source of truth for current architecture, schema, routes, configuration, features, or implementation.
