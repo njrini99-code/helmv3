@@ -4,6 +4,7 @@ import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { IconWarning, IconRefresh } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { logError } from '@/lib/error-logging';
 
 // ============================================
 // TYPES
@@ -48,6 +49,36 @@ export class AdminErrorBoundary extends Component<
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log error to console in development
     console.error('[AdminErrorBoundary] Caught error:', error, errorInfo);
+
+    // Feed the same client error-reporting pipeline every other boundary in
+    // this app uses (RouteErrorBoundary, PanelBoundary): persists to
+    // error_logs/admin_events via /api/log-error and reports to Sentry.
+    // Previously this boundary only console.error'd unless a caller passed
+    // its own `onError` — every consumer relying on the default (this
+    // component wraps the entire GolfHelm admin dashboard content in
+    // src/app/golf/admin/page.tsx with no onError) silently lost every
+    // crash it caught. `onError` remains available as an ADDITIONAL
+    // callback, not a replacement for this default.
+    try {
+      logError(
+        error,
+        {
+          component: `AdminErrorBoundary:${this.props.title ?? 'Something went wrong'}`,
+          boundary: 'admin',
+          feature: 'admin_dashboard',
+          sport: 'shared',
+          componentStack: errorInfo.componentStack ?? undefined,
+        },
+        // 'medium': this boundary exists to degrade a crashed card/section/
+        // dashboard to a scoped, retryable fallback rather than a blank
+        // screen — the same severity PanelBoundary uses for the equivalent
+        // scoped-degrade case, not the 'high' reserved for an unrecovered
+        // full failure.
+        'medium',
+      );
+    } catch {
+      // Reporting must never affect the fallback UI it exists to describe.
+    }
 
     // Call optional callback
     this.props.onError?.(error, errorInfo);

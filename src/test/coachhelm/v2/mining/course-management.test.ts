@@ -180,6 +180,19 @@ describe('generateWorstHolesInsights', () => {
     expect(upsertInsightMock).not.toHaveBeenCalled();
   });
 
+  it('does not call the insight writer when the aggregate evidence has only four samples', async () => {
+    // The insight contract rejects sample_n < 5. Treat this as an ordinary
+    // no-insight outcome rather than calling the writer and emitting an error.
+    tables.primary = manyHoles(4, {
+      par: 4,
+      score: 6,
+      hole_number: 7,
+      course_id: 'course-1',
+    });
+    await generateWorstHolesInsights('player-1');
+    expect(upsertInsightMock).not.toHaveBeenCalled();
+  });
+
   it('emits nothing when avg over par is below 0.8', async () => {
     // 6 plays at exactly par → avg 0.
     tables.primary = manyHoles(6, {

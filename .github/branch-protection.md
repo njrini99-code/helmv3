@@ -128,14 +128,13 @@ Advisory checks:
 (`e2e/baseball-smoke.spec.ts` + `e2e/baseball-onboarding-smoke.spec.ts`) and
 its fail-loud auth setup already existed and ran on every `main` push via
 `playwright.yml`'s `e2e` job, but only post-merge — a real authenticated
-regression could land on `main` before this ever ran. `ci.yml` now runs the
-same specs (steps copied, not moved) as a required PR gate. It skips rather
-than fails on fork/Dependabot PRs (no repo secrets available to them);
-same-repo, non-Dependabot pushes and PRs must have the required secrets
-configured or the job fails loudly. Note the added cost: a second full
-`npm run build` + Playwright-chromium install on every same-repo,
-non-Dependabot PR, on top of the existing `Next build` / `Smoke checks`
-builds.
+regression could land on `main` before this ever ran. `ci.yml` ran the
+same specs (steps copied, not moved) as a required PR gate until 2026-08-26,
+when the owner moved it out of the PR gate (out of `CI aggregate`'s `needs`,
+`if:` limited to push-to-`main`) after two consecutive PR runs died to runner
+shutdowns mid-build without executing a test. Post-merge coverage on `main`
+remains; a red run there blocks the next production promote rather than PR
+merges. See the job's own comment in `ci.yml` for the revert recipe.
 
 **HISTORICAL (both AI reviewers were dropped 2026-07-20).** `the external review bot` was
 intentionally advisory, not required: its `its config` skipped

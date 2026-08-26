@@ -3466,7 +3466,25 @@ async function loadEvidenceBackedInsights(
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (error || !data) return [];
+    if (error || !data) {
+      // This function's ComposedInsight[] return bypasses withAdminObserved's
+      // soft-failure detection entirely (extractActionSoftFailure returns
+      // null for an array), so a real read failure here previously
+      // vanished — indistinguishable from "the player has no persisted
+      // insights yet". Observability only; the fallback [] is unchanged.
+      void logServerError(
+        `loadEvidenceBackedInsights read failed: ${error?.message ?? 'no data returned'}`,
+        {
+          action: 'loadEvidenceBackedInsights',
+          featureArea: 'insights',
+          playerId,
+          errorCode: error?.code,
+          errorDetails: error?.details,
+        },
+        'warning'
+      );
+      return [];
+    }
 
     const projected = data
       .filter((row): row is typeof row & { evidence: Record<string, unknown> } => !!row.evidence)
@@ -3521,7 +3539,17 @@ async function loadEvidenceBackedInsights(
       activeGoals,
     );
     return ranked.map((r) => r._ref);
-  } catch {
+  } catch (err) {
+    void logServerError(
+      `loadEvidenceBackedInsights threw: ${describeError(err)}`,
+      {
+        action: 'loadEvidenceBackedInsights',
+        featureArea: 'insights',
+        playerId,
+        extra: { stack: err instanceof Error ? err.stack : undefined },
+      },
+      'error'
+    );
     return [];
   }
 }

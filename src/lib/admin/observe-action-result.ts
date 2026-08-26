@@ -35,6 +35,13 @@ const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
   /^player profile not found$/i,
   /^only coaches can/i,
   /^you do not have permission/i,
+  // createGolfConversationImpl's tenancy gate (src/app/golf/actions/
+  // messages.ts): the caller or a requested recipient isn't in the target
+  // team's audience (roster + coaches). An ordinary authorization denial —
+  // the same class as `you do not have permission` above, just worded for
+  // messaging specifically — not a defect.
+  /^you do not have access to this team[.!]?$/i,
+  /^one or more recipients are not on this team[.!]?$/i,
   // Round submit's single-flight guard (submit_round_atomic, see
   // supabase/migrations/20260821043500_single_flight_round_submit.sql):
   // a same-round auto-save (or a second submit) still held the row past the
@@ -142,6 +149,17 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
   'active_round_in_progress',
 ]);
 
+/**
+ * Success-equivalent outcomes where the caller has already reconciled state
+ * locally or will retry after the native session finishes propagating. They
+ * are operationally useful at info level, but must not appear as warnings in
+ * the operator error queue.
+ */
+const ROUTINE_RECONCILIATION_CODES: ReadonlySet<string> = new Set([
+  'shot_not_found',
+  'UNAUTHORIZED_RETRYABLE',
+]);
+
 /*
  * Genuinely empty, nothing-failed outcomes ('info', skipSentry — one tier
  * quieter than EXPECTED_SOFT_FAILURE_CODES: those are still benign soft
@@ -211,6 +229,7 @@ export function isExpectedEmptyStateCode(code: string | null): boolean {
 type SoftFailureSeverity = 'info' | 'warning' | 'error';
 
 function severityForSoftFailure(message: string, code: string | null): SoftFailureSeverity {
+  if (code != null && ROUTINE_RECONCILIATION_CODES.has(code)) return 'info';
   if (isExpectedEmptyStateCode(code)) return 'info';
   if (isUserInputRejection(message)) return 'info';
   return isExpectedSoftFailureMessage(message, code) ? 'warning' : 'error';

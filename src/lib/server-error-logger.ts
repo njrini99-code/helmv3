@@ -18,7 +18,10 @@
 // it needs fetch-all-rows.ts to stop depending on the admin logger.
 
 import * as Sentry from '@sentry/nextjs';
-import { maskEmails, collapseEmailsForGrouping } from '@/lib/observability/redact-pii';
+import {
+  collapseEmailsForGrouping,
+  redactFreeTextForStorage,
+} from '@/lib/observability/redact-pii';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
@@ -265,6 +268,26 @@ const MAX_CAUSE_DEPTH = 5;
 const STACK_BUDGET = 8000;
 
 /**
+ * Report a redaction failure without ever becoming one. Passed as the
+ * `onError` hook to the shared `redactFreeTextForStorage`, which returns a
+ * withheld-content placeholder regardless — so this is telemetry about the
+ * failure, never the thing that decides whether the row gets written.
+ */
+function reportRedactionFailure(error: unknown, field: 'stack' | 'message'): void {
+  console.error(
+    `[ServerErrorLogger] ${field} redaction failed; persisting a placeholder instead of the raw value`,
+    error,
+  );
+  try {
+    Sentry.captureException(error, {
+      tags: { component: 'server-error-logger-redaction', field },
+    });
+  } catch {
+    // Sentry must never block this path either.
+  }
+}
+
+/**
  * Serialises `error.stack` PLUS its `error.cause` chain into the single
  * `stack` string persisted to error_logs.stack / admin_events.stack_trace.
  *
@@ -316,7 +339,9 @@ function buildStackWithCauseChain(error: unknown): string | null {
     break;
   }
 
-  return parts.join('\n').slice(0, STACK_BUDGET);
+  return redactFreeTextForStorage(parts.join('\n'), STACK_BUDGET, (err) =>
+    reportRedactionFailure(err, 'stack'),
+  );
 }
 
 async function writeAdminTables(
@@ -542,8 +567,18 @@ async function captureServerTrace(
   // structured admin-only column that retention prunes. That is a design
   // decision and is left exactly as it is -- this masks free text, never the
   // columns built to hold identity.
-  const message = maskEmails(
+  //
+  // Also strips a URL-shaped secret embedded anywhere in the text (a failed
+  // fetch/redirect target, a Postgres error echoing an offending value) —
+  // this `message` becomes admin_events.message AND, via buildAdminTitle,
+  // admin_events.title. See redactFreeTextForStorage's doc comment for why
+  // that stopped being purely internal data. 10000 matches
+  // writeAdminTables's admin_events.message slice, the larger of its two
+  // downstream bounds.
+  const message = redactFreeTextForStorage(
     collapseEmbeddedHtml(rawMessage) ?? collapseEmbeddedRawJsonDump(rawMessage) ?? rawMessage,
+    10000,
+    (err) => reportRedactionFailure(err, 'message'),
   );
   const enriched = enrichTraceContext(message, context);
   const normalizedError = error ?? syntheticTraceError(message);

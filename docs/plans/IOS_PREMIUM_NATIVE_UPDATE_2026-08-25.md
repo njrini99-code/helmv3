@@ -133,7 +133,7 @@ Also inventory all current iOS-related code, config, tests, docs, native bridges
 
 Current code already includes real native-facing work.
 
-**Haptics**
+### Haptics
 
 src/lib/utils/capacitor.ts already uses @capacitor/haptics, not browser vibration.
 
@@ -159,7 +159,7 @@ It also includes throttling, a scrub/selection lifecycle, native guards, and an 
 
 Evolve this into the canonical Helm feedback grammar. Do not create a second competing haptic system.
 
-**Push**
+### Push
 
 Current push logic already contains important fixes around:
 
@@ -172,7 +172,7 @@ Current push logic already contains important fixes around:
 
 Preserve these guarantees.
 
-**Theme/status bar**
+### Theme/status bar
 
 Current code has light/dark/system behavior and native status-bar synchronization.
 
@@ -406,7 +406,7 @@ Discover current simulator destinations.
 
 Audit at minimum:
 
-**Small iPhone class**
+### Small iPhone class
 
 Use smallest useful simulator supported by installed Xcode/runtime.
 
@@ -419,7 +419,7 @@ Look for:
 • horizontal overflow
 • tiny targets
 
-**Current Dynamic Island iPhone**
+### Current Dynamic Island iPhone
 
 This is primary visual QA.
 
@@ -433,7 +433,7 @@ Test:
 • active round
 • navigation
 
-**Large Pro Max class**
+### Large Pro Max class
 
 Look for:
 
@@ -442,7 +442,7 @@ Look for:
 • poor information density
 • bad sheet width
 
-**Landscape**
+### Landscape
 
 The app historically declares iPhone landscape support.
 
@@ -450,7 +450,7 @@ Either make it excellent or intentionally restrict it.
 
 Do not ship a broken supported orientation.
 
-**iPad**
+### iPad
 
 The Xcode target has historically been iPhone-only.
 
@@ -657,7 +657,7 @@ optional audio
 
 ## 19. HAPTIC INTENSITY RULES
 
-**No haptic**
+### No haptic
 
 Use for:
 
@@ -667,7 +667,7 @@ Use for:
 • background sync
 • every tiny navigation change
 
-**Selection**
+### Selection
 
 Use for:
 
@@ -680,7 +680,7 @@ Use for:
 
 Feels dry, small, precise.
 
-**Light impact**
+### Light impact
 
 Use for:
 
@@ -689,7 +689,7 @@ Use for:
 • expanding an interactive surface
 • immediate add action where appropriate
 
-**Medium**
+### Medium
 
 Use for:
 
@@ -698,13 +698,13 @@ Use for:
 • destructive confirmation
 • important save
 
-**Heavy**
+### Heavy
 
 Rare.
 
 Use only for a genuinely weighty physical-feeling snap/land.
 
-**Success**
+### Success
 
 Only after a real meaningful outcome:
 
@@ -713,7 +713,7 @@ Only after a real meaningful outcome:
 • qualifier action completed
 • major save finished
 
-**Warning/error**
+### Warning/error
 
 Only for meaningful warnings/failures.
 
@@ -2122,7 +2122,7 @@ If the answer is weak, keep improving.
 
 After audit, propose implementation in controlled phases.
 
-**Phase A — Native foundation**
+### Phase A — Native foundation
 
 • Xcode/SDK/project health
 • Capacitor compatibility
@@ -2132,7 +2132,7 @@ After audit, propose implementation in controlled phases.
 • safe areas/status
 • push/badge correctness
 
-**Phase B — Interaction system**
+### Phase B — Interaction system
 
 • canonical haptic grammar
 • visual haptics
@@ -2142,7 +2142,7 @@ After audit, propose implementation in controlled phases.
 • scroll/pull refresh
 • keyboard
 
-**Phase C — Core Golf mobile UX**
+### Phase C — Core Golf mobile UX
 
 • player dashboard
 • round entry
@@ -2151,7 +2151,7 @@ After audit, propose implementation in controlled phases.
 • coach workflows
 • loading/empty/error/offline
 
-**Phase D — Apple ecosystem**
+### Phase D — Apple ecosystem
 
 • Live Activity
 • notification actions
@@ -2160,7 +2160,7 @@ After audit, propose implementation in controlled phases.
 • widget if justified
 • Spotlight if justified
 
-**Phase E — Accessibility/performance**
+### Phase E — Accessibility/performance
 
 • VoiceOver
 • larger text
@@ -2168,7 +2168,7 @@ After audit, propose implementation in controlled phases.
 • Instruments
 • long-session testing
 
-**Phase F — App Store**
+### Phase F — App Store
 
 • icon
 • screenshots
@@ -2183,7 +2183,7 @@ Core UX comes before shiny ecosystem extras.
 
 ## 78. P0 / P1 / P2 / P3
 
-**P0**
+### P0
 
 • crashes
 • lost shot/round state
@@ -2192,7 +2192,7 @@ Core UX comes before shiny ecosystem extras.
 • privacy/security
 • broken upgrade path
 
-**P1**
+### P1
 
 • obvious WebView feel in critical flow
 • broken native navigation
@@ -2204,7 +2204,7 @@ Core UX comes before shiny ecosystem extras.
 • major hitch
 • haptic inconsistency
 
-**P2**
+### P2
 
 • Live Activity
 • App Intents
@@ -2212,7 +2212,7 @@ Core UX comes before shiny ecosystem extras.
 • premium microinteractions
 • signature haptics
 
-**P3**
+### P3
 
 • low-value cosmetic polish
 
@@ -2385,13 +2385,13 @@ Do not weaken tests to make a redesign pass.
 
 Leave behind:
 
-**Audit**
+### Audit
 
 ```text
 docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
 ```
 
-**Active system spec**
+### Active system spec
 
 One current document for:
 
@@ -2401,11 +2401,11 @@ One current document for:
 • notification taxonomy
 • native capability architecture
 
-**Implementation plan**
+### Implementation plan
 
 Exact files, tasks, tests, and rollout.
 
-**Native integration map**
+### Native integration map
 
 ```text
 capability
@@ -2414,11 +2414,11 @@ capability
 ↔ consumer
 ```
 
-**Simulator QA evidence**
+### Simulator QA evidence
 
 Screenshots / matrix.
 
-**Physical device checklist**
+### Physical device checklist
 
 Especially:
 
@@ -2427,7 +2427,7 @@ Especially:
 • Live Activity
 • TestFlight
 
-**App Store checklist**
+### App Store checklist
 
 • Xcode/SDK
 • version/build
@@ -2545,7 +2545,7 @@ unless Nick explicitly approves.
 
 Begin in this order.
 
-**1. Environment truth**
+### 1. Environment truth
 
 Confirm:
 
@@ -2559,19 +2559,19 @@ current native project
 current version/build
 ```
 
-**2. Official Apple research**
+### 2. Official Apple research
 
 Verify current platform guidance.
 
-**3. Read current iOS implementation**
+### 3. Read current iOS implementation
 
 Do not trust stale audits.
 
-**4. Build and use simulator**
+### 4. Build and use simulator
 
 Do not edit yet.
 
-**5. Produce audit**
+### 5. Produce audit
 
 Report:
 
@@ -2592,11 +2592,11 @@ Release readiness
 P0/P1/P2/P3
 ```
 
-**6. Design implementation phases**
+### 6. Design implementation phases
 
 Choose native additions based on user value.
 
-**7. Execute controlled upgrade**
+### 7. Execute controlled upgrade
 
 Use simulator continuously.
 

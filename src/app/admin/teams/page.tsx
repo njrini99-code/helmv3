@@ -9,6 +9,7 @@ import { PanelNoData } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { TeamsSortChips } from './TeamsSortChips';
+import { RecentTimelines } from './RecentTimelines';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +76,7 @@ async function Body({ sort }: { sort: PulseSort }) {
 
   return (
     <div className="space-y-4">
+      <RecentTimelines teams={grid.teams} />
       <Surface padding="sm">
         <div className="grid grid-cols-3 gap-3">
           <div>

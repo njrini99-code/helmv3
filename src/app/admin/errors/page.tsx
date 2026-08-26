@@ -184,6 +184,13 @@ export default async function ErrorsPage({
       tab.incidents.length === 0 &&
       filters.windowHours < 168 &&
       ((tab.widerWindowUnresolved ?? 0) > 0 || (tab.widerWindowUntagged ?? 0) > 0);
+    // Sentry's own baked-in 24h stats, keyed by issue id, reused for
+    // TriageQueue's per-row sparkline (no extra query — `tab.sentry.data` is
+    // already fetched for the "Sentry unresolved (org-wide)" panel below).
+    const sentryStats24h =
+      tab.sentry.status === 'ok' && tab.sentry.data
+        ? Object.fromEntries(tab.sentry.data.map((issue) => [issue.id, issue.stats24h]))
+        : {};
     const sourceBreakdown = Array.from(
       tab.incidents.reduce((map, incident) => {
         const key = incident.source ?? incident.origin;
@@ -433,7 +440,11 @@ export default async function ErrorsPage({
               />
             </div>
           </div>
-          <TriageQueue items={tab.incidents} />
+          <TriageQueue
+            items={tab.incidents}
+            appHourlyBuckets={tab.appHourlyBuckets}
+            sentryStats24h={sentryStats24h}
+          />
           <p className="mt-2 text-xs text-warm-500">
             Row detail: <span className="font-fw-mono">/admin/errors/&lt;fingerprint&gt;</span> (click-through from each app row title)
           </p>

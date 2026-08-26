@@ -53,11 +53,44 @@ This area is high criticality because it often uses broader access patterns, ope
 - CRM automation/suppression behavior must respect opt-out and reply-stop logic.
 - Operational charts should not be treated as source of truth if rollups are stale.
 - Cron/admin endpoints must use configured secrets and auth checks.
+- **Incident resolution has exactly one write path.** Every resolve — a single
+  row, a whole fingerprint, or a bulk selection — goes through the user-scoped
+  `resolve_admin_event` RPC and busts `BRIDGE_INCIDENT_CACHE_TAG`. The RPC
+  gates on `is_super_admin()` reading `auth.uid()`, so it must be called with
+  the user-scoped client; a service-role client makes `auth.uid()` NULL and the
+  RPC Forbids. Service-role access is read-only on this path.
+- **An in-app RCA analysis is not an incident.** `analyzeErrorFingerprint`
+  stores its verdict as an `admin_events` row with `event_type='rca_analysis'`
+  under the analyzed fingerprint. Every incident query must exclude that event
+  type, or an analysis is counted as an occurrence of the thing it analyzes
+  (inflating occurrence counts and moving last-seen).
+- **Error text is redacted before it is stored**, not only before it reaches
+  Sentry, and `stack` / `message` / `title` count as error text — not just
+  `url` and `context`. URL query strings and fragments can carry magic-link
+  tokens, OTPs and OAuth codes; a stack embeds them mid-string
+  (`new Error(url)`), and a Postgres message echoes offending values.
+  `redactFreeTextForStorage` in `src/lib/observability/redact-pii.ts` is the
+  single implementation, called by BOTH write paths (the client ingest route
+  and the server logger). Keep it that way: both write the same two columns,
+  both are read back by the RCA action and forwarded to a third-party model,
+  and a second copy is one that eventually stops matching — silently, on the
+  half nobody is looking at.
 
 ## UI Contract
 
 - Admin surfaces should be dense, scannable, and operational rather than marketing-style.
 - Health, errors, data freshness, and needs-attention states should be visible without hunting.
+- The Overview answers "is anything on fire" above the fold: banner, briefing,
+  severity mix, then the triage queue. Posture KPIs live in a disclosure below
+  it, not above it. Each KPI carries its own source note — the provenance is
+  per-tile, not a separate panel.
+- An error's detail page shows what was actually captured — Postgres error code
+  and hint, request id, runtime, handled/unhandled, source file, and the flight
+  trace link when one exists — each copyable on its own. A field with no value
+  renders an em-dash; nothing is invented to fill the grid.
+- Feature health renders through one component wherever it appears (Overview
+  rollup, Health grid, per-app pages). Status thresholds, two-window hysteresis,
+  and knownGaps annotations belong to the data layer, never to a view.
 - CRM screens need clear pipeline, task, suppression, reply, sequence, and timeline states.
 - Loading/error states should avoid blank admin pages; operational users need partial data when available.
 - The desktop rail and mobile More sheet expose the same sign-out outcome, with

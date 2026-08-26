@@ -171,6 +171,9 @@ describe('isCourseImagePublicUrl (image_url anti-spoofing guard)', () => {
   it('accepts a public URL we minted in our own course-images bucket', () => {
     expect(isCourseImagePublicUrl(ok, base)).toBe(true);
   });
+  it('accepts the same configured origin when deployment configuration has incidental whitespace', () => {
+    expect(isCourseImagePublicUrl(ok, `\n  ${base}/  \n`)).toBe(true);
+  });
   it('rejects an arbitrary external URL', () => {
     expect(isCourseImagePublicUrl('https://evil.example.com/pic.jpg', base)).toBe(false);
     expect(isCourseImagePublicUrl('https://qmnssrrolpinvwjjnufo.supabase.co.evil.com/x', base)).toBe(false);

@@ -1,5 +1,6 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { fetchFeatureHealth } from '@/lib/admin/data/feature-health';
+import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
+import type { FeatureHealth } from '@/lib/admin/data/feature-health';
 import { fetchAiAvailability } from '@/lib/admin/data/ai-availability';
 import { Eyebrow, Skeleton } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
@@ -63,13 +64,32 @@ export default async function FeatureHealthPage() {
         />
       );
     }
+    // Per-app-group tallies computed HERE, once, via the same
+    // summarizeFeatureHealth() the Overview/golf/baseball banner reads —
+    // FeatureDotGrid's group headers render this, they never re-derive
+    // their own red/amber/neutral counts (health-consolidation pass).
+    // `degraded` is always false past the early-return above, but pass the
+    // real value rather than a literal to keep this call shape identical to
+    // admin/golf/page.tsx and admin/baseball/page.tsx.
+    const now = new Date();
+    const appOrder = ['golfhelm', 'coachhelm', 'baseballhelm'] as const;
+    const groupSummaries = Object.fromEntries(
+      appOrder.map((app) => [
+        app,
+        summarizeFeatureHealth(
+          { features: features.filter((f: FeatureHealth) => f.app === app), generatedAt, degraded },
+          now,
+        ),
+      ]),
+    ) as Record<(typeof appOrder)[number], ReturnType<typeof summarizeFeatureHealth>>;
+
     return (
       <>
         <p className="font-fw-mono text-xs tabular-nums text-warm-400">
           generated <LocalTime iso={generatedAt} variant="time" />
         </p>
         <div className="mt-4">
-          <FeatureDotGrid features={features} />
+          <FeatureDotGrid features={features} groupSummaries={groupSummaries} />
         </div>
       </>
     );

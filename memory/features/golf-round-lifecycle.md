@@ -178,6 +178,10 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   authorized server lookup confirms a shot is already absent, the client
   reconciles only its stale local reference instead of replaying a destructive
   delete or leaving the active round blocked.
+- Background round-status polling is advisory and never decides whether a
+  player can save, continue, or recover a committed round. Transient transport
+  failures retry without a player-facing alarm; a sustained failure is reported
+  once with status-sync context so it cannot be mistaken for lost progress.
 - Bad route revalidation after acknowledgement or player feedback.
 - Hook-order or hydration issues in round-entry and review screens.
 - Schema replay drift in Supabase migrations touching round/shot/review tables.

@@ -659,7 +659,16 @@ jobs:
   baseball-auth-smoke:
     name: BaseballHelm authenticated smoke
     needs: detect-changes
-    if: needs.detect-changes.outputs.code == 'true'
+    # PUSH/MAIN ONLY (owner 2026-08-26, PR throughput): removed from the PR
+    # gate after it blocked a golf production hotfix twice in one afternoon —
+    # both times the runner died ("shutdown signal") during the TypeScript
+    # step of this job's in-job build, before a single test ran. Same
+    # mechanism as unit-tests-timezone: it now runs on push to main only, so
+    # a baseball smoke regression is caught post-merge (blocking the next
+    # promote) instead of gating every PR. To restore the pre-merge gate,
+    # revert this `if` AND re-add `- baseball-auth-smoke` to the CI-aggregate
+    # `needs` list.
+    if: github.event_name == 'push' && needs.detect-changes.outputs.code == 'true'
     # #372: promotes the already-built, already-mandatory baseball-smoke +
     # onboarding-smoke specs (e2e/baseball-smoke.spec.ts,
     # e2e/baseball-onboarding-smoke.spec.ts) from push/workflow_dispatch-only
@@ -815,10 +824,10 @@ jobs:
     # RLS regressions now block merge through the required `all` check instead of
     # being advisory-only — the gap that let the anon-access hole reach main.
     #
-    # `baseball-auth-smoke` (BaseballHelm authenticated coach/player smoke,
-    # #372) is part of the hard gate for the same reason: an authenticated
-    # smoke suite that only ran post-merge could not have caught a real
-    # regression before it landed on `main`.
+    # `baseball-auth-smoke` is NO LONGER in this gate (owner 2026-08-26, PR
+    # throughput — see the note on the job itself). Like unit-tests-timezone,
+    # it now runs on push to main only; a red baseball smoke on `main` blocks
+    # the next production promote rather than every PR merge.
     #
     # `unit-tests-timezone` is NO LONGER in this gate (owner 2026-08-20, PR
     # throughput). It caught a real 8pm-EDT regression (#1123) as a pre-merge
@@ -846,7 +855,6 @@ jobs:
       - route-hygiene
       - supabase
       - import-cycles
-      - baseball-auth-smoke
     steps:
       - name: Fail if any required CI check failed
         # A skipped heavy job is fine ONLY on a docs-only PR (code=='false').

@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Activity, GitBranch, RadioTower, ShieldCheck, Users, AlertTriangle, Gauge, SearchCheck } from 'lucide-react';
+import { CheckCircle2, Activity, RadioTower, GitBranch, ShieldCheck, Users, AlertTriangle, Gauge, SearchCheck } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   fetchOverviewSnapshot,
@@ -16,6 +16,9 @@ import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/fea
 import { fetchBriefing } from '@/lib/admin/data/briefing';
 import { AdminStatusBanner } from './_components/AdminStatusBanner';
 import { KpiTile } from './_components/KpiTile';
+import { KpiSourceNote } from './_components/KpiSourceNote';
+import { SeverityMixStrip, bucketSeverityMix } from './_components/SeverityMixStrip';
+import { PostureDisclosure } from './_components/PostureDisclosure';
 import { TriageQueue } from './_components/TriageQueue';
 import { AutoRefresh } from './_components/AutoRefresh';
 import { PanelBoundary } from './_components/PanelBoundary';
@@ -29,18 +32,18 @@ export const dynamic = 'force-dynamic';
 /**
  * "Needs your eyes" — up to 6 severity-ordered signals from fetchBriefing()
  * (src/lib/admin/data/briefing.ts). Sits below the status banner, above the
- * KPI grid, in its OWN PanelBoundary so a briefing-query hiccup degrades to
- * a scoped STALE card, never the whole Status panel. Signal discipline:
+ * severity mix, in its OWN PanelBoundary so a briefing-query hiccup degrades
+ * to a scoped STALE card, never the whole Status panel. Signal discipline:
  * attention is the ONLY red pill on this page outside genuine error counts;
  * the all-clear case is one quiet green line, never an empty box.
  *
- * That boundary is mounted as a SIBLING of the banner and KPI panels in the
- * page body — not nested inside them. It used to live inside the component
- * that awaits fetchOverviewSnapshot() (11 parallel Supabase reads + the Vercel
- * API + fetchFeatureHealth's per-feature Sentry sweep), so the highest-signal
- * panel on the page could not even ISSUE its own query — fetchBriefing()
- * shares no data with any of that — until an unrelated fetch had resolved.
- * Sibling boundaries render concurrently; nested ones serialize.
+ * That boundary is mounted as a SIBLING of the banner and severity-mix panels
+ * in the page body — not nested inside them. It used to live inside the
+ * component that awaits fetchOverviewSnapshot() (11 parallel Supabase reads +
+ * the Vercel API + fetchFeatureHealth's per-feature Sentry sweep), so the
+ * highest-signal panel on the page could not even ISSUE its own query —
+ * fetchBriefing() shares no data with any of that — until an unrelated fetch
+ * had resolved. Sibling boundaries render concurrently; nested ones serialize.
  */
 async function BriefingStrip() {
   const { items, degraded } = await fetchBriefing().then((r) => ({
@@ -110,19 +113,10 @@ async function BriefingStrip() {
   );
 }
 
-/**
- * The posture line, and nothing else. Split out of the old `BannerAndKpis` so
- * `BriefingStrip` can sit BETWEEN the banner and the numbers in its own
- * Suspense boundary while keeping the on-screen order it has always had —
- * moving it above the banner would push the "is anything on fire" answer below
- * a card-sized panel on phone, which is exactly what the M1 masthead fix
- * (see CommandHeader) exists to prevent.
- *
- * This and `PostureBoards` await the SAME fetchOverviewSnapshot(), which is
- * cache()-memoised per request, so the split costs zero extra queries. If that
- * memoisation is ever dropped, this page silently pays for its whole fan-out
- * twice.
- */
+/** The posture line, and nothing else. Awaits the SAME fetchOverviewSnapshot()
+ *  `PostureBoards` does (cache()-memoised per request), so splitting this out
+ *  costs zero extra queries. If that memoisation is ever dropped, this page
+ *  silently pays for its whole fan-out twice. */
 async function StatusBanner() {
   const { banner } = await fetchOverviewSnapshot();
   return (
@@ -134,13 +128,42 @@ async function StatusBanner() {
   );
 }
 
+/**
+ * The 24h incident feed's severity composition — critical/error/warning,
+ * counts labelled, one segment per severity deep-linking to the Errors tab
+ * filtered by that severity. `fetchTriageQueue()` is React `cache()`-memoised
+ * per request (see its doc comment in src/lib/admin/data/triage.ts) and
+ * `TriagePanel` below asks for the exact same default-window feed on the
+ * same render — this is a second call site, not a second query.
+ */
+async function SeverityMixSection() {
+  const { items, sentry } = await fetchTriageQueue();
+  const counts = bucketSeverityMix(items);
+  return <SeverityMixStrip counts={counts} sentryStatus={sentry.status} />;
+}
+
+/**
+ * The KPI/board stack. `MetricTruthPanel` (a fourth full-width "here's where
+ * every number came from" section) has DISSOLVED: each KPI tile below now
+ * carries its own `<KpiSourceNote>` — a tap-to-expand line under the tile —
+ * so the honesty stays without spending a whole extra section on it.
+ * `SavedCommandViews`' curated deep links are folded in here too, inside the
+ * collapsed Posture disclosure (see `PostureDisclosure` in
+ * `AdminOverviewPage`) rather than dropped.
+ */
 async function PostureBoards() {
   const { kpis, watcher } = await fetchOverviewSnapshot();
-  // Built as a list (not 6 hand-written <KpiTile> literals) so `StatStrip`'s
-  // `count` — which drives its phone grid-vs-rail breakpoint — is always
-  // derived from what's actually rendered, never a hand-maintained literal
-  // that can silently drift out of sync the next time a tile is added/removed.
-  const kpiTiles: Array<{ key: string } & ComponentProps<typeof KpiTile>> = [
+  // A list (not 6 hand-written <KpiTile> literals) so `StatStrip`'s `count`
+  // — which drives its phone grid-vs-rail breakpoint — is always derived
+  // from what's actually rendered, never a hand-maintained literal that can
+  // silently drift out of sync the next time a tile is added/removed.
+  // `source`/`freshness` feed each tile's `<KpiSourceNote>` — the same
+  // provenance text the old MetricTruthPanel showed, honest per tile.
+  const kpiTiles: Array<
+    { key: string; source: string; freshness?: (WatcherSignal & { stale: boolean }) | null } & ComponentProps<
+      typeof KpiTile
+    >
+  > = [
     {
       key: 'sentry-unresolved',
       label: 'Sentry unresolved',
@@ -148,6 +171,7 @@ async function PostureBoards() {
       href: '/admin/errors',
       tone: kpis.sentryUnresolved ? 'danger' : 'neutral',
       goodDirection: 'down',
+      source: 'Sentry issues API — unresolved, org-wide (not windowed).',
       // Honest starved copy (bridge-tab-audit-p0p1 overview Finding 1) —
       // without this the tile falls through to StatTile's generic "log a
       // few more data points" message even when Sentry is unconfigured or
@@ -172,6 +196,8 @@ async function PostureBoards() {
       href: '/admin/errors',
       goodDirection: 'down',
       tone: classifyKpiTone(kpis.incidentGroups24h, ERRORS_24H_RED_AT),
+      source: '24h feed — admin_events + Sentry (lastSeen), grouped into incidents.',
+      freshness: watcher.find((w) => w.label === 'Error pipeline'),
     },
     {
       key: 'security-events-24h',
@@ -180,13 +206,22 @@ async function PostureBoards() {
       href: '/admin/auth',
       goodDirection: 'down',
       tone: classifyKpiTone(kpis.securityEvents24h, SECURITY_EVENTS_24H_RED_AT),
+      source: "admin_events where event_type = 'security', last 24h count.",
     },
-    { key: 'active-users-today', label: 'Active users today', value: kpis.activeUsersToday, href: '/admin/users' },
+    {
+      key: 'active-users-today',
+      label: 'Active users today',
+      value: kpis.activeUsersToday,
+      href: '/admin/users',
+      source: 'users.last_seen since UTC midnight.',
+      freshness: watcher.find((w) => w.label === 'Login events'),
+    },
     {
       key: 'activity-today',
       label: 'Activity today',
       value: kpis.activityToday.golf + kpis.activityToday.baseball + kpis.activityToday.lifting,
       href: '/admin/golf',
+      source: 'golf_rounds + baseball_games (completed) + helm_lifting_sessions, created today.',
     },
     {
       key: 'last-deploy',
@@ -195,13 +230,11 @@ async function PostureBoards() {
       href: '/admin/deploys',
       tone: kpis.lastDeploy?.state === 'ERROR' ? 'danger' : 'neutral',
       goodDirection: 'down',
+      source: 'Vercel deployments API — most recent deployment age.',
     },
   ];
   return (
     <>
-      {/* No `mt-4` any more: the KPI strip is now the first child of its own
-          panel, and the enclosing section's `space-y-4` already supplies the
-          gap that used to come from this margin. */}
       <StatStrip
         count={kpiTiles.length}
         columns={6}
@@ -210,12 +243,29 @@ async function PostureBoards() {
         edgeBleedClassName="-mx-4 px-4"
         ariaLabel="Platform KPIs"
       >
-        {kpiTiles.map(({ key, ...tile }) => (
-          <KpiTile key={key} {...tile} />
+        {kpiTiles.map(({ key, source, freshness, ...tile }) => (
+          <div key={key} className="flex h-full flex-col gap-1">
+            {/* `min-h-0 flex-1`, not the tile filling this wrapper directly:
+                KpiTile's own Link sets `h-full`, which needs a DEFINITE
+                height to resolve against. This inner cell gives it one (the
+                flex column's leftover space after the note below claims its
+                own natural height) instead of the two fighting over 100%
+                of an otherwise auto-sized wrapper. */}
+            <div className="min-h-0 flex-1">
+              <KpiTile {...tile} />
+            </div>
+            <KpiSourceNote
+              source={source}
+              freshnessLabel={
+                freshness
+                  ? `${freshness.stale ? 'stale' : 'fresh'} · ${formatWatcherAge(freshness.lastSeenAt)}`
+                  : undefined
+              }
+            />
+          </div>
         ))}
       </StatStrip>
       <SignalBoard kpis={kpis} watcher={watcher} />
-      <MetricTruthPanel kpis={kpis} watcher={watcher} />
       <SavedCommandViews kpis={kpis} />
     </>
   );
@@ -311,72 +361,6 @@ function SignalBoard({
   );
 }
 
-function MetricTruthPanel({
-  kpis,
-  watcher,
-}: {
-  kpis: OverviewKpis;
-  watcher: Array<WatcherSignal & { stale: boolean }>;
-}) {
-  const sources = [
-    {
-      label: 'Incident groups',
-      value: kpis.incidentGroups24h,
-      source: '24h feed — admin_events + Sentry (lastSeen), grouped',
-      freshness: watcher.find((w) => w.label === 'Error pipeline'),
-      href: '/admin/errors',
-    },
-    {
-      label: 'Sentry unresolved',
-      value: kpis.sentryUnresolved ?? 'n/a',
-      source: 'Sentry issues API, unresolved only',
-      freshness: null,
-      href: '/admin/errors',
-    },
-    {
-      label: 'Roster posture',
-      value: kpis.activeUsersToday,
-      source: 'users.last_seen since UTC midnight',
-      freshness: watcher.find((w) => w.label === 'Login events'),
-      href: '/admin/users',
-    },
-    {
-      label: 'Deploy state',
-      value: kpis.lastDeploy?.state ?? 'n/a',
-      source: 'Vercel deployments API',
-      freshness: null,
-      href: '/admin/deploys',
-    },
-  ];
-
-  return (
-    <Surface as="section" padding="sm" className="mt-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-warm-200 pb-2">
-        <h2 className="text-eyebrow uppercase text-warm-500">Metric truth layer</h2>
-        <StatusPill tone="accent" size="sm" dot={false}>
-          source mapped
-        </StatusPill>
-      </div>
-      <div className="mt-3 grid gap-2 lg:grid-cols-4">
-        {sources.map((source) => (
-          <Link
-            key={source.label}
-            href={source.href}
-            className="rounded-fw-md border border-warm-200 bg-surface-sunken p-3 transition-colors hover:bg-surface"
-          >
-            <p className="text-caption uppercase tracking-widest text-warm-500">{source.label}</p>
-            <p className="mt-1 font-fw-mono text-xl font-semibold tabular-nums text-warm-900">{source.value}</p>
-            <p className="mt-1 min-h-8 text-caption leading-4 text-warm-600">{source.source}</p>
-            <p className="mt-2 font-fw-mono text-caption tabular-nums text-warm-500">
-              {source.freshness ? `${source.freshness.stale ? 'stale' : 'fresh'} · ${formatWatcherAge(source.freshness.lastSeenAt)}` : 'API freshness via detail'}
-            </p>
-          </Link>
-        ))}
-      </div>
-    </Surface>
-  );
-}
-
 function SavedCommandViews({ kpis }: { kpis: OverviewKpis }) {
   const views = [
     {
@@ -440,6 +424,13 @@ function SavedCommandViews({ kpis }: { kpis: OverviewKpis }) {
   );
 }
 
+/**
+ * Action lanes + Triage queue + Regressed — the actual work surface. Now
+ * above the fold on every breakpoint (see `AdminOverviewPage`): triage-first
+ * ordering means an operator reaches "what do I do about it" right after
+ * "is anything on fire", with the slower KPI/signal/deploy detail collapsed
+ * below in the Posture disclosure rather than sitting in between.
+ */
 async function TriagePanel() {
   const { items, sentry, counts } = await fetchTriageQueue();
   const regressed = items.filter((i) => i.substatus === 'regressed');
@@ -573,14 +564,16 @@ async function DeployRail() {
 }
 
 /**
- * M1 (bridge-chrome, docs/MOBILE_DOCTRINE.md rule 2/7): on phone this used to
- * be the FIRST thing rendered — an eyebrow + big title + paragraph + four
- * shortcut pills spending the entire first viewport on decoration before the
- * posture banner (the actual answer to "is anything on fire") ever appears.
- * Below `md` it condenses to one title line: the paragraph and the shortcut
- * pills are desktop-only chrome (rule 7), and `AdminOverviewPage` now renders
- * the "Live posture" section BEFORE this masthead so the banner is always
- * the first thing above the fold, on every breakpoint.
+ * A compact masthead row, not a hero. This used to be a dark full-width card
+ * with an eyebrow, a big title, a paragraph, and four shortcut pills — on
+ * phone the FIRST thing rendered, spending the whole first viewport on
+ * decoration before the posture banner (the actual answer to "is anything on
+ * fire") ever appeared (M1, bridge-chrome). It's since moved below the
+ * triage lane AND the collapsed Posture disclosure — there is no longer any
+ * decorative hero above triage on any breakpoint — so it only needs to be a
+ * single slim row: a brand label plus the same shortcut links, always
+ * visible (no `hidden md:flex` — nothing above it is fighting for the
+ * viewport any more).
  */
 function CommandHeader() {
   const iconByHref = {
@@ -591,33 +584,28 @@ function CommandHeader() {
   } as const;
 
   return (
-    <section className="rounded-2xl border border-warm-200 bg-[var(--fw-color-nav-bg)] px-5 py-4 text-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/55">Helm Bridge</p>
-          <h1 className="mt-1 text-h3 font-semibold tracking-normal text-white md:text-2xl lg:text-3xl">
-            Command Center
-          </h1>
-          <p className="mt-1 hidden max-w-3xl text-sm text-white/65 md:block">
-            Production posture across GolfHelm, CoachHelm, BaseballHelm, Sentry, and Vercel.
-          </p>
-        </div>
-        <nav aria-label="Command center shortcuts" className="hidden flex-wrap gap-2 md:flex">
-          {ADMIN_COMMAND_SHORTCUTS.map((item) => {
-            const Icon = iconByHref[item.href];
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="glass-subtle inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-white transition-colors hover:border-white/30"
-              >
-                <Icon size={14} aria-hidden />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+    <section
+      aria-label="Command shortcuts"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warm-200 bg-surface px-4 py-2.5"
+    >
+      <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+        Helm Bridge · Command Center
+      </p>
+      <nav aria-label="Command center shortcuts" className="flex flex-wrap gap-2">
+        {ADMIN_COMMAND_SHORTCUTS.map((item) => {
+          const Icon = iconByHref[item.href];
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-warm-200 px-3 text-xs font-medium text-warm-700 transition-colors hover:bg-warm-100"
+            >
+              <Icon size={14} aria-hidden />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
     </section>
   );
 }
@@ -629,38 +617,39 @@ export default async function AdminOverviewPage() {
     <div className="space-y-5">
       <AutoRefresh />
 
-      {/* M1 (bridge-chrome): posture BEFORE the masthead on every breakpoint
-          — the operator's headline question ("is anything on fire") answers
-          above the fold instead of sitting under a decorative hero. */}
-      <section aria-label="Live posture" className="space-y-4">
+      {/* Triage-first ordering (bridge-refit): Status → Needs your eyes →
+          Severity mix, all THREE sibling boundaries so a hiccup in one never
+          blocks the others (see BriefingStrip's doc comment) — then straight
+          into Action lanes/Triage/Regressed, the actual work surface, still
+          above the fold on every breakpoint. Slower posture detail (KPIs,
+          signals, deploys, feature health) is collapsed further down. */}
+      <section aria-label="Right now" className="space-y-4">
         <div>
-          <Eyebrow as="h2" tone="secondary">Live posture</Eyebrow>
+          <Eyebrow as="h2" tone="secondary">Right now</Eyebrow>
           <p className="mt-1 text-sm text-warm-500">Signals refresh server-side and degrade per panel.</p>
         </div>
-        {/* THREE sibling boundaries, not one nested tree. "Needs your eyes"
-            used to render inside the banner/KPI component, which meant it could
-            not start fetchBriefing() until fetchOverviewSnapshot() had resolved
-            — 11 parallel Supabase reads, the Vercel API, and a per-feature
-            Sentry sweep it shares no data with. Siblings render concurrently.
-            The banner is split off (rather than the briefing simply moved to
-            the top) purely to keep the briefing in its original slot between
-            the posture line and the numbers; both halves await the same
-            cache()-memoised snapshot, so this is free. */}
-        <PanelBoundary
-          title="Live posture"
-          skeleton={<Skeleton className="h-11 w-full rounded-2xl" />}
-        >
+        <PanelBoundary title="Status" skeleton={<Skeleton className="h-11 w-full rounded-2xl" />}>
           <StatusBanner />
         </PanelBoundary>
         <PanelBoundary title="Needs your eyes" skeleton={<SkeletonStat />}>
           <BriefingStrip />
         </PanelBoundary>
-        <PanelBoundary title="Platform KPIs" skeleton={<SkeletonStat />}>
-          <PostureBoards />
+        <PanelBoundary
+          title="Severity mix (24h)"
+          skeleton={
+            <div className="space-y-2">
+              <Skeleton className="h-2.5 w-full rounded-full" />
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-11 w-24 rounded-full" />
+                <Skeleton className="h-11 w-24 rounded-full" />
+                <Skeleton className="h-11 w-24 rounded-full" />
+              </div>
+            </div>
+          }
+        >
+          <SeverityMixSection />
         </PanelBoundary>
       </section>
-
-      <CommandHeader />
 
       <section aria-label="Incident operations" className="space-y-4">
         <div>
@@ -672,23 +661,30 @@ export default async function AdminOverviewPage() {
         </PanelBoundary>
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)]">
-        <section aria-label="Feature command map">
-          <PanelBoundary title="Feature command map" skeleton={<SkeletonStat />}>
-            <FeatureHealthPanel />
-          </PanelBoundary>
-        </section>
-        <section aria-label="Deploy control">
-          <Surface elevation="border" padding="sm" className="min-h-full">
-            <Eyebrow as="h2" tone="tertiary" className="mb-2">
-              Deploy control
-            </Eyebrow>
-            <PanelBoundary title="Deploy control" skeleton={<SkeletonStat />}>
-              <DeployRail />
+      <PostureDisclosure>
+        <PanelBoundary title="Platform KPIs" skeleton={<SkeletonStat />}>
+          <PostureBoards />
+        </PanelBoundary>
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)]">
+          <section aria-label="Feature command map">
+            <PanelBoundary title="Feature command map" skeleton={<SkeletonStat />}>
+              <FeatureHealthPanel />
             </PanelBoundary>
-          </Surface>
-        </section>
-      </div>
+          </section>
+          <section aria-label="Deploy control">
+            <Surface elevation="border" padding="sm" className="min-h-full">
+              <Eyebrow as="h2" tone="tertiary" className="mb-2">
+                Deploy control
+              </Eyebrow>
+              <PanelBoundary title="Deploy control" skeleton={<SkeletonStat />}>
+                <DeployRail />
+              </PanelBoundary>
+            </Surface>
+          </section>
+        </div>
+      </PostureDisclosure>
+
+      <CommandHeader />
     </div>
   );
 }

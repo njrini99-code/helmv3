@@ -16,6 +16,7 @@ import {
   isExpectedEmptyStateCode,
   isUserInputRejection,
   observeActionSoftFailure,
+  classifySoftFailure,
 } from '@/lib/admin/observe-action-result';
 import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
 
@@ -71,6 +72,20 @@ describe('observe-action-result', () => {
   // tap would page as an 'error'-severity incident.
   it('classifies the round-submit busy message as an expected soft failure', () => {
     expect(isExpectedSoftFailureMessage('Another save for this round is just finishing — try again in a moment.')).toBe(true);
+  });
+
+  // createGolfConversationImpl's tenancy gate (src/app/golf/actions/
+  // messages.ts) throws these two exact strings on an ordinary authorization
+  // denial. Neither previously matched an anchored pattern — the closest,
+  // `/^you do not have permission/i`, is a different wording — so both
+  // classified as 'error' and paged Sentry for a routine "not on this team"
+  // rejection.
+  it('classifies the golf-messaging tenancy denials as expected soft failures', () => {
+    expect(isExpectedSoftFailureMessage('You do not have access to this team')).toBe(true);
+    expect(isExpectedSoftFailureMessage('One or more recipients are not on this team')).toBe(true);
+    // A genuine infrastructure failure from the same gate (the audience
+    // probe itself failing) must NOT be swallowed alongside them.
+    expect(isExpectedSoftFailureMessage('Could not verify team access. Please try again.')).toBe(false);
   });
 
   it('keeps expected qualifier lifecycle protections out of the error incident feed', () => {
@@ -157,8 +172,19 @@ describe('observe-action-result', () => {
     expect(isExpectedSoftFailureMessage('anything at all', 'some_other_code')).toBe(false);
   });
 
-  it('keeps a stale deleted-shot reconciliation out of Sentry while preserving a warning', () => {
+  it('records a stale deleted-shot reconciliation as info, not a warning incident', () => {
     expect(isExpectedSoftFailureMessage('Shot not found', 'shot_not_found')).toBe(true);
+    expect(classifySoftFailure('Shot not found', 'shot_not_found')).toEqual({
+      severity: 'info',
+      skipSentry: true,
+    });
+  });
+
+  it('records the expected native-session token retry as info, not a warning incident', () => {
+    expect(classifySoftFailure('Unauthorized', 'UNAUTHORIZED_RETRYABLE')).toEqual({
+      severity: 'info',
+      skipSentry: true,
+    });
   });
 
   it('classifies engine_no_recent_rounds as an empty-state code, not a generic soft failure', () => {
