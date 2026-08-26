@@ -65,6 +65,10 @@ export function FairwayTeamBroadcastSheet({
   onSuccess,
   teamId,
 }: FairwayTeamBroadcastSheetProps) {
+  // Desktop-only autofocus (both steps): on touch, focusing an input as the
+  // sheet opens / the step changes summons the iOS keyboard over the content
+  // (owner TestFlight report, 2026-08-26). The keyboard waits for a tap.
+  const finePointer = useMediaQuery('(pointer: fine)');
   const [step, setStep] = React.useState<'recipients' | 'details'>('recipients');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [players, setPlayers] = React.useState<Player[]>([]);
@@ -231,7 +235,7 @@ export function FairwayTeamBroadcastSheet({
                 aria-label="Search players"
                 className="flex-1"
                 // eslint-disable-next-line jsx-a11y/no-autofocus
-                autoFocus
+                autoFocus={finePointer}
               />
               <Button
                 variant="secondary"
@@ -351,7 +355,7 @@ export function FairwayTeamBroadcastSheet({
                 placeholder="e.g., Team Updates, Practice Reminders"
                 enterKeyHint="done"
                 // eslint-disable-next-line jsx-a11y/no-autofocus
-                autoFocus
+                autoFocus={finePointer}
               />
             </FormField>
 

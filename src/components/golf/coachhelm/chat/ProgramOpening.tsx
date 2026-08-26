@@ -34,8 +34,9 @@
  * ========================================================================== */
 
 import Link from 'next/link';
-import { ArrowUpRight, CornerDownLeft } from 'lucide-react';
+import { Activity, ArrowUpRight, CornerDownLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import type { PulseItem, PulseTone } from '@/lib/coachhelm/v3/chat/program-pulse';
 
 /**
@@ -86,7 +87,28 @@ export function ProgramOpening({
   onAsk,
   className,
 }: ProgramOpeningProps) {
-  if (items.length === 0) return null;
+  // `return null` here left the bottom two-thirds of an empty Ask page as
+  // blank canvas on a program with no pulse yet (owner TestFlight report,
+  // 2026-08-26) — and made the route skeleton, which paints a findings list,
+  // a promise the page then broke. An empty pulse is a state this section
+  // owns, so it says so honestly instead of vanishing.
+  if (items.length === 0) {
+    return (
+      <section className={cn('mt-6', className)} aria-label="Where your program stands">
+        <EmptyState
+          variant="subtle"
+          icon={<Activity aria-hidden className="h-5 w-5" />}
+          title="Nothing to report yet"
+          description="Findings appear here as rounds, qualifiers and schedule activity are recorded."
+        />
+        {coverage && (
+          <p className="mt-2 text-center font-fw-sans text-caption text-text-tertiary">
+            {coverage}
+          </p>
+        )}
+      </section>
+    );
+  }
 
   const shown = items.slice(0, VISIBLE_FINDINGS);
   const remaining = items.length - shown.length;
