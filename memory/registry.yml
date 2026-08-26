@@ -80,6 +80,11 @@ features:
       actions:
         - src/app/golf/actions/coachhelm-*.ts
         - src/app/golf/actions/insight-*.ts
+        # `insight-*.ts` never matched `insights.ts` (no hyphen), so the
+        # largest insight action file in the tree — it owns the post-round
+        # generation trigger and its coach push — resolved to NO feature and
+        # every edit to it hit the guard as an unmapped governed path.
+        - src/app/golf/actions/insights.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/v3/**
@@ -414,6 +419,11 @@ features:
         - src/app/golf/(dashboard)/dashboard/calendar/**
       components:
         - src/components/golf/calendar/**
+        # The SHIPPED calendar UI is the Fairway tree (event editor, detail
+        # drawer, month/week/agenda views); only the older golf/calendar tree
+        # was mapped, so every edit to the live components resolved to no
+        # feature and tripped the context guard as an unmapped governed path.
+        - src/components/fairway/pages/calendar/**
       api:
         - src/app/api/calendar/**
       actions:

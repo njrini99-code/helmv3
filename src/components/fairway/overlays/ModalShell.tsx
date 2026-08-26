@@ -224,10 +224,27 @@ function ModalShellRoot({
                 // wins over Tailwind's `@layer utilities` `.fixed`. Centering uses
                 // `inset-0 m-auto` (auto-margin) instead of `-translate-*` so the
                 // framer-motion enter transform (scale/y) can't clobber it.
-                style={{ zIndex: FW_Z.modal, position: 'fixed' }}
+                // Top/bottom insets and the height cap are INLINE because they
+                // must resolve `env(safe-area-inset-*)`: a flat
+                // `max-h-[calc(100dvh-4rem)]` reserved 2rem at each edge, which
+                // is less than the iPhone's ~59pt top inset, so a tall modal
+                // (the focus-area form) rendered its header up underneath the
+                // status bar and Dynamic Island — the clock painted on top of
+                // the panel (owner device report, 2026-08-26). Centring still
+                // comes from `m-auto` + `h-fit`; it now centres inside the SAFE
+                // box rather than the raw viewport, which also stays correct
+                // when the two insets differ (they always do on iPhone).
+                style={{
+                  zIndex: FW_Z.modal,
+                  position: 'fixed',
+                  top: 'max(1rem, env(safe-area-inset-top))',
+                  bottom: 'max(1rem, env(safe-area-inset-bottom))',
+                  maxHeight:
+                    'calc(100dvh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom)))',
+                }}
                 className={cn(
-                  'fixed inset-0 m-auto h-fit w-[calc(100vw-2rem)]',
-                  'max-h-[calc(100dvh-4rem)] overflow-hidden',
+                  'fixed inset-x-0 m-auto h-fit w-[calc(100vw-2rem)]',
+                  'overflow-hidden',
                   'rounded-fw-lg text-text-primary',
                   'flex flex-col',
                   GLASS_STRONG_CLASS,

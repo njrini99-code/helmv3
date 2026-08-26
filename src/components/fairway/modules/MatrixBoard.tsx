@@ -34,7 +34,12 @@ function trackFor(col: MatrixColumn, isFirst: boolean): string {
   if (isFirst) return 'minmax(120px,1.6fr)';
   if (col.key === 'trend') return '96px';
   if (col.key === 'signal') return 'minmax(110px,1.2fr)';
-  return 'minmax(48px,1fr)';
+  // 48px was a hair under the 34px rank pill plus breathing room, so at 390pt
+  // (where only Player/Tee/App/Shrt/Putt survive HIDE_ON_MOBILE) the four rank
+  // columns sat at their floor with a zero gap and the pills read as one
+  // edge-to-edge block — "SHRT PUTT" with no separation on device, 2026-08-26.
+  // The rows now carry `gap-x-1`; this floor keeps a cell wider than its pill.
+  return 'minmax(44px,1fr)';
 }
 
 function gridTemplate(columns: MatrixColumn[], mobile: boolean): string {
@@ -115,7 +120,7 @@ function MatrixHeader({ columns }: { columns: MatrixColumn[] }) {
     <div
       role="row"
       className={cn(
-        'grid items-center gap-0 border-b border-border-subtle px-5 py-2.5',
+        'grid items-center gap-x-1 border-b border-border-subtle px-5 py-2.5',
         GRID_COLS_CLASS,
       )}
     >
@@ -157,7 +162,7 @@ function MatrixRow({
         aria-controls={hasExpand && open ? expandId : undefined}
         onClick={hasExpand ? () => setOpen((v) => !v) : undefined}
         className={cn(
-          'grid w-full items-center gap-0 px-5 py-2.5 text-left transition-colors duration-150',
+          'grid w-full items-center gap-x-1 px-5 py-2.5 text-left transition-colors duration-150',
           'hover:bg-surface-tint',
           open && 'bg-accent-50 shadow-[inset_3px_0_0_var(--fw-color-accent-500)]',
           !(isLast && !hasExpand) && 'border-b border-border-subtle',

@@ -39,9 +39,16 @@ const toneOutline: Record<FwStatusTone, string> = {
   info: 'border-border-subtle text-text-secondary',
 };
 
+// `min-h`, never a fixed `h`: the base style below is `whitespace-nowrap`, but
+// several call sites legitimately override it (`whitespace-normal`) because
+// their pill sits in a ~165px grid column where the label cannot fit on one
+// line. With a FIXED height those wrapped lines rendered OUTSIDE the rounded
+// background — "1 of 7 need work" printed "work" on the champagne card behind
+// the amber pill (owner device report, 2026-08-26). A minimum height keeps
+// every single-line badge pixel-identical while letting a wrapping one grow.
 const badgeSize: Record<'sm' | 'md', string> = {
-  sm: 'h-5 px-2 text-[11px] gap-1',
-  md: 'h-6 px-2.5 text-[12px] gap-1',
+  sm: 'min-h-5 px-2 py-0.5 text-[11px] gap-1',
+  md: 'min-h-6 px-2.5 py-0.5 text-[12px] gap-1',
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -97,9 +104,12 @@ export interface ChipProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'onClic
 // size the clickable <button> to 24px (sm) / 28px (md) and pull it in with a
 // negative right margin so it consumes the chip's right padding instead of
 // pushing the chip taller/wider. The X svg keeps its small h-3 / h-3.5 size.
+// `min-h` on the chip for the same reason as Badge above (a wrapped label must
+// grow the pill, not spill out of it); the remove BUTTON keeps its fixed
+// h-6/h-7 because that square is the WCAG hit area, not text.
 const chipSize: Record<'sm' | 'md', { chip: string; remove: string }> = {
-  sm: { chip: 'h-6 pl-2.5 pr-1 text-[12px] gap-1', remove: 'h-6 w-6 -mr-1 [&_svg]:h-3 [&_svg]:w-3' },
-  md: { chip: 'h-7 pl-3 pr-1.5 text-[13px] gap-1.5', remove: 'h-7 w-7 -mr-1 [&_svg]:h-3.5 [&_svg]:w-3.5' },
+  sm: { chip: 'min-h-6 pl-2.5 pr-1 text-[12px] gap-1', remove: 'h-6 w-6 -mr-1 [&_svg]:h-3 [&_svg]:w-3' },
+  md: { chip: 'min-h-7 pl-3 pr-1.5 text-[13px] gap-1.5', remove: 'h-7 w-7 -mr-1 [&_svg]:h-3.5 [&_svg]:w-3.5' },
 };
 
 export const Chip = forwardRef<HTMLSpanElement, ChipProps>(function Chip(
