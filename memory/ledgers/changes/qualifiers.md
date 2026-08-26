@@ -41,3 +41,18 @@
   leave the saved scorecard unfinishable.
 - Why: the client action guard could not protect direct RPC calls or an older
   recovery payload.
+
+## 2026-08-25 — expected lifecycle rejections carry their classification codes
+
+- SHA: pending commit on PR #1617.
+- Change: the closed-qualifier, duplicate-round-number, and round-limit
+  rejection envelopes in `src/app/golf/actions/golf.ts` now carry the stable
+  codes (`qualifier_closed`, `qualifier_round_already_exists`,
+  `qualifier_round_limit_reached`) that `observe-action-result.ts` already
+  registered in EXPECTED_SOFT_FAILURE_CODES — the registry knew the codes but
+  no envelope ever attached them, so classification fell through to message
+  regexes that do not match this wording.
+- Why: a player reaching their coach-configured round limit was minted as an
+  error-severity Bridge incident plus a Sentry capture (JAVASCRIPT-NEXTJS-P8 /
+  fingerprint 709e5658, observed live 2026-08-25) for an outcome the product
+  handles by design. User-facing messages and success flags are unchanged.

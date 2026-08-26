@@ -78,6 +78,13 @@ Leaderboard reads qualifier
 - Qualifier rounds must remain normal rounds too; do not fork scoring logic.
 - Leaderboard aggregation must handle ties and incomplete entries consistently.
 - Round submission is the source of truth for qualifier progress; do not manually drift entry stats away from linked rounds.
+- Qualifier lifecycle rejections (closed qualifier, duplicate round number,
+  configured-round limit) are expected outcomes, not faults: their
+  `{ success: false }` envelopes carry the stable codes `qualifier_closed`,
+  `qualifier_round_already_exists`, and `qualifier_round_limit_reached`,
+  which `observe-action-result.ts` classifies as handled warnings (no
+  Sentry capture). Keep the codes on these envelopes when rewording the
+  user-facing messages.
 - Scheduled dates and end dates are calendar metadata, never an automatic
   player-entry deadline. A player can be blocked from entering only when a
   coach explicitly closes the qualifier or when the coach-configured round
