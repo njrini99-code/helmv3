@@ -8,7 +8,7 @@
 QA fixture credentials live in `.env.local` (gitignored) under the same
 variables the Playwright harness reads (`e2e/fixtures/golf-auth.ts`):
 
-```
+```text
 GOLFHELM_PLAYER_EMAIL / GOLFHELM_PLAYER_PASSWORD
 GOLFHELM_COACH_EMAIL  / GOLFHELM_COACH_PASSWORD
 ```
@@ -39,7 +39,7 @@ App Store screenshots use `e2e/appstore-screenshots.spec.ts` at 440×956@3x
    The WKWebView session persists across relaunches AND reinstalls (the
    shell's cache clear touches disk/memory cache only, never cookies), so
    this is a per-device one-time step.
-3. Known session origins: the session is scoped to www.helmsportslabs.com.
+3. Known session origins: the session is scoped to `www.helmsportslabs.com`.
    Pointing `capacitor.config.ts` at localhost for dev does NOT reuse it —
    and the shell's navigation allowlist sends non-helm origins to Safari by
    design; don't weaken `allowNavigation` for QA.

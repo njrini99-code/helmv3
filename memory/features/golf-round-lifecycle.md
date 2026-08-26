@@ -231,6 +231,6 @@ Round entry and tracking chrome are safe-area-native in the Capacitor shell:
 step wrappers fold the inset into top padding, and the course-picker close
 control sits below the status bar. The shared `Segmented` control renders an
 accent-green selected thumb in dark scope. Presentation layer only — no
-lifecycle contract change. Ledger: `memory/ledgers/changes/golf_round_lifecycle.md`
+lifecycle contract change. Ledger: the round-lifecycle file under `memory/ledgers/changes/`
 (2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`
 (course picker, tee step, setup band, and scorecard header captures).

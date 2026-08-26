@@ -120,123 +120,123 @@ This is the failure mode most likely for an engineer who read *current* blog/WWD
 ## 5. Source list
 
 ### Apple-primary — Human Interface Guidelines & Liquid Glass
-- https://developer.apple.com/design/human-interface-guidelines/materials
-- https://developer.apple.com/design/human-interface-guidelines/motion
-- https://developer.apple.com/design/human-interface-guidelines/design-principles
-- https://developer.apple.com/design/human-interface-guidelines/
-- https://developer.apple.com/design/human-interface-guidelines/designing-for-ios
-- https://developer.apple.com/documentation/technologyoverviews/liquid-glass
-- https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass
-- https://developer.apple.com/design/resources/
-- https://developer.apple.com/videos/play/wwdc2025/219/ (Meet Liquid Glass)
-- https://developer.apple.com/videos/play/wwdc2025/356/ (Get to know the new design system)
-- https://developer.apple.com/news/?id=v8a3aetj
+- <https://developer.apple.com/design/human-interface-guidelines/materials>
+- <https://developer.apple.com/design/human-interface-guidelines/motion>
+- <https://developer.apple.com/design/human-interface-guidelines/design-principles>
+- <https://developer.apple.com/design/human-interface-guidelines/>
+- <https://developer.apple.com/design/human-interface-guidelines/designing-for-ios>
+- <https://developer.apple.com/documentation/technologyoverviews/liquid-glass>
+- <https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass>
+- <https://developer.apple.com/design/resources/>
+- <https://developer.apple.com/videos/play/wwdc2025/219/> (Meet Liquid Glass)
+- <https://developer.apple.com/videos/play/wwdc2025/356/> (Get to know the new design system)
+- <https://developer.apple.com/news/?id=v8a3aetj>
 
 ### Apple-primary — App icons, Icon Composer, SF Symbols
-- https://developer.apple.com/documentation/Xcode/creating-your-app-icon-using-icon-composer
-- https://developer.apple.com/design/human-interface-guidelines/app-icons
-- https://developer.apple.com/design/human-interface-guidelines/sf-symbols
-- https://developer.apple.com/documentation/Xcode/configuring-your-app-icon
-- https://developer.apple.com/icon-composer/
-- https://developer.apple.com/sf-symbols/
-- https://www.apple.com/legal/sla/docs/xcode.pdf (§2.10 System-Provided Images)
-- https://developer.apple.com/support/terms/
+- <https://developer.apple.com/documentation/Xcode/creating-your-app-icon-using-icon-composer>
+- <https://developer.apple.com/design/human-interface-guidelines/app-icons>
+- <https://developer.apple.com/design/human-interface-guidelines/sf-symbols>
+- <https://developer.apple.com/documentation/Xcode/configuring-your-app-icon>
+- <https://developer.apple.com/icon-composer/>
+- <https://developer.apple.com/sf-symbols/>
+- <https://www.apple.com/legal/sla/docs/xcode.pdf> (§2.10 System-Provided Images)
+- <https://developer.apple.com/support/terms/>
 
 ### Apple-primary — Haptics
-- https://developer.apple.com/design/human-interface-guidelines/playing-haptics
-- https://developer.apple.com/documentation/uikit/uifeedbackgenerator (+ /prepare(), /init(view:))
-- https://developer.apple.com/documentation/uikit/uiimpactfeedbackgenerator (+ /feedbackstyle, /impactoccurred(at:), /impactoccurred(intensity:))
-- https://developer.apple.com/documentation/uikit/uiselectionfeedbackgenerator
-- https://developer.apple.com/documentation/uikit/uinotificationfeedbackgenerator (+ /feedbacktype)
-- https://developer.apple.com/documentation/uikit/uicanvasfeedbackgenerator
-- https://developer.apple.com/documentation/applepencil/playing-haptic-feedback-in-your-app
-- https://developer.apple.com/documentation/corehaptics (+ /chhapticengine, /preparing-your-app-to-play-haptics, /playing-a-single-tap-haptic-pattern, /chhapticevent, /chhapticevent/eventtype, /chhapticevent/parameterid, /chhapticengine/stoppedreason, /chhapticdevicecapability)
+- <https://developer.apple.com/design/human-interface-guidelines/playing-haptics>
+- <https://developer.apple.com/documentation/uikit/uifeedbackgenerator> (+ /prepare(), /init(view:))
+- <https://developer.apple.com/documentation/uikit/uiimpactfeedbackgenerator> (+ /feedbackstyle, /impactoccurred(at:), /impactoccurred(intensity:))
+- <https://developer.apple.com/documentation/uikit/uiselectionfeedbackgenerator>
+- <https://developer.apple.com/documentation/uikit/uinotificationfeedbackgenerator> (+ /feedbacktype)
+- <https://developer.apple.com/documentation/uikit/uicanvasfeedbackgenerator>
+- <https://developer.apple.com/documentation/applepencil/playing-haptic-feedback-in-your-app>
+- <https://developer.apple.com/documentation/corehaptics> (+ /chhapticengine, /preparing-your-app-to-play-haptics, /playing-a-single-tap-haptic-pattern, /chhapticevent, /chhapticevent/eventtype, /chhapticevent/parameterid, /chhapticengine/stoppedreason, /chhapticdevicecapability)
 
 ### Apple-primary — Notifications
-- https://developer.apple.com/documentation/usernotifications/unnotificationcategory (+ /unnotificationcategoryoptions, /categorysummaryformat)
-- https://developer.apple.com/documentation/usernotifications/unnotificationaction (+ /unnotificationactionoptions)
-- https://developer.apple.com/documentation/usernotifications/untextinputnotificationaction
-- https://developer.apple.com/documentation/usernotifications/declaring-your-actionable-notification-types
-- https://developer.apple.com/documentation/usernotifications/unnotificationinterruptionlevel (+ /critical, /timesensitive)
-- https://developer.apple.com/documentation/usernotifications/unauthorizationoptions (+ /criticalalert, /timesensitive, /provisional)
-- https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.usernotifications.critical-alerts
-- https://developer.apple.com/documentation/usernotifications/unnotificationsettings/timesensitivesetting
-- https://developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications
-- https://developer.apple.com/documentation/usernotifications/unmutablenotificationcontent/threadidentifier (+ /summaryargument)
-- https://developer.apple.com/documentation/usernotifications/unusernotificationcenter/setbadgecount(_:withcompletionhandler:)
-- https://developer.apple.com/documentation/uikit/uiapplication/applicationiconbadgenumber
-- https://developer.apple.com/documentation/usernotifications/unusernotificationcenterdelegate/usernotificationcenter(_:willpresent:withcompletionhandler:) (+ /didreceive:)
-- https://developer.apple.com/documentation/usernotifications/unnotificationpresentationoptions (+ /banner, /alert)
-- https://developer.apple.com/contact/request/notifications-critical-alerts-entitlement/
+- <https://developer.apple.com/documentation/usernotifications/unnotificationcategory> (+ /unnotificationcategoryoptions, /categorysummaryformat)
+- <https://developer.apple.com/documentation/usernotifications/unnotificationaction> (+ /unnotificationactionoptions)
+- <https://developer.apple.com/documentation/usernotifications/untextinputnotificationaction>
+- <https://developer.apple.com/documentation/usernotifications/declaring-your-actionable-notification-types>
+- <https://developer.apple.com/documentation/usernotifications/unnotificationinterruptionlevel> (+ /critical, /timesensitive)
+- <https://developer.apple.com/documentation/usernotifications/unauthorizationoptions> (+ /criticalalert, /timesensitive, /provisional)
+- <https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.usernotifications.critical-alerts>
+- <https://developer.apple.com/documentation/usernotifications/unnotificationsettings/timesensitivesetting>
+- <https://developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications>
+- <https://developer.apple.com/documentation/usernotifications/unmutablenotificationcontent/threadidentifier> (+ /summaryargument)
+- <https://developer.apple.com/documentation/usernotifications/unusernotificationcenter/setbadgecount(_:withcompletionhandler:)>
+- <https://developer.apple.com/documentation/uikit/uiapplication/applicationiconbadgenumber>
+- <https://developer.apple.com/documentation/usernotifications/unusernotificationcenterdelegate/usernotificationcenter(_:willpresent:withcompletionhandler:)> (+ /didreceive:)
+- <https://developer.apple.com/documentation/usernotifications/unnotificationpresentationoptions> (+ /banner, /alert)
+- <https://developer.apple.com/contact/request/notifications-critical-alerts-entitlement/>
 
 ### Apple-primary — ActivityKit / WidgetKit / Dynamic Island
-- https://developer.apple.com/documentation/activitykit (+ /activity, /pushtype, /pushtype/channel(_:), /activity/pushtostarttokenupdates, /activity/request(...), /activitystyle, /activitystyle/transient, /activityauthorizationinfo)
-- https://developer.apple.com/documentation/updates/activitykit
-- https://developer.apple.com/documentation/activitykit/starting-and-updating-live-activities-with-activitykit-push-notifications
-- https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities
-- https://developer.apple.com/documentation/bundleresources/information-property-list/nssupportsliveactivities (+ /nssupportsliveactivitiesfrequentupdates)
-- https://developer.apple.com/documentation/widgetkit/activityfamily
-- https://developer.apple.com/documentation/swiftui/environmentvalues/isdynamicislandlimitedinwidth
-- https://developer.apple.com/documentation/widgetkit/dynamicisland
-- https://developer.apple.com/design/human-interface-guidelines/live-activities
-- https://developer.apple.com/documentation/widgetkit (+ /updates/widgetkit, /creating-a-widget-extension, /creating-controls-to-perform-actions-across-the-system)
-- https://developer.apple.com/videos/play/wwdc2026/223/
-- https://developer.apple.com/videos/play/wwdc2023/10185/
-- https://developer.apple.com/videos/play/wwdc2024/10069/
-- https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionScenarios.html
+- <https://developer.apple.com/documentation/activitykit> (+ /activity, /pushtype, /pushtype/channel(_:), /activity/pushtostarttokenupdates, /activity/request(...), /activitystyle, /activitystyle/transient, /activityauthorizationinfo)
+- <https://developer.apple.com/documentation/updates/activitykit>
+- <https://developer.apple.com/documentation/activitykit/starting-and-updating-live-activities-with-activitykit-push-notifications>
+- <https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities>
+- <https://developer.apple.com/documentation/bundleresources/information-property-list/nssupportsliveactivities> (+ /nssupportsliveactivitiesfrequentupdates)
+- <https://developer.apple.com/documentation/widgetkit/activityfamily>
+- <https://developer.apple.com/documentation/swiftui/environmentvalues/isdynamicislandlimitedinwidth>
+- <https://developer.apple.com/documentation/widgetkit/dynamicisland>
+- <https://developer.apple.com/design/human-interface-guidelines/live-activities>
+- <https://developer.apple.com/documentation/widgetkit> (+ /updates/widgetkit, /creating-a-widget-extension, /creating-controls-to-perform-actions-across-the-system)
+- <https://developer.apple.com/videos/play/wwdc2026/223/>
+- <https://developer.apple.com/videos/play/wwdc2023/10185/>
+- <https://developer.apple.com/videos/play/wwdc2024/10069/>
+- <https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionScenarios.html>
 
 ### Apple-primary — App Intents / Shortcuts / Spotlight / Quick Actions
-- https://developer.apple.com/documentation/appintents/app-shortcuts (+ /appshortcutsprovider, /appshortcut, /appshortcutsbuilder)
-- https://developer.apple.com/documentation/appintents/getting-started-with-the-app-intents-framework
-- https://developer.apple.com/documentation/AppIntents/AcceleratingAppInteractionsWithAppIntents
-- https://developer.apple.com/documentation/appintents/indexedentity
-- https://developer.apple.com/documentation/corespotlight (+ /cssearchableindex/init(name:protectionclass:), /deleteallsearchableitems, /1620351-deletesearchableitems)
-- https://developer.apple.com/library/archive/technotes/tn2416/_index.html
-- https://developer.apple.com/documentation/uikit/uiapplicationshortcutitem
-- https://developer.apple.com/documentation/UIKit/add-home-screen-quick-actions
-- https://developer.apple.com/design/human-interface-guidelines/home-screen-quick-actions
-- https://developer.apple.com/videos/play/wwdc2024/10157/
-- https://developer.apple.com/videos/play/wwdc2025/275/ , /260/
-- https://developer.apple.com/videos/play/wwdc2026/345/ , /240/ , /343/
-- https://www.apple.com/newsroom/2026/06/apple-introduces-siri-ai-a-profoundly-more-capable-and-personal-assistant/
-- https://developer.apple.com/documentation/AppIntents/app-schema-domains
-- https://developer.apple.com/documentation/AppIntents/making-app-entities-available-in-spotlight
+- <https://developer.apple.com/documentation/appintents/app-shortcuts> (+ /appshortcutsprovider, /appshortcut, /appshortcutsbuilder)
+- <https://developer.apple.com/documentation/appintents/getting-started-with-the-app-intents-framework>
+- <https://developer.apple.com/documentation/AppIntents/AcceleratingAppInteractionsWithAppIntents>
+- <https://developer.apple.com/documentation/appintents/indexedentity>
+- <https://developer.apple.com/documentation/corespotlight> (+ /cssearchableindex/init(name:protectionclass:), /deleteallsearchableitems, /1620351-deletesearchableitems)
+- <https://developer.apple.com/library/archive/technotes/tn2416/_index.html>
+- <https://developer.apple.com/documentation/uikit/uiapplicationshortcutitem>
+- <https://developer.apple.com/documentation/UIKit/add-home-screen-quick-actions>
+- <https://developer.apple.com/design/human-interface-guidelines/home-screen-quick-actions>
+- <https://developer.apple.com/videos/play/wwdc2024/10157/>
+- <https://developer.apple.com/videos/play/wwdc2025/275/> , /260/
+- <https://developer.apple.com/videos/play/wwdc2026/345/> , /240/ , /343/
+- <https://www.apple.com/newsroom/2026/06/apple-introduces-siri-ai-a-profoundly-more-capable-and-personal-assistant/>
+- <https://developer.apple.com/documentation/AppIntents/app-schema-domains>
+- <https://developer.apple.com/documentation/AppIntents/making-app-entities-available-in-spotlight>
 
 ### Apple-primary — Accessibility
-- https://developer.apple.com/help/app-store-connect/manage-app-accessibility/overview-of-accessibility-nutrition-labels (+ /manage-accessibility-nutrition-labels, /voiceover-accessibility-evaluation-criteria, /reduced-motion-evaluation-criteria, /sufficient-contrast-evaluation-criteria, /larger-text-accessibility-evaluation-criteria, /dark-interface-evaluation-criteria, /voice-control-evaluation-criteria, /audio-descriptions-evaluation-criteria)
-- https://developer.apple.com/videos/play/wwdc2025/224/
-- https://developer.apple.com/videos/play/wwdc2023/10035/
-- https://developer.apple.com/documentation/accessibility/performing-accessibility-audits-for-your-app (+ /accessibility-inspector, /testing-system-accessibility-features-in-your-app)
-- https://developer.apple.com/documentation/xcuiautomation/xcuiapplication/performaccessibilityaudit(for:_:) (+ /xcuiaccessibilityaudittype)
-- https://developer.apple.com/design/human-interface-guidelines/accessibility (+ /foundations/accessibility)
-- https://developer.apple.com/videos/play/wwdc2024/10074/
-- https://developer.apple.com/documentation/uikit/uifontmetrics (+ /scaling-fonts-automatically, /supporting-voiceover-in-your-app)
-- https://developer.apple.com/documentation/webkit/wkwebview (+ /wkwebviewconfiguration)
-- https://developer.apple.com/videos/play/wwdc2022/10153/
+- <https://developer.apple.com/help/app-store-connect/manage-app-accessibility/overview-of-accessibility-nutrition-labels> (+ /manage-accessibility-nutrition-labels, /voiceover-accessibility-evaluation-criteria, /reduced-motion-evaluation-criteria, /sufficient-contrast-evaluation-criteria, /larger-text-accessibility-evaluation-criteria, /dark-interface-evaluation-criteria, /voice-control-evaluation-criteria, /audio-descriptions-evaluation-criteria)
+- <https://developer.apple.com/videos/play/wwdc2025/224/>
+- <https://developer.apple.com/videos/play/wwdc2023/10035/>
+- <https://developer.apple.com/documentation/accessibility/performing-accessibility-audits-for-your-app> (+ /accessibility-inspector, /testing-system-accessibility-features-in-your-app)
+- <https://developer.apple.com/documentation/xcuiautomation/xcuiapplication/performaccessibilityaudit(for:_:)> (+ /xcuiaccessibilityaudittype)
+- <https://developer.apple.com/design/human-interface-guidelines/accessibility> (+ /foundations/accessibility)
+- <https://developer.apple.com/videos/play/wwdc2024/10074/>
+- <https://developer.apple.com/documentation/uikit/uifontmetrics> (+ /scaling-fonts-automatically, /supporting-voiceover-in-your-app)
+- <https://developer.apple.com/documentation/webkit/wkwebview> (+ /wkwebviewconfiguration)
+- <https://developer.apple.com/videos/play/wwdc2022/10153/>
 
 ### Apple-primary — App Store submission / policy
-- https://developer.apple.com/news/upcoming-requirements/ (+ /news/?id=ueeok6yw)
-- https://developer.apple.com/app-store/review/guidelines/
-- https://developer.apple.com/documentation/technotes/tn3183-adding-required-reason-api-entries-to-your-privacy-manifest
-- https://developer.apple.com/news/?id=3d8a9yyh
-- https://developer.apple.com/app-store/app-privacy-details/
-- https://developer.apple.com/news/?id=ks775ehf
-- https://developer.apple.com/news/?id=tlur8uvi
-- https://developer.apple.com/news/upcoming-requirements/?id=07242025a
-- https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications
-- https://developer.apple.com/testflight/
-- https://developer.apple.com/support/dma-and-apps-in-the-eu/
-- https://developer.apple.com/support/xcode/
+- <https://developer.apple.com/news/upcoming-requirements/> (+ /news/?id=ueeok6yw)
+- <https://developer.apple.com/app-store/review/guidelines/>
+- <https://developer.apple.com/documentation/technotes/tn3183-adding-required-reason-api-entries-to-your-privacy-manifest>
+- <https://developer.apple.com/news/?id=3d8a9yyh>
+- <https://developer.apple.com/app-store/app-privacy-details/>
+- <https://developer.apple.com/news/?id=ks775ehf>
+- <https://developer.apple.com/news/?id=tlur8uvi>
+- <https://developer.apple.com/news/upcoming-requirements/?id=07242025a>
+- <https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications>
+- <https://developer.apple.com/testflight/>
+- <https://developer.apple.com/support/dma-and-apps-in-the-eu/>
+- <https://developer.apple.com/support/xcode/>
 
 ### Secondary / press — NOT Apple documentation, corroborating only
-- https://techcrunch.com/2025/12/12/with-ios-26-2-apple-lets-you-roll-back-liquid-glass-again-this-time-on-the-lock-screen/
-- https://www.macrumors.com/2026/06/08/apple-announces-liquid-glass-improvements/
-- https://www.tomsguide.com/phones/iphones/ios-26-1-lets-you-adjust-liquid-glass-transparency-on-your-iphone-heres-how-to-do-it
-- https://macdailynews.com/2026/07/23/crank-up-apples-liquid-glass-to-maximum-transparency-and-youll-enjoy-every-warped-second/
+- <https://techcrunch.com/2025/12/12/with-ios-26-2-apple-lets-you-roll-back-liquid-glass-again-this-time-on-the-lock-screen/>
+- <https://www.macrumors.com/2026/06/08/apple-announces-liquid-glass-improvements/>
+- <https://www.tomsguide.com/phones/iphones/ios-26-1-lets-you-adjust-liquid-glass-transparency-on-your-iphone-heres-how-to-do-it>
+- <https://macdailynews.com/2026/07/23/crank-up-apples-liquid-glass-to-maximum-transparency-and-youll-enjoy-every-warped-second/>
 
 ### Community / forum — flagged, not documentation, do not treat as prescriptive
-- https://biggo.com/news/202509151916_Apple_Hidden_CSS_Property_Liquid_Glass_WebViews — private CSS property, App Store risk, **do not use**
-- https://alastair.is/apple-has-a-private-css-property-to-add-liquid-glass-effects-to-web-content/ — same, unverified/off-limits
-- https://developer.apple.com/forums/thread/739523 — SF Symbols license wording (secondary confirmation of SLA §2.10)
-- https://developer.apple.com/forums/thread/795411 — Icon Composer alpha-channel bug (ITMS-90717 root cause)
-- https://developer.apple.com/forums/thread/110551 , /105571 , /128293 , /651052 , /674454 — WKWebView Dynamic Type / VoiceOver focus issues (Apple-hosted forum, community posts, not prescriptive docs)
+- <https://biggo.com/news/202509151916_Apple_Hidden_CSS_Property_Liquid_Glass_WebViews> — private CSS property, App Store risk, **do not use**
+- <https://alastair.is/apple-has-a-private-css-property-to-add-liquid-glass-effects-to-web-content/> — same, unverified/off-limits
+- <https://developer.apple.com/forums/thread/739523> — SF Symbols license wording (secondary confirmation of SLA §2.10)
+- <https://developer.apple.com/forums/thread/795411> — Icon Composer alpha-channel bug (ITMS-90717 root cause)
+- <https://developer.apple.com/forums/thread/110551> , /105571 , /128293 , /651052 , /674454 — WKWebView Dynamic Type / VoiceOver focus issues (Apple-hosted forum, community posts, not prescriptive docs)
