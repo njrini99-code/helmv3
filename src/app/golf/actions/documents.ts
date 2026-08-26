@@ -1267,7 +1267,9 @@ async function createGolfDocumentImpl(data: {
   file_size: number;
   category?: string;
   player_visible: boolean;
-  uploaded_by: string;
+  /** Ignored — the row's uploaded_by is always the authenticated user. Kept
+   *  optional for legacy callers that still pass it. */
+  uploaded_by?: string;
   folder?: string;
   // Real storage object path (e.g. 'golf-documents/{teamId}/{fileName}') returned
   // by uploadGolfDocument. Persisted verbatim so preview/download can sign it.
@@ -1365,7 +1367,9 @@ export async function createGolfDocument(data: {
   file_size: number;
   category?: string;
   player_visible: boolean;
-  uploaded_by: string;
+  /** Ignored — the row's uploaded_by is always the authenticated user. Kept
+   *  optional for legacy callers that still pass it. */
+  uploaded_by?: string;
   folder?: string;
   // Real storage object path (e.g. 'golf-documents/{teamId}/{fileName}') returned
   // by uploadGolfDocument. Persisted verbatim so preview/download can sign it.
