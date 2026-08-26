@@ -27,6 +27,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { isCoarsePointer } from '@/lib/utils/pointer';
 import {
   Sheet,
   Button,
@@ -176,9 +177,12 @@ function CreateSheet({
   const [playerSearch, setPlayerSearch] = useState('');
   const [docSearch, setDocSearch] = useState('');
 
-  // Focus the title when the sheet opens.
+  // Focus the title when the sheet opens — desktop only. This imperative
+  // focus bypasses vaul's own autofocus suppression, and on touch it summoned
+  // the iOS keyboard over the tallest form in the app the instant the sheet
+  // opened (owner TestFlight report, 2026-08-26). The keyboard waits for a tap.
   useEffect(() => {
-    if (!open) return;
+    if (!open || isCoarsePointer()) return;
     const t = setTimeout(() => titleRef.current?.focus(), 180);
     return () => clearTimeout(t);
   }, [open]);
