@@ -8,13 +8,25 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),
 }));
 
+// Real implementation by default (so the redaction-success tests exercise the
+// actual scrubber) — one test below overrides it with mockImplementationOnce
+// to prove the route's redaction step is fail-open.
+vi.mock('@/lib/observability/redact-pii', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/observability/redact-pii')>(
+    '@/lib/observability/redact-pii',
+  );
+  return { ...actual, redactPiiDeep: vi.fn(actual.redactPiiDeep) };
+});
+
 import { POST } from '@/app/api/log-error/route';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
+import { redactPiiDeep } from '@/lib/observability/redact-pii';
 
 const createClientMock = vi.mocked(createClient);
 const createAdminMock = vi.mocked(createAdminClient);
+const redactPiiDeepMock = vi.mocked(redactPiiDeep);
 
 function request(body: string) {
   return new Request('http://x/api/log-error', {
@@ -216,5 +228,115 @@ describe('POST /api/log-error', () => {
     const json = await res.json();
     expect(json.error).toBe('Invalid payload');
     expect(createAdminMock).not.toHaveBeenCalled();
+  });
+
+  it('redacts magic-link tokens from the URL/referrer/location and masks emails in context before persisting', async () => {
+    // The URL/referrer/location a client reports can carry a Supabase
+    // magic-link token, an OTP, or an OAuth code (?token_hash=...,
+    // #access_token=...) — none of that belongs in error_logs/admin_events.
+    // Browser diagnostics can also carry an email address in free text.
+    mockAnonymousUser();
+
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
+
+    const res = await POST(request(JSON.stringify({
+      message: 'signed in but crashed, reported by coach@school.edu',
+      severity: 'medium',
+      url: '/golf/auth/confirm?token_hash=super-secret-token&type=magiclink',
+      context: {
+        location: {
+          href: 'https://app.golfhelm.com/golf/auth/confirm?token_hash=super-secret-token&type=magiclink#access_token=abc123',
+          referrer: 'https://mail.google.com/mail/u/0/?token=reset-token-xyz',
+          // getBrowserDiagnostics() sends these as their own standalone
+          // fields too, not just embedded in href — a walker that only
+          // recognized a full URL shape would let a bare query/fragment
+          // straight through.
+          search: '?token_hash=super-secret-token&type=magiclink',
+          hash: '#access_token=abc123',
+        },
+        note: 'reported by coach@school.edu',
+      },
+    })));
+
+    expect(res.status).toBe(200);
+    const errorLog = inserts.find((i) => i.table === 'error_logs');
+    const adminEvent = inserts.find((i) => i.table === 'admin_events');
+
+    // The write still happens — redaction is not a reason to drop the log.
+    expect(errorLog).toBeTruthy();
+    expect(adminEvent).toBeTruthy();
+
+    expect(errorLog?.payload.url).toBe('/golf/auth/confirm');
+    expect(adminEvent?.payload.url).toBe('/golf/auth/confirm');
+
+    const context = errorLog?.payload.context as Record<string, unknown>;
+    const location = context.location as Record<string, unknown>;
+    expect(location.href).toBe('https://app.golfhelm.com/golf/auth/confirm');
+    expect(location.referrer).toBe('https://mail.google.com/mail/u/0/');
+    expect(location.search).toBe('');
+    expect(location.hash).toBe('');
+    expect(context.note).toBe('reported by c***@school.edu');
+
+    // The top-level message column is masked too — the same string also
+    // lands in admin_events.title, which is built from `message` directly.
+    expect(errorLog?.payload.message).toBe('signed in but crashed, reported by c***@school.edu');
+    expect(adminEvent?.payload.title).toContain('c***@school.edu');
+    expect(adminEvent?.payload.title).not.toContain('coach@school.edu');
+
+    const serialized = JSON.stringify({ ...errorLog?.payload, context: undefined });
+    const contextSerialized = JSON.stringify(errorLog?.payload.context);
+    for (const secret of ['super-secret-token', 'access_token', 'reset-token-xyz', 'coach@school.edu']) {
+      expect(serialized).not.toContain(secret);
+      expect(contextSerialized).not.toContain(secret);
+    }
+  });
+
+  it('never drops the log when redaction itself throws (fail-open)', async () => {
+    mockAnonymousUser();
+
+    const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn((table: string) => ({
+        insert: vi.fn(async (payload: Record<string, unknown>) => {
+          inserts.push({ table, payload });
+          return { error: null };
+        }),
+      })),
+    } as never);
+
+    redactPiiDeepMock.mockImplementationOnce(() => {
+      throw new Error('redaction blew up');
+    });
+
+    const res = await POST(request(JSON.stringify({
+      message: 'crash during redaction',
+      severity: 'medium',
+      url: '/golf/dashboard?token=abc',
+      context: { note: 'someone@example.com' },
+    })));
+
+    expect(res.status).toBe(200);
+    const errorLog = inserts.find((i) => i.table === 'error_logs');
+    const adminEvent = inserts.find((i) => i.table === 'admin_events');
+
+    // The row is still written even though the redactor threw.
+    expect(errorLog).toBeTruthy();
+    expect(adminEvent).toBeTruthy();
+    // The URL still loses its query string via the cheap fallback split.
+    expect(errorLog?.payload.url).toBe('/golf/dashboard');
+    // The context is omitted rather than risk unredacted PII escaping — assert
+    // the actual invariant (no trace of the raw address anywhere on the row),
+    // not just that a `raw` key happens to be absent/null.
+    expect((errorLog?.payload.context as Record<string, unknown> | undefined)?.raw ?? null).toBeNull();
+    expect(JSON.stringify(errorLog?.payload.context)).not.toContain('someone@example.com');
+    expect(JSON.stringify(errorLog?.payload)).not.toContain('someone@example.com');
   });
 });

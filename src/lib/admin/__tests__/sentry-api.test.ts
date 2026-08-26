@@ -6,6 +6,7 @@ vi.stubGlobal('fetch', fetchMock);
 import {
   fetchSentryIssues,
   fetchSentryFeatureCounts,
+  updateSentryIssueStatus,
   __resetSentryFeatureCountCooldown,
 } from '@/lib/admin/sentry-api';
 
@@ -236,5 +237,117 @@ describe('fetchSentryFeatureCounts', () => {
     // loop is what kept Sentry rate-limiting the Bridge.
     expect(await fetchSentryFeatureCounts(['round_tracking'])).toBeNull();
     expect(fetchMock.mock.calls.length).toBe(callsAfterFailedSweep);
+  });
+});
+
+describe('updateSentryIssueStatus', () => {
+  beforeEach(() => {
+    vi.stubEnv('SENTRY_READ_TOKEN', 'sentry-read-token');
+    vi.stubEnv('SENTRY_ORG', 'helm-xs');
+    vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
+    fetchMock.mockReset();
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('returns unconfigured (NOT an error) when neither token env is set', async () => {
+    vi.stubEnv('SENTRY_READ_TOKEN', '');
+    vi.stubEnv('SENTRY_AUTH_TOKEN', '');
+    const res = await updateSentryIssueStatus('123', 'resolved');
+    expect(res.status).toBe('unconfigured');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('PUTs the status to the issue endpoint and returns the updated id/status on success', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: '123', status: 'resolved' }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const res = await updateSentryIssueStatus('123', 'resolved');
+
+    expect(res.status).toBe('ok');
+    expect(res.data).toEqual({ id: '123', status: 'resolved' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0]! as [string, RequestInit & { headers: Record<string, string> }];
+    expect(String(url)).toBe('https://sentry.io/api/0/organizations/helm-xs/issues/123/');
+    expect(init.method).toBe('PUT');
+    expect(init.headers.Authorization).toBe('Bearer sentry-read-token');
+    expect(init.body).toBe(JSON.stringify({ status: 'resolved' }));
+  });
+
+  it('rejects an empty issue id without calling fetch', async () => {
+    const res = await updateSentryIssueStatus('   ', 'resolved');
+    expect(res.status).toBe('error');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('maps a 403 to a clear, actionable write-scope message and does not retry', async () => {
+    fetchMock.mockResolvedValue(new Response('forbidden', { status: 403 }));
+    const res = await updateSentryIssueStatus('123', 'resolved');
+
+    expect(res.status).toBe('error');
+    expect(res.error).toContain('403');
+    expect(res.error).toContain('token lacks event:write / issue write scope');
+    expect(res.error).toContain('add a token with write scope');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps a 401 to the same actionable write-scope message and does not retry', async () => {
+    fetchMock.mockResolvedValue(new Response('unauthorized', { status: 401 }));
+    const res = await updateSentryIssueStatus('123', 'resolved');
+
+    expect(res.status).toBe('error');
+    expect(res.error).toContain('401');
+    expect(res.error).toContain('write scope');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT retry a 4xx other than 401/403', async () => {
+    fetchMock.mockResolvedValue(new Response('not found', { status: 404 }));
+    const res = await updateSentryIssueStatus('123', 'resolved');
+
+    expect(res.status).toBe('error');
+    expect(res.error).toContain('404');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries exactly once on a 5xx and succeeds if the retry is ok', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response('upstream error', { status: 502 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: '123', status: 'resolved' }), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      }));
+    const res = await updateSentryIssueStatus('123', 'resolved');
+
+    expect(res.status).toBe('ok');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails soft after a 5xx retry that also fails, without a second retry', async () => {
+    fetchMock.mockResolvedValue(new Response('upstream error', { status: 503 }));
+    const res = await updateSentryIssueStatus('123', 'resolved');
+
+    expect(res.status).toBe('error');
+    expect(res.error).toContain('503');
+    // One retry max — not an unbounded loop.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails soft on a thrown network error without throwing', async () => {
+    fetchMock.mockRejectedValue(new Error('ECONNRESET'));
+    const res = await updateSentryIssueStatus('123', 'resolved');
+
+    expect(res.status).toBe('error');
+    expect(res.error).toContain('ECONNRESET');
+  });
+
+  it('supports the ignored status too', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: '123', status: 'ignored' }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const res = await updateSentryIssueStatus('123', 'ignored');
+
+    expect(res.status).toBe('ok');
+    expect(res.data).toEqual({ id: '123', status: 'ignored' });
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(init.body).toBe(JSON.stringify({ status: 'ignored' }));
   });
 });

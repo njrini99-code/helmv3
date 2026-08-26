@@ -26,6 +26,7 @@ import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { withGolfAction } from '@/lib/golf/with-golf-action';
 import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
@@ -606,10 +607,29 @@ async function createEnrichedAnnouncementImpl(input: {
   }
 }
 
+// withGolfAction nests INSIDE withAdminObserved — see the identical note on
+// roster.ts's removePlayerFromTeam. withAdminObserved still owns the
+// demoSafe gate + request-context scope; withGolfAction now owns the
+// classify -> RLS-denial-capture -> log sequence for whatever reaches it
+// (createEnrichedAnnouncementImpl already catches everything internally and
+// returns an ActionResult, so this is mainly the soft-failure observation
+// path today, plus a safety net for any future uncaught throw).
+// `observeSoftFailures: false` on the outer wrapper avoids a duplicate log.
+const golfActionCreateEnrichedAnnouncement = withGolfAction(
+  'createEnrichedAnnouncement',
+  {
+    featureArea: 'golf-announcements',
+    feature: 'announcements',
+    rlsContext: { table: 'golf_announcements', verb: 'insert' },
+    toErrorResult: (message) => ({ success: false, error: message }),
+  },
+  createEnrichedAnnouncementImpl,
+);
+
 const observedCreateEnrichedAnnouncement = withAdminObserved(
   'createEnrichedAnnouncement',
-  { demoSafe: true, sport: 'golf', feature: 'announcements' },
-  createEnrichedAnnouncementImpl,
+  { demoSafe: true, sport: 'golf', feature: 'announcements', observeSoftFailures: false },
+  golfActionCreateEnrichedAnnouncement,
 );
 
 export async function createEnrichedAnnouncement(input: {
@@ -1168,10 +1188,23 @@ async function completeAnnouncementTaskImpl(
   }
 }
 
+// See the note on createEnrichedAnnouncement above — same nesting, same
+// reason (demoSafe stays on the outer withAdminObserved layer).
+const golfActionCompleteAnnouncementTask = withGolfAction(
+  'completeAnnouncementTask',
+  {
+    featureArea: 'golf-announcements',
+    feature: 'announcements',
+    rlsContext: { table: 'golf_task_assignments', verb: 'update' },
+    toErrorResult: (message) => ({ success: false, error: message }),
+  },
+  completeAnnouncementTaskImpl,
+);
+
 const observedCompleteAnnouncementTask = withAdminObserved(
   'completeAnnouncementTask',
-  { demoSafe: true, sport: 'golf', feature: 'announcements' },
-  completeAnnouncementTaskImpl,
+  { demoSafe: true, sport: 'golf', feature: 'announcements', observeSoftFailures: false },
+  golfActionCompleteAnnouncementTask,
 );
 
 export async function completeAnnouncementTask(
@@ -1237,10 +1270,23 @@ async function deleteAnnouncementImpl(
   }
 }
 
+// See the note on createEnrichedAnnouncement above — same nesting, same
+// reason (demoSafe stays on the outer withAdminObserved layer).
+const golfActionDeleteAnnouncement = withGolfAction(
+  'deleteAnnouncement',
+  {
+    featureArea: 'golf-announcements',
+    feature: 'announcements',
+    rlsContext: { table: 'golf_announcements', verb: 'delete' },
+    toErrorResult: (message) => ({ success: false, error: message }),
+  },
+  deleteAnnouncementImpl,
+);
+
 const observedDeleteAnnouncement = withAdminObserved(
   'deleteAnnouncement',
-  { demoSafe: true, sport: 'golf', feature: 'announcements' },
-  deleteAnnouncementImpl,
+  { demoSafe: true, sport: 'golf', feature: 'announcements', observeSoftFailures: false },
+  golfActionDeleteAnnouncement,
 );
 
 export async function deleteAnnouncement(

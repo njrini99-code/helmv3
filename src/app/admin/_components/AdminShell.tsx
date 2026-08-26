@@ -228,11 +228,17 @@ function useBridgeSignOut() {
 export function AdminShell({
   email,
   errorCount,
+  healthCount,
   children,
 }: {
   email: string;
   /** Bridge bottom-nav Errors badge — 0 renders no badge (honest-only). */
   errorCount: number;
+  /** Bridge bottom-nav Health badge — count of RED features, 0 renders no
+   *  badge (honest-only). Computed in layout.tsx via the existing
+   *  feature-health rollup fetch (see its doc comment there for the cost
+   *  tradeoff on non-Overview routes). */
+  healthCount: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -406,10 +412,10 @@ export function AdminShell({
   const shellUser = useMemo(() => ({ name: 'Super admin', teamName: email }), [email]);
 
   // M1 (bridge-chrome): the daily-loop four (Synthesis Decision 6). Memoized
-  // on `errorCount` alone — `FairwayBottomNav` is `React.memo`'d on this
-  // ARRAY's reference identity, so a fresh literal every render (e.g. every
-  // unrelated pathname-driven re-render) would defeat it. Only the Errors
-  // tab carries a badge, and only when > 0 (honest-only).
+  // on `errorCount`/`healthCount` — `FairwayBottomNav` is `React.memo`'d on
+  // this ARRAY's reference identity, so a fresh literal every render (e.g.
+  // every unrelated pathname-driven re-render) would defeat it. Only Errors
+  // and Health carry a badge, and only when > 0 (honest-only).
   const bottomNavItems: NavItem[] = useMemo(
     () =>
       BRIDGE_BOTTOM_NAV_HREFS.map((href) => ({
@@ -417,9 +423,14 @@ export function AdminShell({
         href,
         icon: NAV_ICON_BY_HREF[href],
         activeMatch: (p: string) => (href === '/admin' ? p === '/admin' : p.startsWith(href)),
-        badge: href === '/admin/errors' && errorCount > 0 ? errorCount : undefined,
+        badge:
+          href === '/admin/errors' && errorCount > 0
+            ? errorCount
+            : href === '/admin/health' && healthCount > 0
+              ? healthCount
+              : undefined,
       })),
-    [errorCount],
+    [errorCount, healthCount],
   );
 
   // M1 (more-sheet-nav, docs/MOBILE_DOCTRINE.md Rule 6/10): the More sheet's

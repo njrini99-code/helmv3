@@ -57,7 +57,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
 
   // REVENUE — zero inbound links repo-wide before this entry.
-  { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Invoices, Stripe posture' },
+  { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Create invoices' },
 
   // INTAKE
   { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Log tester-reported bugs on their behalf', meta: 'issues' },

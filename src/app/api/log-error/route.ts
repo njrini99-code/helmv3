@@ -11,6 +11,7 @@ import {
   getTraceRoute,
   type TraceSport,
 } from '@/lib/error-trace-classification';
+import { redactPiiDeep, maskEmails, collapseEmailsForGrouping } from '@/lib/observability/redact-pii';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 import type { Json } from '@/lib/types/database';
 
@@ -23,6 +24,92 @@ function readContextString(context: unknown, key: string): string | null {
 function readContextSport(context: unknown): TraceSport | null {
   const sport = readContextString(context, 'sport');
   return sport === 'golf' || sport === 'baseball' || sport === 'shared' ? sport : null;
+}
+
+/**
+ * Strip the query string and fragment from a URL-shaped string. Mirrors
+ * instrumentation-client.ts's `beforeSend` treatment of `event.request.url`
+ * and `event.contexts.location`: either half can carry a Supabase magic-link
+ * token (`?token_hash=...&type=magiclink`), a password-reset token, or an
+ * OAuth code — none of which belongs in `error_logs`/`admin_events`. Applied
+ * unconditionally to anything URL-shaped, same as the client-side filter, so
+ * this doesn't depend on knowing every token param name in advance.
+ *
+ * Also matches a BARE query string or fragment (`?token_hash=...`,
+ * `#access_token=...`), not just one embedded in a full URL:
+ * `getBrowserDiagnostics()` in error-logging.ts sends `location.search` and
+ * `location.hash` as their own standalone string fields (alongside `href`,
+ * which already contains the same text) — a walker that only recognized
+ * `scheme://` and a leading `/` let those two fields straight through.
+ *
+ * Non-URL strings (an incidental '?' or '#' in the middle of prose) pass
+ * through untouched.
+ */
+function stripUrlSecrets(value: string): string {
+  if (!value.includes('?') && !value.includes('#')) return value;
+  const looksLikeUrl =
+    /^[a-z][a-z0-9+.-]*:\/\//i.test(value) ||
+    value.startsWith('/') ||
+    value.startsWith('?') ||
+    value.startsWith('#');
+  if (!looksLikeUrl) return value;
+  return value.replace(/[?#].*$/, '');
+}
+
+/** Bounds the recursive walk below — a pathological client payload must not turn this into a hang. */
+const CONTEXT_REDACT_MAX_DEPTH = 8;
+
+/** Recursively applies stripUrlSecrets to every string in a client-supplied context tree. */
+function stripUrlSecretsDeep(value: unknown, depth = 0): unknown {
+  if (depth > CONTEXT_REDACT_MAX_DEPTH) return value;
+  if (typeof value === 'string') return stripUrlSecrets(value);
+  if (Array.isArray(value)) return value.map((item) => stripUrlSecretsDeep(item, depth + 1));
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+      out[key] = stripUrlSecretsDeep(nested, depth + 1);
+    }
+    return out;
+  }
+  return value;
+}
+
+interface RedactedClientPayload {
+  url: string | null;
+  context: unknown;
+}
+
+/**
+ * Redact client-supplied data before any of it reaches `error_logs`/
+ * `admin_events`. Two independent hazards land in this same payload: a
+ * magic-link/OAuth/reset token riding in a URL, referrer, or `location`
+ * field, and an email address in free text (browser diagnostics, or a
+ * caught error's own message copied into context). Token stripping is local
+ * to this route (`stripUrlSecrets*` above); email masking reuses
+ * `redactPiiDeep` — this repo's one PII scrubber, already relied on by the
+ * Sentry `beforeSend` hooks for exactly this shape.
+ *
+ * Fail-open by contract: a bug in this function must never drop the error
+ * report itself. On failure it still returns a usable value — the URL
+ * trimmed by the cheapest possible means (a plain string split, which
+ * cannot itself throw) and the context omitted entirely rather than risk
+ * unredacted PII/tokens reaching storage.
+ */
+function redactClientPayloadForStorage(rawUrl: string | null, rawContext: unknown): RedactedClientPayload {
+  try {
+    const strippedContext = stripUrlSecretsDeep(rawContext);
+    return {
+      url: rawUrl ? stripUrlSecrets(rawUrl) : null,
+      context: redactPiiDeep(strippedContext),
+    };
+  } catch (error) {
+    console.error('[log-error route] PII/token redaction failed; persisting with context omitted', error);
+    Sentry.captureException(error, { tags: { component: 'log-error-route-redaction' } });
+    return {
+      url: rawUrl ? (rawUrl.split(/[?#]/)[0] ?? null) : null,
+      context: null,
+    };
+  }
 }
 
 /**
@@ -129,9 +216,26 @@ export async function POST(request: NextRequest) {
     if (isAnonymous && severity === 'critical') {
       severity = 'error';
     }
-    const message = String(errorReport.message || 'Unknown error').slice(0, 2000);
+    // Masked, not just the context: `error.message` is a free-text string the
+    // client fully controls, and error-logging.ts's own enrichErrorContext
+    // copies this exact string into context.error.message — which the
+    // context redaction below already masks. Leaving this top-level column
+    // raw would mask the same address in one place on the row and not the
+    // other. Mirrors server-error-logger.ts's writeAdminTables, the other
+    // write path into these same two tables.
+    const message = maskEmails(String(errorReport.message || 'Unknown error').slice(0, 2000));
     const stack = errorReport.stack ? errorReport.stack.slice(0, 8000) : null;
-    const url = errorReport.url || request.headers.get('referer') || null;
+
+    // Redact BEFORE anything downstream touches this data. The client
+    // controls both `url` and `context` entirely, and `context` typically
+    // carries browser diagnostics (location.href, document.referrer) that
+    // can hold a Supabase magic-link token or an OAuth code, plus free-text
+    // fields that can hold an email address. See redactClientPayloadForStorage.
+    const rawUrl = errorReport.url || request.headers.get('referer') || null;
+    const redactedPayload = redactClientPayloadForStorage(rawUrl, errorReport.context);
+    const url = redactedPayload.url;
+    const redactedContext = redactedPayload.context;
+
     const timestamp = errorReport.timestamp || new Date().toISOString();
     const userAgent = request.headers.get('user-agent');
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
@@ -142,26 +246,35 @@ export async function POST(request: NextRequest) {
     // bucket (mergeTriage falls back to a per-row key when fingerprint is
     // null), so a single network blip can flood the incident queue with
     // hundreds of individually-fingerprinted "network error" rows.
-    const traceRoute = getTraceRoute(errorReport.context, url);
-    const traceAction = getTraceAction(errorReport.context);
+    //
+    // Derived from the REDACTED context, not the raw one — getTraceRoute can
+    // fall back to a nested `location.href`, which is exactly one of the
+    // token-bearing fields redaction above already stripped.
+    const traceRoute = getTraceRoute(redactedContext, url);
+    const traceAction = getTraceAction(redactedContext);
     const trace = classifyTraceSurface(traceRoute, traceAction);
-    const finalSport = readContextSport(errorReport.context) ?? trace.sport;
-    const finalFeature = (readContextString(errorReport.context, 'feature') as FeatureKey | null) ?? trace.feature;
+    const finalSport = readContextSport(redactedContext) ?? trace.sport;
+    const finalFeature = (readContextString(redactedContext, 'feature') as FeatureKey | null) ?? trace.feature;
 
     const fingerprint = buildIncidentSignature({
       severity,
       errorCode: null,
       route: traceRoute ?? url,
-      message,
+      // Collapsed, not masked: the fingerprint groups by string equality, and
+      // a per-address mask (`a***@x.edu` vs `b***@x.edu`) is still unique per
+      // address — it would fragment one root cause into one incident per
+      // reporter. Same split server-error-logger.ts already made.
+      message: collapseEmailsForGrouping(message),
     });
 
-    // Sanitize context field - limit size to prevent abuse
+    // Sanitize context field - limit size to prevent abuse. Applied to the
+    // already-redacted context, never to the raw client payload.
     let sanitizedContext: Json | null = null;
-    if (errorReport.context) {
+    if (redactedContext) {
       try {
-        const contextStr = JSON.stringify(errorReport.context);
+        const contextStr = JSON.stringify(redactedContext);
         if (contextStr.length <= 10000) {
-          sanitizedContext = errorReport.context as Json;
+          sanitizedContext = redactedContext as Json;
         }
       } catch {
         sanitizedContext = null;

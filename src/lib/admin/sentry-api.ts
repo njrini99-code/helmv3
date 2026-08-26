@@ -328,6 +328,82 @@ export interface SentryReleaseHealth {
   crashFreeUsers: number | null;
 }
 
+/**
+ * WRITE side — resolve/ignore a Sentry issue directly from the Bridge, so an
+ * operator can close it out without switching to sentry.io. Every other
+ * export in this file is read-only against SENTRY_READ_TOKEN (or the
+ * SENTRY_AUTH_TOKEN fallback); that same token frequently lacks write scope,
+ * since it was provisioned for org:read + project:read + event:read. This
+ * call still goes through `config()` and inherits the same fail-soft
+ * contract (never throws) — a token that can list issues but cannot mutate
+ * them degrades through the 401/403 branch below exactly like a missing
+ * token degrades through `unconfigured()`, both readable by the caller
+ * without a try/catch.
+ */
+export async function updateSentryIssueStatus(
+  issueId: string,
+  status: 'resolved' | 'ignored',
+): Promise<AdminFetchResult<{ id: string; status: string }>> {
+  const cfg = config();
+  if (!cfg) return unconfigured('Sentry read API');
+
+  const trimmedId = (issueId ?? '').trim();
+  if (!trimmedId) return failed('A Sentry issue id is required');
+
+  const url = `${API}/organizations/${cfg.org}/issues/${trimmedId}/`;
+  const doPut = () =>
+    fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${cfg.token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    });
+
+  try {
+    let res = await doPut();
+    // One retry, 5xx only. A 4xx means the request itself is wrong (bad id,
+    // insufficient scope, already-deleted issue) — retrying it would just
+    // repeat the identical rejection. A 5xx is plausibly a transient upstream
+    // blip, and this is a single operator click, not a poll loop, so one
+    // extra attempt is worth it before giving up.
+    if (!res.ok && res.status >= 500) {
+      res = await doPut();
+    }
+
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        return failed(
+          reportIntegrationFault(
+            'sentry',
+            'issue status update',
+            `Sentry issue update failed: ${res.status} — token lacks event:write / issue write scope — add a token with write scope`,
+          ),
+        );
+      }
+      return failed(
+        reportIntegrationFault(
+          'sentry',
+          'issue status update',
+          `Sentry issue update failed: ${res.status}`,
+        ),
+      );
+    }
+
+    const body = (await res.json()) as { id: string; status: string };
+    return ok({ id: body.id, status: body.status });
+  } catch (err) {
+    return failed(
+      reportIntegrationFault(
+        'sentry',
+        'issue status update',
+        `Sentry issue update threw: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
+  }
+}
+
 /** CONDITIONAL widget (OQ3): renders 'not configured' until session
  *  tracking is confirmed sending sessions for helm-xs. */
 export async function fetchSentryReleaseHealth(): Promise<AdminFetchResult<SentryReleaseHealth>> {

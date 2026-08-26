@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { bridgeGetTracerData, bridgeGetTracerEnrichedData, bridgeListFlightTraces } from '@/app/admin/actions/golf-tracer';
+import {
+  bridgeGetTracerData,
+  bridgeGetTracerEnrichedData,
+  bridgeListFlightTraces,
+  type FlightTraceRun,
+} from '@/app/admin/actions/golf-tracer';
 import { Surface, InlineNotice, Sparkline, StatStrip } from '@/components/fairway';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
@@ -13,6 +18,42 @@ import { TracerIncidentRow } from './TracerIncidentRow';
 import { FlightTraceExplorer } from './FlightTraceExplorer';
 
 export const dynamic = 'force-dynamic';
+
+export interface FlightTraceFetch {
+  traces: FlightTraceRun[];
+  /** Null when the fetch itself succeeded (even if it returned zero rows —
+   *  that is a genuinely empty result, not a failure). Non-null carries a
+   *  short, honest reason the RPC threw, so the panel never tells the
+   *  operator "no traces yet" when what actually happened is "couldn't
+   *  reach the trace store." */
+  unavailableReason: string | null;
+}
+
+/**
+ * `bridgeListFlightTraces` throws when `public.helm_debug_list_traces`
+ * doesn't exist — true in production today: the flight recorder migration
+ * (20260825200811_helm_flight_recorder.sql) is HELD, not yet applied
+ * (supabase/migrations/HELD.md). It could also throw for an unrelated reason
+ * (a revoked grant, a misconfigured admin client) that this thin action
+ * layer can't distinguish from that one — so the held migration is
+ * surfaced as the likely cause, not asserted as certain. Isolating the
+ * failure here, instead of letting it reject inside the page's shared
+ * `Promise.all`, keeps a missing migration from taking down the whole
+ * Tracer page along with it.
+ */
+async function loadFlightTraces(): Promise<FlightTraceFetch> {
+  try {
+    return { traces: await bridgeListFlightTraces(), unavailableReason: null };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'unknown error';
+    return {
+      traces: [],
+      unavailableReason:
+        `${detail} Most likely cause: migration 20260825200811 (Helm Flight ` +
+        'Recorder) is not applied to production yet — see supabase/migrations/HELD.md.',
+    };
+  }
+}
 
 /**
  * Port strategy: W8 shipped a minimum-viable read-only port. This wave
@@ -29,8 +70,12 @@ export const dynamic = 'force-dynamic';
  * is redirected to /admin (next.config.mjs:183), so that page is unreachable.
  */
 
-async function TracerBody() {
-  const [data, enriched, traces] = await Promise.all([bridgeGetTracerData(), bridgeGetTracerEnrichedData(), bridgeListFlightTraces()]);
+async function TracerBody({ initialTraceId }: { initialTraceId: string | null }) {
+  const [data, enriched, flightTraces] = await Promise.all([
+    bridgeGetTracerData(),
+    bridgeGetTracerEnrichedData(),
+    loadFlightTraces(),
+  ]);
 
   const sortedPlayers = [...data.playerSummaries].sort((a, b) => b.total_rounds - a.total_rounds);
   const dailyRounds = enriched.dailyRoundCounts.map((d) => d.count);
@@ -98,7 +143,11 @@ async function TracerBody() {
         </div>
       </Surface>
 
-      <FlightTraceExplorer traces={traces} />
+      <FlightTraceExplorer
+        traces={flightTraces.traces}
+        unavailableReason={flightTraces.unavailableReason}
+        initialTraceId={initialTraceId}
+      />
 
       <Surface padding="sm" id="stuck-rounds">
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
@@ -132,8 +181,18 @@ async function TracerBody() {
   );
 }
 
-export default async function TracerPage() {
+export default async function TracerPage({
+  searchParams,
+}: {
+  // `?trace=<uuid>` is the deep-link target other admin surfaces (e.g. an
+  // error page's "view flight trace" link) point at — the explorer below
+  // preselects and loads that trace on mount.
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireSuperAdmin();
+  const params = await searchParams;
+  const rawTrace = params.trace;
+  const initialTraceId = typeof rawTrace === 'string' && rawTrace.length > 0 ? rawTrace : null;
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
@@ -149,7 +208,7 @@ export default async function TracerPage() {
         . The hole-by-hole shot browser has no Bridge equivalent yet.
       </InlineNotice>
       <PanelBoundary title="Tracer" skeleton={<PanelPageSkeleton rows={8} />}>
-        <TracerBody />
+        <TracerBody initialTraceId={initialTraceId} />
       </PanelBoundary>
     </div>
   );

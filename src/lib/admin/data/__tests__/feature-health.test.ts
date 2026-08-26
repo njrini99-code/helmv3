@@ -330,3 +330,121 @@ describe('summarizeFeatureHealth + computeFeatureHealthBanner — banner discipl
     expect(computeFeatureHealthBanner(summary).contributes).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Health-consolidation pinning test (rendering-only change) — FeatureDotGrid
+// and FeatureHealthRollup were unified behind one FeatureHealthSummary
+// component in this pass, and the classifier itself was NOT touched. This
+// pins the full { status, trend, reason } output of computeFeatureStatus
+// across one representative input per branch, so a rendering-layer refactor
+// can never silently carry a status-logic change with it.
+// ---------------------------------------------------------------------------
+describe('computeFeatureStatus — pinned outputs (health-consolidation regression guard)', () => {
+  it('matches the exact status/trend/reason for one representative input per classifier branch', () => {
+    const cases: Array<{ name: string; inputs: FeatureHealthInputs }> = [
+      { name: 'neutral — no feature-tagged data', inputs: baseInputs({ events24h: { ...baseInputs().events24h, total: 0, warnings: 0 }, heartbeatLastActivity: null, sentryUnresolved: null }) },
+      { name: 'red — unresolved critical', inputs: baseInputs({ events24h: { ...baseInputs().events24h, criticalUnresolved: 1 } }) },
+      { name: 'red — integrity check failed', inputs: baseInputs({ integrityStatus: 'fail' }) },
+      {
+        name: 'red — hysteresis across 2 windows (high tier)',
+        inputs: baseInputs({ tier: 'high', events24h: { ...baseInputs().events24h, fingerprints: 20 }, fingerprintsPrev24h: 20 }),
+      },
+      { name: 'red — low-tier trailing-7d line', inputs: baseInputs({ tier: 'low', fingerprints7d: 2 }) },
+      {
+        name: 'amber — RLS-denial cluster (many users)',
+        inputs: baseInputs({ events24h: { ...baseInputs().events24h, rlsDenials: 3, rlsDenialUsers: 3 } }),
+      },
+      { name: 'amber — fingerprint at threshold', inputs: baseInputs({ tier: 'high', events24h: { ...baseInputs().events24h, fingerprints: 5 } }) },
+      { name: 'amber — unresolved non-critical Sentry issue', inputs: baseInputs({ sentryUnresolved: { total: 2, critical: 0 } }) },
+      { name: 'amber — stale heartbeat', inputs: baseInputs({ heartbeatLastActivity: iso(200) }) },
+      { name: 'green — healthy baseline', inputs: baseInputs() },
+    ];
+
+    const pinned = cases.map(({ name, inputs }) => ({ name, result: computeFeatureStatus(inputs) }));
+
+    expect(pinned).toMatchInlineSnapshot(`
+      [
+        {
+          "name": "neutral — no feature-tagged data",
+          "result": {
+            "reason": "No feature-tagged data yet — instrumentation not yet reporting for this feature. Sentry unavailable — status computed from DB signals only.",
+            "status": "neutral",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "red — unresolved critical",
+          "result": {
+            "reason": "1 unresolved critical incident(s) in the last 24h.",
+            "status": "red",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "red — integrity check failed",
+          "result": {
+            "reason": "Latest integrity check failed for this feature.",
+            "status": "red",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "red — hysteresis across 2 windows (high tier)",
+          "result": {
+            "reason": "Error-fingerprint rate at/above 5/24h across 2 consecutive windows (current 20, previous 20).",
+            "status": "red",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "red — low-tier trailing-7d line",
+          "result": {
+            "reason": "2 error fingerprint(s) in the trailing 7 days (low-traffic RED line 2).",
+            "status": "red",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "amber — RLS-denial cluster (many users)",
+          "result": {
+            "reason": "RLS-denial cluster: 3 denial(s) across 3 user(s) in 24h — possible missing grant / unapplied migration.",
+            "status": "amber",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "amber — fingerprint at threshold",
+          "result": {
+            "reason": "5 error fingerprint(s) in the last 24h.",
+            "status": "amber",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "amber — unresolved non-critical Sentry issue",
+          "result": {
+            "reason": "2 unresolved non-critical Sentry issue(s) tagged to this feature.",
+            "status": "amber",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "amber — stale heartbeat",
+          "result": {
+            "reason": "Heartbeat stale — last activity 200h ago (threshold 6h).",
+            "status": "amber",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "green — healthy baseline",
+          "result": {
+            "reason": "Healthy — no error fingerprints, no RLS cluster, heartbeat within threshold.",
+            "status": "green",
+            "trend": "flat",
+          },
+        },
+      ]
+    `);
+  });
+});

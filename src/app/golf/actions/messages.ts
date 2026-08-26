@@ -15,6 +15,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { withGolfAction } from '@/lib/golf/with-golf-action';
 import { describeError } from '@/lib/utils/describe-error';
 import {
   sendGolfMessage,
@@ -196,8 +197,20 @@ async function resolveGolfTeamAudience(teamId: string): Promise<Set<string> | nu
  *
  * Return shape is unchanged (`{ conversationId }`, throwing on failure) —
  * callers read `result.conversationId` directly.
+ *
+ * Wrapped in `withGolfAction` (see src/lib/golf/with-golf-action.ts) for the
+ * shared classify -> RLS-denial-capture -> log sequence this file used to
+ * hand-roll at the two `logServerError`-then-`throw` sites below (now
+ * dropped — the wrapper's catch covers the identical failure once, not
+ * twice). `sanitizeUnexpectedErrors: false` keeps every thrown message here
+ * exactly as authored: none of them are raw DB output (`AUDIENCE_UNAVAILABLE`
+ * and the two denials below are hand-written, user-safe strings), and
+ * callers read `error.message` directly, so the wrapper's default
+ * generic-message sanitization would only replace a specific, actionable
+ * denial with a useless one. The failure is still fully logged either way —
+ * this only controls what the caller sees.
  */
-export async function createGolfConversation(participantUserIds: string[], teamId?: string) {
+async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -215,25 +228,32 @@ export async function createGolfConversation(participantUserIds: string[], teamI
     }
 
     if (!audience.has(user.id)) {
-      await logServerError(
-        `[createGolfConversation] Caller is not part of team ${teamId}`,
-        { action: ACTION, metadata: { teamId, userId: user.id } },
-      );
       throw new Error('You do not have access to this team');
     }
 
     const outsiders = requestedIds.filter((id) => !audience.has(id));
     if (outsiders.length > 0) {
-      await logServerError(
-        `[createGolfConversation] Rejected ${outsiders.length} participant(s) outside team ${teamId}`,
-        { action: ACTION, metadata: { teamId, userId: user.id, outsiders } },
-      );
       throw new Error('One or more recipients are not on this team');
     }
   }
 
   return createGolfConversationUnvalidated(participantUserIds, teamId);
 }
+
+export const createGolfConversation = withGolfAction(
+  'createGolfConversation',
+  {
+    featureArea: 'golf-messaging',
+    feature: 'messaging',
+    // The delegate's real write is the participant fan-out, not the
+    // conversation row itself — see resolveGolfTeamAudience's own docstring
+    // and src/app/actions/messages.ts's createGolfConversationImpl.
+    rlsContext: { table: 'golf_conversation_participants', verb: 'insert' },
+    contextFrom: (_participantUserIds: string[], teamId?: string) => ({ teamId: teamId ?? null }),
+    sanitizeUnexpectedErrors: false,
+  },
+  createGolfConversationImpl,
+);
 
 export {
   // Golf messaging functions

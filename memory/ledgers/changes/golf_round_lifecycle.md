@@ -1,5 +1,31 @@
 # Golf Round Lifecycle change ledger
 
+## 2026-08-26 — arm the flight recorder on submit and autosave
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-refit`.
+- Change: `submitGolfRoundComprehensive` and `savePartialRound` now start a
+  Helm flight trace, pass the `_helm_trace` key through `p_round_data` so the
+  in-RPC checkpoints arm, record the RPC step, and finalize with the outcome.
+  Failures are always traced; successes follow the recorder's own enable and
+  sampling gates. The recorder is fail-open by construction — every one of its
+  calls swallows internally, so no new failure mode reaches a saving golfer.
+  The same catch paths now stamp `helmTraceId` into the Helm Bridge log
+  context, which is what joins an `admin_events` row to its step-level trace.
+- Also: `golf.ts` branched on an `internal_error` result shape carrying
+  `{error_code, step, detail}` that the current RPC bodies never construct.
+  The handling was tightened to the shapes the RPC actually emits
+  (`success:false` with a message, transport errors, the `busy` single-flight
+  marker) with one defensive fallback branch that logs honestly when it fires.
+- Why: the recorder, its step map, its service-role RPC facades, and the
+  Bridge Trace Explorer were all built and individually tested, but nothing
+  ever called `createHelmFlightRecorder` — so the SQL checkpoints never armed
+  and the explorer listed nothing on real traffic. A round failure could be
+  seen but not located within the transaction.
+- Not yet applied: the recorder's own migration (`20260825200811`) and its new
+  retention migration (`20260826010000`) are R3, owner-applied, and confirmed
+  absent from production. Until they are applied the wiring is inert by
+  design, and the explorer says so rather than showing an empty list.
+
 ## 2026-08-22 — suppress duplicate recovery after a confirmed scorecard
 
 - SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.

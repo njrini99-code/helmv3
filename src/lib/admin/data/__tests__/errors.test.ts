@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { parseErrorsFilters, describeErrorsFilters, buildFilteredIncidentsReport } from '@/lib/admin/data/errors';
+import {
+  parseErrorsFilters,
+  describeErrorsFilters,
+  buildFilteredIncidentsReport,
+  computeAppHourlyBuckets,
+  computeDailyTrend,
+} from '@/lib/admin/data/errors';
 import type { TriageItem } from '@/lib/admin/data/triage';
 
 describe('parseErrorsFilters', () => {
@@ -86,5 +92,96 @@ describe('buildFilteredIncidentsReport', () => {
   it('renders the no-match placeholder when the filtered set is empty', () => {
     const doc = buildFilteredIncidentsReport([], { windowHours: 24 });
     expect(doc).toContain('_no incidents match the current filters_');
+  });
+});
+
+describe('computeAppHourlyBuckets', () => {
+  const NOW = Date.parse('2026-08-25T12:00:00.000Z');
+
+  it('groups rows into 24 rolling hourly buckets by fingerprint', () => {
+    const buckets = computeAppHourlyBuckets(
+      [
+        { id: 'e1', fingerprint: 'fp-1', created_at: '2026-08-25T11:30:00.000Z' }, // this hour
+        { id: 'e2', fingerprint: 'fp-1', created_at: '2026-08-25T11:45:00.000Z' }, // this hour
+        { id: 'e3', fingerprint: 'fp-1', created_at: '2026-08-24T12:30:00.000Z' }, // oldest bucket (right at window start)
+        { id: 'e4', fingerprint: 'fp-2', created_at: '2026-08-25T11:00:00.000Z' },
+      ],
+      24,
+      NOW,
+    );
+    expect(buckets['fp-1']).toHaveLength(24);
+    expect(buckets['fp-1']![23]).toBe(2); // most-recent bucket
+    expect(buckets['fp-1']![0]).toBe(1); // oldest bucket
+    expect(buckets['fp-2']![23]).toBe(1);
+  });
+
+  it('falls back to the `row:<id>` synthetic key for a fingerprint-less row, matching mergeTriage', () => {
+    const buckets = computeAppHourlyBuckets(
+      [{ id: 'e9', fingerprint: null, created_at: '2026-08-25T11:00:00.000Z' }],
+      24,
+      NOW,
+    );
+    expect(buckets['row:e9']).toBeDefined();
+    expect(buckets['row:e9']![23]).toBe(1);
+  });
+
+  it('drops rows outside the trailing 24h window entirely', () => {
+    const buckets = computeAppHourlyBuckets(
+      [{ id: 'e1', fingerprint: 'fp-old', created_at: '2026-08-20T00:00:00.000Z' }],
+      24,
+      NOW,
+    );
+    expect(buckets['fp-old']).toBeUndefined();
+  });
+
+  it('returns an empty map — never a false-zero-filled bucket — when the fetch window is under 24h', () => {
+    const buckets = computeAppHourlyBuckets(
+      [{ id: 'e1', fingerprint: 'fp-1', created_at: '2026-08-25T11:30:00.000Z' }],
+      1,
+      NOW,
+    );
+    expect(buckets).toEqual({});
+  });
+
+  it('ignores malformed timestamps rather than throwing', () => {
+    const buckets = computeAppHourlyBuckets(
+      [{ id: 'e1', fingerprint: 'fp-1', created_at: 'not-a-date' }],
+      24,
+      NOW,
+    );
+    expect(buckets).toEqual({});
+  });
+});
+
+describe('computeDailyTrend', () => {
+  const NOW = Date.parse('2026-08-25T12:00:00.000Z');
+
+  it('buckets timestamps into 7 rolling daily counts, oldest first', () => {
+    const buckets = computeDailyTrend(
+      [
+        '2026-08-25T06:00:00.000Z', // today
+        '2026-08-25T09:00:00.000Z', // today
+        '2026-08-18T18:00:00.000Z', // oldest bucket (just after window start)
+      ],
+      7,
+      NOW,
+    );
+    expect(buckets).toHaveLength(7);
+    expect(buckets[6]).toBe(2); // most recent day
+    expect(buckets[0]).toBe(1); // oldest day
+    expect(buckets.reduce((a, b) => a + b, 0)).toBe(3);
+  });
+
+  it('drops null/undefined/unparseable timestamps and timestamps outside the window', () => {
+    const buckets = computeDailyTrend(
+      [null, undefined, 'garbage', '2026-07-01T00:00:00.000Z'],
+      7,
+      NOW,
+    );
+    expect(buckets.reduce((a, b) => a + b, 0)).toBe(0);
+  });
+
+  it('returns an all-zero array — not an error — for an empty input', () => {
+    expect(computeDailyTrend([], 7, NOW)).toEqual([0, 0, 0, 0, 0, 0, 0]);
   });
 });

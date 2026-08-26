@@ -13,23 +13,36 @@ import {
   type IncidentFeedFilters,
   type IncidentFeedCounts,
 } from '@/lib/admin/data/incident-feed';
-import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
+import type { TriageItem, TriageSeverity, AppTriageEventRow } from '@/lib/admin/data/triage';
 import { FEATURE_REGISTRY, type FeatureKey } from '@/lib/admin/feature-registry';
 import {
   isIncidentClass,
   INCIDENT_CLASS_ORDER,
   INCIDENT_CLASS_LABEL,
+  classifyIncident,
   type IncidentClass,
+  type IncidentClassification,
 } from '@/lib/admin/incident-classification';
 import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
 import {
   buildIncidentReport,
   buildCombinedIncidentReport,
+  resolveActionFilePath,
   extractActionName,
   extractCollapsedCount,
   extractRoute,
+  extractErrorCode,
+  extractErrorHint,
+  extractRequestId,
+  extractHelmTraceId,
+  extractRuntime,
+  extractHandled,
+  hasUnknownAffectedUsers,
   selectNearbyDeploys,
+  selectSuspectDeploy,
+  type IncidentReportDeploy,
 } from '@/lib/admin/incident-report';
+import { rcaAnalysisSchema, type RcaAnalysis } from '@/lib/admin/rca';
 
 export interface ErrorsTabFilters {
   sport?: 'golf' | 'baseball' | 'shared';
@@ -162,6 +175,48 @@ export function buildFilteredIncidentsReport(incidents: readonly TriageItem[], f
   );
 }
 
+/**
+ * TriageQueue's per-row 24h sparkline, app-origin half. Sentry-origin rows
+ * get theirs straight from `SentryIssue.stats24h` (a real Sentry-computed
+ * series, independent of this feed's own window) at the errors/page.tsx call
+ * site — no query needed there either.
+ *
+ * This is a rolling-hour histogram grouped by the SAME fingerprint key
+ * mergeTriage uses (`row.fingerprint ?? \`row:${row.id}\``), built entirely
+ * from `appEvents` — rows `fetchIncidentFeed` already fetched for the merge,
+ * so this costs nothing beyond one JS pass. Two honesty guards:
+ *
+ *  - Only computed when `windowHours >= 24`. A narrower fetch window would
+ *    otherwise leave hours before the fetch start looking like a real zero
+ *    instead of "not fetched" — every reachable value today (the Errors tab's
+ *    chips only offer 24 or 168) clears this, but a hand-edited `?window=`
+ *    must not silently render a false-flat sparkline.
+ *  - The buckets reflect `appEvents`, which `queryAppErrorEvents` has ALREADY
+ *    narrowed by this request's sport/severity/source/feature filters — this
+ *    is "this fingerprint's rate under the current filters", not "this
+ *    fingerprint's total rate across the whole app".
+ */
+export function computeAppHourlyBuckets(
+  appEvents: readonly Pick<AppTriageEventRow, 'id' | 'fingerprint' | 'created_at'>[],
+  windowHours: number,
+  nowMs: number = Date.now(),
+): Record<string, number[]> {
+  if (windowHours < 24) return {};
+  const HOUR_MS = 3600_000;
+  const windowStart = nowMs - 24 * HOUR_MS;
+  const buckets: Record<string, number[]> = {};
+  for (const row of appEvents) {
+    const t = Date.parse(row.created_at);
+    if (!Number.isFinite(t) || t < windowStart || t > nowMs) continue;
+    const fp = row.fingerprint ?? `row:${row.id}`;
+    const idx = Math.min(23, Math.floor((t - windowStart) / HOUR_MS));
+    const arr = buckets[fp] ?? new Array(24).fill(0);
+    arr[idx] = (arr[idx] ?? 0) + 1;
+    buckets[fp] = arr;
+  }
+  return buckets;
+}
+
 export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   sentry: AdminFetchResult<SentryIssue[]>;
   hourly: AdminFetchResult<SentryStatsPoint[]>;
@@ -174,6 +229,9 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   rlsDenials24h: number;
   widerWindowUnresolved: number | null;
   widerWindowUntagged: number | null;
+  /** fingerprint (or `row:<id>`) → rolling 24h hourly histogram. See
+   *  computeAppHourlyBuckets's doc comment for what it does and doesn't cover. */
+  appHourlyBuckets: Record<string, number[]>;
 }> {
   const admin = createAdminClient();
   const ago24h = new Date(Date.now() - 24 * 3600_000).toISOString();
@@ -241,6 +299,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
     rlsDenials24h: rlsRes.count ?? 0,
     widerWindowUnresolved: widerRes ? widerRes.count ?? 0 : null,
     widerWindowUntagged: widerUntaggedRes ? widerUntaggedRes.count ?? 0 : null,
+    appHourlyBuckets: computeAppHourlyBuckets(feed.appEvents, filters.windowHours),
   };
 }
 
@@ -270,7 +329,84 @@ export interface FingerprintSummary {
   nearbyDeploys: ReturnType<typeof selectNearbyDeploys>;
 }
 
+/**
+ * Forensics header fields — every field the raw admin_events rows/metadata
+ * already carry but this page never surfaced before now. Derived once from
+ * `events` (already fetched, already RCA-row-filtered) using the SAME
+ * last-event-title/message + worst-severity convention @/lib/admin/data/
+ * triage's mergeTriage uses for its own classification, so the fingerprint
+ * header and the row this fingerprint produces in TriageQueue read as the
+ * same incident. `null` only when there are zero events (nothing to derive
+ * from) — the page's own empty state handles that.
+ */
+export interface FingerprintForensics {
+  severity: string;
+  classification: IncidentClassification;
+  errorCode: string | null;
+  errorHint: string | null;
+  requestId: string | null;
+  helmTraceId: string | null;
+  runtime: string | null;
+  handled: boolean | null;
+  source: string | null;
+  feature: string | null;
+  sport: string | null;
+  actionName: string | null;
+  /** resolveActionFilePath(feature, actionName) — the feature-registry hint. */
+  sourceFilePath: string | null;
+  /** Last production deploy at/before first-seen — see selectSuspectDeploy. */
+  suspectDeploy: IncidentReportDeploy | null;
+  hasUnknownAffectedUsers: boolean;
+  /** Previously-run analysis, if any (@/lib/admin/rca). Read directly here
+   *  (not via getStoredRcaAnalysis) so the page and its "Copy full report"
+   *  button share one fetch instead of two, and so this module never imports
+   *  the 'use server' actions file that itself imports fetchFingerprintDetail
+   *  (analyze-error.ts) — that would be a circular import. */
+  storedRca: RcaAnalysis | null;
+}
+
+/** 7-day trend for one fingerprint — a rolling-day histogram, oldest first.
+ *  `truncated` means the underlying row fetch hit TREND_ROW_LIMIT, so the
+ *  buckets are a LOWER bound for that window — a distinct cap from
+ *  `FingerprintSummary.truncated` (the 100-row event PAGE), so the two are
+ *  never conflated in the UI. */
+export interface FingerprintTrend {
+  /** Daily counts, oldest → newest, length `TREND_DAYS`. */
+  buckets: number[];
+  truncated: boolean;
+  /** The trend query itself failed. Distinct from a genuine week of zeros:
+   *  an unbound `error` here would have rendered an outage as "no activity",
+   *  which is the exact confusion this page exists to remove. */
+  unavailable: boolean;
+}
+
 const EVENT_PAGE_SIZE = 100;
+const TREND_DAYS = 7;
+// PostgREST's own default page ceiling — made explicit so a fingerprint with
+// more rows in the trend window than this is honestly labelled a lower bound
+// (`FingerprintTrend.truncated`) rather than silently clipped.
+const TREND_ROW_LIMIT = 1000;
+
+/** Rolling-day histogram for the last `days` days, oldest first, ending at
+ *  `nowMs`. Pure aggregation over already-fetched timestamps — same shape as
+ *  computeAppHourlyBuckets, one level up (days instead of hours). */
+export function computeDailyTrend(
+  timestamps: readonly (string | null | undefined)[],
+  days: number = TREND_DAYS,
+  nowMs: number = Date.now(),
+): number[] {
+  const DAY_MS = 24 * 3600_000;
+  const buckets = new Array(days).fill(0) as number[];
+  const windowStart = nowMs - days * DAY_MS;
+  for (const ts of timestamps) {
+    if (!ts) continue;
+    const t = Date.parse(ts);
+    if (!Number.isFinite(t) || t < windowStart || t > nowMs) continue;
+    const idx = Math.min(days - 1, Math.floor((t - windowStart) / DAY_MS));
+    buckets[idx] = (buckets[idx] ?? 0) + 1;
+  }
+  return buckets;
+}
 
 export async function fetchFingerprintDetail(rawFingerprint: string) {
   const admin = createAdminClient();
@@ -284,20 +420,60 @@ export async function fetchFingerprintDetail(rawFingerprint: string) {
   const scoped = <T>(q: { eq: (col: string, val: string) => T }): T =>
     isRowKey ? q.eq('id', rowId!) : q.eq('fingerprint', fingerprint);
 
+  // event_type='rca_analysis' is excluded on every query below: a prior
+  // in-app analysis is persisted under this SAME fingerprint (see
+  // @/app/admin/actions/analyze-error.ts's persistRcaAnalysis), so without
+  // this it can become `events[0]` (the "most recent" row) on the very next
+  // load — self-referentially reporting its own severity:'info',
+  // source:'system', feature:'admin_dashboard' as if that were the incident,
+  // and inflating totalCount/lastSeen with a row that isn't a real
+  // occurrence. Filtered at the source rather than post-hoc in JS, unlike
+  // analyze-error.ts's isOwnRcaAnalysisRow defensive title-match (that one
+  // predates this fix and stays as a backstop for anything still fetching
+  // unfiltered).
   const base = admin
     .from('admin_events')
     .select(
       'id, title, message, severity, created_at, user_email, user_id, team_id, url, stack_trace, source, feature, sport, metadata',
-    );
-  const [{ data, error }, deploys, totalRes, earliestRes] = await Promise.all([
+    )
+    .neq('event_type', 'rca_analysis');
+  const sevenDaysAgoIso = new Date(Date.now() - TREND_DAYS * 24 * 3600_000).toISOString();
+  const [{ data, error }, deploys, totalRes, earliestRes, trendRes, rcaRes] = await Promise.all([
     scoped(base).order('created_at', { ascending: false }).limit(EVENT_PAGE_SIZE),
     fetchVercelDeployments(20),
     // Exact occurrence count — head:true so no rows travel, only the count.
-    scoped(admin.from('admin_events').select('id', { count: 'exact', head: true })),
+    scoped(
+      admin.from('admin_events').select('id', { count: 'exact', head: true }).neq('event_type', 'rca_analysis'),
+    ),
     // TRUE first-seen, independent of the DESC page above.
-    scoped(admin.from('admin_events').select('created_at'))
+    scoped(admin.from('admin_events').select('created_at').neq('event_type', 'rca_analysis'))
       .order('created_at', { ascending: true })
       .limit(1),
+    // 7-day trend — a single lean (one-column) query, capped explicitly so a
+    // fingerprint with more rows than TREND_ROW_LIMIT in this window is
+    // labelled a lower bound rather than silently clipped.
+    scoped(
+      admin
+        .from('admin_events')
+        .select('created_at')
+        .neq('event_type', 'rca_analysis')
+        .gte('created_at', sevenDaysAgoIso),
+    )
+      .order('created_at', { ascending: true })
+      .limit(TREND_ROW_LIMIT),
+    // Stored RCA (if any) — keyed on the raw fingerprint string exactly like
+    // getStoredRcaAnalysis, NOT run through `scoped()`: an RCA analysis is
+    // always persisted under a real `fingerprint` value (never routed
+    // through the row-key branch), matching analyzeErrorFingerprint's own
+    // write path.
+    admin
+      .from('admin_events')
+      .select('metadata')
+      .eq('event_type', 'rca_analysis')
+      .eq('fingerprint', fingerprint)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   // Throw (rather than silently degrading to []) so PanelBoundary's error
   // boundary catches a real query failure and renders PanelStale — a
@@ -314,22 +490,77 @@ export async function fetchFingerprintDetail(rawFingerprint: string) {
     events[events.length - 1]?.created_at ??
     null;
   const lastSeen = events[0]?.created_at ?? null;
+  const nearbyDeploys = selectNearbyDeploys(
+    (deploys.data ?? []).map((d) => ({ sha: d.commitSha, time: d.createdAt })),
+    trueFirstSeen,
+    lastSeen,
+  );
+  const affectedUserCount = new Set(events.filter((e) => e.user_id).map((e) => e.user_id)).size;
 
   const summary: FingerprintSummary = {
     totalCount,
     truncated: totalCount > events.length,
     firstSeen: trueFirstSeen,
     lastSeen,
-    affectedUserCount: new Set(events.filter((e) => e.user_id).map((e) => e.user_id)).size,
-    nearbyDeploys: selectNearbyDeploys(
-      (deploys.data ?? []).map((d) => ({ sha: d.commitSha, time: d.createdAt })),
-      trueFirstSeen,
-      lastSeen,
-    ),
+    affectedUserCount,
+    nearbyDeploys,
   };
 
-  const report = buildFingerprintIncidentReport(fingerprint, events, summary);
-  return { events, report, summary };
+  const last = events[0] ?? null;
+  let forensics: FingerprintForensics | null = null;
+  if (last) {
+    const worst = events.reduce(
+      (acc, e) => ((SEVERITY_RANK[e.severity] ?? 3) < (SEVERITY_RANK[acc] ?? 3) ? e.severity : acc),
+      'info',
+    );
+    const actionName = events.map((e) => extractActionName(e.metadata)).find((a) => a !== null) ?? null;
+    const errorCode = events.map((e) => extractErrorCode(e.metadata)).find((c) => c !== null) ?? null;
+    // `rcaRes.error` bound deliberately: a failed lookup must not present as
+    // "no analysis has been run", which would invite a duplicate run.
+    const storedRcaParsed =
+      !rcaRes.error && rcaRes.data?.metadata ? rcaAnalysisSchema.safeParse(rcaRes.data.metadata) : null;
+
+    forensics = {
+      severity: worst,
+      classification: classifyIncident({
+        title: last.title,
+        message: last.message,
+        severity: worst,
+        source: last.source ?? null,
+        errorCode,
+      }),
+      errorCode,
+      errorHint: events.map((e) => extractErrorHint(e.metadata)).find((v) => v !== null) ?? null,
+      requestId: events.map((e) => extractRequestId(e.metadata)).find((v) => v !== null) ?? null,
+      helmTraceId: events.map((e) => extractHelmTraceId(e.metadata)).find((v) => v !== null) ?? null,
+      runtime: events.map((e) => extractRuntime(e.metadata)).find((v) => v !== null) ?? null,
+      handled: events.map((e) => extractHandled(e.metadata)).find((v) => v !== null) ?? null,
+      source: last.source ?? null,
+      feature: last.feature ?? null,
+      sport: last.sport ?? null,
+      actionName,
+      sourceFilePath: resolveActionFilePath(last.feature ?? null, actionName),
+      suspectDeploy: selectSuspectDeploy(nearbyDeploys, trueFirstSeen),
+      hasUnknownAffectedUsers: hasUnknownAffectedUsers(false, affectedUserCount, totalCount),
+      storedRca: storedRcaParsed?.success ? storedRcaParsed.data : null,
+    };
+  }
+
+  // Bind both `error`s explicitly. supabase-js resolves a failed query as
+  // { data: null, error }, so reading only `.data` would turn an outage into
+  // a flat week and a missing analysis — the page would look calm and be
+  // wrong. Neither failure is worth throwing the whole detail page for: the
+  // events, summary and forensics above are already good.
+  const trend: FingerprintTrend = trendRes.error
+    ? { buckets: [], truncated: false, unavailable: true }
+    : {
+        buckets: computeDailyTrend((trendRes.data ?? []).map((r) => r.created_at), TREND_DAYS),
+        truncated: (trendRes.data?.length ?? 0) >= TREND_ROW_LIMIT,
+        unavailable: false,
+      };
+
+  const report = buildFingerprintIncidentReport(fingerprint, events, summary, forensics);
+  return { events, report, summary, forensics, trend };
 }
 
 /** Copy-for-Claude report for the fingerprint detail page — aggregates every
@@ -352,8 +583,9 @@ function buildFingerprintIncidentReport(
     metadata?: unknown;
   }[],
   summary: FingerprintSummary,
+  forensics: FingerprintForensics | null,
 ): string {
-  if (events.length === 0) {
+  if (events.length === 0 || !forensics) {
     return buildIncidentReport({
       title: `Fingerprint ${fingerprint}`,
       severity: 'info',
@@ -364,11 +596,6 @@ function buildFingerprintIncidentReport(
 
   // events arrives most-recent-first (query orders created_at desc).
   const last = events[0]!;
-  const worst = events.reduce(
-    (acc, e) => ((SEVERITY_RANK[e.severity] ?? 3) < (SEVERITY_RANK[acc] ?? 3) ? e.severity : acc),
-    'info',
-  );
-  const actionName = events.map((e) => extractActionName(e.metadata)).find((a) => a !== null) ?? null;
   const stackTrace = events.map((e) => e.stack_trace).find((s) => !!s) ?? null;
   const collapsedCount = events.reduce((sum, e) => sum + extractCollapsedCount(e.metadata), 0);
 
@@ -376,11 +603,11 @@ function buildFingerprintIncidentReport(
     title: last.title,
     message: last.message,
     fingerprint,
-    source: last.source ?? null,
-    severity: worst,
-    sport: last.sport ?? null,
-    featureKey: last.feature ?? null,
-    actionName,
+    source: forensics.source,
+    severity: forensics.severity,
+    sport: forensics.sport,
+    featureKey: forensics.feature,
+    actionName: forensics.actionName,
     // Exact total, not the fetched-page length — a copied report that says
     // "47 events" when the true count is 312 sends the reader (often Claude)
     // down a wrong severity assessment.
@@ -399,5 +626,23 @@ function buildFingerprintIncidentReport(
       userId: e.user_id,
     })),
     deployMarkers: summary.nearbyDeploys,
+    incidentClass: forensics.classification.klass,
+    incidentClassReason: forensics.classification.reason,
+    hasDegradedMessage: forensics.classification.hasDegradedMessage,
+    errorCode: forensics.errorCode,
+    errorHint: forensics.errorHint,
+    requestId: forensics.requestId,
+    helmTraceId: forensics.helmTraceId,
+    runtime: forensics.runtime,
+    handled: forensics.handled,
+    rca: forensics.storedRca
+      ? {
+          probableCause: forensics.storedRca.probableCause,
+          confidence: forensics.storedRca.confidence,
+          suggestedFix: forensics.storedRca.suggestedFix,
+          model: forensics.storedRca.model,
+          generatedAt: forensics.storedRca.generatedAt,
+        }
+      : null,
   });
 }
