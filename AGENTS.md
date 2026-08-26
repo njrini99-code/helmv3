@@ -185,6 +185,6 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
 - Current source code, current migrations, current tests, `AGENTS.md`, `CLAUDE.md`, and active non-archive documentation outrank archived material.
 - Use repo-local platform CLIs: `./node_modules/.bin/supabase` and `./node_modules/.bin/vercel`. Do not assume global Supabase or Vercel binaries.
 - Production Supabase MCP access must remain project-scoped and read-only. Schema changes belong in the local development stack and reviewed migrations.
-- Never treat an agent memory/index/cache as more authoritative than the current repository and current database evidence.
+- Never treat an agent memory store, code index, or cache as more authoritative than the current repository and current database evidence.
 - Never deploy/promote/rollback Vercel production unless the user explicitly requests that production action.
 <!-- HELM_AGENT_CANONICALITY_END -->
