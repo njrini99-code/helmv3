@@ -1,4 +1,9 @@
-# Helm Sports Labs — App Store submission package (v2.0, build 8)
+# Helm Sports Labs — App Store submission package (v2.0, build 9)
+
+> Build 9 (2026-08-26) supersedes build 8: iOS premium update — safe-area
+> fixes in round chrome (web layer, deploy before archive), portrait-only
+> lock, Dark/Tinted app icon variants, tab selection haptics. See
+> `RELEASE_CANDIDATE_2.0-9.md` for the runbook and §88 report.
 
 Everything you need to fill in App Store Connect and submit. The native build is
 ready (version bumped, icon, splash, privacy strings, encryption flag, push
@@ -18,7 +23,7 @@ and hit Submit.
 
 | | |
 |---|---|
-| **Version** | `1.7 (7)` → **`2.0 (8)`**, Debug + Release, in `project.pbxproj` |
+| **Version** | `1.7 (7)` → **`2.0 (9)`**, Debug + Release, in `project.pbxproj` (build 9, 2026-08-26) |
 | **Guideline 3.1.1 fix** | `DemoPricingNudge` is now hard-gated off native — see §11 |
 | **Scope** | **Golf only.** BaseballHelm is live on the web but is deliberately NOT part of this submission — see §12 |
 
@@ -258,6 +263,10 @@ accounts, and updated metadata. Tracked separately.
 
 - ✅ **Version** → Marketing `2.0`, Build `8` (Debug + Release).
 - ✅ **App icon** — brand cream (#EDE0C8) + green mark, fully opaque (no alpha).
+  Build 9 adds Dark and Tinted appearance variants (same mark; compiled
+  Assets.car verified to carry UIAppearanceDark + ISAppearanceTintable).
+- ✅ **Orientation** — iPhone portrait-only as of build 9 (landscape was
+  declared but unaudited; intentionally restricted per the premium audit).
 - ✅ **Splash + launch screen** — on-brand cream; auto-hide wired in `CapacitorProvider`.
 - ✅ **Status bar** — dark content for the light background.
 - ✅ **Privacy usage strings** — descriptive Camera + Photo Library strings in `Info.plist`.
@@ -274,7 +283,7 @@ accounts, and updated metadata. Tracked separately.
 ## 14. Your steps
 
 1. `npx cap sync ios`, then **Archive** (Xcode → Product → Archive, or Xcode
-   Cloud) and **upload** build `2.0 (8)`.
+   Cloud) and **upload** build `2.0 (9)`.
 2. App Store Connect → **+ Version 2.0** → paste §1, §3, §4, §5, §6; set URLs (§2).
 3. **Recapture and upload screenshots** (§10) — do not reuse the 1.7 set.
 4. **App Privacy** → §7. **Age rating** → §9.
