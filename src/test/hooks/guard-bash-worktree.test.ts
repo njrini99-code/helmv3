@@ -187,3 +187,67 @@ describe('guard-bash rule 12 — vercel production shapes', () => {
     expect(runGuard(cmd)).toBe('ALLOW');
   });
 });
+
+/**
+ * Security scan CLAUDE-SECURITY-20260826-224016, findings F3 + F4.
+ *
+ * Both were confirmed by running this hook before the fix: `/usr/bin/git push
+ * --force`, `\git push --force` and a backslash-newline continuation all
+ * reached exit 0 (allow), while the same commands on one line blocked. The
+ * `vercel` rule was already immune because #1627 had added `/` to ITS anchor —
+ * the git rules were simply never given the same fix.
+ *
+ * These rules are the last blocking layer on shared-history rewrite and on
+ * repo-global stash theft, and `Bash(git push:*)` is allow-listed, so a bypass
+ * here is not theoretical.
+ */
+describe('guard-bash — git invocation shapes that used to bypass every git rule', () => {
+  describe('F4: the anchor must recognise path-qualified and escaped git', () => {
+    it.each([
+      ['absolute path', '/usr/bin/git push --force'],
+      ['homebrew path', '/opt/homebrew/bin/git push -f'],
+      // A leading backslash is the standard way to skip a shell alias or
+      // function, and bash strips it before tokenizing — so this runs git.
+      ['backslash-escaped', '\\git push --force'],
+    ])('blocks a force push via %s', (_label, cmd) => {
+      expect(runGuard(cmd)).toBe('BLOCK');
+    });
+
+    it('blocks git stash via an absolute path', () => {
+      expect(runGuard('/usr/bin/git stash')).toBe('BLOCK');
+    });
+
+    it('blocks an in-repo worktree add via an absolute path', () => {
+      expect(runGuard('/usr/bin/git worktree add .worktrees/x')).toBe('BLOCK');
+    });
+  });
+
+  describe('F3: bash line-continuations are collapsed before matching', () => {
+    it.each([
+      ['between git and push', 'git \\\n  push --force'],
+      ['before the force flag', 'git push \\\n  --force'],
+      ['inside the subcommand', 'git \\\n  stash'],
+    ])('blocks a continuation %s', (_label, cmd) => {
+      // grep matches one LINE at a time; bash joins these into one command.
+      // Without normalisation the two halves never share a grep record.
+      expect(runGuard(cmd)).toBe('BLOCK');
+    });
+  });
+
+  describe('the normalisation must not manufacture blocks', () => {
+    it('leaves a BARE newline alone, so two benign commands stay separate', () => {
+      // Eating bare newlines would join unrelated commands into one record and
+      // invent matches that the shell would never produce.
+      expect(runGuard('git status\ngit log --oneline -1')).toBe('ALLOW');
+    });
+
+    it.each([
+      ['a normal push', 'git push origin br:refs/heads/br'],
+      ['a read-only stash query', 'git stash list'],
+      ['git mentioned inside a grep pattern', 'grep -n "git push" README.md'],
+      ['plain status', 'git status'],
+    ])('still allows %s', (_label, cmd) => {
+      expect(runGuard(cmd)).toBe('ALLOW');
+    });
+  });
+});

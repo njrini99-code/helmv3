@@ -42,7 +42,10 @@ block() { printf '%s\n' "$1" >&2; exit 2; }
 # 1. git stash — refs/stash is REPO-GLOBAL, shared across every worktree.
 #    A stash pushed in one worktree is visible (and poppable) from all of them,
 #    so parallel agents silently steal each other's work.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/])git[[:space:]]+stash([[:space:]]|$)' \
+# The `\\` in the boundary class is belt-and-braces: the normalization above
+# already strips an alias-escape (`\git` -> `git`), but a LITERAL backslash pair
+# survives it, so keep the class able to match one.
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git[[:space:]]+stash([[:space:]]|$)' \
    && ! printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+stash[[:space:]]+(list|show)([[:space:]]|$)'; then
   block "BLOCKED: 'git stash'. refs/stash is repo-global and shared by every worktree, so a stash here is visible and poppable from all of them — that is how parallel work gets silently swapped.
 Use instead: a WIP commit on the current branch (git add -A && git commit -m wip), or copy the file aside."
@@ -91,7 +94,7 @@ fi
 #    through. Harmless while every push prompted — load-bearing the moment
 #    `Bash(git push:*)` was allow-listed. Now: a push AND any force spelling
 #    blocks. Both directions are pinned in src/test/hooks/guard-bash-worktree.test.ts.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/])git([[:space:]]+(-[^[:space:]]+)([[:space:]]+[^[:space:]=-][^[:space:]]*)?)*[[:space:]]+push([[:space:]]|$)' \
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git([[:space:]]+(-[^[:space:]]+)([[:space:]]+[^[:space:]=-][^[:space:]]*)?)*[[:space:]]+push([[:space:]]|$)' \
    && printf '%s' "$CMD" | grep -Eq '(--force|(^|[[:space:]])-[a-zA-Z]*f[a-zA-Z]*([[:space:]]|$))'; then
   block "BLOCKED: force push (any spelling — --force, --force-with-lease, -f, or a combined short flag like -vf/-fv). It rewrites shared history that other branches and open PRs build on. With Bash(git push:*) allow-listed, this hook is the last line — run any force push yourself, outside the agent."
 fi
@@ -238,7 +241,7 @@ fi
 #
 #     External worktrees are the supported shape and are proven not to drift: the
 #     three sibling checkouts all had byte-identical CLAUDE.md/AGENTS.md/.mcp.json.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+worktree[[:space:]]+add'; then
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+worktree[[:space:]]+add'; then
   PROJ_ROOT=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && pwd -P) || PROJ_ROOT=""
 
   # Everything after `worktree add`.

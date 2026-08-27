@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
+import { resolveClientIp } from '@/lib/security/client-ip';
 import {
   checkRateLimit,
   resetRateLimit,
@@ -78,7 +79,7 @@ async function loginActionImpl(
   const normalizedEmail = email.toLowerCase().trim();
 
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
   const userAgent = headersList.get('user-agent') || 'unknown';
   const country = headersList.get('x-vercel-ip-country') ?? undefined;
   const city = headersList.get('x-vercel-ip-city') ?? undefined;
@@ -332,7 +333,7 @@ async function signupActionImpl(
   }
 
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
 
   // Check rate limit
   const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
@@ -648,7 +649,7 @@ async function requestPasswordResetActionImpl(
   // on ip+email gives each teammate their own budget at that IP while still
   // bounding how many times any single (ip, email) pair can be hammered.
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
   const ipRateLimit = await checkRateLimit(
     `password-reset:ip:${ip}:${normalizedEmail}`,
     PASSWORD_RESET_IP_LIMIT,
@@ -787,7 +788,7 @@ async function signupWithStaffInviteActionImpl(
   }
 
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
 
   const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
   if (!rateLimit.allowed) {

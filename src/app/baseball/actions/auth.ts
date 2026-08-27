@@ -4,6 +4,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
+import { resolveClientIp } from '@/lib/security/client-ip';
 import {
   checkRateLimit,
   resetRateLimit,
@@ -50,7 +51,7 @@ async function loginActionImpl(
 
   // Get client IP for rate limiting and logging
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
   const userAgent = headersList.get('user-agent') || 'unknown';
 
   // Check account lockout FIRST (database-persisted)
@@ -284,7 +285,7 @@ async function signupActionImpl(
 
   // Get client IP for rate limiting
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
 
   // Check rate limit (prevent signup spam)
   const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
@@ -422,7 +423,7 @@ async function requestPasswordResetActionImpl(
 
   // Get client IP for logging
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
 
   // Check rate limit (prevent password reset spam/DoS)
   const rateLimit = await checkRateLimit(
