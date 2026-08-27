@@ -269,3 +269,11 @@ tests/**/.momentic-mcp/
 # agent file search (2026-08-27).
 .ruff_cache/
 CLAUDE-SECURITY-*/
+
+# Local output of `npm run knowledge:report`. It is a CI artifact directory
+# (feature-awareness.yml uploads it), and neither it nor its changed-files
+# input was ignored — so running the report locally left untracked files in the
+# repo. Added 2026-08-27 alongside the usage message that now tells people to
+# run it locally, which made that more likely rather than less.
+feature-awareness-report/
+changed-files.txt
