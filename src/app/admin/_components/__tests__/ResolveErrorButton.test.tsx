@@ -43,7 +43,7 @@ describe('ResolveErrorButton', () => {
   });
 
   it('Confirm calls resolveErrorFingerprint with the fingerprint and reports the resolved count', async () => {
-    mockResolve.mockResolvedValue({ success: true, resolvedCount: 3 });
+    mockResolve.mockResolvedValue({ success: true, resolvedCount: 3, fingerprint: { recorded: true } });
     render(<ResolveErrorButton fingerprint="fp-1" />);
     fireEvent.click(screen.getByRole('button', { name: 'Mark this error resolved' }));
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
@@ -55,7 +55,7 @@ describe('ResolveErrorButton', () => {
   });
 
   it('reports the boring case — "Already resolved" — as success, not failure', async () => {
-    mockResolve.mockResolvedValue({ success: true, resolvedCount: 0 });
+    mockResolve.mockResolvedValue({ success: true, resolvedCount: 0, fingerprint: { recorded: true } });
     render(<ResolveErrorButton fingerprint="fp-1" />);
     fireEvent.click(screen.getByRole('button', { name: 'Mark this error resolved' }));
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
