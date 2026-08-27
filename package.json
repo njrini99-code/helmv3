@@ -19,6 +19,7 @@
     "seed:baseball:ci": "tsx scripts/seed-baseball-demo.ts --confirm",
     "prebuild": "node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs",
     "build": "next build --webpack",
+    "postbuild": "node scripts/strip-next-tsconfig-injection.mjs",
     "start": "next start",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 0",
     "lint:ratchet": "node scripts/lint-ratchet.mjs",

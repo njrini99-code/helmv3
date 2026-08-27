@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // vi.mock is hoisted above imports, so the spy must be created in a hoisted
 // block too — a plain top-level const is not initialised when the factory runs.
-const { logServerError } = vi.hoisted(() => ({ logServerError: vi.fn(async () => {}) }));
+const { logServerError } = vi.hoisted(() => ({
+  // Typed with its real parameters so `mock.calls[0]` is the tuple the
+  // assertions destructure — a zero-arg vi.fn() infers calls[0] as `[]`.
+  logServerError: vi.fn(async (_message: string, _context: Record<string, unknown>) => {}),
+}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError }));
 
 import {
@@ -71,7 +75,7 @@ describe('reportSettledFailures — the INC-2026-08-27 regression', () => {
     );
 
     expect(logServerError).toHaveBeenCalledTimes(1);
-    const [message, context] = logServerError.mock.calls[0] as [string, Record<string, unknown>];
+    const [message, context] = logServerError.mock.calls[0]!;
     // The COUNT alone is what made this invisible for two days. Both must be present.
     expect(message).toContain('2 of 3 failed');
     expect(message).toContain('permission denied for table baseball_players');
