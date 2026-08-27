@@ -99,9 +99,8 @@ mechanical, and these are the habits that keep it fixed.
 - **A `.ts`/`.tsx` logged as `Bin N -> M bytes` in a commit stat is a
   smell, not a formatting quirk.** git found a NUL byte and treated the
   source as binary, so the diff never rendered and the code was never
-  actually reviewed. The CSV safe-cell helper under the csv lib carried a
-  literal NUL and a 0x1f inside a regex character class exactly that way
-  (fixed on the bridge branch, 2026-08-27); `file` reported
+  actually reviewed. `src/lib/csv/safe-cell.ts` carried a literal NUL and a
+  0x1f inside a regex character class exactly that way; `file` reported
   it as "data", and it took `no-control-regex` on a later lint run to
   surface it — on a branch that had never been gated. Check with
   `file <path>`: it should say "Unicode text", never "data". (2026-08-27.)

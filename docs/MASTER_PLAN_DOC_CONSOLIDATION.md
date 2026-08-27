@@ -294,6 +294,11 @@ number. It was an artefact of which files happened to be on my disk.
 A ratchet whose scope depends on untracked local files is not a ratchet. It is
 a coin flip that gets blamed on whoever last touched a doc.
 
+The failure mode is worse than wrong numbers: **two checkouts of the same commit
+disagree**, so neither engineer can reproduce the other's result and each
+concludes the other is confused. That is exactly what happened here for about an
+hour — both sessions measuring honestly, both correct about their own tree.
+
 Fixed by intersecting both walks with `git ls-files`:
 
 - `scripts/markdown-lint-ratchet.mjs` — the defect

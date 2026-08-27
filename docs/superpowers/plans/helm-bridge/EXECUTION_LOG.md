@@ -7,6 +7,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 **Status:** DB work complete + verified on prod (2026-07-01). Code change (Task 3) in progress.
 
 ### Task 1 — handle_new_user role-cast fix + self-escalation guard
+
 - Migration `20260701100000_fix_handle_new_user_role_cast.sql` applied to prod via Supabase MCP.
 - **DEVIATION 1 (bug in plan):** the plan's replacement function body was copied from the stale `prod_public_baseline.sql` and OMITTED the live function's `baseball_players` seed block, `sport`/name vars, and `ON CONFLICT (id) DO NOTHING`. Applying it verbatim would have broken baseball player signup onboarding. Corrected by reading the live `pg_get_functiondef` and preserving the entire body — changing ONLY the role assignment from `COALESCE((meta->>'role')::user_role,'player')` to a `CASE` that maps only `coach|player`, else `player`.
 - **DEVIATION 2 (bug in plan):** the plan's guard trigger blocked ALL self role-changes. But golf onboarding (`golf/actions/onboarding.ts:94/304/381`) upserts `users.role` via the USER-SCOPED client, so that guard would break legit player/coach onboarding. Re-scoped the guard to block only self-escalation to a NON-self-service role (`NEW.role NOT IN ('player','coach')`) — closes the admin vector, leaves onboarding working. (Baseball onboarding uses the admin client — unaffected either way.)
@@ -15,11 +16,13 @@ Running record of what was actually applied per wave, plus any deviations from t
 - Verified: guard trigger live; anon/authenticated EXECUTE revoked on both functions.
 
 ### Task 2 — downgrade stale test-admin (owner-approved OQ1)
+
 - BEFORE: 2 `role='admin'` rows (`admin@helmsportslabs.com` b9673959-1c90-405b-93f7-b468a9f4daa3; `admin-ui-1779052548996@golfhelm.local` 8e894959-68f4-4973-b953-6590ed3a8c0b).
 - Downgraded the `admin-ui-...golfhelm.local` row → `player` (UPDATE 1).
 - AFTER: exactly 1 admin row — **`admin@helmsportslabs.com` = `b9673959-1c90-405b-93f7-b468a9f4daa3`** (the W1 allowlist seed + `SUPER_ADMIN_USER_IDS` value).
 
 ### Task 3 — replace error-monitoring.ts (code, Sonnet) — DONE (commit a2be0c42)
+
 - Migrated 10 golf.ts call sites to `logServerException` (merged into the existing `server-error-logger` import); deleted `src/lib/error-monitoring.ts`; removed one orphaned `vi.mock` in `golf-events.test.ts`.
 - Gates: `typecheck` exit 0; grep clean; `test:run` 3769 passed / 6 failed — the 6 are PRE-EXISTING on main (verified by stash): Next.js 16 `revalidatePath` static-store test-env issue + baseball nav-ordering; none related to this change.
 - **Pre-existing test debt noted (not ours):** `program-type-nav-variants.test.ts` (×3), `insight-celebration.test.ts` / `round-recap.test.ts` (×3, revalidatePath store). Track separately; do not block Helm Bridge.
@@ -29,15 +32,18 @@ Running record of what was actually applied per wave, plus any deviations from t
 **Status:** DB migration applied + verified on prod (2026-07-01). Code (Tasks 2–5) pending W0 Task 3 completion (avoid git races in the shared worktree).
 
 ### Task 1 — admin_allowlist + is_super_admin()
+
 - Migration `20260701110000_admin_allowlist_is_super_admin.sql` applied to prod via Supabase MCP (all ACL + seed assertions passed). File committed with W1 code PR.
 - Seeded `admin_allowlist` with Nick = `b9673959-1c90-405b-93f7-b468a9f4daa3` (admin@helmsportslabs.com), exactly 1 row.
 - Verified: 4 cols; RLS enabled+forced; `is_super_admin()` returns false under service_role (correct); EXECUTE = authenticated only, anon denied.
 - **W2 recon (confirmed finding):** `admin_events` carries table-level GRANT SELECT to **anon** + authenticated, and INSERT to authenticated — mitigated by RLS today but the classic anon-grant latent leak. **W2 must `REVOKE` these** and re-assert via `pg_class.relacl`.
 
 ### Owner action needed at W1 merge
+
 - Set `SUPER_ADMIN_USER_IDS=b9673959-1c90-405b-93f7-b468a9f4daa3` in Vercel (Production + Preview), server-only. Gate fails CLOSED without it (nobody enters — correct failure mode).
 
 ### Tasks 2–5 — code (Sonnet) — DONE
+
 - Commits: `ffe2dd300` (edge-safe helpers, 10 tests), `d92dfd40e` (requireSuperAdmin, 5 tests), `fe0052a22` (middleware /admin gate + proxy prefix), `51d853b64` (/admin shell: layout+page+motion provider + gate-coverage contract test).
 - No deviations: plan line numbers matched; `AdminNativeGuard` named export; `framer-motion` (not motion/react); warm tokens exist.
 - Gates: typecheck exit 0; lint 0 errors / 2275 warns (< 6000 ceiling); `test:run` only the 6 pre-existing failures; `nav-capability-gating` middleware contract 9/9.
@@ -48,12 +54,14 @@ Running record of what was actually applied per wave, plus any deviations from t
 **Status:** DB migration applied + verified on prod (2026-07-01). Writer code (Tasks 2–3) in progress (Sonnet).
 
 ### Task 1 — additive columns + indexes + ACL revoke
+
 - Migration `20260701120000_admin_events_bridge_columns.sql` applied to prod via Supabase MCP.
 - Added `sport`/`team_id`/`fingerprint`/`source` (+ NOT VALID CHECKs) + 4 triage indexes. Verified all 4 columns live.
 - **DEVIATION (plan over-revoked):** plan's migration did `REVOKE ALL FROM anon, authenticated` and asserted authenticated has NO SELECT — that would break the still-live `/golf/admin` (its "Admins can read/update admin_events" RLS policies use the authenticated user-scoped client + Realtime). Corrected to: **REVOKE anon (all) + authenticated INSERT** (no INSERT policy = dead weight); **KEEP authenticated SELECT/UPDATE** (legacy admin needs them) — removed in W14 at retirement. Verified: anon_select=false, authed_insert=false, authed_select=true.
 - CHECK `source` list is the union of the design's 8 + the 5 existing `ServerTraceSource` values (else it'd reject today's writers).
 
 ### Tasks 2–3 — writer extensions (Sonnet) — DONE
+
 - Commits `4a09bde6e` (server-error-logger + database.ts types), `b542ff669` (admin-logger).
 - Additive only; all existing signatures frozen. `buildIncidentSignature` matched the plan. database.ts surgically patched (db:types can't run headless). typecheck exit 0; backward-compat proven (`demo-access` 8/8); only the 6 known pre-existing failures.
 
@@ -62,10 +70,12 @@ Running record of what was actually applied per wave, plus any deviations from t
 **Status:** RPC migration applied + verified on prod (2026-07-01). Code (Sentry/Vercel clients, triage) in progress (Sonnet).
 
 ### Task 1 — get_active_sessions() + resolve_admin_event() RPCs
+
 - Migration `20260701130000_bridge_rpcs_sessions_resolve.sql` applied to prod via Supabase MCP. No deviations (new objects; plan SQL was correct).
 - Both SECURITY DEFINER, internally gated on `is_super_admin()`, REVOKE PUBLIC/anon + GRANT authenticated. Verified: anon denied, authenticated allowed, secdef=true. (Calling under service_role raises Forbidden 42501 by design = pass.)
 
 ### Tasks 2+ — server data layer code (Sonnet) — DONE
+
 - Commits `1aadf06cd` (database.ts RPC types), `9f47e8a61` (sentry-api server-only fail-soft), `21d4a0c9d` (vercel-api), `a475313db` (triage merge + resolve action).
 - 11/11 new tests; typecheck exit 0; lint 0 errors; gate-coverage contract covers `actions/triage.ts`.
 - Plan fix: the wave doc's sentry pagination test reused one `Response` (body read-once) — agent switched to `mockImplementation` (fresh Response per call), impl contract unchanged.
@@ -74,6 +84,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 **FOUNDATION (W0–W3) COMPLETE.** 4 prod migrations live + verified; auth gate + /admin shell + server data layer built; all gates green.
 
 ## W4 — Design Foundation (no migration) — DONE
+
 - Commits `587f415f` (clay ink token + SportBadge), `af7b3f59` (AdminShell chrome), `8a1aed0b` (status banner + KPI tile), `1df1efff` (PanelBoundary + states), `d55a4a2e` (AutoRefresh).
 - 16 new tests; typecheck exit 0; lint 0 errors; gate-coverage passes; ZERO changes under src/components/fairway (composed, not forked).
 - Shared component signatures match the plan's Shared Interfaces exactly.
@@ -82,6 +93,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 **★ FOUNDATION (W0–W4) COMPLETE ★** — 4 prod migrations, 3-layer auth gate, gated /admin shell + ops chrome + data layer. All gates green. Building tabs next (W5–W13); W14 retirement held for prod verification.
 
 ## W5 — Overview Tab (no migration) — DONE
+
 - Commits `1c38db3c8` (overview data layer + banner/staleness), `fa35f9fcd` (triage queue inline resolve + optimistic hide), `d37d9458b` (overview page: banner, 6-KPI strip, watcher chips, triage queue, regressed callout, deploy rail).
 - 11 new tests; typecheck exit 0; lint 0 errors; gate-coverage passes. All column/RPC/Fairway-prop names verified vs real source.
 - ~~CLEANUP TODO (polish pass): 2 lint warnings in TriageQueue.tsx~~ **RESOLVED — verified 2026-08-27.** `npx eslint src/app/admin/_components/TriageQueue.tsx` exits 0 with no warnings. The polish sweep cleared them; the TODO was stale.
@@ -94,6 +106,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 2. **BaseballHelm is iffy in prod → HOLD OFF.** Focus = **GolfHelm + CoachHelm (golf AI layer)**. Any task that MODIFIES baseball or lifting app code is DEFERRED (no wrapping baseball/lifting actions, no baseball auth emitters, W9 Baseball tab deferred). Command-center pieces that only READ baseball data (Overview KPIs, Users directory) may stay — read-only, admin-gated, zero prod impact. Feature-health + total coverage (W15/W16) scoped to golf+coachhelm; baseball is a "paused" appendix.
 
 ## W6 — Errors Tab + RLS-Denial Capture + withAdminObserved (no migration) — DONE
+
 - Commits `64c6a744f` (centralized RLS-denial capture), `2bcdde74b` (withAdminObserved + savePartialRound exemplar), `4fc033e13` (errors tab: Sentry table, deploy-marked series, incident feed, fingerprint detail).
 - 14 new tests; typecheck exit 0; lint 0 errors (+5 `no-arbitrary-bg-white` warnings — matches the app's documented glass-card recipe / W4-W5 convention; under ceiling). gate-coverage passes (both new pages gate first-line).
 - UI elevated per directive: ChartFrame (matte + table-fallback), StatusPill severity (dot+tone+label), KpiTile Fragment Mono numerals. `savePartialRound` → impl+wrapped delegate ('use server' gotcha handled).
@@ -101,12 +114,14 @@ Running record of what was actually applied per wave, plus any deviations from t
 - ~~POLISH TODO: consider Fairway surface primitives over raw bg-white/70~~ **RESOLVED — verified 2026-08-27.** `bg-white` occurrences under `src/app/admin` = 0.
 
 ## W15/W16 — Feature Health + Total Coverage (Fable-planned, golf+coachhelm) — QUEUED after W13
+
 - Coverage plan DONE (Fable, noise-disciplined + golf-scoped). Docs written (commit pending between-agent window): `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` (38 features, coverage matrix for 424 actions, Noise-Discipline Charter N1–N6, health state machine, board design, baseball/lifting deferred appendix), `waves/w15-total-coverage.md` (16 tasks), `waves/w16-feature-health-board.md` (6 tasks).
 - Migration `20260702090000_admin_events_feature_health.sql` REVIEWED + APPLIED to prod (verified: feature col + 2 indexes + get_feature_health RPC, anon-denied/authenticated-ok, W2 ACL re-asserted). Dynamic-SQL heartbeat is injection-safe (triple guard: golf_%/allowlist prefix + information_schema existence + format %I quoting; input ≤100 features/≤64-char keys). Noise discipline in SQL: only error/critical → fingerprints/dots; warnings + rls_denials separate counters. Commit held for between-agent window.
 - ★ ALL Helm Bridge prod migrations now applied (W0/W1/W2/W3/W7/W11/W15). Only W14 hardening (revoke anon on ~49 SECURITY DEFINER fns) remains — HELD.
 - Maps found real scale: golf 34 feat/487 actions (docs badly undercounted), none wrapped yet; fetchAllRowsResult drops .code (widen first); annotate known "looks-broken-but-isn't" gaps so dots don't false-red. Baseball 52/362 + lifting 15/137 = deferred.
 
 ## W8 — Golf Tab + Tracer + CoachHelm (no migration) — DONE
+
 - Commits `e788ee8a` (data/golf.ts + classifyTeamHealth tests), `cc0a1fd8` (golf-tracer actions), `bace83b6` (TeamHealthTable + golf page + tracer page).
 - Tracer guard PRESERVED byte-for-byte (admin-tracer-data.ts empty diff); Tracer UI shipped read-only MVP (fix buttons deferred to W14 per doc fallback); double-gate (requireSuperAdmin + legacy role check).
 - Accuracy corrections vs plan (verified in database.ts): golf_demo_sessions.entered_at (not created_at); golf_coachhelm_llm_budget is per-(coach,date) budget_usd/spent_usd → remaining summed, honest null; golf_team_members status='active'; no fabricated quality score.
@@ -115,6 +130,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 ## W9 — Baseball Tab — SKIPPED (baseball hold; build when prod stabilizes)
 
 ## W10 — Users & Teams + Drill-downs + Read-Only Impersonation (no migration) — DONE
+
 - Commits `40818e06e` (data/users.ts), `f5dc8d9a4` (view-as core), `9e21cc682` (pages). 7 new tests; typecheck exit 0; gate-coverage passes; 0 new warnings in new files.
 - Read-only impersonation SAFE: HMAC marker cookie (not a session), service-role read-only render, zero write buttons except Exit, 15min TTL, enter+exit both audit_log'd + logSecurityEvent, fail-soft (disabled w/o ADMIN_IMPERSONATION_SECRET), sticky InlineNotice banner.
 - Plan bugs FIXED: (1) view-as token base64 made the tamper test a no-op → switched to plaintext userId.expiresMs.hmac (real HMAC tamper-evidence); (2) Teams table hard-coded playerCount:0/dormant for every team (false alarm) → real counts/activity/7d-errors.
@@ -123,6 +139,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 - ★ Confirms the ratchet +10 drift is pre-existing (from W5/W6 bg-white) — FINAL POLISH SWEEP owns it.
 
 ## W11 — Jobs & Integrity (migration applied ahead; code pending) + a REAL security fix
+
 - Migration `20260701150000_run_integrity_checks_rpc.sql` applied to prod (SECURITY DEFINER, service_role-only, STATIC SQL no injection surface; 4 checks: orphaned members / stale stats-cache / bridge schema canaries / anon-grant drift). Verified it runs.
 - ★ **Integrity check immediately found a REAL prod security drift:** `anon_grant_drift` FAIL — `audit_log`, `background_job_logs`, `error_logs`, `login_attempts` carried legacy anon table-grants (RLS-mitigated but latent). Verified each has RLS on + ZERO anon policies (safe to revoke; authenticated admin-read/self-insert policies kept).
 - **Fixed** via `20260702093000_revoke_anon_grant_drift_log_tables.sql` (applied to prod, ACL-asserted). Re-ran integrity → **0 failing checks, all 4 green.** The command center caught + closed real drift on day one.
@@ -130,6 +147,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 - Owner env (fail-soft): CRON_SECRET (existing — the 2 new crons reuse it).
 
 ## W12 — Deploys & Infra (no migration) — DONE
+
 - Commits `54457cdb6` (deploy markers + instrumentation hook), `0898ce682` (deploys tab + current-build card + conditional release health + web vitals).
 - 7 new tests; typecheck exit 0; lint 0 errors; 0 ratchet delta; gate-coverage passes.
 - Fail-soft 3-state (ok/not-configured neutral/fetch-failed amber); current-build card works with ZERO new secrets (system env); release health neutral unless sessions confirmed. Per-row Sentry release deep-link added.
@@ -137,6 +155,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 - Owner env (fail-soft): VERCEL_API_TOKEN/PROJECT_ID/TEAM_ID (deployments+vitals); Sentry session tracking (release health).
 
 ## W13 — Daily Digest (dedicated non-CRM transport; no migration) — DONE
+
 - Commits `377f4a07` (pure digest builder), `d9879844` (dedicated ops transport, own secret), `adc440d5` (daily cron on dedicated transport). 14 relevant tests; typecheck exit 0; lint 0 errors; all contract + gate-coverage tests green.
 - CRM boundary CLEAN: transport imports only `resend` npm + local type; envs OPS_DIGEST_RESEND_API_KEY/OPS_DIGEST_TO/OPS_DIGEST_FROM only; zero crm/**, zero RESEND_*/GMAIL_SA_*/CRM_UNSUB_SECRET.
 - Noise: reds-first (failed/overdue crons, failing integrity, error/critical + top-5 fingerprint-grouped incidents), signups, 1-line activity; "All clear" on green nights (not silent — a missing email = dead cron). Fail-soft skip wrapped in recordJobRun. Mobile-friendly email (single-col inline CSS, cream/green/red).
@@ -145,43 +164,57 @@ Running record of what was actually applied per wave, plus any deviations from t
 **★ TAB PHASE COMPLETE (W5–W13, minus W9 baseball-held).** Overview, Errors, Auth, Golf+Tracer+CoachHelm, Users+impersonation, Jobs+Integrity, Deploys, Digest — all built, all gates green. Remaining: W15 total coverage → W16 Feature Health board → mobile+ratchet polish sweep → draft-PR push. W14 retirement + W9 baseball HELD.
 
 ## ⚑ TWO-PR SPLIT (owner directive 2026-07-02 — de-risk the invasive part)
+
 - **PR A "Helm Bridge command center"** = branch `feat/helm-bridge-command-center` (current): W0–W13 + W15 FOUNDATION (Tasks 2-4: registry, additive logger `feature` field + flood throttle, coverage harness) + W16 board. New `/admin` files + only additive/bounded/fire-and-forget touches to shared infra. Board shows neutral "not-yet-instrumented" dots until PR B. LOW risk. Targets `main`.
 - **PR B "Total feature instrumentation"** = NEW branch `feat/helm-bridge-instrumentation` off PR-A tip: W15 batches (Tasks 5-14, the 424 action wraps across 76 golf/coachhelm action files) + Task 15 (RLS centralization in fetch-all-rows) + Task 16 (verification). The ONLY at-scale edits to existing feature code — isolated for scrutiny + preview. Stacks on PR A.
 - Both pushed as DRAFTS; owner merges A first, then B. Nothing auto-merges.
 
 ## W15 — Total Error-Capture Coverage (golf+coachhelm; migration applied)
 ### Foundation (Tasks 2-4, PR-A branch) — DONE
+
 - Commits `419c33dce` (feature-registry.ts + database.ts feature col/get_feature_health types), `fd2e227b8` (emitters + emit-throttle), `fbe275181` (coverage harness).
 - 50 new/extended tests; typecheck exit 0; lint 0 errors; backward-compat proven (179 existing emitter callers unchanged, green).
 - feature-registry.ts: 38 FeatureKey union + FEATURE_REGISTRY; re-derived exports = exactly 424 (287 golf + 137 coachhelm) matching spec; TABLE_TO_FEATURE collision resolve; rpcInput() builds get_feature_health payload.
 - emit-throttle.ts: per-process flood-collapse (LRU 500, key action:errCode, collapsed_count metadata) — noise-discipline. feature threaded additively into observed-action/server-error-logger/admin-logger/rls-denial (featureForTable default). savePartialRound retro-tagged round_tracking.
 - coverage-scanner + assertAreaFullyWrapped: self-test throws listing round-drafts.ts's 4 unwrapped exports; distinguishes wrapped savePartialRound from unwrapped submitGolfRoundComprehensive. Global tripwire = it.todo (flips in Task 16/PR-B).
+
 ### Batches (Tasks 5-14) + RLS centralization (15) + verification (16) → PR-B branch `feat/helm-bridge-instrumentation` (after W16 + polish)
+
 - B0-B5 DONE (commits `027e3c4ce`,`24f220064`,`6af19e66d`,`a479f7d7a`,`2f5f286b7`,`20a67d2a1`).
 - B6 library + recruiting + player surfaces (course_library, recruiting_prospect_tracking, player_hub, coach_dashboard, my_game_profile, whats_new) — DONE. 51 exports wrapped Impl+delegator: course-library.ts/courses.ts/recruiting.ts/recruit-documents.ts (ALL), dashboard-data.ts (coach fns→coach_dashboard, player fns→player_hub), command-palette.ts, player-profile-stats.ts, whats-new.ts, + golf.ts's last 4 saved-course fns (getPlayerSavedCourses/savePlayerCourse/touchSavedCourse/getRecentCoursesForPlayer→course_library) — golf.ts's full 39-export surface is now fully wrapped (spans B0/B1/B2/B4/B5/B6). Foundation self-test fixture handed forward course-library.ts → alerts.ts (B7, still bare).
 - Recovered from two mid-batch session crashes on B6: verified all 9 dirty files against the registry manifest + exemplar pattern before proceeding, no rework needed. Gate green: coverage-contract.b6 + foundation tests pass, typecheck exit 0, lint 0 errors (baseline warnings only, none in the 9 touched files), npm test 3973 passed / 6 pre-existing failures confirmed unrelated via stash-and-rerun (baseball nav-variant drift + Next 16 revalidatePath-in-vitest invariant on round-recap.ts/insight-celebration.ts, both outside B6 scope).
 - Remaining: B7-B9 (coachhelm batches) + Task 15 call-site threading + Task 16 (lock global invariant).
+
 ### Batch B7 (Task 12) — coachhelm engine — DONE (side branch `feat/helm-bridge-instr-b789`)
+
 - Wraps all 34 B7 exports (coachhelm_ai_engine, alerts_system, patterns_dashboard) via Impl+delegator: insight-delivery.ts (8) + player-fingerprint.ts (1) fully; alerts.ts (2) + pattern-management.ts (7) fully; insights.ts's 16 default-tagged `coachhelm_ai_engine` exports (the 10 insights_management/round_review_ai/my_development/player_coachhelm_dashboard overrides stay untouched for B8/B9, excluded via the contract test's exclude-list).
 - `triggerPlayerInsightsAfterRound` delegator preserves the existing fire-and-forget call shape (postRoundTrigger still awaits the SAME promise it always did — no new await introduced at the wrapper boundary) per the batch note.
 - No double-logging cleanup needed: verified zero log-then-rethrow sites across all 5 files (every catch either logs-and-returns a typed envelope or rethrows un-logged into the wrapper) — bodies are byte-identical, confirmed via diff.
 - New `coverage-contract.b7.test.ts` RED (34 unwrapped) → GREEN. typecheck exit 0; lint exit 0 (0 new warnings, files absent from lint output); full test suite unchanged vs baseline (pre-existing unrelated jsdom/framer-motion failures only).
+
 ### Batches B8+B9 (Tasks 13-14) — insights.ts remainder — DONE (side branch `feat/helm-bridge-instr-b789`)
+
 - Wraps the FINAL 10 exports of `insights.ts` via Impl+delegator (bodies byte-identical): insights_management (7 — acknowledgeInsight, dismissInsight, reactivateInsight, resolveInsight, rateInsight, acknowledgeComposedInsight, dismissComposedInsight), round_review_ai (1 — generateRoundReview), my_development (1 — getPlayerFocusAreas), player_coachhelm_dashboard (1 — getPlayerCoachHelmDashboard), matching the registry manifests exactly per B7's exclude-list. `insights.ts` is now 26/26 wrapped (B7+B8+B9 complete).
 - `triggerPlayerInsightsAfterRound` fan-out call shape untouched — diff confirms zero lines changed outside the 10 target functions.
 - New `coverage-contract.insights.test.ts` — whole-file assertion, NO exclude list — RED (10 unwrapped) → GREEN; `coverage-contract.b7.test.ts` still green (its exclude-list is now a no-op). typecheck exit 0; lint exit 0 for insights.ts (0 new warnings); pre-existing unrelated jsdom `node_modules/node_modules/react` duplicate-module failures in CoachInsightCard/HubInsightSignalCard/RoundTakeaway/PlayerCoachHelmDashboard component tests confirmed identical on the unmodified tip (git stash-verified) — not caused by this change.
+
 ### Batch B8 (Task 13) — coachhelm coach surfaces, files-only unit — DONE (side branch `feat/helm-bridge-instr-b8`)
+
 - B8 coachhelm coach surfaces, files-only unit (insights_management, intelligence_dashboard, coachhelm_analytics, coaching_intelligence_settings; insights.ts's 7 lifecycle exports deferred to a separate serial unit) — DONE. 32 exports wrapped Impl+delegator across 9 fully-owned files: insight-management.ts + insight-evidence.ts (ALL→insights_management), intelligence-dashboard.ts + team-category-insights.ts + coachhelm-data.ts + causal-relationships.ts (ALL→intelligence_dashboard), coachhelm-analytics.ts + player-effectiveness.ts (ALL→coachhelm_analytics), coaching-philosophy.ts (ALL→coaching_intelligence_settings). Bodies byte-identical (diff review: every `-` line is a renamed signature, no body edits); zero `throw` statements across the 9 files so zero double-log sites (every `logServerError` call already logs-and-returns gracefully).
 - New `coverage-contract.b8-files.test.ts`: TDD RED confirmed (32 gaps listed) by reverting the 9 files to the branch base and rerunning before restoring; GREEN after. Gate: typecheck exit 0; lint 0 errors (2275 pre-existing warnings, ratchet OK, none new in the 9 files — the 2 insight-management.ts `any` warnings are pre-existing inside the untouched `searchInsights` body); dedicated suites for the 5 files with existing tests (insight-evidence/coachhelm-analytics/insight-management/intelligence-dashboard/coaching-philosophy) + foundation + B0-B6 contract tests all green.
 - ⚠ Hit a cross-worktree `git stash` race: this worktree (`helmv3-bridge-b8`) shares `refs/stash` with sibling worktrees on the same repo (incl. a concurrent `feat/helm-bridge-instr-b9` session); a `git stash push`→`pop` round-trip during the RED/GREEN check popped the B9 session's stash into this tree instead of B8's own. Recovered B8's work via `git fsck --unreachable` (the dropped stash commit stays a loose object until gc), restored the B9 entry back onto the stash stack via `git stash store` so that session isn't stranded, then `git checkout HEAD --` the 14 B9 files out of this tree. Net: avoid `git stash` in shared worktrees — use `git diff > tmp.patch` / a scratch branch for RED/GREEN checks instead.
 - Remaining (as of B8, cut from tip `8639262de` before B7/insights-remaining landed): B7, B9 (coachhelm batches) + insights.ts serial unit + Task 15 call-site threading + Task 16 (lock global invariant).
+
 ### Batch B9 (Task 14) — coachhelm player + reviews + development — DONE (side branch `feat/helm-bridge-instr-b9`)
+
 - **B9 coachhelm player + reviews + development (Task 14 minus insights.ts) — DONE** (branch `feat/helm-bridge-instr-b9`, cut from tip `8639262de`). 61 exports wrapped Impl+delegator across 14 wholly-owned files: player-feedback.ts + insight-celebration.ts (→player_coachhelm_dashboard), round-reviews.ts + round-review-system.ts + round-recap.ts + v3/llm.ts (→round_review_ai), development.ts (10→development_plans_coach, 3 overrides acceptFocusArea/declineFocusArea/updateFocusAreaProgress→my_development), drills.ts + v3/practice-rx.ts + v3/team-practice-rx.ts (→drills_practice_rx), v3/goals.ts + v3/goal-progress.ts + v3/focus-area-progress.ts + v3/intent.ts (→coachhelm_v3_goals). `insights.ts`'s 3 overrides for these same features (generateRoundReview/getPlayerFocusAreas/getPlayerCoachHelmDashboard) intentionally left untouched — owned by the serial insights.ts chain, not this batch. Bodies byte-identical (AST-driven mechanical retrofit: header rename + delegator appended after each function's closing brace, param list + return type reconstructed from the original signature, argument names forwarded 1:1 — every one of the 61 signatures is plain identifiers, no destructuring/rest params, so forwarding is exact).
 - Double-log cleanup: `player-feedback.ts`'s `rateInsightAsPlayer` had 3 log-and-rethrow sites (player-lookup/insight-lookup/upsert failures each `logServerError`'d then `throw`n) — removed the inline logs in favor of the wrapper per N4 (comment left in place, same convention as B0's admin-tracer-data.ts cleanup); every other `logServerError`/`logServerException` call across all 14 files is log-and-return-gracefully (kept, no double-log risk).
 - Gate: new `coverage-contract.b9-files.test.ts` RED→GREEN (61→0 gaps, verified by reverting the 14 files to a private scratch copy — NOT `git stash`, see incident note below — re-running RED, restoring, re-running GREEN); `npx tsc --noEmit` exit 0; `npm run lint` 0 errors (2279 pre-existing warnings, none in the 14 touched files); spot-ran the 5 dedicated test files that import these actions directly (player-feedback/insight-celebration/development/round-recap/round-review-system, 456 tests) plus lib-level tests for drills/practice-rx/llm/intent/goals — 444 passed, 12 failed, confirmed pre-existing and unrelated by swapping in the HEAD version of round-recap.ts/insight-celebration.ts via `git show HEAD:<path>` (same Next-16 `revalidatePath`-outside-request-scope invariant flagged in the B6/T15 log entries, same 2 files). Full `npm test` intentionally skipped per the ASAP slim-gate directive (merge + Task 16 run it downstream).
 - ⚠ **Cross-worktree stash-collision incident:** mid-task I used `git stash push/pop` to snapshot my 14-file diff for the RED proof; worktrees share one `.git` and thus one stash stack, and a concurrent `feat/helm-bridge-instr-b8` session was doing the identical stash dance at the same moment — the two pushes/pops interleaved and each session's WIP landed in the *other's* working directory (I received B8's 9-file `insights_management`/`intelligence_dashboard` diff; B8's worktree received my 14-file diff). Diagnosed via `git worktree list` + content diffing, recovered without loss: saved B8's orphaned diff to a patch file (`recovered-b8-wip/b8-orphaned-stash-recovered.patch`, outside any worktree) and reverted it out of my tree via `git checkout --`; copied my correct 14-file content back out of the B8 worktree (where it was sitting intact) into mine and re-verified GREEN. Did **not** touch the B8 worktree further — a `git checkout --` there to finish restoring it was correctly blocked by the permission system as out-of-scope destructive action on another job's workspace; that worktree still needs its 9 real files restored from the saved patch by whoever owns B8 next. **Lesson: never `git stash` in a shared-`.git` multi-worktree fleet** — used direct file-copy (`cp`) + `git show HEAD:<path>` swaps for the remainder of this task instead.
 - No `crm-*`, no `baseball/**`/`lifting/**`, no `insights.ts` touches; `grep -rn "withAdminObserved" src/app/golf/actions/insights.ts` in this worktree = 0 (untouched).
+
 ### Task 15 shared-helper (T15-CORE) — DONE
+
 - **T15-CORE (shared-helper half of Task 15) — DONE.** `fetch-all-rows.ts`: widened `makeQuery`'s error type to `{message: string; code?: string | null}` in both `fetchAllRows`/`fetchAllRowsResult` (PostgrestError's `code` is now visible to `isRlsDenial`); added additive optional third arg `rlsCtx?: RlsCaptureCtx` (exported type) and call `maybeCaptureRlsDenial(error, …)` in both `if (error)` branches — fire-and-forget, return/throw byte-identical. Omitted `rlsCtx` still routes through with `table:'unknown'`, relying on `maybeCaptureRlsDenial`'s own `isRlsDenial` no-op for non-denials.
 - New `src/lib/supabase/__tests__/fetch-all-rows.test.ts` (16 tests): TDD RED confirmed by stashing the impl and re-running (6 RLS-capture assertions failed against the old file, contract tests unaffected); GREEN after restoring. Covers: unchanged pagination/throw/return contract, PostgREST-shaped error compiles under the widened type, exactly-one capture with passed ctx on 42501, zero capture on non-denials, `table:'unknown'` fallback via the regex path when `rlsCtx` omitted. `grep maybeCaptureRlsDenial` under baseball/lifting = 0. Gate: typecheck exit 0, lint 0 errors/0 new warnings, `npm test` 3986 passed / 6 pre-existing failures (baseball nav-variant + Next 16 revalidatePath-in-vitest, confirmed unrelated via stash-and-rerun — same cluster as B6). Scope held strictly to the two files above — no action-file or route-handler touches (that's the call-site threading half, next unit).
 
@@ -198,12 +231,14 @@ Running record of what was actually applied per wave, plus any deviations from t
 - **W15 status: Tasks 1-14 + 16a DONE. Remaining: T15b (call-site RLS-ctx threading, in flight separately) + Task 16 steps 3-4 manual forced-failure verification (owner/next unit).**
 
 ### Task 15b — call-site RLS-ctx threading — DONE (branch `chore/helm-bridge-t15b-threading`, merged)
+
 - Commit `11be4c774` threads `rlsCtx {table, action, feature, sport:'golf'}` as the additive third argument through every `fetchAllRows`/`fetchAllRowsResult` call site in the 13 golf-action files + 2 route handlers named in the wave doc: `attendance.ts`, `calendar-sync.ts`, `coachhelm-analytics.ts`, `coachhelm-data.ts`, `course-library.ts`, `dashboard-data.ts`, `event-documents.ts`, `golf.ts`, `insight-delivery.ts`, `insights.ts`, `player-profile-stats.ts`, `recruit-documents.ts`, `recurring-events.ts`, `round-reviews.ts`, `shot-analytics.ts`, `stats-data.ts`, `stats-leak-maps.ts`, `team-category-insights.ts`, `teams.ts`, plus `src/app/api/calendar/feeds/[token]/route.ts` and `src/app/api/cron/event-reminders/route.ts`. Pure third-argument addition — zero behavior change, bodies otherwise byte-identical.
 - Added `maybeCaptureRlsDenial` beside the existing ad-hoc 42501-handling branches (capture-only, additive, fire-and-forget; user-facing error messages unchanged) in the 6 files named in Task 15 step 4: `event-documents.ts`, `recruit-documents.ts`, `insights.ts`, `teams.ts`, `golf.ts`, `round-reviews.ts`. `admin-data.ts` correctly skipped (service-role client, no RLS to capture).
 - `grep -rn "maybeCaptureRlsDenial" src/app/baseball src/lib/baseball src/app/lifting src/lib/lifting` = 0 (re-verified independently in this unit, see below).
 - Merged into `feat/helm-bridge-instrumentation` via merge commit `67a6598ab` (fast, conflict-free — T15b's diff (21 golf-action/route files) and T16a's diff (foundation test + fixture) share zero files; no EXECUTION_LOG.md conflict occurred because T15b never touched this log).
 
 ### FINALIZE — full-suite gate + Task 16 steps 2 (this unit)
+
 - **Merge:** `feat/helm-bridge-instrumentation` (tip `9658a042e`, Task 16a) ← `chore/helm-bridge-t15b-threading` (tip `11be4c774`, Task 15b) → merge commit `67a6598ab`. Clean merge, zero conflicts (verified: the two branches' diffs touch disjoint file sets).
 - **Full gate (only full-suite run of this unit):**
   - `npx tsc --noEmit` → exit 0, zero errors.
@@ -228,18 +263,23 @@ NOT done. See the Task 6 entry below.
 
 This status line said "in progress" while Tasks 1-5 were in fact already built
 and merged. Corrected by reading the code, not the log:
+
 - Task 1 `src/lib/admin/data/feature-health.ts` — present (+ `feature-health-detail.ts`)
 - Task 2 Sentry per-feature counts — present in `src/lib/admin/sentry-api.ts`
   (in-flight ceiling + cooldown)
+
 - Task 3 `/admin/health` dot grid + detail — `src/app/admin/health/page.tsx`,
   with `FeatureHealthDetailPanel` and `AttributionCoveragePanel`
+
 - Task 4 `feature` filter on the Errors tab — `src/app/admin/errors/page.tsx`
   (chip + clear-filter href)
+
 - Task 5 Overview rollup — `FeatureHealthRollup` -> `FeatureHealthSummary`,
   rendered by `src/app/admin/page.tsx`
 
 **Step 1 — full gate: GREEN.** Real exit codes on
 `fix/repo-local-cli-guard-bypass` at the post-merge tip:
+
 - `npm run typecheck` exit 0
 - `npm run lint` exit 0
 - `npm test` exit 0 — **1229 test files, 11527 passed, 6 skipped, ZERO failures**
@@ -258,12 +298,15 @@ Left for the owner or a unit with a dev environment. Do not run it against prod.
 
 **Step 3 — a11y: static half verified, Lighthouse NOT run** (needs a dev server).
 Checked by reading the components:
+
 - Colour-independence holds. Status is carried in TEXT, not hue —
   `FeatureHealthSummary` renders "N red · M amber" / "N green · M amber · R red
   · K neutral" as words, and the AI status dot in `health/page.tsx:149` is
   `aria-hidden` decoration beside a text line stating the same thing.
+
 - Reduced motion honoured — `motion-reduce:transition-none` in `TracesClient`
   and `TraceTree`, `motion-safe:` on the `AdminShell` refresh spinner.
+
 - Touch targets — health chips carry `min-h-11` (44px).
 
 **Step 4 — log entry + screenshot: log entry is this; screenshot NOT taken**
@@ -283,12 +326,14 @@ occurrences under `src/app/admin` = 0, arbitrary `text-[Npx]` = 0, and
 session hunting debt that is already paid.
 
 ## W7 — Auth & Sign-ins (golf-scoped; baseball/lifting emitters DEFERRED) + migration
+
 - Task 1 migration `20260701140000_revoke_user_sessions_rpc.sql` applied to prod (SECURITY DEFINER, is_super_admin-gated, DELETEs auth.sessions + writes audit_log; anon denied, authenticated granted — asserted). Verified audit_log col types (record_id/user_id uuid, new_data jsonb) before apply.
 - Code DONE (Sonnet): commits `88f2dc056` (capture coverage: internal log-auth-failure route, middleware bridge fire-and-forget, anonymous log-error relax, AuthApiError ignore narrowed, golf password-reset event), `b83419344` (auth tab: funnel MetricCards, 7d sign-in TrendChart, lockouts, sessions+revoke). 6 new tests; typecheck exit 0; **lint-ratchet delta 0** (agent used Fairway Surface/MetricCard/TrendChart/StatusPill/InlineNotice/Button — no raw bg-white); gate-coverage passes. **DEFERRED per baseball-hold:** baseball/lifting auth emitters (confirmed never opened).
 - Owner env (fail-soft): `INTERNAL_LOG_KEY` (32+ char) enables the middleware→node capture bridge; no-ops without it.
 - ★ CI NOTE: W5/W6 added ~+10 lint-ratchet warnings (no-arbitrary-bg-white/text-px) above baseline — FINAL POLISH SWEEP must convert those admin surfaces to Fairway `Surface` (like W7) OR re-lock baseline, else the ratchet CI check fails on the PR.
 
 ## Audit sweep — stack alignment + final gate (draft #718 → draft #727)
+
 - **Merge:** `feat/helm-bridge-instrumentation` (tip `ac1124e34`, "fix(admin): eliminate nested double-log sites + delegation-verified scanner (audit N4)") ← `feat/helm-bridge-command-center` (tip `190364b00`, "fix(admin): audit sweep — noise-filtered KPIs, red-first ordering, mobile shell, CI portability") → merge commit `93da5023e`. These are the two fix commits a 9-auditor verification sweep confirmed independently on each PR; this unit brings both fixes onto one stack.
 - **Conflicts — 3 files, all real (not trivial), all resolved by union of behavior, none deleted either side's fix:**
   1. `src/lib/admin/data/errors.ts` (`fetchFingerprintDetail`) — instrumentation added `row:<id>` synthetic-key fallback + `decodeURIComponent` for URL-encoded fingerprints; command-center independently added the same throw-on-error-for-PanelBoundary behavior with a simpler `.eq('fingerprint', …)` path. Kept instrumentation's superset (row: fallback + decode) with command-center's identical error-throw already folded in.
