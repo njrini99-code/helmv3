@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds } from '@/app/golf/actions/messages';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
+import { postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 
 export interface GolfConversationParticipant {
   id: string;
@@ -78,8 +79,14 @@ export function useGolfMessages(conversationId: string) {
 
     if (participantsError) {
       logError(
-        new Error(participantsError.message),
-        { component: 'useGolfMessages', action: 'fetch-other-participant-read-status', sport: 'golf', conversationId },
+        toPostgrestError(participantsError),
+        {
+          component: 'useGolfMessages',
+          action: 'fetch-other-participant-read-status',
+          sport: 'golf',
+          conversationId,
+          ...postgrestErrorContext(participantsError),
+        },
         'medium'
       );
     }
@@ -118,8 +125,14 @@ export function useGolfMessages(conversationId: string) {
     if (fetchError) {
       console.error('[useGolfMessages] Failed to load messages:', fetchError);
       logError(
-        new Error(fetchError.message),
-        { component: 'useGolfMessages', action: 'fetch-messages', sport: 'golf', conversationId },
+        toPostgrestError(fetchError),
+        {
+          component: 'useGolfMessages',
+          action: 'fetch-messages',
+          sport: 'golf',
+          conversationId,
+          ...postgrestErrorContext(fetchError),
+        },
         'medium'
       );
       setError(true);
@@ -510,8 +523,14 @@ export function useGolfConversations() {
 
     if (groupConvsError) {
       logError(
-        new Error(groupConvsError.message),
-        { component: 'useGolfConversations', action: 'fetch-team-chat-conversations', sport: 'golf', userId },
+        toPostgrestError(groupConvsError),
+        {
+          component: 'useGolfConversations',
+          action: 'fetch-team-chat-conversations',
+          sport: 'golf',
+          userId,
+          ...postgrestErrorContext(groupConvsError),
+        },
         'medium'
       );
     }
@@ -660,13 +679,29 @@ export function useGolfConversations() {
       conversationsData = [...(conversationsData || []), ...groupConversations];
     }
 
-    if (error && !conversationsData?.length) {
-      // P257: a real backend failure (RPC error AND no rows recovered) must NOT
-      // masquerade as an empty inbox. Flag it so the rail shows a recoverable
-      // error with Retry instead of the cheerful "No conversations yet" empty.
+    // `groupConvsError` joins the RPC error here rather than early-returning at
+    // its own call site. The team-chat query is a SUPPLEMENT to the RPC ("in
+    // case DB function doesn't include them"), so returning on its failure
+    // would blank a rail whose DMs loaded fine. But when BOTH paths yield
+    // nothing and either one failed, that is a backend failure — and it was
+    // previously logged and then allowed to fall through to the cheerful "No
+    // conversations yet" empty, which is the exact masquerade P257 exists to
+    // stop. MessageConversationRail keeps rows on screen when
+    // `error && conversations.length > 0`, so the partial case stays readable.
+    const loadFailure = error ?? groupConvsError;
+    if (loadFailure && !conversationsData?.length) {
+      // P257: a real backend failure (fetch error AND no rows recovered) must
+      // NOT masquerade as an empty inbox. Flag it so the rail shows a
+      // recoverable error with Retry instead of the cheerful empty.
       logError(
-        error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
-        { component: 'useGolfConversations', action: 'fetch-conversations', sport: 'golf', userId },
+        toPostgrestError(loadFailure),
+        {
+          component: 'useGolfConversations',
+          action: 'fetch-conversations',
+          sport: 'golf',
+          userId,
+          ...postgrestErrorContext(loadFailure),
+        },
         'medium'
       );
       setError(true);

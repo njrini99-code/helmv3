@@ -90,6 +90,25 @@ Announcement create
 - Announcement player view needs compact cards, clear acknowledgement action, linked documents/tasks, and urgency state.
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.
 
+## Conversation Rail Failure Semantics (2026-08-27)
+
+The rail distinguishes "backend failed" from "genuinely empty" — a failed load
+must never render the cheerful "No conversations yet" (P257).
+
+`useGolfConversations` reads from TWO sources: the
+`get_golf_conversations_with_details` RPC (primary) and a direct
+`golf_conversation_participants` query for team chats (supplement, "in case DB
+function doesn't include them"). The terminal decision is
+`(rpcError ?? groupConvsError) && !conversationsData?.length` →
+`setError(true)`; `MessageConversationRail` then renders explain + Retry.
+
+Deliberately NOT an early return at the team-chat query: it supplements the RPC,
+so returning on its failure would blank a rail whose DMs loaded fine. The rail
+keeps rows on screen when `error && conversations.length > 0`. Before
+2026-08-27 that query's failure was logged and then fell through, so a user
+whose team-chat read was denied saw an empty inbox with no error — the exact
+masquerade P257 exists to stop.
+
 ## Known Risk Areas
 
 - Announcement inline tasks can drift from task completion state if tasks and assignment tables are not read consistently.
