@@ -36,12 +36,41 @@
 -- golf_qualifiers row whose team_id equals the ROUND's team_id. Everything else
 -- in the function is carried over byte-for-byte.
 --
--- Error codes follow the function's existing convention: 22023 for a malformed
--- request (no such qualifier), 42501 for a cross-tenant attempt, so an attacker
--- cannot use the code to probe which foreign qualifier uuids exist.
--- Deliberately NOT distinguishable: both paths must look the same to a caller
--- who is guessing uuids. They are separated here only because a legitimate
--- client passing a stale qualifier id deserves the 22023.
+-- ERROR CODES. 22023 for a malformed request (no such qualifier), 42501 for a
+-- cross-tenant attempt, following the function's existing convention.
+--
+-- These two ARE distinguishable by SQLSTATE, and an earlier version of this
+-- comment claimed the opposite in the same breath as describing the split. To
+-- be plain: the codes differ ON PURPOSE, so a legitimate client passing a stale
+-- qualifier id gets 22023 rather than a permission error. That is a theoretical
+-- existence oracle for foreign qualifier UUIDs, and it is accepted as low
+-- severity because v4 UUIDs are not enumerable, the sole app caller
+-- (src/app/golf/actions/round-type.ts) collapses both codes to generic copy
+-- before anything reaches a browser, and reaching the raw code at all requires
+-- calling the RPC directly — which already bypasses the app.
+--
+-- VERIFIED (production, 2026-08-27, read-only):
+--   SELECT pg_get_functiondef('public.reclassify_golf_round(uuid,text,uuid,integer)'::regprocedure);
+--   -> md5 c7c2c3f15af684fcdf63286c150bb12c, length 1656, and
+--      position('v_qualifier_team' in def) = 0, i.e. this fix was NOT yet live.
+--   Blast radius: golf_rounds with team_id IS NULL, completed, non-qualifier = 3.
+--   Pre-existing cross-team rows (round.team_id <> qualifier.team_id) = 0,
+--   so F8 has left no bad data to remediate — this is preventive only.
+--   RE-RUN the pg_get_functiondef check before applying; if the md5 differs,
+--   production has moved and this CREATE OR REPLACE would discard it.
+--
+-- ROLLBACK: CLAUDE-SECURITY-20260826-224016/F8-ROLLBACK-reclassify_golf_round.sql
+--   is the byte-exact pre-apply definition captured from production. Run it
+--   as-is to revert.
+--
+-- KNOWN BEHAVIOUR CHANGE (corrective, not a regression): a round whose team_id
+-- IS NULL can no longer be reclassified to 'qualifier' by its owning player,
+-- because golf_qualifiers.team_id is NOT NULL so IS DISTINCT FROM always holds.
+-- There is no "same team" for a round with no team; the prior behaviour let a
+-- teamless round attach to a specific team's qualifier. 3 rounds are in that
+-- state today. They surface the existing 42501 copy ("You don't have permission
+-- to change this round"), which is misleading for a data-integrity condition —
+-- a copy fix in round-type.ts is a follow-up, not a blocker.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.reclassify_golf_round(
