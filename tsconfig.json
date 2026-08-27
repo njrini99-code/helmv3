@@ -57,16 +57,34 @@
   },
   "include": [
     "next-env.d.ts",
-    ".next/types/**/*.ts",
     "**/*.mts",
     "**/*.ts",
-    "**/*.tsx",
-    ".next/dev/types/**/*.ts"
+    "**/*.tsx"
   ],
+  // `.next/types/**/*.ts` and `.next/dev/types/**/*.ts` were here and are
+  // deliberately gone (2026-08-26).
+  //
+  // They gave NOTHING in CI and broke `npm run typecheck` for every local
+  // session. In CI the typecheck job runs on a fresh checkout where `.next/`
+  // does not exist, so both globs matched zero files. Locally `.next/` is
+  // always present (dev server, or any build), so `tsc --noEmit` type-checked
+  // Next's own generated `validator.ts` and failed with two errors that exist
+  // nowhere else:
+  //   .next/types/validator.ts: Type 'Route' does not satisfy the constraint 'never'
+  // Measured that day: `tsc -p` with these globs = exit 2, without = exit 0,
+  // on identical source.
+  //
+  // Every agent and developer running typecheck locally saw a red tree that CI
+  // considered green, which is a standing invitation to chase a bug that is not
+  // there. Generated-file coverage is NOT lost: `next.config.mjs` sets
+  // `typescript.ignoreBuildErrors: false`, so `next build` type-checks its own
+  // generated types itself — and passes with `.next/` present, which is exactly
+  // the case raw `tsc` could not handle.
   "exclude": [
     "node_modules",
     "archive",
-        "scripts",
-    "supabase/functions"
+    "scripts",
+    "supabase/functions",
+    ".next"
   ]
 }

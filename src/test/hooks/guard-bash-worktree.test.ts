@@ -28,7 +28,10 @@ import { resolve } from 'node:path';
  */
 
 const REPO = resolve(__dirname, '../../..');
-const HOOK = resolve(REPO, '.claude/hooks/guard-bash.sh');
+// GUARD_BASH_HOOK lets a candidate fix be verified against this suite before it
+// is written into `.claude/hooks/`, which is deliberately write-denied. Defaults
+// to the real hook, so CI and a bare `npm test` are unchanged.
+const HOOK = process.env.GUARD_BASH_HOOK ?? resolve(REPO, '.claude/hooks/guard-bash.sh');
 
 /** Exit 2 = blocked; anything else = allowed. Never exit 1 (that is "hook error"). */
 function runGuard(command: string): 'BLOCK' | 'ALLOW' {
