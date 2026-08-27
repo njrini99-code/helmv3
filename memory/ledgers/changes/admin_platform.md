@@ -1,5 +1,47 @@
 # Admin Platform change ledger
 
+## 2026-08-26 — reliability tab: wired to the cron contract, and made legible
+
+- SHA: recorded on merge of `feat/reliability-collector`.
+- **Wiring defects caught by CI, not by local runs.** The first draft hand-rolled
+  its own `background_job_logs` insert and never called `recordJobRun`, which
+  `cron-job-log-coverage.test.ts` requires of every registered cron. It also
+  wrote `status: 'success'` — a word no other writer in the table emits (verified:
+  every existing row is `completed` or `failed`), so the Jobs board and every
+  status filter would have skipped it. Both fixed. The lesson recorded for the
+  next agent: a scoped `vitest run <dirs>` is not a substitute for `npm test`
+  when the change touches a cross-cutting registry.
+- Two rows per run now, deliberately: `recordJobRun` writes the cron-board row,
+  and the correlated payload goes under `reliability-snapshot`. One row cannot
+  serve both — `extractOutcomeMetadata` keeps only top-level scalars by design,
+  so `signals[]` would have been stripped and the tab would have shown every run
+  as "recorded but unreadable".
+- The route now returns **503 when any arm is blind**, so the Jobs board shows
+  the cron red until `SENTRY_READ_TOKEN` and a Vercel token exist. That couples
+  to the self-feed filter: a failed run makes `recordJobRun` write an
+  `admin_events` row titled `Cron failed: reliability-triage`, which is precisely
+  what `collectSupabase` excludes. The exclusion test now asserts against that
+  exact string, derived from the shared constant rather than hand-typed.
+- **Visualisation.** The tab was a flat list; it is now KPI strip (needs
+  attention / cross-source / correlated / sources reading, each a drill-through)
+  → source health + severity mix → signals grouped by severity with a severity
+  stripe → run history. Built from the Bridge's existing vocabulary
+  (`StatStrip`, `KpiTile`, `SegmentBar`, `Eyebrow`, `Badge`, `StatusPill`), not
+  new primitives.
+- **Evidence references are now links where they resolve to one.** A Sentry
+  permalink opens the stack trace; an 8-char `buildIncidentSignature`
+  fingerprint drills through to `/admin/errors/<fingerprint>`, which the Bridge
+  already renders. A Vercel deployment id and a pre-fingerprint `row:<uuid>` are
+  rendered as opaque text rather than linked to a page that would 404. Only
+  `http(s)` refs become external links, so a `javascript:`/`data:` value cannot
+  be rendered as one.
+- Cross-surface visibility came free from doing the wiring correctly rather than
+  from new plumbing: because the cron is in `CRON_REGISTRY` and calls
+  `recordJobRun`, the Jobs board picks it up automatically and shows its cadence
+  and failures with no extra query. A nav badge was considered and rejected — the
+  badge path is bottom-nav-only and would have cost a DB read on every Bridge
+  navigation for data that changes once every 3 hours.
+
 ## 2026-08-26 — reliability collector: three sources, one correlated view
 
 - SHA: recorded on merge of `feat/reliability-collector`.

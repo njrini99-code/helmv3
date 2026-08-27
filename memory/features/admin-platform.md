@@ -94,6 +94,27 @@ them would have broken those routes, not the dead one.
   under the analyzed fingerprint. Every incident query must exclude that event
   type, or an analysis is counted as an occurrence of the thing it analyzes
   (inflating occurrence counts and moving last-seen).
+- **The reliability collector writes TWO `background_job_logs` rows per run, and
+  they must stay distinct.** `recordJobRun('reliability-triage', …)` writes the
+  standard cron-board row — every registered cron must call it, enforced by
+  `src/app/api/cron/__tests__/cron-job-log-coverage.test.ts` — and the detailed
+  correlated payload is written separately under `reliability-snapshot`. They
+  cannot be one row: `recordJobRun`'s `extractOutcomeMetadata` deliberately keeps
+  only TOP-LEVEL SCALARS, so `signals[]` and `sources[]` would be silently
+  stripped and the tab would render every run as "recorded but unreadable". Only
+  `reliability-triage` belongs in `CRON_REGISTRY`; the snapshot type is a payload
+  store, not a scheduled job.
+- **The row status vocabulary is `completed` / `failed`.** Verified against
+  production: all existing `background_job_logs` rows use those two words and
+  nothing else. An earlier draft wrote `success`, which no other writer emits and
+  every status-based filter would have missed.
+- **A blind arm makes the cron route return 503.** `recordJobRun` treats >=400 as
+  a failed run, so the Jobs board shows this cron red while any source is
+  unreadable — which is correct rather than noisy, and the error line names the
+  sources to fix. Note the consequence: a failed run makes `recordJobRun` write
+  an `admin_events` row titled `Cron failed: reliability-triage`, which is
+  exactly the self-emission `collectSupabase` must filter out. The two behaviours
+  are coupled; do not change one without the other.
 - **A source that could not be read is never reported as zero problems.** The
   reliability collector's arms each return `{status, reason, signals}`, and the
   run's status is the WORST arm — so a run whose Sentry token is missing writes

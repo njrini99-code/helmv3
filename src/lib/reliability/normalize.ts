@@ -32,6 +32,37 @@ import type {
  */
 export const RELIABILITY_JOB_TYPE = 'reliability-triage';
 
+/**
+ * The DETAILED snapshot row's job type — deliberately distinct from the cron's
+ * own.
+ *
+ * Two rows are written per run, because the two jobs are genuinely different:
+ *
+ * 1. `recordJobRun('reliability-triage', …)` writes the standard cron-board row.
+ *    Every registered cron must call it — `cron-job-log-coverage.test.ts`
+ *    enforces exactly that — and it is what makes the Jobs board able to say
+ *    this cron ran on time.
+ * 2. This job type carries the correlated payload the Reliability tab renders.
+ *
+ * They cannot be one row. `recordJobRun`'s `extractOutcomeMetadata` keeps only
+ * TOP-LEVEL SCALARS and drops arrays and nested objects by design (a bound that
+ * exists so a pathological response body cannot bloat the row) — so `signals[]`
+ * and `sources[]` would be silently stripped, and the tab would render every run
+ * as "recorded but unreadable". Writing the payload under its own job type keeps
+ * both contracts intact without weakening that bound.
+ */
+export const RELIABILITY_SNAPSHOT_JOB_TYPE = 'reliability-snapshot';
+
+/**
+ * The exact title `recordJobRun` gives the `admin_events` row it writes when a
+ * cron fails (`Cron failed: <jobType>`, job-log.ts).
+ *
+ * This is the self-emission the Supabase arm must not read back, and having the
+ * real string here — rather than an approximation — is what makes the exclusion
+ * test a genuine guard instead of a plausible-looking one.
+ */
+export const RELIABILITY_SELF_EVENT_TITLE = `Cron failed: ${RELIABILITY_JOB_TYPE}`;
+
 /** Post-correlation cap. Beyond this the tail is counted, not stored. */
 export const MAX_STORED_SIGNALS = 60;
 

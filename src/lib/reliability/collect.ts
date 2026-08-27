@@ -27,7 +27,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
 import { collectSentry, collectSupabase, collectVercel } from './sources';
 import {
-  RELIABILITY_JOB_TYPE,
+  RELIABILITY_SNAPSHOT_JOB_TYPE,
   correlateSignals,
   summarizeSources,
   worstStatus,
@@ -109,17 +109,22 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
   const completedAt = new Date();
   const admin = createAdminClient();
 
-  // The job row's `status` reflects the WORST arm, not merely "the function
+  // The row's `status` reflects the WORST arm, not merely "the function
   // returned". A collector that could not reach Sentry is not a successful
-  // collection, and a green jobs board for a two-thirds-blind run is exactly
-  // the false-green this system exists to prevent.
-  const jobStatus = overallStatus === 'blind' ? 'failed' : 'success';
+  // collection, and a green board for a two-thirds-blind run is exactly the
+  // false-green this system exists to prevent.
+  //
+  // 'completed' / 'failed' is the table's real vocabulary, verified against
+  // production rather than assumed: all 19,832 existing rows use those two and
+  // nothing else. An earlier draft wrote 'success', which no other writer emits
+  // and every status-based filter would have missed.
+  const jobStatus = overallStatus === 'blind' ? 'failed' : 'completed';
   const blindArms = results.filter((r) => r.status === 'blind').map((r) => r.source);
 
   const { data, error } = await admin
     .from('background_job_logs')
     .insert({
-      job_type: RELIABILITY_JOB_TYPE,
+      job_type: RELIABILITY_SNAPSHOT_JOB_TYPE,
       status: jobStatus,
       started_at: startedAt.toISOString(),
       completed_at: completedAt.toISOString(),

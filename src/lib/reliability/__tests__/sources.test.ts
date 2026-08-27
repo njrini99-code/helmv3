@@ -52,6 +52,7 @@ vi.mock('@/lib/admin/vercel-api', () => ({
 }));
 
 import { collectSupabase, collectSentry, collectVercel } from '../sources';
+import { RELIABILITY_SELF_EVENT_TITLE } from '../normalize';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
 
@@ -83,23 +84,24 @@ describe('collectSupabase — the self-feeding read is closed at the query', () 
     expect(neq?.args).toEqual(['event_type', 'rca_analysis']);
   });
 
-  it('a collector failure row would not survive its own filters', async () => {
-    // Simulate the loop: the previous run failed and wrote an error row naming
-    // the job. Prove the shape we filter on is the shape such a row carries.
-    const selfEmittedRow = {
-      id: 'x',
-      title: 'Cron reliability-triage failed',
-      message: 'reliability-triage: blind sources: sentry',
-      severity: 'error',
-      url: null,
-      created_at: '2026-08-26T01:00:00.000Z',
-      fingerprint: 'abc',
-      metadata: null,
-    };
-    const notFilterPatterns = ['title', 'message'] as const;
-    for (const column of notFilterPatterns) {
-      expect(selfEmittedRow[column]).toContain('reliability-triage');
-    }
+  it('the EXACT row recordJobRun emits on failure is caught by the filter', async () => {
+    // Not an approximation of the self-emission — the real one. When this cron
+    // returns >=400, `recordJobRun` calls `logServerEvent` with the title
+    // `Cron failed: <jobType>` and source='cron', writing an admin_events row
+    // that this collector would read back on its next pass. That is the loop.
+    //
+    // Asserting against the shared constant (rather than a hand-typed string
+    // that merely looks right) is what keeps this a guard: rename the job type
+    // and both the filter and this expectation move together.
+    expect(RELIABILITY_SELF_EVENT_TITLE).toBe('Cron failed: reliability-triage');
+
+    await collectSupabase('2026-08-26T00:00:00.000Z');
+    const titleFilter = calls.find((c) => c.method === 'not' && c.args[0] === 'title');
+    const pattern = String(titleFilter?.args[2] ?? '');
+
+    // The ilike pattern must actually match that title, case-insensitively.
+    const body = pattern.replace(/^%/, '').replace(/%$/, '');
+    expect(RELIABILITY_SELF_EVENT_TITLE.toLowerCase()).toContain(body.toLowerCase());
   });
 
   it('windows the read to the caller’s start time', async () => {

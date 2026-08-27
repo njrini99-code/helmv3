@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import {
   RELIABILITY_JOB_TYPE,
+  RELIABILITY_SNAPSHOT_JOB_TYPE,
+  RELIABILITY_SELF_EVENT_TITLE,
   correlateSignals,
   hasBlindSource,
   proposeRisk,
   summarizeSources,
   worstStatus,
 } from '../normalize';
+import { CRON_REGISTRY } from '@/lib/admin/cron-registry';
 import type { RawSignal, SourceResult } from '../types';
 
 function rawSignal(overrides: Partial<RawSignal> = {}): RawSignal {
@@ -254,11 +257,35 @@ describe('summarizeSources', () => {
   });
 });
 
-describe('RELIABILITY_JOB_TYPE', () => {
+describe('job types — the two rows a run writes must stay distinct', () => {
   it('is exported so the Supabase arm can exclude the collector’s own rows', () => {
     // Guards the self-feeding loop: this constant is the thing the read filters
     // on. If it were inlined at the query instead, a rename here would silently
     // reopen the loop.
     expect(RELIABILITY_JOB_TYPE).toBe('reliability-triage');
+  });
+
+  it('the cron-board job type and the snapshot job type are NOT the same', () => {
+    // If these collided, the Bridge would read back `recordJobRun`'s row — which
+    // carries only top-level scalars, arrays having been stripped by design —
+    // and render every run as "recorded but unreadable". The two rows exist
+    // precisely because one format cannot serve both consumers.
+    expect(RELIABILITY_SNAPSHOT_JOB_TYPE).not.toBe(RELIABILITY_JOB_TYPE);
+  });
+
+  it('the cron-board job type is the one registered in CRON_REGISTRY', () => {
+    // The registry drives the Jobs board, the cadence contract test, and the
+    // job-log coverage test. The SNAPSHOT type is deliberately absent from it:
+    // it is a payload store, not a scheduled job, and registering it would make
+    // the board expect a cron that does not exist.
+    const registered = CRON_REGISTRY.map((e) => e.jobType);
+    expect(registered).toContain(RELIABILITY_JOB_TYPE);
+    expect(registered).not.toContain(RELIABILITY_SNAPSHOT_JOB_TYPE);
+  });
+
+  it('the self-emission title matches what recordJobRun actually writes', () => {
+    // job-log.ts builds `Cron failed: ${jobType}`. Deriving it here rather than
+    // hard-coding keeps the exclusion filter correct through a rename.
+    expect(RELIABILITY_SELF_EVENT_TITLE).toBe(`Cron failed: ${RELIABILITY_JOB_TYPE}`);
   });
 });

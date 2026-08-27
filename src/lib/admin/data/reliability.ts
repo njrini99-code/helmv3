@@ -11,7 +11,7 @@ import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { failed, ok, type AdminFetchResult } from '@/lib/admin/fetch-result';
-import { RELIABILITY_JOB_TYPE } from '@/lib/reliability/normalize';
+import { RELIABILITY_SNAPSHOT_JOB_TYPE } from '@/lib/reliability/normalize';
 import type { ReliabilityRun } from '@/lib/reliability/types';
 
 export interface ReliabilityRunRow {
@@ -73,7 +73,10 @@ export async function fetchReliabilitySnapshot(): Promise<AdminFetchResult<Relia
   const { data, error } = await admin
     .from('background_job_logs')
     .select('id, status, started_at, completed_at, duration_ms, error_message, metadata')
-    .eq('job_type', RELIABILITY_JOB_TYPE)
+    // The SNAPSHOT job type, not the cron's own: the cron-board row written by
+    // `recordJobRun` carries only scalars and would render here as "recorded
+    // but unreadable". See the comment on these two constants.
+    .eq('job_type', RELIABILITY_SNAPSHOT_JOB_TYPE)
     .order('started_at', { ascending: false })
     .limit(HISTORY_LIMIT);
 

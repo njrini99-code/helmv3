@@ -1,30 +1,49 @@
+import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchReliabilitySnapshot, type ReliabilityRunRow } from '@/lib/admin/data/reliability';
-import { Surface, Inset, StatusPill, InlineNotice, type FwStatusTone } from '@/components/fairway';
+import {
+  Surface,
+  Inset,
+  StatStrip,
+  StatusPill,
+  InlineNotice,
+  Eyebrow,
+  Badge,
+  SegmentBar,
+  type FwStatusTone,
+} from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { KpiTile } from '../_components/KpiTile';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
-import type {
-  CorrelatedSignal,
-  ReliabilitySeverity,
-  SourceStatus,
-} from '@/lib/reliability/types';
+import type { CorrelatedSignal, ReliabilitySeverity, SourceStatus } from '@/lib/reliability/types';
+import {
+  corroboratedCount,
+  evidenceTarget,
+  groupBySeverity,
+  historySeries,
+  needsAttentionCount,
+  readingCount,
+  relativeAge,
+  severityCounts,
+} from './reliability-view';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * A blind source is DANGER, not neutral.
  *
- * This is the one tone mapping in the file worth arguing about, so: elsewhere
- * in the Bridge "not configured" is neutral, because choosing not to wire up
- * Inngest is a config decision rather than a fault. Here it is not. The whole
- * claim this tab makes is "these are the problems across your three sources";
- * a source that could not be read makes that claim false, and rendering it as
- * a calm grey chip is precisely how a two-thirds-blind collector reads as a
- * clean bill of health.
+ * The one tone mapping here worth arguing about, so: elsewhere in the Bridge
+ * "not configured" is neutral, because declining to wire up Inngest is a config
+ * decision rather than a fault. Here it is not. The claim this tab makes is
+ * "these are the problems across your three sources"; a source that could not
+ * be read makes that claim false, and rendering it as a calm grey chip is
+ * precisely how a two-thirds-blind collector reads as a clean bill of health.
  */
 const SOURCE_TONE: Record<SourceStatus, FwStatusTone> = {
   ok: 'success',
@@ -35,7 +54,7 @@ const SOURCE_TONE: Record<SourceStatus, FwStatusTone> = {
 const SOURCE_LABEL: Record<SourceStatus, string> = {
   ok: 'reading',
   partial: 'truncated',
-  blind: 'BLIND',
+  blind: 'blind',
 };
 
 const SEVERITY_TONE: Record<ReliabilitySeverity, FwStatusTone> = {
@@ -45,54 +64,220 @@ const SEVERITY_TONE: Record<ReliabilitySeverity, FwStatusTone> = {
   info: 'neutral',
 };
 
-function SignalRow({ signal }: { signal: CorrelatedSignal }) {
-  const corroborated = signal.sources.length > 1;
+const SEVERITY_HEADING: Record<ReliabilitySeverity, string> = {
+  critical: 'Critical',
+  error: 'Errors',
+  warning: 'Warnings',
+  info: 'Informational',
+};
+
+/** What each source contributes, stated once so the page never implies more. */
+const SOURCE_ROLE: Record<string, string> = {
+  sentry: 'runtime exceptions',
+  supabase: 'application error events',
+  vercel: 'build & deploy health',
+};
+
+// ---------------------------------------------------------------------------
+// Signal row
+// ---------------------------------------------------------------------------
+
+function EvidenceLinks({ signal }: { signal: CorrelatedSignal }) {
+  if (signal.evidenceRefs.length === 0) return null;
+
   return (
-    <div className="border-t border-warm-200/60 py-3 first:border-t-0">
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusPill tone={SEVERITY_TONE[signal.severity]} dot>
-          {signal.severity}
-        </StatusPill>
-        {/* Corroboration is the tab's reason to exist — two independent
-            sources agreeing is stronger evidence than one source shouting,
-            and it is what this view shows that the Errors tab cannot. */}
-        {corroborated && (
-          <StatusPill tone="warning">
-            confirmed by {signal.sources.length} sources
-          </StatusPill>
-        )}
-        <span className="text-xs font-medium text-warm-500">{signal.proposedRisk}</span>
-        <span className="text-xs text-warm-500">
-          {signal.count}&times;
-        </span>
-        {signal.featureId && (
-          <span className="text-xs text-warm-500">{signal.featureId}</span>
-        )}
-      </div>
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      {signal.evidenceRefs.slice(0, 4).map((ref, i) => {
+        // A reference is only rendered as a link when it actually resolves to
+        // one. Printing a Sentry permalink as grey text — the first draft's
+        // behaviour — throws away the single most useful action on the row.
+        const target = evidenceTarget(ref, signal.sources[i] ?? signal.sources[0]!);
+        const chip =
+          'inline-flex items-center gap-1 rounded-md border border-warm-200/70 px-2 py-0.5 text-xs';
 
-      <p className="mt-1.5 text-sm font-medium text-warm-900">{signal.title}</p>
-
-      {signal.summary && signal.summary !== signal.title && (
-        <p className="mt-0.5 text-xs text-warm-600">{signal.summary}</p>
-      )}
-
-      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-warm-500">
-        <span>{signal.sources.join(' + ')}</span>
-        {signal.route && <span className="font-mono">{signal.route}</span>}
-        {signal.errorCode && <span className="font-mono">{signal.errorCode}</span>}
-        <span>
-          last seen <LocalTime iso={signal.lastSeen} />
-        </span>
-      </div>
+        if (target.kind === 'external') {
+          return (
+            <a
+              key={ref}
+              href={target.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(chip, 'text-warm-700 transition-colors hover:border-warm-300 hover:text-warm-900')}
+            >
+              {target.label}
+              <ExternalLink aria-hidden className="h-3 w-3" />
+            </a>
+          );
+        }
+        if (target.kind === 'internal') {
+          return (
+            <Link
+              key={ref}
+              href={target.href}
+              className={cn(chip, 'text-warm-700 transition-colors hover:border-warm-300 hover:text-warm-900')}
+            >
+              {target.label}
+            </Link>
+          );
+        }
+        return (
+          <span key={ref} className={cn(chip, 'font-mono text-warm-500')}>
+            {target.label}
+          </span>
+        );
+      })}
     </div>
   );
 }
 
-function RunPanel({ row }: { row: ReliabilityRunRow }) {
+function SignalRow({ signal }: { signal: CorrelatedSignal }) {
+  const corroborated = signal.sources.length > 1;
+
+  return (
+    <li
+      className={cn(
+        'relative border-t border-warm-200/60 py-3.5 pl-4 first:border-t-0',
+        // A severity stripe, so the shape of the list is readable before any
+        // word is. Color is never the only channel — the pill carries the name.
+        'before:absolute before:left-0 before:top-4 before:bottom-4 before:w-0.5 before:rounded-full',
+        signal.severity === 'critical' && 'before:bg-fw-danger',
+        signal.severity === 'error' && 'before:bg-fw-danger/60',
+        signal.severity === 'warning' && 'before:bg-fw-warning/70',
+        signal.severity === 'info' && 'before:bg-warm-300',
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusPill tone={SEVERITY_TONE[signal.severity]} dot>
+          {signal.severity}
+        </StatusPill>
+
+        {/* Corroboration is the tab's reason to exist: two independent sources
+            agreeing is stronger evidence than one source shouting, and it is
+            what this view shows that the Errors tab structurally cannot. */}
+        {corroborated && (
+          <Badge tone="warning" numeric>
+            confirmed by {signal.sources.length} sources
+          </Badge>
+        )}
+
+        <Badge tone="neutral" variant="outline">
+          {signal.proposedRisk}
+        </Badge>
+
+        <span className="font-mono text-xs tabular-nums text-warm-500">
+          {signal.count.toLocaleString()}&times;
+        </span>
+
+        <span className="ml-auto text-xs text-warm-500">{relativeAge(signal.lastSeen)}</span>
+      </div>
+
+      <p className="mt-2 text-sm font-medium leading-snug text-warm-900">{signal.title}</p>
+
+      {signal.summary && signal.summary !== signal.title && (
+        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-warm-600">{signal.summary}</p>
+      )}
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-warm-500">
+        <span className="flex items-center gap-1">
+          {signal.sources.map((source) => (
+            <Badge key={source} tone="neutral" size="sm">
+              {source}
+            </Badge>
+          ))}
+        </span>
+        {signal.route && <span className="font-mono text-warm-600">{signal.route}</span>}
+        {signal.errorCode && <span className="font-mono text-warm-600">{signal.errorCode}</span>}
+        {signal.featureId && <span>{signal.featureId}</span>}
+        <span>
+          first seen <LocalTime iso={signal.firstSeen} />
+        </span>
+      </div>
+
+      <EvidenceLinks signal={signal} />
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Run panel
+// ---------------------------------------------------------------------------
+
+function SourceHealthPanel({ run }: { run: NonNullable<ReliabilityRunRow['run']> }) {
+  return (
+    <Surface>
+      <Inset>
+        <Eyebrow as="p">Source health</Eyebrow>
+        <p className="mt-1 text-xs text-warm-500">
+          What each arm could read this run. A blind arm contributes no signals —
+          which is not the same as contributing zero.
+        </p>
+        <div className="mt-3 space-y-2">
+          {run.sources.map((source) => (
+            <div
+              key={source.source}
+              className={cn(
+                'flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2.5',
+                source.status === 'blind'
+                  ? 'border-fw-danger/40 bg-fw-danger/[0.03]'
+                  : 'border-warm-200/60',
+              )}
+            >
+              <StatusPill tone={SOURCE_TONE[source.status]} dot>
+                {SOURCE_LABEL[source.status]}
+              </StatusPill>
+              <span className="text-sm font-medium text-warm-900">{source.source}</span>
+              <span className="text-xs text-warm-500">
+                {SOURCE_ROLE[source.source] ?? ''}
+              </span>
+              <span className="ml-auto font-mono text-xs tabular-nums text-warm-500">
+                {source.durationMs}ms
+                {source.bounded && ' · bounded'}
+              </span>
+              {source.reason && (
+                <p className="w-full text-xs text-warm-600">{source.reason}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </Inset>
+    </Surface>
+  );
+}
+
+function SeverityMixPanel({ run }: { run: NonNullable<ReliabilityRunRow['run']> }) {
+  const counts = severityCounts(run.signals);
+  return (
+    <Surface>
+      <Inset>
+        <SegmentBar
+          overline="This window"
+          title="Severity mix"
+          takeaway={`${run.signals.length} correlated signals`}
+          awaiting={run.signals.length === 0}
+          parts={[
+            { label: 'Critical', value: counts.critical, tone: 'caution' },
+            { label: 'Error', value: counts.error, tone: 'caution' },
+            { label: 'Warning', value: counts.warning, tone: 'neutral' },
+            { label: 'Info', value: counts.info, tone: 'good' },
+          ]}
+          primary="good"
+        />
+      </Inset>
+    </Surface>
+  );
+}
+
+function RunPanel({
+  row,
+  history,
+}: {
+  row: ReliabilityRunRow;
+  history: readonly ReliabilityRunRow[];
+}) {
   const run = row.run;
 
-  // Recorded but unreadable — an older schema version. Say so; do not render
-  // an empty signal list, which would read as "this run found nothing".
+  // Recorded but unreadable — an older schema version. Say so; do not render an
+  // empty signal list, which would read as "this run found nothing".
   if (!run) {
     return (
       <InlineNotice tone="warning">
@@ -104,86 +289,161 @@ function RunPanel({ row }: { row: ReliabilityRunRow }) {
   }
 
   const blind = run.sources.filter((s) => s.status === 'blind');
+  const groups = groupBySeverity(run.signals);
+  const trend = historySeries(history);
 
   return (
-    <>
+    <div className="space-y-5">
       {blind.length > 0 && (
         <InlineNotice tone="danger">
           <strong>
             {blind.length} of {run.sources.length} sources could not be read.
           </strong>{' '}
-          This run is not a clean bill of health — the signals below are only
-          what the remaining sources saw.
-          <ul className="mt-1.5 space-y-0.5">
+          This run is not a clean bill of health — what follows is only what the
+          remaining {readingCount(run.sources)} saw.
+          <ul className="mt-2 space-y-1">
             {blind.map((s) => (
               <li key={s.source} className="text-xs">
-                <span className="font-medium">{s.source}</span>: {s.reason ?? 'unreadable'}
+                <span className="font-medium">{s.source}</span> ({SOURCE_ROLE[s.source]}):{' '}
+                {s.reason ?? 'unreadable'}
               </li>
             ))}
           </ul>
         </InlineNotice>
       )}
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {/* Hand-rolled rather than StatTile: that component renders a NUMERIC
-            metric, and the fact worth showing per source is a state, not a
-            count. A source's signal count would be actively misleading here —
-            zero from a blind arm and zero from a healthy arm are the same
-            number and opposite meanings. */}
-        {run.sources.map((source) => (
-          <div
-            key={source.source}
-            className="rounded-lg border border-warm-200/60 px-3 py-2.5"
-          >
-            <p className="text-xs font-medium uppercase tracking-wide text-warm-500">
-              {source.source}
-            </p>
-            <div className="mt-1.5">
-              <StatusPill tone={SOURCE_TONE[source.status]} dot>
-                {SOURCE_LABEL[source.status]}
-              </StatusPill>
-            </div>
-            <p className="mt-1.5 text-xs text-warm-500">
-              {source.reason
-                ? source.reason
-                : `${source.durationMs}ms${source.bounded ? ' · bounded' : ''}`}
-            </p>
-          </div>
-        ))}
+      {/* KPIs first: "is anything on fire" above the fold, per the Bridge's
+          UI contract. Every tile is a drill-through, not a readout. */}
+      <StatStrip count={4} mdColumns={4} ariaLabel="Reliability KPIs">
+        <KpiTile
+          label="Needs attention"
+          value={needsAttentionCount(run.signals)}
+          href="#signals"
+          tone={needsAttentionCount(run.signals) > 0 ? 'danger' : 'neutral'}
+          goodDirection="down"
+        />
+        <KpiTile
+          label="Cross-source"
+          value={corroboratedCount(run.signals)}
+          href="#signals"
+          goodDirection="down"
+          tone={corroboratedCount(run.signals) > 0 ? 'warning' : 'neutral'}
+        />
+        <KpiTile
+          label="Correlated signals"
+          value={run.signals.length}
+          href="#signals"
+          trendData={trend.length > 1 ? trend : undefined}
+          goodDirection="down"
+        />
+        <KpiTile
+          label="Sources reading"
+          value={readingCount(run.sources)}
+          href="#sources"
+          tone={blind.length > 0 ? 'danger' : 'neutral'}
+          goodDirection="up"
+        />
+      </StatStrip>
+
+      <div id="sources" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SourceHealthPanel run={run} />
+        <SeverityMixPanel run={run} />
       </div>
 
-      <DatelineRule className="my-5" />
-
-      {run.signals.length === 0 ? (
-        blind.length > 0 ? (
-          <PanelNoData
-            label="No signals from the sources that were readable"
-            description="With sources blind, an empty list is not evidence that production is healthy."
-          />
+      <section id="signals" className="scroll-mt-6">
+        {run.signals.length === 0 ? (
+          blind.length > 0 ? (
+            <PanelNoData
+              label="No signals from the sources that were readable"
+              description="With sources blind, an empty list is not evidence that production is healthy."
+            />
+          ) : (
+            <PanelAllClear
+              label="No correlated signals in this window — all three sources read cleanly"
+              checkedAt={run.windowEnd}
+            />
+          )
         ) : (
-          <PanelAllClear
-            label="No correlated signals in this window — all three sources read cleanly"
-            checkedAt={run.windowEnd}
-          />
-        )
-      ) : (
-        <div>
-          {run.signals.map((signal) => (
-            <SignalRow key={signal.signature} signal={signal} />
-          ))}
-          {run.truncatedSignals > 0 && (
-            <p className="mt-3 text-xs text-warm-500">
-              {run.truncatedSignals} further signal
-              {run.truncatedSignals === 1 ? '' : 's'} were correlated but not stored
-              (display cap). They are counted here so the list is never mistaken
-              for the complete set.
-            </p>
-          )}
-        </div>
-      )}
-    </>
+          <div className="space-y-4">
+            {groups.map((group) => (
+              <Surface key={group.severity}>
+                <Inset>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <Eyebrow as="h2">{SEVERITY_HEADING[group.severity]}</Eyebrow>
+                    <span className="font-mono text-xs tabular-nums text-warm-500">
+                      {group.signals.length}
+                    </span>
+                  </div>
+                  <ul className="mt-1">
+                    {group.signals.map((signal) => (
+                      <SignalRow key={signal.signature} signal={signal} />
+                    ))}
+                  </ul>
+                </Inset>
+              </Surface>
+            ))}
+
+            {run.truncatedSignals > 0 && (
+              <p className="text-xs text-warm-500">
+                {run.truncatedSignals} further signal
+                {run.truncatedSignals === 1 ? ' was' : 's were'} correlated but not
+                stored (display cap). Counted here so this list is never mistaken
+                for the complete set.
+              </p>
+            )}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// History
+// ---------------------------------------------------------------------------
+
+function HistoryPanel({ history }: { history: readonly ReliabilityRunRow[] }) {
+  return (
+    <Surface>
+      <Inset>
+        <Eyebrow as="h2">Recent runs</Eyebrow>
+        <p className="mt-1 text-xs text-warm-500">
+          Cadence is every 3 hours. A gap means a run did not happen — Vercel cron
+          scheduling is best-effort, so an occasional miss is expected and a
+          sustained one is not.
+        </p>
+        <ul className="mt-3 space-y-1">
+          {history.map((row) => (
+            <li
+              key={row.id}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-warm-200/50 py-2 text-xs first:border-t-0"
+            >
+              <StatusPill tone={row.status === 'failed' ? 'danger' : 'success'} dot>
+                {row.status}
+              </StatusPill>
+              <span className="text-warm-600">
+                {row.startedAt ? <LocalTime iso={row.startedAt} /> : '—'}
+              </span>
+              <span className="font-mono tabular-nums text-warm-500">
+                {row.run ? `${row.run.signals.length} signals` : 'unreadable payload'}
+              </span>
+              {row.durationMs !== null && (
+                <span className="font-mono tabular-nums text-warm-500">{row.durationMs}ms</span>
+              )}
+              {row.errorMessage && (
+                <span className="text-warm-600">{row.errorMessage}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Inset>
+    </Surface>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Panel
+// ---------------------------------------------------------------------------
 
 async function ReliabilityPanel() {
   const snapshot = await fetchReliabilitySnapshot();
@@ -198,63 +458,41 @@ async function ReliabilityPanel() {
 
   const { latest, history, neverRan } = snapshot.data;
 
-  // Never-ran is a WIRING problem, not an all-clear. Distinct copy from the
-  // all-clear state above on purpose.
+  // Never-ran is a WIRING problem, not an all-clear — deliberately distinct
+  // copy from the all-clear state.
   if (neverRan || !latest) {
     return (
       <PanelNoData
         label="The reliability collector has not run yet"
-        description="No run has been recorded. If the cron is deployed, the first run lands within 3 hours; until then this tab can say nothing about production."
+        description="No run has been recorded. The cron collects every 3 hours once deployed; until the first run lands, this tab can say nothing about production."
       />
     );
   }
 
   return (
     <div className="space-y-5">
-      <Surface>
-        <Inset>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold text-warm-900">Latest run</h2>
-            <p className="text-xs text-warm-500">
-              {latest.startedAt ? <LocalTime iso={latest.startedAt} /> : 'unknown time'}
-              {latest.durationMs !== null && ` · ${latest.durationMs}ms`}
-            </p>
-          </div>
-          <div className="mt-4">
-            <RunPanel row={latest} />
-          </div>
-        </Inset>
-      </Surface>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Eyebrow as="p">Latest run</Eyebrow>
+        <span className="text-xs text-warm-500">
+          {latest.startedAt ? <LocalTime iso={latest.startedAt} /> : 'unknown time'}
+          {latest.startedAt && ` · ${relativeAge(latest.startedAt)}`}
+          {latest.durationMs !== null && ` · ${latest.durationMs}ms`}
+        </span>
+        {latest.run && (
+          <span className="text-xs text-warm-500">
+            window {new Date(latest.run.windowStart).toISOString().slice(11, 16)}–
+            {new Date(latest.run.windowEnd).toISOString().slice(11, 16)} UTC
+          </span>
+        )}
+      </div>
+
+      <RunPanel row={latest} history={history} />
 
       {history.length > 1 && (
-        <Surface>
-          <Inset>
-            <h2 className="text-sm font-semibold text-warm-900">Recent runs</h2>
-            <p className="mt-0.5 text-xs text-warm-500">
-              Cadence is every 3 hours. A gap here means a run did not happen —
-              Vercel cron scheduling is best-effort, so an occasional miss is
-              expected and a sustained one is not.
-            </p>
-            <div className="mt-3 space-y-1.5">
-              {history.map((row) => (
-                <div key={row.id} className="flex items-center gap-2 text-xs">
-                  <StatusPill tone={row.status === 'success' ? 'success' : 'danger'} dot>
-                    {row.status}
-                  </StatusPill>
-                  <span className="text-warm-500">
-                    {row.startedAt ? <LocalTime iso={row.startedAt} /> : '—'}
-                  </span>
-                  <span className="text-warm-500">
-                    {row.run ? `${row.run.signals.length} signals` : 'unreadable payload'}
-                  </span>
-                  {row.errorMessage && (
-                    <span className="text-warm-600">{row.errorMessage}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Inset>
-        </Surface>
+        <>
+          <DatelineRule />
+          <HistoryPanel history={history} />
+        </>
       )}
     </div>
   );
@@ -265,11 +503,13 @@ export default async function ReliabilityPage() {
 
   return (
     <div className="space-y-5">
+      {/* Matches the collection cadence closely enough to stay current without
+          hammering the table — the data only changes every 3 hours. */}
       <AutoRefresh intervalMs={180_000} />
       <div>
         <h1 className="text-lg font-semibold text-warm-900">Reliability</h1>
-        <p className="mt-0.5 text-sm text-warm-600">
-          What Vercel, Sentry and Supabase agree on, collected every 3 hours.
+        <p className="mt-0.5 max-w-2xl text-sm text-warm-600">
+          What Sentry, Supabase and Vercel agree on, correlated every 3 hours.
           This tab reports; it does not fix.
         </p>
       </div>
