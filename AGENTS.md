@@ -188,8 +188,11 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   resting-state policy governs the canonical checkout; it cannot stop two
   live sessions from moving one HEAD under each other. When more than one
   agent session works in this repo at once, each session doing task work
-  takes its own worktree OUTSIDE the repo (`/private/tmp/helmv3-<task>` or
-  `~/worktrees/`) and leaves the canonical checkout alone. Deploys promote
+  takes its own worktree via `scripts/new-worktree.sh <task>` — the one
+  supported path, which places it at `~/worktrees/helmv3/<task>` OUTSIDE the
+  repo — and leaves the canonical checkout alone. Do not hand-roll
+  `git worktree add`; it sets the task branch's upstream to its base, so a bare
+  push targets `main`. Deploys promote
   from a worktree pinned at the exact merged `main` SHA, never from a
   checkout another session may be mutating. Remove the worktree when the
   task is merged and verified. (Added 2026-08-26 after three concurrent

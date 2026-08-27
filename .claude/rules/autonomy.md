@@ -46,20 +46,27 @@ Pick one of these before dispatching, never neither:
 
 - **Serialize** — agent 1 finishes and commits, *then* agent 2 starts. Simplest,
   and correct when the work is small or the agents touch the same files.
-- **Give each agent its own worktree** — real isolation, real parallelism:
+- **Give each agent its own worktree** — real isolation, real parallelism.
+  **There is exactly one supported way to make one:**
 
   ```bash
-  git worktree add ../helmv3-wt-1 -b agent/task-one
-  git worktree add ../helmv3-wt-2 -b agent/task-two
-  # ...agents work in ../helmv3-wt-1 and ../helmv3-wt-2, each with its own HEAD
-  git worktree remove ../helmv3-wt-1   # when merged
+  scripts/new-worktree.sh <task-name>
+  # -> ~/worktrees/helmv3/<task-name> on branch agent/<task-name>
   git worktree list                    # what's still checked out
+  git worktree remove <path>           # when merged
   ```
 
-**A worktree goes OUTSIDE the repo — never `.worktrees/` inside it.** Note the
-`../` above; it is load-bearing. `.gitignore` line 5 hides `.worktrees/` from
-git, and that is exactly the trap: `find`, `grep`, `ls` and most agent file
-search do NOT honour gitignore. Observed 2026-08-18 —
+  Do not hand-roll `git worktree add`. The raw command creates the branch FROM
+  its base, which sets that branch's upstream TO the base — so a bare
+  `git push` from a task branch targets `main`. That was live on a
+  consolidation branch carrying 23 commits. The script passes
+  `--no-track`, installs dependencies per worktree instead of symlinking them,
+  and puts the tree outside the repo.
+
+**A worktree goes OUTSIDE the repo — never `.worktrees/` inside it.**
+`.gitignore` line 5 hides `.worktrees/` from git, and that is exactly the trap:
+`find`, `grep`, `ls` and most agent file search do NOT honour gitignore.
+Observed 2026-08-18 —
 `.worktrees/codex-golf-team-operations/` held **4,314** `.ts`/`.tsx` files
 against `src/`'s 3,884, so a search from the repo root returned two hits for
 essentially every file:

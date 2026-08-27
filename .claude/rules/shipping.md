@@ -67,9 +67,11 @@ mechanical, and these are the habits that keep it fixed.
   `overnight/remediation-2026-08-18` was configured `merge = refs/heads/main`,
   so `git push` from it targeted `main`. Verify:
   `git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads`
-- **Worktrees go OUTSIDE the repo** (`../` or `~/worktrees/`), never
-  `.worktrees/` inside it. `.gitignore` hides an internal one from git but
-  `find`/`grep` still return it, so agents edit the copy nobody ships.
+- **Make worktrees with `scripts/new-worktree.sh <task>`.** It is the one
+  supported path: `~/worktrees/helmv3/<task>`, `--no-track`, isolated
+  dependencies. Never `.worktrees/` inside the repo — `.gitignore` hides an
+  internal one from git but `find`/`grep` still return it, so agents edit the
+  copy nobody ships.
 - **Prune worktrees by PR state, not `--merged`.** This repo squash-merges, so a
   merged branch never becomes an ancestor of `main` and `git branch --merged`
   never lists it.
