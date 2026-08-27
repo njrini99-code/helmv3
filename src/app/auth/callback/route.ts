@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { checkRateLimit, formatTimeRemaining } from '@/lib/auth/supabase-rate-limit';
+import { resolveClientIp } from '@/lib/security/client-ip';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 
 // Whitelist of allowed redirect paths to prevent open redirect attacks
@@ -73,8 +74,11 @@ export async function GET(request: NextRequest) {
   const rawNext = requestUrl.searchParams.get('next');
   const next = validateRedirectPath(rawNext, request);
 
-  // Get client IP for rate limiting and logging
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  // Get client IP for rate limiting and logging.
+  // resolveClientIp, not the raw header: this value keys the OAuth-callback
+  // rate limit below, and the raw unsplit `x-forwarded-for` let a caller mint a
+  // fresh bucket per request just by varying it (security scan finding F12).
+  const ip = resolveClientIp(request.headers);
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
   // Rate limit OAuth callbacks to prevent abuse (10 per hour per IP)
