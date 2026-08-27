@@ -28,9 +28,22 @@ this repo, and it already tells us which tier is disposable:
 | 5 | Semantic history — `memory/ledgers/*`, `memory/incidents/*`, `memory/decisions/*` | canonical |
 | 6 | **Everything else in `memory/` and `docs/` — "hints; verify before acting"** | **scrap** |
 
-A corpus the governing document itself calls *hints you must verify before trusting*
-is not an asset. It costs context on every session, and it is the measured cause of
-agent drift here. Tier 6 goes.
+**Tier 6 is a statement about TRUST, not about VALUE, and it is not a delete list.**
+(Correction from `helmv3-c5`, 2026-08-27, adopted.) `docs/superpowers/plans/helm-bridge/**`
+is tier 6 by that reading and is the only record of the Bridge architecture and which
+waves are done — deleting it would cost exactly the hunt this work exists to eliminate.
+Same for `docs/CI_RUNBOOK.md` and the operations runbooks.
+
+The criterion is therefore **provably stale, not merely unverified**:
+
+- names a table, column, or enum that does not exist → `npm run docs:schema-drift`
+- names a file path that does not resolve → `npm run docs:path-drift`
+- states a status the code contradicts (a "TODO" for debt already paid, a plan marked
+  "in progress" that shipped)
+
+Both drift checks have baselines that may only go DOWN, so **deleting a provably-stale
+file ratchets a real gate in the right direction** — the evidence is per-file and
+machine-checked, not a tier heuristic.
 
 ### Measured scope
 
@@ -38,8 +51,8 @@ Classification of all 1,678 tracked `.md` files against the hierarchy:
 
 | Count | Class | Action |
 |---|---|---|
-| 1,195 | T6 archive (`docs/archive/**`, `archive/**`) | delete from working tree |
-| 273 | T6 docs prose (`docs/**`) | triage — keep referenced, delete stale |
+| 1,195 | T6 archive (`docs/archive/**`, `archive/**`) | **DONE** — evicted in Phase 1 (1,265 files) |
+| 273 | T6 docs prose (`docs/**`) | triage per-file on drift evidence — **not** a bulk delete |
 | 97 | config (`.claude/rules`, skills, agents) | consolidate |
 | 42 | T6 root/other | triage |
 | 31 | T5 semantic history | **KEEP — load-bearing** |
@@ -49,7 +62,9 @@ Classification of all 1,678 tracked `.md` files against the hierarchy:
 | 2 | T0 constitution (`CLAUDE.md`, `AGENTS.md`) | rewrite thin |
 | 1 | T0 the OS itself | **KEEP — becomes the root** |
 
-**148 canonical · 1,527 scrap candidates.**
+**148 canonical.** The remaining 1,527 were the *starting* candidate pool, not a
+delete list; 1,265 of them (the archive trees) are gone, and the rest are triaged
+per-file on the evidence above.
 
 ---
 
@@ -124,15 +139,31 @@ git history permanently; deleting them from the working tree loses nothing and r
 **Note:** this does *not* fix the red markdown ratchet — `docs/archive` is already
 excluded from its scope. The ratchet is Phase 5.
 
-### Phase 2 — Superseded generation · `e7`
+### Phase 2 — `memory/context/**`, per file, NOT as a directory · `e7`
 
-`memory/context/**` (6 files). `CLAUDE.md`'s own trust table marks
-`memory/context/golfhelm-features.md` SUPERSEDED, and the 2026-08-26 collapse note
-confirms nothing routes to it — 35 registry references all point at `memory/features/`.
+**A blanket delete here would have destroyed generated truth.** `memory/context/`
+holds six files of three different kinds, and only one kind is disposable:
 
-- [ ] Confirm zero inbound references: `grep -rn "memory/context" --include=*.md --include=*.yml --include=*.mjs --include=*.ts .`
-- [ ] Delete only files with zero inbound references; list any that survive and why
-- [ ] Verify: `npm run docs:path-drift`, `npm run knowledge:globs`
+| File | Kind | Verdict |
+|---|---|---|
+| `golfhelm-database.md` | **5 AUTOGEN blocks** — CLAUDE.md's trust table calls it **Authoritative** (tier 2). `c5` regenerated it tonight. | **KEEP** |
+| `golfhelm-features.md` | Provably stale: banner names **19 identifiers verified absent from production** | delete → ratchets `.doc-schema-baseline.json` DOWN |
+| `baseballhelm-database.md` | check for AUTOGEN blocks before touching | triage |
+| `baseballhelm-features.md`, `baseballhelm-workflows.md`, `coachhelm-ai.md` | narrative | triage on drift evidence |
+
+Two doc-rot findings while verifying this, both to fix in Phase 3:
+
+- `CLAUDE.md` claims `golfhelm-features.md` "now carries a SUPERSEDED banner". It does
+  not. It carries a **schema-drift** banner — a different thing that says 19 table
+  names are fiction. The constitution is wrong about its own corpus.
+- `CLAUDE.md:213` points at `memory/context/golfhelm-database.md` for "full column
+  definitions" while `CLAUDE.md:128` calls that same file "the legacy prose rendering —
+  prefer the command". Two lines of one file disagreeing about one document.
+
+- [ ] Delete `golfhelm-features.md`; run `node scripts/check-doc-schema-drift.mjs --update`
+      to ratchet the baseline DOWN (59 → expected ~40), never up
+- [ ] Triage the remaining four on `docs:schema-drift` / `docs:path-drift` evidence
+- [ ] Verify: `npm run docs:path-drift`, `npm run docs:schema-drift`, `npm run knowledge:globs`
 
 ### Phase 3 — Constitution rewrite · `e7`
 
@@ -214,6 +245,11 @@ and the ratchet baselines all read from it.
       script and its baseline file. No gate keeps a committed baseline without a runner.
 - [ ] Make `preflight` exactly the static subset of `ci.yml`, then fix its final
       message to say what it actually ran. If it cannot be exact, it must say so.
+
+      **Do NOT fix the lie by removing `markdown:ratchet` from `preflight`.**
+      (`c5`, adopted.) Removing a check to make a sentence true is the wrong
+      direction. Either wire it into CI or change the sentence. As of Phase 1 the
+      ratchet is passing anyway, so wiring it in is now cheap.
 - [ ] Fix `check:ledger` or delete it — a red orphan is the worst of both.
 - [ ] Reconcile the 12 baseline files against the surviving gate list; delete the
       orphaned ones (`.sqlfluff-baseline.json`, `.paginated-read-baseline.json`, etc.
