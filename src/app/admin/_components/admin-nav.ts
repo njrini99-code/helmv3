@@ -3,6 +3,7 @@ type AdminHref =
   | '/admin/activity'
   | '/admin/errors'
   | '/admin/traces'
+  | '/admin/qualifiers'
   | '/admin/reliability'
   | '/admin/auth'
   | '/admin/golf'
@@ -49,6 +50,10 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // that answers "which rounds are stuck", this answers "walk me through one
   // execution and show me where it diverged".
   { label: 'Flight Recorder', href: '/admin/traces', key: 'F', section: 'Triage', description: 'One round mutation traced end to end', meta: 'trace' },
+  // Qualifier lifecycle + the business rules rendered as live invariant checks.
+  // Sits in Triage because a breached invariant (a round on another team's
+  // qualifier) is an integrity incident, not a reporting curiosity.
+  { label: 'Qualifiers', href: '/admin/qualifiers', key: 'Q', section: 'Triage', description: 'Qualifier lifecycle and rule invariants', meta: 'rules' },
   { label: 'Teams pulse', href: '/admin/teams', key: 'T', section: 'Triage', description: 'Cross-sport team activity and error EKG' },
 
   // CUSTOMERS — "who is this, and how are they doing"

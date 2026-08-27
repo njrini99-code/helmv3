@@ -25,6 +25,7 @@ describe('ADMIN_NAV', () => {
       // several sources agree on, and which sources could be read at all".
       '/admin/reliability',
       '/admin/traces',
+      '/admin/qualifiers',
       '/admin/teams',
       // Customers
       '/admin/users',
@@ -47,7 +48,7 @@ describe('ADMIN_NAV', () => {
       // 'R' (Reliability) is a letter, not a digit, for the documented reason
       // above: '1'-'9'/'0' are never renumbered, so a tab added later takes a
       // letter rather than displacing a shortcut someone already knows.
-      '1', '3', '0', '8', 'R', 'F', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
+      '1', '3', '0', '8', 'R', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
     ]);
   });
 

@@ -1,5 +1,81 @@
 # Admin Platform change ledger
 
+## 2026-08-27 — self-healing: error resolution lifecycle, and a cron that lied
+
+- SHA: recorded on merge of `feat/bridge-shot-tracing`.
+- **APPLIED TO PRODUCTION 2026-08-27 (owner-instructed):**
+  `supabase/migrations/20260827031100_admin_error_resolutions.sql`. Verified on
+  the local Docker stack FIRST (per standing instruction), then applied and
+  re-verified against production: 13 columns, RLS enabled, 1 policy, 4
+  functions, `anon` cannot SELECT, `anon`/`authenticated` cannot EXECUTE the
+  auto-resolve RPC (service_role only), 0 rows.
+- **Why a table and not `admin_events.resolved`.** Those columns are per-ROW.
+  Resolving an incident means marking N rows, and the next occurrence of the
+  SAME fault arrives as a new unresolved row — so the thing an operator fixed
+  cannot be recorded as fixed, and returns indistinguishable from a regression.
+  Resolution belongs to the FINGERPRINT.
+- **The regression rule — why "never show it again" is not what was built.** An
+  archived fault that recurs after its fix shipped is a REGRESSION, and that is
+  the most valuable signal here. Permanent suppression would turn the archive
+  into a way to lose bugs. Nothing is deleted; archiving is a read-time join, so
+  dropping the table would make every incident reappear — the correct failure
+  direction for a feature whose job is hiding things.
+- **Auto-resolve requires a DEPLOY, not just silence.** A nightly cron is silent
+  23 hours a day; a seasonal feature is silent for months; an outage that ended
+  on its own is silent until it returns. Only "production shipped something
+  AFTER the last occurrence" separates a fix from an absence. When the deploy
+  time is unreadable, NOTHING is auto-resolved and the plan says why, rather
+  than archiving live faults on a false premise.
+- Auto never overwrites a human's `manual` resolution (the RPC returns false),
+  and `reopened_count` survives a re-resolve so "fixed three times already"
+  cannot be laundered.
+- `shipStatus` has THREE outcomes. `unknown` exists because Vercel can be
+  unreachable, and rendering that as `pending` would tell an operator their fix
+  had not shipped when the truth is we could not find out.
+
+## 2026-08-27 — a failing cron reported healthy for two days
+
+- Incident: `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
+- `event-reminders` discarded the rejection REASON from `Promise.allSettled`
+  (`failed += 1`), so nothing threw, the route returned 200, `recordJobRun`
+  wrote `completed`, and `admin_events` learned nothing. Sentry saw 47
+  escalating occurrences no Bridge surface could reach.
+- Repaired by capturing, deduping and bounding the reasons, logging them at
+  `error` severity, and carrying them in the response as a STRING —
+  `extractOutcomeMetadata` keeps only top-level scalars and drops arrays, so an
+  array would have reproduced the invisibility.
+- A first attempt returned 500 on total failure; two existing tests rejected it
+  and were right (one flaky APNs push would have reddened the cron). The bug was
+  the invisibility, not the status code. Tests were updated only where they
+  encoded the OLD contract; none were weakened.
+- The underlying permission fault is NOT fixed and is R3. `service_role` already
+  holds SELECT on both objects — the shared property of the two failing objects
+  is that neither grants `anon`, so the path is using the wrong client. Granting
+  `anon` would expose coach data via a `SECURITY DEFINER` view with an open
+  ERROR advisory.
+
+## 2026-08-27 — observability accuracy fixes
+
+- `cn()` silently dropped ALL 43 custom font-size tokens (`text-caption`,
+  `text-eyebrow`, `text-h3`…) whenever merged with a text colour: tailwind-merge
+  files unknown `text-*` under text-COLOUR, so the colour superseded the size.
+  That silently unstyled the shared `<Eyebrow>` primitive everywhere it is used.
+  Fixed at the source in `src/lib/utils.ts` with a drift test pinning the token
+  list to `tailwind.config.ts`.
+- `NOTICE_SEVERITIES` added to `@/lib/admin/severity`, DERIVED from the gap
+  between the two existing tiers rather than hand-listed. A literal `['warning']`
+  would have been a third hand-written definition of the thing that module
+  exists to declare once — the same drift that once left 41.5% of visible events
+  out of the headline count.
+- Sentry `sport` tagging: `cron` and `unattributed` are now distinct from
+  `marketing`. A real cron failure arrived tagged `sport: marketing`, so
+  filtering by the marketing site returned a broken background job and filtering
+  the other way hid it. A wrong label is worse than an honest gap.
+- `tracesSampler` keeps `db.*` spans at 1.0 (was a flat 0.2, discarding four of
+  five Supabase spans); Postgres error codes now drive Sentry grouping, after
+  finding ONE Inngest key mismatch occupying FOUR fingerprints split only by
+  "signature was 1s old" vs "2s".
+
 ## 2026-08-26 — reliability tab: wired to the cron contract, and made legible
 
 - SHA: recorded on merge of `feat/reliability-collector`.

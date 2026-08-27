@@ -1,5 +1,47 @@
 # Admin Platform test ledger
 
+## 2026-08-27 — resolution lifecycle, severity single-source, cn() token drift
+
+- SHA: recorded on merge of `feat/bridge-shot-tracing`.
+- New: `src/lib/reliability/__tests__/resolution.test.ts` (24 tests),
+  `src/lib/__tests__/cn-font-size.test.ts` (12),
+  `src/app/admin/traces/__tests__/trace-tree.test.ts` (22), plus the surface
+  tests the parallel build produced (feature-health-detail 27,
+  team-detail-extras 30, player-detail 32, qualifier-logic 7).
+- Guarantees now covered:
+  - **Silence alone never archives a fault.** A quiet fault with NO production
+    deploy after its last occurrence is not auto-resolved — the test constructs
+    exactly that shape, because a nightly cron is silent 23 hours a day and
+    archiving on silence would hide live faults.
+  - **Unknown deploy time archives NOTHING and says why** — not an empty list
+    that reads as "nothing qualified".
+  - **Reopen beats archive in the same pass**, so a fault that recurred and then
+    went quiet still raises its regression instead of being re-hidden.
+  - **The regression baseline is `last_seen_at_resolution`, not `resolved_at`** —
+    a test pins the case where comparing against `resolved_at` would cry wolf on
+    every fix.
+  - **A regression counts once, not per tick** (verified against the real RPC on
+    Docker: three `mark_regressed` calls produced `reopened_count = 1`).
+  - **Auto never overwrites manual** — the RPC returns false and the human's PR
+    and note survive. Verified against the real function, not a mock.
+  - **`shipStatus` has three outcomes**; unreachable Vercel yields `unknown`,
+    never `pending`, because telling someone their fix has not shipped when we
+    could not find out is a false claim about their work.
+  - **`cn()` preserves custom size tokens**, with a drift test that re-reads
+    `tailwind.config.ts` and fails if a token is added there and not registered.
+    The default scale is asserted unchanged, and last-wins conflict resolution
+    within one group still holds.
+- Pre-existing contract tests this work had to satisfy, all passing:
+  `severity-single-source` (which caught a hand-written severity filter),
+  `cron-job-log-coverage`, `cron-registry` cadence, `admin-nav` order and
+  keyboard map, and `event-reminders` (19/19 — two of which correctly rejected a
+  change proposed during this work; they were not weakened, the change was).
+- Verification limits, stated plainly: the FULL unit suite and `npm run build`
+  were not run for the final tree state — the full run was declined and the
+  build has no `.env.local` in this worktree. `test:rls` matches 0 files
+  (quality-gates.md records this), so the RLS policy added here was verified
+  directly against Docker and then against the production catalog.
+
 ## 2026-08-26 — reliability tab view helpers + cron wiring contracts
 
 - SHA: recorded on merge of `feat/reliability-collector`.

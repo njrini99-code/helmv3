@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Surface, Inset, StatusPill, Badge, Eyebrow, InlineNotice } from '@/components/fairway';
+import { Surface, Inset, StatusPill, Badge, InlineNotice } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import {
   bridgeGetFlightTrace,
@@ -9,7 +9,7 @@ import {
   type FlightTraceRun,
 } from '@/app/admin/actions/golf-tracer';
 import { LocalTime } from '../_components/LocalTime';
-import { TraceTree } from './TraceTree';
+import { TraceTree, EYEBROW_CLASS } from './TraceTree';
 
 function runTone(run: FlightTraceRun) {
   if (run.status === 'failure' || run.failure_step) return 'danger' as const;
@@ -47,7 +47,7 @@ export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) 
     <div className="space-y-4">
       <Surface>
         <Inset>
-          <Eyebrow as="h2">Traces</Eyebrow>
+          <h2 className={EYEBROW_CLASS}>Traces</h2>
           <div className="mt-2 overflow-x-auto">
             <div className="min-w-[34rem] space-y-1">
               {traces.map((run) => (
@@ -61,7 +61,7 @@ export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) 
                   onClick={() => setSelectedId(run.trace_id)}
                   aria-current={run.trace_id === selectedId ? 'true' : undefined}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-xs transition-colors',
+                    'flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-xs transition-colors motion-reduce:transition-none',
                     'hover:bg-warm-100/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500',
                     run.trace_id === selectedId && 'bg-warm-100',
                   )}
@@ -99,13 +99,28 @@ export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) 
       <Surface>
         <Inset>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <Eyebrow as="h2">Workflow tree</Eyebrow>
+            <h2 className={EYEBROW_CLASS}>Workflow tree</h2>
             {detail && (
               <span className="font-fw-mono text-caption text-warm-500">
                 {String(detail.run.trace_id)}
               </span>
             )}
           </div>
+          {/* Says what the CODE contains — checkable — and nothing about the live
+              value of HELM_FLIGHT_RECORDER_ENABLED, which is a deploy-time
+              environment fact this page cannot read. An earlier draft asserted
+              the flag was already on in production and named only the submit
+              call site; both were wrong, and it shipped as operator-facing copy
+              rather than a comment. */}
+          <p className="mt-1 max-w-xl text-caption text-warm-500">
+            Only call sites wired to the recorder produce observed steps. Today
+            that is <span className="font-fw-mono">db.submit_round_atomic</span>{' '}
+            and <span className="font-fw-mono">db.save_partial_round_atomic</span>,
+            plus the fallback rescue path — every other step in each workflow is
+            declared but has no call site yet. A tree that is mostly MISSING
+            therefore means those steps are not instrumented, not that something
+            failed.
+          </p>
 
           <div className="mt-3">
             {error && <InlineNotice tone="danger">{error}</InlineNotice>}
@@ -118,7 +133,19 @@ export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) 
               </p>
             )}
             {!error && !loading && detail && (
-              <TraceTree steps={detail.steps} workflow={String(detail.run.workflow ?? '')} />
+              // `detail.run` — never the `traces` row list — is the KPI
+              // strip's duration source. `selectedId` commits (and repaints)
+              // a render frame BEFORE the `load` effect below flips `loading`
+              // and replaces `detail`, so a list-derived lookup would show the
+              // newly-clicked trace's duration above the PREVIOUS trace's
+              // still-rendered tree. Sourcing both from the same `detail`
+              // object makes that a structural impossibility rather than a
+              // race to avoid.
+              <TraceTree
+                steps={detail.steps}
+                workflow={String(detail.run.workflow ?? '')}
+                run={detail.run}
+              />
             )}
           </div>
         </Inset>

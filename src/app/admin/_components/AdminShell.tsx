@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
-  Radar, CreditCard, GitBranch, Waypoints,
+  Radar, CreditCard, GitBranch, Trophy, Waypoints,
   RefreshCw, Dumbbell, Search, LogOut,
 } from 'lucide-react';
 import {
@@ -103,6 +103,7 @@ const NAV_ICON_BY_HREF = {
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,
+  '/admin/qualifiers': Trophy,
   // Waypoints, not another alert glyph: this tab's subject is the CORRELATION
   // between three sources, and it sits directly beside Errors in the same
   // section — a second warning triangle would read as a duplicate of it.

@@ -50,14 +50,38 @@ const sharedIgnoreErrors = [
   'PlayerAccessError',
 ];
 
-/** Best-effort per-app classification for RSC/route errors that never went through a sport-aware wrapper (those already scope.setTag('sport', ...) themselves). */
-function deriveSportFromUrl(url: string | undefined): 'baseball' | 'golf' | 'lifting' | 'admin' | 'marketing' {
-  const path = url?.split('?')[0] ?? '';
+/**
+ * Best-effort per-app classification for RSC/route errors that never went
+ * through a sport-aware wrapper (those already `scope.setTag('sport', ...)`).
+ *
+ * `cron` and `unattributed` are separate outcomes from `marketing`, and the
+ * distinction is not cosmetic. Verified in production 2026-08-27: a real
+ * permission-denied failure on `GET /api/cron/event-reminders` arrived in
+ * Sentry tagged `sport: marketing`, because a cron path matches none of the
+ * app prefixes and fell through to the default. Filtering Sentry by
+ * `sport:marketing` — the marketing site — therefore returned a broken
+ * BACKGROUND JOB, and filtering the other way hid it.
+ *
+ * A wrong label is worse than an honest "unattributed": it puts the event in
+ * someone else's bucket, where it is neither looked for nor found.
+ */
+function deriveSportFromUrl(
+  url: string | undefined,
+): 'baseball' | 'golf' | 'lifting' | 'admin' | 'cron' | 'marketing' | 'unattributed' {
+  if (!url) return 'unattributed';
+  const path = url.split('?')[0] ?? '';
+  // Crons first: a job is named for what it does, not the app it reads from,
+  // and several touch more than one sport in a single invocation.
+  if (/\/api\/cron(\/|$)/.test(path)) return 'cron';
   if (/\/baseball(\/|$)/.test(path)) return 'baseball';
   if (/\/golf(\/|$)/.test(path)) return 'golf';
   if (/\/lifting(\/|$)/.test(path)) return 'lifting';
   if (/\/admin(\/|$)/.test(path)) return 'admin';
-  return 'marketing';
+  // Only a genuine site path is 'marketing'. An /api/* route that matched none
+  // of the above is unattributed — saying so is honest; calling it marketing is
+  // a guess that reads as a fact.
+  if (/^https?:\/\/[^/]+\/?$/.test(path) || !/\/api(\/|$)/.test(path)) return 'marketing';
+  return 'unattributed';
 }
 
 /**
