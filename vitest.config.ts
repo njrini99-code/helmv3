@@ -210,6 +210,10 @@ export default defineConfig({
             // Migration filename version prefixes are unique and
             // well-formed (the #220 duplicate-version hazard class).
             'scripts/__tests__/check-migration-versions.test.mjs',
+            // The Management API transport for db:drift:check — its read-only
+            // assertion is the only thing between a drift guard and a
+            // production write path, so it must actually run.
+            'scripts/__tests__/check-supabase-drift-transport.test.mjs',
             // Required-env guard: canonical Supabase vars present and the
             // URL isn't a placeholder, scoped per Vercel environment.
             'scripts/__tests__/check-required-env.test.mjs',

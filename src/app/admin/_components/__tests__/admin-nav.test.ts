@@ -19,6 +19,13 @@ describe('ADMIN_NAV', () => {
       '/admin/errors',
       '/admin/health',
       '/admin/jobs',
+      // Added 2026-08-26 with the 3-hourly reliability collector. Sits in
+      // Triage beside Errors because it answers the same question from a
+      // different angle: not "what did each source report" but "what do
+      // several sources agree on, and which sources could be read at all".
+      '/admin/reliability',
+      '/admin/traces',
+      '/admin/qualifiers',
       '/admin/teams',
       // Customers
       '/admin/users',
@@ -38,7 +45,10 @@ describe('ADMIN_NAV', () => {
       '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      '1', '3', '0', '8', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
+      // 'R' (Reliability) is a letter, not a digit, for the documented reason
+      // above: '1'-'9'/'0' are never renumbered, so a tab added later takes a
+      // letter rather than displacing a shortcut someone already knows.
+      '1', '3', '0', '8', 'R', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
     ]);
   });
 

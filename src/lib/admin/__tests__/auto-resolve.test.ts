@@ -30,11 +30,48 @@ const mocks = vi.hoisted(() => ({
    *  the mock's own `.eq('event_type', …)` marker (see makeUpdateChain). */
   nonActionableUpdates: [] as Array<{ ids: string[]; patch: Record<string, unknown> }>,
   deployResult: { status: 'unconfigured', data: null, fetchedAt: null, error: 'Vercel API not configured' } as AdminFetchResult<VercelDeployment[]>,
+  /** Rows the fingerprint-resolution ledger already holds. */
+  storedResolutions: [] as Array<{
+    fingerprint: string;
+    resolved_at: string;
+    resolution_source: string;
+    last_seen_at_resolution: string | null;
+    reopened_at: string | null;
+  }>,
+  /** Set to make the ledger READ fail, so the "we never established that
+   *  nothing regressed" path can be asserted rather than assumed. */
+  storedResolutionsError: null as string | null,
+  /** Every ledger RPC, in call order, so the test can assert what was
+   *  recorded and with which SHA — not merely that something was called. */
+  rpcCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
+  /** Fingerprints the auto-resolve RPC should report as already MANUALLY
+   *  resolved (it returns false, declining to downgrade a human decision). */
+  manualFingerprints: [] as string[],
 }));
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
+    rpc: (name: string, args: Record<string, unknown>) => {
+      mocks.rpcCalls.push({ name, args });
+      if (name === 'admin_auto_resolve_error_fingerprint') {
+        const fp = String(args.p_fingerprint);
+        return Promise.resolve({ data: !mocks.manualFingerprints.includes(fp), error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    },
     from: (table: string) => {
+      if (table === 'admin_error_resolutions') {
+        const chain = {
+          select: () => chain,
+          in: () =>
+            Promise.resolve(
+              mocks.storedResolutionsError
+                ? { data: null, error: { message: mocks.storedResolutionsError } }
+                : { data: mocks.storedResolutions, error: null },
+            ),
+        };
+        return chain;
+      }
       if (table !== 'admin_events') throw new Error(`unexpected table ${table}`);
 
       // One builder serving three different reads: the Rule A/B snapshot
@@ -201,6 +238,10 @@ describe('autoResolveFixedIncidents', () => {
     mocks.legacyUpdates = [];
     mocks.nonActionableUpdates = [];
     mockResolvedIds.clear();
+    mocks.storedResolutions = [];
+    mocks.storedResolutionsError = null;
+    mocks.rpcCalls = [];
+    mocks.manualFingerprints = [];
     mocks.deployResult = { status: 'unconfigured', data: null, fetchedAt: null, error: 'Vercel API not configured' };
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
@@ -593,5 +634,177 @@ describe('autoResolveFixedIncidents', () => {
 
     expect(result.resolvedNonActionable).toBe(0);
     expect(mocks.nonActionableUpdates).toHaveLength(0);
+  });
+});
+
+/**
+ * The fingerprint-level ledger.
+ *
+ * These cover what the row-level `resolved` flip cannot record: WHICH commit
+ * is credited, that a fault has come BACK, and the refusal to overwrite a
+ * human's decision. The archive judgement itself is Rule A/B's and is asserted
+ * above — nothing here re-derives it, which is the whole point of the split.
+ */
+describe('autoResolveFixedIncidents — fingerprint resolution ledger', () => {
+  const NOW = Date.parse('2026-08-27T12:00:00.000Z');
+
+  beforeEach(() => {
+    vi.resetModules();
+    mocks.rows = [];
+    mocks.updates = [];
+    mocks.legacyUpdates = [];
+    mocks.nonActionableUpdates = [];
+    mockResolvedIds.clear();
+    mocks.storedResolutions = [];
+    mocks.storedResolutionsError = null;
+    mocks.rpcCalls = [];
+    mocks.manualFingerprints = [];
+    mocks.deployResult = { status: 'unconfigured', data: null, fetchedAt: null, error: 'Vercel API not configured' };
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const autoResolveCalls = () =>
+    mocks.rpcCalls.filter((c) => c.name === 'admin_auto_resolve_error_fingerprint');
+  const regressionCalls = () =>
+    mocks.rpcCalls.filter((c) => c.name === 'admin_mark_error_regressed');
+
+  it('credits the production SHA on a Rule A resolution', async () => {
+    const deployAt = NOW - 48 * 3600_000;
+    mocks.deployResult = {
+      status: 'ok',
+      data: [deployment({ uid: 'dpl_prod', ready: deployAt, createdAt: deployAt - 60_000 })],
+      fetchedAt: new Date(NOW).toISOString(),
+    };
+    const lastSeen = new Date(deployAt - 10 * 3600_000).toISOString();
+    mocks.rows = [{ fingerprint: 'fp-fixed', created_at: lastSeen }];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.ledger.recorded).toBe(1);
+    expect(result.ledger.failed).toBe(0);
+    const calls = autoResolveCalls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.args.p_fingerprint).toBe('fp-fixed');
+    expect(calls[0]!.args.p_fixed_in_sha).toBe('abc123');
+    // The baseline every future regression check measures against — it must be
+    // the fault's own last occurrence, not "now".
+    expect(calls[0]!.args.p_last_seen_at).toBe(lastSeen);
+  });
+
+  it('records a Rule B resolution with NO sha, because it claims no deploy evidence', async () => {
+    // Rule B infers from 14 days of silence alone. Crediting whatever happens
+    // to be in production would attribute the fix to a release that may have
+    // nothing to do with it.
+    mocks.rows = [{ fingerprint: 'fp-old', created_at: new Date(NOW - 20 * 86400_000).toISOString() }];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedQuiet).toBe(1);
+    expect(result.ledger.recorded).toBe(1);
+    const calls = autoResolveCalls();
+    expect(calls).toHaveLength(1);
+    // Omitted rather than explicitly null: supabase-js drops undefined keys,
+    // so the function's own `default null` supplies the stored value. Asserted
+    // as the absence of a value, since that is what actually goes over the
+    // wire.
+    expect(calls[0]!.args.p_fixed_in_sha).toBeUndefined();
+  });
+
+  it('marks a recurrence as a regression and does NOT re-archive it in the same pass', async () => {
+    // The fault was archived, then fired again. Re-archiving it in the very
+    // pass that noticed would erase the signal immediately after raising it.
+    const recurredAt = new Date(NOW - 30 * 86400_000).toISOString();
+    mocks.rows = [{ fingerprint: 'fp-back', created_at: recurredAt }];
+    mocks.storedResolutions = [
+      {
+        fingerprint: 'fp-back',
+        resolved_at: new Date(NOW - 60 * 86400_000).toISOString(),
+        resolution_source: 'auto',
+        last_seen_at_resolution: new Date(NOW - 90 * 86400_000).toISOString(),
+        reopened_at: null,
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressions.marked).toBe(1);
+    expect(regressionCalls()[0]!.args.p_fingerprint).toBe('fp-back');
+    // Quiet for 30 days, so Rule B DID flip its rows — but the ledger must not
+    // record a fresh resolution over the regression it just raised.
+    expect(result.resolvedQuiet).toBe(1);
+    expect(autoResolveCalls()).toHaveLength(0);
+    expect(result.ledger.recorded).toBe(0);
+  });
+
+  it('does not raise a regression twice for a fault already flagged', async () => {
+    const recurredAt = new Date(NOW - 30 * 86400_000).toISOString();
+    mocks.rows = [{ fingerprint: 'fp-back', created_at: recurredAt }];
+    mocks.storedResolutions = [
+      {
+        fingerprint: 'fp-back',
+        resolved_at: new Date(NOW - 60 * 86400_000).toISOString(),
+        resolution_source: 'auto',
+        last_seen_at_resolution: new Date(NOW - 90 * 86400_000).toISOString(),
+        reopened_at: new Date(NOW - 40 * 86400_000).toISOString(),
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressions.marked).toBe(0);
+    expect(regressionCalls()).toHaveLength(0);
+  });
+
+  it('SKIPS regression detection loudly when the resolutions read fails', async () => {
+    // A failed read is not evidence that nothing regressed. Reporting a clean
+    // zero here would be the `error -> []` shape the OS forbids, in the one
+    // place whose job is noticing that a fix did not hold.
+    mocks.storedResolutionsError = 'connection reset';
+    mocks.rows = [{ fingerprint: 'fp-old', created_at: new Date(NOW - 20 * 86400_000).toISOString() }];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressionSkippedReason).toContain('connection reset');
+    expect(result.regressions.marked).toBe(0);
+    expect(regressionCalls()).toHaveLength(0);
+  });
+
+  it('counts a declined overwrite of a MANUAL resolution as skipped, not as a failure', async () => {
+    // The RPC returning false is the "never downgrade a human decision" rule
+    // working. Collapsing that into `failed` would report a working rule as a
+    // fault.
+    mocks.manualFingerprints = ['fp-old'];
+    mocks.rows = [{ fingerprint: 'fp-old', created_at: new Date(NOW - 20 * 86400_000).toISOString() }];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.ledger.skippedManual).toBe(1);
+    expect(result.ledger.recorded).toBe(0);
+    expect(result.ledger.failed).toBe(0);
+    expect(result.ledger.firstError).toBeNull();
+  });
+
+  it('writes NOTHING to the ledger for Rule C — an unfingerprinted row has nothing to key on', async () => {
+    mocks.rows = [
+      { id: 'row-1', fingerprint: null, created_at: new Date(NOW - 20 * 86400_000).toISOString() },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedLegacy).toBe(1);
+    expect(autoResolveCalls()).toHaveLength(0);
+    expect(result.ledger.recorded).toBe(0);
   });
 });
