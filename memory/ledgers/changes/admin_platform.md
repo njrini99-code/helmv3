@@ -1,5 +1,81 @@
 # Admin Platform change ledger
 
+## 2026-08-27 — self-healing: error resolution lifecycle, and a cron that lied
+
+- SHA: recorded on merge of `feat/bridge-shot-tracing`.
+- **APPLIED TO PRODUCTION 2026-08-27 (owner-instructed):**
+  `supabase/migrations/20260827031754_admin_error_resolutions.sql`. Verified on
+  the local Docker stack FIRST (per standing instruction), then applied and
+  re-verified against production: 13 columns, RLS enabled, 1 policy, 4
+  functions, `anon` cannot SELECT, `anon`/`authenticated` cannot EXECUTE the
+  auto-resolve RPC (service_role only), 0 rows.
+- **Why a table and not `admin_events.resolved`.** Those columns are per-ROW.
+  Resolving an incident means marking N rows, and the next occurrence of the
+  SAME fault arrives as a new unresolved row — so the thing an operator fixed
+  cannot be recorded as fixed, and returns indistinguishable from a regression.
+  Resolution belongs to the FINGERPRINT.
+- **The regression rule — why "never show it again" is not what was built.** An
+  archived fault that recurs after its fix shipped is a REGRESSION, and that is
+  the most valuable signal here. Permanent suppression would turn the archive
+  into a way to lose bugs. Nothing is deleted; archiving is a read-time join, so
+  dropping the table would make every incident reappear — the correct failure
+  direction for a feature whose job is hiding things.
+- **Auto-resolve requires a DEPLOY, not just silence.** A nightly cron is silent
+  23 hours a day; a seasonal feature is silent for months; an outage that ended
+  on its own is silent until it returns. Only "production shipped something
+  AFTER the last occurrence" separates a fix from an absence. When the deploy
+  time is unreadable, NOTHING is auto-resolved and the plan says why, rather
+  than archiving live faults on a false premise.
+- Auto never overwrites a human's `manual` resolution (the RPC returns false),
+  and `reopened_count` survives a re-resolve so "fixed three times already"
+  cannot be laundered.
+- `shipStatus` has THREE outcomes. `unknown` exists because Vercel can be
+  unreachable, and rendering that as `pending` would tell an operator their fix
+  had not shipped when the truth is we could not find out.
+
+## 2026-08-27 — a failing cron reported healthy for two days
+
+- Incident: `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
+- `event-reminders` discarded the rejection REASON from `Promise.allSettled`
+  (`failed += 1`), so nothing threw, the route returned 200, `recordJobRun`
+  wrote `completed`, and `admin_events` learned nothing. Sentry saw 47
+  escalating occurrences no Bridge surface could reach.
+- Repaired by capturing, deduping and bounding the reasons, logging them at
+  `error` severity, and carrying them in the response as a STRING —
+  `extractOutcomeMetadata` keeps only top-level scalars and drops arrays, so an
+  array would have reproduced the invisibility.
+- A first attempt returned 500 on total failure; two existing tests rejected it
+  and were right (one flaky APNs push would have reddened the cron). The bug was
+  the invisibility, not the status code. Tests were updated only where they
+  encoded the OLD contract; none were weakened.
+- The underlying permission fault is NOT fixed and is R3. `service_role` already
+  holds SELECT on both objects — the shared property of the two failing objects
+  is that neither grants `anon`, so the path is using the wrong client. Granting
+  `anon` would expose coach data via a `SECURITY DEFINER` view with an open
+  ERROR advisory.
+
+## 2026-08-27 — observability accuracy fixes
+
+- `cn()` silently dropped ALL 43 custom font-size tokens (`text-caption`,
+  `text-eyebrow`, `text-h3`…) whenever merged with a text colour: tailwind-merge
+  files unknown `text-*` under text-COLOUR, so the colour superseded the size.
+  That silently unstyled the shared `<Eyebrow>` primitive everywhere it is used.
+  Fixed at the source in `src/lib/utils.ts` with a drift test pinning the token
+  list to `tailwind.config.ts`.
+- `NOTICE_SEVERITIES` added to `@/lib/admin/severity`, DERIVED from the gap
+  between the two existing tiers rather than hand-listed. A literal `['warning']`
+  would have been a third hand-written definition of the thing that module
+  exists to declare once — the same drift that once left 41.5% of visible events
+  out of the headline count.
+- Sentry `sport` tagging: `cron` and `unattributed` are now distinct from
+  `marketing`. A real cron failure arrived tagged `sport: marketing`, so
+  filtering by the marketing site returned a broken background job and filtering
+  the other way hid it. A wrong label is worse than an honest gap.
+- `tracesSampler` keeps `db.*` spans at 1.0 (was a flat 0.2, discarding four of
+  five Supabase spans); Postgres error codes now drive Sentry grouping, after
+  finding ONE Inngest key mismatch occupying FOUR fingerprints split only by
+  "signature was 1s old" vs "2s".
+
 ## 2026-08-26 — reliability tab: wired to the cron contract, and made legible
 
 - SHA: recorded on merge of `feat/reliability-collector`.
@@ -438,3 +514,99 @@
   OTP, or OAuth code — those were landing unredacted in tables any Bridge
   operator can read. Separately, an admin-surface crash caught by the boundary
   never reached the triage queue at all.
+
+## 2026-08-26 — the qualifier read's truncation flag could never fire
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `fetchQualifierLogic` no longer asks PostgREST for
+  `.limit(2_000)` / `.limit(20_000)`. It pages at PostgREST's real 1,000-row
+  cap up to an explicit ceiling, and reports whether the ceiling — rather
+  than a drained source — is what stopped it.
+- Why: PostgREST caps any single request at 1,000 rows, so `.limit(20_000)`
+  returned 1,000. Beyond the missing rows, it disabled the honesty check
+  built on top: the fallback `fetched.length >= 20_000` could never be true,
+  so a read that WAS clipped reported `truncated: false` whenever the
+  exact-count probe was unavailable to contradict it. That is the
+  `unknown -> healthy` shape the OS forbids, inside the panel whose whole
+  job is saying how much it actually checked.
+- Found by `scripts/check-row-cap-limits.mjs` (the gate added earlier in this
+  same PR), not by review — the adversarial review pass caught the identical
+  defect in a sibling surface and missed this one.
+
+## 2026-08-26 — a new unchecked Supabase read, caught by its own ratchet
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `loadCoverageAndRawEvents` checks `rowsRes.error` inline instead of
+  through `assertQueryOk`. Same throw, same message shape.
+- Why: `helm/no-unchecked-supabase-error` matches a literal `.error` read and
+  cannot see through a helper call, so the check was real but unverifiable —
+  and the count went 1044 -> 1045 against a baseline that may only go DOWN.
+  The baseline was NOT raised. Of the five results only this one has its
+  `.data` read, which is exactly the shape the rule exists to catch.
+
+## 2026-08-26 — migration reformatted to satisfy sqlfluff, proven inert
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `20260827031754_admin_error_resolutions.sql` reformatted (LT01/
+  LT02/LT05 only). No statement, identifier, grant, or policy changed.
+- Why: it added 69 violations against a ratchet whose counts may only go
+  DOWN. The file is ALREADY APPLIED to production, so "cosmetic" had to be
+  proven, not asserted: the reformatted file was re-applied to the local
+  Docker stack and `pg_get_functiondef` plus the table comment came back
+  byte-identical to the pre-reformat catalog (`diff` exit 0). The RPC
+  behaviour suite was re-run against that database afterwards and still
+  holds — auto never overwrites manual, regression counts once per
+  transition, re-resolve keeps `reopened_count`, malformed SHA rejected.
+
+## 2026-08-27 — the resolution ledger wires into the EXISTING resolver
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `autoResolveFixedIncidents` now records fingerprint-level
+  resolutions (Rule A with the production SHA, Rule B with none) and marks
+  regressions, via `src/lib/admin/resolution-ledger.ts`.
+  `src/lib/reliability/resolution.ts` lost its archive branch entirely and is
+  now reopen-detection plus `shipStatus`.
+- Why, and this is the important part: the removed branch was a SECOND archive
+  rule, and it was missing an exclusion the existing one has. Rule A skips
+  every operator-gated fault (`provider_*_credit_exhausted`,
+  `_invalid_credential`, `_missing_credential`, `_plan_gated_model`) because
+  those fire only when something exercises the path — a quiet weekend is
+  indistinguishable from a fix, and no deploy ever topped up a billing
+  account. Measured 2026-08-06: EVERY provider fault in the table had been
+  flagged resolved while still broken, one closed for ten days with a dead
+  credential. Shipping a parallel rule without that exclusion would have
+  re-earned that bug at full price. One decision, made once, in the place that
+  already carries the exclusion.
+- What the ledger adds that the row-level `resolved` flip cannot: which commit
+  is credited, whether that shipped, and that a fault has come BACK. Rules C
+  (no fingerprint) and D (classifier says non-actionable) write nothing —
+  neither claims anything was fixed.
+- Ordering is load-bearing: regressions are detected BEFORE any resolution is
+  recorded, because recording overwrites `last_seen_at_resolution`, the exact
+  baseline a regression is measured against. A fingerprint that regressed in a
+  pass is excluded from re-archiving in that same pass.
+- A failed resolutions read SKIPS regression detection and says so
+  (`regressionSkippedReason`) rather than reporting a clean zero it never
+  established.
+
+## 2026-08-27 — migration file renamed to match the version production recorded
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `20260827031100_admin_error_resolutions.sql` →
+  `20260827031754_admin_error_resolutions.sql`. Content untouched.
+- Why: production stamped the applied migration `20260827031754` — same name,
+  ~11 minutes later than the local filename. Verified against
+  `supabase_migrations.schema_migrations`: version `20260827031100` returns
+  ZERO rows; `20260827031754 / admin_error_resolutions` is present and is the
+  newest row in the ledger. A local file with no ledger row counts as
+  `unaccounted_local` by the migration ledger-drift gate (authored in a
+  concurrent session and not yet on this branch, so its path is deliberately
+  not cited here), whose baseline of 38 may only go DOWN — so this would have gone red on `main`
+  AFTER merge, reading as an unapplied migration when it is applied and merely
+  stamped differently. Caught by the security-scan session before it landed.
+- Note for anyone auditing later: `schema_migrations.statements` retains the
+  SQL production actually executed, and the on-disk file has since been
+  reformatted for sqlfluff. Those texts therefore differ. Nothing in the repo
+  compares them today; the reformat was proven inert structurally (two fresh
+  scratch databases, full catalog fingerprint, diff exit 0) rather than by
+  text equality.

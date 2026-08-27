@@ -126,6 +126,35 @@ them would have broken those routes, not the dead one.
   `Array<{source, ref}>` for that reason, and `evidenceTarget` needs the source
   to decide whether a ref is a Sentry permalink, a Bridge drill-through, or
   opaque text.
+- **Error resolution belongs to the FINGERPRINT, not the row.**
+  `public.admin_error_resolutions` (applied 2026-08-27) records what fixed a
+  fault: PR, merge SHA, who decided (`auto` cron vs `manual` operator), and
+  whether it has regressed. `admin_events.resolved` stays per-row and is not a
+  substitute — with it alone, a fixed fault's next occurrence is a new
+  unresolved row, indistinguishable from a regression.
+- **An archived fault must come back if it recurs.** "Never show it again" is
+  correct only until the fault returns after its fix shipped; that is a
+  REGRESSION and the most valuable signal this system produces. Nothing is
+  deleted and archiving is a read-time join, so dropping the table makes every
+  incident reappear — the correct failure direction for a feature whose job is
+  hiding things. `reopened_count` survives a re-resolve, so "fixed three times
+  already" cannot be laundered.
+- **Auto-resolution requires a production DEPLOY after the last occurrence, not
+  merely silence.** A nightly cron is silent 23 hours a day and a seasonal
+  feature for months. When the deploy timestamp is unreadable, nothing is
+  auto-resolved and the plan states why. The cron's inference never overwrites
+  an operator's `manual` resolution.
+- **`shipStatus` has three outcomes, not two.** `unknown` exists because Vercel
+  can be unreachable; rendering that as `pending` tells an operator their fix
+  has not shipped when the truth is that we could not find out.
+- **A discarded rejection reason is an invisible outage.** `Promise.allSettled`
+  callers must capture WHY a task rejected, not just count it — the reason is
+  the only thing that answers "what is wrong". See
+  INC-2026-08-27: a counter-only handler let a cron fail for two days while
+  `background_job_logs` recorded 72 consecutive `completed` runs. Reasons
+  written into a cron response must be SCALARS: `recordJobRun`'s
+  `extractOutcomeMetadata` keeps only top-level scalars and silently drops
+  arrays.
 - **A source that could not be read is never reported as zero problems.** The
   reliability collector's arms each return `{status, reason, signals}`, and the
   run's status is the WORST arm — so a run whose Sentry token is missing writes

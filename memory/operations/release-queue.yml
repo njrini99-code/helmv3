@@ -52,3 +52,52 @@ items:
       - src/lib/utils/emergency-save.test.ts
     queued_for_release: false
     first_seen: '2026-08-22T21:00:00-04:00'
+  - id: cron-failure-invisible-to-bridge-2026-08-27
+    feature_id: admin_platform
+    root_cause: >-
+      Promise.allSettled rejection reasons were discarded in event-reminders, so
+      a failing send incremented a counter, the route returned 200, recordJobRun
+      wrote 'completed', and admin_events never learned of it. Sentry alone saw
+      47 escalating occurrences.
+    incident_id: memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md
+    status: repairing
+    risk: R2
+    sha: null
+    pr: null
+    regression_tests:
+      - src/test/api/cron/event-reminders.test.ts
+    queued_for_release: false
+    first_seen: '2026-08-25T12:02:47Z'
+  - id: coachhelm-safety-net-anon-client-2026-08-27
+    feature_id: coachhelm_ai
+    root_cause: >-
+      The coachhelm-safety-net path reached from event-reminders reads
+      baseball_players and baseball_coaches_public with an anon-scoped client.
+      service_role already holds SELECT on both; the shared property of the two
+      failing objects is that neither grants anon. NOT to be fixed by granting
+      anon — baseball_coaches_public is one of the four ERROR-level
+      security_definer_view advisories, so that would expose coach data to
+      unauthenticated callers.
+    incident_id: memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md
+    status: triaging
+    risk: R3
+    sha: null
+    pr: null
+    regression_tests: []
+    queued_for_release: false
+    first_seen: '2026-08-25T12:02:47Z'
+  - id: error-resolution-lifecycle-2026-08-27
+    feature_id: admin_platform
+    root_cause: >-
+      admin_events.resolved is per-row, so a fixed fault could not be recorded as
+      fixed and its next occurrence returned indistinguishable from a regression.
+      Resolution now belongs to the fingerprint.
+    incident_id: null
+    status: verified
+    risk: R3
+    sha: null
+    pr: null
+    regression_tests:
+      - src/lib/reliability/__tests__/resolution.test.ts
+    queued_for_release: false
+    first_seen: '2026-08-27T03:00:00Z'

@@ -1,6 +1,7 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
 import type { FeatureHealth } from '@/lib/admin/data/feature-health';
+import { fetchFeatureHealthDetail } from '@/lib/admin/data/feature-health-detail';
 import { fetchAiAvailability } from '@/lib/admin/data/ai-availability';
 import { Eyebrow, Skeleton } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
@@ -8,6 +9,8 @@ import { PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureDotGrid } from '../_components/FeatureDotGrid';
 import { LocalTime } from '../_components/LocalTime';
+import { AttributionCoveragePanel } from './_components/AttributionCoveragePanel';
+import { FeatureHealthDetailPanel } from './_components/FeatureHealthDetailPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +35,18 @@ const HEALTH_SKELETON = (
         <Skeleton key={i} className="h-12 w-full rounded-xl" />
       ))}
     </div>
+  </div>
+);
+
+// Coverage panel (a SegmentBar + one notice) plus 3 leading detail cards —
+// reserves the rhythm of "one wide instrument, then a short stack of rows"
+// rather than the dot grid's own card-grid shape above.
+const DETAIL_SKELETON = (
+  <div className="space-y-3">
+    <Skeleton className="h-24 w-full rounded-xl" />
+    {Array.from({ length: 3 }, (_, i) => (
+      <Skeleton key={i} className="h-20 w-full rounded-xl" />
+    ))}
   </div>
 );
 
@@ -143,6 +158,30 @@ export default async function FeatureHealthPage() {
     );
   }
 
+  /**
+   * Feature Health — DETAIL (tracer follow-up). One `fetchFeatureHealthDetail()`
+   * call feeds BOTH panels below (it is `cache()`-memoised per request, so a
+   * second call from the same render is free) — the attribution-coverage
+   * panel and the ranked per-feature detail list must agree on the same
+   * `generatedAt`/window, never two independently-timed reads of
+   * `admin_events` that could disagree with each other on screen.
+   *
+   * Deliberately its OWN `PanelBoundary`, separate from the dot grid above:
+   * `fetchFeatureHealthDetail()` reads `admin_events` directly on the admin
+   * client — a completely different failure domain from `get_feature_health()`
+   * (see that module's doc comment) — so an outage in one must never blank
+   * the other.
+   */
+  async function DetailBody() {
+    const detail = await fetchFeatureHealthDetail();
+    return (
+      <div className="space-y-4">
+        <AttributionCoveragePanel coverage={detail.coverage} coverageError={detail.coverageError} />
+        <FeatureHealthDetailPanel result={detail} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <AutoRefresh />
@@ -171,6 +210,20 @@ export default async function FeatureHealthPage() {
       <PanelBoundary title="Feature Health" skeleton={HEALTH_SKELETON}>
         <Body />
       </PanelBoundary>
+      <div>
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+          Feature Health — Detail
+        </h2>
+        <p className="mt-2 hidden max-w-2xl text-sm text-warm-500 md:block">
+          Trailing-7d error/warning counts and true last-event recency per feature, straight from admin_events —
+          ranked so a feature failing right now always outranks a louder one that has already gone quiet.
+        </p>
+        <div className="mt-3">
+          <PanelBoundary title="Feature Health — Detail" skeleton={DETAIL_SKELETON}>
+            <DetailBody />
+          </PanelBoundary>
+        </div>
+      </div>
     </div>
   );
 }

@@ -90,6 +90,36 @@ interface KindResult {
   sent: number;
   failed: number;
   skipped: number;
+  /**
+   * Distinct reasons the sends rejected — deduped and bounded.
+   *
+   * `failed` used to be a bare counter and the rejection REASON was discarded
+   * (`Promise.allSettled(...).forEach(o => { if (rejected) failed += 1 })`).
+   * That is how a live production failure stayed invisible for two days:
+   * `coachhelm-safety-net` code invoked from this route was rejecting with
+   * `permission denied for view baseball_coaches_public`, allSettled absorbed
+   * it, the route still returned 200 `success: true`, `recordJobRun` recorded
+   * `completed`, and the Jobs board showed the cron healthy. Sentry saw 47
+   * occurrences (via the Supabase driver's own instrumentation) that no Bridge
+   * surface could reach — verified 2026-08-27, escalating.
+   *
+   * A count answers "how many"; only the reason answers "what is wrong".
+   */
+  failureReasons: string[];
+}
+
+/** Bounded so one systemic failure cannot write a reason per recipient. */
+const MAX_FAILURE_REASONS = 5;
+
+/** Collapse rejections to distinct, bounded, human-readable causes. */
+function summarizeFailureReasons(reasons: readonly string[]): string[] {
+  const seen: string[] = [];
+  for (const reason of reasons) {
+    const trimmed = reason.trim().slice(0, 300);
+    if (trimmed && !seen.includes(trimmed)) seen.push(trimmed);
+    if (seen.length >= MAX_FAILURE_REASONS) break;
+  }
+  return seen;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -140,6 +170,44 @@ export async function GET(req: NextRequest) {
       result24h.sent + result24h.failed + result24h.skipped +
       result1h.sent + result1h.failed + result1h.skipped > 0;
 
+    const failureReasons = summarizeFailureReasons([
+      ...result24h.failureReasons,
+      ...result1h.failureReasons,
+    ]);
+    const totalFailed = result24h.failed + result1h.failed;
+    const totalSent = result24h.sent + result1h.sent;
+
+    // A cause, not just a count. Previously a rejection incremented `failed`
+    // and the reason was discarded, so this summary said "failed=47" with no
+    // way to learn WHY from any Bridge surface — the actual
+    // `permission denied for view baseball_coaches_public` existed only in
+    // Sentry, via the Supabase driver's own instrumentation.
+    if (failureReasons.length > 0) {
+      await logServerError(
+        `cron.eventReminders sends failed (${totalFailed}): ${failureReasons.join(' | ')}`,
+        {
+          action: 'cron.eventReminders.sendFailure',
+          featureArea: 'calendar',
+          extra: { failureReasons, failed: totalFailed, sent: totalSent },
+        },
+        'error',
+      );
+    }
+
+    // DELIBERATELY still 200, even when every send failed.
+    //
+    // A first attempt at this returned 500 on `sent === 0 && failed > 0` so the
+    // Jobs board would go red. Two existing tests rejected it, and they were
+    // right: this route's documented contract is that an unsent recipient is
+    // simply not marked done and retries on the next hourly tick. With a single
+    // recipient, `sent === 0` is also what one flaky APNs push looks like — so
+    // that rule would have turned a self-healing retry into a red cron.
+    //
+    // The bug was never the status code. It was that the CAUSE was invisible:
+    // the rejection reason was discarded, so no Bridge surface could ever show
+    // why. That is fixed above (an `error`-severity row carrying the distinct
+    // reasons) and below (the reasons ride in the response body, which
+    // `recordJobRun`'s metadata extractor captures as top-level scalars).
     if (anyActivity) {
       await logServerEvent(
         `event_reminders cron 24h sent=${result24h.sent} failed=${result24h.failed} ` +
@@ -161,6 +229,12 @@ export async function GET(req: NextRequest) {
       failed1h: result1h.failed,
       skipped24h: result24h.skipped,
       skipped1h: result1h.skipped,
+      // A STRING, not the array: recordJobRun's extractOutcomeMetadata keeps
+      // only top-level scalars and drops arrays, so an array here would be
+      // silently absent from background_job_logs.metadata -- the exact shape
+      // of invisibility this change exists to remove. Empty when nothing
+      // failed, so a healthy run reads as such.
+      failureReasons: failureReasons.join(' | '),
     });
   });
 }
@@ -292,7 +366,7 @@ async function dispatchReminders(
     return true;
   });
 
-  if (eventRows.length === 0) return { sent: 0, failed: 0, skipped: 0 };
+  if (eventRows.length === 0) return { sent: 0, failed: 0, skipped: 0, failureReasons: [] };
 
   const eventIds = eventRows.map((e) => e.id);
 
@@ -320,7 +394,7 @@ async function dispatchReminders(
 
   // Skip declined; remind everyone else (pending, accepted, tentative).
   const eligible = attendanceRows.filter((a) => a.status !== 'declined');
-  if (eligible.length === 0) return { sent: 0, failed: 0, skipped: 0 };
+  if (eligible.length === 0) return { sent: 0, failed: 0, skipped: 0, failureReasons: [] };
 
   const playerIds = Array.from(new Set(eligible.map((a) => a.player_id)));
   const userIdByPlayerId = new Map<string, string>();
@@ -386,7 +460,9 @@ async function dispatchReminders(
     pending.push({ userId, event });
   }
 
-  if (pending.length === 0) return { sent: 0, failed: 0, skipped: 0 };
+  if (pending.length === 0) return { sent: 0, failed: 0, skipped: 0, failureReasons: [] };
+
+  const rawFailureReasons: string[] = [];
 
   // Email needs each user's address; fetch once for the whole pending set.
   const pendingUserIds = Array.from(new Set(pending.map((r) => r.userId)));
@@ -440,13 +516,23 @@ async function dispatchReminders(
       if (!recipient) return;
       if (outcome.status === 'fulfilled' && outcome.value) {
         succeeded.push(recipient);
+        return;
+      }
+      failed += 1;
+      // Keep the REASON. Counting a rejection and dropping why it rejected is
+      // what let a permission-denied failure read as a healthy cron.
+      if (outcome.status === 'rejected') {
+        rawFailureReasons.push(describeError(outcome.reason));
       } else {
-        failed += 1;
+        // Fulfilled-but-falsey: the send reported failure without throwing.
+        rawFailureReasons.push('send returned a falsey result (no exception)');
       }
     });
   }
 
-  if (succeeded.length === 0) return { sent: 0, failed, skipped };
+  if (succeeded.length === 0) {
+    return { sent: 0, failed, skipped, failureReasons: summarizeFailureReasons(rawFailureReasons) };
+  }
 
   const notifications = succeeded.map(({ userId, event }) => ({
     user_id: userId,
@@ -478,7 +564,12 @@ async function dispatchReminders(
     throw new Error(`insert notifications: ${insertErr.message}`);
   }
 
-  return { sent: succeeded.length, failed, skipped };
+  return {
+    sent: succeeded.length,
+    failed,
+    skipped,
+    failureReasons: summarizeFailureReasons(rawFailureReasons),
+  };
 }
 
 /**

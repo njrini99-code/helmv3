@@ -574,6 +574,15 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520
         with:
@@ -584,6 +593,38 @@ jobs:
 
       - name: Lint migrations
         run: supabase db lint --schema public
+
+      # Schema invariants, run against the stack this job just rebuilt FROM
+      # MIGRATIONS. `db:drift:check` existed in package.json with no workflow
+      # caller since it was written — a script nothing invokes is not a gate,
+      # which `.claude/rules/quality-gates.md` names explicitly.
+      #
+      # WHAT THIS DOES AND DOES NOT PROVE. The script's own header frames these
+      # as production-correctness invariants, and against production it would
+      # answer "has production drifted". It cannot ask that here: the check needs
+      # DATABASE_URL or SUPABASE_DB_PASSWORD, and neither exists as a repo secret
+      # (verified 2026-08-27 — Actions holds ACCESS_TOKEN, SERVICE_ROLE_KEY,
+      # PROJECT_ID, ANON_KEY and no database password).
+      #
+      # Pointed at the local stack it answers a different and still valuable
+      # question: do the migrations, replayed from scratch, produce a schema that
+      # satisfies all 12 invariants? Every one of them encodes a real past
+      # production defect (#651 missing Baseball columns, #728/#887 stale stat
+      # aliases, #732 a phantom rate_limits table, admin rollup gates that must
+      # check is_super_admin). This catches a migration that reintroduces one
+      # before it is ever applied anywhere.
+      #
+      # To ALSO gate production drift, add a SUPABASE_DB_PASSWORD repo secret and
+      # a second scheduled job — deliberately not per-PR, since production drift
+      # is not something a pull request introduces.
+      #
+      # Fail-closed: exit 2 is "could not connect", and it fails this step rather
+      # than passing quietly. A drift guard that goes green when it never reached
+      # a database is the exact false-green shape check:types-drift already has.
+      - name: Schema invariants (migrations rebuild)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run db:drift:check
 
       - name: Run pgTAP RLS suites
         run: |
