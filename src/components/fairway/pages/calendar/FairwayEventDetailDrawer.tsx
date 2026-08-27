@@ -362,14 +362,19 @@ export function FairwayEventDetailDrawer({
               <p className="mb-2.5 font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
                 Attendance
               </p>
-              <div className="grid grid-cols-4 gap-2">
+              {/* 2-up on phone, 4-up from `sm`. Readout's label is
+                  `uppercase tracking-[0.14em]`, so "ACCEPTED" / "PENDING"
+                  need far more than the ~80px a 4-column grid leaves at
+                  390pt: they spilled across their tiles and clipped at the
+                  screen edge (owner device report, 2026-08-26). */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
                   { label: 'Accepted', value: rsvpSummary.accepted },
                   { label: 'Maybe', value: rsvpSummary.tentative },
                   { label: 'No', value: rsvpSummary.declined },
                   { label: 'Pending', value: rsvpSummary.pending },
                 ].map((stat) => (
-                  <Inset key={stat.label} padding="sm" className="flex justify-center">
+                  <Inset key={stat.label} padding="sm" className="flex min-w-0 justify-center">
                     <Readout
                       value={stat.value}
                       format={{ maximumFractionDigits: 0 }}

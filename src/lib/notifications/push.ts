@@ -21,6 +21,7 @@ import 'server-only';
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { surfaceHref } from '@/lib/golf/surface-registry';
 import type { NotificationType, NotificationPreferences } from './types';
 import { getUserNotificationPreferences } from './email';
 import { gatedDelivery, type DeliveryNotificationKey } from '@/lib/coachhelm/v3/notifications/types';
@@ -143,12 +144,28 @@ function generatePushPayload(
         body: `${data.playerName || 'A player'} shot ${data.totalScore}${data.scoreToPar ? ` (${Number(data.scoreToPar) > 0 ? '+' : ''}${data.scoreToPar})` : ''} at ${data.courseName || 'a course'}`,
         data: { url: `${baseUrl}/golf/dashboard/stats/team`, type },
       };
-    case 'coachhelm_insight':
+    case 'coachhelm_insight': {
+      // Role-aware deep link. This used to hardcode `/golf/dashboard/coachhelm`
+      // — the PLAYER-only front door — for every recipient, but the only sender
+      // (insights.ts `triggerPlayerInsightsAfterRound`, which fires whenever a
+      // player submits a round) resolves the TEAM COACH's user_id. So tapping
+      // "New CoachHelm Insight" on a coach's phone deep-linked them into a page
+      // that renders "This CoachHelm dashboard is the player view" with nothing
+      // but a button back to Brief — the in-app dead end the owner reported on
+      // 2026-08-26, reached through an OS notification instead. Coaches land on
+      // the insights view of their own Signals surface (the same destination
+      // FocusAreaCard sends a coach to); a player recipient keeps the player
+      // front door. Hrefs come from the surface registry, never hand-written.
+      const audience = data.audience === 'player' ? 'player' : 'coach';
       return {
         title: 'New CoachHelm Insight',
         body: String(data.insightTitle || 'New coaching insight available'),
-        data: { url: `${baseUrl}/golf/dashboard/coachhelm`, type },
+        data: {
+          url: `${baseUrl}${audience === 'coach' ? surfaceHref('insights') : surfaceHref('overview')}`,
+          type,
+        },
       };
+    }
     case 'qualifier_updated':
       return {
         title: 'Qualifier Updated',

@@ -584,6 +584,8 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           track={track}
           priorities={priorities}
           ledger={ledger}
+          viewerContext={standingViewerContext}
+          playerName={playerName}
         />
         <div className="flex min-w-0 flex-col gap-4">
           {/* No "scoped to one round" notice here any more: a scoped round

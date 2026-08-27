@@ -278,7 +278,10 @@ export function StatsBento({
         rows={leakArea === 'putting' ? 2 : 1}
         onOpen={() => stage.open('putting')}
       >
-        <RailBars rows={puttingRows} labelWidth={44} />
+        {/* 60, matching "Off the tee" below: RailBars' label column is a HARD
+            px track, and "15-20ft" is as wide as the "Fairways" label that
+            already proved 44px too narrow. */}
+        <RailBars rows={puttingRows} labelWidth={60} />
       </BentoCell>
 
       <BentoCell
