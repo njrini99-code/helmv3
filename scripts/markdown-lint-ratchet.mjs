@@ -89,9 +89,29 @@ function countMarkdownFilesRecursive(abs) {
   return n;
 }
 
-const files = markdownFilesUnder('docs');
+// Tracked files only. The readdirSync walk above is retained for the
+// EXCLUSION report (it must still see an `archive/` that exists on disk in
+// order to name it), but the linted set is intersected with `git ls-files`.
+//
+// Why: the walk is not gitignore-aware, so the ratchet counted whatever each
+// developer happened to have on disk. Measured 2026-08-27 — the canonical
+// checkout carried 21 gitignored .md files under docs/ (1,479 on disk vs
+// 1,458 tracked), so the same script on the same commit failed locally and
+// passed in CI. Two of us spent an evening disagreeing about a +389 that only
+// one checkout could see. A ratchet whose scope depends on untracked local
+// files is not a ratchet; it is a coin flip that gets blamed on the last
+// person who touched a doc.
+const tracked = new Set(
+  execFileSync('git', ['ls-files', '-z', '--', '*.md'], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 })
+    .toString('utf8')
+    .split('\0')
+    .filter(Boolean),
+);
+const files = markdownFilesUnder('docs').filter((f) => tracked.has(f));
 for (const name of ['CLAUDE.md', 'AGENTS.md', 'CLAUDE_CODE_GUIDE.md']) {
-  if (existsSync(resolve(ROOT, name))) files.push(name);
+  if (tracked.has(name)) files.push(name);
+  else if (existsSync(resolve(ROOT, name)))
+    excluded.push({ path: name, reason: 'present but untracked — not counted' });
   else excluded.push({ path: name, reason: 'not present in this checkout' });
 }
 files.sort();

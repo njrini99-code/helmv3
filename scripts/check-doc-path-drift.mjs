@@ -46,6 +46,7 @@
  * Pure stdlib.
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 
 const BASELINE = '.doc-path-baseline.json';
@@ -54,13 +55,29 @@ const SINGLES = ['CLAUDE.md', 'AGENTS.md', 'docs/REPO_MAP.md'];
 const PREFIX = '(?:src|docs|memory|scripts|supabase|e2e|tools|public)';
 const PATH_RE = new RegExp(`(?:^|[\\s\`"(\\[|])(${PREFIX}/[A-Za-z0-9._/\\[\\]()@*-]+)`, 'g');
 
+/**
+ * Tracked .md only. `memory/` and `.claude/rules/` happen to carry zero
+ * gitignored markdown today, so this changes nothing right now — it is here so
+ * that dropping a scratch note into memory/ can never silently change a ratchet
+ * count. The sibling markdown ratchet had exactly that defect: it walked docs/,
+ * which contains a wholly gitignored `docs/redesign/` (21 .md files), so the
+ * same script on the same commit failed in one checkout and passed in CI.
+ * Verified 2026-08-27 by running it on a clean origin/main worktree.
+ */
+const TRACKED_MD = new Set(
+  execFileSync('git', ['ls-files', '-z', '--', '*.md'], { maxBuffer: 64 * 1024 * 1024 })
+    .toString('utf8')
+    .split('\0')
+    .filter(Boolean),
+);
+
 function mdFiles(dir, out = []) {
   let entries;
   try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return out; }
   for (const e of entries) {
     const p = join(dir, e.name);
     if (e.isDirectory()) mdFiles(p, out);
-    else if (e.name.endsWith('.md')) out.push(p);
+    else if (e.name.endsWith('.md') && TRACKED_MD.has(p)) out.push(p);
   }
   return out;
 }

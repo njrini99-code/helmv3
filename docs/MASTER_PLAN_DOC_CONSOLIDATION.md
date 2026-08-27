@@ -221,8 +221,12 @@ workflow:
 | `markdown:ratchet` |
 | `lint:duplicate-exports` |
 
-And `markdown:ratchet` is the gate that has been red since 2026-08-20 — so every local
-`preflight` has been failing for a week on a check that gates nothing.
+**CORRECTION, 2026-08-27.** An earlier revision of this plan said
+`markdown:ratchet` had "been red since 2026-08-20 with +389 violations across 96
+files, from no current branch". That was wrong, and it was wrong in an
+instructive way — see 5f. It passes on a clean `origin/main` worktree (verified,
+exit 0). The orphan finding above stands regardless of colour: a gate no
+workflow runs is an orphan whether it is green or red.
 
 **5b. `preflight` misses 15 gates CI does run:** `build`, `test:run`,
 `test:integration`, `audit:paginated-reads`, `check:cycles`, `check:types-drift`,
@@ -253,9 +257,9 @@ and the ratchet baselines all read from it.
 - [ ] Reconcile the 12 baseline files against the surviving gate list; delete the
       orphaned ones (`.sqlfluff-baseline.json`, `.paginated-read-baseline.json`, etc.
       only where their gate is being dropped).
-- [ ] Fix the markdown violations — **do not** run `markdown:ratchet --update`; the
-      ratchet may only go DOWN. MD013 is 306 of the 389, mostly in files phases 1–4
-      delete or rewrite, so run this last.
+- [ ] Nothing to fix in the markdown violations — the count was an artefact.
+      See 5f. The remaining work is wiring the gate into CI, or correcting
+      `preflight`'s claim that CI already runs it.
 - [ ] `docs:diff-check` is `git diff --exit-code`, so it fails by design whenever regen
       output is uncommitted — exactly while you are working. Split it out of
       `docs:check` so `docs:check` reports correctness only.
@@ -274,6 +278,35 @@ gate. Tonight's workaround was to omit them — but that trains people to
 write vaguer docs, which is the opposite of the point. Teach the checker
 about constraint names rather than teaching authors to avoid them.
 (Raised by `c5`, 2026-08-27.)
+
+**5f. A ratchet that walks the filesystem is not reproducible — FIXED.**
+This is the sharpest gate defect found, and it cost two sessions an evening.
+
+`markdown-lint-ratchet.mjs` resolved its scope with a `readdirSync` walk of
+`docs/`. That walk is not gitignore-aware, and `.gitignore:11` ignores the
+whole of `docs/redesign/`, which holds **21 `.md` files**. So the canonical
+checkout linted 1,479 files where CI linted 1,458 — the same script, on the
+same commit, failing locally and passing in CI. Both sessions measured
+honestly, got numbers ~1,850 apart, and each believed the other's tree was
+the broken one. I published "+389, red for a week, pre-existing" from that
+number. It was an artefact of which files happened to be on my disk.
+
+A ratchet whose scope depends on untracked local files is not a ratchet. It is
+a coin flip that gets blamed on whoever last touched a doc.
+
+Fixed by intersecting both walks with `git ls-files`:
+
+- `scripts/markdown-lint-ratchet.mjs` — the defect
+- `scripts/check-doc-path-drift.mjs` — same architecture, no distortion today
+  (`memory/` and `.claude/rules/` carry zero gitignored `.md`), hardened so it
+  cannot start
+
+Proven, not asserted: with the fix in place, creating a gitignored `.md` under
+`docs/` produces byte-identical output. Guarded by
+`src/test/scripts/ratchet-scope.test.ts`.
+
+**The general rule for this repo: a gate must read `git ls-files`, never the
+filesystem.** Audit the other ten against it.
 
 **5d. Required checks vs jobs.** 13 workflows define 43 jobs; `main` requires 6
 contexts. Every job that is not required and not informative is spend without a gate.
