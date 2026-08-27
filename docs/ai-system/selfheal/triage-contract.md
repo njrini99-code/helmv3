@@ -7,11 +7,18 @@
 > **`src/lib/admin/rca.ts` is authoritative for the vocabulary and the stored
 > shape.** Where this document and that file disagree, that file wins.
 
-Your job is to leave the error board **true**: every unresolved error
-fingerprint in the last 72 hours is either explained with an actionable fix, or
-resolved because you proved it is already fixed or not a defect. A row you
-analysed, concluded needs nothing, and left sitting open is a row you did not
-finish.
+Your job is to leave the error board **true**, across **all three sources**:
+every unresolved error fingerprint in `admin_events` AND every correlated
+signal the reliability collector pulled from Sentry, Supabase and Vercel, in
+the last 72 hours, is either explained with an actionable fix or resolved
+because you proved it is already fixed or not a defect. A row you analysed,
+concluded needs nothing, and left sitting open is a row you did not finish.
+
+**Triage is three sources, not one.** `admin_events` only ever contains what
+this application chose to log about itself; a cron dying on a permission grant,
+a Vercel build failing, a Supabase advisor firing — none of those write an
+`admin_events` row. Analysing only `admin_events` and reporting a clean board
+is the exact shape of a monitor that reports health from the half it can see.
 
 Repo: `njrini99-code/helmv3` (fresh checkout). Supabase project ref:
 `qmnssrrolpinvwjjnufo` — **production, serving live users. There is no staging
@@ -68,6 +75,60 @@ count loudly** in your report — a cap you cannot see is indistinguishable from
 a clean board.
 
 ---
+
+## STEP 1B — the other two sources
+
+**`admin_events` is one source of three, and it is the one that only sees what
+this application chose to log.** Triage means all of them. The reliability
+collector (`/api/cron/reliability-triage`, every 3 hours) already reads
+**Sentry, Supabase and Vercel**, correlates them, and writes the result to
+`background_job_logs` under `reliability-snapshot`. Read it:
+
+```sql
+select b.started_at,
+       b.metadata->'sources'  as source_health,
+       s.value->>'signature'  as signature,
+       s.value->>'title'      as title,
+       s.value->>'route'      as route,
+       s.value->>'severity'   as severity,
+       (s.value->>'count')::int as occurrences,
+       s.value->>'lastSeen'   as last_seen,
+       s.value->>'proposedRisk' as risk,
+       s.value->'sources'     as seen_by,
+       s.value->'evidence'    as evidence
+from public.background_job_logs b,
+     lateral jsonb_array_elements(coalesce(b.metadata->'signals','[]'::jsonb)) s
+where b.job_type = 'reliability-snapshot'
+  and b.started_at = (select max(started_at) from public.background_job_logs
+                       where job_type = 'reliability-snapshot')
+order by jsonb_array_length(s.value->'sources') desc, occurrences desc;
+```
+
+Three things about this set that STEP 1's set does not have:
+
+- **`signature` is NOT `admin_events.fingerprint`.** `correlationSignature`
+  deliberately folds severity out of the key so a condition Sentry rates
+  `error` and this app logs `warning` correlates as one signal. Store an
+  analysis for one of these under `fingerprint = 'rel:' || signature` so the
+  two namespaces cannot collide, and check for an existing analysis the same
+  way.
+- **A signal seen by two sources is corroborated** — `sources` with more than
+  one entry means two independent systems saw the same failure. Rank those
+  first; they are the least likely to be instrumentation noise.
+- **`source_health` must be read before you trust an empty result.** Each arm
+  reports `{source, status, reason}`. A `blind` arm means that source could not
+  be READ — say so loudly and never report its silence as "nothing found
+  there". A source that could not be read is unknown, not clean.
+
+Analyse these exactly like STEP 1's rows: same grouping, same four categories,
+same schema, same resolve gates. Two differences:
+
+- These have no `admin_events` rows to flip, so **STEP 4's first write does not
+  apply** — record the ledger row (second write) only, and only under gate (A)
+  or (B).
+- `evidence` carries a Sentry permalink. Open it. It has the stack trace the
+  database does not, and it is the difference between naming a file and
+  guessing one.
 
 ## STEP 2 — group before you write
 

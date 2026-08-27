@@ -15,6 +15,11 @@ Three runners, in three different places:
 
 **Diagnose** — heartbeat `selfheal-triage`. An Anthropic-hosted cloud
 routine, daily 09:17 UTC. Follows [`triage-contract.md`](triage-contract.md).
+Reads **three** sources, not one: `admin_events`, plus the Sentry / Supabase /
+Vercel signals the reliability collector already correlates into
+`background_job_logs.reliability-snapshot`. `admin_events` contains only what
+this app chose to log about itself — a cron dying on a permission grant never
+writes a row there.
 
 **Repair** — heartbeat `selfheal-repair`. A launchd agent on the owner's Mac
 (`~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`), daily 06:40
