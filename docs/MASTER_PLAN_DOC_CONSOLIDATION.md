@@ -320,6 +320,58 @@ Proven, not asserted: with the fix in place, creating a gitignored `.md` under
 **The general rule for this repo: a gate must read `git ls-files`, never the
 filesystem.** Audit the other ten against it.
 
+**5i. THE ORPHAN COUNT WAS WRONG — 11 was really 6, and 2 were actionable.**
+
+Retracted 2026-08-27, second correction to this section. **My detection method
+was broken.** I grepped CI for `npm run <script-name>`. CI mostly invokes these
+scripts **by path** — `node scripts/markdown-lint-ratchet.mjs` — so every
+path-invoked gate read as an orphan. That inflated the finding roughly fivefold.
+
+Re-detected on both forms:
+
+| Reported orphan | Actually |
+|---|---|
+| `markdown:ratchet` | **`review-gate.yml`, no `if:`, IN the `Review Gate aggregate` needs — a fully blocking required check** |
+| `sql:ratchet` | `review-gate.yml` job `sqlfluff` |
+| `check:env-secrets` | `review-gate.yml` job `env-secrets` |
+| `check:row-caps` | `ci.yml` |
+| `check:helm-bridge-env` | `ci.yml` job `bridge-env` |
+| `knowledge:report` | `feature-awareness.yml` |
+| `check:env` | genuine orphan — **now wired** |
+| `lint:duplicate-exports` | genuine orphan — **now wired** |
+| `check:ledger` | not a gate; needs `psql` on stdin |
+| `check:stats`, `db:ledger-drift` | need credentials; correct to fail locally |
+| `docs:check` | local-only by design |
+
+**`markdown:ratchet` is the one that matters**, because I built a whole
+narrative on it: "preflight lies, the gate it has been failing on for a week
+runs in no workflow." Every part of that was wrong. It runs in CI, it has no
+`if:`, and it is in a required aggregate — it is one of the more strictly
+enforced gates in the repo. c5 handed me the disproof hours earlier ("my PR went
+red on markdownlint for exactly one MD004 violation") and I did not reconcile it
+with my own claim.
+
+**Preflight's closing line was very nearly true, not a lie.** Of its ten gates,
+exactly one — `lint:duplicate-exports` — was unreachable in CI. That is now
+wired, so all ten are. The line has been rewritten to say what is actually true:
+every preflight gate is also run by CI and blocks merge, and preflight is a
+SUBSET, since CI additionally runs build, tests, RLS and the Review Gate
+analysers.
+
+**What survives from the original finding, and it is smaller but real:**
+
+- Two genuine orphans existed and are now wired into the existing `lint-ratchet`
+  job (already in `CI aggregate`'s `needs`, so blocking immediately — a new job
+  NOT in that list would run, report, and gate nothing).
+- `package.json` advertises pipeline components (`check:ledger`,
+  `knowledge:report`) as standalone gates.
+- Four gates carried the `git ls-files` scope defect; two are fixed.
+
+**The method lesson is the durable one.** Twice tonight I inferred a system
+property by grepping for a caller and got it wrong — the recruiting pointer, and
+this. Both were resolved by *running the thing*. Grep tells you about the text;
+only execution tells you about the system.
+
 **5g. THE ORPHAN AUDIT — corrected. "11 orphan gates" was too blunt.**
 
 Ran every one of them on 2026-08-27 rather than inferring from the CI grep. They

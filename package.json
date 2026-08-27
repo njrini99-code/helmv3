@@ -78,7 +78,7 @@
     "knowledge:globs": "node scripts/check-registry-globs.mjs",
     "lint:duplicate-exports": "node scripts/check-duplicate-exports.mjs",
     "schema": "node scripts/schema.mjs",
-    "preflight": "npm run typecheck && npm run lint && npm run lint:ratchet && npm run audit:supabase-errors && npm run audit:fail-open && npm run markdown:ratchet && npm run docs:schema-drift && npm run docs:path-drift && npm run knowledge:globs && npm run lint:duplicate-exports && echo 'PREFLIGHT GREEN — this is the blocking static set CI runs. Unit tests: npm test.'",
+    "preflight": "npm run typecheck && npm run lint && npm run lint:ratchet && npm run audit:supabase-errors && npm run audit:fail-open && npm run markdown:ratchet && npm run docs:schema-drift && npm run docs:path-drift && npm run knowledge:globs && npm run lint:duplicate-exports && echo 'PREFLIGHT GREEN — every gate above is also run by CI and blocks merge. It is a SUBSET: CI also runs build, unit/integration tests, RLS and the Review Gate analysers. Unit tests: npm test.'",
     "db:ledger-drift": "node scripts/db/migration-ledger-drift.mjs"
   },
   "keywords": [],
