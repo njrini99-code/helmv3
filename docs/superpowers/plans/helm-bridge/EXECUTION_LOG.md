@@ -231,8 +231,8 @@ and merged. Corrected by reading the code, not the log:
 - Task 1 `src/lib/admin/data/feature-health.ts` — present (+ `feature-health-detail.ts`)
 - Task 2 Sentry per-feature counts — present in `src/lib/admin/sentry-api.ts`
   (in-flight ceiling + cooldown)
-- Task 3 `/admin/health` dot grid + detail — `src/app/admin/health/page.tsx`
-  + `FeatureHealthDetailPanel` + `AttributionCoveragePanel`
+- Task 3 `/admin/health` dot grid + detail — `src/app/admin/health/page.tsx`,
+  with `FeatureHealthDetailPanel` and `AttributionCoveragePanel`
 - Task 4 `feature` filter on the Errors tab — `src/app/admin/errors/page.tsx`
   (chip + clear-filter href)
 - Task 5 Overview rollup — `FeatureHealthRollup` -> `FeatureHealthSummary`,
