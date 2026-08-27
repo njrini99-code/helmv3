@@ -269,3 +269,7 @@ tests/**/.momentic-mcp/
 # flagged at its highest concern level). It is not tracked today but was not
 # ignored either, so nothing prevented it being committed again.
 graphify-out/
+
+# Staging snapshot from the OS backfill. Its incident-mining JSON accounts for
+# ~8.6 MiB of blobs in history and nothing prevented it recurring.
+_staging-snapshot/
