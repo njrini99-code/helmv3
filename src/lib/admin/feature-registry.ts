@@ -45,7 +45,7 @@ export type FeatureKey =
   | 'whats_new'
   | 'my_game_profile'
   | 'admin_dashboard'
-  // CoachHelm (13)
+  // CoachHelm (14)
   | 'coachhelm_ai_engine'
   | 'alerts_system'
   | 'patterns_dashboard'
@@ -59,6 +59,7 @@ export type FeatureKey =
   | 'my_development'
   | 'drills_practice_rx'
   | 'coachhelm_v3_goals'
+  | 'integrations'
   // BaseballHelm (48)
   | 'baseball_academics'
   | 'baseball_announcements'
@@ -893,6 +894,50 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     healthSignal: 'Goal CRUD/suggestions/progress evaluators complete.',
     knownGaps: [
       'V3 surface = documented drift from the 28-feature doc, now first-class here.',
+    ],
+  },
+  {
+    key: 'integrations',
+    label: 'Integrations (Inngest)',
+    app: 'coachhelm',
+    // Deliberately EMPTY. The Inngest surface is an API route
+    // (src/app/api/inngest/route.ts) and a function registry
+    // (src/lib/inngest/functions.ts), not server actions — the manifest
+    // invariants in feature-registry.test.ts are defined over action-boundary
+    // exports, so listing non-action files here would corrupt the count rather
+    // than document anything.
+    actions: {},
+    primaryTable: null,
+    // No heartbeat table ON PURPOSE, and this is the whole point of the entry.
+    // Inngest calls us on exactly two triggers: a Mon 14:00 UTC cron and a
+    // round-submitted event. Between them, silence is the NORMAL state — so a
+    // staleness heartbeat here would measure the calendar, not the integration.
+    heartbeatTable: null,
+    tier: 'med',
+    seasonalEmpty: false,
+    // Silence must never render as green. Verified in production 2026-08-27:
+    // 454 signature-validation errors ran 2026-08-07 → 2026-08-24 14:05 (the
+    // last one minutes after that Monday's 14:00 UTC cron), then NOTHING —
+    // through a production deploy on 08-27, while admin_events took 104 other
+    // events that same day. So the Bridge is demonstrably alive and this
+    // feature is simply quiet, which has TWO readings and the database cannot
+    // separate them: the signing key was fixed, or Inngest Cloud stopped
+    // calling this app at all. The second is worse than the errors were —
+    // durable jobs would be dead silently, round analysis running inline with
+    // no retry or crash recovery. neverNeutral keeps the card from painting
+    // that ambiguity green.
+    neverNeutral: true,
+    healthSignal:
+      'Inngest reaches /api/inngest with a VALID signature. Silence is not ' +
+      'health: the only triggers are a Mon 14:00 UTC cron and round-submitted, ' +
+      'so confirm liveness in the Inngest dashboard (app synced, recent runs) ' +
+      'rather than inferring it from an empty error list.',
+    knownGaps: [
+      'No success signal is recorded, so a working integration and a ' +
+        'disconnected one look identical from admin_events alone.',
+      'UNSIGNED requests (scanners, uptime checks, curl) are robot noise and ' +
+        'are already handled in route.ts — do not read them as this feature ' +
+        'failing.',
     ],
   },
   // ── BaseballHelm (48) ───────────────────────────────────────────────────

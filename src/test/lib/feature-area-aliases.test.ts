@@ -37,7 +37,9 @@ describe('resolveFeatureKey — the featureArea promotion bug', () => {
     // a visible "unregistered tag" warning on the Health board for an
     // invisible gap in the unattributed bucket.
     expect(resolveFeatureKey(null, 'integrations')).toBe('integrations');
-    expect(FEATURE_KEYS.has('integrations')).toBe(false);
+    // Registered 2026-08-27, so this pass-through now lands on a REAL key
+    // rather than free text the Health board could only show untiered.
+    expect(FEATURE_KEYS.has('integrations')).toBe(true);
   });
 
   it('returns null when neither is supplied', () => {

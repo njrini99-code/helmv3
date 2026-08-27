@@ -371,9 +371,12 @@ describe('fetchFeatureHealthDetail', () => {
     const rawRows = [
       // round_tracking (registered) — one recent error.
       { id: 'r1', feature: 'round_tracking', severity: 'error', title: 'boom', created_at: hoursAgoIso(1), fingerprint: 'fp-1' },
-      // integrations (NOT a FEATURE_REGISTRY key) — a stale burst.
-      { id: 'r2', feature: 'integrations', severity: 'error', title: 'webhook 500', created_at: hoursAgoIso(80), fingerprint: 'fp-2' },
-      { id: 'r3', feature: 'integrations', severity: 'error', title: 'webhook 500', created_at: hoursAgoIso(81), fingerprint: 'fp-2' },
+      // webhooks_legacy (NOT a FEATURE_REGISTRY key) — a stale burst.
+      // Was 'integrations' until 2026-08-27, when that became a real registry
+      // key and this case stopped testing the unregistered path at all. The
+      // assertions below are unchanged; only the example tag moved.
+      { id: 'r2', feature: 'webhooks_legacy', severity: 'error', title: 'webhook 500', created_at: hoursAgoIso(80), fingerprint: 'fp-2' },
+      { id: 'r3', feature: 'webhooks_legacy', severity: 'error', title: 'webhook 500', created_at: hoursAgoIso(81), fingerprint: 'fp-2' },
     ];
 
     vi.mocked(createAdminClient).mockReturnValue(
@@ -393,12 +396,12 @@ describe('fetchFeatureHealthDetail', () => {
     expect(result.countsAvailable).toBe(true);
     expect(result.rowsTruncated).toBe(false);
 
-    const integrations = result.rows.find((r) => r.key === 'integrations');
-    expect(integrations).toBeDefined();
-    expect(integrations!.kind).toBe('unregistered');
-    expect(integrations!.status).toBe('amber'); // stale burst, not red
-    expect(integrations!.counts).toEqual({ errors: 2, warnings: 0, total: 2 });
-    expect(integrations!.reason).toMatch(/not a key in FEATURE_REGISTRY/);
+    const unregistered = result.rows.find((r) => r.key === 'webhooks_legacy');
+    expect(unregistered).toBeDefined();
+    expect(unregistered!.kind).toBe('unregistered');
+    expect(unregistered!.status).toBe('amber'); // stale burst, not red
+    expect(unregistered!.counts).toEqual({ errors: 2, warnings: 0, total: 2 });
+    expect(unregistered!.reason).toMatch(/not a key in FEATURE_REGISTRY/);
 
     const roundTracking = result.rows.find((r) => r.key === 'round_tracking');
     expect(roundTracking).toBeDefined();

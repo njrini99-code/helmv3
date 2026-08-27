@@ -78,7 +78,7 @@ Column meanings:
 | `my_game_profile` | Player Profile Surfaces (My Game / My Standing / Team Hub) | `player-profile-stats.ts:*` | `golf_player_stats_cache` | low | Profile stat reads succeed. Route-ownership partially unverified (map gap) — remaining data-fetch paths get coverage via the shared RLS helper only until traced. Low-tier |
 | `admin_dashboard` | Admin Platform (self-referential) | `admin-bi-data.ts:*`, `admin-data.ts:*`, `admin-people-data.ts:*`, `admin-system-data.ts:*`, `admin-tracer-data.ts:*`, `admin/rollup-c.ts:*`, `src/app/admin/actions/triage.ts:*` | `admin_events` | med | Rollup RPCs return in budget; no 42501 on SECURITY DEFINER rollups. **Never NEUTRAL** — foundational infra; integrity-check failures red it immediately (§5 override). Dogfoods its own pipeline; wrapped FIRST (W15 Batch 0) |
 
-### 1.2 CoachHelm (app: `coachhelm`) — 13 features
+### 1.2 CoachHelm (app: `coachhelm`) — 14 features
 
 | Key | Label | Action globs | Primary table | Tier | healthSignal + thresholds |
 |---|---|---|---|---|---|
@@ -95,6 +95,7 @@ Column meanings:
 | `my_development` | My Development (player) | `development.ts:{acceptFocusArea,declineFocusArea,updateFocusAreaProgress}`, `insights.ts:{getPlayerFocusAreas}` | `golf_player_focus_areas` | low | Player accept/decline/progress writes succeed; reads RLS-clean for own player_id. Low-tier |
 | `drills_practice_rx` | Drills & Practice Rx | `drills.ts:*`, `v3/practice-rx.ts:*`, `v3/team-practice-rx.ts:*` | `golf_drills` | low | Rx generation + drill matching return (empty match set = degraded quality signal on drill-in, NOT an error). Low-tier |
 | `coachhelm_v3_goals` | Goals & Progress (V3) | `v3/goals.ts:*`, `v3/goal-progress.ts:*`, `v3/focus-area-progress.ts:*`, `v3/intent.ts:*` | `golf_goals` | med | Goal CRUD/suggestions/progress evaluators complete. V3 surface = documented drift from the 28-feature doc, now first-class here. Med-tier |
+| `integrations` | Integrations (Inngest) | — (API route + function registry, not server actions) | — | med | Inngest reaches `/api/inngest` with a VALID signature. Silence is NOT health: the only triggers are a Mon 14:00 UTC cron and round-submitted, so liveness must be confirmed in the Inngest dashboard, never inferred from an empty error list. `neverNeutral` — a quiet card here is ambiguous (key fixed vs. Inngest no longer calling), and the second reading means durable jobs are dead silently. Unsigned requests are robot noise, already handled in route.ts. Med-tier |
 
 ### 1.3 BaseballHelm (app: `baseballhelm`) — 48 features
 
