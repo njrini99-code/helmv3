@@ -361,8 +361,9 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    `src/lib/golf/nav-registry.ts:322,328,335,341,348,389,427,430`
    (`team.tabs[0]!.href`), `src/lib/golf/strokes-gained.ts:122`
    (`distances[0]!`), `src/lib/golf/progress-drivers.ts:145`
-   (`goals[0]!.player_id // non-empty (guarded above)`). Convention
-   confirmed in `docs/archive/2026-06/superpowers/plans/2026-06-07-coachhelm-to-90.md:927`.
+   (`goals[0]!.player_id // non-empty (guarded above)`). The live call sites
+   above are the convention; the archived plan formerly cited here was deleted
+   on 2026-08-27 along with the rest of the archive tree.
    When `noUncheckedIndexedAccess` forces a `T | undefined` at an index
    you've already proven non-empty (length check, `.filter`, upstream
    invariant), assert with `!` **and** leave a one-line comment naming the

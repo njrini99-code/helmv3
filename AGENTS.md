@@ -198,8 +198,13 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
 - A single active session may work in the canonical checkout directly; do
   not create a worktree without a reason (concurrency above, or an explicit
   user request), and remove any temporary worktree when its task completes.
-- `archive/**` and `docs/archive/**` are historical evidence only. Never use them as the source of truth for current architecture, schema, routes, configuration, features, or implementation.
-- Current source code, current migrations, current tests, `AGENTS.md`, `CLAUDE.md`, and active non-archive documentation outrank archived material.
+- `archive/**` and `docs/archive/**` were deleted from the working tree on
+  2026-08-27 (1,265 files). They live in git history and nowhere else, which is
+  the point: they were historical evidence that no rule could stop an agent
+  from reading as current. Recover a specific file with
+  `git log --diff-filter=D --name-only -- <path>` then `git show <sha>^:<path>`.
+  Do not restore the directories.
+- Current source code, current migrations, current tests, `AGENTS.md`, `CLAUDE.md`, and active documentation outrank anything recovered from history.
 - Use repo-local platform CLIs: `./node_modules/.bin/supabase` and `./node_modules/.bin/vercel`. Do not assume global Supabase or Vercel binaries.
 - Production Supabase MCP access must remain project-scoped and read-only. Schema changes belong in the local development stack and reviewed migrations.
 - Never treat an agent memory store, code index, or cache as more authoritative than the current repository and current database evidence.
