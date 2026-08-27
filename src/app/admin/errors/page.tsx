@@ -2,17 +2,9 @@ import Link from 'next/link';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import {
-  parseErrorsFilters,
-  fetchErrorsTab,
-  buildFilteredIncidentsReport,
-} from '@/lib/admin/data/errors';
+import { parseErrorsFilters, fetchErrorsTab, buildFilteredIncidentsReport } from '@/lib/admin/data/errors';
 import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
-import {
-  INCIDENT_CLASS_ORDER,
-  INCIDENT_CLASS_LABEL,
-  INCIDENT_CLASS_DESCRIPTION,
-} from '@/lib/admin/incident-classification';
+import { INCIDENT_CLASS_ORDER, INCIDENT_CLASS_LABEL, INCIDENT_CLASS_DESCRIPTION } from '@/lib/admin/incident-classification';
 import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import { TriageQueue } from '../_components/TriageQueue';
 import { ErrorsOverTime } from '../_components/ErrorsOverTime';
@@ -24,7 +16,8 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 import { CopyReportButton } from '../_components/CopyReportButton';
 import { BulkResolveButton } from '../_components/BulkResolveButton';
 import { ErrorsFilterChips } from './ErrorsFilterChips';
-
+import { ArchivePanel } from './_components/ArchivePanel';
+import { loadErrorsPageData } from './_data';
 export const dynamic = 'force-dynamic';
 
 const CHIP_SETS: Array<{ param: 'sport' | 'severity' | 'source' | 'window' | 'kind'; values: string[] }> = [
@@ -66,6 +59,17 @@ function chipHref(current: URLSearchParams, param: string, value: string): strin
   const qs = next.toString();
   return qs ? `/admin/errors?${qs}` : '/admin/errors';
 }
+
+/**
+ * The triage read and the archive read, fetched together — pulled out of
+ * `Body` as a pure(ish) async function so the wiring itself is directly
+ * unit-testable (mock the two fetchers, call this, assert both ran and both
+ * results made it through) without needing to render `Body`. `Body` is an
+ * async Server Component embedded via `<Suspense>`, which this repo's test
+ * harness cannot resolve client-side — React 19 supports async components
+ * only on the server — so a full-page render test can prove the shell
+ * mounted but not that its resolved content is what this function produced.
+ */
 
 function clearParamHref(current: URLSearchParams, param: string): string {
   const next = new URLSearchParams(current);
@@ -151,6 +155,7 @@ const FEATURE_LABELS: Record<string, string> = Object.fromEntries(
   FEATURE_REGISTRY.map((f) => [f.key, f.label]),
 );
 
+
 export default async function ErrorsPage({
   searchParams,
 }: {
@@ -164,7 +169,7 @@ export default async function ErrorsPage({
   );
 
   async function Body() {
-    const tab = await fetchErrorsTab(filters);
+    const { tab, archiveResult } = await loadErrorsPageData(filters);
     const { counts } = tab;
     // Sentry-origin and app-origin incidents are concatenated independently
     // by mergeTriage() with no invariant coupling them — tab.incidents can be
@@ -449,6 +454,16 @@ export default async function ErrorsPage({
             Row detail: <span className="font-fw-mono">/admin/errors/&lt;fingerprint&gt;</span> (click-through from each app row title)
           </p>
         </Surface>
+
+        {/* Archive / Fixed — clearly separated from the live triage queue
+            above by a divider and its own top margin. Reference material for
+            "was this ever fixed, and did it ship", not the headline: the open
+            queue above stays the primary content on this page. ArchivePanel
+            owns its own "Archive" heading/empty/error states — this wrapper
+            only adds the visual break. */}
+        <div className="border-t border-warm-200 pt-6">
+          <ArchivePanel result={archiveResult} />
+        </div>
       </div>
     );
   }
