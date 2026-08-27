@@ -139,3 +139,21 @@ worst-case, business-ending failure. Patterns + required tests:
 external review bots were dropped 2026-07-20. The golf/baseball/coachhelm
 siblings were promoted on 2026-08-09; this one was missed and sat unread for
 nine days while the file it cascaded onto no longer existed.*
+
+## Moved here from shipping.md (2026-08-27)
+
+These were always-on in `shipping.md`. They cannot be violated without a `.sql`
+or a migration in play, so they load here instead — on the paths in this file's
+frontmatter rather than on every session.
+
+- **Never grant `anon` EXECUTE** on a `SECURITY DEFINER` function, and never
+  `GRANT ALL`. Recreating a matview or view **re-grants `anon`** — REVOKE after,
+  then verify.
+- **New table => RLS + policy in the same migration.** Enforced by the Review
+  Gate as a blocking hard rule.
+- **Sport prefixes are load-bearing:** `golf_*`, `baseball_*`,
+  `helm_lifting_*`. An unprefixed table name almost certainly does not exist.
+- **"Recorded" is not "applied".** The migrations directory and the applied
+  state have disagreed before. Verify against the live catalog, not the file
+  list. `supabase/migrations/HELD.md` is the record of which held migrations
+  are deliberate rather than forgotten.

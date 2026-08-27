@@ -2,10 +2,16 @@
 verified: 2026-08-20  # every claim below re-checked against the guards, vercel.json, and prod this date
 ---
 
-## Shipping — docs, git, bash, Supabase, Vercel
+## Shipping — git, bash, production writes, deploys
 
-No `paths:`, so this loads every session. That is deliberate: these are the
-traps that don't care which file you opened.
+No `paths:`, so this loads every session. That is deliberate, and the test is
+narrow: **could this rule prevent a mistake made on a turn that opens no
+files?** "Never pipe a gate" passes. "Never grant `anon` EXECUTE" does not — it
+needs a `.sql` in play, so it lives in `database.md`.
+
+Split on 2026-08-27. The documentation rot rule moved to
+`.claude/rules/documentation.md` (`memory/**`, `docs/**`, `**/*.md`) and the SQL
+authoring rules to `.claude/rules/database.md`. Both failed the test above.
 
 Everything here is either enforced by a `PreToolUse` guard in `.claude/hooks/`
 or was learned by breaking something. **Guards are not suspended by permission
@@ -14,43 +20,7 @@ is what makes working fast here safe.
 
 ---
 
-### 1. Documentation — the rot rule
-
-An audit on 2026-08-19/20 found the knowledge base naming **59 database objects
-that do not exist in production** and **file paths that do not resolve**
-(current counts live in `.doc-schema-baseline.json` / `.doc-path-baseline.json`
-— never in prose),
-each rendered with full detail and formatted identically to the real ones. A
-session that obeyed the docs produced fluent, confident, broken work. The fix is
-mechanical, and these are the habits that keep it fixed.
-
-- **Never write a count into prose.** Not "266 tables", not "41 action files",
-  not "8 skills". Counts rot within weeks and a stale number reads as current
-  forever. Put it in an `AUTOGEN` block or leave it out. `glossary.md` said
-  "75 tables" for six months against a schema of 268; `golfhelm-database.md`'s
-  header contradicted its own AUTOGEN block fifteen lines below.
-- **Never document a table, column, or path you have not just verified.** Query
-  it or `ls` it. "The migration exists in this repo" is *not* evidence the table
-  is live — see trap G8 in `memory/context/baseballhelm-database.md`.
-- **Run the gates before claiming a doc is correct:**
-  `npm run docs:schema-drift` and `npm run docs:path-drift`. Both baseline to a
-  known-bad count that may only go DOWN, and both fail CI on anything new.
-- **A "DO NOT EDIT — regenerated" stamp is not evidence of correctness.** That
-  exact stamp sat on an enum block that reported 6 of 18 enums for ~6 months
-  because the generator's regex silently dropped the rest. Verify the generator,
-  not the stamp.
-- **A missing table does not mean a missing feature.** Recurring events are
-  fully implemented on `golf_events.recurring` / `recurrence_rule` /
-  `parent_event_id`; `golf_recurring_events` never existed. Check the code
-  before concluding anything is absent.
-- **Staleness markers must be a number, not a date.** "Re-verified 2026-08-15"
-  reads as current for weeks after it stops being true. Record the anchor SHA
-  and let the reader run `git rev-list --count <sha>..HEAD -- 'src/**'`.
-- **Never bulk-repoint dead paths by basename search.** Tried; nearest-name
-  matches were build artifacts under `src/.helmdev/`. That swaps a visibly
-  broken path for a confidently wrong one.
-
-### 2. Git and commits
+### 1. Git and commits
 
 - **Work on the currently checked-out branch; `main` is home.** Never switch
   branches or create worktrees unless asked; return to clean `main` only when
@@ -78,10 +48,17 @@ mechanical, and these are the habits that keep it fixed.
   `git stash` (`refs/stash` is repo-global and shared across every worktree, so
   parallel agents steal each other's work), `git clean -f/-fd` (deletes
   untracked work that exists nowhere else; `-n`/`--dry-run` is allowed).
+- **A commit that "succeeded" is not a commit that contains what you meant.**
+  `git show --stat` before you move on. On 2026-08-27 a `git add` hit a pathspec
+  error on an already-`git rm`'d file, aborted the whole line, and produced a
+  commit holding only a deletion while its message described a seven-file
+  rewrite. It reported success. Two other near-misses that night were the same
+  shape: a mechanical operation reporting success while doing something narrower
+  than intended.
 - Commit messages: explain **why**, and state what you verified. If a claim
   rests on something you could not run, say so once.
 
-### 3. Bash
+### 2. Bash
 
 - **Never pipe a gate command.** `npm test | tail` exits with `tail`'s status,
   not the test's — it manufactures a green result. Blocked by `guard-bash.sh`.
@@ -107,32 +84,28 @@ mechanical, and these are the habits that keep it fixed.
 - **`ls` is aliased to `eza` here.** Scripted `ls` with flags it doesn't share
   errors out. Use `/bin/ls` in scripts.
 
-### 4. Supabase
+### 3. Production writes
+
+Only the part you can trigger without opening a file. Everything about
+authoring SQL — grants, RLS-with-the-migration, sport prefixes,
+recorded-vs-applied — lives in `.claude/rules/database.md`, which loads on
+`supabase/**`, any `.sql`, and `src/lib/supabase/**`.
 
 - **Production is a single SHARED database serving live users.** Golf and
   baseball are both in it. There is no staging copy.
 - **MCP `apply_migration` / `execute_sql` hit production directly with
   `service_role`** — no file, no review, no RLS. Treat every call as a
-  production write.
+  production write. This bullet is always-on precisely because an MCP call
+  opens no file, so a path-scoped warning would load after the damage.
 - **Blocked by the guards:** `supabase config push` (pushes the whole
   `config.toml`, including the dev `site_url` — would overwrite production's and
-  break every auth email link), `supabase db reset` (drops and recreates from
-  migrations), and destructive SQL through `psql` / `supabase db execute` /
-  `db query` (which bypass `guard-sql.sh`'s file route entirely).
-- `guard-sql.sh` blocks privilege escalation and destructive shapes on **both**
-  routes — `.sql` file edits *and* MCP payloads. `DELETE FROM x;` with no
-  `WHERE` is blocked.
-- **Never grant `anon` EXECUTE** on a `SECURITY DEFINER` function, and never
-  `GRANT ALL`. Recreating a matview or view **re-grants `anon`** — REVOKE after,
-  then verify.
-- **New table ⇒ RLS + policy in the same migration.** Enforced by the Review
-  Gate.
-- **Sport prefixes are load-bearing:** `golf_*`, `baseball_*`, `helm_lifting_*`.
-  An unprefixed table name almost certainly does not exist.
-- **"Recorded" ≠ "applied".** The migrations directory and the applied state
-  have disagreed before. Verify against the live catalog, not the file list.
+  break every auth email link), `supabase db reset`, and destructive SQL through
+  `psql` / `supabase db execute` / `db query`, which bypass `guard-sql.sh`'s
+  file route entirely.
+- `guard-sql.sh` covers **both** routes — `.sql` file edits *and* MCP payloads.
+  `DELETE FROM x;` with no `WHERE` is blocked.
 
-### 5. Vercel
+### 4. Deploys
 
 - **Pushing does not deploy.** `deploymentEnabled: {"*": false}`. Production is
   an on-demand CLI promote. Any doc or comment claiming "production serves

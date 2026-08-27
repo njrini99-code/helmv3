@@ -199,8 +199,16 @@ ones are well designed and mostly stay. The always-on three — `autonomy.md`,
 `shipping.md`, `code-review-tooling.md` — are the ones charging every session.
 
 - [x] Fold `code-review-tooling.md` into `AGENTS.md` — DONE 2026-08-27, file retired
-- [ ] Give `shipping.md` and `autonomy.md` `paths:` frontmatter where their content is
-      genuinely path-specific; keep only the truly universal traps always-on
+- [x] DONE 2026-08-27, but NOT as originally written. `autonomy.md` must stay
+      always-on — its own text says so and the reasoning holds: path-scoped
+      rules load when a file is touched, and the behaviour it governs (ask vs
+      act, serialize vs worktree) is decided BEFORE the first file is opened.
+      Scoping it would load it only in the sessions that did not need it.
+      `shipping.md` was SPLIT instead: the doc rot rule to
+      `.claude/rules/documentation.md`, the SQL authoring rules into the
+      existing `database.md`. **The test, from c5: could this rule prevent a
+      mistake made on a turn that opens no files?** If yes it cannot be
+      path-scoped, whatever its line count.
 - [ ] Add the four rules missing from `CLAUDE.md`'s rules table (`golf-review`,
       `coachhelm-review`, `baseball-review`, `database`) — or delete the table, since
       Phase 3 removes it
