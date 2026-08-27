@@ -56,6 +56,7 @@ vi.mock('@/lib/notifications/push', () => ({
 }));
 
 import { submitGolfRoundComprehensive, updateQualifierStatus } from '../golf';
+import { classifySoftFailure } from '@/lib/admin/observe-action-result';
 
 const COURSE_ID = '11111111-1111-4111-8111-111111111111';
 const QUALIFIER_ID = '22222222-2222-4222-8222-222222222222';
@@ -154,6 +155,61 @@ describe('submitGolfRoundComprehensive — manual qualifier closure', () => {
       .eq('id', QUALIFIER_ID)
       .single();
     expect(qualifier.data?.status).toBe('in_progress');
+  });
+
+  it('tags a submit against an already-closed qualifier with code qualifier_closed', async () => {
+    // The real sequence behind Bridge fingerprint bfec4073: a coach closes the
+    // qualifier while entrants are still mid-submission, so their in-flight
+    // submits land on the completed-qualifier guard. That rejection is an
+    // expected lifecycle outcome, and memory/features/qualifiers.md requires
+    // its envelope to carry the stable `qualifier_closed` code so
+    // observe-action-result.ts tiers it as a handled warning instead of
+    // minting a Sentry error per player.
+    fake = createFakeSupabase({
+      user: { id: 'u-player' },
+      tables: {
+        golf_players: [{ id: 'player-1', user_id: 'u-player' }],
+        golf_team_members: [],
+        golf_rounds: [{
+          id: ROUND_ID,
+          player_id: 'player-1',
+          status: 'in_progress',
+          qualifier_id: QUALIFIER_ID,
+          qualifier_round_number: 1,
+        }],
+        golf_qualifiers: [{ id: QUALIFIER_ID, status: 'completed', num_rounds: 1 }],
+        golf_qualifier_entries: [{
+          id: 'entry-1',
+          qualifier_id: QUALIFIER_ID,
+          player_id: 'player-1',
+          rounds_completed: 0,
+        }],
+        golf_holes: [],
+        golf_shots: [],
+      },
+      rpc: {
+        submit_round_atomic: async () => ({ data: { success: true, warnings: [] }, error: null }),
+      },
+    });
+
+    const result = await submitGolfRoundComprehensive(input(), ROUND_ID);
+
+    expect(result.success).toBe(false);
+    const failure = result as { success: false; error: string; code?: string };
+    expect(failure.code).toBe('qualifier_closed');
+
+    // The code is what keeps this out of the operator error queue. Assert the
+    // consequence, not just the field: with the code the Bridge records a
+    // handled warning; the identical message with no code pages as an error,
+    // which is exactly what production did for 18 occurrences on 2026-08-23.
+    expect(classifySoftFailure(failure.error, failure.code ?? null)).toEqual({
+      severity: 'warning',
+      skipSentry: true,
+    });
+    expect(classifySoftFailure(failure.error, null)).toEqual({
+      severity: 'error',
+      skipSentry: false,
+    });
   });
 
   it('does not claim a manual close succeeded when RLS matched no qualifier row', async () => {

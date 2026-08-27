@@ -1767,7 +1767,13 @@ async function submitGolfRoundComprehensiveImpl(
       }
 
       if (qualifier.status === 'completed') {
-        return { success: false, error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
+        // Expected lifecycle outcome, not a fault: a coach can close the
+        // qualifier while entrants are still mid-submission. The stable
+        // `qualifier_closed` code is what routes this to a handled warning
+        // instead of a Sentry error — see the same guard at
+        // getNextQualifierRoundNumberImpl below, and the codes contract in
+        // memory/features/qualifiers.md. Keep the code when rewording.
+        return { success: false, code: 'qualifier_closed', error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
       }
 
       // Verify the player has an entry in this qualifier
