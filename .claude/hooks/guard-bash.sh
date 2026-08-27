@@ -136,7 +136,7 @@ fi
 GATE='(npm[[:space:]]+(run[[:space:]]+)?(test|lint|typecheck|build)|npx[[:space:]]+(vitest|tsc|eslint|semgrep)|vitest[[:space:]]+run)'
 # Blank the CONTENTS of quoted spans, preserving length-independent structure.
 CMD_UNQ=$(printf '%s' "$CMD" | perl -0777 -pe "s/'[^']*'/''/g; s/\"(\\\\.|[^\"\\\\])*\"/\"\"/g;")
-if printf '%s' "$CMD_UNQ" | grep -Eq "$GATE[^;&]*\|[^|]" \
+if printf '%s' "$CMD_UNQ" | grep -Eq "${GATE}[^;&]*\|[^|]" \
    && ! printf '%s' "$CMD" | grep -q 'pipefail'; then
   block "BLOCKED: a gate command is piped, so its exit code is masked — the pipeline reports the LAST command's status, so a failing suite still looks like success.
 Fix (keeps your filtering): prefix with 'set -o pipefail;' e.g.

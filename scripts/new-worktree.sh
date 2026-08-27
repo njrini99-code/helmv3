@@ -74,7 +74,6 @@ if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
   exit 1
 fi
 
-ROOT="$(git rev-parse --show-toplevel)"
 mkdir -p "$WORKTREE_HOME"
 
 echo "fetching origin..."
