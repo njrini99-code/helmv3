@@ -58,6 +58,23 @@ vi.mock('web-push', () => ({
 
 import { POST } from '@/app/api/push-subscriptions/route';
 
+// DNS is mocked so these stay hermetic. The SSRF guard now resolves hostnames,
+// and a test that reached the real resolver would fail offline and would depend
+// on whatever the vendor names point at that day.
+//
+// Default: every name resolves public. Individual tests override to prove the
+// resolving half of the guard actually fires.
+vi.mock('node:dns', () => ({
+  promises: {
+    lookup: vi.fn(async (hostname: string) => {
+      if (hostname === 'internal.attacker.example') return [{ address: '10.0.0.5', family: 4 }];
+      if (hostname === 'rebind.attacker.example') return [{ address: '93.184.216.34', family: 4 }, { address: '127.0.0.1', family: 4 }];
+      if (hostname === 'nxdomain.attacker.example') throw new Error('ENOTFOUND');
+      return [{ address: '93.184.216.34', family: 4 }];
+    }),
+  },
+}));
+
 function postRequest(endpoint: string): Request {
   return new Request('https://app.helmsportslabs.com/api/push-subscriptions', {
     method: 'POST',
@@ -189,8 +206,8 @@ describe('sendWebPush — sink-side endpoint guard', () => {
     expect(sendNotification).not.toHaveBeenCalled();
   });
 
-  it('exposes the same verdicts through isSafePushEndpoint', async () => {
-    const { isSafePushEndpoint } = await loadPush();
+  it('exposes the same verdicts through isSafePushEndpointShape', async () => {
+    const { isSafePushEndpointShape: isSafePushEndpoint } = await loadPush();
 
     expect(isSafePushEndpoint('https://fcm.googleapis.com/fcm/send/abc')).toBe(true);
     expect(isSafePushEndpoint('https://[fc00::1]/push')).toBe(false);
@@ -200,5 +217,44 @@ describe('sendWebPush — sink-side endpoint guard', () => {
     // Hostnames that merely start with the hex bytes are DNS names, not IPv6.
     expect(isSafePushEndpoint('https://fd-cdn.example.com/push')).toBe(true);
     expect(isSafePushEndpoint('https://fe80.example.com/push')).toBe(true);
+  });
+});
+
+describe('SSRF guard — DNS resolution (F11)', () => {
+  async function loadGuard() {
+    vi.resetModules();
+    return import('@/lib/security/ssrf');
+  }
+
+  it('accepts a public DNS name', async () => {
+    const { isSafePushEndpoint } = await loadGuard();
+    await expect(isSafePushEndpoint('https://fcm.googleapis.com/fcm/send/abc')).resolves.toBe(true);
+  });
+
+  it('rejects a DNS name that resolves to a private address — the actual F11 bypass', async () => {
+    const { isSafePushEndpoint, isSafePushEndpointShape } = await loadGuard();
+    const endpoint = 'https://internal.attacker.example/x';
+
+    // The old string-only guard passed this: nothing in the hostname looks internal.
+    expect(isSafePushEndpointShape(endpoint)).toBe(true);
+    // Resolving closes it.
+    await expect(isSafePushEndpoint(endpoint)).resolves.toBe(false);
+  });
+
+  it('rejects a name with ANY private record, not just all-private', async () => {
+    const { isSafePushEndpoint } = await loadGuard();
+    await expect(isSafePushEndpoint('https://rebind.attacker.example/x')).resolves.toBe(false);
+  });
+
+  it('fails closed when the name does not resolve', async () => {
+    const { isSafePushEndpoint } = await loadGuard();
+    await expect(isSafePushEndpoint('https://nxdomain.attacker.example/x')).resolves.toBe(false);
+  });
+
+  it('still rejects literal private addresses without a lookup', async () => {
+    const { isSafePushEndpoint } = await loadGuard();
+    await expect(isSafePushEndpoint('https://10.0.0.5/x')).resolves.toBe(false);
+    await expect(isSafePushEndpoint('https://[fc00::1]/x')).resolves.toBe(false);
+    await expect(isSafePushEndpoint('http://fcm.googleapis.com/x')).resolves.toBe(false);
   });
 });

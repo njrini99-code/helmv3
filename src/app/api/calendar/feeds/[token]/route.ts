@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import { escapeICalText } from '@/lib/calendar/ical';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
@@ -129,10 +130,12 @@ function formatICalDateOnlyExclusiveEnd(dateStr: string): string {
   return formatICalDateOnly(next.toISOString());
 }
 
-function escapeICalText(text: string | null): string {
-  if (!text) return '';
-  return text.replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n');
-}
+// escapeICalText now comes from '@/lib/calendar/ical' — see the import above.
+// The local copy that used to live here never neutralised a bare carriage
+// return, so a coach-supplied title containing one could terminate the
+// SUMMARY: property and inject arbitrary iCalendar lines into the feed
+// (CWE-93). The sibling implementation had been correct the whole time; a
+// second copy was the bug, so there is now only one.
 
 function generateVEvent(event: CalendarFeedEvent): string {
   const lines: string[] = [];

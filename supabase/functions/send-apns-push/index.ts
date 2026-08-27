@@ -99,9 +99,54 @@ async function generateAPNsJWT(): Promise<string> {
   return `${unsignedToken}.${encodedSignature}`;
 }
 
+/**
+ * Only a trusted server-side caller may drive this function.
+ *
+ * The platform default `verify_jwt = true` is satisfied by the ANON key, which
+ * is published in the client bundle and is itself a signed JWT. So "verified"
+ * meant nothing here: anyone with the project URL and that public key could
+ * POST a device token, title, body and deep-link `data`, and this function
+ * would sign it with the org's own APNS_PRIVATE_KEY and deliver it through
+ * Apple's production gateway. That is a phishing channel riding the
+ * organisation's trusted push identity, with no rate limit on it either.
+ *
+ * The only legitimate caller (`sendPushToUser` in src/lib/notifications/push.ts)
+ * invokes through an ADMIN client, so its bearer token already carries
+ * `role: "service_role"`. Requiring that role costs the real caller nothing and
+ * removes the anon key as a way in.
+ *
+ * The signature was already validated by the platform before this runs; this
+ * only reads the role claim out of the verified payload.
+ */
+function isServiceRoleCaller(req: Request): boolean {
+  const auth = req.headers.get("Authorization") ?? "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  if (!token) return false;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  try {
+    // base64url -> JSON. Deno's atob needs standard base64 padding.
+    const b64 = (parts[1] ?? "").replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const claims = JSON.parse(atob(padded)) as { role?: string };
+    return claims.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  if (!isServiceRoleCaller(req)) {
+    // Deliberately terse: an unauthorised caller learns nothing about whether
+    // the token, topic or payload would otherwise have been accepted.
+    return new Response(
+      JSON.stringify({ success: false, error: "Forbidden" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   try {

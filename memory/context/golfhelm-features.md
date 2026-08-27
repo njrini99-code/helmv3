@@ -12,6 +12,34 @@
 > `node scripts/check-doc-schema-drift.mjs --update` after.
 
 
+> ## ⛔ SUPERSEDED — do not route feature work here
+>
+> **The canonical current-state feature corpus is `memory/features/*.md`,
+> reached through `memory/registry.yml`.** `AGENTS.md` — the repo constitution,
+> which outranks `CLAUDE.md` — routes feature work through the registry, and all
+> 17 golf feature docs are wired into it (verified 2026-08-26: 35 registry
+> references to `memory/features/`). Nothing routes here any more.
+>
+> This file is the OLDER of two generations that described the same features.
+> Two generations meant every fact had two homes, they disagreed, and which one
+> a session believed depended on nothing legible — one of the measured causes of
+> agent drift in this repo. Collapsing to one is the fix; this banner is that
+> collapse.
+>
+> **It is kept, not deleted, as historical context** — it holds narrative that
+> predates the split and may still be the only written account of some
+> behaviour. Treat every word as a hint to verify, never as current truth. The
+> drift warning above is a live example: identifiers described here as if real
+> do not exist in the database.
+>
+> To find a feature now:
+> ```bash
+> npm run knowledge:map -- --files <paths...>       # which feature owns this file
+> npm run knowledge:context -- --files <paths...> --task "<task>"
+> ```
+>
+> ---
+>
 > Complete feature-level documentation: behavior maps, current state, and cross-feature dependencies.
 > Last verified: 2026-02-13
 > Source: Traced through actual codebase, not specs.

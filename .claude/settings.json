@@ -142,6 +142,12 @@
             "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-feature-context.mjs",
             "timeout": 10,
             "statusMessage": "guard: feature context"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-concurrent-edit.mjs",
+            "timeout": 10,
+            "statusMessage": "guard: concurrent edit"
           }
         ]
       },

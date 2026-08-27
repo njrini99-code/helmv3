@@ -421,8 +421,12 @@ features:
         - src/components/golf/calendar/**
         # The SHIPPED calendar UI is the Fairway tree (event editor, detail
         # drawer, month/week/agenda views); only the older golf/calendar tree
-        # was mapped, so every edit to the live components resolved to no
-        # feature and tripped the context guard as an unmapped governed path.
+        # was mapped, so `knowledge:map` resolved the live components to NO
+        # feature — feature-aware routing and PR context packs silently skipped
+        # the code that actually renders the calendar. Unlike the insights.ts
+        # entry above this was never a guard trip: `src/components/fairway/**`
+        # is outside GOVERNED_PATTERNS (.claude/hooks/lib/feature-map.mjs),
+        # which covers src/app|lib|components/golf, not the Fairway tree.
         - src/components/fairway/pages/calendar/**
       api:
         - src/app/api/calendar/**

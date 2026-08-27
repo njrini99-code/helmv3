@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
+import { resolveClientIp } from '@/lib/security/client-ip';
 import { randomBytes } from 'crypto';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/supabase-rate-limit';
 import { validatePassword } from '@/lib/auth/password-validation';
@@ -339,7 +340,7 @@ async function signupAndCompleteCoachOnboardingImpl(data: {
 
   // Rate limiting
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
   const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
 
   if (!rateLimit.allowed) {

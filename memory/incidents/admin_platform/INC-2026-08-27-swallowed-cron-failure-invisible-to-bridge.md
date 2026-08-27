@@ -106,7 +106,25 @@ The bug was never the status code. It was that the cause was invisible.
 
 1. **R3** — correct the client used by the `coachhelm-safety-net` path. Owner
    action; do not grant `anon`.
-2. Audit the other `Promise.allSettled` sites for the same discarded-reason
-   shape.
+2. ~~Audit the other `Promise.allSettled` sites for the same discarded-reason
+   shape.~~ **Started 2026-08-27.** Scanned all 40 non-test `allSettled` call
+   sites; 23 never touch `.reason` within the following 1400 characters. Two of
+   those are the exact incident shape — the result is not even bound, so a
+   rejection leaves no trace anywhere:
+   - `src/lib/notifications/golf-message-fanout.ts` (email + push fan-out)
+   - `src/lib/coachhelm/v3/qualifying/player-notify.ts` (per-candidate
+     email + push)
+   Both now route through the new shared helper `src/lib/settled-failures.ts`
+   (`allSettledReported` / `reportSettledFailures`), which counts every
+   rejection, keeps distinct bounded reasons, and writes each distinct cause via
+   `logServerError` so `admin_events` — and therefore the Bridge — sees it. It
+   deliberately does not change control flow: these sites chose `allSettled`
+   because one failed recipient must not abort the rest, and the bug was never
+   the control flow.
+   Made shared rather than hand-copied on purpose: the SSRF guard in this repo
+   was hand-copied into two files and stayed broken in both.
+   **Still open:** the remaining ~21 sites. Most are client components or
+   read-side fan-outs where a rejection is visible some other way, but they have
+   not been individually cleared. Do not read this item as finished.
 3. The four ERROR `security_definer_view` advisories remain open and are the
    context for this fault.

@@ -4,11 +4,20 @@
  * ============================================================================
  * Haptic feel lab — the §72 physical-device harness (iOS premium plan, 2.1)
  * ----------------------------------------------------------------------------
- * Deliberately UNLINKED from every nav surface: reachable only by URL
- * (/golf/dashboard/dev/haptics) so the owner can tune signature patterns on a
- * TestFlight build without shipping a visible dev surface. Auth still applies
- * (it lives inside the dashboard shell); it renders a plain notice off-native
- * since browsers have no Taptic Engine.
+ * Absent from every GENERATED nav surface (rail, bottom nav, sub-nav,
+ * CommandPalette) and from every breadcrumb. It has exactly ONE entry point:
+ * the "Feel lab" row in Settings > Haptics (`HapticsPanel`, added 2026-08-27),
+ * which inherits that panel's `if (!native) return null` and so exists only in
+ * the installed app. That row was added because "reachable only by URL" is
+ * reachable NOT AT ALL inside a Capacitor WebView, which has no address bar —
+ * the lab was unusable on the exact device it exists to measure.
+ *
+ * Note the row carries no role check: any signed-in user of the installed
+ * build sees it, players included. That is acceptable while distribution is
+ * TestFlight-only and the page is read-only tuning UI; gate it on coach/owner
+ * before any public App Store release. Auth still applies (it lives inside the
+ * dashboard shell); it renders a plain notice off-native since browsers have
+ * no Taptic Engine.
  *
  * Every row fires exactly one semantic through the SAME production paths the
  * app uses (triggerHaptic / fwHaptic / playHelmSignature) — the lab must

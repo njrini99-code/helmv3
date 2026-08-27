@@ -1,5 +1,22 @@
 # Change ledger — ios_native_shell
 
+## 2026-08-27 — feel lab reachable in-app; header corrected to match
+
+- SHA: 1a57943e6.
+- Change: added the "Feel lab" row to Settings > Haptics (`HapticsPanel`),
+  the page's only entry point. It inherits that panel's `if (!native) return
+  null`, so it exists only in the installed app. The page header no longer
+  claims it is "deliberately UNLINKED from every nav surface" — it is absent
+  from every GENERATED nav surface, which is a different and now-accurate
+  claim.
+- Why: "reachable only by URL" is reachable NOT AT ALL inside a Capacitor
+  WebView, which has no address bar — the lab was unusable on the exact
+  device it exists to measure.
+- Watch: the row carries NO role check, so every signed-in user of the
+  installed build sees it, players included. Acceptable while distribution is
+  TestFlight-only and the page is read-only tuning UI; gate on coach/owner
+  before any public App Store release. Recorded in the page header too.
+
 ## 2026-08-26 — §61 capability bridge (2.1 keystone)
 
 - What: `src/lib/native/capabilities.ts` — `getNativeAppInfo()` /

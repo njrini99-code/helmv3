@@ -16,12 +16,36 @@ INPUT=$(cat)
 CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
 [ -z "$CMD" ] && exit 0
 
+# Normalize the command the way bash itself does BEFORE tokenizing, so that the
+# line-oriented greps below see the same logical command the shell will run.
+#
+#   - a backslash immediately before a newline is a line continuation: bash
+#     removes it and joins the lines. Without this, `git \<newline>push --force`
+#     puts `git` and `push` on separate grep records and matches no rule at all.
+#     Measured 2026-08-26: this one shape defeated TEN of the ELEVEN rules below.
+#   - any REMAINING newline genuinely separates two commands, so it becomes
+#     `; `, which every anchor class here already treats as a command boundary.
+#   - a backslash before a letter is the alias-escape form (`\git`, `\vercel`).
+#     It runs the same binary, so it must not change what the rules see.
+#
+# DETECTION ONLY. $CMD is never executed by this hook, so rewriting it cannot
+# change what runs — it only changes what the rules can see.
+#   - `\\` is ONE LITERAL backslash, so a newline after it is a real command
+#     separator, not a continuation. Protect those pairs before joining, or
+#     `xyz\\<newline>git push --force` glues into `xyzgit push --force` and the
+#     leading-boundary anchor every git/vercel rule needs stops matching —
+#     turning a block into an allow. (Caught in review 2026-08-26.)
+CMD=$(printf '%s' "$CMD" | perl -0777 -pe 's/\\\\/\x00/g; s/\\\n//g; s/\n/; /g; s/\\([A-Za-z])/$1/g; s/\x00/\\\\/g;')
+
 block() { printf '%s\n' "$1" >&2; exit 2; }
 
 # 1. git stash — refs/stash is REPO-GLOBAL, shared across every worktree.
 #    A stash pushed in one worktree is visible (and poppable) from all of them,
 #    so parallel agents silently steal each other's work.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])git[[:space:]]+stash([[:space:]]|$)' \
+# The `\\` in the boundary class is belt-and-braces: the normalization above
+# already strips an alias-escape (`\git` -> `git`), but a LITERAL backslash pair
+# survives it, so keep the class able to match one.
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git[[:space:]]+stash([[:space:]]|$)' \
    && ! printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+stash[[:space:]]+(list|show)([[:space:]]|$)'; then
   block "BLOCKED: 'git stash'. refs/stash is repo-global and shared by every worktree, so a stash here is visible and poppable from all of them — that is how parallel work gets silently swapped.
 Use instead: a WIP commit on the current branch (git add -A && git commit -m wip), or copy the file aside."
@@ -70,7 +94,7 @@ fi
 #    through. Harmless while every push prompted — load-bearing the moment
 #    `Bash(git push:*)` was allow-listed. Now: a push AND any force spelling
 #    blocks. Both directions are pinned in src/test/hooks/guard-bash-worktree.test.ts.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])git([[:space:]]+(-[^[:space:]]+)([[:space:]]+[^[:space:]=-][^[:space:]]*)?)*[[:space:]]+push([[:space:]]|$)' \
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git([[:space:]]+(-[^[:space:]]+)([[:space:]]+[^[:space:]=-][^[:space:]]*)?)*[[:space:]]+push([[:space:]]|$)' \
    && printf '%s' "$CMD" | grep -Eq '(--force|(^|[[:space:]])-[a-zA-Z]*f[a-zA-Z]*([[:space:]]|$))'; then
   block "BLOCKED: force push (any spelling — --force, --force-with-lease, -f, or a combined short flag like -vf/-fv). It rewrites shared history that other branches and open PRs build on. With Bash(git push:*) allow-listed, this hook is the last line — run any force push yourself, outside the agent."
 fi
@@ -217,7 +241,7 @@ fi
 #
 #     External worktrees are the supported shape and are proven not to drift: the
 #     three sibling checkouts all had byte-identical CLAUDE.md/AGENTS.md/.mcp.json.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+worktree[[:space:]]+add'; then
+if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+worktree[[:space:]]+add'; then
   PROJ_ROOT=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && pwd -P) || PROJ_ROOT=""
 
   # Everything after `worktree add`.

@@ -132,12 +132,57 @@ function resolveFirstSheetPath(
  * Read the first worksheet of an XLSX buffer into a column-aligned grid.
  * `buffer` is the raw bytes of the .xlsx file.
  */
+/**
+ * Decompression ceilings for an entirely attacker-supplied .xlsx.
+ *
+ * `readXlsx` used to hand the whole buffer to `unzipSync` with no size or ratio
+ * cap anywhere in the chain: the upload path (`stat-event-imports.ts`) has no
+ * file-size check either, and `next.config.mjs` allows a 26MB server-action
+ * body, so a coach with `can_manage_imports` could deliver ~19MB of ZIP whose
+ * worksheet part inflated to several GB. `unzipSync` materialises every entry
+ * before a single row is read, so the function instance OOMs or hangs.
+ *
+ * `unzipSync`'s filter runs against the central-directory entry BEFORE that
+ * entry is inflated, so `originalSize` is a genuine pre-inflate gate. A header
+ * that under-declares its size cannot use that lie to allocate more — fflate
+ * sizes the output from the declared value — so the cap holds either way.
+ */
+const MAX_XLSX_ENTRY_BYTES = 32 * 1024 * 1024;
+const MAX_XLSX_TOTAL_BYTES = 96 * 1024 * 1024;
+
+/** Thrown from the unzip filter so a bomb reports differently from a corrupt file. */
+class XlsxTooLargeError extends Error {}
+
 export function readXlsx(buffer: Uint8Array): XlsxReadResult {
   const warnings: string[] = [];
   let files: Record<string, Uint8Array>;
   try {
-    files = unzipSync(buffer);
-  } catch {
+    let inflatedTotal = 0;
+    files = unzipSync(buffer, {
+      filter(file) {
+        if (file.originalSize > MAX_XLSX_ENTRY_BYTES) {
+          throw new XlsxTooLargeError(
+            `A part inside this workbook (${file.name}) expands to ${file.originalSize} bytes, past the ${MAX_XLSX_ENTRY_BYTES}-byte limit.`,
+          );
+        }
+        inflatedTotal += file.originalSize;
+        if (inflatedTotal > MAX_XLSX_TOTAL_BYTES) {
+          throw new XlsxTooLargeError(
+            `This workbook expands to more than the ${MAX_XLSX_TOTAL_BYTES}-byte total limit.`,
+          );
+        }
+        return true;
+      },
+    });
+  } catch (error) {
+    if (error instanceof XlsxTooLargeError) {
+      return {
+        headers: [],
+        rows: [],
+        sheetName: null,
+        warnings: [`${error.message} It was not opened.`],
+      };
+    }
     return {
       headers: [],
       rows: [],

@@ -105,26 +105,32 @@ npm run knowledge:context -- --files <paths...> --task "<task>"
 
 For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after generating it. If a changed file does not map to a feature, either add the registry entry or call out the missing feature-awareness coverage.
 
-> **Two generations of feature docs exist. Prefer `memory/features/`.**
+> **One generation now. `memory/features/` is canonical.**
 >
-> `memory/features/*.md` (16 files, ~66k chars, reached via `memory/registry.yml`)
-> and `memory/context/golfhelm-features.md` (~58k chars, the By Task Type table
-> below) describe the SAME features. `AGENTS.md` — the repo constitution, which
-> outranks this file — routes feature work through the registry, so
-> **`memory/features/` wins when they disagree**, and the By Task Type row for
-> golf features is the fallback for anything the registry doesn't map.
+> Collapsed 2026-08-26. `memory/context/golfhelm-features.md` was the older of
+> two corpora describing the SAME features; it now carries a SUPERSEDED banner
+> and nothing routes to it. Every golf feature doc is reachable through
+> `memory/registry.yml` (verified that day: 35 registry references to
+> `memory/features/`, all 17 docs mapped), so retiring the old generation
+> orphaned nothing. It is kept as historical narrative, not deleted.
 >
-> Both are hand-written narrative (see the trust table above) and neither is
-> authoritative for names: the calendar feature doc reproduced all 10 of the
-> older doc's non-existent tables rather than re-verifying, so the fiction
-> propagated across the split instead of being caught by it. **Two generations
-> double the drift surface; collapsing them to one is real work still owed.**
+> Why this mattered: two homes for every fact meant they disagreed, and which
+> one a session believed depended on nothing legible. That was a measured cause
+> of agent drift here, alongside concurrent sessions editing the same docs —
+> which `.claude/hooks/guard-concurrent-edit.mjs` now blocks.
+>
+> `memory/features/*.md` is still hand-written narrative (see the trust table
+> above) and is NOT authoritative for names: the calendar feature doc reproduced
+> all 10 of the older doc's non-existent tables rather than re-verifying, so the
+> fiction propagated across the split instead of being caught by it. Verify
+> every identifier against generated truth — `npm run docs:schema-drift` is what
+> makes that checkable.
 
 ### By Task Type
 
 | If you're working on... | Read this file FIRST |
 |------------------------|---------------------|
-| **Any golf feature** (understanding behavior, fixing bugs, adding to it) | `memory/context/golfhelm-features.md` — Find the feature by name, get data flow, files, tables, dependencies, gaps |
+| **Any golf feature** (understanding behavior, fixing bugs, adding to it) | `memory/registry.yml` → the mapped `memory/features/*.md`. Resolve it with `npm run knowledge:map -- --files <paths...>`. This is the canonical corpus; `memory/context/golfhelm-features.md` is the superseded older generation and is now banner-marked as such |
 | **Database queries** (writing SQL, adding columns, debugging data) | `npm run schema -- <table>` (columns+FKs from generated production types, ~300 tokens), `npm run schema -- --grep <substr>` to discover, `--enums [name]` for enums. `memory/context/golfhelm-database.md` is the legacy prose rendering — prefer the command |
 | **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — **use its AUTOGEN blocks, not its narrative index.** `AUTOGEN:tables` and `AUTOGEN:enums` are generated from `src/lib/types/database.ts` and are complete. The hand-written by-feature index above them was last verified 2026-02-13 and named 20 tables that do not exist in production. Do not hand-copy the counts elsewhere, they rot |
 | **CoachHelm AI** (insights, patterns, predictions, reviews, philosophy) | `memory/context/coachhelm-ai.md` — V2 engine architecture, pipeline, components |
