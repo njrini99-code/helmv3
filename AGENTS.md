@@ -190,9 +190,11 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   agent session works in this repo at once, each session doing task work
   takes its own worktree via `scripts/new-worktree.sh <task>` — the one
   supported path, which places it at `~/worktrees/helmv3/<task>` OUTSIDE the
-  repo — and leaves the canonical checkout alone. Do not hand-roll
-  `git worktree add`; it sets the task branch's upstream to its base, so a bare
-  push targets `main`. Deploys promote
+  repo — and leaves the canonical checkout alone. Use it because it guarantees
+  `--no-track`: creating a task branch from a REMOTE-TRACKING ref such as
+  `origin/main` without disabling tracking lets git's `autoSetupMerge` default
+  configure `agent/foo -> origin/main`, and a bare push then targets main.
+  Branching from a local ref does not do this. Deploys promote
   from a worktree pinned at the exact merged `main` SHA, never from a
   checkout another session may be mutating. Remove the worktree when the
   task is merged and verified. (Added 2026-08-26 after three concurrent
