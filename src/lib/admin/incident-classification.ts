@@ -105,6 +105,19 @@ const INTEGRITY_PASS = ['integrity pass'];
  * "Free tier users do not have access to this model", which is a BILLING
  * fault (classified `integration` below), not an access-control outcome.
  */
+/**
+ * Postgres's own privilege-error wording, and only that. `permission denied
+ * for table x` / `for view x` / `for function x` / `for schema x` / `for
+ * sequence x` / `for relation x` — every one of these is SQLSTATE 42501 coming
+ * back at our own service code, never a denial this application issued.
+ *
+ * Deliberately narrow: it requires the object-kind word, so `permission denied`
+ * on its own — the phrasing an app uses when telling a person no — still falls
+ * through to ACCESS_PHRASES below and stays non-actionable.
+ */
+const POSTGRES_PRIVILEGE_ERROR =
+  /permission denied for (table|view|function|schema|sequence|relation|materialized view)\s/i;
+
 const ACCESS_PHRASES = [
   'you do not have access',
   'unauthorized',
@@ -222,7 +235,38 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
     return done('access', true, 'RLS denial tripwire — possible permission regression');
   }
 
-  // 3. Expected access control. Not a bug: the system correctly said no.
+  // 3. A POSTGRES PRIVILEGE ERROR IS NOT AN ACCESS CONTROL DECISION, and this
+  //    check must run before the ACCESS_PHRASES sweep below, which contains the
+  //    bare string 'permission denied' and would otherwise swallow it.
+  //
+  //    The difference is who said no and to whom. `You do not have permission
+  //    to edit this` is THIS APPLICATION correctly denying a user — expected,
+  //    non-actionable, exactly what rule 3b is for. `permission denied for
+  //    table baseball_players` is POSTGRES refusing OUR OWN code because a
+  //    GRANT is missing: nobody was denied anything they should not have had,
+  //    a feature is simply broken.
+  //
+  //    Found 2026-08-27 by running the triage engine against 72h of production
+  //    and reading what it proposed to close: `GET /api/cron/event-reminders`
+  //    failing 23 times on `permission denied for table baseball_players` was
+  //    ranked non-actionable and sat in the closeable pile. Auto-resolve's Rule
+  //    D resolves on exactly this verdict, so any such row that reached
+  //    `admin_events` would have been closed unread — a live grant failure
+  //    filed as "the system correctly said no". That is the `unknown → healthy`
+  //    inversion the OS contract forbids, arrived at through a phrase match.
+  //
+  //    Anchored to Postgres's own wording (`for <object-kind> <name>`) and to
+  //    SQLSTATE 42501 so ordinary app prose containing "permission denied"
+  //    still classifies as before.
+  if (POSTGRES_PRIVILEGE_ERROR.test(haystack) || errorCode === '42501') {
+    return done(
+      'defect',
+      true,
+      'Postgres privilege error (42501) — a missing GRANT on our own code, not an access-control decision',
+    );
+  }
+
+  // 3b. Expected access control. Not a bug: the system correctly said no.
   const accessHit = matchesAny(haystack, ACCESS_PHRASES);
   if (accessHit) {
     return done('access', false, `Expected access control ("${accessHit}")`);

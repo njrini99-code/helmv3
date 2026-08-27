@@ -37,98 +37,60 @@ You have a checkout. Read these before touching production:
 
 ---
 
-## STEP 1 — take everything
+## STEP 1 — run the collector, do not hand-roll it
 
-```sql
-select e.fingerprint,
-       count(*) as occurrences,
-       count(*) filter (where e.created_at > now() - interval '24 hours') as occurrences_24h,
-       max(e.created_at) as last_seen, min(e.created_at) as first_seen,
-       max(e.message) as sample_message, max(e.severity) as severity,
-       max(e.feature) as feature, max(e.source) as source,
-       max(e.url) as sample_route,
-       max(e.metadata->>'action') as action,
-       max(e.metadata->>'errorCode') as error_code
-from public.admin_events e
-where e.event_type = 'error'
-  and e.fingerprint is not null
-  and e.resolved = false
-  and e.severity in ('error','critical','warning')
-  and e.created_at > now() - interval '72 hours'
-  and not exists (select 1 from public.admin_events a
-                  where a.event_type = 'rca_analysis' and a.fingerprint = e.fingerprint)
-group by e.fingerprint
-order by (max(e.severity) = 'critical') desc,
-         (max(e.severity) = 'error') desc,
-         occurrences_24h desc, count(*) desc
-limit 20;
+```bash
+npm run triage -- --hours 72 --json
 ```
 
-72 hours because that is exactly what the Bridge shows
-(`DEFAULT_INCIDENT_WINDOW_HOURS` in `src/lib/admin/data/incident-feed.ts`). A
-window the Bridge does not show is a window this stage must not analyse:
-measured 2026-08-27 with the routine at 7 days and the Bridge at 24 hours, the
-overlap between what had been analysed and what was visible was **zero**.
+That is the whole of collection, grouping and the deterministic verdicts. It
+lives in `scripts/run-triage.ts` and `src/lib/admin/triage-engine.ts`, it is
+covered by tests, and it is what CI checks. **Do not write your own SQL for
+this.** An earlier version of this contract asked each run to hand-roll the
+queries, and every run re-derived them slightly differently — which is how the
+stage spent a week reading one source and calling the board clean.
 
-Take all of them, worst severity first. If more than 20 come back, **say the
-count loudly** in your report — a cap you cannot see is indistinguishable from
-a clean board.
+The plan it prints has three lists and a source-health block:
+
+- **`queue`** — actionable causes with no analysis. **This is your work.**
+- **`closeable`** — non-actionable by their own content (routine telemetry,
+  expected denials, empty states, passed integrity checks). Already decided;
+  `npm run triage -- --apply` closes these, ledger write included. You do not
+  need to analyse them.
+- **`groups[].verdict === 'analysed'`** — already explained. Skip.
+- **`sourceHealth` / `blindSources`** — read this FIRST. A `blind` arm means
+  that source could not be READ. If `blindSources` is non-empty the plan is
+  incomplete, and you must say so at the top of your report rather than
+  reporting the queue as the whole picture.
+
+Three things the plan gives you that raw SQL did not:
+
+- **All three sources.** `admin_events` plus the correlated Sentry / Supabase /
+  Vercel signals. `admin_events` only ever contains what this application chose
+  to log about itself — a cron dying on a table grant writes nothing there.
+  Measured 2026-08-27: a pass reading only `admin_events` reported zero
+  unanalysed while `/admin/reliability` showed eight errors, the largest a cron
+  failing 23 times.
+- **Grouping already done.** One cause wearing many fingerprints is collapsed
+  into one group, with `members` listing every key. Write one analysis per
+  group and list the siblings in `relatedFingerprints`.
+- **`corroborated`** — two independent sources saw the same cause. Those rank
+  first and are the least likely to be instrumentation noise.
+
+Reliability signals carry `key` of the form `rel:<signature>`. **Store their
+analyses under that exact key.** `correlationSignature` and
+`admin_events.fingerprint` are different hashes of different inputs and both
+render as 8 hex characters; the prefix is what stops one cause's analysis
+attaching to another's.
+
+If you want to review a plan without a service-role key, or iterate offline:
+
+```bash
+npm run triage -- --hours 72 --dump plan.json   # collect once
+npm run triage -- --input plan.json --json      # replan, no database
+```
 
 ---
-
-## STEP 1B — the other two sources
-
-**`admin_events` is one source of three, and it is the one that only sees what
-this application chose to log.** Triage means all of them. The reliability
-collector (`/api/cron/reliability-triage`, every 3 hours) already reads
-**Sentry, Supabase and Vercel**, correlates them, and writes the result to
-`background_job_logs` under `reliability-snapshot`. Read it:
-
-```sql
-select b.started_at,
-       b.metadata->'sources'  as source_health,
-       s.value->>'signature'  as signature,
-       s.value->>'title'      as title,
-       s.value->>'route'      as route,
-       s.value->>'severity'   as severity,
-       (s.value->>'count')::int as occurrences,
-       s.value->>'lastSeen'   as last_seen,
-       s.value->>'proposedRisk' as risk,
-       s.value->'sources'     as seen_by,
-       s.value->'evidence'    as evidence
-from public.background_job_logs b,
-     lateral jsonb_array_elements(coalesce(b.metadata->'signals','[]'::jsonb)) s
-where b.job_type = 'reliability-snapshot'
-  and b.started_at = (select max(started_at) from public.background_job_logs
-                       where job_type = 'reliability-snapshot')
-order by jsonb_array_length(s.value->'sources') desc, occurrences desc;
-```
-
-Three things about this set that STEP 1's set does not have:
-
-- **`signature` is NOT `admin_events.fingerprint`.** `correlationSignature`
-  deliberately folds severity out of the key so a condition Sentry rates
-  `error` and this app logs `warning` correlates as one signal. Store an
-  analysis for one of these under `fingerprint = 'rel:' || signature` so the
-  two namespaces cannot collide, and check for an existing analysis the same
-  way.
-- **A signal seen by two sources is corroborated** — `sources` with more than
-  one entry means two independent systems saw the same failure. Rank those
-  first; they are the least likely to be instrumentation noise.
-- **`source_health` must be read before you trust an empty result.** Each arm
-  reports `{source, status, reason}`. A `blind` arm means that source could not
-  be READ — say so loudly and never report its silence as "nothing found
-  there". A source that could not be read is unknown, not clean.
-
-Analyse these exactly like STEP 1's rows: same grouping, same four categories,
-same schema, same resolve gates. Two differences:
-
-- These have no `admin_events` rows to flip, so **STEP 4's first write does not
-  apply** — record the ledger row (second write) only, and only under gate (A)
-  or (B).
-- `evidence` carries a Sentry permalink. Open it. It has the stack trace the
-  database does not, and it is the difference between naming a file and
-  guessing one.
 
 ## STEP 2 — group before you write
 
