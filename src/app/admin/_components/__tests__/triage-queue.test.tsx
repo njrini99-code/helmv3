@@ -26,6 +26,8 @@ const appItem: TriageItem = {
   source: 'server_action', feature: 'rounds', actionName: 'savePartialRound', route: '/api/golf/rounds',
   klass: 'defect', actionable: true, klassReason: 'Unexpected failure (severity-derived)',
   hasDegradedMessage: false,
+  errorCode: '42501',
+  fingerprint: 'fp-1',
   report: '# Incident report: savePartialRound failed',
 };
 const sentryItem: TriageItem = {
@@ -36,6 +38,8 @@ const sentryItem: TriageItem = {
   source: 'sentry', feature: null, actionName: null, route: 'rounds',
   klass: 'defect', actionable: true, klassReason: 'Unexpected failure (severity-derived)',
   hasDegradedMessage: false,
+  errorCode: null,
+  fingerprint: null,
   report: '# Incident report: TypeError in rounds',
 };
 
@@ -45,8 +49,17 @@ describe('TriageQueue', () => {
     expect(screen.getByText('savePartialRound failed')).toBeInTheDocument();
     expect(screen.getByText(/2 users/)).toBeInTheDocument();
     expect(screen.getByText(/3 events/)).toBeInTheDocument();
-    expect(screen.getByText(/source server_action/)).toBeInTheDocument();
-    expect(screen.getByText(/action savePartialRound/)).toBeInTheDocument();
+    // Metadata is now a strip of discrete tags rather than one run-on mono
+    // sentence ("source X · feature Y · action Z · route <absolute URL>"),
+    // so each is asserted as its own exact chip.
+    expect(screen.getByText('server_action')).toBeInTheDocument();
+    expect(screen.getByText('savePartialRound')).toBeInTheDocument();
+    // 'rounds' is the app row's FEATURE and also the sentry row's route,
+    // so it legitimately appears twice — assert presence, not uniqueness.
+    expect(screen.getAllByText('rounds').length).toBeGreaterThan(0);
+    // The error code is the point of the redesign: two incidents with the
+    // same title are told apart by this, and it is copyable.
+    expect(screen.getByRole('button', { name: /copy error code: 42501/i })).toBeInTheDocument();
   });
   it('app rows expose Resolve; sentry rows keep the permalink AND gain their own in-app Resolve', () => {
     const onResolve = vi.fn(async () => ({ resolvedCount: 3 }));

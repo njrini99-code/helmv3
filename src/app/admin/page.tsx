@@ -433,6 +433,9 @@ function SavedCommandViews({ kpis }: { kpis: OverviewKpis }) {
  */
 async function TriagePanel() {
   const { items, sentry, counts } = await fetchTriageQueue();
+  // Match /admin/errors' default view exactly — see the panel header below.
+  const actionableItems = items.filter((i) => i.actionable);
+  const suppressedCount = items.length - actionableItems.length;
   const regressed = items.filter((i) => i.substatus === 'regressed');
   const sportCounts = [
     ['Golf', items.filter((i) => i.sport === 'golf').length, 'golf'],
@@ -500,9 +503,23 @@ async function TriagePanel() {
 
       <div className="grid gap-4 xl:grid-cols-3">
         <Surface as="section" padding="sm" className="min-w-0 xl:col-span-2">
-          <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-            Triage queue
-          </h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-accent-600/25 pb-2">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Triage queue</h2>
+            {/* SAME DEFAULT AS THE ERRORS TAB.
+                This panel rendered the feed UNFILTERED while /admin/errors
+                defaults to actionable-only (applyKindFilter's `undefined`
+                branch). The two surfaces read the same feed through the same
+                builder, so they were in sync by construction and then diverged
+                on this one filter — an operator clicking through from here
+                watched the list shrink with nothing saying why. Suppressed
+                rows are never deleted, only defaulted out of view, so the
+                count and the escape hatch are stated rather than implied. */}
+            {suppressedCount > 0 ? (
+              <Link href="/admin/errors?kind=all" className="text-caption text-accent-700 underline">
+                {suppressedCount} routine hidden
+              </Link>
+            ) : null}
+          </div>
           {sentry.status === 'error' ? (
             <div className="mt-2"><PanelStale label="Sentry feed" error={sentry.error} /></div>
           ) : null}
@@ -511,7 +528,7 @@ async function TriagePanel() {
               Sentry live pull not configured (SENTRY_READ_TOKEN) — showing in-app incidents only.
             </p>
           ) : null}
-          <TriageQueue items={items.slice(0, 25)} />
+          <TriageQueue items={actionableItems.slice(0, 25)} />
         </Surface>
         <Surface as="section" padding="sm" className="min-w-0">
           <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
