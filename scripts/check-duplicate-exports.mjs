@@ -23,6 +23,12 @@
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { trackedFiles } from './lib/tracked-files.mjs';
+
+// Tracked only. This gate carries a committed baseline, so a scope that varies
+// with what is on disk makes two checkouts of the same commit disagree — the
+// markdown-lint-ratchet defect of 2026-08-27. See scripts/lib/tracked-files.mjs.
+const TRACKED = trackedFiles();
 
 const BASELINE = '.duplicate-exports-baseline.json';
 const ROOT = 'src/app';
@@ -34,7 +40,8 @@ function tsFiles(dir, out = []) {
   for (const e of entries) {
     const p = join(dir, e.name);
     if (e.isDirectory()) tsFiles(p, out);
-    else if (/\.tsx?$/.test(e.name) && !/\.test\./.test(e.name) && !p.includes('__tests__')) out.push(p);
+    else if (/\.tsx?$/.test(e.name) && !/\.test\./.test(e.name) && !p.includes('__tests__')
+             && TRACKED.has(p)) out.push(p);
   }
   return out;
 }

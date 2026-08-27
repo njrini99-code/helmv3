@@ -320,6 +320,65 @@ Proven, not asserted: with the fix in place, creating a gitignored `.md` under
 **The general rule for this repo: a gate must read `git ls-files`, never the
 filesystem.** Audit the other ten against it.
 
+**5g. THE ORPHAN AUDIT — corrected. "11 orphan gates" was too blunt.**
+
+Ran every one of them on 2026-08-27 rather than inferring from the CI grep. They
+are not one category, and two of my earlier claims were wrong.
+
+| Gate | Status | Verdict |
+|---|---|---|
+| `check:env` | PASS | wire it |
+| `check:row-caps` | PASS | wire it |
+| `check:env-secrets` | PASS | wire it |
+| `sql:ratchet` | PASS | wire it — scope fixed first |
+| `lint:duplicate-exports` | PASS | wire it — scope fixed first |
+| `check:ledger` | "fails" | **not a gate.** Needs `psql` output on stdin |
+| `knowledge:report` | "fails" | **not a gate.** Needs `changed-files.txt` |
+| `check:helm-bridge-env` | fails | needs Sentry/Vercel tokens — correct to fail |
+| `db:ledger-drift` | fails | needs `DATABASE_URL` — correct to fail |
+| `check:stats` | fails | needs Supabase service role — correct to fail |
+| `markdown:ratchet` | PASS | in `preflight`, in no workflow |
+| `docs:check` | n/a | local-only by design |
+
+**Correction to my own earlier report.** I wrote that `check:ledger` "currently
+FAILS (exit 2) and no one would ever see it". It does exit non-zero, but it is
+not a broken gate — its header documents the intended invocation as
+`psql ... | node scripts/check-migration-ledger.mjs`. The npm alias runs it with
+no stdin, so it correctly reports it cannot parse the ledger. **The npm alias is
+the defect, not the gate.** Same shape for `knowledge:report`, which wants a
+`changed-files.txt` that CI produces.
+
+So the real finding is sharper than "nothing runs these": **`package.json` is
+advertising pipeline components as if they were standalone gates.** Someone
+running `npm run check:ledger` to see whether migrations are in sync gets a
+parse error and reasonably concludes the tooling is broken.
+
+**5h. FOUR OF THE FIVE WIRABLE GATES CARRIED THE §5f DEFECT.**
+
+`c5`'s intake rule — check the scope before wiring, not after — paid for itself
+immediately. Of the five gates that pass and could be wired today, four resolved
+their scope with a `readdirSync` walk and no `git ls-files` filter:
+`check-row-cap-limits`, `check-env-secret-fallbacks`, `sql-lint-ratchet`,
+`check-duplicate-exports`. Wiring them as-is would have shipped four more gates
+that disagree between checkouts.
+
+Fixed the two that carry committed baselines, where a drifting scope is worst —
+`sql-lint-ratchet` (`.sqlfluff-baseline.json`) and `check-duplicate-exports`
+(`.duplicate-exports-baseline.json`) — via a new shared
+`scripts/lib/tracked-files.mjs`, so the rule lives in one place instead of being
+re-implemented per script. Proven the same way as the markdown fix: an untracked
+`.sql` and an untracked `.ts` each produce byte-identical output.
+
+- [ ] `check-row-cap-limits` and `check-env-secret-fallbacks` still walk the
+      filesystem. Pass/fail only, no baseline, so the blast radius is a spurious
+      failure rather than a drifting count — but fix them before wiring.
+- [ ] Wire the five passing gates into `ci.yml`
+- [ ] Fix the two misleading npm aliases (`check:ledger`, `knowledge:report`) so
+      they either document their required input or are renamed to stop
+      advertising themselves as gates
+- [ ] Decide where the three credential-dependent checks belong — they are
+      operational readiness checks, not code gates, and may not belong on a PR
+
 **5d. Required checks vs jobs.** 13 workflows define 43 jobs; `main` requires 6
 contexts. Every job that is not required and not informative is spend without a gate.
 Audit the 43 against the 6 and cut or promote.

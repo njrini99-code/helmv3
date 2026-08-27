@@ -32,6 +32,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { keepTracked } from './lib/tracked-files.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -58,7 +59,14 @@ function sqlFilesIn(dir) {
     .map((e) => join(dir, e.name));
 }
 
-const files = [...sqlFilesIn('supabase/migrations'), ...sqlFilesIn('supabase/seed')].sort();
+// Tracked only. This ratchet carries a committed baseline, so a scope that
+// varies with what happens to be on disk means two checkouts of the same commit
+// disagree about the count — the defect that cost markdown-lint-ratchet.mjs an
+// hour of two sessions' time on 2026-08-27. See scripts/lib/tracked-files.mjs.
+const files = keepTracked(
+  [...sqlFilesIn('supabase/migrations'), ...sqlFilesIn('supabase/seed')],
+  ROOT,
+).sort();
 
 if (files.length === 0) {
   console.log('sql-lint-ratchet: no SQL files found in scope — nothing to lint.');
