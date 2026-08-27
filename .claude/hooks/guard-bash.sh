@@ -42,6 +42,47 @@ CMD=$(printf '%s' "$CMD" | perl -0777 -pe 's/\\\\/\x00/g; s/\\\n//g; s/\n/; /g; 
 
 block() { printf '%s\n' "$1" >&2; exit 2; }
 
+# ---------------------------------------------------------------------------
+# EARLY EXIT: a lone read-only inspection command is never one of the actions
+# below, no matter what words appear in its arguments.
+#
+# Added 2026-08-27, owner directive: "should never block grep. Ever."
+#
+# Every rule in this file matches WORDS against the command line. That is the
+# right shape for catching `git push --force` and the wrong shape for text that
+# merely CONTAINS those words. Observed in a single session, all refused, none
+# of them the dangerous action:
+#     echo "the git push --force rule"
+#     grep -n 'stash' .claude/hooks/guard-bash.sh
+#     git commit -m "<message describing what the guard blocks>"
+# Each refusal cost a round trip and taught nothing, and a guard that cries
+# wolf is a guard people learn to route around — which is strictly worse than
+# not having it.
+#
+# The exemption is deliberately NARROW, because a quoted string is not always
+# inert: `bash -c "git push --force"` is quoted AND executes. So this fires
+# only when the command is a SINGLE invocation of a known read-only utility
+# with NO way to reach a second command:
+#   - no ; && || newline (command separators)
+#   - no | (pipe into something else)
+#   - no $( ) or backtick (command substitution)
+#   - no > or >> (redirection can still clobber a file)
+# Under those conditions the argument text cannot be executed, so no rule below
+# can apply to it.
+READONLY_HEAD='^[[:space:]]*(echo|printf|grep|egrep|fgrep|rg|cat|head|tail|wc|sed|awk|jq|ls|find|file|stat|basename|dirname|realpath|which|type|column|sort|uniq|diff|cut|tr)([[:space:]]|$)'
+#
+# `$` is in the forbidden class outright rather than trying to match `$(`
+# precisely. A verified bypass during development:
+#     echo $(git push --force origin main)
+# was exempted and ran. Command substitution executes, and so does a variable
+# holding a command. Excluding every `$` costs nothing here — a read-only
+# command containing one simply falls through to the normal rules, which allow
+# it anyway.
+if printf '%s' "$CMD" | grep -Eq "$READONLY_HEAD" \
+   && ! printf '%s' "$CMD" | grep -Eq '[;&|><`$]'; then
+  exit 0
+fi
+
 # 1. git stash — ALLOWED. Owner directive, 2026-08-27.
 #
 #    This hook used to block every stash subcommand except `list` and `show`.
@@ -76,9 +117,26 @@ fi
 #    PIPE's exit status, not the gate's. `npm test | tail` exits 0 while the
 #    tests fail. This is the single most dangerous shape for a verification
 #    step, because it manufactures a green result.
+#
+#    NARROWED 2026-08-27. This rule used to fire when a gate appeared ANYWHERE
+#    and a `|` appeared ANYWHERE. Those are not the same command. It refused,
+#    among others:
+#        npx vitest run ... > out 2>&1; grep -E 'Test Files|Tests' out
+#    where the only `|` is inside a quoted regex and the gate is redirected to
+#    a file — the exact shape this rule tells you to use. It also refused an
+#    `echo` and a `git commit -m` whose TEXT merely described a blocked
+#    command. Four times in one session; each refusal cost a round trip and
+#    taught nothing, because the command was already correct.
+#
+#    Now: the gate must sit IMMEDIATELY left of a real pipe, with no command
+#    separator between them, and pipes inside quotes do not count. Quoted
+#    spans are blanked FOR THIS CHECK ONLY — the safety rules below still match
+#    the raw command, because `bash -c "git push --force"` is quoted and does
+#    execute.
 GATE='(npm[[:space:]]+(run[[:space:]]+)?(test|lint|typecheck|build)|npx[[:space:]]+(vitest|tsc|eslint|semgrep)|vitest[[:space:]]+run)'
-if printf '%s' "$CMD" | grep -Eq "$GATE" \
-   && printf '%s' "$CMD" | grep -q '|' \
+# Blank the CONTENTS of quoted spans, preserving length-independent structure.
+CMD_UNQ=$(printf '%s' "$CMD" | perl -0777 -pe "s/'[^']*'/''/g; s/\"(\\\\.|[^\"\\\\])*\"/\"\"/g;")
+if printf '%s' "$CMD_UNQ" | grep -Eq "$GATE[^;&]*\|[^|]" \
    && ! printf '%s' "$CMD" | grep -q 'pipefail'; then
   block "BLOCKED: a gate command is piped, so its exit code is masked — the pipeline reports the LAST command's status, so a failing suite still looks like success.
 Fix (keeps your filtering): prefix with 'set -o pipefail;' e.g.
