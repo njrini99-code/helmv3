@@ -58,6 +58,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   // Read ledger JSON from stdin.
+  //
+  // TTY check FIRST. Without it, running this bare from a terminal blocks
+  // forever waiting for an EOF that never comes — so the usage message below
+  // never prints and the tool looks hung rather than misused. Found 2026-08-27
+  // while adding that message: the fix for a confusing error revealed a worse
+  // failure mode behind it.
+  if (process.stdin.isTTY) {
+    printUsage('no ledger JSON on stdin (stdin is a terminal)');
+    process.exit(2);
+  }
+
   let ledger;
   try {
     const raw = await new Response(process.stdin).text();
@@ -65,7 +76,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     // Supabase returns null when the table is empty (json_agg of 0 rows).
     ledger = Array.isArray(parsed) ? parsed : [];
   } catch {
-    process.stderr.write('check-migration-ledger: failed to parse ledger JSON from stdin\n');
+    // This is almost always someone running `npm run check:ledger` bare and
+    // reasonably concluding the tooling is broken. It isn't — this script is a
+    // PIPELINE COMPONENT, not a standalone gate, and the npm alias does not
+    // supply its input. Say so instead of printing a parse error. (2026-08-27.)
+    printUsage('failed to parse ledger JSON from stdin');
     process.exit(2);
   }
 
@@ -81,4 +96,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   process.stdout.write('Migration ledger in sync.\n');
   process.exit(0);
+}
+
+/** One place for the usage text, shared by the TTY and parse-failure paths. */
+function printUsage(reason) {
+  process.stderr.write(
+    `check-migration-ledger: ${reason}.\n` +
+    '\n' +
+    'This is not a standalone check — it reconciles the migration files on\n' +
+    'disk against the LIVE ledger, so it needs that ledger piped in:\n' +
+    '\n' +
+    '  psql "$DATABASE_URL" -Atc \\\n' +
+    "    \"select json_agg(json_build_object('version',version,'name',name))\n" +
+    '     from supabase_migrations.schema_migrations" \\\n' +
+    '    | node scripts/check-migration-ledger.mjs\n' +
+    '\n' +
+    'Exit 0 = in sync. Exit 1 = a real drift, with the diff printed.\n'
+  );
 }

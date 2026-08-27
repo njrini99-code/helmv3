@@ -5,7 +5,30 @@ import { loadRegistry, mapFilesToFeatures, fileExists } from './lib/registry.mjs
 
 const args = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
-const changedFiles = await readChangedFiles(args.changedFiles);
+// Same shape as check-migration-ledger: a PIPELINE COMPONENT, not a standalone
+// gate. CI (feature-awareness.yml) writes the changed-files list first; running
+// `npm run knowledge:report` bare throws ENOENT and reads as broken tooling.
+// (2026-08-27.)
+let changedFiles;
+try {
+  changedFiles = await readChangedFiles(args.changedFiles);
+} catch (err) {
+  if (err && err.code === 'ENOENT') {
+    process.stderr.write(
+      `knowledge:report: no changed-files list at "${args.changedFiles}".\n` +
+      '\n' +
+      'This is not a standalone check — it reports on a specific set of\n' +
+      'changed files, which CI produces before calling it. To run it locally:\n' +
+      '\n' +
+      '  git diff --name-only origin/main...HEAD > changed-files.txt\n' +
+      '  npm run knowledge:report\n' +
+      '\n' +
+      'Or use `npm run knowledge:map -- --files <paths>` for an ad-hoc lookup.\n'
+    );
+    process.exit(2);
+  }
+  throw err;
+}
 const registry = await loadRegistry(repoRoot);
 const impactedFeatures = mapFilesToFeatures(registry, changedFiles);
 const unmappedFiles = changedFiles.filter(

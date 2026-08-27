@@ -505,9 +505,14 @@ nothing about the filter. That is the `check:env` lesson — a check that cannot
 fail proves nothing — applied to one's own verification method rather than to a
 gate, which is the harder place to apply it.
 - [ ] Wire the five passing gates into `ci.yml`
-- [ ] Fix the two misleading npm aliases (`check:ledger`, `knowledge:report`) so
-      they either document their required input or are renamed to stop
-      advertising themselves as gates
+- [x] DONE 2026-08-27. Neither was renamed — a rename breaks muscle memory and
+      every doc reference, and the alias is not really the defect. The defect is
+      that running one bare produced a bare parse error / ENOENT, which reads as
+      broken tooling. Both now print what they are and how to invoke them.
+      Both messages were TESTED, not asserted: the documented
+      `git diff --name-only ... > changed-files.txt` command runs
+      `knowledge:report` to exit 0, and `check:ledger`'s happy path still
+      reconciles correctly from stdin.
 - [ ] Decide where the three credential-dependent checks belong — they are
       operational readiness checks, not code gates, and may not belong on a PR
 
