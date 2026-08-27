@@ -641,6 +641,18 @@ features:
         - src/app/golf/actions/communication.ts
       services:
         - src/lib/supabase/**
+        # `src/hooks/**` appears NOWHERE else in this registry, so every golf
+        # hook resolved to no feature at all — `knowledge:map` returned an empty
+        # impactedFeatures for the hook that owns the entire conversation rail.
+        # Same class as the Fairway calendar gap noted above, and same reason it
+        # went unnoticed: src/hooks is outside GOVERNED_PATTERNS
+        # (.claude/hooks/lib/feature-map.mjs), so the context guard never
+        # tripped on it either. Mapped BY NAME, not by `src/hooks/golf/**` —
+        # most of the other 15 hooks there are rounds/stats/offline hooks that
+        # belong to other features, and a confidently wrong mapping is worse
+        # than a recorded gap.
+        - src/hooks/golf/use-golf-messages.ts
+        - src/hooks/golf/use-message-attachments.ts
       db:
         - supabase/migrations/*messag*.sql
         - supabase/migrations/*announcement*.sql
