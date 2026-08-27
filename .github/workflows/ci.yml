@@ -368,20 +368,23 @@ jobs:
         continue-on-error: true
         run: npm run audit:paginated-reads
 
-      # Added 2026-08-27. Both were genuine orphans — a script, a maintained
-      # baseline, and no CI caller. They are added as STEPS of this existing
-      # job rather than as new jobs on purpose: `lint-ratchet` is already in
-      # `CI aggregate`'s `needs`, so these become blocking immediately without
-      # touching that list. A new job added to ci.yml but not to `needs` would
-      # run, report its own check line, and block nothing — a visible orphan
-      # instead of an invisible one, which is not an improvement.
+      # Added 2026-08-27. A genuine orphan — a script, a maintained baseline,
+      # and no CI caller. Added as a STEP of this existing job rather than as a
+      # new job on purpose: `lint-ratchet` is already in `CI aggregate`'s
+      # `needs`, so it blocks immediately without touching that list. A new job
+      # added to ci.yml but NOT to `needs` would run, report its own check line,
+      # and block nothing — a visible orphan instead of an invisible one, which
+      # is not an improvement. Cheap: 139ms measured.
       #
-      # Both are cheap: measured 96ms and 139ms locally.
-      - name: Required env contract (orphan wired 2026-08-27)
-        id: ratchet_env
-        continue-on-error: true
-        run: npm run check:env
-
+      # `check:env` was in this block too and was REVERTED the same night. It
+      # early-returns unless VERCEL_ENV is 'production' or 'preview', which
+      # GitHub Actions never sets — so as a CI step it printed OK and exited 0
+      # unconditionally. A step that cannot fail, sitting inside the blocking
+      # aggregate, is the subtlest orphan available: it reports success instead
+      # of being invisible. It is also not an orphan at all — package.json's
+      # `prebuild` lifecycle hook runs it, and vercel.json's buildCommand is
+      # `npm run build`, so it fires on the Vercel production build where
+      # VERCEL_ENV IS set and the check means something. Do not re-add it here.
       - name: Duplicate server-action exports (orphan wired 2026-08-27)
         id: ratchet_dupes
         continue-on-error: true
@@ -394,11 +397,10 @@ jobs:
           O_SUPABASE: ${{ steps.ratchet_supabase.outcome }}
           O_FAILOPEN: ${{ steps.ratchet_failopen.outcome }}
           O_PAGINATED: ${{ steps.ratchet_paginated.outcome }}
-          O_ENV: ${{ steps.ratchet_env.outcome }}
           O_DUPES: ${{ steps.ratchet_dupes.outcome }}
         run: |
           bad=0
-          for pair in "lint:$O_LINT" "supabase:$O_SUPABASE" "fail-open:$O_FAILOPEN" "paginated:$O_PAGINATED" "env:$O_ENV" "dupes:$O_DUPES"; do
+          for pair in "lint:$O_LINT" "supabase:$O_SUPABASE" "fail-open:$O_FAILOPEN" "paginated:$O_PAGINATED" "dupes:$O_DUPES"; do
             name="${pair%%:*}"; outcome="${pair#*:}"
             echo "ratchet $name -> $outcome"
             if [ "$outcome" != "success" ]; then bad=1; fi

@@ -107,6 +107,26 @@ Verified 2026-08-20. Do not treat these as coverage:
 **When you add a guard, add its caller in the same change.** A script in
 `package.json` with no workflow step is not a gate.
 
+**But check for lifecycle hooks before calling something an orphan.** npm fires
+`pre<name>` and `post<name>` automatically, by naming convention — no file
+references them, so no grep for the script name will find the caller. Two
+examples in this repo, both found the hard way on 2026-08-27:
+
+- `check:env` looked like an orphan. `prebuild` runs it, and `vercel.json`'s
+  `buildCommand` is `npm run build`, so it fires on every Vercel production
+  build. It is wired at the only place it works.
+- `postbuild` runs `strip-next-tsconfig-injection.mjs` with nothing referencing
+  it anywhere.
+
+**And check that a gate CAN fail before wiring it.** `check:env` early-returns
+unless `VERCEL_ENV` is `production` or `preview`. GitHub Actions never sets
+that, so as a CI step it printed OK and exited 0 unconditionally. A step that
+cannot fail, sitting inside a blocking aggregate, is worse than an unwired
+script: it reports success rather than being visibly absent. Run it in the
+environment you intend to wire it into, with the failure case forced, before
+adding it.
+
+
 ### 3. Tests — three separate systems
 
 | Layer | Runner | Where | CI |

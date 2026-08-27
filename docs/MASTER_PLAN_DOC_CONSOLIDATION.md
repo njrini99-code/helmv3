@@ -320,6 +320,37 @@ Proven, not asserted: with the fix in place, creating a gitignored `.md` under
 **The general rule for this repo: a gate must read `git ls-files`, never the
 filesystem.** Audit the other ten against it.
 
+**5j. AND A THIRD INSTANCE OF THE SAME METHOD ERROR — caught in review.**
+
+Wiring `check:env` into `ci.yml` was wrong twice over, and `c5` caught both in
+review before it landed.
+
+1. **It cannot fail in CI.** It early-returns unless `VERCEL_ENV` is
+   `production`/`preview`; GitHub Actions never sets it. Measured: with no
+   `VERCEL_ENV` it prints OK and exits 0; with `VERCEL_ENV=production` it exits
+   1 on the first missing var. So the step would have run on every PR, inside
+   the blocking aggregate, verifying nothing. **A gate that cannot fail is the
+   subtlest orphan available — it reports success rather than being invisible**,
+   and it is the exact defect Phase 5 exists to remove. I nearly shipped it
+   while removing others.
+2. **It was never an orphan.** `package.json`'s `prebuild` lifecycle hook runs
+   it, and `vercel.json`'s `buildCommand` is `npm run build`, so it fires on the
+   Vercel production build — where `VERCEL_ENV` IS set.
+
+This is the same root cause as 5i, one layer down: I looked for a caller in one
+syntax and the caller was written in another. In 5i it was `npm run <name>` vs
+the script path. Here it is an **npm lifecycle hook**, which no grep for the
+script name can find, because npm fires it by naming convention.
+
+**Two rules from it, now in `quality-gates.md`:** check `pre*`/`post*` hooks
+before calling a script an orphan, and force the failure case in the target
+environment before wiring anything.
+
+Phase 5's wiring result is therefore **one gate, not two** —
+`lint:duplicate-exports`, which c5 verified independently can fail, has a real
+baseline, and has no env dependency. One true gate beats two where the second
+is decorative.
+
 **5i. THE ORPHAN COUNT WAS WRONG — 11 was really 6, and 2 were actionable.**
 
 Retracted 2026-08-27, second correction to this section. **My detection method
