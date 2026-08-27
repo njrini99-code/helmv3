@@ -320,6 +320,26 @@ Proven, not asserted: with the fix in place, creating a gitignored `.md` under
 **The general rule for this repo: a gate must read `git ls-files`, never the
 filesystem.** Audit the other ten against it.
 
+**5k. FOUR INSTANCES, ACROSS BOTH SESSIONS — the root cause is one thing.**
+
+Every one is *the check I ran was not the check I thought I was running*:
+
+| # | Looked for | Was written as |
+|---|---|---|
+| 1 | `npm run <name>` in CI | the script **path** |
+| 2 | the script name | an npm **lifecycle hook** (`prebuild`) — no file references it |
+| 3 | a config block at a **line number** | a file that had shifted by one line |
+| 4 | a second reader's confirmation | **agreement with a shared wrong premise** |
+
+The fourth is the dangerous one. #1-3 were each caught by someone executing or
+re-checking. #4 — the claim that `markdown:ratchet` "runs in no workflow" — was
+held by BOTH sessions for hours, because it was affirmed in the same message
+that contained its disproof. Two independent readers plus one shared wrong
+premise is not two readers.
+
+Three of these now have rules in `.claude/rules/quality-gates.md`. The fourth
+has no mechanical fix, which is precisely why it is worth writing down.
+
 **5j. AND A THIRD INSTANCE OF THE SAME METHOD ERROR — caught in review.**
 
 Wiring `check:env` into `ci.yml` was wrong twice over, and `c5` caught both in

@@ -118,6 +118,14 @@ examples in this repo, both found the hard way on 2026-08-27:
 - `postbuild` runs `strip-next-tsconfig-injection.mjs` with nothing referencing
   it anywhere.
 
+**Locate a config block by NAME, never by a line number from another
+checkout.** A review on 2026-08-27 reported `lint-ratchet` MISSING from
+`CI aggregate`'s `needs` — it was present. The reviewer had read main's line
+numbers against a branch where the file had shifted by one line. The reported
+result was the opposite of the truth, and it was caught only because "missing"
+was implausible enough to re-check, which is luck rather than method. Use
+`grep -n "name: CI aggregate"` and offset from there.
+
 **And check that a gate CAN fail before wiring it.** `check:env` early-returns
 unless `VERCEL_ENV` is `production` or `preview`. GitHub Actions never sets
 that, so as a CI step it printed OK and exited 0 unconditionally. A step that
