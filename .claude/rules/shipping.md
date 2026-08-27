@@ -73,25 +73,24 @@ mechanical, and these are the habits that keep it fixed.
 - **Prune worktrees by PR state, not `--merged`.** This repo squash-merges, so a
   merged branch never becomes an ancestor of `main` and `git branch --merged`
   never lists it.
-- **Blocked by `guard-bash.sh`, deliberately:** `git push --force` (the only
-  push shape still blocked — it is the sole guard on shared history) and
-  `git clean -f/-fd` (deletes untracked work that exists nowhere else;
-  `-n`/`--dry-run` is allowed).
-- **`git stash` is NO LONGER blocked** (owner directive, 2026-08-27). The hazard
-  is unchanged and worth knowing: `refs/stash` is repo-global, so a stash pushed in
-  one worktree is visible and poppable from every other one. It is now
-  addressed structurally — one task, one worktree, one mutating session —
-  rather than by banning the verb. The old rule also matched the WORDS anywhere
-  on the command line, so an `echo` or `grep` that merely mentioned them was
-  refused, and its suggested alternative (a WIP commit) is *more* visible to
-  peers under the worktree model, not less.
+- **No hook blocks git commands any more.** `guard-bash.sh` was deleted
+  2026-08-27 after being unwired; it protected nothing while it sat there.
+  What remains, and is PROVEN to fire even under `bypassPermissions`, is
+  `permissions.deny` in `.claude/settings.json` — 29 prefix rules. Force push
+  and `git clean -fd` are no longer blocked locally; GitHub's own
+  `allow_force_pushes: false` still refuses the remote.
+- **`git stash` is not blocked.** Worth knowing anyway: `refs/stash` is
+  repo-global, so a stash pushed in one worktree is visible and poppable from
+  every other one. One task, one worktree, one mutating session is what
+  addresses that.
 - Commit messages: explain **why**, and state what you verified. If a claim
   rests on something you could not run, say so once.
 
 ### 3. Bash
 
 - **Never pipe a gate command.** `npm test | tail` exits with `tail`'s status,
-  not the test's — it manufactures a green result. Blocked by `guard-bash.sh`.
+  not the test's — it manufactures a green result. Nothing blocks this any
+  more; it is on you to notice.
   Capture to a file and check the exit code separately.
 - **Recursive `rm` must stay inside the project or `$TMPDIR`.** Blocked
   elsewhere: `~/.claude/settings.local.json` allows `Bash(rm:*)` globally and an
@@ -113,14 +112,17 @@ mechanical, and these are the habits that keep it fixed.
 - **MCP `apply_migration` / `execute_sql` hit production directly with
   `service_role`** — no file, no review, no RLS. Treat every call as a
   production write.
-- **Blocked by the guards:** `supabase config push` (pushes the whole
-  `config.toml`, including the dev `site_url` — would overwrite production's and
-  break every auth email link), `supabase db reset` (drops and recreates from
-  migrations), and destructive SQL through `psql` / `supabase db execute` /
-  `db query` (which bypass `guard-sql.sh`'s file route entirely).
-- `guard-sql.sh` blocks privilege escalation and destructive shapes on **both**
-  routes — `.sql` file edits *and* MCP payloads. `DELETE FROM x;` with no
-  `WHERE` is blocked.
+- **Blocked by `permissions.deny`**, which is proven to fire even under
+  `bypassPermissions`: `supabase config push` (pushes the whole `config.toml`,
+  including the dev `site_url` — would overwrite production's and break every
+  auth email link), `supabase db reset` (drops and recreates from migrations),
+  and `supabase db push` / `migration up`, each in four spellings.
+- **NOT blocked by anything, since `guard-sql.sh` was deleted 2026-08-27:**
+  destructive SQL through `psql` / `supabase db execute` / `db query`, and MCP
+  `apply_migration` / `execute_sql` payloads. That hook had been unwired for
+  some time before deletion, so this is a statement of what was already true,
+  not a new gap — but it IS a gap. `DELETE FROM x;` with no `WHERE` reaches
+  production if you type it.
 - **Never grant `anon` EXECUTE** on a `SECURITY DEFINER` function, and never
   `GRANT ALL`. Recreating a matview or view **re-grants `anon`** — REVOKE after,
   then verify.
