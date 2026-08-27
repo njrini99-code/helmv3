@@ -479,6 +479,31 @@ re-implemented per script. Proven the same way as the markdown fix: an untracked
       byte-identical, and the SAME file staged with `git add -N` makes
       `check:env-secrets` fail on it. Unchanged output therefore means the
       filter worked, not that the probe was inert.
+- [x] **All four re-verified discriminatingly, 2026-08-27.** Evidence below.
+
+#### Discriminating re-verification of the scope filters
+
+The first two (`sql:ratchet`, `lint:duplicate-exports`) were originally checked
+only in the weak direction — *"output unchanged after adding an untracked
+file"*. That is equally consistent with the filter working and with the probe
+being inert. Only the tracked half distinguishes them. All four now have it:
+
+| Gate | untracked probe | same file, `git add -N` |
+| --- | --- | --- |
+| `sql:ratchet` | 7,666 violations, exit 0 | exit 1 — LT01 +10, LT02 +3 |
+| `lint:duplicate-exports` | 27 known, exit 0 | exit 1 — names `getRecruits` |
+| `check:row-caps` | byte-identical | (paired below) |
+| `check:env-secrets` | byte-identical | exit 1 on the planted fallback |
+
+Also checked, on `c5`'s prompt: **every one of the four walks has exactly one
+consumer**, so no second call site can still see untracked files.
+`check-duplicate-exports` filters inside the walk at push time, covering any
+future consumer; the other three filter at their single consumer.
+
+**The reusable point:** an experiment whose probe cannot trip the check proves
+nothing about the filter. That is the `check:env` lesson — a check that cannot
+fail proves nothing — applied to one's own verification method rather than to a
+gate, which is the harder place to apply it.
 - [ ] Wire the five passing gates into `ci.yml`
 - [ ] Fix the two misleading npm aliases (`check:ledger`, `knowledge:report`) so
       they either document their required input or are renamed to stop
