@@ -7,6 +7,7 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { StateChip } from '../_components/Row';
 import { LocalTime } from '../_components/LocalTime';
 
 export const dynamic = 'force-dynamic';
@@ -167,13 +168,29 @@ function StatLine({ label, value }: { label: string; value: React.ReactNode }) {
  */
 function CronJobCard({ row }: { row: CronBoardRow }) {
   const isAlarm = row.status === 'overdue' || row.status === 'failed';
+  // A cron job is NOT an incident — it is a schedule with stats — so this
+  // keeps its card shape and its StatLine pairs rather than being forced into
+  // RailRow. What it adopts from ../_components/Row is the part that has to
+  // match everywhere: how severity is expressed. The status moves from a
+  // leading pill to the same rail the Errors and Reliability rows use, so a
+  // screenful of tabs reads with one vocabulary instead of three.
+  const rail =
+    row.status === 'failed' ? 'bg-fw-danger'
+    : row.status === 'overdue' ? 'bg-fw-warning'
+    : row.status === 'ok' ? 'bg-fw-success'
+    : 'bg-warm-300';
   return (
-    <Inset padding="sm" className={cn(isAlarm && 'ring-1 ring-fw-danger/30')}>
+    <Inset padding="sm" className={cn('relative pl-3', isAlarm && 'ring-1 ring-fw-danger/30')}>
+      <span aria-hidden className={cn('absolute inset-y-2 left-0 w-1 rounded-r-sm', rail)} />
       <div className="flex items-start justify-between gap-3">
         <p className="min-w-0 break-words font-fw-mono text-xs font-medium text-warm-900">{row.jobType}</p>
-        <StatusPill tone={CRON_STATUS_TONE[row.status]} dot size="sm" className="shrink-0">
+        {/* Status still reaches assistive tech and colour-blind readers as a
+            word — the rail is reinforcement, never the only channel. */}
+        <StateChip
+          tone={row.status === 'failed' ? 'danger' : row.status === 'overdue' ? 'warning' : 'neutral'}
+        >
           {row.status}
-        </StatusPill>
+        </StateChip>
       </div>
       <div className="mt-2.5 space-y-1.5 text-xs">
         <StatLine

@@ -9,7 +9,6 @@ import {
   StatusPill,
   InlineNotice,
   Eyebrow,
-  Badge,
   SegmentBar,
   type FwStatusTone,
 } from '@/components/fairway';
@@ -20,6 +19,7 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { RailRow, RowHead, FactLine, RowFoot, StateChip } from '../_components/Row';
 import { LocalTime } from '../_components/LocalTime';
 import type { CorrelatedSignal, ReliabilitySeverity, SourceStatus } from '@/lib/reliability/types';
 import {
@@ -55,13 +55,6 @@ const SOURCE_LABEL: Record<SourceStatus, string> = {
   ok: 'reading',
   partial: 'truncated',
   blind: 'blind',
-};
-
-const SEVERITY_TONE: Record<ReliabilitySeverity, FwStatusTone> = {
-  critical: 'danger',
-  error: 'danger',
-  warning: 'warning',
-  info: 'neutral',
 };
 
 const SEVERITY_HEADING: Record<ReliabilitySeverity, string> = {
@@ -136,68 +129,58 @@ function EvidenceLinks({ signal }: { signal: CorrelatedSignal }) {
 function SignalRow({ signal }: { signal: CorrelatedSignal }) {
   const corroborated = signal.sources.length > 1;
 
+  // Ported to the shared row language (../_components/Row) on 2026-08-27.
+  // What this row had before, and why each piece moved:
+  //
+  //   A severity STRIPE and a severity PILL, both. The stripe was already the
+  //   right idea; the pill repeated it at the front of the row, where it led
+  //   the eye and told you the least. RailRow keeps the stripe and drops the
+  //   duplicate.
+  //
+  //   The TITLE arrived fourth, after the pill, the corroboration badge, the
+  //   risk badge and the count — so the one thing you are actually looking for
+  //   was the last thing you found. It leads now.
+  //
+  //   Route, errorCode and featureId were three separate spans in a wrapping
+  //   flex row. They are facts, so they read as one FactLine in the same order
+  //   the errors queue uses: code, feature, route.
   return (
-    <li
-      className={cn(
-        'relative border-t border-warm-200/60 py-3.5 pl-4 first:border-t-0',
-        // A severity stripe, so the shape of the list is readable before any
-        // word is. Color is never the only channel — the pill carries the name.
-        'before:absolute before:left-0 before:top-4 before:bottom-4 before:w-0.5 before:rounded-full',
-        signal.severity === 'critical' && 'before:bg-fw-danger',
-        signal.severity === 'error' && 'before:bg-fw-danger/60',
-        signal.severity === 'warning' && 'before:bg-fw-warning/70',
-        signal.severity === 'info' && 'before:bg-warm-300',
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusPill tone={SEVERITY_TONE[signal.severity]} dot>
-          {signal.severity}
-        </StatusPill>
+    <RailRow severity={signal.severity}>
+      <RowHead value={signal.count.toLocaleString()} valueLabel={`${signal.count} occurrences`}>
+        {signal.title}
+      </RowHead>
 
-        {/* Corroboration is the tab's reason to exist: two independent sources
+      {signal.summary && signal.summary !== signal.title ? (
+        <p className="mt-1 line-clamp-2 text-caption leading-relaxed text-warm-600">{signal.summary}</p>
+      ) : null}
+
+      <FactLine
+        items={[signal.errorCode, signal.featureId, signal.route]}
+        emphasizeFirst={Boolean(signal.errorCode)}
+      />
+
+      <RowFoot
+        meta={
+          <>
+            {signal.sources.join(' + ')} · first <LocalTime iso={signal.firstSeen} /> · last{' '}
+            {relativeAge(signal.lastSeen)}
+          </>
+        }
+      >
+        {/* Corroboration is this tab's reason to exist: two independent sources
             agreeing is stronger evidence than one source shouting, and it is
-            what this view shows that the Errors tab structurally cannot. */}
-        {corroborated && (
-          <Badge tone="warning" numeric>
-            confirmed by {signal.sources.length} sources
-          </Badge>
-        )}
-
-        <Badge tone="neutral" variant="outline">
-          {signal.proposedRisk}
-        </Badge>
-
-        <span className="font-mono text-xs tabular-nums text-warm-500">
-          {signal.count.toLocaleString()}&times;
-        </span>
-
-        <span className="ml-auto text-xs text-warm-500">{relativeAge(signal.lastSeen)}</span>
-      </div>
-
-      <p className="mt-2 text-sm font-medium leading-snug text-warm-900">{signal.title}</p>
-
-      {signal.summary && signal.summary !== signal.title && (
-        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-warm-600">{signal.summary}</p>
-      )}
-
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-warm-500">
-        <span className="flex items-center gap-1">
-          {signal.sources.map((source) => (
-            <Badge key={source} tone="neutral" size="sm">
-              {source}
-            </Badge>
-          ))}
-        </span>
-        {signal.route && <span className="font-mono text-warm-600">{signal.route}</span>}
-        {signal.errorCode && <span className="font-mono text-warm-600">{signal.errorCode}</span>}
-        {signal.featureId && <span>{signal.featureId}</span>}
-        <span>
-          first seen <LocalTime iso={signal.firstSeen} />
-        </span>
-      </div>
+            what the Errors tab structurally cannot show. It is genuinely STATE,
+            so it stays a chip — and it is the only accent on the row. */}
+        {corroborated ? (
+          <StateChip tone="accent" title={`Independently reported by ${signal.sources.join(', ')}`}>
+            {signal.sources.length} sources
+          </StateChip>
+        ) : null}
+        <StateChip title="Proposed risk tier">{signal.proposedRisk}</StateChip>
+      </RowFoot>
 
       <EvidenceLinks signal={signal} />
-    </li>
+    </RailRow>
   );
 }
 
