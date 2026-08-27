@@ -75,6 +75,57 @@ describe('RcaPanel', () => {
     await waitFor(() => expect(screen.getByText('model unavailable')).toBeInTheDocument());
   });
 
+  // The category chip. `suggestedFix` is free text written by an agent
+  // routine, so the panel derives the verdict from it rather than trusting a
+  // stored field — and an opening it cannot classify has to LOOK
+  // unclassified, because no automatic path will act on it.
+  it.each([
+    ['FIX HERE — add the missing code at golf.ts:1770.', 'Fix here'],
+    ['ALREADY FIXED — commit 3b4204e is an ancestor of the serving SHA.', 'Already fixed'],
+    ['NOT A DEFECT — expected client-side fetch cancellation.', 'Not a defect'],
+    ['NEEDS MORE EVIDENCE — no stack trace was captured.', 'Needs evidence'],
+  ])('renders the category chip for %s', (suggestedFix, label) => {
+    render(
+      <RcaPanel fingerprint="fp-1" initialAnalysis={{ ...okAnalysis, suggestedFix }} onAnalyze={vi.fn()} />,
+    );
+    expect(screen.getByText(label)).toBeInTheDocument();
+  });
+
+  it('renders an off-contract suggestedFix as Uncategorized rather than silently omitting the chip', () => {
+    // A real production analysis from 2026-08-27. The old SQL handoff
+    // (`suggestedFix ilike 'FIX HERE%'`) matched none of these and dropped
+    // them; showing a blank space here would reproduce that invisibility.
+    render(
+      <RcaPanel
+        fingerprint="fp-1"
+        initialAnalysis={{ ...okAnalysis, suggestedFix: 'No fix needed - single occurrence, known noise class.' }}
+        onAnalyze={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Uncategorized')).toBeInTheDocument();
+  });
+
+  it('updates the category chip when a fresh analysis replaces the stored one', async () => {
+    // A single render cannot see this: the chip is derived from component
+    // STATE, and `initialAnalysis` only seeds it. The case that matters is
+    // the state changing under a re-analysis — which is the path an operator
+    // actually takes when they press the button on a stale verdict.
+    const fresh: RcaAnalysis = { ...okAnalysis, suggestedFix: 'ALREADY FIXED — shipped in 3b4204e.' };
+    const onAnalyze = vi.fn().mockResolvedValue({ status: 'ok', analysis: fresh });
+    render(
+      <RcaPanel
+        fingerprint="fp-1"
+        initialAnalysis={{ ...okAnalysis, suggestedFix: 'FIX HERE — guard the null case.' }}
+        onAnalyze={onAnalyze}
+      />,
+    );
+    expect(screen.getByText('Fix here')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Analyze with Claude' }));
+    await waitFor(() => expect(screen.getByText('Already fixed')).toBeInTheDocument());
+    expect(screen.queryByText('Fix here')).not.toBeInTheDocument();
+  });
+
   it('shows a not-permitted message rather than throwing when the action rejects', async () => {
     const onAnalyze = vi.fn().mockRejectedValue(new Error('Forbidden'));
     render(<RcaPanel fingerprint="fp-1" initialAnalysis={null} onAnalyze={onAnalyze} />);

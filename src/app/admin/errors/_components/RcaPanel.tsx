@@ -3,7 +3,13 @@
 import { useState, useTransition } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Button, InlineNotice, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
-import type { RcaAnalysis, RcaResult } from '@/lib/admin/rca';
+import {
+  deriveRcaCategory,
+  RCA_CATEGORY_LABEL,
+  type RcaAnalysis,
+  type RcaCategory,
+  type RcaResult,
+} from '@/lib/admin/rca';
 import { LocalTime } from '../../_components/LocalTime';
 import { analyzeErrorFingerprint } from '../../actions/analyze-error';
 import { FieldCopy } from './FieldCopy';
@@ -24,6 +30,28 @@ const CONFIDENCE_TONE: Record<RcaAnalysis['confidence'], FwStatusTone> = {
   high: 'success',
   medium: 'warning',
   low: 'danger',
+};
+
+/**
+ * Category is the verdict; confidence is only how sure the writer was OF that
+ * verdict. Rendering confidence alone — which this panel did until
+ * 2026-08-27 — told a reader "high confidence" without ever saying high
+ * confidence in WHAT, so an analysis reading "already fixed, here is the
+ * commit" and one reading "fix this file" looked identical at a glance.
+ *
+ * `uncategorized` is deliberately loud rather than hidden. It means the
+ * `suggestedFix` opened with none of the four agreed strings, so no automatic
+ * path can act on it (see isAutoResolvable) and a human has to read the
+ * sentence. Measured 2026-08-27: six of twenty-two stored analyses were in
+ * this state, and the old SQL handoff silently matched none of them. A blank
+ * space there would reproduce exactly that invisibility in the UI.
+ */
+const CATEGORY_TONE: Record<RcaCategory, FwStatusTone> = {
+  'fix-here': 'warning',
+  'already-fixed': 'success',
+  'not-a-defect': 'neutral',
+  'needs-more-evidence': 'info',
+  uncategorized: 'info',
 };
 
 export function RcaPanel({
@@ -61,6 +89,12 @@ export function RcaPanel({
     });
   }
 
+  // Derived, never stored. The four-string vocabulary is enforced nowhere at
+  // write time — the writers are two agent routines, not this codebase — so a
+  // persisted `category` field would be a claim about text rather than a
+  // reading of it, and would go stale the moment a writer drifted.
+  const category = deriveRcaCategory(analysis?.suggestedFix);
+
   return (
     <Surface padding="sm" className="min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-warm-200 pb-2">
@@ -86,6 +120,9 @@ export function RcaPanel({
       {analysis ? (
         <div className="mt-3 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
+            <StatusPill tone={CATEGORY_TONE[category]} dot size="sm">
+              {RCA_CATEGORY_LABEL[category]}
+            </StatusPill>
             <StatusPill tone={CONFIDENCE_TONE[analysis.confidence]} dot size="sm">
               {analysis.confidence} confidence
             </StatusPill>

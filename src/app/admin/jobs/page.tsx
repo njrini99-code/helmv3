@@ -1,5 +1,10 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchJobsTab, type CronBoardRow, type CronRunSummary, type IntegrityRow, type InngestHealth } from '@/lib/admin/data/jobs';
+import {
+  SELFHEAL_RUNNER_LABEL,
+  type SelfHealStageRow,
+  type SelfHealLoopStatus,
+} from '@/lib/admin/selfheal-registry';
 import { Surface, Inset, StatTile, StatusPill, InlineNotice, type FwStatusTone } from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -452,11 +457,122 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
   );
 }
 
+/**
+ * The self-healing loop.
+ *
+ * Two of its three stages run OUTSIDE this deployment — a cloud routine and a
+ * launchd agent on the owner's laptop — so nothing in the app can observe them
+ * failing. Their only evidence of life is a heartbeat row, and this panel is
+ * where its absence becomes visible. Without it, a dead stage and a quiet week
+ * look the same.
+ *
+ * Rendered as a numbered circuit rather than a list of jobs because the stages
+ * are sequential: a dead Diagnose starves Repair, and a dead Repair leaves
+ * Close with nothing to confirm. The step number is what says so.
+ */
+const LOOP_TONE: Record<SelfHealLoopStatus, FwStatusTone> = {
+  ok: 'success',
+  overdue: 'danger',
+  failed: 'danger',
+  'never-ran': 'neutral',
+  // Not neutral: an unreadable stage means the loop's own instrument failed,
+  // and reporting that as calm is the exact inversion this panel exists to
+  // prevent.
+  unknown: 'warning',
+};
+
+const LOOP_LABEL: Record<SelfHealLoopStatus, string> = {
+  ok: 'loop closed',
+  overdue: 'a stage is overdue',
+  failed: 'a stage failed',
+  'never-ran': 'awaiting first run',
+  unknown: 'could not be read',
+};
+
+function SelfHealLoop({ stages, status }: { stages: SelfHealStageRow[]; status: SelfHealLoopStatus }) {
+  if (stages.length === 0) {
+    return (
+      <PanelNoData
+        label="No self-healing stages registered"
+        description="SELFHEAL_STAGES is empty — the loop has no expected half to compare against."
+      />
+    );
+  }
+  return (
+    <ol className="mt-3 space-y-2">
+      {stages.map((stage) => (
+        <li
+          key={stage.id}
+          className="flex min-w-0 items-start gap-3 rounded-fw-md bg-surface-sunken px-3 py-2.5"
+        >
+          <span
+            aria-hidden
+            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-warm-200 font-fw-mono text-caption text-warm-600"
+          >
+            {stage.step}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-warm-900">{stage.title}</span>
+              <StatusPill tone={CRON_STATUS_TONE[stage.status]} dot size="sm">
+                {stage.unreadable ? 'unreadable' : stage.status}
+              </StatusPill>
+              <span className="font-fw-mono text-caption text-warm-500">
+                {SELFHEAL_RUNNER_LABEL[stage.runner]} · {stage.jobType}
+              </span>
+            </div>
+            <p className="mt-1 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">{stage.what}</p>
+            <p className="mt-1 font-fw-mono text-caption text-warm-500">
+              {stage.unreadable ? (
+                // "We could not look" is not "it never ran". Saying the second
+                // when the first is true is how a broken read becomes a calm
+                // grey chip.
+                <>run history unreadable this refresh — unknown, not healthy</>
+              ) : stage.lastRunAt ? (
+                <>
+                  last run <LocalTime iso={stage.lastRunAt} variant="datetime" />
+                  {stage.lastRunStatus ? ` · ${stage.lastRunStatus}` : null}
+                </>
+              ) : (
+                <>no heartbeat on record</>
+              )}
+              {' · '}
+              {stage.contract}
+            </p>
+            {stage.lastError ? (
+              <p className="mt-1 break-words text-caption text-fw-danger-ink [overflow-wrap:anywhere]">
+                {stage.lastError}
+              </p>
+            ) : null}
+          </div>
+        </li>
+      ))}
+      <li className="pt-1 text-xs text-warm-500">
+        Loop status is its <strong className="font-semibold text-warm-900">worst</strong> stage —{' '}
+        <StatusPill tone={LOOP_TONE[status]} dot size="sm">
+          {LOOP_LABEL[status]}
+        </StatusPill>{' '}
+        — because a circuit with one dead link is open, however healthy the rest looks.
+      </li>
+    </ol>
+  );
+}
+
 async function JobsBody() {
   const tab = await fetchJobsTab();
 
   return (
     <div className="space-y-6">
+      <Surface padding="sm">
+        <KeyPanelRule />
+        <SectionLabel>Self-healing loop — error to diagnosis to repair to closure</SectionLabel>
+        <p className="mt-1 text-xs text-warm-500">
+          Two of these three stages run outside this deployment, so nothing here can watch them fail — only notice
+          that they stopped writing.
+        </p>
+        <SelfHealLoop stages={tab.selfHeal} status={tab.selfHealStatus} />
+      </Surface>
+
       {/* Key panel: the board that answers "is anything actually running on
           schedule" — a 2px green left edge, same signal as the overview's
           Feature health rollup. */}
