@@ -15,7 +15,7 @@ git rev-list --count 3d7d1b1ef..HEAD -- \
   '.claude/**' '.github/workflows/**' 'vitest.config.ts' 'package.json'
 ```
 
-Parts 1 to 10 are how the machine works. Parts 11 to 16 are what auditing
+Parts 1 to 12 are how the machine works. Parts 13 to 18 are what auditing
 it turned up, including four things this document's author got wrong.
 
 ---
@@ -75,11 +75,142 @@ worktree. The only one that is actually the repo.
 
 ---
 
-## Part 2 — Session start
+## Part 2 — The stack, and where everything comes from
+
+### Runtime, pinned three ways
+
+| Pin | Value |
+| --- | --- |
+| `.node-version` | 22 |
+| `.nvmrc` | 22 |
+| `package.json` engines | `>=22.0.0` |
+| actually running | v22.23.2 |
+| npm | 10.9.8 |
+| Deno | 2.9.5 — Supabase edge functions only |
+
+`package.json` sets `"type": "module"`, so every `.js` in this repo is ESM.
+A CommonJS file needs the `.cjs` extension. There is **no**
+`packageManager` field, so nothing pins npm itself — CI uses whatever the
+runner ships.
+
+`.node-version` is in `.worktreeinclude` on purpose: without it a fresh
+worktree lands on the machine default while all CI workflows pin 22.
+
+### Core stack
+
+| Package | Version |
+| --- | --- |
+| next | ^16.2.12 |
+| react / react-dom | ^19.2.8 |
+| typescript | ^5.9.3 |
+| tailwindcss | ^3.4.19 |
+| @supabase/supabase-js | 2.112.3 (exact) |
+| @supabase/ssr | ^0.12.3 |
+| vitest | ^4.1.11 |
+| eslint | ^9.39.5 (flat config, 187 lines) |
+| @playwright/test | ^1.62.1 |
+| @capacitor/core | ^8.4.2 |
+| inngest | ^4.13.0 |
+| @sentry/nextjs | ^10.68.0 |
+| stripe | ^22.3.2 |
+| zod | ^4.2.1 |
+
+84 dependencies, 35 devDependencies.
+
+`@supabase/supabase-js` is pinned **exactly**, not caret-ranged. Everything
+else floats within a major.
+
+### TypeScript is strict, and then some
+
+`strict: true` plus **`noUncheckedIndexedAccess: true`**. That second one
+is why `arr[0]` types as `T | undefined` and why the repo convention is
+guard-then-assert with `!` and a one-line comment naming the invariant —
+never a silent `?? fallback`. Target `es2018`, module `esnext`.
+
+`tsconfig.json` deliberately does **not** include `.next/types/**`. Those
+globs match zero files in CI but break `npm run typecheck` locally
+(measured: exit 2 with, exit 0 without). `npm run build` re-injects them,
+so `scripts/strip-next-tsconfig-injection.mjs` runs as `postbuild` and
+removes them again — but only after proving the diff is exactly the known
+build artifact, so a deliberate tsconfig edit survives.
+
+### Where data and services come from
+
+- **Supabase** — one project, ref `qmnssrrolpinvwjjnufo`, committed in
+  `supabase/.temp/project-ref`. **Production is a single shared database**
+  serving golf, baseball and lifting. There is no staging copy.
+- **MCP** — `.mcp.json` declares exactly one server: `supabase`. It must
+  stay project-scoped and read-only; `apply_migration` and `execute_sql`
+  hit production directly with `service_role`, which is why a guard
+  matches those tool names.
+- **Env** — five files: `.env`, `.env.local`, `.env.example` (412 lines,
+  the documentation of what exists), and two `.local` overlays.
+  `.worktreeinclude` deliberately **excludes** all of them, so a live
+  production secret is not copied into every parallel worktree.
+- **Sentry, Vercel, Stripe, Inngest** — all via env, none checked in.
+
+### Claude Code plugins
+
+Five enabled at project scope: `claude-security`, `security-guidance`,
+`sentry`, `superpowers`, `vercel`. Fifteen more at user scope. Plugins
+installed at project scope also load in worktrees of the same repo.
+
+### Build and deploy
+
+`vercel.json`:
+
+| Key | Value |
+| --- | --- |
+| `buildCommand` | `npm run build` |
+| `installCommand` | `npm ci` |
+| `ignoreCommand` | `bash scripts/vercel-ignore-build.sh` |
+| `framework` | nextjs |
+| `regions` | `iad1` |
+| `git.deploymentEnabled` | `{"*": false}` |
+
+**Production cron jobs are declared in `vercel.json`**, not in code — e.g.
+`/api/cron/coachhelm-validation` hourly at :15. They run against
+production on Vercel's schedule, independent of anything in CI.
+
+`next.config.mjs` sets `reactStrictMode`, a turbopack block, and a
+**Content-Security-Policy**. Its `connect-src` allows only
+`https://*.supabase.co`, which is why a plain local
+`http://127.0.0.1:54321` stack cannot be reached from the browser and the
+Cursor Cloud setup fronts it with a TLS proxy.
+
+### npm lifecycle hooks — callers no grep will find
+
+npm fires these **by naming convention**. Nothing references them:
+
+- `prebuild` -> `check-required-env.mjs && stamp-sw.mjs`
+- `postbuild` -> `strip-next-tsconfig-injection.mjs`
+
+Because `vercel.json`'s `buildCommand` is `npm run build`, `prebuild` runs
+on every Vercel production build — which is the only place
+`check-required-env` does anything, since it early-returns unless
+`VERCEL_ENV` is set. Searching for a script's *name* will not find these
+callers. See Part 14.2.
+
+### iOS / Capacitor
+
+`appId: com.helmsportslabs.golfhelm`, `appName: Helm Sports Labs`,
+`webDir: public`. The iOS compile runs on CircleCI's M-series runners, not
+GitHub Actions.
+
+### `tools/` — 71M on disk, 4.1M tracked
+
+A Python-based agent toolkit (`overnight.py`, `deep_prompts.py`,
+`core/`, `baseballhelm-command-center/`) plus an untracked
+`HELM_INTELLIGENCE .zip`. Note the space in that filename. Most of the 71M
+is untracked; it is not repo weight.
+
+---
+
+## Part 3 — Session start
 
 Context is assembled in a fixed order and injected as a **user message**,
 not the system prompt. It is guidance the model reads, not a rule the
-runtime enforces. Enforcement is Part 3.
+runtime enforces. Enforcement is Part 4.
 
 1. `~/.claude/CLAUDE.md` — absent on this machine.
 2. `./CLAUDE.md`, with `@AGENTS.md` and
@@ -109,7 +240,7 @@ If yes it must stay always-on, whatever its length.
 
 ---
 
-## Part 3 — The hooks, all eleven
+## Part 4 — The hooks, all eleven
 
 | Event | Matcher | Hook |
 | --- | --- | --- |
@@ -195,7 +326,7 @@ rejected.
 
 ---
 
-## Part 4 — Git, mechanically
+## Part 5 — Git, mechanically
 
 ### A branch is a 41-byte file
 
@@ -274,7 +405,7 @@ gh pr list --state merged --limit 20 \
 
 ---
 
-## Part 5 — Edit to merged
+## Part 6 — Edit to merged
 
 1. **Edit** — three PreToolUse hooks vote; PostToolUse records the touch.
 2. **Verify** — `npm run preflight`, ten gates, all also run by CI.
@@ -296,7 +427,7 @@ CLI promote a human runs. Merging is not shipping.
 
 ---
 
-## Part 6 — CI: all 43 jobs, and which of them gate
+## Part 7 — CI: all 43 jobs, and which of them gate
 
 Two aggregates gate a merge, and each gates **only through its own
 `needs:` list**. A job in a workflow but not in `needs` runs, posts a
@@ -373,7 +504,7 @@ Canonical account: `.github/branch-protection.md`. Do not restate it.
 
 ---
 
-## Part 7 — Tests: three systems, not one
+## Part 8 — Tests: three systems, not one
 
 ### vitest — five projects
 
@@ -408,7 +539,7 @@ only. `npm run test:e2e` is not what CI runs on a PR.
 
 ---
 
-## Part 8 — Ratchets
+## Part 9 — Ratchets
 
 Nine baselines, each locking a per-rule count that may only go **down**.
 `--update` is legitimate only after the net decreases.
@@ -444,7 +575,7 @@ lines around every list and heading.
 
 ---
 
-## Part 9 — Worktrees in practice
+## Part 10 — Worktrees in practice
 
 Claude Code has **built-in** worktree support. `claude --worktree <name>`
 creates one under `.claude/worktrees/<name>/`, branched from the default
@@ -470,7 +601,139 @@ git worktree remove ~/worktrees/helmv3-task
 
 ---
 
-## Part 10 — Traps, ranked by cost
+## Part 11 — Supabase and Vercel: the tool rules
+
+These two get their own part because they are the only tools here that can
+touch production directly, and both are defended in **three** independent
+layers. Understanding which layer stops you matters, because they fail
+differently.
+
+### The three layers
+
+1. **`permissions.deny` in `.claude/settings.json`** — matches a literal
+   command **prefix**. Cheap, but prefix-matching is easy to dodge:
+   `vercel --cwd . deploy --prod` is a different prefix from
+   `vercel deploy --prod`.
+2. **`guard-bash.sh` / `guard-sql.sh`** — regex over the whole command, or
+   over the MCP payload. Catches reordered flags and alternate spellings.
+   **Not suspended by allow rules or by `bypassPermissions`.**
+3. **The Review Gate** — `ast-grep` and `semgrep` packs that block at
+   merge, after the fact.
+
+`settings.json` is version-controlled and therefore **branch-scoped**: a
+`git checkout` of an older branch silently removes those deny rules. The
+hooks do not move with the branch, which is why the important blocks are
+duplicated into `guard-bash.sh` rather than trusted to permissions alone.
+
+### Supabase — production is not a place you experiment
+
+**One project, ref `qmnssrrolpinvwjjnufo`, and it is a single SHARED
+database serving golf, baseball and lifting. There is no staging copy.**
+
+`guard-sql.sh` runs on **both** routes — file edits *and* MCP payloads —
+and blocks four shapes:
+
+- **`GRANT` to `anon` / `PUBLIC`** — `anon` is the UNAUTHENTICATED role.
+  Anyone holding the publishable key gets it. This exact shape has reached
+  this production database before.
+- **`SECURITY DEFINER` with no matching `REVOKE`** — a definer function
+  runs with its owner's rights.
+- **`DROP TABLE` / `TRUNCATE`** — additive migrations only.
+- **`DELETE FROM` with no `WHERE`.**
+
+Its normalizer is **quote-aware on purpose**. A naive comment-stripper
+turns `SELECT '--' as marker; DELETE FROM golf_players;` into `SELECT '`,
+and the unscoped DELETE vanishes before the check runs — turning a block
+into an allow.
+
+Denied at the permission layer as well: `supabase config push`,
+`db reset`, `db push`, `migration up`, each in four spellings (bare,
+`./node_modules/.bin/`, `npx`, and prefixed).
+
+Why each matters:
+
+- **`config push`** pushes the entire `config.toml`, including the dev
+  `site_url`. It would overwrite production's and break every auth email
+  link.
+- **`db push` / `migration up`** apply **every** pending migration and
+  cannot be aimed at one. `supabase/migrations/HELD.md` exists because
+  some are deliberately held; applying them all would run migrations that
+  file explicitly forbids.
+- **`db reset`** drops and recreates from migrations, against a project
+  linked to production.
+
+**MCP `apply_migration` and `execute_sql` hit production directly with
+`service_role`** — no file, no review, no RLS. Treat every call as a
+production write. That is why a hook matches those tool names and why the
+MCP warning is always-on rather than path-scoped: an MCP call opens no
+file, so a path-scoped warning would load after the damage.
+
+Standing rules that no hook enforces:
+
+- Use the **repo-local** CLI, `./node_modules/.bin/supabase`. Do not
+  assume a global binary.
+- Production MCP access stays **project-scoped and read-only**. Schema
+  changes belong in a reviewed migration.
+- **"Recorded" is not "applied."** The migrations directory and the live
+  catalog have disagreed. Verify against the catalog, not the file list.
+- New table means **RLS plus a policy in the same migration**. Enforced by
+  the Review Gate.
+- Recreating a view or matview **re-grants `anon`**. REVOKE after, then
+  verify.
+- For real Supabase work invoke the `supabase:supabase` skill (and
+  `supabase:supabase-postgres-best-practices` for query and schema
+  performance) rather than working from memory.
+- `db-migration-reviewer` review is **mandatory** for schema changes —
+  they are R3 under the engineering OS, meaning prepare only; the owner
+  executes.
+
+### Vercel — pushing is not deploying
+
+**`vercel.json` carries `"git": {"deploymentEnabled": {"*": false}}`.**
+No branch auto-deploys. Production is an on-demand CLI promote a human
+runs. Any doc claiming "production serves main" is stale.
+
+Denied at the permission layer in four spellings each: `vercel deploy
+--prod`, `vercel --prod`, `vercel promote`, `vercel rollback`,
+`vercel alias set`. `guard-bash.sh` blocks the same shapes by regex,
+explicitly as belt-and-braces — the comment in that file notes that a
+permission deny matches a literal prefix, so a reordered invocation would
+dodge it.
+
+All four mutate what production serves. `alias set` is included because
+domain routing is production state even though it deploys nothing.
+
+Practical rules that are not enforced by anything:
+
+- **One deploy per milestone.** Deploys cost real money; do not deploy to
+  preview a change. Use CI artefacts for visuals.
+- **`vercel deploy` needs `--archive=tgz`** — there is a 15,000-file
+  upload cap and this repo is over it.
+- **`.vercelignore` replaces the default ignore set**, it does not extend
+  it.
+- **Team-scoped and integration env vars do not appear in
+  `vercel env ls`.** Absence from that listing is not evidence a variable
+  is unset.
+- Use the **repo-local** CLI, `./node_modules/.bin/vercel`.
+
+### What runs in production without touching CI
+
+`vercel.json` declares **cron jobs**. They execute against production on
+Vercel's schedule, independent of anything in this repo's CI. A green
+pipeline says nothing about whether they are healthy — that is what the
+Bridge is for.
+
+### The rule underneath both
+
+Under the engineering OS these are **R3 — privileged**: migrations, RLS,
+auth, secrets, billing, destructive data, deploy permissions. An agent may
+investigate and prepare. **The owner executes.** Daily reliability work
+never deploys, promotes, or rolls back production, and a healthy day ends
+with zero production actions.
+
+---
+
+## Part 12 — Traps, ranked by cost
 
 1. `git branch --merged` never works here. Squash merge. Use PR state.
 2. A required check is matched by name, and a stale name never errors —
@@ -492,7 +755,7 @@ git worktree remove ~/worktrees/helmv3-task
 
 ---
 
-## Part 11 — What the audit found
+## Part 13 — What the audit found
 
 > Everything that resolved got trusted. Nothing checked what it resolved
 > **to**.
@@ -501,7 +764,7 @@ Five defects, found separately, turned out to be one defect in different
 clothes. Each passed the check that existed; none of those checks was
 asking the right question.
 
-## 11.1 A pointer that resolved to the wrong document
+## 13.1 A pointer that resolved to the wrong document
 
 `memory/registry.yml` pointed the `recruiting` feature's canonical
 `docs.feature` at a 1,399-line file containing **zero** occurrences of
@@ -517,7 +780,7 @@ doc does not describe it — wired into `knowledge:check`, which `ci.yml`
 already runs. Proven as a regression: restoring the old pointer exits 1
 naming `recruiting` with 0 hits.
 
-## 11.2 A ratchet that disagreed between two checkouts of one commit
+## 13.2 A ratchet that disagreed between two checkouts of one commit
 
 `markdown-lint-ratchet.mjs` walked `docs/` with `readdirSync`. That walk
 is not gitignore-aware, and `docs/redesign/` is wholly ignored while
@@ -527,7 +790,7 @@ One checkout linted 1,479 files; CI linted 1,458. The same script, same
 commit, gave two people numbers **1,850 apart**. Both measured honestly;
 each concluded the other's tree was broken.
 
-## 11.3 The rules file about verification was wrong about verification
+## 13.3 The rules file about verification was wrong about verification
 
 `quality-gates.md` claimed `test:rls` "points at an empty vitest project"
 and put coverage at "59 pgTAP suites". Both false — it runs the real
@@ -541,7 +804,7 @@ to locally-unrunnable-but-CI-covered.
 Fixed without writing new counts — a count in prose is what rotted in the
 first place. The bullet now ships the commands that derive them.
 
-## 11.4 A navigation doc committing the error three others warned of
+## 13.4 A navigation doc committing the error three others warned of
 
 The required-check NAME trap was documented in four files. One of them,
 `docs/REPO_MAP.md` — which agents read before writing code — had drifted
@@ -550,7 +813,7 @@ into naming the phantom check `Review Gate / all`.
 The fact now lives in `.github/branch-protection.md` alone. Restating is
 how a warning system acquires the bug it warns about.
 
-## 11.5 Tooling that misreports its own coverage
+## 13.5 Tooling that misreports its own coverage
 
 `npm run check:ledger` exits non-zero for anyone who runs it, because it
 needs `psql` output on stdin and the alias supplies none. From a terminal
@@ -562,11 +825,11 @@ Both now print what they are and how to invoke them, and
 
 ---
 
-## Part 12 — What this document's author got wrong
+## Part 14 — What this document's author got wrong
 
 Four retractions, kept rather than edited away.
 
-## 12.1 "Eleven orphan gates" was six, and two were actionable
+## 14.1 "Eleven orphan gates" was six, and two were actionable
 
 I grepped CI for `npm run <name>`. **CI mostly invokes scripts by path.**
 Every path-invoked gate read as an orphan — a fivefold inflation.
@@ -576,7 +839,7 @@ narrative on it. It is a fully blocking required check. Another session
 had told me hours earlier their PR went red on it, which is only possible
 if it gates PRs. I had the disproof and did not reconcile it.
 
-## 12.2 I wired a gate that cannot fail
+## 14.2 I wired a gate that cannot fail
 
 Fixing the above, I added `check:env` to CI. It early-returns unless
 `VERCEL_ENV` is set, which Actions never sets. Measured: without it, prints
@@ -590,7 +853,7 @@ the Vercel build, where the check means something.
 Caught by a second reader opening the script. This is the strongest
 evidence here that the defect class is systemic, not historical.
 
-## 12.3 "docs:check fails by design" — wrong
+## 14.3 "docs:check fails by design" — wrong
 
 After `docs:regen` runs, a non-empty diff means the **committed** AUTOGEN
 blocks do not match the generator. "Uncommitted regen output" and "stale
@@ -599,7 +862,7 @@ timing of the encounter as the defect. It also prints the true condition
 and the exact remedy, and it is the only check that catches a hand-edit
 inside an AUTOGEN block.
 
-## 12.4 Measuring a working tree and calling it the repo
+## 14.4 Measuring a working tree and calling it the repo
 
 I reported a skill directory as "56M of the 57M". That was the canonical
 checkout including untracked generated assets; a clean checkout has 1.7M
@@ -607,7 +870,7 @@ across 20 tracked files. Same error twice more: `docs/ui-audits` (39M on
 disk, 0.1M tracked) and `docs/redesign` (16M, 0 tracked) are not repo
 weight at all.
 
-## 12.5 The method lesson
+## 14.5 The method lesson
 
 Every retraction came from inferring a system property by **grepping for a
 caller** written in a syntax I was not searching:
@@ -628,7 +891,7 @@ the same message that contained its disproof.
 
 ---
 
-## Part 13 — Repo weight, measured
+## Part 15 — Repo weight, measured
 
 `git-sizer` names only the single largest object. Ranking every blob is
 more useful:
@@ -657,7 +920,7 @@ now gitignored; the existing blobs stay in history unless it is rewritten.
 **67M is 108 PNGs from one visual audit dated 2026-07-04** — 80% of all
 tracked image weight in the repo.
 
-## 13.1 Three stashes holding real work
+## 15.1 Three stashes holding real work
 
 `refs/stash` is repo-global, which is why `guard-bash.sh` blocks `git
 stash`. Three entries predated the guard: 10 files (+234/−437), 18 files
@@ -665,7 +928,7 @@ stash`. Three entries predated the guard: 10 files (+234/−437), 18 files
 `recovered/stash-0/1/2`; `refs/preserved/stash-*` already held identical
 copies. `refs/stash` was then cleared. Nothing dropped.
 
-## 13.2 Refs that block garbage collection
+## 15.2 Refs that block garbage collection
 
 Seventeen refs outside `heads`/`remotes`/`tags` keep old commits reachable
 so `gc` cannot reclaim them. Two were provably redundant and deleted.
@@ -679,7 +942,7 @@ gc after deletion is irreversible.
 
 ---
 
-## Part 14 — A live production bug, as illustration
+## Part 16 — A live production bug, as illustration
 
 Bridge fingerprint `af4c2c9d`: golf Messaging,
 `fetch-team-chat-conversations`, 5 occurrences, 4 users, 8/19 to 8/26.
@@ -710,7 +973,7 @@ The error is logged and the UI lies.
 
 ---
 
-## Part 15 — Numbers, and what they do not mean
+## Part 17 — Numbers, and what they do not mean
 
 | Measure | Before | After |
 | --- | --- | --- |
@@ -736,7 +999,7 @@ measure what anyone started *doing*.
 
 ---
 
-## Part 16 — Still open
+## Part 18 — Still open
 
 Decisions, not work:
 
