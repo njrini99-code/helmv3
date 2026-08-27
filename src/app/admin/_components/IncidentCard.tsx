@@ -256,8 +256,16 @@ export function IncidentCard({
           <span className="ml-auto flex shrink-0 items-center gap-1">
             <CopyReportButton variant="icon" report={item.report} label={`Copy incident report: ${item.title}`} />
             {!isApp ? (
-              <Button asChild variant="ghost" size="sm">
-                <a href={item.permalink ?? '#'} target="_blank" rel="noreferrer" aria-label="Open in Sentry">
+              {/* aria-label on the Button, not only on the inner <a>. With
+                  asChild the prop merges onto the anchor either way, so the
+                  rendered accessible name is identical — but
+                  scripts/__tests__/icon-only-button-aria-label.test.mjs reads
+                  the <Button> element statically and cannot follow the slot,
+                  so a label only on the child reads as an unlabelled
+                  icon-only button. Keeping it in both places would be the
+                  same string twice; the Button is the one that is checkable. */}
+              <Button asChild variant="ghost" size="sm" aria-label="Open in Sentry">
+                <a href={item.permalink ?? '#'} target="_blank" rel="noreferrer">
                   <ExternalLink size={13} aria-hidden />
                 </a>
               </Button>
