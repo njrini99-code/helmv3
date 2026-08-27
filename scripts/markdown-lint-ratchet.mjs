@@ -30,8 +30,8 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -48,45 +48,67 @@ const UPDATE = process.argv.includes('--update');
 /** @type {{ path: string; reason: string }[]} */
 const excluded = [];
 
+/**
+ * Every tracked .md path under `dir`, from git — not from the filesystem.
+ *
+ * WHY GIT AND NOT readdirSync (measured 2026-08-27)
+ *
+ * This gate judges COMMITTED repository content, so the universe of files it
+ * may inspect is the set git tracks. A filesystem walk inspects whatever
+ * happens to exist on this machine today, which made the gate depend on the
+ * checkout rather than on the commit:
+ *
+ *   canonical checkout   markdown:ratchet FAILS  (+393 over baseline)
+ *   fresh worktree       markdown:ratchet PASSES
+ *   tracked content      IDENTICAL in both
+ *
+ * The whole difference was 21 gitignored files under docs/redesign/ holding
+ * 1,850 violations. They are not in the repository; they were on one Mac.
+ *
+ * Scoped to tracked files, with those 21 excluded, the count came out 1,457
+ * BELOW the recorded baseline — so the walk had also been inflating the
+ * baseline itself.
+ *
+ * A gate whose result depends on untracked local files cannot be reproduced in
+ * CI, and a local red that CI does not see teaches people to ignore it.
+ */
 function markdownFilesUnder(dir) {
-  const abs = resolve(ROOT, dir);
-  let entries;
+  let out;
   try {
-    entries = readdirSync(abs, { withFileTypes: true });
+    out = execFileSync('git', ['ls-files', '-z', '--', `${dir}/*.md`], {
+      cwd: ROOT,
+      encoding: 'utf-8',
+      maxBuffer: 32 * 1024 * 1024,
+    })
+      .split('\0')
+      .filter(Boolean);
   } catch {
     return [];
   }
-  const out = [];
-  for (const e of entries) {
-    const rel = join(dir, e.name);
-    if (e.isDirectory()) {
-      if (e.name === 'archive' || e.name.startsWith('.full-review')) {
-        const count = countMarkdownFilesRecursive(resolve(ROOT, rel));
-        if (count > 0) excluded.push({ path: rel, reason: `${count} .md file${count !== 1 ? 's' : ''}, deliberately excluded directory` });
-        continue;
-      }
-      out.push(...markdownFilesUnder(rel));
-    } else if (e.isFile() && e.name.endsWith('.md')) {
-      out.push(rel);
-    }
-  }
-  return out;
-}
 
-/** Count-only walk, for reporting how big an excluded directory actually is. */
-function countMarkdownFilesRecursive(abs) {
-  let entries;
-  try {
-    entries = readdirSync(abs, { withFileTypes: true });
-  } catch {
-    return 0;
+  // Same two exclusions as before, applied to the tracked set. `archive` is
+  // historical evidence; `.full-review*` is generated audit output.
+  const kept = [];
+  const excludedCounts = new Map();
+  for (const rel of out) {
+    const seg = rel.split('/');
+    const hit = seg.findIndex(
+      (part, i) => i > 0 && (part === 'archive' || part.startsWith('.full-review')),
+    );
+    if (hit === -1) {
+      kept.push(rel);
+      continue;
+    }
+    const prefix = seg.slice(0, hit + 1).join('/');
+    excludedCounts.set(prefix, (excludedCounts.get(prefix) ?? 0) + 1);
   }
-  let n = 0;
-  for (const e of entries) {
-    if (e.isDirectory()) n += countMarkdownFilesRecursive(join(abs, e.name));
-    else if (e.isFile() && e.name.endsWith('.md')) n += 1;
+  for (const [prefix, count] of excludedCounts) {
+    excluded.push({
+      path: prefix,
+      reason: `${count} .md file${count !== 1 ? 's' : ''}, deliberately excluded directory`,
+    });
   }
-  return n;
+  return kept;
 }
 
 const files = markdownFilesUnder('docs');
