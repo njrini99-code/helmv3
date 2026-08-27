@@ -1592,6 +1592,73 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
  * appears first, resolving collisions deterministically without a second
  * override structure.
  */
+/**
+ * Legacy free-text `featureArea` values → their canonical FEATURE_REGISTRY key.
+ *
+ * WHY THIS EXISTS. `server-error-logger.ts` resolves the canonical column as
+ * `context.feature ?? context.featureArea ?? null`. `featureArea` is the OLDER
+ * free-text field kept for continuity of saved Sentry searches, so a call site
+ * that sets only `featureArea` has its free text PROMOTED into
+ * `admin_events.feature`, where a registry key belongs. It then looks canonical
+ * and is not: no tier, no hysteresis, no owner, and
+ * `resolveActionFilePath(feature, action)` returns null, so the Bridge's error
+ * detail renders a blank SOURCE FILE for an error whose file is perfectly well
+ * known. Measured 2026-08-27 against production: 811 of 2,443 events in 7 days
+ * carried one of the values below.
+ *
+ * Aliasing here fixes all 131 affected call sites at once. Retagging them
+ * individually would be 131 edits across 35 files, each an opportunity to pick
+ * a different key for the same concept — which is how the drift started.
+ *
+ * DELIBERATELY NOT EXHAUSTIVE. An unrecognised `featureArea` still passes
+ * through unchanged, so the Health board keeps flagging it as an unregistered
+ * tag. That warning is the intended way a genuinely-new feature surfaces
+ * (`integrations`, which owns the Inngest handler, is exactly that and needs a
+ * real registry entry — not an alias to something it is not). Silencing it here
+ * would trade a visible gap for an invisible one.
+ */
+export const FEATURE_AREA_ALIASES: Readonly<Record<string, FeatureKey>> = {
+  // src/app/golf/actions/golf.ts — savePartialRound/deleteShot/updateShot are
+  // already listed under round_tracking's own `actions` manifest above.
+  shot_tracking: 'round_tracking',
+  // src/app/golf/actions/stats.ts — cache invalidation for the stats surface.
+  stats_cache: 'stats_analytics',
+  // src/lib/coachhelm/v2/mining/** — pattern-miner and causal-engine are engine
+  // internals, not a separate product surface.
+  'coachhelm.mining': 'coachhelm_ai_engine',
+  // A FILE PATH that reached production as a feature tag (3 events, 3 errors,
+  // from generateWorstHolesInsights). Mapped rather than left to look like a
+  // feature name; the emitting call site should be corrected separately.
+  'coachhelm/v2/mining/course-management': 'coachhelm_ai_engine',
+  // 75 call sites across 26 files use the bare product name. The engine is the
+  // umbrella owner; some of these (insights.rateInsight, insights.rosterRead)
+  // arguably belong to insights_management, so this mapping is a deliberate
+  // approximation that is strictly better than unregistered — not a claim of
+  // per-action precision.
+  coachhelm: 'coachhelm_ai_engine',
+};
+
+/** Every canonical key, for membership tests. */
+export const FEATURE_KEYS: ReadonlySet<string> = new Set(
+  FEATURE_REGISTRY.map((f) => f.key),
+);
+
+/**
+ * The one place the canonical feature column is decided.
+ *
+ * Order matters: an explicit `feature` always wins, then a known alias, then a
+ * `featureArea` that happens to already BE a registry key, then the raw value
+ * (so a new tag stays visible as "unregistered" rather than vanishing).
+ */
+export function resolveFeatureKey(
+  feature: string | null | undefined,
+  featureArea: string | null | undefined,
+): string | null {
+  if (feature) return feature;
+  if (!featureArea) return null;
+  return FEATURE_AREA_ALIASES[featureArea] ?? featureArea;
+}
+
 export const TABLE_TO_FEATURE: Readonly<Record<string, FeatureKey>> = (() => {
   const map: Record<string, FeatureKey> = {};
   for (const def of FEATURE_REGISTRY) {

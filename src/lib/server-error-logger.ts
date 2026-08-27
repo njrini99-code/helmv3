@@ -31,6 +31,7 @@ import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { getRequestId } from '@/lib/admin/request-context';
 import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump } from '@/lib/utils/describe-error';
 import { redactSensitiveUrl } from '@/lib/security/redact-url';
+import { resolveFeatureKey } from '@/lib/admin/feature-registry';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -115,7 +116,7 @@ function normalizeContext(context: RoundErrorContext, traceMessage?: string): Re
     route: context.route ?? null,
     url: redactSensitiveUrl(context.url ?? null),
     featureArea: context.featureArea ?? null,
-    feature: context.feature ?? context.featureArea ?? null,
+    feature: resolveFeatureKey(context.feature, context.featureArea),
     source: context.source ?? 'server_action',
     statusCode: context.statusCode ?? null,
     requestId: context.requestId ?? null,
@@ -212,7 +213,7 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
   return {
     ...context,
     sport,
-    feature: context.feature ?? classified.feature ?? context.featureArea ?? null,
+    feature: context.feature ?? classified.feature ?? resolveFeatureKey(null, context.featureArea),
   };
 }
 
@@ -398,7 +399,7 @@ async function writeAdminTables(
     team_id: enriched.teamId ?? null,
     fingerprint: dbFingerprint,
     source: enriched.source ?? 'server_action',
-    feature: enriched.feature ?? enriched.featureArea ?? null,
+    feature: resolveFeatureKey(enriched.feature, enriched.featureArea),
   }, { onConflict: 'id' });
 
   const [errorLogResult, adminEventResult] = await Promise.allSettled([
@@ -463,7 +464,7 @@ function captureSentryTrace(
     scope.setTag('action', context.action);
     scope.setTag('error_source', context.source ?? 'server_action');
     scope.setTag('feature_area', context.featureArea ?? 'unknown');
-    scope.setTag('feature', context.feature ?? context.featureArea ?? 'unknown');
+    scope.setTag('feature', resolveFeatureKey(context.feature, context.featureArea) ?? 'unknown');
     if (context.sport) scope.setTag('sport', context.sport);
     scope.setTag('handled', String(context.handled ?? true));
     if (context.errorCode) scope.setTag('pg_error_code', context.errorCode);
