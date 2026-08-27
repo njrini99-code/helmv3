@@ -296,23 +296,24 @@ jobs:
             echo "No changed shell scripts for shellcheck."
           fi
 
-      # .claude/hooks/*.sh were covered by NOTHING. They are the load-bearing
-      # safety hooks — guard-bash.sh is what blocks force-push, destructive rm
-      # and unscoped SQL — and one of them has already shipped a silent bug
-      # (a BSD-sed incompatibility that made a rule match nothing while
-      # appearing to work). They are also short, stable and few, so unlike the
-      # rest of the repo they can be checked in FULL on every run rather than
-      # only when changed: a hook that stops working is not something to learn
-      # about from the diff that happened to touch it.
+      # .claude/hooks/*.sh were covered by NOTHING. They are few, short and
+      # stable, so unlike the rest of the repo they can be checked in FULL on
+      # every run rather than only when changed: a hook that stops working is
+      # not something to learn about from the diff that happened to touch it.
+      # One of them has already shipped a silent bug (a BSD-sed
+      # incompatibility that made a rule match nothing while appearing to
+      # work).
+      #
+      # This is a GLOB, deliberately. guard-bash.sh and guard-sql.sh were
+      # deleted 2026-08-27 after being unwired, and the step kept passing
+      # because it never named them.
       - name: Run shellcheck on the safety hooks (always, not just when changed)
         run: |
-          # SC2088 is excluded for this glob ONLY, and it is a false positive
-          # both times it fires. guard-bash.sh inspects the raw command STRING
-          # an agent proposed, in which `~` is still an unexpanded character,
-          # so it matches a LITERAL tilde on purpose and expands it by hand.
-          # Following SC2088 here would make `rm -rf ~` stop being blocked.
-          # Excluded from the CI invocation rather than annotated inline
-          # because .claude/hooks/ is deliberately not agent-writable.
+          # SC2088 is excluded for this glob ONLY. It was a false positive
+          # for guard-bash.sh, which inspected the raw command STRING an agent
+          # proposed (where `~` is still unexpanded) and so matched a literal
+          # tilde on purpose. That hook is gone; the exclusion is kept because
+          # a future hook inspecting command text would hit the same thing.
           shellcheck --severity=warning --exclude=SC2088 --color=always .claude/hooks/*.sh
 
   markdownlint:

@@ -50,6 +50,23 @@ mechanical, and these are the habits that keep it fixed.
   matches were build artifacts under `src/.helmdev/`. That swaps a visibly
   broken path for a confidently wrong one.
 
+### 1b. Agent settings ownership
+
+- **Helm project scope owns `autoMemoryEnabled`, and the value is `false`.**
+  `.claude/settings.json` is authoritative; do not set this key in user scope
+  for Helm work, and do not flip it per branch.
+- The reason is not that auto-memory is bad. It is that this repo already has
+  an explicit Git-backed memory architecture — `memory/registry.yml`,
+  `memory/features/**`, `memory/ledgers/**`, `memory/incidents/**`,
+  `memory/decisions/**` — which is visible, version-controlled, reviewable and
+  portable. A machine-local store that can disagree with committed state is a
+  second authority for engineering truth. One authority.
+- **`.claude/settings.json` is version-controlled, so a `git checkout` can
+  change agent behaviour.** That is a real hazard, not a hypothetical: on
+  2026-08-27 this key read `true` on one local branch and `false` on two
+  others. If you see agent behaviour change after switching branches, diff this
+  file first.
+
 ### 2. Git and commits
 
 - **Work on the currently checked-out branch; `main` is home.** Never switch
@@ -67,24 +84,32 @@ mechanical, and these are the habits that keep it fixed.
   `overnight/remediation-2026-08-18` was configured `merge = refs/heads/main`,
   so `git push` from it targeted `main`. Verify:
   `git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads`
-- **Worktrees go OUTSIDE the repo** (`../` or `~/worktrees/`), never
-  `.worktrees/` inside it. `.gitignore` hides an internal one from git but
-  `find`/`grep` still return it, so agents edit the copy nobody ships.
+- **Make worktrees with `scripts/new-worktree.sh <task>`.** It is the one
+  supported path: `~/worktrees/helmv3/<task>`, `--no-track`, isolated
+  dependencies. Never `.worktrees/` inside the repo — `.gitignore` hides an
+  internal one from git but `find`/`grep` still return it, so agents edit the
+  copy nobody ships.
 - **Prune worktrees by PR state, not `--merged`.** This repo squash-merges, so a
   merged branch never becomes an ancestor of `main` and `git branch --merged`
   never lists it.
-- **Blocked by `guard-bash.sh`, deliberately:** `git push --force` (the only
-  push shape still blocked — it is the sole guard on shared history),
-  `git stash` (`refs/stash` is repo-global and shared across every worktree, so
-  parallel agents steal each other's work), `git clean -f/-fd` (deletes
-  untracked work that exists nowhere else; `-n`/`--dry-run` is allowed).
+- **No hook blocks git commands any more.** `guard-bash.sh` was deleted
+  2026-08-27 after being unwired; it protected nothing while it sat there.
+  What remains, and is PROVEN to fire even under `bypassPermissions`, is
+  `permissions.deny` in `.claude/settings.json` — 29 prefix rules. Force push
+  and `git clean -fd` are no longer blocked locally; GitHub's own
+  `allow_force_pushes: false` still refuses the remote.
+- **`git stash` is not blocked.** Worth knowing anyway: `refs/stash` is
+  repo-global, so a stash pushed in one worktree is visible and poppable from
+  every other one. One task, one worktree, one mutating session is what
+  addresses that.
 - Commit messages: explain **why**, and state what you verified. If a claim
   rests on something you could not run, say so once.
 
 ### 3. Bash
 
 - **Never pipe a gate command.** `npm test | tail` exits with `tail`'s status,
-  not the test's — it manufactures a green result. Blocked by `guard-bash.sh`.
+  not the test's — it manufactures a green result. Nothing blocks this any
+  more; it is on you to notice.
   Capture to a file and check the exit code separately.
 - **Recursive `rm` must stay inside the project or `$TMPDIR`.** Blocked
   elsewhere: `~/.claude/settings.local.json` allows `Bash(rm:*)` globally and an
@@ -103,17 +128,42 @@ mechanical, and these are the habits that keep it fixed.
 
 - **Production is a single SHARED database serving live users.** Golf and
   baseball are both in it. There is no staging copy.
-- **MCP `apply_migration` / `execute_sql` hit production directly with
-  `service_role`** — no file, no review, no RLS. Treat every call as a
-  production write.
-- **Blocked by the guards:** `supabase config push` (pushes the whole
-  `config.toml`, including the dev `site_url` — would overwrite production's and
-  break every auth email link), `supabase db reset` (drops and recreates from
-  migrations), and destructive SQL through `psql` / `supabase db execute` /
-  `db query` (which bypass `guard-sql.sh`'s file route entirely).
-- `guard-sql.sh` blocks privilege escalation and destructive shapes on **both**
-  routes — `.sql` file edits *and* MCP payloads. `DELETE FROM x;` with no
-  `WHERE` is blocked.
+#### Two production paths, and they are not the same risk
+
+Do not collapse these. An earlier version of this section did, and overstated
+the MCP one.
+
+**Path 1 — the Supabase MCP server.** `.mcp.json` declares exactly one server,
+pointed at the production project and carrying `read_only=true`:
+
+```text
+https://mcp.supabase.com/mcp?project_ref=<prod>&read_only=true
+```
+
+- `execute_sql` — a write against production is *expected* to be rejected by
+  the read-only database role. That is the configuration's intent.
+- `apply_migration` — **behaviour under `read_only=true` is UNVERIFIED here.**
+  Do not assume it is available, and do not assume it is blocked. Verify before
+  relying on either, and record what you observed.
+
+Never edit `read_only=true` out of `.mcp.json` to make something work.
+
+**Path 2 — direct database credentials.** `psql`, `supabase db execute`,
+`supabase db query`, and anything else holding
+`SUPABASE_SERVICE_ROLE_KEY` / `HELM_PROD_POSTGRES_PASSWORD` /
+`HELM_PROD_DB_URL_DIRECT` from `.env.local`. These carry write capability and
+**nothing intercepts them** — `guard-sql.sh` was deleted 2026-08-27, and it had
+been unwired before that, so this describes what was already true rather than a
+new gap. `DELETE FROM x;` with no `WHERE` reaches production if you type it.
+
+This is the path that needs your attention. It is also why `.worktreeinclude`
+withholds the `.env.local` family from worktrees.
+
+**Blocked by `permissions.deny`**, proven to fire even under
+`bypassPermissions`: `supabase config push` (pushes the whole `config.toml`,
+including the dev `site_url` — would overwrite production's and break every
+auth email link), `supabase db reset` (drops and recreates from migrations),
+and `supabase db push` / `migration up`, each in four spellings.
 - **Never grant `anon` EXECUTE** on a `SECURITY DEFINER` function, and never
   `GRANT ALL`. Recreating a matview or view **re-grants `anon`** — REVOKE after,
   then verify.

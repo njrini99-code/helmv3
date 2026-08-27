@@ -7,10 +7,12 @@
 // Spec §8: "Do not dump the whole OS into SessionStart output."
 import { existsSync } from 'node:fs';
 import { sessionStatePath, appendEvent } from './lib/session-state.mjs';
+import { resolveActiveRoot } from './lib/workspace-identity.mjs';
 
 async function main() {
   const input = await readStdinJson();
-  const repoRoot = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
+  // ACTIVE worktree, not the original project dir. See workspace-identity.mjs.
+  const repoRoot = resolveActiveRoot(input);
   const sessionId = input.session_id || `unknown-${process.pid}`;
   const source = input.source || 'startup';
 
