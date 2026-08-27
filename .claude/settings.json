@@ -213,5 +213,5 @@
     "superpowers@claude-plugins-official": true,
     "vercel@claude-plugins-official": true
   },
-  "autoMemoryEnabled": false
+  "autoMemoryEnabled": true
 }
