@@ -32,6 +32,10 @@ import {
 
 const NOW = new Date('2026-07-02T12:00:00Z');
 
+/** Neutral-reason matchers for the integrations case below. */
+const SEASONAL_REASON_RE = /expected-empty/i;
+const NOT_REPORTING_RE = /not yet reporting/i;
+
 function iso(hoursAgo: number): string {
   return new Date(NOW.getTime() - hoursAgo * 3_600_000).toISOString();
 }
@@ -98,6 +102,34 @@ describe('computeFeatureStatus — neutral-first (§3.1)', () => {
     );
     expect(result.status).toBe('neutral');
     expect(result.reason).toMatch(/not yet reporting/i);
+  });
+
+  it("integrations with zero everything → NEUTRAL, never green (it must not claim Inngest is healthy)", () => {
+    // The registry entry's whole point. `integrations` is quiet by design
+    // between a Mon 14:00 UTC cron and a round-submitted event, and a quiet
+    // window has two readings the DB cannot separate: the signing key was
+    // fixed, or Inngest stopped calling us and durable jobs are dead silently.
+    // Green would assert the first. Neutral asserts neither, which is the only
+    // honest answer — so this asserts the RENDERED status, not registry shape.
+    const result = computeFeatureStatus(
+      baseInputs({
+        key: 'integrations',
+        tier: 'med',
+        seasonalEmpty: true,
+        neverNeutral: false,
+        events24h: {
+          total: 0, errors: 0, criticalUnresolved: 0, warnings: 0,
+          fingerprints: 0, rlsDenials: 0, rlsDenialFingerprints: 0, rlsDenialUsers: 0,
+        },
+        heartbeatLastActivity: null,
+      }),
+    );
+    expect(result.status).toBe('neutral');
+    expect(result.status).not.toBe('green');
+    // seasonalEmpty picks the reason: "expected-empty", NOT the false
+    // "instrumentation not yet reporting" — it reported 454 times.
+    expect(result.reason).toMatch(SEASONAL_REASON_RE);
+    expect(result.reason).not.toMatch(NOT_REPORTING_RE);
   });
 
   it('neverNeutral (admin_dashboard) with zero everything → green, not neutral', () => {

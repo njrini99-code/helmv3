@@ -10,7 +10,7 @@ import {
 } from '@/lib/admin/feature-registry';
 
 // The canonical key list per docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md
-// §1.1 (24) + §1.2 (13) + §1.3 (48) + §1.4 (1 excluded) = 86. Hard-coded here on purpose —
+// §1.1 (24) + §1.2 (14) + §1.3 (48) + §1.4 (1 excluded) = 87. Hard-coded here on purpose —
 // the doc is canonical, this list is the tripwire that catches drift between
 // the spec and the registry.
 const EXPECTED_KEYS: FeatureKey[] = [
@@ -53,6 +53,7 @@ const EXPECTED_KEYS: FeatureKey[] = [
   'my_development',
   'drills_practice_rx',
   'coachhelm_v3_goals',
+  'integrations',
   // §1.3 BaseballHelm (48)
   'baseball_academics',
   'baseball_announcements',
@@ -237,9 +238,9 @@ function scanExports(relPath: string): string[] {
 
 describe('FEATURE_REGISTRY completeness', () => {
   it('has exactly 86 entries with unique keys', () => {
-    expect(FEATURE_REGISTRY).toHaveLength(86);
+    expect(FEATURE_REGISTRY).toHaveLength(87);
     const keys = FEATURE_REGISTRY.map((f) => f.key);
-    expect(new Set(keys).size).toBe(86);
+    expect(new Set(keys).size).toBe(87);
   });
 
   it('matches the FEATURE_COVERAGE.md §1 canonical key list exactly', () => {
@@ -408,7 +409,7 @@ describe('FEATURE_REGISTRY completeness', () => {
 
   it('rpcInput() excludes the CRM row and carries heartbeat tables', () => {
     const input = rpcInput();
-    expect(input).toHaveLength(85);
+    expect(input).toHaveLength(86);
     expect(input.some((i) => i.key === 'crm_recruiting_pipeline')).toBe(false);
     const roundTracking = input.find((i) => i.key === 'round_tracking');
     expect(roundTracking?.heartbeat_table).toBe('golf_rounds');
