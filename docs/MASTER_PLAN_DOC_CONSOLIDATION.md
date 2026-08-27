@@ -132,9 +132,12 @@ are "historical evidence only. Never use them as the source of truth." They rema
 git history permanently; deleting them from the working tree loses nothing and removes
 1,195 files from every `find`, `grep`, and agent file search.
 
-- [ ] `git rm -r docs/archive archive`
-- [ ] Remove the `docs/archive` exclusion from `scripts/markdown-lint-ratchet.mjs`
-- [ ] Verify: `npm run docs:path-drift` (baseline 44 may only go DOWN)
+- [x] `git rm -r docs/archive archive` — 1,265 files, commit 42cc1a8fe
+- [~] SUPERSEDED. The exclusion is still in the script but is now INERT — the
+      directory it names no longer exists, so it matches nothing and no longer
+      appears in the ratchet's NOT COVERED report. Left as a harmless guard
+      against a future `archive/` rather than edited for tidiness.
+- [x] Verified — 44 -> 31.
 
 **Note:** this does *not* fix the red markdown ratchet — `docs/archive` is already
 excluded from its scope. The ratchet is Phase 5.
@@ -160,10 +163,16 @@ Two doc-rot findings while verifying this, both to fix in Phase 3:
   definitions" while `CLAUDE.md:128` calls that same file "the legacy prose rendering —
   prefer the command". Two lines of one file disagreeing about one document.
 
-- [ ] Delete `golfhelm-features.md`; run `node scripts/check-doc-schema-drift.mjs --update`
+- [x] DONE DIFFERENTLY — emptied to a tombstone rather than deleted, because 36
+      files still link to it and deleting would have created 36 dead paths.
+      Baseline ratcheted 59 -> 58. Commit 4a0891c3d.
       to ratchet the baseline DOWN (59 → expected ~40), never up
-- [ ] Triage the remaining four on `docs:schema-drift` / `docs:path-drift` evidence
-- [ ] Verify: `npm run docs:path-drift`, `npm run docs:schema-drift`, `npm run knowledge:globs`
+- [ ] STILL OPEN. `baseballhelm-database.md`, `baseballhelm-features.md`,
+      `baseballhelm-workflows.md`, `coachhelm-ai.md`. None is provably stale by
+      the drift gates today, so none met the deletion criterion. Baseball is
+      seed data nobody uses; this is low value and needs an owner steer on
+      whether baseball docs matter at all.
+- [x] Verified — all three PASS.
 
 ### Phase 3 — Constitution rewrite · `e7`
 
@@ -189,8 +198,11 @@ Apply the `/doctor` heuristic per line: **cut what Claude can derive from the co
 rationale, and conventions that differ from tool defaults.**
 
 - [x] Rewrite `AGENTS.md`, then `CLAUDE.md` — DONE 2026-08-27. CLAUDE.md 353 -> 64, AGENTS.md 212 -> 136.
-- [ ] Verify: `npm run docs:schema-drift` (baseline 59, may only go DOWN — a shorter
-      CLAUDE.md should *reduce* it), `npm run docs:path-drift`
+- [x] Verified. See below. (Original text kept for the reasoning.)
+  <!-- original item, kept for its reasoning:
+  ~~Verify: `npm run docs:schema-drift` (baseline 59, may only go DOWN — a shorter
+  CLAUDE.md should *reduce* it), `npm run docs:path-drift`
+  -->
 
 ### Phase 4 — Rules consolidation · `e7`
 
@@ -209,10 +221,16 @@ ones are well designed and mostly stay. The always-on three — `autonomy.md`,
       existing `database.md`. **The test, from c5: could this rule prevent a
       mistake made on a turn that opens no files?** If yes it cannot be
       path-scoped, whatever its line count.
-- [ ] Add the four rules missing from `CLAUDE.md`'s rules table (`golf-review`,
-      `coachhelm-review`, `baseball-review`, `database`) — or delete the table, since
-      Phase 3 removes it
-- [ ] Verify: `/context` shows the reduced load
+- [x] SUPERSEDED — Phase 3 deleted the rules table entirely. An index of files
+      that load themselves was a second place for the list to rot, and it was
+      already missing these four. Verified: 0 references remain in CLAUDE.md.
+  <!-- original item, kept for its reasoning:
+  ~~Add the four rules missing from `CLAUDE.md`'s rules table (`golf-review`,
+  `coachhelm-review`, `baseball-review`, `database`) — or delete the table, since
+  Phase 3 removes it
+  -->
+- [x] Verified by line count instead — 1,108 -> 659 always-on. `/context` is an
+      interactive display and cannot be asserted from a script.
 
 ### Phase 5 — Put local, CI, and the ratchets in sync · `e7`, one item needs `c5`
 
@@ -252,29 +270,55 @@ committed, and **nothing runs them** on a PR or locally:
 **The target: one list, three consumers.** Define the gate set once and have local, CI,
 and the ratchet baselines all read from it.
 
-- [ ] Decide per orphan: **promote** it into `ci.yml` + `preflight`, or **delete** the
-      script and its baseline file. No gate keeps a committed baseline without a runner.
-- [ ] Make `preflight` exactly the static subset of `ci.yml`, then fix its final
-      message to say what it actually ran. If it cannot be exact, it must say so.
+- [x] DONE — see 5i/5j. Decided per orphan; none deleted.
+  <!-- original item, kept for its reasoning:
+  ~~Decide per orphan: **promote** it into `ci.yml` + `preflight`, or **delete** the
+  script and its baseline file. No gate keeps a committed baseline without a runner.
+  -->
+- [x] DONE — all ten preflight gates are now reachable in CI, and its closing
+      line states what is true rather than being deleted. Commit aeff3e864.
+  <!-- original item, kept for its reasoning:
+  ~~Make `preflight` exactly the static subset of `ci.yml`, then fix its final
+  message to say what it actually ran. If it cannot be exact, it must say so.
   - **Do NOT fix the lie by removing `markdown:ratchet` from `preflight`.**
-    (`c5`, adopted.) Removing a check to make a sentence true is the wrong
-    direction. Either wire it into CI or change the sentence. As of Phase 1 the
-    ratchet is passing anyway, so wiring it in is now cheap.
-- [ ] Fix `check:ledger` or delete it — a red orphan is the worst of both.
-- [ ] Reconcile the 12 baseline files against the surviving gate list; delete the
-      orphaned ones (`.sqlfluff-baseline.json`, `.paginated-read-baseline.json`, etc.
-      only where their gate is being dropped).
-- [ ] Nothing to fix in the markdown violations — the count was an artefact.
+  (`c5`, adopted.) Removing a check to make a sentence true is the wrong
+  direction. Either wire it into CI or change the sentence. As of Phase 1 the
+  ratchet is passing anyway, so wiring it in is now cheap.
+  -->
+- [x] DONE, and the premise was wrong: it is not a red orphan, it is a pipeline
+      component whose npm alias supplies no input. Now prints usage, plus a TTY
+      guard so it errors instead of hanging. Commit e8767dc21.
+- [ ] STILL OPEN. 12 baseline files. Now that the orphan count is corrected to
+      one wired gate and no deletions, no baseline is known-orphaned — so this
+      is an audit, not a cleanup, and it has no known defect behind it.
+  <!-- original item, kept for its reasoning:
+  ~~Reconcile the 12 baseline files against the surviving gate list; delete the
+  orphaned ones (`.sqlfluff-baseline.json`, `.paginated-read-baseline.json`, etc.
+  only where their gate is being dropped).
+  -->
+- [x] Nothing to fix — the count was an artefact. See 5f.
       See 5f. The remaining work is wiring the gate into CI, or correcting
       `preflight`'s claim that CI already runs it.
-- [ ] `docs:diff-check` is `git diff --exit-code`, so it fails by design whenever regen
-      output is uncommitted — exactly while you are working. Split it out of
-      `docs:check` so `docs:check` reports correctness only.
-- [ ] **`tsconfig.json` (needs `c5` — `src`-adjacent):** `npm run build` re-injects
-      `.next/types/**/*.ts` and `.next/dev/types/**/*.ts` into `include`, which the
-      file's own comment records as deliberately removed because they break
-      `npm run typecheck` (measured: exit 2 with, exit 0 without) while matching zero
-      files in CI. Every local build silently dirties the repo and re-arms the trap.
+- [ ] STILL OPEN, and it needs `c5`: `docs:check` still chains `docs:diff-check`,
+      which is `git diff --exit-code` and therefore fails whenever regen output
+      is uncommitted — i.e. exactly while you are working. Splitting it is a
+      `package.json` edit, and that file is `c5`'s lane again after the Phase 5
+      handback. Not doing it unilaterally; that is how tonight started.
+  <!-- original item, kept for its reasoning:
+  ~~`docs:diff-check` is `git diff --exit-code`, so it fails by design whenever regen
+  output is uncommitted — exactly while you are working. Split it out of
+  `docs:check` so `docs:check` reports correctness only.
+  -->
+- [x] DONE BY `c5` — `scripts/strip-next-tsconfig-injection.mjs`, wired as
+      `postbuild`, commit 53126be33. Verified from this side: tsconfig came back
+      byte-identical after a build (stat-dirty only).
+  <!-- original item, kept for its reasoning:
+  ~~**`tsconfig.json` (needs `c5` — `src`-adjacent):** `npm run build` re-injects
+  `.next/types/**/*.ts` and `.next/dev/types/**/*.ts` into `include`, which the
+  file's own comment records as deliberately removed because they break
+  `npm run typecheck` (measured: exit 2 with, exit 0 without) while matching zero
+  files in CI. Every local build silently dirties the repo and re-arms the trap.
+  -->
 
 **5e. Known gate limitation, not a doc rule.** `docs:schema-drift` reads
 any `golf_*` or `baseball_*` token in a doc as a schema identifier. A
@@ -504,7 +548,9 @@ future consumer; the other three filter at their single consumer.
 nothing about the filter. That is the `check:env` lesson — a check that cannot
 fail proves nothing — applied to one's own verification method rather than to a
 gate, which is the harder place to apply it.
-- [ ] Wire the five passing gates into `ci.yml`
+- [x] SUPERSEDED by 5i/5j — it was never five. Four were already in CI (invoked
+      by script path, which my grep missed) and one could not fail in CI. ONE
+      gate wired: `lint:duplicate-exports`.
 - [x] DONE 2026-08-27. Neither was renamed — a rename breaks muscle memory and
       every doc reference, and the alias is not really the defect. The defect is
       that running one bare produced a bare parse error / ENOENT, which reads as
@@ -513,8 +559,13 @@ gate, which is the harder place to apply it.
       `git diff --name-only ... > changed-files.txt` command runs
       `knowledge:report` to exit 0, and `check:ledger`'s happy path still
       reconciles correctly from stdin.
-- [ ] Decide where the three credential-dependent checks belong — they are
-      operational readiness checks, not code gates, and may not belong on a PR
+- [ ] OWNER DECISION. `check:helm-bridge-env`, `db:ledger-drift`, `check:stats`
+      need real credentials and are operational-readiness checks, not code
+      gates. They may not belong on a PR at all.
+  <!-- original item, kept for its reasoning:
+  ~~Decide where the three credential-dependent checks belong — they are
+  operational readiness checks, not code gates, and may not belong on a PR
+  -->
 
 **5d. Required checks vs jobs.** 13 workflows define 43 jobs; `main` requires 6
 contexts. Every job that is not required and not informative is spend without a gate.
@@ -522,27 +573,56 @@ Audit the 43 against the 6 and cut or promote.
 
 ### Phase 6 — Config and disk bloat · `e7`
 
-- [ ] Delete duplicate AI-tool configs: `.agents/skills/supabase` and
-      `.agents/skills/supabase-postgres-best-practices` duplicate `.claude/skills/`.
-      Triage `.codex`, `.cursor`, `.devin`, `.ultracode`, `.design-sync` — keep only
-      what a tool actually in use reads.
-- [ ] Untracked junk at repo root: 5 `.png` screenshots, `.DS_Store`,
-      `CLAUDE-SECURITY-20260826-224016/` (260K), `.ruff_cache`, `.playwright-mcp`
-      (20M). Add to `.gitignore` and remove.
-- [ ] `.claude/skills/golfhelm-creative-engine` is **56M of the 57M** `.claude/`
-      total. Confirm the assets are needed in-repo; if they are reference imagery,
-      move them out.
-- [ ] Prune 17 stale local branches — **by PR state, not `git branch --merged`**
-      (this repo squash-merges, so merged branches never become ancestors of `main`).
-      Includes 4 `worktree-wf_509b1144-*` leftovers.
+- [ ] OWNER DECISION. `.agents/` is untracked here, so deleting it is a local
+      cleanup with no repo effect. The tracked question is whether `.codex`,
+      `.cursor`, `.devin` are still used by tools you actually run.
+  <!-- original item, kept for its reasoning:
+  ~~Delete duplicate AI-tool configs: `.agents/skills/supabase` and
+  `.agents/skills/supabase-postgres-best-practices` duplicate `.claude/skills/`.
+  Triage `.codex`, `.cursor`, `.devin`, `.ultracode`, `.design-sync` — keep only
+  what a tool actually in use reads.
+  -->
+- [x] PARTLY DONE — `.ruff_cache/` and `CLAUDE-SECURITY-*/` gitignored (8d7c482bd),
+      `feature-awareness-report/` and `changed-files.txt` gitignored (082f51213).
+      Everything else at root was already ignored; `git status` reports zero
+      untracked entries.
+  <!-- original item, kept for its reasoning:
+  ~~Untracked junk at repo root: 5 `.png` screenshots, `.DS_Store`,
+  `CLAUDE-SECURITY-20260826-224016/` (260K), `.ruff_cache`, `.playwright-mcp`
+  (20M). Add to `.gitignore` and remove.
+  -->
+- [x] MEASUREMENT CORRECTED — 56M was the CANONICAL CHECKOUT, including untracked
+      generated assets. In a clean checkout it is 1.7M across 20 tracked files.
+      Not repo bloat. My earlier figure overstated it by measuring a working
+      tree rather than the repo.
+  <!-- original item, kept for its reasoning:
+  ~~`.claude/skills/golfhelm-creative-engine` is **56M of the 57M** `.claude/`
+  total. Confirm the assets are needed in-repo; if they are reference imagery,
+  move them out.
+  -->
+- [ ] OWNER DECISION. Branch deletion is not recoverable from a worktree the way
+      a file is, and several belong to sessions that are not mine.
+  <!-- original item, kept for its reasoning:
+  ~~Prune 17 stale local branches — **by PR state, not `git branch --merged`**
+  (this repo squash-merges, so merged branches never become ancestors of `main`).
+  Includes 4 `worktree-wf_509b1144-*` leftovers.
+  -->
 
 ### Phase 7 — Reconcile with `c5` · both
 
-- [ ] c5 lands the Bridge on main
-- [ ] This branch rebases onto the new `main`
-- [ ] Joint verification: `npm run typecheck`, `npm run lint`, `npm test`,
-      `npm run build`, `npm run docs:check`, every ratchet
-- [ ] One PR per phase, not one giant PR
+- [x] DONE — #1633 squash-merged as a68844165, 45 CI checks green.
+- [x] DONE — rebased at 2af58d353, one conflict resolved deliberately.
+- [x] DONE except `npm test` and `npm run build`, which this worktree cannot run
+      meaningfully — it has no `node_modules` of its own and this branch touches
+      zero `src/**` runtime code. `c5` ran the full suite on merged main: 11,560
+      passed, build 0.
+  <!-- original item, kept for its reasoning:
+  ~~Joint verification: `npm run typecheck`, `npm run lint`, `npm test`,
+  `npm run build`, `npm run docs:check`, every ratchet
+  -->
+- [ ] OWNER DECISION — the branch is one line of 20 commits, each phase
+      independently revertable. Splitting into PRs now would be busywork; it is
+      landable as-is or splittable if you prefer per-phase review.
 
 ---
 
