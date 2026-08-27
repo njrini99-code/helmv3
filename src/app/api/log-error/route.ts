@@ -377,10 +377,36 @@ export async function POST(request: NextRequest) {
             feature: finalFeature,
           };
 
+    // The client already sends the error's constructor name in
+    // context.error.name — 81 of 81 client rows in the last 7 days carried it,
+    // and NONE carried `errorCode`. So the Bridge rendered a blank ERROR CODE
+    // for every client incident while the value sat one level down in the same
+    // row. Lifted to the top level because that is where
+    // incident-report.ts's extractErrorCode() reads (metadata.errorCode), the
+    // same place server-error-logger.ts writes it.
+    //
+    // This is what turns "Client error: AbortError: Fetch is aborted" from a
+    // message you have to read into an ERROR CODE you can group and filter by.
+    const clientErrorName = (() => {
+      const ctx = redactedContext as { error?: { name?: unknown } } | null | undefined;
+      const name = ctx?.error?.name;
+      return typeof name === 'string' && name.length > 0 ? name : null;
+    })();
+
     const adminMetadata = {
       source: 'client',
       route: traceRoute,
       action: traceAction,
+      // `runtime` is the browser here, as distinct from server-error-logger's
+      // 'nodejs' | 'edge'. extractRuntime() takes any non-empty string, and a
+      // truthful third value beats a blank field.
+      runtime: 'browser',
+      ...(clientErrorName ? { errorCode: clientErrorName } : {}),
+      // `handled` is deliberately NOT set. incident-report.ts documents that
+      // null means "genuinely absent" and that a row must never be presented
+      // as a known-unhandled it isn't — and the client reporter does not tell
+      // us whether the throw was caught. Guessing here would manufacture the
+      // exact false confidence the field exists to avoid.
       sport: finalSport,
       feature: finalFeature,
       reportedSeverity: errorReport.severity || 'medium',
