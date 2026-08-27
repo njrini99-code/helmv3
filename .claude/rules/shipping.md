@@ -96,6 +96,15 @@ mechanical, and these are the habits that keep it fixed.
   not found" and every wrapped call reads as a failure. This produced a bogus
   "21 of 21 tests failing" result on 2026-08-20. Use `gtimeout` (coreutils) or
   no wrapper.
+- **A `.ts`/`.tsx` logged as `Bin N -> M bytes` in a commit stat is a
+  smell, not a formatting quirk.** git found a NUL byte and treated the
+  source as binary, so the diff never rendered and the code was never
+  actually reviewed. The CSV safe-cell helper under the csv lib carried a
+  literal NUL and a 0x1f inside a regex character class exactly that way
+  (fixed on the bridge branch, 2026-08-27); `file` reported
+  it as "data", and it took `no-control-regex` on a later lint run to
+  surface it — on a branch that had never been gated. Check with
+  `file <path>`: it should say "Unicode text", never "data". (2026-08-27.)
 - **`ls` is aliased to `eza` here.** Scripted `ls` with flags it doesn't share
   errors out. Use `/bin/ls` in scripts.
 

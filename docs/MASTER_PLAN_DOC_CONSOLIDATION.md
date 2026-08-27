@@ -265,6 +265,16 @@ and the ratchet baselines all read from it.
       `npm run typecheck` (measured: exit 2 with, exit 0 without) while matching zero
       files in CI. Every local build silently dirties the repo and re-arms the trap.
 
+**5e. Known gate limitation, not a doc rule.** `docs:schema-drift` reads
+any `golf_*` or `baseball_*` token in a doc as a schema identifier. A
+foreign-key constraint name is a real identifier but not a table, view,
+function or enum, so naming one registers as documented-but-nonexistent
+drift. A doc that correctly names its constraints therefore *fails* the
+gate. Tonight's workaround was to omit them — but that trains people to
+write vaguer docs, which is the opposite of the point. Teach the checker
+about constraint names rather than teaching authors to avoid them.
+(Raised by `c5`, 2026-08-27.)
+
 **5d. Required checks vs jobs.** 13 workflows define 43 jobs; `main` requires 6
 contexts. Every job that is not required and not informative is spend without a gate.
 Audit the 43 against the 6 and cut or promote.

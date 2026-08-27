@@ -9,3 +9,8 @@ execFileSync(process.execPath, ['scripts/knowledge/check-doc-coverage.mjs', ...a
 execFileSync(process.execPath, ['scripts/knowledge/stale-doc-check.mjs', ...args], {
   stdio: 'inherit',
 });
+// Does each canonical doc actually DESCRIBE its feature? check-doc-coverage
+// only proves the pointer resolves; this proves what it resolves to is right.
+execFileSync(process.execPath, ['scripts/knowledge/check-doc-relevance.mjs', ...args], {
+  stdio: 'inherit',
+});
