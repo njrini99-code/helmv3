@@ -4,7 +4,7 @@
 
 - SHA: recorded on merge of `feat/bridge-shot-tracing`.
 - **APPLIED TO PRODUCTION 2026-08-27 (owner-instructed):**
-  `supabase/migrations/20260827031100_admin_error_resolutions.sql`. Verified on
+  `supabase/migrations/20260827031754_admin_error_resolutions.sql`. Verified on
   the local Docker stack FIRST (per standing instruction), then applied and
   re-verified against production: 13 columns, RLS enabled, 1 policy, 4
   functions, `anon` cannot SELECT, `anon`/`authenticated` cannot EXECUTE the
@@ -547,7 +547,7 @@
 ## 2026-08-26 — migration reformatted to satisfy sqlfluff, proven inert
 
 - SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
-- Change: `20260827031100_admin_error_resolutions.sql` reformatted (LT01/
+- Change: `20260827031754_admin_error_resolutions.sql` reformatted (LT01/
   LT02/LT05 only). No statement, identifier, grant, or policy changed.
 - Why: it added 69 violations against a ratchet whose counts may only go
   DOWN. The file is ALREADY APPLIED to production, so "cosmetic" had to be
@@ -588,3 +588,24 @@
 - A failed resolutions read SKIPS regression detection and says so
   (`regressionSkippedReason`) rather than reporting a clean zero it never
   established.
+
+## 2026-08-27 — migration file renamed to match the version production recorded
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `20260827031100_admin_error_resolutions.sql` →
+  `20260827031754_admin_error_resolutions.sql`. Content untouched.
+- Why: production stamped the applied migration `20260827031754` — same name,
+  ~11 minutes later than the local filename. Verified against
+  `supabase_migrations.schema_migrations`: version `20260827031100` returns
+  ZERO rows; `20260827031754 / admin_error_resolutions` is present and is the
+  newest row in the ledger. A local file with no ledger row counts as
+  `unaccounted_local` in `scripts/db/migration-ledger-drift.mjs`, whose
+  baseline of 38 may only go DOWN — so this would have gone red on `main`
+  AFTER merge, reading as an unapplied migration when it is applied and merely
+  stamped differently. Caught by the security-scan session before it landed.
+- Note for anyone auditing later: `schema_migrations.statements` retains the
+  SQL production actually executed, and the on-disk file has since been
+  reformatted for sqlfluff. Those texts therefore differ. Nothing in the repo
+  compares them today; the reformat was proven inert structurally (two fresh
+  scratch databases, full catalog fingerprint, diff exit 0) rather than by
+  text equality.
