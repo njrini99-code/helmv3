@@ -113,7 +113,10 @@ describe('FeatureDotGrid', () => {
     await user.click(screen.getByRole('button', { name: /CoachHelm Engine/i }));
     const card = screen.getByLabelText('CoachHelm Engine detail');
     expect(within(card).getByText(/timeout on fan-out/i)).toBeInTheDocument();
-    expect(within(card).getByText(/4×/)).toBeInTheDocument();
+    // The count is a bare right-aligned number now, so a column of them
+    // scans vertically; the unit travels as its accessible name. Same
+    // contract as the triage queue — these cards share ./Row.
+    expect(within(card).getByLabelText('4 occurrences')).toBeInTheDocument();
     // ONE line per fingerprint, not N rows.
     expect(within(card).getAllByText(/timeout on fan-out/i)).toHaveLength(1);
   });
