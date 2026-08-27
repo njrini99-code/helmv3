@@ -56,12 +56,27 @@ Pick one of these before dispatching, never neither:
   git worktree remove <path>           # when merged
   ```
 
-  Do not hand-roll `git worktree add`. The raw command creates the branch FROM
-  its base, which sets that branch's upstream TO the base — so a bare
-  `git push` from a task branch targets `main`. That was live on a
-  consolidation branch carrying 23 commits. The script passes
-  `--no-track`, installs dependencies per worktree instead of symlinking them,
-  and puts the tree outside the repo.
+  Use it because it guarantees five things at once: an external managed
+  location, the `agent/<task>` branch name, `--no-track`, an isolated
+  dependency install, and a known base.
+
+  The proven failure mode is narrower than "raw git is dangerous". It is
+  specifically **creating a task branch from a REMOTE-TRACKING ref (such as
+  `origin/main`) without disabling tracking**. Git's `autoSetupMerge` default
+  then configures the new branch to track that ref:
+
+  ```text
+  agent/foo -> origin/main
+  ```
+
+  and a later bare `git push` from `agent/foo` targets **main**. That was live
+  on a consolidation branch carrying 23 commits that existed nowhere else.
+  Branching from a local ref does not produce this, and `--no-track` prevents
+  it in either case. Check with:
+
+  ```bash
+  git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads
+  ```
 
 **A worktree goes OUTSIDE the repo — never `.worktrees/` inside it.**
 `.gitignore` line 5 hides `.worktrees/` from git, and that is exactly the trap:

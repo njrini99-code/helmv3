@@ -50,6 +50,23 @@ mechanical, and these are the habits that keep it fixed.
   matches were build artifacts under `src/.helmdev/`. That swaps a visibly
   broken path for a confidently wrong one.
 
+### 1b. Agent settings ownership
+
+- **Helm project scope owns `autoMemoryEnabled`, and the value is `false`.**
+  `.claude/settings.json` is authoritative; do not set this key in user scope
+  for Helm work, and do not flip it per branch.
+- The reason is not that auto-memory is bad. It is that this repo already has
+  an explicit Git-backed memory architecture — `memory/registry.yml`,
+  `memory/features/**`, `memory/ledgers/**`, `memory/incidents/**`,
+  `memory/decisions/**` — which is visible, version-controlled, reviewable and
+  portable. A machine-local store that can disagree with committed state is a
+  second authority for engineering truth. One authority.
+- **`.claude/settings.json` is version-controlled, so a `git checkout` can
+  change agent behaviour.** That is a real hazard, not a hypothetical: on
+  2026-08-27 this key read `true` on one local branch and `false` on two
+  others. If you see agent behaviour change after switching branches, diff this
+  file first.
+
 ### 2. Git and commits
 
 - **Work on the currently checked-out branch; `main` is home.** Never switch
@@ -111,20 +128,42 @@ mechanical, and these are the habits that keep it fixed.
 
 - **Production is a single SHARED database serving live users.** Golf and
   baseball are both in it. There is no staging copy.
-- **MCP `apply_migration` / `execute_sql` hit production directly with
-  `service_role`** — no file, no review, no RLS. Treat every call as a
-  production write.
-- **Blocked by `permissions.deny`**, which is proven to fire even under
-  `bypassPermissions`: `supabase config push` (pushes the whole `config.toml`,
-  including the dev `site_url` — would overwrite production's and break every
-  auth email link), `supabase db reset` (drops and recreates from migrations),
-  and `supabase db push` / `migration up`, each in four spellings.
-- **NOT blocked by anything, since `guard-sql.sh` was deleted 2026-08-27:**
-  destructive SQL through `psql` / `supabase db execute` / `db query`, and MCP
-  `apply_migration` / `execute_sql` payloads. That hook had been unwired for
-  some time before deletion, so this is a statement of what was already true,
-  not a new gap — but it IS a gap. `DELETE FROM x;` with no `WHERE` reaches
-  production if you type it.
+#### Two production paths, and they are not the same risk
+
+Do not collapse these. An earlier version of this section did, and overstated
+the MCP one.
+
+**Path 1 — the Supabase MCP server.** `.mcp.json` declares exactly one server,
+pointed at the production project and carrying `read_only=true`:
+
+```text
+https://mcp.supabase.com/mcp?project_ref=<prod>&read_only=true
+```
+
+- `execute_sql` — a write against production is *expected* to be rejected by
+  the read-only database role. That is the configuration's intent.
+- `apply_migration` — **behaviour under `read_only=true` is UNVERIFIED here.**
+  Do not assume it is available, and do not assume it is blocked. Verify before
+  relying on either, and record what you observed.
+
+Never edit `read_only=true` out of `.mcp.json` to make something work.
+
+**Path 2 — direct database credentials.** `psql`, `supabase db execute`,
+`supabase db query`, and anything else holding
+`SUPABASE_SERVICE_ROLE_KEY` / `HELM_PROD_POSTGRES_PASSWORD` /
+`HELM_PROD_DB_URL_DIRECT` from `.env.local`. These carry write capability and
+**nothing intercepts them** — `guard-sql.sh` was deleted 2026-08-27, and it had
+been unwired before that, so this describes what was already true rather than a
+new gap. `DELETE FROM x;` with no `WHERE` reaches production if you type it.
+
+This is the path that needs your attention. It is also why `.worktreeinclude`
+withholds the `.env.local` family from worktrees.
+
+**Blocked by `permissions.deny`**, proven to fire even under
+`bypassPermissions`: `supabase config push` (pushes the whole `config.toml`,
+including the dev `site_url` — would overwrite production's and break every
+auth email link), `supabase db reset` (drops and recreates from migrations),
+and `supabase db push` / `migration up`, each in four spellings.
 - **Never grant `anon` EXECUTE** on a `SECURITY DEFINER` function, and never
   `GRANT ALL`. Recreating a matview or view **re-grants `anon`** — REVOKE after,
   then verify.
