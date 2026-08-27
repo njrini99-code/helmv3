@@ -72,10 +72,30 @@ Verified 2026-08-20. Do not treat these as coverage:
   promoted into vitest (so CI proves the guard *works*), but no workflow ever
   *invokes* the guard. We verify the smoke detector and never install it.
 - **`db:drift:check` and `orphans:mounts`** exist as scripts with no CI caller.
-- **`test:rls` points at an empty vitest project** — the `rls` project matches
-  **0** files. Real RLS coverage is **59 pgTAP suites** under
-  `supabase/tests/rls/*.sql`, run by the "Supabase lint + RLS tests" job. Do not
-  read `npm run test:rls` passing as RLS being tested.
+- **`npm run test:rls` runs the real pgTAP suites** — it is
+  `bash scripts/test-pgtap.sh`, which assembles every contract under
+  `supabase/tests/rls/` against a local Postgres, using the same pattern CI's
+  "Supabase lint + RLS tests" job uses. It needs the local stack up
+  (`127.0.0.1:54322`); a connection refusal means Docker is down, not that RLS
+  is untested.
+
+  Corrected 2026-08-27. This bullet previously said `test:rls` "points at an
+  empty vitest project" and put RLS coverage at "59 pgTAP suites". Both were
+  stale: the script was repointed at pgTAP, and the suite count had moved. It
+  is worth noticing WHERE that lie lived — a rules file about the verification
+  machinery, so it misled exactly the person trying to check whether RLS was
+  covered, and told them not to trust a command that works.
+
+  The vitest `rls` project does still select zero files; that part was true. It
+  no longer implies anything about `test:rls`.
+
+  Counts are deliberately not restated here, per `shipping.md`'s rot rule.
+  Derive them:
+
+  ```bash
+  ls supabase/tests/rls/*.sql | wc -l          # suites (incl. _helpers.sql)
+  grep -ohE 'plan\([0-9]+\)' supabase/tests/rls/*.sql | grep -oE '[0-9]+' | paste -sd+ - | bc
+  ```
 - **19 of 51 files under `scripts/__tests__/` run nowhere.** Nothing references
   `node --test` — not one npm script, not one workflow — so an unpromoted file
   never executes and its guard is decorative. 32 are promoted explicitly in
@@ -92,7 +112,7 @@ Verified 2026-08-20. Do not treat these as coverage:
 | Layer | Runner | Where | CI |
 |---|---|---|---|
 | Unit / unit-dom / integration / business / contract | vitest projects | `src/**/*.test.{ts,tsx}` + 32 named `scripts/**` files | `test:run`, `test:integration` |
-| RLS | **pgTAP**, not vitest | `supabase/tests/rls/*.sql` (59) | "Supabase lint + RLS tests" |
+| RLS | **pgTAP**, not vitest | `supabase/tests/rls/*.sql` | `test:rls` locally; "Supabase lint + RLS tests" in CI |
 | E2E | Playwright | `e2e/**` | `smoke` on PRs; full suite on push to `main` only |
 
 - `npm test` runs **unit + unit-dom only** — the fast inner loop, not coverage.

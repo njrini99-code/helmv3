@@ -309,14 +309,21 @@ export default defineConfig({
         test: {
           ...sharedTestConfig,
           name: 'rls',
-          // Selects ZERO files today — no `src/**/*.rls.test.*` exists, and
-          // `npm run test:rls` consequently does nothing. That is not a gap:
-          // RLS is tested for real by the pgTAP suites in
-          // supabase/tests/rls/*.sql, which run against a fresh Postgres in
-          // CI's "Supabase lint + RLS tests" job and currently carry 93
-          // assertions. Kept as a defined project so the naming convention
-          // stays available, but do not read a green `test:rls` as evidence
-          // of anything.
+          // Selects ZERO files today — no `src/**/*.rls.test.*` exists. Kept
+          // as a defined project so the naming convention stays available.
+          //
+          // Corrected 2026-08-27: this comment used to add that "`npm run
+          // test:rls` consequently does nothing" and to put pgTAP coverage at
+          // "93 assertions". Both are wrong now. `test:rls` is
+          // `bash scripts/test-pgtap.sh` and runs the real suites under
+          // supabase/tests/rls/ against a local Postgres; the assertion count
+          // is off by more than an order of magnitude. The same stale claim
+          // was living in .claude/rules/quality-gates.md, which is how a
+          // wrong fact about the verification machinery reached the person
+          // trying to verify something.
+          //
+          // A green vitest `rls` project still proves nothing — but that is a
+          // statement about THIS project, not about `npm run test:rls`.
           include: ['src/**/*.rls.test.{ts,tsx}'],
           exclude: ['node_modules', '.next'],
           testTimeout: 30_000,
