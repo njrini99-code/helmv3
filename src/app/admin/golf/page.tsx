@@ -290,8 +290,11 @@ async function GolfBody() {
           )}
         </div>
         <p className="mt-2 text-xs text-warm-500">
-          Errors 7d comes from <span className="font-fw-mono">admin_events.team_id</span> — 0s are expected
-          until every emitter tags a team, not a broken feed.
+          Errors 7d counts an incident for a team when{' '}
+          <span className="font-fw-mono">admin_events.team_id</span> matches <em>or</em> the event&rsquo;s{' '}
+          <span className="font-fw-mono">user_id</span> is on that team&rsquo;s active roster or coaching
+          staff. A 0 here is a real 0. Someone on two teams credits the same incident to both — there is no
+          field saying which team they were acting for, and picking one would under-report the other.
         </p>
       </Surface>
 
