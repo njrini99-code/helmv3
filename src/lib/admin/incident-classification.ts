@@ -65,6 +65,19 @@ export interface IncidentClassification {
    * being deleted — nothing is ever hidden irrecoverably.
    */
   actionable: boolean;
+  /**
+   * Did a CONTENT rule recognise this, or did it fall through to the severity
+   * ladder at the bottom?
+   *
+   * The distinction only matters in one direction, and it matters a lot there.
+   * `false` with `actionable: false` means "we did not recognise this, and it
+   * happened to be logged at info" — which is an argument from silence, not a
+   * verdict. Any automatic path that CLOSES things must require `true`;
+   * otherwise a row nobody understood gets archived because whoever wrote the
+   * log line picked a quiet severity. Measured 2026-08-27: 4 of 13 rows the
+   * triage engine offered to close were in exactly this state.
+   */
+  matched: boolean;
   /** Which rule fired, in operator-readable words. Surfaced in the UI. */
   reason: string;
   /**
@@ -215,11 +228,17 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
 
   const hasDegradedMessage = matchesAny(haystack, DEGRADED_MESSAGE_MARKERS) !== null;
 
-  const done = (klass: IncidentClass, actionable: boolean, reason: string): IncidentClassification => ({
+  const done = (
+    klass: IncidentClass,
+    actionable: boolean,
+    reason: string,
+    matched = true,
+  ): IncidentClassification => ({
     klass,
     actionable,
     reason,
     hasDegradedMessage,
+    matched,
   });
 
   // 1. Integrity checks that PASSED. Most specific rule, runs first — these
@@ -319,12 +338,12 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
   //    critically an unmatched error/critical defaults to a VISIBLE defect —
   //    a new unanticipated failure must never be silently filtered away.
   if (severity === 'critical' || severity === 'error') {
-    return done('defect', true, 'Unexpected failure (severity-derived)');
+    return done('defect', true, 'Unexpected failure (severity-derived)', false);
   }
   if (severity === 'warning') {
-    return done('degradation', true, 'Warning-level degradation (severity-derived)');
+    return done('degradation', true, 'Warning-level degradation (severity-derived)', false);
   }
-  return done('telemetry', false, 'Informational (severity-derived)');
+  return done('telemetry', false, 'Informational (severity-derived)', false);
 }
 
 /** Human label for a class — used by chips, the detail page, and the report. */

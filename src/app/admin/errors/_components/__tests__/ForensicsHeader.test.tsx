@@ -5,7 +5,14 @@ import type { FingerprintForensics } from '@/lib/admin/data/errors';
 
 const baseForensics: FingerprintForensics = {
   severity: 'error',
-  classification: { klass: 'defect', actionable: true, reason: 'Unexpected failure (severity-derived)', hasDegradedMessage: false },
+  classification: {
+    klass: 'defect',
+    actionable: true,
+    reason: 'Unexpected failure (severity-derived)',
+    hasDegradedMessage: false,
+    // Severity-derived means no content rule matched.
+    matched: false,
+  },
   errorCode: null,
   errorHint: null,
   requestId: null,

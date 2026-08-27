@@ -373,7 +373,8 @@ function renderPlan(plan: TriagePlan): string {
   out.push('');
   out.push(
     `${c.candidates} candidates → ${c.groups} causes (${c.collapsed} collapsed)` +
-      ` · ${c.needsAnalysis} need analysis · ${c.notADefect} closeable · ${c.analysed} already analysed` +
+      ` · ${c.needsAnalysis} need analysis · ${c.notADefect} closeable` +
+      ` · ${c.quietUnrecognised} quiet/unrecognised · ${c.analysed} already analysed` +
       ` · ${c.corroborated} corroborated`,
   );
 
@@ -391,6 +392,15 @@ function renderPlan(plan: TriagePlan): string {
   out.push(`CLOSEABLE (${plan.closeable.length}) — non-actionable by their own content`);
   out.push(BAR);
   plan.closeable.forEach((g, i) => out.push(renderGroup(g, i)));
+
+  out.push('');
+  out.push(BAR);
+  out.push(
+    `QUIET, UNRECOGNISED (${plan.quiet.length}) — logged at info, matched by no rule.`,
+  );
+  out.push('  Reported, never auto-closed: "nothing recognised it" is not a verdict.');
+  out.push(BAR);
+  plan.quiet.forEach((g, i) => out.push(renderGroup(g, i)));
 
   const analysed = plan.groups.filter((g) => g.verdict === 'analysed');
   out.push('');

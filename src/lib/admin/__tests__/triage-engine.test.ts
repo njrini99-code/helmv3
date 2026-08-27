@@ -158,6 +158,49 @@ describe('verdicts', () => {
   });
 });
 
+describe('quiet but unrecognised — the bucket that must never be auto-closed', () => {
+  it('does NOT put a severity-fallback info row in closeable', () => {
+    // `[v3.llm.budget.platform_default] server trace` — a real row from the
+    // 2026-08-27 run. No content rule matched it; it is non-actionable purely
+    // because whoever wrote the log line chose `info`. Closing on that is
+    // closing on silence.
+    const result = plan([
+      candidate({
+        title: '[v3.llm.budget.platform_default] server trace',
+        message: '[v3.llm.budget.platform_default] server trace',
+        severity: 'info',
+      }),
+    ]);
+    expect(result.closeable).toHaveLength(0);
+    expect(result.quiet).toHaveLength(1);
+    expect(result.counts.quietUnrecognised).toBe(1);
+    expect(result.quiet[0]!.reason).toMatch(/never auto-closed/i);
+  });
+
+  it('DOES put a content-matched non-actionable row in closeable', () => {
+    // An empty state the classifier actually recognises. This is a verdict,
+    // not an absence of one, so it is safe to close.
+    const result = plan([
+      candidate({
+        title: '[getPlayerProfile] No completed rounds found for this player',
+        message: 'No completed rounds found for this player',
+        severity: 'info',
+      }),
+    ]);
+    expect(result.closeable).toHaveLength(1);
+    expect(result.quiet).toHaveLength(0);
+  });
+
+  it('keeps an unmatched ERROR actionable — the fallback must stay loud upward', () => {
+    // The severity ladder defaults an unrecognised error to a VISIBLE defect.
+    // Adding `matched` must not have quietly changed that direction.
+    const result = plan([
+      candidate({ message: 'Some brand new failure nobody has seen', severity: 'error' }),
+    ]);
+    expect(result.queue).toHaveLength(1);
+  });
+});
+
 describe('source health', () => {
   it('reports a blind source and marks the plan incomplete', () => {
     const result = plan([candidate()], [

@@ -90,7 +90,12 @@ export type TriageVerdict =
    *  check. Closeable here. */
   | 'not-a-defect'
   /** Actionable, unexplained. This is the queue. */
-  | 'needs-analysis';
+  | 'needs-analysis'
+  /**
+   * Non-actionable ONLY because it was logged quietly and nothing recognised
+   * it. Reported, never auto-closed — see `decide()`.
+   */
+  | 'quiet-unrecognised';
 
 export interface TriageGroup {
   /** Deterministic id for the cause, from `buildIncidentSignature`. */
@@ -121,8 +126,12 @@ export interface TriagePlan {
   /** Groups that need a reader, worst first. The only list anyone acts on. */
   queue: TriageGroup[];
   /** Groups the engine can close now, with the classifier's reason as the
-   *  evidence. Never includes anything it merely failed to understand. */
+   *  evidence. Never includes anything it merely failed to understand — that
+   *  is what `quiet` is for. */
   closeable: TriageGroup[];
+  /** Non-actionable only by severity, recognised by nothing. Reported so it is
+   *  visible, excluded from every write path so it cannot be archived unread. */
+  quiet: TriageGroup[];
   sourceHealth: SourceHealth[];
   /** Sources that could not be read. Non-empty means this plan is INCOMPLETE
    *  and must be reported as such — a source that failed to read is unknown,
@@ -136,6 +145,7 @@ export interface TriagePlan {
     needsAnalysis: number;
     corroborated: number;
     collapsed: number;
+    quietUnrecognised: number;
   };
 }
 
@@ -220,9 +230,29 @@ function decide(members: readonly TriageCandidate[]): {
     };
   }
 
+  // Non-actionable, but HOW it got there decides whether anything may close
+  // it. A content rule recognising the row ("expected access control", "empty
+  // state", "routine telemetry") is a verdict. Falling through every rule and
+  // landing on the severity ladder is not — it means nothing recognised this,
+  // and it happened to be logged at info. Closing on that is closing on
+  // silence, with the added twist that the "silence" is a severity whoever
+  // wrote the log line chose.
+  //
+  // Measured 2026-08-27: 4 of the 13 rows this engine offered to close were
+  // severity-fallback only — `[v3.llm.budget.platform_default] server trace`,
+  // an admin-digest send confirmation, and two others that no rule matched.
+  const first = classifications[0];
+  if (first && !first.matched) {
+    return {
+      verdict: 'quiet-unrecognised',
+      reason: `${first.reason} — no rule recognised this, so it is reported but never auto-closed`,
+      category: null,
+    };
+  }
+
   return {
     verdict: 'not-a-defect',
-    reason: classifications[0]?.reason ?? 'Classified non-actionable from row content',
+    reason: first?.reason ?? 'Classified non-actionable from row content',
     category: null,
   };
 }
@@ -309,6 +339,7 @@ export function buildTriagePlan(input: {
     groups,
     queue: groups.filter((g) => g.verdict === 'needs-analysis'),
     closeable: groups.filter((g) => g.verdict === 'not-a-defect'),
+    quiet: groups.filter((g) => g.verdict === 'quiet-unrecognised'),
     sourceHealth: [...sourceHealth],
     blindSources,
     counts: {
@@ -322,6 +353,7 @@ export function buildTriagePlan(input: {
       // large the board was showing one fault as many, which is the specific
       // thing that made it unreadable.
       collapsed: candidates.length - groups.length,
+      quietUnrecognised: groups.filter((g) => g.verdict === 'quiet-unrecognised').length,
     },
   };
 }
