@@ -35,145 +35,69 @@ Generated/live/code truth outranks prose.
 Production monitoring and production deployment are separate workflows.
 A daily reliability run MUST NOT deploy production.
 
-## Mobile UI rules
+## Mobile and UI
 
-- **Canonical design sources, in authority order:** `src/styles/design-tokens.css`
-  (the `--fw-*` tokens) → `src/components/fairway/**` (the shipped components) →
-  `.claude/rules/design-system.md` (the binding invariant). Tokens beat prose,
-  always. Read these before styling anything under `src/app/golf/(dashboard)/`.
-- The `modern-saas-ui` skill is **craft guidance only** — useful for hierarchy,
-  density, motion and empty-state judgement. It does **not** encode this repo's
-  tokens: it carries zero references to the canonical sources and ~31 uses of
-  the glass / `bg-white` / `gray-*` vocabulary that `design-system.md` declares
-  RETIRED. Consult it for *how a screen should feel*; take the actual classes
-  from the tokens and the Fairway components.
-  (Corrected 2026-08-19: this line previously claimed the skill "encodes the
-  Fairway tokens and component idioms this repo has actually shipped." It does
-  not, and that claim pointed the constitution at a skill the rules contradict.)
-- For technical layout bugs (overlays, jitter, breakpoint failures, z-index) use
-  `ui-stability-debugger-v2` instead; it targets defects rather than aesthetics.
-  (An earlier version of this line pointed at a `mobile-app-consistency-system`
-  skill that does not exist anywhere — not in `.claude/skills/`,
-  `~/.claude/skills/`, or any plugin cache — which made every rule below it
-  unreachable. Verify a skill resolves before citing it here.)
-- All mobile screens must use the shared app shell with consistent safe-area handling, page padding, section spacing, and bottom-nav clearance.
-- All mobile headers must use either a Standard header or an Action header pattern.
-- Standard header: leading nav control, title, optional subtitle or meta, and at most one visible trailing action.
-- Action header: leading nav control, title, and one primary CTA on the right.
-- Do not stack multiple utility rows in the header unless there is no viable alternative.
-- Bottom nav is reserved for primary everyday destinations only.
-- Side drawer is reserved for secondary, team, admin, or account destinations.
-- Avoid duplicating major destinations across bottom nav and drawer.
-- Reuse shared button, chip, tab, card, metric, and empty-state components whenever possible.
-- Do not introduce one-off spacing, radius, icon sizes, or control heights.
-- Each screen should expose one clear primary action, a small number of secondary actions, and move lower-priority actions into overflow or a bottom sheet.
-- Prefer calmer, denser, more scannable mobile layouts over decorative or oversized sections.
-- Reduce top-of-screen chrome so users reach content earlier.
-- Empty states should stay compact: icon, short title, one sentence, one CTA.
-- Every changed mobile screen should feel visually and behaviorally consistent with the rest of the app.
+**Canonical sources, in authority order:** `src/styles/design-tokens.css` (the
+`--fw-*` tokens) → the shipped `src/components/fairway/**` components →
+`.claude/rules/design-system.md`, which is the binding invariant and loads
+automatically on any `.tsx`/`.css`. Tokens beat prose.
 
-## Automated review
+The shell, header patterns, bottom-nav-vs-drawer split, spacing scale and
+empty-state rules that used to be listed here now live in that rule, where they
+load only when you touch UI rather than on every session.
 
-There are **no AI reviewers on PRs.** The external review bots were dropped
-2026-07-20 by founder decision — their quota had become the slowest step in
-shipping, and the Review Gate + CodeQL cover the same hard rules
-deterministically. Do not wait for a review comment that is never coming, and
-do not treat its absence as a check still pending.
+Two skill notes that are not in the rule and are easy to get wrong:
 
-What that leaves:
+- `modern-saas-ui` is **craft guidance only** — hierarchy, density, motion,
+  empty-state judgement. It does not encode this repo's tokens: zero references
+  to the canonical sources, and ~31 uses of the glass / `bg-white` / `gray-*`
+  vocabulary that `design-system.md` declares RETIRED. Take *feel* from it and
+  *classes* from the tokens.
+- For layout defects — overlays, jitter, breakpoints, z-index — use
+  `ui-stability-debugger-v2`. It targets bugs, not aesthetics.
 
-- `.coderabbit.yaml` is a **disable stub** (`auto_review.enabled: false`),
-  not live path-instruction config.
-- The custom rule packs under `.coderabbit/ast-grep/` and
-  `.coderabbit/semgrep/helmv3.yml` **remain and are load-bearing** — CI
-  consumes them directly from `review-gate.yml`. Treat that directory name
-  as historical; they are CI assets now, not CodeRabbit assets.
+## Review and CI
 
-`.claude/rules/code-review-tooling.md` is the authority here; keep the two
-in step.
+**There are no AI reviewers on PRs.** The external bots were dropped 2026-07-20
+by founder decision — their quota was the slowest step in shipping and the
+Review Gate plus CodeQL cover the same hard rules deterministically. Do not wait
+for a review comment that is never coming, and do not read its absence as a
+check still pending.
 
-CI runs across two platforms:
+- `.coderabbit.yaml` is a **disable stub**, not live config.
+- The rule packs under `.coderabbit/ast-grep/` and `.coderabbit/semgrep/`
+  **remain load-bearing** — `review-gate.yml` consumes them directly. Treat the
+  directory name as historical; they are CI assets now.
+- `.gitleaks.toml` carries this project's own secret patterns.
 
-- **GitHub Actions** (`.github/workflows/ci.yml`, `review-gate.yml`)
-  — every-PR fast path (typecheck, lint, vitest, build, RLS tests,
-  Review Gate static analyzers).
-- **CircleCI** (`.circleci/config.yml`, see `.circleci/README.md`)
-  — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk)
-  scheduled Mondays 06:00 UTC, plus iOS Capacitor compile on
-  M-series macOS runners (push to `main`, `release/*`, `ios/*`,
-  `capacitor/*`).
+**Two platforms.** GitHub Actions owns the per-PR fast path (`ci.yml`,
+`review-gate.yml`): typecheck, lint, vitest, build, RLS, static analysers.
+CircleCI (`.circleci/config.yml`) owns the weekly heavy jobs — Knip, Stryker,
+sqlfluff, npm audit, Squawk — and the iOS Capacitor compile on M-series runners.
 
-Pre-merge gate blocks (must be `error`-clean before merge):
-- Service-role key in a client bundle
-- New table without RLS + policy in the same migration
-- Server action without `supabase.auth.getUser()` before any DB call
-- Bare table names without `golf_` / `baseball_` prefix
-- DELETE-then-INSERT in any save/submit/sync write path
+**Blocking hard rules** (must be `error`-clean to merge): service-role key in a
+client bundle · new table without RLS + policy in the same migration · server
+action without `supabase.auth.getUser()` before any DB call · bare table name
+without a sport prefix · DELETE-then-INSERT in a save/submit/sync path.
 
-Static analyzers enabled: ESLint, Biome, oxc, ast-grep, ruff, pylint,
-swiftlint, shellcheck, yamllint, actionlint, markdownlint, languagetool,
-hadolint, checkov, gitleaks, semgrep, sqlfluff.
+**A red or stuck check:** `docs/CI_RUNBOOK.md` classifies every check as
+hard-gate vs advisory, with rerun commands. Read it before treating a red as a
+merge blocker — several are advisory.
 
-## Cursor Cloud specific instructions
+**Required-check names are a trap, and the failure mode is silence.** The
+canonical account is `.github/branch-protection.md` — read it there. In short: a
+required context is matched by NAME, the aggregate jobs were renamed, and the
+CodeQL matrix *renders* its three `Analyze (...)` names, so a stale required list
+makes every PR permanently unsatisfiable with no error saying why. That fact was
+duplicated in four files as of 2026-08-27; it now lives in one, and everything
+else points here.
 
-The startup script only runs `npm install`. Everything below is baked into
-the VM snapshot (Docker, Supabase CLI, Caddy, a trusted local CA, the
-`/etc/hosts` entry, and a gitignored `.env.local`) but the **services are not
-running after a fresh boot** — only disk state persists. Start them in order.
+## Cursor Cloud
 
-### Backend model (important, non-obvious)
+Setup for that environment — Docker, the local Supabase stack, and the Caddy TLS
+proxy the CSP requires — is in `docs/setup/CURSOR_CLOUD.md`. It moved out of this
+file on 2026-08-27 because it loaded into every session in every environment.
 
-The app needs Supabase. The CSP in `next.config.mjs` (`connect-src`) only
-allows `https://*.supabase.co` — the browser therefore **cannot** talk to a
-plain `http://127.0.0.1:54321` local stack. To run fully local without editing
-app code, a **Caddy TLS reverse proxy** fronts the local `supabase start` stack
-under the hostname `https://helmlocaldev.supabase.co` (mapped to `127.0.0.1` in
-`/etc/hosts`; Caddy's internal CA is already trusted in the system store and in
-Chrome's NSS DB at `~/.pki/nssdb`). `.env.local` points
-`NEXT_PUBLIC_SUPABASE_URL` at that proxied hostname.
-Alternative: point `.env.local` at a real remote Supabase project
-(`https://*.supabase.co`), which satisfies the CSP natively — then Docker/Caddy
-are unnecessary.
-
-### Start the local stack (fresh VM)
-
-1. Docker daemon (systemd is not running here):
-   `sudo dockerd &` — wait until `docker info` succeeds. The daemon is
-   configured for `fuse-overlayfs` + iptables-legacy (required in this VM).
-2. Local Supabase (from repo root): `npx supabase start` — applies all
-   `supabase/migrations/` + `supabase/seed/v3-seed.sql`. Exposes API 54321,
-   DB 54322, Studio 54323, Mailpit 54324. Reset with `npx supabase db reset`.
-3. Caddy TLS proxy: `caddy run --config /home/ubuntu/dev-proxy/Caddyfile &`
-   (proxies `https://helmlocaldev.supabase.co` → `127.0.0.1:54321`).
-4. Dev server, with the CA so server-side/middleware Supabase calls are trusted:
-   `NODE_EXTRA_CA_CERTS=/home/ubuntu/.local/share/caddy/pki/authorities/local/root.crt npm run dev`
-   → http://localhost:3000
-
-### Auth / using the app
-
-- Signup access-code gate has **no committed default** — `SIGNUP_ACCESS_CODE`
-  must be set (locally and in Vercel) or shared-code signup is disabled and
-  only a coach's team join_code will get someone through the gate.
-- Local auth email confirmation is **disabled**, so signup logs you in
-  immediately. The seed does NOT create `auth.users` — sign up via the app
-  (coach = 3-step onboarding → `/golf/dashboard`; creates `golf_coaches` +
-  `golf_teams` rows).
-
-### Chrome + local HTTPS (only if launching Chrome manually)
-
-Chrome must run with `HOME=/home/ubuntu` (so it reads the trusted CA from
-`~/.pki/nssdb`) AND a **non-default** `--user-data-dir` (Chrome refuses
-`--remote-debugging-port` on the default profile dir). After adding/refreshing
-a CA, Chrome must be restarted to pick it up.
-
-### Tests
-
-`npm run lint` (fast) and `npm test` (unit; ~7 min, 818 files) need no backend.
-`npm run test:rls` / `npm run test:integration` require the local Supabase
-stack running (steps 1–2 above). See `README.md` / `CLAUDE.md` "Commands" for
-the full list.
-
-<!-- HELM_AGENT_CANONICALITY_START -->
 ## Helm agent canonicality
 
 The canonical working repository is `/Users/ricknini/Downloads/helmv3`.

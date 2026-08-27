@@ -101,7 +101,7 @@ Don't treat a check as "stuck" before its normal window has passed:
   (This bullet said "only `main` builds automatically" until 2026-08-15 —
   five weeks after that stopped being true.)
 - **CodeRabbit / the external review bot** — gone. Dropped 2026-07-20 by founder decision;
-  see `.claude/rules/code-review-tooling.md`. There is no AI review on a PR,
+  see AGENTS.md > "Review and CI". There is no AI review on a PR,
   so their absence is never a pending check. The Review Gate + CodeQL cover
   the same hard rules deterministically.
 - **PR smoke** (`pr-smoke.yml`) — `Smoke checks` build ~15 min; optional
@@ -197,7 +197,7 @@ See also:
 
 - [`docs/operations/COST_CONTROLS.md`](operations/COST_CONTROLS.md) — Vercel
   preview policy, PR vs main Playwright, manual full E2E, spend alerts
-- [`.claude/rules/code-review-tooling.md`](../.claude/rules/code-review-tooling.md)
+- [`AGENTS.md`](../AGENTS.md) > "Review and CI" (absorbed `.claude/rules/code-review-tooling.md`, 2026-08-27)
   — the authority on what reviews this repo actually runs
 - [`.github/branch-protection.md`](../.github/branch-protection.md) — required
   checks enforcement policy

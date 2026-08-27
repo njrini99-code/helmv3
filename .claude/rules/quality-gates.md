@@ -147,13 +147,12 @@ Verified 2026-08-20. Do not treat these as coverage:
   build, RLS, knowledge + doc gates) and `review-gate.yml` (static analyzers).
 - **CircleCI** — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk)
   Mondays 06:00 UTC, plus iOS Capacitor compile.
-- **6 required checks on `main`**, verified live 2026-08-20 and all resolving to
-  real job names: `Smoke checks`, `CI aggregate`, `Review Gate aggregate`,
-  `Analyze (actions)`, `Analyze (javascript-typescript)`, `Analyze (python)`.
-  The last three render from the CodeQL matrix — **a matrix job's status name is
-  the rendered `name:`, so changing the matrix silently renames the required
-  check.** That produced two phantom required checks and made every PR
-  unsatisfiable until 2026-08-19.
+- **Required checks on `main` are matched by NAME, and a stale name fails
+  silently.** Canonical account, including the live list and how the CodeQL
+  matrix renders its own check names: `.github/branch-protection.md`. Not
+  restated here — this fact was living in four files as of 2026-08-27, and a
+  fact with four homes is a fact with four chances to rot. The `test:rls` lie
+  two sections down had two homes and rotted in both.
 - **`docs:check` is local-only** and its `docs:diff-check` half only compares the
   generator to itself. The two that catch real problems —
   `docs:schema-drift` and `docs:path-drift` — run in CI on every PR.

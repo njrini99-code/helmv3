@@ -188,7 +188,7 @@ Apply the `/doctor` heuristic per line: **cut what Claude can derive from the co
 (directory layouts, dependency lists, architecture overviews); keep pitfalls,
 rationale, and conventions that differ from tool defaults.**
 
-- [ ] Rewrite `AGENTS.md`, then `CLAUDE.md`
+- [x] Rewrite `AGENTS.md`, then `CLAUDE.md` — DONE 2026-08-27. CLAUDE.md 353 -> 64, AGENTS.md 212 -> 136.
 - [ ] Verify: `npm run docs:schema-drift` (baseline 59, may only go DOWN — a shorter
       CLAUDE.md should *reduce* it), `npm run docs:path-drift`
 
@@ -198,8 +198,7 @@ rationale, and conventions that differ from tool defaults.**
 ones are well designed and mostly stay. The always-on three — `autonomy.md`,
 `shipping.md`, `code-review-tooling.md` — are the ones charging every session.
 
-- [ ] Fold `code-review-tooling.md` (57 lines) into `AGENTS.md`'s automated-review
-      section; it is already half-duplicated there
+- [x] Fold `code-review-tooling.md` into `AGENTS.md` — DONE 2026-08-27, file retired
 - [ ] Give `shipping.md` and `autonomy.md` `paths:` frontmatter where their content is
       genuinely path-specific; keep only the truly universal traps always-on
 - [ ] Add the four rules missing from `CLAUDE.md`'s rules table (`golf-review`,
