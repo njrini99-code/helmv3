@@ -34,6 +34,11 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'refresh-engagement', path: '/api/cron/refresh-engagement', cadenceMinutes: 4 * 60 },
   { jobType: 'ingest-gmail-replies', path: '/api/cron/ingest-gmail-replies', cadenceMinutes: 30 },
   { jobType: 'helm-debug-prune', path: '/api/cron/helm-debug-prune', cadenceMinutes: DAILY },
+  // vercel.json schedules this "0 */3 * * *" — every 3 hours, hence 180. Read
+  // the refresh-engagement note above before touching either half: the cadence
+  // and the cron string are two encodings of one fact, and they have already
+  // drifted apart once at exactly this spot.
+  { jobType: 'reliability-triage', path: '/api/cron/reliability-triage', cadenceMinutes: 3 * 60 },
 ] as const;
 
 export type CronBoardStatus = 'ok' | 'overdue' | 'never-ran' | 'failed';

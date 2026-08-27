@@ -2,6 +2,7 @@ type AdminHref =
   | '/admin'
   | '/admin/activity'
   | '/admin/errors'
+  | '/admin/reliability'
   | '/admin/auth'
   | '/admin/golf'
   | '/admin/baseball'
@@ -36,6 +37,10 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Errors', href: '/admin/errors', key: '3', section: 'Triage', description: 'Sentry plus app incident groups', meta: 'trace' },
   { label: 'Health', href: '/admin/health', key: '0', section: 'Triage', description: 'Feature health across every app', meta: 'map' },
   { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Triage', description: 'Crons, guards, integrity checks' },
+  // The 3-hourly collector's correlated view. Distinct from Errors: that tab
+  // shows each source's incidents, this one shows what MORE THAN ONE source
+  // agrees on, plus which sources were readable at all.
+  { label: 'Reliability', href: '/admin/reliability', key: 'R', section: 'Triage', description: 'Correlated Vercel, Sentry and Supabase signals', meta: '3h' },
   // Was reachable ONLY from a text-xs back-arrow three levels deep, despite
   // being the one cross-sport board built to answer "who needs attention" —
   // 30-day activity/error EKG with four triage sorts.

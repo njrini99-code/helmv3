@@ -1,5 +1,79 @@
 # Admin Platform test ledger
 
+## 2026-08-26 — reliability tab view helpers + cron wiring contracts
+
+- SHA: recorded on merge of `feat/reliability-collector`.
+- New: `src/app/admin/reliability/__tests__/reliability-view.test.ts` (19 tests)
+  covering the pure view layer, split out of `page.tsx` for the same reason
+  `tracer-shared.ts` was.
+- Guarantees now covered:
+  - **An evidence reference is only rendered as a link when it resolves to one.**
+    Sentry permalinks become external links labelled by issue id; an 8-char
+    fingerprint becomes `/admin/errors/<fp>`; a Vercel deployment id and a
+    pre-fingerprint `row:<uuid>` stay opaque rather than linking to a 404. A
+    `javascript:` or `data:` value is never rendered as an external link.
+  - **The history sparkline skips unreadable runs rather than plotting zero.** A
+    zero means "looked, found nothing"; an unreadable payload means we do not
+    know, and plotting it as zero would draw a reassuring dip that never
+    happened.
+  - **`readingCount` never counts a blind arm**, so "sources reading" cannot
+    overstate coverage.
+  - Severity grouping is worst-first with empty buckets omitted; `relativeAge`
+    returns an em-dash for a future or unparseable timestamp rather than a
+    negative age.
+  - **The two job types stay distinct** and only the cron one is in
+    `CRON_REGISTRY` — if they collided the Bridge would read back the
+    scalars-only cron row and render every run as unreadable.
+  - **The self-emission title is derived from the shared constant**, so a rename
+    moves the exclusion filter and the test together.
+- Pre-existing contracts this change had to satisfy, all now passing:
+  `cron-job-log-coverage` (every registered cron calls `recordJobRun` — this
+  one initially did not), `cron-registry` cadence-vs-vercel.json, `admin-nav`
+  order and keyboard map.
+- Verified with the FULL unit suite (`npm test`), not a scoped run: 1215 files,
+  11,243 passed, 6 skipped, 0 failures. The scoped run is what let the
+  `recordJobRun` violation reach CI in the first place.
+
+## 2026-08-26 — reliability collector: degradation and the self-feeding read
+
+- SHA: recorded on merge of `feat/reliability-collector`.
+- New: `src/lib/reliability/__tests__/normalize.test.ts` and
+  `src/lib/reliability/__tests__/sources.test.ts` — 31 tests, plus the two
+  existing contract tests this change had to satisfy
+  (`cron-registry.test.ts`, `admin-nav.test.ts`).
+- Guarantees now covered:
+  - **A blind source can never present as a clean run.** `worstStatus` degrades
+    blind > partial > ok, and one test asserts that a healthy-empty arm and a
+    blind-empty arm — both carrying zero signals — stay distinguishable. This
+    is the OS contract's `error→[]` prohibition in executable form.
+  - **The self-feeding read stays closed.** `collectSupabase` must exclude
+    `event_type='rca_analysis'` and any row naming its own job type. Verified
+    red/green: deleting the two `.not()` filters turns the suite red (1 failed
+    / 10 passed); restoring them turns it green. The guard is load-bearing, not
+    decorative.
+  - **Cross-source folding.** One root cause seen by Sentry and Supabase with
+    different round ids in the route collapses to a single signal with summed
+    count, both sources listed, and both evidence refs retained.
+  - **Folding survives sources disagreeing about severity** — Sentry `error` +
+    Supabase `warning` for one root cause must be ONE entry with the worse
+    severity kept. The first draft's version of this test passed two rows of the
+    same severity and therefore could not fail; the replacement was verified
+    red/green against the severity-bearing key (22 pass → 1 fail).
+    Two neighbouring ratchet tests also gained `toHaveLength(1)` assertions:
+    without them they passed under the broken implementation, because splitting
+    a pair into two entries left `critical` first in the sort order and reading
+    only `signals[0].severity` found it either way.
+  - **Bounded coverage is counted, never silent** (quality-gates §1).
+  - **Redaction at the boundary.** Emails in a title or message do not survive
+    into stored signal text.
+  - **Privileged work is never proposed as low risk.** Anything naming auth,
+    RLS, billing, migrations, secrets or sessions proposes R3 — including when
+    the keyword appears only in the title and the route looks innocuous.
+- Not covered, deliberately: nothing asserts the collector's behaviour against
+  live Sentry or Vercel, because neither token is available to CI. The arms are
+  tested through mocked clients, so the first production run is the first real
+  exercise of the network paths.
+
 ## 2026-08-26 — error_rate_hourly → admin_events error-trend derivation coverage
 
 - SHA: recorded in the follow-up ledger commit on `feat/bridge-todo`.
