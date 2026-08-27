@@ -610,3 +610,29 @@
   compares them today; the reformat was proven inert structurally (two fresh
   scratch databases, full catalog fingerprint, diff exit 0) rather than by
   text equality.
+
+## 2026-08-27 — allSettled rejections become visible to the Bridge
+
+Follow-up 2 of INC-2026-08-27 (a failing cron reported healthy for two days).
+
+Added `src/lib/settled-failures.ts`: `summarizeSettledFailures`,
+`reportSettledFailures`, `allSettledReported`. Counts every rejection, keeps
+distinct reasons bounded at `MAX_FAILURE_REASONS`, and writes each distinct
+cause through `logServerError` so it reaches `admin_events` and the Bridge.
+Control flow is unchanged by design.
+
+Wired into the two call sites that matched the incident shape exactly — the
+settled array was not even bound, so a rejection was invisible everywhere:
+`src/lib/notifications/golf-message-fanout.ts` (email + push) and
+`src/lib/coachhelm/v3/qualifying/player-notify.ts` (per-candidate email + push).
+
+Shared helper rather than a copied idiom: this repo's SSRF guard was hand-copied
+into two files and stayed broken in both.
+
+Verified: typecheck exit 0, lint exit 0, 64 test files / 896 tests exit 0
+(`src/test/lib/settled-failures.test.ts src/lib/admin src/test/hooks`),
+including 7 new tests for the helper.
+
+NOT done: ~21 other `allSettled` sites flagged by the scan are not individually
+cleared, and the incident's R3 follow-up (the client used by the
+`coachhelm-safety-net` path) is untouched — owner action, and do not grant anon.
