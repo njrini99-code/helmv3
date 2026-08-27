@@ -46,6 +46,16 @@ ones. A session that obeyed the docs produced fluent, confident, broken work.
 - **Never bulk-repoint dead paths by basename search.** Tried; nearest-name
   matches were build artifacts under `src/.helmdev/`. That swaps a visibly broken
   path for a confidently wrong one.
+- **A continuation paragraph under a list item becomes a CODE BLOCK.** Write
+  `- [ ] item`, leave a blank line, then indent prose six spaces to line it up
+  under the text, and markdownlint reads it as an indented code block (MD046).
+  It renders as one too. Hit three times in one night on this repo's own plan
+  document, each time while writing up a different finding — the indentation
+  looks correct in the editor and only the linter disagrees. Put the prose in a
+  `####` section below the list instead, or keep it to a nested bullet.
+- **A table's separator row needs padded pipes here** — `| --- | --- |`, not
+  `|---|---|`, or MD060 fires. The existing tables in `docs/` mostly use the
+  unpadded form and are grandfathered into the baseline; new ones are not.
 - **A fact with four homes has four chances to rot.** Put it in the file whose
   name matches it and have the others point there. The required-check NAME trap
   lived in four files until 2026-08-27; one of the four,
