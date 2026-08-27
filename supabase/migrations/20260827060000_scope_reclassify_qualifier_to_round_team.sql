@@ -50,16 +50,19 @@
 -- calling the RPC directly — which already bypasses the app.
 --
 -- VERIFIED (production, 2026-08-27, read-only):
---   SELECT pg_get_functiondef('public.reclassify_golf_round(uuid,text,uuid,integer)'::regprocedure);
+--   SELECT pg_get_functiondef(
+--     'public.reclassify_golf_round(uuid,text,uuid,integer)'::regprocedure);
 --   -> md5 c7c2c3f15af684fcdf63286c150bb12c, length 1656, and
 --      position('v_qualifier_team' in def) = 0, i.e. this fix was NOT yet live.
---   Blast radius: golf_rounds with team_id IS NULL, completed, non-qualifier = 3.
+--   Blast radius: golf_rounds with team_id IS NULL, completed,
+--   non-qualifier = 3.
 --   Pre-existing cross-team rows (round.team_id <> qualifier.team_id) = 0,
 --   so F8 has left no bad data to remediate — this is preventive only.
 --   RE-RUN the pg_get_functiondef check before applying; if the md5 differs,
 --   production has moved and this CREATE OR REPLACE would discard it.
 --
--- ROLLBACK: CLAUDE-SECURITY-20260826-224016/F8-ROLLBACK-reclassify_golf_round.sql
+-- ROLLBACK:
+--   CLAUDE-SECURITY-20260826-224016/F8-ROLLBACK-reclassify_golf_round.sql
 --   is the byte-exact pre-apply definition captured from production. Run it
 --   as-is to revert.
 --
@@ -68,8 +71,9 @@
 -- because golf_qualifiers.team_id is NOT NULL so IS DISTINCT FROM always holds.
 -- There is no "same team" for a round with no team; the prior behaviour let a
 -- teamless round attach to a specific team's qualifier. 3 rounds are in that
--- state today. They surface the existing 42501 copy ("You don't have permission
--- to change this round"), which is misleading for a data-integrity condition —
+-- state today. They surface the existing 42501 copy ("You don't have
+-- permission to change this round"), which is misleading for a
+-- data-integrity condition —
 -- a copy fix in round-type.ts is a follow-up, not a blocker.
 -- =============================================================================
 
