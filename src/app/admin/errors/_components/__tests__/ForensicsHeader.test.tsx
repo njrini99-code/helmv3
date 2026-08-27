@@ -38,11 +38,25 @@ describe('ForensicsHeader', () => {
     expect(screen.getByText('submitGolfRoundComprehensive')).toBeInTheDocument();
   });
 
-  it('renders an explicit em-dash — never invented — for every absent field', () => {
+  it('names every absent field once instead of rendering six empty boxes', () => {
+    // The contract is unchanged — absence is STATED, never invented or
+    // silently hidden. What changed is where: absent fields used to each
+    // render their own bordered box containing an em-dash, which on a phone
+    // (one column) meant a client incident showed six empty boxes above the
+    // two fields that actually had values. They are now named once, together.
     render(<ForensicsHeader forensics={baseForensics} />);
-    const dashes = screen.getAllByText('—');
-    // errorCode, errorHint, requestId, helmTraceId, runtime, handled: 6 absent fields.
-    expect(dashes.length).toBe(6);
+
+    // No em-dash boxes remain...
+    expect(screen.queryAllByText('—')).toHaveLength(0);
+
+    // ...and every one of the six is still accounted for, by name.
+    const notCaptured = screen.getByText(/not captured/i).parentElement;
+    expect(notCaptured).not.toBeNull();
+    for (const label of ['error code', 'error hint', 'request id', 'trace id', 'runtime', 'handled']) {
+      expect(notCaptured!.textContent).toContain(label);
+    }
+    // Absence is explained, so a blank field never reads as a broken panel.
+    expect(notCaptured!.textContent).toMatch(/absent on this incident, not hidden/i);
   });
 
   it('does not render an "Open flight trace" link when helmTraceId is absent', () => {

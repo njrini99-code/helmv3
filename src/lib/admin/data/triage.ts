@@ -68,6 +68,24 @@ export interface TriageItem {
   klassReason: string;
   /** The message lost its content on capture (e.g. "[object Object]"). */
   hasDegradedMessage: boolean;
+  /**
+   * Postgres / provider / client error code (`metadata.errorCode`), app rows
+   * only — Sentry issues carry no app metadata and are explicitly null below.
+   *
+   * It was already computed here to feed classifyIncident() and then thrown
+   * away, so the queue rendered rows titled "Client error: Load failed" with
+   * nothing to tell two of them apart. It is the single most identifying
+   * field an incident has: 42501 vs 57014 vs 23505 is the whole first triage
+   * question, and it is what buildIncidentSignature() groups on.
+   */
+  errorCode: string | null;
+  /**
+   * The grouping fingerprint, plain. It existed only inside the row's href
+   * (`/admin/errors/${key.slice(4)}`), so an operator could click it but
+   * never copy it — and it is the exact token you need to search logs or
+   * hand to someone else. Null for Sentry rows, whose identity is shortId.
+   */
+  fingerprint: string | null;
   /** Pre-built Copy-for-Claude markdown — see @/lib/admin/incident-report. */
   report: string;
 }
@@ -191,6 +209,10 @@ export function mergeTriage(input: {
     actionable: classification.actionable,
     klassReason: classification.reason,
     hasDegradedMessage: classification.hasDegradedMessage,
+    // Sentry issues carry no app metadata — same deliberate omission the
+    // classifyIncident call above documents. Its identity is shortId.
+    errorCode: null,
+    fingerprint: null,
     report: buildIncidentReport({
       title: issue.title,
       message: issue.culprit ?? issue.title,
@@ -282,6 +304,8 @@ export function mergeTriage(input: {
       actionable: classification.actionable,
       klassReason: classification.reason,
       hasDegradedMessage: classification.hasDegradedMessage,
+      errorCode,
+      fingerprint: fp,
       report: buildIncidentReport({
         title: last.title,
         message: last.message,

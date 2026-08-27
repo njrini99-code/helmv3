@@ -62,6 +62,34 @@ export function ForensicsHeader({ forensics }: { forensics: FingerprintForensics
     : null;
   const featureLabel = featureLabelFor(forensics.feature);
 
+  // Partition once: the grid renders what has a value, the footnote names
+  // what does not. `mono` stays undefined where Field's own default applies.
+  const fields: Array<{ label: string; value: string | null; mono?: boolean }> = [
+    { label: 'Error code', value: forensics.errorCode },
+    { label: 'Error hint', value: forensics.errorHint, mono: false },
+    { label: 'Source file', value: forensics.sourceFilePath },
+    { label: 'Request id', value: forensics.requestId },
+    { label: 'Trace id', value: forensics.helmTraceId },
+    { label: 'Runtime', value: forensics.runtime },
+    {
+      label: 'Handled',
+      value: forensics.handled === null ? null : forensics.handled ? 'yes' : 'no — unhandled',
+      mono: false,
+    },
+    { label: 'Sport', value: forensics.sport, mono: false },
+    {
+      label: 'Feature',
+      value: forensics.feature ? `${featureLabel ?? forensics.feature} (${forensics.feature})` : null,
+      mono: false,
+    },
+    { label: 'Source', value: forensics.source, mono: false },
+    { label: 'Action', value: forensics.actionName },
+  ];
+  const present = fields.filter((f) => f.value !== null && f.value !== '');
+  const notCaptured = fields
+    .filter((f) => f.value === null || f.value === '')
+    .map((f) => f.label.toLowerCase());
+
   return (
     <Surface padding="sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-warm-200 pb-2">
@@ -79,29 +107,35 @@ export function ForensicsHeader({ forensics }: { forensics: FingerprintForensics
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        <Field label="Error code" value={forensics.errorCode} />
-        <Field label="Error hint" value={forensics.errorHint} mono={false} />
-        <Field label="Source file" value={forensics.sourceFilePath} />
-        <Field label="Request id" value={forensics.requestId} />
-        <Field label="Trace id" value={forensics.helmTraceId} />
-        <Field label="Runtime" value={forensics.runtime} />
-        <Field
-          label="Handled"
-          value={
-            forensics.handled === null ? null : forensics.handled ? 'yes' : 'no — unhandled'
-          }
-          mono={false}
-        />
-        <Field label="Sport" value={forensics.sport} mono={false} />
-        <Field
-          label="Feature"
-          value={forensics.feature ? `${featureLabel ?? forensics.feature} (${forensics.feature})` : null}
-          mono={false}
-        />
-        <Field label="Source" value={forensics.source} mono={false} />
-        <Field label="Action" value={forensics.actionName} />
-      </div>
+      {/* PRESENT FIELDS ONLY.
+          All eleven used to render unconditionally, each as its own bordered
+          box with an em-dash when absent. On a phone the grid is one column,
+          so a client-origin incident — which populates almost none of them;
+          measured 2026-08-27, errorCode sits on 2.9% of error-severity rows
+          and errorHint on 2.6% — produced a screen of eight identical empty
+          boxes before any real content.
+
+          The honesty contract that put an explicit em-dash there rather than
+          hiding a field is RIGHT and is kept: absence is still stated, once,
+          on the `notCaptured` line below. What changed is that saying it
+          eight times in eight boxes buries the two or three fields that DO
+          carry a value, which is the opposite of what the panel is for. */}
+      {present.length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3">
+          {present.map((f) => (
+            <Field key={f.label} label={f.label} value={f.value} mono={f.mono} />
+          ))}
+        </div>
+      ) : null}
+
+      {notCaptured.length > 0 ? (
+        <p className="mt-3 text-caption leading-5 text-warm-500">
+          <span className="uppercase tracking-widest">Not captured</span>{' '}
+          <span className="font-fw-mono">{notCaptured.join(' · ')}</span>
+          {' — '}
+          absent on this incident, not hidden. A field is populated only when the call site passes it.
+        </p>
+      ) : null}
 
       {tracerHref ? (
         <Link
