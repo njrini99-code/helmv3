@@ -60,6 +60,79 @@ function deriveSportFromUrl(url: string | undefined): 'baseball' | 'golf' | 'lif
   return 'marketing';
 }
 
+/**
+ * Keep database spans at full rate while leaving page loads sampled.
+ *
+ * `tracesSampleRate: 0.2` is a sensible ceiling for page-load volume and a bad
+ * one for database work: it discards four out of five Supabase spans, so the
+ * slow or failing query you are hunting is usually simply absent. Sampling is
+ * meant to bound cost on the high-volume, low-information spans — and page
+ * loads are exactly that, while `db.*` spans are the opposite.
+ *
+ * DB operations are comparatively rare per request and carry the highest
+ * diagnostic value, so they sample at 1.0. Everything else keeps the previous
+ * behaviour unchanged, which is why this is close to free: the added volume is
+ * the DB spans that were already being generated and then thrown away.
+ *
+ * Sampling decisions are inherited by child spans, so this reads the ROOT
+ * span's attributes — a `db.*` op nested under a page-load transaction is
+ * governed by that transaction's decision, not this one. Naming the op
+ * explicitly here is what makes a Supabase call made from a server action
+ * (its own root) reliably kept.
+ */
+function makeTracesSampler(isDev: boolean): Sentry.NodeOptions['tracesSampler'] {
+  const base = isDev ? 0.1 : 0.2;
+  return (samplingContext) => {
+    // Respect an upstream sampling decision so a distributed trace stays whole
+    // rather than being half-recorded.
+    if (typeof samplingContext.parentSampled === 'boolean') {
+      return samplingContext.parentSampled;
+    }
+    const attributes = samplingContext.attributes ?? {};
+    const op = String(attributes['sentry.op'] ?? samplingContext.name ?? '');
+    if (op.startsWith('db.') || op.startsWith('db ')) return 1.0;
+    return base;
+  };
+}
+
+/**
+ * Postgres error codes as the grouping key.
+ *
+ * PostgREST surfaces failures as VALUES carrying a `code` (`42501` RLS denial,
+ * `23505` unique violation, `PGRST116` no-rows-for-single), and the human
+ * message around that code embeds table names, column names and constraint
+ * names. Grouping on the message therefore scatters one bad policy across many
+ * Sentry issues — the same splitting already documented for
+ * `normalizeIncidentMessagePrefix`, and visible in production right now, where
+ * one Inngest key mismatch occupies four fingerprints because the message
+ * carries "signature was 1s old" vs "2s".
+ *
+ * Fingerprinting on the code makes the class countable: "42501 is up 40x this
+ * hour" is actionable, where forty separately-named issues are not.
+ *
+ * Only applied when a code is actually present, so nothing else regroups.
+ */
+function fingerprintByPostgresCode(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
+  if (event.fingerprint) return event; // never override a deliberate one
+  const candidates = [
+    (event.contexts?.postgres as { code?: unknown } | undefined)?.code,
+    (event.extra as Record<string, unknown> | undefined)?.code,
+    (event.extra as Record<string, unknown> | undefined)?.errorCode,
+    event.tags?.pg_code,
+  ];
+  const code = candidates.find(
+    (c): c is string => typeof c === 'string' && /^(PGRST\d{3}|[0-9A-Z]{5})$/.test(c),
+  );
+  if (!code) return event;
+  return {
+    ...event,
+    tags: { ...event.tags, pg_code: code },
+    // `{{ default }}` keeps Sentry's own grouping as a secondary axis, so two
+    // genuinely different 42501s do not collapse into one issue.
+    fingerprint: ['{{ default }}', `pg:${code}`],
+  };
+}
+
 const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   if (event.request) {
     delete event.request.cookies;
@@ -91,7 +164,9 @@ const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   // telemetry; the pair identifies a person and where they were.
   //
   // Applied last, so it also covers anything the tagging above introduced.
-  return redactEventPii(event);
+  // Postgres-code fingerprinting runs on the redacted event, so grouping never
+  // depends on a value that was about to be scrubbed.
+  return fingerprintByPostgresCode(redactEventPii(event));
 };
 
 export async function register() {
@@ -137,8 +212,8 @@ export async function register() {
       // Enable Sentry SDK structured logs (separate from error events).
       enableLogs: true,
 
-      // 20% in prod controls span volume on hot endpoints; 10% in dev for speed.
-      tracesSampleRate: isDev ? 0.1 : 0.2,
+      // Page loads stay sampled; db.* spans are kept at 1.0 — see makeTracesSampler.
+      tracesSampler: makeTracesSampler(isDev),
       profileSessionSampleRate: isDev ? 0 : 0.3,
       profileLifecycle: 'trace',
 
@@ -175,7 +250,7 @@ export async function register() {
         Sentry.captureConsoleIntegration({ levels: ['error'] }),
       ],
       enableLogs: true,
-      tracesSampleRate: isDev ? 0.1 : 0.2,
+      tracesSampler: makeTracesSampler(isDev),
       beforeSend: scrubPii,
       ignoreErrors: sharedIgnoreErrors,
     });
