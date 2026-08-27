@@ -84,7 +84,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 ## W5 — Overview Tab (no migration) — DONE
 - Commits `1c38db3c8` (overview data layer + banner/staleness), `fa35f9fcd` (triage queue inline resolve + optimistic hide), `d37d9458b` (overview page: banner, 6-KPI strip, watcher chips, triage queue, regressed callout, deploy rail).
 - 11 new tests; typecheck exit 0; lint 0 errors; gate-coverage passes. All column/RPC/Fairway-prop names verified vs real source.
-- CLEANUP TODO (polish pass): 2 lint warnings in TriageQueue.tsx (helm/no-arbitrary-text-px, helm/no-raw-button) from verbatim doc code — under ceiling, tidy later.
+- ~~CLEANUP TODO (polish pass): 2 lint warnings in TriageQueue.tsx~~ **RESOLVED — verified 2026-08-27.** `npx eslint src/app/admin/_components/TriageQueue.tsx` exits 0 with no warnings. The polish sweep cleared them; the TODO was stale.
 
 ## ⚑ SCOPE DIRECTIVES (owner, mid-build 2026-07-01)
 
@@ -98,7 +98,7 @@ Running record of what was actually applied per wave, plus any deviations from t
 - 14 new tests; typecheck exit 0; lint 0 errors (+5 `no-arbitrary-bg-white` warnings — matches the app's documented glass-card recipe / W4-W5 convention; under ceiling). gate-coverage passes (both new pages gate first-line).
 - UI elevated per directive: ChartFrame (matte + table-fallback), StatusPill severity (dot+tone+label), KpiTile Fragment Mono numerals. `savePartialRound` → impl+wrapped delegate ('use server' gotcha handled).
 - Note: local `next build` prerender fails on unrelated pages (missing NEXT_PUBLIC_SUPABASE_URL locally) — pre-existing env limit, validated on Vercel preview instead.
-- POLISH TODO: consider Fairway surface primitives over raw bg-white/70 in a final sweep (optional; current is on-brand).
+- ~~POLISH TODO: consider Fairway surface primitives over raw bg-white/70~~ **RESOLVED — verified 2026-08-27.** `bg-white` occurrences under `src/app/admin` = 0.
 
 ## W15/W16 — Feature Health + Total Coverage (Fable-planned, golf+coachhelm) — QUEUED after W13
 - Coverage plan DONE (Fable, noise-disciplined + golf-scoped). Docs written (commit pending between-agent window): `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` (38 features, coverage matrix for 424 actions, Noise-Discipline Charter N1–N6, health state machine, board design, baseball/lifting deferred appendix), `waves/w15-total-coverage.md` (16 tasks), `waves/w16-feature-health-board.md` (6 tasks).
@@ -220,7 +220,67 @@ Running record of what was actually applied per wave, plus any deviations from t
 - Manual Task 16 step 3 (forced-failure dev verification: trigger one bad-table-name failure, confirm single tagged `admin_events` row + fingerprint collapse at 50×, confirm `enterDemo`/NEXT_REDIRECT writes nothing) is a **manual dev-environment exercise** — not run in this CLI-only, no-dev-server unit per the machine rule; left for the owner or a unit with dev-server access. Everything else in Task 16 (tripwire code + full gate) is verified above.
 
 ## W16 — Feature Health Board (green-dot grid; PR-A branch)
-**Status:** in progress (Sonnet).
+**Status:** Tasks 1-5 DONE. Task 6 verification PARTIALLY done — steps 1 and 3
+(static half) verified 2026-08-27; steps 2 and 4 need a dev environment and are
+NOT done. See the Task 6 entry below.
+
+### Task 6 — end-to-end verification sweep — PARTIAL (2026-08-27)
+
+This status line said "in progress" while Tasks 1-5 were in fact already built
+and merged. Corrected by reading the code, not the log:
+- Task 1 `src/lib/admin/data/feature-health.ts` — present (+ `feature-health-detail.ts`)
+- Task 2 Sentry per-feature counts — present in `src/lib/admin/sentry-api.ts`
+  (in-flight ceiling + cooldown)
+- Task 3 `/admin/health` dot grid + detail — `src/app/admin/health/page.tsx`
+  + `FeatureHealthDetailPanel` + `AttributionCoveragePanel`
+- Task 4 `feature` filter on the Errors tab — `src/app/admin/errors/page.tsx`
+  (chip + clear-filter href)
+- Task 5 Overview rollup — `FeatureHealthRollup` -> `FeatureHealthSummary`,
+  rendered by `src/app/admin/page.tsx`
+
+**Step 1 — full gate: GREEN.** Real exit codes on
+`fix/repo-local-cli-guard-bypass` at the post-merge tip:
+- `npm run typecheck` exit 0
+- `npm run lint` exit 0
+- `npm test` exit 0 — **1229 test files, 11527 passed, 6 skipped, ZERO failures**
+
+Worth recording: the 6 "pre-existing failures" excused in every W15 entry above
+(3 baseball nav-variant + 3 Next-16 `revalidatePath`-outside-request-scope) no
+longer fail. The suite is clean, not clean-modulo-excuses.
+
+**Step 2 — dev walkthrough with seeded events: NOT DONE, and deliberately so.**
+The step calls for inserting synthetic `admin_events` rows via a service-role
+script. This repo has ONE Supabase database and it is live production serving
+real users; seeding fake error rows would pollute the exact observability data
+this board reports on, and the Feature Health classifier would then be reading
+its own test fixtures. It needs the local stack (`supabase start`, Docker).
+Left for the owner or a unit with a dev environment. Do not run it against prod.
+
+**Step 3 — a11y: static half verified, Lighthouse NOT run** (needs a dev server).
+Checked by reading the components:
+- Colour-independence holds. Status is carried in TEXT, not hue —
+  `FeatureHealthSummary` renders "N red · M amber" / "N green · M amber · R red
+  · K neutral" as words, and the AI status dot in `health/page.tsx:149` is
+  `aria-hidden` decoration beside a text line stating the same thing.
+- Reduced motion honoured — `motion-reduce:transition-none` in `TracesClient`
+  and `TraceTree`, `motion-safe:` on the `AdminShell` refresh spinner.
+- Touch targets — health chips carry `min-h-11` (44px).
+
+**Step 4 — log entry + screenshot: log entry is this; screenshot NOT taken**
+(needs a dev server).
+
+**Bonus check, since a recreate can silently re-grant.** `get_feature_health` is
+`SECURITY DEFINER`. Its newest recreate,
+`20260821050000_feature_health_excludes_resolved_incidents.sql:197`, DOES
+re-`REVOKE EXECUTE ... FROM public, anon` after the `CREATE OR REPLACE`. The
+re-grant trap named in `.claude/rules/shipping.md` is not tripped here.
+
+**Also corrected:** the "★ CI NOTE" at the end of the W7 entry warns that W5/W6
+left ~10 lint-ratchet warnings which the FINAL POLISH SWEEP must clear "else the
+ratchet CI check fails on the PR". That sweep has since happened: `bg-white`
+occurrences under `src/app/admin` = 0, arbitrary `text-[Npx]` = 0, and
+`npm run lint` exits 0. The warning is stale; leaving it would send the next
+session hunting debt that is already paid.
 
 ## W7 — Auth & Sign-ins (golf-scoped; baseball/lifting emitters DEFERRED) + migration
 - Task 1 migration `20260701140000_revoke_user_sessions_rpc.sql` applied to prod (SECURITY DEFINER, is_super_admin-gated, DELETEs auth.sessions + writes audit_log; anon denied, authenticated granted — asserted). Verified audit_log col types (record_id/user_id uuid, new_data jsonb) before apply.

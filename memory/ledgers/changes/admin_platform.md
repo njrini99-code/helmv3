@@ -636,3 +636,36 @@ including 7 new tests for the helper.
 NOT done: ~21 other `allSettled` sites flagged by the scan are not individually
 cleared, and the incident's R3 follow-up (the client used by the
 `coachhelm-safety-net` path) is untouched — owner action, and do not grant anon.
+
+## 2026-08-27 — W16 Task 6 verification sweep (partial) + execution-log correction
+
+Helm Bridge architecture status established by reading code, not the plan doc.
+W16 Tasks 1-5 were already built and merged while `EXECUTION_LOG.md` still said
+"in progress (Sonnet)" — corrected in place, with the file:line evidence for
+each task.
+
+Task 6 step 1 (full gate) verified GREEN at the post-merge tip of
+`fix/repo-local-cli-guard-bypass`:
+  npm run typecheck   exit 0
+  npm run lint        exit 0
+  npm test            exit 0 — 1229 files, 11527 passed, 6 skipped, 0 failed
+
+The 6 failures excused as "pre-existing" in every prior W15 entry (baseball
+nav-variant drift, Next-16 revalidatePath-outside-request-scope) no longer fail.
+
+Task 6 step 3 static half verified: colour-independence (status rendered as
+words, dots aria-hidden), motion-reduce/motion-safe honoured, 44px touch
+targets.
+
+Also verified `get_feature_health`'s newest recreate re-REVOKEs anon after
+CREATE OR REPLACE — the re-grant trap in .claude/rules/shipping.md is not
+tripped.
+
+NOT DONE and left explicitly: Task 6 step 2 (seeded-event dev walkthrough) and
+the Lighthouse/screenshot halves. Step 2 must NOT be run against production —
+one shared live database, and seeding synthetic admin_events would pollute the
+data the Feature Health board reads. Needs the local Supabase stack.
+
+Stale-warning correction: the W7 "★ CI NOTE" said a final polish sweep still
+owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
+0 arbitrary text-[Npx], lint exit 0. Debt already paid; warning removed.
