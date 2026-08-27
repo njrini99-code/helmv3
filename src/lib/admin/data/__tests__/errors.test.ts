@@ -9,8 +9,13 @@ import {
 import type { TriageItem } from '@/lib/admin/data/triage';
 
 describe('parseErrorsFilters', () => {
-  it('defaults to a 24h window with no filters', () => {
-    expect(parseErrorsFilters({})).toEqual({ windowHours: 24 });
+  it('defaults to a 72h window with no filters', () => {
+    // 24 -> 72 on 2026-08-27, deliberately: the nightly RCA routine analyses
+    // fingerprints that fired recently, and if its window and the Bridge's
+    // disagree the analysis lands on an incident that is not on the page.
+    // Measured with the routine at 7d and this at 24h: zero overlap between
+    // what was analysed and what was visible. 72 also survives a weekend.
+    expect(parseErrorsFilters({})).toEqual({ windowHours: 72 });
   });
   it('parses valid sport/severity/source/window from the URL', () => {
     expect(
@@ -18,21 +23,21 @@ describe('parseErrorsFilters', () => {
     ).toEqual({ sport: 'golf', severity: 'critical', source: 'rls_denial', windowHours: 168 });
   });
   it('drops invalid values instead of trusting the URL', () => {
-    expect(parseErrorsFilters({ sport: 'chess', severity: 'meh', window: '-5' })).toEqual({ windowHours: 24 });
+    expect(parseErrorsFilters({ sport: 'chess', severity: 'meh', window: '-5' })).toEqual({ windowHours: 72 });
   });
 
   // W16 Task 4 — drill-in from the Feature Health board.
   it('parses a valid feature key from the URL', () => {
     expect(parseErrorsFilters({ feature: 'round_tracking' })).toEqual({
-      windowHours: 24,
+      windowHours: 72,
       feature: 'round_tracking',
     });
   });
   it('drops an unknown feature key instead of trusting the URL (no crash, no filter)', () => {
-    expect(parseErrorsFilters({ feature: 'not_a_real_feature' })).toEqual({ windowHours: 24 });
+    expect(parseErrorsFilters({ feature: 'not_a_real_feature' })).toEqual({ windowHours: 72 });
   });
   it('never accepts the excluded CRM key as a feature filter', () => {
-    expect(parseErrorsFilters({ feature: 'crm_recruiting_pipeline' })).toEqual({ windowHours: 24 });
+    expect(parseErrorsFilters({ feature: 'crm_recruiting_pipeline' })).toEqual({ windowHours: 72 });
   });
 });
 
@@ -71,7 +76,7 @@ describe('describeErrorsFilters', () => {
 
 describe('buildFilteredIncidentsReport', () => {
   const item = (over: Partial<TriageItem>): TriageItem => ({
-    errorCode: null, fingerprint: 'fp-1',
+    errorCode: null, fingerprint: 'fp-1', hasRca: false, description: 'savePartialRound failed',
     key: 'app:fp-1', origin: 'app', title: 'savePartialRound failed', severity: 'error',
     sport: 'golf', occurrences: 1, affectedUsers: 1,
     firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-01T00:00:00Z',

@@ -24,7 +24,7 @@ const CHIP_SETS: Array<{ param: 'sport' | 'severity' | 'source' | 'window' | 'ki
   { param: 'sport', values: ['golf', 'baseball', 'shared'] },
   { param: 'severity', values: ['critical', 'error', 'warning', 'info'] },
   { param: 'source', values: ['server_action', 'rls_denial', 'auth', 'cron', 'client'] },
-  { param: 'window', values: ['24', '168'] },
+  { param: 'window', values: ['24', '72', '168'] },
   // Kind axis. No chip for 'defect' — that IS the unfiltered default view, so
   // a "defect" chip would read as a narrowing that changes nothing.
   { param: 'kind', values: ['all', 'telemetry', 'empty_state', 'access', 'integration', 'degradation', 'integrity_ok'] },

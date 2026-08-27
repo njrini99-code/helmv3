@@ -15,7 +15,21 @@ import {
 } from '@/lib/admin/data/triage';
 
 /** Default window shared by Overview KPIs, triage queue, and Errors tab. */
-export const DEFAULT_INCIDENT_WINDOW_HOURS = 24;
+/**
+ * 72 hours, not 24.
+ *
+ * The nightly RCA routine analyses fingerprints that fired recently, and the
+ * Bridge only shows a trailing window — so if the two disagree, an analysis
+ * lands on an incident that is not on the page. Measured 2026-08-27 with the
+ * routine at 7 days and this at 24 hours: all five analyses it wrote were
+ * attached to fingerprints with ZERO occurrences in the visible window, and
+ * the ten fingerprints actually on the page had no analysis at all. Zero
+ * overlap.
+ *
+ * 72 also covers a Friday-evening failure still being there on Monday, which
+ * a 24-hour window silently drops.
+ */
+export const DEFAULT_INCIDENT_WINDOW_HOURS = 72;
 
 export interface IncidentFeedFilters {
   windowHours: number;
@@ -158,6 +172,7 @@ export function buildIncidentFeedFromSources(
   windowHours: number,
   sentryTagHint?: SentryTagHint,
   priorResolutions?: Map<string, string>,
+  analyzedFingerprints?: ReadonlySet<string>,
 ): { incidents: TriageItem[]; counts: IncidentFeedCounts } {
   const sentryInWindow = filterSentryIssuesByWindow(sentryIssues, windowHours);
   const incidents = mergeTriage({
@@ -165,6 +180,7 @@ export function buildIncidentFeedFromSources(
     appEvents: [...appEvents],
     sentryTagHint,
     priorResolutions,
+    analyzedFingerprints,
   });
   return { incidents, counts: summarizeIncidentFeed(incidents) };
 }
@@ -249,6 +265,58 @@ const REGRESSION_LOOKBACK_DAYS = 90;
  * query has run. Cheap — bounded by `IN (…)` on an indexed column, and
  * chunked to stay under PostgREST's URL limit (see trap: database.md).
  */
+/**
+ * Which of these fingerprints already have a stored RCA analysis.
+ *
+ * WHY THIS EXISTS. The nightly RCA routine writes `event_type='rca_analysis'`
+ * rows carrying the incident's own fingerprint, and the fingerprint DETAIL
+ * page reads them (`fetchFingerprintDetail` -> `storedRca` -> `RcaPanel`). But
+ * nothing in the LIST said an analysis existed, so the only way to find one was
+ * to open incidents at random and hope.
+ *
+ * Measured 2026-08-27, which is what forced this: the routine's first run wrote
+ * five analyses — all correct, all high-confidence, one of which independently
+ * identified the Inngest signing-key fault — and every one was unreachable.
+ * Work that cannot be found is work that did not happen.
+ *
+ * Same shape as queryPriorResolutions below: scoped to the fingerprints already
+ * in this feed, chunked under PostgREST's URL ceiling, and failure-tolerant —
+ * a missing badge must never take the queue down with it.
+ */
+export async function queryAnalyzedFingerprints(
+  fingerprints: readonly string[],
+): Promise<Set<string>> {
+  const analyzed = new Set<string>();
+  if (fingerprints.length === 0) return analyzed;
+
+  const admin = createAdminClient();
+  const CHUNK_SIZE = 200;
+  for (let i = 0; i < fingerprints.length; i += CHUNK_SIZE) {
+    const chunk = fingerprints.slice(i, i + CHUNK_SIZE);
+    const { data, error } = await admin
+      .from('admin_events')
+      .select('fingerprint')
+      .eq('event_type', 'rca_analysis')
+      .in('fingerprint', chunk);
+    // DEGRADE, explicitly. A failed lookup here costs one RCA link; taking the
+    // whole triage queue down over a missing badge would be far worse. But the
+    // decision is made here rather than by dropping `error` on the floor —
+    // supabase-js resolves failures as { data: null, error }, so an unbound
+    // error silently becomes "no analyses exist", which reads as a working
+    // empty rather than a broken read.
+    if (error) {
+      console.warn('[queryAnalyzedFingerprints] RCA lookup failed; links suppressed for this batch', error.message);
+      continue;
+    }
+    for (const row of data ?? []) {
+      if (typeof row.fingerprint === 'string' && row.fingerprint.length > 0) {
+        analyzed.add(row.fingerprint);
+      }
+    }
+  }
+  return analyzed;
+}
+
 export async function queryPriorResolutions(
   fingerprints: readonly string[],
 ): Promise<Map<string, string>> {
@@ -346,15 +414,19 @@ export async function fetchIncidentFeed(
   // Runs AFTER queryAppErrorEvents because it is scoped to the fingerprints
   // that actually appear in this feed — a bounded IN(…) on an indexed column
   // rather than a table scan.
-  const priorResolutions = await queryPriorResolutions(
-    Array.from(
-      new Set(
-        appEvents
-          .map((row) => row.fingerprint)
-          .filter((fp): fp is string => typeof fp === 'string' && fp.length > 0),
-      ),
+  const feedFingerprints = Array.from(
+    new Set(
+      appEvents
+        .map((row) => row.fingerprint)
+        .filter((fp): fp is string => typeof fp === 'string' && fp.length > 0),
     ),
   );
+  // Both are scoped to the fingerprints already in this feed, so they run
+  // together rather than serially — a bounded IN(…) on an indexed column each.
+  const [priorResolutions, analyzedFingerprints] = await Promise.all([
+    queryPriorResolutions(feedFingerprints),
+    queryAnalyzedFingerprints(feedFingerprints),
+  ]);
 
   const { incidents, counts } = buildIncidentFeedFromSources(
     appEvents,
@@ -365,6 +437,7 @@ export async function fetchIncidentFeed(
     // feature (the list endpoint doesn't return tags), so it stays null.
     { sport: filters.sport ?? null, feature: filters.feature ?? null },
     priorResolutions,
+    analyzedFingerprints,
   );
 
   return { incidents, appEvents, sentry, counts };
