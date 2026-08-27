@@ -914,19 +914,28 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     // staleness heartbeat here would measure the calendar, not the integration.
     heartbeatTable: null,
     tier: 'med',
-    seasonalEmpty: false,
-    // Silence must never render as green. Verified in production 2026-08-27:
-    // 454 signature-validation errors ran 2026-08-07 → 2026-08-24 14:05 (the
-    // last one minutes after that Monday's 14:00 UTC cron), then NOTHING —
-    // through a production deploy on 08-27, while admin_events took 104 other
-    // events that same day. So the Bridge is demonstrably alive and this
-    // feature is simply quiet, which has TWO readings and the database cannot
-    // separate them: the signing key was fixed, or Inngest Cloud stopped
-    // calling this app at all. The second is worse than the errors were —
-    // durable jobs would be dead silently, round analysis running inline with
-    // no retry or crash recovery. neverNeutral keeps the card from painting
-    // that ambiguity green.
-    neverNeutral: true,
+    // Silence must never render as GREEN, and `neverNeutral` would do exactly
+    // that — read computeFeatureStatus(): it SKIPS the neutral-first gate so a
+    // zero-everything feature falls through to green. That is right for
+    // admin_dashboard (foundational infra, heartbeat table always has rows). It
+    // is wrong here, so this entry deliberately does NOT set it: quiet must
+    // land on NEUTRAL, the honest "we do not know" state.
+    //
+    // Verified in production 2026-08-27: 454 signature-validation errors ran
+    // 2026-08-07 -> 2026-08-24 14:05 (the last minutes after that Monday's
+    // 14:00 UTC cron), then NOTHING — through a production deploy on 08-27,
+    // while admin_events took 104 other events that same day. The Bridge is
+    // demonstrably alive and this feature is simply quiet, which has TWO
+    // readings the database cannot separate: the signing key was fixed, or
+    // Inngest Cloud stopped calling this app at all. The second is worse than
+    // the errors were — durable jobs dead silently, round analysis running
+    // inline with no retry or crash recovery.
+    //
+    // seasonalEmpty picks the neutral REASON text. True, because quiet between
+    // a Monday cron and a round submission genuinely is expected. The false
+    // branch reads "instrumentation not yet reporting", which would be a plain
+    // falsehood — it reported 454 times.
+    seasonalEmpty: true,
     healthSignal:
       'Inngest reaches /api/inngest with a VALID signature. Silence is not ' +
       'health: the only triggers are a Mon 14:00 UTC cron and round-submitted, ' +
