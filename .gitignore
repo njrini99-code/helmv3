@@ -263,3 +263,9 @@ __pycache__/
 # committed), and screenshots of auth flows are risky to publish.
 .momentic-mcp/
 tests/**/.momentic-mcp/
+
+# Tool caches and one-off scan output that regenerate on demand. Neither was
+# ignored, so both showed up as untracked noise in every `git status` and in
+# agent file search (2026-08-27).
+.ruff_cache/
+CLAUDE-SECURITY-*/
