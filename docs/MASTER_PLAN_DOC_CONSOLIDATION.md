@@ -299,11 +299,35 @@ and the ratchet baselines all read from it.
 - [x] Nothing to fix — the count was an artefact. See 5f.
       See 5f. The remaining work is wiring the gate into CI, or correcting
       `preflight`'s claim that CI already runs it.
-- [ ] STILL OPEN, and it needs `c5`: `docs:check` still chains `docs:diff-check`,
-      which is `git diff --exit-code` and therefore fails whenever regen output
-      is uncommitted — i.e. exactly while you are working. Splitting it is a
-      `package.json` edit, and that file is `c5`'s lane again after the Phase 5
-      handback. Not doing it unilaterally; that is how tonight started.
+- [x] **`docs:check` / `docs:diff-check` — considered and DECLINED.** See below.
+
+#### Why docs:diff-check stays as it is
+
+Not a defect. My characterisation was wrong, and `c5` argued it down rather
+than accepting the item.
+
+I called it *"fails by design whenever regen output is uncommitted — i.e.
+exactly while you are working"*, implying a spurious failure. It is not
+spurious. After `docs:regen` runs, a non-empty diff means the **committed**
+AUTOGEN blocks do not match what the generator produces. "I have uncommitted
+regen output" and "the committed inventory is stale" are the same state from
+two angles, not two states conflated. I treated the timing of the encounter as
+the defect.
+
+It also fails the night's actual test, which I should have applied before
+filing it. Every other defect here had output that **misleads**: `check:ledger`
+reads as broken tooling, `check:env` printed OK while checking nothing,
+`markdown:ratchet` gave two sessions numbers 1,850 apart. This one prints the
+true condition and the exact remedy — *"Inventory docs are out of date. Run npm
+run docs:regen and commit changes."* It fired on `c5` tonight: they read it,
+ran regen, committed, green. One commit, nobody misled.
+
+And it is the only check that would catch a hand-edit **inside** an AUTOGEN
+block, which `CLAUDE.md` explicitly forbids and nothing else notices.
+
+Splitting it would trade a true signal for a quieter one — the thing the OS
+forbids in as many words. Recorded as declined rather than left open: an open
+item nobody intends to do is its own small piece of doc rot.
   <!-- original item, kept for its reasoning:
   ~~`docs:diff-check` is `git diff --exit-code`, so it fails by design whenever regen
   output is uncommitted — exactly while you are working. Split it out of
