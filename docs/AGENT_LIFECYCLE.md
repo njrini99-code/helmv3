@@ -265,6 +265,27 @@ Sizes: `guard-bash.sh` 341, `stop-verify.sh` 250, `guard-concurrent-edit`
 **One file edit fires three PreToolUse hooks in sequence. Any one exits 2
 and the write never happens.**
 
+### The six custom subagents
+
+`.claude/agents/` defines six, each with its own tool allowlist and model:
+
+| Agent | Tools | Model |
+| --- | --- | --- |
+| `code-reviewer` | Read, Grep, Glob, Bash | sonnet |
+| `db-migration-reviewer` | Read, Grep, Glob, Bash | **opus** |
+| `security-reviewer` | Read, Grep, Glob, Bash | sonnet |
+| `ui-polish-reviewer` | Read, Grep, Glob, Bash | sonnet |
+| `debugger` | inherit | sonnet |
+| `verifier` | inherit | sonnet |
+
+The four reviewers are **read-only by construction** — no Write, no Edit.
+`db-migration-reviewer` is the only one on opus, and the engineering OS
+makes its review **mandatory** for any schema change.
+
+`debugger` and `verifier` inherit the full tool set, so they can run
+things. `verifier` exists to check a completion claim by running commands
+and reading the diff rather than trusting a summary.
+
 ### Why the hooks are the entire safety story
 
 `~/.claude/settings.json` sets `permissions.defaultMode:
@@ -455,11 +476,81 @@ re-add them while tidying.
 aggregate**.
 
 The blocking hard rules live in the custom packs under
-`.coderabbit/ast-grep/` and `.coderabbit/semgrep/` — that directory name
-is historical, CI consumes it directly. They block: service-role key in a
-client bundle, a new table without RLS in the same migration, a server
-action without `supabase.auth.getUser()` before a DB call, a bare
-unprefixed table name, and DELETE-then-INSERT in a save path.
+`.coderabbit/ast-grep/` and `.coderabbit/semgrep/`. That directory name is
+historical — the review bots were dropped 2026-07-20 and CI now consumes
+the packs directly. Twenty-one rules, enumerated below because "the custom
+packs" is not a thing anyone can act on.
+
+#### ast-grep — 10 rules
+
+Errors (block):
+
+- `helmv3-no-service-role-key` — `SUPABASE_SERVICE_ROLE_KEY` outside an
+  admin path. It bypasses RLS.
+- `helmv3-no-bare-table-names` — Supabase queries must use `golf_*` /
+  `baseball_*` prefixes.
+- `helmv3-no-deep-types-import` — entity types come from `@/lib/types`
+  only; `@/types/database` and `@/types/supabase` do not exist.
+- `helmv3-no-limit-above-postgrest-cap` — `.limit()` above 1000 is
+  **silently truncated** by PostgREST. You get 1000 rows and no error.
+- `helmv3-no-process-env-in-edge` — edge functions run on Deno; use
+  `Deno.env.get()`.
+- `helmv3-no-silent-catch-fallback` — a `catch` whose entire body is a
+  bare `return []` / `null` / `{}`.
+
+Warnings (do not block): `no-console-log-in-src`, `no-explicit-any`,
+`no-untracked-fixme` (tag debt with an issue link), `prefer-getByRole`.
+
+#### semgrep — 11 rules
+
+Errors (block):
+
+- `helmv3-service-role-outside-admin` — the same key, caught by path.
+- `helmv3-no-log-supabase-token` — access/refresh tokens give full user
+  impersonation until they expire.
+- `helmv3-server-action-missing-auth-check` — a server action hitting
+  Supabase without `supabase.auth.getUser()` first.
+- `helmv3-destructive-write-pattern` — DELETE then INSERT on one table in
+  a save/sync/submit path. A transient failure between them loses data.
+- `helmv3-server-supabase-in-client` — `@/lib/supabase/server` uses
+  `next/headers`; importing it into a `'use client'` file breaks.
+- `helmv3-security-definer-without-search-path` — definer functions must
+  pin `SET search_path` or they are search-path injectable.
+- `helmv3-create-table-without-rls` — a new table without
+  `ENABLE ROW LEVEL SECURITY` in the same migration.
+- `helmv3-hardcoded-supabase-credentials-py` — the Python helpers under
+  `tools/` count too.
+
+Warnings: `no-pii-in-spans` (no raw email/phone/name in Datadog or OTel
+attributes), `action-missing-revalidate` (a mutating action that never
+calls `revalidatePath`), `capacitor-plugin-needs-usage-desc`.
+
+#### Two mechanics that decide whether a rule ever fires
+
+**Both packs scan CHANGED FILES ONLY**, via
+`bash .github/scripts/changed-files.sh` — not the whole repo. A
+pre-existing violation in a file your PR does not touch will not block
+you, and will not be reported. These are not ratchets; they are
+diff-scoped gates.
+
+**The `__test__/` fixtures are excluded on purpose.**
+`.coderabbit/semgrep/__test__/` holds intentionally-broken code that
+exists to prove the rules fire. Without the exclusion, every PR touching
+the rule packs would block on its own fixtures.
+
+`ast-grep` is downloaded at job time from a pinned GitHub release
+(0.44.0), not from `node_modules`.
+
+#### A rule that exists for the class but not the shape
+
+`helmv3-no-silent-catch-fallback` selects on `catch_clause`. The live
+messaging bug in Part 16 is not a catch clause — it is
+`if (error) { logError(...) }` with **no return at all**, so execution
+falls through and the UI silently renders partial data. Same failure
+class, different syntax, and the rule does not see it.
+
+That is worth knowing before assuming a rule pack covers a category. It
+covers the shapes someone thought to write down.
 
 ### The other eleven workflows
 
