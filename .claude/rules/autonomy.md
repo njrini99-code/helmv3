@@ -46,20 +46,42 @@ Pick one of these before dispatching, never neither:
 
 - **Serialize** — agent 1 finishes and commits, *then* agent 2 starts. Simplest,
   and correct when the work is small or the agents touch the same files.
-- **Give each agent its own worktree** — real isolation, real parallelism:
+- **Give each agent its own worktree** — real isolation, real parallelism.
+  **There is exactly one supported way to make one:**
 
   ```bash
-  git worktree add ../helmv3-wt-1 -b agent/task-one
-  git worktree add ../helmv3-wt-2 -b agent/task-two
-  # ...agents work in ../helmv3-wt-1 and ../helmv3-wt-2, each with its own HEAD
-  git worktree remove ../helmv3-wt-1   # when merged
+  scripts/new-worktree.sh <task-name>
+  # -> ~/worktrees/helmv3/<task-name> on branch agent/<task-name>
   git worktree list                    # what's still checked out
+  git worktree remove <path>           # when merged
   ```
 
-**A worktree goes OUTSIDE the repo — never `.worktrees/` inside it.** Note the
-`../` above; it is load-bearing. `.gitignore` line 5 hides `.worktrees/` from
-git, and that is exactly the trap: `find`, `grep`, `ls` and most agent file
-search do NOT honour gitignore. Observed 2026-08-18 —
+  Use it because it guarantees five things at once: an external managed
+  location, the `agent/<task>` branch name, `--no-track`, an isolated
+  dependency install, and a known base.
+
+  The proven failure mode is narrower than "raw git is dangerous". It is
+  specifically **creating a task branch from a REMOTE-TRACKING ref (such as
+  `origin/main`) without disabling tracking**. Git's `autoSetupMerge` default
+  then configures the new branch to track that ref:
+
+  ```text
+  agent/foo -> origin/main
+  ```
+
+  and a later bare `git push` from `agent/foo` targets **main**. That was live
+  on a consolidation branch carrying 23 commits that existed nowhere else.
+  Branching from a local ref does not produce this, and `--no-track` prevents
+  it in either case. Check with:
+
+  ```bash
+  git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads
+  ```
+
+**A worktree goes OUTSIDE the repo — never `.worktrees/` inside it.**
+`.gitignore` line 5 hides `.worktrees/` from git, and that is exactly the trap:
+`find`, `grep`, `ls` and most agent file search do NOT honour gitignore.
+Observed 2026-08-18 —
 `.worktrees/codex-golf-team-operations/` held **4,314** `.ts`/`.tsx` files
 against `src/`'s 3,884, so a search from the repo root returned two hits for
 essentially every file:

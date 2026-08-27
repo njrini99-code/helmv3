@@ -147,12 +147,6 @@
             "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-session-touch.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: record touch"
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit.sh",
-            "timeout": 30,
-            "statusMessage": "eslint --fix"
           }
         ]
       }
