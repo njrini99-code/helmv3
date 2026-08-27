@@ -543,11 +543,12 @@ the rule packs would block on its own fixtures.
 
 #### A rule that exists for the class but not the shape
 
-`helmv3-no-silent-catch-fallback` selects on `catch_clause`. The live
-messaging bug in Part 16 is not a catch clause — it is
+`helmv3-no-silent-catch-fallback` selects on `catch_clause`. The
+messaging bug in Part 16 was not a catch clause — it was
 `if (error) { logError(...) }` with **no return at all**, so execution
-falls through and the UI silently renders partial data. Same failure
-class, different syntax, and the rule does not see it.
+fell through and the UI silently rendered partial data. Same failure
+class, different syntax, and the rule never saw it. That instance has
+since been fixed by hand; the blind spot has not.
 
 That is worth knowing before assuming a rule pack covers a category. It
 covers the shapes someone thought to write down.
@@ -1033,7 +1034,7 @@ gc after deletion is irreversible.
 
 ---
 
-## Part 16 — A live production bug, as illustration
+## Part 16 — A production bug, as illustration (since fixed)
 
 Bridge fingerprint `af4c2c9d`: golf Messaging,
 `fetch-team-chat-conversations`, 5 occurrences, 4 users, 8/19 to 8/26.
@@ -1061,6 +1062,49 @@ fixed and pinned by a test; the call sites feeding it were not. Ten
 There is a second defect at the same site: after logging there is **no
 early return**, so the conversation list silently drops every team chat.
 The error is logged and the UI lies.
+
+### Fixed while this was being written — `9dea37c56` (#1635)
+
+Both halves shipped to `main` on 2026-08-27, hours after the paragraphs
+above were written. Recorded rather than rewritten: the gap between what
+I proposed and what actually shipped is the useful part.
+
+- The call site now uses `toPostgrestError()` and
+  `postgrestErrorContext()` from `src/lib/utils/describe-error.ts`. The
+  code rides on `.name`, because that is the only channel the client path
+  has — `/api/log-error` lifts `context.error.name` into
+  `metadata.errorCode`, which is where `extractErrorCode()` reads. A
+  context-level `errorCode` would have been inert.
+- `details` and `hint` deliberately stay OUT of `.message`. Fingerprints
+  hash the message and `details` carries row-specific text, so folding it
+  in would mint a new incident group per occurrence.
+- **The second defect was not fixed the way this document proposed.** I
+  wrote "no early return". The fix does not add one, and should not: the
+  team-chat query *supplements* the RPC, so returning early would blank a
+  rail whose DMs loaded fine. The terminal check became
+  `(rpcError ?? groupConvsError)` instead. The defect was real; the
+  prescription attached to it was wrong.
+
+### And a count I should not have written
+
+"Ten wrappers remain, three in that one file" is not reproducible, and it
+does not agree with the fix author's "~47 other sites" — we were counting
+different shapes and neither of us said which. The measurable version,
+with the query that produces it:
+
+```bash
+git grep -nE "new Error\([A-Za-z_$][A-Za-z0-9_$.]*\.message\)" \
+  -- 'src/**/*.ts' 'src/**/*.tsx'
+```
+
+76 hits today; 74 outside tests; 12 that report rather than `throw`, of
+which 3 are unrelated normalizers. **Zero remain in
+`use-golf-messages.ts`.** Most of the rest are `throw`, which is a
+different shape — a throw preserves control flow and the message
+propagates. The harmful one is reporting an error and losing its code.
+
+Section 1 of `shipping.md` says never write a count into prose. I wrote
+one six pages after quoting the rule.
 
 ---
 
