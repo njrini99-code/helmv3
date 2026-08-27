@@ -229,7 +229,8 @@ from (select distinct e.fingerprint from public.admin_events e
         and e.severity in ('error','critical','warning')
         and e.created_at > now() - interval '72 hours'
         and not exists (select 1 from public.admin_events a
-                        where a.event_type='rca_analysis' and a.fingerprint=e.fingerprint)) t;
+                        where a.event_type = 'rca_analysis'
+                          and a.fingerprint = e.fingerprint)) t;
 
 select a.fingerprint,
        jsonb_typeof(a.metadata->'suspectFiles') as files_is_array,

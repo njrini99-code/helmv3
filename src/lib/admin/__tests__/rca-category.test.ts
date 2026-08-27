@@ -18,7 +18,7 @@ import {
   RCA_CATEGORIES,
   RCA_CANONICAL_PREFIX,
   RCA_CATEGORY_LABEL,
-} from '@/lib/admin/rca';
+} from '@/lib/admin/rca-category';
 
 describe('deriveRcaCategory — the four canonical prefixes', () => {
   it('routes each canonical prefix to its own category', () => {

@@ -3,13 +3,12 @@
 import { useState, useTransition } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Button, InlineNotice, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
-import {
-  deriveRcaCategory,
-  RCA_CATEGORY_LABEL,
-  type RcaAnalysis,
-  type RcaCategory,
-  type RcaResult,
-} from '@/lib/admin/rca';
+import type { RcaAnalysis, RcaResult } from '@/lib/admin/rca';
+// Directly from the pure module, NOT through `@/lib/admin/rca` — that barrel
+// re-exports these, but it is `server-only`, and a value import through it
+// pulls the AI SDK into the client bundle. `tsc` and the whole test suite pass
+// either way; only `next build` fails.
+import { deriveRcaCategory, RCA_CATEGORY_LABEL, type RcaCategory } from '@/lib/admin/rca-category';
 import { LocalTime } from '../../_components/LocalTime';
 import { analyzeErrorFingerprint } from '../../actions/analyze-error';
 import { FieldCopy } from './FieldCopy';
