@@ -245,11 +245,10 @@ and the ratchet baselines all read from it.
       script and its baseline file. No gate keeps a committed baseline without a runner.
 - [ ] Make `preflight` exactly the static subset of `ci.yml`, then fix its final
       message to say what it actually ran. If it cannot be exact, it must say so.
-
-      **Do NOT fix the lie by removing `markdown:ratchet` from `preflight`.**
-      (`c5`, adopted.) Removing a check to make a sentence true is the wrong
-      direction. Either wire it into CI or change the sentence. As of Phase 1 the
-      ratchet is passing anyway, so wiring it in is now cheap.
+  - **Do NOT fix the lie by removing `markdown:ratchet` from `preflight`.**
+    (`c5`, adopted.) Removing a check to make a sentence true is the wrong
+    direction. Either wire it into CI or change the sentence. As of Phase 1 the
+    ratchet is passing anyway, so wiring it in is now cheap.
 - [ ] Fix `check:ledger` or delete it — a red orphan is the worst of both.
 - [ ] Reconcile the 12 baseline files against the surviving gate list; delete the
       orphaned ones (`.sqlfluff-baseline.json`, `.paginated-read-baseline.json`, etc.

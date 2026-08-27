@@ -51,7 +51,6 @@ features:
     docs:
       feature: memory/features/coachhelm-ai.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/architecture/coachhelm-evidence-contract.md
         - docs/v3-research-golf-domain.md
       ui:
@@ -106,7 +105,6 @@ features:
       required_docs:
         - memory/features/coachhelm-ai.md
         - memory/context/coachhelm-ai.md
-        - memory/context/golfhelm-features.md
         - docs/v3-testing-standards.md
       required_checks:
         - npm run typecheck
@@ -218,7 +216,6 @@ features:
     review:
       required_docs:
         - memory/features/golf-round-lifecycle.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
         - docs/v3-testing-standards.md
       required_checks:
@@ -234,7 +231,6 @@ features:
     docs:
       feature: memory/features/qualifiers.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/v3-feature-audit.md
         - docs/v3-page-audit.md
       ui:
@@ -272,7 +268,6 @@ features:
     review:
       required_docs:
         - memory/features/qualifiers.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
       required_checks:
         - npm run typecheck
@@ -289,7 +284,6 @@ features:
       flows:
         - docs/features/SHOT_TRACKING_DATA_FLOW.md
         - docs/features/SHOT_TRACKING_VERIFICATION.md
-        - memory/context/golfhelm-features.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
@@ -347,7 +341,6 @@ features:
     docs:
       feature: memory/features/stats-analytics.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/features/SHOT_TRACKING_DATA_FLOW.md
         - docs/features/SHOT_TRACKING_VERIFICATION.md
       ui:
@@ -389,7 +382,6 @@ features:
     review:
       required_docs:
         - memory/features/stats-analytics.md
-        - memory/context/golfhelm-features.md
         - docs/features/SHOT_TRACKING_DATA_FLOW.md
       required_checks:
         - npm run typecheck
@@ -404,7 +396,6 @@ features:
     docs:
       feature: memory/features/calendar-events.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md
       ui:
         - memory/projects/golfhelm.md
@@ -453,7 +444,6 @@ features:
     review:
       required_docs:
         - memory/features/calendar-events.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
       required_checks:
         - npm run typecheck
@@ -468,7 +458,6 @@ features:
     docs:
       feature: memory/features/coach-intelligence-triage.md
       flows:
-        - memory/context/golfhelm-features.md
         - memory/context/coachhelm-ai.md
         - docs/architecture/coachhelm-evidence-contract.md
       ui:
@@ -543,7 +532,6 @@ features:
     docs:
       feature: memory/features/player-coachhelm-development.md
       flows:
-        - memory/context/golfhelm-features.md
         - memory/context/coachhelm-ai.md
         - docs/v3-feature-audit.md
       ui:
@@ -599,7 +587,6 @@ features:
     review:
       required_docs:
         - memory/features/player-coachhelm-development.md
-        - memory/context/golfhelm-features.md
         - memory/context/coachhelm-ai.md
       required_checks:
         - npm run typecheck
@@ -614,7 +601,6 @@ features:
     docs:
       feature: memory/features/team-communications.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
@@ -656,7 +642,6 @@ features:
     review:
       required_docs:
         - memory/features/team-communications.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
       required_checks:
         - npm run typecheck
@@ -671,7 +656,6 @@ features:
     docs:
       feature: memory/features/team-operations.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
@@ -722,7 +706,6 @@ features:
     review:
       required_docs:
         - memory/features/team-operations.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
       required_checks:
         - npm run typecheck
@@ -737,7 +720,6 @@ features:
     docs:
       feature: memory/features/roster-team.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
       ui:
         - memory/projects/golfhelm.md
@@ -777,7 +759,6 @@ features:
     review:
       required_docs:
         - memory/features/roster-team.md
-        - memory/context/golfhelm-features.md
         - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
       required_checks:
         - npm run typecheck
@@ -790,9 +771,7 @@ features:
     owner: product
     criticality: medium
     docs:
-      feature: memory/context/golfhelm-features.md
-      flows:
-        - memory/context/golfhelm-features.md
+      feature: memory/features/recruiting.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
@@ -818,8 +797,6 @@ features:
       - supabase
       - team_access_control
     review:
-      required_docs:
-        - memory/context/golfhelm-features.md
       required_checks:
         - npm run typecheck
         - npm run build
@@ -832,7 +809,6 @@ features:
     docs:
       feature: memory/features/auth-onboarding-join.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/security/auth-config.md
       ui:
         - memory/projects/golfhelm.md
@@ -888,7 +864,6 @@ features:
     docs:
       feature: memory/features/settings-preferences.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/v3-feature-audit.md
       ui:
         - memory/projects/golfhelm.md
@@ -925,7 +900,6 @@ features:
     review:
       required_docs:
         - memory/features/settings-preferences.md
-        - memory/context/golfhelm-features.md
       required_checks:
         - npm run typecheck
         - npm run test -- --run src/test/coachhelm/v3/notifications.test.ts
@@ -939,7 +913,6 @@ features:
     docs:
       feature: memory/features/player-hub.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
@@ -976,7 +949,6 @@ features:
     review:
       required_docs:
         - memory/features/player-hub.md
-        - memory/context/golfhelm-features.md
         - memory/features/team-operations.md
       required_checks:
         - npm run typecheck
@@ -990,7 +962,6 @@ features:
     docs:
       feature: memory/features/admin-platform.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md
         - docs/BI_DASHBOARD_ARCHITECTURE.md
       ui:
