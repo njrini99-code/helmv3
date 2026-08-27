@@ -599,8 +599,9 @@
   `supabase_migrations.schema_migrations`: version `20260827031100` returns
   ZERO rows; `20260827031754 / admin_error_resolutions` is present and is the
   newest row in the ledger. A local file with no ledger row counts as
-  `unaccounted_local` in `scripts/db/migration-ledger-drift.mjs`, whose
-  baseline of 38 may only go DOWN — so this would have gone red on `main`
+  `unaccounted_local` by the migration ledger-drift gate (authored in a
+  concurrent session and not yet on this branch, so its path is deliberately
+  not cited here), whose baseline of 38 may only go DOWN — so this would have gone red on `main`
   AFTER merge, reading as an unapplied migration when it is applied and merely
   stamped differently. Caught by the security-scan session before it landed.
 - Note for anyone auditing later: `schema_migrations.statements` retains the
