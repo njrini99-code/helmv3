@@ -263,3 +263,9 @@ __pycache__/
 # committed), and screenshots of auth flows are risky to publish.
 .momentic-mcp/
 tests/**/.momentic-mcp/
+
+# graphify knowledge-graph output. `graphify-out/graph.json` is the single
+# largest object in this repo's history at 53.5 MiB (git-sizer, 2026-08-27,
+# flagged at its highest concern level). It is not tracked today but was not
+# ignored either, so nothing prevented it being committed again.
+graphify-out/
