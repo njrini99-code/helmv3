@@ -12,6 +12,9 @@
 # the catastrophic-glob check never sees the `*` it exists to catch.
 set -ufo pipefail
 
+# shellcheck source=lib/active-root.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/active-root.sh"
+
 INPUT=$(cat)
 CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
 [ -z "$CMD" ] && exit 0
@@ -166,7 +169,9 @@ fi
 #     Scope recursive deletes to paths that belong to the work: the project
 #     itself and the OS temp dirs (where the scratchpad lives).
 if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])rm[[:space:]]'; then
-  PROJ=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && pwd -P) || PROJ=""
+  # ACTIVE worktree: "inside the work" means the tree being worked in, which
+  # under the worktree model is not necessarily the original project dir.
+  PROJ=$(helm_active_root 2>/dev/null) || PROJ=""
 
   # Isolate the rm invocation BEFORE looking at flags. Reading flags from the
   # whole command line was a real false-positive: any `-r` belonging to another
@@ -242,7 +247,7 @@ fi
 #     External worktrees are the supported shape and are proven not to drift: the
 #     three sibling checkouts all had byte-identical CLAUDE.md/AGENTS.md/.mcp.json.
 if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+worktree[[:space:]]+add'; then
-  PROJ_ROOT=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && pwd -P) || PROJ_ROOT=""
+  PROJ_ROOT=$(helm_active_root 2>/dev/null) || PROJ_ROOT=""
 
   # Everything after `worktree add`.
   # NOTE: [[:space:]][[:space:]]* and not \+ — BSD sed (macOS, where this hook

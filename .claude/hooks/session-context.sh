@@ -6,7 +6,13 @@
 # structured form is explicit and survives future changes to that behaviour.
 set -uo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
+# shellcheck source=lib/active-root.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/active-root.sh"
+
+# The ACTIVE worktree, not the original project dir — reporting the canonical
+# checkout's branch/dirty state to a session working in a worktree is the P0
+# this fixes. See .claude/hooks/lib/workspace-identity.mjs.
+cd "$(helm_active_root)" 2>/dev/null || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 

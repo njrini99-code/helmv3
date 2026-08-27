@@ -19,6 +19,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readEvents, foldState } from './session-state.mjs';
 import { getRegistry, isGoverned, isExcluded } from './feature-map.mjs';
+import { resolveActiveRoot } from './workspace-identity.mjs';
 
 // Ledger-style files whose entries must carry an explicit YYYY-MM-DD date —
 // owner directive, 2026-08-21: explicit dates on everything, applied here as
@@ -33,7 +34,9 @@ const DATE_RE = /\b(19|20)\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\b/;
 
 async function main() {
   const sessionId = process.argv[2];
-  const repoRoot = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  // ACTIVE worktree. Verifying the wrong checkout is how a Stop gate passes
+  // while the work it was meant to verify sits in another tree.
+  const repoRoot = resolveActiveRoot();
 
   if (!sessionId) {
     output({ error: 'missing session_id argument', touchedFiles: [] });
