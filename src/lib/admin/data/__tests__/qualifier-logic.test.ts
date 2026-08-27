@@ -27,15 +27,24 @@ const qualifiersCount: Probe = { data: null, error: null, count: 0 };
 const roundsPage: Probe = { data: [], error: null };
 const roundsCount: Probe = { data: null, error: null, count: 0 };
 
+/** Every `.range(from, to)` the paged read asked for, in call order, so a
+ *  test can assert the windows tile the source exactly — a skipped or
+ *  overlapping page would silently under- or double-count the invariants
+ *  this panel exists to report. */
+const rangeCalls: Array<{ table: string; from: number; to: number }> = [];
+
 /** Every chain method returns the same thenable node — matches the
  *  supabase-js PostgrestFilterBuilder shape (awaitable at any point in the
  *  chain), mirroring the mock style already used in ai-availability.test.ts. */
-function chainNode(result: Probe) {
+function chainNode(result: Probe, table = '') {
   const node = {
     not: () => node,
     order: () => node,
     limit: () => node,
-    range: () => node,
+    range: (from: number, to: number) => {
+      rangeCalls.push({ table, from, to });
+      return node;
+    },
     then: (onFulfilled: (v: Probe) => unknown, onRejected?: (e: unknown) => unknown) =>
       Promise.resolve(result).then(onFulfilled, onRejected),
   };
@@ -47,8 +56,8 @@ vi.mock('@/lib/supabase/admin', () => ({
     from: (table: string) => ({
       select: (_cols: string, opts?: { count?: string; head?: boolean }) => {
         const isCountProbe = Boolean(opts?.head);
-        if (table === 'golf_qualifiers') return chainNode(isCountProbe ? qualifiersCount : qualifiersPage);
-        if (table === 'golf_rounds') return chainNode(isCountProbe ? roundsCount : roundsPage);
+        if (table === 'golf_qualifiers') return chainNode(isCountProbe ? qualifiersCount : qualifiersPage, table);
+        if (table === 'golf_rounds') return chainNode(isCountProbe ? roundsCount : roundsPage, table);
         throw new Error(`unexpected table in test mock: ${table}`);
       },
     }),
@@ -58,6 +67,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 import { fetchQualifierLogic } from '../qualifier-logic';
 
 function resetAll() {
+  rangeCalls.length = 0;
   qualifiersPage.data = [];
   qualifiersPage.error = null;
   qualifiersCount.count = 0;
@@ -220,6 +230,45 @@ describe('fetchQualifierLogic', () => {
     expect(result.data!.qualifiers.truncated).toBe(true);
     expect(result.data!.qualifiers.confirmedTotal).toBeNull();
     expect(result.truncated).toBe(true);
+
+    // The pages must TILE the source: contiguous, non-overlapping, and each
+    // no wider than PostgREST's 1,000-row cap. A gap silently drops rows from
+    // the invariant evaluation; an overlap double-counts them. Either way the
+    // violation counts this panel reports would be wrong while still looking
+    // perfectly plausible.
+    const qualifierRanges = rangeCalls.filter((c) => c.table === 'golf_qualifiers');
+    expect(qualifierRanges).toEqual([
+      { table: 'golf_qualifiers', from: 0, to: 999 },
+      { table: 'golf_qualifiers', from: 1_000, to: 1_999 },
+    ]);
+  });
+
+  it('asks for a window no wider than the PostgREST cap even when the ceiling is not a multiple of it', async () => {
+    // The linked-round ceiling (20,000) is a clean multiple, but the guard
+    // that matters is `Math.min(PAGE_SIZE, ceiling - rows.length)` — without
+    // it, a ceiling with a remainder would request a final window wider than
+    // 1,000 and silently reintroduce the exact bug this replaced.
+    roundsPage.data = Array.from({ length: 1_000 }, (_unused, i) => ({
+      id: `r${i}`,
+      team_id: 'team-a',
+      player_id: 'p1',
+      qualifier_id: 'q1',
+      qualifier_round_number: 1,
+    }));
+    roundsCount.count = null;
+    roundsCount.error = { message: 'count probe unavailable' };
+
+    await fetchQualifierLogic();
+
+    const roundRanges = rangeCalls.filter((c) => c.table === 'golf_rounds');
+    expect(roundRanges.length).toBeGreaterThan(1);
+    for (const call of roundRanges) {
+      expect(call.to - call.from + 1).toBeLessThanOrEqual(1_000);
+    }
+    // Contiguous with no gap and no overlap, page to page.
+    for (let i = 1; i < roundRanges.length; i += 1) {
+      expect(roundRanges[i]!.from).toBe(roundRanges[i - 1]!.to + 1);
+    }
   });
 
   it('does not report truncation when a short page drained the source', async () => {
