@@ -35,6 +35,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, realpathSync } from 'node:fs';
 import { resolve, dirname, isAbsolute, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** Run git, returning trimmed stdout or null. Never throws. */
 function git(args, cwd) {
@@ -145,6 +146,33 @@ function countRange(root, range) {
 }
 
 /**
+ * ROOT/WORKSPACE identity only — the three facts every consumer needs and
+ * none of the integration-distance ones.
+ *
+ * Deliberately does NO ahead/behind work and touches no remote ref. That
+ * separation is the point: consumers that only need "where am I / is this
+ * canonical" must be able to consolidate onto this module WITHOUT inheriting
+ * ahead/behind semantics, which are a separate open question (this module
+ * measures against origin/main, session-context.sh still measures against
+ * local main, and reconciling those two is its own change).
+ *
+ * @param {{cwd?: string}} [input] parsed hook stdin JSON
+ * @returns {{activeRoot: string, canonicalRoot: string, kind: string,
+ *            inRepo: boolean}}
+ */
+export function workspaceRoots(input) {
+  const activeRoot = resolveActiveRoot(input);
+  const canonicalRoot = canonicalRootOf(activeRoot);
+  const inRepo = topLevelOf(activeRoot) !== null;
+  return {
+    activeRoot,
+    canonicalRoot,
+    inRepo,
+    kind: !inRepo ? 'unknown' : activeRoot === canonicalRoot ? 'canonical' : 'task',
+  };
+}
+
+/**
  * Full workspace identity. Every field is best-effort: this runs inside
  * hooks, so it must never throw and never block a session.
  *
@@ -155,9 +183,7 @@ function countRange(root, range) {
  * @param {{cwd?: string}} [input] parsed hook stdin JSON
  */
 export function workspaceIdentity(input) {
-  const root = resolveActiveRoot(input);
-  const canonicalRoot = canonicalRootOf(root);
-  const inRepo = topLevelOf(root) !== null;
+  const { activeRoot: root, canonicalRoot, inRepo, kind } = workspaceRoots(input);
 
   const branch = git(['rev-parse', '--abbrev-ref', 'HEAD'], root);
   const headSha = git(['rev-parse', 'HEAD'], root);
@@ -167,8 +193,6 @@ export function workspaceIdentity(input) {
   );
   const baseSha = git(['rev-parse', 'origin/main'], root);
   const porcelain = git(['status', '--porcelain'], root);
-
-  const kind = !inRepo ? 'unknown' : root === canonicalRoot ? 'canonical' : 'task';
 
   return {
     root,
@@ -200,4 +224,35 @@ export function hasUnsafeUpstream(identity) {
   if (!identity?.upstream) return false;
   if (identity.branch === 'main') return false;
   return identity.upstream === 'origin/main';
+}
+
+// ---------------------------------------------------------------------------
+// CLI surface.
+//
+// Exists so SHELL consumers can read identity without reimplementing it. The
+// alternative — a shell script with its own precedence rules — is what this
+// module replaces; a second implementation in another language is still a
+// second implementation.
+//
+//   node workspace-identity.mjs --active-root
+//   node workspace-identity.mjs --canonical-root
+//   node workspace-identity.mjs --kind
+//   node workspace-identity.mjs --json
+//
+// `--cwd <dir>` supplies the payload cwd a hook would have passed.
+// ---------------------------------------------------------------------------
+function runCli(argv) {
+  const cwdFlag = argv.indexOf('--cwd');
+  const input = cwdFlag !== -1 && argv[cwdFlag + 1] ? { cwd: argv[cwdFlag + 1] } : {};
+  const r = workspaceRoots(input);
+  if (argv.includes('--json')) return JSON.stringify(r);
+  if (argv.includes('--canonical-root')) return r.canonicalRoot;
+  if (argv.includes('--kind')) return r.kind;
+  return r.activeRoot; // --active-root, and the default
+}
+
+// `process.argv[1]` is the resolved script path when run directly; when this
+// module is imported it is the importer's path, so this never fires then.
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.stdout.write(`${runCli(process.argv.slice(2))}\n`);
 }
