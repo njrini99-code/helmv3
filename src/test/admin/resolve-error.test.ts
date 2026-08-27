@@ -38,10 +38,17 @@ vi.mock('@/lib/admin/data/overview', () => ({ BRIDGE_INCIDENT_CACHE_TAG: 'bridge
 
 // ─── service-role READ: admin.from('admin_events').select('id').eq(...).eq(...) ──
 let readOutcome: { data: unknown; error: unknown } = {
-  data: [{ id: 'e1' }, { id: 'e2' }],
+  // created_at added 2026-08-27: the action selects `id, created_at`, orders
+  // DESC and takes rows[0].created_at as the p_last_seen_at regression
+  // baseline. Without it the fixture cannot exercise that logic at all.
+  data: [
+    { id: 'e1', created_at: '2026-08-26T10:00:00.000Z' },
+    { id: 'e2', created_at: '2026-08-25T09:00:00.000Z' },
+  ],
   error: null,
 };
 const readEqCalls: Array<[string, unknown]> = [];
+const readOrderCalls: Array<[string, boolean]> = [];
 let selectColumns: string | null = null;
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -55,6 +62,19 @@ vi.mock('@/lib/supabase/admin', () => ({
         },
         eq: (col: string, val: unknown) => {
           readEqCalls.push([col, val]);
+          return node;
+        },
+        // Added 2026-08-27 with the ordering fix in resolve-error.ts. The
+        // action now ends the read with `.order('created_at', { ascending:
+        // false })` so rows[0] is the genuine newest occurrence regardless of
+        // PostgREST's 1000-row cap — without it the p_last_seen_at regression
+        // baseline could silently understate on a large fingerprint. This stub
+        // stopped at .eq(), so the chain threw
+        // "admin.from(...).select(...).eq(...).eq(...).order is not a function"
+        // and took 6 tests with it. Recorded so the assertion below can prove
+        // the ordering is actually requested, not just tolerated.
+        order: (col: string, opts: { ascending: boolean }) => {
+          readOrderCalls.push([col, opts.ascending]);
           return node;
         },
         // The query builder itself is a thenable — no `.select()` at the end
@@ -93,9 +113,16 @@ beforeEach(() => {
   revalidatePath.mockClear();
   updateTag.mockClear();
   readEqCalls.length = 0;
+  readOrderCalls.length = 0;
   rpcCalls.length = 0;
   selectColumns = null;
-  readOutcome = { data: [{ id: 'e1' }, { id: 'e2' }], error: null };
+  readOutcome = {
+    data: [
+      { id: 'e1', created_at: '2026-08-26T10:00:00.000Z' },
+      { id: 'e2', created_at: '2026-08-25T09:00:00.000Z' },
+    ],
+    error: null,
+  };
   rpcOutcome = { data: 2, error: null };
   requireSuperAdmin.mockResolvedValue({ userId: 'admin-1', email: 'a@b.c' });
 });
@@ -104,13 +131,42 @@ describe('resolveErrorFingerprint — the write the dashboard never had', () => 
   it('resolves the fingerprint through the user-scoped RPC, not a direct UPDATE', async () => {
     const r = await resolve('abc123');
 
-    expect(r).toEqual({ success: true, resolvedCount: 2 });
+    // `fingerprint` was added 2026-08-27: the action now records the resolve
+    // at fingerprint level too, and reports that write's outcome separately
+    // so a fingerprint failure after a successful row resolve cannot collapse
+    // into a plain `success: true`.
+    expect(r).toEqual({ success: true, resolvedCount: 2, fingerprint: { recorded: true } });
     // The read step looked up ids by fingerprint...
-    expect(selectColumns).toBe('id');
+    // `created_at` joined `id` on 2026-08-27: the action orders by it to pick
+    // the genuine newest occurrence for the p_last_seen_at regression
+    // baseline, so it has to be selected.
+    expect(selectColumns).toBe('id, created_at');
+    // And prove the ordering is actually REQUESTED, not merely tolerated by
+    // the stub — an unordered read would silently understate the baseline
+    // once a fingerprint exceeds PostgREST's 1000-row page.
+    expect(readOrderCalls).toContainEqual(['created_at', false]);
     expect(readEqCalls).toContainEqual(['fingerprint', 'abc123']);
     expect(readEqCalls).toContainEqual(['resolved', false]);
     // ...and the write went through resolve_admin_event with those exact ids.
-    expect(rpcCalls).toEqual([{ fn: 'resolve_admin_event', args: { p_event_ids: ['e1', 'e2'] } }]);
+    // TWO rpcs now, in order: the row-level resolve, then the new
+    // fingerprint-level record. The second is the whole point of this
+    // change — admin_error_resolutions had no writer, so the Bridge kept
+    // no memory that anything was ever fixed.
+    expect(rpcCalls).toEqual([
+      { fn: 'resolve_admin_event', args: { p_event_ids: ['e1', 'e2'] } },
+      {
+        fn: 'admin_resolve_error_fingerprint',
+        args: {
+          p_fingerprint: 'abc123',
+          p_pr_number: undefined,
+          p_pr_url: undefined,
+          p_fixed_in_sha: undefined,
+          p_note: undefined,
+          // rows[0] — the NEWEST occurrence, not the last row in the page.
+          p_last_seen_at: '2026-08-26T10:00:00.000Z',
+        },
+      },
+    ]);
   });
 
   it('busts the same nav-badge cache tag resolveTriageEvents busts', async () => {
@@ -125,7 +181,15 @@ describe('resolveErrorFingerprint — the write the dashboard never had', () => 
   it('reports 0 rather than failure when the fingerprint was already resolved, and skips the RPC entirely', async () => {
     readOutcome = { data: [], error: null };
 
-    expect(await resolve('abc123')).toEqual({ success: true, resolvedCount: 0 });
+    // Zero open rows and no options => the RPC is deliberately SKIPPED, so a
+    // stray re-click cannot bump resolved_at, relabel resolution_source to
+    // 'manual', or clear a live reopened_at. Reported as recorded:true
+    // because nothing failed — there was simply nothing new to record.
+    expect(await resolve('abc123')).toEqual({
+      success: true,
+      resolvedCount: 0,
+      fingerprint: { recorded: true },
+    });
     expect(rpcCalls).toEqual([]);
   });
 });

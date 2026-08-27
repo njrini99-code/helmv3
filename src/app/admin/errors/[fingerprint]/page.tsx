@@ -15,7 +15,8 @@ import { ForensicsHeader } from '../_components/ForensicsHeader';
 import { TrendStrip } from '../_components/TrendStrip';
 import { RcaPanel } from '../_components/RcaPanel';
 import { FieldCopy } from '../_components/FieldCopy';
-
+import { fetchResolutionArchive } from '@/lib/admin/data/resolutions';
+import { resolveArchivedResolution, RegressionBanner, ResolutionSummary } from '../_components/ResolutionPanels';
 export const dynamic = 'force-dynamic';
 
 const SEVERITY_TONE: Record<TriageSeverity, FwStatusTone> = {
@@ -33,12 +34,10 @@ function normalizeSport(raw: string | null | undefined): BridgeSport | null {
   return raw === 'golf' || raw === 'baseball' || raw === 'shared' ? raw : null;
 }
 
-/** Mirrors TriageQueue's detailLine() so the same source/feature/action
- *  context an operator sees on the list view is also visible per-event
- *  here, plus the resolveActionFilePath() "where it was" line — previously
- *  computed only for the hidden copy-for-Claude report (incident-report.ts's
- *  own comment calls that "the single highest-value line"), now surfaced
- *  on-screen too. */
+
+
+
+
 function EventDetailLine({
   source,
   feature,
@@ -97,8 +96,46 @@ export default async function FingerprintDetailPage({
       );
     }
 
+    // Resolution lifecycle: has this fingerprint ever been marked fixed, and
+    // has it come back? Synthetic `row:<id>` keys (pre-fingerprinting legacy
+    // rows — see fetchFingerprintDetail's own scoped() branch) never carry a
+    // resolution row, since admin_auto_resolve_error_fingerprint is only ever
+    // called with a real `fingerprint` column value — skip the read outright
+    // rather than querying a key that can never match.
+    //
+    // fetchResolutionArchive() reads the whole table (it is the Archive
+    // panel's data source, with no per-fingerprint variant — see that
+    // module's doc comment) — one extra bounded read on an admin page, traded
+    // for reusing its already-computed shipStatus/regressed rather than
+    // re-deriving them here.
+    const isRowKey = fingerprint.startsWith('row:');
+    const archive = isRowKey ? null : await fetchResolutionArchive();
+    // A FAILED read is not evidence this fingerprint was never resolved —
+    // collapsing the two would be exactly the error→[] shape the engineering
+    // OS forbids. Render the failure honestly instead of silently falling
+    // through to "never resolved". See resolveArchivedResolution's own doc
+    // comment for why this is a separate, directly-testable pure function.
+    const { resolution, resolutionReadFailed } = resolveArchivedResolution(fingerprint, archive);
+
     return (
       <div className="space-y-3">
+        {resolutionReadFailed ? (
+          <Surface padding="sm" className="border border-fw-warning/30 bg-fw-warning/5">
+            <p className="text-body-sm text-warm-800">
+              Resolution status unavailable —{' '}
+              <span className="font-fw-mono text-caption">{archive?.error ?? 'unknown error'}</span>. This does not
+              mean the fault was never resolved; it means the resolution record could not be read.
+            </p>
+          </Surface>
+        ) : null}
+
+        {/* Regression, above everything else: a fault that was already
+            declared fixed and came back is a more urgent fact than "this is
+            broken", and must not be missable. */}
+        {resolution?.regressed ? <RegressionBanner resolution={resolution} /> : null}
+
+        {resolution ? <ResolutionSummary resolution={resolution} /> : null}
+
         {/* Suspect deploy, elevated: the first thing an operator should read —
             "what shipped right before this started" — not buried in the
             bracketing-deploy list further down. */}
