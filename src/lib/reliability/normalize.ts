@@ -219,7 +219,9 @@ export function correlateSignals(
             errorCode: raw.errorCode,
             title,
           }),
-          evidenceRefs: raw.evidenceRef ? [raw.evidenceRef] : [],
+          evidence: raw.evidenceRef
+            ? [{ source: raw.source, ref: raw.evidenceRef }]
+            : [],
         });
         continue;
       }
@@ -229,8 +231,14 @@ export function correlateSignals(
       if (raw.firstSeen < existing.firstSeen) existing.firstSeen = raw.firstSeen;
       if (raw.lastSeen > existing.lastSeen) existing.lastSeen = raw.lastSeen;
       if (!existing.sources.includes(raw.source)) existing.sources.push(raw.source);
-      if (raw.evidenceRef && !existing.evidenceRefs.includes(raw.evidenceRef)) {
-        existing.evidenceRefs.push(raw.evidenceRef);
+      // Dedupe on the PAIR, and keep the source attached. Two sources can
+      // legitimately report the same ref string, and one source routinely
+      // contributes several — neither case survives index-based pairing.
+      if (
+        raw.evidenceRef &&
+        !existing.evidence.some((e) => e.source === raw.source && e.ref === raw.evidenceRef)
+      ) {
+        existing.evidence.push({ source: raw.source, ref: raw.evidenceRef });
       }
       // Severity may have worsened; the tier is derived from it, so re-derive.
       existing.proposedRisk = proposeRisk({

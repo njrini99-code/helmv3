@@ -108,13 +108,24 @@ them would have broken those routes, not the dead one.
   production: all existing `background_job_logs` rows use those two words and
   nothing else. An earlier draft wrote `success`, which no other writer emits and
   every status-based filter would have missed.
-- **A blind arm makes the cron route return 503.** `recordJobRun` treats >=400 as
-  a failed run, so the Jobs board shows this cron red while any source is
-  unreadable — which is correct rather than noisy, and the error line names the
-  sources to fix. Note the consequence: a failed run makes `recordJobRun` write
-  an `admin_events` row titled `Cron failed: reliability-triage`, which is
-  exactly the self-emission `collectSupabase` must filter out. The two behaviours
-  are coupled; do not change one without the other.
+- **Only a TOTALLY blind reliability run returns 503; a partially blind one
+  returns 200.** `recordJobRun` does more than write a job row on a >=400 — it
+  also calls `logServerEvent(..., 'error')`, which writes an `admin_events` row.
+  Failing the run whenever ANY arm was blind therefore produced eight error rows
+  a day, indefinitely, into `/admin/errors`, the incident feed and the nav error
+  badge. A degraded run is already reported honestly twice — the snapshot row
+  carries `status='failed'` and the tab renders a danger band naming each blind
+  source — so a red Jobs board is not worth polluting the triage queue for.
+  These behaviours are coupled with the self-feed filter: a failed run's
+  `admin_events` row is titled `Cron failed: reliability-triage`, which is
+  exactly what `collectSupabase` excludes. Do not change one without the other.
+- **Evidence references carry their source; they are never paired by index.**
+  A `CorrelatedSignal`'s `sources[]` and its evidence list dedupe on different
+  keys, so their indices do not correspond — one source contributing two refs
+  shifts every later index and misattributes the rest. Evidence is
+  `Array<{source, ref}>` for that reason, and `evidenceTarget` needs the source
+  to decide whether a ref is a Sentry permalink, a Bridge drill-through, or
+  opaque text.
 - **A source that could not be read is never reported as zero problems.** The
   reliability collector's arms each return `{status, reason, signals}`, and the
   run's status is the WORST arm — so a run whose Sentry token is missing writes

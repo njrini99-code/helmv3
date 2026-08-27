@@ -26,7 +26,7 @@ function signal(overrides: Partial<CorrelatedSignal> = {}): CorrelatedSignal {
     sources: ['sentry'],
     featureId: null,
     proposedRisk: 'R2',
-    evidenceRefs: [],
+    evidence: [],
     ...overrides,
   };
 }

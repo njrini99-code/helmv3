@@ -58,14 +58,23 @@ export async function GET(request: Request): Promise<Response> {
         );
       }
 
-      // 503 when any arm was blind, so the Jobs board shows this cron as FAILED
-      // rather than green. `recordJobRun` treats >=400 as a failed run, which is
-      // the behaviour we want: a collector that can read one of three sources
-      // has not done its job, and the board is where an operator would look.
+      // TOTALLY blind fails the run; PARTIALLY blind does not. The distinction
+      // is not cosmetic, because `recordJobRun` does more than write a job row
+      // on a >=400: it also calls `logServerEvent(..., 'error')`, which writes
+      // an `admin_events` row.
       //
-      // This will hold the board red until SENTRY_READ_TOKEN and a Vercel token
-      // exist — which is correct, not noisy. The error line names exactly which
-      // sources are blind, so the board states the remedy.
+      // An earlier draft returned 503 whenever ANY arm was blind. With one
+      // unreadable source at a 3-hour cadence that is eight error rows a day,
+      // forever, landing in `/admin/errors`, the triage queue, the incident feed
+      // and the bottom-nav error badge — a system whose entire thesis is "never
+      // hide errors" quietly manufacturing them in the surface an operator uses
+      // to find real ones. The self-feed filter keeps them out of this
+      // collector's own reads, but not out of everyone else's view.
+      //
+      // A degraded run is already reported honestly twice over: the snapshot row
+      // carries status='failed', and the tab renders a danger band naming each
+      // blind source. Losing a permanently-red Jobs board for partial blindness
+      // is the right trade for a triage queue that stays about production.
       //
       // Every value below is a top-level scalar because `recordJobRun` keeps
       // only scalars; anything nested here would be silently dropped from the
@@ -80,9 +89,11 @@ export async function GET(request: Request): Promise<Response> {
         blindSources: blind.map((s) => s.source).join(', '),
       };
 
-      return blind.length > 0
+      const totallyBlind = blind.length === run.sources.length && run.sources.length > 0;
+
+      return totallyBlind
         ? NextResponse.json(
-            { ...body, error: `blind sources: ${body.blindSources}` },
+            { ...body, error: `all sources blind: ${body.blindSources}` },
             { status: 503 },
           )
         : NextResponse.json(body);

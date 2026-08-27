@@ -83,22 +83,25 @@ const SOURCE_ROLE: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 function EvidenceLinks({ signal }: { signal: CorrelatedSignal }) {
-  if (signal.evidenceRefs.length === 0) return null;
+  if (signal.evidence.length === 0) return null;
 
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
-      {signal.evidenceRefs.slice(0, 4).map((ref, i) => {
+      {signal.evidence.slice(0, 4).map(({ source, ref }) => {
         // A reference is only rendered as a link when it actually resolves to
         // one. Printing a Sentry permalink as grey text — the first draft's
         // behaviour — throws away the single most useful action on the row.
-        const target = evidenceTarget(ref, signal.sources[i] ?? signal.sources[0]!);
+        //
+        // The source comes from the PAIR, never from `sources[i]`: those two
+        // lists dedupe on different keys and their indices do not correspond.
+        const target = evidenceTarget(ref, source);
         const chip =
           'inline-flex items-center gap-1 rounded-md border border-warm-200/70 px-2 py-0.5 text-xs';
 
         if (target.kind === 'external') {
           return (
             <a
-              key={ref}
+              key={`${source}:${ref}`}
               href={target.href}
               target="_blank"
               rel="noopener noreferrer"
@@ -112,7 +115,7 @@ function EvidenceLinks({ signal }: { signal: CorrelatedSignal }) {
         if (target.kind === 'internal') {
           return (
             <Link
-              key={ref}
+              key={`${source}:${ref}`}
               href={target.href}
               className={cn(chip, 'text-warm-700 transition-colors hover:border-warm-300 hover:text-warm-900')}
             >
@@ -121,7 +124,7 @@ function EvidenceLinks({ signal }: { signal: CorrelatedSignal }) {
           );
         }
         return (
-          <span key={ref} className={cn(chip, 'font-mono text-warm-500')}>
+          <span key={`${source}:${ref}`} className={cn(chip, 'font-mono text-warm-500')}>
             {target.label}
           </span>
         );
@@ -260,7 +263,12 @@ function SeverityMixPanel({ run }: { run: NonNullable<ReliabilityRunRow['run']> 
             { label: 'Warning', value: counts.warning, tone: 'neutral' },
             { label: 'Info', value: counts.info, tone: 'good' },
           ]}
-          primary="good"
+          // Index 0 (Critical), NOT the default `'good'`. The default auto-picks
+          // the first good-toned part — Info — so a window holding 1 critical
+          // and 39 info would headline a reassuring "97%" on a page whose only
+          // job is answering what is broken. The critical share is the honest
+          // headline, and "0%" is a genuinely good reading when it is earned.
+          primary={0}
         />
       </Inset>
     </Surface>

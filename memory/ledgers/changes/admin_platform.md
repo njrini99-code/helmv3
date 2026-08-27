@@ -22,6 +22,28 @@
   `admin_events` row titled `Cron failed: reliability-triage`, which is precisely
   what `collectSupabase` excludes. The exclusion test now asserts against that
   exact string, derived from the shared constant rather than hand-typed.
+- **Evidence attribution was a parallel-array bug that broke the drill-through
+  this change added.** `sources[]` and `evidenceRefs[]` were separate lists
+  deduped on DIFFERENT keys, and the view paired them by index. One source
+  contributing two refs — two Sentry issues folding to one signature, the common
+  case — shifted every later index, so a Supabase fingerprint got attributed to
+  Sentry, failed `evidenceTarget`'s source check, and rendered as dead text
+  instead of `/admin/errors/<fingerprint>`. Replaced with
+  `evidence: Array<{source, ref}>`; a ref means nothing without knowing which
+  system it addresses, so the pair is the unit. Verified red/green. Note why the
+  original tests could not catch it: every `evidenceTarget` case passed a
+  hand-matched `(ref, source)` pair, so the pairing itself was never exercised —
+  the assertion had to move up to `correlateSignals`.
+- **The 503-on-any-blind-arm would have manufactured errors into the shared
+  triage queue.** `recordJobRun` does more than write a job row on a >=400: it
+  also calls `logServerEvent(..., 'error')`, writing an `admin_events` row. At a
+  3-hour cadence with one unreadable source that is eight error rows a day,
+  indefinitely, landing in `/admin/errors`, the incident feed and the nav error
+  badge — a system whose thesis is "never hide errors" quietly generating them
+  where an operator looks for real ones. Now only a TOTALLY blind run returns
+  503. A partially blind run is still reported honestly twice: the snapshot row
+  carries `status='failed'` and the tab renders a danger band naming each blind
+  source.
 - **Visualisation.** The tab was a flat list; it is now KPI strip (needs
   attention / cross-source / correlated / sources reading, each a drill-through)
   → source health + severity mix → signals grouped by severity with a severity

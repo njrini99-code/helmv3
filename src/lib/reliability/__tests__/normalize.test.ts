@@ -92,7 +92,52 @@ describe('correlateSignals — cross-source folding', () => {
     expect(signals).toHaveLength(1);
     expect(signals[0]!.count).toBe(10);
     expect(signals[0]!.sources.sort()).toEqual(['sentry', 'supabase']);
-    expect(signals[0]!.evidenceRefs.sort()).toEqual(['ref-1', 'ref-2']);
+    expect(signals[0]!.evidence).toEqual([
+      { source: 'sentry', ref: 'ref-1' },
+      { source: 'supabase', ref: 'ref-2' },
+    ]);
+  });
+
+  it('keeps every evidence ref attributed to the source that produced it', () => {
+    // The regression this replaces: `sources` and `evidenceRefs` were parallel
+    // arrays deduped on DIFFERENT keys, and the view paired them by index. One
+    // source contributing two refs — two Sentry issues folding to one signature,
+    // the common case — shifted every later index by one, so a Supabase
+    // fingerprint got attributed to Sentry and silently stopped rendering as a
+    // drill-through to /admin/errors/<fingerprint>.
+    //
+    // Asserting pairs at the fold is the only place this is catchable: a test
+    // that hands `evidenceTarget` a matched (ref, source) pair can never see it.
+    const { signals } = correlateSignals([
+      sourceResult({
+        source: 'sentry',
+        signals: [
+          rawSignal({ source: 'sentry', evidenceRef: 'https://sentry.io/issues/1/' }),
+          rawSignal({ source: 'sentry', evidenceRef: 'https://sentry.io/issues/2/' }),
+        ],
+      }),
+      sourceResult({
+        source: 'supabase',
+        signals: [rawSignal({ source: 'supabase', evidenceRef: 'a1b2c3d4' })],
+      }),
+    ]);
+
+    expect(signals).toHaveLength(1);
+    const fingerprint = signals[0]!.evidence.find((e) => e.ref === 'a1b2c3d4');
+    expect(fingerprint?.source).toBe('supabase');
+    expect(signals[0]!.evidence.filter((e) => e.source === 'sentry')).toHaveLength(2);
+  });
+
+  it('dedupes evidence on the PAIR, so two sources may report the same ref', () => {
+    const shared = 'same-ref';
+    const { signals } = correlateSignals([
+      sourceResult({ source: 'sentry', signals: [rawSignal({ source: 'sentry', evidenceRef: shared })] }),
+      sourceResult({ source: 'supabase', signals: [rawSignal({ source: 'supabase', evidenceRef: shared })] }),
+    ]);
+    expect(signals[0]!.evidence).toEqual([
+      { source: 'sentry', ref: shared },
+      { source: 'supabase', ref: shared },
+    ]);
   });
 
   it('keeps genuinely different failures apart', () => {

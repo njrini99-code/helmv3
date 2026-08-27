@@ -14,10 +14,18 @@
  * returned `[]` for an unreachable Sentry would render as "0 problems found"
  * on a dashboard whose entire purpose is telling you whether anything is wrong.
  *
- * That is not hypothetical here. As of 2026-08-26 the repo's GitHub Actions
- * secrets hold Supabase credentials but NOT `SENTRY_READ_TOKEN` or a Vercel
- * token; those live in Vercel's production env, a different store. So two of
- * three arms start blind, and the system has to say so rather than look clean.
+ * That is not hypothetical here. This collector runs as a VERCEL CRON, so the
+ * credentials that matter are the ones in Vercel's production env — not the
+ * repo's GitHub Actions secrets, which is where an earlier draft of this comment
+ * looked because the collector was originally going to run in Actions. Checked
+ * 2026-08-26: `SENTRY_READ_TOKEN` IS present in production env, so the Sentry
+ * arm should read; `VERCEL_API_TOKEN` is unverified, so the Vercel arm is the
+ * one likely to start blind.
+ *
+ * The correction matters more than the detail. A confidently-wrong justification
+ * is worse than none — it survives review because it reads as researched, and
+ * the next person reasons from a store this code never consults.
+ *
  * It is the same failure the quality-gates rule records for `check:types-drift`
  * — a job that stays green while checking nothing — and the OS contract's
  * "never error→[]" line names it directly.
@@ -129,7 +137,27 @@ export interface CorrelatedSignal {
   featureId: string | null;
   /** Proposed tier. Advisory in this phase; nothing dispatches on it yet. */
   proposedRisk: RiskTier;
-  evidenceRefs: string[];
+  /**
+   * Evidence references PAIRED with the source that produced them.
+   *
+   * This was two parallel arrays — `sources[]` and `evidenceRefs[]` — and the
+   * view paired them by index. They cannot be paired by index: `sources` dedupes
+   * by source while refs dedupe by ref, so the moment one source contributes two
+   * refs (two Sentry issues folding to one signature — the common case) or none,
+   * the indices stop corresponding. The failure was silent and specific: a
+   * Supabase fingerprint sitting at index 2 got attributed to `sentry`, so
+   * `evidenceTarget`'s source check failed and it rendered as dead text instead
+   * of a drill-through to `/admin/errors/<fingerprint>`.
+   *
+   * A ref means nothing without knowing which system it addresses, so the pair
+   * is the unit.
+   */
+  evidence: EvidenceRef[];
+}
+
+export interface EvidenceRef {
+  source: ReliabilitySource;
+  ref: string;
 }
 
 /** The whole run, as written to `background_job_logs.metadata`. */
