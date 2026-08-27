@@ -5,7 +5,6 @@
  * Falls back gracefully if Resend is not configured.
  */
 
-import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
@@ -770,50 +769,86 @@ function generateEmailTemplate(
  * Checks all four profile tables in priority order.
  *   Players  → "Hi Nick,"
  *   Coaches  → "Hi Coach Smith,"  (last word of full_name used as last name)
+ *
+ * SERVICE-ROLE CLIENT, DELIBERATELY (2026-08-27 fix): this used to read
+ * through the cookie-based `createClient()` — fine for the two in-request
+ * callers (`golf-message-fanout.ts`'s `notifyNewMessage`, `announcements.ts`'s
+ * `notifyTeamAnnouncement`) where the querying session has its
+ * own cookies, but `sendEmailNotification` is also called from the
+ * `event-reminders` and `coachhelm-safety-net` crons, which run with NO
+ * session at all. There `createClient()` doesn't throw (it's still inside a
+ * route-handler request scope, so `cookies()` resolves fine) — it silently
+ * authenticates as `anon`. `golf_players`/`golf_coaches` grant `anon` SELECT
+ * (RLS then returns zero rows for an unauthenticated caller, so lookups 1–2
+ * just fall through), but `baseball_players` and the `baseball_coaches_public`
+ * view do NOT grant `anon` — so steps 3–4 got a hard Postgres 42501
+ * "permission denied for table/view ..." back from PostgREST on every
+ * baseball recipient. supabase-js resolves that as `{ data: null, error }`
+ * rather than throwing, and this function's `try/catch` only ever catches a
+ * throw, so the failure was doubly invisible to our own code (the greeting
+ * silently degraded to 'Hi there,') while still surfacing as a raw
+ * permission-denied response that Sentry's own HTTP instrumentation captured
+ * independently (47 occurrences, escalating, misattributed to whichever
+ * cron's bundle the async stack happened to be sampled in — see
+ * event-reminders/route.ts's KindResult doc comment for the incident).
+ *
+ * The fix is the service-role client, same as `getUserNotificationPreferences`
+ * above and for the same reason. It is NOT a privilege escalation: every
+ * caller passes the actual recipient's own `userId` (see that function's
+ * SECURITY CONTRACT — the same contract applies here), and the only thing
+ * ever returned is that recipient's own first/last name, embedded in an email
+ * addressed to them. `baseball_coaches_public` (not `baseball_coaches`) is
+ * still used for step 4 on purpose — it is the non-PII projection, and this
+ * function must never touch the full `baseball_coaches` row. NEVER widen the
+ * `anon` grant on `baseball_players`/`baseball_coaches_public` to "fix" this
+ * — `baseball_coaches_public` is one of four ERROR-level
+ * `security_definer_view` advisories; granting `anon` would expose coach data
+ * to unauthenticated callers.
  */
 async function getRecipientGreeting(userId: string): Promise<string> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 1. Golf player → first name
-    const { data: golfPlayer } = await supabase
+    const { data: golfPlayer, error: golfPlayerErr } = await supabase
       .from('golf_players')
       .select('first_name')
       .eq('user_id', userId)
       .maybeSingle();
+    if (golfPlayerErr) throw golfPlayerErr;
     if (golfPlayer?.first_name) return `Hi ${golfPlayer.first_name},`;
 
     // 2. Golf coach → last name from full_name
-    const { data: golfCoach } = await supabase
+    const { data: golfCoach, error: golfCoachErr } = await supabase
       .from('golf_coaches')
       .select('full_name')
       .eq('user_id', userId)
       .maybeSingle();
+    if (golfCoachErr) throw golfCoachErr;
     if (golfCoach?.full_name) {
       const lastName = golfCoach.full_name.trim().split(' ').pop() ?? golfCoach.full_name;
       return `Hi Coach ${lastName},`;
     }
 
     // 3. Baseball player → first name
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: bbPlayer } = await (supabase as any)
+    const { data: bbPlayer, error: bbPlayerErr } = await supabase
       .from('baseball_players')
       .select('first_name')
       .eq('user_id', userId)
-      .maybeSingle() as { data: { first_name: string | null } | null };
+      .maybeSingle();
+    if (bbPlayerErr) throw bbPlayerErr;
     if (bbPlayer?.first_name) return `Hi ${bbPlayer.first_name},`;
 
     // 4. Baseball coach → last name from full_name.
-    // Read from the baseball_coaches_public view (non-PII) so this greeting
-    // still resolves for the recipient coach once baseball_coaches RLS is
-    // narrowed away from blanket read. (Session-less/anon callers get null
-    // here either way and fall through to the default greeting.)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: bbCoach } = await (supabase as any)
+    // Read from the baseball_coaches_public view (non-PII) — never the base
+    // baseball_coaches table — so this greeting stays clear of the RLS
+    // narrowing on that table regardless of who/what is calling.
+    const { data: bbCoach, error: bbCoachErr } = await supabase
       .from('baseball_coaches_public')
       .select('full_name')
       .eq('user_id', userId)
-      .maybeSingle() as { data: { full_name: string | null } | null };
+      .maybeSingle();
+    if (bbCoachErr) throw bbCoachErr;
     if (bbCoach?.full_name) {
       const lastName = bbCoach.full_name.trim().split(' ').pop() ?? bbCoach.full_name;
       return `Hi Coach ${lastName},`;
@@ -823,6 +858,14 @@ async function getRecipientGreeting(userId: string): Promise<string> {
   }
   return 'Hi there,';
 }
+
+// ---------------------------------------------------------------------------
+// Test surface — exported for unit tests in src/test/lib/notifications/.
+// Production callers should use sendEmailNotification() above.
+// ---------------------------------------------------------------------------
+export const __testables = {
+  getRecipientGreeting,
+};
 
 /**
  * Send an email notification

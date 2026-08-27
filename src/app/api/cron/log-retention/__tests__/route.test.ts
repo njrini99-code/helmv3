@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
+import type { AutoResolveResult } from '@/lib/admin/auto-resolve';
 
 /**
  * Retention-purge batching contract.
@@ -83,14 +84,21 @@ vi.mock('@/lib/admin/incident-resolver', () => ({
   archiveKnownResolvedIncidents: async () => ({ archived: 0, buckets: {} }),
 }));
 
-vi.mock('@/lib/admin/auto-resolve', () => ({
-  autoResolveFixedIncidents: async () => ({
+const { autoResolveMock } = vi.hoisted(() => ({
+  autoResolveMock: vi.fn<() => Promise<AutoResolveResult>>(async () => ({
     resolvedRelease: 0,
     resolvedQuiet: 0,
     resolvedLegacy: 0,
+    resolvedNonActionable: 0,
     fingerprints: 0,
     deploySha: null,
-  }),
+    ledger: { recorded: 0, skippedManual: 0, failed: 0, capped: 0, firstError: null },
+    regressions: { marked: 0, failed: 0, capped: 0, firstError: null },
+  })),
+}));
+
+vi.mock('@/lib/admin/auto-resolve', () => ({
+  autoResolveFixedIncidents: autoResolveMock,
 }));
 
 function request(secret = 'cron-secret'): NextRequest {
@@ -110,6 +118,17 @@ describe('GET /api/cron/log-retention', () => {
     vi.stubEnv('CRON_SECRET', 'cron-secret');
     mocks.rows = new Map();
     mocks.deleteBatches = [];
+    autoResolveMock.mockReset();
+    autoResolveMock.mockResolvedValue({
+      resolvedRelease: 0,
+      resolvedQuiet: 0,
+      resolvedLegacy: 0,
+      resolvedNonActionable: 0,
+      fingerprints: 0,
+      deploySha: null,
+      ledger: { recorded: 0, skippedManual: 0, failed: 0, capped: 0, firstError: null },
+      regressions: { marked: 0, failed: 0, capped: 0, firstError: null },
+    });
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -152,5 +171,171 @@ describe('GET /api/cron/log-retention', () => {
     // Nothing may be deleted twice.
     const touched = mocks.deleteBatches.flatMap((b) => b.ids);
     expect(new Set(touched).size).toBe(touched.length);
+  });
+
+  it('flattens a clean resolution pass into top-level scalars, undegraded', async () => {
+    autoResolveMock.mockResolvedValue({
+      resolvedRelease: 2,
+      resolvedQuiet: 1,
+      resolvedLegacy: 0,
+      resolvedNonActionable: 0,
+      fingerprints: 3,
+      deploySha: 'abc123',
+      ledger: { recorded: 3, skippedManual: 1, failed: 0, capped: 0, firstError: null },
+      regressions: { marked: 1, failed: 0, capped: 0, firstError: null },
+    });
+
+    const GET = await loadRoute();
+    const res = await GET(request());
+    const body = (await res.json()) as Record<string, unknown>;
+
+    expect(res.status).toBe(200);
+    expect(body.degraded).toBe(false);
+    // Every field `recordJobRun`'s extractOutcomeMetadata can actually keep
+    // (top-level string/number/boolean) must be present directly on the body —
+    // a nested `ledger`/`regressions` object here would be silently dropped
+    // before it ever reached background_job_logs.metadata.
+    expect(body.ledgerRecorded).toBe(3);
+    expect(body.ledgerSkippedManual).toBe(1);
+    expect(body.ledgerFailed).toBe(0);
+    expect(body.ledgerCapped).toBe(0);
+    expect(body.regressionsMarked).toBe(1);
+    expect(body.regressionsFailed).toBe(0);
+    expect(body.regressionsCapped).toBe(0);
+    // Encodes extractOutcomeMetadata's actual rule (job-log.ts), not just
+    // presence: every flattened field must be a scalar it can keep, so a
+    // later "tidy this up" that re-nests them under `ledger: {…}` fails here
+    // instead of silently going invisible in background_job_logs.metadata.
+    for (const key of [
+      'ledgerRecorded',
+      'ledgerSkippedManual',
+      'ledgerFailed',
+      'ledgerCapped',
+      'regressionsMarked',
+      'regressionsFailed',
+      'regressionsCapped',
+      'degraded',
+    ]) {
+      expect(['string', 'number', 'boolean']).toContain(typeof body[key]);
+    }
+    // No cause to report on a clean pass.
+    expect(body).not.toHaveProperty('ledgerFirstError');
+    expect(body).not.toHaveProperty('regressionsFirstError');
+    expect(body).not.toHaveProperty('regressionSkippedReason');
+  });
+
+  it('surfaces the ledger failure cause and reports the run as degraded, without failing the cron', async () => {
+    autoResolveMock.mockResolvedValue({
+      resolvedRelease: 0,
+      resolvedQuiet: 0,
+      resolvedLegacy: 0,
+      resolvedNonActionable: 0,
+      fingerprints: 1,
+      deploySha: null,
+      ledger: {
+        recorded: 0,
+        skippedManual: 0,
+        failed: 1,
+        capped: 0,
+        firstError: 'fp-123: connection reset',
+      },
+      regressions: { marked: 0, failed: 0, capped: 0, firstError: null },
+    });
+
+    const GET = await loadRoute();
+    const res = await GET(request());
+    const body = (await res.json()) as Record<string, unknown>;
+
+    // A retryable per-fingerprint RPC failure must not turn a red cron —
+    // next night's pass re-decides it from fresh occurrence data. Only the
+    // `degraded` signal changes.
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.degraded).toBe(true);
+    expect(body.ledgerFailed).toBe(1);
+    expect(body.ledgerFirstError).toBe('fp-123: connection reset');
+  });
+
+  it('surfaces a regression-write failure as degraded with its cause', async () => {
+    autoResolveMock.mockResolvedValue({
+      resolvedRelease: 0,
+      resolvedQuiet: 0,
+      resolvedLegacy: 0,
+      resolvedNonActionable: 0,
+      fingerprints: 0,
+      deploySha: null,
+      ledger: { recorded: 0, skippedManual: 0, failed: 0, capped: 0, firstError: null },
+      regressions: { marked: 0, failed: 1, capped: 0, firstError: 'fp-999: rpc timeout' },
+    });
+
+    const GET = await loadRoute();
+    const res = await GET(request());
+    const body = (await res.json()) as Record<string, unknown>;
+
+    expect(res.status).toBe(200);
+    expect(body.degraded).toBe(true);
+    expect(body.regressionsFailed).toBe(1);
+    expect(body.regressionsFirstError).toBe('fp-999: rpc timeout');
+  });
+
+  it('surfaces a capped ledger pass rather than reading as fully covered', async () => {
+    autoResolveMock.mockResolvedValue({
+      resolvedRelease: 0,
+      resolvedQuiet: 0,
+      resolvedLegacy: 0,
+      resolvedNonActionable: 0,
+      fingerprints: 600,
+      deploySha: null,
+      ledger: { recorded: 500, skippedManual: 0, failed: 0, capped: 100, firstError: null },
+      regressions: { marked: 0, failed: 0, capped: 0, firstError: null },
+    });
+
+    const GET = await loadRoute();
+    const res = await GET(request());
+    const body = (await res.json()) as Record<string, unknown>;
+
+    expect(body.ledgerCapped).toBe(100);
+  });
+
+  it('surfaces the regression-skip reason when regression detection could not run', async () => {
+    autoResolveMock.mockResolvedValue({
+      resolvedRelease: 0,
+      resolvedQuiet: 0,
+      resolvedLegacy: 0,
+      resolvedNonActionable: 0,
+      fingerprints: 0,
+      deploySha: null,
+      ledger: { recorded: 0, skippedManual: 0, failed: 0, capped: 0, firstError: null },
+      regressions: { marked: 0, failed: 0, capped: 0, firstError: null },
+      regressionSkippedReason: 'resolutions read failed: connection reset',
+    });
+
+    const GET = await loadRoute();
+    const res = await GET(request());
+    const body = (await res.json()) as Record<string, unknown>;
+
+    expect(body.regressionSkippedReason).toBe('resolutions read failed: connection reset');
+    // `regressionSkippedReason` is only ever set when the resolutions read
+    // failed (see auto-resolve.ts) — regression detection never ran, so
+    // "nothing regressed" was never established. That is not a clean pass:
+    // reporting `degraded: false` here would be the unknown->healthy collapse
+    // the OS contract bans.
+    expect(body.degraded).toBe(true);
+  });
+
+  it('treats a thrown/caught autoResolveFixedIncidents failure as degraded with its message as the cause, without failing the cron', async () => {
+    autoResolveMock.mockRejectedValue(new Error('autoResolveFixedIncidents boom'));
+
+    const GET = await loadRoute();
+    const res = await GET(request());
+    const body = (await res.json()) as Record<string, unknown>;
+
+    // runAutoResolve's fail-soft wrapper converts the throw into
+    // `{ error: message }` so the retention purge (the route's own job)
+    // still runs and still returns 200.
+    expect(res.status).toBe(200);
+    expect(body.degraded).toBe(true);
+    expect(body.ledgerFailed).toBe(0);
+    expect(body.ledgerFirstError).toBe('autoResolveFixedIncidents boom');
   });
 });
