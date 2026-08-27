@@ -1,32 +1,38 @@
 /**
- * Self-healing decisions: what the reliability cron should archive, and what it
- * should drag back into view.
+ * Regression detection: which archived faults have come BACK.
  *
  * Pure on purpose — every rule below is a judgement about production state, and
  * a judgement that can only be exercised against production is one nobody can
- * test. The I/O lives in `resolution-io.ts`.
+ * test.
  *
- * THE TWO DECISIONS
- * -----------------
- * AUTO-RESOLVE. A fault stops appearing after a deploy. That is the ordinary
- * shape of "someone fixed it", and it is the only evidence available without a
- * human saying so — nothing in the events themselves announces a fix.
+ * WHY THIS MODULE DOES NOT DECIDE WHAT TO ARCHIVE
+ * ----------------------------------------------
+ * It used to. That was a mistake, and a specific one rather than a stylistic
+ * one: `autoResolveFixedIncidents` (src/lib/admin/auto-resolve.ts) has decided
+ * what is fixed since long before this module existed, and it carries an
+ * exclusion this module did not.
  *
- * REOPEN. An archived fault appears again. That is a regression, and it is the
- * single most valuable thing this system can tell you: "we already fixed this
- * and it came back" is a completely different fact from "this is broken".
+ * Its Rule A — quiet since a production deploy that is at least 24h old — is
+ * the same inference this module's archive branch made. But Rule A also skips
+ * every OPERATOR-GATED fault: `provider_*_credit_exhausted`,
+ * `_invalid_credential`, `_missing_credential`, `_plan_gated_model`. Those fire
+ * only when something exercises the path, so a quiet weekend is
+ * indistinguishable from a fix, and no deploy has ever topped up a billing
+ * account or rotated a key. Measured in production 2026-08-06: EVERY provider
+ * fault in the table had been flagged resolved while still broken — one sat
+ * closed for ten days with a dead credential.
  *
- * WHY A DEPLOY IS REQUIRED FOR AUTO-RESOLVE
- * -----------------------------------------
- * Silence alone is not evidence of a fix. A nightly cron that fails once a day
- * is silent for 23 hours; a seasonal feature is silent all summer; an outage
- * that ended on its own is silent until it returns. Requiring a production
- * deploy AFTER the last occurrence is what separates "someone shipped
- * something and the fault stopped" from "nothing happened to be running".
+ * A second archive rule without that exclusion would have re-earned that bug at
+ * full price. So the decision stays in ONE place, made once, and this module
+ * keeps the half that nothing else provides.
  *
- * It is still an inference, not proof — which is exactly why the resolution it
- * writes is marked `auto` and never overwrites a human's `manual` decision, and
- * why the Bridge must present the two differently.
+ * REOPEN — the piece that genuinely has no other home. auto-resolve.ts's own
+ * doc says regression semantics "need no extra code" because a fault that fires
+ * again arrives as a fresh unresolved row. It does — carrying no memory that it
+ * was ever fixed, by what, or how many times this has happened. "We already
+ * fixed this and it came back" is a completely different fact from "this is
+ * broken", and only the fingerprint-level resolution record can tell them
+ * apart.
  */
 
 export interface OpenFault {
@@ -45,29 +51,11 @@ export interface ExistingResolution {
   reopenedAt: string | null;
 }
 
-export interface ResolutionInputs {
-  /** Faults with at least one occurrence in the collector's window. */
+export interface ReopenInputs {
+  /** Faults with at least one occurrence in the caller's window. */
   openFaults: readonly OpenFault[];
   /** Current resolution rows, keyed however the caller likes. */
   resolutions: readonly ExistingResolution[];
-  /**
-   * When production last shipped. Null when Vercel could not be read — and that
-   * is NOT treated as "no deploy": with an unknown deploy time nothing is
-   * auto-resolved at all, because the alternative is archiving live faults on a
-   * false premise. Reopening still works, since it needs no deploy evidence.
-   */
-  productionDeployedAt: string | null;
-  /** Commit SHA currently in production, recorded on the resolution. */
-  productionSha: string | null;
-  now: Date;
-  /** A fault must be silent at least this long before auto-resolution. */
-  quietHours?: number;
-}
-
-export interface AutoResolveDecision {
-  fingerprint: string;
-  lastSeenAt: string;
-  reason: string;
 }
 
 export interface ReopenDecision {
@@ -77,97 +65,47 @@ export interface ReopenDecision {
   reason: string;
 }
 
-export interface ResolutionPlan {
-  autoResolve: AutoResolveDecision[];
-  reopen: ReopenDecision[];
-  /** Why nothing was auto-resolved, when that is the case. Never silent. */
-  autoResolveBlockedReason: string | null;
-}
-
 /**
- * Minimum silence before a fault may be archived.
+ * Which archived faults have recurred since they were archived.
  *
- * 24h is chosen so a DAILY cron gets at least one scheduled chance to fail
- * again before its fault is archived. A shorter window would archive a nightly
- * job's failure during the day and reopen it every night — churn that reads as
- * a regression storm and is really just the schedule.
+ * A fault with no resolution row cannot regress — it was never claimed fixed —
+ * so it is skipped rather than treated as anything. Deciding whether such a
+ * fault should now be archived is `autoResolveFixedIncidents`'s job; see the
+ * module doc for why that is deliberately not here.
  */
-export const DEFAULT_QUIET_HOURS = 24;
-
-function hoursBetween(fromIso: string, to: Date): number {
-  const ms = to.getTime() - new Date(fromIso).getTime();
-  return Number.isFinite(ms) ? ms / 3_600_000 : Number.NaN;
-}
-
-/**
- * Decide what to archive and what to bring back.
- *
- * Reopen is evaluated FIRST and wins: a fault that recurred after its
- * resolution is a regression even if it has since gone quiet again, and
- * archiving it in the same pass would erase the signal it exists to raise.
- */
-export function planResolutions(input: ResolutionInputs): ResolutionPlan {
-  const quietHours = input.quietHours ?? DEFAULT_QUIET_HOURS;
+export function planReopens(input: ReopenInputs): ReopenDecision[] {
   const byFingerprint = new Map(input.resolutions.map((r) => [r.fingerprint, r]));
-
   const reopen: ReopenDecision[] = [];
-  const autoResolve: AutoResolveDecision[] = [];
 
   for (const fault of input.openFaults) {
     const resolution = byFingerprint.get(fault.fingerprint);
+    if (!resolution) continue;
 
-    if (resolution) {
-      // Compare against the last occurrence known AT RESOLUTION, not against
-      // resolvedAt. A fault that fired once more between the fix landing and
-      // the cron noticing is not a regression — the resolver already knew about
-      // that occurrence. Falling back to resolvedAt when the column is null
-      // keeps older rows working.
-      const baseline = resolution.lastSeenAtResolution ?? resolution.resolvedAt;
-      const isNewer = new Date(fault.lastSeenAt).getTime() > new Date(baseline).getTime();
-      if (isNewer && !resolution.reopenedAt) {
-        reopen.push({
-          fingerprint: fault.fingerprint,
-          lastSeenAt: fault.lastSeenAt,
-          resolvedAt: resolution.resolvedAt,
-          reason:
-            `recurred at ${fault.lastSeenAt}, after being resolved ` +
-            `(${resolution.resolutionSource}) at ${resolution.resolvedAt}`,
-        });
-      }
-      // Already-resolved faults are never re-archived here: either they
-      // regressed (handled above) or they are correctly quiet and need nothing.
-      continue;
-    }
+    // Compare against the last occurrence known AT RESOLUTION, not against
+    // resolvedAt. A fault that fired once more between the fix landing and the
+    // cron noticing is not a regression — the resolver already knew about that
+    // occurrence, and comparing against resolvedAt would cry wolf on every
+    // fix. Falling back to resolvedAt when the column is null keeps older rows
+    // working.
+    const baseline = resolution.lastSeenAtResolution ?? resolution.resolvedAt;
+    const isNewer = new Date(fault.lastSeenAt).getTime() > new Date(baseline).getTime();
 
-    // Unresolved fault. Archive only when BOTH hold: it has been quiet long
-    // enough, and production shipped something after its last occurrence.
-    if (!input.productionDeployedAt) continue;
+    // `reopenedAt` already set means this regression has been raised. Without
+    // this check a fault firing every three hours would raise a fresh
+    // regression every tick — noise that buries the signal it is made of.
+    if (!isNewer || resolution.reopenedAt) continue;
 
-    const quietFor = hoursBetween(fault.lastSeenAt, input.now);
-    if (!Number.isFinite(quietFor) || quietFor < quietHours) continue;
-
-    const deployedAfter =
-      new Date(input.productionDeployedAt).getTime() > new Date(fault.lastSeenAt).getTime();
-    if (!deployedAfter) continue;
-
-    autoResolve.push({
+    reopen.push({
       fingerprint: fault.fingerprint,
       lastSeenAt: fault.lastSeenAt,
+      resolvedAt: resolution.resolvedAt,
       reason:
-        `no occurrence for ${Math.floor(quietFor)}h, and production deployed at ` +
-        `${input.productionDeployedAt} after the last one`,
+        `recurred at ${fault.lastSeenAt}, after being resolved ` +
+        `(${resolution.resolutionSource}) at ${resolution.resolvedAt}`,
     });
   }
 
-  return {
-    autoResolve,
-    reopen,
-    // Say why nothing was archived rather than reporting an empty list that
-    // reads as "nothing qualified".
-    autoResolveBlockedReason: input.productionDeployedAt
-      ? null
-      : 'no production deploy timestamp available — auto-resolution is skipped rather than guessed',
-  };
+  return reopen;
 }
 
 /** Whether a resolved fault's fix is actually live, for the Bridge to render. */

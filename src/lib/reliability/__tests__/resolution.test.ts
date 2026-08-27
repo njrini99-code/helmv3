@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  DEFAULT_QUIET_HOURS,
-  planResolutions,
+  planReopens,
   shipStatus,
   type ExistingResolution,
   type OpenFault,
@@ -25,93 +24,15 @@ function resolution(over: Partial<ExistingResolution> = {}): ExistingResolution 
   };
 }
 
-describe('auto-resolve — silence alone is never enough', () => {
-  it('archives a fault that went quiet and was followed by a deploy', () => {
-    const plan = planResolutions({
-      openFaults: [fault({ lastSeenAt: hoursAgo(48) })],
-      resolutions: [],
-      productionDeployedAt: hoursAgo(30),
-      productionSha: 'abc1234',
-      now: NOW,
-    });
-    expect(plan.autoResolve).toHaveLength(1);
-    expect(plan.autoResolve[0]!.fingerprint).toBe('fp1');
-    expect(plan.autoResolve[0]!.reason).toContain('production deployed');
-  });
-
-  it('does NOT archive a fault that is merely quiet with no deploy after it', () => {
-    // The core rule. A nightly cron is silent 23 hours a day; a seasonal
-    // feature is silent for months. Without a deploy there is no evidence a
-    // fix happened, and archiving would hide a live fault.
-    const plan = planResolutions({
-      openFaults: [fault({ lastSeenAt: hoursAgo(48) })],
-      resolutions: [],
-      productionDeployedAt: hoursAgo(72), // BEFORE the last occurrence
-      productionSha: 'abc1234',
-      now: NOW,
-    });
-    expect(plan.autoResolve).toEqual([]);
-  });
-
-  it('does NOT archive a fault seen more recently than the quiet window', () => {
-    const plan = planResolutions({
-      openFaults: [fault({ lastSeenAt: hoursAgo(2) })],
-      resolutions: [],
-      productionDeployedAt: hoursAgo(1),
-      productionSha: 'abc1234',
-      now: NOW,
-    });
-    expect(plan.autoResolve).toEqual([]);
-  });
-
-  it('respects the quiet-window boundary exactly', () => {
-    const justInside = planResolutions({
-      openFaults: [fault({ lastSeenAt: hoursAgo(DEFAULT_QUIET_HOURS - 1) })],
-      resolutions: [], productionDeployedAt: hoursAgo(0.5), productionSha: 'a', now: NOW,
-    });
-    const justOutside = planResolutions({
-      openFaults: [fault({ lastSeenAt: hoursAgo(DEFAULT_QUIET_HOURS + 1) })],
-      resolutions: [], productionDeployedAt: hoursAgo(0.5), productionSha: 'a', now: NOW,
-    });
-    expect(justInside.autoResolve).toEqual([]);
-    expect(justOutside.autoResolve).toHaveLength(1);
-  });
-
-  it('archives NOTHING when the deploy time is unknown, and SAYS why', () => {
-    // Unknown must not read as "no deploy" — that would archive live faults on
-    // a false premise. And an empty list with no reason reads as "nothing
-    // qualified", which is a different claim.
-    const plan = planResolutions({
-      openFaults: [fault({ lastSeenAt: hoursAgo(200) })],
-      resolutions: [],
-      productionDeployedAt: null,
-      productionSha: null,
-      now: NOW,
-    });
-    expect(plan.autoResolve).toEqual([]);
-    expect(plan.autoResolveBlockedReason).toMatch(/no production deploy timestamp/i);
-  });
-
-  it('reports no blocked-reason when deploy data WAS available', () => {
-    const plan = planResolutions({
-      openFaults: [], resolutions: [], productionDeployedAt: hoursAgo(1),
-      productionSha: 'a', now: NOW,
-    });
-    expect(plan.autoResolveBlockedReason).toBeNull();
-  });
-});
-
-describe('reopen — an archived fault that comes back is a regression', () => {
+describe('planReopens — an archived fault that comes back is a regression', () => {
   it('reopens when a NEW occurrence post-dates what the resolver knew', () => {
-    const plan = planResolutions({
+    const reopen = planReopens({
       openFaults: [fault({ lastSeenAt: hoursAgo(2) })],
       resolutions: [resolution({ lastSeenAtResolution: hoursAgo(48), resolvedAt: hoursAgo(36) })],
-      productionDeployedAt: hoursAgo(30),
-      productionSha: 'abc1234',
-      now: NOW,
     });
-    expect(plan.reopen).toHaveLength(1);
-    expect(plan.reopen[0]!.reason).toContain('recurred');
+    expect(reopen).toHaveLength(1);
+    expect(reopen[0]!.fingerprint).toBe('fp1');
+    expect(reopen[0]!.reason).toContain('recurred');
   });
 
   it('does NOT reopen for an occurrence the resolver already knew about', () => {
@@ -119,67 +40,68 @@ describe('reopen — an archived fault that comes back is a regression', () => {
     // a fault that fired once more between the fix landing and the cron
     // noticing was already accounted for. Comparing against resolvedAt would
     // reopen it and cry wolf on every fix.
-    const plan = planResolutions({
+    const reopen = planReopens({
       openFaults: [fault({ lastSeenAt: hoursAgo(40) })],
       resolutions: [resolution({ lastSeenAtResolution: hoursAgo(40), resolvedAt: hoursAgo(36) })],
-      productionDeployedAt: hoursAgo(30),
-      productionSha: 'abc1234',
-      now: NOW,
     });
-    expect(plan.reopen).toEqual([]);
+    expect(reopen).toEqual([]);
   });
 
   it('does not re-reopen a fault already flagged as regressed', () => {
     // Otherwise a fault firing every 3 hours would raise a fresh regression
     // every tick.
-    const plan = planResolutions({
+    const reopen = planReopens({
       openFaults: [fault({ lastSeenAt: hoursAgo(1) })],
       resolutions: [resolution({ reopenedAt: hoursAgo(5) })],
-      productionDeployedAt: hoursAgo(30),
-      productionSha: 'abc1234',
-      now: NOW,
     });
-    expect(plan.reopen).toEqual([]);
+    expect(reopen).toEqual([]);
   });
 
   it('reopens a MANUALLY resolved fault too, and names the source', () => {
     // A human asserting "fixed" does not make a recurrence less of a
     // regression — it makes it more interesting.
-    const plan = planResolutions({
+    const reopen = planReopens({
       openFaults: [fault({ lastSeenAt: hoursAgo(1) })],
       resolutions: [resolution({ resolutionSource: 'manual', lastSeenAtResolution: hoursAgo(48) })],
-      productionDeployedAt: hoursAgo(30),
-      productionSha: 'abc1234',
-      now: NOW,
     });
-    expect(plan.reopen).toHaveLength(1);
-    expect(plan.reopen[0]!.reason).toContain('manual');
+    expect(reopen).toHaveLength(1);
+    expect(reopen[0]!.reason).toContain('manual');
   });
 
-  it('never archives an already-resolved fault a second time', () => {
-    const plan = planResolutions({
-      openFaults: [fault({ lastSeenAt: hoursAgo(200) })],
-      resolutions: [resolution({ lastSeenAtResolution: hoursAgo(200) })],
-      productionDeployedAt: hoursAgo(1),
-      productionSha: 'abc1234',
-      now: NOW,
+  it('ignores a fault that was never claimed fixed', () => {
+    // Nothing to regress FROM. Whether this fault should now be archived is
+    // autoResolveFixedIncidents' decision, not this module's — see the module
+    // doc for the operator-gated exclusion that makes that separation matter.
+    const reopen = planReopens({
+      openFaults: [fault({ fingerprint: 'never-resolved', lastSeenAt: hoursAgo(1) })],
+      resolutions: [],
     });
-    expect(plan.autoResolve).toEqual([]);
-    expect(plan.reopen).toEqual([]);
+    expect(reopen).toEqual([]);
   });
 
-  it('reopen wins over archive in the same pass', () => {
-    // A fault that recurred and then went quiet again must still surface the
-    // regression; archiving it in the same tick would erase the signal.
-    const plan = planResolutions({
-      openFaults: [fault({ lastSeenAt: hoursAgo(30) })],
-      resolutions: [resolution({ lastSeenAtResolution: hoursAgo(72), resolvedAt: hoursAgo(60) })],
-      productionDeployedAt: hoursAgo(1),
-      productionSha: 'abc1234',
-      now: NOW,
+  it('falls back to resolvedAt when the resolution predates last_seen_at_resolution', () => {
+    // Rows written before that column existed carry null. They must still be
+    // able to regress, just against the weaker baseline.
+    const reopen = planReopens({
+      openFaults: [fault({ lastSeenAt: hoursAgo(1) })],
+      resolutions: [resolution({ lastSeenAtResolution: null, resolvedAt: hoursAgo(10) })],
     });
-    expect(plan.reopen).toHaveLength(1);
-    expect(plan.autoResolve).toEqual([]);
+    expect(reopen).toHaveLength(1);
+  });
+
+  it('matches each fault to its OWN resolution, not merely to any', () => {
+    const reopen = planReopens({
+      openFaults: [
+        fault({ fingerprint: 'fp-quiet', lastSeenAt: hoursAgo(80) }),
+        fault({ fingerprint: 'fp-back', lastSeenAt: hoursAgo(1) }),
+      ],
+      resolutions: [
+        resolution({ fingerprint: 'fp-quiet', lastSeenAtResolution: hoursAgo(80) }),
+        resolution({ fingerprint: 'fp-back', lastSeenAtResolution: hoursAgo(90) }),
+      ],
+    });
+    expect(reopen).toHaveLength(1);
+    expect(reopen[0]!.fingerprint).toBe('fp-back');
   });
 });
 
@@ -224,7 +146,8 @@ describe('shipStatus — three outcomes, never two', () => {
 
   it('still answers when there is no fix SHA at all', () => {
     // A fault resolved with no code change (config fix, upstream outage) has
-    // no SHA, and that must not force 'unknown'.
+    // no SHA, and that must not force 'unknown'. Rule B resolutions record
+    // exactly this shape: quiet for 14 days, no deploy evidence claimed.
     expect(shipStatus({
       fixedInSha: null, resolvedAt: hoursAgo(10),
       productionSha: 'abc', productionDeployedAt: hoursAgo(2),

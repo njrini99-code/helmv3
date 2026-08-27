@@ -318,3 +318,26 @@
     reported as it, even with no count probe to confirm.
 - The pre-existing mock gained `range`, since the read now pages rather than
   calling `.limit()`.
+
+## 2026-08-27 — resolution ledger
+
+- `src/lib/admin/__tests__/auto-resolve.test.ts` gains 7 cases covering only
+  what the ledger adds; the archive judgement itself is Rule A/B's and its 17
+  existing tests are untouched and still pass.
+  - Rule A credits the production SHA and records the fault's OWN last
+    occurrence as the regression baseline, not "now".
+  - Rule B records with the SHA argument OMITTED. Verified against local
+    Docker that omitting it stores NULL (`omitted_sha_is_null=true`), so the
+    "claims no deploy evidence" property is a checked fact.
+  - A recurrence is marked regressed AND excluded from re-archiving in the
+    same pass. Verified RED: disabling the exclusion guard fails exactly this
+    case.
+  - An already-flagged regression is not re-raised.
+  - A failed resolutions read sets `regressionSkippedReason` instead of
+    reporting zero regressions.
+  - A declined overwrite of a MANUAL resolution counts as `skippedManual`,
+    never as `failed`.
+  - Rule C writes nothing to the ledger.
+- `src/lib/reliability/__tests__/resolution.test.ts` drops the archive-branch
+  cases with the branch itself and gains two for `planReopens`: a fault never
+  claimed fixed cannot regress, and each fault matches its OWN resolution.

@@ -557,3 +557,34 @@
   behaviour suite was re-run against that database afterwards and still
   holds — auto never overwrites manual, regression counts once per
   transition, re-resolve keeps `reopened_count`, malformed SHA rejected.
+
+## 2026-08-27 — the resolution ledger wires into the EXISTING resolver
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `autoResolveFixedIncidents` now records fingerprint-level
+  resolutions (Rule A with the production SHA, Rule B with none) and marks
+  regressions, via `src/lib/admin/resolution-ledger.ts`.
+  `src/lib/reliability/resolution.ts` lost its archive branch entirely and is
+  now reopen-detection plus `shipStatus`.
+- Why, and this is the important part: the removed branch was a SECOND archive
+  rule, and it was missing an exclusion the existing one has. Rule A skips
+  every operator-gated fault (`provider_*_credit_exhausted`,
+  `_invalid_credential`, `_missing_credential`, `_plan_gated_model`) because
+  those fire only when something exercises the path — a quiet weekend is
+  indistinguishable from a fix, and no deploy ever topped up a billing
+  account. Measured 2026-08-06: EVERY provider fault in the table had been
+  flagged resolved while still broken, one closed for ten days with a dead
+  credential. Shipping a parallel rule without that exclusion would have
+  re-earned that bug at full price. One decision, made once, in the place that
+  already carries the exclusion.
+- What the ledger adds that the row-level `resolved` flip cannot: which commit
+  is credited, whether that shipped, and that a fault has come BACK. Rules C
+  (no fingerprint) and D (classifier says non-actionable) write nothing —
+  neither claims anything was fixed.
+- Ordering is load-bearing: regressions are detected BEFORE any resolution is
+  recorded, because recording overwrites `last_seen_at_resolution`, the exact
+  baseline a regression is measured against. A fingerprint that regressed in a
+  pass is excluded from re-archiving in that same pass.
+- A failed resolutions read SKIPS regression detection and says so
+  (`regressionSkippedReason`) rather than reporting a clean zero it never
+  established.
