@@ -38,6 +38,9 @@ import { readFileSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
+import { trackedFiles } from './lib/tracked-files.mjs';
+
+const TRACKED = trackedFiles();
 const ROOT = process.cwd();
 const SECRET_SHAPED = /(SECRET|_KEY|^KEY|TOKEN|PASSWORD|_CODE|DSN)/;
 const EXEMPT_PREFIX = /^NEXT_PUBLIC_/;
@@ -67,7 +70,10 @@ async function walk(dir, out = []) {
 }
 
 const findings = [];
-for (const file of await walk(join(ROOT, 'src'))) {
+// Tracked only — see scripts/lib/tracked-files.mjs. Same reasoning as
+// check-row-cap-limits: an untracked scratch .ts under src/ must not be able
+// to change this gate's verdict.
+for (const file of (await walk(join(ROOT, 'src'))).filter((f) => TRACKED.has(relative(ROOT, f)))) {
   const rel = relative(ROOT, file);
   if (/__tests__|^src\/test\//.test(rel)) continue;
   const src = readFileSync(file, 'utf8');

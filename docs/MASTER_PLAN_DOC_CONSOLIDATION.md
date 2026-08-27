@@ -472,9 +472,13 @@ Fixed the two that carry committed baselines, where a drifting scope is worst â€
 re-implemented per script. Proven the same way as the markdown fix: an untracked
 `.sql` and an untracked `.ts` each produce byte-identical output.
 
-- [ ] `check-row-cap-limits` and `check-env-secret-fallbacks` still walk the
-      filesystem. Pass/fail only, no baseline, so the blast radius is a spurious
-      failure rather than a drifting count â€” but fix them before wiring.
+- [x] DONE 2026-08-27. `check-row-cap-limits` and `check-env-secret-fallbacks`
+      now filter through `scripts/lib/tracked-files.mjs` too. **All four
+      filesystem-walking gates are scoped.** Proven discriminatingly, not just
+      by "output unchanged": an untracked probe leaves both gates
+      byte-identical, and the SAME file staged with `git add -N` makes
+      `check:env-secrets` fail on it. Unchanged output therefore means the
+      filter worked, not that the probe was inert.
 - [ ] Wire the five passing gates into `ci.yml`
 - [ ] Fix the two misleading npm aliases (`check:ledger`, `knowledge:report`) so
       they either document their required input or are renamed to stop

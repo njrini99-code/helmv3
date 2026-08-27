@@ -29,6 +29,9 @@ import { readFileSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
+import { trackedFiles } from './lib/tracked-files.mjs';
+
+const TRACKED = trackedFiles();
 const ROOT = process.cwd();
 const SCAN_DIRS = ['src', 'scripts'];
 /** PostgREST's server-side per-request row cap. Exactly 1000 is honest. */
@@ -75,7 +78,12 @@ const isComment = (line) => {
 
 const findings = [];
 for (const dir of SCAN_DIRS) {
-  for (const file of await walk(join(ROOT, dir))) {
+  // Tracked only — see scripts/lib/tracked-files.mjs. The walk is not
+  // gitignore-aware, so without this the check's scope is whatever the person
+  // running it happens to have on disk, and two checkouts of the same commit
+  // disagree. No baseline here, so the blast radius was a spurious FAILURE
+  // rather than a drifting count — still worth closing.
+  for (const file of (await walk(join(ROOT, dir))).filter((f) => TRACKED.has(relative(ROOT, f)))) {
     const rel = relative(ROOT, file);
     if (EXEMPT.test(rel)) continue;
     const src = readFileSync(file, 'utf8');
