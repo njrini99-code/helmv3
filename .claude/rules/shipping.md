@@ -74,10 +74,17 @@ mechanical, and these are the habits that keep it fixed.
   merged branch never becomes an ancestor of `main` and `git branch --merged`
   never lists it.
 - **Blocked by `guard-bash.sh`, deliberately:** `git push --force` (the only
-  push shape still blocked — it is the sole guard on shared history),
-  `git stash` (`refs/stash` is repo-global and shared across every worktree, so
-  parallel agents steal each other's work), `git clean -f/-fd` (deletes
-  untracked work that exists nowhere else; `-n`/`--dry-run` is allowed).
+  push shape still blocked — it is the sole guard on shared history) and
+  `git clean -f/-fd` (deletes untracked work that exists nowhere else;
+  `-n`/`--dry-run` is allowed).
+- **`git stash` is NO LONGER blocked** (owner directive, 2026-08-27). The hazard
+  is unchanged and worth knowing: `refs/stash` is repo-global, so a stash pushed in
+  one worktree is visible and poppable from every other one. It is now
+  addressed structurally — one task, one worktree, one mutating session —
+  rather than by banning the verb. The old rule also matched the WORDS anywhere
+  on the command line, so an `echo` or `grep` that merely mentioned them was
+  refused, and its suggested alternative (a WIP commit) is *more* visible to
+  peers under the worktree model, not less.
 - Commit messages: explain **why**, and state what you verified. If a claim
   rests on something you could not run, say so once.
 

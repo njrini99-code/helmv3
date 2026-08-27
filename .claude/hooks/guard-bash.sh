@@ -42,17 +42,28 @@ CMD=$(printf '%s' "$CMD" | perl -0777 -pe 's/\\\\/\x00/g; s/\\\n//g; s/\n/; /g; 
 
 block() { printf '%s\n' "$1" >&2; exit 2; }
 
-# 1. git stash — refs/stash is REPO-GLOBAL, shared across every worktree.
-#    A stash pushed in one worktree is visible (and poppable) from all of them,
-#    so parallel agents silently steal each other's work.
-# The `\\` in the boundary class is belt-and-braces: the normalization above
-# already strips an alias-escape (`\git` -> `git`), but a LITERAL backslash pair
-# survives it, so keep the class able to match one.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git[[:space:]]+stash([[:space:]]|$)' \
-   && ! printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+stash[[:space:]]+(list|show)([[:space:]]|$)'; then
-  block "BLOCKED: 'git stash'. refs/stash is repo-global and shared by every worktree, so a stash here is visible and poppable from all of them — that is how parallel work gets silently swapped.
-Use instead: a WIP commit on the current branch (git add -A && git commit -m wip), or copy the file aside."
-fi
+# 1. git stash — ALLOWED. Owner directive, 2026-08-27.
+#
+#    This hook used to block every stash subcommand except `list` and `show`.
+#    The hazard it was written for is real and has not gone away: refs/stash is
+#    REPO-GLOBAL, so a stash pushed in one worktree is visible and poppable from
+#    every other one, and two agents can silently swap work through it.
+#
+#    It is no longer a hook's call to make. The owner uses stash deliberately,
+#    and a guard that blocks an ordinary git command every session teaches
+#    people to route around guards — which costs more than the failure mode it
+#    prevented. The worktree isolation this program is building addresses the
+#    same hazard structurally: one task, one worktree, one mutating session.
+#
+#    Two things the old rule got wrong beyond being too broad:
+#      - it matched the WORDS anywhere in the command line, so an `echo` or a
+#        `grep` mentioning them was blocked as if it were the command itself;
+#      - its advice ("use a WIP commit") is worse under the worktree model,
+#        because a WIP commit on a shared branch is MORE visible to peers than
+#        a stash, not less.
+#
+#    If parallel-agent stash collisions reappear, fix them in the workspace
+#    factory (one worktree per mutating session), not by re-blocking a verb.
 
 # 2. rm -rf .next — deleting the Turbopack cache mid-session wedges cold compile
 #    for the rest of the session and costs minutes per page.

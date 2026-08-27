@@ -181,8 +181,12 @@ Still blocked by `.claude/hooks/guard-bash.sh`, deliberately:
   this hook is no longer the only thing preventing a rewrite of shared
   history. Kept as belt-and-braces; it also covers the local repo, which a
   GitHub setting cannot.
-- `git stash`, `git clean -f`, recursive `rm` outside the project — all
-  destroy work that exists nowhere else.
+- `git clean -f`, recursive `rm` outside the project — both destroy work that
+  exists nowhere else.
+
+`git stash` was unblocked 2026-08-27 by owner directive. `refs/stash` is still
+repo-global and shared by every worktree; that hazard is now handled by
+worktree isolation rather than by refusing the command.
 
 ### 1. Type Imports
 ```typescript
