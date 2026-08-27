@@ -162,6 +162,54 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_error_resolutions: {
+        Row: {
+          created_at: string
+          fingerprint: string
+          fixed_in_sha: string | null
+          last_seen_at_resolution: string | null
+          note: string | null
+          pr_number: number | null
+          pr_url: string | null
+          reopened_at: string | null
+          reopened_count: number
+          resolution_source: string
+          resolved_at: string
+          resolved_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fingerprint: string
+          fixed_in_sha?: string | null
+          last_seen_at_resolution?: string | null
+          note?: string | null
+          pr_number?: number | null
+          pr_url?: string | null
+          reopened_at?: string | null
+          reopened_count?: number
+          resolution_source?: string
+          resolved_at?: string
+          resolved_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fingerprint?: string
+          fixed_in_sha?: string | null
+          last_seen_at_resolution?: string | null
+          note?: string | null
+          pr_number?: number | null
+          pr_url?: string | null
+          reopened_at?: string | null
+          reopened_count?: number
+          resolution_source?: string
+          resolved_at?: string
+          resolved_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_events: {
         Row: {
           browser_info: Json | null
@@ -20561,6 +20609,34 @@ export type Database = {
     }
     Functions: {
       __admin_rollup_b_gate: { Args: never; Returns: undefined }
+      admin_auto_resolve_error_fingerprint: {
+        Args: {
+          p_fingerprint: string
+          p_fixed_in_sha?: string
+          p_last_seen_at: string
+          p_note?: string
+        }
+        Returns: boolean
+      }
+      admin_mark_error_regressed: {
+        Args: { p_fingerprint: string }
+        Returns: undefined
+      }
+      admin_resolve_error_fingerprint: {
+        Args: {
+          p_fingerprint: string
+          p_fixed_in_sha?: string
+          p_last_seen_at?: string
+          p_note?: string
+          p_pr_number?: number
+          p_pr_url?: string
+        }
+        Returns: undefined
+      }
+      admin_unresolve_error_fingerprint: {
+        Args: { p_fingerprint: string }
+        Returns: undefined
+      }
       baseball_accept_staff_invite: { Args: { p_token: string }; Returns: Json }
       baseball_announcement_has_recipients: {
         Args: { p_announcement_id: string }
