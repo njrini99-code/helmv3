@@ -28,6 +28,8 @@ const appItem: TriageItem = {
   hasDegradedMessage: false,
   errorCode: '42501',
   fingerprint: 'fp-1',
+  hasRca: true,
+  description: 'savePartialRound failed',
   report: '# Incident report: savePartialRound failed',
 };
 const sentryItem: TriageItem = {
@@ -40,6 +42,8 @@ const sentryItem: TriageItem = {
   hasDegradedMessage: false,
   errorCode: null,
   fingerprint: null,
+  hasRca: false,
+  description: 'TypeError in rounds',
   report: '# Incident report: TypeError in rounds',
 };
 
@@ -48,7 +52,9 @@ describe('TriageQueue', () => {
     render(<TriageQueue items={[appItem, sentryItem]} onResolve={vi.fn()} />);
     expect(screen.getByText('savePartialRound failed')).toBeInTheDocument();
     expect(screen.getByText(/2 users/)).toBeInTheDocument();
-    expect(screen.getByText(/3 events/)).toBeInTheDocument();
+    // The count renders as a bare number so a column of them scans
+    // vertically; the unit travels as its accessible name.
+    expect(screen.getByLabelText('3 events')).toBeInTheDocument();
     // Metadata is now a strip of discrete tags rather than one run-on mono
     // sentence ("source X · feature Y · action Z · route <absolute URL>"),
     // so each is asserted as its own exact chip.
@@ -59,20 +65,42 @@ describe('TriageQueue', () => {
     expect(screen.getAllByText('rounds').length).toBeGreaterThan(0);
     // The error code is the point of the redesign: two incidents with the
     // same title are told apart by this, and it is copyable.
-    expect(screen.getByRole('button', { name: /copy error code: 42501/i })).toBeInTheDocument();
+    // The code is the most identifying fact on the row, so it leads the fact
+    // line as text rather than sitting in its own black chip. Copying is the
+    // whole-report control — one copy affordance per row, not two.
+    expect(screen.getByText('42501')).toBeInTheDocument();
+    // Two rows render, so two copy controls — one per incident.
+    expect(screen.getAllByRole('button', { name: /copy incident report/i })).toHaveLength(2);
   });
   it('app rows expose Resolve; sentry rows keep the permalink AND gain their own in-app Resolve', () => {
     const onResolve = vi.fn(async () => ({ resolvedCount: 3 }));
     render(<TriageQueue items={[appItem, sentryItem]} onResolve={onResolve} onResolveSentry={vi.fn()} />);
     // Both origins now render a "Resolve" button — app row first, matching
     // array order (TriageQueue renders in the order it's given).
-    const resolveButtons = screen.getAllByRole('button', { name: /^resolve$/i });
+    const resolveButtons = screen.getAllByRole('button', { name: /resolve incident/i });
     expect(resolveButtons).toHaveLength(2);
     fireEvent.click(resolveButtons[0]!);
     expect(onResolve).toHaveBeenCalledWith(['e1', 'e2', 'e3']);
     const link = screen.getByRole('link', { name: /open in sentry/i });
     expect(link).toHaveAttribute('href', 'https://sentry.io/x');
   });
+  it('links to the analysis when one exists, and shows nothing when it does not', () => {
+    // The routine wrote five correct analyses on 2026-08-27 and every one was
+    // unreachable: the detail page rendered them, the list never said they
+    // existed. This is the door. Asserted both ways so a regression that drops
+    // the link OR one that shows it on every row both fail.
+    render(<TriageQueue items={[appItem, sentryItem]} onResolve={vi.fn()} />);
+    const rca = screen.getByRole('link', { name: /rca/i });
+    expect(rca).toHaveAttribute('href', '/admin/errors/fp-1#rca');
+    // Exactly one — sentryItem has hasRca false and carries no app fingerprint.
+    expect(screen.getAllByRole('link', { name: /rca/i })).toHaveLength(1);
+  });
+
+  it('shows no RCA link when nothing has been analysed', () => {
+    render(<TriageQueue items={[{ ...appItem, hasRca: false }]} onResolve={vi.fn()} />);
+    expect(screen.queryByRole('link', { name: /rca/i })).not.toBeInTheDocument();
+  });
+
   it('renders the celebratory all-clear when empty', () => {
     render(<TriageQueue items={[]} onResolve={vi.fn()} />);
     expect(screen.getByText(/nothing in the queue/i)).toBeInTheDocument();
@@ -80,7 +108,7 @@ describe('TriageQueue', () => {
   it('resolved rows leave the list optimistically', async () => {
     const onResolve = vi.fn(async () => ({ resolvedCount: 3 }));
     render(<TriageQueue items={[appItem]} onResolve={onResolve} />);
-    fireEvent.click(screen.getByRole('button', { name: /resolve/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /resolve incident/i })[0]!);
     await waitFor(() =>
       expect(screen.queryByText('savePartialRound failed')).not.toBeInTheDocument(),
     );
@@ -90,7 +118,7 @@ describe('TriageQueue', () => {
       throw new Error('Unauthorized');
     });
     render(<TriageQueue items={[appItem]} onResolve={onResolve} />);
-    fireEvent.click(screen.getByRole('button', { name: /resolve/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /resolve incident/i })[0]!);
     // Optimistically hidden immediately after the click...
     await waitFor(() => expect(onResolve).toHaveBeenCalled());
     // ...but reconciled back once the rejection is observed.
@@ -100,7 +128,7 @@ describe('TriageQueue', () => {
     expect(screen.getByText(/resolve failed/i)).toBeInTheDocument();
     expect(screen.getByText(/unauthorized/i)).toBeInTheDocument();
     // The Resolve button must still be usable for a retry.
-    expect(screen.getByRole('button', { name: /resolve/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /resolve incident/i }).length).toBeGreaterThan(0);
   });
 });
 
@@ -149,14 +177,14 @@ describe('TriageQueue — Sentry in-app Resolve', () => {
   it('resolves a Sentry row optimistically and calls the action with the issue id', () => {
     const onResolveSentry = vi.fn(async () => ({ ok: true }));
     render(<TriageQueue items={[sentryItem]} onResolveSentry={onResolveSentry} />);
-    fireEvent.click(screen.getByRole('button', { name: /resolve/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /resolve incident/i })[0]!);
     expect(onResolveSentry).toHaveBeenCalledWith('s1');
   });
 
   it('hides the row optimistically, then keeps it hidden on success', async () => {
     const onResolveSentry = vi.fn(async () => ({ ok: true }));
     render(<TriageQueue items={[sentryItem]} onResolveSentry={onResolveSentry} />);
-    fireEvent.click(screen.getByRole('button', { name: /resolve/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /resolve incident/i })[0]!);
     await waitFor(() =>
       expect(screen.queryByText('TypeError in rounds')).not.toBeInTheDocument(),
     );
@@ -169,14 +197,14 @@ describe('TriageQueue — Sentry in-app Resolve', () => {
       error: 'Sentry issue update failed: 403 — token lacks event:write / issue write scope — add a token with write scope',
     }));
     render(<TriageQueue items={[sentryItem]} onResolveSentry={onResolveSentry} />);
-    fireEvent.click(screen.getByRole('button', { name: /resolve/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /resolve incident/i })[0]!);
     await waitFor(() => expect(onResolveSentry).toHaveBeenCalled());
     await waitFor(() =>
       expect(screen.getByText('TypeError in rounds')).toBeInTheDocument(),
     );
     expect(screen.getByText(/token lacks event:write/)).toBeInTheDocument();
     // Still resolvable — a retry must remain possible.
-    expect(screen.getByRole('button', { name: /resolve/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /resolve incident/i }).length).toBeGreaterThan(0);
   });
 
   it('restores the row and surfaces the error when the action rejects outright', async () => {
@@ -184,7 +212,7 @@ describe('TriageQueue — Sentry in-app Resolve', () => {
       throw new Error('Forbidden');
     });
     render(<TriageQueue items={[sentryItem]} onResolveSentry={onResolveSentry} />);
-    fireEvent.click(screen.getByRole('button', { name: /resolve/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /resolve incident/i })[0]!);
     await waitFor(() => expect(onResolveSentry).toHaveBeenCalled());
     await waitFor(() =>
       expect(screen.getByText('TypeError in rounds')).toBeInTheDocument(),
@@ -196,6 +224,6 @@ describe('TriageQueue — Sentry in-app Resolve', () => {
     render(<TriageQueue items={[sentryItem]} onResolveSentry={vi.fn()} />);
     const link = screen.getByRole('link', { name: /open in sentry/i });
     expect(link).toHaveAttribute('href', 'https://sentry.io/x');
-    expect(screen.getByRole('button', { name: /resolve/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /resolve incident/i }).length).toBeGreaterThan(0);
   });
 });

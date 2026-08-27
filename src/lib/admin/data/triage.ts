@@ -80,6 +80,21 @@ export interface TriageItem {
    */
   errorCode: string | null;
   /**
+   * The human-readable sentence the row renders, from buildIncidentDescription.
+   * `title` is kept alongside it because the incident REPORT and the detail
+   * page still key off the original.
+   */
+  description: string;
+  /**
+   * A stored RCA analysis exists for this fingerprint, so the detail page has
+   * something to show. False for Sentry rows, which carry no app fingerprint.
+   *
+   * The analysis itself is NOT inlined: it is up to ~1.3 KB of prose per
+   * incident and the queue renders 25 of them. This is the pointer that makes
+   * it findable; the detail page renders the content.
+   */
+  hasRca: boolean;
+  /**
    * The grouping fingerprint, plain. It existed only inside the row's href
    * (`/admin/errors/${key.slice(4)}`), so an operator could click it but
    * never copy it — and it is the exact token you need to search logs or
@@ -88,6 +103,58 @@ export interface TriageItem {
   fingerprint: string | null;
   /** Pre-built Copy-for-Claude markdown — see @/lib/admin/incident-report. */
   report: string;
+}
+
+/**
+ * Split an action identifier into words, so it can be read in a sentence.
+ * `send-message` -> "send message"; `GolfDashboardLayout` -> "Golf Dashboard
+ * Layout". Mechanical only — no dictionary, nothing invented.
+ */
+function humanizeAction(action: string): string {
+  return action
+    .replace(/[-_.]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .trim();
+}
+
+/**
+ * The sentence the queue actually shows.
+ *
+ * The card used to render `title`, which is `[action]` plus a message clipped
+ * to fit — so a row read "[getNextQualifierRoundNumber] This qualifier is
+ * still o…" while the full, genuinely good sentence sat unused in `message`:
+ * "This qualifier is still open, but your coach configured 3 rounds. You have
+ * submitted 3 of 3. Ask a coach to raise the limit."
+ *
+ * Three tiers, best available wins:
+ *   1. A server `message` is written by us and usually explains itself. Use it.
+ *   2. A CLIENT message is whatever the browser said, and it is often two words
+ *      ("Load failed") with errorCode, error.name and error.message all null —
+ *      verified against production. That is everything the browser gave us, so
+ *      nothing better can be extracted; but we do know which action was running,
+ *      so the row can say WHAT WAS HAPPENING without inventing a cause.
+ *   3. Nothing usable -> fall back to the title unchanged.
+ *
+ * Deliberately does NOT dress up a thin capture into friendly copy. A row that
+ * still reads generically is telling you the CALL SITE is under-instrumented,
+ * and hiding that in the UI would remove the only signal that says so.
+ */
+const GENERIC_MESSAGE_MAX = 28;
+
+export function buildIncidentDescription(
+  message: string | null,
+  title: string,
+  actionName: string | null,
+): string {
+  const msg = message?.trim();
+  if (!msg) return title;
+
+  // Short, contextless messages get the action appended as context — never as
+  // an explanation. "Load failed" -> "Load failed — while send message".
+  if (msg.length <= GENERIC_MESSAGE_MAX && actionName) {
+    return `${msg} — while ${humanizeAction(actionName)}`;
+  }
+  return msg;
 }
 
 const SENTRY_LEVEL_TO_SEVERITY: Record<string, TriageSeverity> = {
@@ -174,6 +241,9 @@ export function mergeTriage(input: {
    * absent, regression detection simply does not fire (the prior behaviour).
    */
   priorResolutions?: Map<string, string>;
+  /** Fingerprints with a stored rca_analysis row — see
+   *  queryAnalyzedFingerprints in ./incident-feed. */
+  analyzedFingerprints?: ReadonlySet<string>;
 }): TriageItem[] {
   const hintSport = input.sentryTagHint?.sport ?? null;
   const hintFeature = input.sentryTagHint?.feature ?? null;
@@ -192,6 +262,9 @@ export function mergeTriage(input: {
     key: `sentry:${issue.id}`,
     origin: 'sentry' as const,
     title: issue.title,
+    // Sentry's title IS its summary line; there is no separate message to
+    // prefer, and its culprit is already rendered as the path.
+    description: issue.title,
     severity,
     sport: hintSport,
     occurrences: issue.count,
@@ -213,6 +286,7 @@ export function mergeTriage(input: {
     // classifyIncident call above documents. Its identity is shortId.
     errorCode: null,
     fingerprint: null,
+    hasRca: false,
     report: buildIncidentReport({
       title: issue.title,
       message: issue.culprit ?? issue.title,
@@ -287,6 +361,7 @@ export function mergeTriage(input: {
       key: `app:${fp}`,
       origin: 'app',
       title: last.title,
+      description: buildIncidentDescription(last.message, last.title, actionName),
       severity: worst,
       sport: normalizeSport(last.sport),
       occurrences: bucket.rows.length,
@@ -306,6 +381,7 @@ export function mergeTriage(input: {
       hasDegradedMessage: classification.hasDegradedMessage,
       errorCode,
       fingerprint: fp,
+      hasRca: input.analyzedFingerprints?.has(fp) ?? false,
       report: buildIncidentReport({
         title: last.title,
         message: last.message,

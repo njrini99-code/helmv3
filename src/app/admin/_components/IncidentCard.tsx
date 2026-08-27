@@ -1,16 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Check, Copy, ExternalLink, CheckCheck } from 'lucide-react';
-import { Button, Sparkline, StatusPill } from '@/components/fairway';
-import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
+import { ExternalLink, CheckCheck, Sparkles } from 'lucide-react';
+import { Button, Sparkline } from '@/components/fairway';
+import type { TriageItem } from '@/lib/admin/data/triage';
 import { INCIDENT_CLASS_LABEL } from '@/lib/admin/incident-classification';
 import { hasUnknownAffectedUsers } from '@/lib/admin/incident-report';
-import { cn } from '@/lib/utils';
-import { SportBadge } from './SportBadge';
 import { LocalTime } from './LocalTime';
-import { CopyReportButton, copyTextToClipboard } from './CopyReportButton';
+import { CopyReportButton } from './CopyReportButton';
+import { RailRow, RowHead, FactLine, RowPath, RowFoot, StateChip } from './Row';
 
 /**
  * ONE incident, as a card rather than a wrapping row.
@@ -45,15 +43,6 @@ import { CopyReportButton, copyTextToClipboard } from './CopyReportButton';
 /** Left rail colour per severity. Kept in the warm/fw palette the Bridge
  *  already uses — /admin is a documented non-Fairway consumer, and the
  *  surrounding code's dark-mode reasoning depends on those tokens. */
-const SEVERITY_RAIL: Record<TriageSeverity, string> = {
-  critical: 'bg-fw-danger-ink',
-  error: 'bg-fw-danger-ink',
-  warning: 'bg-fw-warning-ink',
-  info: 'bg-warm-300',
-};
-
-const COPIED_RESET_MS = 1500;
-
 /**
  * Strip the origin from a route so the part that differs is what you read.
  *
@@ -90,78 +79,6 @@ export function affectedUsersLabel(item: Pick<TriageItem, 'origin' | 'affectedUs
   return `${n} user${n === 1 ? '' : 's'}`;
 }
 
-/** A tag. One shape for every piece of metadata, so the strip reads as a set
- *  rather than as five unrelated inline styles competing for attention. */
-function Chip({
-  children,
-  title,
-  tone = 'neutral',
-  mono = false,
-}: {
-  children: React.ReactNode;
-  title?: string;
-  tone?: 'neutral' | 'strong' | 'danger';
-  mono?: boolean;
-}) {
-  return (
-    <span
-      title={title}
-      className={cn(
-        'inline-flex max-w-full items-center gap-1 rounded px-1.5 py-0.5 text-eyebrow uppercase leading-4',
-        mono && 'font-fw-mono normal-case tracking-normal',
-        tone === 'neutral' && 'bg-warm-100 text-warm-600',
-        tone === 'strong' && 'bg-warm-900 text-warm-50',
-        tone === 'danger' && 'bg-fw-danger-bg text-fw-danger-ink',
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-/**
- * A chip that copies its own value on tap.
- *
- * The error code and the fingerprint are the two tokens an operator actually
- * needs to carry elsewhere — into a log search, a migration, a message to
- * someone else. The fingerprint previously existed ONLY inside the row's
- * href, so it was clickable and not copyable. Reuses CopyReportButton's
- * clipboard fallback chain rather than adding a third implementation.
- */
-function CopyChip({ value, label, tone = 'neutral' }: { value: string; label: string; tone?: 'neutral' | 'strong' }) {
-  const [copied, setCopied] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
-
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      aria-label={`Copy ${label}: ${value}`}
-      onClick={() => {
-        void copyTextToClipboard(value).then((ok) => {
-          if (!ok) return;
-          setCopied(true);
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          timeoutRef.current = setTimeout(() => setCopied(false), COPIED_RESET_MS);
-        });
-      }}
-      className={cn(
-        'inline-flex max-w-full items-center gap-1 rounded px-1.5 py-0.5 font-fw-mono text-eyebrow leading-4 transition-colors',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
-        tone === 'strong'
-          ? 'bg-warm-900 text-warm-50 hover:bg-warm-800'
-          : 'bg-warm-100 text-warm-700 hover:bg-warm-200',
-      )}
-    >
-      <span className="truncate">{value}</span>
-      {copied ? <Check size={10} aria-hidden /> : <Copy size={10} aria-hidden className="opacity-50" />}
-    </Button>
-  );
-}
-
 export function IncidentCard({
   item,
   series,
@@ -179,115 +96,95 @@ export function IncidentCard({
   const isApp = item.origin === 'app';
 
   return (
-    <li className="relative flex min-w-0 gap-3 py-3 pl-3">
-      {/* Severity as a rail. Replaces the leading pill: same information,
-          no vertical cost, and it lines the cards up so a screen of them
-          reads as a column of severities at a glance. */}
-      <span
-        aria-hidden
-        className={cn('absolute inset-y-2 left-0 w-[3px] rounded-full', SEVERITY_RAIL[item.severity])}
-      />
-      <div className="min-w-0 flex-1">
-        {/* 1 — TITLE, the thing you are looking for. */}
+    <RailRow severity={item.severity}>
+      {/* Every piece below comes from ./Row — the same language Reliability,
+          Jobs and Health render, so the tabs cannot drift apart again. */}
+      <RowHead
+        value={item.occurrences}
+        valueLabel={`${item.occurrences} ${item.occurrences === 1 ? 'event' : 'events'}`}
+      >
         {isApp && item.fingerprint ? (
-          <Link
-            href={`/admin/errors/${item.fingerprint}`}
-            className="block break-words text-body-sm font-semibold text-warm-900 [overflow-wrap:anywhere] hover:underline"
-          >
-            {item.title}
+          <Link href={`/admin/errors/${item.fingerprint}`} className="hover:underline">
+            {item.description}
           </Link>
         ) : (
-          <p className="break-words text-body-sm font-semibold text-warm-900 [overflow-wrap:anywhere]">{item.title}</p>
+          item.description
         )}
+      </RowHead>
 
-        {/* 2 — TAGS. Everything that tells two same-titled incidents apart,
-            in one strip, one visual language. Ordered most-identifying
-            first: code, then where it happened, then what it is. */}
-        <div className="mt-1.5 flex flex-wrap items-center gap-1">
-          {item.errorCode ? <CopyChip value={item.errorCode} label="error code" tone="strong" /> : null}
-          {item.feature ? <Chip title="Feature registry key">{item.feature}</Chip> : null}
-          {item.actionName ? <Chip title="Server action / component" mono>{item.actionName}</Chip> : null}
-          {item.source ? <Chip title="Capture source">{item.source}</Chip> : null}
-          <SportBadge sport={item.sport} />
-          <Chip title={isApp ? 'Captured by the app' : 'Captured by Sentry'}>{isApp ? 'App' : 'Sentry'}</Chip>
-          {/* Regressed is the highest-signal thing on a row — a fix did not
-              hold — so it keeps a full pill rather than a quiet chip. */}
-          {item.substatus === 'regressed' ? (
-            <StatusPill tone="danger" dot size="sm">Regressed</StatusPill>
-          ) : null}
-          {/* Kind axis, still shown only when it is NOT a plain actionable
-              defect — labelling every ordinary bug "Defect" would be chrome.
-              Unchanged decision, carried over deliberately. */}
-          {!item.actionable ? <Chip title={item.klassReason}>{INCIDENT_CLASS_LABEL[item.klass]}</Chip> : null}
-          {item.hasDegradedMessage ? (
-            <Chip
-              tone="danger"
-              title="The message was stringified on capture (e.g. [object Object]) — the real cause was lost. Fix the call site to use describeError()."
-            >
-              message lost
-            </Chip>
-          ) : null}
-        </div>
+      <FactLine
+        items={[item.errorCode, item.feature, item.actionName, item.source]}
+        emphasizeFirst={Boolean(item.errorCode)}
+      />
 
-        {/* 3 — WHERE. Path only; the origin was identical on every row. */}
-        {path ? (
-          <p className="mt-1 break-words font-fw-mono text-caption leading-4 text-warm-500 [overflow-wrap:anywhere]">
-            {path}
-          </p>
+      {path ? <RowPath>{path}</RowPath> : null}
+
+      <RowFoot
+        meta={
+          <>
+            {affectedUsersLabel(item)} · <LocalTime iso={item.lastSeen} />
+          </>
+        }
+      >
+        {series ? (
+          <Sparkline
+            data={series}
+            goodDirection="down"
+            label={`${isApp ? 'App' : 'Sentry'} events, last 24h`}
+            width={44}
+            height={14}
+            showEndDot={false}
+            className="mr-1 shrink-0"
+          />
         ) : null}
 
-        {/* 4 — COUNTS + ACTIONS, one line. */}
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <p className="font-fw-mono text-caption tabular-nums text-warm-500">
-            {item.occurrences} {item.occurrences === 1 ? 'event' : 'events'} · {affectedUsersLabel(item)} ·{' '}
-            <LocalTime iso={item.lastSeen} />
-          </p>
-          {series ? (
-            <Sparkline
-              data={series}
-              goodDirection="down"
-              label={`${isApp ? 'App' : 'Sentry'} events, last 24h`}
-              width={52}
-              height={16}
-              showEndDot={false}
-              className="shrink-0"
-            />
-          ) : null}
-          <span className="ml-auto flex shrink-0 items-center gap-1">
-            <CopyReportButton variant="icon" report={item.report} label={`Copy incident report: ${item.title}`} />
-            {/* aria-label lives on the Button, not only on the inner <a>.
-                With asChild the prop merges onto the anchor either way, so the
-                rendered accessible name is identical — but
-                scripts/__tests__/icon-only-button-aria-label.test.mjs reads the
-                <Button> element statically and cannot follow the slot, so a
-                label only on the child reads as an unlabelled icon-only button.
+        {item.substatus === 'regressed' ? <StateChip tone="danger">Regressed</StateChip> : null}
+        {!item.actionable ? (
+          <StateChip title={item.klassReason}>{INCIDENT_CLASS_LABEL[item.klass]}</StateChip>
+        ) : null}
+        {item.hasDegradedMessage ? (
+          <StateChip
+            tone="danger"
+            title="The message was stringified on capture (e.g. [object Object]) — the real cause was lost. Fix the call site to use describeError()."
+          >
+            message lost
+          </StateChip>
+        ) : null}
 
-                This comment sits ABOVE the ternary on purpose: inside a
-                `cond ? ( ... ) : null` brace the contents are an EXPRESSION,
-                so a JSX comment written there parses as an empty object
-                literal instead. JSX comments are only comments in children
-                position. */}
-            {!isApp ? (
-              <Button asChild variant="ghost" size="sm" aria-label="Open in Sentry">
-                <a href={item.permalink ?? '#'} target="_blank" rel="noreferrer">
-                  <ExternalLink size={13} aria-hidden />
-                </a>
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => (isApp ? onResolve(item) : onResolveSentry(item))}
-              leftIcon={<CheckCheck size={13} aria-hidden />}
-            >
-              Resolve
-            </Button>
-          </span>
-        </div>
+        {/* THE DOOR — the one accent on the row, only when an analysis exists. */}
+        {isApp && item.hasRca && item.fingerprint ? (
+          <Link
+            href={`/admin/errors/${item.fingerprint}#rca`}
+            title="A root-cause analysis exists for this incident — open it"
+            className="rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+          >
+            <StateChip tone="accent">
+              <Sparkles size={10} aria-hidden />
+              RCA
+            </StateChip>
+          </Link>
+        ) : null}
 
-        {error ? <p className="mt-1 text-caption text-fw-danger-ink">Resolve failed — {error}</p> : null}
-      </div>
-    </li>
+        <CopyReportButton variant="icon" report={item.report} label={`Copy incident report: ${item.title}`} />
+        {!isApp ? (
+          <Button asChild variant="ghost" size="sm" aria-label="Open in Sentry">
+            <a href={item.permalink ?? '#'} target="_blank" rel="noreferrer">
+              <ExternalLink size={13} aria-hidden />
+            </a>
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-label="Resolve incident"
+          onClick={() => (isApp ? onResolve(item) : onResolveSentry(item))}
+        >
+          <CheckCheck size={13} aria-hidden />
+        </Button>
+      </RowFoot>
+
+      {error ? <p className="mt-1 text-caption text-fw-danger-ink">Resolve failed — {error}</p> : null}
+    </RailRow>
   );
 }
