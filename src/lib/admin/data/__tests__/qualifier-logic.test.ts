@@ -35,6 +35,7 @@ function chainNode(result: Probe) {
     not: () => node,
     order: () => node,
     limit: () => node,
+    range: () => node,
     then: (onFulfilled: (v: Probe) => unknown, onRejected?: (e: unknown) => unknown) =>
       Promise.resolve(result).then(onFulfilled, onRejected),
   };
@@ -189,5 +190,53 @@ describe('fetchQualifierLogic', () => {
     // confirmedTotal is null, not a number, when the count probe errored.
     expect(result.data!.qualifiers.confirmedTotal).toBeNull();
     expect(result.data!.qualifiers.evaluated).toBe(1);
+  });
+
+  it('reports truncation when the ceiling stopped the read and the count probe is unavailable', async () => {
+    // THE REGRESSION THIS PINS. The fetch used to be `.limit(2_000)` with a
+    // fallback of `fetched.length >= 2_000`. PostgREST caps ANY single request
+    // at 1,000 rows, so that comparison could never be true — a read that was
+    // genuinely clipped reported `truncated: false` whenever the exact-count
+    // probe was unavailable to contradict it. Paging to a real ceiling is what
+    // makes the fallback reachable.
+    //
+    // The mock returns a FULL page every time, exactly as PostgREST does when
+    // more rows remain, so accumulation runs to QUALIFIER_ROW_CEILING (2,000)
+    // rather than draining.
+    qualifiersPage.data = Array.from({ length: 1_000 }, (_unused, i) => ({
+      id: `q${i}`,
+      team_id: 'team-a',
+      num_rounds: 1,
+      status: 'open',
+      name: `Q${i}`,
+    }));
+    qualifiersCount.error = { message: 'count probe unavailable' };
+    qualifiersCount.count = null;
+
+    const result = await fetchQualifierLogic();
+
+    expect(result.status).toBe('ok');
+    expect(result.data!.qualifiers.evaluated).toBe(2_000);
+    expect(result.data!.qualifiers.truncated).toBe(true);
+    expect(result.data!.qualifiers.confirmedTotal).toBeNull();
+    expect(result.truncated).toBe(true);
+  });
+
+  it('does not report truncation when a short page drained the source', async () => {
+    // The other half of the same rule: stopping because the source ran out is
+    // not truncation, and must not be reported as it even with no count probe.
+    qualifiersPage.data = [{ id: 'q1', team_id: 'team-a', num_rounds: 1, status: 'open', name: 'Q' }];
+    qualifiersCount.error = { message: 'count probe unavailable' };
+    qualifiersCount.count = null;
+    roundsPage.data = [];
+    roundsCount.error = { message: 'count probe unavailable' };
+    roundsCount.count = null;
+
+    const result = await fetchQualifierLogic();
+
+    expect(result.status).toBe('ok');
+    expect(result.data!.qualifiers.truncated).toBe(false);
+    expect(result.data!.linkedRounds.truncated).toBe(false);
+    expect(result.truncated).toBe(false);
   });
 });

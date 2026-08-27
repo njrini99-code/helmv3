@@ -14,11 +14,12 @@
 -- the PR, the merge commit, when, and whether a human or the cron decided.
 --
 -- THE REGRESSION RULE -- why "I never want to see it again" is not quite what
--- you want. An archived fault must come BACK, loudly, if it recurs after its fix
--- shipped. That is a regression, and it is the most valuable thing this table
--- can tell you; suppressing it forever would turn the archive into a way to lose
--- bugs. So resolution is recorded and COMPARED against new occurrences at read
--- time, rather than anything being deleted or permanently hidden.
+-- you want. An archived fault must come BACK, loudly, if it recurs after the
+-- fix shipped. That is a regression, and it is the most valuable thing this
+-- table can tell you; suppressing it forever would turn the archive into a
+-- way to lose bugs. So resolution is recorded and COMPARED against new
+-- occurrences at read time, rather than anything being deleted or
+-- permanently hidden.
 --
 -- Nothing here is destructive: no admin_events row is modified or removed, and
 -- archiving is a JOIN at read time. If this table were dropped tomorrow every
@@ -26,58 +27,63 @@
 -- whose job is hiding things.
 
 create table if not exists public.admin_error_resolutions (
-  -- One current resolution state per fault. History lives in the audit columns.
-  fingerprint text primary key,
+    -- One current resolution state per fault. History lives in the audit
+    -- columns below.
+    fingerprint text primary key,
 
-  resolved_at timestamptz not null default now(),
-  -- Null for an automatic resolution: nobody decided, so attributing it to a
-  -- person would be a lie in an audit column.
-  resolved_by uuid references auth.users(id) on delete set null,
+    resolved_at timestamptz not null default now(),
+    -- Null for an automatic resolution: nobody decided, so attributing it to a
+    -- person would be a lie in an audit column.
+    resolved_by uuid references auth.users (id) on delete set null,
 
-  -- WHO decided. 'auto' means the reliability cron observed the fault stop
-  -- recurring after a deploy; 'manual' means an operator asserted it. The
-  -- distinction must survive: an auto-archive is a much weaker claim than a
-  -- human one, and the UI must not present them identically.
-  resolution_source text not null default 'manual'
+    -- WHO decided. 'auto' means the reliability cron observed the fault stop
+    -- recurring after a deploy; 'manual' means an operator asserted it. The
+    -- distinction must survive: an auto-archive is a much weaker claim than a
+    -- human one, and the UI must not present them identically.
+    resolution_source text not null default 'manual'
     check (resolution_source in ('auto', 'manual')),
 
-  -- What fixed it. All nullable: a fault may be resolved with no code change (a
-  -- config fix, an upstream outage ending), and recording "resolved, no PR" is
-  -- more honest than inventing one.
-  pr_number integer check (pr_number is null or pr_number > 0),
-  pr_url text,
-  -- The merge commit, compared against the deployed production SHA to answer
-  -- "has the fix actually shipped" -- a DIFFERENT question from "is it fixed",
-  -- kept separable on purpose.
-  fixed_in_sha text check (fixed_in_sha is null or fixed_in_sha ~ '^[0-9a-f]{7,40}$'),
+    -- What fixed it. All nullable: a fault may be resolved with no code
+    -- change (a config fix, an upstream outage ending), and recording
+    -- "resolved, no PR" is more honest than inventing one.
+    pr_number integer check (pr_number is null or pr_number > 0),
+    pr_url text,
+    -- The merge commit, compared against the deployed production SHA to answer
+    -- "has the fix actually shipped" -- a DIFFERENT question from "is it
+    -- fixed", kept separable on purpose.
+    fixed_in_sha text check (
+        fixed_in_sha is null or fixed_in_sha ~ '^[0-9a-f]{7,40}$'
+    ),
 
-  -- The last occurrence the resolver could see. The regression check compares
-  -- new events against THIS, not against resolved_at: a fault that fired once
-  -- more between the fix landing and the cron running is not a regression.
-  last_seen_at_resolution timestamptz,
+    -- The last occurrence the resolver could see. The regression check compares
+    -- new events against THIS, not against resolved_at: a fault that fired once
+    -- more between the fix landing and the cron running is not a regression.
+    last_seen_at_resolution timestamptz,
 
-  note text,
+    note text,
 
-  -- Regression bookkeeping. An archived-then-regressed fault is not the same as
-  -- one never fixed, and the Bridge says so.
-  reopened_at timestamptz,
-  reopened_count integer not null default 0 check (reopened_count >= 0),
+    -- Regression bookkeeping. An archived-then-regressed fault is not the
+    -- same as one never fixed, and the Bridge says so.
+    reopened_at timestamptz,
+    reopened_count integer not null default 0 check (reopened_count >= 0),
 
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
 );
 
 comment on table public.admin_error_resolutions is
-  'Per-fingerprint resolution state for Helm Bridge incidents: what fixed a fault (PR + merge SHA), who decided (auto cron vs operator), and whether it has regressed since. Read-side archive; never mutates admin_events.';
+'Per-fingerprint resolution state for Helm Bridge incidents: what fixed a '
+'fault (PR + merge SHA), who decided (auto cron vs operator), and whether it '
+'has regressed since. Read-side archive; never mutates admin_events.';
 
 create index if not exists idx_admin_error_resolutions_resolved_at
-  on public.admin_error_resolutions (resolved_at desc);
+on public.admin_error_resolutions (resolved_at desc);
 
 -- Partial index: the hot query is "which archived faults have come back", which
 -- only ever touches rows with a reopened_at.
 create index if not exists idx_admin_error_resolutions_reopened
-  on public.admin_error_resolutions (reopened_at desc)
-  where reopened_at is not null;
+on public.admin_error_resolutions (reopened_at desc)
+where reopened_at is not null;
 
 -- RLS -----------------------------------------------------------------------
 alter table public.admin_error_resolutions enable row level security;
@@ -86,12 +92,13 @@ alter table public.admin_error_resolutions enable row level security;
 -- service_role, but a human in the SQL editor should not be locked out of the
 -- table recording their own actions. No policy for anon: a leaked publishable
 -- key reads nothing.
-drop policy if exists admin_error_resolutions_select_super_admin on public.admin_error_resolutions;
+drop policy if exists admin_error_resolutions_select_super_admin
+on public.admin_error_resolutions;
 create policy admin_error_resolutions_select_super_admin
-  on public.admin_error_resolutions
-  for select
-  to authenticated
-  using (public.is_super_admin());
+on public.admin_error_resolutions
+for select
+to authenticated
+using (public.is_super_admin());
 
 revoke all on public.admin_error_resolutions from anon;
 revoke all on public.admin_error_resolutions from authenticated;
@@ -104,12 +111,12 @@ grant select, insert, update on public.admin_error_resolutions to service_role;
 -- client: under service_role auth.uid() is NULL and this Forbids, which is the
 -- documented 509-storm failure mode in admin-platform.md.
 create or replace function public.admin_resolve_error_fingerprint(
-  p_fingerprint text,
-  p_pr_number integer default null,
-  p_pr_url text default null,
-  p_fixed_in_sha text default null,
-  p_note text default null,
-  p_last_seen_at timestamptz default null
+    p_fingerprint text,
+    p_pr_number integer default null,
+    p_pr_url text default null,
+    p_fixed_in_sha text default null,
+    p_note text default null,
+    p_last_seen_at timestamptz default null
 )
 returns void
 language plpgsql
@@ -150,13 +157,21 @@ begin
 end;
 $$;
 
-revoke execute on function public.admin_resolve_error_fingerprint(text, integer, text, text, text, timestamptz) from public;
-revoke execute on function public.admin_resolve_error_fingerprint(text, integer, text, text, text, timestamptz) from anon;
-grant execute on function public.admin_resolve_error_fingerprint(text, integer, text, text, text, timestamptz) to authenticated;
+revoke execute on function public.admin_resolve_error_fingerprint(
+    text, integer, text, text, text, timestamptz
+) from public;
+revoke execute on function public.admin_resolve_error_fingerprint(
+    text, integer, text, text, text, timestamptz
+) from anon;
+grant execute on function public.admin_resolve_error_fingerprint(
+    text, integer, text, text, text, timestamptz
+) to authenticated;
 
 -- Un-archive, for an operator who archived the wrong thing. Restoring
 -- visibility must never be harder than hiding it.
-create or replace function public.admin_unresolve_error_fingerprint(p_fingerprint text)
+create or replace function public.admin_unresolve_error_fingerprint(
+    p_fingerprint text
+)
 returns void
 language plpgsql
 security definer
@@ -170,9 +185,15 @@ begin
 end;
 $$;
 
-revoke execute on function public.admin_unresolve_error_fingerprint(text) from public;
-revoke execute on function public.admin_unresolve_error_fingerprint(text) from anon;
-grant execute on function public.admin_unresolve_error_fingerprint(text) to authenticated;
+revoke execute on function public.admin_unresolve_error_fingerprint(
+    text
+) from public;
+revoke execute on function public.admin_unresolve_error_fingerprint(
+    text
+) from anon;
+grant execute on function public.admin_unresolve_error_fingerprint(
+    text
+) to authenticated;
 
 -- Automatic write path ------------------------------------------------------
 -- service_role only: called by the reliability cron, never by a browser. It
@@ -180,10 +201,10 @@ grant execute on function public.admin_unresolve_error_fingerprint(text) to auth
 -- outranks the cron's inference, and silently replacing one with the other
 -- would erase the record of who decided.
 create or replace function public.admin_auto_resolve_error_fingerprint(
-  p_fingerprint text,
-  p_last_seen_at timestamptz,
-  p_fixed_in_sha text default null,
-  p_note text default null
+    p_fingerprint text,
+    p_last_seen_at timestamptz,
+    p_fixed_in_sha text default null,
+    p_note text default null
 )
 returns boolean
 language plpgsql
@@ -226,14 +247,23 @@ begin
 end;
 $$;
 
-revoke execute on function public.admin_auto_resolve_error_fingerprint(text, timestamptz, text, text) from public;
-revoke execute on function public.admin_auto_resolve_error_fingerprint(text, timestamptz, text, text) from anon;
-revoke execute on function public.admin_auto_resolve_error_fingerprint(text, timestamptz, text, text) from authenticated;
-grant execute on function public.admin_auto_resolve_error_fingerprint(text, timestamptz, text, text) to service_role;
+revoke execute on function public.admin_auto_resolve_error_fingerprint(
+    text, timestamptz, text, text
+) from public;
+revoke execute on function public.admin_auto_resolve_error_fingerprint(
+    text, timestamptz, text, text
+) from anon;
+revoke execute on function public.admin_auto_resolve_error_fingerprint(
+    text, timestamptz, text, text
+) from authenticated;
+grant execute on function public.admin_auto_resolve_error_fingerprint(
+    text, timestamptz, text, text
+) to service_role;
 
 -- Mark an archived fault as regressed. Called by the cron when it observes an
--- occurrence NEWER than `last_seen_at_resolution` -- recorded rather than merely
--- displayed, so "how often does this keep coming back" stays answerable.
+-- occurrence NEWER than `last_seen_at_resolution` -- recorded rather than
+-- merely displayed, so "how often does this keep coming back" stays
+-- answerable.
 create or replace function public.admin_mark_error_regressed(p_fingerprint text)
 returns void
 language plpgsql
@@ -253,5 +283,9 @@ $$;
 
 revoke execute on function public.admin_mark_error_regressed(text) from public;
 revoke execute on function public.admin_mark_error_regressed(text) from anon;
-revoke execute on function public.admin_mark_error_regressed(text) from authenticated;
-grant execute on function public.admin_mark_error_regressed(text) to service_role;
+revoke execute on function public.admin_mark_error_regressed(
+    text
+) from authenticated;
+grant execute on function public.admin_mark_error_regressed(
+    text
+) to service_role;

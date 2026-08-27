@@ -434,7 +434,16 @@ async function loadCoverageAndRawEvents(windowStartIso: string): Promise<Coverag
         .in('severity', NOTICE_SEVERITIES),
     ]);
 
-    assertQueryOk(rowsRes, 'feature-health-detail raw events');
+    // Inline rather than via assertQueryOk for this ONE result, deliberately.
+    // `rowsRes` is the only one of the five whose `.data` is read below, and
+    // helm/no-unchecked-supabase-error matches a literal `.error` read — it
+    // cannot see through a helper call, so the four `.count`-only results are
+    // invisible to it while this one is exactly the shape it exists to catch.
+    // Same throw, same message shape as assertQueryOk; the difference is that
+    // the gate can now verify the check rather than take it on trust.
+    if (rowsRes.error) {
+      throw new Error(`feature-health-detail raw events query failed: ${rowsRes.error.message}`);
+    }
     assertQueryOk(totalRes, 'feature-health-detail total count');
     assertQueryOk(unattrRes, 'feature-health-detail unattributed count');
     assertQueryOk(unattrErrRes, 'feature-health-detail unattributed errors');

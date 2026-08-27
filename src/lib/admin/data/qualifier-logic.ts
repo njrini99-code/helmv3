@@ -21,15 +21,33 @@ import {
  * duplicates a business rule.
  *
  * Production today is ~12 qualifiers / ~121 linked rounds (measured
- * 2026-08-27), so a generous cap still comfortably covers real growth while
- * keeping the read bounded and the honesty contract enforceable: a separate
- * exact `count` query tells the page whether the bounded page still holds
- * every row, so "12 qualifiers" is never silently a lie if that ever stops
- * being true.
+ * 2026-08-27), so a generous ceiling still comfortably covers real growth
+ * while keeping the read bounded and the honesty contract enforceable: a
+ * separate exact `count` query tells the page whether the bounded read still
+ * holds every row, so "12 qualifiers" is never silently a lie if that ever
+ * stops being true.
  */
 
-const QUALIFIER_ROW_LIMIT = 2_000;
-const LINKED_ROUND_ROW_LIMIT = 20_000;
+/**
+ * PostgREST's server-side per-request row cap.
+ *
+ * This is a hard ceiling on what ONE request can return, not a preference:
+ * `.limit(20_000)` returns 1,000 rows, not 20,000. That matters here beyond
+ * the missing rows, because it also disables the fallback truncation check —
+ * `fetched.length >= 20_000` can never be true when the server stops at
+ * 1,000, so a read that WAS clipped reported `truncated: false` whenever the
+ * exact-count probe was unavailable to contradict it. Enforced repo-wide by
+ * `scripts/check-row-cap-limits.mjs`, which is what caught this.
+ */
+const PAGE_SIZE = 1_000;
+
+/**
+ * How much of each table this page is willing to read. Enforced by stopping
+ * page accumulation — a real ceiling — rather than by a `.limit()` the server
+ * would ignore.
+ */
+const QUALIFIER_ROW_CEILING = 2_000;
+const LINKED_ROUND_ROW_CEILING = 20_000;
 
 /**
  * One bounded read's own honesty bookkeeping. `evaluated` is what the
@@ -64,35 +82,90 @@ interface CountProbe {
   error: { message: string } | null;
 }
 
+interface BoundedPage<T> {
+  rows: T[];
+  error: { message: string } | null;
+  /**
+   * True when accumulation stopped because the CEILING was reached rather
+   * than because the source was drained — the only case in which rows may
+   * exist that this read never saw.
+   *
+   * Deliberately conservative at the exact boundary: a source holding
+   * precisely `ceiling` rows reports true, because the read cannot tell that
+   * apart from one holding more without another round-trip. Over-reporting
+   * "there may be more" is the safe direction; under-reporting it is the
+   * defect this replaced.
+   */
+  hitCeiling: boolean;
+}
+
+/**
+ * Read up to `ceiling` rows, paging at PostgREST's real cap.
+ *
+ * The caller must apply a stable `.order(...)` on a unique column so page
+ * boundaries don't drift between requests. Mirrors the repo's existing
+ * `fetchAllRowsResult` idiom, but with an explicit ceiling and a report of
+ * whether that ceiling was what stopped it — which is the fact the honesty
+ * contract below is built on and which an unbounded drain cannot provide.
+ */
+async function fetchUpTo<T>(
+  ceiling: number,
+  makeQuery: (
+    from: number,
+    to: number,
+  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<BoundedPage<T>> {
+  const rows: T[] = [];
+
+  while (rows.length < ceiling) {
+    const want = Math.min(PAGE_SIZE, ceiling - rows.length);
+    const { data, error } = await makeQuery(rows.length, rows.length + want - 1);
+    if (error) return { rows, error, hitCeiling: false };
+
+    const page = data ?? [];
+    rows.push(...page);
+    // A SHORT page means the source is drained. A full one only means there
+    // may be more — never that there is.
+    if (page.length < want) return { rows, error: null, hitCeiling: false };
+  }
+
+  return { rows, error: null, hitCeiling: true };
+}
+
 /**
  * Honest truncation check. When the exact-count probe itself succeeded, the
  * comparison is exact. When the probe query failed (rare — it is a second,
  * independent round-trip), rather than silently reporting `truncated: false`
  * on data we could not actually confirm complete, this falls back to the
- * conservative signal available from the page fetch alone: the page came
- * back exactly full, which is the one case a row could have been cut off.
+ * conservative signal available from the read alone: accumulation stopped at
+ * our own ceiling rather than on a drained source, which is the one case a
+ * row could have been cut off.
  */
-function isTruncated(fetchedLen: number, limit: number, probe: CountProbe): boolean {
+function isTruncated(fetchedLen: number, probe: CountProbe, hitCeiling: boolean): boolean {
   if (!probe.error && probe.count !== null) return probe.count > fetchedLen;
-  return fetchedLen >= limit;
+  return hitCeiling;
 }
 
 export async function fetchQualifierLogic(): Promise<AdminFetchResult<QualifierLogicSnapshot>> {
   const admin = createAdminClient();
 
   const [qualifiersRes, qualifiersCountRes, roundsRes, roundsCountRes] = await Promise.all([
-    admin
-      .from('golf_qualifiers')
-      .select('id, team_id, num_rounds, status, name')
-      .order('id', { ascending: true })
-      .limit(QUALIFIER_ROW_LIMIT),
+    fetchUpTo<QualifierRow>(QUALIFIER_ROW_CEILING, (from, to) =>
+      admin
+        .from('golf_qualifiers')
+        .select('id, team_id, num_rounds, status, name')
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
     admin.from('golf_qualifiers').select('id', { count: 'exact', head: true }),
-    admin
-      .from('golf_rounds')
-      .select('id, team_id, player_id, qualifier_id, qualifier_round_number')
-      .not('qualifier_id', 'is', null)
-      .order('id', { ascending: true })
-      .limit(LINKED_ROUND_ROW_LIMIT),
+    fetchUpTo<QualifierLinkedRound>(LINKED_ROUND_ROW_CEILING, (from, to) =>
+      admin
+        .from('golf_rounds')
+        .select('id, team_id, player_id, qualifier_id, qualifier_round_number')
+        .not('qualifier_id', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
     admin.from('golf_rounds').select('id', { count: 'exact', head: true }).not('qualifier_id', 'is', null),
   ]);
 
@@ -103,8 +176,8 @@ export async function fetchQualifierLogic(): Promise<AdminFetchResult<QualifierL
     return failed(`golf_rounds query failed: ${roundsRes.error.message}`);
   }
 
-  const qualifiers: QualifierRow[] = qualifiersRes.data ?? [];
-  const linkedRounds: QualifierLinkedRound[] = roundsRes.data ?? [];
+  const qualifiers: QualifierRow[] = qualifiersRes.rows;
+  const linkedRounds: QualifierLinkedRound[] = roundsRes.rows;
 
   const invariants = evaluateQualifierInvariants(qualifiers, linkedRounds);
   const lifecycle = summarizeQualifierLifecycle(qualifiers, linkedRounds);
@@ -113,12 +186,12 @@ export async function fetchQualifierLogic(): Promise<AdminFetchResult<QualifierL
   const qualifiersFetch: BoundedFetch = {
     evaluated: qualifiers.length,
     confirmedTotal: qualifiersCountRes.error ? null : (qualifiersCountRes.count ?? null),
-    truncated: isTruncated(qualifiers.length, QUALIFIER_ROW_LIMIT, qualifiersCountRes),
+    truncated: isTruncated(qualifiers.length, qualifiersCountRes, qualifiersRes.hitCeiling),
   };
   const linkedRoundsFetch: BoundedFetch = {
     evaluated: linkedRounds.length,
     confirmedTotal: roundsCountRes.error ? null : (roundsCountRes.count ?? null),
-    truncated: isTruncated(linkedRounds.length, LINKED_ROUND_ROW_LIMIT, roundsCountRes),
+    truncated: isTruncated(linkedRounds.length, roundsCountRes, roundsRes.hitCeiling),
   };
 
   // `ok()` sets status/data/fetchedAt; the envelope's own `truncated` flag

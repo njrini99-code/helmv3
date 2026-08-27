@@ -302,3 +302,19 @@
   1210 files, 11,120 tests, 0 failures, 6 pre-existing skips. `tsc --noEmit`
   clean. ESLint clean across `src/app/admin/**`, `src/lib/admin/**`,
   `src/lib/golf/**`, `src/lib/supabase/**`, `src/app/golf/actions/*.ts`.
+
+## 2026-08-26 — qualifier bounded-read truncation
+
+- `src/lib/admin/data/__tests__/qualifier-logic.test.ts` gains two cases that
+  pin the guarantee the previous implementation could not deliver:
+  - **ceiling reached + count probe unavailable => `truncated: true`.** The
+    mock returns a FULL 1,000-row page every call, exactly as PostgREST does
+    when more rows remain, so accumulation runs to the 2,000 ceiling instead
+    of draining. Verified RED against the old single-request shape: with the
+    read stopped after one page it reports `evaluated: 1000, truncated: false`
+    and this case — and only this case — fails.
+  - **short page => `truncated: false`.** The other half of the same rule:
+    stopping because the source ran out is not truncation and must not be
+    reported as it, even with no count probe to confirm.
+- The pre-existing mock gained `range`, since the read now pages rather than
+  calling `.limit()`.

@@ -514,3 +514,46 @@
   OTP, or OAuth code — those were landing unredacted in tables any Bridge
   operator can read. Separately, an admin-surface crash caught by the boundary
   never reached the triage queue at all.
+
+## 2026-08-26 — the qualifier read's truncation flag could never fire
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `fetchQualifierLogic` no longer asks PostgREST for
+  `.limit(2_000)` / `.limit(20_000)`. It pages at PostgREST's real 1,000-row
+  cap up to an explicit ceiling, and reports whether the ceiling — rather
+  than a drained source — is what stopped it.
+- Why: PostgREST caps any single request at 1,000 rows, so `.limit(20_000)`
+  returned 1,000. Beyond the missing rows, it disabled the honesty check
+  built on top: the fallback `fetched.length >= 20_000` could never be true,
+  so a read that WAS clipped reported `truncated: false` whenever the
+  exact-count probe was unavailable to contradict it. That is the
+  `unknown -> healthy` shape the OS forbids, inside the panel whose whole
+  job is saying how much it actually checked.
+- Found by `scripts/check-row-cap-limits.mjs` (the gate added earlier in this
+  same PR), not by review — the adversarial review pass caught the identical
+  defect in a sibling surface and missed this one.
+
+## 2026-08-26 — a new unchecked Supabase read, caught by its own ratchet
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `loadCoverageAndRawEvents` checks `rowsRes.error` inline instead of
+  through `assertQueryOk`. Same throw, same message shape.
+- Why: `helm/no-unchecked-supabase-error` matches a literal `.error` read and
+  cannot see through a helper call, so the check was real but unverifiable —
+  and the count went 1044 -> 1045 against a baseline that may only go DOWN.
+  The baseline was NOT raised. Of the five results only this one has its
+  `.data` read, which is exactly the shape the rule exists to catch.
+
+## 2026-08-26 — migration reformatted to satisfy sqlfluff, proven inert
+
+- SHA: recorded in this commit on `feat/bridge-shot-tracing` (PR #1631).
+- Change: `20260827031100_admin_error_resolutions.sql` reformatted (LT01/
+  LT02/LT05 only). No statement, identifier, grant, or policy changed.
+- Why: it added 69 violations against a ratchet whose counts may only go
+  DOWN. The file is ALREADY APPLIED to production, so "cosmetic" had to be
+  proven, not asserted: the reformatted file was re-applied to the local
+  Docker stack and `pg_get_functiondef` plus the table comment came back
+  byte-identical to the pre-reformat catalog (`diff` exit 0). The RPC
+  behaviour suite was re-run against that database afterwards and still
+  holds — auto never overwrites manual, regression counts once per
+  transition, re-resolve keeps `reopened_count`, malformed SHA rejected.
