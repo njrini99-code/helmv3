@@ -12,6 +12,9 @@
 # the catastrophic-glob check never sees the `*` it exists to catch.
 set -ufo pipefail
 
+# shellcheck source=lib/active-root.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/active-root.sh"
+
 INPUT=$(cat)
 CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
 [ -z "$CMD" ] && exit 0
@@ -39,17 +42,69 @@ CMD=$(printf '%s' "$CMD" | perl -0777 -pe 's/\\\\/\x00/g; s/\\\n//g; s/\n/; /g; 
 
 block() { printf '%s\n' "$1" >&2; exit 2; }
 
-# 1. git stash — refs/stash is REPO-GLOBAL, shared across every worktree.
-#    A stash pushed in one worktree is visible (and poppable) from all of them,
-#    so parallel agents silently steal each other's work.
-# The `\\` in the boundary class is belt-and-braces: the normalization above
-# already strips an alias-escape (`\git` -> `git`), but a LITERAL backslash pair
-# survives it, so keep the class able to match one.
-if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git[[:space:]]+stash([[:space:]]|$)' \
-   && ! printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+stash[[:space:]]+(list|show)([[:space:]]|$)'; then
-  block "BLOCKED: 'git stash'. refs/stash is repo-global and shared by every worktree, so a stash here is visible and poppable from all of them — that is how parallel work gets silently swapped.
-Use instead: a WIP commit on the current branch (git add -A && git commit -m wip), or copy the file aside."
+# ---------------------------------------------------------------------------
+# EARLY EXIT: a lone read-only inspection command is never one of the actions
+# below, no matter what words appear in its arguments.
+#
+# Added 2026-08-27, owner directive: "should never block grep. Ever."
+#
+# Every rule in this file matches WORDS against the command line. That is the
+# right shape for catching `git push --force` and the wrong shape for text that
+# merely CONTAINS those words. Observed in a single session, all refused, none
+# of them the dangerous action:
+#     echo "the git push --force rule"
+#     grep -n 'stash' .claude/hooks/guard-bash.sh
+#     git commit -m "<message describing what the guard blocks>"
+# Each refusal cost a round trip and taught nothing, and a guard that cries
+# wolf is a guard people learn to route around — which is strictly worse than
+# not having it.
+#
+# The exemption is deliberately NARROW, because a quoted string is not always
+# inert: `bash -c "git push --force"` is quoted AND executes. So this fires
+# only when the command is a SINGLE invocation of a known read-only utility
+# with NO way to reach a second command:
+#   - no ; && || newline (command separators)
+#   - no | (pipe into something else)
+#   - no $( ) or backtick (command substitution)
+#   - no > or >> (redirection can still clobber a file)
+# Under those conditions the argument text cannot be executed, so no rule below
+# can apply to it.
+READONLY_HEAD='^[[:space:]]*(echo|printf|grep|egrep|fgrep|rg|cat|head|tail|wc|sed|awk|jq|ls|find|file|stat|basename|dirname|realpath|which|type|column|sort|uniq|diff|cut|tr)([[:space:]]|$)'
+#
+# `$` is in the forbidden class outright rather than trying to match `$(`
+# precisely. A verified bypass during development:
+#     echo $(git push --force origin main)
+# was exempted and ran. Command substitution executes, and so does a variable
+# holding a command. Excluding every `$` costs nothing here — a read-only
+# command containing one simply falls through to the normal rules, which allow
+# it anyway.
+if printf '%s' "$CMD" | grep -Eq "$READONLY_HEAD" \
+   && ! printf '%s' "$CMD" | grep -Eq '[;&|><`$]'; then
+  exit 0
 fi
+
+# 1. git stash — ALLOWED. Owner directive, 2026-08-27.
+#
+#    This hook used to block every stash subcommand except `list` and `show`.
+#    The hazard it was written for is real and has not gone away: refs/stash is
+#    REPO-GLOBAL, so a stash pushed in one worktree is visible and poppable from
+#    every other one, and two agents can silently swap work through it.
+#
+#    It is no longer a hook's call to make. The owner uses stash deliberately,
+#    and a guard that blocks an ordinary git command every session teaches
+#    people to route around guards — which costs more than the failure mode it
+#    prevented. The worktree isolation this program is building addresses the
+#    same hazard structurally: one task, one worktree, one mutating session.
+#
+#    Two things the old rule got wrong beyond being too broad:
+#      - it matched the WORDS anywhere in the command line, so an `echo` or a
+#        `grep` mentioning them was blocked as if it were the command itself;
+#      - its advice ("use a WIP commit") is worse under the worktree model,
+#        because a WIP commit on a shared branch is MORE visible to peers than
+#        a stash, not less.
+#
+#    If parallel-agent stash collisions reappear, fix them in the workspace
+#    factory (one worktree per mutating session), not by re-blocking a verb.
 
 # 2. rm -rf .next — deleting the Turbopack cache mid-session wedges cold compile
 #    for the rest of the session and costs minutes per page.
@@ -62,9 +117,26 @@ fi
 #    PIPE's exit status, not the gate's. `npm test | tail` exits 0 while the
 #    tests fail. This is the single most dangerous shape for a verification
 #    step, because it manufactures a green result.
+#
+#    NARROWED 2026-08-27. This rule used to fire when a gate appeared ANYWHERE
+#    and a `|` appeared ANYWHERE. Those are not the same command. It refused,
+#    among others:
+#        npx vitest run ... > out 2>&1; grep -E 'Test Files|Tests' out
+#    where the only `|` is inside a quoted regex and the gate is redirected to
+#    a file — the exact shape this rule tells you to use. It also refused an
+#    `echo` and a `git commit -m` whose TEXT merely described a blocked
+#    command. Four times in one session; each refusal cost a round trip and
+#    taught nothing, because the command was already correct.
+#
+#    Now: the gate must sit IMMEDIATELY left of a real pipe, with no command
+#    separator between them, and pipes inside quotes do not count. Quoted
+#    spans are blanked FOR THIS CHECK ONLY — the safety rules below still match
+#    the raw command, because `bash -c "git push --force"` is quoted and does
+#    execute.
 GATE='(npm[[:space:]]+(run[[:space:]]+)?(test|lint|typecheck|build)|npx[[:space:]]+(vitest|tsc|eslint|semgrep)|vitest[[:space:]]+run)'
-if printf '%s' "$CMD" | grep -Eq "$GATE" \
-   && printf '%s' "$CMD" | grep -q '|' \
+# Blank the CONTENTS of quoted spans, preserving length-independent structure.
+CMD_UNQ=$(printf '%s' "$CMD" | perl -0777 -pe "s/'[^']*'/''/g; s/\"(\\\\.|[^\"\\\\])*\"/\"\"/g;")
+if printf '%s' "$CMD_UNQ" | grep -Eq "${GATE}[^;&]*\|[^|]" \
    && ! printf '%s' "$CMD" | grep -q 'pipefail'; then
   block "BLOCKED: a gate command is piped, so its exit code is masked — the pipeline reports the LAST command's status, so a failing suite still looks like success.
 Fix (keeps your filtering): prefix with 'set -o pipefail;' e.g.
@@ -166,7 +238,9 @@ fi
 #     Scope recursive deletes to paths that belong to the work: the project
 #     itself and the OS temp dirs (where the scratchpad lives).
 if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]])rm[[:space:]]'; then
-  PROJ=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && pwd -P) || PROJ=""
+  # ACTIVE worktree: "inside the work" means the tree being worked in, which
+  # under the worktree model is not necessarily the original project dir.
+  PROJ=$(helm_active_root 2>/dev/null) || PROJ=""
 
   # Isolate the rm invocation BEFORE looking at flags. Reading flags from the
   # whole command line was a real false-positive: any `-r` belonging to another
@@ -242,7 +316,7 @@ fi
 #     External worktrees are the supported shape and are proven not to drift: the
 #     three sibling checkouts all had byte-identical CLAUDE.md/AGENTS.md/.mcp.json.
 if printf '%s' "$CMD" | grep -Eq '(^|[;&|[:space:]/\\])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+worktree[[:space:]]+add'; then
-  PROJ_ROOT=$(cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && pwd -P) || PROJ_ROOT=""
+  PROJ_ROOT=$(helm_active_root 2>/dev/null) || PROJ_ROOT=""
 
   # Everything after `worktree add`.
   # NOTE: [[:space:]][[:space:]]* and not \+ — BSD sed (macOS, where this hook

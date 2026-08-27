@@ -13,6 +13,7 @@
 // guard-bash.sh's BSD-sed `\+` bug and its `-b`-mistaken-for-a-path bug,
 // neither caught by reading, both caught by running the hook.
 import { loadRegistry, mapFilesToFeatures } from '../../../scripts/knowledge/lib/registry.mjs';
+import { resolveActiveRoot } from './workspace-identity.mjs';
 
 // In-process cache keyed on repoRoot. Parsing memory/registry.yml measures
 // ~5-10ms once imported (audit, timed live) — cheap enough that this cache
@@ -90,12 +91,17 @@ export async function buildFeatureDocIndex(repoRoot) {
   return index;
 }
 
-/** CLAUDE_PROJECT_DIR first (what every existing hook uses), then the
- * hook stdin JSON's own `cwd` field, then process.cwd() last — per the audit,
- * do not rely on process.cwd() alone; its value depends on how the harness
- * spawned the command. */
+/** Delegates to the ONE workspace-identity resolver. Do not reintroduce a
+ * local precedence here.
+ *
+ * This function used to prefer CLAUDE_PROJECT_DIR, which does NOT move when
+ * the session works inside a git worktree. Governance depended on it: an
+ * edited path relativised against the wrong root becomes '../../worktrees/…',
+ * which matches no GOVERNED_PATTERNS entry, so guard-feature-context stopped
+ * seeing the file instead of failing loudly. Regression test:
+ * src/test/hooks/workspace-identity.test.ts. */
 export function resolveRepoRoot(input) {
-  return process.env.CLAUDE_PROJECT_DIR || input?.cwd || process.cwd();
+  return resolveActiveRoot(input);
 }
 
 // Governed roots = the union of golf-feature-ownership.md's, baseball-roles.md's

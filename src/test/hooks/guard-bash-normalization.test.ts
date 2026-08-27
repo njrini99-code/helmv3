@@ -1,3 +1,7 @@
+// NOTE 2026-08-27: `git stash` was REMOVED from this hook by owner directive
+// and is no longer blocked. Rows that used it as their sample command were
+// dropped, not rewritten — each of those tables still exercises the same
+// normalization anchor through the force-push, clean -fd and worktree rows.
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -69,7 +73,6 @@ function continueAfterFirstToken(cmd: string): string {
 
 /** Every dangerous shape the hook claims to block, in its plain single-line form. */
 const DANGEROUS = [
-  ['rule 1  — git stash', 'git stash'],
   ['rule 2  — rm -rf .next', 'rm -rf .next'],
   ['rule 4  — force push', 'git push --force origin main'],
   ['rule 6  — supabase config push', 'supabase config push'],
@@ -107,7 +110,6 @@ describe('guard-bash — a line continuation must not defeat any rule', () => {
   // several rules because they share that anchor.
   it.each([
     ['force push', 'xyz\\\\\ngit push --force origin main'],
-    ['git stash', 'xyz\\\\\ngit stash'],
     ['worktree inside the repo', 'xyz\\\\\ngit worktree add .claude/worktrees/x -b b'],
     ['vercel promote', 'xyz\\\\\nvercel promote dpl_abc123'],
   ])('BLOCKS %s that follows an escaped backslash (two real commands)', (_label, cmd) => {
@@ -119,7 +121,6 @@ describe('guard-bash — a path-qualified binary must not defeat any rule', () =
   // AGENTS.md mandates repo-local, path-qualified CLI invocation, so this is
   // the form the constitution actively pushes agents toward.
   it.each([
-    ['git stash', '/usr/bin/git stash'],
     ['force push', '/usr/bin/git push --force origin main'],
     ['force push via homebrew path', '/opt/homebrew/bin/git push -f origin main'],
     ['git clean -fd', '/usr/bin/git clean -fd'],
@@ -133,7 +134,6 @@ describe('guard-bash — a leading backslash must not defeat any rule', () => {
   // `\git` skips a shell alias or function and runs the real binary. It is a
   // documented, ordinary technique, not an obfuscation.
   it.each([
-    ['git stash', '\\git stash'],
     ['force push', '\\git push --force origin main'],
     ['worktree inside the repo', '\\git worktree add .claude/worktrees/x -b b'],
     ['vercel promote', '\\vercel promote dpl_abc123'],

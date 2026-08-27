@@ -19,7 +19,13 @@ FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')
 # the package on every invocation, and when it cannot find one locally it
 # reaches for the network — which in an unattended run is a hook that hangs
 # instead of a hook that no-ops. Measured here: ~0.41s vs ~0.51s per edit.
-ESLINT="${CLAUDE_PROJECT_DIR:-.}/node_modules/.bin/eslint"
+# shellcheck source=lib/active-root.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/active-root.sh"
+ACTIVE_ROOT="$(helm_active_root)"
+# Active tree first: with per-worktree node_modules the canonical
+# checkout's eslint is the wrong binary and may not even exist.
+ESLINT="$ACTIVE_ROOT/node_modules/.bin/eslint"
+[ -x "$ESLINT" ] || ESLINT="${CLAUDE_PROJECT_DIR:-.}/node_modules/.bin/eslint"
 [ -x "$ESLINT" ] || ESLINT=""
 
 case "$FILE" in

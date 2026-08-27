@@ -213,8 +213,10 @@ describe('guard-bash — git invocation shapes that used to bypass every git rul
       expect(runGuard(cmd)).toBe('BLOCK');
     });
 
-    it('blocks git stash via an absolute path', () => {
-      expect(runGuard('/usr/bin/git stash')).toBe('BLOCK');
+    it('ALLOWS git stash via an absolute path (unblocked 2026-08-27)', () => {
+      // Owner directive. The repo-global refs/stash hazard is now addressed
+      // structurally by one-worktree-per-mutating-session, not by a verb ban.
+      expect(runGuard('/usr/bin/git stash')).toBe('ALLOW');
     });
 
     it('blocks an in-repo worktree add via an absolute path', () => {
@@ -226,7 +228,10 @@ describe('guard-bash — git invocation shapes that used to bypass every git rul
     it.each([
       ['between git and push', 'git \\\n  push --force'],
       ['before the force flag', 'git push \\\n  --force'],
-      ['inside the subcommand', 'git \\\n  stash'],
+      // Was `git \<newline> stash` until stash was unblocked 2026-08-27.
+      // `clean` keeps the identical shape — a continuation sitting between
+      // `git` and its subcommand — against a rule that still blocks.
+      ['inside the subcommand', 'git \\\n  clean -fd'],
     ])('blocks a continuation %s', (_label, cmd) => {
       // grep matches one LINE at a time; bash joins these into one command.
       // Without normalisation the two halves never share a grep record.
@@ -243,7 +248,7 @@ describe('guard-bash — git invocation shapes that used to bypass every git rul
 
     it.each([
       ['a normal push', 'git push origin br:refs/heads/br'],
-      ['a read-only stash query', 'git stash list'],
+      ['any stash subcommand, now unblocked', 'git stash list'],
       ['git mentioned inside a grep pattern', 'grep -n "git push" README.md'],
       ['plain status', 'git status'],
     ])('still allows %s', (_label, cmd) => {

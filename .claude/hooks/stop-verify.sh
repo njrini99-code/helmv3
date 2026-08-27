@@ -40,7 +40,13 @@
 # correctly under concurrency. See the ADVISORY branch below.
 set -uo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
+# shellcheck source=lib/active-root.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/active-root.sh"
+
+# ACTIVE worktree. Verifying the wrong checkout is how a Stop gate passes
+# while the work it was meant to verify sits in another tree.
+ACTIVE_ROOT="$(helm_active_root)"
+cd "$ACTIVE_ROOT" 2>/dev/null || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 command -v jq >/dev/null 2>&1 || exit 0
@@ -58,7 +64,7 @@ SESSION_ID=$(printf '%s' "$STDIN_JSON" | jq -r '.session_id // empty' 2>/dev/nul
 [ -z "$SESSION_ID" ] && SESSION_ID="ppid-$PPID"
 SESSION_ID_SAFE=$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')
 
-STOP_CHECK_JSON=$(node "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/lib/stop-check.mjs" "$SESSION_ID" 2>/dev/null)
+STOP_CHECK_JSON=$(node "$ACTIVE_ROOT/.claude/hooks/lib/stop-check.mjs" "$SESSION_ID" 2>/dev/null)
 printf '%s' "$STOP_CHECK_JSON" | jq -e . >/dev/null 2>&1 || STOP_CHECK_JSON='{"touchedFiles":[]}'
 
 # Counts/lists below are computed from .verifiableFiles, NOT .touchedFiles —
