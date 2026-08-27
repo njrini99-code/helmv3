@@ -56,7 +56,8 @@ so a job split/rename does not silently break protection.
 > `codeql.yml` has all three matrix legs on `push`/`pull_request` to `main`.
 >
 > **Also changed 2026-08-19:** `allow_force_pushes` **true → false**. Until now
-> `.claude/hooks/guard-bash.sh` was the only thing preventing a rewrite of
+> `.claude/hooks/guard-bash.sh` (deleted 2026-08-27) was the only thing
+> preventing a rewrite of
 > shared history on `main`; the hook stays as belt-and-braces, but it is no
 > longer load-bearing. Note `CLAUDE.md` rule 0 still describes force pushes as
 > "ENABLED on GitHub" — that sentence is now stale.
