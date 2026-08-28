@@ -37,6 +37,8 @@ import { BlindnessBeacon } from './_components/BlindnessBeacon';
 import { ProofDebtPanel, selectProofDebt } from './_components/ProofDebtPanel';
 import { fetchChangeTimeline } from '@/lib/admin/data/change-timeline';
 import { ChangeTimeline } from './_components/ChangeTimeline';
+import { selectAttention } from '@/lib/admin/incidents/attention';
+import { AttentionQueue } from './_components/AttentionQueue';
 
 export const dynamic = 'force-dynamic';
 
@@ -671,6 +673,42 @@ async function ProofDebt() {
 }
 
 /**
+ * NEEDS YOUR EYES, ranked by evidence rather than by severity alone.
+ *
+ * Companion to `BriefingStrip`, not a replacement: that panel reads
+ * `fetchBriefing`'s platform signals, this one reads the incident board and
+ * the self-heal stages. The ordering is what makes it different — a fault
+ * that was declared fixed and came back outranks a fresh critical, because
+ * the first says the system's own judgement was wrong and the second only
+ * says something broke.
+ *
+ * Both panels are boundaries of their own so neither can take the other down,
+ * and both refuse to render an all-clear while a source is blind: an empty
+ * list we could not fully compute must not read as a calm morning.
+ */
+async function AttentionPanel() {
+  const [board, loop] = await Promise.all([
+    cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS),
+    fetchSelfHealBoard(),
+  ]);
+  const now = Date.now();
+  const stages = loop.status === 'ok' ? (loop.data?.stages ?? []) : [];
+  const all = selectAttention(
+    { incidents: board.incidents, stages, coverage: board.coverage, now },
+    Number.MAX_SAFE_INTEGER,
+  );
+  const rows = selectAttention({ incidents: board.incidents, stages, coverage: board.coverage, now });
+  return (
+    <AttentionQueue
+      rows={rows}
+      total={all.length}
+      checkedAt={board.computedAt}
+      canClaimAllClear={canClaimAllClear(board.coverage)}
+    />
+  );
+}
+
+/**
  * CHANGE TIMELINE — what changed, and in what order.
  *
  * The sentence an operator otherwise reconstructs by hand every morning. It is
@@ -754,6 +792,9 @@ export default async function AdminOverviewPage() {
         </PanelBoundary>
         <PanelBoundary title="Needs your eyes" skeleton={<SkeletonStat />}>
           <BriefingStrip />
+        </PanelBoundary>
+        <PanelBoundary title="Needs your eyes — incidents and the loop" skeleton={<SkeletonList />}>
+          <AttentionPanel />
         </PanelBoundary>
         <PanelBoundary
           title="Severity mix (24h)"
