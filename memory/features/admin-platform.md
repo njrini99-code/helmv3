@@ -265,6 +265,37 @@ them would have broken those routes, not the dead one.
   both are read back by the RCA action and forwarded to a third-party model,
   and a second copy is one that eventually stops matching — silently, on the
   half nobody is looking at.
+- **A SHA match may only ever prove a fix shipped — never disprove it.**
+  `deriveServesFix` (`src/lib/admin/incidents/deploy-proof.ts`) answers "does
+  production serve this fix" as `true` / `false` / `null`. Production almost
+  never sits on the fix commit, because any later deploy moves it past, so
+  equality is evidence of shipping and inequality is evidence of nothing. The
+  merge timestamp is the general test: a deploy cut after the merge carries the
+  merge. An implementation that returned `false` on SHA mismatch reported every
+  fix older than one deploy as permanently unshipped, and made the timestamp
+  branch unreachable whenever both SHAs were known. `deployAt === null` (Vercel
+  unreadable) is `null`, never `false` — the same three-outcome rule
+  `shipStatus` follows.
+- **One attention list on the Overview, and the platform checks are in it.**
+  `selectAttention` ranks incidents, dead self-heal stages, `fetchBriefing`'s
+  platform checks and the standing blind-source caveat on ONE scale. The
+  Overview briefly carried two panels both titled "Needs your eyes" — one for
+  the briefing, one for incidents and the loop — which left the operator
+  ranking two lists against each other by eye. A second attention list is no
+  more defensible than a second incident list. A briefing check that could not
+  RUN withdraws the all-clear and is stated on the list, because a check that
+  failed to execute is not a check that passed.
+- **Every filter control on the incident queue must narrow the canonical
+  queue.** Lens (lifecycle/attention) and `?kind=` (incident class) are
+  orthogonal facets over the SAME list, both applied in
+  `src/lib/admin/incidents/lens.ts`. `?kind=` was once parsed, rendered as
+  chips and linked from the suppressed notice while nothing downstream
+  consulted it — the canonical queue is built from `IncidentFeedFilters`, which
+  has no `kind` field — so every one of those controls was inert and the
+  notice's "N held back" described a list the operator was no longer looking
+  at. A control that does nothing is worse than a missing one: it teaches the
+  operator the queue is curated when it is not. Counts shown beside a filter
+  are measured over the list that filter actually narrows.
 
 ## UI Contract
 
