@@ -840,9 +840,23 @@ export function useShotStateMachine({
       if (!el) return;
 
       if (shouldAutoScrollDistanceInput(shotType)) {
-        el.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        // `center`, not `nearest`. This runs BEFORE the keyboard exists, so the
+        // input is already inside the (full-height) viewport and `nearest`
+        // resolves to "do nothing" — then the keyboard slides up over the
+        // bottom ~45% and covers the field the player is about to type into.
+        // Centring at least leaves it above the keyboard's eventual top edge.
+        el.scrollIntoView({ behavior: 'auto', block: 'center' });
         distanceFocusTimeoutRef.current = setTimeout(() => {
-          distanceInputRef.current?.focus({ preventScroll: true });
+          // DO NOT re-add `preventScroll: true` here. It was added to stop this
+          // focus double-scrolling against the line above, but the line above
+          // was a no-op, so all `preventScroll` actually suppressed was the one
+          // scroll with any knowledge of the keyboard. Focus-driven scrolling
+          // honours `scroll-margin-bottom`, which globals.css already sets to
+          // `calc(var(--keyboard-height) + 40px)` on every input under
+          // `body.capacitor` — that rule was written for this scroll and had
+          // nothing triggering it. If you are here chasing a double-scroll,
+          // fix the redundant call above rather than muting this one.
+          distanceInputRef.current?.focus();
         }, 0);
       }
     }, 0);
