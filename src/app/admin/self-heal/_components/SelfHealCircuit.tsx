@@ -30,6 +30,10 @@ const RUNTIME_TONE: Record<SelfHealStageDetail['status'], FwStatusTone> = {
   overdue: 'danger',
   failed: 'danger',
   'never-ran': 'neutral',
+  // The stage ran and said part of its own work failed. Close is the reason
+  // this exists: it piggybacks log-retention's heartbeat, so its work could
+  // fail while this circuit rendered success.
+  degraded: 'warning',
 };
 
 /**

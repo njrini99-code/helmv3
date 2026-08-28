@@ -93,6 +93,10 @@ export interface JobsTab {
 interface BackgroundJobLogRow {
   job_type: string;
   status: string;
+  /** Carries `degraded: true` when a run finished but reported that part of
+   *  its own work failed. Selected AND passed through — a status derived from
+   *  a column the query never fetched is a status that never fires. */
+  metadata: unknown;
   duration_ms: number | null;
   error_message: string | null;
   started_at: string;
@@ -182,7 +186,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
       CRON_REGISTRY.map((entry) =>
         admin
           .from('background_job_logs')
-          .select('job_type, status, duration_ms, error_message, started_at')
+          .select('job_type, status, duration_ms, error_message, started_at, metadata')
           .eq('job_type', entry.jobType)
           .order('started_at', { ascending: false })
           .limit(RECENT_RUNS_PER_JOB),
@@ -219,7 +223,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
       SELFHEAL_STAGES.map((stage) =>
         admin
           .from('background_job_logs')
-          .select('job_type, status, duration_ms, error_message, started_at')
+          .select('job_type, status, duration_ms, error_message, started_at, metadata')
           .eq('job_type', stage.jobType)
           .order('started_at', { ascending: false })
           .limit(1),
@@ -259,7 +263,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     const failures = runs.filter((r) => r.status === 'failed').length;
     return {
       ...entry,
-      status: classifyCronStatus(entry, last ? { started_at: last.started_at, status: last.status } : null, now),
+      status: classifyCronStatus(entry, last ? { started_at: last.started_at, status: last.status, metadata: last.metadata } : null, now),
       lastRunAt: last?.started_at ?? null,
       lastDurationMs: last?.duration_ms ?? null,
       lastError: last?.error_message ?? null,
@@ -310,7 +314,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
         ? 'never-ran'
         : classifySelfHealStage(
             stage,
-            last ? { started_at: last.started_at, status: last.status } : null,
+            last ? { started_at: last.started_at, status: last.status, metadata: last.metadata } : null,
             now,
           ),
       lastRunAt: last?.started_at ?? null,

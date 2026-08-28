@@ -89,6 +89,10 @@ export interface SelfHealBoard {
 interface BackgroundJobLogRow {
   job_type: string;
   status: string;
+  /** Carries `degraded: true` when a run finished but reported that part of
+   *  its own work failed. Selected AND passed through — a status derived from
+   *  a column the query never fetched is a status that never fires. */
+  metadata: unknown;
   started_at: string;
   completed_at: string | null;
   duration_ms: number | null;
@@ -210,7 +214,7 @@ export async function fetchSelfHealBoard(now: Date = new Date()): Promise<AdminF
       SELFHEAL_STAGES.map((stage) =>
         admin
           .from('background_job_logs')
-          .select('job_type, status, started_at, completed_at, duration_ms, error_message')
+          .select('job_type, status, started_at, completed_at, duration_ms, error_message, metadata')
           .eq('job_type', stage.jobType)
           .order('started_at', { ascending: false })
           .limit(HISTORY_LIMIT_PER_STAGE),
@@ -256,7 +260,7 @@ export async function fetchSelfHealBoard(now: Date = new Date()): Promise<AdminF
         ? 'never-ran'
         : classifySelfHealStage(
             stage,
-            last ? { started_at: last.started_at, status: last.status } : null,
+            last ? { started_at: last.started_at, status: last.status, metadata: last.metadata } : null,
             now,
           ),
       lastRunAt: last?.started_at ?? null,
