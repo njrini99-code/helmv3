@@ -98,8 +98,10 @@ async function main() {
   // Derived from OUTSTANDING, not from history: once a path matches the
   // integration ref it is nobody's verification problem, delegated or not, and
   // stop-verify.sh's "N file(s) are DELEGATED" note must not list it.
+  //
+  // And bounded IN TIME (Phase 7C) — see `delegationCovers`.
   const delegatedFiles = outstandingFiles
-    .filter((f) => state.delegatedVerifications.has(f.path))
+    .filter((f) => delegationCovers(state.delegatedVerifications.get(f.path), f.ts))
     .map((f) => ({ path: f.path, ...state.delegatedVerifications.get(f.path) }));
   const delegatedPaths = new Set(delegatedFiles.map((f) => f.path));
   const verifiableFiles = outstandingFiles.filter((f) => !delegatedPaths.has(f.path));
@@ -190,6 +192,47 @@ async function main() {
     rlsRelevant,
     autogenRelevant,
   });
+}
+
+/**
+ * Does this delegation still cover the work currently on the path?
+ *
+ * A `delegated_verification` says "a different session's PR already gated and
+ * CI-checked this path". That is a claim about the work AS IT STOOD when the
+ * event was written — it says nothing about whatever gets written next. Before
+ * Phase 7C the mere existence of the event suppressed the path forever, which
+ * was reproduced on real events (2026-08-28):
+ *
+ *     10:00  touch P
+ *     10:05  delegated_verification P
+ *     18:00  touch P again, brand-new unverified content
+ *            -> outstanding (correct) but NOT verifiable (wrong)
+ *
+ * Eight hours later, a delegation was still silencing the gate for work it
+ * never saw. It is the same staleness Phase 7B declined to introduce with a
+ * `touch_retired` event — except this one already existed.
+ *
+ * The fix needs no new event and no new clock. `foldState` already keeps
+ * last-write-wins timestamps on both sides, so the LATEST touch and the LATEST
+ * delegation are both in hand and the answer is derivable from event order:
+ *
+ *     latestTouch <= delegatedAt   still covered
+ *     latestTouch >  delegatedAt   stale; the path stays verifiable
+ *
+ * Self-correcting, exactly like Phase 7B: re-delegating after the new touch
+ * makes the delegation newer again, with no invalidation protocol to run.
+ *
+ * Either timestamp missing or unparseable => NOT covered. A delegation that
+ * cannot prove it is newer than the work has not earned the right to silence
+ * the gate, and this is a suppression path — the direction to fail is toward
+ * verifying.
+ */
+function delegationCovers(delegation, latestTouchTs) {
+  if (!delegation) return false;
+  const delegatedAt = Date.parse(delegation.ts ?? '');
+  const touchedAt = Date.parse(latestTouchTs ?? '');
+  if (!Number.isFinite(delegatedAt) || !Number.isFinite(touchedAt)) return false;
+  return touchedAt <= delegatedAt;
 }
 
 // ---------------------------------------------------------------------------
