@@ -4,6 +4,7 @@
 
 import { git } from '../lib/exec.mjs';
 import { check, Status } from '../result.mjs';
+import { workspaceRoots } from '../../../.claude/hooks/lib/workspace-identity.mjs';
 
 /** Normalise a git remote URL to `owner/name`, protocol-agnostic. */
 function normRemote(url) {
@@ -40,28 +41,31 @@ export async function run(ctx) {
     );
   }
 
-  // 2. cwd is the git top-level (not a subdir, not a different tree).
-  const top = git(repoRoot, ['rev-parse', '--show-toplevel']);
-  if (top.ok) {
-    out.push(
-      top.value === repoRoot
-        ? check('identity.toplevel', Status.PASS, 'cwd is the repository top-level')
-        : check('identity.toplevel', Status.WARN, 'cwd is not the git top-level', {
-            expected: top.value,
-            actual: repoRoot,
-          }),
-    );
-  }
+  // 2 and 3 both come from the ONE identity authority now
+  //     .claude/hooks/lib/workspace-identity.mjs
+  // rather than from a second set of `git rev-parse` calls owned here.
+  //
+  // The git calls this replaces were not wrong — git's own top-level is the
+  // right source. What was wrong is that this file owned a PARALLEL
+  // implementation of the same question, free to drift from the hooks' one.
+  // A doctor that can disagree with the thing it inspects is not a doctor.
+  const ws = workspaceRoots({ cwd: repoRoot });
 
-  // 3. Is this the canonical checkout or a linked worktree? (informational —
-  //    a linked worktree has a .git FILE, the canonical one a directory.)
-  const common = git(repoRoot, ['rev-parse', '--git-common-dir']);
-  const gitDir = git(repoRoot, ['rev-parse', '--git-dir']);
-  if (common.ok && gitDir.ok) {
-    const linked = common.value !== gitDir.value;
+  out.push(
+    ws.activeRoot === repoRoot
+      ? check('identity.toplevel', Status.PASS, 'cwd is the repository top-level')
+      : check('identity.toplevel', Status.WARN, 'cwd is not the git top-level', {
+          expected: ws.activeRoot,
+          actual: repoRoot,
+        }),
+  );
+
+  if (ws.inRepo) {
     out.push(
       check('identity.checkout-kind', Status.PASS,
-        linked ? 'running in a linked worktree' : 'running in the canonical checkout'),
+        ws.kind === 'task'
+          ? 'running in a linked worktree'
+          : 'running in the canonical checkout'),
     );
   }
 

@@ -27,6 +27,7 @@ import * as ai from './checks/ai.mjs';
 import * as registry from './checks/registry.mjs';
 import * as ci from './checks/ci.mjs';
 import * as config from './checks/config.mjs';
+import { workspaceRoots } from '../../.claude/hooks/lib/workspace-identity.mjs';
 
 // Local-only modules would be gated on `--local`; all MVP checks are shared/CI-safe.
 const MODULES = [identity, workspace, scratch, ai, registry, ci, config];
@@ -42,10 +43,20 @@ function parseArgs(argv) {
   };
 }
 
+/**
+ * The ACTIVE workspace root, from the one authority.
+ *
+ * This used to be its own `git rev-parse --show-toplevel` call. Preferring
+ * git's own top-level was never the defect — git reality should win. The
+ * defect was that repo-doctor OWNED a second algorithm, which could drift from
+ * the hooks' one without anything noticing, and then repo-doctor and the hooks
+ * would disagree about which checkout a session is in. That is exactly the
+ * class of bug repo-doctor exists to report.
+ */
 function resolveRepoRoot() {
-  const r = execRun('git', ['rev-parse', '--show-toplevel']);
-  if (r.ok) return r.value;
-  // Fall back to two levels up from this file (scripts/repo-doctor/cli.mjs).
+  const { activeRoot } = workspaceRoots({});
+  if (activeRoot) return activeRoot;
+  // Last resort only: two levels up from this file (scripts/repo-doctor/cli.mjs).
   return join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 }
 
