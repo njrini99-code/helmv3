@@ -331,6 +331,16 @@ them would have broken those routes, not the dead one.
 - CRM email/reply/suppression logic can have compliance impact.
 - Rollup dashboards can appear live while backed by stale data.
 - Observability code must avoid PII and secret leakage.
+- **An incident detail page costs a whole board.** `fetchIncidentById`
+  (`src/lib/admin/incidents/fetch.ts`) builds the full 168h board — a Sentry
+  pull, a paginated `admin_events` sweep, the GitHub work log and per-PR check
+  runs — to answer for ONE incident, on top of the page's own
+  `fetchFingerprintDetail` and `fetchResolutionArchive`. The wide window is
+  deliberate (a detail page is reached from bookmarks, RCA rows and PR bodies,
+  so a 72h board would 404 half of them), and correctness beat cost while the
+  read model was being established. Twenty incidents opened in a row is twenty
+  boards. If that starts to bite, the fix is a narrowed by-id query, not a
+  shorter window.
 
 ## Tests To Prefer
 
