@@ -24,6 +24,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { SELFHEAL_CLOSE_JOB_TYPE } from '@/lib/admin/selfheal-registry';
 import { archiveKnownResolvedIncidents } from '@/lib/admin/incident-resolver';
 import { autoResolveFixedIncidents, type AutoResolveResult } from '@/lib/admin/auto-resolve';
 import type { Database } from '@/lib/types/database';
@@ -141,11 +142,29 @@ function purgeJobLogsBefore(admin: AdminClient, before: string): Promise<number>
   );
 }
 
-/** Fail-soft wrapper — an auto-resolve bug/outage must never fail the
- *  retention cron's own purge work. Failure is logged, not thrown. */
+/**
+ * Fail-soft wrapper — an auto-resolve bug/outage must never fail the retention
+ * cron's own purge work. Failure is logged, not thrown.
+ *
+ * WHY THE INNER `recordJobRun`. Auto-resolution IS the self-healing loop's
+ * CLOSE stage, and it used to have no heartbeat of its own: `SELFHEAL_STAGES`
+ * read `log-retention`'s. But this function exists precisely to let
+ * auto-resolve fail while retention carries on, so the route still returned
+ * 200 and recorded `log-retention` = 'completed' — and the Self-Heal circuit
+ * read a closed loop off a heartbeat belonging to different work. Retention
+ * succeeding is not evidence about Close.
+ *
+ * `recordJobRun` writes 'failed' and RETHROWS, so the catch stays OUTSIDE it:
+ * the throw is what marks the close run failed, and catching here is what
+ * keeps retention independent. Catching inside would write 'completed' and
+ * rebuild the same false-green one layer down.
+ *
+ * No new Vercel schedule — the same nightly invocation now reports two facts
+ * instead of one.
+ */
 async function runAutoResolve(): Promise<AutoResolveResult | { error: string }> {
   try {
-    return await autoResolveFixedIncidents();
+    return await recordJobRun(SELFHEAL_CLOSE_JOB_TYPE, () => autoResolveFixedIncidents());
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[log-retention] autoResolveFixedIncidents failed', message);

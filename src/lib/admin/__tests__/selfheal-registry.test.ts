@@ -109,3 +109,19 @@ describe('summarizeLoop', () => {
     expect(summarizeLoop([])).toBe('unknown');
   });
 });
+
+describe('ET-3 — the Close stage reads its own job type', () => {
+  it('Close is keyed on selfheal-close, not log-retention', () => {
+    // Borrowing log-retention's heartbeat meant retention succeeding counted
+    // as evidence about auto-resolution. They are different work with
+    // different failure modes; only one of them is Close.
+    const close = SELFHEAL_STAGES.find((s) => s.id === 'close');
+    expect(close).toBeDefined();
+    expect(close!.jobType).toBe('selfheal-close');
+  });
+
+  it('no two stages share a job type', () => {
+    const types = SELFHEAL_STAGES.map((s) => s.jobType);
+    expect(new Set(types).size).toBe(types.length);
+  });
+});
