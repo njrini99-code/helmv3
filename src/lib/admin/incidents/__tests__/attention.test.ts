@@ -214,9 +214,16 @@ describe('selectAttention — stage-dead', () => {
     // into a shared "the stage is broken" string.
     expect(new Set(whys).size).toBe(whys.length);
 
-    const unreadableWhy = byKey.get('stage:unreadable')!.why;
-    expect(unreadableWhy.toLowerCase()).toMatch(/read/);
-    expect(unreadableWhy.toLowerCase()).not.toMatch(/broken/);
+    // The STATE is the discriminating fact and no fallback branch can produce
+    // it. Asserting only on the prose could not fail: this fixture's stage is
+    // titled 'unreadable', every other branch interpolates that title into its
+    // own sentence, and `toMatch(/read/)` therefore matched the fixture's NAME
+    // rather than the behaviour — deleting the `stage.unreadable` branch
+    // outright left this test green. Proven by injection, 2026-08-28.
+    const unreadableRow = byKey.get('stage:unreadable')!;
+    expect(unreadableRow.state).toBe('UNREADABLE');
+    expect(unreadableRow.why.toLowerCase()).toMatch(/could not be read/);
+    expect(unreadableRow.why.toLowerCase()).not.toMatch(/broken/);
   });
 
   it('does not double-count a stage that is both failing and unproven — one row, from status', () => {
