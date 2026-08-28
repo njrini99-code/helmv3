@@ -11,14 +11,56 @@
 // write policy), the `documents the Bash gap` case below will start failing —
 // and that failure is the signal to update the docs, not to delete the test.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, realpathSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve, join } from 'node:path';
 
 const REPO = resolve(__dirname, '../../..');
 const HOOK = resolve(REPO, '.claude/hooks/guard-canonical-write.mjs');
 const SETTINGS = resolve(REPO, '.claude/settings.json');
+
+// A REAL canonical checkout + linked worktree, built here.
+//
+// An earlier version of this file hardcoded the author's machine path as
+// "canonical". It passed locally and failed all four path assertions in CI,
+// because on a CI runner that path does not exist AND the checkout itself IS
+// the canonical one — so both directions inverted. That is the same defect
+// this whole program is about: an assertion trusted what a path resolved to
+// without checking. Build the topology instead of assuming it.
+let tmp: string;
+let canonical: string;
+let worktree: string;
+
+function git(args: string[], cwd: string) {
+  return execFileSync('git', args, { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+}
+
+beforeAll(() => {
+  tmp = realpathSync(mkdtempSync(join(tmpdir(), 'helm-boundary-')));
+  canonical = join(tmp, 'helmv3');
+  worktree = join(tmp, 'worktrees', 'task-one');
+  mkdirSync(join(canonical, 'src'), { recursive: true });
+
+  git(['init', '-q', '-b', 'main'], canonical);
+  git(['config', 'user.email', 'test@example.com'], canonical);
+  git(['config', 'user.name', 'Test'], canonical);
+  writeFileSync(join(canonical, 'src/app.ts'), 'export const x = 1;\n');
+  git(['add', '-A'], canonical);
+  git(['commit', '-qm', 'initial'], canonical);
+
+  mkdirSync(join(tmp, 'worktrees'), { recursive: true });
+  git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/task-one', worktree], canonical);
+});
+
+afterAll(() => {
+  try {
+    rmSync(tmp, { recursive: true, force: true });
+  } catch {
+    /* best effort */
+  }
+});
 
 /** Run the hook with a raw payload; 2 = BLOCK, anything else = ALLOW. */
 function runHook(payload: Record<string, unknown>): 'BLOCK' | 'ALLOW' {
@@ -34,8 +76,6 @@ function runHook(payload: Record<string, unknown>): 'BLOCK' | 'ALLOW' {
   }
 }
 
-const CANON = '/Users/ricknini/Downloads/helmv3';
-
 describe('canonical-write boundary — what IS enforced', () => {
   it.each(['Write', 'Edit', 'MultiEdit'])(
     'BLOCKS %s targeting a path inside the canonical checkout',
@@ -43,8 +83,8 @@ describe('canonical-write boundary — what IS enforced', () => {
       expect(
         runHook({
           tool_name: tool,
-          cwd: CANON,
-          tool_input: { file_path: `${CANON}/src/anything.ts` },
+          cwd: canonical,
+          tool_input: { file_path: `${canonical}/src/anything.ts` },
         }),
       ).toBe('BLOCK');
     },
@@ -54,8 +94,8 @@ describe('canonical-write boundary — what IS enforced', () => {
     expect(
       runHook({
         tool_name: 'Write',
-        cwd: REPO,
-        tool_input: { file_path: `${REPO}/src/anything.ts` },
+        cwd: worktree,
+        tool_input: { file_path: `${worktree}/src/anything.ts` },
       }),
     ).toBe('ALLOW');
   });
@@ -68,8 +108,8 @@ describe('canonical-write boundary — what is NOT enforced', () => {
     expect(
       runHook({
         tool_name: 'Bash',
-        cwd: CANON,
-        tool_input: { command: `echo x > ${CANON}/src/anything.ts` },
+        cwd: canonical,
+        tool_input: { command: `echo x > ${canonical}/src/anything.ts` },
       }),
     ).toBe('ALLOW');
   });
