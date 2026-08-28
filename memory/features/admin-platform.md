@@ -15,6 +15,13 @@ This area is high criticality because it often uses broader access patterns, ope
 ### Routes
 
 - `src/app/admin/**` (Helm Bridge)
+- `src/app/admin/self-heal/**` — the self-healing circuit board. Distinct from
+  `/admin/jobs`, which answers "did the crons run"; this answers "is the loop
+  alive, and has each stage ever actually produced its output".
+- `src/lib/admin/incidents/**` — the unified incident read model. `types.ts` is
+  the contract; `correlate.ts`, `lifecycle.ts`, `proof.ts`, `sources.ts`,
+  `lens.ts` and `truth-strip.ts` are pure; `fetch.ts` is the only module in it
+  that performs I/O.
 - `src/app/golf/admin/**`
 - `src/app/golf/admin/crm/**`
 - `src/app/api/cron/reliability-triage/**` — the 3-hourly collector behind the
@@ -186,6 +193,67 @@ them would have broken those routes, not the dead one.
   **not** equal to the row's stored `admin_events.fingerprint`, which was
   computed with that row's real severity. Within the Supabase arm, rows are
   still pre-grouped on the stored fingerprint before correlation runs.
+- **One incident model, derived at read time, never stored.**
+  `src/lib/admin/incidents/` folds the app fingerprint bucket, the Sentry
+  issue, the reliability `CorrelatedSignal` and the `rca_analysis` row into a
+  single `UnifiedIncident`. It is a READ MODEL: there is no `admin_incidents`
+  table and no persisted `lifecycleState`, because lifecycle and proof are
+  functions of evidence that changes underneath them (a PR merges, production
+  rolls forward, a fault recurs) and a stored string would outrank live
+  evidence. The layering is `existing readers -> correlate -> lifecycle+proof
+  -> UnifiedIncident[]`; every derivation is a pure function unit-tested with
+  no I/O. If persistence is ever added, persist durable EVENTS, never the
+  derived state.
+- **An incident's id is the key that was already stored under it.** In
+  priority order: an `admin_events` fingerprint, then `rel:<signature>`, then
+  `sentry:<issueId>`. That order is not cosmetic — `rca_analysis` rows,
+  `/admin/errors/<id>` links and repair PR bodies all address exactly these
+  strings, so a synthetic key would break every artefact the self-healing loop
+  has already written. `fetchIncidentById` also matches on any fingerprint an
+  incident folded, so links written before correlation still resolve.
+- **`unknown` is a state, and nothing may collapse it into a healthy value.**
+  A CI check read that failed is `unknown`, never `pending` — pending reads as
+  orderly progress. An unreadable deploy leaves an incident `merged`, never
+  `resolved` and never `awaiting-deploy`. A blind source's freshness is
+  `unknown`, not `fresh`, even when the failed attempt was seconds ago. This
+  is the same rule `src/lib/reliability/types.ts` states for one collector
+  run, lifted to every Bridge surface.
+- **No all-clear anywhere while a required source is blind.**
+  `canClaimAllClear` in `src/lib/admin/incidents/sources.ts` is the single
+  guard. "No incidents found" under an unreadable Sentry converts a broken
+  read into a green screen, which is the most damaging empty state a
+  monitoring surface can show. The incident queue, the proof-debt panel and
+  the Truth Strip's incident cell all consult it; a new panel that renders an
+  empty state must too.
+- **Corroboration is an observation count, not a confidence score**, and
+  evidence coverage is a checklist, not a percentage. Two systems seeing a
+  fault is a mechanical fact about coverage and says nothing about
+  likelihood. Rendering either as a percentage would imply a calibration this
+  system does not have — which is also why the Reliability tab groups by
+  source count in WORDS.
+- **Repair state is joined from GitHub, never stored.** A repair PR names its
+  incident through the two markers `docs/ai-system/selfheal/repair-contract.md`
+  already mandates: the `/admin/errors/<fp>` body link (STEP 5) and the
+  `fix/rca-<fp>` branch (STEP 4). Both are scanned, because the Bridge reads
+  PRs through GitHub's SEARCH endpoint, which returns the body but not
+  `head.ref`, while the list-pulls fallback returns the ref. A failed GitHub
+  read makes repair state `unknown`, never `none` — reporting an unreachable
+  API as an empty queue re-queues work that is already sitting in a branch.
+- **Runtime health and capability proof are separate facts for every
+  self-healing stage.** A stage can heartbeat healthily for a week while never
+  once producing its output; on 2026-08-28 Repair's heartbeats were green and
+  it had never completed a PR-opening run. `selfheal-capability.ts` derives
+  capability from mechanical evidence (signals collected, analyses written,
+  repair PRs opened, auto-resolutions recorded) and a `null` count means the
+  read failed, so capability is `unknown` — never `unproven`. A loop whose
+  runtime is `ok` and whose capability is `unproven` must never render as
+  healthy.
+- **Reliability is a lens, not a second queue.** `/admin/reliability` keeps
+  source health, the blind-source notice, the severity mix, run history and
+  the raw snapshot — removing those was never the goal. What it must not do
+  is sort by severity (the Incidents tab's axis) or dead-end its rows: every
+  signal title links to `/admin/errors/rel:<signature>`, which is the same
+  string the nightly triage stores its analysis under.
 - **Error text is redacted before it is stored**, not only before it reaches
   Sentry, and `stack` / `message` / `title` count as error text — not just
   `url` and `context`. URL query strings and fragments can carry magic-link
