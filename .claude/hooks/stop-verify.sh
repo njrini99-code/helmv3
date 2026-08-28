@@ -31,13 +31,20 @@
 # this script stays bash for the loop-safety/exit-code machinery that was
 # already correct and untouched by the attribution bug.
 #
-# Git is now a FALLBACK cross-check only, for the one case session-state
-# cannot cover by construction: a session with ZERO recorded touches (either
-# it genuinely wrote nothing, or the recording hooks did not fire — e.g. an
-# older harness, a disabled hook, a wiring bug). In that case the old
+# Git is now a FALLBACK cross-check only, for the case session-state cannot
+# cover by construction: a session with nothing left to verify (it genuinely
+# wrote nothing, the recording hooks did not fire, or — since Phase 7B —
+# everything it wrote has already landed on origin/main). In that case the old
 # baseline-diff mechanism still runs, but ADVISORY ONLY — it can no longer
 # block, because it is exactly the mechanism proven unable to attribute
-# correctly under concurrency. See the ADVISORY branch below.
+# correctly under concurrency.
+#
+# The advisory has TWO shapes, on purpose. Before Phase 7B, reaching this
+# branch implied the ledger was empty, so one message ("the hook may not be
+# firing") was always true. Now the counts are derived from what still DIFFERS
+# from origin/main, and a session whose work merged reports zero to verify with
+# a full ledger — telling that reader their recording hook is broken would be a
+# wrong diagnosis introduced by the very change that made the gate accurate.
 set -uo pipefail
 
 # shellcheck source=lib/active-root.sh
@@ -81,6 +88,14 @@ CONTEXT_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.contextGaps | length')
 MEMORY_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.memoryGaps | length')
 DATE_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.dateGaps | length')
 DELEGATED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.delegatedFiles | length')
+# HISTORICAL touch count, deliberately separate from the counts above. Since
+# Phase 7B those counts are derived from what is still DIFFERENT from
+# origin/main, so "zero to verify" no longer implies "recorded nothing" — a
+# session whose work has all merged reports 0 verifiable and N historical. The
+# advisory below has to tell those two apart or it misdiagnoses a healthy
+# session as a broken hook.
+HISTORICAL_TOUCH_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.touchedFiles | length')
+SETTLED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.settledTouchedFiles | length')
 
 # `.git` is a DIRECTORY in a normal clone and a FILE in a worktree.
 GITDIR=$(git rev-parse --git-dir 2>/dev/null || echo ".git")
@@ -114,7 +129,8 @@ if [ "${TOUCHED_SRC_COUNT:-0}" -eq 0 ] && [ "${MAPPING_GAP_COUNT:-0}" -eq 0 ] \
   GIT_ONLY_COUNT=$(printf '%s' "$NEW_SINCE_BASELINE" | grep -cE "$SRC_RE" || true)
   printf '%s\n' "$DIRTY_NOW" > "$BASE"
   if [ "${GIT_ONLY_COUNT:-0}" -gt 0 ]; then
-    cat >&2 <<ADVISORY
+    if [ "${HISTORICAL_TOUCH_COUNT:-0}" -eq 0 ]; then
+      cat >&2 <<ADVISORY
 [stop-verify] git shows ${GIT_ONLY_COUNT} dirty source file(s) since this session's
 last stop, but this session's OWN ledger (.claude/session-state/${SESSION_ID_SAFE}.jsonl)
 recorded zero touches. Either these are a peer session's changes (git cannot
@@ -123,6 +139,17 @@ record-session-touch.mjs hook is not wired/firing for this session. This is a
 NOTE, not a block: verify the hook is active if these files are actually yours.
   ${NEW_SINCE_BASELINE}
 ADVISORY
+    else
+      cat >&2 <<ADVISORY
+[stop-verify] git shows ${GIT_ONLY_COUNT} dirty source file(s) since this session's
+last stop. This session's ledger DID record ${HISTORICAL_TOUCH_COUNT} touch(es), but all of
+them are settled against origin/main (${SETTLED_COUNT} settled), so none is an outstanding
+verification demand. The dirty files below are therefore a peer session's
+changes, or were written by a path that records no touch event (Bash, for
+one). This is a NOTE, not a block.
+  ${NEW_SINCE_BASELINE}
+ADVISORY
+    fi
   fi
   exit 0
 fi
