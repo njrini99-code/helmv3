@@ -35,6 +35,8 @@ import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { TruthStrip } from './_components/TruthStrip';
 import { BlindnessBeacon } from './_components/BlindnessBeacon';
 import { ProofDebtPanel, selectProofDebt } from './_components/ProofDebtPanel';
+import { fetchChangeTimeline } from '@/lib/admin/data/change-timeline';
+import { ChangeTimeline } from './_components/ChangeTimeline';
 
 export const dynamic = 'force-dynamic';
 
@@ -668,6 +670,29 @@ async function ProofDebt() {
   );
 }
 
+/**
+ * CHANGE TIMELINE — what changed, and in what order.
+ *
+ * The sentence an operator otherwise reconstructs by hand every morning. It is
+ * the difference between "the error stopped" and "the error stopped nine
+ * minutes after the deploy that claimed to fix it" — and the second is the
+ * only one you can act on.
+ *
+ * It takes the already-assembled board rather than re-deriving incidents, so
+ * the strip and the list on /admin/errors cannot describe different sets of
+ * incidents in the same moment. Deliberately states no causality: a deploy
+ * immediately before an incident is a temporal neighbour, and calling it a
+ * cause would be a claim the data does not support.
+ */
+async function ChangeTimelinePanel() {
+  const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+  const timeline = await fetchChangeTimeline(board.incidents);
+  if (timeline.status !== 'ok' || !timeline.data) {
+    return <PanelStale label="Change timeline" error={timeline.error} />;
+  }
+  return <ChangeTimeline snapshot={timeline.data} />;
+}
+
 function CommandHeader() {
   const iconByHref = {
     '/admin/errors': Activity,
@@ -769,6 +794,18 @@ export default async function AdminOverviewPage() {
           </div>
         </Surface>
       </section>
+
+      <Surface as="section" padding="sm">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-accent-600/25 pb-2">
+          <Eyebrow as="h2" tone="tertiary">Change timeline</Eyebrow>
+          <p className="text-caption text-warm-500">Deploys, repairs, closures and regressions</p>
+        </div>
+        <div className="mt-2">
+          <PanelBoundary title="Change timeline" skeleton={<SkeletonList />}>
+            <ChangeTimelinePanel />
+          </PanelBoundary>
+        </div>
+      </Surface>
 
       <PostureDisclosure>
         <PanelBoundary title="Platform KPIs" skeleton={<SkeletonStat />}>
