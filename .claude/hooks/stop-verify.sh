@@ -132,9 +132,21 @@ STATE=$(printf '%s%s%s' "$(git rev-parse HEAD 2>/dev/null)" \
                         "$(git status --porcelain 2>/dev/null)" \
                         "$(git diff --stat 2>/dev/null)" \
         | shasum | cut -d' ' -f1)
-MARK="$GITDIR/claude-stop-verify-$STATE"
+# SESSION-SCOPED, not state-scoped. The hash alone was a cross-session
+# fail-open: session A gets nagged at tree state X, leaves the mark, and a
+# DIFFERENT session B arriving at the same state finds it and exits silently —
+# B is never told about its OWN unverified files, context gaps or memory gaps.
+# One session's suppression swallowed another session's warning, invisibly.
+#
+# Note what this mark is NOT: there is no "verification passed" state here. It
+# is written BEFORE the block is emitted and means "this tree state has already
+# been nagged". That property is deliberate and preserved — without it the gate
+# re-blocks every Stop at an unchanged tree and a session that legitimately
+# cannot satisfy a gate can never end its turn. Adding the session id keeps the
+# loop safety and makes it un-shareable.
+MARK="$GITDIR/claude-stop-verify-$SESSION_ID_SAFE-$STATE"
 
-# Already pushed back on this exact tree state — let it go (loop safety).
+# Already pushed back on this exact tree state IN THIS SESSION — let it go.
 [ -f "$MARK" ] && exit 0
 
 find "$GITDIR" -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 -delete 2>/dev/null
