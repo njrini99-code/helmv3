@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 
 /**
  * Helm Bridge — the self-healing loop's combined board: runtime AND
@@ -295,3 +296,19 @@ export async function fetchSelfHealBoard(now: Date = new Date()): Promise<AdminF
     computedAt: now.toISOString(),
   });
 }
+
+/**
+ * Per-request memoised self-heal board.
+ *
+ * The Overview reads this twice — the truth strip and the attention queue both
+ * need the loop's stages — and each read is a Supabase heartbeat sweep plus a
+ * GitHub work-log pull. Without this they run twice per render for one answer.
+ *
+ * Takes NO arguments on purpose. React's `cache()` keys on argument REFERENCE
+ * identity, so a `Date` parameter would give every call site its own key and
+ * memoise nothing at all — the trap `cachedIncidentBoard` documents for object
+ * literals. Callers that need to pin `now` (tests, and anything reasoning
+ * about a fixed instant) call `fetchSelfHealBoard` directly and skip the
+ * memoisation, which is the honest trade: a pinned clock is not the same query.
+ */
+export const cachedSelfHealBoard = cache(() => fetchSelfHealBoard());

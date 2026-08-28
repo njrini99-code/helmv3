@@ -302,7 +302,7 @@ describe('selectAttention — proof-overdue boundary', () => {
 });
 
 describe('ATTENTION_PRIORITY', () => {
-  it('contains all eight reasons exactly once', () => {
+  it('contains every reason exactly once', () => {
     const expected: AttentionReason[] = [
       'regression',
       'critical',
@@ -310,11 +310,13 @@ describe('ATTENTION_PRIORITY', () => {
       'repair-ci-failed',
       'repairable-untouched',
       'needs-evidence',
+      'platform-attention',
       'proof-overdue',
+      'platform-watch',
       'source-blind',
     ];
-    expect(ATTENTION_PRIORITY).toHaveLength(8);
-    expect(new Set(ATTENTION_PRIORITY).size).toBe(8);
+    expect(ATTENTION_PRIORITY).toHaveLength(expected.length);
+    expect(new Set(ATTENTION_PRIORITY).size).toBe(expected.length);
     expect(new Set(ATTENTION_PRIORITY)).toEqual(new Set(expected));
   });
 
@@ -348,6 +350,12 @@ describe('ATTENTION_PRIORITY', () => {
       }),
     ];
     const stages = [stage('dead', { status: 'failed' })];
+    // The briefing's two severities are rows in this same queue, so they take
+    // part in this ordering rather than living in a second list.
+    const briefing = [
+      { severity: 'attention' as const, headline: 'a cron is overdue', href: null },
+      { severity: 'watch' as const, headline: 'signups drifting', href: null },
+    ];
 
     const rows = selectAttention(
       {
@@ -355,6 +363,7 @@ describe('ATTENTION_PRIORITY', () => {
         stages,
         coverage: coverage({ anyBlind: true, blindSources: ['app'] }),
         now: NOW,
+        briefing,
       },
       20,
     );
@@ -418,5 +427,50 @@ describe('selectAttention — purity', () => {
     const first: AttentionRow[] = selectAttention(input, 20);
     const second: AttentionRow[] = selectAttention(input, 20);
     expect(second).toEqual(first);
+  });
+});
+
+describe('platform checks share the one attention queue', () => {
+  const base = {
+    incidents: [] as UnifiedIncident[],
+    stages: [],
+    coverage: coverage({ anyBlind: false, blindSources: [] }),
+    now: NOW,
+  };
+
+  it('turns briefing items into rows', () => {
+    const rows = selectAttention({
+      ...base,
+      briefing: [
+        { severity: 'attention', headline: 'a cron is overdue', href: '/admin/crons' },
+        { severity: 'watch', headline: 'signups drifting', href: null },
+      ],
+    });
+    expect(rows.map((r) => r.reason)).toEqual(['platform-attention', 'platform-watch']);
+    expect(rows[0]!.headline).toBe('a cron is overdue');
+    expect(rows[0]!.href).toBe('/admin/crons');
+    // No timestamp exists on a briefing item, and inventing one would float
+    // every check to the top of its band.
+    expect(rows[0]!.ageMs).toBeNull();
+  });
+
+  it('ranks a failing platform check below the loop being dead, above a watch', () => {
+    const rows = selectAttention({
+      ...base,
+      stages: [stage('dead', { status: 'failed' })],
+      briefing: [
+        { severity: 'watch', headline: 'w', href: null },
+        { severity: 'attention', headline: 'a', href: null },
+      ],
+    });
+    expect(rows.map((r) => r.reason)).toEqual([
+      'stage-dead',
+      'platform-attention',
+      'platform-watch',
+    ]);
+  });
+
+  it('is absent, not empty, when no briefing is supplied', () => {
+    expect(selectAttention(base)).toEqual([]);
   });
 });

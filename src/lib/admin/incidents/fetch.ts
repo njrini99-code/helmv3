@@ -17,6 +17,7 @@ import type { CorrelatedSignal } from '@/lib/reliability/types';
 import { correlateIncidents, type CorrelationSourceHealth, type IncidentDraft } from './correlate';
 import { deriveLifecycle } from './lifecycle';
 import { deriveEvidenceCoverage, deriveProof, deriveProofGaps } from './proof';
+import { buildDeployProof } from './deploy-proof';
 import { countLenses } from './lens';
 import {
   buildSourceFreshness,
@@ -27,7 +28,6 @@ import {
 } from './sources';
 import type {
   IncidentAnalysis,
-  IncidentDeployProof,
   IncidentLensCounts,
   IncidentRepair,
   IncidentResolution,
@@ -403,81 +403,6 @@ export interface IncidentBoard {
   windowHours: number;
 }
 
-/**
- * Deploy proof for one incident — is the fix live, and has enough happened
- * since to call it proven?
- *
- * `servesFix` is nullable and stays null whenever the deploy anchor is
- * unreadable. `shipStatus`'s three outcomes exist in `auto-resolve.ts` for
- * this exact reason: rendering "we could not find out" as "not shipped" tells
- * an operator their fix has not landed when the truth is that we could not
- * look.
- */
-function buildDeployProof(
-  resolution: StoredResolutionRow | undefined,
-  repair: IncidentRepair,
-  deploy: { deployAt: number | null; deploySha: string | null },
-  lastSeen: string,
-  now: number,
-): IncidentDeployProof | null {
-  const fixedInSha = resolution?.fixedInSha ?? repair.mergeSha ?? null;
-  const hasFix = repair.status === 'merged' || fixedInSha !== null;
-  if (!hasFix) return null;
-
-  const deployedAt = deploy.deployAt === null ? null : new Date(deploy.deployAt).toISOString();
-  const mergedAtMs = repair.mergedAt ? Date.parse(repair.mergedAt) : null;
-
-  // Unknown, not false. A missing deploy anchor means Vercel could not be
-  // read; it does NOT mean production is behind.
-  const servesFix =
-    deploy.deployAt === null
-      ? null
-      : fixedInSha !== null && deploy.deploySha !== null
-        ? deploy.deploySha.startsWith(fixedInSha) || fixedInSha.startsWith(deploy.deploySha)
-        : mergedAtMs !== null
-          ? deploy.deployAt >= mergedAtMs
-          : null;
-
-  const sinceDeployMs =
-    servesFix === true && deploy.deployAt !== null ? now - deploy.deployAt : null;
-
-  const lastOccurrenceMs = Date.parse(lastSeen);
-  const recurredAfterDeploy =
-    deploy.deployAt !== null && Number.isFinite(lastOccurrenceMs)
-      ? lastOccurrenceMs > deploy.deployAt
-      : null;
-
-  const PROOF_WINDOW_MS = 24 * 3600_000;
-  const sufficientProof =
-    servesFix !== true
-      ? null
-      : recurredAfterDeploy === true
-        ? false
-        : sinceDeployMs !== null && sinceDeployMs >= PROOF_WINDOW_MS
-          ? true
-          : false;
-
-  return {
-    fixedInSha,
-    productionSha: deploy.deploySha,
-    deployedAt,
-    servesFix,
-    lastOccurrenceAt: lastSeen,
-    sinceDeployMs,
-    sufficientProof,
-    gap:
-      servesFix === null
-        ? 'Production deploy state could not be read, so shipping cannot be confirmed.'
-        : servesFix === false
-          ? 'Merged, but production does not serve the fix yet.'
-          : recurredAfterDeploy === true
-            ? 'The fault fired again after the fix went live.'
-            : sufficientProof
-              ? null
-              : 'Live, but not enough post-deploy evidence to close.',
-  };
-}
-
 function toAnalysis(stored: RcaAnalysis, repairVerdict: IncidentAnalysis['repairVerdict']): IncidentAnalysis {
   return {
     category: deriveRcaCategory(stored.suggestedFix),
@@ -634,7 +559,13 @@ export async function fetchIncidentBoard(
       .find((r) => r !== undefined);
     const resolution = toResolution(resolutionRow);
 
-    const deployProof = buildDeployProof(resolutionRow, repair, deploy, draft.lastSeen, now);
+    const deployProof = buildDeployProof({
+      resolutionFixedInSha: resolutionRow?.fixedInSha ?? null,
+      repair,
+      deploy,
+      lastSeen: draft.lastSeen,
+      now,
+    });
 
     const proofInput = {
       firstSeen: draft.firstSeen,

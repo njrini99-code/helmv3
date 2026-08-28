@@ -76,6 +76,8 @@ export type AttentionReason =
   | 'repairable-untouched'
   | 'needs-evidence'
   | 'proof-overdue'
+  | 'platform-attention'
+  | 'platform-watch'
   | 'source-blind';
 
 export interface AttentionRow {
@@ -96,6 +98,19 @@ export interface AttentionInput {
   stages: readonly SelfHealStageDetail[];
   coverage: CoverageSummary;
   now: number;
+  /**
+   * Platform checks from `fetchBriefing()` — cron health, KPI thresholds and
+   * the rest. They are NOT incidents and have no lifecycle, but they compete
+   * for exactly the same thing: the operator's next action.
+   *
+   * They are folded in here because the Overview briefly carried two panels
+   * both titled "Needs your eyes" — one for these, one for incidents and the
+   * loop — which handed the operator two attention lists to reconcile and rank
+   * against each other by eye. That is the same split this whole read model
+   * exists to remove; a second attention list is no more defensible than a
+   * second incident list.
+   */
+  briefing?: readonly PlatformCheck[];
 }
 
 /**
@@ -136,7 +151,9 @@ export const ATTENTION_PRIORITY: readonly AttentionReason[] = [
   'repair-ci-failed',
   'repairable-untouched',
   'needs-evidence',
+  'platform-attention',
   'proof-overdue',
+  'platform-watch',
   'source-blind',
 ];
 
@@ -233,8 +250,53 @@ const REASON_TONE: Readonly<Record<AttentionReason, StateTone>> = {
   'repairable-untouched': 'accent',
   'needs-evidence': 'warning',
   'proof-overdue': 'warning',
+  'platform-attention': 'warning',
+  'platform-watch': 'neutral',
   'source-blind': 'danger',
 };
+
+/**
+ * One platform check, structurally compatible with `BriefingItem` from
+ * `@/lib/admin/data/briefing`.
+ *
+ * Restated rather than imported: that module is `server-only`, and this one is
+ * pure and reached from a client component. A type-only import would be erased
+ * today, but the edge is one refactor away from becoming a value import and
+ * dragging the Supabase admin client into a client bundle — the exact
+ * poisoning `rca-category.ts`'s header documents. Structural typing means a
+ * `BriefingItem[]` still assigns here with no adapter.
+ */
+export interface PlatformCheck {
+  severity: 'attention' | 'watch';
+  headline: string;
+  href: string | null;
+}
+
+/**
+ * A platform check as an attention row.
+ *
+ * `ageMs` is null and stays null: a briefing item carries no timestamp, and
+ * the sort treats a null age as "sorts last within its band" rather than
+ * "most recent". Inventing an age of 0 here would float every check above
+ * genuinely fresh incidents in the same band.
+ */
+function deriveBriefingRow(item: PlatformCheck, index: number): AttentionRow {
+  const reason: AttentionReason =
+    item.severity === 'attention' ? 'platform-attention' : 'platform-watch';
+  return {
+    key: `platform:${index}:${item.headline}`,
+    reason,
+    state: item.severity === 'attention' ? 'ATTENTION' : 'WATCH',
+    headline: item.headline,
+    why:
+      item.severity === 'attention'
+        ? 'A platform check is failing and nothing automated will clear it.'
+        : 'A platform check is drifting toward a threshold.',
+    ageMs: null,
+    href: item.href,
+    tone: REASON_TONE[reason],
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Per-incident derivation
@@ -505,8 +567,8 @@ function deriveSourceBlindRow(coverage: CoverageSummary): AttentionRow | null {
 
 /**
  * Build the attention queue: one row per incident at its worst reason, one
- * row per dead self-heal stage, and at most one standing `source-blind`
- * row — ranked by `ATTENTION_PRIORITY` and, within a reason, most recent
+ * row per dead self-heal stage, one row per platform check from the briefing,
+ * and at most one standing `source-blind` row — ranked by `ATTENTION_PRIORITY` and, within a reason, most recent
  * first (an `ageMs` of `null` sorts last within its band, never first: an
  * unknown age is not evidence of recency).
  *
@@ -520,8 +582,10 @@ function deriveSourceBlindRow(coverage: CoverageSummary): AttentionRow | null {
  * returns everything and leaves slicing to its caller.
  */
 export function selectAttention(input: AttentionInput, limit: number = DEFAULT_LIMIT): AttentionRow[] {
-  const { incidents, stages, coverage, now } = input;
+  const { incidents, stages, coverage, now, briefing = [] } = input;
   const rows: AttentionRow[] = [];
+
+  briefing.forEach((item, index) => rows.push(deriveBriefingRow(item, index)));
 
   for (const stage of stages) {
     const row = deriveStageRow(stage, now);

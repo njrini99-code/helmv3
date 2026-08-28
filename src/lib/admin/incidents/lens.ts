@@ -15,6 +15,9 @@
  * part that most needs a test with no I/O in it.
  */
 
+import type { IncidentClass } from '@/lib/admin/incident-classification';
+import { INCIDENT_CLASS_ORDER } from '@/lib/admin/incident-classification';
+
 import type { IncidentLens, IncidentLensCounts, UnifiedIncident } from './types';
 import { INCIDENT_LENSES } from './types';
 
@@ -69,3 +72,58 @@ export function countLenses(incidents: readonly UnifiedIncident[]): IncidentLens
   return counts;
 }
 
+
+// ---------------------------------------------------------------------------
+// The class facet
+// ---------------------------------------------------------------------------
+
+/**
+ * The `?kind=` facet, applied to the SAME list the lens rail filters.
+ *
+ * Lens and kind are orthogonal facets over one model — lens slices by
+ * lifecycle and attention, kind slices by what the classifier decided the
+ * incident IS — so both narrow the canonical queue and neither forks it into a
+ * second list.
+ *
+ * This exists because for a while it did not. The Errors page still parsed
+ * `?kind=`, still rendered the chips, and still offered "Show everything" in
+ * the suppressed notice, but nothing downstream consulted the value: the
+ * canonical queue is built from `IncidentFeedFilters`, which has no `kind`
+ * field. Every one of those controls was inert, and the notice's "N held back"
+ * described a list the operator was no longer looking at. A control that does
+ * nothing is worse than a missing one — it teaches the operator that the queue
+ * is curated when it is not.
+ *
+ * `undefined` means "the default view": actionable classes only, which is what
+ * the notice's count is measured against. `'all'` means no class filtering.
+ */
+export function matchesKind(incident: UnifiedIncident, kind: string | undefined): boolean {
+  if (kind === 'all') return true;
+  if (kind === undefined) return incident.actionable;
+  return incident.klass === kind;
+}
+
+export function applyIncidentFacets(
+  incidents: readonly UnifiedIncident[],
+  lens: IncidentLens,
+  kind: string | undefined,
+): UnifiedIncident[] {
+  return incidents.filter(
+    (incident) => matchesLens(incident, lens) && matchesKind(incident, kind),
+  );
+}
+
+/**
+ * What the default view is holding back, counted over the CANONICAL list and
+ * broken down by class. Ordered by `INCIDENT_CLASS_ORDER` so the chips do not
+ * reshuffle between renders.
+ */
+export function suppressedByClass(
+  incidents: readonly UnifiedIncident[],
+): Array<{ klass: IncidentClass; count: number }> {
+  const held = incidents.filter((incident) => !incident.actionable);
+  return INCIDENT_CLASS_ORDER.map((klass) => ({
+    klass,
+    count: held.filter((incident) => incident.klass === klass).length,
+  })).filter((entry) => entry.count > 0);
+}

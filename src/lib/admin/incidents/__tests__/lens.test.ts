@@ -13,7 +13,14 @@
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
-import { applyLens, countLenses, matchesLens } from '@/lib/admin/incidents/lens';
+import {
+  applyIncidentFacets,
+  applyLens,
+  countLenses,
+  matchesKind,
+  matchesLens,
+  suppressedByClass,
+} from '@/lib/admin/incidents/lens';
 import { buildTruthStrip } from '@/lib/admin/incidents/truth-strip';
 import { INCIDENT_LENSES, type IncidentLifecycleState, type ProofGap, type UnifiedIncident } from '@/lib/admin/incidents/types';
 import type { CoverageSummary } from '@/lib/admin/incidents/sources';
@@ -200,5 +207,48 @@ describe('the Truth Strip agrees with the Incidents list', () => {
     expect(nonEmpty.length).toBeGreaterThanOrEqual(6);
     expect(counts.actionable).toBeGreaterThan(0);
     expect(counts.actionable).toBeLessThan(counts.all);
+  });
+});
+
+describe('the kind facet', () => {
+  const defect = incident({ id: 'a', klass: 'defect', actionable: true });
+  const telemetry = incident({ id: 'b', klass: 'telemetry', actionable: false });
+  const emptyState = incident({ id: 'c', klass: 'empty_state', actionable: false });
+  const all = [defect, telemetry, emptyState];
+
+  it('defaults to the actionable classes only', () => {
+    expect(matchesKind(defect, undefined)).toBe(true);
+    expect(matchesKind(telemetry, undefined)).toBe(false);
+  });
+
+  it('shows everything under kind=all', () => {
+    expect(all.every((i) => matchesKind(i, 'all'))).toBe(true);
+  });
+
+  it('narrows to one class when a class is named', () => {
+    expect(matchesKind(telemetry, 'telemetry')).toBe(true);
+    expect(matchesKind(defect, 'telemetry')).toBe(false);
+  });
+
+  /**
+   * The regression: `?kind=` was parsed and rendered as chips, but nothing
+   * downstream consulted it, so every one of those controls was inert against
+   * the canonical queue. Both facets must narrow the same list.
+   */
+  it('composes with the lens rather than replacing it', () => {
+    expect(applyIncidentFacets(all, 'all', undefined).map((i) => i.id)).toEqual(['a']);
+    expect(applyIncidentFacets(all, 'all', 'all').map((i) => i.id)).toEqual(['a', 'b', 'c']);
+    expect(applyIncidentFacets(all, 'all', 'empty_state').map((i) => i.id)).toEqual(['c']);
+    // A lens that excludes the incident still wins, whatever the kind says.
+    expect(applyIncidentFacets(all, 'regressions', 'all')).toEqual([]);
+  });
+
+  it('counts what the default view holds back, by class', () => {
+    // Ordered by INCIDENT_CLASS_ORDER, not by discovery, so the chips do not
+    // reshuffle between renders.
+    expect(suppressedByClass(all)).toEqual([
+      { klass: 'empty_state', count: 1 },
+      { klass: 'telemetry', count: 1 },
+    ]);
   });
 });
