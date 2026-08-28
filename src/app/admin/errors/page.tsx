@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { parseErrorsFilters, fetchErrorsTab, buildFilteredIncidentsReport } from '@/lib/admin/data/errors';
 import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
-import { INCIDENT_CLASS_ORDER, INCIDENT_CLASS_LABEL, INCIDENT_CLASS_DESCRIPTION } from '@/lib/admin/incident-classification';
+import { INCIDENT_CLASS_LABEL, INCIDENT_CLASS_DESCRIPTION } from '@/lib/admin/incident-classification';
 import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
-import { applyLens } from '@/lib/admin/incidents/fetch';
+import { applyIncidentFacets, suppressedByClass } from '@/lib/admin/incidents/lens';
 import { canClaimAllClear } from '@/lib/admin/incidents/sources';
 import {
   INCIDENT_LENSES,
@@ -189,17 +189,32 @@ export default async function ErrorsPage({
   async function Body() {
     const { tab, archiveResult, board } = await loadErrorsPageData(filters);
     const { counts } = tab;
-    const lensed = applyLens(board.incidents, lens);
+    // Both facets narrow the SAME canonical list: lens by lifecycle/attention,
+    // kind by what the classifier decided the incident is. Neither forks it.
+    const lensed = applyIncidentFacets(board.incidents, lens, filters.kind);
     const allClearAllowed = canClaimAllClear(board.coverage);
     // fingerprint-keyed 24h histograms, re-keyed to incident ids. An incident
     // folds one or more fingerprints, so the series is the FIRST one that has
     // history rather than a sum — summing two independent histograms would
     // draw a shape neither source ever produced.
+    //
+    // A Sentry-origin incident folds NO app fingerprints, so the app histogram
+    // lookup alone leaves it with no sparkline at all — which is how the old
+    // TriageQueue's second series source (`sentryStats24h`) quietly went unused
+    // when this queue replaced it. Sentry bakes its own 24h stats into each
+    // issue, so fall back to those, keyed by the incident's Sentry issue ids.
+    const sentrySeriesById = new Map<string, number[]>();
+    for (const issue of tab.sentry.data ?? []) {
+      const series = issue.stats24h.map(([, count]) => count);
+      if (series.length >= 2) sentrySeriesById.set(issue.id, series);
+    }
     const seriesByIncident: Record<string, number[]> = {};
     for (const incident of board.incidents) {
-      const series = incident.appFingerprints
-        .map((fp) => tab.appHourlyBuckets[fp])
-        .find((s) => Array.isArray(s) && s.length >= 2);
+      const series =
+        incident.appFingerprints
+          .map((fp) => tab.appHourlyBuckets[fp])
+          .find((s) => Array.isArray(s) && s.length >= 2) ??
+        incident.sentryIssueIds.map((id) => sentrySeriesById.get(id)).find((s) => s !== undefined);
       if (series) seriesByIncident[incident.id] = series;
     }
     // Sentry-origin and app-origin incidents are concatenated independently
@@ -212,10 +227,10 @@ export default async function ErrorsPage({
     // broken down by class — a filter that silently hides most of the feed is
     // worse than no filter, because the operator cannot tell the queue is
     // being curated at all.
-    const suppressedBreakdown = INCIDENT_CLASS_ORDER
-      .filter((k) => k !== 'defect' && (tab.kindCounts.byClass[k] ?? 0) > 0)
-      .map((k) => ({ klass: k, count: tab.kindCounts.byClass[k] ?? 0 }));
-    const showSuppressedNotice = !filters.kind && tab.kindCounts.suppressed > 0;
+    const suppressedBreakdown = suppressedByClass(board.incidents);
+    const shownActionable = board.incidents.filter((incident) => incident.actionable).length;
+    const heldBack = suppressedBreakdown.reduce((sum, entry) => sum + entry.count, 0);
+    const showSuppressedNotice = !filters.kind && heldBack > 0;
     const showWiderWindowHint =
       tab.incidents.length === 0 &&
       filters.windowHours < 168 &&
@@ -267,9 +282,9 @@ export default async function ErrorsPage({
           <Surface padding="sm">
             <p className="text-body-sm text-warm-800">
               Showing{' '}
-              <span className="font-fw-mono tabular-nums">{tab.kindCounts.actionable}</span>{' '}
-              actionable {tab.kindCounts.actionable === 1 ? 'incident' : 'incidents'}.{' '}
-              <span className="font-fw-mono tabular-nums">{tab.kindCounts.suppressed}</span> held
+              <span className="font-fw-mono tabular-nums">{shownActionable}</span>{' '}
+              actionable {shownActionable === 1 ? 'incident' : 'incidents'}.{' '}
+              <span className="font-fw-mono tabular-nums">{heldBack}</span> held
               back as not-a-bug:{' '}
               {suppressedBreakdown.map((entry, i) => (
                 <span key={entry.klass}>

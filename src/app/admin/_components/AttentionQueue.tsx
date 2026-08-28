@@ -111,6 +111,7 @@ export function AttentionQueue({
   total,
   checkedAt,
   canClaimAllClear,
+  degradedChecks = 0,
 }: {
   rows: readonly AttentionRow[];
   /** Rows BEFORE the limit `selectAttention` applied, so overflow can be
@@ -118,6 +119,10 @@ export function AttentionQueue({
   total: number;
   checkedAt: string;
   canClaimAllClear: boolean;
+  /** Briefing checks that could not run. Shown as a standing caveat on the
+   *  whole list: a check that failed to execute is not a check that passed,
+   *  and this list would otherwise look shorter than the truth. */
+  degradedChecks?: number;
 }) {
   if (rows.length === 0) {
     return canClaimAllClear ? (
@@ -125,7 +130,11 @@ export function AttentionQueue({
     ) : (
       <PanelNoData
         label="Could not fully compute what needs attention"
-        description="At least one source could not be read, so this list may be incomplete."
+        description={
+          degradedChecks > 0
+            ? `${degradedChecks} ${degradedChecks === 1 ? 'check' : 'checks'} could not run, so this list may be incomplete.`
+            : 'At least one source could not be read, so this list may be incomplete.'
+        }
       />
     );
   }
@@ -137,6 +146,12 @@ export function AttentionQueue({
           <AttentionRowItem key={row.key} row={row} />
         ))}
       </ul>
+      {degradedChecks > 0 ? (
+        <p className="mt-2 text-caption text-fw-warning">
+          {degradedChecks} {degradedChecks === 1 ? 'check' : 'checks'} couldn&apos;t run — this list
+          may be incomplete.
+        </p>
+      ) : null}
       {total > rows.length ? (
         <p className="mt-2 text-caption text-warm-500">
           <Link

@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Activity, RadioTower, GitBranch, ShieldCheck, Users, AlertTriangle, Gauge, SearchCheck } from 'lucide-react';
+import { Activity, RadioTower, GitBranch, ShieldCheck, Users, AlertTriangle, Gauge, SearchCheck } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   fetchOverviewSnapshot,
@@ -30,7 +30,7 @@ import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
 import { buildTruthStrip } from '@/lib/admin/incidents/truth-strip';
 import { canClaimAllClear } from '@/lib/admin/incidents/sources';
 import { fetchDeployFreshness } from '@/lib/admin/deploy-freshness';
-import { fetchSelfHealBoard } from '@/lib/admin/data/selfheal';
+import { cachedSelfHealBoard } from '@/lib/admin/data/selfheal';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { TruthStrip } from './_components/TruthStrip';
 import { BlindnessBeacon } from './_components/BlindnessBeacon';
@@ -41,90 +41,6 @@ import { selectAttention } from '@/lib/admin/incidents/attention';
 import { AttentionQueue } from './_components/AttentionQueue';
 
 export const dynamic = 'force-dynamic';
-
-/**
- * "Needs your eyes" — up to 6 severity-ordered signals from fetchBriefing()
- * (src/lib/admin/data/briefing.ts). Sits below the status banner, above the
- * severity mix, in its OWN PanelBoundary so a briefing-query hiccup degrades
- * to a scoped STALE card, never the whole Status panel. Signal discipline:
- * attention is the ONLY red pill on this page outside genuine error counts;
- * the all-clear case is one quiet green line, never an empty box.
- *
- * That boundary is mounted as a SIBLING of the banner and severity-mix panels
- * in the page body — not nested inside them. It used to live inside the
- * component that awaits fetchOverviewSnapshot() (11 parallel Supabase reads +
- * the Vercel API + fetchFeatureHealth's per-feature Sentry sweep), so the
- * highest-signal panel on the page could not even ISSUE its own query —
- * fetchBriefing() shares no data with any of that — until an unrelated fetch
- * had resolved. Sibling boundaries render concurrently; nested ones serialize.
- */
-async function BriefingStrip() {
-  const { items, degraded } = await fetchBriefing().then((r) => ({
-    items: r.items,
-    degraded: r.degradedChecks,
-  }));
-
-  // An all-clear is a CLAIM. Only make it when every check actually ran —
-  // otherwise a broken check renders as good news.
-  if (items.length === 0 && degraded.length === 0) {
-    return (
-      <p className="flex items-center gap-2 text-sm text-accent-700">
-        <CheckCircle2 size={14} className="shrink-0" aria-hidden />
-        All clear — nothing needs your attention right now.
-      </p>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <p className="flex items-center gap-2 text-sm text-fw-warning">
-        <AlertTriangle size={14} className="shrink-0" aria-hidden />
-        {degraded.length} {degraded.length === 1 ? 'check' : 'checks'} couldn&apos;t run — this is not an all-clear.
-      </p>
-    );
-  }
-
-  return (
-    <Surface as="section" padding="sm">
-      <h2 className="flex items-center justify-between gap-2 border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-        <span>Needs your eyes</span>
-        {degraded.length > 0 ? (
-          <span className="font-normal normal-case tracking-normal text-fw-warning">
-            {degraded.length} {degraded.length === 1 ? 'check' : 'checks'} couldn&apos;t run
-          </span>
-        ) : null}
-      </h2>
-      <ul className="mt-1 divide-y divide-warm-200/60">
-        {items.map((item) => {
-          const row = (
-            <>
-              <StatusPill tone={item.severity === 'attention' ? 'danger' : 'warning'} dot size="sm" className="shrink-0">
-                {item.severity}
-              </StatusPill>
-              <span className="min-w-0 flex-1 basis-full break-words text-sm text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
-                {item.headline}
-              </span>
-            </>
-          );
-          return (
-            <li key={`${item.severity}:${item.headline}`}>
-              {item.href ? (
-                <Link
-                  href={item.href}
-                  className="-mx-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-fw-sm px-1 py-2.5 transition-colors hover:bg-surface-sunken"
-                >
-                  {row}
-                </Link>
-              ) : (
-                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 py-2.5">{row}</div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </Surface>
-  );
-}
 
 /** The posture line, and nothing else. Awaits the SAME fetchOverviewSnapshot()
  *  `PostureBoards` does (cache()-memoised per request), so splitting this out
@@ -613,7 +529,7 @@ async function DeployRail() {
  * reads (the incident board, the self-heal heartbeats, production freshness)
  * share nothing with the KPI snapshot below, so nesting it would make the
  * highest-signal panel on the Bridge wait on eleven Supabase queries before it
- * could issue its own — the same serialization mistake `BriefingStrip`'s doc
+ * could issue its own — the same serialization mistake `AttentionPanel`'s doc
  * comment records. Siblings render concurrently.
  *
  * The self-heal and deploy reads are BOTH allowed to fail without taking the
@@ -624,7 +540,7 @@ async function DeployRail() {
 async function MissionTruthStrip() {
   const [board, loop, deploy] = await Promise.all([
     cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS),
-    fetchSelfHealBoard(),
+    cachedSelfHealBoard(),
     fetchDeployFreshness(),
   ]);
 
@@ -673,37 +589,56 @@ async function ProofDebt() {
 }
 
 /**
- * NEEDS YOUR EYES, ranked by evidence rather than by severity alone.
+ * NEEDS YOUR EYES — THE attention list, ranked by evidence rather than by
+ * severity alone.
  *
- * Companion to `BriefingStrip`, not a replacement: that panel reads
- * `fetchBriefing`'s platform signals, this one reads the incident board and
- * the self-heal stages. The ordering is what makes it different — a fault
- * that was declared fixed and came back outranks a fresh critical, because
- * the first says the system's own judgement was wrong and the second only
- * says something broke.
+ * One list, deliberately. This started as a companion to a second panel that
+ * carried the same title and rendered `fetchBriefing`'s platform checks on
+ * their own, which left an operator holding two attention lists and ranking
+ * them against each other by eye. Two lists over one question is the split
+ * this read model exists to remove, so the briefing's checks are now rows in
+ * here and the separate panel is gone.
  *
- * Both panels are boundaries of their own so neither can take the other down,
- * and both refuse to render an all-clear while a source is blind: an empty
- * list we could not fully compute must not read as a calm morning.
+ * The ordering is what earns the merge: a fault that was declared fixed and
+ * came back outranks a fresh critical, because the first says the system's own
+ * judgement was wrong and the second only says something broke — and a failing
+ * platform check ranks against both on the same scale.
+ *
+ * An all-clear is a CLAIM and needs the whole picture: a blind source or a
+ * briefing check that could not run both withdraw it, because an empty list we
+ * could not fully compute must not read as a calm morning.
+ *
+ * Mounted as a SIBLING boundary in the page body, never nested inside the
+ * component that awaits `fetchOverviewSnapshot()` (11 parallel Supabase reads
+ * + the Vercel API + a per-feature Sentry sweep). It shares no data with any
+ * of that, and nesting it once meant the highest-signal panel on the page
+ * could not even ISSUE its own queries until an unrelated fetch had resolved.
+ * Sibling boundaries render concurrently; nested ones serialize.
  */
 async function AttentionPanel() {
-  const [board, loop] = await Promise.all([
+  const [board, loop, briefing] = await Promise.all([
     cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS),
-    fetchSelfHealBoard(),
+    cachedSelfHealBoard(),
+    fetchBriefing(),
   ]);
   const now = Date.now();
   const stages = loop.status === 'ok' ? (loop.data?.stages ?? []) : [];
-  const all = selectAttention(
-    { incidents: board.incidents, stages, coverage: board.coverage, now },
-    Number.MAX_SAFE_INTEGER,
-  );
-  const rows = selectAttention({ incidents: board.incidents, stages, coverage: board.coverage, now });
+  const input = {
+    incidents: board.incidents,
+    stages,
+    coverage: board.coverage,
+    now,
+    briefing: briefing.items,
+  };
+  const all = selectAttention(input, Number.MAX_SAFE_INTEGER);
+  const rows = selectAttention(input);
   return (
     <AttentionQueue
       rows={rows}
       total={all.length}
       checkedAt={board.computedAt}
-      canClaimAllClear={canClaimAllClear(board.coverage)}
+      canClaimAllClear={canClaimAllClear(board.coverage) && briefing.degradedChecks.length === 0}
+      degradedChecks={briefing.degradedChecks.length}
     />
   );
 }
@@ -775,7 +710,7 @@ export default async function AdminOverviewPage() {
 
       {/* Triage-first ordering (bridge-refit): Status → Needs your eyes →
           Severity mix, all THREE sibling boundaries so a hiccup in one never
-          blocks the others (see BriefingStrip's doc comment) — then straight
+          blocks the others (see AttentionPanel's doc comment) — then straight
           into Action lanes/Triage/Regressed, the actual work surface, still
           above the fold on every breakpoint. Slower posture detail (KPIs,
           signals, deploys, feature health) is collapsed further down. */}
@@ -790,10 +725,7 @@ export default async function AdminOverviewPage() {
         <PanelBoundary title="Status" skeleton={<Skeleton className="h-11 w-full rounded-2xl" />}>
           <StatusBanner />
         </PanelBoundary>
-        <PanelBoundary title="Needs your eyes" skeleton={<SkeletonStat />}>
-          <BriefingStrip />
-        </PanelBoundary>
-        <PanelBoundary title="Needs your eyes — incidents and the loop" skeleton={<SkeletonList />}>
+        <PanelBoundary title="Needs your eyes" skeleton={<SkeletonList />}>
           <AttentionPanel />
         </PanelBoundary>
         <PanelBoundary
