@@ -1767,7 +1767,15 @@ async function submitGolfRoundComprehensiveImpl(
       }
 
       if (qualifier.status === 'completed') {
-        return { success: false, error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
+        // `code` is load-bearing, not decoration: severityForSoftFailure()
+        // only downgrades a soft failure to 'warning'/skipSentry when it
+        // recognises a code in EXPECTED_SOFT_FAILURE_CODES, and this wording
+        // matches no EXPECTED_SOFT_FAILURE_PATTERNS. Without it this guard
+        // fell through to 'error' and paged Sentry 18 times in one 32-minute
+        // window on 2026-08-23 for a coach closing a qualifier mid-submission
+        // — expected lifecycle behaviour, correctly rejected. The identical
+        // guard below already returns this code for the same outcome.
+        return { success: false, code: 'qualifier_closed', error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
       }
 
       // Verify the player has an entry in this qualifier
