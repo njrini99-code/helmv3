@@ -31,11 +31,16 @@ export interface WorkLogEntry {
   closed_at: string | null;
   parsed: ParsedPrBody;
   /**
-   * Incident ids this PR claims to repair, from the two markers
-   * `docs/ai-system/selfheal/repair-contract.md` already mandates — the
-   * `/admin/errors/<fp>` body link (STEP 5) and the `fix/rca-<fp>` branch
-   * (STEP 4). Extracted here rather than stored anywhere, so GitHub stays the
-   * single authority on what a repair is doing.
+   * Incident ids this PR claims to repair.
+   *
+   * The `/admin/errors/<fp>` body link (STEP 5) is the REQUIRED forward join
+   * and the only marker new Repair work must carry. The `fix/rca-<fp>` branch
+   * form is still parsed, but only for HISTORICAL PRs: the one supported
+   * worktree creator produces `agent/<task>` branches and cannot make that
+   * name, which is why #1658 was joined by its body link alone.
+   *
+   * Extracted here rather than stored anywhere, so GitHub stays the single
+   * authority on what a repair is doing.
    *
    * Without it the Bridge cannot tell "REPAIRABLE, nobody has started" from
    * "REPAIRABLE, PR #1660 is open and green" — and an operator re-triages work
