@@ -19,20 +19,25 @@ import { cn } from '@/lib/utils';
 import { KpiTile } from '../_components/KpiTile';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
-import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
+import { PanelNoData, PanelAllClear, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { CaptureQualityPanel } from '../_components/CaptureQuality';
+import { fetchCaptureQuality } from '@/lib/admin/data/capture-quality';
 import { RailRow, RowHead, FactLine, RowFoot, StateChip } from '../_components/Row';
 import { LocalTime } from '../_components/LocalTime';
-import type { CorrelatedSignal, ReliabilitySeverity, SourceStatus } from '@/lib/reliability/types';
+import type { CorrelatedSignal, SourceStatus } from '@/lib/reliability/types';
 import {
+  buildCoverageMatrix,
   corroboratedCount,
   evidenceTarget,
-  groupBySeverity,
+  groupByCorroboration,
   historySeries,
   needsAttentionCount,
   readingCount,
   relativeAge,
   severityCounts,
+  signalIncidentHref,
+  type CoverageCell,
 } from './reliability-view';
 
 export const dynamic = 'force-dynamic';
@@ -57,13 +62,6 @@ const SOURCE_LABEL: Record<SourceStatus, string> = {
   ok: 'reading',
   partial: 'truncated',
   blind: 'blind',
-};
-
-const SEVERITY_HEADING: Record<ReliabilitySeverity, string> = {
-  critical: 'Critical',
-  error: 'Errors',
-  warning: 'Warnings',
-  info: 'Informational',
 };
 
 /** What each source contributes, stated once so the page never implies more. */
@@ -155,7 +153,15 @@ function SignalRow({
   return (
     <RailRow severity={signal.severity}>
       <RowHead value={signal.count.toLocaleString()} valueLabel={`${signal.count} occurrences`}>
-        {signal.title}
+        {/* EVERY ROW IS A DOOR, not a leaf. This tab shows the same production
+            faults the Incidents tab does, seen through the source-agreement
+            lens — so a row that dead-ends here would be the second incident
+            list this redesign exists to remove. The `rel:<signature>` spelling
+            is both the storage key the nightly triage writes an analysis under
+            and the route that resolves it, so the two cannot drift. */}
+        <Link href={signalIncidentHref(signal.signature)} className="hover:underline">
+          {signal.title}
+        </Link>
       </RowHead>
 
       {signal.summary && signal.summary !== signal.title ? (
@@ -278,6 +284,73 @@ function SeverityMixPanel({ run }: { run: NonNullable<ReliabilityRunRow['run']> 
   );
 }
 
+/** Cell colour per state. A no-run cell is deliberately the emptiest thing on
+ *  the grid: it means the collector's own record is unreadable, which must not
+ *  look like a provider outage. */
+const COVERAGE_CELL: Readonly<Record<CoverageCell, { className: string; label: string }>> = {
+  reading: { className: 'bg-fw-success', label: 'reading' },
+  partial: { className: 'bg-fw-warning', label: 'partial' },
+  blind: { className: 'bg-fw-danger', label: 'blind' },
+  'no-run': { className: 'border border-warm-300 bg-transparent', label: 'no run' },
+};
+
+/**
+ * "Was the system actually watching?"
+ *
+ * A current-status pill answers the less useful question. A source that was
+ * blind for three hours overnight and recovered at 6am reads as perfectly
+ * healthy on a pill, while every count computed during those three hours was
+ * quietly partial. This makes the hole visible after the fact, which is when
+ * an operator actually asks.
+ */
+function CoveragePanel({ coverage }: { coverage: ReturnType<typeof buildCoverageMatrix> }) {
+  return (
+    <Surface>
+      <Inset>
+        <div className="flex items-baseline justify-between gap-2">
+          <Eyebrow as="h2">Coverage history</Eyebrow>
+          <span className="font-mono text-xs tabular-nums text-warm-500">
+            {coverage[0]?.totalRuns ?? 0} runs
+          </span>
+        </div>
+        <p className="mt-0.5 text-caption text-warm-500">Oldest left, newest right.</p>
+        {/* The grid scrolls in its own axis; the PAGE never pans sideways. */}
+        <div className="mt-3 overflow-x-auto">
+          <ul className="min-w-max space-y-1.5">
+            {coverage.map((row) => (
+              <li key={row.source} className="flex items-center gap-2">
+                <span className="w-20 shrink-0 font-fw-mono text-caption uppercase text-warm-500">
+                  {row.source}
+                </span>
+                <span className="flex gap-0.5" aria-hidden>
+                  {row.cells.map((cell, i) => (
+                    <span
+                      key={`${row.source}-${i}`}
+                      title={COVERAGE_CELL[cell].label}
+                      className={cn('h-3.5 w-3.5 rounded-sm', COVERAGE_CELL[cell].className)}
+                    />
+                  ))}
+                </span>
+                {/* The chart is never the only explanation — the same fact in
+                    words, for assistive tech and for anyone reading in
+                    greyscale. */}
+                <span className="font-fw-mono text-caption tabular-nums text-warm-500">
+                  {row.readingRuns}/{row.totalRuns} reading
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {coverage.length === 0 ? (
+          <p className="mt-2 text-caption text-warm-500">
+            No run history yet — the collector has not written a readable row.
+          </p>
+        ) : null}
+      </Inset>
+    </Surface>
+  );
+}
+
 function RunPanel({
   row,
   history,
@@ -302,8 +375,13 @@ function RunPanel({
   }
 
   const blind = run.sources.filter((s) => s.status === 'blind');
-  const groups = groupBySeverity(run.signals);
+  // Grouped by INDEPENDENT OBSERVATION COUNT, not severity. Severity is the
+  // Incidents tab's axis; sorting by it here made this page read as a second,
+  // differently-ordered copy of that queue. What only this page can compute is
+  // how many separate systems saw the same fault.
+  const groups = groupByCorroboration(run.signals);
   const trend = historySeries(history);
+  const coverage = buildCoverageMatrix(history);
 
   return (
     <div className="space-y-5">
@@ -363,6 +441,8 @@ function RunPanel({
         <SeverityMixPanel run={run} />
       </div>
 
+      <CoveragePanel coverage={coverage} />
+
       <section id="signals" className="scroll-mt-6">
         {run.signals.length === 0 ? (
           blind.length > 0 ? (
@@ -378,15 +458,36 @@ function RunPanel({
           )
         ) : (
           <div className="space-y-4">
+            <InlineNotice tone="info">
+              These are the same production faults the Incidents tab lists, grouped by how many
+              independent systems saw each one. Every title links to its canonical incident.{' '}
+              <Link href="/admin/errors?lens=reliability" className="underline">
+                Open the Reliability lens on Incidents
+              </Link>
+              .
+            </InlineNotice>
             {groups.map((group) => (
-              <Surface key={group.severity}>
+              <Surface key={group.sourceCount}>
                 <Inset>
                   <div className="flex items-baseline justify-between gap-2">
-                    <Eyebrow as="h2">{SEVERITY_HEADING[group.severity]}</Eyebrow>
+                    <Eyebrow as="h2">
+                      {group.sourceCount === 1
+                        ? '1 source'
+                        : `${group.sourceCount} independent sources`}
+                    </Eyebrow>
                     <span className="font-mono text-xs tabular-nums text-warm-500">
                       {group.signals.length}
                     </span>
                   </div>
+                  {/* Said in words, because the number alone invites the wrong
+                      reading. Observation count is a mechanical fact about
+                      coverage; it is not a confidence score, and this page must
+                      not let it become one by implication. */}
+                  <p className="mt-0.5 text-caption text-warm-500">
+                    {group.sourceCount > 1
+                      ? 'Seen independently by more than one system — corroboration, not confidence.'
+                      : 'Reported by a single system. Not weaker evidence, just uncorroborated.'}
+                  </p>
                   <ul className="mt-1">
                     {group.signals.map((signal) => (
                       <SignalRow
@@ -461,6 +562,29 @@ function HistoryPanel({ history }: { history: readonly ReliabilityRunRow[] }) {
 // ---------------------------------------------------------------------------
 // Panel
 // ---------------------------------------------------------------------------
+
+/**
+ * How completely errors were CAPTURED — a measurement, not an incident list.
+ *
+ * It belongs on this tab because the question it answers is the same one the
+ * rest of the page asks from the other direction. Source health says whether
+ * we could SEE production; this says whether what we saw arrived with enough
+ * detail to act on. An incident whose row carries no error code, no stack and
+ * no route is not a mystery about production — it is a mystery about the CALL
+ * SITE, and until that is visible the under-instrumented emitters stay
+ * under-instrumented forever.
+ *
+ * Its own boundary: it reads `admin_events` directly and shares nothing with
+ * the collector snapshot above, so a failure in either must not take the other
+ * with it.
+ */
+async function CaptureQualitySection() {
+  const report = await fetchCaptureQuality();
+  if (report.status !== 'ok' || !report.data) {
+    return <PanelStale label="Capture quality" error={report.error} />;
+  }
+  return <CaptureQualityPanel report={report.data} />;
+}
 
 async function ReliabilityPanel() {
   const snapshot = await fetchReliabilitySnapshot();
@@ -542,6 +666,20 @@ export default async function ReliabilityPage() {
       <PanelBoundary title="Reliability" skeleton={<PanelPageSkeleton />}>
         <ReliabilityPanel />
       </PanelBoundary>
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Capture quality</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            How completely errors arrived, not how healthy production is. A low number is a
+            backlog item for the call site.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Capture quality" skeleton={<PanelPageSkeleton rows={4} />}>
+              <CaptureQualitySection />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
     </div>
   );
 }

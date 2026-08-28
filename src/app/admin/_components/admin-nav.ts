@@ -5,6 +5,7 @@ type AdminHref =
   | '/admin/traces'
   | '/admin/qualifiers'
   | '/admin/reliability'
+  | '/admin/self-heal'
   | '/admin/auth'
   | '/admin/golf'
   | '/admin/baseball'
@@ -36,13 +37,26 @@ export interface AdminNavEntry {
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // TRIAGE — "what is broken right now"
   { label: 'Overview', href: '/admin', key: '1', section: 'Triage', description: 'Command posture, triage, deploys', meta: 'live' },
-  { label: 'Errors', href: '/admin/errors', key: '3', section: 'Triage', description: 'Sentry plus app incident groups', meta: 'trace' },
+  // "Incidents", not "Errors". The list now carries app errors, Sentry
+  // issues, Supabase faults, Vercel faults, reliability-only signals and
+  // regressions folded into ONE incident each — "Errors" had become too
+  // narrow a word for what the tab holds. The ROUTE is deliberately unchanged:
+  // renaming it would break every stored deep link, every rca_analysis row's
+  // /admin/errors/<fp> reference, and the repair contract's PR-body join,
+  // and buys nothing an operator can see.
+  { label: 'Incidents', href: '/admin/errors', key: '3', section: 'Triage', description: 'One incident per cause, with every source that saw it', meta: 'trace' },
   { label: 'Health', href: '/admin/health', key: '0', section: 'Triage', description: 'Feature health across every app', meta: 'map' },
   { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Triage', description: 'Crons, guards, integrity checks' },
   // The 3-hourly collector's correlated view. Distinct from Errors: that tab
   // shows each source's incidents, this one shows what MORE THAN ONE source
   // agrees on, plus which sources were readable at all.
   { label: 'Reliability', href: '/admin/reliability', key: 'R', section: 'Triage', description: 'Correlated Vercel, Sentry and Supabase signals', meta: '3h' },
+  // The self-healing circuit as a thing that can be watched. Distinct from
+  // Jobs & Integrity, which answers "did the crons run": this answers "is the
+  // loop alive, and has each stage ever actually produced its output" — a
+  // stage can heartbeat healthily for a week while never once doing its job,
+  // which is exactly what Repair did.
+  { label: 'Self-heal', href: '/admin/self-heal', key: 'S', section: 'Triage', description: 'Collect, Diagnose, Repair, Close — runtime and capability', meta: 'loop' },
   // Was reachable ONLY from a text-xs back-arrow three levels deep, despite
   // being the one cross-sport board built to answer "who needs attention" —
   // 30-day activity/error EKG with four triage sorts.
@@ -112,7 +126,9 @@ export const BRIDGE_BOTTOM_NAV_HREFS = [
  */
 export const BRIDGE_BOTTOM_NAV_LABELS: Record<(typeof BRIDGE_BOTTOM_NAV_HREFS)[number], string> = {
   '/admin': 'Overview',
-  '/admin/errors': 'Errors',
+  // Matches the rail label. The bottom tab is the same destination, and two
+  // names for one place is how muscle memory gets taught wrong.
+  '/admin/errors': 'Incidents',
   '/admin/health': 'Health',
   '/admin/users': 'Users',
 };

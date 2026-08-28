@@ -14,6 +14,21 @@ import { LocalTime } from '../../_components/LocalTime';
 import { ForensicsHeader } from '../_components/ForensicsHeader';
 import { TrendStrip } from '../_components/TrendStrip';
 import { RcaPanel } from '../_components/RcaPanel';
+import { LifecycleSpine, LifecycleWhy } from '../_components/LifecycleSpine';
+import {
+  DeploymentProofCard,
+  EvidenceWall,
+  RepairCard,
+  RootCauseCard,
+} from '../_components/EvidenceWall';
+import {
+  EvidenceCoverageStrip,
+  ProofDots,
+  ProofGapList,
+  ProofLegend,
+} from '../../_components/ProofDots';
+import { fetchIncidentById } from '@/lib/admin/incidents/fetch';
+import type { UnifiedIncident } from '@/lib/admin/incidents/types';
 import { RcaAnalysisView } from '../_components/RcaAnalysisView';
 import { FieldCopy } from '../_components/FieldCopy';
 import { fetchResolutionArchive } from '@/lib/admin/data/resolutions';
@@ -85,8 +100,66 @@ export default async function FingerprintDetailPage({
   // Decode for display — the data layer decodes again idempotently.
   const fingerprint = decodeURIComponent(rawFingerprint);
 
+  /**
+   * THE STORY, above the forensics.
+   *
+   * Everything below this section is evidence an operator reads when they
+   * already know what they are looking at: raw occurrences, stack traces,
+   * bracketing deploys. This section is what they are looking at — first
+   * seen, which sources saw it, what caused it, what is being done, whether
+   * it shipped, and what remains unproven. Reaching that story previously
+   * meant joining four surfaces by hand.
+   *
+   * `incident` is null when the fault falls outside even the detail page's
+   * wider 7-day window. That is a real state, not an error: the forensics
+   * below still render, and claiming a lifecycle we cannot compute would be
+   * worse than showing none.
+   */
+  function IncidentCommand({ incident }: { incident: UnifiedIncident }) {
+    return (
+      <section aria-label="Incident command" className="space-y-3">
+        <Surface padding="sm" className="min-w-0">
+          <LifecycleSpine incident={incident} />
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-warm-200 pt-3">
+            <ProofDots proof={incident.proof} size="md" />
+            <ProofLegend />
+          </div>
+          <div className="mt-2">
+            <ProofGapList gaps={incident.proofGaps} />
+          </div>
+        </Surface>
+
+        <Surface padding="sm" className="min-w-0">
+          <LifecycleWhy verdict={incident.lifecycle} />
+        </Surface>
+
+        <EvidenceWall sources={incident.sources} />
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <RootCauseCard analysis={incident.analysis} />
+          <RepairCard repair={incident.repair} />
+        </div>
+
+        <DeploymentProofCard proof={incident.deployProof} resolution={incident.resolution} />
+
+        <Surface padding="sm" className="min-w-0">
+          <h2 className="text-eyebrow uppercase text-warm-500">Evidence coverage</h2>
+          <div className="mt-2">
+            <EvidenceCoverageStrip coverage={incident.evidenceCoverage} />
+          </div>
+        </Surface>
+      </section>
+    );
+  }
+
   async function Body() {
-    const { events, report, summary, forensics, trend, storedRca } = await fetchFingerprintDetail(rawFingerprint);
+    // The unified incident is fetched ALONGSIDE the forensics, not instead of
+    // them: this page is the one surface where the raw occurrences still
+    // matter, and a lifecycle read that fails must not take them down with it.
+    const [{ events, report, summary, forensics, trend, storedRca }, unified] = await Promise.all([
+      fetchFingerprintDetail(rawFingerprint),
+      fetchIncidentById(fingerprint).catch(() => null),
+    ]);
 
     if (events.length === 0 || !forensics) {
       // A reliability-sourced fingerprint (`rel:<signature>`, from the nightly
@@ -105,6 +178,7 @@ export default async function FingerprintDetailPage({
               </Link>
               ; what follows is the root-cause analysis the nightly triage wrote for it.
             </InlineNotice>
+            {unified ? <IncidentCommand incident={unified.incident} /> : null}
             <Surface padding="sm" className="min-w-0">
               <h2 className="border-b border-warm-200 pb-2 text-eyebrow uppercase text-warm-500">
                 Root-cause analysis
@@ -163,6 +237,8 @@ export default async function FingerprintDetailPage({
         {resolution?.regressed ? <RegressionBanner resolution={resolution} /> : null}
 
         {resolution ? <ResolutionSummary resolution={resolution} /> : null}
+
+        {unified ? <IncidentCommand incident={unified.incident} /> : null}
 
         {/* Suspect deploy, elevated: the first thing an operator should read —
             "what shipped right before this started" — not buried in the
