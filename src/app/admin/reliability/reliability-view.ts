@@ -148,3 +148,107 @@ export function relativeAge(iso: string, now: number = Date.now()): string {
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
 }
+
+/**
+ * Signals grouped by how many INDEPENDENT SOURCES saw them, most-corroborated
+ * first.
+ *
+ * WHY THIS REPLACED SEVERITY AS THE PRIMARY AXIS ON THIS TAB. Severity is the
+ * Incidents tab's axis, and grouping by it here made Reliability read as a
+ * second, differently-sorted copy of the same queue — which is exactly the
+ * split-brain the unified incident model exists to end. This tab's unique
+ * contribution is not "what is worst"; it is "what do multiple independent
+ * systems agree on", which no other surface can compute.
+ *
+ * The count is an OBSERVATION COUNT, never a confidence score. Two sources
+ * seeing a fault is a mechanical fact about coverage; it says nothing about how
+ * likely the fault is to be real, and labelling it confidence would invent a
+ * calibration this system does not have.
+ *
+ * `groupBySeverity` is kept and still exported: the severity mix panel uses it,
+ * and deleting a tested pure helper to make a layout change would be a wider
+ * blast radius than the change deserves.
+ */
+export function groupByCorroboration(
+  signals: readonly CorrelatedSignal[],
+): Array<{ sourceCount: number; signals: CorrelatedSignal[] }> {
+  const byCount = new Map<number, CorrelatedSignal[]>();
+  for (const signal of signals) {
+    const key = signal.sources.length;
+    const bucket = byCount.get(key) ?? [];
+    bucket.push(signal);
+    byCount.set(key, bucket);
+  }
+  return [...byCount.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([sourceCount, group]) => ({
+      sourceCount,
+      // Within a bucket, worst severity first — the corroboration question is
+      // answered by the grouping, so severity is free to order inside it.
+      signals: [...group].sort(
+        (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity),
+      ),
+    }));
+}
+
+/**
+ * The Bridge link for a correlated signal.
+ *
+ * Every row on this tab is a DOOR into the canonical incident, not a leaf. The
+ * nightly triage stores a reliability signal's analysis under
+ * `rel:<signature>`, and `/admin/errors/<id>` resolves that spelling — so the
+ * same string is both the storage key and the route, and no translation table
+ * can drift between them.
+ */
+export function signalIncidentHref(signature: string): string {
+  return `/admin/errors/${encodeURIComponent(`rel:${signature}`)}`;
+}
+
+/** One cell of the coverage matrix: what one source did on one run. */
+export type CoverageCell = 'reading' | 'partial' | 'blind' | 'no-run';
+
+export interface CoverageRow {
+  source: ReliabilitySource;
+  /** Oldest first, so the matrix reads left-to-right as time. */
+  cells: CoverageCell[];
+  readingRuns: number;
+  totalRuns: number;
+}
+
+/**
+ * "Was the system actually watching?" — per source, across the recent runs.
+ *
+ * A single current-status pill answers "is Sentry readable right now", which is
+ * the less useful question: a source that was blind for three hours overnight
+ * and recovered at 6am reads as perfectly healthy on a pill, and every count
+ * computed during those three hours was quietly partial. The matrix makes the
+ * hole visible after the fact, which is when an operator actually asks.
+ *
+ * A run whose metadata could not be parsed (`row.run === null`) yields
+ * `'no-run'` for every source — DISTINCT from `'blind'`. One means the
+ * collector's own record is unreadable; the other means the collector ran and
+ * could not reach that provider. Collapsing them would attribute an infra
+ * problem to a provider outage.
+ */
+export function buildCoverageMatrix(
+  history: readonly ReliabilityRunRow[],
+  sources: readonly ReliabilitySource[] = ['sentry', 'supabase', 'vercel'],
+): CoverageRow[] {
+  // `history` arrives newest-first from the data layer; the matrix reads as
+  // time, so it is reversed once here rather than at each cell.
+  const chronological = [...history].reverse();
+  return sources.map((source) => {
+    const cells = chronological.map((row): CoverageCell => {
+      if (!row.run) return 'no-run';
+      const arm = row.run.sources.find((s) => s.source === source);
+      if (!arm) return 'no-run';
+      return arm.status === 'ok' ? 'reading' : arm.status === 'partial' ? 'partial' : 'blind';
+    });
+    return {
+      source,
+      cells,
+      readingRuns: cells.filter((c) => c === 'reading').length,
+      totalRuns: cells.length,
+    };
+  });
+}

@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import {
+  buildCoverageMatrix,
   corroboratedCount,
   evidenceTarget,
+  groupByCorroboration,
   groupBySeverity,
   historySeries,
   needsAttentionCount,
   readingCount,
   relativeAge,
   severityCounts,
+  signalIncidentHref,
 } from '../reliability-view';
 import type { CorrelatedSignal, ReliabilitySeverity } from '@/lib/reliability/types';
 import type { ReliabilityRunRow } from '@/lib/admin/data/reliability';
@@ -199,5 +202,128 @@ describe('relativeAge', () => {
 
   it('renders an em-dash for an unparseable timestamp', () => {
     expect(relativeAge('not-a-date', now)).toBe('—');
+  });
+});
+
+// =============================================================================
+// The conversion from "second incident list" to "coverage and corroboration".
+//
+// Reliability and Errors read different sources on different clocks and never
+// reconciled — named 2026-08-28 as the biggest open design problem on the
+// Bridge. The fix is not to delete this tab: it computes something no other
+// surface can, namely how many INDEPENDENT systems saw the same fault. What
+// changed is that it stopped sorting by the other tab's axis and started
+// linking every row into the canonical incident.
+// =============================================================================
+
+describe('groupByCorroboration', () => {
+  it('groups by independent observation count, most-corroborated first', () => {
+    const groups = groupByCorroboration([
+      signal({ signature: 'one', sources: ['sentry'] }),
+      signal({ signature: 'three', sources: ['sentry', 'supabase', 'vercel'] }),
+      signal({ signature: 'two', sources: ['sentry', 'supabase'] }),
+    ]);
+    expect(groups.map((g) => g.sourceCount)).toEqual([3, 2, 1]);
+    expect(groups[0]!.signals.map((s) => s.signature)).toEqual(['three']);
+  });
+
+  it('orders by severity WITHIN a bucket — the grouping already answered the other question', () => {
+    const groups = groupByCorroboration([
+      signal({ signature: 'warn', severity: 'warning', sources: ['sentry', 'supabase'] }),
+      signal({ signature: 'crit', severity: 'critical', sources: ['sentry', 'supabase'] }),
+    ]);
+    expect(groups[0]!.signals.map((s) => s.signature)).toEqual(['crit', 'warn']);
+  });
+
+  it('omits empty buckets rather than rendering a "0 sources" heading', () => {
+    expect(groupByCorroboration([])).toEqual([]);
+  });
+});
+
+describe('signalIncidentHref', () => {
+  it('points at the canonical incident under the SAME rel: key the analysis is stored with', () => {
+    // The nightly triage writes an analysis to admin_events under
+    // `rel:<signature>`, and /admin/errors/<id> resolves that spelling. One
+    // string, two uses, no translation table that can drift between them.
+    expect(signalIncidentHref('f321abcd')).toBe('/admin/errors/rel%3Af321abcd');
+  });
+});
+
+describe('buildCoverageMatrix', () => {
+  const run = (statuses: Record<string, 'ok' | 'partial' | 'blind'>): ReliabilityRunRow => ({
+    id: 'r',
+    status: 'completed',
+    startedAt: '2026-08-28T00:00:00.000Z',
+    completedAt: '2026-08-28T00:01:00.000Z',
+    durationMs: 60_000,
+    errorMessage: null,
+    run: {
+      version: 1,
+      windowStart: '2026-08-27T21:00:00.000Z',
+      windowEnd: '2026-08-28T00:00:00.000Z',
+      overallStatus: 'ok',
+      sources: Object.entries(statuses).map(([source, status]) => ({
+        source: source as 'sentry' | 'supabase' | 'vercel',
+        status,
+        reason: status === 'ok' ? null : 'unreachable',
+        bounded: false,
+        durationMs: 10,
+      })),
+      signals: [],
+      truncatedSignals: 0,
+    },
+  });
+
+  it('reads oldest-left, newest-right — the data layer hands it newest-first', () => {
+    const matrix = buildCoverageMatrix([
+      run({ sentry: 'blind', supabase: 'ok', vercel: 'ok' }), // newest
+      run({ sentry: 'ok', supabase: 'ok', vercel: 'ok' }), // oldest
+    ]);
+    const sentry = matrix.find((r) => r.source === 'sentry')!;
+    expect(sentry.cells).toEqual(['reading', 'blind']);
+  });
+
+  it('distinguishes an unreadable RUN from a blind SOURCE', () => {
+    // One means the collector's own record could not be parsed; the other
+    // means the collector ran and could not reach that provider. Collapsing
+    // them attributes an infrastructure problem to a provider outage.
+    const unreadable: ReliabilityRunRow = {
+      id: 'legacy',
+      status: 'completed',
+      startedAt: null,
+      completedAt: null,
+      durationMs: null,
+      errorMessage: null,
+      run: null,
+    };
+    const matrix = buildCoverageMatrix([unreadable]);
+    for (const row of matrix) {
+      expect(row.cells).toEqual(['no-run']);
+      expect(row.cells).not.toContain('blind');
+    }
+  });
+
+  it('counts only genuinely reading runs, never partial or blind ones', () => {
+    const matrix = buildCoverageMatrix([
+      run({ sentry: 'ok', supabase: 'partial', vercel: 'blind' }),
+      run({ sentry: 'ok', supabase: 'ok', vercel: 'blind' }),
+    ]);
+    expect(matrix.find((r) => r.source === 'sentry')!.readingRuns).toBe(2);
+    expect(matrix.find((r) => r.source === 'supabase')!.readingRuns).toBe(1);
+    expect(matrix.find((r) => r.source === 'vercel')!.readingRuns).toBe(0);
+    for (const row of matrix) expect(row.totalRuns).toBe(2);
+  });
+
+  it('reports a source missing from a run as no-run, not as reading', () => {
+    // A collector that stopped emitting an arm entirely must not have that
+    // arm's silence read as health.
+    const matrix = buildCoverageMatrix([run({ sentry: 'ok' })]);
+    expect(matrix.find((r) => r.source === 'vercel')!.cells).toEqual(['no-run']);
+  });
+
+  it('returns a row per source even with no history at all', () => {
+    const matrix = buildCoverageMatrix([]);
+    expect(matrix.map((r) => r.source)).toEqual(['sentry', 'supabase', 'vercel']);
+    for (const row of matrix) expect(row.totalRuns).toBe(0);
   });
 });
