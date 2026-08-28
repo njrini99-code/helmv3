@@ -11,16 +11,24 @@ type AuthCallback = (
 const {
   createClientMock,
   getUserMock,
+  getSessionMock,
   onAuthStateChangeMock,
   rpcMock,
   unsubscribeMock,
 } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
   getUserMock: vi.fn(),
+  getSessionMock: vi.fn(),
   onAuthStateChangeMock: vi.fn(),
   rpcMock: vi.fn(),
   unsubscribeMock: vi.fn(),
 }));
+
+/** A live session for `user-1` — the default in every test that expects a
+ *  heartbeat to actually go out. */
+function liveSession(userId = 'user-1') {
+  return { data: { session: { access_token: 'jwt', user: { id: userId } } }, error: null };
+}
 
 let authCallback: AuthCallback;
 
@@ -33,6 +41,7 @@ describe('usePresence authenticated heartbeat lifecycle (#1016)', () => {
     vi.useFakeTimers();
     rpcMock.mockReset().mockResolvedValue({ data: undefined, error: null });
     getUserMock.mockReset();
+    getSessionMock.mockReset().mockResolvedValue(liveSession());
     unsubscribeMock.mockReset();
     onAuthStateChangeMock.mockReset().mockImplementation((callback: AuthCallback) => {
       authCallback = callback;
@@ -41,6 +50,7 @@ describe('usePresence authenticated heartbeat lifecycle (#1016)', () => {
     createClientMock.mockReset().mockReturnValue({
       auth: {
         getUser: getUserMock,
+        getSession: getSessionMock,
         onAuthStateChange: onAuthStateChangeMock,
       },
       rpc: rpcMock,
@@ -95,6 +105,9 @@ describe('usePresence authenticated heartbeat lifecycle (#1016)', () => {
         data: { user: { id: 'user-2' } },
         error: null,
       });
+    // The pre-RPC session check compares ids, so the session has to belong to
+    // the same user the auth event announced — that comparison is the guard.
+    getSessionMock.mockResolvedValue(liveSession('user-2'));
 
     renderHook(() => usePresence());
     await act(async () => {
@@ -120,6 +133,52 @@ describe('usePresence authenticated heartbeat lifecycle (#1016)', () => {
     await act(async () => {
       await Promise.resolve();
       await vi.advanceTimersByTimeAsync(125_000);
+    });
+
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  // The 42501 fix. Measured 2026-08-27: 10 `permission denied for function
+  // heartbeat` in 72h across the two round pages, still firing. The hook
+  // confirmed auth when the timers STARTED and then fired every 60s for the
+  // life of the page; on iOS WKWebView a backgrounded tab misses the token
+  // refresh and comes back with a dead JWT, so PostgREST evaluated the call as
+  // `anon` — which `public.heartbeat()` (SECURITY DEFINER, EXECUTE to
+  // `authenticated` only) correctly refuses.
+  it.each([
+    ['there is no session at all', { data: { session: null }, error: null }],
+    ['the session carries no access token', { data: { session: { user: { id: 'user-1' } } }, error: null }],
+    ['getSession itself failed', { data: { session: null }, error: { message: 'network' } }],
+    [
+      'the session belongs to a different user',
+      { data: { session: { access_token: 'jwt', user: { id: 'somebody-else' } } }, error: null },
+    ],
+  ])('never calls the RPC when %s', async (_label, sessionResult) => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    getSessionMock.mockResolvedValue(sessionResult);
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it('stops the timers after a skipped heartbeat rather than retrying every minute', async () => {
+    // Skipping without stopping would turn one dead token into a heartbeat
+    // attempt per minute for as long as the tab stays open.
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    getSessionMock.mockResolvedValue({ data: { session: null }, error: null });
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300_000);
     });
 
     expect(rpcMock).not.toHaveBeenCalled();

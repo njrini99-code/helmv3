@@ -86,3 +86,71 @@ describe('classifyIncident — Postgres privilege errors', () => {
     expect(result.klass).toBe('access');
   });
 });
+
+/**
+ * Four causes that occupied the actionable triage queue on 2026-08-27 without
+ * being defects. Each entry below is the exact production string, and each has
+ * a reason it is not actionable that does NOT reduce to "it was quiet".
+ */
+describe('classifyIncident — queue noise with a named cause', () => {
+  it('recognises Supabase Auth’s own wording for a bad password', () => {
+    // `invalid email or password` (our copy) was already covered;
+    // `AuthApiError: Invalid login credentials` (the provider's) was not, so
+    // the same event classified two different ways depending on who reported it.
+    const result = classifyIncident({
+      title: 'AuthApiError: Invalid login credentials',
+      message: 'AuthApiError: Invalid login credentials',
+      severity: 'error',
+      source: 'sentry',
+      errorCode: null,
+    });
+    expect(result.actionable).toBe(false);
+    expect(result.klass).toBe('access');
+  });
+
+  it('treats a superseded Vercel build as telemetry, not a warning to act on', () => {
+    // 18 occurrences in 72h, every one of them a normal push cancelling the
+    // build before it.
+    const result = classifyIncident({
+      title: 'Deployment canceled',
+      message: 'Deployment canceled',
+      severity: 'warning',
+      source: 'vercel',
+      errorCode: 'vercel_canceled',
+    });
+    expect(result.actionable).toBe(false);
+    expect(result.klass).toBe('telemetry');
+  });
+
+  it.each([
+    'Client error: Loading chunk 71649 failed.',
+    'ChunkLoadError: Loading chunk 53333 failed.',
+    'Failed to fetch dynamically imported module: /_next/static/chunks/x.js',
+  ])('routes a stale-deployment asset failure to a recovered degradation: %s', (message) => {
+    const result = classifyIncident({
+      title: message,
+      message,
+      severity: 'warning',
+      source: 'client',
+      errorCode: 'ChunkLoadError',
+    });
+    expect(result.actionable).toBe(false);
+    expect(result.klass).toBe('degradation');
+    expect(result.reason).toMatch(/StaleDeploymentRecoveryScript/);
+  });
+
+  it('keeps a SERVER-side chunk-shaped failure out of the client carve-out', () => {
+    // The stale-deployment rule is about a browser holding an old bundle. It
+    // must not become a way for a genuinely broken server import to read as
+    // recovered — so the assertion here is that the phrase, not the source, is
+    // what qualifies, and an unrelated server error still lands actionable.
+    const result = classifyIncident({
+      title: 'Error: Cannot find module ./missing',
+      message: 'Error: Cannot find module ./missing',
+      severity: 'error',
+      source: 'server',
+      errorCode: null,
+    });
+    expect(result.actionable).toBe(true);
+  });
+});

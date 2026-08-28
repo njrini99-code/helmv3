@@ -49,11 +49,24 @@ export function replaceStageUrl(param: string, key: string, homeKey: string): bo
   const next = new URL(window.location.href);
   if (key === homeKey) next.searchParams.delete(param);
   else next.searchParams.set(param, key);
-  window.history.replaceState(
-    window.history.state,
-    '',
-    `${next.pathname}${next.search}${next.hash}`,
-  );
+  const nextUrl = `${next.pathname}${next.search}${next.hash}`;
+
+  // Do not write history for a URL that is already the current one.
+  //
+  // Safari throttles `replaceState` to 100 calls per 10 seconds and throws
+  // `SecurityError` past that — observed once in production on 2026-08-27
+  // (iOS 18.7 WKWebView, /golf/dashboard, a deep recursive render loop in the
+  // stack ending at `replaceState`). This guard is NOT a claim to have found
+  // that loop; it is the observation that a write which changes nothing can
+  // only cost, and removing it means a re-render storm that lands on the same
+  // stage stops consuming the browser's budget.
+  //
+  // The custom event still dispatches either way: listeners care that a stage
+  // was selected, not that the address bar changed, and skipping it here would
+  // make re-selecting the current stage silently do nothing.
+  if (nextUrl !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+    window.history.replaceState(window.history.state, '', nextUrl);
+  }
   window.dispatchEvent(
     new CustomEvent<StageNavigationDetail>(STAGE_NAVIGATION_EVENT, {
       detail: { param, key },

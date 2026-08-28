@@ -25,6 +25,7 @@
 import 'dotenv/config';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { fetchAllRowsResult } from '../src/lib/supabase/fetch-all-rows';
 import type { Database } from '../src/lib/types/database';
 import {
   buildTriagePlan,
@@ -68,6 +69,26 @@ interface TriageDump {
   sourceHealth: SourceHealth[];
   windowHours: number;
   collectedAt: string;
+}
+
+interface AdminEventRow {
+  fingerprint: string | null;
+  title: string | null;
+  message: string | null;
+  severity: string | null;
+  source: string | null;
+  feature: string | null;
+  url: string | null;
+  metadata: unknown;
+  created_at: string | null;
+  id: string;
+}
+
+interface AnalysisRow {
+  fingerprint: string | null;
+  metadata: unknown;
+  created_at: string | null;
+  id: string;
 }
 
 const SEVERITIES = new Set(['critical', 'error', 'warning', 'info']);
@@ -122,15 +143,30 @@ async function collectAdminEvents(
   admin: Admin,
   since: string,
 ): Promise<{ candidates: TriageCandidate[]; health: SourceHealth }> {
-  const { data, error } = await admin
-    .from('admin_events')
-    .select('fingerprint, title, message, severity, source, feature, url, metadata, created_at')
-    .eq('event_type', 'error')
-    .eq('resolved', false)
-    .not('fingerprint', 'is', null)
-    .gte('created_at', since)
-    .order('created_at', { ascending: false })
-    .limit(2000);
+  // PAGINATED, not `.limit(2000)`.
+  //
+  // PostgREST truncates every response at 1000 rows (supabase/config.toml
+  // `max_rows`), so a larger limit does not fail — it silently returns 1000.
+  // For THIS script that is the worst possible failure: triage would read a
+  // truncated window, find nothing unanalysed in it, and report a clean board.
+  // A monitor reporting health from a partial read is the exact thing the
+  // engine exists to prevent, and CI's row-cap check caught it here before it
+  // ever ran that way.
+  //
+  // `.order('created_at')` alone is not a stable page key — ties would let
+  // rows drift across page boundaries — so `id` breaks the tie.
+  const { data, error } = await fetchAllRowsResult<AdminEventRow>((from, to) =>
+    admin
+      .from('admin_events')
+      .select('fingerprint, title, message, severity, source, feature, url, metadata, created_at, id')
+      .eq('event_type', 'error')
+      .eq('resolved', false)
+      .not('fingerprint', 'is', null)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
 
   if (error) {
     // A source that could not be READ is never reported as zero problems.
@@ -140,12 +176,16 @@ async function collectAdminEvents(
     };
   }
 
-  const { data: analyses, error: analysesError } = await admin
-    .from('admin_events')
-    .select('fingerprint, metadata, created_at')
-    .eq('event_type', 'rca_analysis')
-    .order('created_at', { ascending: false })
-    .limit(2000);
+  const { data: analyses, error: analysesError } = await fetchAllRowsResult<AnalysisRow>(
+    (from, to) =>
+      admin
+        .from('admin_events')
+        .select('fingerprint, metadata, created_at, id')
+        .eq('event_type', 'rca_analysis')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to),
+  );
 
   if (analysesError) {
     return {
@@ -301,13 +341,17 @@ async function collectReliabilitySignals(
 
 /** Analyses stored for reliability signals, keyed `rel:<signature>`. */
 async function collectRelAnalyses(admin: Admin): Promise<Map<string, string>> {
-  const { data } = await admin
-    .from('admin_events')
-    .select('fingerprint, metadata')
-    .eq('event_type', 'rca_analysis')
-    .like('fingerprint', 'rel:%')
-    .order('created_at', { ascending: false })
-    .limit(1000);
+  const { data } = await fetchAllRowsResult<{ fingerprint: string | null; metadata: unknown }>(
+    (from, to) =>
+      admin
+        .from('admin_events')
+        .select('fingerprint, metadata, created_at, id')
+        .eq('event_type', 'rca_analysis')
+        .like('fingerprint', 'rel:%')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to),
+  );
   const out = new Map<string, string>();
   for (const row of data ?? []) {
     const fp = str(row.fingerprint);

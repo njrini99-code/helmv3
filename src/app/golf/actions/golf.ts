@@ -5376,7 +5376,7 @@ async function getPendingInvitationsImpl(): Promise<ActionResult<EventInvitation
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -5420,7 +5420,7 @@ async function getPlayerEventRSVPImpl(
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -5994,12 +5994,49 @@ async function savePartialRoundImpl(
       return { success: false, error: 'You must be signed in' };
     }
 
-    // Get player record
-    const { data: player } = await supabase
+    // Get player record.
+    //
+    // `.maybeSingle()`, not `.single()`, and the error is BOUND rather than
+    // discarded. Both halves were live defects, found 2026-08-27 from four
+    // production events on `POST /golf/dashboard/rounds/continue/:id`:
+    //
+    //   1. `.single()` raises PGRST116 ("Cannot coerce the result to a single
+    //      JSON object") when it finds no row. A user without a player
+    //      profile is an EXPECTED state here, not an exception — and
+    //      `Sentry.instrumentSupabaseClient` reports the failed query
+    //      independently of how this code handles it, so a correctly-handled
+    //      miss still surfaced as a production error with an unhandled
+    //      mechanism. `.maybeSingle()` returns `{ data: null, error: null }`
+    //      and the `if (!player)` branch below behaves identically.
+    //
+    //   2. `const { data: player } =` threw the error away, so an RLS denial
+    //      or a transport failure was indistinguishable from "this user has no
+    //      player row" — the auto-save reported "Player profile not found" to
+    //      a player who has one. `error → []` is the shape the OS contract
+    //      forbids; a read that FAILED must not be reported as a read that
+    //      found nothing.
+    const { data: player, error: playerError } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (playerError) {
+      // Distinct message and code from the not-found branch on purpose: this
+      // one is retryable and the next auto-save tick may well succeed, so it
+      // must not tell the player their profile is missing.
+      void logServerError(`Auto-save player lookup failed: ${playerError.message}`, {
+        action: 'savePartialRound',
+        featureArea: 'shot_tracking',
+        roundId: existingRoundId,
+        userId: user.id,
+        errorCode: playerError.code,
+        errorHint: playerError.hint,
+        errorDetails: playerError.details,
+        extra: { courseName: data.courseName, currentHole: data.currentHole },
+      }, 'error');
+      return { success: false, error: 'retry' };
+    }
 
     if (!player) {
       void logServerError('Auto-save failed: player profile not found', {
@@ -6775,7 +6812,7 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -6892,7 +6929,7 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -7052,7 +7089,7 @@ async function getNextQualifierRoundNumberImpl(
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -8033,7 +8070,7 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -8200,7 +8237,7 @@ async function updateShotImpl(
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };

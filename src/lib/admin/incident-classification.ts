@@ -140,6 +140,12 @@ const ACCESS_PHRASES = [
   'permission denied',
   'not a super admin',
   'invalid email or password',
+  // Supabase Auth's own wording for the same event. `invalid email or
+  // password` above is OUR copy; `AuthApiError: Invalid login credentials` is
+  // what the provider throws, and it reached Sentry as an unclassified error
+  // while the identical outcome logged by our own code classified correctly.
+  // One event, two vocabularies — the list has to carry both.
+  'invalid login credentials',
   'you must be signed in',
   'must be signed in',
   'only coaches can',
@@ -174,6 +180,12 @@ const TELEMETRY_PHRASES = [
   'refusing to emit',
   'resizeobserver loop',
   'cron 24h sent=',
+  // A Vercel build superseded by a newer push. It is the platform doing
+  // exactly what it should, reported to the reliability collector as a signal
+  // — 18 of them in one 72h window on 2026-08-27, purely from normal pushes.
+  // Not an application error at all, and nothing to act on.
+  'deployment canceled',
+  'deployment cancelled',
 ];
 
 /** Upstream provider faults — quota, billing, rate limiting, model errors. */
@@ -193,6 +205,27 @@ const INTEGRATION_PHRASES = [
   'paid credits',
   'free tier',
   'inngest api error',
+];
+
+/**
+ * A client asking for a JavaScript chunk that no longer exists.
+ *
+ * This is the stale-deployment case and it ALREADY self-recovers:
+ * `src/components/providers/StaleDeploymentRecoveryScript.tsx` reloads the
+ * page when it sees one. The visitor's tab was open across a deploy; the new
+ * build has different content hashes; the old chunk 404s. Nothing is broken in
+ * the code that gets fetched.
+ *
+ * Its own class rather than a DEGRADATION_PHRASES entry, because those are
+ * phrased as "the call site explicitly continued" and this one is recovered by
+ * a different mechanism entirely — a full reload — which is worth saying in
+ * the reason string rather than flattening into a generic fallback.
+ */
+const STALE_DEPLOYMENT_PHRASES = [
+  'loading chunk',
+  'chunkloaderror',
+  'failed to fetch dynamically imported module',
+  'importing a module script failed',
 ];
 
 /** Handled fallbacks — the call site explicitly continued. */
@@ -320,6 +353,16 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
   const emptyHit = matchesAny(haystack, EMPTY_STATE_PHRASES);
   if (emptyHit) {
     return done('empty_state', false, `Empty state, not a failure ("${emptyHit}")`);
+  }
+
+  // 5b. Stale-deployment chunk failures — recovered by a reload, not by us.
+  const staleHit = matchesAny(haystack, STALE_DEPLOYMENT_PHRASES);
+  if (staleHit) {
+    return done(
+      'degradation',
+      false,
+      `Stale-deployment asset ("${staleHit}") — StaleDeploymentRecoveryScript reloads the page`,
+    );
   }
 
   // 6. Routine operational instrumentation.
