@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFingerprintDetail } from '@/lib/admin/data/errors';
-import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
+import { InlineNotice, StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
 import { extractActionName, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
 import { PanelBoundary } from '../../_components/PanelBoundary';
@@ -14,6 +14,7 @@ import { LocalTime } from '../../_components/LocalTime';
 import { ForensicsHeader } from '../_components/ForensicsHeader';
 import { TrendStrip } from '../_components/TrendStrip';
 import { RcaPanel } from '../_components/RcaPanel';
+import { RcaAnalysisView } from '../_components/RcaAnalysisView';
 import { FieldCopy } from '../_components/FieldCopy';
 import { fetchResolutionArchive } from '@/lib/admin/data/resolutions';
 import { resolveArchivedResolution, RegressionBanner, ResolutionSummary } from '../_components/ResolutionPanels';
@@ -85,9 +86,36 @@ export default async function FingerprintDetailPage({
   const fingerprint = decodeURIComponent(rawFingerprint);
 
   async function Body() {
-    const { events, report, summary, forensics, trend } = await fetchFingerprintDetail(rawFingerprint);
+    const { events, report, summary, forensics, trend, storedRca } = await fetchFingerprintDetail(rawFingerprint);
 
     if (events.length === 0 || !forensics) {
+      // A reliability-sourced fingerprint (`rel:<signature>`, from the nightly
+      // triage of Sentry/Vercel signals) has a stored analysis but no
+      // `admin_events` error rows — so there are no occurrences to render, but
+      // there IS a root-cause analysis, and it must not vanish behind a blank
+      // "no events" state (the exact bug fixed 2026-08-28). Show it.
+      if (storedRca) {
+        return (
+          <div className="space-y-4">
+            <InlineNotice tone="info">
+              This is a correlated reliability signal (Sentry / Vercel / Supabase), not an
+              application error logged directly. Its occurrences live on the{' '}
+              <Link href="/admin/reliability" className="underline">
+                Reliability tab
+              </Link>
+              ; what follows is the root-cause analysis the nightly triage wrote for it.
+            </InlineNotice>
+            <Surface padding="sm" className="min-w-0">
+              <h2 className="border-b border-warm-200 pb-2 text-eyebrow uppercase text-warm-500">
+                Root-cause analysis
+              </h2>
+              <div className="mt-3">
+                <RcaAnalysisView analysis={storedRca} />
+              </div>
+            </Surface>
+          </div>
+        );
+      }
       return (
         <PanelNoData
           label="No events for this fingerprint"

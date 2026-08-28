@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { fetchReliabilitySnapshot, type ReliabilityRunRow } from '@/lib/admin/data/reliability';
+import { fetchReliabilitySnapshot, queryRelAnalyses, type ReliabilityRunRow } from '@/lib/admin/data/reliability';
+import { RcaAnalysisView } from '../errors/_components/RcaAnalysisView';
+import type { RcaAnalysis } from '@/lib/admin/rca';
 import {
   Surface,
   Inset,
@@ -126,7 +128,13 @@ function EvidenceLinks({ signal }: { signal: CorrelatedSignal }) {
   );
 }
 
-function SignalRow({ signal }: { signal: CorrelatedSignal }) {
+function SignalRow({
+  signal,
+  analysis,
+}: {
+  signal: CorrelatedSignal;
+  analysis: RcaAnalysis | null;
+}) {
   const corroborated = signal.sources.length > 1;
 
   // Ported to the shared row language (../_components/Row) on 2026-08-27.
@@ -180,6 +188,18 @@ function SignalRow({ signal }: { signal: CorrelatedSignal }) {
       </RowFoot>
 
       <EvidenceLinks signal={signal} />
+
+      {/* The root-cause analysis the nightly triage wrote for this signal.
+          These live in admin_events under fingerprint `rel:<signature>` and
+          had no surface at all before 2026-08-28 — this is where they show. */}
+      {analysis ? (
+        <div className="mt-3 rounded-fw-md border border-warm-200 bg-surface-sunken/40 p-3">
+          <p className="mb-2 text-caption uppercase tracking-widest text-warm-500">
+            Root-cause analysis
+          </p>
+          <RcaAnalysisView analysis={analysis} />
+        </div>
+      ) : null}
     </RailRow>
   );
 }
@@ -261,9 +281,11 @@ function SeverityMixPanel({ run }: { run: NonNullable<ReliabilityRunRow['run']> 
 function RunPanel({
   row,
   history,
+  analysisBySignature,
 }: {
   row: ReliabilityRunRow;
   history: readonly ReliabilityRunRow[];
+  analysisBySignature: ReadonlyMap<string, RcaAnalysis>;
 }) {
   const run = row.run;
 
@@ -367,7 +389,11 @@ function RunPanel({
                   </div>
                   <ul className="mt-1">
                     {group.signals.map((signal) => (
-                      <SignalRow key={signal.signature} signal={signal} />
+                      <SignalRow
+                        key={signal.signature}
+                        signal={signal}
+                        analysis={analysisBySignature.get(signal.signature) ?? null}
+                      />
                     ))}
                   </ul>
                 </Inset>
@@ -449,6 +475,15 @@ async function ReliabilityPanel() {
 
   const { latest, history, neverRan } = snapshot.data;
 
+  // The analyses the nightly triage wrote for these signals — keyed by bare
+  // signature. Without this the Reliability tab renders the signals but never
+  // their root-cause analysis, which is where every rel:* analysis was
+  // invisible (fixed 2026-08-28).
+  const analysisBySignature =
+    latest?.run && latest.run.signals.length > 0
+      ? await queryRelAnalyses(latest.run.signals.map((sig) => sig.signature))
+      : new Map<string, RcaAnalysis>();
+
   // Never-ran is a WIRING problem, not an all-clear — deliberately distinct
   // copy from the all-clear state.
   if (neverRan || !latest) {
@@ -477,7 +512,7 @@ async function ReliabilityPanel() {
         )}
       </div>
 
-      <RunPanel row={latest} history={history} />
+      <RunPanel row={latest} history={history} analysisBySignature={analysisBySignature} />
 
       {history.length > 1 && (
         <>
