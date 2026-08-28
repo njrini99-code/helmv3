@@ -12,6 +12,10 @@ import {
   type ParsedPrBody,
   type WorkArea,
 } from '@/lib/admin/pr-body-parser';
+import {
+  extractRepairIncidentIds,
+  extractRepairVerdict,
+} from '@/lib/admin/incidents/repair-link';
 
 export type PrLifecycleState = 'open' | 'merged' | 'closed';
 
@@ -26,6 +30,25 @@ export interface WorkLogEntry {
   merged_at: string | null;
   closed_at: string | null;
   parsed: ParsedPrBody;
+  /**
+   * Incident ids this PR claims to repair, from the two markers
+   * `docs/ai-system/selfheal/repair-contract.md` already mandates — the
+   * `/admin/errors/<fp>` body link (STEP 5) and the `fix/rca-<fp>` branch
+   * (STEP 4). Extracted here rather than stored anywhere, so GitHub stays the
+   * single authority on what a repair is doing.
+   *
+   * Without it the Bridge cannot tell "REPAIRABLE, nobody has started" from
+   * "REPAIRABLE, PR #1660 is open and green" — and an operator re-triages work
+   * that is already sitting in a branch.
+   */
+  repairIncidentIds: string[];
+  /**
+   * Whether the PR's own words say its reading CONFIRMED or CORRECTED the
+   * analysis it acted on. `'not-reviewed'` when it makes neither claim —
+   * never a default to confirmed, which would manufacture agreement nobody
+   * expressed. This is the only empirical feedback the Diagnose contract gets.
+   */
+  repairVerdict: 'confirmed' | 'corrected' | 'not-reviewed';
 }
 
 export interface WorkLogSnapshot {
@@ -214,6 +237,12 @@ export async function fetchWorkLog(): Promise<AdminFetchResult<WorkLogSnapshot>>
         merged_at: pr.merged_at,
         closed_at: pr.closed_at,
         parsed,
+        // Title AND body: the search endpoint returns the body but never
+        // `head.ref`, while the list-pulls fallback returns the ref — scanning
+        // both means the join survives whichever path served the request,
+        // instead of working locally and returning nothing in production.
+        repairIncidentIds: extractRepairIncidentIds(`${pr.title}\n${pr.body ?? ''}`),
+        repairVerdict: extractRepairVerdict(pr.body),
       };
     });
 
