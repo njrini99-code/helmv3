@@ -72,12 +72,40 @@ function severityFromSentryLevel(level: string): ReliabilitySeverity {
  * by Sentry rather than needing a separate log tail. The Vercel arm below is
  * therefore about deploy/build health, not runtime exceptions — see its note.
  */
-export async function collectSentry(): Promise<SourceResult> {
+/**
+ * Is `whenIso` at or after the window start?
+ *
+ * Unparseable or missing timestamps return TRUE — inside. This is a collection
+ * filter, and dropping a signal whose time we cannot establish would silently
+ * shrink the board, which is the direction this whole subsystem refuses to
+ * fail in. An unplaceable signal is kept and stays visible.
+ */
+function windowInclusive(whenIso: string | null | undefined, windowStartIso: string): boolean {
+  if (!whenIso) return true;
+  const when = Date.parse(whenIso);
+  const start = Date.parse(windowStartIso);
+  if (!Number.isFinite(when) || !Number.isFinite(start)) return true;
+  return when >= start;
+}
+
+export async function collectSentry(windowStartIso: string): Promise<SourceResult> {
   const startedAt = Date.now();
   const res = await fetchSentryIssues({ query: 'is:unresolved', limit: SENTRY_ISSUE_LIMIT });
   const { status, reason } = statusFromFetch(res);
 
-  const signals: RawSignal[] = (res.data ?? []).map((issue) => ({
+  // `is:unresolved` is a LIFETIME query — an issue stays unresolved for months.
+  // Without this filter every long-standing issue was collected into a snapshot
+  // that declares a four-hour window, and a 2026-08-28 run labelled 17:01-21:01
+  // carried issues last seen at 14:50, 11:04 and 02:23. The window has to
+  // describe the data or it is not a window.
+  //
+  // Filtered on lastSeen, not firstSeen: an old fault that fired again inside
+  // the window IS a current occurrence. `windowInclusive` treats an
+  // unparseable timestamp as INSIDE, because dropping a signal we cannot place
+  // would quietly shrink the board.
+  const inWindow = (res.data ?? []).filter((issue) => windowInclusive(issue.lastSeen, windowStartIso));
+
+  const signals: RawSignal[] = inWindow.map((issue) => ({
     source: 'sentry' as const,
     severity: severityFromSentryLevel(issue.level),
     title: issue.title,
@@ -129,7 +157,13 @@ export async function collectSupabase(windowStartIso: string): Promise<SourceRes
   const { data, error } = await admin
     .from('admin_events')
     .select('id, title, message, severity, url, created_at, fingerprint, metadata')
-    // An analysis of an incident is not an occurrence of it.
+    // ALLOWLIST, not denylist. This arm is documented as "Application error
+    // events", but it selected by exclusion — so login, security,
+    // round_submitted and every other event type was eligible, because a
+    // denylist admits whatever nobody thought to exclude.
+    .eq('event_type', 'error')
+    // Kept even though event_type='error' already excludes it: the
+    // self-feeding-read guard below is load-bearing enough to state twice.
     .neq('event_type', 'rca_analysis')
     // ...and neither is this collector's own failure.
     .not('title', 'ilike', `%${RELIABILITY_JOB_TYPE}%`)
@@ -231,12 +265,19 @@ function readErrorCode(metadata: unknown): string | null {
  * a BUILD failed — a deployment stuck in ERROR is invisible to an exception
  * tracker because the code never ran. That is what this arm contributes.
  */
-export async function collectVercel(): Promise<SourceResult> {
+export async function collectVercel(windowStartIso: string): Promise<SourceResult> {
   const startedAt = Date.now();
   const res = await fetchVercelDeployments(VERCEL_DEPLOY_LIMIT);
   const { status, reason } = statusFromFetch(res);
 
-  const failed = (res.data ?? []).filter((d) => d.state === 'ERROR' || d.state === 'CANCELED');
+  // Same window discipline as the Sentry arm: the deployment list is not
+  // window-scoped, so a snapshot could carry a failure group spanning
+  // 02:18 -> 20:50 while declaring a four-hour window.
+  const failed = (res.data ?? []).filter(
+    (d) =>
+      (d.state === 'ERROR' || d.state === 'CANCELED') &&
+      windowInclusive(new Date(d.createdAt).toISOString(), windowStartIso),
+  );
 
   const signals: RawSignal[] = failed.map((deploy) => {
     const when = new Date(deploy.createdAt).toISOString();

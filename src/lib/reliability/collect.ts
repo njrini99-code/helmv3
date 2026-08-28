@@ -75,9 +75,11 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
   // must not take the run down, because a run that dies produces no record at
   // all — which is indistinguishable from "never scheduled" on the jobs board.
   const settled = await Promise.allSettled([
-    collectSentry(),
+    // ONE window owner. Every arm receives the same start, so
+    // ReliabilityRun.windowStart/windowEnd actually describe all three.
+    collectSentry(windowStartIso),
     collectSupabase(windowStartIso),
-    collectVercel(),
+    collectVercel(windowStartIso),
   ]);
 
   const sourceNames = ['sentry', 'supabase', 'vercel'] as const;
