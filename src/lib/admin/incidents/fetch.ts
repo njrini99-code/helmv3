@@ -17,6 +17,7 @@ import type { CorrelatedSignal } from '@/lib/reliability/types';
 import { correlateIncidents, type CorrelationSourceHealth, type IncidentDraft } from './correlate';
 import { deriveLifecycle } from './lifecycle';
 import { deriveEvidenceCoverage, deriveProof, deriveProofGaps } from './proof';
+import { countLenses } from './lens';
 import {
   buildSourceFreshness,
   describeBlindness,
@@ -27,7 +28,6 @@ import {
 import type {
   IncidentAnalysis,
   IncidentDeployProof,
-  IncidentLens,
   IncidentLensCounts,
   IncidentRepair,
   IncidentResolution,
@@ -36,7 +36,6 @@ import type {
   SourceFreshness,
   UnifiedIncident,
 } from './types';
-import { INCIDENT_LENSES } from './types';
 
 /**
  * The one read that assembles an incident board.
@@ -405,64 +404,6 @@ export interface IncidentBoard {
 }
 
 /**
- * Which lens an incident belongs to.
- *
- * Filters over ONE model, never separate datasets — which is the whole point.
- * The Reliability tab stopped being a competing incident list the moment its
- * rows became a lens over these same incidents.
- */
-export function matchesLens(incident: UnifiedIncident, lens: IncidentLens): boolean {
-  switch (lens) {
-    case 'actionable':
-      return (
-        incident.actionable &&
-        incident.lifecycle.state !== 'resolved' &&
-        incident.lifecycle.state !== 'not-a-defect'
-      );
-    case 'reliability':
-      // Corroborated, OR witnessed by a non-app observer. The second clause
-      // matters: a Supabase-only permission fault is exactly the signal the
-      // Reliability tab exists for, and it has only one source.
-      return (
-        incident.corroboration >= 2 ||
-        incident.sources.some(
-          (s) => s.source !== 'app' && s.health !== 'blind' && s.health !== 'unknown',
-        )
-      );
-    case 'repairable':
-      return incident.lifecycle.state === 'repairable';
-    case 'needs-evidence':
-      return incident.lifecycle.state === 'needs-evidence';
-    case 'regressions':
-      return incident.lifecycle.state === 'regressed';
-    case 'awaiting-proof':
-      return (
-        incident.lifecycle.state === 'awaiting-proof' ||
-        incident.lifecycle.state === 'awaiting-deploy' ||
-        incident.lifecycle.state === 'merged' ||
-        incident.proofGaps.length > 0
-      );
-    case 'all':
-      return true;
-  }
-}
-
-export function applyLens(
-  incidents: readonly UnifiedIncident[],
-  lens: IncidentLens,
-): UnifiedIncident[] {
-  return incidents.filter((incident) => matchesLens(incident, lens));
-}
-
-export function countLenses(incidents: readonly UnifiedIncident[]): IncidentLensCounts {
-  const counts = {} as IncidentLensCounts;
-  for (const lens of INCIDENT_LENSES) {
-    counts[lens] = incidents.filter((incident) => matchesLens(incident, lens)).length;
-  }
-  return counts;
-}
-
-/**
  * Deploy proof for one incident — is the fix live, and has enough happened
  * since to call it proven?
  *
@@ -816,3 +757,10 @@ export async function fetchIncidentById(
 export const cachedIncidentBoard = cache((windowHours: number) =>
   fetchIncidentBoard({ windowHours }),
 );
+
+/**
+ * Re-exported so existing call sites keep importing lens behaviour from the
+ * module that produces the board. The implementations live in `./lens`, which
+ * is pure and unit-tested without a database.
+ */
+export { applyLens, countLenses, matchesLens } from './lens';
