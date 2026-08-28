@@ -63,7 +63,11 @@ export interface TruthStripInput {
 export function ageWords(ms: number | null): string {
   if (ms === null || !Number.isFinite(ms)) return 'age unknown';
   if (ms < 0) return 'age unknown';
-  const minutes = Math.round(ms / 60_000);
+  // FLOOR, not round. `Math.round` turns 30 seconds into "1m ago", which is
+  // both wrong and wrong in the wrong direction — a freshness line that ages
+  // data up is claiming staleness it cannot demonstrate. Floor at every step
+  // says "at least this old", which is the claim the evidence supports.
+  const minutes = Math.floor(ms / 60_000);
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.round(minutes / 60);

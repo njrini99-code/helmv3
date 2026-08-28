@@ -383,6 +383,16 @@ async function fetchResolutions(
 
 export interface IncidentBoard {
   incidents: UnifiedIncident[];
+  /**
+   * Incident id -> the `admin_events` row ids behind it.
+   *
+   * Carried on the BOARD rather than on the incident because it is not a fact
+   * about the fault — it is the handle the resolve action needs, and
+   * `resolve_admin_event` is per-row. Keeping it out of `UnifiedIncident`
+   * stops a list of ids that can be hundreds long from travelling with every
+   * card into every client component that only wants to render a title.
+   */
+  eventIdsByIncident: Record<string, string[]>;
   /** Per-source freshness, always one row per source. */
   freshness: SourceFreshness[];
   coverage: CoverageSummary;
@@ -638,6 +648,15 @@ export async function fetchIncidentBoard(
     ...reliability.health,
   ];
 
+  // fingerprint -> the admin_events rows in this feed. Built from the triage
+  // items rather than re-queried: they already carry exactly these ids, and a
+  // second query could disagree with the list the operator is looking at.
+  const eventIdsByFingerprint = new Map<string, string[]>();
+  for (const item of feed.incidents) {
+    if (item.origin !== 'app' || !item.fingerprint) continue;
+    eventIdsByFingerprint.set(item.fingerprint, item.eventIds);
+  }
+
   const drafts: IncidentDraft[] = correlateIncidents({
     triage: feed.incidents,
     reliabilitySignals: reliability.signals,
@@ -738,8 +757,15 @@ export async function fetchIncidentBoard(
     sourceHealth.map((s) => [s.source, s.reason]),
   );
 
+  const eventIdsByIncident: Record<string, string[]> = {};
+  for (const incident of incidents) {
+    const ids = incident.appFingerprints.flatMap((fp) => eventIdsByFingerprint.get(fp) ?? []);
+    if (ids.length > 0) eventIdsByIncident[incident.id] = [...new Set(ids)];
+  }
+
   return {
     incidents,
+    eventIdsByIncident,
     freshness,
     coverage,
     blindnessNote: describeBlindness(freshness, reasons),

@@ -569,3 +569,18 @@ export const INCIDENT_LENS_DESCRIPTION: Readonly<Record<IncidentLens, string>> =
  * disagree. `incident-count-agreement.test.ts` exists because they did.
  */
 export type IncidentLensCounts = Record<IncidentLens, number>;
+
+/**
+ * Read the lens off a URL search param.
+ *
+ * Defaults to `'actionable'` — the lens that answers "what is broken", which
+ * is what someone opening the tab is asking. An unrecognised value falls back
+ * rather than throwing: a stale bookmark from before a lens was renamed should
+ * land on the default view, not a 500.
+ */
+export function parseIncidentLens(raw: string | string[] | undefined): IncidentLens {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return (INCIDENT_LENSES as readonly string[]).includes(value ?? '')
+    ? (value as IncidentLens)
+    : 'actionable';
+}

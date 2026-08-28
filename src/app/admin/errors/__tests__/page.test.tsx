@@ -36,6 +36,15 @@ vi.mock('@/lib/admin/data/resolutions', () => ({
   fetchResolutionArchive: (...args: unknown[]) => fetchResolutionArchive(...args),
 }));
 
+// The unified incident board — the canonical list this page now leads with.
+// Mocked alongside the other two because it is the THIRD independent read,
+// and the parallelism assertion below only means something if every read it
+// covers is under this suite's control.
+const fetchIncidentBoard = vi.fn();
+vi.mock('@/lib/admin/incidents/fetch', () => ({
+  fetchIncidentBoard: (...args: unknown[]) => fetchIncidentBoard(...args),
+}));
+
 import { loadErrorsPageData } from '../_data';
 
 function archiveOk(): AdminFetchResult<ResolutionArchiveSnapshot> {
@@ -48,9 +57,42 @@ function archiveOk(): AdminFetchResult<ResolutionArchiveSnapshot> {
 
 const filters: ErrorsTabFilters = { windowHours: 24 };
 
+function boardEmpty() {
+  return {
+    incidents: [],
+    eventIdsByIncident: {},
+    freshness: [],
+    coverage: {
+      reading: 0,
+      partial: 0,
+      blind: 0,
+      unknown: 0,
+      total: 0,
+      anyBlind: false,
+      blindSources: [],
+      oldestAgeMs: null,
+      worst: 'unknown' as const,
+    },
+    blindnessNote: null,
+    lensCounts: {
+      actionable: 0,
+      reliability: 0,
+      repairable: 0,
+      'needs-evidence': 0,
+      regressions: 0,
+      'awaiting-proof': 0,
+      all: 0,
+    },
+    computedAt: '2026-08-28T00:00:00.000Z',
+    windowHours: 24,
+  };
+}
+
 beforeEach(() => {
   fetchErrorsTab.mockReset();
   fetchResolutionArchive.mockReset();
+  fetchIncidentBoard.mockReset();
+  fetchIncidentBoard.mockResolvedValue(boardEmpty());
 });
 
 describe('loadErrorsPageData', () => {
@@ -64,7 +106,11 @@ describe('loadErrorsPageData', () => {
 
     expect(fetchErrorsTab).toHaveBeenCalledWith(filters);
     expect(fetchResolutionArchive).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({ tab, archiveResult: archive });
+    // The board takes the SAME filter object as the tab read. Two queries
+    // that can disagree about which incidents are in scope is the split the
+    // unified read model exists to close, so this is not incidental.
+    expect(fetchIncidentBoard).toHaveBeenCalledWith(filters);
+    expect(result).toEqual({ tab, archiveResult: archive, board: boardEmpty() });
   });
 
   it('passes a FAILED archive read straight through, rather than swallowing it', async () => {
