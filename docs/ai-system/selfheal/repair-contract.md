@@ -20,11 +20,48 @@ Repo: `njrini99-code/helmv3`, canonical checkout
 
 ---
 
+## STEP 0 — how you read production (you have NO MCP)
+
+You run with **`--strict-mcp-config` and an empty MCP config** — deliberately.
+Do not reach for an `mcp__Supabase__*` tool; there isn't one. A bare
+`claude -p` HUNG three times on 2026-08-27/28 (15-47 minutes, zero output, no
+work) because the Supabase MCP server is OAuth-gated, and a headless process
+with no browser can never complete that OAuth. Removing MCP entirely is what
+fixes it.
+
+Read production the headless way, with `Bash` + Node, using the service-role
+key already in the canonical checkout's `.env.local`:
+
+```bash
+node --env-file=/Users/ricknini/Downloads/helmv3/.env.local -e '
+const { createClient } = require("@supabase/supabase-js");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const c = createClient(url, key, { auth: { persistSession: false } });
+(async () => {
+  const { data, error } = await c.from("admin_events").select("...").eq("...", "...");
+  if (error) { console.error("QUERY FAILED:", error.message); process.exit(1); }
+  console.log(JSON.stringify(data));
+})();
+'
+```
+
+This is READ-ONLY by discipline, not by grant: the service-role key can write,
+so you must only ever `select`. No `insert`/`update`/`delete` except the single
+heartbeat row STEP 6 describes. Everything the `STEP 0b`/`STEP 1` SQL below
+asks for, run through this Node path.
+
+---
+
 ## Hard limits — read before doing anything
 
-- **Never deploy, promote, or roll back production.** `guard-bash.sh` rule 12
-  blocks `vercel … --prod`, and you must not edit, weaken, or route around any
-  guard hook. If a guard blocks you, that is the answer, not an obstacle.
+- **Never deploy, promote, or roll back production.** `permissions.deny` in
+  `.claude/settings.json` blocks `vercel … --prod` (and force-push, and
+  destructive SQL) and fires even under `bypassPermissions` — you run in
+  `bypassPermissions` mode precisely so prompts auto-approve while those deny
+  rules still hold. `guard-bash.sh` was deleted 2026-08-27; the deny list is
+  the real safety layer now. If a deny rule blocks you, that is the answer, not
+  an obstacle.
 - **Never merge your own PR.** Open it and stop. `config/release-policy.yml`
   reserves merge and release to the owner.
 - **Never touch** auth, RLS policies, migrations, secrets, billing, or
@@ -206,8 +243,10 @@ npm run build       # a page/component or 'use server' surface may have changed
 Three things learned the hard way on 2026-08-27, each of which cost a full CI
 cycle:
 
-- **Never pipe a gate command.** `npm test | tail` exits with `tail`'s status.
-  `guard-bash.sh` blocks it. Capture to a file and check `$?` separately.
+- **Never pipe a gate command.** `npm test | tail` exits with `tail`'s status,
+  manufacturing a green result. Nothing blocks this any more (`guard-bash.sh`
+  was deleted 2026-08-27) — it is on you. Capture to a file and check `$?`
+  separately.
 - **A subset is not the suite.** Running only the tests near your change misses
   gates in `scripts/__tests__` that run inside the Unit-tests shards — exactly
   how an accessibility failure reached CI.

@@ -506,6 +506,24 @@ export async function fetchFingerprintDetail(rawFingerprint: string) {
     nearbyDeploys,
   };
 
+  // Parse the stored analysis UNCONDITIONALLY — before the `if (last)` gate.
+  //
+  // A reliability-sourced fingerprint (`rel:<signature>`, from the nightly
+  // triage of Sentry/Vercel signals) has a `rca_analysis` row but NO
+  // `event_type='error'` rows, so `events` is empty and `forensics` stays
+  // null. Until 2026-08-28 this parse lived inside `if (last)`, so the
+  // analysis was fetched (the `rcaRes` query above) and then silently thrown
+  // away — the detail page rendered "No events for this fingerprint" over a
+  // real, stored analysis. Lifting it out lets the page show the RCA even
+  // when there is nothing else, and makes the Repair stage's
+  // `/admin/errors/<fingerprint>` links resolve for `rel:` keys.
+  //
+  // `rcaRes.error` bound deliberately: a failed lookup must not present as
+  // "no analysis has been run", which would invite a duplicate run.
+  const storedRcaParsed =
+    !rcaRes.error && rcaRes.data?.metadata ? rcaAnalysisSchema.safeParse(rcaRes.data.metadata) : null;
+  const storedRca = storedRcaParsed?.success ? storedRcaParsed.data : null;
+
   const last = events[0] ?? null;
   let forensics: FingerprintForensics | null = null;
   if (last) {
@@ -515,11 +533,6 @@ export async function fetchFingerprintDetail(rawFingerprint: string) {
     );
     const actionName = events.map((e) => extractActionName(e.metadata)).find((a) => a !== null) ?? null;
     const errorCode = events.map((e) => extractErrorCode(e.metadata)).find((c) => c !== null) ?? null;
-    // `rcaRes.error` bound deliberately: a failed lookup must not present as
-    // "no analysis has been run", which would invite a duplicate run.
-    const storedRcaParsed =
-      !rcaRes.error && rcaRes.data?.metadata ? rcaAnalysisSchema.safeParse(rcaRes.data.metadata) : null;
-
     forensics = {
       severity: worst,
       classification: classifyIncident({
@@ -542,7 +555,7 @@ export async function fetchFingerprintDetail(rawFingerprint: string) {
       sourceFilePath: resolveActionFilePath(last.feature ?? null, actionName),
       suspectDeploy: selectSuspectDeploy(nearbyDeploys, trueFirstSeen),
       hasUnknownAffectedUsers: hasUnknownAffectedUsers(false, affectedUserCount, totalCount),
-      storedRca: storedRcaParsed?.success ? storedRcaParsed.data : null,
+      storedRca,
     };
   }
 
@@ -560,7 +573,7 @@ export async function fetchFingerprintDetail(rawFingerprint: string) {
       };
 
   const report = buildFingerprintIncidentReport(fingerprint, events, summary, forensics);
-  return { events, report, summary, forensics, trend };
+  return { events, report, summary, forensics, trend, storedRca };
 }
 
 /** Copy-for-Claude report for the fingerprint detail page — aggregates every

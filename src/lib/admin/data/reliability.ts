@@ -13,6 +13,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { failed, ok, type AdminFetchResult } from '@/lib/admin/fetch-result';
 import { RELIABILITY_SNAPSHOT_JOB_TYPE } from '@/lib/reliability/normalize';
 import type { ReliabilityRun } from '@/lib/reliability/types';
+import { rcaAnalysisSchema, type RcaAnalysis } from '@/lib/admin/rca';
 
 export interface ReliabilityRunRow {
   id: string;
@@ -91,4 +92,55 @@ export async function fetchReliabilitySnapshot(): Promise<AdminFetchResult<Relia
     // a wiring problem; the tab must not render that as an all-clear.
     neverRan: rows.length === 0,
   });
+}
+
+/**
+ * Stored root-cause analyses for a set of reliability signals, keyed by their
+ * BARE signature (not the `rel:` fingerprint).
+ *
+ * The nightly triage writes an analysis for a reliability signal into
+ * `admin_events` as an `rca_analysis` row under `fingerprint = 'rel:' +
+ * signature` (see `scripts/run-triage.ts` / `triage-engine.ts`). The
+ * Reliability tab holds `signal.signature` but never looked the analysis up,
+ * so every one of them was invisible. This is that lookup.
+ *
+ * Direct batched query rather than a per-row `getStoredRcaAnalysis` call: the
+ * latter is a `'use server'` action that re-runs `requireSuperAdmin()` every
+ * time, and calling it once per signal (up to MAX_STORED_SIGNALS) is an N+1.
+ * One `.in()` covers the whole page. Fail-soft — a missing-analysis badge must
+ * never take the tab down — exactly like `queryAnalyzedFingerprints`.
+ */
+export async function queryRelAnalyses(
+  signatures: readonly string[],
+): Promise<Map<string, RcaAnalysis>> {
+  const out = new Map<string, RcaAnalysis>();
+  const unique = [...new Set(signatures)].filter(Boolean);
+  if (unique.length === 0) return out;
+
+  const admin = createAdminClient();
+  const keys = unique.map((sig) => `rel:${sig}`);
+
+  const { data, error } = await admin
+    .from('admin_events')
+    .select('fingerprint, metadata, created_at')
+    .eq('event_type', 'rca_analysis')
+    .in('fingerprint', keys)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    // Degrade explicitly: no analyses shown, tab intact. Never throw.
+    console.warn(`queryRelAnalyses: lookup failed, no analyses shown: ${error.message}`);
+    return out;
+  }
+
+  // Newest-first, so the first row seen for a signature is the one to keep.
+  for (const row of data ?? []) {
+    const fp = typeof row.fingerprint === 'string' ? row.fingerprint : null;
+    if (!fp || !fp.startsWith('rel:')) continue;
+    const signature = fp.slice('rel:'.length);
+    if (out.has(signature)) continue;
+    const parsed = rcaAnalysisSchema.safeParse(row.metadata);
+    if (parsed.success) out.set(signature, parsed.data);
+  }
+  return out;
 }
