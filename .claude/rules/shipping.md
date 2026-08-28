@@ -67,6 +67,34 @@ mechanical, and these are the habits that keep it fixed.
   others. If you see agent behaviour change after switching branches, diff this
   file first.
 
+### 1c. The canonical checkout boundary — what is actually enforced
+
+- **The canonical checkout is the control tower.** All mutating agent work
+  begins in a task worktree: `scripts/new-worktree.sh <task>`.
+- **That is a rule, not a mechanism.** State the narrow truth:
+
+  | Route into canonical | Blocked? | By what |
+  | --- | --- | --- |
+  | `Write` / `Edit` / `MultiEdit` | **yes** | `guard-canonical-write.mjs` |
+  | `Bash` — redirection, `cp`, `mv`, `python3`, a formatter | **no** | nothing |
+
+- Measured 2026-08-27: the hook is wired under matcher `Write|Edit|MultiEdit`,
+  a regex over the TOOL NAME, so it never executes for `Bash`; and a Bash
+  payload carries `command`, not `file_path`, so it would exit 0 even if it
+  did. End to end, `echo > <canonical>/src/…ts` from Bash created the file.
+- **Under `bypassPermissions`, Bash is the instructed default for file
+  changes.** The unguarded route is the normal one, not an edge case.
+- **Do not close this with a Bash command parser.** That architecture was
+  deleted for cause: it refused an `echo`, a `grep` and a commit message for
+  containing the words of a blocked command, and its read-only exemption was
+  bypassable through `$(...)`. A regex does not understand shell semantics.
+- **The structural option, for the owner.** `sandbox.filesystem` can deny
+  writes by PATH at the OS level, which covers Bash-spawned processes without
+  parsing. It is currently `disabled: true` in `~/.claude/settings.json`, which
+  is why the probe above succeeded. Enabling it is user-global — it affects
+  every project and could break a concurrent session — so it is an owner
+  decision, not an agent one.
+
 ### 2. Git and commits
 
 - **Work on the currently checked-out branch; `main` is home.** Never switch
