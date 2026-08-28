@@ -22,9 +22,10 @@ import type { DeployFreshness } from '@/lib/admin/deploy-freshness';
 function incident(
   over: Partial<UnifiedIncident> & { id: string; state?: IncidentLifecycleState },
 ): UnifiedIncident {
+  // `id` comes through `...rest` at the end; naming it here as well would be
+  // overwritten and TS says so.
   const { state = 'new', ...rest } = over;
   return {
-    id: over.id,
     linkTarget: `/admin/errors/${over.id}`,
     title: over.id,
     description: over.id,
