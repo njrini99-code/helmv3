@@ -122,7 +122,7 @@ export interface SelfHealStageRow extends SelfHealStage {
  */
 export function classifySelfHealStage(
   stage: SelfHealStage,
-  lastRun: { started_at: string; status: string } | null,
+  lastRun: { started_at: string; status: string; metadata?: unknown } | null,
   now: Date,
 ): CronBoardStatus {
   return classifyCronStatus(
