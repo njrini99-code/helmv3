@@ -20,7 +20,7 @@ function makeBuilder() {
   const builder: Record<string, unknown> = {};
   // Every chainable method records its arguments and returns the builder, so a
   // test can assert on the filters the query was actually built with.
-  for (const method of ['select', 'neq', 'not', 'gte', 'order']) {
+  for (const method of ['select', 'eq', 'neq', 'not', 'gte', 'order']) {
     builder[method] = (...args: unknown[]) => {
       calls.push({ method, args });
       return builder;
@@ -55,6 +55,14 @@ import { collectSupabase, collectSentry, collectVercel } from '../sources';
 import { RELIABILITY_SELF_EVENT_TITLE } from '../normalize';
 import { fetchSentryIssues } from '@/lib/admin/sentry-api';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
+
+/**
+ * A window start early enough that every pre-existing fixture below is inside
+ * it. These tests were written before the arms took a window and assert on
+ * mapping/degradation, not on windowing — passing an early start keeps them
+ * asserting exactly what they always did.
+ */
+const ANY_WINDOW = '2000-01-01T00:00:00.000Z';
 
 beforeEach(() => {
   calls.length = 0;
@@ -141,7 +149,7 @@ describe('collectSentry — degradation is reported, never swallowed', () => {
       fetchedAt: null,
       error: 'Sentry read API not configured',
     });
-    const result = await collectSentry();
+    const result = await collectSentry(ANY_WINDOW);
     expect(result.status).toBe('blind');
     expect(result.reason).toContain('not configured');
     expect(result.signals).toEqual([]);
@@ -154,7 +162,7 @@ describe('collectSentry — degradation is reported, never swallowed', () => {
       fetchedAt: null,
       error: 'HTTP 500',
     });
-    const result = await collectSentry();
+    const result = await collectSentry(ANY_WINDOW);
     expect(result.status).toBe('blind');
     expect(result.reason).toBe('HTTP 500');
   });
@@ -172,7 +180,7 @@ describe('collectSentry — degradation is reported, never swallowed', () => {
       ],
       fetchedAt: '2026-08-26T02:00:00.000Z',
     });
-    const result = await collectSentry();
+    const result = await collectSentry(ANY_WINDOW);
     expect(result.status).toBe('ok');
     expect(result.signals[0]!.severity).toBe('critical');
     expect(result.signals[0]!.evidenceRef).toBe('https://sentry.io/issues/1');
@@ -190,7 +198,7 @@ describe('collectVercel — build failures only, which Sentry cannot see', () =>
       ] as never,
       fetchedAt: '2026-08-26T02:00:00.000Z',
     });
-    const result = await collectVercel();
+    const result = await collectVercel(ANY_WINDOW);
     expect(result.signals).toHaveLength(1);
     expect(result.signals[0]!.evidenceRef).toBe('dep-bad');
     expect(result.signals[0]!.errorCode).toBe('vercel_error');
@@ -203,8 +211,108 @@ describe('collectVercel — build failures only, which Sentry cannot see', () =>
       fetchedAt: null,
       error: 'Vercel API not configured',
     });
-    const result = await collectVercel();
+    const result = await collectVercel(ANY_WINDOW);
     expect(result.status).toBe('blind');
     expect(result.signals).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ET-1 — the collection window must describe all three arms, and the Supabase
+// arm must collect ERRORS.
+//
+// A snapshot taken 2026-08-28 declared windowStart 17:01 / windowEnd 21:01 and
+// then carried Sentry issues last seen at 14:50, 13:29, 11:04 and 02:23, plus a
+// Vercel group spanning 02:18 -> 20:50. The declared window was not a
+// description of the data. Only `collectSupabase` ever received it:
+//
+//     collectSentry()                 <- no window
+//     collectSupabase(windowStartIso) <- windowed
+//     collectVercel()                 <- no window
+//
+// An operator reading "4-hour window, 19 signals" was reading something else.
+// ---------------------------------------------------------------------------
+
+const WINDOW_START = '2026-08-28T17:00:00.000Z';
+
+describe('ET-1 — every source arm honours the caller window', () => {
+  it('collectSentry drops issues last seen BEFORE the window start', async () => {
+    vi.mocked(fetchSentryIssues).mockResolvedValue({
+      status: 'ok',
+      data: [
+        { title: 'inside', culprit: '/a', level: 'error', count: 3, firstSeen: '2026-08-28T18:00:00.000Z', lastSeen: '2026-08-28T20:30:00.000Z', permalink: 'p1' },
+        { title: 'edge-before', culprit: '/b', level: 'error', count: 1, firstSeen: '2026-08-28T10:00:00.000Z', lastSeen: '2026-08-28T16:59:00.000Z', permalink: 'p2' },
+        { title: 'long-stale', culprit: '/c', level: 'error', count: 9, firstSeen: '2026-08-27T00:00:00.000Z', lastSeen: '2026-08-28T02:00:00.000Z', permalink: 'p3' },
+      ],
+      truncated: false,
+    } as never);
+
+    const result = await collectSentry(WINDOW_START);
+    expect(result.signals.map((s) => s.title)).toEqual(['inside']);
+  });
+
+  it('collectVercel drops deployments created BEFORE the window start', async () => {
+    vi.mocked(fetchVercelDeployments).mockResolvedValue({
+      status: 'ok',
+      data: [
+        { uid: 'd1', state: 'ERROR', target: 'production', createdAt: Date.parse('2026-08-28T20:30:00.000Z') },
+        { uid: 'd2', state: 'CANCELED', target: null, createdAt: Date.parse('2026-08-28T19:00:00.000Z') },
+        { uid: 'd3', state: 'ERROR', target: 'production', createdAt: Date.parse('2026-08-28T16:30:00.000Z') },
+      ],
+    } as never);
+
+    const result = await collectVercel(WINDOW_START);
+    expect(result.signals.map((s) => s.evidenceRef).sort()).toEqual(['d1', 'd2']);
+  });
+
+  it('a signal whose timestamp cannot be parsed is KEPT, not dropped', async () => {
+    // The fail-safe direction of the window filter, and it needs its own test:
+    // an injection that flipped `windowInclusive` to drop unplaceable signals
+    // left every other test green. Dropping a signal we cannot place would
+    // silently shrink the board, which is the one direction this subsystem
+    // must never fail in.
+    vi.mocked(fetchSentryIssues).mockResolvedValue({
+      status: 'ok',
+      data: [
+        { title: 'no-timestamp', culprit: '/a', level: 'error', count: 1, firstSeen: null, lastSeen: null, permalink: 'p1' },
+        { title: 'garbage-timestamp', culprit: '/b', level: 'error', count: 1, firstSeen: 'not-a-date', lastSeen: 'not-a-date', permalink: 'p2' },
+      ],
+      truncated: false,
+    } as never);
+
+    const result = await collectSentry(WINDOW_START);
+    expect(result.signals.map((s) => s.title).sort()).toEqual(['garbage-timestamp', 'no-timestamp']);
+  });
+
+  it('a blind arm stays blind — windowing must not turn unreadable into empty', async () => {
+    vi.mocked(fetchSentryIssues).mockResolvedValue({
+      status: 'error',
+      data: null,
+      error: 'rate limited',
+    } as never);
+
+    const result = await collectSentry(WINDOW_START);
+    expect(result.status).not.toBe('ok');
+    expect(result.signals).toEqual([]);
+  });
+});
+
+describe('ET-1 — the Supabase arm collects ERRORS, not every event type', () => {
+  it('filters explicitly to event_type = error', async () => {
+    // The arm is documented as "Application error events" but selected by
+    // DENYLIST (`.neq('event_type','rca_analysis')`), so login, security,
+    // round_submitted and every other type was eligible. A denylist admits
+    // whatever nobody thought to exclude; an allowlist admits what was meant.
+    await collectSupabase(WINDOW_START);
+    const eq = calls.find((c) => c.method === 'eq' && c.args[0] === 'event_type');
+    expect(eq?.args).toEqual(['event_type', 'error']);
+  });
+
+  it('keeps the rca_analysis exclusion — an analysis is still not an occurrence', async () => {
+    // Belt and braces: event_type='error' already excludes rca_analysis, but
+    // the self-feeding-read guard is load-bearing enough to state twice.
+    await collectSupabase(WINDOW_START);
+    const neq = calls.find((c) => c.method === 'neq');
+    expect(neq?.args).toEqual(['event_type', 'rca_analysis']);
   });
 });
