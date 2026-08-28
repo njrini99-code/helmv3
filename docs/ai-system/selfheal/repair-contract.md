@@ -44,6 +44,52 @@ Repo: `njrini99-code/helmv3`, canonical checkout
 
 ---
 
+## STEP 0b — refuse to run on a stale board
+
+**Before reading a single analysis, check that Diagnose has actually run.**
+
+```sql
+select job_type, status, started_at, metadata
+from public.background_job_logs
+where job_type = 'selfheal-triage'
+order by started_at desc
+limit 1;
+```
+
+Stop, write a heartbeat saying why, and open nothing if any of these hold:
+
+- **no row at all** — Diagnose has never reported running
+- **the newest row is older than 24 hours** — it has stopped
+- **`status = 'failed'`** — it ran and broke; its analyses are not trustworthy
+- **`metadata->>'probe' = 'true'`** — that is a hand-written instrument probe,
+  not a stage run, and it is deliberately marked so you can tell
+
+The heartbeat for a refusal is `status='completed'` with
+`skipped_reason: 'no fresh selfheal-triage'` — **not** `failed`. The stage did
+its job; there was nothing legitimate to work from. Reserve `failed` for this
+stage itself breaking.
+
+**Why this exists.** The schedule puts Diagnose at 09:17 UTC and Repair at
+10:40 UTC — 83 minutes apart — and that gap is the ONLY thing sequencing them.
+It is a convention, not a guarantee. Nothing stops this stage running while
+Diagnose is still working, or after it failed, or when it has been disabled for
+a week. And the failure is silent in the worst direction: an empty queue from
+"Diagnose never ran" is indistinguishable from an empty queue from "nothing
+needs repair", so this stage would report a clean, quiet, successful run while
+the half of the loop that feeds it was dead.
+
+Observed 2026-08-28: both stages were fired manually at the same moment.
+Diagnose did not write its analyses until **16 minutes later**, so Repair spent
+its entire run reading a board that predated every finding it was supposed to
+act on. It reported nothing wrong, because from where it stood nothing was.
+
+A 24-hour window rather than "since the last Repair run" on purpose: this stage
+runs daily, so anything fresher than a day is the current picture, and keying
+off your own last run would make a single skipped night compound into a
+permanent refusal.
+
+---
+
 ## STEP 1 — find the repairable findings
 
 **Do not filter on the `suggestedFix` prefix in SQL.** That is what this stage
