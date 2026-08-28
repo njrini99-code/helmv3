@@ -1,8 +1,49 @@
 #!/usr/bin/env node
 // .claude/hooks/guard-canonical-write.mjs — PreToolUse / Write|Edit|MultiEdit
 //
-// ONE responsibility: refuse agent file mutations inside the canonical Helm
+// ONE responsibility: refuse Write / Edit / MultiEdit inside the canonical Helm
 // checkout. Task worktrees are unaffected.
+//
+// WHAT THIS GUARANTEES, AND WHAT IT DOES NOT
+//
+// It does NOT make the canonical checkout read-only. Say the narrow thing:
+//
+//     Write / Edit / MultiEdit into canonical   BLOCKED by this hook
+//     Bash writing the same path                NOT BLOCKED by anything
+//
+// Measured 2026-08-27, both ends, not inferred:
+//
+//   - The hook is wired under matcher `Write|Edit|MultiEdit`. That is a regex
+//     over the TOOL NAME, and `Bash` does not match it, so this file never
+//     executes for a Bash call.
+//   - Even if it did, a Bash payload carries `tool_input.command`, not
+//     `tool_input.file_path`. This hook exits 0 on a missing file_path, so it
+//     would allow the write anyway. Two independent reasons, either sufficient.
+//   - End to end: `echo '// probe' > <canonical>/src/…ts` from Bash created the
+//     file, rc=0.
+//
+// And Bash is not an exotic route. Under `bypassPermissions` this repo's
+// sessions are instructed to prefer Bash for file changes, so the unguarded
+// path is the DEFAULT one.
+//
+// WHY THIS WAS NOT "FIXED" BY WIDENING THE MATCHER
+//
+// Adding `Bash` to the matcher would require deciding, from command TEXT,
+// whether a shell line writes a file. That is the architecture this repo
+// already deleted: the previous Bash guard refused an `echo`, a `grep`, and a
+// commit message for containing the words of a blocked command, and a
+// hand-written exemption for read-only utilities was itself bypassable via
+// `$(...)`. A regex does not understand shell semantics, and pretending
+// otherwise produced a boundary that read as enforced and was not.
+//
+// THE STRUCTURAL OPTION, which is an owner decision and not taken here
+//
+// `sandbox.filesystem` in ~/.claude/settings.json can deny writes by PATH, at
+// the OS level, which would cover Bash-spawned processes without parsing
+// anything. It is currently `disabled: true`, which is why the probe above
+// succeeded. Turning it on is user-global — it affects every project on the
+// machine and could break another session mid-flight — so it is not a change
+// an agent should make unilaterally. Documented in .claude/rules/shipping.md.
 //
 // This is the only blocking hook in the repo. The five it replaces were
 // unwired on 2026-08-27 because they matched WORDS against a command line,
@@ -70,8 +111,10 @@ async function main() {
       `  canonical  ${canonicalRoot}\n` +
       `  active     ${activeRoot}\n\n` +
       `The canonical checkout is the control tower: it is for inspection, ` +
-      `fetching, creating workspaces and coordinating releases. Agents do not ` +
-      `mutate it.\n\n` +
+      `fetching, creating workspaces and coordinating releases. Mutating work ` +
+      `belongs in a task worktree.\n\n` +
+      `(This hook covers Write/Edit/MultiEdit only. Bash writes to this path ` +
+      `are not blocked by anything — see the header of this file.)\n\n` +
       `Create or enter a task worktree, then make the change there:\n\n` +
       `  scripts/new-worktree.sh <task-name>\n\n` +
       `That gives you ~/worktrees/helmv3/<task-name> on branch ` +
