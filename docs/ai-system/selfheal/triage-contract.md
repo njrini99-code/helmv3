@@ -214,11 +214,21 @@ on the distinction.
 
 ---
 
-## STEP 5 — write your heartbeat
+## STEP 5 — write your heartbeat, LAST
 
-**Always, on every run, success or failure.** This is the only evidence this
-deployment has that you ran at all; without it a disabled routine and a quiet
-week look identical on `/admin/jobs`.
+**Write this after everything else — after the analyses are inserted and the
+resolves are done — never before.** Its counts describe the run, so they can
+only be true once the run is over.
+
+Observed 2026-08-28: a run wrote its heartbeat at 01:53, then wrote 12 analyses
+at 02:04-02:06. The heartbeat therefore carried `analysed: 0` while the run
+actually produced twelve. The board read "ran, did nothing" over a run that
+did the most work of the night. A heartbeat written first is not a heartbeat;
+it is a start-marker wearing the wrong counts.
+
+**Always write it — on every run, success or failure.** It is the only evidence
+this deployment has that you ran at all; without it a disabled routine and a
+quiet week look identical on `/admin/jobs`.
 
 ```sql
 insert into public.background_job_logs
@@ -226,20 +236,25 @@ insert into public.background_job_logs
 values (
   'selfheal-triage',
   '<completed|failed>',        -- these two words exactly; nothing else reads
-  '<when you started>'::timestamptz,
-  now(),
-  <ms>,
+  '<the timestamp you captured at the START of the run>'::timestamptz,
+  now(),                       -- completed_at is now, because now IS the end
+  <ms since you started>,
   <null or one line>,
   jsonb_build_object(
-    'analysed', <n>, 'resolved', <n>, 'groups', <n>,
+    'analysed', <the real count you just wrote>, 'resolved', <n>, 'groups', <n>,
     'still_open_unanalysed', <n>, 'capped', <true|false>
   )
 );
 ```
 
+Capture `started_at` into a variable at the very beginning, but do not INSERT
+the row until the end — the row needs a real start time AND real final counts,
+and only writing-last gives you both.
+
 Write it **even if you analysed nothing** — `status='completed'` with
 `analysed: 0` is a healthy quiet run and must be distinguishable from not
-running.
+running. The distinction that matters is between that and a run that produced
+twelve but said zero because it reported too early.
 
 ---
 
