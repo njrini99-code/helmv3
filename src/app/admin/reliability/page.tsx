@@ -19,8 +19,10 @@ import { cn } from '@/lib/utils';
 import { KpiTile } from '../_components/KpiTile';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
-import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
+import { PanelNoData, PanelAllClear, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { CaptureQualityPanel } from '../_components/CaptureQuality';
+import { fetchCaptureQuality } from '@/lib/admin/data/capture-quality';
 import { RailRow, RowHead, FactLine, RowFoot, StateChip } from '../_components/Row';
 import { LocalTime } from '../_components/LocalTime';
 import type { CorrelatedSignal, SourceStatus } from '@/lib/reliability/types';
@@ -561,6 +563,29 @@ function HistoryPanel({ history }: { history: readonly ReliabilityRunRow[] }) {
 // Panel
 // ---------------------------------------------------------------------------
 
+/**
+ * How completely errors were CAPTURED — a measurement, not an incident list.
+ *
+ * It belongs on this tab because the question it answers is the same one the
+ * rest of the page asks from the other direction. Source health says whether
+ * we could SEE production; this says whether what we saw arrived with enough
+ * detail to act on. An incident whose row carries no error code, no stack and
+ * no route is not a mystery about production — it is a mystery about the CALL
+ * SITE, and until that is visible the under-instrumented emitters stay
+ * under-instrumented forever.
+ *
+ * Its own boundary: it reads `admin_events` directly and shares nothing with
+ * the collector snapshot above, so a failure in either must not take the other
+ * with it.
+ */
+async function CaptureQualitySection() {
+  const report = await fetchCaptureQuality();
+  if (report.status !== 'ok' || !report.data) {
+    return <PanelStale label="Capture quality" error={report.error} />;
+  }
+  return <CaptureQualityPanel report={report.data} />;
+}
+
 async function ReliabilityPanel() {
   const snapshot = await fetchReliabilitySnapshot();
 
@@ -641,6 +666,20 @@ export default async function ReliabilityPage() {
       <PanelBoundary title="Reliability" skeleton={<PanelPageSkeleton />}>
         <ReliabilityPanel />
       </PanelBoundary>
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Capture quality</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            How completely errors arrived, not how healthy production is. A low number is a
+            backlog item for the call site.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Capture quality" skeleton={<PanelPageSkeleton rows={4} />}>
+              <CaptureQualitySection />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
     </div>
   );
 }
