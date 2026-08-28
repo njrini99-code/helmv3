@@ -24,6 +24,11 @@ describe('ADMIN_NAV', () => {
       // different angle: not "what did each source report" but "what do
       // several sources agree on, and which sources could be read at all".
       '/admin/reliability',
+      // Added with the Mission Control work. Sits beside Reliability because
+      // it answers the third question in that family: not "what broke" or
+      // "could we see it", but "is the thing that repairs it alive AND
+      // proven".
+      '/admin/self-heal',
       '/admin/traces',
       '/admin/qualifiers',
       '/admin/teams',
@@ -48,7 +53,7 @@ describe('ADMIN_NAV', () => {
       // 'R' (Reliability) is a letter, not a digit, for the documented reason
       // above: '1'-'9'/'0' are never renumbered, so a tab added later takes a
       // letter rather than displacing a shortcut someone already knows.
-      '1', '3', '0', '8', 'R', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
+      '1', '3', '0', '8', 'R', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
     ]);
   });
 

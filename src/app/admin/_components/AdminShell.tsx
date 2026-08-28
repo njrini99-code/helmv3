@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
   Radar, CreditCard, GitBranch, Trophy, Waypoints,
-  RefreshCw, Dumbbell, Search, LogOut,
+  RefreshCw, Dumbbell, Search, LogOut, Recycle,
 } from 'lucide-react';
 import {
   AppShell,
@@ -36,6 +36,9 @@ import { RelativeTime } from './RelativeTime';
 const SUBROUTE_LABELS: Record<string, string> = {
   tracer: 'Tracer',
   'view-as': 'View as',
+  // titleCaseSegment would render this "Self Heal"; the product name is one
+  // hyphenated word.
+  'self-heal': 'Self-heal',
 };
 
 /** Dynamic-route segments (uuids, opaque ids) are never surfaced verbatim. */
@@ -108,6 +111,10 @@ const NAV_ICON_BY_HREF = {
   // between three sources, and it sits directly beside Errors in the same
   // section — a second warning triangle would read as a duplicate of it.
   '/admin/reliability': Waypoints,
+  // A closed loop, not another gauge: this tab's subject is a CIRCUIT that
+  // either completes or does not, and it sits beside Reliability where a
+  // second measurement glyph would read as a variant of it.
+  '/admin/self-heal': Recycle,
   '/admin/auth': KeyRound,
   '/admin/utilization': Gauge,
   '/admin/golf': Flag,

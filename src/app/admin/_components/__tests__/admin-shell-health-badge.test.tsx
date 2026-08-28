@@ -99,7 +99,11 @@ describe('AdminShell bottom-nav Health badge', () => {
         <div>Bridge content</div>
       </AdminShell>,
     );
-    expect(screen.getByText('Errors:5')).toBeInTheDocument();
+    // "Incidents", not "Errors" — the tab was renamed when the list stopped
+    // being errors-only and started folding Sentry issues, Supabase faults,
+    // Vercel faults and reliability signals into one incident each. The route
+    // is unchanged; only the word is.
+    expect(screen.getByText('Incidents:5')).toBeInTheDocument();
     expect(screen.getByText('Health:2')).toBeInTheDocument();
   });
 });
