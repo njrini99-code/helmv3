@@ -26,6 +26,15 @@ import { PanelAllClear, PanelNoData, PanelStale } from './_components/PanelState
 import { FeatureHealthRollup } from './_components/FeatureHealthRollup';
 import { Skeleton, SkeletonStat, SkeletonList, Surface, Eyebrow, StatusPill, StatStrip } from '@/components/fairway';
 import { ADMIN_COMMAND_SHORTCUTS } from './_components/admin-nav';
+import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
+import { buildTruthStrip } from '@/lib/admin/incidents/truth-strip';
+import { canClaimAllClear } from '@/lib/admin/incidents/sources';
+import { fetchDeployFreshness } from '@/lib/admin/deploy-freshness';
+import { fetchSelfHealBoard } from '@/lib/admin/data/selfheal';
+import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
+import { TruthStrip } from './_components/TruthStrip';
+import { BlindnessBeacon } from './_components/BlindnessBeacon';
+import { ProofDebtPanel, selectProofDebt } from './_components/ProofDebtPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -592,6 +601,73 @@ async function DeployRail() {
  * visible (no `hidden md:flex` — nothing above it is fighting for the
  * viewport any more).
  */
+/**
+ * MISSION CONTROL — the five facts that decide whether anything else on this
+ * page can be trusted.
+ *
+ * Deliberately the FIRST panel, and deliberately its own boundary. Its three
+ * reads (the incident board, the self-heal heartbeats, production freshness)
+ * share nothing with the KPI snapshot below, so nesting it would make the
+ * highest-signal panel on the Bridge wait on eleven Supabase queries before it
+ * could issue its own — the same serialization mistake `BriefingStrip`'s doc
+ * comment records. Siblings render concurrently.
+ *
+ * The self-heal and deploy reads are BOTH allowed to fail without taking the
+ * strip down: a null loop renders as UNREADABLE and an unresolvable deploy
+ * renders as UNKNOWN, because "we could not find out" is a different fact from
+ * "it is fine" and this is the one panel that must never blur them.
+ */
+async function MissionTruthStrip() {
+  const [board, loop, deploy] = await Promise.all([
+    cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS),
+    fetchSelfHealBoard(),
+    fetchDeployFreshness(),
+  ]);
+
+  const loopData = loop.status === 'ok' ? loop.data : null;
+  const loopAgeMs = loopData ? Date.now() - Date.parse(loopData.computedAt) : null;
+
+  const cells = buildTruthStrip({
+    incidents: board.incidents,
+    coverage: board.coverage,
+    deploy,
+    // The running deployment identifies itself through the env of the
+    // deployment it is running in — no API token required, and no chance of
+    // reporting a deploy other than the one serving this request.
+    deploymentId: process.env.VERCEL_DEPLOYMENT_ID ?? null,
+    loop: loopData?.verdict ?? null,
+    loopAgeMs: Number.isFinite(loopAgeMs) ? loopAgeMs : null,
+    computedAt: board.computedAt,
+    now: Date.now(),
+  });
+
+  return (
+    <div className="space-y-3">
+      <TruthStrip cells={cells} />
+      <BlindnessBeacon note={board.blindnessNote} coverage={board.coverage} />
+    </div>
+  );
+}
+
+/**
+ * Proof debt — solved-looking work that is not yet evidenced.
+ *
+ * Reads the same memoised board as the truth strip above, so the number in the
+ * strip and the list here cannot disagree. That is not a nicety: a headline
+ * count that contradicts the list it links to is the exact failure
+ * `incident-count-agreement.test.ts` exists to pin, one layer down.
+ */
+async function ProofDebt() {
+  const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+  return (
+    <ProofDebtPanel
+      rows={selectProofDebt(board.incidents)}
+      canClaimAllClear={canClaimAllClear(board.coverage)}
+      checkedAt={board.computedAt}
+    />
+  );
+}
+
 function CommandHeader() {
   const iconByHref = {
     '/admin/errors': Activity,
@@ -645,6 +721,9 @@ export default async function AdminOverviewPage() {
           <Eyebrow as="h2" tone="secondary">Right now</Eyebrow>
           <p className="mt-1 text-sm text-warm-500">Signals refresh server-side and degrade per panel.</p>
         </div>
+        <PanelBoundary title="System truth" skeleton={<Skeleton className="h-24 w-full rounded-2xl" />}>
+          <MissionTruthStrip />
+        </PanelBoundary>
         <PanelBoundary title="Status" skeleton={<Skeleton className="h-11 w-full rounded-2xl" />}>
           <StatusBanner />
         </PanelBoundary>
@@ -676,6 +755,19 @@ export default async function AdminOverviewPage() {
         <PanelBoundary title="Incident operations" skeleton={<SkeletonList />}>
           <TriagePanel />
         </PanelBoundary>
+        <Surface as="section" padding="sm">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-accent-600/25 pb-2">
+            <Eyebrow as="h3" tone="tertiary">Proof debt</Eyebrow>
+            <p className="text-caption text-warm-500">
+              Solved-looking work that is not yet evidenced
+            </p>
+          </div>
+          <div className="mt-2">
+            <PanelBoundary title="Proof debt" skeleton={<SkeletonList />}>
+              <ProofDebt />
+            </PanelBoundary>
+          </div>
+        </Surface>
       </section>
 
       <PostureDisclosure>
