@@ -211,3 +211,18 @@ export async function runRcaAnalysis(context: RcaSourceContext): Promise<RcaResu
     return { status: 'error', message: describeError(error) };
   }
 }
+
+/* ==========================================================================
+ * The repair vocabulary lives in `rca-category.ts` — it is pure and must stay
+ * importable from client components, which this `server-only` module is not.
+ * Re-exported here so server-side callers have a single import site.
+ * ========================================================================== */
+export {
+  RCA_CATEGORIES,
+  RCA_CANONICAL_PREFIX,
+  RCA_CATEGORY_LABEL,
+  deriveRcaCategory,
+  isRepairCandidate,
+  isAutoResolvable,
+  type RcaCategory,
+} from '@/lib/admin/rca-category';

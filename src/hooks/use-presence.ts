@@ -40,6 +40,47 @@ export function usePresence() {
       if (!active || !userId) return;
 
       try {
+        // Take the session immediately BEFORE the call, not just once when the
+        // timers started.
+        //
+        // `startTimers` confirms the user with `getUser()` and then fires every
+        // 60 seconds for as long as the page lives. The access token can expire
+        // inside any one of those gaps — reliably so on iOS WKWebView, where a
+        // backgrounded tab misses the auto-refresh window and comes back with a
+        // dead JWT. PostgREST then evaluates the call as `anon`, and
+        // `public.heartbeat()` grants EXECUTE to `authenticated` and
+        // `service_role` only, so it comes back `42501 permission denied for
+        // function heartbeat`.
+        //
+        // That is not a grant to widen: `heartbeat` is SECURITY DEFINER and
+        // writing presence for an unauthenticated caller is exactly what the
+        // missing grant is preventing (`.claude/rules/shipping.md` — never
+        // grant `anon` EXECUTE on a SECURITY DEFINER function). The call simply
+        // should not be made without a live token.
+        //
+        // `getSession()` reads local state and refreshes an expired token
+        // rather than round-tripping Auth every minute, so this is cheap and
+        // also repairs the common case instead of only detecting it. The error
+        // branch below stays as the backstop for a token that dies between
+        // this check and the RPC.
+        //
+        // Measured 2026-08-27: 10 occurrences across the two round pages in
+        // 72h, still firing. Handled correctly by this hook — it stops the
+        // timers — but `@supabase/supabase-js/tracing` reports the failed RPC
+        // to Sentry independently of our handling, so a silently-correct
+        // recovery still surfaced as a production error.
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+        if (!active || authenticatedUserId !== userId) return;
+        if (sessionError || !session?.access_token || session.user?.id !== userId) {
+          console.debug('[Presence] Skipping heartbeat — no live session for this user.');
+          authenticatedUserId = null;
+          stopTimers();
+          return;
+        }
+
         const { error } = await supabase.rpc('heartbeat');
         if (!error) return;
 

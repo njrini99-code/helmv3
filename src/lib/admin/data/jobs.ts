@@ -8,6 +8,13 @@ import {
   type CronBoardStatus,
   type CronRegistryEntry,
 } from '@/lib/admin/cron-registry';
+import {
+  SELFHEAL_STAGES,
+  classifySelfHealStage,
+  summarizeLoop,
+  type SelfHealStageRow,
+  type SelfHealLoopStatus,
+} from '@/lib/admin/selfheal-registry';
 
 export interface CronRunSummary {
   startedAt: string;
@@ -74,6 +81,13 @@ export interface JobsTab {
   integrity: IntegrityRow[];
   logHealth: LogHealth;
   inngest: InngestHealth;
+  /** The error→diagnosis→repair→closure circuit, one row per stage. Two of
+   *  its three runners live outside this deployment, so their only evidence of
+   *  life is the heartbeat row they write — see `selfheal-registry.ts`. */
+  selfHeal: SelfHealStageRow[];
+  /** The loop's worst stage, in one word. `'unknown'` when any stage's history
+   *  was unreadable — a failed read is never reported as a healthy loop. */
+  selfHealStatus: SelfHealLoopStatus;
 }
 
 interface BackgroundJobLogRow {
@@ -155,7 +169,15 @@ export async function fetchJobsTab(): Promise<JobsTab> {
   // non-alarming status) even after actually failing days earlier. 18
   // parallel queries is the documented, migration-free fix (no window-
   // function RPC — no new migrations in this batch).
-  const [jobRunsPerJob, integrityRows, adminEventsCount, errorLogsCount, jobLogsCount, inngestFaults] = await Promise.all([
+  const [
+    jobRunsPerJob,
+    integrityRows,
+    adminEventsCount,
+    errorLogsCount,
+    jobLogsCount,
+    inngestFaults,
+    selfHealRuns,
+  ] = await Promise.all([
     Promise.all(
       CRON_REGISTRY.map((entry) =>
         admin
@@ -189,6 +211,20 @@ export async function fetchJobsTab(): Promise<JobsTab> {
       .like('metadata->>errorCode', 'provider_inngest_%')
       .order('created_at', { ascending: false })
       .limit(1),
+    // One read per stage, same bounded shape as the cron board above. A stage
+    // running daily would be crowded out of any globally-ordered window by the
+    // 30-minute crons, and would then read "never-ran" — the neutral status —
+    // while actually being days overdue.
+    Promise.all(
+      SELFHEAL_STAGES.map((stage) =>
+        admin
+          .from('background_job_logs')
+          .select('job_type, status, duration_ms, error_message, started_at')
+          .eq('job_type', stage.jobType)
+          .order('started_at', { ascending: false })
+          .limit(1),
+      ),
+    ),
   ]);
 
   // FAIL LOUDLY. None of these 21 results had its `.error` inspected, so a
@@ -260,8 +296,34 @@ export async function fetchJobsTab(): Promise<JobsTab> {
       ? { status: 'rejecting', faultCode, faultLastSeenAt: openFault.created_at ?? null }
       : { status: 'activated', faultCode: null, faultLastSeenAt: null };
 
+  // Self-healing stages. A stage whose read FAILED is marked unreadable and
+  // never classified — `summarizeLoop` turns any unreadable stage into
+  // `'unknown'` for the whole loop, because a circuit you could not inspect is
+  // not a circuit you can call closed.
+  const selfHeal: SelfHealStageRow[] = SELFHEAL_STAGES.map((stage, i) => {
+    const result = selfHealRuns[i];
+    const unreadable = Boolean(result?.error);
+    const last = (result?.data?.[0] ?? null) as BackgroundJobLogRow | null;
+    return {
+      ...stage,
+      status: unreadable
+        ? 'never-ran'
+        : classifySelfHealStage(
+            stage,
+            last ? { started_at: last.started_at, status: last.status } : null,
+            now,
+          ),
+      lastRunAt: last?.started_at ?? null,
+      lastRunStatus: last?.status ?? null,
+      lastError: last?.error_message ?? null,
+      unreadable,
+    };
+  });
+
   return {
     board,
+    selfHeal,
+    selfHealStatus: summarizeLoop(selfHeal),
     /** Job types whose run history could not be read — status is UNKNOWN for
      *  these, not "never ran". Empty in the normal case. */
     unreadableJobs,
