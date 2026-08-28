@@ -59,8 +59,7 @@ function UnreadableBanner({ unreadable }: { unreadable: readonly string[] }) {
     <div className="mb-3 flex items-start gap-2 rounded-lg bg-fw-warning-bg px-3 py-2">
       <CloudOff size={14} className="mt-0.5 shrink-0 text-fw-warning-ink" aria-hidden />
       <p className="text-caption leading-5 text-fw-warning-ink">
-        Partial — could not read: {unreadable.join('; ')}. Some changes may be missing from this
-        strip.
+        Partial: {unreadable.join('; ')}. Some changes may be missing from this strip.
       </p>
     </div>
   );

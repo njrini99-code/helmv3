@@ -80,9 +80,19 @@ export interface ChangeTimelineInput {
 export interface ChangeTimelineSnapshot {
   events: ChangeEvent[];
   windowMs: number;
-  /** Sources that could not be read, so the strip can say it is partial.
-   *  Each entry is `"<source label>: <reason>"` — the reason travels with
-   *  the label rather than being dropped, per the fail-soft contract below. */
+  /**
+   * Reasons this strip may be INCOMPLETE, so it can say so rather than
+   * rendering a false all-clear. Two distinct cases share this one array,
+   * deliberately: a source that could not be read at all (rejected or
+   * returned a non-`ok` envelope), and a source that WAS read but only
+   * partially (`AdminFetchResult.truncated`, or the deploy page having
+   * possibly been clipped before reaching the window edge — see
+   * `deploymentWindowMayBeIncomplete`). Both mean the same thing to an
+   * operator — "do not trust this strip as the full story" — even though
+   * only the first is literally "unreadable". Each entry is
+   * `"<source label>: <reason>"`, so the reason travels with the label
+   * rather than being dropped, per the fail-soft contract below.
+   */
   unreadable: string[];
   /**
    * True when more incidents fell inside the window than
@@ -541,19 +551,75 @@ export function buildChangeTimeline(input: ChangeTimelineInput): ChangeEvent[] {
  *  here is defense in depth: every reader this module calls already catches
  *  internally and returns a `failed()` envelope, but a second boundary costs
  *  nothing and this module's whole reason for existing is to not be the
- *  place a silent gap gets introduced. */
+ *  place a silent gap gets introduced.
+ *
+ *  A successful-but-`truncated` envelope (`fetchWorkLog` past
+ *  `GITHUB_PR_FETCH_LIMIT`, `fetchResolutionArchive` past
+ *  `RESOLUTION_ROW_CEILING`) is NOT treated as a full read either: `data` is
+ *  still returned and used, but a note is recorded too, because "the most
+ *  recent page" quietly stops covering the strip's `windowMs` the moment the
+ *  source has more history than one page holds — the same honesty gap a
+ *  dropped rejection reason would leave, just from the other end of a
+ *  paginated read. */
 async function readSource<T>(
   label: string,
   run: () => Promise<AdminFetchResult<T>>,
 ): Promise<{ data: T | null; note: string | null }> {
   try {
     const res = await run();
-    if (res.status === 'ok') return { data: res.data, note: null };
+    if (res.status === 'ok') {
+      const note = res.truncated
+        ? `${label}: only the most recent page was read — older history in the window may be missing`
+        : null;
+      return { data: res.data, note };
+    }
     const status: AdminFetchStatus = res.status;
     return { data: null, note: `${label}: ${res.error ?? status}` };
   } catch (err) {
     return { data: null, note: `${label}: ${err instanceof Error ? err.message : String(err)}` };
   }
+}
+
+/**
+ * How many deployments to request per refresh.
+ *
+ * `fetchVercelDeployments` has no server-side `target` filter — it returns
+ * the N most recent deployments of ANY target, and `buildDeployEvents`
+ * filters to `target === 'production'` afterward, same as every other
+ * consumer of this reader (`release-ledger.ts`, `ben-leah-issue-tracker.ts`).
+ * At the OLD default of 20, a burst of preview deploys (every open PR's
+ * Vercel preview counts) can fill the whole page and push every production
+ * deploy in a 72-hour window out of it entirely — the request still comes
+ * back `ok`, `deployments` is non-empty, nothing lands in `unreadable`, and
+ * the strip would render an honest-LOOKING "no deploys" that is actually
+ * "no deploys in the 20 most recent PREVIEWS". 100 does not eliminate that
+ * risk, only lowers it; `deploymentWindowMayBeIncomplete` below is the
+ * mechanical check that catches it regardless of how high this number is.
+ */
+const DEPLOY_FETCH_LIMIT = 100;
+
+/**
+ * Whether the fetched deployment page might have been cut off before
+ * reaching back to `now - windowMs` — the same "hit our own ceiling, not a
+ * drained source" reasoning `resolutions.ts`'s `isTruncated` uses, applied
+ * here because `fetchVercelDeployments` exposes no total count to compare
+ * against.
+ *
+ * The page filled (`length === requestedLimit`) AND the OLDEST row we got
+ * is still inside the window: both must hold, because a full page whose
+ * oldest row already falls outside the window proves the window is fully
+ * covered regardless of how many more (older, out-of-window) deployments
+ * exist beyond it.
+ */
+function deploymentWindowMayBeIncomplete(
+  deployments: readonly VercelDeployment[],
+  requestedLimit: number,
+  now: number,
+  windowMs: number,
+): boolean {
+  if (deployments.length < requestedLimit) return false;
+  const oldestCreatedAt = Math.min(...deployments.map((d) => d.createdAt));
+  return oldestCreatedAt >= now - windowMs;
 }
 
 /**
@@ -563,7 +629,14 @@ async function readSource<T>(
  * `incidents` is not fetched here — it is the caller's already-assembled
  * unified incident board (see `fetchIncidentBoard`), passed in so this
  * module never re-derives it and cannot disagree with what the Incidents
- * tab is showing at the same moment.
+ * tab is showing at the same moment. WIRING REQUIREMENT ON THE CALLER: that
+ * board must itself already cover at least `windowMs` (e.g. built with a
+ * `windowHours` at or above this strip's window). If the caller's board is
+ * narrower, `incident-first-seen` and `analysis` events silently stop as of
+ * the CALLER's shorter horizon while this strip's own copy still claims
+ * `windowMs` — this function has no way to detect that mismatch from
+ * `incidents` alone, because a short list is indistinguishable from a
+ * genuinely quiet one.
  */
 export async function fetchChangeTimeline(
   incidents: readonly UnifiedIncident[],
@@ -571,7 +644,7 @@ export async function fetchChangeTimeline(
   now: number = Date.now(),
 ): Promise<AdminFetchResult<ChangeTimelineSnapshot>> {
   const [deployRes, prRes, resolutionRes] = await Promise.all([
-    readSource('Vercel deployments', () => fetchVercelDeployments()),
+    readSource('Vercel deployments', () => fetchVercelDeployments(DEPLOY_FETCH_LIMIT)),
     readSource('GitHub pull requests', () => fetchWorkLog()),
     readSource('resolution archive', () => fetchResolutionArchive()),
   ]);
@@ -579,6 +652,15 @@ export async function fetchChangeTimeline(
   const unreadable = [deployRes.note, prRes.note, resolutionRes.note].filter(
     (n): n is string => n !== null,
   );
+
+  if (
+    deployRes.data &&
+    deploymentWindowMayBeIncomplete(deployRes.data, DEPLOY_FETCH_LIMIT, now, windowMs)
+  ) {
+    unreadable.push(
+      `Vercel deployments: the ${DEPLOY_FETCH_LIMIT} most recent deployments (any target) were all still inside the window — older production deploys in this window may be missing`,
+    );
+  }
 
   const events = buildChangeTimeline({
     deployments: deployRes.data,
