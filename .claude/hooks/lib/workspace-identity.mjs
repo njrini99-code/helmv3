@@ -237,13 +237,21 @@ export function hasUnsafeUpstream(identity) {
 //   node workspace-identity.mjs --active-root
 //   node workspace-identity.mjs --canonical-root
 //   node workspace-identity.mjs --kind
-//   node workspace-identity.mjs --json
+//   node workspace-identity.mjs --json            (roots only)
+//   node workspace-identity.mjs --identity-json   (full identity)
 //
 // `--cwd <dir>` supplies the payload cwd a hook would have passed.
 // ---------------------------------------------------------------------------
 function runCli(argv) {
   const cwdFlag = argv.indexOf('--cwd');
   const input = cwdFlag !== -1 && argv[cwdFlag + 1] ? { cwd: argv[cwdFlag + 1] } : {};
+  // FULL identity — every field workspaceIdentity() owns, including the
+  // integration distance. Separate flag on purpose: `--json` has meant the
+  // roots-only result since Phase 4, and that boundary is what lets a consumer
+  // ask "where am I" without paying for (or inheriting) trunk-distance
+  // semantics. Serialises the authority; computes nothing itself.
+  if (argv.includes('--identity-json')) return JSON.stringify(workspaceIdentity(input));
+
   const r = workspaceRoots(input);
   if (argv.includes('--json')) return JSON.stringify(r);
   if (argv.includes('--canonical-root')) return r.canonicalRoot;
