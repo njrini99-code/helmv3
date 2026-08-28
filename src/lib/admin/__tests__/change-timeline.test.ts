@@ -17,6 +17,7 @@ import {
   INCIDENT_EVENT_CAP,
   type ChangeTimelineInput,
 } from '@/lib/admin/data/change-timeline';
+import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import type { UnifiedIncident, IncidentAnalysis } from '@/lib/admin/incidents/types';
 import type { VercelDeployment } from '@/lib/admin/vercel-api';
 import type { WorkLogEntry } from '@/lib/admin/github-pr-timeline';
@@ -342,3 +343,22 @@ function mixedFixture(): ChangeTimelineInput {
     resolutions: [makeResolution({ fingerprint: 'fp-crash', resolvedAt: hoursAgo(1), resolutionSource: 'auto' })],
   });
 }
+
+describe('the timeline window and the incident board window must agree', () => {
+  /**
+   * `fetchChangeTimeline` renders incident-first-seen and analysis events from
+   * whatever board its caller passes, but labels the strip with its OWN window.
+   * If the board's window is the narrower of the two, those events stop early
+   * while the copy still claims the full window — a strip that looks complete
+   * and is not.
+   *
+   * The Overview passes `cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS)`,
+   * so today the two agree exactly. Nothing structural enforces that: they are
+   * two constants in two modules, and this test is what stops them drifting
+   * apart silently. If you change one, change the other or pass an explicit
+   * window at the call site.
+   */
+  it('DEFAULT_WINDOW_MS is exactly DEFAULT_INCIDENT_WINDOW_HOURS', () => {
+    expect(DEFAULT_WINDOW_MS).toBe(DEFAULT_INCIDENT_WINDOW_HOURS * 60 * 60 * 1000);
+  });
+});
