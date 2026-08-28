@@ -776,6 +776,35 @@ export async function fetchIncidentBoard(
 }
 
 /**
+ * One incident, by the id the detail route carries.
+ *
+ * WIDER WINDOW THAN THE LIST, on purpose. The board defaults to 72 hours
+ * because that is the useful triage horizon; a detail page is reached from a
+ * link, a bookmark, an RCA row or a repair PR body, and those outlive the
+ * window by a long way. Opening a link and being told the incident does not
+ * exist — when what actually happened is that it stopped firing four days ago
+ * — is the failure this wider default prevents.
+ *
+ * Matches on the incident id OR on any fingerprint it folded, because the
+ * stored links predate correlation: an `rca_analysis` row and a repair PR both
+ * address a BARE fingerprint, which may now be one of several behind a single
+ * unified incident. Returning null for such a link would silently break every
+ * artefact the self-healing loop has already written.
+ */
+export async function fetchIncidentById(
+  id: string,
+  windowHours = 168,
+): Promise<{ incident: UnifiedIncident; board: IncidentBoard } | null> {
+  const board = await fetchIncidentBoard({ windowHours });
+  const incident =
+    board.incidents.find((i) => i.id === id) ??
+    board.incidents.find((i) => i.appFingerprints.includes(id)) ??
+    board.incidents.find((i) => i.reliabilitySignatures.includes(id.replace(/^rel:/, ''))) ??
+    null;
+  return incident ? { incident, board } : null;
+}
+
+/**
  * Per-request memoised DEFAULT-WINDOW board.
  *
  * Takes a PRIMITIVE, and that is the entire point: React's `cache()` keys on
