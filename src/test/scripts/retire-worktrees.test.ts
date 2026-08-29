@@ -194,3 +194,84 @@ describe('retire-worktrees — what it allows', () => {
     expect(git(['worktree', 'list'], canonical)).toContain(wt);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WT — "could not ask" is not "asked and found none".
+//
+// Observed live 2026-08-28: `gh pr list` uses GraphQL, which in this sandbox
+// fails with
+//
+//     Post "https://api.github.com/graphql": tls: failed to verify certificate
+//
+// while `gh api` (REST) resolves the same PR fine. The tool discards that with
+// `2>/dev/null`, reads empty stdout, and prints
+//
+//     "no PR found — cannot prove the work landed"
+//
+// for SEVEN worktrees, four of which were provably merged. The direction is
+// safe — everything is KEPT — but the sentence is false, and an operator
+// reading it concludes the branches were never merged rather than that the
+// query never ran.
+//
+// This is the same unknown-vs-none conflation #1660 fixed in fetch.ts, sitting
+// in the tool built to enforce that discipline.
+// ---------------------------------------------------------------------------
+
+/** A lookup stub that FAILS rather than answering. */
+function writeFailingStub(message: string, exitCode = 1) {
+  writeFileSync(stub, `#!/usr/bin/env bash\necho "${message}" >&2\nexit ${exitCode}\n`);
+  chmodSync(stub, 0o755);
+}
+
+describe('retire-worktrees — a failed lookup is UNKNOWN, never "no PR"', () => {
+  it('a SUCCESSFUL empty lookup still reads as "no PR found"', () => {
+    // The honest negative: gh answered, and there is genuinely no PR.
+    const wt = join(tmp, 'nopr-success');
+    git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/nopr-success', wt, 'HEAD'], canonical);
+    writePrStub({}); // exits 0, prints nothing
+
+    const v = verdict(run(), 'agent/nopr-success');
+    expect(v).toContain('KEEP');
+    expect(v).toMatch(/no PR found/);
+  });
+
+  it('a FAILED lookup does NOT claim there is no PR', () => {
+    // The bug. Today this prints the identical "no PR found" sentence.
+    const wt = join(tmp, 'lookup-failed');
+    git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/lookup-failed', wt, 'HEAD'], canonical);
+    writeFailingStub('tls: failed to verify certificate: x509: OSStatus -26276');
+
+    const v = verdict(run(), 'agent/lookup-failed');
+    expect(v).toContain('KEEP');
+    expect(v).not.toMatch(/no PR found/);
+    expect(v).toMatch(/unreadable|could not|UNKNOWN/i);
+  });
+
+  it('the two outcomes are DISTINGUISHABLE in the report', () => {
+    // The property that actually matters: an operator must be able to tell
+    // "nothing to retire" from "I could not find out".
+    const a = join(tmp, 'distinct-none');
+    const b = join(tmp, 'distinct-unknown');
+    git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/distinct-none', a, 'HEAD'], canonical);
+    writePrStub({});
+    const noneLine = verdict(run(), 'agent/distinct-none');
+
+    git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/distinct-unknown', b, 'HEAD'], canonical);
+    writeFailingStub('network unreachable');
+    const unknownLine = verdict(run(), 'agent/distinct-unknown');
+
+    const reason = (line: string) => line.replace(/^\S+\s+\S+\s+\S+\s+/, '').trim();
+    expect(reason(noneLine)).not.toBe(reason(unknownLine));
+  });
+
+  it('an unreadable lookup never makes a worktree RETIRABLE', () => {
+    // Fail-safe direction, pinned independently of the wording.
+    const wt = join(tmp, 'unknown-not-retirable');
+    git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/unknown-not-retirable', wt, 'HEAD'], canonical);
+    writeFailingStub('boom');
+
+    const out = run();
+    expect(verdict(out, 'agent/unknown-not-retirable')).not.toContain('RETIRABLE');
+    expect(out).toContain('Nothing retirable.');
+  });
+});
