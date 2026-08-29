@@ -37,10 +37,32 @@ been retired.
 
 ## Migrations are additive
 
-One shared production database serves Golf, Baseball and Lift Lab. `DROP TABLE`,
-`TRUNCATE`, and unqualified `DELETE FROM` are blocked by a PreToolUse hook on
-both the file-write and MCP paths. That is deliberate — if a destructive change
-is genuinely needed, the owner does it by hand where the blast radius is visible.
+One shared production database serves Golf, Baseball and Lift Lab, and there is
+no staging copy.
+
+**Destructive SQL is UNENFORCED. Treat it that way.** `DROP TABLE`, `TRUNCATE`
+and unqualified `DELETE FROM` are stopped by nothing on either the file-write
+path or the MCP `execute_sql` path. `guard-sql.sh` was deleted 2026-08-27 and
+had been unwired before that. `docs/CONTROL_PLANE_ENFORCEMENT.md` resolves this
+claim against live configuration on every regeneration — read it there rather
+than trusting this paragraph.
+
+This line used to say the opposite: that those statements were "blocked by a
+PreToolUse hook on both the file-write and MCP paths". That was false on both
+paths, and the only PreToolUse hook in the repo says in its own header that it
+"does not look at branch names, file names, features or prompts — it compares
+two absolute paths."
+
+**The false version escaped this repo.** `~/.claude/settings.json`'s autoMode
+environment block repeats it as *"DROP TABLE / TRUNCATE / unqualified DELETE
+are blocked by a PreToolUse hook **per repo docs**"* — sourced from here, and
+now informing permission decisions across every project on the machine. That
+file is user-global and outside this project's mutation boundary, so it is NOT
+corrected here. Repo claim: corrected. User-global copy: still stale.
+
+What actually protects the database is that a destructive change is the owner's
+to make by hand, where the blast radius is visible. That is a convention, not a
+mechanism, and the difference is the whole point of this section.
 
 ## Grants: anon is the unauthenticated role
 
