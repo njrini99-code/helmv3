@@ -73,6 +73,37 @@ function severityFromSentryLevel(level: string): ReliabilitySeverity {
  * therefore about deploy/build health, not runtime exceptions — see its note.
  */
 /**
+ * Occurrences inside the window, from the issue's own 24h buckets — or `null`
+ * when that cannot be established.
+ *
+ * No extra request: the issue-list call already sends `statsPeriod=24h` and
+ * the response already carries `stats['24h']` as `[epochSeconds, count]`
+ * pairs. The collection window is four hours, comfortably inside that range.
+ *
+ * `null` means UNKNOWN, and the caller must not substitute either the lifetime
+ * count (the bug this closes) or zero (a different lie: the issue is only in
+ * this collection because `lastSeen` proves it fired inside the window).
+ */
+function windowOccurrences(
+  buckets: ReadonlyArray<readonly [number, number]> | undefined,
+  windowStartIso: string,
+): number | null {
+  if (!buckets || buckets.length === 0) return null;
+  const startMs = Date.parse(windowStartIso);
+  if (!Number.isFinite(startMs)) return null;
+  const startSec = startMs / 1000;
+  let total = 0;
+  let sawBucket = false;
+  for (const bucket of buckets) {
+    const [ts, n] = bucket;
+    if (!Number.isFinite(ts) || !Number.isFinite(n)) continue;
+    sawBucket = true;
+    if (ts >= startSec) total += n;
+  }
+  return sawBucket ? total : null;
+}
+
+/**
  * Is `whenIso` at or after the window start?
  *
  * Unparseable or missing timestamps return TRUE — inside. This is a collection
@@ -105,20 +136,26 @@ export async function collectSentry(windowStartIso: string): Promise<SourceResul
   // would quietly shrink the board.
   const inWindow = (res.data ?? []).filter((issue) => windowInclusive(issue.lastSeen, windowStartIso));
 
-  const signals: RawSignal[] = inWindow.map((issue) => ({
+  const signals: RawSignal[] = inWindow.map((issue) => {
+    const windowed = windowOccurrences(issue.stats24h, windowStartIso);
+    return {
     source: 'sentry' as const,
     severity: severityFromSentryLevel(issue.level),
     title: issue.title,
     message: issue.culprit ? `${issue.title} — ${issue.culprit}` : issue.title,
     route: issue.culprit,
     errorCode: null,
-    count: issue.count,
+    // NEVER issue.count — that is the issue's LIFETIME total, and this row is
+    // filed under a four-hour window. See `windowOccurrences`.
+    count: windowed ?? 1,
+    countBasis: windowed === null ? ('unknown' as const) : ('window' as const),
     firstSeen: issue.firstSeen,
     lastSeen: issue.lastSeen,
     // The permalink IS the evidence reference — an operator pivots to Sentry
     // for the payload, so no raw event body needs copying into our row.
     evidenceRef: issue.permalink,
-  }));
+    };
+  });
 
   return {
     source: 'sentry',
@@ -211,6 +248,7 @@ export async function collectSupabase(windowStartIso: string): Promise<SourceRes
         route: row.url ?? null,
         errorCode: readErrorCode(row.metadata),
         count: 1,
+        countBasis: 'window' as const,
         firstSeen: occurredAt,
         lastSeen: occurredAt,
         evidenceRef: row.fingerprint ?? row.id,
@@ -289,6 +327,7 @@ export async function collectVercel(windowStartIso: string): Promise<SourceResul
       route: null,
       errorCode: `vercel_${deploy.state.toLowerCase()}`,
       count: 1,
+      countBasis: 'window' as const,
       firstSeen: when,
       lastSeen: when,
       evidenceRef: deploy.uid,
