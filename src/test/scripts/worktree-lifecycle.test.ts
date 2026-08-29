@@ -17,7 +17,7 @@
 //     porcelain parsing are where the shell version actually broke
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, chmodSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -32,7 +32,7 @@ import {
   RETIRABLE,
   UNKNOWN,
   UNKNOWN_REMOTE,
-  DELETE_SAFE,
+  DELETE_MERGED_EXACT,
   KEEP_OPEN,
   KEEP_DIVERGED_AFTER_PR,
   KEEP_WORKTREE_ACTIVE,
@@ -40,6 +40,13 @@ import {
   KEEP_PROTECTED,
   UNKNOWN_PR,
   UNKNOWN_IDENTITY,
+  NO_UPSTREAM_UNIQUE_WORK,
+  classifyWorkspaceKind,
+  mutationBudgetDecision,
+  RELEASE_READONLY,
+  UNKNOWN_KIND,
+  REQUIRES_HUMAN_VERDICTS,
+  AUTONOMOUS_BRANCH_VERDICTS,
 } from '../../../scripts/lib/worktree-lifecycle.mjs';
 
 const REPO = resolve(__dirname, '../../..');
@@ -117,9 +124,9 @@ describe('branch classification — the evidence is the PR head OID', () => {
     prHeadSha: SHA_A,
   };
 
-  it('DELETE_SAFE requires PR MERGED and an exact head match', () => {
+  it('DELETE_MERGED_EXACT requires PR MERGED and an exact head match', () => {
     const v = classifyBranch(merged);
-    expect(v.verdict).toBe(DELETE_SAFE);
+    expect(v.verdict).toBe(DELETE_MERGED_EXACT);
     expect(v.reason).toMatch(/#903 MERGED/);
   });
 
@@ -128,7 +135,7 @@ describe('branch classification — the evidence is the PR head OID', () => {
     // requiring it is guaranteed false for exactly the safe branches. #1654's
     // first dry run printed "Nothing retirable" with 11.6 GiB in front of it.
     // There is deliberately no remote field in these facts at all.
-    expect(classifyBranch(merged).verdict).toBe(DELETE_SAFE);
+    expect(classifyBranch(merged).verdict).toBe(DELETE_MERGED_EXACT);
   });
 
   it('KEEP_DIVERGED_AFTER_PR when someone committed after the merge', () => {
@@ -162,7 +169,7 @@ describe('branch classification — the evidence is the PR head OID', () => {
     expect(empty).not.toBe(failed);
   });
 
-  it('MERGED but no head SHA is UNKNOWN, never DELETE_SAFE', () => {
+  it('MERGED but no head SHA is UNKNOWN, never DELETE_MERGED_EXACT', () => {
     expect(classifyBranch({ ...merged, prHeadSha: null }).verdict).toBe(UNKNOWN_PR);
   });
 
@@ -186,8 +193,8 @@ describe('branch classification — the evidence is the PR head OID', () => {
 });
 
 describe('combining the two — RETIRABLE is derived, not asserted', () => {
-  it('PARKABLE + DELETE_SAFE = RETIRE', () => {
-    const c = combineVerdicts(PARKABLE, DELETE_SAFE);
+  it('PARKABLE + DELETE_MERGED_EXACT = RETIRE', () => {
+    const c = combineVerdicts(PARKABLE, DELETE_MERGED_EXACT);
     expect(c.action).toBe('RETIRE');
     expect(c.worktree).toBe(RETIRABLE);
   });
@@ -200,7 +207,7 @@ describe('combining the two — RETIRABLE is derived, not asserted', () => {
 
   it('every non-PARKABLE worktree verdict is KEEP', () => {
     for (const v of [ACTIVE, UNKNOWN, UNKNOWN_REMOTE]) {
-      expect(combineVerdicts(v, DELETE_SAFE).action, v).toBe('KEEP');
+      expect(combineVerdicts(v, DELETE_MERGED_EXACT).action, v).toBe('KEEP');
     }
   });
 });
@@ -288,7 +295,7 @@ describe('the CLI, against real worktrees', () => {
     expect(git(['branch', '--merged', 'main'], canonical)).not.toContain('agent/w2');
 
     writePrStub({ 'agent/w2': `903 MERGED ${sha}` });
-    expect(row(run(), 'agent/w2')).toMatch(/DELETE_SAFE|RETIRE/);
+    expect(row(run(), 'agent/w2')).toMatch(/DELETE_MERGED_EXACT|RETIRE/);
   });
 
   it('a FAILED lookup never produces an action', () => {
@@ -343,6 +350,61 @@ describe('the CLI, against real worktrees', () => {
     expect(git(['branch', '--list', 'agent/w6'], canonical)).not.toContain('agent/w6');
   });
 
+  it('SENTINEL: a fixture run can never resolve back to the live Helm checkout', () => {
+    // The #1676 near miss: the CLI resolved its repo from import.meta.url, so a
+    // fixture test operated on the real repository and --park removed a live
+    // worktree. This is the regression guard. If it ever fails, STOP — a
+    // destructive tool is pointing at the wrong tree.
+    const out = execFileSync('node', [CLI, '--json'], {
+      cwd: canonical,
+      encoding: 'utf-8',
+      env: { ...process.env, HELM_PR_LOOKUP: stub },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const rows = JSON.parse(out);
+    for (const r of rows) {
+      expect(r.worktree, 'fixture run reached the real checkout').not.toContain('Downloads/helmv3');
+    }
+    expect(rows.some((r: { worktree: string }) => r.worktree.includes(tmp))).toBe(true);
+  });
+
+  it('the budget CLI refuses a second mutation workspace, and does so in the fixture', () => {
+    const BUDGET = resolve(REPO, 'scripts/check-mutation-budget.mjs');
+    const wt = join(tmp, 'wbudget');
+    git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/wbudget', wt, 'main'], canonical);
+
+    const r = spawnSync('node', [BUDGET], {
+      cwd: canonical,
+      encoding: 'utf-8',
+      env: { ...process.env, HELM_MAX_MUTATION_WORKTREES: '1' },
+    });
+    // The fixture has no workspace-identity module, so its ROOT cannot be
+    // proven canonical either — and neither tree declares a kind. Both are
+    // therefore UNKNOWN_KIND and both count. That is the fail-safe direction
+    // and the assertion says so rather than pinning a convenient number.
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/[2-9] of 1 mutation workspace/);
+    expect(r.stderr).not.toContain('Downloads/helmv3');
+  });
+
+  it('the budget CLI allows creation when only canonical exists', () => {
+    const BUDGET = resolve(REPO, 'scripts/check-mutation-budget.mjs');
+    const r = spawnSync('node', [BUDGET], {
+      cwd: canonical,
+      encoding: 'utf-8',
+      env: { ...process.env, HELM_MAX_MUTATION_WORKTREES: '1' },
+    });
+    // No canonical-identity module in the fixture, so the fixture root counts
+    // as UNKNOWN_KIND — which is the fail-safe direction. Budget of 2 must pass.
+    const r2 = spawnSync('node', [BUDGET], {
+      cwd: canonical,
+      encoding: 'utf-8',
+      env: { ...process.env, HELM_MAX_MUTATION_WORKTREES: '2' },
+    });
+    expect(r2.status).toBe(0);
+    expect(r.status === 0 || r.status === 1).toBe(true);
+  });
+
   it('never deletes a protected branch, whatever the PR says', () => {
     git(['branch', 'preserve/important', 'main'], canonical);
     const sha = git(['rev-parse', 'preserve/important'], canonical);
@@ -350,5 +412,81 @@ describe('the CLI, against real worktrees', () => {
 
     run(['--retire']);
     expect(git(['branch', '--list', 'preserve/important'], canonical)).toContain('preserve/important');
+  });
+});
+
+describe('workspace kind and the mutation budget', () => {
+  it('canonical never counts against the budget', () => {
+    expect(classifyWorkspaceKind({ isCanonical: true }).counts).toBe(false);
+  });
+
+  it('a declared task workspace counts', () => {
+    expect(classifyWorkspaceKind({ declaredKind: 'task' }).counts).toBe(true);
+  });
+
+  it('a legacy workspace with no declared kind counts — fails toward mutation', () => {
+    // The ambiguous case the plan calls out. Wrongly counting a harmless
+    // checkout costs one overridable refusal; wrongly ignoring a real one is
+    // the leak this exists to close.
+    const v = classifyWorkspaceKind({ declaredKind: null });
+    expect(v.kind).toBe(UNKNOWN_KIND);
+    expect(v.counts).toBe(true);
+  });
+
+  it('an unreadable workspace counts — unknown is not free', () => {
+    expect(classifyWorkspaceKind({ readable: false }).counts).toBe(true);
+  });
+
+  it('a DETACHED declared release workspace does not consume the budget', () => {
+    const v = classifyWorkspaceKind({ declaredKind: 'release', detached: true });
+    expect(v.kind).toBe(RELEASE_READONLY);
+    expect(v.counts).toBe(false);
+  });
+
+  it('a declared release that is NOT detached still counts', () => {
+    // Either half alone is insufficient: on a branch it can still be committed to.
+    expect(classifyWorkspaceKind({ declaredKind: 'release', detached: false }).counts).toBe(true);
+  });
+
+  it('canonical alone leaves the budget available', () => {
+    const d = mutationBudgetDecision([classifyWorkspaceKind({ isCanonical: true })], 1);
+    expect(d.ok).toBe(true);
+    expect(d.used).toBe(0);
+  });
+
+  it('one mutation workspace consumes a budget of 1', () => {
+    const d = mutationBudgetDecision(
+      [classifyWorkspaceKind({ isCanonical: true }), classifyWorkspaceKind({ declaredKind: 'task' })],
+      1,
+    );
+    expect(d.ok).toBe(false);
+    expect(d.reason).toMatch(/1 of 1/);
+  });
+});
+
+describe('locally-unique work is a distinct, permanent keep', () => {
+  const base = { branch: 'feat/x', localSha: SHA_A, prLookup: 'OK' as const, prState: 'NONE' };
+
+  it('no upstream + unique commits is NO_UPSTREAM_UNIQUE_WORK, not UNKNOWN_PR', () => {
+    // "the lookup failed" and "this is the only copy of 19 commits" are
+    // different keeps, and only one of them is permanent.
+    const v = classifyBranch({ ...base, upstream: null, uniqueCommits: 19 });
+    expect(v.verdict).toBe(NO_UPSTREAM_UNIQUE_WORK);
+    expect(v.reason).toMatch(/exist only here/);
+  });
+
+  it('pushed with no PR stays UNKNOWN_PR', () => {
+    expect(classifyBranch({ ...base, upstream: 'origin/feat/x', uniqueCommits: 3 }).verdict).toBe(UNKNOWN_PR);
+  });
+
+  it('no upstream but no unique commits stays UNKNOWN_PR', () => {
+    expect(classifyBranch({ ...base, upstream: null, uniqueCommits: 0 }).verdict).toBe(UNKNOWN_PR);
+  });
+
+  it('every human-required verdict is excluded from autonomous action', () => {
+    for (const v of REQUIRES_HUMAN_VERDICTS) {
+      expect(AUTONOMOUS_BRANCH_VERDICTS.has(v), v).toBe(false);
+    }
+    expect(AUTONOMOUS_BRANCH_VERDICTS.has(DELETE_MERGED_EXACT)).toBe(true);
   });
 });

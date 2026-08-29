@@ -4,8 +4,8 @@
  *
  *   scripts/worktree-lifecycle.mjs                 report only (default)
  *   scripts/worktree-lifecycle.mjs --park          remove PARKABLE checkouts, keep branches
- *   scripts/worktree-lifecycle.mjs --retire        PARK + delete DELETE_SAFE branches
- *   scripts/worktree-lifecycle.mjs --gc-branches   delete DELETE_SAFE branches only
+ *   scripts/worktree-lifecycle.mjs --retire        PARK + delete DELETE_MERGED_EXACT branches
+ *   scripts/worktree-lifecycle.mjs --gc-branches   delete DELETE_MERGED_EXACT branches only
  *   scripts/worktree-lifecycle.mjs --json          machine-readable report
  *
  * This gathers facts. scripts/lib/worktree-lifecycle.mjs decides. The split is
@@ -17,7 +17,7 @@
  *
  * STANDING OWNER AUTHORIZATION, 2026-08-29: an agent may run --park and
  * --retire without asking for rows the tool itself verdicts PARKABLE /
- * DELETE_SAFE, and should do it in the same step that merges a PR. Anything
+ * DELETE_MERGED_EXACT, and should do it in the same step that merges a PR. Anything
  * the tool declines — every KEEP_* and UNKNOWN_* — still needs a human.
  *
  * WHY BRANCH DELETION NEEDS `-D`
@@ -36,8 +36,9 @@ import {
   classifyWorktree,
   classifyBranch,
   combineVerdicts,
-  DELETE_SAFE,
+  DELETE_MERGED_EXACT,
   PARKABLE,
+  REQUIRES_HUMAN_VERDICTS,
 } from './lib/worktree-lifecycle.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -158,6 +159,16 @@ function worktrees() {
   return out;
 }
 
+/** Commits on this branch that are not on the integration trunk. */
+function uniqueCommits(branch) {
+  const n = git(['rev-list', '--count', `origin/main..${branch}`]);
+  if (n === null) {
+    const n2 = git(['rev-list', '--count', `main..${branch}`]);
+    return n2 === null ? null : Number(n2);
+  }
+  return Number(n);
+}
+
 function dirtyCount(path) {
   const s = git(['status', '--porcelain'], { cwd: path });
   if (s === null) return null;
@@ -226,6 +237,8 @@ for (const w of wts) {
         // the branch be deletable once the checkout is gone" — passing the tree
         // would always answer KEEP_WORKTREE_ACTIVE and RETIRE would be
         // unreachable for every worktree, forever.
+        upstream,
+        uniqueCommits: uniqueCommits(w.branch),
         prLookup: pr.lookup,
         prNumber: pr.number ?? null,
         prState: pr.state ?? null,
@@ -270,6 +283,8 @@ for (const b of allBranches) {
   const bv = classifyBranch({
     branch: b,
     localSha,
+    upstream,
+    uniqueCommits: uniqueCommits(b),
     prLookup: pr.lookup,
     prNumber: pr.number ?? null,
     prState: pr.state ?? null,
@@ -292,7 +307,7 @@ for (const b of allBranches) {
     tipMatchesPr: pr.headSha ? (pr.headSha === localSha ? 'yes' : 'no') : '-',
     worktreeVerdict: '-',
     branchVerdict: bv.verdict,
-    action: bv.verdict === DELETE_SAFE ? 'DELETE_BRANCH' : 'KEEP',
+    action: bv.verdict === DELETE_MERGED_EXACT ? 'DELETE_BRANCH' : 'KEEP',
     reason: bv.reason,
   });
 }
@@ -318,13 +333,22 @@ for (const r of rows) {
 }
 
 const parkable = rows.filter((r) => r.kind === 'worktree' && (r.action === 'PARK' || r.action === 'RETIRE'));
-const deletable = rows.filter((r) => r.branchVerdict === DELETE_SAFE && r.worktree === 'none');
+const deletable = rows.filter((r) => r.branchVerdict === DELETE_MERGED_EXACT && r.worktree === 'none');
 const unknowns = rows.filter((r) => String(r.branchVerdict).startsWith('UNKNOWN') || String(r.worktreeVerdict).startsWith('UNKNOWN'));
 
 console.log('');
-console.log(`  ${parkable.length} worktree(s) parkable/retirable · ${deletable.length} branch(es) DELETE_SAFE · ${unknowns.length} row(s) UNKNOWN`);
+console.log(`  ${parkable.length} worktree(s) parkable/retirable · ${deletable.length} branch(es) DELETE_MERGED_EXACT · ${unknowns.length} row(s) UNKNOWN`);
 if (unknowns.length) {
   console.log('  UNKNOWN means evidence was unavailable. It is never a licence to remove anything.');
+}
+
+const humanRows = rows.filter((r) => REQUIRES_HUMAN_VERDICTS.has(r.branchVerdict));
+if (humanRows.length) {
+  console.log('');
+  console.log('  STANDING AUTHORIZATION covers ONLY DELETE_MERGED_EXACT and PARKABLE.');
+  console.log(`  ${humanRows.length} row(s) carry a verdict that requires a human and will never be`);
+  console.log('  acted on automatically — including NO_UPSTREAM_UNIQUE_WORK, which is the');
+  console.log('  only copy of real commits.');
 }
 
 if (!PARK && !GC) {
@@ -351,7 +375,7 @@ if (GC) {
   // Re-derive after parking: a branch whose worktree just went away becomes
   // eligible, and one whose removal was refused must not be.
   const stillHeld = new Set(worktrees().map((w) => w.branch).filter(Boolean));
-  const targets = rows.filter((r) => r.branchVerdict === DELETE_SAFE && !stillHeld.has(r.branch));
+  const targets = rows.filter((r) => r.branchVerdict === DELETE_MERGED_EXACT && !stillHeld.has(r.branch));
   for (const r of targets) {
     // Re-verify the exact head match immediately before deleting. The report
     // may be seconds old; the deletion is not reversible from here.

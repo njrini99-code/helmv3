@@ -426,7 +426,27 @@ function renderHooksBody(hooks) {
   ].join('\n');
 }
 
-async function main() {
+/**
+ * Write, or in --check mode compare and record drift. A verification command
+ * must NOT rewrite the tree it is checking: the previous architecture ran the
+ * mutating regen and then diffed, which means the only way to learn the docs
+ * were stale was to have already changed them. That also made the check unusable
+ * as a PR gate, which is why a bot opened a FOLLOW-UP PR instead — and a
+ * follow-up PR is `created != integrated`, the same class of control that this
+ * repo keeps discovering does not actually run. #1623 sat open for exactly that
+ * reason while main carried a stale inventory.
+ */
+async function emit(path, next, check, drift) {
+  if (!check) {
+    await writeFile(path, next);
+    return;
+  }
+  const current = await readFile(path, 'utf8').catch(() => null);
+  if (current !== next) drift.push({ path, current, next });
+}
+
+async function main({ check = false } = {}) {
+  const drift = [];
   console.log('Regenerating inventory docs…');
 
   const [{ tables, views, functions, enums }, routes, actions, hooks] =
@@ -445,22 +465,51 @@ async function main() {
     renderTablesBody({ tables, views, functions }),
   );
   glossary = replaceManagedBlock(glossary, 'enums', renderEnumsBody(enums));
-  await writeFile(GLOSSARY, glossary);
+  await emit(GLOSSARY, glossary, check, drift);
 
   let project = await readFile(PROJECT_DOC, 'utf8');
   project = replaceManagedBlock(project, 'routes', renderRoutesBody(routes));
   project = replaceManagedBlock(project, 'actions', renderActionsBody(actions));
   project = replaceManagedBlock(project, 'hooks', renderHooksBody(hooks));
-  await writeFile(PROJECT_DOC, project);
+  await emit(PROJECT_DOC, project, check, drift);
 
   const tableColumns = extractTableColumns(await readFile(DATABASE_TYPES, 'utf8'));
   const totalCols = tableColumns.reduce((n, t) => n + t.columns.length, 0);
   console.log(`  Columns doc: ${tableColumns.length} tables, ${totalCols} columns`);
   let dbDoc = await readFile(DATABASE_DOC, 'utf8');
   dbDoc = replaceManagedBlock(dbDoc, 'columns', renderColumnsBody(tableColumns));
-  await writeFile(DATABASE_DOC, dbDoc);
+  await emit(DATABASE_DOC, dbDoc, check, drift);
 
-  console.log('Done.');
+  if (!check) {
+    console.log('Done.');
+    return 0;
+  }
+
+  if (drift.length === 0) {
+    console.log('docs:inventory-check: OK — generated inventory matches its sources');
+    return 0;
+  }
+
+  console.error('docs:inventory-check: GENERATED INVENTORY IS STALE');
+  console.error('');
+  console.error('These files do not match what their sources currently generate.');
+  console.error('Run `npm run docs:regen` and commit the result IN THIS BRANCH —');
+  console.error('a source change and its generated truth belong in the same PR.');
+  console.error('');
+  for (const d of drift) {
+    const rel = d.path.replace(`${REPO_ROOT}/`, '');
+    const a = (d.current ?? '').split('\n');
+    const b = d.next.split('\n');
+    let first = 0;
+    while (first < a.length && first < b.length && a[first] === b[first]) first += 1;
+    console.error(`  ${rel}`);
+    console.error(`    first difference at line ${first + 1}`);
+    if (a[first] !== undefined) console.error(`      committed: ${a[first].slice(0, 100)}`);
+    if (b[first] !== undefined) console.error(`      expected : ${b[first].slice(0, 100)}`);
+    const delta = b.length - a.length;
+    if (delta) console.error(`    line count ${a.length} -> ${b.length} (${delta > 0 ? '+' : ''}${delta})`);
+  }
+  return 1;
 }
 
 // Only run when invoked directly. Without this guard, importing anything from
@@ -472,10 +521,13 @@ const invokedDirectly =
   process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (invokedDirectly) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+  const check = process.argv.includes('--check');
+  main({ check })
+    .then((code) => process.exit(code ?? 0))
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
 }
 
 export { extractEnums, extractTopLevelKeys };

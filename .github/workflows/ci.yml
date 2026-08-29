@@ -129,6 +129,73 @@ jobs:
       - name: Check PostgREST row caps
         run: node scripts/check-row-cap-limits.mjs
 
+  control-plane:
+    name: Control plane
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # A DEDICATED job, not a step inside another one. These checks were first
+    # added under "Feature knowledge", where a control-plane failure would have
+    # surfaced under someone else's name — the same mislabeled-signal class as a
+    # guard timeout rendering as "GlassCard import exists". A control that
+    # reports under the wrong name is a control you will misread.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # GENERATED INVENTORY DRIFT — a required PR-time gate as of 2026-08-29.
+      #
+      # Before this, drift was caught by a scheduled workflow that opened a
+      # FOLLOW-UP PR (#1623 sat open while main carried a stale route count),
+      # and that workflow's own header records that PRs created with
+      # GITHUB_TOKEN may receive no required CI. `created != integrated` is the
+      # same class of control this repo keeps finding does not actually run.
+      #
+      # --check is NON-MUTATING: it computes the expected blocks and compares,
+      # leaving the tree byte-identical. The previous `docs:regen && git diff`
+      # shape could only tell you the docs were stale by first making them
+      # correct, which is unusable as a gate.
+      - name: Generated inventory is current
+        run: npm run docs:inventory-check
+
+      # REPO-WIDE STATIC GUARDS, with honest outcomes.
+      #
+      # These ran inside the `unit` project until 2026-08-29, where a sweep that
+      # timed out was reported using the same shape as a failed assertion — CI
+      # printed red against "no imports of GlassCard ... remain in src" when the
+      # guard had never finished asking. The runner distinguishes:
+      #   exit 0  PASS
+      #   exit 1  POLICY_FAILURE          ran, found violations
+      #   exit 2  INFRASTRUCTURE_FAILURE  did not finish — UNKNOWN, not a pass
+      - name: Repo-wide static guards
+        run: npm run guards
+
+      # THE CONTROL PLANE VERIFIES THE CONTROL PLANE.
+      #
+      # Static mode only: no user-global config, no network beyond gh, no
+      # machine-specific state. READ-ONLY by construction — it regenerates
+      # nothing and deletes nothing, so it can report what is wrong instead of
+      # quietly fixing it.
+      #
+      #   exit 0  VERIFIED
+      #   exit 1  CONTROL FAILURE   a control that should hold does not
+      #   exit 2  UNKNOWN           a required state could not be established
+      #
+      # UNKNOWN never becomes PASS. Every control this repo lost was lost by
+      # being assumed rather than checked.
+      - name: Control plane
+        run: npm run control-plane:verify:static
+
   feature-knowledge:
     name: Feature knowledge
     runs-on: ubuntu-latest
@@ -156,11 +223,10 @@ jobs:
       # golf_*/baseball_* database object that does not exist in
       # src/lib/types/database.ts.
       #
-      # This runs HERE, on the per-PR fast path, on purpose. `docs:check` is a
-      # local-only guard (no workflow invokes it) and it could not have caught
-      # this class anyway — it re-runs the generator and diffs the output
-      # against the file, so it only compares the generator to itself, only
-      # reads AUTOGEN blocks, and covers 3 files. An audit on 2026-08-19 found
+      # This runs HERE, on the per-PR fast path, on purpose, and it covers a
+      # class the inventory check cannot: the inventory check compares the
+      # generator to its own output, reads only AUTOGEN blocks, and covers 3
+      # files. This one reads the whole knowledge base against the live schema. An audit on 2026-08-19 found
       # 59 identifiers documented as live tables — with columns, FKs and RLS
       # policy names — that returned absent from every catalog in production.
       # Sessions are ordered by CLAUDE.md to read those docs before writing
@@ -885,6 +951,7 @@ jobs:
       - database-types
       - schema-invariants
       - feature-knowledge
+      - control-plane
       - bridge-env
       - typecheck
       - edge-functions

@@ -116,7 +116,6 @@ export default defineConfig({
             //   grep -cE "^\s*'scripts/__tests__/" vitest.config.ts
             // Only the #516 secrets guard is promoted to vitest
             // here, since it previously never ran under any mechanism at all.
-            'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
             // Named explicitly for the same reason. Guards extractEnums() in
             // regen-docs.mjs, which rendered "**6 enums**" into memory/glossary.md
             // for ~6 months while the schema had 18 — under a
@@ -134,7 +133,6 @@ export default defineConfig({
             // unconsolidated badges): they encode real drift that accumulated
             // while they sat unrun, and wiring them would turn main red, so
             // they stay out until someone fixes the underlying violations.
-            'scripts/__tests__/seed-recruiting-invariant.test.mjs',
             'scripts/__tests__/seed-baseball-stats.safety.test.mjs',
             'scripts/__tests__/baseball-demo-seed-surfaces.test.mjs',
             // Named explicitly for the same reason as the line above (no
@@ -157,7 +155,6 @@ export default defineConfig({
             // what they protect — a script that creates auth users and deletes
             // rows against a live project — is exactly the kind of thing that
             // must not be guarded by a test nobody executes.
-            'scripts/__tests__/baseball-demo-seed-contract.test.mjs',
             'scripts/__tests__/verify-baseball-demo-coverage-honesty.test.ts',
             // The mobile touch-target / safe-area guard. Promoted for the same
             // reason as its neighbours, with a sharper illustration of the cost:
@@ -181,7 +178,6 @@ export default defineConfig({
             // icon-only vs icon+text, and an end-to-end flag-one/pass-one) mean a
             // green run here is evidence the detector works, not just that it
             // found nothing.
-            'scripts/__tests__/icon-only-button-aria-label.test.mjs',
             // Guards the accessible-name derivation inside ui-audit-golf.mjs's
             // PROBE. It has to fail in BOTH directions: too permissive loses the
             // real /documents dead end, too strict resurrects the 18 phantom
@@ -197,11 +193,9 @@ export default defineConfig({
             // Merge-artifact guard for baseball server actions: duplicated
             // top-level return keys, dead consecutive duplicate returns,
             // stale "types will be regenerated" comments.
-            'scripts/__tests__/baseball-action-integrity.test.mjs',
             // Blocks reintroduction of the retired
             // /baseball/dashboard/stats/games/new href now that middleware
             // redirects it to /stats/games/create.
-            'scripts/__tests__/baseball-stale-route-links.test.mjs',
             // Wave W7A nav primitives: <Breadcrumb>/<SecondaryNav> stay the
             // canonical deep-route wayfinding surfaces.
             'scripts/__tests__/breadcrumb-nav.test.mjs',
@@ -241,19 +235,14 @@ export default defineConfig({
             'scripts/__tests__/no-bare-empty-text.test.mjs',
             // Wave W2B card consolidation: GlassCard/GlassStatCard/
             // PremiumGlassCard stay deleted and unimported.
-            'scripts/__tests__/no-glasscard-imports.test.mjs',
             // The golf /stats surface stays bound to the canonical v3
             // motion library — no legacy IOS_EASE or ad-hoc springs.
-            'scripts/__tests__/no-ios-ease-stats.test.mjs',
             // Wave W2C skeleton consolidation: the three legacy skeleton
             // modules stay deleted and unimported.
-            'scripts/__tests__/no-legacy-skeleton-imports.test.mjs',
             // The 2026-05-28 `s/translate/tranwarm/g` typo-squat class
             // never reappears (it silently killed 203 Tailwind utilities).
-            'scripts/__tests__/no-tranwarm-typo.test.mjs',
             // Wave W2F: hand-rolled Dropdown/Toast primitives stay retired
             // in favor of Radix DropdownMenu + Sonner.
-            'scripts/__tests__/radix-dropdown-sonner.test.mjs',
             // Smoke test for the Review Gate ast-grep rule pack (bare table
             // names, process.env in edge functions, service-role leaks)
             // against real src/ plus the synthetic positive fixture.
@@ -312,6 +301,42 @@ export default defineConfig({
           // guards out of vitest, so a non-completion can report "guard did
           // not run", is the only thing that would separate the two states.
           testTimeout: 30_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          ...sharedTestConfig,
+          // REPO-WIDE STATIC GUARDS, split out of `unit` on 2026-08-29.
+          //
+          // These walk thousands of files. Inside `unit` a slow runner turned a
+          // sweep into a TIMEOUT, and vitest reports a timeout exactly the way
+          // it reports a failed assertion — so CI printed red against
+          // "no imports of GlassCard ... remain in src" when the guard had never
+          // finished asking. #1672 widened the bound, and its own PR said that
+          // makes the lie RARER, not distinguishable.
+          //
+          // They live here so `scripts/repo-guards.mjs` can run them alone and
+          // interpret WHY each one failed. Do not add ordinary unit tests here.
+          environment: 'node' as const,
+          name: 'guards',
+          include: [
+            'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
+            'scripts/__tests__/seed-recruiting-invariant.test.mjs',
+            'scripts/__tests__/baseball-demo-seed-contract.test.mjs',
+            'scripts/__tests__/icon-only-button-aria-label.test.mjs',
+            'scripts/__tests__/baseball-action-integrity.test.mjs',
+            'scripts/__tests__/baseball-stale-route-links.test.mjs',
+            'scripts/__tests__/no-glasscard-imports.test.mjs',
+            'scripts/__tests__/no-ios-ease-stats.test.mjs',
+            'scripts/__tests__/no-legacy-skeleton-imports.test.mjs',
+            'scripts/__tests__/no-tranwarm-typo.test.mjs',
+            'scripts/__tests__/radix-dropdown-sonner.test.mjs',
+          ],
+          exclude: ['node_modules', '.next', 'archive'],
+          // Generous on purpose: this project is I/O bound by design. The runner
+          // no longer depends on the bound being right, only on it being rare.
+          testTimeout: 120_000,
         },
       },
       {

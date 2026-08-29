@@ -218,7 +218,33 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   **Retire the worktree in the SAME step that merges its PR** — not at the end
   of a session, and not by reporting it to the owner. `--remove` carries a
   STANDING OWNER AUTHORIZATION (granted 2026-08-29) for any worktree the tool
-  itself verdicts RETIRABLE:
+  itself verdicts PARKABLE/RETIRABLE, and for branch deletion ONLY when the
+  classifier returns `DELETE_MERGED_EXACT`:
+
+  ```text
+  PR state           === MERGED
+  local tip          === PR head OID      (exact, never ancestry)
+  protected          === false
+  checked out        === false
+  ```
+
+  Every other verdict requires a human, and the exclusion list is explicit:
+  `UNKNOWN_PR`, `KEEP_OPEN`, `KEEP_DIVERGED_AFTER_PR`, `KEEP_PROTECTED`,
+  `KEEP_WORKTREE_ACTIVE`, `KEEP_DIRTY`, `NO_UPSTREAM_UNIQUE_WORK`,
+  `UNKNOWN_REMOTE`, `UNKNOWN_IDENTITY`. `NO_UPSTREAM_UNIQUE_WORK` is the
+  sharpest of those: measured 2026-08-29, ten branches hold up to 19 commits
+  that exist nowhere else. A branch count is not a health metric; unexplained
+  branches are.
+
+  The authorization is also stated in the tool's own output, so a reader never
+  has to remember this paragraph.
+
+  **One mutation workspace at a time.** `HELM_MAX_MUTATION_WORKTREES` defaults
+  to 1 and `new-worktree.sh` refuses BEFORE `git worktree add` and before any
+  dependency install. Classification fails TOWARD mutation: an unreadable or
+  undeclared workspace counts against the budget.
+
+  For the worktree half:
 
   ```bash
   gh pr merge <n> --squash && node scripts/worktree-lifecycle.mjs --retire

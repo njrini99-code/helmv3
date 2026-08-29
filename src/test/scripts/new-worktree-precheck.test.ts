@@ -25,7 +25,10 @@ function run(task: string, env: Record<string, string>) {
   return spawnSync('bash', [SCRIPT, task], {
     cwd: REPO,
     encoding: 'utf-8',
-    env: { ...process.env, ...env },
+    // The mutation budget is checked BEFORE the disk reserve, so it would
+    // refuse first and these cases would never reach the gate they are about.
+    // Raised here to isolate the disk gate — the budget has its own tests.
+    env: { HELM_MAX_MUTATION_WORKTREES: '99', ...process.env, ...env },
   });
 }
 

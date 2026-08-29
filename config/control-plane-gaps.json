@@ -1,0 +1,49 @@
+{
+  "$comment": [
+    "ACKNOWLEDGED GAPS. An acknowledged gap is not an unknown.",
+    "",
+    "  UNKNOWN            we could not establish the state -> exit 2",
+    "  ACKNOWLEDGED_GAP   we established it, it is bad, and someone owns it -> exit 0",
+    "",
+    "The difference is that a gap has a name, an owner, a reason and a date.",
+    "Nothing may be listed here to make a red verifier green: the entry must",
+    "describe a real decision, and the verifier still PRINTS every gap on every",
+    "run so they cannot fade into the background.",
+    "",
+    "Removing a gap is how it gets fixed. Adding one is a decision, not a repair."
+  ],
+  "gaps": [
+    {
+      "id": "SUPABASE_ARBITRARY_SQL_UNENFORCED",
+      "owner": "founder",
+      "opened": "2026-08-29",
+      "scope": "mcp__claude_ai_Supabase__execute_sql",
+      "reason": "The sanctioned project-scoped path (mcp__supabase__*) is not connected — its OAuth flow has not been completed. Until it is, the account-scoped connector is the ONLY working Supabase query path, and it carries no read_only enforcement: a DELETE reaches production and nothing intercepts it. Denying it would remove the capability without making anything safe, and #1671 is the story of a document killing a working path. Retained deliberately as TEMPORARY_FALLBACK and named UNENFORCED rather than called safe.",
+      "closes_when": "mcp__supabase__* is connected and exercised, after which this grant is removed."
+    },
+    {
+      "id": "SANDBOX_FILESYSTEM_DISABLED",
+      "owner": "founder",
+      "opened": "2026-08-29",
+      "scope": "~/.claude/settings.json sandbox.filesystem",
+      "reason": "Measured 2026-08-29 with ten disposable probes: filesystem sandboxing is NOT enforced. Writes inside the project, writes outside it, writes to .claude/settings.json and .claude/hooks, reads of .env.local, and ../ traversal all SUCCEEDED — including paths the config lists under denyRead and denyWithinAllow. sandbox.filesystem.disabled is true and authoritative. Network sandboxing IS enforced (observed: deny network-outbound analytics.brew.sh:443). Enabling it was NOT done: the configured allowWrite list covers only /private/tmp/helmv3-*, /tmp/helmv3-*, ~/.npm and ~/Library/Caches/deno — not the repository — so flipping it as configured would block every worktree write, and the setting is user-global so it would do that to every project and any concurrent session. Consequence accepted: Bash writes into the canonical checkout remain structurally unblocked; guard-canonical-write.mjs covers only Write/Edit/MultiEdit.",
+      "closes_when": "an allowWrite set is designed that permits worktrees and denies canonical, and its behaviour is proven on a disposable profile before being applied user-globally."
+    },
+    {
+      "id": "SUPABASE_MIGRATION_GRANT_VS_READ_SCOPES",
+      "owner": "founder",
+      "opened": "2026-08-29",
+      "scope": "mcp__supabase__apply_migration",
+      "reason": "The owner authorization for applying production migrations through the project-scoped MCP is explicit and repeated. But that server's OAuth grant requests ONLY :read scopes — organizations, projects, database, analytics, secrets, edge_functions, environment, storage. A token minted under those scopes structurally cannot write, so the authorized capability probably cannot function as granted. This is surfaced rather than resolved: confirming it means attempting a production migration, which this run is not authorized to do and should not do to answer a documentation question.",
+      "closes_when": "the owner either completes the OAuth flow and observes what apply_migration actually does, or moves migrations to a path whose capability matches the authorization."
+    },
+    {
+      "id": "GITHUB_CAPABILITY_UNGOVERNED",
+      "owner": "founder",
+      "opened": "2026-08-29",
+      "scope": "gh CLI",
+      "reason": "Branch deletion depends on GitHub PR state and head OID, and the authoritative path is the gh CLI. No allow/deny rule or .mcp.json entry in this repo governs it, so its configuration fingerprint is marked `ungoverned` and drift in its capability CANNOT be detected by this repo's tooling. The lifecycle classifier compensates behaviourally — a failed lookup is UNKNOWN_PR and never 'no PR' — but that is a fallback, not detection.",
+      "closes_when": "gh capability is governed by something this repo can fingerprint, or the lifecycle path stops depending on an ungoverned tool."
+    }
+  ]
+}
