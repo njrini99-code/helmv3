@@ -41,13 +41,14 @@ set -euo pipefail
 
 WORKTREE_HOME="${HELM_WORKTREE_HOME:-$HOME/worktrees/helmv3}"
 BASE="origin/main"
-INSTALL=1
+INSTALL=0
 TASK=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --base) BASE="$2"; shift 2 ;;
-    --no-install) INSTALL=0; shift ;;
+    --install) INSTALL=1; shift ;;
+    --no-install) INSTALL=0; shift ;;   # accepted, and now the default
     -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
     -*) echo "unknown flag: $1" >&2; exit 2 ;;
     *) TASK="$1"; shift ;;
@@ -55,7 +56,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$TASK" ]; then
-  echo "usage: scripts/new-worktree.sh <task-name> [--base <ref>] [--no-install]" >&2
+  echo "usage: scripts/new-worktree.sh <task-name> [--base <ref>] [--install]" >&2
   exit 2
 fi
 
@@ -88,7 +89,7 @@ mkdir -p "$WORKTREE_HOME"
 # Measured the same day on this machine: a worktree with node_modules is
 # 3.8 GiB, and a built one adds up to 5.7 GiB of .next on top. The floor is set
 # so a worktree can be created AND used, not merely created.
-WORKTREE_MIN_FREE_GIB="${HELM_MIN_FREE_GIB:-10}"
+WORKTREE_MIN_FREE_GIB="${HELM_MIN_FREE_GIB:-${HELM_DISK_RESERVE_GIB:-12}}"
 
 free_gib() {
   # -P for POSIX output (one line per fs, no wrapping), -k for 1K blocks.
@@ -98,16 +99,19 @@ free_gib() {
 
 AVAIL_GIB="$(free_gib "$WORKTREE_HOME")"
 if [ -n "$AVAIL_GIB" ] && [ "$AVAIL_GIB" -lt "$WORKTREE_MIN_FREE_GIB" ]; then
-  echo "refusing: ${AVAIL_GIB} GiB free under ${WORKTREE_HOME}, need ${WORKTREE_MIN_FREE_GIB} GiB." >&2
+  echo "refusing: ${AVAIL_GIB} GiB free under ${WORKTREE_HOME}, reserve is ${WORKTREE_MIN_FREE_GIB} GiB." >&2
   echo >&2
-  echo "A worktree costs ~3.8 GiB installed and up to ~9.5 GiB once built." >&2
-  echo "Reclaim first — retirement is keyed on PR state, not on branch merge-base:" >&2
+  echo "This is the MACHINE reserve, not an install estimate. At zero bytes free" >&2
+  echo "nothing runs at all — writing a command's output fails, so no command can" >&2
+  echo "be issued to clean up. Measured 2026-08-29." >&2
   echo >&2
-  echo "  scripts/retire-worktrees.sh            # report" >&2
-  echo "  scripts/retire-worktrees.sh --remove   # act" >&2
+  echo "Reclaim. Parking removes a checkout WITHOUT abandoning its branch:" >&2
   echo >&2
-  echo "Override for a deliberately small workspace: HELM_MIN_FREE_GIB=<n>, or" >&2
-  echo "--no-install to skip the dependency install entirely." >&2
+  echo "  node scripts/worktree-lifecycle.mjs           # report" >&2
+  echo "  node scripts/worktree-lifecycle.mjs --park    # remove disposable checkouts" >&2
+  echo "  node scripts/worktree-lifecycle.mjs --retire  # also delete proven-merged branches" >&2
+  echo >&2
+  echo "Override: HELM_DISK_RESERVE_GIB=<n>." >&2
   exit 1
 fi
 
@@ -134,29 +138,23 @@ cat > "$DIR/.helm/workspace.json" <<JSON
 }
 JSON
 
+# DEPENDENCIES ARE NO LONGER INSTALLED BY DEFAULT.
+#
+# A checkout cost ~3.8 GiB of node_modules whether or not the task needed it,
+# and most control-plane, docs and config work never runs a single test. Coupling
+# the two is what made every task, however small, a multi-GiB commitment — and it
+# is why six worktrees in one day took the volume to zero bytes free.
+#
+# Install when a command actually requires it:
+#
+#   node scripts/ensure-worktree-deps.mjs <dir>
+#
+# which applies the reserve + budget policy rather than starting and hoping.
 if [ "$INSTALL" -eq 1 ]; then
-  echo "installing dependencies (isolated)..."
-  ( cd "$DIR" && npm ci --silent ) || {
-    # Distinguish the two failure modes. A transient npm/network failure is
-    # worth keeping the tree for — you re-run `npm ci` and carry on. Running
-    # OUT OF SPACE is not: the half-written tree is pure cost, and leaving it
-    # is what turned one ENOSPC into a session that could not clean up after
-    # itself. Detected by re-measuring rather than by matching npm's wording.
-    AFTER_GIB="$(free_gib "$DIR")"
-    if [ -n "$AFTER_GIB" ] && [ "$AFTER_GIB" -lt 2 ]; then
-      echo "npm ci failed and the volume is full (${AFTER_GIB} GiB free)." >&2
-      echo "Removing the partial worktree — a failed create must not cost space." >&2
-      git worktree remove --force "$DIR" 2>/dev/null || rm -rf "$DIR"
-      git branch -D "$BRANCH" >/dev/null 2>&1 || true
-      git worktree prune >/dev/null 2>&1 || true
-      echo "Reclaim more with: scripts/retire-worktrees.sh --remove" >&2
-      exit 1
-    fi
-    echo "npm ci failed — the worktree exists but has no node_modules." >&2
-    echo "Run 'npm ci' in $DIR before trusting any test result there." >&2
+  node "$(dirname "${BASH_SOURCE[0]}")/ensure-worktree-deps.mjs" "$DIR" || {
+    echo "dependency install refused or failed — the worktree itself is intact." >&2
+    echo "Re-run: node scripts/ensure-worktree-deps.mjs $DIR" >&2
   }
-else
-  echo "skipped install (--no-install): tests in this worktree will not run yet"
 fi
 
 cat <<EOF
@@ -166,7 +164,7 @@ cat <<EOF
                          git push -u origin $BRANCH)
   base        $BASE
   env         local, no production writes
-  deps        $([ "$INSTALL" -eq 1 ] && echo isolated || echo "NOT INSTALLED")
+  deps        $([ "$INSTALL" -eq 1 ] && echo "isolated" || echo "not installed — run: node scripts/ensure-worktree-deps.mjs $DIR")
 
 EOF
 printf '%s\n' "$DIR"

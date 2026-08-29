@@ -60,20 +60,26 @@ describe('new-worktree.sh refuses rather than half-creating', () => {
         HELM_WORKTREE_HOME: home,
         HELM_MIN_FREE_GIB: '9999999',
       });
-      expect(r.stderr).toContain('scripts/retire-worktrees.sh --remove');
-      expect(r.stderr).toMatch(/HELM_MIN_FREE_GIB/);
+      // The reclaim path is now PARKING, which frees a checkout without
+      // abandoning its branch — so a blocked caller is not forced to choose
+      // between disk and unfinished work.
+      expect(r.stderr).toContain('scripts/worktree-lifecycle.mjs --park');
+      expect(r.stderr).toMatch(/HELM_DISK_RESERVE_GIB/);
     } finally {
       rmSync(home, { recursive: true, force: true });
     }
   });
 
-  it('removes the partial tree when the install fails FOR SPACE (source-level)', () => {
-    // Source-level on purpose — see the header. A transient npm failure must
-    // still KEEP the tree, so this checks both halves of the branch exist.
-    const src = readFileSync(SCRIPT, 'utf-8');
-    expect(src).toMatch(/AFTER_GIB=/);
-    expect(src).toMatch(/git worktree remove --force "\$DIR"/);
-    expect(src).toContain('the worktree exists but has no node_modules');
+  it('removes partial state when the install fails FOR SPACE (source-level)', () => {
+    // Source-level on purpose — see the header. Both halves of the branch must
+    // exist: a transient npm failure KEEPS the tree, an ENOSPC failure does not.
+    //
+    // This logic moved out of new-worktree.sh when installs became lazy. It now
+    // lives with the install, which is the only thing that can exhaust a disk.
+    const deps = readFileSync(resolve(REPO, 'scripts/ensure-worktree-deps.mjs'), 'utf-8');
+    expect(deps).toMatch(/RESERVE_GIB/);
+    expect(deps).toMatch(/rm.*node_modules|'-rf'/s);
+    expect(deps).toContain('The worktree is intact');
   });
 });
 
@@ -86,13 +92,17 @@ describe('worktree retirement carries a standing grant', () => {
     // resumes.
     const agents = readFileSync(resolve(REPO, 'AGENTS.md'), 'utf-8');
     expect(agents).toMatch(/STANDING OWNER AUTHORIZATION/);
-    expect(agents).toContain('scripts/retire-worktrees.sh --remove');
+    expect(agents).toContain('scripts/worktree-lifecycle.mjs --retire');
     expect(agents).toMatch(/same step that merges its PR/i);
   });
 
   it('the tool itself says so, for a reader who never opens AGENTS.md', () => {
-    const src = readFileSync(resolve(REPO, 'scripts/retire-worktrees.sh'), 'utf-8');
-    expect(src).toMatch(/standing owner authorization/i);
-    expect(src).toMatch(/KEEP rows still need a human/);
+    // retire-worktrees.sh is now a forwarding shim; the authority carries the
+    // grant text, and the shim explains where it went.
+    const cli = readFileSync(resolve(REPO, 'scripts/worktree-lifecycle.mjs'), 'utf-8');
+    expect(cli).toMatch(/STANDING OWNER AUTHORIZATION/i);
+    expect(cli).toMatch(/still needs a human/i);
+    const shim = readFileSync(resolve(REPO, 'scripts/retire-worktrees.sh'), 'utf-8');
+    expect(shim).toMatch(/worktree-lifecycle\.mjs/);
   });
 });

@@ -82,7 +82,11 @@
     "ui:screenshots": "npm run ui:routes && npm run ui:auth && npm run ui:screenshots:capture && npm run ui:screenshots:index",
     "ui:screenshots:capture": "tsx scripts/ui-intelligence/capture-desktop-screenshots.ts",
     "ui:screenshots:index": "tsx scripts/ui-intelligence/generate-screenshot-index.ts",
-    "verify:business": "npm run test:business"
+    "verify:business": "npm run test:business",
+    "worktree:deps": "node scripts/ensure-worktree-deps.mjs",
+    "worktrees": "node scripts/worktree-lifecycle.mjs",
+    "worktrees:park": "node scripts/worktree-lifecycle.mjs --park",
+    "worktrees:retire": "node scripts/worktree-lifecycle.mjs --retire"
   },
   "keywords": [],
   "author": "",
