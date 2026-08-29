@@ -60,3 +60,74 @@ describe('MCP access documentation — the repo file is not the tool inventory',
     expect(text).toContain('usableSecret');
   });
 });
+
+/**
+ * 2026-08-29, second finding in the same file. `AGENTS.md` said Supabase MCP
+ * access "must remain project-scoped and read-only" while
+ * `~/.claude/settings.json` separately authorized applying production
+ * migrations through MCP. Both were in force and they contradicted, so neither
+ * was enforced — and six ALLOW rules granting `apply_migration`/`execute_sql`
+ * across THREE Supabase namespaces sat unnoticed underneath, two of them for a
+ * plugin that is not installed on this machine.
+ *
+ * Project-scope DENY beating user-scope ALLOW was verified by probe, not
+ * assumed: exactly the ten denied tools left the tool set while `list_tables`
+ * still loaded.
+ *
+ * Same limit as above — this cannot see user scope and does not try to. It
+ * pins the deny entries that neutralise those grants for this repo, and the
+ * AGENTS.md sentence that names which namespace is sanctioned.
+ */
+const SETTINGS = resolve(__dirname, '../../../../.claude/settings.json');
+const AGENTS = resolve(__dirname, '../../../../AGENTS.md');
+
+describe('Supabase MCP is consolidated to one sanctioned namespace', () => {
+  const deny: string[] = JSON.parse(readFileSync(SETTINGS, 'utf-8')).permissions.deny;
+  const agents = readFileSync(AGENTS, 'utf-8');
+
+  it('denies every project-mutating tool on the account-wide connector', () => {
+    // The owner authorized migrations on mcp__supabase__* — the project-scoped
+    // server — and nothing else. These ten were never authorized anywhere, and
+    // several are account-level rather than project-level.
+    const mutating = [
+      'apply_migration',
+      'create_branch',
+      'create_project',
+      'delete_branch',
+      'deploy_edge_function',
+      'merge_branch',
+      'pause_project',
+      'rebase_branch',
+      'reset_branch',
+      'restore_project',
+    ];
+    const missing = mutating
+      .map((t) => `mcp__claude_ai_Supabase__${t}`)
+      .filter((rule) => !deny.includes(rule));
+    expect(missing, 'account-wide Supabase MCP tools left un-denied').toEqual([]);
+  });
+
+  it('denies the plugin namespace that was pre-authorized while absent', () => {
+    // mcp__plugin_supabase_supabase__{apply_migration,execute_sql} were ALLOW
+    // at user scope with no such plugin installed — a grant that would have
+    // activated the moment anyone installed it. Denied at server level so a
+    // future tool in that namespace cannot inherit the grant either.
+    expect(deny).toContain('mcp__plugin_supabase_supabase');
+  });
+
+  it('keeps the account connector readable — it is the only one that works', () => {
+    // #1671 was about a document killing the working path. Not repeating it.
+    for (const readTool of ['list_tables', 'list_migrations', 'get_advisors', 'execute_sql']) {
+      expect(deny).not.toContain(`mcp__claude_ai_Supabase__${readTool}`);
+    }
+  });
+
+  it('AGENTS.md names the sanctioned namespace instead of an unenforced absolute', () => {
+    expect(agents).toContain('mcp__supabase__*');
+    expect(agents).toMatch(/owner-authorized|owner-authorised/i);
+    // The bare absolute is what contradicted the live grant.
+    expect(agents).not.toMatch(
+      /Production Supabase MCP access must remain project-scoped and read-only\./,
+    );
+  });
+});

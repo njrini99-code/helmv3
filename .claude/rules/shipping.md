@@ -176,6 +176,57 @@ https://mcp.supabase.com/mcp?project_ref=<prod>&read_only=true
 
 Never edit `read_only=true` out of `.mcp.json` to make something work.
 
+**Three Supabase MCP namespaces exist; exactly one answers, and it is not the
+sanctioned one.** Measured 2026-08-29:
+
+| Namespace | Scope | Connected |
+| --- | --- | --- |
+| `mcp__supabase__*` (this repo's `.mcp.json`) | project-scoped, `read_only=true` | **no** — only `authenticate` exposed |
+| `mcp__plugin_supabase_supabase__*` | a plugin that is **not installed** | **no** |
+| `mcp__claude_ai_Supabase__*` (account connector) | **whole account** | **yes** |
+
+`list_organizations` succeeds through the account connector, so it is not
+project-scoped. Its ten project-mutating tools — `apply_migration`,
+`create_project`, `pause_project`, `restore_project`, `deploy_edge_function`,
+and the five branch verbs — are now in `permissions.deny` in
+`.claude/settings.json`. Its read tools are deliberately kept: it is the only
+Supabase MCP that works.
+
+**`execute_sql` on that connector is NOT denied, and that is a gap, stated
+rather than closed.** It is the working query path and the owner may use it
+daily; it also carries no `read_only=true`, so `DELETE FROM x;` through it
+reaches production and nothing intercepts it. Denying it would remove the
+capability, not make it safe.
+
+**The permission asymmetry this closed.** The CLI migration path is denied in
+four spellings (`db push`, `migration up`, `db reset`, `config push`). Before
+this, **zero** deny rules mentioned `mcp__`, while six ALLOW rules granted
+`apply_migration`/`execute_sql` across all three namespaces — and an allow rule
+suspends both the prompt and the auto-mode classifier. Two of those six named
+`mcp__plugin_supabase_supabase__*`, a plugin that does not exist on this
+machine: a standing pre-authorization that would activate the moment anyone
+installed it.
+
+**No hook sees an MCP call.** The only `PreToolUse` hook is
+`guard-canonical-write.mjs` under matcher `Write|Edit|MultiEdit`, a regex over
+the TOOL NAME. Nothing in `.claude/hooks/` matches `mcp__`. Permission rules
+are the entire MCP defence — which is why the deny list, not a hook, is where
+this was fixed.
+
+**Precedence, proven here rather than assumed:** a project-scope DENY overrides
+a user-scope ALLOW, and it takes effect mid-session. Probe: denying the
+read-only `list_projects` at project scope, while it was ALLOW in three
+user-scope places, removed it from the tool set — while `list_organizations` on
+the same server still answered, proving the server was connected and the deny
+is what bit. A second probe (`Bash(echo …)`) confirmed hot reload. The real
+rules were then verified the same way: exactly the ten denied tools vanished;
+`list_tables` still loaded.
+
+**The six ALLOW rules live in user scope** (`~/.claude/settings.json`,
+`~/.claude/settings.local.json`) and are NOT edited from here — user-global,
+affecting every project and any concurrent session. Same boundary as
+`sandbox.filesystem`. The project-scope deny is what neutralises them for Helm.
+
 **`.mcp.json` is not the list of MCP tools you have.** It is the list this REPO
 declares. Account-level connectors add more, and they do not appear in any file
 here — check your own tool inventory rather than inferring it from this
