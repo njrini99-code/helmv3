@@ -196,8 +196,28 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   configure `agent/foo -> origin/main`, and a bare push then targets main.
   Branching from a local ref does not do this. Deploys promote
   from a worktree pinned at the exact merged `main` SHA, never from a
-  checkout another session may be mutating. Remove the worktree when the
-  task is merged and verified. (Added 2026-08-26 after three concurrent
+  checkout another session may be mutating.
+
+  **Retire the worktree in the SAME step that merges its PR** — not at the end
+  of a session, and not by reporting it to the owner. `--remove` carries a
+  STANDING OWNER AUTHORIZATION (granted 2026-08-29) for any worktree the tool
+  itself verdicts RETIRABLE:
+
+  ```bash
+  gh pr merge <n> --squash && scripts/retire-worktrees.sh --remove
+  ```
+
+  That grant exists because the old rule caused the failure it was meant to
+  prevent. Retirement shipped in #1654 as report-only with owner approval
+  required, and nothing ever invoked it. On 2026-08-29 one session created six
+  worktrees, ran the tool six times, printed "retirable" six times, and asked
+  instead of acting — until the volume hit **zero bytes free**, at which point
+  no command could run at all, because even writing a command's output needs
+  disk. The approval step was the seventh check on top of six the tool had
+  already passed, and it was the one that never fired in time.
+  The six that DO fire — canonical checkout, uncommitted changes, live process
+  cwd, no PR, PR not MERGED, tip past its remote — are what the grant relies on.
+  Anything the tool declines still needs a human. (Added 2026-08-26 after three concurrent
   sessions — iOS, bridge, hotfix — contended over one HEAD; the hotfix
   session's worktree dodge is now the rule.)
 - A single active session may work in the canonical checkout directly; do
