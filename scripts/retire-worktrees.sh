@@ -98,13 +98,42 @@ while IFS=$'\t' read -r WT BR; do
     continue
   fi
 
-  # 5. PR state — the only signal that survives squash-merge
+  # 5. PR state — the only signal that survives squash-merge.
+  #
+  #    EXIT CODE, not empty stdout, decides whether the question was ANSWERED.
+  #    Empty stdout is ambiguous: it is what a successful "this branch has no
+  #    PR" looks like AND what a failed lookup looks like. Reading them as the
+  #    same thing printed "no PR found — cannot prove the work landed" for
+  #    seven worktrees on 2026-08-28, four of them provably merged, because
+  #    `gh pr list` (GraphQL) was failing with
+  #    `tls: failed to verify certificate` and the error went to /dev/null.
+  #
+  #    Safe direction, false sentence. "Could not ask" is not "asked and found
+  #    none", and an operator who reads the second concludes the work never
+  #    landed rather than that the query never ran.
+  #
+  #    stderr is CAPTURED and bounded rather than discarded — the reason is the
+  #    whole point of the distinction.
+  LOOKUP_ERRFILE=$(mktemp)
   if [ -n "${HELM_PR_LOOKUP:-}" ]; then
-    read -r PR_NUM PR_STATE <<<"$("$HELM_PR_LOOKUP" "$BR" 2>/dev/null)"
+    LOOKUP_OUT=$("$HELM_PR_LOOKUP" "$BR" 2>"$LOOKUP_ERRFILE")
+    LOOKUP_RC=$?
   else
-    PR_JSON=$(gh pr list --head "$BR" --state all --limit 1 --json number,state 2>/dev/null)
-    read -r PR_NUM PR_STATE <<<"$(printf '%s' "$PR_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const a=JSON.parse(s);const p=a[0];process.stdout.write(p?p.number+" "+p.state:"")}catch{process.stdout.write("")}})' 2>/dev/null)"
+    LOOKUP_OUT=$(gh pr list --head "$BR" --state all --limit 1 --json number,state 2>"$LOOKUP_ERRFILE")
+    LOOKUP_RC=$?
+    if [ "$LOOKUP_RC" -eq 0 ]; then
+      LOOKUP_OUT=$(printf '%s' "$LOOKUP_OUT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const a=JSON.parse(s);const p=a[0];process.stdout.write(p?p.number+" "+p.state:"")}catch{process.stdout.write("")}})' 2>/dev/null)
+    fi
   fi
+  LOOKUP_ERR=$(tr '\n' ' ' < "$LOOKUP_ERRFILE" | cut -c1-120)
+  rm -f "$LOOKUP_ERRFILE"
+
+  if [ "$LOOKUP_RC" -ne 0 ]; then
+    printf '%-46s %-32s %-12s %s\n' "$SHORT" "$BR" "KEEP" "PR state unreadable — the lookup failed${LOOKUP_ERR:+: $LOOKUP_ERR}"
+    continue
+  fi
+
+  read -r PR_NUM PR_STATE <<<"$LOOKUP_OUT"
   PR_NUM=${PR_NUM:-}
   PR_STATE=${PR_STATE:-}
 
