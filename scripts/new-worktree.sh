@@ -76,6 +76,41 @@ fi
 
 mkdir -p "$WORKTREE_HOME"
 
+# ---------------------------------------------------------------------------
+# Free-space precheck.
+#
+# 2026-08-29: this script started a multi-GiB `npm ci` with the volume already
+# at 99%, died on ENOSPC partway through, and left an 858 MiB partial tree
+# behind. The failure COST space instead of refusing to spend it — and it then
+# blocked the session completely, because at zero bytes free even writing a
+# command's output fails, so nothing could clean up.
+#
+# Measured the same day on this machine: a worktree with node_modules is
+# 3.8 GiB, and a built one adds up to 5.7 GiB of .next on top. The floor is set
+# so a worktree can be created AND used, not merely created.
+WORKTREE_MIN_FREE_GIB="${HELM_MIN_FREE_GIB:-10}"
+
+free_gib() {
+  # -P for POSIX output (one line per fs, no wrapping), -k for 1K blocks.
+  # Field 4 is available. Integer GiB, floored — deliberately pessimistic.
+  df -Pk "$1" 2>/dev/null | awk 'NR==2 {printf "%d", $4/1048576}'
+}
+
+AVAIL_GIB="$(free_gib "$WORKTREE_HOME")"
+if [ -n "$AVAIL_GIB" ] && [ "$AVAIL_GIB" -lt "$WORKTREE_MIN_FREE_GIB" ]; then
+  echo "refusing: ${AVAIL_GIB} GiB free under ${WORKTREE_HOME}, need ${WORKTREE_MIN_FREE_GIB} GiB." >&2
+  echo >&2
+  echo "A worktree costs ~3.8 GiB installed and up to ~9.5 GiB once built." >&2
+  echo "Reclaim first — retirement is keyed on PR state, not on branch merge-base:" >&2
+  echo >&2
+  echo "  scripts/retire-worktrees.sh            # report" >&2
+  echo "  scripts/retire-worktrees.sh --remove   # act" >&2
+  echo >&2
+  echo "Override for a deliberately small workspace: HELM_MIN_FREE_GIB=<n>, or" >&2
+  echo "--no-install to skip the dependency install entirely." >&2
+  exit 1
+fi
+
 echo "fetching origin..."
 git fetch origin --quiet
 
@@ -102,6 +137,21 @@ JSON
 if [ "$INSTALL" -eq 1 ]; then
   echo "installing dependencies (isolated)..."
   ( cd "$DIR" && npm ci --silent ) || {
+    # Distinguish the two failure modes. A transient npm/network failure is
+    # worth keeping the tree for — you re-run `npm ci` and carry on. Running
+    # OUT OF SPACE is not: the half-written tree is pure cost, and leaving it
+    # is what turned one ENOSPC into a session that could not clean up after
+    # itself. Detected by re-measuring rather than by matching npm's wording.
+    AFTER_GIB="$(free_gib "$DIR")"
+    if [ -n "$AFTER_GIB" ] && [ "$AFTER_GIB" -lt 2 ]; then
+      echo "npm ci failed and the volume is full (${AFTER_GIB} GiB free)." >&2
+      echo "Removing the partial worktree — a failed create must not cost space." >&2
+      git worktree remove --force "$DIR" 2>/dev/null || rm -rf "$DIR"
+      git branch -D "$BRANCH" >/dev/null 2>&1 || true
+      git worktree prune >/dev/null 2>&1 || true
+      echo "Reclaim more with: scripts/retire-worktrees.sh --remove" >&2
+      exit 1
+    fi
     echo "npm ci failed — the worktree exists but has no node_modules." >&2
     echo "Run 'npm ci' in $DIR before trusting any test result there." >&2
   }
