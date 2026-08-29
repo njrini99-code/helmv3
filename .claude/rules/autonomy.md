@@ -56,9 +56,19 @@ Pick one of these before dispatching, never neither:
   git worktree remove <path>           # when merged
   ```
 
-  Use it because it guarantees five things at once: an external managed
-  location, the `agent/<task>` branch name, `--no-track`, an isolated
-  dependency install, and a known base.
+  Use it because it guarantees four things at once: an external managed
+  location, the `agent/<task>` branch name, `--no-track`, and a known base.
+
+  It no longer installs dependencies. A checkout cost ~3.8 GiB of node_modules
+  whether or not the task needed one, and most control-plane, docs and config
+  work never runs a test — that coupling is why six worktrees in one day took
+  the volume to zero bytes free. Install when something actually needs it:
+
+  ```bash
+  node scripts/ensure-worktree-deps.mjs <dir>   # or: new-worktree.sh <task> --install
+  ```
+
+  which applies a reserve-plus-budget policy instead of starting and hoping.
 
   The proven failure mode is narrower than "raw git is dangerous". It is
   specifically **creating a task branch from a REMOTE-TRACKING ref (such as

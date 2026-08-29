@@ -190,7 +190,10 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   agent session works in this repo at once, each session doing task work
   takes its own worktree via `scripts/new-worktree.sh <task>` — the one
   supported path, which places it at `~/worktrees/helmv3/<task>` OUTSIDE the
-  repo — and leaves the canonical checkout alone. Use it because it guarantees
+  repo — and leaves the canonical checkout alone. **It does not install
+  dependencies** — run `node scripts/ensure-worktree-deps.mjs <dir>` when a
+  command actually needs them, so a docs or config task never pays for a
+  ~3.8 GiB node_modules it will not use. Use it because it guarantees
   `--no-track`: creating a task branch from a REMOTE-TRACKING ref such as
   `origin/main` without disabling tracking lets git's `autoSetupMerge` default
   configure `agent/foo -> origin/main`, and a bare push then targets main.
@@ -198,13 +201,27 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   from a worktree pinned at the exact merged `main` SHA, never from a
   checkout another session may be mutating.
 
+  **`scripts/worktree-lifecycle.mjs` is the lifecycle authority** (
+  `retire-worktrees.sh` forwards to it). It separates two things the old tool
+  conflated:
+
+  ```text
+  PARK    remove the disposable checkout, KEEP the branch   (no PR needed)
+  RETIRE  park, AND delete a branch proven merged by exact PR head OID
+  ```
+
+  Parking is what lets an open PR waiting on a human stop costing ~3.8 GiB.
+  Branch deletion is proven by `PR MERGED` + `local tip === PR head OID`, never
+  by a remote tip — `delete_branch_on_merge` removes that exactly when the
+  branch becomes safe, which is #1654's shipped defect.
+
   **Retire the worktree in the SAME step that merges its PR** — not at the end
   of a session, and not by reporting it to the owner. `--remove` carries a
   STANDING OWNER AUTHORIZATION (granted 2026-08-29) for any worktree the tool
   itself verdicts RETIRABLE:
 
   ```bash
-  gh pr merge <n> --squash && scripts/retire-worktrees.sh --remove
+  gh pr merge <n> --squash && node scripts/worktree-lifecycle.mjs --retire
   ```
 
   That grant exists because the old rule caused the failure it was meant to
