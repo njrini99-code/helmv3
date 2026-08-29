@@ -27,8 +27,18 @@ npm run knowledge:context -- --files <paths...> --task "<task>"
 ```
 
 `memory/registry.yml` routes a path to its feature doc in `memory/features/`.
-That corpus is canonical for behavior. A governed edit is blocked until the
-session has actually loaded the mapped context.
+That corpus is canonical for behavior.
+
+A governed edit made without the mapped context is **DETECTED, not prevented.**
+The Stop gate reports it after the fact; no PreToolUse hook refuses the edit.
+The distinction matters: you can complete a whole governed change with no
+context loaded, and only find out when you try to stop. Load the context
+because the work needs it, not because something will catch you.
+
+(This read "a governed edit is blocked until the session has actually loaded
+the mapped context" until 2026-08-29. Nothing blocked it then either.
+`docs/CONTROL_PLANE_ENFORCEMENT.md` resolves claims like this one against the
+live hook configuration.)
 
 ## Trusting what you read
 

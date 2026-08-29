@@ -159,7 +159,34 @@ the output. If a claim rests on something you could not run locally, name that
 limit once. Do not hedge work that is done and checked, and do not re-audit
 your own phrasing after the fact.
 
-The guard hooks in `.claude/hooks/` are the safety net — they block the shapes
-that actually matter (force push, destructive SQL, unscoped recursive delete)
-deterministically and are not suspended by permission allow rules. That is
-what makes acting without asking safe here. Trust them and work.
+### What actually makes acting without asking safe
+
+Not the hooks. This section used to say the guard hooks "block the shapes that
+actually matter (force push, destructive SQL, unscoped recursive delete)" and
+concluded "trust them and work." **All three examples were false**, measured
+2026-08-29: no hook and no deny rule covers force push, destructive SQL, or
+recursive `rm`. One `PreToolUse` hook exists and it refuses exactly one thing —
+`Write`/`Edit`/`MultiEdit` into the canonical checkout.
+
+That mattered more than the other stale claims, because this was the paragraph
+telling you it was safe to proceed without asking. A false safety claim used to
+justify autonomy is the worst possible place for one.
+
+What is actually true:
+
+- `permissions.deny` fires deterministically, is not suspended by allow rules
+  or by `bypassPermissions`, and a project-scope deny overrides a user-scope
+  allow. That is real, and it is what covers the Supabase CLI migration path
+  and the account-wide Supabase MCP mutations.
+- One `PreToolUse` hook covers canonical writes via three tool names, and by
+  its own header does not read intent, match keywords, or look at features.
+- Everything else on the destructive list is on you.
+
+`docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated from the live configuration
+and resolves each claim to a mechanism, a location, and how it was observed.
+Check there before believing any sentence in these rules that says something is
+blocked — including this one.
+
+So: work autonomously because the owner asked for it and because the work is
+recoverable through git and PR review, not because a machine will catch a
+destructive mistake. Mostly it will not.

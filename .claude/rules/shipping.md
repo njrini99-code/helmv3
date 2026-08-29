@@ -7,10 +7,19 @@ verified: 2026-08-20  # every claim below re-checked against the guards, vercel.
 No `paths:`, so this loads every session. That is deliberate: these are the
 traps that don't care which file you opened.
 
-Everything here is either enforced by a `PreToolUse` guard in `.claude/hooks/`
-or was learned by breaking something. **Guards are not suspended by permission
-allow rules or by `bypassPermissions`** — they are the real safety layer, which
-is what makes working fast here safe.
+Everything here was either learned by breaking something or is enforced by
+configuration — and **which one applies is not something this file should be
+trusted to tell you.** `docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated from
+`.claude/settings.json` and the hook scripts on disk, and resolves each safety
+claim to a mechanism, a config location, and how it was observed. Three claims
+in these rules turned out to be false on 2026-08-29 — all about irreversible
+operations, all confident — which is why enforcement is no longer asserted in
+prose here.
+
+What IS true and load-bearing: `permissions.deny` rules and the one wired
+`PreToolUse` guard are not suspended by permission allow rules or by
+`bypassPermissions`. That is the real safety layer. It is also much smaller
+than this file used to imply.
 
 ---
 
@@ -139,12 +148,15 @@ mechanical, and these are the habits that keep it fixed.
   not the test's — it manufactures a green result. Nothing blocks this any
   more; it is on you to notice.
   Capture to a file and check the exit code separately.
-- **Recursive `rm` must stay inside the project or `$TMPDIR`.** Blocked
-  elsewhere: `~/.claude/settings.local.json` allows `Bash(rm:*)` globally and an
-  allow rule suspends both the prompt and the auto-mode classifier — the hook is
-  the only thing left.
-- **`rm -rf .next` is blocked.** It wedges Turbopack cold-compile for the rest
-  of the session.
+- **Recursive `rm` is UNENFORCED — keep it inside the project or `$TMPDIR`
+  yourself.** `~/.claude/settings.local.json` allows `Bash(rm:*)` globally, an
+  allow rule suspends both the prompt and the auto-mode classifier, and the hook
+  that used to be "the only thing left" no longer exists. No `permissions.deny`
+  rule covers `rm` either. Nothing will stop you.
+- **`rm -rf .next` is NOT blocked** — avoid it because it wedges Turbopack
+  cold-compile for the rest of the session, not because anything refuses it.
+  (Both of these lines claimed enforcement until 2026-08-29;
+  `docs/CONTROL_PLANE_ENFORCEMENT.md` now resolves them against live config.)
 - **`timeout` does not exist on macOS.** `timeout 90 cmd` fails with "command
   not found" and every wrapped call reads as a failure. This produced a bogus
   "21 of 21 tests failing" result on 2026-08-20. Use `gtimeout` (coreutils) or
