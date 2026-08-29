@@ -184,7 +184,13 @@ describe('collectSentry — degradation is reported, never swallowed', () => {
     expect(result.status).toBe('ok');
     expect(result.signals[0]!.severity).toBe('critical');
     expect(result.signals[0]!.evidenceRef).toBe('https://sentry.io/issues/1');
-    expect(result.signals[0]!.count).toBe(4);
+    // This used to assert `count === 4`, which was the fixture's LIFETIME
+    // count being copied straight onto a windowed signal — the ET-1B bug,
+    // asserted as correct. The fixture has `stats24h: []`, so the window count
+    // is not establishable: basis is 'unknown' and `count` is the provable
+    // floor of 1, never the lifetime 4 and never 0.
+    expect(result.signals[0]!.count).toBe(1);
+    expect(result.signals[0]!.countBasis).toBe('unknown');
   });
 });
 
@@ -314,5 +320,136 @@ describe('ET-1 — the Supabase arm collects ERRORS, not every event type', () =
     await collectSupabase(WINDOW_START);
     const neq = calls.find((c) => c.method === 'neq');
     expect(neq?.args).toEqual(['event_type', 'rca_analysis']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ET-1B — the occurrence NUMBER must mean what the window says it means.
+//
+// #1661 fixed which issues belong in the window. It deliberately did not fix
+// what their count means. So a board can now honestly say "this issue occurred
+// between 17:00 and 21:00" while printing 1,427 — the issue's LIFETIME total,
+// which may span months.
+//
+// `is:unresolved` is a lifetime query and `SentryIssue.count` is a lifetime
+// number. Nothing in the collector narrowed it.
+//
+// The fix needs no new request: the same issue-list response already carries
+// `stats.24h` buckets (the request already sends statsPeriod=24h), and the
+// collection window is four hours — comfortably inside that range.
+// ---------------------------------------------------------------------------
+describe('ET-1B — Sentry occurrence counts are window-local, or explicitly unknown', () => {
+  const WINDOW = '2026-08-28T17:00:00.000Z';
+  const hour = (iso: string) => Math.floor(Date.parse(iso) / 1000);
+
+  it('sums only the buckets inside the window, not the lifetime count', async () => {
+    vi.mocked(fetchSentryIssues).mockResolvedValue({
+      status: 'ok',
+      data: [
+        {
+          title: 'windowed',
+          culprit: '/a',
+          level: 'error',
+          count: 100, // LIFETIME
+          firstSeen: '2026-08-01T00:00:00.000Z',
+          lastSeen: '2026-08-28T20:30:00.000Z',
+          permalink: 'p1',
+          stats24h: [
+            [hour('2026-08-28T16:00:00.000Z'), 12], // before the window
+            [hour('2026-08-28T17:00:00.000Z'), 2],
+            [hour('2026-08-28T18:00:00.000Z'), 3],
+            [hour('2026-08-28T19:00:00.000Z'), 0],
+            [hour('2026-08-28T20:00:00.000Z'), 4],
+            [hour('2026-08-28T21:00:00.000Z'), 1],
+          ],
+        },
+      ],
+      truncated: false,
+    } as never);
+
+    const result = await collectSentry(WINDOW);
+    expect(result.signals).toHaveLength(1);
+    // 2 + 3 + 0 + 4 + 1 = 10. NOT 100, and not 112.
+    expect(result.signals[0]!.count).toBe(10);
+    expect(result.signals[0]!.countBasis).toBe('window');
+  });
+
+  it('a bucket exactly ON the window start is inside it', async () => {
+    vi.mocked(fetchSentryIssues).mockResolvedValue({
+      status: 'ok',
+      data: [
+        {
+          title: 'edge', culprit: null, level: 'error', count: 999,
+          firstSeen: '2026-08-01T00:00:00.000Z', lastSeen: '2026-08-28T17:00:00.000Z', permalink: 'p',
+          stats24h: [[hour('2026-08-28T17:00:00.000Z'), 7]],
+        },
+      ],
+      truncated: false,
+    } as never);
+
+    const result = await collectSentry(WINDOW);
+    expect(result.signals[0]!.count).toBe(7);
+  });
+
+  it('missing buckets do NOT become zero, and do NOT become the lifetime count', async () => {
+    // The issue is in the window (lastSeen proves at least one occurrence).
+    // We can prove a FLOOR of 1; we cannot prove 5,000. Reporting 0 would be
+    // false, and reporting the lifetime number is the bug this closes.
+    vi.mocked(fetchSentryIssues).mockResolvedValue({
+      status: 'ok',
+      data: [
+        {
+          title: 'no-buckets', culprit: null, level: 'error', count: 5000,
+          firstSeen: '2026-08-01T00:00:00.000Z', lastSeen: '2026-08-28T20:00:00.000Z', permalink: 'p',
+          stats24h: [],
+        },
+      ],
+      truncated: false,
+    } as never);
+
+    const result = await collectSentry(WINDOW);
+    expect(result.signals[0]!.count).not.toBe(0);
+    expect(result.signals[0]!.count).not.toBe(5000);
+    expect(result.signals[0]!.count).toBe(1);
+    expect(result.signals[0]!.countBasis).toBe('unknown');
+  });
+
+  it('buckets present but all unparseable is UNKNOWN, not zero', async () => {
+    // The `sawBucket` branch: a non-empty array whose entries are malformed.
+    // Without this the branch is unreachable from any test, and an injection
+    // that deleted it stayed green — so it was untested code guarding a case
+    // nobody had proven could happen.
+    vi.mocked(fetchSentryIssues).mockResolvedValue({
+      status: 'ok',
+      data: [
+        {
+          title: 'garbage-buckets', culprit: null, level: 'error', count: 77,
+          firstSeen: '2026-08-01T00:00:00.000Z', lastSeen: '2026-08-28T20:00:00.000Z', permalink: 'p',
+          stats24h: [['nope', 'nope'], [null, 3]],
+        },
+      ],
+      truncated: false,
+    } as never);
+
+    const result = await collectSentry(WINDOW);
+    expect(result.signals[0]!.count).toBe(1);
+    expect(result.signals[0]!.countBasis).toBe('unknown');
+  });
+
+  it('every non-Sentry arm declares its basis too', async () => {
+    // Exhaustiveness on purpose: a source that forgets to say how it counted
+    // is a source whose number cannot be read.
+    rowsToReturn = [
+      { id: '1', title: 't', message: 'm', severity: 'error', url: '/a', created_at: '2026-08-28T18:00:00.000Z', fingerprint: 'fp1', metadata: null },
+    ];
+    const supa = await collectSupabase(WINDOW);
+    expect(supa.signals[0]!.countBasis).toBe('window');
+
+    vi.mocked(fetchVercelDeployments).mockResolvedValue({
+      status: 'ok',
+      data: [{ uid: 'd1', state: 'ERROR', target: 'production', createdAt: Date.parse('2026-08-28T20:00:00.000Z') }],
+    } as never);
+    const vercel = await collectVercel(WINDOW);
+    expect(vercel.signals[0]!.countBasis).toBe('window');
   });
 });

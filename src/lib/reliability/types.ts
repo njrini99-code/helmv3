@@ -91,6 +91,20 @@ export interface RawSignal {
   route: string | null;
   errorCode: string | null;
   count: number;
+  /**
+   * How `count` was arrived at.
+   *
+   * `'window'` — the number is occurrences inside the collection window.
+   * `'unknown'` — the signal demonstrably occurred in the window, but the
+   *   exact number could not be established. `count` is then a provable FLOOR
+   *   (at least one), never a lifetime total and never zero.
+   *
+   * This exists because `is:unresolved` is a LIFETIME query and
+   * `SentryIssue.count` is a LIFETIME number. A four-hour snapshot that
+   * printed it was labelling months of occurrences as four hours of them.
+   * Every arm declares its basis so a number can always be read.
+   */
+  countBasis: 'window' | 'unknown';
   firstSeen: string;
   lastSeen: string;
   /**
