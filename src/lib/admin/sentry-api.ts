@@ -34,9 +34,6 @@ const MAX_PAGES = 20;
 // load. Same `truncated: true` contract as the page ceiling: if the deadline
 // hits while a next-page cursor still exists, the caller is told honestly.
 const MAX_WALL_CLOCK_MS = 8_000;
-/** In-flight ceiling for the per-feature count sweep — see
- *  fetchSentryFeatureCounts' doc comment for why this is not unbounded. */
-const FEATURE_COUNT_CONCURRENCY = 6;
 /** How long to skip the per-feature sweep entirely after one fails. Matches
  *  REVALIDATE_SECONDS: long enough to break the 429 feedback loop, short
  *  enough that a transient blip costs at most one minute of feature counts. */
@@ -284,43 +281,86 @@ export async function fetchSentryFeatureCounts(
   if (keys.length === 0) return {};
   if (Date.now() < featureCountCooldownUntil) return null;
 
-  const counts: Record<string, { total: number; critical: number }> = {};
-  let sweepFailed = false;
-  let nextIndex = 0;
-
-  // Hand-rolled worker pool rather than a new dependency: each worker pulls
-  // the next key until the list is exhausted, or until a sibling has already
-  // failed and made the rest of the sweep worthless.
-  async function worker(): Promise<void> {
-    for (;;) {
-      if (sweepFailed) return;
-      const key = keys[nextIndex++];
-      if (key === undefined) return;
-
-      const res = await fetchSentryIssues({ query: `is:unresolved feature:${key}`, limit: 100 });
-      if (res.status !== 'ok' || !res.data) {
-        sweepFailed = true;
-        return;
-      }
-      counts[key] = {
-        total: res.data.length,
-        critical: res.data.filter((issue) => issue.level === 'fatal').length,
-      };
-    }
-  }
+  // ONE aggregate query, grouped on the tag, instead of one query per feature.
+  //
+  // Measured against production Sentry (org helm-xs, 2026-08-29, one authorised
+  // probe): the Discover events endpoint answers the whole question in a single
+  // request. The previous implementation issued one PAGINATING request per
+  // feature key — roughly 85 distinct URLs against an endpoint whose observed
+  // limit is `x-sentry-rate-limit-limit: 10`. That fanout is what earned the
+  // sustained 429s the Bridge reports as integration faults, and no amount of
+  // caching fixed it: `sentryGet` already sets a 60s revalidate, so the cost was
+  // 85 distinct URLs per instance per window, not per page load.
+  //
+  // `count_unique(issue)` is deliberate. `count()` returns EVENTS where this
+  // function's contract is ISSUES — in the same probe, 7/1/2 events against
+  // 4/1/1 issues. Using `count()` would silently redefine the number.
+  const params = new URLSearchParams({
+    dataset: 'errors',
+    query: 'is:unresolved',
+    statsPeriod: '24h',
+    project: '-1',
+    per_page: '100',
+  });
+  params.append('field', 'feature');
+  params.append('field', 'level');
+  params.append('field', 'count_unique(issue)');
 
   try {
-    const workers = Math.min(FEATURE_COUNT_CONCURRENCY, keys.length);
-    await Promise.all(Array.from({ length: workers }, () => worker()));
-  } catch {
-    sweepFailed = true;
-  }
+    const res = await sentryGet(`/organizations/${cfg.org}/events/`, params, cfg.token);
+    if (!res.ok) {
+      featureCountCooldownUntil = Date.now() + FEATURE_COUNT_COOLDOWN_MS;
+      return null;
+    }
+    const body = (await res.json()) as unknown;
+    const rows = aggregateRows(body);
+    if (rows === null) {
+      featureCountCooldownUntil = Date.now() + FEATURE_COUNT_COOLDOWN_MS;
+      return null;
+    }
 
-  if (sweepFailed) {
+    // Seed every REQUESTED key at zero. Absent from an aggregate means the
+    // query asked globally and this feature had none — genuinely zero, unlike
+    // the old sweep where absence could only mean "we never asked".
+    const counts: Record<string, { total: number; critical: number }> = {};
+    for (const key of keys) counts[key] = { total: 0, critical: 0 };
+
+    for (const row of rows) {
+      const feature = typeof row.feature === 'string' ? row.feature : '';
+      const bucket = counts[feature];
+      // The aggregate returns every feature in the org, including '' and
+      // 'unknown'. Only requested keys belong in the result.
+      if (!bucket) continue;
+      const n = Number(row['count_unique(issue)']);
+      if (!Number.isFinite(n)) continue;
+      bucket.total += n;
+      if (row.level === 'fatal') bucket.critical += n;
+    }
+    return counts;
+  } catch {
     featureCountCooldownUntil = Date.now() + FEATURE_COUNT_COOLDOWN_MS;
     return null;
   }
-  return counts;
+}
+
+/**
+ * Rows out of a Discover aggregate response, or `null` when the envelope is
+ * not what we expect.
+ *
+ * The `{ data: [...] }` envelope is what the REST endpoint documents and what
+ * the Discover URL implies; the shape was confirmed through the Sentry MCP
+ * rather than by parsing a raw response body, so a bare array is accepted too.
+ * Anything else returns `null` — an unrecognised envelope is unreadable, and
+ * silently treating it as zero rows would report every feature as healthy.
+ */
+function aggregateRows(body: unknown): Array<Record<string, unknown>> | null {
+  const raw = Array.isArray(body)
+    ? body
+    : body && typeof body === 'object' && Array.isArray((body as { data?: unknown }).data)
+      ? (body as { data: unknown[] }).data
+      : null;
+  if (raw === null) return null;
+  return raw.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object');
 }
 
 export interface SentryReleaseHealth {
