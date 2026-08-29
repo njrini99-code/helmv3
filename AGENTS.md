@@ -206,7 +206,28 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
 - `archive/**` and `docs/archive/**` are historical evidence only. Never use them as the source of truth for current architecture, schema, routes, configuration, features, or implementation.
 - Current source code, current migrations, current tests, `AGENTS.md`, `CLAUDE.md`, and active non-archive documentation outrank archived material.
 - Use repo-local platform CLIs: `./node_modules/.bin/supabase` and `./node_modules/.bin/vercel`. Do not assume global Supabase or Vercel binaries.
-- Production Supabase MCP access must remain project-scoped and read-only. Schema changes belong in the local development stack and reviewed migrations.
+- **One sanctioned Supabase MCP path: `mcp__supabase__*`**, declared in this
+  repo's `.mcp.json`, project-scoped to the single production project and
+  carrying `read_only=true`. Schema changes belong in the local development
+  stack and reviewed migrations.
+  - `mcp__supabase__apply_migration` is **owner-authorized** — stated three
+    times in `~/.claude/settings.json` autoMode, "owner's own infrastructure;
+    migrations are reviewed before apply". That authorization is deliberate.
+    Note it targets exactly the combination `shipping.md` records as
+    UNVERIFIED (`apply_migration` under `read_only=true`); do not resolve that
+    by trying it against production.
+  - **Other Supabase MCP namespaces are NOT sanctioned.** An account-level
+    connector (`mcp__claude_ai_Supabase__*`) reaches the whole account, not one
+    project — `list_organizations` succeeds through it. Its project-mutating
+    tools are denied in `.claude/settings.json`; its read tools are kept,
+    because measured 2026-08-29 it is the ONLY Supabase MCP that is actually
+    connected, and removing a working read path to satisfy a sentence is the
+    #1671 mistake.
+  - This line previously read "Production Supabase MCP access must remain
+    project-scoped and read-only", full stop. That was in force at the same
+    time as the owner's migration authorization, and the two contradicted.
+    A rule that contradicts a live grant does not get enforced — it gets
+    ignored, and six unreviewed MCP grants sat unnoticed underneath it.
 - Never treat an agent memory store, code index, or cache as more authoritative than the current repository and current database evidence.
 - Never deploy/promote/rollback Vercel production unless the user explicitly requests that production action.
 <!-- HELM_AGENT_CANONICALITY_END -->
