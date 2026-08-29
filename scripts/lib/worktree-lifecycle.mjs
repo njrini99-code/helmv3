@@ -54,7 +54,7 @@ export const UNKNOWN = 'UNKNOWN';
  * it needs the commits to survive removing the directory, so it requires the
  * remote and reports UNKNOWN_REMOTE when it cannot get it.
  */
-export const DELETE_SAFE = 'DELETE_SAFE';
+export const DELETE_MERGED_EXACT = 'DELETE_MERGED_EXACT';
 export const KEEP_OPEN = 'KEEP_OPEN';
 export const KEEP_DIVERGED_AFTER_PR = 'KEEP_DIVERGED_AFTER_PR';
 export const KEEP_WORKTREE_ACTIVE = 'KEEP_WORKTREE_ACTIVE';
@@ -63,6 +63,13 @@ export const KEEP_PROTECTED = 'KEEP_PROTECTED';
 export const UNKNOWN_PR = 'UNKNOWN_PR';
 export const UNKNOWN_REMOTE = 'UNKNOWN_REMOTE';
 export const UNKNOWN_IDENTITY = 'UNKNOWN_IDENTITY';
+/**
+ * A branch with NO upstream and commits that exist nowhere else. Distinct from
+ * UNKNOWN_PR on purpose: "the lookup failed" and "this is the only copy of 19
+ * commits" are different keeps, and only one of them is permanent. Measured
+ * 2026-08-29: ten such branches, up to 19 unique commits each.
+ */
+export const NO_UPSTREAM_UNIQUE_WORK = 'NO_UPSTREAM_UNIQUE_WORK';
 
 /**
  * Branch name prefixes that are never deleted automatically, whatever their PR
@@ -152,7 +159,7 @@ export function classifyWorktree(facts) {
  *   prState       'MERGED'|'OPEN'|'CLOSED'|'NONE'|null
  *   prHeadSha     string|null
  *
- * DELETE_SAFE deliberately does NOT require a remote tip. `delete_branch_on_
+ * DELETE_MERGED_EXACT deliberately does NOT require a remote tip. `delete_branch_on_
  * merge` removes it at merge time, so requiring it would refuse exactly the
  * branches that are safe — measured as #1654's shipped defect.
  */
@@ -179,6 +186,13 @@ export function classifyBranch(facts) {
     return { verdict: UNKNOWN_PR, reason: 'PR lookup failed — evidence unavailable, not absent' };
   }
   if (!f.prState || f.prState === 'NONE') {
+    // Separate the permanent keep from the merely-unproven one.
+    if (!f.upstream && (f.uniqueCommits ?? 0) > 0) {
+      return {
+        verdict: NO_UPSTREAM_UNIQUE_WORK,
+        reason: `${f.uniqueCommits} commit(s) exist only here — no upstream, no PR`,
+      };
+    }
     return { verdict: UNKNOWN_PR, reason: 'no PR found — cannot prove the work landed' };
   }
   if (f.prState !== 'MERGED') {
@@ -200,7 +214,7 @@ export function classifyBranch(facts) {
   }
 
   return {
-    verdict: DELETE_SAFE,
+    verdict: DELETE_MERGED_EXACT,
     reason: `PR #${f.prNumber} MERGED and tip === PR head ${short(f.prHeadSha)}`,
   };
 }
@@ -218,7 +232,7 @@ function short(sha) {
  * unreachable, which is its own species of false claim.
  *
  *   ACTIVE                                   -> KEEP    (do nothing)
- *   PARKABLE + branch DELETE_SAFE            -> RETIRE  (remove tree AND branch)
+ *   PARKABLE + branch DELETE_MERGED_EXACT            -> RETIRE  (remove tree AND branch)
  *   PARKABLE + anything else                 -> PARK    (remove tree, keep branch)
  *   UNKNOWN                                  -> KEEP    (evidence missing)
  *
@@ -226,7 +240,7 @@ function short(sha) {
  * human no longer costs ~3.8 GiB while it waits.
  */
 export function combineVerdicts(worktreeVerdict, branchVerdict) {
-  if (worktreeVerdict === PARKABLE && branchVerdict === DELETE_SAFE) {
+  if (worktreeVerdict === PARKABLE && branchVerdict === DELETE_MERGED_EXACT) {
     return { action: 'RETIRE', worktree: RETIRABLE, reason: 'checkout disposable and branch provably merged' };
   }
   if (worktreeVerdict === PARKABLE) {
@@ -237,10 +251,116 @@ export function combineVerdicts(worktreeVerdict, branchVerdict) {
   return { action: 'KEEP', worktree: worktreeVerdict, reason: 'not eligible' };
 }
 
-/** Verdicts that a standing owner authorization permits an agent to act on. */
+/**
+ * STANDING OWNER AUTHORIZATION — recorded here, in the authority itself, so a
+ * reader never has to remember a paragraph in another file.
+ *
+ * Granted 2026-08-29. An agent may delete a local branch WITHOUT asking when
+ * ALL of these hold:
+ *
+ *     PR state          === MERGED
+ *     local tip         === PR head OID (exact, not ancestry)
+ *     protected         === false
+ *     checked out       === false
+ *     classifier verdict === DELETE_MERGED_EXACT
+ *
+ * and may PARK or RETIRE a workspace the classifier verdicts PARKABLE.
+ *
+ * EXPLICITLY EXCLUDED — every one of these requires a human:
+ *
+ *     UNKNOWN_PR                 evidence unavailable, or no PR found
+ *     KEEP_OPEN                  PR open, or closed without merging
+ *     KEEP_DIVERGED_AFTER_PR     commits made after the PR merged
+ *     KEEP_PROTECTED             a human preserved it deliberately
+ *     KEEP_WORKTREE_ACTIVE       a checkout still holds it
+ *     KEEP_DIRTY                 uncommitted work
+ *     NO_UPSTREAM_UNIQUE_WORK    the only copy of real commits
+ *     UNKNOWN_REMOTE             cannot prove the work is pushed
+ *     UNKNOWN_IDENTITY           cannot resolve the branch at all
+ *
+ * The grant is deliberately narrow: it covers exactly the case where GitHub has
+ * already recorded that this exact tree landed on main.
+ */
 export const AUTONOMOUS_WORKTREE_VERDICTS = new Set([PARKABLE, RETIRABLE]);
-export const AUTONOMOUS_BRANCH_VERDICTS = new Set([DELETE_SAFE]);
+export const AUTONOMOUS_BRANCH_VERDICTS = new Set([DELETE_MERGED_EXACT]);
+export const REQUIRES_HUMAN_VERDICTS = new Set([
+  UNKNOWN_PR, KEEP_OPEN, KEEP_DIVERGED_AFTER_PR, KEEP_PROTECTED,
+  KEEP_WORKTREE_ACTIVE, KEEP_DIRTY, NO_UPSTREAM_UNIQUE_WORK,
+  UNKNOWN_REMOTE, UNKNOWN_IDENTITY,
+]);
 
 export function mayActAutonomously(verdict) {
   return AUTONOMOUS_WORKTREE_VERDICTS.has(verdict) || AUTONOMOUS_BRANCH_VERDICTS.has(verdict);
+}
+
+// ---------------------------------------------------------------------------
+// Workspace KIND and the mutation-worktree budget.
+//
+// The disk reserve (#1674) stops a catastrophe; it does not stop waste. Six
+// worktrees created in one day is not a disk problem, it is a concurrency
+// problem that only becomes visible as a disk problem. The budget makes the
+// policy structural: refused BEFORE `git worktree add`, not reported after.
+//
+// Classification FAILS TOWARD MUTATION on purpose. A workspace whose kind
+// cannot be established is counted against the budget, because the cost of
+// wrongly counting a harmless checkout is one refusal the caller can override,
+// and the cost of wrongly ignoring a real one is the leak this exists to close.
+
+export const CANONICAL = 'CANONICAL';
+export const MUTATION = 'MUTATION';
+export const RELEASE_READONLY = 'RELEASE_READONLY';
+export const UNKNOWN_KIND = 'UNKNOWN_KIND';
+
+/**
+ * facts:
+ *   isCanonical  bool
+ *   detached     bool
+ *   declaredKind string|null   from .helm/workspace.json "kind"
+ *   readable     bool|null     could the workspace be inspected at all
+ */
+export function classifyWorkspaceKind(facts) {
+  const f = facts ?? {};
+  if (f.isCanonical) return { kind: CANONICAL, counts: false, reason: 'canonical checkout' };
+
+  if (f.readable === false) {
+    // Cannot inspect it. It still occupies disk and may hold a branch.
+    return { kind: UNKNOWN_KIND, counts: true, reason: 'workspace unreadable — counted, fails safe' };
+  }
+
+  // A release checkout only escapes the budget when it says so AND is detached.
+  // Either half alone is not enough: a declared release that is on a branch can
+  // still be committed to, and a bare detached HEAD is the ambiguous legacy
+  // case the plan explicitly wants counted.
+  if (f.declaredKind === 'release' && f.detached === true) {
+    return { kind: RELEASE_READONLY, counts: false, reason: 'declared release workspace, detached' };
+  }
+  if (f.declaredKind === 'release') {
+    return { kind: MUTATION, counts: true, reason: 'declared release but NOT detached — can still be committed to' };
+  }
+
+  if (!f.declaredKind) {
+    return { kind: UNKNOWN_KIND, counts: true, reason: 'no declared kind (legacy workspace) — counted, fails safe' };
+  }
+  return { kind: MUTATION, counts: true, reason: `declared kind '${f.declaredKind}'` };
+}
+
+export const DEFAULT_MUTATION_BUDGET = 1;
+
+/**
+ * Decide whether one more mutation workspace may be created.
+ * `existing` is an array of classifyWorkspaceKind results.
+ */
+export function mutationBudgetDecision(existing, budget = DEFAULT_MUTATION_BUDGET) {
+  const counted = (existing ?? []).filter((e) => e && e.counts);
+  const used = counted.length;
+  if (used >= budget) {
+    return {
+      ok: false,
+      used,
+      budget,
+      blocking: counted,
+      reason: `${used} of ${budget} mutation workspace(s) already in use`,
+    };
+  }
+  return { ok: true, used, budget, blocking: [], reason: `${used} of ${budget} in use` };
 }

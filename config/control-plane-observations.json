@@ -1,0 +1,132 @@
+{
+  "$comment": [
+    "Behavioral observations. Each carries the fingerprint of the configuration",
+    "that produced it; when that fingerprint changes, gen-tool-authority.mjs marks",
+    "the observation STALE automatically and no human has to remember to.",
+    "",
+    "Record only what was actually run. An inference is not an observation.",
+    "DENIED_BY_POLICY is a configuration fact, not a behavioral one: the namespace",
+    "was probed BEFORE the deny was added, and the deny mechanism itself was proven",
+    "separately (project-scope deny removes tools from the session tool set — see",
+    "the Supabase probe in PR #1673)."
+  ],
+  "observations": [
+    {
+      "service": "Supabase",
+      "namespace": "mcp__supabase__*",
+      "capability": "connect",
+      "observed_at": "2026-08-29",
+      "result": "FAIL",
+      "evidence": "exposes ONLY authenticate/complete_authentication — OAuth not completed. Its grant requests exclusively :read scopes (organizations, projects, database, analytics, secrets, edge_functions, environment, storage): connector-enforced read-only, not a URL string.",
+      "configuration_fingerprint": "20b8aa0d1c1206ee",
+      "configured": "yes",
+      "connected": "no",
+      "exposed": "no",
+      "allowed": "yes"
+    },
+    {
+      "service": "Supabase",
+      "namespace": "mcp__claude_ai_Supabase__*",
+      "capability": "read",
+      "observed_at": "2026-08-29",
+      "result": "PASS",
+      "evidence": "list_organizations + list_projects -> one project, Helm-Production/qmnssrrolpinvwjjnufo. Account-scoped, therefore NOT project-scoped. Ten mutating tools denied at project scope and verified absent from the session tool set.",
+      "configuration_fingerprint": "20b8aa0d1c1206ee",
+      "configured": "yes",
+      "connected": "yes",
+      "exposed": "yes",
+      "allowed": "partial (10 mutators denied)"
+    },
+    {
+      "service": "Supabase",
+      "namespace": "mcp__plugin_supabase_supabase__*",
+      "capability": "connect",
+      "observed_at": "2026-08-29",
+      "result": "FAIL",
+      "evidence": "no such plugin installed; user-global ALLOW grants for execute_sql/apply_migration removed 2026-08-29",
+      "configuration_fingerprint": "20b8aa0d1c1206ee",
+      "configured": "no",
+      "connected": "no",
+      "exposed": "no",
+      "allowed": "no"
+    },
+    {
+      "service": "Sentry",
+      "namespace": "mcp__claude_ai_Sentry__*",
+      "capability": "read",
+      "observed_at": "2026-08-29",
+      "result": "PASS",
+      "evidence": "find_organizations -> org helm-xs (us.sentry.io)",
+      "configuration_fingerprint": "e1d6b5e512b23087",
+      "configured": "yes",
+      "connected": "yes",
+      "exposed": "yes",
+      "allowed": "yes"
+    },
+    {
+      "service": "Sentry",
+      "namespace": "mcp__plugin_sentry_sentry__*",
+      "capability": "read",
+      "observed_at": "2026-08-29",
+      "result": "DENIED_BY_POLICY",
+      "evidence": "probed 2026-08-29 BEFORE the deny: connected, find_organizations returned a byte-identical result to the authority. Redundant, so denied at project scope. Reversible by deleting one deny line.",
+      "configuration_fingerprint": "e1d6b5e512b23087",
+      "configured": "yes",
+      "connected": "yes (pre-deny)",
+      "exposed": "yes (pre-deny)",
+      "allowed": "no"
+    },
+    {
+      "service": "Vercel",
+      "namespace": "mcp__claude_ai_Vercel__*",
+      "capability": "read",
+      "observed_at": "2026-08-29",
+      "result": "PASS",
+      "evidence": "full tool surface present in session (list_projects, list_deployments, get_runtime_logs)",
+      "configuration_fingerprint": "877140c1c20967a1",
+      "configured": "yes",
+      "connected": "yes",
+      "exposed": "yes",
+      "allowed": "yes"
+    },
+    {
+      "service": "Vercel",
+      "namespace": "mcp__plugin_vercel_vercel__*",
+      "capability": "connect",
+      "observed_at": "2026-08-29",
+      "result": "DENIED_BY_POLICY",
+      "evidence": "probed 2026-08-29: exposes ONLY authenticate/complete_authentication, so it cannot operate. Denied so a dead namespace does not sit beside the live one as though equivalent.",
+      "configuration_fingerprint": "877140c1c20967a1",
+      "configured": "yes",
+      "connected": "no",
+      "exposed": "no",
+      "allowed": "no"
+    },
+    {
+      "service": "GitHub",
+      "namespace": "gh CLI (gh api)",
+      "capability": "pr-lookup",
+      "observed_at": "2026-08-29",
+      "result": "PASS",
+      "evidence": "exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668).",
+      "configuration_fingerprint": "ungoverned:87544794",
+      "configured": "yes",
+      "connected": "yes",
+      "exposed": "yes",
+      "allowed": "yes"
+    },
+    {
+      "service": "GitHub",
+      "namespace": "mcp__github__*",
+      "capability": "read",
+      "observed_at": "2026-08-29",
+      "result": "NOT_EXERCISED",
+      "evidence": "declared in ~/.claude.json; retained for interactive use; nothing on the lifecycle path depends on it",
+      "configuration_fingerprint": "ungoverned:87544794",
+      "configured": "yes",
+      "connected": "unknown",
+      "exposed": "yes",
+      "allowed": "yes"
+    }
+  ]
+}

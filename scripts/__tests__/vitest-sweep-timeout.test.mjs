@@ -52,14 +52,35 @@ describe('vitest project timeouts', () => {
     ).toBeTypeOf('number');
   });
 
-  it("'unit' is bounded no more tightly than the projects that already set a timeout", () => {
-    // integration / rls / business carry 30_000. 'unit' holding the sweeps has
-    // no case for being stricter than the projects that touch a database.
-    const siblings = projects()
-      .filter((p) => p.name !== 'unit' && typeof p.testTimeout === 'number')
+  it('the project holding the repo sweeps is the MOST generous of all', () => {
+    // REWRITTEN 2026-08-29. This used to assert that `unit` was bounded no more
+    // tightly than its siblings, because `unit` was where the repo-wide sweeps
+    // lived. They have moved to a dedicated `guards` project, so that premise is
+    // gone — and the test failing on that move is the premise announcing itself
+    // rather than a regression.
+    //
+    // The invariant that actually matters now: whichever project runs the
+    // filesystem sweeps must have the loosest bound, because it is the only one
+    // that is I/O-bound by design.
+    const guards = project('guards');
+    const others = projects()
+      .filter((p) => p.name !== 'guards' && typeof p.testTimeout === 'number')
       .map((p) => p.testTimeout);
-    expect(siblings.length, 'expected sibling projects to declare timeouts').toBeGreaterThan(0);
-    expect(project('unit').testTimeout).toBeGreaterThanOrEqual(Math.max(...siblings));
+    expect(typeof guards.testTimeout, 'the guards project must declare a timeout').toBe('number');
+    expect(guards.testTimeout).toBeGreaterThanOrEqual(Math.max(...others));
+  });
+
+  it('the sweeps live in `guards`, not in `unit`', () => {
+    // A sweep back inside `unit` would inherit a bound calibrated for unit
+    // tests, which is how a timeout came to be reported as a GlassCard
+    // violation in the first place.
+    const unitInclude = project('unit').include ?? [];
+    const guardsInclude = project('guards').include ?? [];
+    expect(guardsInclude.length, 'guards project should list the sweeps').toBeGreaterThan(5);
+    const strays = unitInclude.filter((g) =>
+      guardsInclude.includes(g),
+    );
+    expect(strays, 'these sweeps are listed in BOTH projects').toEqual([]);
   });
 
   it('every project that runs a scripts/__tests__ sweep declares a timeout', () => {

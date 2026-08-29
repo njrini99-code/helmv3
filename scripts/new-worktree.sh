@@ -78,6 +78,19 @@ fi
 mkdir -p "$WORKTREE_HOME"
 
 # ---------------------------------------------------------------------------
+# Mutation-worktree budget, enforced BEFORE any allocation.
+#
+# The disk reserve stops a catastrophe; it does not stop waste. Six worktrees in
+# one day is a concurrency problem that only becomes visible as a disk problem.
+# This refuses before `git worktree add` and before any install, so a refusal
+# costs nothing. Classification fails TOWARD mutation: an unreadable or
+# undeclared workspace counts against the budget.
+if ! node "$(dirname "${BASH_SOURCE[0]}")/check-mutation-budget.mjs"; then
+  exit 1
+fi
+
+
+# ---------------------------------------------------------------------------
 # Free-space precheck.
 #
 # 2026-08-29: this script started a multi-GiB `npm ci` with the volume already

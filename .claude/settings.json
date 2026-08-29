@@ -106,7 +106,9 @@
       "mcp__claude_ai_Supabase__rebase_branch",
       "mcp__claude_ai_Supabase__reset_branch",
       "mcp__claude_ai_Supabase__restore_project",
-      "mcp__plugin_supabase_supabase"
+      "mcp__plugin_supabase_supabase",
+      "mcp__plugin_sentry_sentry",
+      "mcp__plugin_vercel_vercel"
     ]
   },
   "hooks": {

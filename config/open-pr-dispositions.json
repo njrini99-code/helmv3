@@ -1,0 +1,24 @@
+{
+  "$comment": [
+    "Every open PR must have a recorded disposition. An unclassified open PR is",
+    "background state — #1623 sat open for weeks while main carried a stale route",
+    "count, and nobody was wrong, because nobody owned it.",
+    "",
+    "Vocabulary: ACTIVE, HUMAN_TEST_PENDING, STALE, SUPERSEDED,",
+    "AUTOMATION_RESIDUE, UNKNOWN.",
+    "",
+    "control-plane:verify FAILS on any open PR missing an entry here."
+  ],
+  "1659": {
+    "disposition": "HUMAN_TEST_PENDING",
+    "note": "Product fix awaiting a physical-iPhone test. Branch and PR kept; worktree PARKED so it consumes zero checkouts and zero node_modules until the device test actually happens."
+  },
+  "1638": {
+    "disposition": "SUPERSEDED",
+    "note": "An agent-lifecycle trace written before PARK/RETIRE, the branch-GC classifier, the enforcement inventory and the tool authority matrix existed. It also carries autoMemoryEnabled: true while main deliberately says false. Do not merge; close after extracting anything still true."
+  },
+  "1623": {
+    "disposition": "AUTOMATION_RESIDUE",
+    "note": "Docs Regen bot PR. Its content — the route inventory — is regenerated and committed directly in the convergence branch, and inventory drift is now a required PR-time check. The follow-up-PR architecture is removed, so this is superseded and closes."
+  }
+}
