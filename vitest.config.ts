@@ -95,18 +95,25 @@ export default defineConfig({
             // Named explicitly (not a `scripts/**/*.test.mjs` glob) so that
             // `node --test` files are never swept in.
             //
-            // COUNT CORRECTED 2026-08-20. This comment used to say "the other
-            // 46 files in scripts/__tests__/ … are NOT wired into any CI job",
-            // which was true when written and badly stale by the time anyone
-            // read it: 32 have since been promoted below. Of 51 files under
-            // scripts/__tests__/, 32 now run under vitest and 19 still run
-            // nowhere. Nothing references `node --test` — not a single npm
-            // script, not a single workflow — so an unpromoted file executes
-            // never, silently, and its guard is decorative.
+            // Nothing references `node --test` — not a single npm script, not
+            // a single workflow — so a file under scripts/__tests__/ that is
+            // NOT listed below executes never, silently, and its guard is
+            // decorative. That is the fact worth knowing here.
             //
-            // If you promote or drop one, fix this count. A stale number here
-            // is how "46 dead tests" became folklore while the real figure
-            // moved by 24.
+            // THE COUNT THAT USED TO LIVE HERE IS GONE, on purpose. It was
+            // hand-maintained, it carried an instruction to update it by hand,
+            // and it rotted anyway — twice. It first read "46 files … not
+            // wired into any CI job", was corrected 2026-08-20 to "of 51
+            // files, 32 run under vitest and 19 run nowhere", and by
+            // 2026-08-29 one of those files had been dropped without the
+            // number moving. Measured that day: 50 files, 31 promoted.
+            //
+            // A number you must remember to change is a number that will be
+            // wrong, and a wrong number here reads as current forever. Count
+            // it when you need it:
+            //
+            //   /bin/ls scripts/__tests__/ | grep -cE '\.(test|spec)\.(mjs|ts)$'
+            //   grep -cE "^\s*'scripts/__tests__/" vitest.config.ts
             // Only the #516 secrets guard is promoted to vitest
             // here, since it previously never ran under any mechanism at all.
             'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
@@ -258,6 +265,9 @@ export default defineConfig({
             // tokens.css and globals.css never redeclare the same CSS
             // custom property inside :root (the W0 silent-override class).
             'scripts/__tests__/token-files-no-conflict.test.mjs',
+            // The unit project's own timeout, and the removal of the
+            // hand-maintained count above, must not silently revert.
+            'scripts/__tests__/vitest-sweep-timeout.test.mjs',
           ],
           exclude: [
             'node_modules',
@@ -268,6 +278,40 @@ export default defineConfig({
             'src/**/*.contract.test.{ts,tsx}',
             'src/**/*-contract.test.{ts,tsx}',
           ],
+          // Vitest's default is 5_000ms, and that default is wrong for what
+          // this project actually contains. Alongside ordinary unit tests, the
+          // `scripts/__tests__/*.test.mjs` guards listed above are repo
+          // sweeps: eleven of them each walk every .ts/.tsx file under src/
+          // — 4,066 files on 2026-08-29 — reading each one sequentially and
+          // running regexes over it. That is roughly 45,000 sequential reads
+          // per shard. They are lint passes wearing a unit test's costume, and
+          // 5s bounds MACHINE LOAD, not the property they assert.
+          //
+          // It has already fired twice in two days, both on GitHub's 2-core
+          // runners, and once on main:
+          //
+          //   2026-08-28  main, run 33189072611  icon-only-button-aria-label
+          //   2026-08-29  PR #1670,  run 33260843017   no-glasscard-imports
+          //
+          // Proven non-deterministic rather than assumed: #1670's shard was
+          // re-run at the IDENTICAL sha and went green. Locally the same
+          // `test:run --shard=1/3` finishes 424 files in 71s against CI's
+          // 264s, so this machine cannot reproduce it — the bound is the
+          // runner's, and a local green is not evidence either way.
+          //
+          // 30_000 matches integration/rls/business, which already carry it.
+          // The cost accepted: a genuinely hung unit test now reports after
+          // 30s instead of 5s, inside a shard that already runs 264s.
+          //
+          // WHAT THIS DOES NOT FIX. A timeout is UNKNOWN, and vitest reports
+          // it as a failed assertion — CI prints red against "no imports of
+          // GlassCard … remain in src" when the guard never finished asking,
+          // so a reader concludes a banned import exists. Raising the bound
+          // makes that rarer. It does not make it distinguishable. Reading
+          // the 45,000 files concurrently is the actual fix; moving these
+          // guards out of vitest, so a non-completion can report "guard did
+          // not run", is the only thing that would separate the two states.
+          testTimeout: 30_000,
         },
       },
       {
