@@ -357,11 +357,37 @@ values (
   <ms>,
   <null or one line>,
   jsonb_build_object(
+    'run_id', '<HELM_REPAIR_RUN_ID>',
     'candidates', <n>, 'prs_opened', <n>, 'confirmed', <n>,
     'corrected', <n>, 'skipped', <n>, 'gate_failed', <n>
   )
 );
 ```
+
+**`run_id` comes from `process.env.HELM_REPAIR_RUN_ID`.** Include it whenever it
+is set; omit the key entirely when it is not, so historical rows and manual runs
+stay valid. It exists so the outer runner can ask a precise question — *did THIS
+run write a heartbeat?* — instead of inferring from a timestamp window, which
+cannot tell this run from one that merely overlapped it.
+
+### Who owns which heartbeat
+
+```text
+YOU own the normal final heartbeat, success or failure.
+
+The outer runner owns ONLY a runner-level failure row, and writes it
+ONLY after a SUCCESSFUL read proves no row exists for this run_id.
+```
+
+If the heartbeat store cannot be read, the runner records nothing and reports
+UNKNOWN. A failed query is not proof of absence, and writing on one would
+manufacture failure rows during a Supabase outage — inventing bad news is no
+better than inventing good.
+
+The runner never invents `candidates`, `confirmed`, `corrected` or
+`prs_opened`; it does not know them. A row carrying
+`metadata.heartbeat_source = 'runner-fallback'` is the wrapper saying the run
+died before you could speak — it is not a Repair verdict.
 
 `status='completed'` with `prs_opened: 0` is a healthy quiet run. Use
 `'failed'` only when the run itself broke — a gate you could not read, a
