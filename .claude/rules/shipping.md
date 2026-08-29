@@ -161,8 +161,8 @@ mechanical, and these are the habits that keep it fixed.
 Do not collapse these. An earlier version of this section did, and overstated
 the MCP one.
 
-**Path 1 — the Supabase MCP server.** `.mcp.json` declares exactly one server,
-pointed at the production project and carrying `read_only=true`:
+**Path 1 — the Supabase MCP server.** `.mcp.json` declares exactly one server
+*in this repo*, pointed at the production project and carrying `read_only=true`:
 
 ```text
 https://mcp.supabase.com/mcp?project_ref=<prod>&read_only=true
@@ -175,6 +175,30 @@ https://mcp.supabase.com/mcp?project_ref=<prod>&read_only=true
   relying on either, and record what you observed.
 
 Never edit `read_only=true` out of `.mcp.json` to make something work.
+
+**`.mcp.json` is not the list of MCP tools you have.** It is the list this REPO
+declares. Account-level connectors add more, and they do not appear in any file
+here — check your own tool inventory rather than inferring it from this
+directory. That distinction cost two days on 2026-08-29: this section said
+"`.mcp.json` declares exactly one server", which is true of the file and was
+read as "one MCP server exists". A Sentry MCP was authenticated and available
+the entire time while ET-4 sat blocked on "we cannot reach Sentry without a
+token".
+
+**The Sentry MCP is the working read path for Sentry.** Org slug `helm-xs`.
+`find_organizations`, `search_issues`, and `search_events` (which does grouped
+aggregates — `field=feature&field=level&field=count_unique(issue)` is how ET-4
+replaced an 85-request fanout with one query). Use it for evidence and for
+answering questions about response shape.
+
+**The Sentry credentials in `.env.local` are NOT usable.** Measured 2026-08-29:
+`SENTRY_READ_TOKEN` and `SENTRY_AUTH_TOKEN` are 11-character placeholders and
+`SENTRY_ORG` is not the real slug, so a direct REST call returns
+`HTTP 401 {"detail":"Invalid token"}`. They still pass `usableSecret()` in
+`src/lib/admin/sentry-api.ts` (>= 10 chars, no placeholder pattern), so
+`config()` treats Sentry as CONFIGURED and every local Sentry read fails soft
+and silently. Production is unaffected. Do not spend time debugging local
+Sentry reads — they cannot work; use the MCP.
 
 **Path 2 — direct database credentials.** `psql`, `supabase db execute`,
 `supabase db query`, and anything else holding
