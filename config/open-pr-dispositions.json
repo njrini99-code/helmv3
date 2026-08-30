@@ -14,11 +14,6 @@
     "worktree_policy": "KEEP",
     "note": "Owned by a CONCURRENT session. This row was transcribed from observable state — PR OPEN, worktree checked out and in use — by the lifecycle session on 2026-08-30, NOT by its owner; the owning session should confirm or correct it. Recorded rather than left blank because leaving it blank is what let --retire park this exact checkout. Carries the qualifier-slot picker fix, a prepared-but-unapplied R3 migration (20260830120000), the unfinished-round reclassification defect, RPC integrity moved toward the database, and a separately identified coach/unfinished-round navigation defect. Those facts must reach feature memory and the incident system when it lands; they must not survive only in the PR description."
   },
-  "1688": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "Control-plane closure PR A: the transitional merge-identity exception that lets this row survive its own merge, the github/main-branch-protection check reading both classic protection and rulesets, and the registered-gap count fix. Canonical checkout — no separate worktree, so nothing to park."
-  },
   "1689": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
