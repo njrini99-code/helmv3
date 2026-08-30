@@ -78,9 +78,14 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 1c. The canonical checkout boundary — what is actually enforced
 
-- **The canonical checkout is the control tower.** All mutating agent work
-  begins in a task worktree: `scripts/new-worktree.sh <task>`.
-- **That is a rule, not a mechanism.** State the narrow truth:
+- **`AGENTS.md` owns workspace and concurrency policy. This section owns only
+  what is mechanically enforced.** Two lines in this file used to answer the
+  same question differently — "All mutating agent work begins in a task
+  worktree" here, and "Never switch branches or create worktrees unless asked"
+  in §2 — while AGENTS.md carried the actual rule: one active session may work
+  in canonical directly; concurrent sessions each take a worktree. Two rules for
+  one decision means neither is followed. The policy is stated once, there.
+- **What is enforced here is narrow, and it is a rule, not a mechanism:**
 
   | Route into canonical | Blocked? | By what |
   | --- | --- | --- |
@@ -106,10 +111,11 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 2. Git and commits
 
-- **Work on the currently checked-out branch; `main` is home.** Never switch
-  branches or create worktrees unless asked; return to clean `main` only when
-  the task is merged and verified — the resting-state policy is AGENTS.md's
-  canonicality section, stated once there. **A push to `main` ships nothing** —
+- **Confirm the branch, then work on it; `main` is home.** Return to clean
+  `main` only when the task is merged and verified. Whether a task takes a
+  worktree or the canonical checkout is AGENTS.md's call, not this file's — its
+  canonicality section is where that policy is stated, once.
+  **A push to `main` ships nothing** —
   `vercel.json` carries `"git": {"deploymentEnabled": {"*": false}}`, so no
   branch auto-deploys; production is an on-demand promote.
 - **`git add <explicit paths>`. Never `git add -A`.** Every agent in this repo
