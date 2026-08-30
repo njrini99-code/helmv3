@@ -187,12 +187,27 @@ export function describeBlindness(
   rows: readonly SourceFreshness[],
   reasons: ReadonlyMap<IncidentSourceName, string | null>,
 ): string | null {
-  const blind = rows.filter((r) => r.health === 'blind');
-  if (blind.length === 0) return null;
-  const parts = blind.map((row) => {
+  const describe = (row: SourceFreshness) => {
     const reason = reasons.get(row.source);
     const label = row.source.toUpperCase();
     return reason ? `${label} (${reason})` : label;
-  });
-  return `Reliability coverage incomplete — ${parts.join(', ')} could not be read this refresh.`;
+  };
+
+  const blind = rows.filter((r) => r.health === 'blind');
+  // PARTIAL sources are named too, as of 2026-08-30. A source that reads one
+  // arm and is blind on another was recorded in `health` and reported nowhere:
+  // the beacon only listed fully-blind sources, so a degradation was carried in
+  // the data and invisible on the screen. A degradation nothing surfaces is the
+  // same class of defect as one nothing records.
+  //
+  // The two are worded differently on purpose. "Could not be read" is a
+  // complete blackout; "incomplete" is a source still delivering some of its
+  // signal. Collapsing them would trade one wrong claim for another.
+  const partial = rows.filter((r) => r.health === 'partial');
+  if (blind.length === 0 && partial.length === 0) return null;
+
+  const clauses: string[] = [];
+  if (blind.length > 0) clauses.push(`${blind.map(describe).join(', ')} could not be read this refresh`);
+  if (partial.length > 0) clauses.push(`${partial.map(describe).join(', ')} read incompletely`);
+  return `Reliability coverage incomplete — ${clauses.join('; ')}.`;
 }

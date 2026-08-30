@@ -55,7 +55,9 @@ function checkIn(root: string, id: string) {
   const r = spawnSync('node', [VERIFY, '--static', '--json'], {
     cwd: REPO,
     encoding: 'utf-8',
-    env: { ...process.env, HELM_CONTROL_PLANE_ROOT: root },
+    // Skip the nested vitest run — see the guard in control-plane-verify.mjs.
+    // It reports UNKNOWN when skipped, so nothing here is silently upgraded.
+    env: { ...process.env, HELM_CONTROL_PLANE_ROOT: root, HELM_CP_SKIP_NESTED_TESTS: '1' },
   });
   const parsed = JSON.parse(r.stdout);
   return parsed.results.find((x: { id: string }) => x.id === id) ?? null;
@@ -267,7 +269,7 @@ describe('SENTINEL: injections can never reach the live checkout', () => {
     const r = spawnSync('node', [VERIFY, '--static', '--json'], {
       cwd: REPO,
       encoding: 'utf-8',
-      env: { ...process.env, HELM_CONTROL_PLANE_ROOT: base },
+      env: { ...process.env, HELM_CONTROL_PLANE_ROOT: base, HELM_CP_SKIP_NESTED_TESTS: '1' },
     });
     const parsed = JSON.parse(r.stdout);
     const hookCheck = parsed.results.find((x: { id: string }) => x.id === 'hook-scripts-exist');
