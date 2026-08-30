@@ -86,6 +86,43 @@ describe('new-worktree.sh refuses rather than half-creating', () => {
   });
 });
 
+describe('a new workspace starts undisposable', () => {
+  // The half of the ownership problem the OPEN-PR gate cannot reach: before a
+  // PR exists there is no row to key intent on, and a five-minute-old worktree
+  // is clean, pushed and lsof-silent — every signal the old rule read as
+  // "disposable". So the marker starts at KEEP and releasing it is a positive
+  // act. Asserted at the SOURCE because creating a real worktree here would
+  // spend the single-mutation budget the script itself enforces.
+  const script = readFileSync(SCRIPT, 'utf-8');
+
+  /** The heredoc that is actually written, not the prose around it. */
+  const emitted = (() => {
+    const open = script.indexOf('<<JSON', script.indexOf('.helm/workspace.json'));
+    return script.slice(open, script.indexOf('\nJSON', open));
+  })();
+
+  it('scripts/new-worktree.sh writes parkPolicy: KEEP into the marker', () => {
+    expect(emitted).toMatch(/"parkPolicy":\s*"KEEP"/);
+  });
+
+  it('it never EMITS PARK_IF_REPRODUCIBLE at creation', () => {
+    // Scoped to the heredoc on purpose: the comment above it names the value a
+    // human must type to release a checkout, and that is the point of the
+    // comment. A whole-file match would forbid explaining the mechanism.
+    expect(emitted).not.toMatch(/PARK_IF_REPRODUCIBLE/);
+  });
+
+  it('the lifecycle tool refuses anything the marker has not released', () => {
+    const lib = readFileSync(resolve(REPO, 'scripts/lib/worktree-lifecycle.mjs'), 'utf-8');
+    // The gate must sit BEFORE the reproducibility checks, or a released-looking
+    // checkout could be parked on pushed-ness alone — the #1681 shape.
+    const gate = lib.indexOf('KEEP_WORKSPACE_INTENT_REQUIRED,\n      reason:');
+    const upstream = lib.indexOf("verdict: UNKNOWN_REMOTE");
+    expect(gate).toBeGreaterThan(0);
+    expect(upstream).toBeGreaterThan(gate);
+  });
+});
+
 describe('worktree retirement carries a standing grant', () => {
   it('AGENTS.md says an agent may run --remove for RETIRABLE rows', () => {
     // #1654 shipped retirement as report-only with owner approval required,

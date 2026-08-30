@@ -29,6 +29,8 @@ import {
   isProtectedBranch,
   ACTIVE,
   PARKABLE,
+  KEEP_WORKSPACE_INTENT_REQUIRED,
+  mayActAutonomously,
   RETIRABLE,
   UNKNOWN,
   UNKNOWN_REMOTE,
@@ -59,6 +61,10 @@ const CLI = resolve(REPO, 'scripts/worktree-lifecycle.mjs');
 const SHA_A = 'a'.repeat(40);
 const SHA_B = 'b'.repeat(40);
 
+// "clean" means nothing stands in the way — which since 2026-08-30 includes a
+// workspace that has RELEASED itself. Leaving parkPolicy out here would silently
+// convert every test below into a test of the new gate instead of the one it was
+// written for; the gate's own behaviour is pinned in its own describe block.
 const clean = {
   isCanonical: false,
   isCurrentExecution: false,
@@ -68,6 +74,8 @@ const clean = {
   upstream: 'origin/agent/x',
   localSha: SHA_A,
   remoteSha: SHA_A,
+  parkPolicy: WORKTREE_POLICY_PARK_IF_REPRODUCIBLE,
+  workspaceMarker: 'present',
 };
 
 describe('worktree classification — refusals first', () => {
@@ -145,6 +153,81 @@ const openPr = {
   disposition: null,
   worktreePolicy: null,
 };
+
+describe('a checkout is disposable only if its own workspace says so', () => {
+  // The residue the #1681 fix left behind, registered as
+  // WORKTREE_PARK_NO_PR_OWNERSHIP: the OPEN-PR gate cannot cover the window
+  // BEFORE a PR exists, and that window is where a session starts. A worktree
+  // five minutes old is clean, pushed, has no PR to key a disposition on, and is
+  // invisible to lsof between two tool calls.
+  const noPr = { ...clean, prLookup: 'OK', prState: 'NONE', prNumber: null };
+
+  it('KEEPS a PR-less checkout whose workspace says KEEP', () => {
+    const v = classifyWorktree({ ...noPr, parkPolicy: WORKTREE_POLICY_KEEP });
+    expect(v.verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+    expect(v.reason).toMatch(/parkPolicy is KEEP/);
+  });
+
+  it('KEEPS a checkout with NO .helm/workspace.json at all', () => {
+    // Not a hypothetical: measured 2026-08-30, the one live non-canonical
+    // worktree (agent/round-type-reclassify) predates the marker entirely.
+    const v = classifyWorktree({ ...noPr, parkPolicy: null, workspaceMarker: 'absent' });
+    expect(v.verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+    expect(v.reason).toMatch(/no \.helm\/workspace\.json/);
+  });
+
+  it('KEEPS a marker that exists but carries no parkPolicy key', () => {
+    const v = classifyWorktree({ ...noPr, parkPolicy: null, workspaceMarker: 'present' });
+    expect(v.verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+    expect(v.reason).toMatch(/parkPolicy is unset/);
+  });
+
+  it('KEEPS an unreadable marker — a broken file is not a release', () => {
+    const v = classifyWorktree({ ...noPr, parkPolicy: null, workspaceMarker: 'unreadable' });
+    expect(v.verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+    expect(v.reason).toMatch(/could not be read/);
+  });
+
+  it('KEEPS an unrecognised parkPolicy value', () => {
+    expect(classifyWorktree({ ...noPr, parkPolicy: 'PARK' }).verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+  });
+
+  it('PARKS a PR-less checkout once its workspace releases it', () => {
+    expect(classifyWorktree(noPr).verdict).toBe(PARKABLE);
+  });
+
+  it('a positive process sighting still overrides a released workspace', () => {
+    expect(classifyWorktree({ ...noPr, hasLiveProcess: true }).verdict).toBe(ACTIVE);
+  });
+
+  it('a negative process sighting still authorises nothing on its own', () => {
+    // The whole point: with the workspace saying KEEP, lsof silence changes
+    // nothing. That inference is what removed a live checkout on 2026-08-30.
+    expect(
+      classifyWorktree({ ...noPr, parkPolicy: WORKTREE_POLICY_KEEP, hasLiveProcess: false }).verdict,
+    ).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+  });
+
+  it('an OPEN PR released by its owner CANNOT override a workspace KEEP', () => {
+    // Two different facts, and both must permit. Workspace identity answers
+    // "may this CHECKOUT go"; PR state answers "may this BRANCH be deleted".
+    const v = classifyWorktree({
+      ...clean,
+      parkPolicy: WORKTREE_POLICY_KEEP,
+      prLookup: 'OK',
+      prNumber: 1659,
+      prState: 'OPEN',
+      disposition: 'HUMAN_TEST_PENDING',
+      worktreePolicy: WORKTREE_POLICY_PARK_IF_REPRODUCIBLE,
+    });
+    expect(v.verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+  });
+
+  it('the new verdict is excluded from autonomous action', () => {
+    expect(REQUIRES_HUMAN_VERDICTS.has(KEEP_WORKSPACE_INTENT_REQUIRED)).toBe(true);
+    expect(mayActAutonomously(KEEP_WORKSPACE_INTENT_REQUIRED)).toBe(false);
+  });
+});
 
 describe('an OPEN PR needs its owner to release the checkout', () => {
   it('REPRODUCES #1681: the exact fact-set that was parked is now refused', () => {
@@ -417,6 +500,12 @@ describe('the CLI, against real worktrees', () => {
     git(['init', '-q', '-b', 'main'], canonical);
     git(['config', 'user.email', 't@e.com'], canonical);
     git(['config', 'user.name', 'T'], canonical);
+    // .gitignore:257 in the real repo ignores .helm/, which is why writing the
+    // workspace marker does not make a checkout dirty there. Without the same
+    // line here the marker itself would read as uncommitted work and every
+    // worktree below would classify ACTIVE — the fixture disagreeing with
+    // production about what "clean" means.
+    writeFileSync(join(canonical, '.gitignore'), '.helm/\n');
     commit(canonical, 'base');
     writePrStub({});
   });
@@ -470,10 +559,17 @@ describe('the CLI, against real worktrees', () => {
    * branch.*.remote/merge — without it git reports no upstream and the tool
    * correctly refuses to park work it cannot prove is pushed.
    */
-  function pushedWorktree(name: string): string {
+  function pushedWorktree(name: string, parkPolicy: string | null = 'PARK_IF_REPRODUCIBLE'): string {
     const wt = join(tmp, name);
     const branch = `agent/${name}`;
     git(['worktree', 'add', '-q', '--no-track', '-b', branch, wt, 'main'], canonical);
+    // scripts/new-worktree.sh writes .helm/workspace.json; a raw `git worktree
+    // add` does not, and the workspace gate correctly refuses one without it.
+    // Pass null to exercise exactly that.
+    if (parkPolicy !== null) {
+      mkdirSync(join(wt, '.helm'), { recursive: true });
+      writeFileSync(join(wt, '.helm/workspace.json'), JSON.stringify({ kind: 'task', parkPolicy }));
+    }
     if (!git(['remote'], canonical).includes('origin')) {
       git(['remote', 'add', 'origin', canonical], canonical);
       git(['config', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*'], canonical);
@@ -494,6 +590,26 @@ describe('the CLI, against real worktrees', () => {
     const out = run(['--park']);
     expect(git(['worktree', 'list'], canonical)).toContain(wt);
     expect(out).toMatch(/KEEP_PR_OWNER_INTENT_REQUIRED/);
+  });
+
+  it('--park refuses a PR-LESS checkout whose workspace has not released it', () => {
+    // The window the OPEN-PR gate cannot see: no PR exists yet, so there is no
+    // row to key intent on. Before this, reproducibility alone decided.
+    const wt = pushedWorktree('w4c', 'KEEP');
+    writePrStub({});
+
+    const out = run(['--park']);
+    expect(git(['worktree', 'list'], canonical)).toContain(wt);
+    expect(out).toMatch(/KEEP_WORKSPACE_INTENT_REQUIRED/);
+  });
+
+  it('--park refuses a checkout with no .helm/workspace.json at all', () => {
+    const wt = pushedWorktree('w4d', null);
+    writePrStub({});
+
+    const out = run(['--park']);
+    expect(git(['worktree', 'list'], canonical)).toContain(wt);
+    expect(out).toMatch(/no \.helm\/workspace\.json/);
   });
 
   it('--park still refuses when the disposition says KEEP', () => {

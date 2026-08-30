@@ -90,6 +90,33 @@ export const KEEP_PR_OWNER_INTENT_REQUIRED = 'KEEP_PR_OWNER_INTENT_REQUIRED';
  * It was being asked to also imply what may happen to the checkout, which is a
  * second meaning readers had to infer. The policy states the action directly.
  */
+/**
+ * A checkout whose OWN workspace identity has not released it.
+ *
+ * The #1681 fix requires positive owner intent before parking a checkout whose
+ * branch has an OPEN PR. It never covered the window BEFORE a PR exists — and
+ * that window is where a session actually starts. A worktree created five
+ * minutes ago is clean, pushed, has no PR to key a disposition on, and is
+ * invisible to `lsof` between two tool calls: every signal the old rule used
+ * says "disposable", and every one of them is wrong.
+ *
+ * So disposability is now declared by the WORKSPACE, in the marker
+ * scripts/new-worktree.sh already writes:
+ *
+ *     .helm/workspace.json  ->  { "parkPolicy": "KEEP" }
+ *
+ * KEEP at creation, always. It becomes PARK_IF_REPRODUCIBLE only when somebody
+ * edits it, which is the positive act the old rule lacked. Absent file, absent
+ * key, unknown value, unreadable JSON — every one of them KEEPS. Never infer
+ * parkability from the shape of a missing answer.
+ *
+ * This is a DIFFERENT fact from PR state, and both still apply:
+ *
+ *     workspace identity  ->  may this CHECKOUT go?
+ *     PR state            ->  may this BRANCH be deleted?
+ */
+export const KEEP_WORKSPACE_INTENT_REQUIRED = 'KEEP_WORKSPACE_INTENT_REQUIRED';
+
 export const WORKTREE_POLICY_KEEP = 'KEEP';
 export const WORKTREE_POLICY_PARK_IF_REPRODUCIBLE = 'PARK_IF_REPRODUCIBLE';
 export const WORKTREE_POLICIES = new Set([WORKTREE_POLICY_KEEP, WORKTREE_POLICY_PARK_IF_REPRODUCIBLE]);
@@ -159,6 +186,11 @@ export function isProtectedBranch(branch) {
  *   prState         'MERGED'|'OPEN'|'CLOSED'|'NONE'|null
  *   disposition     string|null   from config/open-pr-dispositions.json
  *   worktreePolicy  string|null   KEEP | PARK_IF_REPRODUCIBLE
+ *
+ * Workspace identity (.helm/workspace.json in the checkout itself):
+ *   parkPolicy      string|null   KEEP | PARK_IF_REPRODUCIBLE; anything else,
+ *                                 including null, means KEEP
+ *   workspaceMarker 'present'|'absent'|'unreadable'|null   for the reason line
  */
 export function classifyWorktree(facts) {
   const f = facts ?? {};
@@ -181,6 +213,23 @@ export function classifyWorktree(facts) {
   if (!f.branch) {
     // Detached: there is no ref to recreate the checkout from.
     return { verdict: UNKNOWN, reason: 'detached HEAD — no branch identity to park against' };
+  }
+
+  // WORKSPACE GATE. First of the two ownership gates, and unconditional: a
+  // checkout that has not released itself is never parkable, whatever its PR
+  // says. This is the half that covers work BEFORE a PR exists — the residue
+  // the #1681 fix left behind, registered then as WORKTREE_PARK_NO_PR_OWNERSHIP.
+  if (f.parkPolicy !== WORKTREE_POLICY_PARK_IF_REPRODUCIBLE) {
+    const how =
+      f.workspaceMarker === 'absent'
+        ? 'no .helm/workspace.json — a checkout that predates the marker, or was not made by scripts/new-worktree.sh'
+        : f.workspaceMarker === 'unreadable'
+          ? '.helm/workspace.json could not be read'
+          : `.helm/workspace.json parkPolicy is ${f.parkPolicy ?? 'unset'}`;
+    return {
+      verdict: KEEP_WORKSPACE_INTENT_REQUIRED,
+      reason: `${how} — only parkPolicy: ${WORKTREE_POLICY_PARK_IF_REPRODUCIBLE} releases a checkout`,
+    };
   }
 
   // OWNERSHIP GATE. Runs before the reproducibility checks on purpose: when an
@@ -390,6 +439,7 @@ export function combineVerdicts(worktreeVerdict, branchVerdict) {
 export const AUTONOMOUS_WORKTREE_VERDICTS = new Set([PARKABLE, RETIRABLE]);
 export const AUTONOMOUS_BRANCH_VERDICTS = new Set([DELETE_MERGED_EXACT]);
 export const REQUIRES_HUMAN_VERDICTS = new Set([
+  KEEP_WORKSPACE_INTENT_REQUIRED,
   UNKNOWN_PR, KEEP_OPEN, KEEP_DIVERGED_AFTER_PR, KEEP_PROTECTED,
   KEEP_WORKTREE_ACTIVE, KEEP_DIRTY, NO_UPSTREAM_UNIQUE_WORK,
   UNKNOWN_REMOTE, UNKNOWN_IDENTITY, KEEP_PR_OWNER_INTENT_REQUIRED,
