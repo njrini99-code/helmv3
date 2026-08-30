@@ -14,7 +14,7 @@ features:
     docs:
       feature: docs/ai-system/helmv3-ai-codebase-intelligence.md
       flows:
-        - docs/superpowers/plans/2026-05-28-ai-codebase-intelligence.md
+        - docs/ai-system/helmv3-ai-codebase-intelligence.md
       ui:
         - AGENTS.md
         - CLAUDE.md
@@ -240,7 +240,6 @@ features:
       flows:
         - docs/features/SHOT_TRACKING_DATA_FLOW.md
         - docs/features/SHOT_TRACKING_VERIFICATION.md
-        - docs/ROUND_REVIEW_ACCURACY_REPORT.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
@@ -370,8 +369,7 @@ features:
       business_logic:
         - docs/v3-research-golf-domain.md
         - docs/v3-testing-standards.md
-      incidents:
-        - docs/ROUND_REVIEW_ACCURACY_REPORT.md
+      incidents: []
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/rounds/new/**
@@ -432,8 +430,7 @@ features:
       business_logic:
         - docs/v3-research-golf-domain.md
         - docs/v3-testing-standards.md
-      incidents:
-        - docs/ROUND_REVIEW_ACCURACY_REPORT.md
+      incidents: []
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/stats/**

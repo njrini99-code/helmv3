@@ -12,8 +12,13 @@
  *
  *   check-doc-coverage        every mapped feature has the docs it claims
  *   stale-doc-check           feature code changed without its docs moving
+ *   check-registry-globs      every registry code glob still matches something
  *   check-ledger-integrity    incidents, repair units, ledgers, gaps and
  *                             decisions all refer to things that exist
+ *   check-authority           current authority resolves, is current, and names
+ *                             its source
+ *   document-inventory --check  the generated document inventory still matches
+ *                             the tracked tree
  *   check-feature-registry    the semantic router and the runtime observability
  *                             vocabulary still agree about who owns what
  *   gen-feature-map --check   the generated feature map still matches its sources
@@ -36,7 +41,16 @@ execFileSync(process.execPath, ['scripts/knowledge/check-doc-coverage.mjs', ...a
 execFileSync(process.execPath, ['scripts/knowledge/stale-doc-check.mjs', ...args], {
   stdio: 'inherit',
 });
+execFileSync(process.execPath, ['scripts/check-registry-globs.mjs', ...args], {
+  stdio: 'inherit',
+});
 execFileSync(process.execPath, ['scripts/knowledge/check-ledger-integrity.mjs', ...args], {
+  stdio: 'inherit',
+});
+execFileSync(process.execPath, ['scripts/knowledge/check-authority.mjs', ...args], {
+  stdio: 'inherit',
+});
+execFileSync(process.execPath, ['scripts/knowledge/document-inventory.mjs', '--check'], {
   stdio: 'inherit',
 });
 
