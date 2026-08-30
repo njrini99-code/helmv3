@@ -47,14 +47,6 @@
       "contract": "docs/OBSERVABILITY_AUTHORITY.md"
     },
     {
-      "id": "WORKTREE_PARK_NO_PR_OWNERSHIP",
-      "owner": "founder",
-      "opened": "2026-08-30",
-      "scope": "scripts/lib/worktree-lifecycle.mjs classifyWorktree",
-      "reason": "The #1681 fix requires positive owner intent before parking a checkout whose branch has an OPEN PR. It does NOT cover a worktree whose branch has no PR at all — there, reproducibility alone still decides, exactly as before. That is the same defect class: a session working in a worktree BEFORE opening a PR is clean, pushed and invisible to lsof between tool calls, and has no row in config/open-pr-dispositions.json because there is no PR to key one on. Left open rather than closed by extending the rule, because requiring recorded intent for every branch would make --park unable to act at all, and parking exists so an open PR waiting on a human stops costing ~3.8 GiB. Narrower in practice than it reads: HELM_MAX_MUTATION_WORKTREES defaults to 1, so a second concurrent mutation workspace is refused before it can be created.",
-      "closes_when": "a worktree carries a durable ownership marker independent of its PR — a session id written at creation by scripts/new-worktree.sh and checked for liveness — or the mutation budget is proven to make concurrent PR-less worktrees unreachable."
-    },
-    {
       "id": "MAIN_ADMIN_BYPASS_AVAILABLE",
       "owner": "founder",
       "opened": "2026-08-30",
@@ -75,6 +67,12 @@
       "opened": "2026-08-30",
       "closed": "2026-08-30",
       "how": "computeTeamGrade gained an explicit UNKNOWN grade, checked BEFORE every other rule so a dormant team with an unreadable count is ungradeable rather than graded D by luck. team-page-extras resolves a rejected read to null instead of 0, the page renders an em-dash with an explaining title and adds errors7d to its existing degraded banner, and computeTeamComputedInsights no longer prints \"fully active with no errors\" from an unread count. Regression tests cover the grade, the insights strip and the producer — the producer one exists because reverting it to 0 TYPECHECKS CLEANLY (number is assignable to number|null), so only a behavioural test stops it coming back."
+    },
+    {
+      "id": "WORKTREE_PARK_NO_PR_OWNERSHIP",
+      "opened": "2026-08-30",
+      "closed": "2026-08-30",
+      "how": "Checkout disposability now comes from the workspace's own identity, not from inference. scripts/new-worktree.sh writes parkPolicy: KEEP into the .helm/workspace.json marker it already created, and classifyWorktree refuses to park anything the marker has not explicitly moved to PARK_IF_REPRODUCIBLE — verdict KEEP_WORKSPACE_INTENT_REQUIRED, which sits outside the standing autonomous authorization. The gate runs BEFORE the reproducibility checks and independently of any PR, so it covers the window the #1681 fix could not reach: the one before a PR exists. Absent file, absent key, unknown value and unreadable JSON all KEEP; a positive lsof sighting still vetoes; a negative one still authorises nothing. Two facts stay separate — workspace identity answers whether the CHECKOUT may go, PR state answers whether the BRANCH may be deleted — and an OPEN PR released by its owner cannot override a workspace KEEP. CLOSED DIFFERENTLY FROM THE ORIGINAL CONDITION, deliberately: that asked for a session id checked for LIVENESS, which is the same unsound negative-evidence inference in a new costume — a session between two tool calls looks dead. Declared intent needs no liveness probe. Proven by 72 tests in worktree-lifecycle.test.ts, including end-to-end --park runs against real git worktrees with the marker absent, KEEP, and released."
     }
   ]
 }

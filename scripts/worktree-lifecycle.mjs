@@ -135,6 +135,25 @@ function prFor(branch) {
 }
 
 /**
+ * Recorded intent for the CHECKOUT, read from the checkout itself.
+ *
+ * scripts/new-worktree.sh already writes .helm/workspace.json; this adds one
+ * field to it rather than a second ownership store. Every failure mode returns
+ * a marker state and no policy, which classifyWorktree turns into KEEP —
+ * absence is never permission.
+ */
+function workspaceIntent(path) {
+  const f = resolve(path, '.helm/workspace.json');
+  if (!existsSync(f)) return { marker: 'absent', parkPolicy: null };
+  try {
+    const j = JSON.parse(readFileSync(f, 'utf-8'));
+    return { marker: 'present', parkPolicy: typeof j.parkPolicy === 'string' ? j.parkPolicy : null };
+  } catch {
+    return { marker: 'unreadable', parkPolicy: null };
+  }
+}
+
+/**
  * Recorded owner intent for OPEN PRs. Read from the repository being ACTED ON,
  * like every other fact here — a fixture repo gets its own file or none, never
  * the live one's.
@@ -261,6 +280,10 @@ for (const w of wts) {
     prState: pr.state ?? null,
     disposition: disp?.disposition ?? null,
     worktreePolicy: disp?.worktree_policy ?? null,
+    ...(isCanonical ? { parkPolicy: null, workspaceMarker: null } : (() => {
+      const ws = workspaceIntent(w.path);
+      return { parkPolicy: ws.parkPolicy, workspaceMarker: ws.marker };
+    })()),
   };
   const wv = classifyWorktree(wFacts);
   const bv = w.branch
@@ -297,6 +320,8 @@ for (const w of wts) {
     prState: pr.state ?? 'UNKNOWN',
     prHeadSha: pr.headSha ? pr.headSha.slice(0, 9) : '-',
     tipMatchesPr: pr.headSha ? (pr.headSha === localSha ? 'yes' : 'no') : '-',
+    parkPolicy: wFacts.parkPolicy ?? '-',
+    workspaceMarker: wFacts.workspaceMarker ?? '-',
     disposition: wFacts.disposition ?? '-',
     worktreePolicy: wFacts.worktreePolicy ?? '-',
     worktreeVerdict: wv.verdict,
@@ -356,9 +381,9 @@ if (JSON_OUT) {
 }
 
 const H = ['BRANCH', 'WORKTREE', 'SIZE', 'DIRTY', 'CWD', 'PR', 'PR_STATE', 'TIP=PR', 'WT_VERDICT', 'BR_VERDICT', 'ACTION'];
-// WT_VERDICT is 30 wide because KEEP_PR_OWNER_INTENT_REQUIRED is 29 characters
+// WT_VERDICT is 32 wide because KEEP_WORKSPACE_INTENT_REQUIRED is 30 characters
 // and a report that wraps its own verdict column is a report nobody reads.
-const W = [34, 44, 6, 7, 7, 6, 9, 7, 30, 24, 14];
+const W = [34, 44, 6, 7, 7, 6, 9, 7, 32, 24, 14];
 const line = (c) => c.map((v, i) => String(v).padEnd(W[i])).join(' ');
 console.log(line(H));
 console.log('-'.repeat(W.reduce((a, b) => a + b + 1, 0)));

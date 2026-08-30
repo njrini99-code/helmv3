@@ -14,10 +14,10 @@
     "worktree_policy": "KEEP",
     "note": "Owned by a CONCURRENT session. This row was transcribed from observable state — PR OPEN, worktree checked out and in use — by the lifecycle session on 2026-08-30, NOT by its owner; the owning session should confirm or correct it. Recorded rather than left blank because leaving it blank is what let --retire park this exact checkout. Carries the qualifier-slot picker fix, a prepared-but-unapplied R3 migration (20260830120000), the unfinished-round reclassification defect, RPC integrity moved toward the database, and a separately identified coach/unfinished-round navigation defect. Those facts must reach feature memory and the incident system when it lands; they must not survive only in the PR description."
   },
-  "1688": {
+  "1689": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Control-plane closure PR A: the transitional merge-identity exception that lets this row survive its own merge, the github/main-branch-protection check reading both classic protection and rulesets, and the registered-gap count fix. Canonical checkout — no separate worktree, so nothing to park."
+    "note": "Control-plane closure PR B: checkout disposability moves into .helm/workspace.json parkPolicy, closing WORKTREE_PARK_NO_PR_OWNERSHIP. Canonical checkout — no separate worktree, so nothing to park."
   },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
@@ -56,6 +56,19 @@
     "worktree_policy — what may HAPPEN to its checkout:",
     "  KEEP                    never park it automatically",
     "  PARK_IF_REPRODUCIBLE    park it once clean and pushed; the branch stays",
+    "",
+    "worktree_policy IS NOW THE SECOND OF TWO GATES, and is on its way out. Since",
+    "2026-08-30 a checkout is released by its own .helm/workspace.json",
+    "(parkPolicy), which covers the window before a PR exists — the window this",
+    "field cannot see. Both gates must permit, so this field can only ever make the",
+    "answer more conservative.",
+    "",
+    "It is kept for now rather than deleted in the same change, for one concrete",
+    "reason: #1659 is PARKED. There is no checkout on disk to carry a marker, so",
+    "deleting this field would delete the only recorded authorization for it.",
+    "Remove the field when #1659 is resolved, or when its worktree is recreated and",
+    "its intent written into the marker — and remove the residue check’s policy",
+    "validation in the same change.",
     "",
     "The second field exists because the first was being asked to imply it. On",
     "2026-08-30 `--retire` parked a concurrent session's worktree (#1681) purely",

@@ -244,9 +244,34 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   fine; what is missing is a decision). #1659 is the case this preserves: an
   open PR waiting on a physical-device test, released explicitly by its owner.
 
-  The narrowing does not reach a branch with **no** PR, where reproducibility
-  still decides alone. That residual is registered as
-  `WORKTREE_PARK_NO_PR_OWNERSHIP` rather than quietly accepted.
+  **A checkout is disposable only if it says so itself.** That rule above is
+  keyed on a PR, and a session starts working before one exists — so it left the
+  window where the failure actually happens. Since 2026-08-30 the answer comes
+  from the workspace's own identity instead:
+
+  ```text
+  .helm/workspace.json  ->  { "parkPolicy": "KEEP" }   written at creation
+                            "PARK_IF_REPRODUCIBLE"     only if a human sets it
+  ```
+
+  `new-worktree.sh` always writes `KEEP`. Releasing a checkout is a positive
+  act, and everything else keeps it: no marker, no key, an unknown value, a file
+  that will not parse. The gate runs before the reproducibility checks and
+  independently of any PR, so both must permit — an OPEN PR its owner released
+  still cannot override a workspace `KEEP`. Verdict:
+  `KEEP_WORKSPACE_INTENT_REQUIRED`, outside the standing authorization.
+
+  The two remain different questions, and conflating them is what caused this:
+
+  ```text
+  workspace identity   may this CHECKOUT go?
+  PR state             may this BRANCH be deleted?
+  ```
+
+  `WORKTREE_PARK_NO_PR_OWNERSHIP` is closed by this, but **not** the way its
+  closing condition asked. That asked for a session id checked for LIVENESS,
+  which is the same unsound negative-evidence inference in a new costume: a
+  session between two tool calls looks dead. Declared intent needs no probe.
 
   **Retire the worktree in the SAME step that merges its PR** — not at the end
   of a session, and not by reporting it to the owner. `--remove` carries a
