@@ -14,10 +14,10 @@
     "worktree_policy": "KEEP",
     "note": "Owned by a CONCURRENT session. This row was transcribed from observable state — PR OPEN, worktree checked out and in use — by the lifecycle session on 2026-08-30, NOT by its owner; the owning session should confirm or correct it. Recorded rather than left blank because leaving it blank is what let --retire park this exact checkout. Carries the qualifier-slot picker fix, a prepared-but-unapplied R3 migration (20260830120000), the unfinished-round reclassification defect, RPC integrity moved toward the database, and a separately identified coach/unfinished-round navigation defect. Those facts must reach feature memory and the incident system when it lands; they must not survive only in the PR description."
   },
-  "1691": {
+  "1692": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Control-plane closure PR D: the error-surface reconciliation block on /admin/errors (closes ERROR_SURFACES_DISAGREE), and the ADR recording why sandbox.filesystem stays disabled. Canonical checkout — nothing to park."
+    "note": "Opened 2026-08-30 from the canonical checkout. Application compatibility for a nullable golf_players.user_id (four notification fan-outs, shipped BEFORE migration 20260819200000 because the filter is a no-op while the column is NOT NULL), plus the classification of all 42 repo migrations with no production ledger row. Applies no migration and changes no production state. Canonical checkout — nothing to park. This PR also clears #1691's row, which was transitionally closed at a03ef845d and went stale the moment HEAD moved past it; that is the exception working, not a defect."
   },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
