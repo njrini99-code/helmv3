@@ -29,7 +29,11 @@ const HEALTH_TONE: Record<TeamHealth, 'success' | 'warning' | 'danger'> = {
   dormant: 'danger',
 };
 
+// UNKNOWN is neutral, deliberately. It is not a bad grade — it means the
+// inputs could not be established, and colouring it like a failing team would
+// be its own false claim in the other direction.
 const GRADE_TONE: Record<TeamGrade, string> = {
+  UNKNOWN: 'border-warm-300 bg-warm-50 text-warm-600',
   A: 'border-accent-500 bg-accent-50 text-accent-700',
   B: 'border-accent-300 bg-accent-50 text-accent-700',
   C: 'border-fw-warning bg-fw-warning-bg text-warm-800',
@@ -127,7 +131,15 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
     fetchTeamDetailExtras({ teamId, rosterIndex }),
   ]);
   const { qualifiers, inFlight } = teamExtras;
-  const allDegraded = [...degraded, ...teamExtras.degraded];
+  const allDegraded = [
+    ...degraded,
+    ...teamExtras.degraded,
+    // An unreadable 7-day error count degrades this page the same way any other
+    // unreadable panel does. Before 2026-08-30 it resolved to 0 and graded the
+    // team 'A' — the banner below already promises panels show "unknown, not
+    // zero", and this is the one that did not keep that promise.
+    ...(extras.errors7d === null ? ['errors7d'] : []),
+  ];
 
   const now = new Date();
   const health = classifyTeamHealth(teamLastActivity, now);
@@ -187,9 +199,13 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
                   'inline-flex h-7 w-7 items-center justify-center rounded-full border-2 font-fw-mono text-xs font-bold',
                   GRADE_TONE[grade],
                 )}
-                title={`Team grade: ${grade}`}
+                title={
+                  grade === 'UNKNOWN'
+                    ? 'Team grade unavailable — the 7-day error count could not be read, and an unread count is not zero.'
+                    : `Team grade: ${grade}`
+                }
               >
-                {grade}
+                {grade === 'UNKNOWN' ? '—' : grade}
               </span>
               <Link
                 href={`/admin/thread/team/${teamId}`}
