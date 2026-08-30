@@ -19,6 +19,11 @@
     "worktree_policy": "KEEP",
     "note": "Control-plane closure PR A: the transitional merge-identity exception that lets this row survive its own merge, the github/main-branch-protection check reading both classic protection and rulesets, and the registered-gap count fix. Canonical checkout — no separate worktree, so nothing to park."
   },
+  "1689": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Control-plane closure PR B: checkout disposability moves into .helm/workspace.json parkPolicy, closing WORKTREE_PARK_NO_PR_OWNERSHIP. Canonical checkout — no separate worktree, so nothing to park."
+  },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
     "exactly — control-plane:verify FAILS on a missing entry AND on a stale one.",
