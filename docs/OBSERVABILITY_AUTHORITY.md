@@ -118,8 +118,23 @@ OVERALL                 partial      — the two are not reconciled
 
 rather than one surface's zero standing in for production health.
 
-Tracked as `ERROR_SURFACES_DISAGREE` in `config/control-plane-gaps.json`, with
-this document as its definition of done.
+~~Tracked as `ERROR_SURFACES_DISAGREE` in `config/control-plane-gaps.json`, with
+this document as its definition of done.~~
+
+**SHIPPED 2026-08-30.** `src/lib/admin/incidents/reconciliation.ts` is the
+verdict; `ErrorSurfaceReconciliation` renders the three rows on
+`/admin/errors`. The gap is closed with that evidence.
+
+Two things the implementation had to decide that this contract did not say:
+
+- **The counts are asymmetric.** Application events are counted at
+  error-or-worse, because `admin_events` is graded and the grading is its
+  value. Sentry incidents are counted ungraded, because the rule below forbids
+  silencing an issue on Helm's opinion of a fault Helm never handled.
+- **The block renders even when the surfaces agree.** `BlindnessBeacon` returns
+  null when nothing is wrong, and that is right for a warning. It is wrong for a
+  reconciliation: without a visible row, "the two agree" and "nobody compared
+  them" look identical — which is the failure this contract exists to remove.
 
 ---
 

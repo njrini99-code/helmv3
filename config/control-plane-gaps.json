@@ -38,15 +38,6 @@
       "closes_when": "the owner either completes the OAuth flow and observes what apply_migration actually does, or moves migrations to a path whose capability matches the authorization."
     },
     {
-      "id": "ERROR_SURFACES_DISAGREE",
-      "owner": "founder",
-      "opened": "2026-08-30",
-      "scope": "admin_events vs Sentry",
-      "reason": "Measured 2026-08-30: admin_events reported 0 error-or-worse rows in 48h while Sentry reported 12 unresolved issues, several receiving events within hours. Both were correct, and the cause is now precise — TWO causes, not one. (1) CLASSIFICATION: Sentry's largest issue ([v3.llm.budget.platform_default], 64 events) IS in admin_events, 25 rows, at severity INFO, because an unconfigured coach budget falling back to the platform default is expected. Sentry has no severity model. (2) SCOPE: JWT expired, heartbeat 401s, fetch failed, invalid credentials and the coerce error have ZERO admin_events rows — they are unhandled framework/platform errors that never reached logServerError, which src/instrumentation.ts documents as intended. NO CAPTURE PATH VIOLATES THE CONTRACT. The defect is what Mission Control CLAIMS: one surface's zero standing in for production health. Contract written to docs/OBSERVABILITY_AUTHORITY.md.",
-      "closes_when": "The board renders the two surfaces separately and marks overall health as partial when they are unreconciled — per the model in docs/OBSERVABILITY_AUTHORITY.md. Explicitly NOT closed by making every Sentry event appear in admin_events: that would discard the severity grading that makes admin_events useful.",
-      "contract": "docs/OBSERVABILITY_AUTHORITY.md"
-    },
-    {
       "id": "MAIN_ADMIN_BYPASS_AVAILABLE",
       "owner": "founder",
       "opened": "2026-08-30",
@@ -81,6 +72,12 @@
       "opened": "2026-08-30",
       "closed": "2026-08-30",
       "how": "Checkout disposability now comes from the workspace's own identity, not from inference. scripts/new-worktree.sh writes parkPolicy: KEEP into the .helm/workspace.json marker it already created, and classifyWorktree refuses to park anything the marker has not explicitly moved to PARK_IF_REPRODUCIBLE — verdict KEEP_WORKSPACE_INTENT_REQUIRED, which sits outside the standing autonomous authorization. The gate runs BEFORE the reproducibility checks and independently of any PR, so it covers the window the #1681 fix could not reach: the one before a PR exists. Absent file, absent key, unknown value and unreadable JSON all KEEP; a positive lsof sighting still vetoes; a negative one still authorises nothing. Two facts stay separate — workspace identity answers whether the CHECKOUT may go, PR state answers whether the BRANCH may be deleted — and an OPEN PR released by its owner cannot override a workspace KEEP. CLOSED DIFFERENTLY FROM THE ORIGINAL CONDITION, deliberately: that asked for a session id checked for LIVENESS, which is the same unsound negative-evidence inference in a new costume — a session between two tool calls looks dead. Declared intent needs no liveness probe. Proven by 72 tests in worktree-lifecycle.test.ts, including end-to-end --park runs against real git worktrees with the marker absent, KEEP, and released."
+    },
+    {
+      "id": "ERROR_SURFACES_DISAGREE",
+      "opened": "2026-08-30",
+      "closed": "2026-08-30",
+      "how": "The board renders the two surfaces separately and can say 'partial'. src/lib/admin/incidents/reconciliation.ts is a pure verdict function — APPLICATION EVENTS from graded admin_events incidents, RUNTIME ERROR SURFACE from correlated Sentry incidents, OVERALL reconciled only when the two agree — and ErrorSurfaceReconciliation renders all three rows on /admin/errors. Order is fail-safe: unreadability is decided BEFORE agreement, because two surfaces cannot agree when one did not speak, so a blind source can never produce 'healthy' (the same rule canClaimAllClear applies page-wide) and an unread count renders as an em-dash rather than 0. The component renders even when everything agrees, which is a deliberate departure from BlindnessBeacon's return-null-when-quiet: silence is right for a WARNING and wrong for a RECONCILIATION, because otherwise 'the surfaces agree' and 'nobody compared them' look identical again — the exact failure being closed. Nothing was mirrored between the surfaces and no Sentry issue was silenced, both of which the contract forbids. 15 tests; injections proving they fail — rendering disagreement as healthy turns 4 red, treating a blind surface as zero turns 2 red — with the module restored byte-identical (sha256). Definition of done was docs/OBSERVABILITY_AUTHORITY.md, and it is met."
     }
   ]
 }
