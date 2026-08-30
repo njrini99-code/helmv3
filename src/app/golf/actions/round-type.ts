@@ -254,12 +254,15 @@ async function updateRoundTypeImpl(
       update.qualifier_round_number = null;
     }
 
-    // A completed round cannot be updated directly: `golf_rounds` carries a
-    // BEFORE-UPDATE lifecycle guard that rejects it with SQLSTATE 55000. That
-    // guard is right about scores and was over-broad about classification —
-    // re-typing a round changes what it COUNTS TOWARD, not a single stroke of
-    // it, and on 2026-08-23 it stranded four Guilford players who had recorded
-    // qualifier rounds as practice rounds.
+    // A round cannot be re-typed by a direct table UPDATE: `golf_rounds`
+    // carries a BEFORE-UPDATE lifecycle guard that refuses it with SQLSTATE
+    // 55000. That guard is right about scores and was twice over-broad about
+    // classification — re-typing a round changes what it COUNTS TOWARD, not a
+    // single stroke of it. On 2026-08-23 it stranded four Guilford players who
+    // had recorded qualifier rounds as practice rounds (fixed for COMPLETED
+    // rounds by 20260824030000), and it went on refusing rounds that were
+    // merely unfinished until 20260830120000 — which is the "players still
+    // cannot edit round type after the round" report of 2026-08-30.
     //
     // `reclassify_golf_round` is the narrow, marker-gated RPC that owns this
     // write (migration 20260824030000). It re-checks permission itself
@@ -311,19 +314,40 @@ async function updateRoundTypeImpl(
       // least gets a sentence they can act on instead of the raw
       // "code=55000 msg=Completed rounds are permanent history and cannot be
       // changed." that was being rendered verbatim in the round editor.
+      // The RPC now enforces every rule this action checks above, so these
+      // mostly fire when the world changed between our reads and the write.
+      // Each maps to the reason, never to a SQLSTATE — a coach reading
+      // "code=55000" learns nothing they can act on.
       if (updateError.code === '42501') {
+        // Not owner/coach, not entered in that qualifier, or the qualifier
+        // belongs to another team. The action's own checks above produce the
+        // specific sentence; this is the fallback when the RPC got there first.
         return { success: false, error: "You don't have permission to change this round." };
       }
       if (updateError.code === '22023') {
         return { success: false, error: 'Pick which qualifier and round number this counts as.' };
       }
+      if (updateError.code === '23505') {
+        return {
+          success: false,
+          error: 'That qualifier round number was just taken by another round. Pick a different one.',
+        };
+      }
       if (updateError.code === '55000') {
-        // Should be unreachable now that the RPC owns this write; kept so a
-        // future guard change surfaces as readable copy rather than SQLSTATE.
+        // The lifecycle guard refused. Since 20260830120000 the `reclassify`
+        // branch covers live rounds as well as submitted ones, so this should
+        // only be reachable if the round changed status underneath us — which
+        // is a stale-page problem, not a permanence problem.
+        //
+        // The previous copy here said the round's "scores are locked as
+        // submitted history". That was wrong in the case operators actually
+        // hit: an `in_progress` round was refused by the guard's general
+        // branch, and the player was told their round was permanent history
+        // when it had never been submitted at all.
         return {
           success: false,
           error:
-            "This round's scores are locked as submitted history, so it can't be re-typed right now. The scores themselves are safe and unchanged.",
+            "This round changed while you were editing it, so the new type wasn't saved. Reload the round and try again — the scores themselves are safe and unchanged.",
         };
       }
       // Never surface a raw driver string to a coach. describeError() is for
