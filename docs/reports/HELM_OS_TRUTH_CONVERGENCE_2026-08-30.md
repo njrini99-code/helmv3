@@ -113,9 +113,20 @@ the feature map — and one silently named two features in a field the model
 treats as one. Plus **one repair unit with `incident_id: null` and no reason.**
 Both classes are now refused.
 
-Deliberately NOT enforced: that a repair unit's incident lives under its own
-feature. It does not always, and the dedupe rule says that is correct. Reported
-as a note, never failed.
+Deliberately NOT enforced, and there are two of these:
+
+- **That a repair unit's incident lives under its own feature.** It does not
+  always, and the dedupe rule says that is correct. Reported as a note.
+- **That every feature HAS a ledger.** A ledger is appended after a behavioural
+  mutation, so a feature with no recorded mutation legitimately has none, and
+  requiring one would produce empty files asserting a history nobody wrote.
+  The checker verified only filename → registry key, which made a pass read as
+  *"every feature has history"* — it does not. Coverage is now **named on every
+  run**: `changes` 13/20, `tests` 5/20, with the features that have none
+  listed by id. Reported, never failed.
+
+That second one is the same *absence vs. silence* distinction the rest of this
+run is built on, applied to the checker itself.
 
 ## Historical, and why
 
@@ -143,11 +154,23 @@ npm run knowledge:check    # coverage, staleness, globs, ledgers, authority,
 npm run control-plane:verify   # runtime capability and enforcement truth
 ```
 
-`helm-os:check` is a **local convenience**, not new CI enforcement. CI invokes
-the individual scripts by name and always has; the real tightening is that
-`knowledge:check` — already a required job — grew four stages. A separate CI job
-would have duplicated work and added another required-context name that has to
-match exactly, which is the phantom-check trap this repo has already paid for.
+`helm-os:check` is a **local convenience**, not new CI enforcement.
+
+**This is a deviation from the plan, and it was a decision, not an oversight.**
+§35 asked for `helm-os:check` to be wired into CI once its baseline was clean.
+It is not. CI already invokes the individual scripts by name and always has;
+the real tightening is that `knowledge:check` — an *already required* job —
+grew four stages, and `docs:check`'s members are each their own job. A separate
+`helm-os:check` job would re-run all of it and add another required-context
+name that has to match exactly — the phantom-check trap this repo has already
+paid for once, when `Review Gate / all` was renamed and every PR became
+unsatisfiable against a context that posts nothing. Reversing this is one job
+block in `ci.yml` plus one required-context entry, and the owner may prefer it;
+the point is that nothing was quietly dropped.
+
+Every stage `helm-os:check` composes is separately verified to run in CI —
+confirmed by reading the `Feature knowledge` job's own log, not inferred from
+the workflow file.
 
 ## Unresolved
 

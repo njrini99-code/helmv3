@@ -22,6 +22,13 @@
  * incident, and that is the rule working, not a violation. The cross-reference
  * is REPORTED so it stays visible, and never failed.
  *
+ * That every feature HAS a ledger. A ledger is appended after a behavioural
+ * mutation (memory/ledgers/README.md), so a feature with no recorded mutation
+ * legitimately has no file, and requiring one would produce empty documents
+ * that assert a history nobody wrote. What WOULD be dishonest is letting a
+ * one-directional pass read as "every feature has history", so the coverage is
+ * PRINTED every run and the features without a ledger are named.
+ *
  * `incident_id: null` IS checked, in the other direction: a repair unit with no
  * incident must say why. An unexplained null is indistinguishable from a
  * forgotten link, which is the whole class of failure these records exist to
@@ -141,12 +148,15 @@ for (const item of queue?.items ?? []) {
 // ---------------------------------------------------------------------------
 // Ledgers
 // ---------------------------------------------------------------------------
+const ledgerCoverage = new Map();
 for (const kind of ['changes', 'tests']) {
   const dir = P('memory/ledgers', kind);
   if (!existsSync(dir)) {
     fail('LEDGER_DIR_MISSING', `memory/ledgers/${kind}/ does not exist`);
     continue;
   }
+  const covered = new Set();
+  ledgerCoverage.set(kind, covered);
   for (const f of readdirSync(dir)) {
     if (f === 'README.md') continue;
     if (!f.endsWith('.md')) {
@@ -154,6 +164,7 @@ for (const kind of ['changes', 'tests']) {
       continue;
     }
     const id = f.slice(0, -3);
+    if (featureIds.has(id)) covered.add(id);
     if (!featureIds.has(id)) {
       // The one normalization rule: ledgers use the registry key verbatim.
       // A kebab-cased sibling is the same feature under a second spelling,
@@ -219,10 +230,22 @@ console.log(
   `Ledger integrity: ${incidentPaths.size} incident(s), ${(queue?.items ?? []).length} repair unit(s), ` +
     `${(gaps.gaps ?? []).length} open gap(s), ${adrIds.size} decision(s).`,
 );
+for (const kind of ['changes', 'tests']) {
+  const covered = ledgerCoverage.get(kind);
+  if (!covered) continue;
+  const missing = [...featureIds].filter((id) => !covered.has(id)).sort();
+  console.log(
+    `   ledgers/${kind}: ${covered.size}/${featureIds.size} feature(s) have one` +
+      (missing.length ? ` — none yet for ${missing.join(', ')}` : ''),
+  );
+}
 for (const n of notes) console.log(`   note: ${n}`);
 
 if (problems.length === 0) {
-  console.log('✅ Every durable record refers to something that exists.');
+  console.log(
+    '✅ Every durable record refers to something that exists. ' +
+      '(Ledger COVERAGE is reported above, never enforced — see this file\'s header.)',
+  );
 } else {
   const byKind = new Map();
   for (const p of problems) byKind.set(p.kind, [...(byKind.get(p.kind) ?? []), p]);

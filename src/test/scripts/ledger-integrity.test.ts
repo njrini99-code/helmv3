@@ -165,6 +165,29 @@ describe('ledger integrity', () => {
     expect(run().stderr).toMatch(/LEDGER_NOT_A_FEATURE/);
   });
 
+  it('NAMES the features with no ledger, and does not fail on them', () => {
+    // A ledger is appended after a behavioural mutation, so a feature with no
+    // recorded mutation legitimately has none. Enforcing coverage would produce
+    // empty files asserting a history nobody wrote. What is NOT acceptable is a
+    // one-directional pass reading as "every feature has history" — so the
+    // absence is named on every run.
+    write(
+      'memory/registry.yml',
+      'version: 1\n\nfeatures:\n  qualifiers:\n    name: Qualifiers\n  shot_tracking:\n    name: Shot Tracking\n',
+    );
+    const r = run();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/ledgers\/changes: 1\/2 feature\(s\) have one — none yet for shot_tracking/);
+    expect(r.stdout).toMatch(/ledgers\/tests: 1\/2 feature\(s\) have one — none yet for shot_tracking/);
+  });
+
+  it('reports full ledger coverage without a "none yet" clause', () => {
+    const r = run();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/ledgers\/changes: 1\/1 feature\(s\) have one$/m);
+    expect(r.stdout).not.toMatch(/none yet/);
+  });
+
   it('refuses a gap that is both open and closed', () => {
     write(
       'config/control-plane-gaps.json',
