@@ -29,9 +29,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 13 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 18 | 18 | 6 | 17 |
+| `CURRENT_FEATURE` | 19 | 19 | 6 | 17 |
 | `REFERENCE` | 59 | 12 | 17 | 110 |
-| `GENERATED_TRUTH` | 15 | 3 | 5 | 22 |
+| `GENERATED_TRUTH` | 15 | 3 | 5 | 23 |
 | `PROCESS_CONTRACT` | 8 | 1 | 7 | 10 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
@@ -163,6 +163,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 21 | 2 |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | - | 3 | 23 | - |
+| `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | - | 1 | 22 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 10 | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 27 | 2 |
@@ -253,7 +254,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 8 | 8 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 2 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 121 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 129 | 1 |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | 0 | 1 | - |
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | 1 |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 28 | 3 | - |
@@ -293,7 +294,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/specs/2026-08-18-golf-team-operations-design.md` | current | - | - | yes | 1 | 0 | - |
 | `docs/superpowers/specs/README.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/superpowers/specs/helm-bridge/DECISIONS.md` | current | - | - | yes | 2 | 3 | 1 |
-| `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` | current | - | - | yes | 5 | 8 | 1 |
+| `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` | current | - | - | yes | 6 | 8 | 1 |
 
 ### `PLAN`
 

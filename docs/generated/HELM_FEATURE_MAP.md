@@ -60,9 +60,20 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/app/api/golf/rounds/**` … and 15 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
-- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`
+- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/golf_round_lifecycle.md`, `memory/ledgers/tests/golf_round_lifecycle.md`
+
+## `crm_outreach`
+
+**CRM Outreach (NCAA cold email)** · active · criticality medium · owner founder
+
+- **Behaviour:** `memory/features/crm_outreach.md`
+- **Code:** `src/app/golf/admin/crm/**`, `src/app/api/crm/**`, `src/app/api/admin/crm/**`, `src/app/api/webhooks/resend/**`, `src/app/api/webhooks/resend-inbound/**`, `src/app/api/cron/process-sequences/**` … and 8 more in the registry
+- **Telemetry:** `crm_recruiting_pipeline` (golfhelm, low)
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** no ledger yet
 
 ## `qualifiers`
 
@@ -249,4 +260,3 @@ would be indistinguishable from an oversight, which is the whole failure this
 reconciliation removes.
 
 - `integrations` — **platform**. Inngest job execution. Infrastructure that carries other features' work, not a product feature with behaviour of its own to document.
-- `crm_recruiting_pipeline` — **feature_awareness_gap**. NCAA cold-email outreach — a live surface with app routes, API handlers and server actions under src/app/**/crm/**, and no entry in this registry. Distinct from the 'recruiting' feature, which the runtime registry labels "Recruiting HQ (coach tracker — NOT CRM)". Marked as a gap rather than mapped, because AGENTS.md requires a missing feature to be named and this one needs a current-state doc written from the code before it can be routed. Do not attach it to 'recruiting': that would make one feature doc answer for two different products.

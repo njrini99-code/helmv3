@@ -291,6 +291,61 @@ features:
         - npm run test -- --run src/app/golf/actions/__tests__/golf-schemas.test.ts
         - npm run build
 
+  crm_outreach:
+    name: CRM Outreach (NCAA cold email)
+    status: active
+    owner: founder
+    criticality: medium
+    # KNOWLEDGE routing only. src/lib/admin/feature-registry.ts carries an owner
+    # directive that CRM is never wrapped, tagged, or shown on the Bridge health
+    # board, and its runtime row keeps excluded: 'crm' with an empty actions map.
+    # Nothing here changes that: verified 2026-08-30 that memory/registry.yml is
+    # read only by scripts/knowledge/**, scripts/repo-doctor and the drift gates,
+    # and that src/lib/reliability/collect.ts resolves feature ids from a
+    # hardcoded route table because it "cannot read a build-time artifact".
+    # This entry exists because AGENTS.md requires a live surface to be mapped
+    # or named, and it was named as a gap until the doc below was written from
+    # the code.
+    observability:
+      feature_keys:
+        - crm_recruiting_pipeline
+    docs:
+      feature: memory/features/crm_outreach.md
+    code:
+      routes:
+        - src/app/golf/admin/crm/**
+        - src/app/api/crm/**
+        - src/app/api/admin/crm/**
+        - src/app/api/webhooks/resend/**
+        - src/app/api/webhooks/resend-inbound/**
+        - src/app/api/cron/process-sequences/**
+        - src/app/api/cron/ingest-gmail-replies/**
+        - src/app/api/cron/refresh-engagement/**
+      components:
+        - src/app/golf/admin/crm/components/**
+      api: null
+      actions:
+        - src/app/golf/actions/crm-*.ts
+        # Both of these break the crm- convention. A sweep keyed on the prefix
+        # misses them, which is why they are listed individually.
+        - src/app/golf/actions/resend-activity.ts
+        - src/app/golf/admin/crm/components/resend/actions.ts
+      services:
+        - src/lib/crm/**
+      db:
+        - supabase/migrations/*crm*.sql
+      tests: null
+    integrations:
+      - supabase
+      - resend
+      - gmail
+      - google_calendar
+    review:
+      required_docs:
+        - memory/features/crm_outreach.md
+      required_checks:
+        - npm run typecheck
+
   qualifiers:
     name: Qualifiers
     status: active
@@ -1347,14 +1402,3 @@ observability_keys_unowned:
     reason: >-
       Inngest job execution. Infrastructure that carries other features' work,
       not a product feature with behaviour of its own to document.
-  crm_recruiting_pipeline:
-    classification: feature_awareness_gap
-    reason: >-
-      NCAA cold-email outreach — a live surface with app routes, API handlers and
-      server actions under src/app/**/crm/**, and no entry in this registry.
-      Distinct from the 'recruiting' feature, which the runtime registry labels
-      "Recruiting HQ (coach tracker — NOT CRM)". Marked as a gap rather than
-      mapped, because AGENTS.md requires a missing feature to be named and this
-      one needs a current-state doc written from the code before it can be
-      routed. Do not attach it to 'recruiting': that would make one feature doc
-      answer for two different products.

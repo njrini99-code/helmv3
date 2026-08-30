@@ -109,6 +109,46 @@ describe('doc schema drift — feature ids are a different namespace', () => {
     expect(run().status).not.toBe(0);
   });
 
+  it('does NOT flag a name a document DECLARES it is naming because it is absent', () => {
+    // An incident record's subject can BE the absence: deleting the identifier
+    // would delete the finding. Baselining it would be wrong twice — the
+    // baseline is for known-bad references that should shrink, and this is
+    // neither bad nor going away until the migration is applied.
+    write(
+      'memory/incidents/x/INC-2026-08-30-a.md',
+      '<!-- schema-drift-absent: golf_player_anonymize_on_unlink -->\n\n' +
+        'Production has no `golf_player_anonymize_on_unlink`, so the cascade stands.\n',
+    );
+    const r = run();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/1 excluded as DECLARED ABSENT/);
+    expect(r.stdout).toContain('golf_player_anonymize_on_unlink');
+  });
+
+  it('exempts ONLY in the file that declares it', () => {
+    // Otherwise one incident's declaration would silently cover a typo in an
+    // unrelated feature doc, which is the phantom this gate exists to catch.
+    write(
+      'memory/incidents/x/INC-2026-08-30-a.md',
+      '<!-- schema-drift-absent: golf_player_anonymize_on_unlink -->\n\nabsent.\n',
+    );
+    write('memory/features/other.md', 'Call `golf_player_anonymize_on_unlink` to do the thing.\n');
+    const r = run();
+    expect(r.status).not.toBe(0);
+    expect(r.stderr + r.stdout).toContain('golf_player_anonymize_on_unlink');
+  });
+
+  it('exempts only the names listed, not the rest of the document', () => {
+    write(
+      'memory/incidents/x/INC-2026-08-30-a.md',
+      '<!-- schema-drift-absent: golf_player_anonymize_on_unlink -->\n\n' +
+        'Absent: `golf_player_anonymize_on_unlink`. Typo two lines down: `golf_recurring_events`.\n',
+    );
+    const r = run();
+    expect(r.status).not.toBe(0);
+    expect(r.stderr + r.stdout).toContain('golf_recurring_events');
+  });
+
   it('an unreadable registry exempts nothing — it fails toward reporting', () => {
     rmSync(join(root, 'memory/registry.yml'));
     write('memory/doc.md', 'See `golf_round_lifecycle`.\n');
