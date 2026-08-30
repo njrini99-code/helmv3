@@ -70,9 +70,31 @@ to avoid, and ends: *"A P0 that reports itself as applied is worse than one that
 reports itself as missing."* That is what happened, by a different route —
 `supabase_migrations.schema_migrations` records **846** versions against **337**
 tracked migration files, so the ledger and the directory have long since stopped
-being comparable by eye, and the one automated check that compares them
-(`Supabase Preview`) has been red on every `main` commit for so long that it
-reads as background noise.
+being comparable by eye.
+
+**Correction, 2026-08-30.** An earlier revision of this paragraph said the one
+automated check that compares them, `Supabase Preview`, "has been red on every
+`main` commit for so long that it reads as background noise." That is wrong, and
+the truth is worse. Measured across eight PRs (#1679, #1680, #1686–#1691), the
+check's conclusion is **`SKIPPED` every time** — never `FAILURE`. It is also
+**not** among `main`'s six required contexts, so it could not block a merge even
+if it did fail. A check that never runs is invisible in a way a red one is not.
+
+Why it skips is legitimate: Supabase only builds a preview branch for a PR that
+touches `supabase/migrations/**`. Most PRs do not. Branching itself **is**
+enabled and does work — PR #1681 touches migrations, and its preview branch
+reached `FUNCTIONS_DEPLOYED`.
+
+What is genuinely unaddressed sits one level down. The Supabase branch record for
+`main` carries status **`MIGRATIONS_FAILED`**, with `created_at` and `updated_at`
+both `2026-07-03T21:11:11Z` — so it has not been refreshed since it was written.
+Whether that is a live verdict on today's migrations or a stale record from
+branching setup is NOT established here; both readings fit the timestamps, and
+saying which would be a guess.
+
+This matters for `Supabase Preview`'s disposition: it is **inert, not failing**.
+Making it "green" is not the task — deciding whether an inert check should be
+required, repaired, or removed is.
 
 ## Blast radius, measured
 
@@ -225,6 +247,22 @@ not be actionable.
 Not attempted from this session: `supabase db push` and `migration up` are
 denied by `permissions.deny`, deliberately, and a production schema change is
 not something an agent should authorize for itself.
+
+## The one route left for the local exercise
+
+Docker is down (below), which removes `npx supabase start`. But a **Supabase
+preview branch is not production** — it is an isolated ephemeral project built
+from this repo's migrations, and it is the environment the plan's "do not use
+production for destructive behavioral tests" rule points toward.
+
+Branching is enabled and demonstrably works: #1681's preview branch reached
+`FUNCTIONS_DEPLOYED` today. A PR that touches `supabase/migrations/**` gets one
+automatically.
+
+Not done from here, deliberately: creating a preview branch provisions a real
+project on the owner's Supabase account, and this session neither has that grant
+nor should assume it. Recorded as the recommended route for exercising this
+migration if Docker stays down, not taken.
 
 ## Blocked, and why
 
