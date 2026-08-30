@@ -106,6 +106,46 @@ async function loadFeatureIds() {
   }
 }
 
+/**
+ * A DOCUMENT THAT NAMES AN OBJECT BECAUSE IT IS ABSENT.
+ *
+ * This gate exists because a doc naming a table that does not exist produces
+ * confident, well-formatted broken code. An incident record does the opposite:
+ * its whole subject can BE the absence — INC-2026-08-30 documents that
+ * `golf_player_anonymize_on_unlink` is missing from production and that
+ * `golf_players_user_id_fkey` is still ON DELETE CASCADE, and a reader who
+ * removed those names would delete the finding.
+ *
+ * Baselining them would be wrong twice over: the baseline is for known-bad
+ * references that should shrink, and these are neither bad nor going away until
+ * the migration is applied. So the exemption is DECLARED IN THE DOCUMENT, per
+ * identifier, and printed on every run:
+ *
+ *     <!-- schema-drift-absent: name_one, name_two -->
+ *
+ * It exempts only those names, only in that file. Anything else in the same
+ * document is still checked, so a genuine typo two lines away is still caught.
+ */
+const ABSENT_RE = /<!--\s*schema-drift-absent:\s*([^>]*?)\s*-->/g;
+
+async function loadDeclaredAbsent(files) {
+  const declared = new Map();
+  for (const f of files) {
+    let raw;
+    try {
+      raw = await readFile(join(ROOT, f), 'utf8');
+    } catch {
+      continue;
+    }
+    for (const m of raw.matchAll(ABSENT_RE)) {
+      for (const name of m[1].split(',').map((x) => x.trim()).filter(Boolean)) {
+        declared.set(name, [...(declared.get(name) ?? []), f]);
+      }
+    }
+  }
+  return declared;
+}
+
 // ---------------------------------------------------------------------------
 // Schema surface
 // ---------------------------------------------------------------------------
@@ -225,9 +265,23 @@ async function main() {
   const docs = await scanDocs();
   const featureIds = await loadFeatureIds();
 
+  // Declared-absent names are exempt only in the file that declares them, so a
+  // phantom cannot hide behind another document's declaration.
+  const declaredAbsent = await loadDeclaredAbsent(
+    [...new Set([...docs.values()].flatMap((set) => [...set]))],
+  );
+  const isDeclaredAbsentEverywhere = (n) => {
+    const where = declaredAbsent.get(n);
+    if (!where) return false;
+    return [...docs.get(n)].every((f) => where.includes(f));
+  };
+
   const exempt = [...docs.keys()].filter((n) => !all.has(n) && featureIds.has(n)).sort();
+  const absent = [...docs.keys()]
+    .filter((n) => !all.has(n) && !featureIds.has(n) && isDeclaredAbsentEverywhere(n))
+    .sort();
   const unknown = [...docs.keys()]
-    .filter((n) => !all.has(n) && !featureIds.has(n))
+    .filter((n) => !all.has(n) && !featureIds.has(n) && !isDeclaredAbsentEverywhere(n))
     .sort();
 
   if (update) {
@@ -273,6 +327,14 @@ async function main() {
     console.log(
       `${exempt.length} excluded as declared memory/registry.yml feature id(s), ` +
         `not database objects: ${exempt.join(', ')}`
+    );
+  }
+
+  if (absent.length) {
+    // Printed, never silent — same rule as the registry-key exemption above.
+    console.log(
+      `${absent.length} excluded as DECLARED ABSENT — documented because they do ` +
+        `not exist: ${absent.join(', ')}`
     );
   }
 

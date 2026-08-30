@@ -186,7 +186,7 @@ fine".
 | `WORKTREE_PARK_NO_PR_OWNERSHIP` | gap | a worktree carries an ownership marker independent of its PR |
 | `crm_recruiting_pipeline` | feature-awareness gap | a current-state doc is written from the code and the feature is registered |
 | PR #1681 reconciliation | **blocked** | that PR merges; its disposition row records what must reach feature memory and the incident system |
-| `docs/baseballhelm-overnight/DATABASE_STATUS.md` | UNKNOWN | two items marked "NOT FIXED — needs a product decision" on 2026-07-29 were not re-verified here; verifying them is production work, not documentation work |
+| `docs/baseballhelm-overnight/DATABASE_STATUS.md` | **RESOLVED 2026-08-30** | This row said "two items marked NOT FIXED". There was **one** such marker, plus one separately-declared deliberate gap — a count written into prose, wrong, in the run whose thesis is that stale counts read as current forever. Both are now classified: the marker was **already fixed** (re-verified against live `pg_policies`, and the section under it already carried an "✅ APPLIED" block), and the recruiting-discoverability gap is a **recorded product decision**, step (6) of `PRODUCT_MODULES.recruiting.restore`. |
 
 ## Deliberately not done
 

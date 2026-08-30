@@ -337,7 +337,23 @@ already hold, and both sit behind the recruiting sunset.
 
 _Found 2026-07-29 04:40, by following the question the section above ends with:
 "if a fifth exists it is behind a predicate that is neither `true` nor
-missing." It is. **NOT FIXED — needs a product decision. See below.**_
+missing." It is. ~~**NOT FIXED — needs a product decision. See below.**~~
+**RESOLVED — ALREADY FIXED. Corrected forward 2026-08-30.**_
+
+> This heading stayed "NOT FIXED" while the section beneath it grew an
+> **"✅ APPLIED"** block with role-impersonation evidence for all ten live coach
+> accounts. A reader scanning headings, or grepping for NOT FIXED, got the
+> opposite of the truth for a month.
+>
+> Re-verified 2026-08-30 against live `pg_policies`, not against the migration
+> file — trap G8 says the migration existing is not evidence the policy is live:
+>
+> `baseball_coaches_select` / SELECT / `{authenticated}` now reads
+> `((SELECT auth.uid()) = user_id) OR shares_my_baseball_organization(organization_id)`.
+>
+> The unscoped `get_my_coach_id() IS NOT NULL` predicate this section was
+> written about is gone. Classification: **already fixed**, not a pending
+> product decision.
 
 `baseball_coaches_select_all` (`USING (true)`) *was* dropped, by
 `20260701014000_baseball_coaches_narrow_select.sql`. But that migration only
