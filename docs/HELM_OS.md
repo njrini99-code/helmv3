@@ -91,6 +91,60 @@ HISTORICAL EVIDENCE ONLY
 
 ---
 
+## Mission Control is a projection, not a ledger
+
+It answers one question — *what is known right now* — by reading the
+authorities. It stores no independent narrative of what an issue is, which
+feature owns it, or whether it is fixed. Those already have owners, and a second
+copy would be a second thing to keep true.
+
+```text
+runtime surfaces        Sentry · admin_events · heartbeats
+feature vocabulary      src/lib/admin/feature-registry.ts
+semantic ownership      memory/registry.yml
+confirmed defects       memory/incidents/**
+repair state            memory/operations/release-queue.yml
+accepted limitations    config/control-plane-gaps.json
+        ↓
+MISSION CONTROL — synthesis
+```
+
+What each surface may and may not claim is
+`docs/OBSERVABILITY_AUTHORITY.md`. The rule that matters most:
+
+> A count of zero from one surface is not a statement about production. It is a
+> statement about that surface.
+
+## The self-heal loop, and where it hands off to Git
+
+`docs/ai-system/selfheal/` owns the runtime half — capture, diagnose, repair,
+close — against `admin_events`, `rca_analysis`, `admin_error_resolutions` and
+background-job heartbeats. That model is unchanged. What was never written down
+is where it crosses into the Git-backed records:
+
+```text
+runtime event                    admin_events / Sentry
+      ↓  diagnose                rca_analysis
+CONFIRMED ROOT CAUSE
+      ↓                          <-- the handoff
+memory/incidents/<feature_id>/   the durable defect
+      ↓
+release-queue.yml repair unit    observed → … → verified_in_production
+      ↓
+PR, merge, release
+      ↓
+ledgers/changes · ledgers/tests · deployments.md
+      ↓
+memory/features/<feature>.md     current behaviour updated
+```
+
+The two halves have different jobs. Database rows are what production emits and
+are queryable but not reviewable; the Git records are what a human decided, and
+they are reviewable, portable and diffable. A root cause that stays only in
+`rca_analysis` has no owner; an incident with no runtime evidence has no proof.
+
+---
+
 ## Three rules that make the map hold
 
 **A projection may summarise an authority. It may never become a second copy

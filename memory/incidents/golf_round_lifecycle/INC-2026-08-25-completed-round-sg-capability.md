@@ -1,6 +1,7 @@
 # INC-2026-08-25 — completed-round SG recalculation rejected
 
-- Feature: Golf Round Lifecycle and Stats Analytics
+- Feature: `golf_round_lifecycle`
+- Also affects: `stats_analytics`
 - Status: repairing locally; not deployed
 - Risk: R3 — protected database lifecycle / migration
 - First reproduced: 2026-08-25
