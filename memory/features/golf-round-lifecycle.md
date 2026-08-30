@@ -106,10 +106,12 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - A completed-scorecard slot and an in-progress shot collection for the same
   hole must never be persisted together. Removing a final hole-out clears the
   former before the remaining shots are saved as in-progress progress.
-- The durable parent is also the authority for immutable start-time identity
-  such as round type, qualifier link, and qualifier round number. Final
-  submission may use recovery data for scorecard content, but must not let
-  stale client metadata change persisted identity. A legacy missing qualifier
+- The durable parent is also the authority for start-time identity such as
+  round type, qualifier link, and qualifier round number. Final submission may
+  use recovery data for scorecard content, but must not let stale client
+  metadata change persisted identity. That identity is immutable **to the
+  round-tracking path** — it is not immutable outright; see the
+  reclassification rules below, which are the one sanctioned way it changes. A legacy missing qualifier
   round number may be filled only after the database verifies the same entrant,
   an open qualifier, and an unused valid number. Continue Round obtains those
   choices from the authenticated server and asks the player to select one at
@@ -160,6 +162,46 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   `record_round_coachhelm_terminal_state`, and recap text through
   `save_round_ai_recap`. App code must never update a completed
   `golf_rounds` row directly.
+
+### Reclassification — changing what a round counts toward
+
+- **Re-typing a round is not editing it.** Changing `round_type` /
+  `qualifier_id` / `qualifier_round_number` changes what a round COUNTS
+  TOWARD; it does not touch a single stroke. The lifecycle guard's blanket
+  refusal has twice been over-broad for this reason — once for completed
+  rounds (fixed 2026-08-24 after four Guilford players were stranded) and once
+  for unfinished ones (`20260830120000`, prepared). Immutability of SCORES is
+  the invariant; immutability of CLASSIFICATION never was.
+- **`public.reclassify_golf_round` is the only sanctioned write path**, and it
+  is a public API: SECURITY DEFINER, granted to `authenticated`, callable
+  directly with any arguments by any signed-in user. Every rule that keeps a
+  qualifier coherent therefore lives IN the function — qualifier exists, is
+  open, the player is entered, and the round-number slot is free. The
+  TypeScript action keeps its own copies so a refusal can be a sentence rather
+  than a SQLSTATE, but the action is not the enforcement and must never be
+  treated as it. (Until `20260830120000` those four checks existed only in the
+  action, so a direct RPC call bypassed all of them.)
+- **A round counts in a qualifier because of `qualifier_id`, not
+  `round_type`.** They are separate columns and both must agree. Setting only
+  the type produces a round that calls itself a qualifier, passes every type
+  check, renders correctly — and never appears in the standings. Converting
+  away from a qualifier clears the linkage rather than orphaning it.
+- **Entry in the qualifier is the tenancy boundary**, not the round's
+  `team_id`. Rows in `golf_qualifier_entries` are coach-managed (all three
+  write policies are `is_golf_team_coach`), so a player cannot forge their way
+  into another program's qualifier. A `team_id` comparison is defence in depth
+  only, and must tolerate a NULL `team_id` — production carries rounds without
+  one, and refusing those would be a regression rather than a fix.
+- **A qualifier round number is a slot, and a slot can be occupied.** Any
+  surface offering a round number must offer only the numbers actually free
+  for that player in that qualifier, and must say so when none are. Offering
+  every number and defaulting to 1 is what the 2026-08-30 "players still
+  cannot edit round type after the round" report turned out to be: a player
+  fixing a mis-tapped round has usually already recorded the qualifier's
+  earlier rounds, so 1 is precisely the slot that is not free, and every save
+  failed on the clash check with nothing on screen naming an available number.
+  A control that can only offer a losing move reads as a broken feature, not
+  as a validation.
 
 ## UI Contract
 
