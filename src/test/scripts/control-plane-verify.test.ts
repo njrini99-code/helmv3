@@ -384,6 +384,35 @@ describe('open-PR disposition residue — current state, with one exact exceptio
     expect(r.problems.join()).toMatch(/no recorded disposition.*1659/);
   });
 
+  it('an open PR whose row is IN FLIGHT at its own head is not unclassified', async () => {
+    // The mirror of the transitional exception. A row that lives in its own PR
+    // is absent from main for the PR's whole flight, so without this main is red
+    // from the moment any such PR opens — and pushing the row straight to main
+    // is exactly the bypass this change exists to remove.
+    const r = await classify({
+      openPrs: [{ number: '1688', ref: 'agent/x' }],
+      inFlightRows: { 1688: true },
+    });
+    expect(r.problems).toEqual([]);
+    expect(r.inFlight).toEqual(['1688']);
+  });
+
+  it('an open PR with no row at its own head still fails — #1623 must stay caught', async () => {
+    const r = await classify({
+      openPrs: [{ number: '1623', ref: 'agent/y' }],
+      inFlightRows: { 1623: false },
+    });
+    expect(r.inFlight).toEqual([]);
+    expect(r.problems.join()).toMatch(/no recorded disposition.*1623/);
+  });
+
+  it('an unreadable head file fails — arriving must be PROVEN, never assumed', async () => {
+    for (const v of [null, undefined]) {
+      const r = await classify({ openPrs: [{ number: '1623', ref: 'agent/y' }], inFlightRows: { 1623: v } });
+      expect(r.problems.join()).toMatch(/no recorded disposition/);
+    }
+  });
+
   it('a MERGED row whose merge commit IS HEAD is transitionally closed, not a failure', async () => {
     const r = await classify({
       recorded: { 1687: KEEP },

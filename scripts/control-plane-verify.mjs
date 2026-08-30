@@ -159,6 +159,22 @@ export function summarise(all, registeredGaps = []) {
  * It survives its own merge, and nothing more. The next ordinary PR clears it
  * while adding its own row, which is the workflow that removes the trap.
  *
+ * THE SAME TRAP, BEFORE THE MERGE. A row that lives in its own PR is absent
+ * from main for the PR's whole flight, so "open PR with no recorded
+ * disposition" fails main from the moment the PR opens until it lands. Adding
+ * the row in an EARLIER PR only moves the problem, and pushing it straight to
+ * main is the bypass this whole change exists to remove. Second exception,
+ * proved the same way — by identity, not by assumption:
+ *
+ *     the row is absent from the verified checkout
+ *     AND it IS present in config/open-pr-dispositions.json at that PR's OWN head
+ *          -> IN FLIGHT, not unclassified
+ *
+ * A row that cannot be read at the PR head, or is genuinely not there, still
+ * fails. This distinguishes "arriving" from "missing", which is the same
+ * distinction as everything else here: #1623 sat open for weeks with no row
+ * anywhere, and must still fail.
+ *
  * Everything else about a stale row still fails, including the cases where the
  * evidence for the exception is missing. Refusing to grant a RELAXATION on
  * unreadable evidence is the safe direction; it is not the same as the
@@ -170,6 +186,8 @@ export function summarise(all, registeredGaps = []) {
  *   recorded     { '<n>': { disposition, worktree_policy } }
  *   mergeFacts   { '<n>': { lookup: 'OK'|'FAILED', state, mergeCommitSha } }
  *   headSha      string|null           full sha of the verified checkout's HEAD
+ *   inFlightRows { '<n>': true|false|null }  row present at that PR's own head;
+ *                                            null = could not read, which fails
  */
 export function classifyDispositionResidue(facts) {
   const f = facts ?? {};
@@ -183,9 +201,13 @@ export function classifyDispositionResidue(facts) {
   const problems = [];
   const transitional = [];
 
-  const unclassified = openPrs
-    .filter((p) => !recorded[String(p.number)])
-    .map((p) => `${p.number} ${p.ref ?? ''}`.trim());
+  const inFlightRows = f.inFlightRows ?? {};
+  const inFlight = [];
+  const unclassified = [];
+  for (const pr of openPrs.filter((p) => !recorded[String(p.number)])) {
+    if (inFlightRows[String(pr.number)] === true) inFlight.push(String(pr.number));
+    else unclassified.push(`${pr.number} ${pr.ref ?? ''}`.trim());
+  }
   if (unclassified.length) {
     problems.push('open PRs with no recorded disposition: ' + unclassified.join('; '));
   }
@@ -219,7 +241,7 @@ export function classifyDispositionResidue(facts) {
     problems.push('worktree_policy missing or outside {KEEP, PARK_IF_REPRODUCIBLE}: ' + badPolicy.join('; '));
   }
 
-  return { problems, transitional };
+  return { problems, transitional, inFlight };
 }
 
 /**
@@ -665,19 +687,41 @@ function checkOpenPrResidue() {
     mergeFacts[k] = { lookup: 'OK', state, mergeCommitSha: sha && sha !== '-' ? sha : null };
   }
 
+  // A row that is absent HERE may be arriving in the PR that adds it. Read the
+  // file at that PR's own head and find out, rather than assuming either way.
+  const inFlightRows = {};
+  for (const pr of openPrs.filter((x) => !recorded[x.number])) {
+    if (!pr.ref) { inFlightRows[pr.number] = null; continue; }
+    const c = sh(GH, ['api', `repos/{owner}/{repo}/contents/config/open-pr-dispositions.json?ref=${pr.ref}`,
+      '-H', 'Accept: application/vnd.github.raw']);
+    if (c.status !== 0) { inFlightRows[pr.number] = null; continue; }
+    try {
+      const atHead = JSON.parse(c.stdout);
+      inFlightRows[pr.number] = Object.prototype.hasOwnProperty.call(atHead, pr.number);
+    } catch {
+      inFlightRows[pr.number] = null;
+    }
+  }
+
   const headSha = git(['rev-parse', 'HEAD']);
-  const { problems, transitional } = classifyDispositionResidue({ openPrs, recorded, mergeFacts, headSha });
+  const { problems, transitional, inFlight } = classifyDispositionResidue({
+    openPrs, recorded, mergeFacts, headSha, inFlightRows,
+  });
 
   // A transitional row is REPORTED, never silent. It is a row that must go in
   // the next PR, and a reader who cannot see it will not remove it.
-  const note = transitional.length
-    ? ` | transitionally closed (merged at HEAD, clear in the next PR): ${transitional.map((k) => '#' + k).join(', ')}`
-    : '';
+  const note =
+    (transitional.length
+      ? ` | transitionally closed (merged at HEAD, clear in the next PR): ${transitional.map((k) => '#' + k).join(', ')}`
+      : '') +
+    (inFlight.length
+      ? ` | in flight (row present at the PR's own head): ${inFlight.map((k) => '#' + k).join(', ')}`
+      : '');
 
   add('github', 'open-pr-residue', problems.length ? FAIL : PASS,
     problems.length
       ? problems.join(' | ') + note
-      : `${openPrs.length} open PR(s), all classified with a valid worktree_policy, no stale rows${note}`);
+      : `${openPrs.length} open PR(s), all classified or in flight, no stale rows${note}`);
 }
 
 function checkMainBranchProtection() {
