@@ -88,13 +88,31 @@ reached `FUNCTIONS_DEPLOYED`.
 What is genuinely unaddressed sits one level down. The Supabase branch record for
 `main` carries status **`MIGRATIONS_FAILED`**, with `created_at` and `updated_at`
 both `2026-07-03T21:11:11Z` — so it has not been refreshed since it was written.
-Whether that is a live verdict on today's migrations or a stale record from
-branching setup is NOT established here; both readings fit the timestamps, and
-saying which would be a guess.
+
+The timestamps **favour "stale artifact"** over "live verdict", and it is worth
+saying why rather than leaving it balanced. If the integration wrote to the
+default-branch record on any commit since July, `updated_at` would have moved;
+across roughly two months of merges it has not. Meanwhile #1681's branch record,
+created today, does carry a current status (`FUNCTIONS_DEPLOYED`), so the
+integration is writing records — just, apparently, not to this one.
+
+That is evidence, not proof. What would settle it is whether the integration
+updates the default-branch record at all, and that is not established here. Do
+not read the paragraph above as "the migrations are fine."
 
 This matters for `Supabase Preview`'s disposition: it is **inert, not failing**.
-Making it "green" is not the task — deciding whether an inert check should be
-required, repaired, or removed is.
+Making it "green" is not the task.
+
+**Recommendation: remove it, and point at the classification report instead.**
+The check exists to answer "does the repo agree with production's migrations".
+`docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md` answers exactly
+that, deterministically, from the live catalog — and it can be run on demand
+rather than only on a PR that happens to touch `supabase/migrations/**`, which
+is the condition that made this check silent in the first place. Requiring an
+inert check would block every PR; repairing it would rebuild something the
+report already does better. The owner can overrule this, but leaving a check
+that reports `SKIPPED` forever while a real divergence sits underneath it is the
+one option with nothing to recommend it.
 
 ## Blast radius, measured
 
@@ -267,11 +285,19 @@ migration if Docker stays down, not taken.
 ## Blocked, and why
 
 The plan's local exercise of this migration could not be run. Docker Desktop is
-installed and was launched, but the daemon did not come up within the session
-(a bounded probe timed out repeatedly; two installs are present,
-`/Applications/Docker.app` and `/Applications/Docker 2.app`). `npx supabase
-start` therefore cannot run, and with 19 GiB free against a 12 GiB reserve the
-image pull would be tight even once it does.
+installed and was launched, but the daemon never accepted a connection within
+the session — four bounded probes over roughly twenty minutes all timed out
+while the GUI process was running. `npx supabase start` therefore cannot run.
+
+**A likely, owner-fixable cause: there are two installs.** Both
+`/Applications/Docker.app` and `/Applications/Docker 2.app` exist, and the
+process `open -a Docker` actually launched came from `Docker 2.app`. Two
+installs contending over one socket and VM is a known way to get a running GUI
+with a dead daemon. Removing the duplicate is a minute of work and is the first
+thing to try; it would unblock the local exercise directly.
+
+Worth knowing either way: with 19 GiB free against a 12 GiB reserve, the image
+pull would be tight even once the daemon is up.
 
 Stated rather than skipped: the migration has NOT been exercised against a local
 stack, and that step remains outstanding before the production apply.
