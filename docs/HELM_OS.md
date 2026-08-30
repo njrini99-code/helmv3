@@ -18,6 +18,7 @@ The reasoning behind the map, and the alternatives rejected, is
 
 | Question | Authority |
 | --- | --- |
+| What features exist, at a glance? | `docs/generated/HELM_FEATURE_MAP.md` (generated) |
 | What files belong to a feature? | `memory/registry.yml` |
 | How does that feature behave now? | the `docs.feature` it maps to, plus verified code |
 | What telemetry key does runtime use? | `src/lib/admin/feature-registry.ts` |
@@ -51,6 +52,7 @@ POLICY
 SEMANTIC PRODUCT MODEL
   memory/registry.yml                   feature identity + code ownership + routing
   memory/features/*.md                  current behaviour, per feature
+  docs/generated/HELM_FEATURE_MAP.md    navigation projection (generated)
 
 RUNTIME FEATURE HEALTH
   src/lib/admin/feature-registry.ts     FeatureKey vocabulary, tables, tiers
@@ -119,6 +121,7 @@ npm run knowledge:context -- --files <paths...> --task "<task>"
 ```bash
 npm run docs:check          # generated docs, schema names, doc paths
 npm run knowledge:check     # feature/ledger/authority integrity
+npm run knowledge:feature-map  # regenerate the feature map after a registry edit
 npm run control-plane:verify  # runtime capability and enforcement truth
 ```
 

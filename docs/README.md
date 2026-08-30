@@ -12,7 +12,7 @@
 > | --- | --- |
 > | `CONTROL_PLANE_ENFORCEMENT.md` | `npm run enforcement:check` |
 > | `TOOL_AUTHORITY_MATRIX.md` | `npm run tool-authority:check` |
-> | `generated/**` | `npm run knowledge:check` |
+> | `generated/HELM_FEATURE_MAP.md` | `npm run knowledge:check` |
 >
 > This preamble read "Everything in `docs/` is hand-written prose. None of it is
 > generated" until 2026-08-30, while both files above sat in this directory. A
@@ -65,8 +65,11 @@ For orientation before diving into a specific doc cluster, read (in rough order)
   before `memory/glossary.md` or anything in `memory/context/`.
 - **`memory/glossary.md`** — every table, view, function, enum, and type location.
 - **`memory/projects/golfhelm.md`** — all GolfHelm routes, action files, component tree.
-- **`memory/context/golfhelm-features.md`** / **`memory/context/baseballhelm-features.md`** —
-  feature-by-feature data flow, files, tables, gaps, per product.
+- **`memory/features/*.md`** — the current-state feature corpus, reached
+  through `memory/registry.yml`. For BaseballHelm the corpus is still
+  **`memory/context/baseballhelm-features.md`**; the golf equivalent
+  (`memory/context/golfhelm-features.md`) is historical as of 2026-08-30 and
+  is routed from nowhere.
 - **`docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`** — source of truth for what BaseballHelm
   should be.
 - **`memory/incidents/`** — confirmed product defects, one file per incident, per
