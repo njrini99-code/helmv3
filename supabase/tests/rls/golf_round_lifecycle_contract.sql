@@ -4,7 +4,7 @@ BEGIN;
 -- calls in production. This caught a branch/schema split where production had
 -- applied the guard and capability RPCs but the checked-out migration history
 -- did not create them at all.
-SELECT plan(12);
+SELECT plan(14);
 
 -- A minimal persisted round lets this contract test the trigger behavior as
 -- well as the presence of its database objects. The enclosing transaction is
@@ -109,6 +109,42 @@ SELECT ok(
   ), false),
   'reclassification verifies the invoking user rather than relying on definer privileges'
 );
+
+-- ── The reclassify allowlist (20260830120000) ────────────────────────────────
+-- The fixture round is still `in_progress` at this point, which is the whole
+-- point of these two: 20260830120000 removed `OLD.status = 'completed'` from
+-- the reclassify branch so an unfinished round can be re-typed, and its ONLY
+-- remaining safety argument is that the branch's column allowlist excludes
+-- `status`. Nothing pinned that claim, so a mis-scoped allowlist would have
+-- turned the marker into a way to complete a round outside the protected
+-- submit path. These are the tests that would catch it.
+
+SELECT lives_ok(
+  $$SELECT set_config('helm.golf_lifecycle_write', 'reclassify', true);
+    UPDATE public.golf_rounds
+    SET round_type = 'qualifier'
+    WHERE id = '00000000-0000-0000-0000-000000005102'$$,
+  'an unfinished round can be re-typed through the reclassify marker'
+);
+
+SELECT throws_ok(
+  $$SELECT set_config('helm.golf_lifecycle_write', 'reclassify', true);
+    UPDATE public.golf_rounds
+    SET round_type = 'practice', status = 'completed'
+    WHERE id = '00000000-0000-0000-0000-000000005102'$$,
+  '55000',
+  'Completed rounds must be submitted through the protected round-submit flow.',
+  'the reclassify marker cannot also complete a round — status is not in its allowlist'
+);
+
+SELECT set_config('helm.golf_lifecycle_write', '', true);
+
+-- Put the fixture back the way the remaining assertions expect to find it.
+SELECT set_config('helm.golf_lifecycle_write', 'reclassify', true);
+UPDATE public.golf_rounds
+SET round_type = 'practice'
+WHERE id = '00000000-0000-0000-0000-000000005102';
+SELECT set_config('helm.golf_lifecycle_write', '', true);
 
 SELECT throws_ok(
   $$UPDATE public.golf_rounds

@@ -87,8 +87,32 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 1. The lifecycle guard. Reproduced in full because CREATE OR REPLACE
 --    replaces the whole body; every branch other than `reclassify` is
---    byte-for-byte what production carries today (verified against
---    pg_get_functiondef on 2026-08-30).
+--    byte-for-byte what production carries today.
+--
+--    PRE-APPLY CHECK — DO NOT SKIP. A CREATE OR REPLACE silently discards
+--    anything production has that this file does not. Both bodies were read
+--    from the live catalog on 2026-08-30 and fingerprinted:
+--
+--      helm_private.guard_golf_round_lifecycle()
+--        md5 cbc5671bc953183a4967d43b7d66699e   length 3403
+--      public.reclassify_golf_round(uuid,text,uuid,integer)
+--        md5 c7c2c3f15af684fcdf63286c150bb12c   length 1656
+--
+--    Re-run immediately before applying:
+--
+--      SELECT md5(pg_get_functiondef(
+--               'helm_private.guard_golf_round_lifecycle()'::regprocedure)),
+--             length(pg_get_functiondef(
+--               'helm_private.guard_golf_round_lifecycle()'::regprocedure));
+--      SELECT md5(pg_get_functiondef(
+--               'public.reclassify_golf_round(uuid,text,uuid,integer)'::regprocedure)),
+--             length(pg_get_functiondef(
+--               'public.reclassify_golf_round(uuid,text,uuid,integer)'::regprocedure));
+--
+--    If either md5 differs from the value above, production has moved since
+--    this file was written and applying it would DISCARD that change. Stop and
+--    re-derive. (This is the discipline 20260827060000 used and this file
+--    originally dropped — restored after review.)
 -- ─────────────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION helm_private.guard_golf_round_lifecycle()
 RETURNS trigger
@@ -222,7 +246,14 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'Unsupported round type.';
   END IF;
 
-  SELECT * INTO v_round FROM public.golf_rounds WHERE id = p_round_id;
+  -- FOR UPDATE, because the status check below and the UPDATE at the end are
+  -- otherwise a TOCTOU: `submit_round_atomic` can complete this very round in
+  -- between, and since the guard's reclassify branch no longer looks at status
+  -- at all, nothing downstream would notice. The realistic window is a
+  -- qualifying weekend, where reclassifying and submitting happen at once.
+  -- `submit_round_atomic` already takes this same row lock first, so this
+  -- introduces no new lock-ordering inversion.
+  SELECT * INTO v_round FROM public.golf_rounds WHERE id = p_round_id FOR UPDATE;
   IF NOT FOUND THEN RETURN NULL; END IF;
 
   -- Live or submitted only. An abandoned round must not be re-typed back into
@@ -319,3 +350,11 @@ REVOKE ALL ON FUNCTION public.reclassify_golf_round(uuid, text, uuid, integer)
   FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.reclassify_golf_round(uuid, text, uuid, integer)
   TO authenticated, service_role;
+
+-- The trigger function is reachable only through the trigger and must never be
+-- callable directly. CREATE OR REPLACE does not reset ACLs, so this changes
+-- nothing today — it is restated because every prior migration touching this
+-- function did, and a privileged object whose reachability is stated in some
+-- files and assumed in others is one a reader has to go and check.
+REVOKE ALL ON FUNCTION helm_private.guard_golf_round_lifecycle()
+  FROM public, anon, authenticated;
