@@ -205,6 +205,25 @@ fine".
   language.
 - **Deleting anything.** The goal was never fewer files.
 
+## The ownership gate proved itself on a real evidence outage
+
+Not an injection. Retiring PR #1687's own branch, `--gc-branches` reported
+`0 action(s) taken` and every branch `UNKNOWN_PR — no PR found, cannot prove
+the work landed`, while a direct `gh api` call from the same shell answered
+correctly. Cause: the agent Bash sandbox's filtering proxy, which broke TLS for
+`gh` when it was spawned as a grandchild —
+`tls: failed to verify certificate: x509: OSStatus -26276`. Environmental, not
+a repo defect, and it produced exactly the condition the vocabulary exists for:
+**evidence unavailable, which is not evidence of absence.**
+
+The tool deleted nothing. `UNKNOWN_PR` is outside the standing authorization,
+so the fail-safe direction held under a failure nobody designed the test for.
+Re-run with the proxy out of the path, the same branch classified
+`DELETE_MERGED_EXACT` on PR head OID and was deleted.
+
+This is the #1668 conflation — a failed lookup rendered as `NONE` — not
+recurring, observed live rather than argued.
+
 ## Three defects the new tooling found in its own authors' work
 
 1. **`docs:schema-drift` could not see a namespace.** Writing the ADR turned it
