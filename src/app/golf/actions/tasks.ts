@@ -395,7 +395,12 @@ async function createTaskImpl(
           const { data: userRows, error: userRowsError } = await supabase
             .from('users')
             .select('id, email')
-            .in('id', playerRows.map(p => p.user_id));
+            // `user_id` is nullable once an account is deleted and the player's history
+            // is preserved (20260819200000). A null is not a recipient — drop it so the
+            // rest of the batch still gets notified, matching the three fan-outs in
+            // golf.ts that already do this. NOT NULL in production today, so this
+            // removes nothing yet: that is what lets it ship before the migration.
+            .in('id', playerRows.map(p => p.user_id).filter((id): id is string => Boolean(id)));
 
           if (userRowsError) {
             await logServerError(
