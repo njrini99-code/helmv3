@@ -198,7 +198,15 @@ function render(): string {
 function main(): void {
   const check = process.argv.includes('--check');
   const next = render();
-  const current = existsSync(OUT) ? readFileSync(OUT, 'utf8') : '';
+  // Read once and treat "not there" as "empty", rather than asking existsSync
+  // and then reading. The two-call form is a genuine TOCTOU — CodeQL flags it
+  // as js/file-system-race — and the single call is also simpler.
+  let current = '';
+  try {
+    current = readFileSync(OUT, 'utf8');
+  } catch {
+    /* first run, or the file was removed between generations */
+  }
 
   if (!check) {
     writeFileSync(OUT, next);
