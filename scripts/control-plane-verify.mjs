@@ -221,6 +221,17 @@ function checkWorktreePolicy() {
 }
 
 function checkControlPlaneTests() {
+  // This check spawns vitest. When the verifier is itself invoked FROM a test
+  // — which the failure-injection suite does, deliberately, to prove the
+  // verifier discriminates — that nests vitest inside vitest under full-suite
+  // load and the inner run becomes unreliable.
+  //
+  // Skipping reports UNKNOWN, never PASS. A check that did not run is not a
+  // check that passed, and this file exists to keep that distinction.
+  if (process.env.HELM_CP_SKIP_NESTED_TESTS === '1') {
+    return add('tests', 'control-plane-suites', UNKNOWN,
+      'skipped: nested invocation (HELM_CP_SKIP_NESTED_TESTS=1) — not run, therefore not passed');
+  }
   const r = sh('npx', ['vitest', 'run', '--project', 'unit',
     'src/test/scripts/worktree-lifecycle.test.ts',
     'src/test/scripts/control-plane-enforcement.test.ts',

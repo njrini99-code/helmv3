@@ -385,9 +385,9 @@ interface StoredResolutionRow {
  */
 async function fetchResolutions(
   fingerprints: readonly string[],
-): Promise<Map<string, StoredResolutionRow>> {
+): Promise<{ byFingerprint: Map<string, StoredResolutionRow>; readable: boolean; reason: string | null }> {
   const out = new Map<string, StoredResolutionRow>();
-  if (fingerprints.length === 0) return out;
+  if (fingerprints.length === 0) return { byFingerprint: out, readable: true, reason: null };
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -397,7 +397,13 @@ async function fetchResolutions(
 
   if (error) {
     console.warn(`[fetchResolutions] resolution ledger unreadable: ${error.message}`);
-    return out;
+    // The empty map is returned as before — the board must not go down for
+    // this — but the CALLER is now told the difference. Returning a bare empty
+    // map made "nothing is resolved" and "we could not read what is resolved"
+    // the same value, and the sibling arm of this producer
+    // (fetchRepairPrs -> { byIncident, readable, reason }) already models it
+    // correctly. This is that convention, applied to the arm that lacked it.
+    return { byFingerprint: out, readable: false, reason: `Resolution ledger unreadable: ${error.message}` };
   }
 
   for (const row of data ?? []) {
@@ -411,7 +417,7 @@ async function fetchResolutions(
       reopenedCount: typeof row.reopened_count === 'number' ? row.reopened_count : 0,
     });
   }
-  return out;
+  return { byFingerprint: out, readable: true, reason: null };
 }
 
 // ---------------------------------------------------------------------------
@@ -593,7 +599,7 @@ export async function fetchIncidentBoard(
       : null;
 
     const resolutionRow = draft.appFingerprints
-      .map((fp) => resolutions.get(fp))
+      .map((fp) => resolutions.byFingerprint.get(fp))
       .find((r) => r !== undefined);
     const resolution = toResolution(resolutionRow);
 
@@ -655,16 +661,34 @@ export async function fetchIncidentBoard(
     } satisfies UnifiedIncident;
   });
 
-  const readings: SourceReading[] = sourceHealth.map((s) => ({
-    source: s.source,
-    health: s.health,
-    observedAt: s.observedAt,
-    reason: s.reason,
-  }));
+  // The `app` source is declared `reading` above because app EVENTS throw when
+  // they cannot be read, so reaching that line proves the event arm is healthy.
+  // That reasoning does not extend to the resolution ledger, which fails SOFT:
+  // an unreadable ledger returned an empty map and the board reported a fully
+  // healthy app source over incomplete data. `partial` is the state that
+  // already exists for exactly this — reading one arm, blind on another — and
+  // it flows into coverage.anyBlind and the blindness beacon without any new
+  // type, source name or UI.
+  //
+  // Deliberately NOT modelled as a non-null `resolution` carrying
+  // `resolvedBy: 'unknown'`: LifecycleSpine treats `resolution !== null` as
+  // closeState `proven`, so that shape would upgrade "could not read" into
+  // "proven closed" — a worse falsehood than the one being fixed.
+  const readings: SourceReading[] = sourceHealth.map((s) => {
+    if (s.source === 'app' && !resolutions.readable) {
+      return {
+        source: s.source,
+        health: 'partial' as const,
+        observedAt: s.observedAt,
+        reason: resolutions.reason,
+      };
+    }
+    return { source: s.source, health: s.health, observedAt: s.observedAt, reason: s.reason };
+  });
   const freshness = buildSourceFreshness(readings, now);
   const coverage = summarizeCoverage(freshness);
   const reasons = new Map<IncidentSourceName, string | null>(
-    sourceHealth.map((s) => [s.source, s.reason]),
+    readings.map((r) => [r.source, r.reason ?? null] as const),
   );
 
   const eventIdsByIncident: Record<string, string[]> = {};
