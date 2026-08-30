@@ -421,16 +421,47 @@ function checkSandbox() {
       : 'sandbox.filesystem enabled');
 }
 
+/**
+ * config/open-pr-dispositions.json must equal the live open-PR set, in BOTH
+ * directions.
+ *
+ * The missing direction was always checked. The stale direction was not, and
+ * the file had accumulated ACTIVE rows for #1623, #1638, #1679 and #1680 long
+ * after they closed or merged — a current-state registry quietly asserting
+ * things that had stopped being true. A registry that only grows is a history
+ * file wearing a registry's name.
+ *
+ * The vocabulary check lives here rather than in the lifecycle tool because
+ * the lifecycle tool must fail SAFE on a malformed entry (unrecognised policy
+ * => KEEP) and would therefore never report one. Something has to notice.
+ */
 function checkOpenPrResidue() {
   const r = sh('gh', ['api', 'repos/{owner}/{repo}/pulls?state=open&per_page=50', '--jq', '.[] | "\\(.number) \\(.head.ref)"']);
   if (r.status !== 0) return add('github', 'open-pr-residue', UNKNOWN, 'could not list open PRs');
   const lines = (r.stdout ?? '').trim().split('\n').filter(Boolean);
+  const open = new Set(lines.map((l) => l.split(' ')[0]));
   const known = readJson(resolve(ROOT, 'config/open-pr-dispositions.json')) ?? {};
+  // Keys beginning with a dollar sign are documentation, not rows.
+  const recorded = Object.keys(known).filter((k) => !k.startsWith('$'));
+
   const unclassified = lines.filter((l) => !known[l.split(' ')[0]]);
-  add('github', 'open-pr-residue', unclassified.length ? FAIL : PASS,
-    unclassified.length
-      ? `open PRs with no recorded disposition: ${unclassified.join('; ')}`
-      : `${lines.length} open PR(s), all classified`);
+  const stale = recorded.filter((k) => !open.has(k));
+
+  const POLICIES = new Set(['KEEP', 'PARK_IF_REPRODUCIBLE']);
+  const badPolicy = recorded
+    .filter((k) => open.has(k))
+    .filter((k) => !POLICIES.has(known[k]?.worktree_policy))
+    .map((k) => '#' + k + ' worktree_policy=' + (known[k]?.worktree_policy ?? 'unset'));
+
+  const problems = [];
+  if (unclassified.length) problems.push('open PRs with no recorded disposition: ' + unclassified.join('; '));
+  if (stale.length) problems.push('disposition rows for PRs no longer open: ' + stale.map((k) => '#' + k).join(', '));
+  if (badPolicy.length) problems.push('worktree_policy missing or outside {KEEP, PARK_IF_REPRODUCIBLE}: ' + badPolicy.join('; '));
+
+  add('github', 'open-pr-residue', problems.length ? FAIL : PASS,
+    problems.length
+      ? problems.join(' | ')
+      : lines.length + ' open PR(s), all classified with a valid worktree_policy, no stale rows');
 }
 
 // ---------------------------------------------------------------------------

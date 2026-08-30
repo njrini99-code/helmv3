@@ -72,6 +72,39 @@ export const UNKNOWN_IDENTITY = 'UNKNOWN_IDENTITY';
 export const NO_UPSTREAM_UNIQUE_WORK = 'NO_UPSTREAM_UNIQUE_WORK';
 
 /**
+ * A WORKTREE verdict, and deliberately neither ACTIVE nor UNKNOWN.
+ *
+ *   ACTIVE  would claim somebody is demonstrably using it. Not proven.
+ *   UNKNOWN would claim the evidence was unreadable. Also untrue — the PR read
+ *           fine; what is missing is a recorded decision by its owner.
+ *
+ * It means: this checkout is disposable in every mechanical sense, and its
+ * branch has an OPEN PR whose owner has not said it may go.
+ */
+export const KEEP_PR_OWNER_INTENT_REQUIRED = 'KEEP_PR_OWNER_INTENT_REQUIRED';
+
+/**
+ * The `worktree_policy` vocabulary in config/open-pr-dispositions.json.
+ *
+ * A disposition LABEL (ACTIVE, HUMAN_TEST_PENDING, ...) says what the PR is.
+ * It was being asked to also imply what may happen to the checkout, which is a
+ * second meaning readers had to infer. The policy states the action directly.
+ */
+export const WORKTREE_POLICY_KEEP = 'KEEP';
+export const WORKTREE_POLICY_PARK_IF_REPRODUCIBLE = 'PARK_IF_REPRODUCIBLE';
+export const WORKTREE_POLICIES = new Set([WORKTREE_POLICY_KEEP, WORKTREE_POLICY_PARK_IF_REPRODUCIBLE]);
+
+/**
+ * Dispositions that KEEP the checkout whatever the policy field says.
+ *
+ * Defence in depth, and cheap: ACTIVE means somebody is working in it right
+ * now, UNKNOWN means nobody has established what it is. Neither can be parked
+ * by an agent, so a mis-typed policy beside one of these fails safe instead of
+ * authorising the exact removal this rule exists to prevent.
+ */
+export const OPEN_PR_KEEP_DISPOSITIONS = new Set(['ACTIVE', 'UNKNOWN']);
+
+/**
  * Branch name prefixes that are never deleted automatically, whatever their PR
  * says. These exist because a human deliberately preserved something.
  */
@@ -96,9 +129,36 @@ export function isProtectedBranch(branch) {
  *   remoteSha       string|null
  *   isCurrentExecution bool       the tree this process is running from
  *
- * Note the asymmetry with branches: parking does NOT consult the PR at all. It
- * removes only the disposable checkout, so "is this work finished" is not the
- * question — "is this checkout reproducible from a pushed ref" is.
+ * OWNERSHIP — rewritten 2026-08-30 against a reproduced failure.
+ *
+ * This comment used to state, as design, that "parking does NOT consult the PR
+ * at all", the only question being whether the checkout is reproducible from a
+ * pushed ref. That was the defect, written down as an intention.
+ *
+ * On 2026-08-30 `--retire` parked a CONCURRENT session's worktree
+ * (agent/round-type-reclassify, PR #1681, OPEN) because it was clean, pushed
+ * and idle. Nothing was lost — parking keeps the branch, and PARKABLE already
+ * required the tip to match its pushed remote — but the checkout belonged to
+ * somebody still using it, and the tool could not tell.
+ *
+ * The false step is the process probe. `lsof +D` samples ONE INSTANT:
+ *
+ *     hasLiveProcess === true     proof of activity        — a sound veto
+ *     hasLiveProcess === false    NOT proof of inactivity  — an agent session
+ *                                 sitting between two tool calls has no
+ *                                 process whose cwd is visible
+ *
+ * Negative detection therefore never authorises removal by itself. For a
+ * branch with an OPEN PR, dispensability must be proven POSITIVELY from
+ * recorded owner intent (config/open-pr-dispositions.json). Reproducibility is
+ * still necessary. It is no longer sufficient.
+ *
+ * PR facts (all optional; absent means "not supplied", handled explicitly):
+ *   prLookup        'OK' | 'FAILED'
+ *   prNumber        number|null
+ *   prState         'MERGED'|'OPEN'|'CLOSED'|'NONE'|null
+ *   disposition     string|null   from config/open-pr-dispositions.json
+ *   worktreePolicy  string|null   KEEP | PARK_IF_REPRODUCIBLE
  */
 export function classifyWorktree(facts) {
   const f = facts ?? {};
@@ -123,6 +183,39 @@ export function classifyWorktree(facts) {
     return { verdict: UNKNOWN, reason: 'detached HEAD — no branch identity to park against' };
   }
 
+  // OWNERSHIP GATE. Runs before the reproducibility checks on purpose: when an
+  // owner has said KEEP, no amount of pushed-ness makes the checkout free, and
+  // "PR #1681 is OPEN and its disposition is ACTIVE" is the reason a reader can
+  // act on. Scoped to OPEN PRs, per the rule this implements.
+  if (f.prLookup && f.prLookup !== 'OK') {
+    // Evidence unavailable is never absence — the same conflation as #1668,
+    // here on the worktree side.
+    return { verdict: UNKNOWN, reason: 'PR lookup failed — ownership could not be established' };
+  }
+  if (f.prState === 'OPEN') {
+    const n = f.prNumber ? `#${f.prNumber}` : 'the PR';
+    if (!f.disposition) {
+      return {
+        verdict: KEEP_PR_OWNER_INTENT_REQUIRED,
+        reason: `PR ${n} is OPEN with no recorded disposition — record one in config/open-pr-dispositions.json`,
+      };
+    }
+    if (OPEN_PR_KEEP_DISPOSITIONS.has(f.disposition)) {
+      return {
+        verdict: KEEP_PR_OWNER_INTENT_REQUIRED,
+        reason: `PR ${n} is OPEN and its disposition is ${f.disposition}`,
+      };
+    }
+    if (f.worktreePolicy !== WORKTREE_POLICY_PARK_IF_REPRODUCIBLE) {
+      return {
+        verdict: KEEP_PR_OWNER_INTENT_REQUIRED,
+        reason: `PR ${n} is OPEN and its worktree_policy is ${f.worktreePolicy ?? 'unset'} — only ${WORKTREE_POLICY_PARK_IF_REPRODUCIBLE} authorises parking`,
+      };
+    }
+    // Falls through: the owner recorded, explicitly, that this checkout may go
+    // once it is reproducible. #1659 is the case this preserves.
+  }
+
   if (!f.localSha) return { verdict: UNKNOWN, reason: 'could not resolve the local tip' };
 
   // Parking requires the checkout be reproducible: the work must be pushed.
@@ -139,9 +232,13 @@ export function classifyWorktree(facts) {
     return { verdict: UNKNOWN_REMOTE, reason: `local tip differs from ${f.upstream} (unpushed commits)` };
   }
 
+  const authorised =
+    f.prState === 'OPEN'
+      ? ` — PR #${f.prNumber} disposition ${f.disposition}/${f.worktreePolicy} authorises it`
+      : '';
   return {
     verdict: PARKABLE,
-    reason: `clean, idle, and identical to ${f.upstream} — recreate with scripts/new-worktree.sh`,
+    reason: `clean, idle, and identical to ${f.upstream}${authorised} — recreate with scripts/new-worktree.sh`,
   };
 }
 
@@ -231,10 +328,11 @@ function short(sha) {
  * dead. Keeping it as a separate classifier output would have made it
  * unreachable, which is its own species of false claim.
  *
- *   ACTIVE                                   -> KEEP    (do nothing)
- *   PARKABLE + branch DELETE_MERGED_EXACT            -> RETIRE  (remove tree AND branch)
- *   PARKABLE + anything else                 -> PARK    (remove tree, keep branch)
- *   UNKNOWN                                  -> KEEP    (evidence missing)
+ *   ACTIVE                                     -> KEEP    (do nothing)
+ *   KEEP_PR_OWNER_INTENT_REQUIRED              -> KEEP    (owner has not released it)
+ *   PARKABLE + branch DELETE_MERGED_EXACT      -> RETIRE  (remove tree AND branch)
+ *   PARKABLE + anything else                   -> PARK    (remove tree, keep branch)
+ *   UNKNOWN                                    -> KEEP    (evidence missing)
  *
  * The PARK row is the point of the whole redesign: an open PR waiting on a
  * human no longer costs ~3.8 GiB while it waits.
@@ -246,8 +344,9 @@ export function combineVerdicts(worktreeVerdict, branchVerdict) {
   if (worktreeVerdict === PARKABLE) {
     return { action: 'PARK', worktree: PARKABLE, reason: 'checkout disposable; branch stays' };
   }
-  // Everything else — ACTIVE, UNKNOWN, UNKNOWN_REMOTE — is KEEP. Missing
-  // evidence is never a licence to remove a checkout.
+  // Everything else — ACTIVE, KEEP_PR_OWNER_INTENT_REQUIRED, UNKNOWN,
+  // UNKNOWN_REMOTE — is KEEP. Neither missing evidence nor missing permission
+  // is a licence to remove a checkout.
   return { action: 'KEEP', worktree: worktreeVerdict, reason: 'not eligible' };
 }
 
@@ -266,8 +365,15 @@ export function combineVerdicts(worktreeVerdict, branchVerdict) {
  *
  * and may PARK or RETIRE a workspace the classifier verdicts PARKABLE.
  *
+ * NARROWED 2026-08-30. PARKABLE no longer follows from "clean + pushed + no
+ * process seen". A worktree whose branch has an OPEN PR is PARKABLE only when
+ * that PR carries a disposition whose worktree_policy is PARK_IF_REPRODUCIBLE.
+ * The grant is unchanged in wording and smaller in reach, because the verdict
+ * it points at got harder to earn.
+ *
  * EXPLICITLY EXCLUDED — every one of these requires a human:
  *
+ *     KEEP_PR_OWNER_INTENT_REQUIRED  open PR whose owner has not released the checkout
  *     UNKNOWN_PR                 evidence unavailable, or no PR found
  *     KEEP_OPEN                  PR open, or closed without merging
  *     KEEP_DIVERGED_AFTER_PR     commits made after the PR merged
@@ -286,7 +392,7 @@ export const AUTONOMOUS_BRANCH_VERDICTS = new Set([DELETE_MERGED_EXACT]);
 export const REQUIRES_HUMAN_VERDICTS = new Set([
   UNKNOWN_PR, KEEP_OPEN, KEEP_DIVERGED_AFTER_PR, KEEP_PROTECTED,
   KEEP_WORKTREE_ACTIVE, KEEP_DIRTY, NO_UPSTREAM_UNIQUE_WORK,
-  UNKNOWN_REMOTE, UNKNOWN_IDENTITY,
+  UNKNOWN_REMOTE, UNKNOWN_IDENTITY, KEEP_PR_OWNER_INTENT_REQUIRED,
 ]);
 
 export function mayActAutonomously(verdict) {

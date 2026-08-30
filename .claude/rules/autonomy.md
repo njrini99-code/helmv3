@@ -53,7 +53,7 @@ Pick one of these before dispatching, never neither:
   scripts/new-worktree.sh <task-name>
   # -> ~/worktrees/helmv3/<task-name> on branch agent/<task-name>
   git worktree list                    # what's still checked out
-  git worktree remove <path>           # when merged
+  npm run worktrees:retire             # when merged — never a raw remove
   ```
 
   Use it because it guarantees four things at once: an external managed
@@ -105,25 +105,26 @@ Agents picked one at random and edited a branch nobody was shipping, then
 reported success. That is the mechanical cause of "the agents keep getting
 lost". Put worktrees in a sibling directory and this cannot happen.
 
-**Prune by PR state, not by `--merged`.** This repo squash-merges, so a merged
-branch's commits never become ancestors of `main` and
-`git branch --merged` will never list it — `codex/golf-team-operations` still
-reported "10 commits not in main" long after #1513 had shipped as `a9f2c7f37`.
-Cleanup keyed on `--merged` therefore never fires and worktrees accumulate
-forever. Use the PR instead:
+**Prune through the lifecycle authority. Do not hand-roll a second one.**
+This repo squash-merges, so a merged branch's commits never become ancestors of
+`main` and `git branch --merged` will never list it — `codex/golf-team-operations`
+still reported "10 commits not in main" long after #1513 had shipped as
+`a9f2c7f37`. Cleanup keyed on `--merged` never fires and worktrees accumulate
+forever.
 
 ```bash
-gh pr list --state merged --limit 20 --json headRefName,number,mergeCommit
-git worktree remove --force <path> && git branch -D <branch>
+npm run worktrees          # report — the default, and always safe
+npm run worktrees:park     # remove disposable checkouts, KEEP their branches
+npm run worktrees:retire   # park, AND delete branches proven merged
 ```
 
-Before removing anything, check nothing still holds it — a stale process whose
-cwd is inside a worktree turns the removal into deleted-inode confusion rather
-than a clean error:
-
-```bash
-lsof +D <worktree-path> | awk '$4=="cwd"'
-```
+This block used to spell out `git worktree remove --force`, `git branch -D` and
+an `lsof +D` pre-check. All three are gone deliberately: `scripts/worktree-lifecycle.mjs`
+is the single lifecycle authority, a hand-run recipe is a second deletion
+algorithm that nothing tests, and the `lsof` step in particular taught the exact
+inference that removed a live checkout on 2026-08-30 — `lsof` answers about one
+instant, so seeing no process is not evidence that nobody is using a worktree.
+The policy boundary lives in AGENTS.md; the mechanism lives in the tool.
 
   Worktrees share the object store, so branches and commits are visible from the
   main checkout immediately — no pushing between them.
