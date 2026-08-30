@@ -108,12 +108,23 @@
       "capability": "pr-lookup",
       "observed_at": "2026-08-29",
       "result": "PASS",
-      "evidence": "exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668).",
+      "evidence": "exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668). Capability is fingerprintable after all: the authenticated account id, the repository id and the OAuth scope set (X-Oauth-Scopes response header) are all stable and carry no secret material. Recorded 2026-08-30; control-plane:verify re-measures them live and reports drift.",
       "configuration_fingerprint": "ungoverned:87544794",
       "configured": "yes",
       "connected": "yes",
       "exposed": "yes",
-      "allowed": "yes"
+      "allowed": "yes",
+      "capability_fingerprint": "461f95b7b94d1774",
+      "capability_evidence": {
+        "account_id": 238133540,
+        "repo_id": 1119265234,
+        "granted_scope_names": [
+          "gist",
+          "read:org",
+          "repo",
+          "workflow"
+        ]
+      }
     },
     {
       "service": "GitHub",

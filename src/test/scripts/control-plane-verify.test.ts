@@ -237,6 +237,43 @@ describe('runtime evidence expires when its configuration moves', () => {
   });
 });
 
+describe('github capability is fingerprintable — the gap that closed by measuring', () => {
+  it('the same capability always produces the same digest, whatever the key order', async () => {
+    // A first draft recorded the fingerprint in Python (sorted keys) and checked
+    // it in JS (insertion order), so identical capability produced different
+    // digests and the check failed against itself. Two implementations of one
+    // fact is the defect this repo keeps finding.
+    const { githubCapabilityFingerprint } = await import('../../../scripts/control-plane-verify.mjs');
+    const a = githubCapabilityFingerprint({ account_id: 1, repo_id: 2, granted_scope_names: ['repo', 'gist'] });
+    const b = githubCapabilityFingerprint({ granted_scope_names: ['gist', 'repo'], repo_id: 2, account_id: 1 });
+    expect(a).toBe(b);
+  });
+
+  it('DROPPING a scope changes the digest — branch deletion depends on this path', async () => {
+    const { githubCapabilityFingerprint } = await import('../../../scripts/control-plane-verify.mjs');
+    const full = githubCapabilityFingerprint({ account_id: 1, repo_id: 2, granted_scope_names: ['repo', 'workflow'] });
+    const narrowed = githubCapabilityFingerprint({ account_id: 1, repo_id: 2, granted_scope_names: ['repo'] });
+    expect(narrowed).not.toBe(full);
+  });
+
+  it('a different account or repo changes the digest', async () => {
+    const { githubCapabilityFingerprint } = await import('../../../scripts/control-plane-verify.mjs');
+    const base = { account_id: 1, repo_id: 2, granted_scope_names: ['repo'] };
+    expect(githubCapabilityFingerprint({ ...base, account_id: 9 })).not.toBe(githubCapabilityFingerprint(base));
+    expect(githubCapabilityFingerprint({ ...base, repo_id: 9 })).not.toBe(githubCapabilityFingerprint(base));
+  });
+
+  it('the recorded observation carries a fingerprint and its evidence', () => {
+    const obs = JSON.parse(
+      readFileSync(resolve(REPO, 'config/control-plane-observations.json'), 'utf-8'),
+    ).observations.find((o: { service: string; namespace: string }) => o.service === 'GitHub' && o.namespace.startsWith('gh CLI'));
+    expect(obs?.capability_fingerprint, 'no fingerprint recorded').toBeTruthy();
+    // Evidence, not just a hash — a digest nobody can reconstruct is not evidence.
+    expect(obs?.capability_evidence?.granted_scope_names).toContain('repo');
+    expect(typeof obs?.capability_evidence?.account_id).toBe('number');
+  });
+});
+
 describe('exit semantics', () => {
   it('UNKNOWN outranks FAIL and never becomes PASS', async () => {
     const { summarise, PASS, FAIL, UNKNOWN } = await import('../../../scripts/control-plane-verify.mjs');

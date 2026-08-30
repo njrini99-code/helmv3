@@ -28,5 +28,9 @@
   "1679": {
     "disposition": "ACTIVE",
     "note": "This branch. The product-diagnostics tranche: MC-PRODUCER information-loss boundary, category-drift disproof, and the capture audit. Closes when it merges — at which point the lifecycle authority retires the branch in the same step."
+  },
+  "1680": {
+    "disposition": "ACTIVE",
+    "note": "This branch. Closeout: GITHUB_CAPABILITY_UNGOVERNED closed by measuring, ERROR_SURFACES_DISAGREE registered from live production, shipping.md slimmed of facts the generators now own. Closes on merge; the lifecycle authority retires the branch in the same step."
   }
 }

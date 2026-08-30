@@ -33,6 +33,7 @@
  * every run so it cannot fade.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -321,6 +322,79 @@ function checkObservationFreshness() {
   });
 }
 
+/**
+ * GitHub capability drift, measured live.
+ *
+ * GITHUB_CAPABILITY_UNGOVERNED was an acknowledged gap on the reasoning that
+ * nothing in this repo governs the gh CLI, so its capability could not be
+ * fingerprinted. Measured 2026-08-30, that was wrong: the authenticated account
+ * id, the repository id and the OAuth scope set are all stable, all exposed
+ * (the scopes arrive in the X-Oauth-Scopes response header), and none of them
+ * is secret material.
+ *
+ * Branch deletion depends on this path — PR state and head OID — so a silent
+ * scope change is a silent change in what the lifecycle can prove. Static mode
+ * skips this: it needs the network and an authenticated gh.
+ */
+/**
+ * ONE implementation, used both to record the fingerprint and to check it.
+ *
+ * A first draft computed the recorded value in Python (sorted keys) and the
+ * live value in JS (insertion order), so identical capability produced
+ * different digests and the check failed against itself. Two implementations of
+ * one fact is the same defect this repo keeps finding; keys are sorted here so
+ * serialisation order cannot be the difference.
+ */
+export function githubCapabilityFingerprint(cap) {
+  // NOTE ON THE FIELD NAME. This was `oauth_scopes`, and CodeQL raised
+  // js/insufficient-password-hash and js/clear-text-logging against it — its
+  // heuristic reads `oauth_*` as credential material, so hashing it with a
+  // plain sha256 looks like a bad password hash and printing it looks like
+  // leaking a secret.
+  //
+  // Both are false positives. The value is a list of PERMISSION NAMES —
+  // `gist, read:org, repo, workflow` — that GitHub returns in the public
+  // X-Oauth-Scopes RESPONSE HEADER. It is not a token, it grants nothing, and
+  // printing it is the entire point: a drift message that will not say which
+  // scope changed is useless.
+  //
+  // Renamed anyway, because a name that misleads a scanner misleads a reader
+  // too, and `granted_scope_names` is simply more accurate about what is held.
+  // The digest is a content fingerprint, never an authentication secret.
+  const canonical = JSON.stringify({
+    account_id: cap.account_id,
+    granted_scope_names: [...(cap.granted_scope_names ?? [])].sort(),
+    repo_id: cap.repo_id,
+  });
+  return createHash('sha256').update(canonical).digest('hex').slice(0, 16);
+}
+
+function checkGithubCapability() {
+  const obs = readJson(resolve(ROOT, 'config/control-plane-observations.json'));
+  const recorded = (obs?.observations ?? []).find(
+    (o) => o.service === 'GitHub' && String(o.namespace).startsWith('gh CLI'),
+  );
+  if (!recorded?.capability_fingerprint) {
+    return add('tools', 'github-capability-fingerprint', UNKNOWN, 'no capability fingerprint recorded for the gh path');
+  }
+
+  const scopes = sh('gh', ['api', '-i', 'user']);
+  if (scopes.status !== 0) {
+    return add('tools', 'github-capability-fingerprint', UNKNOWN, 'gh unavailable or unauthenticated — capability could not be measured');
+  }
+  const m = (scopes.stdout ?? '').match(/^x-oauth-scopes:\s*(.*)$/im);
+  const live = {
+    account_id: Number(sh('gh', ['api', 'user', '--jq', '.id']).stdout?.trim()),
+    repo_id: Number(sh('gh', ['api', 'repos/{owner}/{repo}', '--jq', '.id']).stdout?.trim()),
+    granted_scope_names: (m?.[1] ?? '').split(',').map((x) => x.trim()).filter(Boolean).sort(),
+  };
+  const digest = githubCapabilityFingerprint(live);
+  add('tools', 'github-capability-fingerprint', digest === recorded.capability_fingerprint ? PASS : FAIL,
+    digest === recorded.capability_fingerprint
+      ? `account/repo/scopes unchanged since ${recorded.observed_at} (${digest})`
+      : `CHANGED since ${recorded.observed_at}: recorded ${recorded.capability_fingerprint}, live ${digest} — scopes now [${live.granted_scope_names.join(', ')}]. Branch deletion depends on this path; re-verify before trusting a lifecycle verdict.`);
+}
+
 function checkUserGlobal() {
   const p = resolve(process.env.HOME ?? '', '.claude/settings.json');
   if (!existsSync(p)) return add('user-global', 'readable', UNKNOWN, 'user-global settings not readable from here');
@@ -375,6 +449,7 @@ async function run() {
     checkLifecycleRuntime();
     checkDangerousUpstreams();
     await checkObservationFreshness();
+    checkGithubCapability();
     checkUserGlobal();
     checkSandbox();
     checkOpenPrResidue();
