@@ -14,10 +14,10 @@
     "worktree_policy": "KEEP",
     "note": "Owned by a CONCURRENT session. This row was transcribed from observable state — PR OPEN, worktree checked out and in use — by the lifecycle session on 2026-08-30, NOT by its owner; the owning session should confirm or correct it. Recorded rather than left blank because leaving it blank is what let --retire park this exact checkout. Carries the qualifier-slot picker fix, a prepared-but-unapplied R3 migration (20260830120000), the unfinished-round reclassification defect, RPC integrity moved toward the database, and a separately identified coach/unfinished-round navigation defect. Those facts must reach feature memory and the incident system when it lands; they must not survive only in the PR description."
   },
-  "1684": {
+  "1685": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "PR B of the truth-convergence run: the authority ADR, six verified-false current-state claims corrected, docs/HELM_OS.md, and the schema-drift namespace fix. Runs in the canonical checkout, which the classifier holds ACTIVE regardless. Row lands in a follow-up commit for the reason the ADR states: a PR number does not exist until the PR does."
+    "note": "PR C of the truth-convergence run: the 87-to-20 feature crosswalk, knowledge:registry-check, the recruiting re-route and feature doc, 32 previously unmapped action modules, FEATURE_COVERAGE demoted, and the generated HELM_FEATURE_MAP. Canonical checkout, held ACTIVE by the classifier regardless."
   },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
