@@ -53,6 +53,14 @@
       "scope": "scripts/lib/worktree-lifecycle.mjs classifyWorktree",
       "reason": "The #1681 fix requires positive owner intent before parking a checkout whose branch has an OPEN PR. It does NOT cover a worktree whose branch has no PR at all — there, reproducibility alone still decides, exactly as before. That is the same defect class: a session working in a worktree BEFORE opening a PR is clean, pushed and invisible to lsof between tool calls, and has no row in config/open-pr-dispositions.json because there is no PR to key one on. Left open rather than closed by extending the rule, because requiring recorded intent for every branch would make --park unable to act at all, and parking exists so an open PR waiting on a human stops costing ~3.8 GiB. Narrower in practice than it reads: HELM_MAX_MUTATION_WORKTREES defaults to 1, so a second concurrent mutation workspace is refused before it can be created.",
       "closes_when": "a worktree carries a durable ownership marker independent of its PR — a session id written at creation by scripts/new-worktree.sh and checked for liveness — or the mutation budget is proven to make concurrent PR-less worktrees unreachable."
+    },
+    {
+      "id": "MAIN_ADMIN_BYPASS_AVAILABLE",
+      "owner": "founder",
+      "opened": "2026-08-30",
+      "scope": "GitHub branch protection on main — enforce_admins",
+      "reason": "main is protected and requires six status contexts, but classic branch protection reports enforce_admins.enabled=false, so a repository administrator — which is what ordinary agent credentials are here — can push straight past the pull-request requirement AND the required checks. It is not hypothetical: on 2026-08-30 two commits reached main that way, each printing 'Bypassed rule violations for refs/heads/main'. Both were green on all six required contexts afterwards, so the state of main was never harmed; the defect is that the bypass is STANDING rather than break-glass, and that nothing noticed it either time. Registered rather than fixed from here because branch protection is repository settings, not repository content: no agent credential should be able to relax its own gate, and an agent that could would not be a gate.",
+      "closes_when": "the owner turns on 'Include administrators' / 'Do not allow bypassing the above settings' for main in GitHub settings, and github/main-branch-protection observes enforce_admins.enabled=true with the three aggregate contexts still required and no ruleset bypass actors. Emergency access is then break-glass: relax, act, restore — never a standing grant."
     }
   ],
   "closed": [
