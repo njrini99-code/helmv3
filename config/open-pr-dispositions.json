@@ -14,11 +14,6 @@
     "worktree_policy": "KEEP",
     "note": "Owned by a CONCURRENT session. This row was transcribed from observable state — PR OPEN, worktree checked out and in use — by the lifecycle session on 2026-08-30, NOT by its owner; the owning session should confirm or correct it. Recorded rather than left blank because leaving it blank is what let --retire park this exact checkout. Carries the qualifier-slot picker fix, a prepared-but-unapplied R3 migration (20260830120000), the unfinished-round reclassification defect, RPC integrity moved toward the database, and a separately identified coach/unfinished-round navigation defect. Those facts must reach feature memory and the incident system when it lands; they must not survive only in the PR description."
   },
-  "1683": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "PR A of the truth-convergence run: the #1681 lifecycle fix. Recorded here in a follow-up commit on its own branch because a PR number does not exist until the PR does — which is the first live demonstration of this file's new cost, stated in the ADR: opening any PR now turns control-plane:verify red until a row is written. KEEP rather than PARK_IF_REPRODUCIBLE because this work runs in the canonical checkout, which the classifier holds ACTIVE before consulting anything else."
-  },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
     "exactly — control-plane:verify FAILS on a missing entry AND on a stale one.",
