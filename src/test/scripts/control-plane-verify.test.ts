@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, cpSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, cpSync, readFileSync, writeFileSync, chmodSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 
@@ -61,6 +61,70 @@ function checkIn(root: string, id: string) {
   });
   const parsed = JSON.parse(r.stdout);
   return parsed.results.find((x: { id: string }) => x.id === id) ?? null;
+}
+
+
+/**
+ * Run the RUNTIME checks against a disposable root with a stubbed `gh`.
+ *
+ * The pure classifiers below carry all the discrimination; this proves the
+ * WIRING — that the check is actually invoked and its answer reaches the
+ * result set. Without it a correct classifier could sit unreferenced, which is
+ * this repo's signature failure: a control that stopped running while its
+ * documentation stayed put.
+ *
+ * `gh` is stubbed rather than called, so no test can reach GitHub, and
+ * HELM_CONTROL_PLANE_ROOT keeps every read inside the disposable directory.
+ */
+function runtimeCheck(
+  answers: { protection?: unknown; rulesets?: unknown; pulls?: string | null },
+  id: string,
+) {
+  const dir = mkdtempSync(join(tmpdir(), 'helm-cpv-rt-'));
+  try {
+    mkdirSync(join(dir, 'config'), { recursive: true });
+    cpSync(resolve(REPO, 'config/control-plane-gaps.json'), join(dir, 'config/control-plane-gaps.json'));
+
+    if (answers.protection !== undefined && answers.protection !== null) {
+      writeFileSync(join(dir, 'protection.json'), JSON.stringify(answers.protection));
+    }
+    writeFileSync(join(dir, 'rulesets.json'), JSON.stringify(answers.rulesets ?? []));
+    if (answers.pulls !== undefined && answers.pulls !== null) {
+      writeFileSync(join(dir, 'pulls.txt'), answers.pulls);
+    }
+
+    const gh = join(dir, 'gh');
+    writeFileSync(
+      gh,
+      [
+        '#!/bin/sh',
+        `D=${JSON.stringify(dir)}`,
+        'case "$2" in',
+        '  *branches/main/protection) [ -f "$D/protection.json" ] && exec cat "$D/protection.json"; exit 1;;',
+        '  *rulesets) exec cat "$D/rulesets.json";;',
+        '  *state=open*) [ -f "$D/pulls.txt" ] && exec cat "$D/pulls.txt"; exit 1;;',
+        'esac',
+        'exit 1',
+        '',
+      ].join('\n'),
+    );
+    chmodSync(gh, 0o755);
+
+    const r = spawnSync('node', [VERIFY, '--json'], {
+      cwd: REPO,
+      encoding: 'utf-8',
+      env: {
+        ...process.env,
+        HELM_CONTROL_PLANE_ROOT: dir,
+        HELM_CP_GH: gh,
+        HELM_CP_SKIP_NESTED_TESTS: '1',
+      },
+    });
+    const parsed = JSON.parse(r.stdout);
+    return parsed.results.find((x: { id: string }) => x.id === id) ?? null;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 beforeAll(() => {
@@ -296,6 +360,205 @@ describe('exit semantics', () => {
       expect(g.reason?.length ?? 0, `${g.id} needs a reason`).toBeGreaterThan(80);
       expect(g.closes_when, `${g.id} needs a closing condition`).toBeTruthy();
     }
+  });
+});
+
+describe('open-PR disposition residue — current state, with one exact exception', () => {
+  const HEAD = 'a'.repeat(40);
+  const OTHER = 'b'.repeat(40);
+  const KEEP = { disposition: 'ACTIVE', worktree_policy: 'KEEP' };
+
+  async function classify(over: Record<string, unknown>) {
+    const { classifyDispositionResidue } = await import('../../../scripts/control-plane-verify.mjs');
+    return classifyDispositionResidue({ openPrs: [], recorded: {}, mergeFacts: {}, headSha: HEAD, ...over });
+  }
+
+  it('an OPEN PR with a row passes', async () => {
+    const r = await classify({ openPrs: [{ number: '1659', ref: 'x' }], recorded: { 1659: KEEP } });
+    expect(r.problems).toEqual([]);
+    expect(r.transitional).toEqual([]);
+  });
+
+  it('an OPEN PR with no row fails — unclassified work is background state', async () => {
+    const r = await classify({ openPrs: [{ number: '1659', ref: 'x' }] });
+    expect(r.problems.join()).toMatch(/no recorded disposition.*1659/);
+  });
+
+  it('a MERGED row whose merge commit IS HEAD is transitionally closed, not a failure', async () => {
+    const r = await classify({
+      recorded: { 1687: KEEP },
+      mergeFacts: { 1687: { lookup: 'OK', state: 'MERGED', mergeCommitSha: HEAD } },
+    });
+    expect(r.problems).toEqual([]);
+    expect(r.transitional).toEqual(['1687']);
+  });
+
+  it('BOUNDARY: one commit later, the same row fails again', async () => {
+    // This is what separates exact merge identity from "merged recently" or
+    // "merged within N commits". The exception survives its own merge and
+    // nothing more; the next ordinary PR clears the row while adding its own.
+    const r = await classify({
+      recorded: { 1687: KEEP },
+      mergeFacts: { 1687: { lookup: 'OK', state: 'MERGED', mergeCommitSha: OTHER } },
+      headSha: HEAD,
+    });
+    expect(r.transitional).toEqual([]);
+    expect(r.problems.join()).toMatch(/#1687 — merged at bbbbbbbbb, HEAD has moved past it/);
+  });
+
+  it('a closed-but-unmerged row fails', async () => {
+    const r = await classify({
+      recorded: { 1623: KEEP },
+      mergeFacts: { 1623: { lookup: 'OK', state: 'CLOSED', mergeCommitSha: null } },
+    });
+    expect(r.problems.join()).toMatch(/#1623 — closed without merging/);
+  });
+
+  it('a failed per-row merge lookup never grants the exception', async () => {
+    // Distinct from the OPEN-PR listing failing, which stays UNKNOWN: there we
+    // cannot establish what is open. Here we know the row is stale and only the
+    // RELAXATION is unproven, so refusing the relaxation is the safe direction.
+    const r = await classify({
+      recorded: { 1687: KEEP },
+      mergeFacts: { 1687: { lookup: 'FAILED' } },
+    });
+    expect(r.transitional).toEqual([]);
+    expect(r.problems.join()).toMatch(/merge state could not be read/);
+  });
+
+  it('MERGED with no merge commit sha does not grant the exception', async () => {
+    const r = await classify({
+      recorded: { 1687: KEEP },
+      mergeFacts: { 1687: { lookup: 'OK', state: 'MERGED', mergeCommitSha: null } },
+    });
+    expect(r.problems.join()).toMatch(/no merge commit/);
+  });
+
+  it('an unreadable local HEAD does not grant the exception', async () => {
+    const r = await classify({
+      recorded: { 1687: KEEP },
+      mergeFacts: { 1687: { lookup: 'OK', state: 'MERGED', mergeCommitSha: HEAD } },
+      headSha: null,
+    });
+    expect(r.problems.join()).toMatch(/could not read local HEAD/);
+  });
+
+  it('only ONE row can be transitional — every other stale row still fails', async () => {
+    const r = await classify({
+      recorded: { 1687: KEEP, 1623: KEEP },
+      mergeFacts: {
+        1687: { lookup: 'OK', state: 'MERGED', mergeCommitSha: HEAD },
+        1623: { lookup: 'OK', state: 'MERGED', mergeCommitSha: OTHER },
+      },
+    });
+    expect(r.transitional).toEqual(['1687']);
+    expect(r.problems.join()).toMatch(/#1623/);
+    expect(r.problems.join()).not.toMatch(/#1687/);
+  });
+
+  it('a malformed worktree_policy on an OPEN row fails', async () => {
+    const r = await classify({
+      openPrs: [{ number: '1659', ref: 'x' }],
+      recorded: { 1659: { disposition: 'ACTIVE', worktree_policy: 'MAYBE' } },
+    });
+    expect(r.problems.join()).toMatch(/worktree_policy missing or outside/);
+  });
+
+  it('WIRING: the check reports UNKNOWN when the open-PR listing itself fails', () => {
+    const r = runtimeCheck({ pulls: null }, 'open-pr-residue');
+    expect(r?.state).toBe('UNKNOWN');
+    expect(r?.detail).toMatch(/could not list open PRs/);
+  });
+});
+
+describe('main branch protection is a fact the verifier reads, not one a human remembers', () => {
+  const OK = {
+    required_status_checks: { contexts: ['CI aggregate', 'Review Gate aggregate', 'Smoke checks', 'Analyze (python)'] },
+    enforce_admins: { enabled: true },
+  };
+
+  async function classify(over: Record<string, unknown>) {
+    const { classifyBranchProtection } = await import('../../../scripts/control-plane-verify.mjs');
+    return classifyBranchProtection({ lookup: 'OK', protection: OK, rulesets: [], gapRegistered: true, ...over });
+  }
+
+  it('protected, admins included, no ruleset bypass -> PASS', async () => {
+    expect((await classify({})).state).toBe('PASS');
+  });
+
+  it('REPRODUCES 2026-08-30: enforce_admins off, gap registered -> GAP, not silence', async () => {
+    const r = await classify({ protection: { ...OK, enforce_admins: { enabled: false } } });
+    expect(r.state).toBe('ACKNOWLEDGED_GAP');
+    expect(r.detail).toMatch(/MAIN_ADMIN_BYPASS_AVAILABLE/);
+  });
+
+  it('enforce_admins off with NO registered gap -> FAIL — a known condition is a gap only while it is owned', async () => {
+    const r = await classify({ protection: { ...OK, enforce_admins: { enabled: false } }, gapRegistered: false });
+    expect(r.state).toBe('FAIL');
+  });
+
+  it('a ruleset targeting main with bypass actors FAILS even when classic protection is perfect', async () => {
+    // Two mechanisms. Reading only /branches/main/protection is how this check
+    // would become decorative the moment the bypass moved to the rulesets UI.
+    const r = await classify({
+      rulesets: [{ name: 'main-guard', enforcement: 'active', targetsMain: true, bypassActorCount: 1 }],
+    });
+    expect(r.state).toBe('FAIL');
+    expect(r.detail).toMatch(/bypass actors/);
+  });
+
+  it('an inactive ruleset, or one not targeting main, does not fail it', async () => {
+    expect((await classify({ rulesets: [{ name: 'draft', enforcement: 'disabled', targetsMain: true, bypassActorCount: 3 }] })).state).toBe('PASS');
+    expect((await classify({ rulesets: [{ name: 'other', enforcement: 'active', targetsMain: false, bypassActorCount: 3 }] })).state).toBe('PASS');
+  });
+
+  it('a dropped aggregate context FAILS — a rename is what made every PR unsatisfiable once', async () => {
+    const r = await classify({
+      protection: { ...OK, required_status_checks: { contexts: ['CI aggregate', 'Smoke checks'] } },
+    });
+    expect(r.state).toBe('FAIL');
+    expect(r.detail).toMatch(/Review Gate aggregate/);
+  });
+
+  it('unreadable protection -> UNKNOWN, and unlistable rulesets -> UNKNOWN', async () => {
+    expect((await classify({ lookup: 'FAILED' })).state).toBe('UNKNOWN');
+    expect((await classify({ rulesets: null })).state).toBe('UNKNOWN');
+  });
+
+  it('no protection at all -> FAIL', async () => {
+    expect((await classify({ protection: null })).state).toBe('FAIL');
+  });
+
+  it('WIRING: the check actually runs, and the stub answer reaches the result', () => {
+    expect(runtimeCheck({ protection: { ...OK } }, 'main-branch-protection')?.state).toBe('PASS');
+    const off = runtimeCheck({ protection: { ...OK, enforce_admins: { enabled: false } } }, 'main-branch-protection');
+    // The live gaps file is copied into the fixture, so this exercises the
+    // registered-gap arm against the real registry.
+    expect(off?.state).toBe('ACKNOWLEDGED_GAP');
+  });
+});
+
+describe('the summary counts registered gaps, not checks that happen to report one', () => {
+  it('five registered gaps and one GAP-state check reports five, not one', async () => {
+    const { summarise, PASS, GAP } = await import('../../../scripts/control-plane-verify.mjs');
+    const s = summarise([{ state: PASS }, { state: GAP }], [1, 2, 3, 4, 5].map((i) => ({ id: 'G' + i })));
+    expect(s.registered_gap_count).toBe(5);
+    expect(s.gap_state_check_count).toBe(1);
+    expect(s.passes).toBe(1);
+  });
+
+  it('zero registered gaps reports zero', async () => {
+    const { summarise, PASS } = await import('../../../scripts/control-plane-verify.mjs');
+    expect(summarise([{ state: PASS }], []).registered_gap_count).toBe(0);
+  });
+
+  it('registered gaps never change the exit code by themselves', async () => {
+    const { summarise, PASS, FAIL, UNKNOWN } = await import('../../../scripts/control-plane-verify.mjs');
+    const many = [1, 2, 3].map((i) => ({ id: 'G' + i }));
+    expect(summarise([{ state: PASS }], many).code).toBe(0);
+    expect(summarise([{ state: FAIL }], many).code).toBe(1);
+    expect(summarise([{ state: UNKNOWN }], many).code).toBe(2);
+    expect(summarise([{ state: FAIL }, { state: UNKNOWN }], many).code).toBe(2);
   });
 });
 
