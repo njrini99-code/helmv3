@@ -24,5 +24,9 @@
   "1678": {
     "disposition": "ACTIVE",
     "note": "Opened 2026-08-30 by a CONCURRENT session, not this one. Adds two claim rows to the enforcement generator recording that a production deploy TYPED as a vercel command is CONFIGURED, while the same deploy run through scripts/deploy-prod.sh is UNENFORCED — deny rules prefix-match the command an agent submits, and the script is what gets submitted. That is the same matcher-reads-what-was-typed shape as the canonical-write row, and it is the enforcement inventory being used exactly as intended. Not touched here: it modifies gen-enforcement-inventory.mjs, which this branch does not. Left for its own session to land."
+  },
+  "1679": {
+    "disposition": "ACTIVE",
+    "note": "This branch. The product-diagnostics tranche: MC-PRODUCER information-loss boundary, category-drift disproof, and the capture audit. Closes when it merges — at which point the lifecycle authority retires the branch in the same step."
   }
 }
