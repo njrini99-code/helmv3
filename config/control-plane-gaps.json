@@ -38,20 +38,13 @@
       "closes_when": "the owner either completes the OAuth flow and observes what apply_migration actually does, or moves migrations to a path whose capability matches the authorization."
     },
     {
-      "id": "TEAM_GRADE_READ_FAILURE_READS_AS_HEALTHY",
-      "owner": "founder",
-      "opened": "2026-08-30",
-      "scope": "src/lib/admin/data/team-page-extras.ts — errors7d",
-      "reason": "A rejected 7-day error-count lookup resolves to 0, and 0 grades the team \"A\" out of computeTeamGrade. So a READ FAILURE renders as a healthy team. Found during the capture audit; it was already known and reasoned in a code comment, which is exactly the problem — a risk that lives only in a comment is invisible to everything that checks. Its siblings are safe by comparison: reliability/collect.ts turns a rejection into status \"blind\" with a reason, and rollup-b.ts returns { value: empty, degraded: true }. This one has no such channel because computeTeamGrade has no \"unknown\" grade to return.",
-      "closes_when": "computeTeamGrade gains an explicit unknown/ungraded state and errors7d distinguishes \"0 errors\" from \"could not read\". That is a product decision about what an ungraded team looks like on the page, not a bug fix, which is why it is registered rather than patched."
-    },
-    {
       "id": "ERROR_SURFACES_DISAGREE",
       "owner": "founder",
       "opened": "2026-08-30",
       "scope": "admin_events vs Sentry",
-      "reason": "Measured 2026-08-30 12:04Z: admin_events reports ZERO errors in 48 hours (most recent 2026-08-28 00:30Z) while Sentry reports 12 unresolved issues, several last seen 2-10 hours earlier, one with 64 events. Several Sentry culprits are SERVER-side (GET /api/calendar/feeds/[token], POST /api/inngest, server traces on /golf/dashboard/rounds/:id) — the path logServerError is meant to capture into admin_events. Which of the twelve SHOULD have been captured is not established, so this records the disagreement, not its cause. It matters because the board that answers \"is production healthy\" currently reads zero while production emits errors: the same unknown-presented-as-healthy class this whole program exists to remove. docs/ai-system/selfheal/STATE-2026-08-28.md already named it \"the biggest open design problem\"; this is the first current measurement of it.",
-      "closes_when": "The two surfaces reconcile, or the Bridge states which surface is authoritative for which class of error and renders the other as a separate, named source with its own freshness. Reconciling two error surfaces is a design decision about what the board claims to know, not a bug fix."
+      "reason": "Measured 2026-08-30: admin_events reported 0 error-or-worse rows in 48h while Sentry reported 12 unresolved issues, several receiving events within hours. Both were correct, and the cause is now precise — TWO causes, not one. (1) CLASSIFICATION: Sentry's largest issue ([v3.llm.budget.platform_default], 64 events) IS in admin_events, 25 rows, at severity INFO, because an unconfigured coach budget falling back to the platform default is expected. Sentry has no severity model. (2) SCOPE: JWT expired, heartbeat 401s, fetch failed, invalid credentials and the coerce error have ZERO admin_events rows — they are unhandled framework/platform errors that never reached logServerError, which src/instrumentation.ts documents as intended. NO CAPTURE PATH VIOLATES THE CONTRACT. The defect is what Mission Control CLAIMS: one surface's zero standing in for production health. Contract written to docs/OBSERVABILITY_AUTHORITY.md.",
+      "closes_when": "The board renders the two surfaces separately and marks overall health as partial when they are unreconciled — per the model in docs/OBSERVABILITY_AUTHORITY.md. Explicitly NOT closed by making every Sentry event appear in admin_events: that would discard the severity grading that makes admin_events useful.",
+      "contract": "docs/OBSERVABILITY_AUTHORITY.md"
     }
   ],
   "closed": [
@@ -60,6 +53,12 @@
       "opened": "2026-08-29",
       "closed": "2026-08-30",
       "how": "Measured what the gh path actually exposes: authenticated account id (238133540), repository id (1119265234) and the OAuth scope set from the X-Oauth-Scopes response header (gist, read:org, repo, workflow). All stable, none of it secret material. That is a capability fingerprint, so drift IS detectable — the gap was closed by measuring rather than by changing any lifecycle code, which is what its closing condition asked for."
+    },
+    {
+      "id": "TEAM_GRADE_READ_FAILURE_READS_AS_HEALTHY",
+      "opened": "2026-08-30",
+      "closed": "2026-08-30",
+      "how": "computeTeamGrade gained an explicit UNKNOWN grade, checked BEFORE every other rule so a dormant team with an unreadable count is ungradeable rather than graded D by luck. team-page-extras resolves a rejected read to null instead of 0, the page renders an em-dash with an explaining title and adds errors7d to its existing degraded banner, and computeTeamComputedInsights no longer prints \"fully active with no errors\" from an unread count. Regression tests cover the grade, the insights strip and the producer — the producer one exists because reverting it to 0 TYPECHECKS CLEANLY (number is assignable to number|null), so only a behavioural test stops it coming back."
     }
   ]
 }
