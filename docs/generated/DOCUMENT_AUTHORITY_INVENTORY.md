@@ -40,7 +40,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `STATE_SNAPSHOT` | 3 | 0 | 3 | 5 |
 | `HISTORY_LEDGER` | 22 | 0 | 2 | 16 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
-| `ADR` | 1 | 0 | 1 | 0 |
+| `ADR` | 2 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
 | `ARCHIVE` | 1196 | 0 | 419 | 527 |
 | `UNKNOWN` | 91 | 4 | 37 | 108 |
@@ -504,6 +504,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/decisions/ADR-2026-08-30-helm-knowledge-authority.md` | current | - | - | yes | 3 | 21 | - |
+| `memory/decisions/ADR-2026-08-30-sandbox-filesystem-allowwrite.md` | current | - | - | yes | 0 | 3 | - |
 
 ### `INDEX`
 
@@ -548,7 +549,7 @@ them would bury everything above.
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 2 | 5 | - |
-| `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 3 | 2 | - |
+| `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 3 | 3 | - |
 | `docs/REPO_MAP.md` | current | - | - | yes | 3 | 37 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 3 | 7 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | - | - | yes | 2 | 16 | 13 |
