@@ -1,3 +1,19 @@
+<!--
+STATUS: HISTORICAL — superseded
+DATE: 2026-08-30
+SUPERSEDED BY / WHY: A CoachHelm V2 phase plan from 2026-08-01, last touched
+2026-08-02, that sat at the repository root asking "Ready to proceed with Phase
+1.2?" for a month. Verified 2026-08-30: behavior-learner.ts is wired into
+orchestrator.ts and insights.ts, the 19 vercel.json crons run at distinct times,
+trust chips render in FairwayEffectiveness.tsx, and cron routes carry stall
+handling — the eight pending items are substantially landed, and the V2 learning
+path they targeted has since been superseded by src/lib/coachhelm/v3/.
+Repair state now lives in memory/operations/release-queue.yml and confirmed
+defects in memory/incidents/**; a progress file at the repo root is a second,
+invisible backlog.
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
 # CoachHelm Comprehensive Fix Plan — Progress Report
 
 **Date:** August 1, 2026  

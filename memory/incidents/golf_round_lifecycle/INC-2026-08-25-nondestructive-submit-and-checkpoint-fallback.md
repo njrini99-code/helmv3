@@ -1,6 +1,7 @@
 # INC-2026-08-25 — submit/checkpoint fallback could erase recoverable progress
 
-- Feature: Golf Round Lifecycle, Shot Tracking
+- Feature: `golf_round_lifecycle`
+- Also affects: `shot_tracking`
 - Status: repairing locally; not deployed
 - Risk: R2 — player data durability
 - Root-cause class: application fallback bypassed the protected lifecycle RPC

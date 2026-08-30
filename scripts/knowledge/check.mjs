@@ -12,6 +12,8 @@
  *
  *   check-doc-coverage        every mapped feature has the docs it claims
  *   stale-doc-check           feature code changed without its docs moving
+ *   check-ledger-integrity    incidents, repair units, ledgers, gaps and
+ *                             decisions all refer to things that exist
  *   check-feature-registry    the semantic router and the runtime observability
  *                             vocabulary still agree about who owns what
  *   gen-feature-map --check   the generated feature map still matches its sources
@@ -32,6 +34,9 @@ execFileSync(process.execPath, ['scripts/knowledge/check-doc-coverage.mjs', ...a
   stdio: 'inherit',
 });
 execFileSync(process.execPath, ['scripts/knowledge/stale-doc-check.mjs', ...args], {
+  stdio: 'inherit',
+});
+execFileSync(process.execPath, ['scripts/knowledge/check-ledger-integrity.mjs', ...args], {
   stdio: 'inherit',
 });
 

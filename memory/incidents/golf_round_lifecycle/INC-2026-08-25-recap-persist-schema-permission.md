@@ -1,6 +1,7 @@
 # INC-2026-08-25 — round recap persist denied at helm_private boundary
 
-- Feature: Golf Round Lifecycle (surface: round_review_ai recap persist)
+- Feature: `golf_round_lifecycle`
+- Surface: `round_review_ai` recap persist
 - Status: repairing — fix verified against a local reproduction; production
   apply in progress
 - Risk: R1 repair of an R3-introduced regression (grants/definer only; no data

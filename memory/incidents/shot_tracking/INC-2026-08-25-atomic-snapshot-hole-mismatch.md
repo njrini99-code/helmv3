@@ -1,6 +1,7 @@
 # INC-2026-08-25 — atomic snapshot shot-group mismatch
 
-- Feature: Shot Tracking and Golf Round Lifecycle
+- Feature: `shot_tracking`
+- Also affects: `golf_round_lifecycle`
 - Status: repairing locally; not deployed
 - Risk: R3 — protected database lifecycle / migration
 - First reproduced: 2026-08-25

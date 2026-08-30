@@ -99,6 +99,12 @@ items:
       fixed and its next occurrence returned indistinguishable from a regression.
       Resolution now belongs to the fingerprint.
     incident_id: null
+    no_incident_reason: >-
+      Not a defect repair. admin_events.resolved was per-row by design and the
+      change moves resolution to the fingerprint — a capability the model did
+      not have, not a fault it had. There is nothing to file as a confirmed
+      product defect, and filing one would put a design change in the incident
+      system where a reader would later look for a broken thing that never was.
     status: verified
     risk: R3
     sha: null
