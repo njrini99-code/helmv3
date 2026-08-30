@@ -224,7 +224,12 @@ export function classifyDispositionResidue(facts) {
     } else if (!headSha) {
       rejected.push(`#${k} — could not read local HEAD to compare against`);
     } else if (m.mergeCommitSha !== headSha) {
-      rejected.push(`#${k} — merged at ${m.mergeCommitSha.slice(0, 9)}, HEAD has moved past it`);
+      // The remedy, not just the diagnosis. This row was TRANSITIONALLY closed
+      // while HEAD sat on its merge commit; the grace ends the moment any other
+      // commit lands. A session that meets this failure without the explanation
+      // has no way to tell it from an ordinary stale row, and the fix costs
+      // nothing: delete it in the PR already being opened.
+      rejected.push(`#${k} — merged at ${m.mergeCommitSha.slice(0, 9)}, HEAD has moved past it; its transitional grace has ENDED — delete this row in the PR you are already opening`);
     } else {
       transitional.push(k);
     }
