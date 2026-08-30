@@ -36,7 +36,7 @@ human has to remember to invalidate them.
 | Supabase | `mcp__supabase__*` | project-scoped: qmnssrrolpinvwjjnufo, read_only=true | .mcp.json (this repo) | **FAILED** — 2026-08-29 — exposes ONLY authenticate/complete_authentication — OAuth not completed. Its grant requests exclusively :read scopes (organizations, projects, database, analytics, secrets, edge_functions, environment, storage): connector-enforced read-only, not a URL string. |
 | Sentry | `mcp__claude_ai_Sentry__*` | org helm-xs | account connector | **EXERCISED** — 2026-08-29 — find_organizations -> org helm-xs (us.sentry.io) |
 | Vercel | `mcp__claude_ai_Vercel__*` | account | account connector | **EXERCISED** — 2026-08-29 — full tool surface present in session (list_projects, list_deployments, get_runtime_logs) |
-| GitHub | `gh CLI (gh api)` | repo njrini99-code/helmv3 | scripts/worktree-lifecycle.mjs | **EXERCISED** — 2026-08-29 — exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668). |
+| GitHub | `gh CLI (gh api)` | repo njrini99-code/helmv3 | scripts/worktree-lifecycle.mjs | **EXERCISED** — 2026-08-29 — exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668). Capability is fingerprintable after all: the authenticated account id, the repository id and the OAuth scope set (X-Oauth-Scopes response header) are all stable and carry no secret material. Recorded 2026-08-30; control-plane:verify re-measures them live and reports drift. |
 
 ## Every namespace, classified
 

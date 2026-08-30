@@ -188,71 +188,55 @@ https://mcp.supabase.com/mcp?project_ref=<prod>&read_only=true
 
 Never edit `read_only=true` out of `.mcp.json` to make something work.
 
-**Three Supabase MCP namespaces exist; exactly one answers, and it is not the
-sanctioned one.** Measured 2026-08-29:
+**Which MCP namespace is authoritative, what it is connected to, and what it is
+allowed to do are GENERATED, not written here.**
 
-| Namespace | Scope | Connected |
-| --- | --- | --- |
-| `mcp__supabase__*` (this repo's `.mcp.json`) | project-scoped, `read_only=true` | **no** — only `authenticate` exposed |
-| `mcp__plugin_supabase_supabase__*` | a plugin that is **not installed** | **no** |
-| `mcp__claude_ai_Supabase__*` (account connector) | **whole account** | **yes** |
+    docs/TOOL_AUTHORITY_MATRIX.md          per-service authority + evidence
+    docs/CONTROL_PLANE_ENFORCEMENT.md      what is actually enforced
+    config/control-plane-gaps.json         what is knowingly not
+    npm run control-plane:verify           whether any of it has drifted
 
-`list_organizations` succeeds through the account connector, so it is not
-project-scoped. Its ten project-mutating tools — `apply_migration`,
-`create_project`, `pause_project`, `restore_project`, `deploy_edge_function`,
-and the five branch verbs — are now in `permissions.deny` in
-`.claude/settings.json`. Its read tools are deliberately kept: it is the only
-Supabase MCP that works.
+Those are rebuilt from `.claude/settings.json`, `.mcp.json` and recorded
+observations, and each observation carries a fingerprint of the configuration
+that produced it — change a deny rule and the matching EXERCISED claim goes
+STALE by itself. A table of namespaces and connection states used to live in
+this section. It is gone on purpose: prose cannot notice a mechanism being
+deleted, which is the failure this whole file keeps recording.
 
-**`execute_sql` on that connector is NOT denied, and that is a gap, stated
-rather than closed.** It is the working query path and the owner may use it
-daily; it also carries no `read_only=true`, so `DELETE FROM x;` through it
-reaches production and nothing intercepts it. Denying it would remove the
-capability, not make it safe.
+What stays here is the part no generator can derive — policy and the reasons
+behind it:
 
-**The permission asymmetry this closed.** The CLI migration path is denied in
-four spellings (`db push`, `migration up`, `db reset`, `config push`). Before
-this, **zero** deny rules mentioned `mcp__`, while six ALLOW rules granted
-`apply_migration`/`execute_sql` across all three namespaces — and an allow rule
-suspends both the prompt and the auto-mode classifier. Two of those six named
-`mcp__plugin_supabase_supabase__*`, a plugin that does not exist on this
-machine: a standing pre-authorization that would activate the moment anyone
-installed it.
-
-**No hook sees an MCP call.** The only `PreToolUse` hook is
-`guard-canonical-write.mjs` under matcher `Write|Edit|MultiEdit`, a regex over
-the TOOL NAME. Nothing in `.claude/hooks/` matches `mcp__`. Permission rules
-are the entire MCP defence — which is why the deny list, not a hook, is where
-this was fixed.
-
-**Precedence, proven here rather than assumed:** a project-scope DENY overrides
-a user-scope ALLOW, and it takes effect mid-session. Probe: denying the
-read-only `list_projects` at project scope, while it was ALLOW in three
-user-scope places, removed it from the tool set — while `list_organizations` on
-the same server still answered, proving the server was connected and the deny
-is what bit. A second probe (`Bash(echo …)`) confirmed hot reload. The real
-rules were then verified the same way: exactly the ten denied tools vanished;
-`list_tables` still loaded.
-
-**The six ALLOW rules live in user scope** (`~/.claude/settings.json`,
-`~/.claude/settings.local.json`) and are NOT edited from here — user-global,
-affecting every project and any concurrent session. Same boundary as
-`sandbox.filesystem`. The project-scope deny is what neutralises them for Helm.
+- **Never edit `read_only=true` out of `.mcp.json`** to make something work.
+- **The sanctioned path's OAuth grant requests only `:read` scopes** —
+  organizations, projects, database, analytics, secrets, edge_functions,
+  environment, storage. That is connector-enforced read-only, observable
+  without any write probe, and it is why `apply_migration` on that namespace
+  may not function as granted. Do not resolve that by attempting a production
+  migration.
+- **Arbitrary SQL through the account connector is UNENFORCED**, deliberately
+  and temporarily. It is the only working query path; `DELETE FROM x;` through
+  it reaches production and nothing intercepts it. Registered as
+  `SUPABASE_ARBITRARY_SQL_UNENFORCED`, not described as safe.
+- **No hook sees an MCP call.** The only `PreToolUse` hook matches
+  `Write|Edit|MultiEdit`, a regex over the TOOL NAME. Permission rules are the
+  entire MCP defence — which is why deny rules, not a hook, are where this is
+  enforced.
+- **A project-scope DENY overrides a user-scope ALLOW**, mid-session, proven by
+  probe rather than assumed.
+- **User-scope grants are not edited from this repo.** They affect every
+  project and any concurrent session.
 
 **`.mcp.json` is not the list of MCP tools you have.** It is the list this REPO
-declares. Account-level connectors add more, and they do not appear in any file
-here — check your own tool inventory rather than inferring it from this
-directory. That distinction cost two days on 2026-08-29: this section said
-"`.mcp.json` declares exactly one server", which is true of the file and was
-read as "one MCP server exists". A Sentry MCP was authenticated and available
-the entire time while ET-4 sat blocked on "we cannot reach Sentry without a
-token".
+declares. Account-level connectors add more and appear in no file here — check
+your own tool inventory rather than inferring it from this directory. That
+distinction cost two days: this section once said "`.mcp.json` declares exactly
+one server", true of the file and read as "one MCP server exists", while an
+authenticated Sentry MCP sat available the whole time.
 
 **The Sentry MCP is the working read path for Sentry.** Org slug `helm-xs`.
-`find_organizations`, `search_issues`, and `search_events` (which does grouped
-aggregates — `field=feature&field=level&field=count_unique(issue)` is how ET-4
-replaced an 85-request fanout with one query). Use it for evidence and for
-answering questions about response shape.
+`find_organizations`, `search_issues`, `search_events` (grouped aggregates —
+`field=feature&field=level&field=count_unique(issue)` replaced an 85-request
+fanout with one query).
 
 **The Sentry credentials in `.env.local` are NOT usable.** Measured 2026-08-29:
 `SENTRY_READ_TOKEN` and `SENTRY_AUTH_TOKEN` are 11-character placeholders and

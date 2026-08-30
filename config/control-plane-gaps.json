@@ -38,20 +38,28 @@
       "closes_when": "the owner either completes the OAuth flow and observes what apply_migration actually does, or moves migrations to a path whose capability matches the authorization."
     },
     {
-      "id": "GITHUB_CAPABILITY_UNGOVERNED",
-      "owner": "founder",
-      "opened": "2026-08-29",
-      "scope": "gh CLI",
-      "reason": "Branch deletion depends on GitHub PR state and head OID, and the authoritative path is the gh CLI. No allow/deny rule or .mcp.json entry in this repo governs it, so its configuration fingerprint is marked `ungoverned` and drift in its capability CANNOT be detected by this repo's tooling. The lifecycle classifier compensates behaviourally — a failed lookup is UNKNOWN_PR and never 'no PR' — but that is a fallback, not detection.",
-      "closes_when": "gh capability is governed by something this repo can fingerprint, or the lifecycle path stops depending on an ungoverned tool."
-    },
-    {
       "id": "TEAM_GRADE_READ_FAILURE_READS_AS_HEALTHY",
       "owner": "founder",
       "opened": "2026-08-30",
       "scope": "src/lib/admin/data/team-page-extras.ts — errors7d",
       "reason": "A rejected 7-day error-count lookup resolves to 0, and 0 grades the team \"A\" out of computeTeamGrade. So a READ FAILURE renders as a healthy team. Found during the capture audit; it was already known and reasoned in a code comment, which is exactly the problem — a risk that lives only in a comment is invisible to everything that checks. Its siblings are safe by comparison: reliability/collect.ts turns a rejection into status \"blind\" with a reason, and rollup-b.ts returns { value: empty, degraded: true }. This one has no such channel because computeTeamGrade has no \"unknown\" grade to return.",
       "closes_when": "computeTeamGrade gains an explicit unknown/ungraded state and errors7d distinguishes \"0 errors\" from \"could not read\". That is a product decision about what an ungraded team looks like on the page, not a bug fix, which is why it is registered rather than patched."
+    },
+    {
+      "id": "ERROR_SURFACES_DISAGREE",
+      "owner": "founder",
+      "opened": "2026-08-30",
+      "scope": "admin_events vs Sentry",
+      "reason": "Measured 2026-08-30 12:04Z: admin_events reports ZERO errors in 48 hours (most recent 2026-08-28 00:30Z) while Sentry reports 12 unresolved issues, several last seen 2-10 hours earlier, one with 64 events. Several Sentry culprits are SERVER-side (GET /api/calendar/feeds/[token], POST /api/inngest, server traces on /golf/dashboard/rounds/:id) — the path logServerError is meant to capture into admin_events. Which of the twelve SHOULD have been captured is not established, so this records the disagreement, not its cause. It matters because the board that answers \"is production healthy\" currently reads zero while production emits errors: the same unknown-presented-as-healthy class this whole program exists to remove. docs/ai-system/selfheal/STATE-2026-08-28.md already named it \"the biggest open design problem\"; this is the first current measurement of it.",
+      "closes_when": "The two surfaces reconcile, or the Bridge states which surface is authoritative for which class of error and renders the other as a separate, named source with its own freshness. Reconciling two error surfaces is a design decision about what the board claims to know, not a bug fix."
+    }
+  ],
+  "closed": [
+    {
+      "id": "GITHUB_CAPABILITY_UNGOVERNED",
+      "opened": "2026-08-29",
+      "closed": "2026-08-30",
+      "how": "Measured what the gh path actually exposes: authenticated account id (238133540), repository id (1119265234) and the OAuth scope set from the X-Oauth-Scopes response header (gist, read:org, repo, workflow). All stable, none of it secret material. That is a capability fingerprint, so drift IS detectable — the gap was closed by measuring rather than by changing any lifecycle code, which is what its closing condition asked for."
     }
   ]
 }
