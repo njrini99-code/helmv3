@@ -126,9 +126,13 @@ mechanical, and these are the habits that keep it fixed.
   dependencies. Never `.worktrees/` inside the repo — `.gitignore` hides an
   internal one from git but `find`/`grep` still return it, so agents edit the
   copy nobody ships.
-- **Prune worktrees by PR state, not `--merged`.** This repo squash-merges, so a
-  merged branch never becomes an ancestor of `main` and `git branch --merged`
-  never lists it.
+- **Prune with `npm run worktrees{,:park,:retire}`, never by hand.** This repo
+  squash-merges, so a merged branch never becomes an ancestor of `main` and
+  `git branch --merged` never lists it — which is why the tool keys on PR state
+  and an exact head OID. Since 2026-08-30 it also refuses to park a checkout
+  whose branch has an OPEN PR unless `config/open-pr-dispositions.json` records
+  `worktree_policy: PARK_IF_REPRODUCIBLE` for it. AGENTS.md states the policy;
+  `scripts/worktree-lifecycle.mjs` is the mechanism.
 - **No hook blocks git commands any more.** `guard-bash.sh` was deleted
   2026-08-27 after being unwired; it protected nothing while it sat there.
   What remains, and is PROVEN to fire even under `bypassPermissions`, is

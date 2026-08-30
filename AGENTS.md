@@ -206,7 +206,7 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   conflated:
 
   ```text
-  PARK    remove the disposable checkout, KEEP the branch   (no PR needed)
+  PARK    remove the disposable checkout, KEEP the branch
   RETIRE  park, AND delete a branch proven merged by exact PR head OID
   ```
 
@@ -215,11 +215,45 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   by a remote tip — `delete_branch_on_merge` removes that exactly when the
   branch becomes safe, which is #1654's shipped defect.
 
+  **An OPEN PR's checkout is parked only with its owner's recorded consent.**
+  That line above used to end "(no PR needed)", and on 2026-08-30 `--retire`
+  removed a concurrent session's worktree (`agent/round-type-reclassify`, PR
+  #1681, OPEN) on exactly that basis: clean, tip identical to its pushed remote,
+  and no process whose cwd `lsof` could see. Nothing was lost — parking keeps
+  the branch — but the checkout had an owner and the tool had no way to know.
+
+  The unsound step is reading silence as absence. `lsof +D` samples one instant,
+  and an agent session between two tool calls has no visible cwd:
+
+  ```text
+  hasLiveProcess == true    proof of activity          — a sound veto
+  hasLiveProcess == false   NOT proof of inactivity    — proves nothing
+  ```
+
+  So a worktree whose branch has an OPEN PR is PARKABLE only when
+  `config/open-pr-dispositions.json` records that PR with a `worktree_policy`:
+
+  ```text
+  PARK_IF_REPRODUCIBLE    may be parked once clean and pushed; the branch stays
+  KEEP                    never parked automatically
+  ```
+
+  A missing row, an unrecognised policy, or a disposition of `ACTIVE`/`UNKNOWN`
+  all yield `KEEP_PR_OWNER_INTENT_REQUIRED` — a verdict deliberately distinct
+  from both ACTIVE (nothing proved anyone is using it) and UNKNOWN (the PR read
+  fine; what is missing is a decision). #1659 is the case this preserves: an
+  open PR waiting on a physical-device test, released explicitly by its owner.
+
+  The narrowing does not reach a branch with **no** PR, where reproducibility
+  still decides alone. That residual is registered as
+  `WORKTREE_PARK_NO_PR_OWNERSHIP` rather than quietly accepted.
+
   **Retire the worktree in the SAME step that merges its PR** — not at the end
   of a session, and not by reporting it to the owner. `--remove` carries a
-  STANDING OWNER AUTHORIZATION (granted 2026-08-29) for any worktree the tool
-  itself verdicts PARKABLE/RETIRABLE, and for branch deletion ONLY when the
-  classifier returns `DELETE_MERGED_EXACT`:
+  STANDING OWNER AUTHORIZATION (granted 2026-08-29, narrowed 2026-08-30 by the
+  paragraph above) for any worktree the tool itself verdicts PARKABLE/RETIRABLE,
+  and for branch deletion ONLY when the classifier returns
+  `DELETE_MERGED_EXACT`:
 
   ```text
   PR state           === MERGED
@@ -231,7 +265,8 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   Every other verdict requires a human, and the exclusion list is explicit:
   `UNKNOWN_PR`, `KEEP_OPEN`, `KEEP_DIVERGED_AFTER_PR`, `KEEP_PROTECTED`,
   `KEEP_WORKTREE_ACTIVE`, `KEEP_DIRTY`, `NO_UPSTREAM_UNIQUE_WORK`,
-  `UNKNOWN_REMOTE`, `UNKNOWN_IDENTITY`. `NO_UPSTREAM_UNIQUE_WORK` is the
+  `UNKNOWN_REMOTE`, `UNKNOWN_IDENTITY`, `KEEP_PR_OWNER_INTENT_REQUIRED`.
+  `NO_UPSTREAM_UNIQUE_WORK` is the
   sharpest of those: measured 2026-08-29, ten branches hold up to 19 commits
   that exist nowhere else. A branch count is not a health metric; unexplained
   branches are.
@@ -258,8 +293,9 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   no command could run at all, because even writing a command's output needs
   disk. The approval step was the seventh check on top of six the tool had
   already passed, and it was the one that never fired in time.
-  The six that DO fire — canonical checkout, uncommitted changes, live process
-  cwd, no PR, PR not MERGED, tip past its remote — are what the grant relies on.
+  The seven that DO fire — canonical checkout, uncommitted changes, live process
+  cwd, no PR, PR not MERGED, tip past its remote, and since 2026-08-30 an OPEN
+  PR without recorded owner consent — are what the grant relies on.
   Anything the tool declines still needs a human. (Added 2026-08-26 after three concurrent
   sessions — iOS, bridge, hotfix — contended over one HEAD; the hotfix
   session's worktree dodge is now the rule.)

@@ -47,6 +47,10 @@ import {
   UNKNOWN_KIND,
   REQUIRES_HUMAN_VERDICTS,
   AUTONOMOUS_BRANCH_VERDICTS,
+  KEEP_PR_OWNER_INTENT_REQUIRED,
+  WORKTREE_POLICY_KEEP,
+  WORKTREE_POLICY_PARK_IF_REPRODUCIBLE,
+  OPEN_PR_KEEP_DISPOSITIONS,
 } from '../../../scripts/lib/worktree-lifecycle.mjs';
 
 const REPO = resolve(__dirname, '../../..');
@@ -107,10 +111,152 @@ describe('worktree classification — refusals first', () => {
     expect(classifyWorktree({ ...clean, remoteSha: SHA_B }).verdict).toBe(UNKNOWN_REMOTE);
   });
 
-  it('PARKS a clean, idle, fully-pushed worktree — regardless of PR state', () => {
-    // The change that matters. Parking removes only the disposable checkout,
-    // so "has the work landed" is not the question being asked.
+  it('PARKS a clean, idle, fully-pushed worktree when no PR claims it', () => {
+    // This assertion used to end "— regardless of PR state", and that sentence
+    // was the #1681 defect written as a guarantee. It is now scoped: with no PR
+    // in the facts there is nobody to ask, and reproducibility decides.
     expect(classifyWorktree(clean).verdict).toBe(PARKABLE);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE #1681 REGRESSION.
+//
+// On 2026-08-30 `npm run worktrees:retire` removed a CONCURRENT session's
+// checkout (agent/round-type-reclassify, PR #1681, OPEN). Every mechanical
+// signal said disposable: clean, tip identical to its pushed remote, and no
+// process whose cwd `lsof` could see. Nothing was lost, because parking keeps
+// the branch — but the checkout had an owner and the tool could not tell.
+//
+// The unsound step is reading silence as absence. `lsof +D` samples one
+// instant; an agent session between two tool calls has no visible cwd. So
+// hasLiveProcess === true is a sound veto and hasLiveProcess === false proves
+// nothing at all. For an OPEN PR, dispensability must now be stated by its
+// owner in config/open-pr-dispositions.json, not inferred.
+//
+// `openPr` below is the exact fact-set of that failure. The pre-fix classifier
+// returned PARKABLE for it; that is what these tests pin shut.
+
+const openPr = {
+  ...clean,
+  prLookup: 'OK',
+  prNumber: 1681,
+  prState: 'OPEN',
+  disposition: null,
+  worktreePolicy: null,
+};
+
+describe('an OPEN PR needs its owner to release the checkout', () => {
+  it('REPRODUCES #1681: the exact fact-set that was parked is now refused', () => {
+    // Clean, pushed, lsof-silent, OPEN PR, no recorded intent.
+    const v = classifyWorktree(openPr);
+    expect(v.verdict).toBe(KEEP_PR_OWNER_INTENT_REQUIRED);
+    expect(v.verdict).not.toBe(PARKABLE);
+    expect(combineVerdicts(v.verdict, KEEP_OPEN).action).toBe('KEEP');
+    expect(v.reason).toMatch(/1681/);
+  });
+
+  it('is neither ACTIVE nor UNKNOWN — both would be false claims', () => {
+    // ACTIVE would assert somebody is demonstrably using it; nothing proved
+    // that. UNKNOWN would assert the evidence was unreadable; the PR read fine.
+    // What is missing is a decision, and it gets its own name.
+    const v = classifyWorktree(openPr).verdict;
+    expect(v).not.toBe(ACTIVE);
+    expect(v).not.toBe(UNKNOWN);
+  });
+
+  it('KEEPS an OPEN PR marked ACTIVE, whatever its policy field says', () => {
+    // Defence in depth: a mis-typed policy beside ACTIVE must fail safe.
+    expect(
+      classifyWorktree({ ...openPr, disposition: 'ACTIVE', worktreePolicy: WORKTREE_POLICY_PARK_IF_REPRODUCIBLE })
+        .verdict,
+    ).toBe(KEEP_PR_OWNER_INTENT_REQUIRED);
+    expect(OPEN_PR_KEEP_DISPOSITIONS.has('ACTIVE')).toBe(true);
+  });
+
+  it('KEEPS an OPEN PR marked UNKNOWN — nobody has established what it is', () => {
+    expect(
+      classifyWorktree({ ...openPr, disposition: 'UNKNOWN', worktreePolicy: WORKTREE_POLICY_PARK_IF_REPRODUCIBLE })
+        .verdict,
+    ).toBe(KEEP_PR_OWNER_INTENT_REQUIRED);
+  });
+
+  it('KEEPS a recorded disposition whose worktree_policy is KEEP', () => {
+    expect(
+      classifyWorktree({ ...openPr, disposition: 'STALE', worktreePolicy: WORKTREE_POLICY_KEEP }).verdict,
+    ).toBe(KEEP_PR_OWNER_INTENT_REQUIRED);
+  });
+
+  it('KEEPS when the policy is unset or outside the vocabulary', () => {
+    expect(classifyWorktree({ ...openPr, disposition: 'STALE' }).verdict).toBe(KEEP_PR_OWNER_INTENT_REQUIRED);
+    expect(
+      classifyWorktree({ ...openPr, disposition: 'STALE', worktreePolicy: 'PARK' }).verdict,
+    ).toBe(KEEP_PR_OWNER_INTENT_REQUIRED);
+  });
+
+  it('PARKS #1659: HUMAN_TEST_PENDING with an explicit PARK_IF_REPRODUCIBLE', () => {
+    // The case the park/retire split exists for. An open PR waiting on a human
+    // with a physical device should not cost ~3.8 GiB while it waits — and the
+    // owner has said so, in the file, rather than the tool inferring it.
+    const v = classifyWorktree({
+      ...openPr,
+      prNumber: 1659,
+      disposition: 'HUMAN_TEST_PENDING',
+      worktreePolicy: WORKTREE_POLICY_PARK_IF_REPRODUCIBLE,
+    });
+    expect(v.verdict).toBe(PARKABLE);
+    expect(v.reason).toMatch(/HUMAN_TEST_PENDING/);
+  });
+
+  it('a positive process sighting overrides even an authorising policy', () => {
+    // Permission is not a reason to remove a checkout somebody is standing in.
+    expect(
+      classifyWorktree({
+        ...openPr,
+        disposition: 'HUMAN_TEST_PENDING',
+        worktreePolicy: WORKTREE_POLICY_PARK_IF_REPRODUCIBLE,
+        hasLiveProcess: true,
+      }).verdict,
+    ).toBe(ACTIVE);
+  });
+
+  it('a negative process sighting never authorises anything on its own', () => {
+    // The whole defect in one assertion: hasLiveProcess false plus everything
+    // else mechanical is NOT enough.
+    expect(classifyWorktree({ ...openPr, hasLiveProcess: false }).verdict).toBe(
+      KEEP_PR_OWNER_INTENT_REQUIRED,
+    );
+  });
+
+  it('a FAILED PR lookup is UNKNOWN — evidence unavailable, not permission', () => {
+    const v = classifyWorktree({ ...openPr, prLookup: 'FAILED', prState: null });
+    expect(v.verdict).toBe(UNKNOWN);
+    expect(combineVerdicts(v.verdict, UNKNOWN_PR).action).toBe('KEEP');
+  });
+
+  it('still refuses unpushed work, permission or not', () => {
+    // Ownership is a new necessary condition, not a replacement for the old one.
+    expect(
+      classifyWorktree({
+        ...openPr,
+        disposition: 'HUMAN_TEST_PENDING',
+        worktreePolicy: WORKTREE_POLICY_PARK_IF_REPRODUCIBLE,
+        upstream: null,
+      }).verdict,
+    ).toBe(UNKNOWN_REMOTE);
+  });
+
+  it('a MERGED PR is unaffected — GitHub already proved that tree landed', () => {
+    // Deliberate scope. Once a PR is merged, its checkout is reproducible from
+    // main and no disposition is required; the branch half is still gated on an
+    // exact head-OID match.
+    const v = classifyWorktree({ ...openPr, prState: 'MERGED', prNumber: 903 });
+    expect(v.verdict).toBe(PARKABLE);
+    expect(combineVerdicts(v.verdict, DELETE_MERGED_EXACT).action).toBe('RETIRE');
+  });
+
+  it('the new verdict is excluded from autonomous action', () => {
+    expect(REQUIRES_HUMAN_VERDICTS.has(KEEP_PR_OWNER_INTENT_REQUIRED)).toBe(true);
   });
 });
 
@@ -238,6 +384,16 @@ describe('the CLI, against real worktrees', () => {
     chmodSync(stub, 0o755);
   }
 
+  /**
+   * The CLI reads owner intent from the repository it is ACTING ON, so a
+   * fixture gets its own file. Absent means "no PR here has been released",
+   * which is why the refusal test below writes nothing at all.
+   */
+  function writeDispositions(table: Record<string, unknown>) {
+    mkdirSync(join(canonical, 'config'), { recursive: true });
+    writeFileSync(join(canonical, 'config/open-pr-dispositions.json'), JSON.stringify(table, null, 2));
+  }
+
   function run(extra: string[] = []): string {
     return execFileSync('node', [CLI, ...extra], {
       cwd: canonical,
@@ -308,20 +464,53 @@ describe('the CLI, against real worktrees', () => {
     expect(r).not.toMatch(/DELETE_BRANCH|RETIRE/);
   });
 
-  it('--park removes the checkout and KEEPS the branch', () => {
-    const wt = join(tmp, 'w4');
-    git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/w4', wt, 'main'], canonical);
-    // Give it an upstream that matches, so it is genuinely reproducible.
-    // `%(upstream:short)` needs a remote with a fetch refspec, not just
-    // branch.*.remote/merge — without it git reports no upstream and the tool
-    // correctly refuses to park work it cannot prove is pushed. Discovered by
-    // this test failing for the right reason.
-    git(['remote', 'add', 'origin', canonical], canonical);
-    git(['config', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*'], canonical);
-    git(['update-ref', 'refs/remotes/origin/agent/w4', git(['rev-parse', 'agent/w4'], canonical)], canonical);
-    git(['config', 'branch.agent/w4.remote', 'origin'], canonical);
-    git(['config', 'branch.agent/w4.merge', 'refs/heads/agent/w4'], canonical);
+  /**
+   * Make a worktree genuinely reproducible: clean, and identical to a real
+   * upstream. `%(upstream:short)` needs a remote with a fetch refspec, not just
+   * branch.*.remote/merge — without it git reports no upstream and the tool
+   * correctly refuses to park work it cannot prove is pushed.
+   */
+  function pushedWorktree(name: string): string {
+    const wt = join(tmp, name);
+    const branch = `agent/${name}`;
+    git(['worktree', 'add', '-q', '--no-track', '-b', branch, wt, 'main'], canonical);
+    if (!git(['remote'], canonical).includes('origin')) {
+      git(['remote', 'add', 'origin', canonical], canonical);
+      git(['config', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*'], canonical);
+    }
+    git(['update-ref', `refs/remotes/origin/${branch}`, git(['rev-parse', branch], canonical)], canonical);
+    git(['config', `branch.${branch}.remote`, 'origin'], canonical);
+    git(['config', `branch.${branch}.merge`, `refs/heads/${branch}`], canonical);
+    return wt;
+  }
+
+  it('REPRODUCES #1681 end to end: --park refuses an OPEN PR with no disposition', () => {
+    // Every mechanical signal says disposable — clean, pushed, no process this
+    // instant. That was enough on 2026-08-30 and it removed a live checkout.
+    const wt = pushedWorktree('w4a');
+    writePrStub({ 'agent/w4a': '1681 OPEN deadbeef' });
+    // Deliberately no dispositions file: this is the state that caused it.
+
+    const out = run(['--park']);
+    expect(git(['worktree', 'list'], canonical)).toContain(wt);
+    expect(out).toMatch(/KEEP_PR_OWNER_INTENT_REQUIRED/);
+  });
+
+  it('--park still refuses when the disposition says KEEP', () => {
+    const wt = pushedWorktree('w4b');
+    writePrStub({ 'agent/w4b': '1681 OPEN deadbeef' });
+    writeDispositions({ '1681': { disposition: 'ACTIVE', worktree_policy: 'KEEP' } });
+
+    run(['--park']);
+    expect(git(['worktree', 'list'], canonical)).toContain(wt);
+  });
+
+  it('--park removes the checkout and KEEPS the branch when the owner released it', () => {
+    const wt = pushedWorktree('w4');
     writePrStub({ 'agent/w4': '1659 OPEN deadbeef' });
+    writeDispositions({
+      '1659': { disposition: 'HUMAN_TEST_PENDING', worktree_policy: 'PARK_IF_REPRODUCIBLE' },
+    });
 
     run(['--park']);
     expect(git(['worktree', 'list'], canonical)).not.toContain(wt);

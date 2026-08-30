@@ -45,6 +45,14 @@
       "reason": "Measured 2026-08-30: admin_events reported 0 error-or-worse rows in 48h while Sentry reported 12 unresolved issues, several receiving events within hours. Both were correct, and the cause is now precise — TWO causes, not one. (1) CLASSIFICATION: Sentry's largest issue ([v3.llm.budget.platform_default], 64 events) IS in admin_events, 25 rows, at severity INFO, because an unconfigured coach budget falling back to the platform default is expected. Sentry has no severity model. (2) SCOPE: JWT expired, heartbeat 401s, fetch failed, invalid credentials and the coerce error have ZERO admin_events rows — they are unhandled framework/platform errors that never reached logServerError, which src/instrumentation.ts documents as intended. NO CAPTURE PATH VIOLATES THE CONTRACT. The defect is what Mission Control CLAIMS: one surface's zero standing in for production health. Contract written to docs/OBSERVABILITY_AUTHORITY.md.",
       "closes_when": "The board renders the two surfaces separately and marks overall health as partial when they are unreconciled — per the model in docs/OBSERVABILITY_AUTHORITY.md. Explicitly NOT closed by making every Sentry event appear in admin_events: that would discard the severity grading that makes admin_events useful.",
       "contract": "docs/OBSERVABILITY_AUTHORITY.md"
+    },
+    {
+      "id": "WORKTREE_PARK_NO_PR_OWNERSHIP",
+      "owner": "founder",
+      "opened": "2026-08-30",
+      "scope": "scripts/lib/worktree-lifecycle.mjs classifyWorktree",
+      "reason": "The #1681 fix requires positive owner intent before parking a checkout whose branch has an OPEN PR. It does NOT cover a worktree whose branch has no PR at all — there, reproducibility alone still decides, exactly as before. That is the same defect class: a session working in a worktree BEFORE opening a PR is clean, pushed and invisible to lsof between tool calls, and has no row in config/open-pr-dispositions.json because there is no PR to key one on. Left open rather than closed by extending the rule, because requiring recorded intent for every branch would make --park unable to act at all, and parking exists so an open PR waiting on a human stops costing ~3.8 GiB. Narrower in practice than it reads: HELM_MAX_MUTATION_WORKTREES defaults to 1, so a second concurrent mutation workspace is refused before it can be created.",
+      "closes_when": "a worktree carries a durable ownership marker independent of its PR — a session id written at creation by scripts/new-worktree.sh and checked for liveness — or the mutation budget is proven to make concurrent PR-less worktrees unreachable."
     }
   ],
   "closed": [
