@@ -496,7 +496,11 @@ async function createEnrichedAnnouncementImpl(input: {
           // success:true with send_email/send_push false, and nothing records
           // that delivery was attempted at all — the exact silent-failure
           // class this change exists to remove.
-          if (userRowsError || !userRows || userRows.length === 0) {
+          // `userIds.length > 0` matters only after 20260819200000: a batch whose
+          // players are ALL anonymized has nobody to look up, and reporting that as
+          // a delivery failure would be the failure-vs-empty conflation this guard
+          // was added to remove, pointed the other way.
+          if (userIds.length > 0 && (userRowsError || !userRows || userRows.length === 0)) {
             await logServerError(
               userRowsError
                 ? `[createEnrichedAnnouncement] Recipient lookup FAILED for ${userIds.length} player(s): ${userRowsError.message}`
