@@ -23,8 +23,9 @@
 
 `supabase/migrations/20260819200000_preserve_golf_history_on_account_deletion.sql`
 is committed on `main`. Its own header records the owner decision of 2026-08-18
-— *"There should be no deletion of golf shot history"* — and measures that **93
-of 94 players** pass the delete route's pre-flight and reach the cascade.
+— *"There should be no deletion of golf shot history"* — and measured then that
+**93 of 94 players** pass the delete route's pre-flight and reach the cascade.
+That ratio is 2026-08-18's measurement and has NOT been re-measured here.
 
 It is not applied. Verified read-only against production
 (`qmnssrrolpinvwjjnufo`) on 2026-08-30:
@@ -40,8 +41,21 @@ golf_players_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ```
 
-So `DELETE /api/account/delete` still runs a service-role delete on `users`,
-and the cascade below it still destroys that player's `golf_rounds`,
+The route was then read as it stands today rather than trusted from that
+migration's header — eleven days and many merges separate the two, and a
+stopgap block could have landed in between. It did not:
+
+- `src/app/api/account/delete/route.ts:150` — `USER_BLOCKING_TABLES` is still
+  exactly `golf_goals.created_by_user_id`,
+  `golf_qualifier_selections.selected_by_user_id` and
+  `golf_travel_expenses.created_by`. Nothing blocks on `golf_rounds` or
+  `golf_shots`.
+- `src/app/api/account/delete/route.ts:308` — the route still ends in
+  `admin.from('users').delete().eq('id', user.id)`, a service-role delete.
+- The file names `golf_rounds`, `golf_shots` and `golf_players` **nowhere**, so
+  no preservation or detach step was added on the application side either.
+
+So the cascade below that delete still destroys the player's `golf_rounds`,
 `golf_holes`, `golf_shots`, `golf_round_reviews` and `golf_round_stats_cache`.
 Irreversibly, with no export and no grace period.
 
@@ -59,7 +73,9 @@ reads as background noise.
 ## What was checked, and what was not
 
 Checked: the three objects above, individually, against the live catalog rather
-than against the migration file — the G8 rule.
+than against the migration file — the G8 rule. And the delete route as it is
+today, rather than as its migration's header described it in August, which is
+the same rule pointed at code instead of schema.
 
 NOT checked: whether every other unapplied-looking migration is genuinely
 unapplied. Several files that look local-only are deliberately so, and say so in
