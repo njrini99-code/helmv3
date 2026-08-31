@@ -155,23 +155,23 @@ export default async function RoundDetailPage({
     redirect('/golf/dashboard');
   }
 
-  // A player who opens their own unfinished round wants to RESUME it, so they
-  // still go to the scoring screen. A coach does not — they cannot play
-  // someone else's round, and sending them to live scoring was the only route
-  // this page offered them.
+  // An unfinished round goes to the scoring screen, for everyone.
   //
-  // That redirect used to run before access was resolved, which meant an
-  // in-progress round had no detail page for anyone, and therefore no
-  // round-type editor. Combined with the lifecycle guard refusing live rounds
-  // outright, "change this round to a qualifier round before it's submitted"
-  // was unreachable from both ends at once. The guard half is
-  // 20260830120000; this is the half above it.
+  // Reverted 2026-08-31, same day it shipped. The previous version sent only
+  // PLAYERS here and let a coach through to the detail page, so a coach could
+  // re-type a live round. Measured before reverting: NO coach surface anywhere
+  // in the product lists or links an in-progress round. All four coach-facing
+  // reads in dashboard-data.ts filter `.eq('status','completed')`, and every
+  // in_progress read in golf.ts is player-scoped (savePartialRound,
+  // deleteInProgressRound, getNextQualifierRoundNumber). The exception was
+  // reachable only by typing a URL.
   //
-  // Submission then does the rest on its own: the submit path treats the
-  // PERSISTED round as authoritative for its qualifier identity, so a round
-  // re-typed while in progress completes exactly as if it had started that
-  // way, including the standings refresh.
-  if (round.status === 'in_progress' && !isCoach) {
+  // So it bought nothing and widened what a coach can touch, which the owner
+  // ruled against directly: coaches deal with submitted rounds. The lifecycle
+  // guard still permits re-typing a live round (20260830120000) — that
+  // capability is simply unused until a surface exists that should use it,
+  // which is the right order.
+  if (round.status === 'in_progress') {
     redirect(`/golf/dashboard/rounds/continue/${id}`);
   }
 

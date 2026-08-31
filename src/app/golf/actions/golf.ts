@@ -1745,10 +1745,36 @@ async function submitGolfRoundComprehensiveImpl(
         // number instead of silently erasing it at completion.
         effectiveQualifierRoundNumber = persistedQualifierRoundNumber ?? data.qualifierRoundNumber;
       } else if (existingRound.round_type !== 'qualifier' && data.qualifierId) {
-        // A completed scorecard is not the place to reclassify a practice or
-        // tournament round. Coaches use updateRoundType, which validates the
-        // qualifier and leaves a clear audit trail.
-        return { success: false, error: 'This started round is not a qualifier round. Ask a coach to update its type before submitting.' };
+        // A submitted scorecard is still not the place to RECLASSIFY a round —
+        // that is `updateRoundType`, which validates the qualifier and leaves an
+        // audit trail. What changed 2026-08-31 is the consequence: the client's
+        // stale qualifier data is now IGNORED rather than used to refuse the
+        // submission.
+        //
+        // Refusing stranded a real case. A player may now change their own live
+        // round's type from the scoring screen, so "was a qualifier round when
+        // this client loaded, is a practice round now" is an ordinary sequence,
+        // not a stale-client attack. The old branch met it with "ask a coach to
+        // update its type" — for a change the player had just made themselves,
+        // on a round they could no longer submit.
+        //
+        // Dropping the value keeps the protection intact (the client still
+        // cannot reclassify through submit) and honours the rule stated at the
+        // top of this block: the persisted row is the authority for its own
+        // identity.
+        void logServerError(
+          'Round submit: client carried qualifier data for a round that is no longer a qualifier round; using the persisted identity and ignoring it',
+          {
+            action: 'submitGolfRoundComprehensive.qualifierIdentity',
+            featureArea: 'qualifiers',
+            roundId: existingRoundId,
+            playerId: player.id,
+            extra: { persistedRoundType: existingRound.round_type, submittedQualifierId: data.qualifierId },
+          },
+          'warning',
+        );
+        effectiveQualifierId = undefined;
+        effectiveQualifierRoundNumber = undefined;
       }
     }
 
