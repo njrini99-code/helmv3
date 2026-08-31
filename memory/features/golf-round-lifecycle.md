@@ -231,6 +231,25 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   the RPC still refuses on a race. An entry with no round is not harmless: it
   puts the player on the coach's leaderboard at zero, produced by a save that
   reported failure.
+- **A CONCLUDED qualifier is still a valid target.** Owner instruction
+  2026-08-31: there is no time limit on correcting what a round counts toward.
+  A round recorded as practice by mistake was always meant to count in that
+  qualifier, and the competition ending does not make the mistake less wrong.
+  `20260831180000` removes the refusal from `reclassify_golf_round`; every
+  other rule it enforces is retained verbatim.
+  - This **moves a published result** — `get_qualifier_leaderboard` recomputes
+    live from `golf_rounds` — so the picker labels such a qualifier
+    `(completed)`, warns before saving, and says so again in the confirmation.
+    Visible, not silent, rather than forbidden.
+  - It could not have been a database-only change. The refusal lived in THREE
+    places: the page filtered completed qualifiers out of the picker, the
+    action refused before ever calling the RPC, and the RPC refused again.
+    Removing only the database check would have changed nothing a coach could
+    see. When a rule appears enforceable in the database, check the layers
+    above it before calling the fix a data fix.
+  - **Submitting a NEW round into a completed qualifier stays refused**
+    (`qualifier_closed`, golf.ts). Different act: reclassification changes what
+    an existing round counts toward and never touches a stroke.
 - **The empty state must name a dead end the READER can act on.** The previous
   copy told whoever was looking that "a coach needs to add them to a qualifier
   first" — while the coach was the one reading it. That is a loop, not an

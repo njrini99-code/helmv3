@@ -323,15 +323,25 @@ describe('updateRoundType — guards', () => {
     expect(state.entered).toBeNull();
   });
 
-  it('refuses a completed qualifier', async () => {
-    state.qualifier = { id: 'qual-1', status: 'completed', num_rounds: 3 };
+  // Reversed 2026-08-31 on the owner's instruction: there is no time limit on
+  // correcting what a round counts toward. A round recorded as practice by
+  // mistake was always meant to count in that qualifier, and the competition
+  // ending does not make the mistake less wrong. The editor labels a completed
+  // qualifier as completed so the standings move visibly, not silently.
+  it('ALLOWS a completed qualifier — no time limit on a correction', async () => {
+    state.qualifier = { id: 'qual-1', status: 'completed', num_rounds: 3, team_id: 'team-1' };
     const res = await updateRoundType({
       roundId: 'round-1',
       roundType: 'qualifier',
       qualifierId: 'qual-1',
+      qualifierRoundNumber: 2,
     });
-    expect(res.success).toBe(false);
-    expect(res.error).toMatch(/already completed/i);
+    expect(res.success).toBe(true);
+    expect(state.written).toEqual({
+      round_type: 'qualifier',
+      qualifier_id: 'qual-1',
+      qualifier_round_number: 2,
+    });
   });
 
   it('refuses a round number beyond the qualifier length', async () => {

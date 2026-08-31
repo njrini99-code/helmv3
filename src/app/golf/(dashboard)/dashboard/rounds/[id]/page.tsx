@@ -265,6 +265,7 @@ export default async function RoundDetailPage({
     numRounds: number;
     takenRoundNumbers: number[];
     playerEntered: boolean;
+    isCompleted: boolean;
   }> = [];
   // An empty list has two very different causes, and saying "this team has no
   // open qualifier" when the read simply failed is a confident false statement
@@ -296,7 +297,9 @@ export default async function RoundDetailPage({
         const q = (row as { qualifier?: unknown }).qualifier;
         return (Array.isArray(q) ? q[0] : q) as QualifierRow | null | undefined;
       })
-      .filter((q): q is QualifierRow => Boolean(q && q.id && q.status !== 'completed'));
+      // Completed qualifiers are included deliberately — see the coach's
+      // instruction recorded in 20260831180000. The editor marks them.
+      .filter((q): q is QualifierRow => Boolean(q && q.id));
 
     const enteredIds = new Set(entered.map((q) => q.id));
 
@@ -328,8 +331,7 @@ export default async function RoundDetailPage({
       const { data: teamRows, error: teamQualError } = await supabase
         .from('golf_qualifiers')
         .select('id, name, num_rounds, status')
-        .eq('team_id', roundTeamId)
-        .neq('status', 'completed');
+        .eq('team_id', roundTeamId);
 
       if (teamQualError) {
         qualifierReadFailed = true;
@@ -349,6 +351,7 @@ export default async function RoundDetailPage({
       numRounds: q.num_rounds ?? 1,
       takenRoundNumbers: [] as number[],
       playerEntered: enteredIds.has(q.id),
+      isCompleted: q.status === 'completed',
     }));
 
     // Which slots this player's OTHER rounds already occupy.
