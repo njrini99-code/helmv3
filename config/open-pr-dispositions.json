@@ -1,23 +1,8 @@
 {
-  "1659": {
-    "disposition": "HUMAN_TEST_PENDING",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Product fix awaiting a physical-iPhone test. Branch and PR kept; the checkout may be parked because the work is explicitly waiting on a human with a device, not on an agent session. This is the case the park/retire split exists for — it stops an open PR costing ~3.8 GiB while it waits."
-  },
-  "1678": {
+  "1697": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Opened 2026-08-30 by a CONCURRENT session. Adds two claim rows to the enforcement generator recording that a production deploy TYPED as a vercel command is CONFIGURED, while the same deploy run through scripts/deploy-prod.sh is UNENFORCED — deny rules prefix-match the command an agent submits, and the script is what gets submitted. Not touched from here: it modifies gen-enforcement-inventory.mjs, which no other branch may edit concurrently. Until it lands, main's generated enforcement inventory is incomplete by design, not by drift."
-  },
-  "1681": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "Owned by a CONCURRENT session. This row was transcribed from observable state — PR OPEN, worktree checked out and in use — by the lifecycle session on 2026-08-30, NOT by its owner; the owning session should confirm or correct it. Recorded rather than left blank because leaving it blank is what let --retire park this exact checkout. Carries the qualifier-slot picker fix, a prepared-but-unapplied R3 migration (20260830120000), the unfinished-round reclassification defect, RPC integrity moved toward the database, and a separately identified coach/unfinished-round navigation defect. Those facts must reach feature memory and the incident system when it lands; they must not survive only in the PR description."
-  },
-  "1696": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "Opened 2026-08-31 from the canonical checkout. Documentation only: closes out the repo wiring audit with the branch-durability blind spot (the protected-prefix check runs BEFORE the unique-work check, so backup/preserve/recovered branches never reach the durability verdict — nine held commits existing nowhere else, all now pushed after a clean gitleaks scan) and the zsh :r modifier trap that made seven of those pushes fail as a phantom git error. No production state. Canonical checkout — nothing to park. Clears #1695's transitional row."
+    "note": "Opened 2026-08-31 from the canonical checkout. Clears the rows for #1659, #1678, #1681 and #1696, all merged: the first three were the last open PRs in the repo and #1696's transitional grace had expired. Records the worktree-retire gap that squash-merge with --delete-branch produces. No production state, no migration. Canonical checkout — nothing to park."
   },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",

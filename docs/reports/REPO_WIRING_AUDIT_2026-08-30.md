@@ -209,6 +209,33 @@ refs that demonstrably resolved. In zsh, `"refs/heads/$b:refs/heads/$b"` parses
 literally works, which is what makes it convincing: the bug appears only when the
 branch name is a variable. `git push origin "$b"` avoids it.
 
+## A gap that appears every time a PR is squash-merged
+
+`gh pr merge --squash --delete-branch` removes the remote head ref. The
+lifecycle tool looks a PR up by `head={owner}:<branch>`, which then matches
+nothing, so a worktree whose PR just merged classifies:
+
+```text
+no PR found — cannot prove the work landed        → UNKNOWN_PR → KEEP
+```
+
+Observed on #1681 (2026-08-31): merged, tip exact, worktree clean — and
+`--retire` correctly took no action, leaving a ~3.8 GiB checkout behind.
+
+The refusal is right. `UNKNOWN_PR` means evidence was unavailable, and AGENTS.md
+is explicit that this is never a licence to remove anything. The defect is
+upstream of the verdict: the *lookup* depends on a ref that
+`delete_branch_on_merge` removes at exactly the moment the branch becomes safe
+to retire — the same shape as #1654's shipped defect, one level down.
+
+A lookup that also searched merged PRs by head SHA would close it, since the
+classifier already keys on `local tip === PR head OID`. Not built here: it
+changes how the tool gathers evidence for branch deletion, which deserves its
+own change rather than riding along in a documentation PR.
+
+Until then, retire the worktree BEFORE merging, or merge without
+`--delete-branch`.
+
 ## What this audit did not cover
 
 118 script files under `scripts/` are unreachable from CI. Most of that is
