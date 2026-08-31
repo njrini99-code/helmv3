@@ -1,4 +1,7 @@
-import { test } from 'node:test';
+// This previously ran under `node --test`, which nothing invokes, so it
+// never executed. Promoted to vitest after its stale path references were
+// repaired (see the audit report, 2026-08-30).
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join, resolve, relative } from 'node:path';
@@ -40,7 +43,6 @@ const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
 // Dropped from TARGETS rather than left dangling.
 const TARGETS = [
   'src/app/golf/admin/crm/components/CoachTable.tsx',
-  'src/app/golf/(dashboard)/dashboard/qualifiers/[id]/QualifierRoundBreakdown.tsx',
   'src/components/golf/calendar/WeekView.tsx',
 ];
 

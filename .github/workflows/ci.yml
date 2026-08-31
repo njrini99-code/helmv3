@@ -434,6 +434,15 @@ jobs:
         continue-on-error: true
         run: npm run audit:paginated-reads
 
+      # Duplicate exports had a committed baseline (.duplicate-exports-baseline.json,
+      # 27 grandfathered) and a process.exit(1) on anything new — but NO job ran it,
+      # so the ratchet could never ratchet and new duplicates landed silently. A
+      # baseline nothing compares against is a green that means nothing.
+      - name: Duplicate exports (ratchet)
+        id: ratchet_dupexports
+        continue-on-error: true
+        run: npm run lint:duplicate-exports
+
       - name: Ratchet aggregate (fails if any ratchet failed)
         if: always()
         env:
@@ -441,9 +450,10 @@ jobs:
           O_SUPABASE: ${{ steps.ratchet_supabase.outcome }}
           O_FAILOPEN: ${{ steps.ratchet_failopen.outcome }}
           O_PAGINATED: ${{ steps.ratchet_paginated.outcome }}
+          O_DUPEXPORTS: ${{ steps.ratchet_dupexports.outcome }}
         run: |
           bad=0
-          for pair in "lint:$O_LINT" "supabase:$O_SUPABASE" "fail-open:$O_FAILOPEN" "paginated:$O_PAGINATED"; do
+          for pair in "lint:$O_LINT" "supabase:$O_SUPABASE" "fail-open:$O_FAILOPEN" "paginated:$O_PAGINATED" "duplicate-exports:$O_DUPEXPORTS"; do
             name="${pair%%:*}"; outcome="${pair#*:}"
             echo "ratchet $name -> $outcome"
             if [ "$outcome" != "success" ]; then bad=1; fi
