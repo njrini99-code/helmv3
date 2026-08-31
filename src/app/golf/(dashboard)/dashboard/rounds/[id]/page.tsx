@@ -196,10 +196,18 @@ export default async function RoundDetailPage({
   // Generate (or fetch cached) AI round recap. Server action persists the
   // result on first call so subsequent visits are instant. Failure here
   // never blocks the page render — recap stays null.
+  //
+  // Skipped for a round still in progress. Those reach this page now (a coach
+  // opening a live round to change its type), and there is nothing to recap
+  // yet: the action would spend an LLM call on a partial scorecard and then
+  // fail to persist it anyway, because the lifecycle guard's `round_recap`
+  // branch only permits the write when the round is already completed.
   let aiRecap: string | null = null;
   try {
-    const result = await generateRoundRecap(id);
-    aiRecap = result.recap;
+    if (round.status === 'completed') {
+      const result = await generateRoundRecap(id);
+      aiRecap = result.recap;
+    }
   } catch (err) {
     if (process.env.NODE_ENV === 'development') {
       console.warn('[round-detail] recap generation failed:', err);
