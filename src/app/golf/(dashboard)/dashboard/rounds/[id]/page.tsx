@@ -115,11 +115,6 @@ export default async function RoundDetailPage({
     notFound();
   }
 
-  // Redirect to continue page if round is still in progress
-  if (round.status === 'in_progress') {
-    redirect(`/golf/dashboard/rounds/continue/${id}`);
-  }
-
   const roundData = {
     ...round,
     player: Array.isArray(round.player) ? round.player[0] : round.player,
@@ -127,8 +122,15 @@ export default async function RoundDetailPage({
 
   // Check if coach has access by verifying round's player is on their team
   let isCoach = false;
+  // Hoisted: the qualifier picker below needs the same team the access check
+  // used. It is the coach's own team, which is the only team whose qualifiers
+  // they may enter a player into — and the action re-derives it server-side
+  // from the ROUND's team, so a mismatch is refused there rather than trusted
+  // from here.
+  let coachTeamId: string | null = null;
   if (coach?.organization_id && roundData.player_id) {
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+    coachTeamId = teamId ?? null;
 
     if (teamId) {
       const { data: teamMembership, error: membershipError } = await supabase
@@ -158,6 +160,26 @@ export default async function RoundDetailPage({
 
   if (!isCoach && !isOwnRound) {
     redirect('/golf/dashboard');
+  }
+
+  // A player who opens their own unfinished round wants to RESUME it, so they
+  // still go to the scoring screen. A coach does not — they cannot play
+  // someone else's round, and sending them to live scoring was the only route
+  // this page offered them.
+  //
+  // That redirect used to run before access was resolved, which meant an
+  // in-progress round had no detail page for anyone, and therefore no
+  // round-type editor. Combined with the lifecycle guard refusing live rounds
+  // outright, "change this round to a qualifier round before it's submitted"
+  // was unreachable from both ends at once. The guard half is
+  // 20260830120000; this is the half above it.
+  //
+  // Submission then does the rest on its own: the submit path treats the
+  // PERSISTED round as authoritative for its qualifier identity, so a round
+  // re-typed while in progress completes exactly as if it had started that
+  // way, including the standings refresh.
+  if (round.status === 'in_progress' && !isCoach) {
+    redirect(`/golf/dashboard/rounds/continue/${id}`);
   }
 
   // The owning player OR a coach of their team may retype the round. Deliberately
@@ -241,6 +263,7 @@ export default async function RoundDetailPage({
     name: string;
     numRounds: number;
     takenRoundNumbers: number[];
+    playerEntered: boolean;
   }> = [];
   if (canChangeType && roundData.player_id) {
     const { data: entryRows, error: entriesError } = await supabase
@@ -256,23 +279,62 @@ export default async function RoundDetailPage({
       );
     }
 
-    qualifierOptions = (entryRows ?? [])
+    type QualifierRow = {
+      id: string;
+      name: string | null;
+      num_rounds: number | null;
+      status: string | null;
+    };
+
+    const entered = (entryRows ?? [])
       .map((row) => {
         const q = (row as { qualifier?: unknown }).qualifier;
-        return (Array.isArray(q) ? q[0] : q) as
-          | { id: string; name: string | null; num_rounds: number | null; status: string | null }
-          | null
-          | undefined;
+        return (Array.isArray(q) ? q[0] : q) as QualifierRow | null | undefined;
       })
-      .filter((q): q is { id: string; name: string | null; num_rounds: number | null; status: string | null } =>
-        Boolean(q && q.id && q.status !== 'completed'),
-      )
-      .map((q) => ({
-        id: q.id,
-        name: q.name ?? 'Qualifier',
-        numRounds: q.num_rounds ?? 1,
-        takenRoundNumbers: [] as number[],
-      }));
+      .filter((q): q is QualifierRow => Boolean(q && q.id && q.status !== 'completed'));
+
+    const enteredIds = new Set(entered.map((q) => q.id));
+
+    // A coach also gets the team's OTHER open qualifiers — the ones this
+    // player is not entered in yet.
+    //
+    // Without this, "change a practice round into a qualifier round" was
+    // impossible for exactly the players who most needed it: a player with no
+    // entry row saw an EMPTY dropdown and a message telling them a coach must
+    // add them — which the coach was already reading. Measured 2026-08-31 on
+    // one production team, two players held six practice rounds between them
+    // and zero qualifier entries.
+    //
+    // Coach-only because RLS INSERT on golf_qualifier_entries is coach-only:
+    // offering a player a qualifier they cannot be entered into would rebuild
+    // the same dead end one step further in. The action re-checks both the
+    // role and the team, and creates the entry on save.
+    let teamOpen: QualifierRow[] = [];
+    if (isCoach && coachTeamId) {
+      const { data: teamRows, error: teamQualError } = await supabase
+        .from('golf_qualifiers')
+        .select('id, name, num_rounds, status')
+        .eq('team_id', coachTeamId)
+        .neq('status', 'completed');
+
+      if (teamQualError) {
+        void logServerError(
+          `[round detail] team qualifier read failed for round ${id}; the type editor will only offer qualifiers this player is already entered in: ${describeError(teamQualError)}`,
+          { action: 'roundDetail.teamQualifiers', featureArea: 'rounds' },
+          'warning',
+        );
+      }
+
+      teamOpen = ((teamRows ?? []) as QualifierRow[]).filter((q) => !enteredIds.has(q.id));
+    }
+
+    qualifierOptions = [...entered, ...teamOpen].map((q) => ({
+      id: q.id,
+      name: q.name ?? 'Qualifier',
+      numRounds: q.num_rounds ?? 1,
+      takenRoundNumbers: [] as number[],
+      playerEntered: enteredIds.has(q.id),
+    }));
 
     // Which slots this player's OTHER rounds already occupy.
     //
@@ -357,6 +419,7 @@ export default async function RoundDetailPage({
         currentQualifierId={roundData.qualifier_id}
         currentQualifierRoundNumber={roundData.qualifier_round_number}
         qualifierOptions={qualifierOptions}
+        viewerIsCoach={isCoach}
       />
     </div>
   );

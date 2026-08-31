@@ -147,6 +147,8 @@ export interface FairwayRoundDetailProps {
   currentQualifierRoundNumber?: number | null;
   /** Open qualifiers this round's player is entered in. */
   qualifierOptions?: QualifierOption[];
+  /** Coach of this round's team — decides the round-type editor's empty copy. */
+  viewerIsCoach?: boolean;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -216,6 +218,7 @@ export function FairwayRoundDetail({
   currentQualifierId = null,
   currentQualifierRoundNumber = null,
   qualifierOptions = [],
+  viewerIsCoach = false,
 }: FairwayRoundDetailProps) {
   const reviewHref = `/golf/dashboard/rounds/${round.id}/review`;
 
@@ -387,6 +390,7 @@ export function FairwayRoundDetail({
               currentQualifierId={currentQualifierId}
               currentQualifierRoundNumber={currentQualifierRoundNumber}
               qualifierOptions={qualifierOptions}
+              viewerIsCoach={viewerIsCoach}
             />
           </div>
         )}
