@@ -7,6 +7,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { resolveMimeType } from './mime';
+import { convertHeicToJpeg } from './heic-to-jpeg';
 
 // Constants
 export const STORAGE_BUCKET = 'golf-attachments';
@@ -240,28 +241,40 @@ export async function uploadAttachment(
     return { success: false, error: validation.error };
   }
 
-  // Generate storage path
-  const storagePath = generateStoragePath(conversationId, messageId, file.name);
+  // HEIC in, JPEG out — on the one device that can decode it.
+  //
+  // An iPhone photo uploads fine as HEIC and then renders as a BROKEN IMAGE
+  // for every teammate on desktop Chrome, Firefox or Android, because the
+  // thread renders attachments with a plain <img>. Converting here, on the
+  // device that HAS the photo, means what lands in storage is displayable
+  // everywhere. If this device cannot decode HEIC the original comes back
+  // unchanged and the upload proceeds exactly as before — never worse.
+  //
+  // Everything below describes the file that is ACTUALLY stored: its name (so
+  // the extension matches the bytes), its size, and its type.
+  const uploadFile = await convertHeicToJpeg(file, resolveFileMimeType(file));
 
-  // Get file metadata
-  // One resolved type for the whole upload. Using `file.type` directly here
-  // would record an empty mimeType, categorise the file as a 'document', and —
-  // worse — let Supabase infer `application/octet-stream` for the object,
-  // which the bucket's `allowed_mime_types` does not permit. The photo would
-  // then fail at the Storage API even after passing validation.
-  const resolvedMimeType = resolveFileMimeType(file);
+  // Generate storage path
+  const storagePath = generateStoragePath(conversationId, messageId, uploadFile.name);
+
+  // One resolved type for the whole upload. Using a raw `type` here would
+  // record an empty mimeType, categorise the file as a 'document', and — worse
+  // — let Supabase infer `application/octet-stream` for the object, which the
+  // bucket's `allowed_mime_types` does not permit. The photo would then fail
+  // at the Storage API even after passing validation.
+  const resolvedMimeType = resolveFileMimeType(uploadFile);
   const fileType = getFileType(resolvedMimeType);
   const metadata: AttachmentMetadata = {
-    fileName: file.name,
+    fileName: uploadFile.name,
     fileType,
     mimeType: resolvedMimeType,
-    fileSize: file.size,
+    fileSize: uploadFile.size,
   };
 
   // Get dimensions for images/videos and duration for audio
   try {
     if (fileType === 'image') {
-      const dims = await getImageDimensions(file);
+      const dims = await getImageDimensions(uploadFile);
       metadata.width = dims.width;
       metadata.height = dims.height;
     } else if (fileType === 'video') {
@@ -287,7 +300,7 @@ export async function uploadAttachment(
 
   const { error: uploadError } = await supabase.storage
     .from(STORAGE_BUCKET)
-    .upload(storagePath, file, {
+    .upload(storagePath, uploadFile, {
       cacheControl: '3600',
       upsert: false,
       // Explicit, because the SDK otherwise infers from `file.type` — blank on
