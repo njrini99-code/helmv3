@@ -171,6 +171,13 @@ mechanical, and these are the habits that keep it fixed.
   not found" and every wrapped call reads as a failure. This produced a bogus
   "21 of 21 tests failing" result on 2026-08-20. Use `gtimeout` (coreutils) or
   no wrapper.
+- **zsh eats `:r`, `:h`, `:t`, `:e` after a variable.** `"refs/heads/$b:refs/heads/$b"`
+  becomes `refs/heads/recovered/stash-0efs/heads/recovered/stash-0` — zsh reads
+  `$b:r` as the `:r` history modifier. `git push` then reports
+  `src refspec ... does not match any` for a ref that resolves fine, and the
+  same command typed literally works, so it reads as a git problem. Seven
+  branch pushes failed this way on 2026-08-30. Use `git push origin "$b"`, or
+  `${b}` followed by a literal colon.
 - **`ls` is aliased to `eza` here.** Scripted `ls` with flags it doesn't share
   errors out. Use `/bin/ls` in scripts.
 

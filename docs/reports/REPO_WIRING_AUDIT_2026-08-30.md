@@ -160,6 +160,55 @@ tool itself is invoked by nothing — a tested component with no consumer. Adjac
 to `MIGRATIONS_REPO_PRODUCTION_LEDGER_DIVERGENCE`; noted, not wired, because
 what should pipe into it is a design decision.
 
+## Branch durability — the verdict that hid it
+
+`AGENTS.md` treats "no important work exists in one accidental local ref" as the
+point of branch hygiene, and `NO_UPSTREAM_UNIQUE_WORK` is the verdict that
+surfaces it. Measured directly rather than through the tool, **nine branches held
+commits that existed nowhere but this laptop** — up to 95 on one:
+
+```text
+backup/1641-pre-phase2-2026-08-27          11
+backup/1641-pre-restack-2026-08-27         10
+backup/1656-pre-main-refresh-2026-08-28    14
+preserve/claude-ckpt                        1
+preserve/local-main-2026-08-27              6
+preserve/pr852-closed                      33
+recovered/stash-0                          12
+recovered/stash-1                          95
+recovered/stash-2                           4
+```
+
+The lifecycle tool reported **none** of them, and was not wrong to: it checks the
+protected prefixes (`backup/`, `preserve/`, `recovered/`, `stage/`) *before* it
+checks for unique upstream-less work, so those branches return `KEEP_PROTECTED`
+and never reach the durability verdict. Both verdicts are correct in isolation.
+The ordering means **the branches named for preservation are exactly the ones
+whose non-durability is invisible.**
+
+That also reconciles an earlier claim. The 2026-08-30 closeout recorded
+`NO_UPSTREAM_UNIQUE_WORK remaining: NONE` after pushing ten branches. True as
+stated — protected branches were never in that verdict's population.
+
+All nine were scanned and pushed. **gitleaks: no leaks found, 127 commits
+scanned** on the four largest before any push; the only secret-shaped literal
+was `.env.example`'s placeholder `your-service-role-key`. Branches whose work
+exists in one place: **9 → 0**.
+
+Not changed here: whether `KEEP_PROTECTED` should still report unique-work
+status alongside its verdict. It is a real question — a protected branch cannot
+be deleted by the tool, so the durability fact is advisory rather than
+load-bearing — and it is a design decision, not a repair.
+
+### A zsh trap worth its own line
+
+Pushing them failed seven times with `src refspec ... does not match any` against
+refs that demonstrably resolved. In zsh, `"refs/heads/$b:refs/heads/$b"` parses
+`$b:r` as the `:r` history modifier and **eats the `:r`**, yielding
+`refs/heads/recovered/stash-0efs/heads/recovered/stash-0`. The same command typed
+literally works, which is what makes it convincing: the bug appears only when the
+branch name is a variable. `git push origin "$b"` avoids it.
+
 ## What this audit did not cover
 
 118 script files under `scripts/` are unreachable from CI. Most of that is
