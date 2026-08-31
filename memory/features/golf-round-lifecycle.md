@@ -262,6 +262,29 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   copy told whoever was looking that "a coach needs to add them to a qualifier
   first" — while the coach was the one reading it. That is a loop, not an
   explanation, and it is what the 2026-08-31 report described.
+- **The live round's type is changed by the PLAYER, on the scoring screen.**
+  Owner decision 2026-08-31, after measuring: NO coach surface anywhere lists
+  or links an in-progress round — all four coach-facing reads in
+  `dashboard-data.ts` filter `.eq('status','completed')`, and every
+  `in_progress` read in `golf.ts` is player-scoped. Letting a coach open one
+  was therefore reachable only by typing a URL, and widened what a coach can
+  touch for no gain; it was reverted the same day. The editor now renders on
+  `/golf/dashboard/rounds/continue/[id]`, which already scopes its round to
+  `player.id`, so it is always the player's own.
+  - Rendered from the SERVER component, outside `ContinueRoundClient`. That
+    component owns live scoring, autosave and recovery; a type picker does not
+    belong inside that state machine.
+  - Player rules apply: only qualifiers the player is already ENTERED in,
+    because RLS makes entry creation coach-only.
+- **A round re-typed mid-play must still submit.** Saving calls
+  `router.refresh()`, which re-runs the page and rebuilds `setupData` — so the
+  qualifier identity the submit path reads is the one just written. But a
+  client that loaded EARLIER still carries the old value, and the submit path
+  used to answer that with *"not a qualifier round. Ask a coach to update its
+  type"* — for a change the player had just made themselves, on a round they
+  could then no longer submit. The stale value is now DROPPED, not used to
+  refuse: a client still cannot reclassify through submit, which was the
+  protection that branch existed for.
 - **An unfinished round has to be reachable to be re-typed.** The round detail
   page redirected every `in_progress` round to the scoring screen before
   access was even resolved, so the round-type editor did not exist for live
