@@ -58,9 +58,12 @@ describe('AttachmentButton — a rejected file is never silent', () => {
     const input = container.querySelector<HTMLInputElement>('input[type="file"]');
     expect(input).not.toBeNull();
 
-    // A mime type ALLOWED_MIME_TYPES does not carry — exactly what a phone can
-    // hand back for a photo.
-    pick(input!, new File(['x'], 'IMG_0394.heic', { type: 'application/x-unknown' }));
+    // Genuinely unsupported, by BOTH signals. Deliberately not a photo with a
+    // blank type: since the iOS mime fallback landed, `IMG_0394.heic` with an
+    // unknown type resolves through its EXTENSION and is now correctly
+    // ACCEPTED — which is the whole point of that fix. Using it here would
+    // assert the opposite of the intended behaviour.
+    pick(input!, new File(['x'], 'payload.exe', { type: 'application/x-unknown' }));
 
     expect(onFilesSelected).not.toHaveBeenCalled();
     // The assertion that carries this file: the user was TOLD.
@@ -71,6 +74,7 @@ describe('AttachmentButton — a rejected file is never silent', () => {
     expect(logErrorMock.mock.calls[0]![1]).toMatchObject({
       component: 'AttachmentButton',
       mimeType: 'application/x-unknown',
+      fileName: 'payload.exe',
     });
   });
 
