@@ -77,8 +77,9 @@
 -- `team_id` is wrong or absent.
 --
 -- It also does not break real data. Measured 2026-08-30: 8 rounds carry a NULL
--- `team_id` (3 of them completed), so a bare `round.team_id = qualifier.team_id`
--- equality would have refused those rounds a qualifier they may legitimately
+-- `team_id` (3 of them completed), so a bare
+-- `round.team_id = qualifier.team_id` equality would have refused those
+-- rounds a qualifier they may legitimately
 -- belong to. The team comparison is still applied, as defence in depth, but
 -- only when the round actually carries a team. Existing cross-team links: 0,
 -- so nothing currently stored violates either rule.
@@ -105,9 +106,11 @@
 --             length(pg_get_functiondef(
 --               'helm_private.guard_golf_round_lifecycle()'::regprocedure));
 --      SELECT md5(pg_get_functiondef(
---               'public.reclassify_golf_round(uuid,text,uuid,integer)'::regprocedure)),
+--               'public.reclassify_golf_round(uuid,text,uuid,integer)'
+--                 ::regprocedure)),
 --             length(pg_get_functiondef(
---               'public.reclassify_golf_round(uuid,text,uuid,integer)'::regprocedure));
+--               'public.reclassify_golf_round(uuid,text,uuid,integer)'
+--                 ::regprocedure));
 --
 --    If either md5 differs from the value above, production has moved since
 --    this file was written and applying it would DISCARD that change. Stop and
@@ -347,9 +350,10 @@ $function$;
 --    function should never leave its own reachability implicit.
 -- ─────────────────────────────────────────────────────────────────────────────
 REVOKE ALL ON FUNCTION public.reclassify_golf_round(uuid, text, uuid, integer)
-  FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.reclassify_golf_round(uuid, text, uuid, integer)
-  TO authenticated, service_role;
+FROM public, anon;
+GRANT EXECUTE ON FUNCTION
+public.reclassify_golf_round(uuid, text, uuid, integer)
+TO authenticated, service_role;
 
 -- The trigger function is reachable only through the trigger and must never be
 -- callable directly. CREATE OR REPLACE does not reset ACLs, so this changes
@@ -357,4 +361,4 @@ GRANT EXECUTE ON FUNCTION public.reclassify_golf_round(uuid, text, uuid, integer
 -- function did, and a privileged object whose reachability is stated in some
 -- files and assumed in others is one a reader has to go and check.
 REVOKE ALL ON FUNCTION helm_private.guard_golf_round_lifecycle()
-  FROM public, anon, authenticated;
+FROM public, anon, authenticated;
