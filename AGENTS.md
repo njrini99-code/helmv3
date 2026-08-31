@@ -210,6 +210,29 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   RETIRE  park, AND delete a branch proven merged by exact PR head OID
   ```
 
+  **It reports on REMOTE branches as well as local ones, and the distinction
+  is the whole point.** Until 2026-08-31 it enumerated `refs/heads` only, so a
+  branch whose local copy had been pruned — which is every branch merged with
+  `--delete-branch`, plus anything pushed from another machine — was invisible
+  to it. Measured that day: three such branches, one a PR MERGED for days,
+  while the report said `0 branches to delete` and GitHub's branch list still
+  showed it. A cleanup tool that cannot see the residue it exists to remove
+  reports success at having looked at the wrong place. Remote deletion carries
+  its own verdict (`DELETE_REMOTE`, a `git push origin --delete`) and is never
+  rendered as `DELETE_BRANCH`: one is recoverable from the reflog, the other
+  is not.
+
+  **A total evidence blackout exits 2, and is never a clean report.** If every
+  PR lookup fails, the tool prints `INFRASTRUCTURE_FAILURE` and refuses to
+  present the result as a finding. The failure mode this closes was observed,
+  not theorised: `gh` cannot reach GitHub from inside the Bash sandbox (Go's
+  TLS cannot read the macOS keychain there), so every row read `UNKNOWN` and
+  the summary read `0 branches deletable` — indistinguishable from a genuinely
+  clean repository. Re-run outside the sandbox rather than trusting a report
+  whose every lookup failed. Same convention as `npm run guards`:
+  PASS / POLICY_FAILURE / INFRASTRUCTURE_FAILURE, where the third exits
+  non-zero and never presents as the first.
+
   Parking is what lets an open PR waiting on a human stop costing ~3.8 GiB.
   Branch deletion is proven by `PR MERGED` + `local tip === PR head OID`, never
   by a remote tip — `delete_branch_on_merge` removes that exactly when the

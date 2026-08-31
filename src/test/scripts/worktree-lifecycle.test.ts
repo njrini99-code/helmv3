@@ -579,14 +579,91 @@ describe('the CLI, against real worktrees', () => {
     expect(row(run(), 'agent/w2')).toMatch(/DELETE_MERGED_EXACT|RETIRE/);
   });
 
-  it('a FAILED lookup never produces an action', () => {
+  /**
+   * The residue the tool could not see, and the only kind an operator does.
+   *
+   * Every version before 2026-08-31 enumerated `refs/heads` — LOCAL branches.
+   * A branch whose local copy was pruned after merging, or that was pushed
+   * from another machine, existed only as `refs/remotes/origin/<b>` and was
+   * therefore absent from the report entirely. Measured on the live repo that
+   * day: three such branches, one of them a PR that had been MERGED for days,
+   * while the report said "0 branches to delete" and GitHub's branch list —
+   * the thing the owner was actually looking at — still showed it.
+   */
+  it('sees a remote-only branch and offers DELETE_REMOTE when the PR proves it merged', () => {
+    // A remote ref with no local branch, exactly as delete_branch_on_merge or
+    // a prune leaves behind.
+    if (!git(['remote'], canonical).includes('origin')) {
+      git(['remote', 'add', 'origin', canonical], canonical);
+      git(['config', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*'], canonical);
+    }
+    const sha = git(['rev-parse', 'main'], canonical).trim();
+    git(['update-ref', 'refs/remotes/origin/feat/remote-only', sha], canonical);
+
+    writePrStub({ 'feat/remote-only': `4242 MERGED ${sha}` });
+    const out = run();
+    const r = row(out, 'feat/remote-only');
+
+    expect(r).toMatch(/remote only/);
+    expect(r).toMatch(/DELETE_MERGED_EXACT/);
+    // Its own verb: `git push origin --delete` is not `git branch -D`, and a
+    // report that renders them identically invites the wrong assumption about
+    // how recoverable the action is.
+    expect(r).toMatch(/DELETE_REMOTE/);
+  });
+
+  it('keeps a remote-only branch whose tip moved past its merged PR', () => {
+    if (!git(['remote'], canonical).includes('origin')) {
+      git(['remote', 'add', 'origin', canonical], canonical);
+      git(['config', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*'], canonical);
+    }
+    const sha = git(['rev-parse', 'main'], canonical).trim();
+    git(['update-ref', 'refs/remotes/origin/feat/remote-diverged', sha], canonical);
+
+    // PR merged an EARLIER commit; the branch has moved on since. Those
+    // commits exist nowhere else once the remote ref is gone.
+    writePrStub({ 'feat/remote-diverged': '4243 MERGED 0000000000000000000000000000000000000000' });
+    const r = row(run(), 'feat/remote-diverged');
+
+    expect(r).toMatch(/KEEP_DIVERGED_AFTER_PR/);
+    expect(r).not.toMatch(/DELETE_REMOTE/);
+  });
+
+  // Strengthened 2026-08-31. It still asserts the original guarantee — a
+  // failed lookup never produces an action — and now also asserts that the
+  // tool SAYS SO and exits non-zero.
+  //
+  // The gap this closes was observed, not imagined: when `gh` could not reach
+  // GitHub (Go's TLS cannot read the macOS keychain inside the Bash sandbox),
+  // every row read UNKNOWN and the summary read "0 branches deletable". That
+  // is indistinguishable from a genuinely clean repo, and it is why branches
+  // accumulated for weeks while a working cleanup tool sat right here. Exit 0
+  // on a total evidence blackout is the tool reporting success at having
+  // learned nothing.
+  it('a FAILED lookup never produces an action, and says so loudly', () => {
     const wt = join(tmp, 'w3');
     git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/w3', wt, 'main'], canonical);
     writeFileSync(stub, '#!/usr/bin/env bash\nexit 3\n');
     chmodSync(stub, 0o755);
-    const r = row(run(), 'agent/w3');
+
+    let out = '';
+    let status: number | null = null;
+    try {
+      out = run();
+      status = 0;
+    } catch (err) {
+      const e = err as { status?: number; stdout?: string };
+      status = e.status ?? null;
+      out = e.stdout ?? '';
+    }
+
+    const r = row(out, 'agent/w3');
     expect(r).toMatch(/UNKNOWN_PR/);
-    expect(r).not.toMatch(/DELETE_BRANCH|RETIRE/);
+    expect(r).not.toMatch(/DELETE_BRANCH|RETIRE|DELETE_REMOTE/);
+    // The part that was missing: an unknown must not read as a clean result.
+    expect(out).toMatch(/INFRASTRUCTURE_FAILURE/);
+    expect(out).toMatch(/proves NOTHING/);
+    expect(status).toBe(2);
   });
 
   /**
