@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
+import { resolveMimeType } from './mime';
 
 // Constants
 export const STORAGE_BUCKET = 'golf-attachments';
@@ -112,31 +113,10 @@ export interface PendingAttachment {
  * re-checks `allowed_mime_types` server-side regardless, so a lie here cannot
  * put an unsupported object in the bucket.
  */
-const EXTENSION_MIME_FALLBACK: Record<string, string> = {
-  heic: 'image/heic',
-  heif: 'image/heif',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  png: 'image/png',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  mp4: 'video/mp4',
-  mov: 'video/quicktime',
-  webm: 'video/webm',
-  m4a: 'audio/m4a',
-  mp3: 'audio/mpeg',
-  wav: 'audio/wav',
-  pdf: 'application/pdf',
-};
-
-/**
- * The effective mime type for a file: what the browser reported, or what its
- * extension implies when the browser reported nothing we recognise.
- */
 export function resolveFileMimeType(file: File): string {
-  if (file.type && ALLOWED_MIME_TYPES[file.type]) return file.type;
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-  return EXTENSION_MIME_FALLBACK[ext] ?? file.type;
+  // "Usable" here means the messages allow-list recognises it — a type this
+  // path could not upload anyway is no better than none.
+  return resolveMimeType(file, (t) => Boolean(ALLOWED_MIME_TYPES[t]));
 }
 
 /**
