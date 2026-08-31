@@ -334,7 +334,16 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
 });
 
 describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
-  it('refuses a stale link after a coach has explicitly closed the qualifier', async () => {
+  // Reversed 2026-08-31 on the owner's instruction: "there should be no time
+  // constraints." A closed qualifier used to refuse here, which meant opening
+  // only the SUBMIT-side check would have been half a fix — a round has to be
+  // started before it can be submitted, so this would have become the new dead
+  // end one step earlier.
+  //
+  // The rules that actually protect the standings are untouched and are
+  // asserted by the neighbouring cases: the player must be ENTERED, and the
+  // round cap (`num_rounds`) still applies. Only the clock stopped mattering.
+  it('ALLOWS a round in a closed qualifier — no time limit, cap still applies', async () => {
     const tables = baseTables();
     tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
     tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'completed' }];
@@ -342,8 +351,7 @@ describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
 
     const result = await getNextQualifierRoundNumber('qualifier-1');
 
-    expect(result.success).toBe(false);
-    expect(result.success === false && result.error).toMatch(/closed by the coach/i);
+    expect(result.success).toBe(true);
   });
 
   it('explains an open qualifier round cap without falsely calling the qualifier completed', async () => {

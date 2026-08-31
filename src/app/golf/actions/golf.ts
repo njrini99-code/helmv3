@@ -1767,17 +1767,21 @@ async function submitGolfRoundComprehensiveImpl(
         return { success: false, error: 'Qualifier not found.' };
       }
 
-      if (qualifier.status === 'completed') {
-        // `code` is load-bearing, not decoration: severityForSoftFailure()
-        // only downgrades a soft failure to 'warning'/skipSentry when it
-        // recognises a code in EXPECTED_SOFT_FAILURE_CODES, and this wording
-        // matches no EXPECTED_SOFT_FAILURE_PATTERNS. Without it this guard
-        // fell through to 'error' and paged Sentry 18 times in one 32-minute
-        // window on 2026-08-23 for a coach closing a qualifier mid-submission
-        // — expected lifecycle behaviour, correctly rejected. The identical
-        // guard below already returns this code for the same outcome.
-        return { success: false, code: 'qualifier_closed', error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
-      }
+      // REMOVED 2026-08-31, owner instruction: "there should be no time
+      // constraints." A concluded qualifier used to refuse submission here
+      // with `qualifier_closed`. It no longer does — a round that belongs in a
+      // qualifier still belongs in it after the coach has closed it, and the
+      // coach is the one who closed it.
+      //
+      // Every other rule below is untouched and is what keeps this safe: the
+      // player must be ENTERED, the round number must be within `num_rounds`,
+      // and the slot must not already be taken. Those are the rules that
+      // protect the standings; the status check only protected the clock.
+      //
+      // The Sentry-tiering note this comment replaced is preserved in the
+      // codepath that still needs it — `qualifier_closed` remains in
+      // EXPECTED_SOFT_FAILURE_CODES, and removing the last producer of a code
+      // does not make the allowlist wrong, only unused.
 
       // Verify the player has an entry in this qualifier
       const { data: qualifierEntry, error: entryError } = await supabase
@@ -7133,11 +7137,11 @@ async function getNextQualifierRoundNumberImpl(
     if (!qualifier) {
       return { success: false, error: 'Qualifier not found' };
     }
-    if (qualifier.status === 'completed') {
-      // See qualifier_round_already_exists above: the code routes this
-      // expected lifecycle outcome to 'warning', not a Sentry error.
-      return { success: false, code: 'qualifier_closed', error: 'This qualifier has been closed by the coach.' };
-    }
+    // REMOVED 2026-08-31 alongside the submit-side check above. Opening only
+    // submission would have been half a fix: a round has to be STARTED before
+    // it can be submitted, so this guard would have become the new dead end
+    // one step earlier, with a message about the coach closing the qualifier
+    // rather than anything the player could act on.
 
     // A started qualifier round owns its number until it is submitted or
     // explicitly discarded. Returning it here lets the client resume the

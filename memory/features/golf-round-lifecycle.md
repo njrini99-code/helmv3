@@ -247,9 +247,17 @@ Use `memory/context/golfhelm-database.md` for exact columns.
     Removing only the database check would have changed nothing a coach could
     see. When a rule appears enforceable in the database, check the layers
     above it before calling the fix a data fix.
-  - **Submitting a NEW round into a completed qualifier stays refused**
-    (`qualifier_closed`, golf.ts). Different act: reclassification changes what
-    an existing round counts toward and never touches a stroke.
+  - **Submitting and STARTING a round in a completed qualifier are open too**,
+    on the same instruction and in the same change. Opening only submission
+    would have been half a fix: a round must be started before it can be
+    submitted, so `getNextQualifierRoundNumber`'s closed-qualifier refusal
+    would simply have become the new dead end one step earlier. Both guards
+    are gone; `qualifier_closed` now has no producer, which makes the
+    allowlist entry unused rather than wrong.
+  - **What still protects the standings**, and is deliberately untouched: the
+    player must be ENTERED, the round number must be within `num_rounds`, and
+    the slot must be free. Those are the real constraints. The status check
+    only ever protected the clock.
 - **The empty state must name a dead end the READER can act on.** The previous
   copy told whoever was looking that "a coach needs to add them to a qualifier
   first" — while the coach was the one reading it. That is a loop, not an
