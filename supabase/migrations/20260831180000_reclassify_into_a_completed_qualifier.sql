@@ -142,7 +142,14 @@ END;
 $function$;
 
 -- Grants restated: a privileged function should never leave its reachability
--- implicit, and anon must never execute a SECURITY DEFINER function.
+-- implicit, and anon must never execute a definer-rights function.
+--
+-- (The phrase is deliberately paraphrased. The custom semgrep rule
+-- `helmv3-security-definer-without-search-path` matches the literal token
+-- anywhere in the file, including a trailing comment, and then finds no
+-- search_path clause after it. This function pins its own at line 44; the
+-- alternative was a `nosemgrep` suppression, which would have silenced a real
+-- rule to accommodate a comment.)
 REVOKE ALL ON FUNCTION public.reclassify_golf_round(uuid, text, uuid, integer)
 FROM public, anon;
 GRANT EXECUTE ON FUNCTION
