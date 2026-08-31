@@ -74,6 +74,13 @@ export interface QualifierOption {
    * dead end one step further along.
    */
   playerEntered?: boolean;
+  /**
+   * This qualifier has already been concluded. Still a valid target — there is
+   * no time limit on correcting what a round counts toward — but attaching a
+   * round to it MOVES A PUBLISHED RESULT, so it is named at the point of
+   * choosing rather than discovered afterwards.
+   */
+  isCompleted?: boolean;
 }
 
 /**
@@ -128,7 +135,8 @@ function describeSaved(
   }
   if (!chosen) return 'This round now counts as a qualifier round.';
   const entered = chosen.playerEntered === false ? ' The player was added to it.' : '';
-  return `Saved as round ${roundNumber} of ${chosen.name}. It now counts in the standings.${entered}`;
+  const finished = chosen.isCompleted ? ' That qualifier is finished, so its standings have changed.' : '';
+  return `Saved as round ${roundNumber} of ${chosen.name}. It now counts in the standings.${entered}${finished}`;
 }
 
 export function RoundTypeEditor({
@@ -240,10 +248,26 @@ export function RoundTypeEditor({
   return (
     <div
       className={cn(
-        'mt-3 flex flex-col gap-3 rounded-card border border-border-subtle bg-surface p-4',
+        'mt-3 flex w-full flex-col gap-3 rounded-card border border-border-subtle bg-surface p-4',
+        // Fills a phone, stops stretching on a desktop column. Without the
+        // ceiling the selects ran the full content width on a laptop, which
+        // read as a form field for the whole page rather than for this card.
+        'sm:max-w-md',
         className,
       )}
     >
+      {/* The panel replaces the button that opened it, so without a heading
+          the segmented control arrives with nothing naming it. `aria-label`
+          covered a screen reader and left everyone else guessing. */}
+      <div className="flex flex-col gap-0.5">
+        <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+          Change round type
+        </h3>
+        <p className="font-fw-sans text-caption text-text-tertiary">
+          Changes what this round counts toward. Its scores are not affected.
+        </p>
+      </div>
+
       <Segmented
         options={EDITABLE_ROUND_TYPES.map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
         value={type}
@@ -275,7 +299,8 @@ export function RoundTypeEditor({
                 value={qualifierId}
                 onChange={(e) => setQualifierId(e.target.value)}
                 className={cn(
-                  'min-h-[40px] rounded-fw-md border border-border-subtle bg-canvas px-3',
+                  'min-h-[40px] [@media(pointer:coarse)]:min-h-[44px] w-full',
+                  'rounded-fw-md border border-border-subtle bg-canvas px-3',
                   'font-fw-sans text-body-sm text-text-primary',
                   'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                 )}
@@ -283,10 +308,17 @@ export function RoundTypeEditor({
                 <option value="">Select…</option>
                 {qualifierOptions.map((q) => (
                   <option key={q.id} value={q.id}>
-                    {q.name}
+                    {q.isCompleted ? `${q.name} (completed)` : q.name}
                   </option>
                 ))}
               </NativeSelect>
+
+              {chosen?.isCompleted && (
+                <p className="font-fw-sans text-caption text-text-secondary">
+                  {chosen.name} is already finished. Adding this round will change its final
+                  standings.
+                </p>
+              )}
 
               {chosen && chosen.playerEntered === false && (
                 <p className="font-fw-sans text-caption text-text-secondary">
@@ -317,7 +349,8 @@ export function RoundTypeEditor({
                     value={roundNumber}
                     onChange={(e) => setRoundNumber(Number(e.target.value))}
                     className={cn(
-                      'min-h-[40px] rounded-fw-md border border-border-subtle bg-canvas px-3',
+                      'min-h-[40px] [@media(pointer:coarse)]:min-h-[44px] w-full',
+                  'rounded-fw-md border border-border-subtle bg-canvas px-3',
                       'font-fw-sans text-body-sm text-text-primary',
                       'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                     )}

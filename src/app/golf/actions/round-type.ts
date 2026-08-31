@@ -224,12 +224,21 @@ async function updateRoundTypeImpl(
         return { success: false, error: 'That qualifier belongs to a different team.' };
       }
 
-      if (qualifier.status === 'completed') {
-        return {
-          success: false,
-          error: 'That qualifier is already completed, so rounds can no longer be added to it.',
-        };
-      }
+      // A CONCLUDED qualifier is still a valid target. Owner instruction
+      // 2026-08-31: there is no time limit on correcting what a round counts
+      // toward. A round recorded as practice by mistake was always meant to
+      // count in it, and the competition ending does not make the mistake less
+      // wrong.
+      //
+      // This does move a published result — `get_qualifier_leaderboard`
+      // recomputes live from `golf_rounds` — so the editor labels a completed
+      // qualifier as completed at the point of choosing it. Visible, not
+      // silent, rather than forbidden.
+      //
+      // Submitting a NEW round into a completed qualifier stays refused
+      // (`qualifier_closed`, golf.ts). That is a different act: this only
+      // changes what an existing round counts toward and never touches a
+      // stroke.
 
       // The player must actually be entered — same check the submit path runs.
       const { data: entry, error: entryError } = await supabase
