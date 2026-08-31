@@ -262,7 +262,23 @@ for (const w of wts) {
   // PR facts are gathered BEFORE the worktree is classified, because since
   // 2026-08-30 the worktree verdict depends on them: an OPEN PR's checkout is
   // parkable only with its owner's recorded consent.
-  const pr = w.branch && !isCanonical ? prFor(w.branch) : { lookup: 'OK', state: 'NONE' };
+  //
+  // The lookup runs for the canonical checkout too. It used to be skipped there
+  // and substituted with `{ lookup: 'OK', state: 'NONE' }` — which does not mean
+  // "not checked", it means "checked, and there is no PR". That is a fabricated
+  // fact in the evidence layer, and classifyBranch read it exactly as written:
+  // canonical's own branch always came back UNKNOWN_PR ("no PR found — cannot
+  // prove the work landed") even with an OPEN PR against it, measured on
+  // #1694. Nothing was lost, because UNKNOWN_PR fails safe to KEEP — but the
+  // tool was reaching a right answer from an invented one.
+  //
+  // Skipping it saved nothing either: classifyWorktree returns ACTIVE for
+  // canonical on its FIRST line, before any PR fact is read. Only the BRANCH
+  // verdict ever consumed these, and that is the separate question AGENTS.md
+  // insists on keeping separate — may this CHECKOUT go, vs may this BRANCH be
+  // deleted. The short-circuit conflated them inside the tool that defines the
+  // distinction.
+  const pr = w.branch ? prFor(w.branch) : { lookup: 'OK', state: 'NONE' };
   const disp = pr.number != null ? (DISPOSITIONS[String(pr.number)] ?? null) : null;
 
   const wFacts = {

@@ -518,6 +518,42 @@ describe('the CLI, against real worktrees', () => {
     }
   });
 
+  it("looks the canonical checkout's OWN branch up, instead of inventing 'no PR'", () => {
+    // The canonical checkout used to be skipped in the PR lookup and handed a
+    // literal { lookup: 'OK', state: 'NONE' } — which does not say "not
+    // checked", it says "checked, and there is no PR". classifyBranch read that
+    // exactly as written, so canonical's own branch always came back UNKNOWN_PR
+    // even with a MERGED PR against it. Measured against #1694 on 2026-08-30.
+    //
+    // Reaching this at all takes one extra step, and that step is the reason
+    // the bug survived: canonicalRoot() returns null for a fixture, because it
+    // resolves .claude/hooks/lib/workspace-identity.mjs against the repo under
+    // test and fixtures do not have one. That is deliberate and correct — a
+    // fixture must never be able to claim it is the real canonical checkout —
+    // but it also means isCanonical is ALWAYS false here, so every
+    // canonical-only branch of the tool was untestable. Giving the fixture its
+    // own identity stub is what makes this assertion able to fail.
+    mkdirSync(join(canonical, '.claude/hooks/lib'), { recursive: true });
+    writeFileSync(
+      join(canonical, '.claude/hooks/lib/workspace-identity.mjs'),
+      `console.log(${JSON.stringify(canonical)});\n`,
+    );
+
+    git(['checkout', '-q', '-b', 'agent/canon-own', 'main'], canonical);
+    const sha = git(['rev-parse', 'agent/canon-own'], canonical);
+    writePrStub({ 'agent/canon-own': `1694 MERGED ${sha}` });
+
+    const line = row(run(), 'agent/canon-own');
+    // The checkout is canonical, so it is never parkable — proving the fixture
+    // really is being treated as canonical, which is what makes the rest count.
+    expect(line).toContain('ACTIVE');
+    // ...and its BRANCH is still classified from real PR facts. The two
+    // questions AGENTS.md insists on keeping separate, kept separate.
+    expect(line).toContain('1694');
+    expect(line).toContain('MERGED');
+    expect(line).not.toContain('UNKNOWN_PR');
+  });
+
   it('removes nothing without an action flag', () => {
     const wt = join(tmp, 'w1');
     git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/w1', wt, 'main'], canonical);
