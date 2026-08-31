@@ -332,6 +332,13 @@ export default defineConfig({
             'scripts/__tests__/no-legacy-skeleton-imports.test.mjs',
             'scripts/__tests__/no-tranwarm-typo.test.mjs',
             'scripts/__tests__/radix-dropdown-sonner.test.mjs',
+            // Promoted 2026-08-30. Both previously ran under `node --test`,
+            // which nothing invokes. Each failed only because its hardcoded
+            // path list named files deleted in the W1 Fairway consolidation
+            // (ffd0fd8ab) and the dead player-CoachHelm removal (a259fa296) —
+            // guard rot, not code drift. Lists repaired, both now green.
+            'scripts/__tests__/admin-tables-mobile.test.mjs',
+            'scripts/__tests__/no-arbitrary-text-px-fairway-pages.test.mjs',
           ],
           exclude: ['node_modules', '.next', 'archive'],
           // Generous on purpose: this project is I/O bound by design. The runner

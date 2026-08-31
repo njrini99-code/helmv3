@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
 | `PLAN` | 62 | 3 | 31 | 156 |
-| `AUDIT_SNAPSHOT` | 80 | 6 | 37 | 131 |
+| `AUDIT_SNAPSHOT` | 81 | 6 | 37 | 132 |
 | `STATE_SNAPSHOT` | 4 | 0 | 3 | 6 |
 | `HISTORY_LEDGER` | 22 | 0 | 2 | 16 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
@@ -58,7 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 3 | 1 |
 | `.claude/rules/database.md` | current | - | - | yes | 1 | 7 | - |
-| `.claude/rules/design-system.md` | current | - | - | yes | 2 | 6 | 1 |
+| `.claude/rules/design-system.md` | current | - | - | yes | 3 | 6 | 1 |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
@@ -431,6 +431,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/coach/INDEX.md` | current | - | - | - | 0 | 5 | - |
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/player/ERRORS.md` | current | - | - | - | 0 | 1 | - |
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/player/INDEX.md` | current | - | - | - | 0 | 5 | - |
+| `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 0 | 7 | 1 |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | 0 | 3 | - |
 | `docs/ui-audits/UI_AUDIT_2026-08-14.md` | current | - | - | yes | 0 | 2 | - |
 | `docs/ui-audits/UI_AUDIT_2026-08-15-PRE-DEPLOY-BASELINE.md` | current | - | - | - | 0 | 1 | 1 |
