@@ -313,14 +313,22 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
 
             set((s) => {
               s.isSyncing = false;
-              s.syncStatus = result.success ? 'success' : 'error';
+              // A DECLINED run leaves the status untouched. Marking it 'error'
+              // made the concurrency guard look like a failure and, through
+              // OfflineIndicator's `if (!isOnline || syncError) setOpen(true)`,
+              // forced a red toast over a player's scorecard mid-round.
+              s.syncStatus = result.declined
+                ? s.syncStatus
+                : result.success
+                  ? 'success'
+                  : 'error';
               s.showSyncProgress = false;
 
               if (result.success && (result.syncedRounds > 0 || result.syncedHoles > 0 || result.syncedShots > 0)) {
                 s.lastSuccessfulSync = new Date();
               }
 
-              if (!result.success && result.errors.length > 0) {
+              if (!result.success && !result.declined && result.errors.length > 0) {
                 s.syncError = result.errors[0] ?? null;
               }
             });
