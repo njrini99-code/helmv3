@@ -92,11 +92,62 @@ export interface PendingAttachment {
 }
 
 /**
+ * Extension -> mime, for the case where the browser reports NOTHING.
+ *
+ * iOS does this. Reproduced against production 2026-08-31 by dispatching the
+ * three shapes an iPhone actually hands back:
+ *
+ *   HEIC, type "image/heic"   -> accepted
+ *   HEIC, type ""             -> SILENTLY DROPPED
+ *   camera capture, type ""   -> SILENTLY DROPPED
+ *
+ * `ALLOWED_MIME_TYPES[""]` is undefined, so the file was rejected before any
+ * request was made — no preview, no error, no log. That is "we can't do
+ * pictures" on a phone, in one line, while the same photo attaches fine from a
+ * desktop because desktop browsers populate `type`.
+ *
+ * Only consulted when the browser gave us nothing usable; a reported type
+ * always wins. The extension is a weaker signal than a real mime type, which
+ * is why it is the fallback rather than the primary — and the Storage bucket
+ * re-checks `allowed_mime_types` server-side regardless, so a lie here cannot
+ * put an unsupported object in the bucket.
+ */
+const EXTENSION_MIME_FALLBACK: Record<string, string> = {
+  heic: 'image/heic',
+  heif: 'image/heif',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+  m4a: 'audio/m4a',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  pdf: 'application/pdf',
+};
+
+/**
+ * The effective mime type for a file: what the browser reported, or what its
+ * extension implies when the browser reported nothing we recognise.
+ */
+export function resolveFileMimeType(file: File): string {
+  if (file.type && ALLOWED_MIME_TYPES[file.type]) return file.type;
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  return EXTENSION_MIME_FALLBACK[ext] ?? file.type;
+}
+
+/**
  * Validate a file for upload
  */
 export function validateFile(file: File): { valid: boolean; error?: string } {
-  // Check mime type first to get the file category
-  const fileType = ALLOWED_MIME_TYPES[file.type];
+  // Check mime type first to get the file category. Falls back to the
+  // extension when the browser reported no usable type — see
+  // EXTENSION_MIME_FALLBACK: iOS reports "" for camera captures and some HEIC
+  // picks, and without this every one of those was dropped in silence.
+  const fileType = ALLOWED_MIME_TYPES[resolveFileMimeType(file)];
   if (!fileType) {
     return {
       valid: false,
@@ -213,11 +264,17 @@ export async function uploadAttachment(
   const storagePath = generateStoragePath(conversationId, messageId, file.name);
 
   // Get file metadata
-  const fileType = getFileType(file.type);
+  // One resolved type for the whole upload. Using `file.type` directly here
+  // would record an empty mimeType, categorise the file as a 'document', and —
+  // worse — let Supabase infer `application/octet-stream` for the object,
+  // which the bucket's `allowed_mime_types` does not permit. The photo would
+  // then fail at the Storage API even after passing validation.
+  const resolvedMimeType = resolveFileMimeType(file);
+  const fileType = getFileType(resolvedMimeType);
   const metadata: AttachmentMetadata = {
     fileName: file.name,
     fileType,
-    mimeType: file.type,
+    mimeType: resolvedMimeType,
     fileSize: file.size,
   };
 
@@ -253,6 +310,10 @@ export async function uploadAttachment(
     .upload(storagePath, file, {
       cacheControl: '3600',
       upsert: false,
+      // Explicit, because the SDK otherwise infers from `file.type` — blank on
+      // an iOS camera capture — and sends `application/octet-stream`, which
+      // this bucket's `allowed_mime_types` rejects.
+      contentType: resolvedMimeType,
     });
 
   if (uploadError) {
