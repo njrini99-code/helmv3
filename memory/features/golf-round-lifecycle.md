@@ -170,8 +170,10 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   TOWARD; it does not touch a single stroke. The lifecycle guard's blanket
   refusal has twice been over-broad for this reason — once for completed
   rounds (fixed 2026-08-24 after four Guilford players were stranded) and once
-  for unfinished ones (`20260830120000`, prepared). Immutability of SCORES is
-  the invariant; immutability of CLASSIFICATION never was.
+  for unfinished ones (`20260830120000`, APPLIED to production 2026-08-31,
+  recorded in `supabase_migrations.schema_migrations` alongside
+  `20260827060000`, which had also never been applied). Immutability of SCORES
+  is the invariant; immutability of CLASSIFICATION never was.
 - **`public.reclassify_golf_round` is the only sanctioned write path**, and it
   is a public API: SECURITY DEFINER, granted to `authenticated`, callable
   directly with any arguments by any signed-in user. Every rule that keeps a
@@ -202,6 +204,64 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   failed on the clash check with nothing on screen naming an available number.
   A control that can only offer a losing move reads as a broken feature, not
   as a validation.
+- **A coach entering a player IS part of changing the round type.** The
+  qualifier picker used to be built only from `golf_qualifier_entries`, so a
+  player with no entry row saw an EMPTY dropdown — and converting a practice
+  round into a qualifier round is precisely the case where no entry exists
+  yet. Measured 2026-08-31 on one production team, two players held six
+  practice rounds between them and zero entries, so the one operation their
+  coach was asking for was unreachable from the UI. A coach is now offered
+  every open qualifier of their team, and `updateRoundType` creates the entry
+  as part of the save (idempotent — `UNIQUE (qualifier_id, player_id)`).
+  A PLAYER is still offered only qualifiers they are already in, because RLS
+  INSERT on entries is coach-only and offering more would move the same dead
+  end one step later into a silent zero-row write.
+- **Scope the qualifier picker by the ROUND's team, never the viewer's.** They
+  are different questions and they diverge in production: the round detail page
+  grants coach access when the round's PLAYER is a member of the coach's
+  cookie-resolved team, while `reclassify_golf_round` gates the qualifier
+  against `golf_rounds.team_id`. Measured 2026-08-31: 12 rounds carry a
+  `team_id` that is not a membership of their own player, and 8 carry none at
+  all. Offering the viewer's team's qualifiers therefore lets a coach pick one
+  the write then refuses — after the player has been entered into it. Ask the
+  question the enforcement asks.
+- **Enter the player LAST, and take it back if the write is refused.** The
+  entry is created only after the qualifier, team, round-number and slot-clash
+  checks have all passed, immediately before the RPC, and is deleted again if
+  the RPC still refuses on a race. An entry with no round is not harmless: it
+  puts the player on the coach's leaderboard at zero, produced by a save that
+  reported failure.
+- **The empty state must name a dead end the READER can act on.** The previous
+  copy told whoever was looking that "a coach needs to add them to a qualifier
+  first" — while the coach was the one reading it. That is a loop, not an
+  explanation, and it is what the 2026-08-31 report described.
+- **An unfinished round has to be reachable to be re-typed.** The round detail
+  page redirected every `in_progress` round to the scoring screen before
+  access was even resolved, so the round-type editor did not exist for live
+  rounds on any surface. With the guard also refusing them, the operation was
+  blocked at both ends at once and fixing only the guard would have changed
+  nothing visible. A player still goes to scoring — they want to resume — but
+  a coach gets the detail page.
+- **Submission completes a re-typed round as if it had started that way.** The
+  submit path treats the PERSISTED round as authoritative for its qualifier
+  identity (`effectiveRoundType`/`effectiveQualifierId` are overwritten from
+  the stored row), so a round moved into a qualifier while in progress
+  validates, claims its slot, and refreshes the standings on completion. No
+  extra step is needed at completion time.
+- **Moving a round between qualifiers leaves stored totals stale unless they
+  are refreshed.** `get_qualifier_leaderboard` recomputes live from
+  `golf_rounds`, so a coach's leaderboard is always right; but
+  `golf_qualifier_entries` ALSO carries `score` / `total_score` /
+  `total_to_par` / `rounds_completed`, and `getPlayerQualifiers` renders the
+  player's own card from those. Submitting was the only thing that refreshed
+  them, which was sufficient only while a round's qualifier identity was fixed
+  at creation. `updateRoundType` now refreshes both sides of a move via
+  `updateQualifierEntryStats` (`src/lib/golf/qualifier-standings.ts`, shared
+  with the submit path). Do NOT reach for `public.update_qualifier_leaderboard`
+  for this: it computes the same thing but is not SECURITY DEFINER, so it
+  writes under the caller's RLS and a player-session call silently matches no
+  row — and measured 2026-08-31 nothing in the repo or the database called it,
+  no trigger being wired to it.
 
 ## UI Contract
 

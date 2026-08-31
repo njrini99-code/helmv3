@@ -59,6 +59,8 @@
  */
 
 import { revalidatePath } from 'next/cache';
+
+import { updateQualifierEntryStats } from '@/lib/golf/qualifier-standings';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
@@ -80,7 +82,7 @@ async function updateRoundTypeImpl(
   const { roundId, roundType } = input;
 
   if (!EDITABLE_ROUND_TYPES.includes(roundType)) {
-    return { success: false, error: 'That is not a round type you can change to.' };
+    return { success: false, error: "That isn't a round type you can change to." };
   }
 
   try {
@@ -107,7 +109,7 @@ async function updateRoundTypeImpl(
     if (!round) {
       // Covers both "no such round" and "RLS hid it" — deliberately the same
       // message, so this can't be used to probe which rounds exist.
-      return { success: false, error: 'Round not found.' };
+      return { success: false, error: 'That round could not be found.' };
     }
 
     if (round.round_type === roundType && !input.qualifierId) {
@@ -128,30 +130,45 @@ async function updateRoundTypeImpl(
       return { success: false, error: 'Could not verify your access to this round. Please try again.' };
     }
 
-    let permitted = Boolean(ownPlayer);
+    // Coach-of-this-team is needed twice: for permission, and again to decide
+    // whether a MISSING qualifier entry can be created rather than refused.
+    // Resolved at most once, and independently of `ownPlayer` — a coach who is
+    // also the player on the round is still a coach.
+    let teamCoachResolved = false;
+    let isTeamCoach = false;
+    const resolveTeamCoach = async (): Promise<string | null> => {
+      if (teamCoachResolved || !round.team_id) return null;
+      teamCoachResolved = true;
 
-    if (!permitted && round.team_id) {
       const { data: coachRow, error: coachRowError } = await supabase
         .from('golf_coaches')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
       if (coachRowError) {
-        return { success: false, error: 'Could not verify your access to this round. Please try again.' };
+        return 'Could not verify your access to this round. Please try again.';
       }
+      if (!coachRow) return null;
 
-      if (coachRow) {
-        const { data: staffRow, error: staffRowError } = await supabase
-          .from('golf_team_coach_staff')
-          .select('coach_id')
-          .eq('team_id', round.team_id)
-          .eq('coach_id', coachRow.id)
-          .maybeSingle();
-        if (staffRowError) {
-          return { success: false, error: 'Could not verify your access to this round. Please try again.' };
-        }
-        permitted = Boolean(staffRow);
+      const { data: staffRow, error: staffRowError } = await supabase
+        .from('golf_team_coach_staff')
+        .select('coach_id')
+        .eq('team_id', round.team_id)
+        .eq('coach_id', coachRow.id)
+        .maybeSingle();
+      if (staffRowError) {
+        return 'Could not verify your access to this round. Please try again.';
       }
+      isTeamCoach = Boolean(staffRow);
+      return null;
+    };
+
+    let permitted = Boolean(ownPlayer);
+
+    if (!permitted) {
+      const failure = await resolveTeamCoach();
+      if (failure) return { success: false, error: failure };
+      permitted = isTeamCoach;
     }
 
     if (!permitted) {
@@ -168,6 +185,9 @@ async function updateRoundTypeImpl(
       qualifier_round_number?: number | null;
     } = { round_type: roundType };
 
+    /** Set when the coach's save must also enter the player in the qualifier. */
+    let mustEnterPlayer = false;
+
     if (roundType === 'qualifier') {
       const qualifierId = input.qualifierId ?? round.qualifier_id;
       if (!qualifierId) {
@@ -179,7 +199,7 @@ async function updateRoundTypeImpl(
 
       const { data: qualifier, error: qualifierError } = await supabase
         .from('golf_qualifiers')
-        .select('id, status, num_rounds')
+        .select('id, status, num_rounds, team_id')
         .eq('id', qualifierId)
         .maybeSingle();
 
@@ -191,6 +211,19 @@ async function updateRoundTypeImpl(
       if (!qualifier) {
         return { success: false, error: 'That qualifier no longer exists.' };
       }
+      // The qualifier must belong to the ROUND's own team — the same gate the
+      // RPC applies, checked here so the refusal is a sentence and, more
+      // importantly, so it happens BEFORE any entry is created. The page
+      // scopes its picker by the round's team too; this is the server's copy
+      // of that rule, and it is the one that counts.
+      //
+      // Skipped when the round carries no team at all: production holds 8 such
+      // rounds and refusing them would be a regression, not a fix. The RPC
+      // makes the same exception.
+      if (round.team_id && qualifier.team_id && qualifier.team_id !== round.team_id) {
+        return { success: false, error: 'That qualifier belongs to a different team.' };
+      }
+
       if (qualifier.status === 'completed') {
         return {
           success: false,
@@ -209,8 +242,39 @@ async function updateRoundTypeImpl(
       if (entryError) {
         return { success: false, error: 'Could not check the qualifier entries. Please try again.' };
       }
+
+      // A missing entry used to end here. That refusal is the dead end behind
+      // the 2026-08-31 report: turning a practice round into a qualifier round
+      // is PRECISELY the case where no entry exists yet, so the one thing a
+      // coach wanted to do was the one thing the check forbade — and the
+      // message named the coach as the person who must fix it while the coach
+      // was the one reading it.
+      //
+      // The entry is not optional bookkeeping: `get_qualifier_leaderboard`
+      // reads FROM golf_qualifier_entries and LEFT JOINs the rounds, so a
+      // round attached without one is filed where the player appears nowhere.
+      // Creating it is what makes the reclassification mean anything.
+      //
+      // RLS INSERT on entries is coach-only, so this splits by role rather
+      // than pretending both can: a coach enters the player, a player is told
+      // who can.
+      //
+      // DECIDED here, WRITTEN below. Creating the entry up here would leave a
+      // stray one behind every time a later check refused the save — the
+      // player would then sit on the coach's leaderboard with zero rounds,
+      // produced by an action that reported failure.
       if (!entry) {
-        return { success: false, error: 'This player is not entered in that qualifier.' };
+        const failure = await resolveTeamCoach();
+        if (failure) return { success: false, error: failure };
+
+        if (!isTeamCoach) {
+          return {
+            success: false,
+            error:
+              'You are not in that qualifier yet. Ask your coach to add you to it, then change this round.',
+          };
+        }
+        mustEnterPlayer = true;
       }
 
       const roundNumber = input.qualifierRoundNumber ?? round.qualifier_round_number ?? 1;
@@ -290,6 +354,25 @@ async function updateRoundTypeImpl(
 
     const callReclassify = supabase.rpc as unknown as ReclassifyRpc;
 
+    // Every other check has passed, so this is the last thing that can be
+    // undone cheaply if the write itself refuses. Idempotent —
+    // `UNIQUE (qualifier_id, player_id)` plus ON CONFLICT DO NOTHING — so a
+    // concurrent save that entered the same player first is not an error.
+    if (mustEnterPlayer && update.qualifier_id) {
+      const { error: enterError } = await supabase
+        .from('golf_qualifier_entries')
+        .upsert(
+          { qualifier_id: update.qualifier_id, player_id: round.player_id },
+          { onConflict: 'qualifier_id,player_id', ignoreDuplicates: true },
+        );
+      if (enterError) {
+        return {
+          success: false,
+          error: 'Could not add this player to that qualifier. Please try again.',
+        };
+      }
+    }
+
     const { data: reclassifiedId, error: updateError } = await callReclassify(
       'reclassify_golf_round',
       {
@@ -306,6 +389,27 @@ async function updateRoundTypeImpl(
     }
 
     if (updateError) {
+      // The RPC still refused after every check passed, which means the world
+      // moved between our reads and the write. If this save is what entered
+      // the player, take that back: an entry with no round puts them on the
+      // coach's leaderboard at zero from a save that reported failure.
+      // Best-effort — a failed cleanup is logged, never surfaced on top of the
+      // refusal the coach actually needs to read.
+      if (mustEnterPlayer && update.qualifier_id) {
+        const { error: undoError } = await supabase
+          .from('golf_qualifier_entries')
+          .delete()
+          .eq('qualifier_id', update.qualifier_id)
+          .eq('player_id', round.player_id);
+        if (undoError) {
+          void logServerError(
+            `updateRoundType: could not undo the qualifier entry after a failed reclassify; ${round.player_id} may now sit in qualifier ${update.qualifier_id} with no rounds: ${describeError(undoError)}`,
+            { action: 'updateRoundType.undoEntry', featureArea: 'round_tracking', roundId },
+            'warning',
+          );
+        }
+      }
+
       // `golf_rounds` carries a BEFORE-UPDATE lifecycle guard
       // (helm_private.guard_golf_round_lifecycle) that rejects ANY update to a
       // completed round with SQLSTATE 55000. Reclassifying a round changes
@@ -364,10 +468,40 @@ async function updateRoundTypeImpl(
       };
     }
 
+    // Re-derive the standings for every qualifier this round just entered or
+    // left. `get_qualifier_leaderboard` recomputes live from golf_rounds, so
+    // the coach's leaderboard is already correct — but golf_qualifier_entries
+    // ALSO carries stored totals (score, total_score, total_to_par,
+    // rounds_completed) and `getPlayerQualifiers` renders the player's own
+    // card from those. Submitting a round was previously the only thing that
+    // refreshed them, which was correct while a round's qualifier identity was
+    // fixed at creation. Now that a round can MOVE, the totals on both sides
+    // of the move go stale, and the player's card would disagree with their
+    // coach's leaderboard.
+    //
+    // Best-effort on purpose: the round type is already saved, and failing the
+    // whole action over a secondary aggregate would be the worse trade. Same
+    // helper the submit path uses, so both routes converge on one definition.
+    const affectedQualifiers = Array.from(
+      new Set([update.qualifier_id ?? null, round.qualifier_id ?? null].filter(Boolean) as string[]),
+    );
+    for (const qid of affectedQualifiers) {
+      try {
+        await updateQualifierEntryStats(qid, round.player_id);
+      } catch (err) {
+        void logServerError(
+          `updateRoundType: standings refresh failed for qualifier ${qid}; the round type IS saved and the coach leaderboard recomputes live, but the player's stored totals are now stale: ${describeError(err)}`,
+          { action: 'updateRoundType.standings', featureArea: 'round_tracking', roundId },
+          'warning',
+        );
+      }
+    }
+
     revalidatePath(`/golf/dashboard/rounds/${roundId}`);
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/qualifiers');
     revalidatePath('/golf/dashboard/stats');
+    revalidatePath('/golf/dashboard/my-qualifiers');
 
     return { success: true };
   } catch (err) {

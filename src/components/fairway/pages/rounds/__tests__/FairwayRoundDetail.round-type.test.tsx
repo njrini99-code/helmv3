@@ -67,23 +67,23 @@ describe('FairwayRoundDetail — round type editor mounting', () => {
 
     // The literal ask: "can they edit on their end?" This is the assertion that
     // fails if the editor is ever gated back down to coaches only.
-    expect(screen.getByRole('button', { name: /change type/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /change round type/i })).toBeTruthy();
   });
 
   it('offers the control to a coach viewing a player\'s round', () => {
     renderDetail({ isCoach: true, viewerIsOwner: false });
-    expect(screen.getByRole('button', { name: /change type/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /change round type/i })).toBeTruthy();
   });
 
   it('renders nothing extra when the viewer may not retype the round', () => {
     renderDetail({ canChangeType: false });
-    expect(screen.queryByRole('button', { name: /change type/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /change round type/i })).toBeNull();
   });
 
   it('still shows the round type in the context line either way', () => {
     renderDetail();
     // The control sits next to the value it edits; if the masthead ever stops
-    // naming the type, "Change type" loses its referent.
+    // naming the type, "Change round type" loses its referent.
     expect(document.body.textContent).toMatch(/practice/i);
   });
 });

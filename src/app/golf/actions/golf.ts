@@ -38,6 +38,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { updateQualifierEntryStats } from '@/lib/golf/qualifier-standings';
 import { expectRows } from '@/lib/supabase/expect-rows';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
@@ -7539,62 +7540,6 @@ export async function getQualifierLeaderboard(
   qualifierId: string
 ): Promise<ActionResult<QualifierLeaderboardData>> {
   return observedGetQualifierLeaderboard(qualifierId);
-}
-
-/**
- * Update qualifier entry statistics after a round is submitted
- * This is called automatically after submitGolfRoundComprehensive
- */
-async function updateQualifierEntryStats(
-  qualifierId: string,
-  playerId: string
-): Promise<void> {
-  // Use one privileged client for both the source rounds and the aggregate
-  // write. A player is allowed to submit their own score, but never to update
-  // the coach-owned qualifier-entry aggregate directly. Most importantly,
-  // inspect every result: PostgREST can report a zero-row UPDATE with no
-  // error, which previously left production aggregates stale without a log.
-  const admin = createAdminClient();
-  const { data: rounds, error: roundsError } = await admin
-    .from('golf_rounds')
-    .select('total_score, score_to_par')
-    .eq('qualifier_id', qualifierId)
-    .eq('player_id', playerId)
-    .eq('status', 'completed');
-
-  if (roundsError) {
-    throw new Error(`Could not read completed qualifier rounds: ${roundsError.message}`);
-  }
-
-  // Filter out rounds with null total_score to avoid summing 0 in place of missing data
-  const scoredRounds = ((rounds ?? []) as Array<{
-    total_score: number | null;
-    score_to_par: number | null;
-  }>).filter((round): round is { total_score: number; score_to_par: number | null } => round.total_score != null);
-
-  const totalScore = scoredRounds.reduce((sum, round) => sum + round.total_score, 0);
-  const totalToPar = scoredRounds.reduce((sum, round) => sum + (round.score_to_par ?? 0), 0);
-  const roundsCompleted = scoredRounds.length;
-
-  const { data: updatedEntry, error: updateError } = await admin
-    .from('golf_qualifier_entries')
-    .update({
-      score: totalScore,
-      total_score: totalScore,
-      total_to_par: totalToPar,
-      rounds_completed: roundsCompleted,
-    })
-    .eq('qualifier_id', qualifierId)
-    .eq('player_id', playerId)
-    .select('id')
-    .maybeSingle();
-
-  if (updateError) {
-    throw new Error(`Could not update qualifier entry aggregate: ${updateError.message}`);
-  }
-  if (!updatedEntry) {
-    throw new Error('Qualifier entry aggregate update matched no row');
-  }
 }
 
 /**

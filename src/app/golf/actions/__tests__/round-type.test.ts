@@ -28,8 +28,15 @@ const state = {
     qualifier_round_number: null as number | null,
   } as Record<string, unknown> | null,
   ownPlayer: { id: 'player-1' } as { id: string } | null,
-  qualifier: { id: 'qual-1', status: 'in_progress', num_rounds: 3 } as Record<string, unknown> | null,
+  qualifier: { id: 'qual-1', status: 'in_progress', num_rounds: 3, team_id: 'team-1' } as Record<string, unknown> | null,
   entry: { id: 'entry-1' } as { id: string } | null,
+  /** Whether this user is a golf coach at all, and of THIS round's team. */
+  coachRow: null as { id: string } | null,
+  staffRow: null as { coach_id: string } | null,
+  /** What the action entered the player into, if anything. */
+  entered: null as Record<string, unknown> | null,
+  /** Set when the action deleted an entry it had just created. */
+  entryDeleted: false,
   clash: null as { id: string } | null,
   /** What the action actually wrote. The point of the whole file. */
   written: null as Record<string, unknown> | null,
@@ -64,9 +71,27 @@ function table(name: string) {
         return { data: state.qualifier, error: null };
       case 'golf_qualifier_entries':
         return { data: state.entry, error: null };
+      case 'golf_coaches':
+        return { data: state.coachRow, error: null };
+      case 'golf_team_coach_staff':
+        return { data: state.staffRow, error: null };
       default:
         return { data: null, error: null };
     }
+  });
+
+  chain.upsert = vi.fn(async (payload: Record<string, unknown>) => {
+    if (name === 'golf_qualifier_entries') state.entered = payload;
+    return { error: null };
+  });
+
+  chain.delete = vi.fn(() => {
+    if (name === 'golf_qualifier_entries') state.entryDeleted = true;
+    const d: Record<string, unknown> = {};
+    d.eq = vi.fn(() => d);
+    // Awaiting the builder is how the action consumes it.
+    (d as { then?: unknown }).then = (resolve: (v: unknown) => unknown) => resolve({ error: null });
+    return d;
   });
 
   chain.update = vi.fn((payload: Record<string, unknown>) => {
@@ -103,6 +128,12 @@ vi.mock('@/lib/supabase/server', () => ({
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
+// Refreshing the stored standings needs a service-role client. It is
+// best-effort in the action and irrelevant to what these tests assert.
+vi.mock('@/lib/golf/qualifier-standings', () => ({
+  updateQualifierEntryStats: vi.fn(async () => {}),
+}));
+
 const { updateRoundType } = await import('../round-type');
 
 beforeEach(() => {
@@ -117,7 +148,11 @@ beforeEach(() => {
     qualifier_round_number: null,
   };
   state.ownPlayer = { id: 'player-1' };
-  state.qualifier = { id: 'qual-1', status: 'in_progress', num_rounds: 3 };
+  state.qualifier = { id: 'qual-1', status: 'in_progress', num_rounds: 3, team_id: 'team-1' };
+  state.coachRow = null;
+  state.staffRow = null;
+  state.entered = null;
+  state.entryDeleted = false;
   state.entry = { id: 'entry-1' };
   state.clash = null;
   state.written = null;
@@ -183,7 +218,16 @@ describe('updateRoundType — guards', () => {
     expect(state.written).toBeNull();
   });
 
-  it('refuses a qualifier the player is not entered in', async () => {
+  // A missing entry is no longer a dead end for a coach — it is the ordinary
+  // shape of "turn this practice round into a qualifier round", because a
+  // player who has not played the qualifier yet has no entry row. The refusal
+  // that used to live here told the COACH that a coach had to fix it, which
+  // is the loop the 2026-08-31 report described.
+  //
+  // It stays a refusal for a player, because RLS INSERT on
+  // golf_qualifier_entries is coach-only: letting the action try would just
+  // move the same dead end one step later, into a silent zero-row write.
+  it('refuses a qualifier the player is not entered in — when a PLAYER asks', async () => {
     state.entry = null;
     const res = await updateRoundType({
       roundId: 'round-1',
@@ -191,8 +235,92 @@ describe('updateRoundType — guards', () => {
       qualifierId: 'qual-1',
     });
     expect(res.success).toBe(false);
-    expect(res.error).toMatch(/not entered/i);
+    expect(res.error).toMatch(/ask your coach/i);
     expect(state.written).toBeNull();
+    expect(state.entered).toBeNull();
+  });
+
+  it('ENTERS the player and proceeds when a COACH asks', async () => {
+    state.entry = null;
+    state.ownPlayer = null; // the coach is not the player
+    state.coachRow = { id: 'coach-1' };
+    state.staffRow = { coach_id: 'coach-1' };
+
+    const res = await updateRoundType({
+      roundId: 'round-1',
+      roundType: 'qualifier',
+      qualifierId: 'qual-1',
+      qualifierRoundNumber: 2,
+    });
+
+    expect(res.success).toBe(true);
+    // The entry is what makes the round appear in the standings at all:
+    // get_qualifier_leaderboard reads FROM golf_qualifier_entries and LEFT
+    // JOINs the rounds, so linking the round without one files it where the
+    // player is listed nowhere.
+    expect(state.entered).toEqual({ qualifier_id: 'qual-1', player_id: 'player-1' });
+    expect(state.written).toEqual({
+      round_type: 'qualifier',
+      qualifier_id: 'qual-1',
+      qualifier_round_number: 2,
+    });
+  });
+
+  // The page scopes its picker by the ROUND's team, but the picker is a
+  // convenience and this is the enforcement. Production holds 12 rounds whose
+  // team_id is not a membership of their own player, so the two can diverge.
+  it('refuses a qualifier belonging to a different team, and enters nobody', async () => {
+    state.entry = null;
+    state.ownPlayer = null;
+    state.coachRow = { id: 'coach-1' };
+    state.staffRow = { coach_id: 'coach-1' };
+    state.qualifier = { id: 'qual-1', status: 'in_progress', num_rounds: 3, team_id: 'other-team' };
+
+    const res = await updateRoundType({
+      roundId: 'round-1',
+      roundType: 'qualifier',
+      qualifierId: 'qual-1',
+    });
+
+    expect(res.success).toBe(false);
+    expect(res.error).toMatch(/different team/i);
+    expect(state.entered).toBeNull();
+    expect(state.written).toBeNull();
+  });
+
+  // An entry with no round puts the player on the coach's leaderboard at zero,
+  // produced by a save that reported failure.
+  it('undoes an entry it created when the write is then refused', async () => {
+    state.entry = null;
+    state.ownPlayer = null;
+    state.coachRow = { id: 'coach-1' };
+    state.staffRow = { coach_id: 'coach-1' };
+    state.updateError = { message: 'refused', code: '23505' } as { message: string };
+
+    const res = await updateRoundType({
+      roundId: 'round-1',
+      roundType: 'qualifier',
+      qualifierId: 'qual-1',
+    });
+
+    expect(res.success).toBe(false);
+    expect(state.entered).not.toBeNull();
+    expect(state.entryDeleted).toBe(true);
+  });
+
+  it('does not enter the player when one already exists', async () => {
+    state.ownPlayer = null;
+    state.coachRow = { id: 'coach-1' };
+    state.staffRow = { coach_id: 'coach-1' };
+
+    const res = await updateRoundType({
+      roundId: 'round-1',
+      roundType: 'qualifier',
+      qualifierId: 'qual-1',
+    });
+
+    expect(res.success).toBe(true);
+    expect(state.entered).toBeNull();
   });
 
   it('refuses a completed qualifier', async () => {

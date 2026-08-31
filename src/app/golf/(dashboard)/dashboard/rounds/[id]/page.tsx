@@ -115,11 +115,6 @@ export default async function RoundDetailPage({
     notFound();
   }
 
-  // Redirect to continue page if round is still in progress
-  if (round.status === 'in_progress') {
-    redirect(`/golf/dashboard/rounds/continue/${id}`);
-  }
-
   const roundData = {
     ...round,
     player: Array.isArray(round.player) ? round.player[0] : round.player,
@@ -160,6 +155,26 @@ export default async function RoundDetailPage({
     redirect('/golf/dashboard');
   }
 
+  // A player who opens their own unfinished round wants to RESUME it, so they
+  // still go to the scoring screen. A coach does not — they cannot play
+  // someone else's round, and sending them to live scoring was the only route
+  // this page offered them.
+  //
+  // That redirect used to run before access was resolved, which meant an
+  // in-progress round had no detail page for anyone, and therefore no
+  // round-type editor. Combined with the lifecycle guard refusing live rounds
+  // outright, "change this round to a qualifier round before it's submitted"
+  // was unreachable from both ends at once. The guard half is
+  // 20260830120000; this is the half above it.
+  //
+  // Submission then does the rest on its own: the submit path treats the
+  // PERSISTED round as authoritative for its qualifier identity, so a round
+  // re-typed while in progress completes exactly as if it had started that
+  // way, including the standings refresh.
+  if (round.status === 'in_progress' && !isCoach) {
+    redirect(`/golf/dashboard/rounds/continue/${id}`);
+  }
+
   // The owning player OR a coach of their team may retype the round. Deliberately
   // includes the player: the coach's question was "can they edit on their end?",
   // and `golf_rounds_update` (RLS) already permits the owning player to write
@@ -174,10 +189,18 @@ export default async function RoundDetailPage({
   // Generate (or fetch cached) AI round recap. Server action persists the
   // result on first call so subsequent visits are instant. Failure here
   // never blocks the page render — recap stays null.
+  //
+  // Skipped for a round still in progress. Those reach this page now (a coach
+  // opening a live round to change its type), and there is nothing to recap
+  // yet: the action would spend an LLM call on a partial scorecard and then
+  // fail to persist it anyway, because the lifecycle guard's `round_recap`
+  // branch only permits the write when the round is already completed.
   let aiRecap: string | null = null;
   try {
-    const result = await generateRoundRecap(id);
-    aiRecap = result.recap;
+    if (round.status === 'completed') {
+      const result = await generateRoundRecap(id);
+      aiRecap = result.recap;
+    }
   } catch (err) {
     if (process.env.NODE_ENV === 'development') {
       console.warn('[round-detail] recap generation failed:', err);
@@ -241,7 +264,12 @@ export default async function RoundDetailPage({
     name: string;
     numRounds: number;
     takenRoundNumbers: number[];
+    playerEntered: boolean;
   }> = [];
+  // An empty list has two very different causes, and saying "this team has no
+  // open qualifier" when the read simply failed is a confident false statement
+  // of exactly the kind this repo keeps recording.
+  let qualifierReadFailed = false;
   if (canChangeType && roundData.player_id) {
     const { data: entryRows, error: entriesError } = await supabase
       .from('golf_qualifier_entries')
@@ -256,23 +284,72 @@ export default async function RoundDetailPage({
       );
     }
 
-    qualifierOptions = (entryRows ?? [])
+    type QualifierRow = {
+      id: string;
+      name: string | null;
+      num_rounds: number | null;
+      status: string | null;
+    };
+
+    const entered = (entryRows ?? [])
       .map((row) => {
         const q = (row as { qualifier?: unknown }).qualifier;
-        return (Array.isArray(q) ? q[0] : q) as
-          | { id: string; name: string | null; num_rounds: number | null; status: string | null }
-          | null
-          | undefined;
+        return (Array.isArray(q) ? q[0] : q) as QualifierRow | null | undefined;
       })
-      .filter((q): q is { id: string; name: string | null; num_rounds: number | null; status: string | null } =>
-        Boolean(q && q.id && q.status !== 'completed'),
-      )
-      .map((q) => ({
-        id: q.id,
-        name: q.name ?? 'Qualifier',
-        numRounds: q.num_rounds ?? 1,
-        takenRoundNumbers: [] as number[],
-      }));
+      .filter((q): q is QualifierRow => Boolean(q && q.id && q.status !== 'completed'));
+
+    const enteredIds = new Set(entered.map((q) => q.id));
+
+    // A coach also gets the team's OTHER open qualifiers — the ones this
+    // player is not entered in yet.
+    //
+    // Without this, "change a practice round into a qualifier round" was
+    // impossible for exactly the players who most needed it: a player with no
+    // entry row saw an EMPTY dropdown and a message telling them a coach must
+    // add them — which the coach was already reading. Measured 2026-08-31 on
+    // one production team, two players held six practice rounds between them
+    // and zero qualifier entries.
+    //
+    // Coach-only because RLS INSERT on golf_qualifier_entries is coach-only:
+    // offering a player a qualifier they cannot be entered into would rebuild
+    // the same dead end one step further in. The action re-checks both the
+    // role and the team, and creates the entry on save.
+    let teamOpen: QualifierRow[] = [];
+    // Scoped by the ROUND's team, not the coach's cookie team. Those are not
+    // the same thing: coach access here is granted by the round's PLAYER being
+    // a member of the cookie team, while the RPC gates the qualifier against
+    // `golf_rounds.team_id`. Measured 2026-08-31, production holds 12 rounds
+    // whose `team_id` is not a membership of their own player, plus 8 with no
+    // team at all — so offering the cookie team's qualifiers would let a coach
+    // pick one the write then refuses, after the player had been entered into
+    // it. Ask the same question the enforcement asks.
+    const roundTeamId = (round as { team_id?: string | null }).team_id ?? null;
+    if (isCoach && roundTeamId) {
+      const { data: teamRows, error: teamQualError } = await supabase
+        .from('golf_qualifiers')
+        .select('id, name, num_rounds, status')
+        .eq('team_id', roundTeamId)
+        .neq('status', 'completed');
+
+      if (teamQualError) {
+        qualifierReadFailed = true;
+        void logServerError(
+          `[round detail] team qualifier read failed for round ${id}; the type editor will only offer qualifiers this player is already entered in: ${describeError(teamQualError)}`,
+          { action: 'roundDetail.teamQualifiers', featureArea: 'rounds' },
+          'warning',
+        );
+      }
+
+      teamOpen = ((teamRows ?? []) as QualifierRow[]).filter((q) => !enteredIds.has(q.id));
+    }
+
+    qualifierOptions = [...entered, ...teamOpen].map((q) => ({
+      id: q.id,
+      name: q.name ?? 'Qualifier',
+      numRounds: q.num_rounds ?? 1,
+      takenRoundNumbers: [] as number[],
+      playerEntered: enteredIds.has(q.id),
+    }));
 
     // Which slots this player's OTHER rounds already occupy.
     //
@@ -357,6 +434,8 @@ export default async function RoundDetailPage({
         currentQualifierId={roundData.qualifier_id}
         currentQualifierRoundNumber={roundData.qualifier_round_number}
         qualifierOptions={qualifierOptions}
+        viewerIsCoach={isCoach}
+        qualifierReadFailed={qualifierReadFailed}
       />
     </div>
   );
