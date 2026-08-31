@@ -50,6 +50,34 @@ export interface QualifierOption {
   name: string;
   /** How many rounds this qualifier is configured for. */
   numRounds: number;
+  /**
+   * Round numbers in this qualifier that ANOTHER of this player's rounds
+   * already holds. Excludes the round being edited, so a round already sitting
+   * in slot 2 does not see its own slot as taken.
+   *
+   * This is the field whose absence was the bug. The picker used to offer
+   * every number from 1 to `numRounds` and default to 1 — but a player fixing
+   * a mis-tapped round has usually already recorded the qualifier's earlier
+   * rounds, so slot 1 is exactly the one that is NOT free. The save then died
+   * on the server's clash check ("Round 1 of that qualifier is already taken")
+   * with no way to see which numbers were available, which is what "players
+   * still cannot edit round type" turned out to mean on 2026-08-30.
+   */
+  takenRoundNumbers?: number[];
+}
+
+/**
+ * Round numbers still free in a qualifier, in order.
+ *
+ * Exported for tests: the whole defect was an off-by-default here, and a rule
+ * this cheap to get wrong deserves a test that does not need a DOM.
+ */
+export function freeRoundNumbers(option: QualifierOption | undefined): number[] {
+  if (!option) return [];
+  const taken = new Set(option.takenRoundNumbers ?? []);
+  return Array.from({ length: Math.max(option.numRounds, 1) }, (_, i) => i + 1).filter(
+    (n) => !taken.has(n),
+  );
 }
 
 export interface RoundTypeEditorProps {
@@ -88,6 +116,25 @@ export function RoundTypeEditor({
 
   const needsQualifier = type === 'qualifier';
   const chosen = qualifierOptions.find((q) => q.id === qualifierId);
+  const free = freeRoundNumbers(chosen);
+  // A qualifier with every slot already filled by this player's other rounds
+  // is a dead end, and saying so here is the difference between an
+  // explanation and a failed save.
+  const noFreeSlots = Boolean(chosen) && free.length === 0;
+
+  // Keep the chosen number on a FREE slot. Without this the picker defaults to
+  // 1 — usually the one slot already taken — and every save fails on the
+  // server's clash check. Runs when the qualifier changes, not on every
+  // render, so a deliberate pick is never overridden.
+  const lastQualifierRef = React.useRef<string>(qualifierId);
+  React.useEffect(() => {
+    if (lastQualifierRef.current === qualifierId) return;
+    lastQualifierRef.current = qualifierId;
+    const nextFree = freeRoundNumbers(qualifierOptions.find((q) => q.id === qualifierId));
+    if (nextFree.length > 0 && !nextFree.includes(roundNumber)) {
+      setRoundNumber(nextFree[0]!);
+    }
+  }, [qualifierId, qualifierOptions, roundNumber]);
   const unchanged =
     type === currentType &&
     (!needsQualifier || (qualifierId === (currentQualifierId ?? '') && roundNumber === (currentQualifierRoundNumber ?? 1)));
@@ -184,10 +231,22 @@ export function RoundTypeEditor({
                 ))}
               </NativeSelect>
 
-              {chosen && chosen.numRounds > 1 && (
+              {noFreeSlots && (
+                <p className="font-fw-sans text-caption text-text-secondary">
+                  Every round of {chosen?.name} is already filled by another of this player&apos;s
+                  rounds, so this one can&apos;t be added to it. Re-type the round that&apos;s in the
+                  wrong slot first, or pick a different qualifier.
+                </p>
+              )}
+
+              {/* Rendered whenever a qualifier is chosen and something is free —
+                  including a single-round qualifier. It used to be hidden when
+                  numRounds === 1, which silently pinned the number to 1 and gave
+                  a player whose slot 1 was taken no control and no explanation. */}
+              {chosen && !noFreeSlots && (
                 <>
                   <label className="font-fw-sans text-caption text-text-tertiary" htmlFor="rt-num">
-                    Which round of it? (1–{chosen.numRounds})
+                    Which round of it? ({free.length} of {chosen.numRounds} still open)
                   </label>
                   <NativeSelect
                     id="rt-num"
@@ -199,11 +258,19 @@ export function RoundTypeEditor({
                       'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                     )}
                   >
-                    {Array.from({ length: chosen.numRounds }, (_, i) => i + 1).map((n) => (
-                      <option key={n} value={n}>
-                        Round {n}
-                      </option>
-                    ))}
+                    {Array.from({ length: chosen.numRounds }, (_, i) => i + 1).map((n) => {
+                      const taken = !free.includes(n);
+                      return (
+                        // Taken slots stay VISIBLE but unselectable: a player
+                        // looking for "round 3" needs to see that 1 and 2 exist
+                        // and why they are not on offer. Removing them entirely
+                        // would renumber the list and read as data loss.
+                        <option key={n} value={n} disabled={taken}>
+                          Round {n}
+                          {taken ? ' — already recorded' : ''}
+                        </option>
+                      );
+                    })}
                   </NativeSelect>
                 </>
               )}
@@ -224,7 +291,10 @@ export function RoundTypeEditor({
           variant="primary"
           size="sm"
           onClick={save}
-          disabled={busy || unchanged || (needsQualifier && !qualifierId)}
+          // `noFreeSlots` joins the list because the save is guaranteed to
+          // fail on the server's clash check — an enabled button that cannot
+          // succeed is how this bug reached players in the first place.
+          disabled={busy || unchanged || (needsQualifier && (!qualifierId || noFreeSlots))}
         >
           {busy ? 'Saving…' : 'Save'}
         </Button>

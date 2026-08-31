@@ -236,7 +236,12 @@ export default async function RoundDetailPage({
   // Degrades rather than throws: an empty list makes the editor say "not
   // entered in any open qualifier" instead of taking the whole page down, and
   // the practice/tournament choices still work without it.
-  let qualifierOptions: Array<{ id: string; name: string; numRounds: number }> = [];
+  let qualifierOptions: Array<{
+    id: string;
+    name: string;
+    numRounds: number;
+    takenRoundNumbers: number[];
+  }> = [];
   if (canChangeType && roundData.player_id) {
     const { data: entryRows, error: entriesError } = await supabase
       .from('golf_qualifier_entries')
@@ -262,7 +267,57 @@ export default async function RoundDetailPage({
       .filter((q): q is { id: string; name: string | null; num_rounds: number | null; status: string | null } =>
         Boolean(q && q.id && q.status !== 'completed'),
       )
-      .map((q) => ({ id: q.id, name: q.name ?? 'Qualifier', numRounds: q.num_rounds ?? 1 }));
+      .map((q) => ({
+        id: q.id,
+        name: q.name ?? 'Qualifier',
+        numRounds: q.num_rounds ?? 1,
+        takenRoundNumbers: [] as number[],
+      }));
+
+    // Which slots this player's OTHER rounds already occupy.
+    //
+    // Without this the editor offered every round number and defaulted to 1 —
+    // and a player fixing a mis-tapped round has usually already recorded the
+    // qualifier's earlier rounds, so 1 is precisely the slot that is not free.
+    // Every save then failed on the action's clash check with no way to see
+    // which numbers were available. That is the 2026-08-30 "players still
+    // cannot edit round type after the round" report: not a permission
+    // problem, a picker that could only offer a losing move.
+    //
+    // Excludes THIS round, so a round already sitting in slot 2 does not read
+    // its own slot as taken. Mirrors the action's clash query, including its
+    // `abandoned` exclusion.
+    if (qualifierOptions.length > 0) {
+      const { data: takenRows, error: takenError } = await supabase
+        .from('golf_rounds')
+        .select('qualifier_id, qualifier_round_number')
+        .eq('player_id', roundData.player_id)
+        .in('qualifier_id', qualifierOptions.map((q) => q.id))
+        .neq('status', 'abandoned')
+        .neq('id', id);
+
+      if (takenError) {
+        // Degrade to "nothing known taken" rather than dropping the editor:
+        // the action still refuses a real clash, so the worst case is the old
+        // behaviour (a save that fails with an explanation), not a bad write.
+        void logServerError(
+          `[round detail] taken qualifier slots read failed for round ${id}; the type editor may offer a slot that is already used: ${describeError(takenError)}`,
+          { action: 'roundDetail.takenSlots', featureArea: 'rounds' },
+          'warning',
+        );
+      }
+
+      const byQualifier = new Map<string, number[]>();
+      for (const row of takenRows ?? []) {
+        if (!row.qualifier_id || typeof row.qualifier_round_number !== 'number') continue;
+        const list = byQualifier.get(row.qualifier_id) ?? [];
+        list.push(row.qualifier_round_number);
+        byQualifier.set(row.qualifier_id, list);
+      }
+      for (const option of qualifierOptions) {
+        option.takenRoundNumbers = byQualifier.get(option.id) ?? [];
+      }
+    }
   }
 
   const reviewStats = (reviewRow?.round_stats ?? null) as
