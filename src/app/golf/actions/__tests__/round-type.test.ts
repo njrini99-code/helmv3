@@ -113,16 +113,32 @@ vi.mock('@/lib/supabase/server', () => ({
     // practice. Recorded into `state.written` in the same shape the direct
     // update used, so every assertion below still asserts the same thing:
     // what actually gets persisted.
-    rpc: vi.fn(async (fn: string, args: Record<string, unknown>) => {
-      if (fn !== 'reclassify_golf_round') return { data: null, error: null };
-      if (state.updateError) return { data: null, error: state.updateError };
-      state.written = {
-        round_type: args.p_round_type,
-        qualifier_id: args.p_qualifier_id,
-        qualifier_round_number: args.p_qualifier_round_number,
-      };
-      return { data: 'round-1', error: null };
-    }),
+    // Shaped like the REAL client on purpose. `SupabaseClient.rpc()` is
+    // literally `return this.rest.rpc(...)`, so a caller that detaches the
+    // method — `const f = supabase.rpc` — loses `this` and throws
+    // "Cannot read properties of undefined (reading 'rest')".
+    //
+    // A plain `vi.fn` cannot catch that: an arrow function ignores `this`, so
+    // the mock succeeded while production threw on every single save from
+    // 2026-08-23 to 2026-08-31. The mock was the reason a broken call site
+    // looked tested. `rest` holds the behaviour; `rpc` is a method-shorthand
+    // that must reach it through `this`.
+    rest: {
+      rpc: async (fn: string, args: Record<string, unknown>) => {
+        if (fn !== 'reclassify_golf_round') return { data: null, error: null };
+        if (state.updateError) return { data: null, error: state.updateError };
+        state.written = {
+          round_type: args.p_round_type,
+          qualifier_id: args.p_qualifier_id,
+          qualifier_round_number: args.p_qualifier_round_number,
+        };
+        return { data: 'round-1', error: null };
+      },
+    },
+    rpc(fn: string, args: Record<string, unknown>) {
+      return (this as { rest: { rpc: (f: string, a: Record<string, unknown>) => unknown } })
+        .rest.rpc(fn, args);
+    },
   })),
 }));
 
@@ -227,6 +243,27 @@ describe('updateRoundType — guards', () => {
   // It stays a refusal for a player, because RLS INSERT on
   // golf_qualifier_entries is coach-only: letting the action try would just
   // move the same dead end one step later, into a silent zero-row write.
+  // The bug a coach reported as "it says it cannot read", reproduced by
+  // clicking Save in production on 2026-08-31 — not by reading the code.
+  // Every save between 2026-08-23 and then failed this way, and Sentry saw
+  // nothing because the editor catches the rejection and renders err.message.
+  it('calls the RPC bound to its client — a detached rpc() throws on this.rest', async () => {
+    const res = await updateRoundType({
+      roundId: 'round-1',
+      roundType: 'qualifier',
+      qualifierId: 'qual-1',
+      qualifierRoundNumber: 2,
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.error).toBeUndefined();
+    expect(state.written).toEqual({
+      round_type: 'qualifier',
+      qualifier_id: 'qual-1',
+      qualifier_round_number: 2,
+    });
+  });
+
   it('refuses a qualifier the player is not entered in — when a PLAYER asks', async () => {
     state.entry = null;
     const res = await updateRoundType({

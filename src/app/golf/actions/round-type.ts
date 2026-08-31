@@ -361,7 +361,23 @@ async function updateRoundTypeImpl(
       error: { code?: string; message: string; hint?: string; details?: string } | null;
     }>;
 
-    const callReclassify = supabase.rpc as unknown as ReclassifyRpc;
+    // `.bind(supabase)` is load-bearing, not style. `SupabaseClient.rpc()` is
+    // `return this.rest.rpc(...)`, so a DETACHED reference loses `this` and
+    // every call throws:
+    //
+    //     TypeError: Cannot read properties of undefined (reading 'rest')
+    //
+    // That is not hypothetical. Without the bind, this line broke EVERY
+    // round-type save in production from 2026-08-23 (d21e59b58, which
+    // introduced the RPC call) until 2026-08-31, and it is what a coach
+    // reported as "it says it cannot read" — the client catches the rejection
+    // and renders `err.message` verbatim in the editor. Sentry never saw it,
+    // because nothing rethrows.
+    //
+    // Every other RPC cast in this repo already binds — admin-data.ts,
+    // rollup-a/b/c.ts, resolve-error.ts, triage.ts. This was the one that did
+    // not. Reproduced by clicking Save in production, not by reading the code.
+    const callReclassify = supabase.rpc.bind(supabase) as unknown as ReclassifyRpc;
 
     // Every other check has passed, so this is the last thing that can be
     // undone cheaply if the write itself refuses. Idempotent —
