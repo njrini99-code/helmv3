@@ -14,10 +14,10 @@
     "worktree_policy": "KEEP",
     "note": "Owned by a CONCURRENT session. This row was transcribed from observable state — PR OPEN, worktree checked out and in use — by the lifecycle session on 2026-08-30, NOT by its owner; the owning session should confirm or correct it. Recorded rather than left blank because leaving it blank is what let --retire park this exact checkout. Carries the qualifier-slot picker fix, a prepared-but-unapplied R3 migration (20260830120000), the unfinished-round reclassification defect, RPC integrity moved toward the database, and a separately identified coach/unfinished-round navigation defect. Those facts must reach feature memory and the incident system when it lands; they must not survive only in the PR description."
   },
-  "1694": {
+  "1695": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Opened 2026-08-30 from the canonical checkout. Repo wiring audit: promotes two guard tests that executed never (node:test files, and nothing runs node --test), deletes three whose subjects were deleted or rewritten, repairs a fourth so its failure reports real drift instead of phantom files, and wires lint:duplicate-exports — a ratchet with a committed baseline that no CI job ran. No production state, no migration. Canonical checkout — nothing to park. Also clears #1693's transitional row."
+    "note": "Opened 2026-08-30 from the canonical checkout. Fixes the worktree lifecycle tool substituting a fabricated {lookup:'OK', state:'NONE'} for the canonical checkout's PR lookup — 'checked, no PR' asserted where nothing was checked, which made canonical's own branch classify UNKNOWN_PR even with an OPEN PR. Fail-safe throughout, so nothing was lost; the defect is an invented fact in the evidence layer. Also gives the fixture harness an identity stub, without which every canonical-only branch of the tool was untestable. No production state. Canonical checkout — nothing to park. Clears #1694's transitional row."
   },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
