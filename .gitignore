@@ -263,3 +263,19 @@ __pycache__/
 # committed), and screenshots of auth flows are risky to publish.
 .momentic-mcp/
 tests/**/.momentic-mcp/
+
+# Extracted from PR #1638 (closed as superseded 2026-08-29) — the one piece of
+# it that is still true. The rest of that PR described a lifecycle that no
+# longer exists (it predates PARK vs RETIRE, the branch classifier, the
+# enforcement inventory and the tool authority matrix) and flipped
+# autoMemoryEnabled to true, which this project deliberately sets false.
+#
+# graphify knowledge-graph output. `graphify-out/graph.json` is the single
+# largest object in this repo's history at 53.5 MiB (git-sizer, 2026-08-27,
+# flagged at its highest concern level). It is not tracked today but was not
+# ignored either, so nothing prevented it being committed again.
+graphify-out/
+
+# Staging snapshot from the OS backfill. Its incident-mining JSON accounts for
+# ~8.6 MiB of blobs in history and nothing prevented it recurring.
+_staging-snapshot/

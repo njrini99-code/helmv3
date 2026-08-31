@@ -74,6 +74,78 @@ const IDENT_RE = /\b((?:golf|baseball)_[a-z0-9_]{3,})\b/g;
  */
 const isStub = (n) => n.endsWith('_');
 
+/**
+ * SEMANTIC FEATURE IDS ARE A DIFFERENT NAMESPACE.
+ *
+ * `memory/registry.yml` keys are snake_case and several carry a sport prefix —
+ * `golf_round_lifecycle`, `baseball_core`. They match IDENT_RE exactly, and
+ * they are not database objects and never will be. Any doc that discusses
+ * feature routing has to name one, and until 2026-08-30 doing so in a `.md`
+ * file under `memory/` failed this gate as a phantom table.
+ *
+ * The exclusion is DECLARED, not pattern-matched: only keys actually present
+ * under `features:` in the registry are exempt, so a genuinely misspelled
+ * table name is still caught. A name that is BOTH a registry key and a real
+ * schema object is unaffected — it resolves against the schema first.
+ *
+ * Parsed with a line regex rather than a YAML dependency to keep this script
+ * standalone, which is a property the file's header already relies on.
+ */
+async function loadFeatureIds() {
+  try {
+    const raw = await readFile(join(ROOT, 'memory/registry.yml'), 'utf8');
+    const start = raw.indexOf('\nfeatures:');
+    if (start === -1) return new Set();
+    return new Set(
+      [...raw.slice(start).matchAll(/^ {2}([a-z][a-z0-9_]*):$/gm)].map((m) => m[1]),
+    );
+  } catch {
+    // Unreadable registry means no exemptions, which fails toward reporting
+    // rather than toward silence.
+    return new Set();
+  }
+}
+
+/**
+ * A DOCUMENT THAT NAMES AN OBJECT BECAUSE IT IS ABSENT.
+ *
+ * This gate exists because a doc naming a table that does not exist produces
+ * confident, well-formatted broken code. An incident record does the opposite:
+ * its whole subject can BE the absence — INC-2026-08-30 documents that
+ * `golf_player_anonymize_on_unlink` is missing from production and that
+ * `golf_players_user_id_fkey` is still ON DELETE CASCADE, and a reader who
+ * removed those names would delete the finding.
+ *
+ * Baselining them would be wrong twice over: the baseline is for known-bad
+ * references that should shrink, and these are neither bad nor going away until
+ * the migration is applied. So the exemption is DECLARED IN THE DOCUMENT, per
+ * identifier, and printed on every run:
+ *
+ *     <!-- schema-drift-absent: name_one, name_two -->
+ *
+ * It exempts only those names, only in that file. Anything else in the same
+ * document is still checked, so a genuine typo two lines away is still caught.
+ */
+const ABSENT_RE = /<!--\s*schema-drift-absent:\s*([^>]*?)\s*-->/g;
+
+async function loadDeclaredAbsent(files) {
+  const declared = new Map();
+  for (const f of files) {
+    let raw;
+    try {
+      raw = await readFile(join(ROOT, f), 'utf8');
+    } catch {
+      continue;
+    }
+    for (const m of raw.matchAll(ABSENT_RE)) {
+      for (const name of m[1].split(',').map((x) => x.trim()).filter(Boolean)) {
+        declared.set(name, [...(declared.get(name) ?? []), f]);
+      }
+    }
+  }
+  return declared;
+}
+
 // ---------------------------------------------------------------------------
 // Schema surface
 // ---------------------------------------------------------------------------
@@ -191,8 +263,26 @@ async function main() {
 
   const { parts, all } = await loadSchema();
   const docs = await scanDocs();
+  const featureIds = await loadFeatureIds();
 
-  const unknown = [...docs.keys()].filter((n) => !all.has(n)).sort();
+  // Declared-absent names are exempt only in the file that declares them, so a
+  // phantom cannot hide behind another document's declaration.
+  const declaredAbsent = await loadDeclaredAbsent(
+    [...new Set([...docs.values()].flatMap((set) => [...set]))],
+  );
+  const isDeclaredAbsentEverywhere = (n) => {
+    const where = declaredAbsent.get(n);
+    if (!where) return false;
+    return [...docs.get(n)].every((f) => where.includes(f));
+  };
+
+  const exempt = [...docs.keys()].filter((n) => !all.has(n) && featureIds.has(n)).sort();
+  const absent = [...docs.keys()]
+    .filter((n) => !all.has(n) && !featureIds.has(n) && isDeclaredAbsentEverywhere(n))
+    .sort();
+  const unknown = [...docs.keys()]
+    .filter((n) => !all.has(n) && !featureIds.has(n) && !isDeclaredAbsentEverywhere(n))
+    .sort();
 
   if (update) {
     await writeFile(
@@ -231,6 +321,22 @@ async function main() {
     `Docs reference ${docs.size} golf_*/baseball_* identifiers; ` +
       `${unknown.length} not in the schema (baseline ${baseline.total}).`
   );
+  if (exempt.length) {
+    // Printed, never silent: an exemption that nobody can see is how a real
+    // phantom eventually hides behind a registry key.
+    console.log(
+      `${exempt.length} excluded as declared memory/registry.yml feature id(s), ` +
+        `not database objects: ${exempt.join(', ')}`
+    );
+  }
+
+  if (absent.length) {
+    // Printed, never silent — same rule as the registry-key exemption above.
+    console.log(
+      `${absent.length} excluded as DECLARED ABSENT — documented because they do ` +
+        `not exist: ${absent.join(', ')}`
+    );
+  }
 
   let failed = false;
 

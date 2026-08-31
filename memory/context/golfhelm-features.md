@@ -1,3 +1,27 @@
+<!--
+STATUS: HISTORICAL — superseded by memory/features/*.md
+DATE: 2026-08-30
+KEPT FOR HISTORY -- do not delete this file.
+-->
+
+> **HISTORICAL. Not the current state of any feature.**
+>
+> This is the Gen-1 golf knowledge base. Every feature it covers now has a
+> current-state doc under `memory/features/`, and as of 2026-08-30
+> `memory/registry.yml` routes to those and no longer routes anything here —
+> `recruiting` was the last, and it pointed at this file while this file
+> contains no recruiting section at all.
+>
+> Read it for how a surface was described in mid-2026, not for how it behaves
+> now. Names in particular were never authoritative here: the split that created
+> the second generation did not create a check, it doubled the surface —
+> `features/calendar-events.md` reproduced all ten of this document's
+> non-existent tables rather than re-verifying them. Take table, column and enum
+> names from `memory/glossary.md`'s AUTOGEN blocks or
+> `src/lib/types/database.ts`.
+>
+> Where to go instead: `memory/registry.yml` → the mapped `memory/features/*.md`.
+
 # GolfHelm Feature Registry
 
 <!-- schema-drift-banner -->

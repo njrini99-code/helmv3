@@ -46,16 +46,10 @@ const BADGE_FILE = join(REPO_ROOT, 'src', 'components', 'ui', 'badge.tsx');
 const MIGRATED_PILLS = [
   'src/components/ui/status-pill.tsx',
   'src/components/golf/calendar/StatusBadge.tsx',
-  'src/components/golf/roster/YearBadge.tsx',
-  'src/components/golf/roster/PlayerStatusBadge.tsx',
-  'src/components/golf/tasks/ReminderBadge.tsx',
   'src/components/baseball/tasks/ReminderBadge.tsx',
   'src/components/golf/coachhelm/insight-card/MovementPill.tsx',
-  'src/components/golf/coachhelm/alerts/AlertBadge.tsx',
-  'src/components/golf/calendar/editorial/EventChip.tsx',
   'src/app/golf/admin/crm/components/badges/EngagementBadge.tsx',
   'src/app/golf/admin/crm/components/EmailStatusBadge.tsx',
-  'src/components/baseball/recruiting-philosophy/MatchScoreBadge.tsx',
 ];
 
 /**
@@ -87,16 +81,6 @@ const RICHER_TREATMENT_ALLOWLIST = [
     reason:
       'Both variants are interactive Button primitives (nav-rail item + clickable ' +
       'filter chip), not a hand-rolled colored pill span.',
-  },
-  {
-    file: 'src/components/golf/coachhelm/v3/IntentPill/index.tsx',
-    reason:
-      'Color is lib-owned (NARRATIVE_GOAL_PRESENTATION.pillClass, shared with ' +
-      'IntentDrawer) — IntentPill does not hand-roll colors. It keeps raw ' +
-      'template-string class composition because its custom text-eyebrow size + ' +
-      'pillClass text-<hue> color do not collide under raw concat, whereas the ' +
-      'tests render path asserts text-eyebrow survives. (Migrating it gains no ' +
-      'color fidelity and risks the existing IntentPill size test.)',
   },
 ];
 

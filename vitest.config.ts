@@ -95,21 +95,27 @@ export default defineConfig({
             // Named explicitly (not a `scripts/**/*.test.mjs` glob) so that
             // `node --test` files are never swept in.
             //
-            // COUNT CORRECTED 2026-08-20. This comment used to say "the other
-            // 46 files in scripts/__tests__/ … are NOT wired into any CI job",
-            // which was true when written and badly stale by the time anyone
-            // read it: 32 have since been promoted below. Of 51 files under
-            // scripts/__tests__/, 32 now run under vitest and 19 still run
-            // nowhere. Nothing references `node --test` — not a single npm
-            // script, not a single workflow — so an unpromoted file executes
-            // never, silently, and its guard is decorative.
+            // Nothing references `node --test` — not a single npm script, not
+            // a single workflow — so a file under scripts/__tests__/ that is
+            // NOT listed below executes never, silently, and its guard is
+            // decorative. That is the fact worth knowing here.
             //
-            // If you promote or drop one, fix this count. A stale number here
-            // is how "46 dead tests" became folklore while the real figure
-            // moved by 24.
+            // THE COUNT THAT USED TO LIVE HERE IS GONE, on purpose. It was
+            // hand-maintained, it carried an instruction to update it by hand,
+            // and it rotted anyway — twice. It first read "46 files … not
+            // wired into any CI job", was corrected 2026-08-20 to "of 51
+            // files, 32 run under vitest and 19 run nowhere", and by
+            // 2026-08-29 one of those files had been dropped without the
+            // number moving. Measured that day: 50 files, 31 promoted.
+            //
+            // A number you must remember to change is a number that will be
+            // wrong, and a wrong number here reads as current forever. Count
+            // it when you need it:
+            //
+            //   /bin/ls scripts/__tests__/ | grep -cE '\.(test|spec)\.(mjs|ts)$'
+            //   grep -cE "^\s*'scripts/__tests__/" vitest.config.ts
             // Only the #516 secrets guard is promoted to vitest
             // here, since it previously never ran under any mechanism at all.
-            'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
             // Named explicitly for the same reason. Guards extractEnums() in
             // regen-docs.mjs, which rendered "**6 enums**" into memory/glossary.md
             // for ~6 months while the schema had 18 — under a
@@ -127,7 +133,6 @@ export default defineConfig({
             // unconsolidated badges): they encode real drift that accumulated
             // while they sat unrun, and wiring them would turn main red, so
             // they stay out until someone fixes the underlying violations.
-            'scripts/__tests__/seed-recruiting-invariant.test.mjs',
             'scripts/__tests__/seed-baseball-stats.safety.test.mjs',
             'scripts/__tests__/baseball-demo-seed-surfaces.test.mjs',
             // Named explicitly for the same reason as the line above (no
@@ -150,7 +155,6 @@ export default defineConfig({
             // what they protect — a script that creates auth users and deletes
             // rows against a live project — is exactly the kind of thing that
             // must not be guarded by a test nobody executes.
-            'scripts/__tests__/baseball-demo-seed-contract.test.mjs',
             'scripts/__tests__/verify-baseball-demo-coverage-honesty.test.ts',
             // The mobile touch-target / safe-area guard. Promoted for the same
             // reason as its neighbours, with a sharper illustration of the cost:
@@ -174,7 +178,6 @@ export default defineConfig({
             // icon-only vs icon+text, and an end-to-end flag-one/pass-one) mean a
             // green run here is evidence the detector works, not just that it
             // found nothing.
-            'scripts/__tests__/icon-only-button-aria-label.test.mjs',
             // Guards the accessible-name derivation inside ui-audit-golf.mjs's
             // PROBE. It has to fail in BOTH directions: too permissive loses the
             // real /documents dead end, too strict resurrects the 18 phantom
@@ -190,11 +193,9 @@ export default defineConfig({
             // Merge-artifact guard for baseball server actions: duplicated
             // top-level return keys, dead consecutive duplicate returns,
             // stale "types will be regenerated" comments.
-            'scripts/__tests__/baseball-action-integrity.test.mjs',
             // Blocks reintroduction of the retired
             // /baseball/dashboard/stats/games/new href now that middleware
             // redirects it to /stats/games/create.
-            'scripts/__tests__/baseball-stale-route-links.test.mjs',
             // Wave W7A nav primitives: <Breadcrumb>/<SecondaryNav> stay the
             // canonical deep-route wayfinding surfaces.
             'scripts/__tests__/breadcrumb-nav.test.mjs',
@@ -234,19 +235,14 @@ export default defineConfig({
             'scripts/__tests__/no-bare-empty-text.test.mjs',
             // Wave W2B card consolidation: GlassCard/GlassStatCard/
             // PremiumGlassCard stay deleted and unimported.
-            'scripts/__tests__/no-glasscard-imports.test.mjs',
             // The golf /stats surface stays bound to the canonical v3
             // motion library — no legacy IOS_EASE or ad-hoc springs.
-            'scripts/__tests__/no-ios-ease-stats.test.mjs',
             // Wave W2C skeleton consolidation: the three legacy skeleton
             // modules stay deleted and unimported.
-            'scripts/__tests__/no-legacy-skeleton-imports.test.mjs',
             // The 2026-05-28 `s/translate/tranwarm/g` typo-squat class
             // never reappears (it silently killed 203 Tailwind utilities).
-            'scripts/__tests__/no-tranwarm-typo.test.mjs',
             // Wave W2F: hand-rolled Dropdown/Toast primitives stay retired
             // in favor of Radix DropdownMenu + Sonner.
-            'scripts/__tests__/radix-dropdown-sonner.test.mjs',
             // Smoke test for the Review Gate ast-grep rule pack (bare table
             // names, process.env in edge functions, service-role leaks)
             // against real src/ plus the synthetic positive fixture.
@@ -258,6 +254,9 @@ export default defineConfig({
             // tokens.css and globals.css never redeclare the same CSS
             // custom property inside :root (the W0 silent-override class).
             'scripts/__tests__/token-files-no-conflict.test.mjs',
+            // The unit project's own timeout, and the removal of the
+            // hand-maintained count above, must not silently revert.
+            'scripts/__tests__/vitest-sweep-timeout.test.mjs',
           ],
           exclude: [
             'node_modules',
@@ -268,6 +267,83 @@ export default defineConfig({
             'src/**/*.contract.test.{ts,tsx}',
             'src/**/*-contract.test.{ts,tsx}',
           ],
+          // Vitest's default is 5_000ms, and that default is wrong for what
+          // this project actually contains. Alongside ordinary unit tests, the
+          // `scripts/__tests__/*.test.mjs` guards listed above are repo
+          // sweeps: eleven of them each walk every .ts/.tsx file under src/
+          // — 4,066 files on 2026-08-29 — reading each one sequentially and
+          // running regexes over it. That is roughly 45,000 sequential reads
+          // per shard. They are lint passes wearing a unit test's costume, and
+          // 5s bounds MACHINE LOAD, not the property they assert.
+          //
+          // It has already fired twice in two days, both on GitHub's 2-core
+          // runners, and once on main:
+          //
+          //   2026-08-28  main, run 33189072611  icon-only-button-aria-label
+          //   2026-08-29  PR #1670,  run 33260843017   no-glasscard-imports
+          //
+          // Proven non-deterministic rather than assumed: #1670's shard was
+          // re-run at the IDENTICAL sha and went green. Locally the same
+          // `test:run --shard=1/3` finishes 424 files in 71s against CI's
+          // 264s, so this machine cannot reproduce it — the bound is the
+          // runner's, and a local green is not evidence either way.
+          //
+          // 30_000 matches integration/rls/business, which already carry it.
+          // The cost accepted: a genuinely hung unit test now reports after
+          // 30s instead of 5s, inside a shard that already runs 264s.
+          //
+          // WHAT THIS DOES NOT FIX. A timeout is UNKNOWN, and vitest reports
+          // it as a failed assertion — CI prints red against "no imports of
+          // GlassCard … remain in src" when the guard never finished asking,
+          // so a reader concludes a banned import exists. Raising the bound
+          // makes that rarer. It does not make it distinguishable. Reading
+          // the 45,000 files concurrently is the actual fix; moving these
+          // guards out of vitest, so a non-completion can report "guard did
+          // not run", is the only thing that would separate the two states.
+          testTimeout: 30_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          ...sharedTestConfig,
+          // REPO-WIDE STATIC GUARDS, split out of `unit` on 2026-08-29.
+          //
+          // These walk thousands of files. Inside `unit` a slow runner turned a
+          // sweep into a TIMEOUT, and vitest reports a timeout exactly the way
+          // it reports a failed assertion — so CI printed red against
+          // "no imports of GlassCard ... remain in src" when the guard had never
+          // finished asking. #1672 widened the bound, and its own PR said that
+          // makes the lie RARER, not distinguishable.
+          //
+          // They live here so `scripts/repo-guards.mjs` can run them alone and
+          // interpret WHY each one failed. Do not add ordinary unit tests here.
+          environment: 'node' as const,
+          name: 'guards',
+          include: [
+            'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
+            'scripts/__tests__/seed-recruiting-invariant.test.mjs',
+            'scripts/__tests__/baseball-demo-seed-contract.test.mjs',
+            'scripts/__tests__/icon-only-button-aria-label.test.mjs',
+            'scripts/__tests__/baseball-action-integrity.test.mjs',
+            'scripts/__tests__/baseball-stale-route-links.test.mjs',
+            'scripts/__tests__/no-glasscard-imports.test.mjs',
+            'scripts/__tests__/no-ios-ease-stats.test.mjs',
+            'scripts/__tests__/no-legacy-skeleton-imports.test.mjs',
+            'scripts/__tests__/no-tranwarm-typo.test.mjs',
+            'scripts/__tests__/radix-dropdown-sonner.test.mjs',
+            // Promoted 2026-08-30. Both previously ran under `node --test`,
+            // which nothing invokes. Each failed only because its hardcoded
+            // path list named files deleted in the W1 Fairway consolidation
+            // (ffd0fd8ab) and the dead player-CoachHelm removal (a259fa296) —
+            // guard rot, not code drift. Lists repaired, both now green.
+            'scripts/__tests__/admin-tables-mobile.test.mjs',
+            'scripts/__tests__/no-arbitrary-text-px-fairway-pages.test.mjs',
+          ],
+          exclude: ['node_modules', '.next', 'archive'],
+          // Generous on purpose: this project is I/O bound by design. The runner
+          // no longer depends on the bound being right, only on it being rare.
+          testTimeout: 120_000,
         },
       },
       {

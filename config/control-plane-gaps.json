@@ -1,0 +1,83 @@
+{
+  "$comment": [
+    "ACKNOWLEDGED GAPS. An acknowledged gap is not an unknown.",
+    "",
+    "  UNKNOWN            we could not establish the state -> exit 2",
+    "  ACKNOWLEDGED_GAP   we established it, it is bad, and someone owns it -> exit 0",
+    "",
+    "The difference is that a gap has a name, an owner, a reason and a date.",
+    "Nothing may be listed here to make a red verifier green: the entry must",
+    "describe a real decision, and the verifier still PRINTS every gap on every",
+    "run so they cannot fade into the background.",
+    "",
+    "Removing a gap is how it gets fixed. Adding one is a decision, not a repair."
+  ],
+  "gaps": [
+    {
+      "id": "SUPABASE_ARBITRARY_SQL_UNENFORCED",
+      "owner": "founder",
+      "opened": "2026-08-29",
+      "scope": "mcp__claude_ai_Supabase__execute_sql",
+      "reason": "The sanctioned project-scoped path (mcp__supabase__*) is not connected — its OAuth flow has not been completed. Until it is, the account-scoped connector is the ONLY working Supabase query path, and it carries no read_only enforcement: a DELETE reaches production and nothing intercepts it. Denying it would remove the capability without making anything safe, and #1671 is the story of a document killing a working path. Retained deliberately as TEMPORARY_FALLBACK and named UNENFORCED rather than called safe.",
+      "closes_when": "mcp__supabase__* is connected and exercised, after which this grant is removed."
+    },
+    {
+      "id": "SANDBOX_FILESYSTEM_DISABLED",
+      "owner": "founder",
+      "opened": "2026-08-29",
+      "scope": "~/.claude/settings.json sandbox.filesystem",
+      "reason": "Measured 2026-08-29 with ten disposable probes: filesystem sandboxing is NOT enforced. Writes inside the project, writes outside it, writes to .claude/settings.json and .claude/hooks, reads of .env.local, and ../ traversal all SUCCEEDED — including paths the config lists under denyRead and denyWithinAllow. sandbox.filesystem.disabled is true and authoritative. Network sandboxing IS enforced (observed: deny network-outbound analytics.brew.sh:443). Enabling it was NOT done: the configured allowWrite list covers only /private/tmp/helmv3-*, /tmp/helmv3-*, ~/.npm and ~/Library/Caches/deno — not the repository — so flipping it as configured would block every worktree write, and the setting is user-global so it would do that to every project and any concurrent session. Consequence accepted: Bash writes into the canonical checkout remain structurally unblocked; guard-canonical-write.mjs covers only Write/Edit/MultiEdit.",
+      "closes_when": "an allowWrite set is designed that permits worktrees and denies canonical, and its behaviour is proven on a disposable profile before being applied user-globally."
+    },
+    {
+      "id": "SUPABASE_MIGRATION_GRANT_VS_READ_SCOPES",
+      "owner": "founder",
+      "opened": "2026-08-29",
+      "scope": "mcp__supabase__apply_migration",
+      "reason": "The owner authorization for applying production migrations through the project-scoped MCP is explicit and repeated. But that server's OAuth grant requests ONLY :read scopes — organizations, projects, database, analytics, secrets, edge_functions, environment, storage. A token minted under those scopes structurally cannot write, so the authorized capability probably cannot function as granted. This is surfaced rather than resolved: confirming it means attempting a production migration, which this run is not authorized to do and should not do to answer a documentation question.",
+      "closes_when": "the owner either completes the OAuth flow and observes what apply_migration actually does, or moves migrations to a path whose capability matches the authorization."
+    },
+    {
+      "id": "MAIN_ADMIN_BYPASS_AVAILABLE",
+      "owner": "founder",
+      "opened": "2026-08-30",
+      "scope": "GitHub branch protection on main — enforce_admins",
+      "reason": "main is protected and requires six status contexts, but classic branch protection reports enforce_admins.enabled=false, so a repository administrator — which is what ordinary agent credentials are here — can push straight past the pull-request requirement AND the required checks. It is not hypothetical: on 2026-08-30 two commits reached main that way, each printing 'Bypassed rule violations for refs/heads/main'. Both were green on all six required contexts afterwards, so the state of main was never harmed; the defect is that the bypass is STANDING rather than break-glass, and that nothing noticed it either time. Registered rather than fixed from here because branch protection is repository settings, not repository content: no agent credential should be able to relax its own gate, and an agent that could would not be a gate.",
+      "closes_when": "the owner turns on 'Include administrators' / 'Do not allow bypassing the above settings' for main in GitHub settings, and github/main-branch-protection observes enforce_admins.enabled=true with the three aggregate contexts still required and no ruleset bypass actors. Emergency access is then break-glass: relax, act, restore — never a standing grant."
+    },
+    {
+      "id": "MIGRATIONS_REPO_PRODUCTION_LEDGER_DIVERGENCE",
+      "owner": "founder",
+      "opened": "2026-08-30",
+      "scope": "supabase/migrations/** vs supabase_migrations.schema_migrations on the production project",
+      "reason": "Production's migration ledger records 846 versions; the repository tracks 337 migration files. 240 of those versions predate the repo's earliest file, which is expected — the repo was deliberately squashed to 20260527000000_prod_public_baseline.sql — but the divergence does not stop there. Sampling the window since 2026-08-01: 110 ledger rows against 71 tracked files, 54 rows with no file at that version and 15 files with no row at all. Most of the 54 turn out to be the SAME migration recorded under a different timestamp, because applying through the dashboard or MCP stamps its own version rather than the filename's; and several of the 15 are deliberately local-only (the reconcile_* family exists to bring a RESET LOCAL schema in line with production, and says so in its own headers). So the headline numbers overstate it. What they do NOT overstate is that the two are no longer comparable by eye, and at least one committed migration is genuinely unapplied and matters: INC-2026-08-30-account-deletion-still-cascades-golf-history. The Supabase Preview check has reported this on every main commit for long enough to read as background noise, which is how a true alarm stops working.",
+      "closes_when": "the 337 tracked migrations are classified against the live ledger and the live catalog — applied / applied-under-another-version / deliberately-local-only / genuinely-unapplied — and each genuinely-unapplied one is either applied under owner authorization or given a header saying why it never should be. Supabase Preview then either goes green or is decommissioned as a DECISION rather than as a way to stop seeing it."
+    }
+  ],
+  "closed": [
+    {
+      "id": "GITHUB_CAPABILITY_UNGOVERNED",
+      "opened": "2026-08-29",
+      "closed": "2026-08-30",
+      "how": "Measured what the gh path actually exposes: authenticated account id (238133540), repository id (1119265234) and the OAuth scope set from the X-Oauth-Scopes response header (gist, read:org, repo, workflow). All stable, none of it secret material. That is a capability fingerprint, so drift IS detectable — the gap was closed by measuring rather than by changing any lifecycle code, which is what its closing condition asked for."
+    },
+    {
+      "id": "TEAM_GRADE_READ_FAILURE_READS_AS_HEALTHY",
+      "opened": "2026-08-30",
+      "closed": "2026-08-30",
+      "how": "computeTeamGrade gained an explicit UNKNOWN grade, checked BEFORE every other rule so a dormant team with an unreadable count is ungradeable rather than graded D by luck. team-page-extras resolves a rejected read to null instead of 0, the page renders an em-dash with an explaining title and adds errors7d to its existing degraded banner, and computeTeamComputedInsights no longer prints \"fully active with no errors\" from an unread count. Regression tests cover the grade, the insights strip and the producer — the producer one exists because reverting it to 0 TYPECHECKS CLEANLY (number is assignable to number|null), so only a behavioural test stops it coming back."
+    },
+    {
+      "id": "WORKTREE_PARK_NO_PR_OWNERSHIP",
+      "opened": "2026-08-30",
+      "closed": "2026-08-30",
+      "how": "Checkout disposability now comes from the workspace's own identity, not from inference. scripts/new-worktree.sh writes parkPolicy: KEEP into the .helm/workspace.json marker it already created, and classifyWorktree refuses to park anything the marker has not explicitly moved to PARK_IF_REPRODUCIBLE — verdict KEEP_WORKSPACE_INTENT_REQUIRED, which sits outside the standing autonomous authorization. The gate runs BEFORE the reproducibility checks and independently of any PR, so it covers the window the #1681 fix could not reach: the one before a PR exists. Absent file, absent key, unknown value and unreadable JSON all KEEP; a positive lsof sighting still vetoes; a negative one still authorises nothing. Two facts stay separate — workspace identity answers whether the CHECKOUT may go, PR state answers whether the BRANCH may be deleted — and an OPEN PR released by its owner cannot override a workspace KEEP. CLOSED DIFFERENTLY FROM THE ORIGINAL CONDITION, deliberately: that asked for a session id checked for LIVENESS, which is the same unsound negative-evidence inference in a new costume — a session between two tool calls looks dead. Declared intent needs no liveness probe. Proven by 72 tests in worktree-lifecycle.test.ts, including end-to-end --park runs against real git worktrees with the marker absent, KEEP, and released."
+    },
+    {
+      "id": "ERROR_SURFACES_DISAGREE",
+      "opened": "2026-08-30",
+      "closed": "2026-08-30",
+      "how": "The board renders the two surfaces separately and can say 'partial'. src/lib/admin/incidents/reconciliation.ts is a pure verdict function — APPLICATION EVENTS from graded admin_events incidents, RUNTIME ERROR SURFACE from correlated Sentry incidents, OVERALL reconciled only when the two agree — and ErrorSurfaceReconciliation renders all three rows on /admin/errors. Order is fail-safe: unreadability is decided BEFORE agreement, because two surfaces cannot agree when one did not speak, so a blind source can never produce 'healthy' (the same rule canClaimAllClear applies page-wide) and an unread count renders as an em-dash rather than 0. The component renders even when everything agrees, which is a deliberate departure from BlindnessBeacon's return-null-when-quiet: silence is right for a WARNING and wrong for a RECONCILIATION, because otherwise 'the surfaces agree' and 'nobody compared them' look identical again — the exact failure being closed. Nothing was mirrored between the surfaces and no Sentry issue was silenced, both of which the contract forbids. 15 tests; injections proving they fail — rendering disagreement as healthy turns 4 red, treating a blind surface as zero turns 2 red — with the module restored byte-identical (sha256). Definition of done was docs/OBSERVABILITY_AUTHORITY.md, and it is met."
+    }
+  ]
+}

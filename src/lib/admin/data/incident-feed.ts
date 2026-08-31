@@ -317,11 +317,26 @@ export async function queryAnalyzedFingerprints(
   return analyzed;
 }
 
+/**
+ * Prior resolutions, plus whether we could actually read them.
+ *
+ * Same shape as `fetchResolutions` in incidents/fetch.ts and `fetchRepairPrs`
+ * beside it: an unreadable source reports itself instead of returning a short
+ * map that looks like an answer.
+ */
+export interface PriorResolutions {
+  byFingerprint: Map<string, string>;
+  readable: boolean;
+  reason: string | null;
+}
+
 export async function queryPriorResolutions(
   fingerprints: readonly string[],
-): Promise<Map<string, string>> {
+): Promise<PriorResolutions> {
   const latest = new Map<string, string>();
-  if (fingerprints.length === 0) return latest;
+  let readable = true;
+  let reason: string | null = null;
+  if (fingerprints.length === 0) return { byFingerprint: latest, readable, reason };
 
   const admin = createAdminClient();
   const since = new Date(Date.now() - REGRESSION_LOOKBACK_DAYS * 24 * 3600_000).toISOString();
@@ -334,7 +349,7 @@ export async function queryPriorResolutions(
   const CHUNK_SIZE = 200;
   for (let i = 0; i < fingerprints.length; i += CHUNK_SIZE) {
     const chunk = fingerprints.slice(i, i + CHUNK_SIZE);
-    const { data } = await admin
+    const { data, error } = await admin
       .from('admin_events')
       .select('fingerprint, resolved_at')
       .eq('resolved', true)
@@ -355,6 +370,21 @@ export async function queryPriorResolutions(
       .gte('resolved_at', since)
       .order('resolved_at', { ascending: false });
 
+    if (error) {
+      // The swallow this comment block already warned about, made observable.
+      // Chunking removed the URL-length CAUSE; it did nothing about the error
+      // being discarded, so any other failure — RLS, timeout, a dropped
+      // connection — still produced a short map and the regression tags simply
+      // vanished. Absent tags read as "nothing regressed", which is the
+      // healthier-than-reality direction.
+      //
+      // Still fail-soft: the partial map is returned, because the feed must not
+      // go down for this. What changes is that the caller is told.
+      readable = false;
+      reason = `Prior-resolution lookup failed: ${error.message}`;
+      break;
+    }
+
     for (const row of data ?? []) {
       const fp = row.fingerprint;
       const at = row.resolved_at;
@@ -364,7 +394,7 @@ export async function queryPriorResolutions(
       if (!latest.has(fp)) latest.set(fp, at);
     }
   }
-  return latest;
+  return { byFingerprint: latest, readable, reason };
 }
 
 /**
@@ -436,7 +466,7 @@ export async function fetchIncidentFeed(
     // by that tag — an unfiltered view still can't know per-issue sport/
     // feature (the list endpoint doesn't return tags), so it stays null.
     { sport: filters.sport ?? null, feature: filters.feature ?? null },
-    priorResolutions,
+    priorResolutions.byFingerprint,
     analyzedFingerprints,
   );
 

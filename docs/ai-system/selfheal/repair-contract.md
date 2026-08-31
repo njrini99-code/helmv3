@@ -204,21 +204,35 @@ Confirm it yourself:
 local `main` is routinely ahead of or behind origin.
 
 ```bash
-git -C /Users/ricknini/Downloads/helmv3 fetch -q origin
-git -C /Users/ricknini/Downloads/helmv3 worktree add --no-track \
-    /private/tmp/helmv3-repair-<fp> -b fix/rca-<fp> origin/main
-ln -sfn /Users/ricknini/Downloads/helmv3/node_modules /private/tmp/helmv3-repair-<fp>/node_modules
-ln -sfn /Users/ricknini/Downloads/helmv3/.env.local   /private/tmp/helmv3-repair-<fp>/.env.local
+cd /Users/ricknini/Downloads/helmv3
+git fetch origin --prune
+scripts/new-worktree.sh "repair-<fp>"
 ```
 
-**`--no-track` is load-bearing.** Without it, `worktree add -b <branch>
-origin/main` sets the new branch's upstream *to* `origin/main`, so a bare
-`git push` from your task branch targets the **trunk**. Verified directly on
-2026-08-27: with the flag `upstream=` is empty; without it,
-`upstream=origin/main`. This is the trap `AGENTS.md` documents, it was live on
-a branch carrying 23 unpushed commits, and an earlier version of this contract
-had the unsafe form. Always push with an explicit
-`git push -u origin <same-branch-name>` — never a bare `git push`.
+It prints the workspace path — use that, do not assume one. You get
+`agent/repair-<fp>`, `--no-track`, an **isolated** dependency install, a local
+environment, and `productionWrites: false` in the workspace declaration.
+
+**Do not hand-build a worktree, and do not symlink anything into it.** Both
+instructions used to live here and both are now wrong:
+
+- **`ln -s <canonical>/node_modules`** is the exact practice the supported
+  creator removed. Two trees sharing one install, with different lockfiles,
+  test against whichever was installed last — that manufactures fake failures
+  *and* fake passes.
+- **`ln -s <canonical>/.env.local`** puts production credentials inside a task
+  worktree. `.worktreeinclude` withholds that file deliberately; the STEP 0b
+  `--env-file` form already lets the process USE the key without it ever
+  becoming a file you could commit.
+
+**Why the script rather than your own `worktree add`:** it guarantees
+`--no-track`. Without that flag, branching from a remote-tracking ref sets the
+new branch's upstream *to* `origin/main`, so a bare `git push` from your task
+branch targets the **trunk**. Verified 2026-08-27: with the flag `upstream=` is
+empty; without it, `upstream=origin/main`. That was live on a branch carrying 23
+unpushed commits, and an earlier version of this contract had the unsafe form.
+Still push explicitly — `git push -u origin <same-branch-name>`, never a bare
+`git push`.
 
 Then, in order:
 
@@ -254,6 +268,14 @@ cycle:
   through esbuild, which accepted a malformed JSX expression that `tsc`
   rejected. Run `preflight` even when tests pass.
 
+**`npm run build` may not be runnable in your workspace, and that is by
+design.** `.worktreeinclude` withholds `.env.local`, so the build fails on
+`NEXT_PUBLIC_SUPABASE_URL` before reaching any code path your change touched.
+Do not solve that by copying production env into the worktree. Report the local
+build as *not runnable under the workspace security model*, and let CI's
+configured `Next build` job — which supplies that env — be the authoritative
+build gate. Observed exactly this way on #1658.
+
 If a gate fails, fix it or abandon the repair. **Never push red.**
 
 ---
@@ -264,7 +286,26 @@ Commit with a message that says **why**, names what you verified with real exit
 codes, and states what you could not verify.
 
 ```bash
-gh pr create --base main --head fix/rca-<fp> --title "…" --body-file <file>
+gh pr create --base main --head "$(git rev-parse --abbrev-ref HEAD)" \
+  --title "…" --body-file <file>
+```
+
+**The `/admin/errors/<fingerprint>` link in the body is REQUIRED, and it is the
+only thing that joins this PR to its incident.** `extractRepairIncidentIds`
+reads it, `fetchRepairPrs` keys Repair state on it, and the capability probe
+counts PRs that carry it. Omit it and the Bridge cannot see your work: the
+incident stays REPAIRABLE, an operator re-triages it, and Repair still reads as
+never having opened a PR. #1658 was complete and green and would have proved
+nothing without it.
+
+A `fix/rca-<fp>` **branch** name is no longer required and cannot be produced by
+the supported creator. `repair-link.ts` still parses it so historical PRs keep
+working; new work is joined by the body link.
+
+Verify the join before you write your heartbeat:
+
+```bash
+gh pr view <number> --json body --jq '.body' | grep -o '/admin/errors/[0-9a-f]*'
 ```
 
 The PR body must contain:
@@ -277,14 +318,23 @@ The PR body must contain:
 - the three gate exit codes
 - anything you deliberately did not fix
 
-**Do not merge. Do not deploy.** Remove your worktree when the PR is open:
+**Do not merge. Do not deploy.**
+
+**Keep your worktree while the PR is open.** Review comments and CI fixes need
+it, and `scripts/retire-worktrees.sh` — the lifecycle authority since Phase 7A —
+refuses to remove a worktree whose PR is not merged. Once it merges, retire it
+through that tool, report mode first:
 
 ```bash
-git -C /Users/ricknini/Downloads/helmv3 worktree remove /private/tmp/helmv3-repair-<fp>
+scripts/retire-worktrees.sh
 ```
 
-Worktrees carry a `.next` directory after a build; five of them filled this
-machine's disk to 100% on 2026-08-27 and a build died on `ENOSPC`. Clean up.
+`--remove` acts only on rows it reported RETIRABLE, and only with owner
+authorization. Do not delete a worktree by hand.
+
+Do clean up build output while the worktree lives: a `.next` directory after a
+build is several GB, and five of them filled this machine's disk to 100% on
+2026-08-27, killing a build on `ENOSPC`. It happened again on 2026-08-28.
 
 ---
 
@@ -307,11 +357,37 @@ values (
   <ms>,
   <null or one line>,
   jsonb_build_object(
+    'run_id', '<HELM_REPAIR_RUN_ID>',
     'candidates', <n>, 'prs_opened', <n>, 'confirmed', <n>,
     'corrected', <n>, 'skipped', <n>, 'gate_failed', <n>
   )
 );
 ```
+
+**`run_id` comes from `process.env.HELM_REPAIR_RUN_ID`.** Include it whenever it
+is set; omit the key entirely when it is not, so historical rows and manual runs
+stay valid. It exists so the outer runner can ask a precise question — *did THIS
+run write a heartbeat?* — instead of inferring from a timestamp window, which
+cannot tell this run from one that merely overlapped it.
+
+### Who owns which heartbeat
+
+```text
+YOU own the normal final heartbeat, success or failure.
+
+The outer runner owns ONLY a runner-level failure row, and writes it
+ONLY after a SUCCESSFUL read proves no row exists for this run_id.
+```
+
+If the heartbeat store cannot be read, the runner records nothing and reports
+UNKNOWN. A failed query is not proof of absence, and writing on one would
+manufacture failure rows during a Supabase outage — inventing bad news is no
+better than inventing good.
+
+The runner never invents `candidates`, `confirmed`, `corrected` or
+`prs_opened`; it does not know them. A row carrying
+`metadata.heartbeat_source = 'runner-fallback'` is the wrapper saying the run
+died before you could speak — it is not a Repair verdict.
 
 `status='completed'` with `prs_opened: 0` is a healthy quiet run. Use
 `'failed'` only when the run itself broke — a gate you could not read, a

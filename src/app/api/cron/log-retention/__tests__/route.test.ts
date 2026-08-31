@@ -76,8 +76,25 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }));
 
+const { recordedRuns } = vi.hoisted(() => ({
+  recordedRuns: [] as Array<{ jobType: string; outcome: 'completed' | 'failed' }>,
+}));
+
+// Pass-through as before, but now it RECORDS which job types were wrapped and
+// whether the wrapped work threw — the two facts ET-3 is about. The real
+// `recordJobRun` writes a 'failed' row and rethrows, so the mock rethrows too:
+// a mock that swallowed the throw would hide the very behaviour under test.
 vi.mock('@/lib/admin/job-log', () => ({
-  recordJobRun: async <T,>(_jobType: string, fn: () => Promise<T>): Promise<T> => fn(),
+  recordJobRun: async <T,>(jobType: string, fn: () => Promise<T>): Promise<T> => {
+    try {
+      const result = await fn();
+      recordedRuns.push({ jobType, outcome: 'completed' });
+      return result;
+    } catch (err) {
+      recordedRuns.push({ jobType, outcome: 'failed' });
+      throw err;
+    }
+  },
 }));
 
 vi.mock('@/lib/admin/incident-resolver', () => ({
@@ -337,5 +354,62 @@ describe('GET /api/cron/log-retention', () => {
     expect(body.degraded).toBe(true);
     expect(body.ledgerFailed).toBe(0);
     expect(body.ledgerFirstError).toBe('autoResolveFixedIncidents boom');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ET-3 — Close needs its own heartbeat.
+//
+// `SELFHEAL_STAGES` used `log-retention` as the Close stage's heartbeat. But
+// this route deliberately fail-softs an `autoResolveFixedIncidents()` failure
+// so the independent retention purge still runs, then returns 200 and records
+// `log-retention` = 'completed'.
+//
+// So Close's actual work — the auto-resolution — could fail completely while
+// the Self-Heal circuit read a closed loop off a heartbeat that belongs to a
+// different job. #1664 made `degraded` READABLE; it did not make the signal
+// Close's own. Retention succeeding is not evidence about Close.
+// ---------------------------------------------------------------------------
+describe('log-retention — Close owns its own heartbeat', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv('CRON_SECRET', 'cron-secret');
+    mocks.rows = new Map();
+    mocks.deleteBatches = [];
+    recordedRuns.length = 0;
+    autoResolveMock.mockReset();
+    autoResolveMock.mockResolvedValue({
+      resolvedRelease: 0,
+      resolvedQuiet: 0,
+      resolvedLegacy: 0,
+      resolvedNonActionable: 0,
+      fingerprints: 0,
+      deploySha: null,
+      ledger: { recorded: 0, skippedManual: 0, failed: 0, capped: 0, firstError: null },
+      regressions: { marked: 0, failed: 0, capped: 0, firstError: null },
+    });
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('records a selfheal-close run distinct from the retention run', async () => {
+    const GET = await loadRoute();
+    await GET(request());
+
+    const types = recordedRuns.map((r) => r.jobType);
+    expect(types).toContain('log-retention');
+    expect(types).toContain('selfheal-close');
+  });
+
+  it('a failed auto-resolve marks selfheal-close FAILED while retention still completes', async () => {
+    // The false-green, stated as an outcome pair. Before ET-3 there was only
+    // one row and it said 'completed'.
+    autoResolveMock.mockRejectedValueOnce(new Error('auto-resolve exploded'));
+
+    const GET = await loadRoute();
+    const res = await GET(request());
+
+    expect(res.status).toBeLessThan(400); // retention is independent, still 200
+    expect(recordedRuns).toContainEqual({ jobType: 'selfheal-close', outcome: 'failed' });
+    expect(recordedRuns).toContainEqual({ jobType: 'log-retention', outcome: 'completed' });
   });
 });

@@ -17,6 +17,8 @@ import {
 import { UnifiedIncidentQueue } from '../_components/UnifiedIncidentQueue';
 import { IncidentLensRail } from '../_components/IncidentLensRail';
 import { BlindnessBeacon } from '../_components/BlindnessBeacon';
+import { ErrorSurfaceReconciliation } from '../_components/ErrorSurfaceReconciliation';
+import { reconcileErrorSurfaces } from '@/lib/admin/incidents/reconciliation';
 import { SourceCoverageSummaryLine } from '../_components/SourceCoverage';
 import { ErrorsOverTime } from '../_components/ErrorsOverTime';
 import { KpiTile } from '../_components/KpiTile';
@@ -193,6 +195,45 @@ export default async function ErrorsPage({
     // kind by what the classifier decided the incident is. Neither forks it.
     const lensed = applyIncidentFacets(board.incidents, lens, filters.kind);
     const allClearAllowed = canClaimAllClear(board.coverage);
+
+    // The two surfaces, separately. Counting INCIDENTS rather than raw rows is
+    // deliberate: an incident is one production cause, so twelve Sentry events
+    // of one fault are one thing wrong, not twelve. Worth knowing before
+    // comparing screens — this number will NOT match the Sentry dashboard's
+    // unresolved-issue count, and is not meant to.
+    //
+    // The two counts are also asymmetric on purpose. The application side takes
+    // error-or-worse only, because admin_events is GRADED and that grading is
+    // its whole value. The runtime side takes every correlated Sentry incident,
+    // ungraded, because docs/OBSERVABILITY_AUTHORITY.md forbids silencing Sentry
+    // issues Helm happens to grade info — Helm's opinion of a fault it never
+    // handled is not evidence about that fault.
+    //
+    // A source that could not be read contributes null, never 0. That
+    // substitution is the entire defect being fixed.
+    const healthOf = (name: 'app' | 'sentry') =>
+      board.freshness.find((f) => f.source === name)?.health ?? 'unknown';
+    const readable = (name: 'app' | 'sentry') => {
+      const h = healthOf(name);
+      return h !== 'blind' && h !== 'unknown';
+    };
+    const reconciliation = reconcileErrorSurfaces({
+      application: {
+        health: healthOf('app'),
+        count: readable('app')
+          ? board.incidents.filter(
+              (i) =>
+                i.appFingerprints.length > 0 && (i.severity === 'error' || i.severity === 'critical'),
+            ).length
+          : null,
+      },
+      runtime: {
+        health: healthOf('sentry'),
+        count: readable('sentry')
+          ? board.incidents.filter((i) => i.sentryIssueIds.length > 0).length
+          : null,
+      },
+    });
     // fingerprint-keyed 24h histograms, re-keyed to incident ids. An incident
     // folds one or more fingerprints, so the series is the FIRST one that has
     // history rather than a sum — summing two independent histograms would
@@ -271,6 +312,8 @@ export default async function ErrorsPage({
         </header>
 
         <BlindnessBeacon note={board.blindnessNote} coverage={board.coverage} />
+
+        <ErrorSurfaceReconciliation verdict={reconciliation} />
 
         <IncidentLensRail
           active={lens}

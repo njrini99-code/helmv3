@@ -470,7 +470,12 @@ async function createEnrichedAnnouncementImpl(input: {
         }
 
         if (playerRows && playerRows.length > 0) {
-          const userIds = playerRows.map(p => p.user_id);
+          // `user_id` is nullable once an account is deleted and the player's history
+          // is preserved (20260819200000). A null is not a recipient — drop it so the
+          // rest of the batch still gets notified, matching the three fan-outs in
+          // golf.ts that already do this. NOT NULL in production today, so this
+          // removes nothing yet: that is what lets it ship before the migration.
+          const userIds = playerRows.map(p => p.user_id).filter((id): id is string => Boolean(id));
 
           // Get emails for those users.
           //
@@ -491,7 +496,11 @@ async function createEnrichedAnnouncementImpl(input: {
           // success:true with send_email/send_push false, and nothing records
           // that delivery was attempted at all — the exact silent-failure
           // class this change exists to remove.
-          if (userRowsError || !userRows || userRows.length === 0) {
+          // `userIds.length > 0` matters only after 20260819200000: a batch whose
+          // players are ALL anonymized has nobody to look up, and reporting that as
+          // a delivery failure would be the failure-vs-empty conflation this guard
+          // was added to remove, pointed the other way.
+          if (userIds.length > 0 && (userRowsError || !userRows || userRows.length === 0)) {
             await logServerError(
               userRowsError
                 ? `[createEnrichedAnnouncement] Recipient lookup FAILED for ${userIds.length} player(s): ${userRowsError.message}`

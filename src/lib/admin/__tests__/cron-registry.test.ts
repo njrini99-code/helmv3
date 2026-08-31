@@ -75,3 +75,78 @@ describe('classifyCronStatus', () => {
     expect(classifyCronStatus(hourly, runAt(5, 'failed'), now)).toBe('failed');
   });
 });
+
+// ---------------------------------------------------------------------------
+// ET-2 — a cron that ran, returned 200, and knows its own work partly failed
+// must not read as healthy.
+//
+// THE FALSE-GREEN, mechanically:
+//
+//   `log-retention` catches an autoResolveFixedIncidents() failure, keeps
+//   going (the retention half is independent and still worth doing), returns
+//   HTTP 200, and records status='completed' with metadata.degraded=true.
+//   Its own comment says so: "`degraded` carries the honest signal instead of
+//   the status code."
+//
+//   `classifyCronStatus` never sees it. The parameter type is literally
+//   `{ started_at: string; status: string }` — metadata is not in scope — so
+//   the honest signal the route took care to record was unreadable by the
+//   board that exists to display it.
+//
+//   That matters most for Self-Heal, where `log-retention` IS the Close
+//   stage's heartbeat: Close's work can fail while the circuit shows OK.
+//
+// PRECEDENCE, deliberately minimal: `degraded` only ever replaces what would
+// have been `'ok'`. A failed run still reads `failed`; an overdue one still
+// reads `overdue`. Nothing that already reported a problem is downgraded, so
+// this cannot regress any existing row — it can only stop a green one lying.
+// ---------------------------------------------------------------------------
+describe('classifyCronStatus — degraded is not healthy', () => {
+  const entry = { jobType: 'log-retention', path: '/api/cron/log-retention', cadenceMinutes: 1440 };
+  const now = new Date('2026-08-28T12:00:00.000Z');
+  const recent = '2026-08-28T11:30:00.000Z';
+  const stale = '2026-08-20T11:30:00.000Z';
+
+  it('completed + degraded=true  =>  degraded', () => {
+    expect(
+      classifyCronStatus(entry, { started_at: recent, status: 'completed', metadata: { degraded: true } }, now),
+    ).toBe('degraded');
+  });
+
+  it('completed + degraded=false  =>  ok', () => {
+    expect(
+      classifyCronStatus(entry, { started_at: recent, status: 'completed', metadata: { degraded: false } }, now),
+    ).toBe('ok');
+  });
+
+  it('a historical row with no metadata at all keeps its old answer', () => {
+    // Rows written before `degraded` existed must not change meaning. Absent
+    // is not degraded — it is "this run never reported either way".
+    expect(classifyCronStatus(entry, { started_at: recent, status: 'completed' }, now)).toBe('ok');
+    expect(classifyCronStatus(entry, { started_at: recent, status: 'completed', metadata: null }, now)).toBe('ok');
+    expect(classifyCronStatus(entry, { started_at: recent, status: 'completed', metadata: {} }, now)).toBe('ok');
+  });
+
+  it('failed still outranks degraded', () => {
+    expect(
+      classifyCronStatus(entry, { started_at: recent, status: 'failed', metadata: { degraded: true } }, now),
+    ).toBe('failed');
+  });
+
+  it('overdue still outranks degraded — a job that stopped running is the bigger fact', () => {
+    expect(
+      classifyCronStatus(entry, { started_at: stale, status: 'completed', metadata: { degraded: true } }, now),
+    ).toBe('overdue');
+  });
+
+  it('a non-boolean degraded value is not treated as degraded', () => {
+    // Only an explicit `true` means degraded. A string, a number or a nested
+    // object is malformed metadata, and guessing from it would invent a
+    // status the writer never claimed.
+    for (const bad of ['true', 1, {}, [], 'yes']) {
+      expect(
+        classifyCronStatus(entry, { started_at: recent, status: 'completed', metadata: { degraded: bad } }, now),
+      ).toBe('ok');
+    }
+  });
+});

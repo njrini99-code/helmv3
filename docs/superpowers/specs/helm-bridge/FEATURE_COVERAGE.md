@@ -1,6 +1,26 @@
 # FEATURE_COVERAGE.md — Helm Bridge Total Error-Capture Coverage + Feature Health
 
-**Status:** Canonical spec (W15 instrumentation + W16 board build against THIS file).
+**Status:** DESIGN_SPEC — historical. **Not a current feature registry.**
+
+> Demoted from "Canonical spec" on 2026-08-30. This document was written as the
+> design contract for the W15/W16 Helm Bridge waves and it is still the best
+> account of *why* the instrumentation is shaped the way it is — the
+> noise-discipline charter below is the reasoning nothing else records.
+>
+> It is no longer a source of truth for **which features exist or what they
+> cover**. That moved, and to two different places:
+>
+> - **`src/lib/admin/feature-registry.ts`** owns the runtime `FeatureKey`
+>   vocabulary, action manifests, primary tables, traffic tiers and health
+>   signals. It is imported by shipped code, so it cannot drift from what runs.
+> - **`memory/registry.yml`** owns semantic feature identity and which runtime
+>   keys each feature owns, checked by `npm run knowledge:registry-check`.
+>
+> A directory named `specs/` cannot hold a live registry: nothing regenerates
+> this file and nothing fails when it drifts. Where a table here disagrees with
+> either of the two above, they are right.
+>
+> See `memory/decisions/ADR-2026-08-30-helm-knowledge-authority.md`.
 **Scope (updated 2026-07-04):** GOLFHELM + COACHHELM + BASEBALLHELM. BaseballHelm server actions are now first-class Helm Bridge emitters and registry rows. CRM is NEVER touched (no wrapping, no tagging, no board presence beyond the "excluded" registry row).
 
 **Companion plans:**

@@ -165,15 +165,49 @@ interface RepairPr {
  * `'pending'`: pending reads as orderly progress, and a checks read that
  * failed is not progress.
  */
-async function fetchBranchChecks(
+/**
+ * The commit a pull request currently points at, or `null` when GitHub could
+ * not be read.
+ *
+ * This exists because CI state must be keyed on the PR's ACTUAL head. The
+ * previous code derived a branch name from the incident id (`fix/rca-<id>`,
+ * the repair contract's STEP 4) and asked for check-runs on that. The one
+ * supported worktree creator, `scripts/new-worktree.sh`, only produces
+ * `agent/<task>` branches, so the first real Repair PR (#1658) lived on
+ * `agent/repair-qualifier-closed-code` and joined its incident through the
+ * STEP 5 body link instead. The guessed ref 404'd, and a green PR reported
+ * "checks unknown" — the producer could find the PR and then fail to read it.
+ *
+ * `null` here means UNREADABLE, never "no checks". The caller keeps the PR.
+ */
+async function fetchPullRequestHeadSha(
   owner: string,
   repo: string,
-  branch: string,
+  prNumber: number,
+  headers: HeadersInit,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`, {
+      headers,
+      next: { revalidate: 120 },
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { head?: { sha?: string } };
+    return body.head?.sha ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchCommitChecks(
+  owner: string,
+  repo: string,
+  sha: string,
   headers: HeadersInit,
 ): Promise<RepairChecks | null> {
   try {
     const res = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits/${encodeURIComponent(branch)}/check-runs?per_page=100`,
+      `https://api.github.com/repos/${owner}/${repo}/commits/${encodeURIComponent(sha)}/check-runs?per_page=100`,
       { headers, next: { revalidate: 120 } },
     );
     if (!res.ok) return null;
@@ -213,7 +247,7 @@ async function fetchBranchChecks(
  * map means the read succeeded and no repair exists. Collapsing the two would
  * quietly re-queue work that is already in a branch.
  */
-async function fetchRepairPrs(
+export async function fetchRepairPrs(
   incidentIds: ReadonlySet<string>,
 ): Promise<{ byIncident: Map<string, RepairPr>; readable: boolean; reason: string | null }> {
   const log = await fetchWorkLog();
@@ -257,7 +291,11 @@ async function fetchRepairPrs(
       const headers = githubIssuesHeaders(token);
       await Promise.all(
         openIds.map(async ([id, pr]) => {
-          const checks = await fetchBranchChecks(owner, repo, `fix/rca-${id}`, headers);
+          // PR identity decides which commit to inspect. A branch NAME does not
+          // — see `fetchPullRequestHeadSha`. If either call fails the PR stays
+          // visible with `checks: null` (unreadable), never dropped.
+          const headSha = await fetchPullRequestHeadSha(owner, repo, pr.entry.number, headers);
+          const checks = headSha ? await fetchCommitChecks(owner, repo, headSha, headers) : null;
           byIncident.set(id, { ...pr, checks });
         }),
       );
@@ -347,9 +385,9 @@ interface StoredResolutionRow {
  */
 async function fetchResolutions(
   fingerprints: readonly string[],
-): Promise<Map<string, StoredResolutionRow>> {
+): Promise<{ byFingerprint: Map<string, StoredResolutionRow>; readable: boolean; reason: string | null }> {
   const out = new Map<string, StoredResolutionRow>();
-  if (fingerprints.length === 0) return out;
+  if (fingerprints.length === 0) return { byFingerprint: out, readable: true, reason: null };
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -359,7 +397,13 @@ async function fetchResolutions(
 
   if (error) {
     console.warn(`[fetchResolutions] resolution ledger unreadable: ${error.message}`);
-    return out;
+    // The empty map is returned as before — the board must not go down for
+    // this — but the CALLER is now told the difference. Returning a bare empty
+    // map made "nothing is resolved" and "we could not read what is resolved"
+    // the same value, and the sibling arm of this producer
+    // (fetchRepairPrs -> { byIncident, readable, reason }) already models it
+    // correctly. This is that convention, applied to the arm that lacked it.
+    return { byFingerprint: out, readable: false, reason: `Resolution ledger unreadable: ${error.message}` };
   }
 
   for (const row of data ?? []) {
@@ -373,7 +417,7 @@ async function fetchResolutions(
       reopenedCount: typeof row.reopened_count === 'number' ? row.reopened_count : 0,
     });
   }
-  return out;
+  return { byFingerprint: out, readable: true, reason: null };
 }
 
 // ---------------------------------------------------------------------------
@@ -555,7 +599,7 @@ export async function fetchIncidentBoard(
       : null;
 
     const resolutionRow = draft.appFingerprints
-      .map((fp) => resolutions.get(fp))
+      .map((fp) => resolutions.byFingerprint.get(fp))
       .find((r) => r !== undefined);
     const resolution = toResolution(resolutionRow);
 
@@ -617,16 +661,34 @@ export async function fetchIncidentBoard(
     } satisfies UnifiedIncident;
   });
 
-  const readings: SourceReading[] = sourceHealth.map((s) => ({
-    source: s.source,
-    health: s.health,
-    observedAt: s.observedAt,
-    reason: s.reason,
-  }));
+  // The `app` source is declared `reading` above because app EVENTS throw when
+  // they cannot be read, so reaching that line proves the event arm is healthy.
+  // That reasoning does not extend to the resolution ledger, which fails SOFT:
+  // an unreadable ledger returned an empty map and the board reported a fully
+  // healthy app source over incomplete data. `partial` is the state that
+  // already exists for exactly this — reading one arm, blind on another — and
+  // it flows into coverage.anyBlind and the blindness beacon without any new
+  // type, source name or UI.
+  //
+  // Deliberately NOT modelled as a non-null `resolution` carrying
+  // `resolvedBy: 'unknown'`: LifecycleSpine treats `resolution !== null` as
+  // closeState `proven`, so that shape would upgrade "could not read" into
+  // "proven closed" — a worse falsehood than the one being fixed.
+  const readings: SourceReading[] = sourceHealth.map((s) => {
+    if (s.source === 'app' && !resolutions.readable) {
+      return {
+        source: s.source,
+        health: 'partial' as const,
+        observedAt: s.observedAt,
+        reason: resolutions.reason,
+      };
+    }
+    return { source: s.source, health: s.health, observedAt: s.observedAt, reason: s.reason };
+  });
   const freshness = buildSourceFreshness(readings, now);
   const coverage = summarizeCoverage(freshness);
   const reasons = new Map<IncidentSourceName, string | null>(
-    sourceHealth.map((s) => [s.source, s.reason]),
+    readings.map((r) => [r.source, r.reason ?? null] as const),
   );
 
   const eventIdsByIncident: Record<string, string[]> = {};

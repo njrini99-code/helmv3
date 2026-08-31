@@ -26,6 +26,10 @@ const CRON_STATUS_TONE: Record<CronBoardRow['status'], FwStatusTone> = {
   overdue: 'danger',
   failed: 'danger',
   'never-ran': 'neutral',
+  // The run finished but reported part of its own work failed. Warning, not
+  // danger — the job is alive and its schedule is fine — and emphatically not
+  // success, which is the lie this status exists to stop.
+  degraded: 'warning',
 };
 
 /**
@@ -475,6 +479,7 @@ const LOOP_TONE: Record<SelfHealLoopStatus, FwStatusTone> = {
   overdue: 'danger',
   failed: 'danger',
   'never-ran': 'neutral',
+  degraded: 'warning',
   // Not neutral: an unreadable stage means the loop's own instrument failed,
   // and reporting that as calm is the exact inversion this panel exists to
   // prevent.
@@ -486,6 +491,7 @@ const LOOP_LABEL: Record<SelfHealLoopStatus, string> = {
   overdue: 'a stage is overdue',
   failed: 'a stage failed',
   'never-ran': 'awaiting first run',
+  degraded: 'a stage ran degraded',
   unknown: 'could not be read',
 };
 

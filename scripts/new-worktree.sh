@@ -41,13 +41,14 @@ set -euo pipefail
 
 WORKTREE_HOME="${HELM_WORKTREE_HOME:-$HOME/worktrees/helmv3}"
 BASE="origin/main"
-INSTALL=1
+INSTALL=0
 TASK=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --base) BASE="$2"; shift 2 ;;
-    --no-install) INSTALL=0; shift ;;
+    --install) INSTALL=1; shift ;;
+    --no-install) INSTALL=0; shift ;;   # accepted, and now the default
     -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
     -*) echo "unknown flag: $1" >&2; exit 2 ;;
     *) TASK="$1"; shift ;;
@@ -55,7 +56,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$TASK" ]; then
-  echo "usage: scripts/new-worktree.sh <task-name> [--base <ref>] [--no-install]" >&2
+  echo "usage: scripts/new-worktree.sh <task-name> [--base <ref>] [--install]" >&2
   exit 2
 fi
 
@@ -76,6 +77,57 @@ fi
 
 mkdir -p "$WORKTREE_HOME"
 
+# ---------------------------------------------------------------------------
+# Mutation-worktree budget, enforced BEFORE any allocation.
+#
+# The disk reserve stops a catastrophe; it does not stop waste. Six worktrees in
+# one day is a concurrency problem that only becomes visible as a disk problem.
+# This refuses before `git worktree add` and before any install, so a refusal
+# costs nothing. Classification fails TOWARD mutation: an unreadable or
+# undeclared workspace counts against the budget.
+if ! node "$(dirname "${BASH_SOURCE[0]}")/check-mutation-budget.mjs"; then
+  exit 1
+fi
+
+
+# ---------------------------------------------------------------------------
+# Free-space precheck.
+#
+# 2026-08-29: this script started a multi-GiB `npm ci` with the volume already
+# at 99%, died on ENOSPC partway through, and left an 858 MiB partial tree
+# behind. The failure COST space instead of refusing to spend it — and it then
+# blocked the session completely, because at zero bytes free even writing a
+# command's output fails, so nothing could clean up.
+#
+# Measured the same day on this machine: a worktree with node_modules is
+# 3.8 GiB, and a built one adds up to 5.7 GiB of .next on top. The floor is set
+# so a worktree can be created AND used, not merely created.
+WORKTREE_MIN_FREE_GIB="${HELM_MIN_FREE_GIB:-${HELM_DISK_RESERVE_GIB:-12}}"
+
+free_gib() {
+  # -P for POSIX output (one line per fs, no wrapping), -k for 1K blocks.
+  # Field 4 is available. Integer GiB, floored — deliberately pessimistic.
+  df -Pk "$1" 2>/dev/null | awk 'NR==2 {printf "%d", $4/1048576}'
+}
+
+AVAIL_GIB="$(free_gib "$WORKTREE_HOME")"
+if [ -n "$AVAIL_GIB" ] && [ "$AVAIL_GIB" -lt "$WORKTREE_MIN_FREE_GIB" ]; then
+  echo "refusing: ${AVAIL_GIB} GiB free under ${WORKTREE_HOME}, reserve is ${WORKTREE_MIN_FREE_GIB} GiB." >&2
+  echo >&2
+  echo "This is the MACHINE reserve, not an install estimate. At zero bytes free" >&2
+  echo "nothing runs at all — writing a command's output fails, so no command can" >&2
+  echo "be issued to clean up. Measured 2026-08-29." >&2
+  echo >&2
+  echo "Reclaim. Parking removes a checkout WITHOUT abandoning its branch:" >&2
+  echo >&2
+  echo "  node scripts/worktree-lifecycle.mjs           # report" >&2
+  echo "  node scripts/worktree-lifecycle.mjs --park    # remove disposable checkouts" >&2
+  echo "  node scripts/worktree-lifecycle.mjs --retire  # also delete proven-merged branches" >&2
+  echo >&2
+  echo "Override: HELM_DISK_RESERVE_GIB=<n>." >&2
+  exit 1
+fi
+
 echo "fetching origin..."
 git fetch origin --quiet
 
@@ -87,6 +139,12 @@ git worktree add --no-track "$DIR" -b "$BRANCH" "$BASE"
 # so repo:doctor can compare the declaration against reality instead of
 # guessing.
 mkdir -p "$DIR/.helm"
+#
+# parkPolicy is KEEP at creation, always, and that is the point. A worktree five
+# minutes old is clean, pushed, has no PR to key a disposition on, and shows no
+# process to `lsof` between two tool calls — every signal the lifecycle tool
+# used to read as "disposable", and every one of them wrong. Releasing a
+# checkout is now a positive act: edit this field to PARK_IF_REPRODUCIBLE.
 cat > "$DIR/.helm/workspace.json" <<JSON
 {
   "kind": "task",
@@ -95,18 +153,28 @@ cat > "$DIR/.helm/workspace.json" <<JSON
   "base": "${BASE}",
   "environment": "local",
   "supabase": "local",
-  "productionWrites": false
+  "productionWrites": false,
+  "parkPolicy": "KEEP"
 }
 JSON
 
+# DEPENDENCIES ARE NO LONGER INSTALLED BY DEFAULT.
+#
+# A checkout cost ~3.8 GiB of node_modules whether or not the task needed it,
+# and most control-plane, docs and config work never runs a single test. Coupling
+# the two is what made every task, however small, a multi-GiB commitment — and it
+# is why six worktrees in one day took the volume to zero bytes free.
+#
+# Install when a command actually requires it:
+#
+#   node scripts/ensure-worktree-deps.mjs <dir>
+#
+# which applies the reserve + budget policy rather than starting and hoping.
 if [ "$INSTALL" -eq 1 ]; then
-  echo "installing dependencies (isolated)..."
-  ( cd "$DIR" && npm ci --silent ) || {
-    echo "npm ci failed — the worktree exists but has no node_modules." >&2
-    echo "Run 'npm ci' in $DIR before trusting any test result there." >&2
+  node "$(dirname "${BASH_SOURCE[0]}")/ensure-worktree-deps.mjs" "$DIR" || {
+    echo "dependency install refused or failed — the worktree itself is intact." >&2
+    echo "Re-run: node scripts/ensure-worktree-deps.mjs $DIR" >&2
   }
-else
-  echo "skipped install (--no-install): tests in this worktree will not run yet"
 fi
 
 cat <<EOF
@@ -116,7 +184,7 @@ cat <<EOF
                          git push -u origin $BRANCH)
   base        $BASE
   env         local, no production writes
-  deps        $([ "$INSTALL" -eq 1 ] && echo isolated || echo "NOT INSTALLED")
+  deps        $([ "$INSTALL" -eq 1 ] && echo "isolated" || echo "not installed — run: node scripts/ensure-worktree-deps.mjs $DIR")
 
 EOF
 printf '%s\n' "$DIR"

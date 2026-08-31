@@ -1767,7 +1767,15 @@ async function submitGolfRoundComprehensiveImpl(
       }
 
       if (qualifier.status === 'completed') {
-        return { success: false, error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
+        // `code` is load-bearing, not decoration: severityForSoftFailure()
+        // only downgrades a soft failure to 'warning'/skipSentry when it
+        // recognises a code in EXPECTED_SOFT_FAILURE_CODES, and this wording
+        // matches no EXPECTED_SOFT_FAILURE_PATTERNS. Without it this guard
+        // fell through to 'error' and paged Sentry 18 times in one 32-minute
+        // window on 2026-08-23 for a coach closing a qualifier mid-submission
+        // — expected lifecycle behaviour, correctly rejected. The identical
+        // guard below already returns this code for the same outcome.
+        return { success: false, code: 'qualifier_closed', error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
       }
 
       // Verify the player has an entry in this qualifier
@@ -3712,7 +3720,12 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
           .in('id', validatedData.playerIds);
 
         if (playerRows?.length) {
-          const userIds = playerRows.map(p => p.user_id);
+          // `user_id` is nullable once an account is deleted and the player's history
+          // is preserved (20260819200000). A null is not a recipient — drop it so the
+          // rest of the batch still gets notified, matching the three fan-outs in
+          // golf.ts that already do this. NOT NULL in production today, so this
+          // removes nothing yet: that is what lets it ship before the migration.
+          const userIds = playerRows.map(p => p.user_id).filter((id): id is string => Boolean(id));
           const { data: userRows } = await supabase
             .from('users')
             .select('id, email')

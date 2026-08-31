@@ -21,6 +21,7 @@ function rawSignal(overrides: Partial<RawSignal> = {}): RawSignal {
     route: '/api/golf/rounds/11111111-1111-1111-1111-111111111111',
     errorCode: '42P10',
     count: 1,
+  countBasis: 'window' as const,
     firstSeen: '2026-08-26T10:00:00.000Z',
     lastSeen: '2026-08-26T10:00:00.000Z',
     evidenceRef: 'ref-1',

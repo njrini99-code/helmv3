@@ -53,10 +53,20 @@ Governed paths: everything `memory/registry.yml` maps, plus
    multi-feature files, every materially impacted feature).
 3. Verify names, columns, and paths against generated/live truth.
 
-The `guard-feature-context` PreToolUse hook enforces this mechanically:
-edits to governed files are denied until the session has actually loaded the
-mapped feature context (reading the doc or running `knowledge:context`
-counts; writing a flag does not).
+**This is policy, and it is DETECTED, not prevented.** The Stop gate reports a
+governed edit made without the mapped context after the fact; no PreToolUse hook
+refuses it. You can complete an entire governed change with no context loaded
+and only find out when you try to stop.
+
+This paragraph read "The `guard-feature-context` PreToolUse hook enforces this
+mechanically: edits to governed files are denied…" until 2026-08-30. There is no
+`guard-feature-context.mjs` on disk and no such hook in `.claude/settings.json`;
+the only wired PreToolUse hook matches `Write|Edit|MultiEdit` and refuses writes
+into the canonical checkout. `docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated
+from the live configuration and has recorded the true state — POST-HOC — the
+whole time.
+
+Load the context because the work needs it. Nothing will stop you if you don't.
 
 ## After meaningful behavioral mutation
 
@@ -171,13 +181,27 @@ nothing should be described as depending on them.
 SessionStart initializes `.claude/session-state/<session_id>.jsonl` and
 announces this OS. PostToolUse records the feature contexts you actually
 load and every file you touch (event-time ownership — git is never asked to
-guess whose change is whose). PreToolUse denies governed edits without
-loaded context (`guard-feature-context.mjs`), and denies production deploy
-shapes outright (`.claude/settings.json` permission denies plus a
-`guard-bash.sh` belt-and-braces rule). Stop verifies mapping, context, and
-memory evidence against your session's own state before allowing the turn to
-end (`stop-verify.sh` + `lib/stop-check.mjs`); git is a fallback cross-check
-only, used solely when a session's own ledger recorded zero touches.
+guess whose change is whose). Stop verifies mapping, context, and memory
+evidence against your session's own state before allowing the turn to end
+(`stop-verify.sh` + `lib/stop-check.mjs`); git is a fallback cross-check only,
+used solely when a session's own ledger recorded zero touches.
+
+**Exactly one PreToolUse hook is wired**, matching `Write|Edit|MultiEdit`, and
+it refuses writes into the canonical checkout — `guard-canonical-write.mjs`.
+Production deploy shapes are refused by `permissions.deny` in
+`.claude/settings.json`, which is a permission rule rather than a hook.
+
+Two mechanisms named here until 2026-08-30 do not exist:
+`guard-feature-context.mjs` was never on disk, and `guard-bash.sh` was deleted
+on 2026-08-27 after a period of sitting unwired. Neither absence changed what
+the deny rules do; both made this contract claim more enforcement than the
+repository has.
+
+**Do not take an enforcement claim from this file.**
+`docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated from `.claude/settings.json`
+and the hook scripts actually on disk, and resolves every claim to a mechanism,
+a location, and how it was observed. Where the two disagree, it is right and
+this file is the thing to fix.
 
 ## Planned extensions (none wired — specs only)
 

@@ -70,6 +70,18 @@ export interface SelfHealStage {
 
 const DAILY = 24 * 60;
 
+/**
+ * Close's own heartbeat job type.
+ *
+ * It used to be `log-retention`, the cron that HOSTS the auto-resolve work.
+ * That route deliberately fail-softs an auto-resolve failure so its
+ * independent purge still runs, then returns 200 — so Close's work could fail
+ * completely while this registry read a healthy heartbeat belonging to
+ * different work. Exported so the route and the registry cannot drift apart on
+ * the string that joins them.
+ */
+export const SELFHEAL_CLOSE_JOB_TYPE = 'selfheal-close';
+
 export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
   {
     id: 'triage',
@@ -93,7 +105,7 @@ export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
   },
   {
     id: 'close',
-    jobType: 'log-retention',
+    jobType: SELFHEAL_CLOSE_JOB_TYPE,
     step: 3,
     title: 'Close',
     runner: 'vercel-cron',
@@ -122,7 +134,7 @@ export interface SelfHealStageRow extends SelfHealStage {
  */
 export function classifySelfHealStage(
   stage: SelfHealStage,
-  lastRun: { started_at: string; status: string } | null,
+  lastRun: { started_at: string; status: string; metadata?: unknown } | null,
   now: Date,
 ): CronBoardStatus {
   return classifyCronStatus(

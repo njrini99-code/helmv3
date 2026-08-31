@@ -152,37 +152,19 @@ describe('fetchSentryFeatureCounts', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('queries is:unresolved feature:<key> per key and buckets total/critical counts', async () => {
-    fetchMock.mockImplementation((url: string) => {
-      const u = String(url);
-      if (u.includes('feature%3Around_tracking')) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify([issuePayload('1'), { ...issuePayload('2'), level: 'fatal' }]),
-            { status: 200, headers: { 'content-type': 'application/json' } },
-          ),
-        );
-      }
-      return Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { 'content-type': 'application/json' } }));
-    });
-    const res = await fetchSentryFeatureCounts(['round_tracking', 'stats_analytics']);
-    expect(res).toEqual({
-      round_tracking: { total: 2, critical: 1 },
-      stats_analytics: { total: 0, critical: 0 },
-    });
-  });
+  // REMOVED: 'queries is:unresolved feature:<key> per key ...'
+  //
+  // It asserted the FANOUT — one `feature:<key>` query per feature — as the
+  // correct behaviour. ET-4 replaced that with a single Discover aggregate, so
+  // the assertion now describes a mechanism that no longer exists. Its real
+  // subject (total/critical bucketing) is covered by
+  // 'buckets total and critical from the grouped rows' below, against the
+  // response shape the aggregate actually returns.
 
-  it('degrades to null for ALL keys if any single per-feature query fails (never a partial, misleading map)', async () => {
-    fetchMock.mockImplementation((url: string) => {
-      const u = String(url);
-      if (u.includes('feature%3Around_tracking')) {
-        return Promise.resolve(new Response('slow down', { status: 429 }));
-      }
-      return Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { 'content-type': 'application/json' } }));
-    });
-    const res = await fetchSentryFeatureCounts(['round_tracking', 'stats_analytics']);
-    expect(res).toBeNull();
-  });
+  // REMOVED: 'degrades to null for ALL keys if any single per-feature query
+  // fails ...' — there is no longer a per-feature query to fail. The property
+  // it protected (never a partial, misleading map) is now covered by
+  // 'a failed aggregate degrades to null — never a partial map'.
 
   it('degrades to null on a thrown network error', async () => {
     fetchMock.mockRejectedValue(new Error('ECONNRESET'));
@@ -190,41 +172,16 @@ describe('fetchSentryFeatureCounts', () => {
     expect(res).toBeNull();
   });
 
-  it('never exceeds the concurrency ceiling, however many features exist', async () => {
-    let inFlight = 0;
-    let peakInFlight = 0;
-    fetchMock.mockImplementation(async () => {
-      inFlight += 1;
-      peakInFlight = Math.max(peakInFlight, inFlight);
-      await new Promise((resolve) => setTimeout(resolve, 1));
-      inFlight -= 1;
-      return new Response(JSON.stringify([]), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-    });
+  // REMOVED: 'never exceeds the concurrency ceiling ...' and, below,
+  // 'abandons the rest of the sweep once one query fails'.
+  //
+  // Both bounded a worker pool that no longer exists, and both would now pass
+  // VACUOUSLY — a single request trivially satisfies "at most 6 in flight" and
+  // "at most 6 calls before abandoning". A test that cannot fail is worse than
+  // no test, because it reads like coverage. The stronger guarantee that
+  // replaces them is 'makes exactly ONE request regardless of how many
+  // features exist', which fails the moment a fanout returns.
 
-    const keys = Array.from({ length: 40 }, (_, i) => `feature_${i}`);
-    const res = await fetchSentryFeatureCounts(keys);
-
-    // Every key still gets counted — bounding concurrency must not drop work.
-    expect(Object.keys(res ?? {})).toHaveLength(40);
-    expect(peakInFlight).toBeLessThanOrEqual(6);
-  });
-
-  it('abandons the rest of the sweep once one query fails', async () => {
-    fetchMock.mockImplementation(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1));
-      return new Response('slow down', { status: 429 });
-    });
-
-    const keys = Array.from({ length: 40 }, (_, i) => `feature_${i}`);
-    expect(await fetchSentryFeatureCounts(keys)).toBeNull();
-
-    // The result is already null, so issuing the other 34 queries would be
-    // pure rate-limit pressure for output nobody reads.
-    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(6);
-  });
 
   it('skips the sweep entirely during the cooldown that follows a failure', async () => {
     fetchMock.mockResolvedValue(new Response('slow down', { status: 429 }));
@@ -379,5 +336,145 @@ describe('updateSentryIssueStatus', () => {
     expect(res.status).toBe('ok');
     const url = String(fetchMock.mock.calls[0]![0]);
     expect(url).toContain('/issues/HELMV3-4C/');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ET-4 — per-feature counts come from ONE aggregate query, not one query per
+// feature.
+//
+// MEASURED against production Sentry (org helm-xs, 2026-08-29, one authorised
+// probe). The Discover events endpoint answers the whole question in a single
+// request by grouping on the tag:
+//
+//   GET /organizations/<org>/events/
+//       ?dataset=errors&query=is:unresolved&statsPeriod=24h
+//       &field=feature&field=level&field=count_unique(issue)
+//
+//   [{"level":"error","feature":"","count_unique(issue)":4},
+//    {"level":"info","feature":"calendar","count_unique(issue)":1},
+//    {"level":"info","feature":"unknown","count_unique(issue)":1}]
+//
+// The old sweep issued one PAGINATING request per feature key — ~85 distinct
+// URLs, each subject to Sentry's rate limit (observed
+// `x-sentry-rate-limit-limit: 10`). That fanout is what earned the sustained
+// 429s the Bridge reports as integration faults.
+//
+// `count_unique(issue)` is deliberate. `count()` returns EVENTS (7/1/2 in the
+// same probe) where this function's contract is ISSUES (4/1/1). Shipping
+// `count()` would have silently redefined the number — the exact
+// lifetime-vs-window mistake #1666 closed, in a new place.
+// ---------------------------------------------------------------------------
+describe('fetchSentryFeatureCounts — one aggregate query, not one per feature', () => {
+  beforeEach(() => {
+    vi.stubEnv('SENTRY_READ_TOKEN', 'sentry-read-token');
+    vi.stubEnv('SENTRY_ORG', 'helm-xs');
+    vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
+    fetchMock.mockReset();
+    __resetSentryFeatureCountCooldown();
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  const aggregate = (rows: unknown[]) =>
+    new Response(JSON.stringify({ data: rows }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+
+  it('makes exactly ONE request regardless of how many features exist', async () => {
+    fetchMock.mockResolvedValue(aggregate([]));
+    const keys = Array.from({ length: 85 }, (_, i) => `feature_${i}`);
+
+    await fetchSentryFeatureCounts(keys);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks the Discover events endpoint, grouped by feature and level', async () => {
+    fetchMock.mockResolvedValue(aggregate([]));
+    await fetchSentryFeatureCounts(['round_tracking']);
+
+    const url = String(fetchMock.mock.calls[0]![0]);
+    expect(url).toContain('/events/');
+    expect(url).toContain('field=feature');
+    expect(url).toContain('field=level');
+    expect(url).toContain('count_unique');
+    // A per-feature filter would be the fanout returning.
+    expect(url).not.toContain('feature%3A');
+  });
+
+  it('buckets total and critical from the grouped rows', async () => {
+    fetchMock.mockResolvedValue(
+      aggregate([
+        { feature: 'round_tracking', level: 'error', 'count_unique(issue)': 3 },
+        { feature: 'round_tracking', level: 'fatal', 'count_unique(issue)': 2 },
+        { feature: 'calendar', level: 'info', 'count_unique(issue)': 1 },
+      ]),
+    );
+
+    const res = await fetchSentryFeatureCounts(['round_tracking', 'calendar', 'stats_analytics']);
+    expect(res).toEqual({
+      round_tracking: { total: 5, critical: 2 },
+      calendar: { total: 1, critical: 0 },
+      // Absent from the response means the aggregate asked globally and this
+      // feature had none — genuinely zero, not "we did not ask".
+      stats_analytics: { total: 0, critical: 0 },
+    });
+  });
+
+  it('ignores rows for features the caller did not ask about', async () => {
+    // The aggregate returns every feature in the org, including "" and
+    // "unknown". Only requested keys may appear in the result.
+    fetchMock.mockResolvedValue(
+      aggregate([
+        { feature: '', level: 'error', 'count_unique(issue)': 4 },
+        { feature: 'unknown', level: 'info', 'count_unique(issue)': 1 },
+        { feature: 'calendar', level: 'error', 'count_unique(issue)': 2 },
+      ]),
+    );
+
+    const res = await fetchSentryFeatureCounts(['calendar']);
+    expect(res).toEqual({ calendar: { total: 2, critical: 0 } });
+  });
+
+  it('an UNRECOGNISED response envelope is unreadable, not zero rows', async () => {
+    // The most dangerous shape in this file. The `{ data: [...] }` envelope was
+    // confirmed through the Sentry MCP, not by parsing a raw REST body — so it
+    // is INFERRED, and inference can be wrong. If Sentry returns something else
+    // and we read it as "no rows", every feature reports zero unresolved issues
+    // and the Bridge renders a fully healthy board off an unparsed response.
+    //
+    // Unreadable must degrade to null, exactly like a 429.
+    for (const body of [{ notData: [] }, 'a string', 42, null]) {
+      fetchMock.mockReset();
+      __resetSentryFeatureCountCooldown();
+      fetchMock.mockResolvedValue(
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+      expect(await fetchSentryFeatureCounts(['round_tracking'])).toBeNull();
+    }
+  });
+
+  it('an empty but WELL-FORMED aggregate is zero, not unreadable', async () => {
+    // The other half: `{ data: [] }` is a successful answer meaning nothing is
+    // unresolved. Collapsing it into null would hide a genuinely healthy board.
+    fetchMock.mockResolvedValue(aggregate([]));
+    expect(await fetchSentryFeatureCounts(['round_tracking'])).toEqual({
+      round_tracking: { total: 0, critical: 0 },
+    });
+  });
+
+  it('a failed aggregate degrades to null — never a partial map', async () => {
+    fetchMock.mockResolvedValue(new Response('slow down', { status: 429 }));
+    const res = await fetchSentryFeatureCounts(['round_tracking', 'calendar']);
+    expect(res).toBeNull();
+  });
+
+  it('a thrown network error degrades to null', async () => {
+    fetchMock.mockRejectedValue(new Error('ECONNRESET'));
+    expect(await fetchSentryFeatureCounts(['round_tracking'])).toBeNull();
   });
 });

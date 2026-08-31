@@ -7,10 +7,19 @@ verified: 2026-08-20  # every claim below re-checked against the guards, vercel.
 No `paths:`, so this loads every session. That is deliberate: these are the
 traps that don't care which file you opened.
 
-Everything here is either enforced by a `PreToolUse` guard in `.claude/hooks/`
-or was learned by breaking something. **Guards are not suspended by permission
-allow rules or by `bypassPermissions`** — they are the real safety layer, which
-is what makes working fast here safe.
+Everything here was either learned by breaking something or is enforced by
+configuration — and **which one applies is not something this file should be
+trusted to tell you.** `docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated from
+`.claude/settings.json` and the hook scripts on disk, and resolves each safety
+claim to a mechanism, a config location, and how it was observed. Three claims
+in these rules turned out to be false on 2026-08-29 — all about irreversible
+operations, all confident — which is why enforcement is no longer asserted in
+prose here.
+
+What IS true and load-bearing: `permissions.deny` rules and the one wired
+`PreToolUse` guard are not suspended by permission allow rules or by
+`bypassPermissions`. That is the real safety layer. It is also much smaller
+than this file used to imply.
 
 ---
 
@@ -69,9 +78,14 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 1c. The canonical checkout boundary — what is actually enforced
 
-- **The canonical checkout is the control tower.** All mutating agent work
-  begins in a task worktree: `scripts/new-worktree.sh <task>`.
-- **That is a rule, not a mechanism.** State the narrow truth:
+- **`AGENTS.md` owns workspace and concurrency policy. This section owns only
+  what is mechanically enforced.** Two lines in this file used to answer the
+  same question differently — "All mutating agent work begins in a task
+  worktree" here, and "Never switch branches or create worktrees unless asked"
+  in §2 — while AGENTS.md carried the actual rule: one active session may work
+  in canonical directly; concurrent sessions each take a worktree. Two rules for
+  one decision means neither is followed. The policy is stated once, there.
+- **What is enforced here is narrow, and it is a rule, not a mechanism:**
 
   | Route into canonical | Blocked? | By what |
   | --- | --- | --- |
@@ -97,10 +111,11 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 2. Git and commits
 
-- **Work on the currently checked-out branch; `main` is home.** Never switch
-  branches or create worktrees unless asked; return to clean `main` only when
-  the task is merged and verified — the resting-state policy is AGENTS.md's
-  canonicality section, stated once there. **A push to `main` ships nothing** —
+- **Confirm the branch, then work on it; `main` is home.** Return to clean
+  `main` only when the task is merged and verified. Whether a task takes a
+  worktree or the canonical checkout is AGENTS.md's call, not this file's — its
+  canonicality section is where that policy is stated, once.
+  **A push to `main` ships nothing** —
   `vercel.json` carries `"git": {"deploymentEnabled": {"*": false}}`, so no
   branch auto-deploys; production is an on-demand promote.
 - **`git add <explicit paths>`. Never `git add -A`.** Every agent in this repo
@@ -117,9 +132,13 @@ mechanical, and these are the habits that keep it fixed.
   dependencies. Never `.worktrees/` inside the repo — `.gitignore` hides an
   internal one from git but `find`/`grep` still return it, so agents edit the
   copy nobody ships.
-- **Prune worktrees by PR state, not `--merged`.** This repo squash-merges, so a
-  merged branch never becomes an ancestor of `main` and `git branch --merged`
-  never lists it.
+- **Prune with `npm run worktrees{,:park,:retire}`, never by hand.** This repo
+  squash-merges, so a merged branch never becomes an ancestor of `main` and
+  `git branch --merged` never lists it — which is why the tool keys on PR state
+  and an exact head OID. Since 2026-08-30 it also refuses to park a checkout
+  whose branch has an OPEN PR unless `config/open-pr-dispositions.json` records
+  `worktree_policy: PARK_IF_REPRODUCIBLE` for it. AGENTS.md states the policy;
+  `scripts/worktree-lifecycle.mjs` is the mechanism.
 - **No hook blocks git commands any more.** `guard-bash.sh` was deleted
   2026-08-27 after being unwired; it protected nothing while it sat there.
   What remains, and is PROVEN to fire even under `bypassPermissions`, is
@@ -139,16 +158,26 @@ mechanical, and these are the habits that keep it fixed.
   not the test's — it manufactures a green result. Nothing blocks this any
   more; it is on you to notice.
   Capture to a file and check the exit code separately.
-- **Recursive `rm` must stay inside the project or `$TMPDIR`.** Blocked
-  elsewhere: `~/.claude/settings.local.json` allows `Bash(rm:*)` globally and an
-  allow rule suspends both the prompt and the auto-mode classifier — the hook is
-  the only thing left.
-- **`rm -rf .next` is blocked.** It wedges Turbopack cold-compile for the rest
-  of the session.
+- **Recursive `rm` is UNENFORCED — keep it inside the project or `$TMPDIR`
+  yourself.** `~/.claude/settings.local.json` allows `Bash(rm:*)` globally, an
+  allow rule suspends both the prompt and the auto-mode classifier, and the hook
+  that used to be "the only thing left" no longer exists. No `permissions.deny`
+  rule covers `rm` either. Nothing will stop you.
+- **`rm -rf .next` is NOT blocked** — avoid it because it wedges Turbopack
+  cold-compile for the rest of the session, not because anything refuses it.
+  (Both of these lines claimed enforcement until 2026-08-29;
+  `docs/CONTROL_PLANE_ENFORCEMENT.md` now resolves them against live config.)
 - **`timeout` does not exist on macOS.** `timeout 90 cmd` fails with "command
   not found" and every wrapped call reads as a failure. This produced a bogus
   "21 of 21 tests failing" result on 2026-08-20. Use `gtimeout` (coreutils) or
   no wrapper.
+- **zsh eats `:r`, `:h`, `:t`, `:e` after a variable.** `"refs/heads/$b:refs/heads/$b"`
+  becomes `refs/heads/recovered/stash-0efs/heads/recovered/stash-0` — zsh reads
+  `$b:r` as the `:r` history modifier. `git push` then reports
+  `src refspec ... does not match any` for a ref that resolves fine, and the
+  same command typed literally works, so it reads as a git problem. Seven
+  branch pushes failed this way on 2026-08-30. Use `git push origin "$b"`, or
+  `${b}` followed by a literal colon.
 - **`ls` is aliased to `eza` here.** Scripted `ls` with flags it doesn't share
   errors out. Use `/bin/ls` in scripts.
 
@@ -161,8 +190,8 @@ mechanical, and these are the habits that keep it fixed.
 Do not collapse these. An earlier version of this section did, and overstated
 the MCP one.
 
-**Path 1 — the Supabase MCP server.** `.mcp.json` declares exactly one server,
-pointed at the production project and carrying `read_only=true`:
+**Path 1 — the Supabase MCP server.** `.mcp.json` declares exactly one server
+*in this repo*, pointed at the production project and carrying `read_only=true`:
 
 ```text
 https://mcp.supabase.com/mcp?project_ref=<prod>&read_only=true
@@ -175,6 +204,65 @@ https://mcp.supabase.com/mcp?project_ref=<prod>&read_only=true
   relying on either, and record what you observed.
 
 Never edit `read_only=true` out of `.mcp.json` to make something work.
+
+**Which MCP namespace is authoritative, what it is connected to, and what it is
+allowed to do are GENERATED, not written here.**
+
+    docs/TOOL_AUTHORITY_MATRIX.md          per-service authority + evidence
+    docs/CONTROL_PLANE_ENFORCEMENT.md      what is actually enforced
+    config/control-plane-gaps.json         what is knowingly not
+    npm run control-plane:verify           whether any of it has drifted
+
+Those are rebuilt from `.claude/settings.json`, `.mcp.json` and recorded
+observations, and each observation carries a fingerprint of the configuration
+that produced it — change a deny rule and the matching EXERCISED claim goes
+STALE by itself. A table of namespaces and connection states used to live in
+this section. It is gone on purpose: prose cannot notice a mechanism being
+deleted, which is the failure this whole file keeps recording.
+
+What stays here is the part no generator can derive — policy and the reasons
+behind it:
+
+- **Never edit `read_only=true` out of `.mcp.json`** to make something work.
+- **The sanctioned path's OAuth grant requests only `:read` scopes** —
+  organizations, projects, database, analytics, secrets, edge_functions,
+  environment, storage. That is connector-enforced read-only, observable
+  without any write probe, and it is why `apply_migration` on that namespace
+  may not function as granted. Do not resolve that by attempting a production
+  migration.
+- **Arbitrary SQL through the account connector is UNENFORCED**, deliberately
+  and temporarily. It is the only working query path; `DELETE FROM x;` through
+  it reaches production and nothing intercepts it. Registered as
+  `SUPABASE_ARBITRARY_SQL_UNENFORCED`, not described as safe.
+- **No hook sees an MCP call.** The only `PreToolUse` hook matches
+  `Write|Edit|MultiEdit`, a regex over the TOOL NAME. Permission rules are the
+  entire MCP defence — which is why deny rules, not a hook, are where this is
+  enforced.
+- **A project-scope DENY overrides a user-scope ALLOW**, mid-session, proven by
+  probe rather than assumed.
+- **User-scope grants are not edited from this repo.** They affect every
+  project and any concurrent session.
+
+**`.mcp.json` is not the list of MCP tools you have.** It is the list this REPO
+declares. Account-level connectors add more and appear in no file here — check
+your own tool inventory rather than inferring it from this directory. That
+distinction cost two days: this section once said "`.mcp.json` declares exactly
+one server", true of the file and read as "one MCP server exists", while an
+authenticated Sentry MCP sat available the whole time.
+
+**The Sentry MCP is the working read path for Sentry.** Org slug `helm-xs`.
+`find_organizations`, `search_issues`, `search_events` (grouped aggregates —
+`field=feature&field=level&field=count_unique(issue)` replaced an 85-request
+fanout with one query).
+
+**The Sentry credentials in `.env.local` are NOT usable.** Measured 2026-08-29:
+`SENTRY_READ_TOKEN` and `SENTRY_AUTH_TOKEN` are 11-character placeholders and
+`SENTRY_ORG` is not the real slug, so a direct REST call returns
+`HTTP 401 {"detail":"Invalid token"}`. They still pass `usableSecret()` in
+`src/lib/admin/sentry-api.ts` (>= 10 chars, no placeholder pattern), so
+`config()` treats Sentry as CONFIGURED and every local Sentry read fails soft
+and silently. Production is unaffected. Do not spend time debugging local
+Sentry reads — they cannot work; use the MCP.
 
 **Path 2 — direct database credentials.** `psql`, `supabase db execute`,
 `supabase db query`, and anything else holding

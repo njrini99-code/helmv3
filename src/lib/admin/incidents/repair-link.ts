@@ -14,8 +14,11 @@
  * that can disagree with GitHub. `docs/ai-system/selfheal/repair-contract.md`
  * requires two things on every repair PR, and both carry the fingerprint:
  *
- *   STEP 4  the branch is `fix/rca-<fp>`
- *   STEP 5  the body links to `/admin/errors/<fingerprint>`
+ *   STEP 5  the body links to `/admin/errors/<fingerprint>`  — REQUIRED, and
+ *           the only join new Repair work must carry
+ *   STEP 4  the branch is `fix/rca-<fp>`  — HISTORICAL ONLY. The one supported
+ *           worktree creator produces `agent/<task>`, so this form cannot be
+ *           produced any more; parsing stays so old PRs keep resolving.
  *
  * Both are scanned, because only one of them is reliably available. The Bridge
  * reads PRs through GitHub's SEARCH endpoint (see `fetchPullRequests`), which
