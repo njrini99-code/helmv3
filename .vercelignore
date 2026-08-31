@@ -68,6 +68,41 @@ coverage/
 audit/
 tools/
 
+# More untracked local artifact directories — the SAME trap as audit/ and
+# tools/ above, at new addresses. Every one of these is in .gitignore and
+# untracked, which is exactly why they upload: the moment this file exists
+# Vercel consults it INSTEAD of .gitignore, so "git ignores it" stops meaning
+# "Vercel ignores it". Measured 2026-08-31, all five together: 166 files, 21 MB.
+#
+#   .playwright-mcp   browser session logs from a debugging run in August
+#   .agents           local agent skill definitions
+#   routes            generated route dumps and a wiki export
+#   .ruff_cache       linter cache
+#   .momentic-mcp     tooling state
+#
+# None has ever been a build input.
+.playwright-mcp/
+.agents/
+routes/
+.ruff_cache/
+.momentic-mcp/
+# Tracked, unlike the five above, but still pure test artifacts (jpegs from
+# MCP CLI runs) that no build step reads.
+.momentic/
+
+# Documentation. 1,698 tracked files and 145 MB — 54% of the entire upload,
+# and more than half of that is binary: marketing mockup references, visual-audit
+# screenshots, PDFs.
+#
+# Nothing in the build reads it. Verified 2026-08-31: no reference in
+# next.config.mjs, tailwind.config.ts, tsconfig.json or package.json; no import
+# from src/; no /docs route; no runtime readFile against it. Next.js serves
+# static assets from public/, which is separate and stays.
+#
+# This excludes docs from the UPLOAD only. They remain tracked in git, which is
+# where they are actually read.
+docs/
+
 # Native shell — built by Capacitor/Xcode, never by the Vercel build.
 android/
 ios/
