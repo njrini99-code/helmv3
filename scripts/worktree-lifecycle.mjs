@@ -391,6 +391,67 @@ for (const b of allBranches) {
   });
 }
 
+// Remote branches with no local ref — invisible to every prior version of this
+// tool, and the ONLY ones an operator actually sees.
+//
+// `refs/heads` is what the loop above enumerates, so a branch that was merged
+// and whose local copy was pruned (or that was pushed from another machine, or
+// created by a workflow) never appeared in this report at all. Measured
+// 2026-08-31: three such branches existed, one of them `feat/golfhelm-
+// engineering-os-p2` whose PR #1588 had been MERGED for days. The tool
+// reported "0 branches to delete" while GitHub's branch list — the thing the
+// owner was looking at — still showed it. A cleanup tool that cannot see the
+// residue it exists to remove is not a cleanup tool.
+//
+// Same proof standard as a local branch, no weaker: PR MERGED, and the remote
+// tip identical to the PR head OID. Deletion is `git push origin --delete`,
+// which is why it carries its own action name rather than being folded into
+// DELETE_BRANCH — the two are not equally reversible and should never read as
+// the same operation.
+const localSet = new Set(allBranches);
+const remoteBranches = (git(['for-each-ref', '--format=%(refname:short)', 'refs/remotes/origin']) ?? '')
+  .split('\n')
+  .filter(Boolean)
+  .map((r) => r.replace(/^origin\//, ''))
+  .filter((b) => b && b !== 'HEAD' && b !== 'origin' && b !== 'main' && !localSet.has(b));
+
+for (const b of remoteBranches) {
+  const remoteTip = git(['rev-parse', `origin/${b}`]);
+  const pr = prFor(b);
+  const bv = classifyBranch({
+    branch: b,
+    localSha: remoteTip,
+    upstream: `origin/${b}`,
+    uniqueCommits: uniqueCommits(`origin/${b}`),
+    prLookup: pr.lookup,
+    prNumber: pr.number ?? null,
+    prState: pr.state ?? null,
+    prHeadSha: pr.headSha ?? null,
+  });
+  rows.push({
+    kind: 'remote-branch',
+    branch: b,
+    worktree: 'none (remote only)',
+    size: '-',
+    dirty: 'no',
+    processCwd: 'no',
+    upstream: `origin/${b}`,
+    localSha: remoteTip ? remoteTip.slice(0, 9) : '-',
+    remoteSha: remoteTip ? remoteTip.slice(0, 9) : '-',
+    prLookup: pr.lookup,
+    prNumber: pr.number ?? '-',
+    prState: pr.state ?? 'UNKNOWN',
+    prHeadSha: pr.headSha ? pr.headSha.slice(0, 9) : '-',
+    tipMatchesPr: pr.headSha ? (pr.headSha === remoteTip ? 'yes' : 'no') : '-',
+    disposition: '-',
+    worktreePolicy: '-',
+    worktreeVerdict: '-',
+    branchVerdict: bv.verdict,
+    action: bv.verdict === DELETE_MERGED_EXACT ? 'DELETE_REMOTE' : 'KEEP',
+    reason: bv.reason,
+  });
+}
+
 if (JSON_OUT) {
   console.log(JSON.stringify(rows, null, 2));
   process.exit(0);
@@ -414,13 +475,58 @@ for (const r of rows) {
 }
 
 const parkable = rows.filter((r) => r.kind === 'worktree' && (r.action === 'PARK' || r.action === 'RETIRE'));
-const deletable = rows.filter((r) => r.branchVerdict === DELETE_MERGED_EXACT && r.worktree === 'none');
+const deletable = rows.filter((r) => r.branchVerdict === DELETE_MERGED_EXACT && r.action !== 'KEEP');
+// Proven merged, but a checkout still holds the branch so it cannot be deleted
+// yet. This used to be silently excluded from a count that carried the SAME
+// NAME as the verdict printed on its row — so the report said
+// `DELETE_MERGED_EXACT` on the line and `0 branch(es) DELETE_MERGED_EXACT` in
+// the summary, and the summary is the part people read. One label, two
+// meanings, is how a tool tells you nothing while appearing to tell you
+// something.
+const blockedByWorktree = rows.filter(
+  (r) => r.branchVerdict === DELETE_MERGED_EXACT && r.action === 'KEEP' && r.worktree !== 'none',
+);
 const unknowns = rows.filter((r) => String(r.branchVerdict).startsWith('UNKNOWN') || String(r.worktreeVerdict).startsWith('UNKNOWN'));
 
 console.log('');
-console.log(`  ${parkable.length} worktree(s) parkable/retirable · ${deletable.length} branch(es) DELETE_MERGED_EXACT · ${unknowns.length} row(s) UNKNOWN`);
+console.log(`  ${parkable.length} worktree(s) parkable/retirable · ${deletable.length} branch(es) deletable now · ${unknowns.length} row(s) UNKNOWN`);
+if (blockedByWorktree.length) {
+  console.log('');
+  console.log(`  ${blockedByWorktree.length} branch(es) are PROVEN MERGED but still checked out, so they are`);
+  console.log('  counted nowhere above. Park the checkout first and they become deletable:');
+  for (const r of blockedByWorktree) {
+    console.log(`    ${r.branch}  ->  ${r.worktree}`);
+  }
+}
 if (unknowns.length) {
   console.log('  UNKNOWN means evidence was unavailable. It is never a licence to remove anything.');
+}
+
+// Every PR lookup failing is an INFRASTRUCTURE failure, not 26 independent
+// "this branch has no PR" answers — and the two are indistinguishable in the
+// output above. Observed 2026-08-31: `gh` cannot reach GitHub from inside the
+// Bash sandbox (Go's TLS cannot read the macOS keychain there), so every row
+// read UNKNOWN and the summary read `0 branches to delete`. That is the exact
+// shape of "the tool says there is nothing to clean" — indistinguishable from
+// a genuinely clean repo, which is how branches accumulated while a working
+// cleanup tool sat right here.
+//
+// Mirrors the repo's own guard convention: PASS / POLICY_FAILURE /
+// INFRASTRUCTURE_FAILURE, where the third exits non-zero and never presents as
+// the first.
+const lookupRows = rows.filter((r) => r.prLookup);
+const failedLookups = lookupRows.filter((r) => r.prLookup !== 'OK');
+if (lookupRows.length > 0 && failedLookups.length === lookupRows.length) {
+  console.log('');
+  console.log('  INFRASTRUCTURE_FAILURE: every PR lookup failed.');
+  console.log(`  ${failedLookups.length}/${lookupRows.length} branches could not be classified, so this report proves NOTHING`);
+  console.log('  about what is disposable. It is not evidence that the repo is clean.');
+  console.log('');
+  console.log('  Most likely: `gh` cannot reach GitHub from this shell. Verify with');
+  console.log('    gh api repos/{owner}/{repo}/pulls?per_page=1');
+  console.log('  If that works in your terminal but not here, the caller is sandboxed —');
+  console.log('  re-run outside the sandbox rather than trusting this output.');
+  process.exit(2);
 }
 
 const humanRows = rows.filter(
@@ -464,12 +570,37 @@ if (GC) {
     // Re-verify the exact head match immediately before deleting. The report
     // may be seconds old; the deletion is not reversible from here.
     const now = git(['rev-parse', r.branch]);
-    if (!now || !now.startsWith(r.localSha)) {
+    if (!now) {
+      // Already gone — usually deleted moments ago by --retire in this same
+      // run. Saying "tip moved" here was wrong and alarming: it names a
+      // divergence that did not happen.
+      console.log(`gc: SKIP ${r.branch} — already deleted`);
+      continue;
+    }
+    if (!now.startsWith(r.localSha)) {
       console.log(`gc: SKIP ${r.branch} — tip moved since classification`);
       continue;
     }
     console.log(`gc: deleting ${r.branch} (${r.reason})`);
     if (git(['branch', '-D', r.branch]) === null) {
+      console.log('  refused — left in place');
+    } else {
+      acted++;
+    }
+  }
+
+  // Remote-only branches, same proof, different verb. Kept in its own loop so
+  // the output never lets a local delete and a remote delete read alike: one
+  // is recoverable from the reflog for 90 days, the other is a push.
+  const remoteTargets = rows.filter((r) => r.kind === 'remote-branch' && r.action === 'DELETE_REMOTE');
+  for (const r of remoteTargets) {
+    const now = git(['rev-parse', `origin/${r.branch}`]);
+    if (!now || !now.startsWith(r.localSha)) {
+      console.log(`gc: SKIP origin/${r.branch} — tip moved since classification`);
+      continue;
+    }
+    console.log(`gc: deleting REMOTE origin/${r.branch} (${r.reason})`);
+    if (git(['push', 'origin', '--delete', r.branch]) === null) {
       console.log('  refused — left in place');
     } else {
       acted++;
