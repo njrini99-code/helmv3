@@ -23,7 +23,7 @@
  * and no e2e attachment coverage. A regression here shipped with no CI signal.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 
 // `vi.mock` factories are hoisted above module-level consts, so the spies have
 // to be created inside `vi.hoisted` or they are not initialised when the
