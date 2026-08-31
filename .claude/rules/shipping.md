@@ -297,9 +297,19 @@ and `supabase db push` / `migration up`, each in four spellings.
   main" is stale.
 - **One deploy per milestone.** Deploys cost real money; do not deploy
   incrementally to preview a change. Use GitHub Actions frames for visuals.
-- **`vercel deploy` needs `--archive=tgz`** — there is a 15,000-file upload cap
-  and this repo is over it.
+- **`vercel deploy` needs `--archive=tgz`.** The 15,000-file upload cap is
+  real, and this repo blew through it twice — 48,139 files on 2026-08-03 and
+  19,795 on 2026-08-09. It is **no longer over it**: measured 2026-08-31 the
+  upload is 5,712 files / 101 MB, because `.vercelignore` grew to cover the
+  directories those rejections named. Keep `--archive=tgz` anyway; it is also
+  what avoids the 10 MB request-body limit that stalled a promote.
+  (This line read "and this repo is over it" until 2026-08-31. A count in prose
+  outlived the condition it described — §1's own rule, in §5.)
 - `.vercelignore` **replaces** the default ignore set; it does not extend it.
+  This is the single most expensive line in this section. Every deploy failure
+  above was the same mechanism: a directory `.gitignore` excluded, uploaded
+  anyway, because the moment `.vercelignore` exists Vercel consults it INSTEAD.
+  A new untracked tooling directory is therefore a new upload, silently.
 - Team-scoped and integration env vars **do not show in `vercel env ls`**. Its
   absence from that listing is not evidence a variable is unset.
 
