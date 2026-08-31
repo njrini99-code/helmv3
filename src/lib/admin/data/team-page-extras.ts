@@ -24,7 +24,8 @@ import { resolveTeamErrorCounts } from '@/lib/admin/data/team-scope';
 
 export interface TeamPageExtras {
   organizationName: string | null;
-  errors7d: number;
+  /** `null` when the count could not be read — never silently zero. */
+  errors7d: number | null;
   roundScoresByPlayer: Map<string, { score: number | null; toPar: number | null }>;
   coachhelmInsights: { insights30d: number; acknowledgedPct: number | null } | null;
 }
@@ -99,12 +100,12 @@ export async function fetchTeamPageExtras(input: {
   const organizationName =
     orgResult.status === 'fulfilled' ? ((orgResult.value.data as { name: string } | null)?.name ?? null) : null;
 
-  // KNOWN RESIDUAL RISK, deliberately left as-is: a rejected lookup still
-  // reads as 0, which grades the team 'A'. Unlike the old `.eq('team_id')`
-  // count that returned 0 *always*, this is now only reachable on a genuine
-  // read failure — but making it honest means giving computeTeamGrade an
-  // "unknown" grade, which is a product decision, not a bug fix.
-  const errors7d = errors7dResult.status === 'fulfilled' ? errors7dResult.value : 0;
+  // CLOSED 2026-08-30 (gap TEAM_GRADE_READ_FAILURE_READS_AS_HEALTHY). This used
+  // to resolve a rejected lookup to 0, and 0 grades the team 'A' — so a broken
+  // read rendered as excellent health. computeTeamGrade now has an UNKNOWN
+  // grade, so the honest value is expressible: null means "could not read",
+  // which is not zero.
+  const errors7d = errors7dResult.status === 'fulfilled' ? errors7dResult.value : null;
 
   const roundScoresByPlayer =
     scoresResult.status === 'fulfilled'

@@ -257,6 +257,69 @@ function resolveClaims(hooks, denies) {
         observed: 'UNENFORCED — guard-sql.sh deleted 2026-08-27; SUPABASE_SERVICE_ROLE_KEY carries write capability',
       }),
     },
+    {
+      // Narrow on purpose, like the destructive-SQL matcher above: `--prod`
+      // and the three verbs, not the word "vercel". `vercel env ls` and
+      // `vercel inspect` are allow rules in the same file and must not be
+      // counted as a production-deploy mechanism.
+      claim: 'A production deploy typed as a vercel command is refused',
+      resolve: () => {
+        const hits = denyMatch((r) => /vercel.*(--prod|promote|rollback|alias set)/.test(r));
+        return hits.length
+          ? {
+              mechanism: `${hits.length} deny rules`,
+              where: '.claude/settings.json → permissions.deny',
+              observed: 'CONFIGURED — bare, ./node_modules/.bin and npx spellings; fires under bypassPermissions',
+            }
+          : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED' };
+      },
+    },
+    {
+      // The row this file exists for. Everything above resolves a claim by
+      // finding a mechanism; this one resolves it by finding that the
+      // mechanism cannot see the call. `permissions.deny` prefix-matches the
+      // command the agent SUBMITS, and the wrapper submits as itself — the
+      // `vercel deploy --prod --yes` it runs is a child process no rule
+      // inspects. Same shape as the canonical-write row: a matcher that reads
+      // what was typed rather than what will happen.
+      claim: 'A production deploy run through scripts/deploy-prod.sh is refused',
+      resolve: () => {
+        const wrapper = 'scripts/deploy-prod.sh';
+        const covered = denyMatch((r) => r.includes('deploy-prod'));
+        if (covered.length) {
+          return {
+            mechanism: covered.join(', '),
+            where: '.claude/settings.json → permissions.deny',
+            observed: 'CONFIGURED — the wrapper itself is denied',
+          };
+        }
+        // Only report the gap if the wrapper actually still runs a production
+        // deploy. If someone rewrites it, this row must stop asserting.
+        let runsProdDeploy = false;
+        try {
+          runsProdDeploy = /vercel\s+deploy\s+--prod/.test(
+            readFileSync(resolve(ROOT, wrapper), 'utf8'),
+          );
+        } catch {
+          return {
+            mechanism: 'NONE',
+            where: '—',
+            observed: `UNKNOWN — ${wrapper} could not be read`,
+          };
+        }
+        return runsProdDeploy
+          ? {
+              mechanism: 'NONE',
+              where: '—',
+              observed: `UNENFORCED — ${wrapper} runs \`vercel deploy --prod\` in a child process; deny rules match the submitted command, which is the script. NOT probed: the only probe is a real production deploy`,
+            }
+          : {
+              mechanism: 'N/A',
+              where: '—',
+              observed: `N/A — ${wrapper} no longer runs a production deploy`,
+            };
+      },
+    },
   ].map((c) => ({ claim: c.claim, ...c.resolve() }));
 }
 

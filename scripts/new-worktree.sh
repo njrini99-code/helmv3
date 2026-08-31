@@ -139,6 +139,12 @@ git worktree add --no-track "$DIR" -b "$BRANCH" "$BASE"
 # so repo:doctor can compare the declaration against reality instead of
 # guessing.
 mkdir -p "$DIR/.helm"
+#
+# parkPolicy is KEEP at creation, always, and that is the point. A worktree five
+# minutes old is clean, pushed, has no PR to key a disposition on, and shows no
+# process to `lsof` between two tool calls — every signal the lifecycle tool
+# used to read as "disposable", and every one of them wrong. Releasing a
+# checkout is now a positive act: edit this field to PARK_IF_REPRODUCIBLE.
 cat > "$DIR/.helm/workspace.json" <<JSON
 {
   "kind": "task",
@@ -147,7 +153,8 @@ cat > "$DIR/.helm/workspace.json" <<JSON
   "base": "${BASE}",
   "environment": "local",
   "supabase": "local",
-  "productionWrites": false
+  "productionWrites": false,
+  "parkPolicy": "KEEP"
 }
 JSON
 

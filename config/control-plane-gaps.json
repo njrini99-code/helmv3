@@ -38,20 +38,20 @@
       "closes_when": "the owner either completes the OAuth flow and observes what apply_migration actually does, or moves migrations to a path whose capability matches the authorization."
     },
     {
-      "id": "TEAM_GRADE_READ_FAILURE_READS_AS_HEALTHY",
+      "id": "MAIN_ADMIN_BYPASS_AVAILABLE",
       "owner": "founder",
       "opened": "2026-08-30",
-      "scope": "src/lib/admin/data/team-page-extras.ts — errors7d",
-      "reason": "A rejected 7-day error-count lookup resolves to 0, and 0 grades the team \"A\" out of computeTeamGrade. So a READ FAILURE renders as a healthy team. Found during the capture audit; it was already known and reasoned in a code comment, which is exactly the problem — a risk that lives only in a comment is invisible to everything that checks. Its siblings are safe by comparison: reliability/collect.ts turns a rejection into status \"blind\" with a reason, and rollup-b.ts returns { value: empty, degraded: true }. This one has no such channel because computeTeamGrade has no \"unknown\" grade to return.",
-      "closes_when": "computeTeamGrade gains an explicit unknown/ungraded state and errors7d distinguishes \"0 errors\" from \"could not read\". That is a product decision about what an ungraded team looks like on the page, not a bug fix, which is why it is registered rather than patched."
+      "scope": "GitHub branch protection on main — enforce_admins",
+      "reason": "main is protected and requires six status contexts, but classic branch protection reports enforce_admins.enabled=false, so a repository administrator — which is what ordinary agent credentials are here — can push straight past the pull-request requirement AND the required checks. It is not hypothetical: on 2026-08-30 two commits reached main that way, each printing 'Bypassed rule violations for refs/heads/main'. Both were green on all six required contexts afterwards, so the state of main was never harmed; the defect is that the bypass is STANDING rather than break-glass, and that nothing noticed it either time. Registered rather than fixed from here because branch protection is repository settings, not repository content: no agent credential should be able to relax its own gate, and an agent that could would not be a gate.",
+      "closes_when": "the owner turns on 'Include administrators' / 'Do not allow bypassing the above settings' for main in GitHub settings, and github/main-branch-protection observes enforce_admins.enabled=true with the three aggregate contexts still required and no ruleset bypass actors. Emergency access is then break-glass: relax, act, restore — never a standing grant."
     },
     {
-      "id": "ERROR_SURFACES_DISAGREE",
+      "id": "MIGRATIONS_REPO_PRODUCTION_LEDGER_DIVERGENCE",
       "owner": "founder",
       "opened": "2026-08-30",
-      "scope": "admin_events vs Sentry",
-      "reason": "Measured 2026-08-30 12:04Z: admin_events reports ZERO errors in 48 hours (most recent 2026-08-28 00:30Z) while Sentry reports 12 unresolved issues, several last seen 2-10 hours earlier, one with 64 events. Several Sentry culprits are SERVER-side (GET /api/calendar/feeds/[token], POST /api/inngest, server traces on /golf/dashboard/rounds/:id) — the path logServerError is meant to capture into admin_events. Which of the twelve SHOULD have been captured is not established, so this records the disagreement, not its cause. It matters because the board that answers \"is production healthy\" currently reads zero while production emits errors: the same unknown-presented-as-healthy class this whole program exists to remove. docs/ai-system/selfheal/STATE-2026-08-28.md already named it \"the biggest open design problem\"; this is the first current measurement of it.",
-      "closes_when": "The two surfaces reconcile, or the Bridge states which surface is authoritative for which class of error and renders the other as a separate, named source with its own freshness. Reconciling two error surfaces is a design decision about what the board claims to know, not a bug fix."
+      "scope": "supabase/migrations/** vs supabase_migrations.schema_migrations on the production project",
+      "reason": "Production's migration ledger records 846 versions; the repository tracks 337 migration files. 240 of those versions predate the repo's earliest file, which is expected — the repo was deliberately squashed to 20260527000000_prod_public_baseline.sql — but the divergence does not stop there. Sampling the window since 2026-08-01: 110 ledger rows against 71 tracked files, 54 rows with no file at that version and 15 files with no row at all. Most of the 54 turn out to be the SAME migration recorded under a different timestamp, because applying through the dashboard or MCP stamps its own version rather than the filename's; and several of the 15 are deliberately local-only (the reconcile_* family exists to bring a RESET LOCAL schema in line with production, and says so in its own headers). So the headline numbers overstate it. What they do NOT overstate is that the two are no longer comparable by eye, and at least one committed migration is genuinely unapplied and matters: INC-2026-08-30-account-deletion-still-cascades-golf-history. The Supabase Preview check has reported this on every main commit for long enough to read as background noise, which is how a true alarm stops working.",
+      "closes_when": "the 337 tracked migrations are classified against the live ledger and the live catalog — applied / applied-under-another-version / deliberately-local-only / genuinely-unapplied — and each genuinely-unapplied one is either applied under owner authorization or given a header saying why it never should be. Supabase Preview then either goes green or is decommissioned as a DECISION rather than as a way to stop seeing it."
     }
   ],
   "closed": [
@@ -60,6 +60,24 @@
       "opened": "2026-08-29",
       "closed": "2026-08-30",
       "how": "Measured what the gh path actually exposes: authenticated account id (238133540), repository id (1119265234) and the OAuth scope set from the X-Oauth-Scopes response header (gist, read:org, repo, workflow). All stable, none of it secret material. That is a capability fingerprint, so drift IS detectable — the gap was closed by measuring rather than by changing any lifecycle code, which is what its closing condition asked for."
+    },
+    {
+      "id": "TEAM_GRADE_READ_FAILURE_READS_AS_HEALTHY",
+      "opened": "2026-08-30",
+      "closed": "2026-08-30",
+      "how": "computeTeamGrade gained an explicit UNKNOWN grade, checked BEFORE every other rule so a dormant team with an unreadable count is ungradeable rather than graded D by luck. team-page-extras resolves a rejected read to null instead of 0, the page renders an em-dash with an explaining title and adds errors7d to its existing degraded banner, and computeTeamComputedInsights no longer prints \"fully active with no errors\" from an unread count. Regression tests cover the grade, the insights strip and the producer — the producer one exists because reverting it to 0 TYPECHECKS CLEANLY (number is assignable to number|null), so only a behavioural test stops it coming back."
+    },
+    {
+      "id": "WORKTREE_PARK_NO_PR_OWNERSHIP",
+      "opened": "2026-08-30",
+      "closed": "2026-08-30",
+      "how": "Checkout disposability now comes from the workspace's own identity, not from inference. scripts/new-worktree.sh writes parkPolicy: KEEP into the .helm/workspace.json marker it already created, and classifyWorktree refuses to park anything the marker has not explicitly moved to PARK_IF_REPRODUCIBLE — verdict KEEP_WORKSPACE_INTENT_REQUIRED, which sits outside the standing autonomous authorization. The gate runs BEFORE the reproducibility checks and independently of any PR, so it covers the window the #1681 fix could not reach: the one before a PR exists. Absent file, absent key, unknown value and unreadable JSON all KEEP; a positive lsof sighting still vetoes; a negative one still authorises nothing. Two facts stay separate — workspace identity answers whether the CHECKOUT may go, PR state answers whether the BRANCH may be deleted — and an OPEN PR released by its owner cannot override a workspace KEEP. CLOSED DIFFERENTLY FROM THE ORIGINAL CONDITION, deliberately: that asked for a session id checked for LIVENESS, which is the same unsound negative-evidence inference in a new costume — a session between two tool calls looks dead. Declared intent needs no liveness probe. Proven by 72 tests in worktree-lifecycle.test.ts, including end-to-end --park runs against real git worktrees with the marker absent, KEEP, and released."
+    },
+    {
+      "id": "ERROR_SURFACES_DISAGREE",
+      "opened": "2026-08-30",
+      "closed": "2026-08-30",
+      "how": "The board renders the two surfaces separately and can say 'partial'. src/lib/admin/incidents/reconciliation.ts is a pure verdict function — APPLICATION EVENTS from graded admin_events incidents, RUNTIME ERROR SURFACE from correlated Sentry incidents, OVERALL reconciled only when the two agree — and ErrorSurfaceReconciliation renders all three rows on /admin/errors. Order is fail-safe: unreadability is decided BEFORE agreement, because two surfaces cannot agree when one did not speak, so a blind source can never produce 'healthy' (the same rule canClaimAllClear applies page-wide) and an unread count renders as an em-dash rather than 0. The component renders even when everything agrees, which is a deliberate departure from BlindnessBeacon's return-null-when-quiet: silence is right for a WARNING and wrong for a RECONCILIATION, because otherwise 'the surfaces agree' and 'nobody compared them' look identical again — the exact failure being closed. Nothing was mirrored between the surfaces and no Sentry issue was silenced, both of which the contract forbids. 15 tests; injections proving they fail — rendering disagreement as healthy turns 4 red, treating a blind surface as zero turns 2 red — with the module restored byte-identical (sha256). Definition of done was docs/OBSERVABILITY_AUTHORITY.md, and it is met."
     }
   ]
 }

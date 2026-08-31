@@ -3,10 +3,16 @@
 # Schema (spec: docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md §17;
 # runtime contract: memory/system/golfhelm-engineering-os.md "Release queue").
 # A raw Sentry/Vercel/Bridge event does not belong here — only a verified
-# repair unit does. Populated by the release routine once
-# npm run reliability:collect / release:* land (not yet — see the compact
-# OS's Build status note); empty until then, not a placeholder for
-# hand-written entries.
+# repair unit does.
+#
+# HOW IT IS POPULATED TODAY: by hand, by the session that verifies a repair
+# unit, following the schema below. This header claimed the opposite until
+# 2026-08-30 — "empty until then, not a placeholder for hand-written entries" —
+# while sitting directly above hand-written items. The automated writer
+# (npm run reliability:collect / release:*) is still specified and still absent;
+# when it lands it takes over this file, and the schema is what makes that
+# handover mechanical rather than a rewrite. Until then, hand-written entries
+# are the intended use, not a violation of it.
 #
 # Per-item fields:
 #   id:                 stable identifier for this repair unit
@@ -93,6 +99,12 @@ items:
       fixed and its next occurrence returned indistinguishable from a regression.
       Resolution now belongs to the fingerprint.
     incident_id: null
+    no_incident_reason: >-
+      Not a defect repair. admin_events.resolved was per-row by design and the
+      change moves resolution to the fingerprint — a capability the model did
+      not have, not a fault it had. There is nothing to file as a confirmed
+      product defect, and filing one would put a design change in the incident
+      system where a reader would later look for a broken thing that never was.
     status: verified
     risk: R3
     sha: null

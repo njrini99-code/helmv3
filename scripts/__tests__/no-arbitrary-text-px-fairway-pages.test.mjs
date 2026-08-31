@@ -1,3 +1,6 @@
+// This previously ran under `node --test`, which nothing invokes, so it
+// never executed. Promoted to vitest after its stale path references were
+// repaired (see the audit report, 2026-08-30).
 // Regression test for the P403 type-scale sweep across the LIVE Fairway
 // redesign pages (the isRedesignEnabled() path).
 //
@@ -22,7 +25,7 @@
 //
 // Run via: node --test scripts/__tests__/no-arbitrary-text-px-fairway-pages.test.mjs
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -33,7 +36,6 @@ const repoRoot = resolve(import.meta.dirname, '../..');
 const SCOPED_FILES = [
   'src/components/fairway/pages/coachhelm/FairwayEffectiveness.tsx',
   'src/components/fairway/pages/coachhelm/PlayersGridView.tsx',
-  'src/components/fairway/pages/coachhelm/FairwayPlayerCoachHelm.tsx',
   'src/components/fairway/pages/messages/MessageConversationRail.tsx',
   'src/components/fairway/pages/messages/MessageThreadPane.tsx',
   'src/components/fairway/pages/calendar/FairwayMonthGrid.tsx',
@@ -45,7 +47,11 @@ const BANNED = /text-\[[0-9]+(\.[0-9]+)?px\]/;
 
 // The named tokens P403 introduced — every replacement must resolve to one of
 // these (or an existing canonical step), so the scale is provably closed.
-const REQUIRED_TOKENS = ['stat-xl', 'stat-lg', 'microlabel', 'microbadge'];
+// stat-xl / stat-lg were consumed only by FairwayPlayerCoachHelm.tsx, deleted in
+// a259fa296 (2026-08-18, dead player-CoachHelm cluster). The tokens still exist;
+// nothing in the scoped set uses them, so asserting consumption here asserts a
+// dead consumer. Dropped rather than left failing.
+const REQUIRED_TOKENS = ['microlabel', 'microbadge'];
 
 test('no arbitrary font-size (text-[Npx]) in the P403-scoped Fairway pages', () => {
   const offenders = [];

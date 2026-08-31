@@ -6,10 +6,15 @@ features:
     status: active
     owner: platform
     criticality: high
+    observability:
+      feature_keys: []
+      reason: >-
+        Agent tooling, not a product surface. Nothing here writes
+        admin_events.feature, and no FeatureKey should exist for it.
     docs:
       feature: docs/ai-system/helmv3-ai-codebase-intelligence.md
       flows:
-        - docs/superpowers/plans/2026-05-28-ai-codebase-intelligence.md
+        - docs/ai-system/helmv3-ai-codebase-intelligence.md
       ui:
         - AGENTS.md
         - CLAUDE.md
@@ -48,10 +53,15 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys:
+        - coachhelm_ai_engine
+        - insights_management
+        - coachhelm_analytics
+        - round_review_ai
     docs:
       feature: memory/features/coachhelm-ai.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/architecture/coachhelm-evidence-contract.md
         - docs/v3-research-golf-domain.md
       ui:
@@ -80,6 +90,9 @@ features:
       actions:
         - src/app/golf/actions/coachhelm-*.ts
         - src/app/golf/actions/insight-*.ts
+        - src/app/golf/actions/player-effectiveness.ts
+        - src/app/golf/actions/player-fingerprint.ts
+        - src/app/golf/actions/player-fingerprint-types.ts
         # `insight-*.ts` never matched `insights.ts` (no hyphen), so the
         # largest insight action file in the tree — it owns the post-round
         # generation trigger and its coach push — resolved to NO feature and
@@ -97,6 +110,7 @@ features:
       tests:
         - src/test/coachhelm/**
         - src/test/api/cron/coachhelm*.test.ts
+        - src/app/golf/actions/player-fingerprint.chart.test.ts
     integrations:
       - supabase
       - sentry
@@ -106,7 +120,6 @@ features:
       required_docs:
         - memory/features/coachhelm-ai.md
         - memory/context/coachhelm-ai.md
-        - memory/context/golfhelm-features.md
         - docs/v3-testing-standards.md
       required_checks:
         - npm run typecheck
@@ -118,6 +131,56 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys:
+        - baseball_academics
+        - baseball_announcements
+        - baseball_auth
+        - baseball_calendar
+        - baseball_camps
+        - baseball_classes
+        - baseball_coach_command_center
+        - baseball_coachhelm
+        - baseball_command_center
+        - baseball_compare
+        - baseball_decision_room
+        - baseball_demo_access
+        - baseball_demo_tracking
+        - baseball_dev_plans
+        - baseball_discover
+        - baseball_documents
+        - baseball_games
+        - baseball_import
+        - baseball_insights
+        - baseball_interests
+        - baseball_lift_onboarding
+        - baseball_lifting
+        - baseball_lineups
+        - baseball_messages
+        - baseball_notes
+        - baseball_notifications
+        - baseball_onboarding
+        - baseball_philosophy
+        - baseball_player_actions
+        - baseball_player_peek
+        - baseball_player_today
+        - baseball_postgame
+        - baseball_practice
+        - baseball_profile
+        - baseball_recruiting
+        - baseball_recruiting_philosophy
+        - baseball_roster
+        - baseball_scout_packet
+        - baseball_settings
+        - baseball_signals
+        - baseball_staff
+        - baseball_stats
+        - baseball_tasks
+        - baseball_teams
+        - baseball_timeline
+        - baseball_travel
+        - baseball_video
+        - baseball_watchlist
     docs:
       # Was `CLAUDE.md` for all three — a ROUTING file, not a feature doc, so
       # every baseball change routed an agent to the table of contents. These
@@ -170,12 +233,13 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: [round_tracking, course_library]
     docs:
       feature: memory/features/golf-round-lifecycle.md
       flows:
         - docs/features/SHOT_TRACKING_DATA_FLOW.md
         - docs/features/SHOT_TRACKING_VERIFICATION.md
-        - docs/ROUND_REVIEW_ACCURACY_REPORT.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
@@ -199,6 +263,8 @@ features:
         - src/app/golf/actions/round-*.ts
         - src/app/golf/actions/shot-analytics.ts
         - src/app/golf/actions/player-feedback.ts
+        - src/app/golf/actions/course-library.ts
+        - src/app/golf/actions/courses.ts
       services:
         - src/lib/golf/**
         - src/lib/coachhelm/v2/post-round-trigger.ts
@@ -218,7 +284,6 @@ features:
     review:
       required_docs:
         - memory/features/golf-round-lifecycle.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
         - docs/v3-testing-standards.md
       required_checks:
@@ -226,15 +291,71 @@ features:
         - npm run test -- --run src/app/golf/actions/__tests__/golf-schemas.test.ts
         - npm run build
 
+  crm_outreach:
+    name: CRM Outreach (NCAA cold email)
+    status: active
+    owner: founder
+    criticality: medium
+    # KNOWLEDGE routing only. src/lib/admin/feature-registry.ts carries an owner
+    # directive that CRM is never wrapped, tagged, or shown on the Bridge health
+    # board, and its runtime row keeps excluded: 'crm' with an empty actions map.
+    # Nothing here changes that: verified 2026-08-30 that memory/registry.yml is
+    # read only by scripts/knowledge/**, scripts/repo-doctor and the drift gates,
+    # and that src/lib/reliability/collect.ts resolves feature ids from a
+    # hardcoded route table because it "cannot read a build-time artifact".
+    # This entry exists because AGENTS.md requires a live surface to be mapped
+    # or named, and it was named as a gap until the doc below was written from
+    # the code.
+    observability:
+      feature_keys:
+        - crm_recruiting_pipeline
+    docs:
+      feature: memory/features/crm_outreach.md
+    code:
+      routes:
+        - src/app/golf/admin/crm/**
+        - src/app/api/crm/**
+        - src/app/api/admin/crm/**
+        - src/app/api/webhooks/resend/**
+        - src/app/api/webhooks/resend-inbound/**
+        - src/app/api/cron/process-sequences/**
+        - src/app/api/cron/ingest-gmail-replies/**
+        - src/app/api/cron/refresh-engagement/**
+      components:
+        - src/app/golf/admin/crm/components/**
+      api: null
+      actions:
+        - src/app/golf/actions/crm-*.ts
+        # Both of these break the crm- convention. A sweep keyed on the prefix
+        # misses them, which is why they are listed individually.
+        - src/app/golf/actions/resend-activity.ts
+        - src/app/golf/admin/crm/components/resend/actions.ts
+      services:
+        - src/lib/crm/**
+      db:
+        - supabase/migrations/*crm*.sql
+      tests: null
+    integrations:
+      - supabase
+      - resend
+      - gmail
+      - google_calendar
+    review:
+      required_docs:
+        - memory/features/crm_outreach.md
+      required_checks:
+        - npm run typecheck
+
   qualifiers:
     name: Qualifiers
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: [qualifiers, my_qualifiers]
     docs:
       feature: memory/features/qualifiers.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/v3-feature-audit.md
         - docs/v3-page-audit.md
       ui:
@@ -257,6 +378,7 @@ features:
       actions:
         - src/app/golf/actions/golf.ts
         - src/app/golf/actions/v3/qualifying.ts
+        - src/app/golf/actions/qualifier-progress.ts
       services:
         - src/lib/coachhelm/v3/qualifying/**
       db:
@@ -272,7 +394,6 @@ features:
     review:
       required_docs:
         - memory/features/qualifiers.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
       required_checks:
         - npm run typecheck
@@ -284,20 +405,26 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: []
+      covered_by: golf_round_lifecycle
+      reason: >-
+        Shot entry is instrumented as part of round_tracking; no separate
+        FeatureKey exists. High criticality with no key of its own is a real
+        observability limit, recorded here rather than hidden by inventing
+        one.
     docs:
       feature: memory/features/shot-tracking.md
       flows:
         - docs/features/SHOT_TRACKING_DATA_FLOW.md
         - docs/features/SHOT_TRACKING_VERIFICATION.md
-        - memory/context/golfhelm-features.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
       business_logic:
         - docs/v3-research-golf-domain.md
         - docs/v3-testing-standards.md
-      incidents:
-        - docs/ROUND_REVIEW_ACCURACY_REPORT.md
+      incidents: []
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/rounds/new/**
@@ -324,6 +451,7 @@ features:
         - e2e/golf-round.spec.ts
         - src/app/golf/actions/__tests__/golf-schemas.test.ts
         - src/test/coachhelm/v2/shot-analysis/**
+        - src/app/golf/actions/shot-analytics.test.ts
     integrations:
       - supabase
       - coachhelm_ai
@@ -344,10 +472,11 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: [stats_analytics, my_game_profile]
     docs:
       feature: memory/features/stats-analytics.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/features/SHOT_TRACKING_DATA_FLOW.md
         - docs/features/SHOT_TRACKING_VERIFICATION.md
       ui:
@@ -356,8 +485,7 @@ features:
       business_logic:
         - docs/v3-research-golf-domain.md
         - docs/v3-testing-standards.md
-      incidents:
-        - docs/ROUND_REVIEW_ACCURACY_REPORT.md
+      incidents: []
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/stats/**
@@ -371,6 +499,10 @@ features:
         - src/app/golf/actions/stats-data-types.ts
         - src/app/golf/actions/stats-intelligence.ts
         - src/app/golf/actions/player-profile-stats.ts
+        - src/app/golf/actions/stats-dashboard.ts
+        - src/app/golf/actions/stats-leak-maps.ts
+        - src/app/golf/actions/stats-leak-maps-types.ts
+        - src/app/golf/actions/team-sg-baseline.ts
       services:
         - src/lib/cache/golf-stats-calculator.ts
         - src/lib/coachhelm/v2/stats/**
@@ -389,7 +521,6 @@ features:
     review:
       required_docs:
         - memory/features/stats-analytics.md
-        - memory/context/golfhelm-features.md
         - docs/features/SHOT_TRACKING_DATA_FLOW.md
       required_checks:
         - npm run typecheck
@@ -401,10 +532,11 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: [calendar_events, academics_classes]
     docs:
       feature: memory/features/calendar-events.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md
       ui:
         - memory/projects/golfhelm.md
@@ -436,6 +568,7 @@ features:
         - src/app/golf/actions/calendar-sync.ts
         - src/app/golf/actions/event-documents.ts
         - src/app/golf/actions/recurring-events.ts
+        - src/app/golf/actions/schedule-image.ts
       services:
         - src/lib/calendar/**
       db:
@@ -453,7 +586,6 @@ features:
     review:
       required_docs:
         - memory/features/calendar-events.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
       required_checks:
         - npm run typecheck
@@ -465,10 +597,15 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys:
+        - alerts_system
+        - patterns_dashboard
+        - intelligence_dashboard
+        - coaching_intelligence_settings
     docs:
       feature: memory/features/coach-intelligence-triage.md
       flows:
-        - memory/context/golfhelm-features.md
         - memory/context/coachhelm-ai.md
         - docs/architecture/coachhelm-evidence-contract.md
       ui:
@@ -508,6 +645,10 @@ features:
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/coachhelm-analytics.ts
         - src/app/golf/actions/coaching-philosophy.ts
+        - src/app/golf/actions/causal-relationships.ts
+        - src/app/golf/actions/signal-groups.ts
+        - src/app/golf/actions/team-category-insights.ts
+        - src/app/golf/actions/team-category-insights-helpers.ts
       services:
         - src/lib/coachhelm/v2/**
         - src/lib/coachhelm/v3/foundation/**
@@ -540,10 +681,16 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys:
+        - player_coachhelm_dashboard
+        - development_plans_coach
+        - my_development
+        - drills_practice_rx
+        - coachhelm_v3_goals
     docs:
       feature: memory/features/player-coachhelm-development.md
       flows:
-        - memory/context/golfhelm-features.md
         - memory/context/coachhelm-ai.md
         - docs/v3-feature-audit.md
       ui:
@@ -578,6 +725,7 @@ features:
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/round-reviews.ts
         - src/app/golf/actions/v3/**
+        - src/app/golf/actions/drills.ts
       services:
         - src/lib/coachhelm/v2/**
         - src/lib/coachhelm/v3/**
@@ -599,7 +747,6 @@ features:
     review:
       required_docs:
         - memory/features/player-coachhelm-development.md
-        - memory/context/golfhelm-features.md
         - memory/context/coachhelm-ai.md
       required_checks:
         - npm run typecheck
@@ -611,10 +758,11 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: [messaging, announcements, notifications]
     docs:
       feature: memory/features/team-communications.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
@@ -639,6 +787,11 @@ features:
         - src/app/golf/actions/message-attachments.ts
         - src/app/golf/actions/announcements.ts
         - src/app/golf/actions/communication.ts
+        - src/app/golf/actions/coach-notifications.ts
+        - src/app/golf/actions/player-notifications.ts
+        - src/app/golf/actions/push-notifications.ts
+        - src/app/golf/actions/unified-notifications.ts
+        - src/app/golf/actions/unified-notifications-model.ts
       services:
         - src/lib/supabase/**
         # `src/hooks/**` appears NOWHERE else in this registry, so every golf
@@ -659,6 +812,7 @@ features:
         - supabase/migrations/*communication*.sql
       tests:
         - e2e/messages.spec.ts
+        - src/app/golf/actions/unified-notifications-model.test.ts
     integrations:
       - supabase
       - notifications
@@ -668,7 +822,6 @@ features:
     review:
       required_docs:
         - memory/features/team-communications.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
       required_checks:
         - npm run typecheck
@@ -680,10 +833,11 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: [task_management, documents, travel, coach_dashboard]
     docs:
       feature: memory/features/team-operations.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
@@ -716,6 +870,7 @@ features:
         - src/app/golf/actions/event-documents.ts
         - src/app/golf/actions/travel.ts
         - src/app/golf/actions/dashboard-data.ts
+        - src/app/golf/actions/command-palette.ts
       services:
         - src/lib/supabase/**
         - src/lib/golf/nav-registry.ts
@@ -734,7 +889,6 @@ features:
     review:
       required_docs:
         - memory/features/team-operations.md
-        - memory/context/golfhelm-features.md
         - memory/context/golfhelm-database.md
       required_checks:
         - npm run typecheck
@@ -746,10 +900,11 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: [roster_management, team_info]
     docs:
       feature: memory/features/roster-team.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
       ui:
         - memory/projects/golfhelm.md
@@ -774,6 +929,8 @@ features:
         - src/app/golf/actions/roster.ts
         - src/app/golf/actions/teams.ts
         - src/app/golf/actions/player-profile-stats.ts
+        - src/app/golf/actions/team-switcher.ts
+        - src/app/golf/actions/team-switcher.constants.ts
       services:
         - src/lib/auth/**
       db:
@@ -789,7 +946,6 @@ features:
     review:
       required_docs:
         - memory/features/roster-team.md
-        - memory/context/golfhelm-features.md
         - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
       required_checks:
         - npm run typecheck
@@ -801,10 +957,12 @@ features:
     status: active
     owner: product
     criticality: medium
+    observability:
+      feature_keys: [recruiting_prospect_tracking]
     docs:
-      feature: memory/context/golfhelm-features.md
+      feature: memory/features/recruiting.md
       flows:
-        - memory/context/golfhelm-features.md
+        - memory/features/recruiting.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
@@ -831,7 +989,7 @@ features:
       - team_access_control
     review:
       required_docs:
-        - memory/context/golfhelm-features.md
+        - memory/features/recruiting.md
       required_checks:
         - npm run typecheck
         - npm run build
@@ -841,10 +999,11 @@ features:
     status: active
     owner: platform
     criticality: high
+    observability:
+      feature_keys: [auth_onboarding, join_team_flow]
     docs:
       feature: memory/features/auth-onboarding-join.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/security/auth-config.md
       ui:
         - memory/projects/golfhelm.md
@@ -869,6 +1028,9 @@ features:
         - src/app/golf/actions/onboarding.ts
         - src/app/golf/actions/access-code.ts
         - src/app/golf/actions/roster.ts
+        - src/app/golf/actions/coach-entry.ts
+        - src/app/golf/actions/demo-access.ts
+        - src/app/golf/actions/demo-tracking.ts
       services:
         - src/lib/auth/**
         - src/lib/supabase/**
@@ -897,10 +1059,11 @@ features:
     status: active
     owner: product
     criticality: medium
+    observability:
+      feature_keys: [settings, whats_new]
     docs:
       feature: memory/features/settings-preferences.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/v3-feature-audit.md
       ui:
         - memory/projects/golfhelm.md
@@ -922,6 +1085,7 @@ features:
         - src/app/golf/actions/v3/notification-prefs.ts
         - src/app/golf/actions/coaching-philosophy.ts
         - src/app/golf/actions/teams.ts
+        - src/app/golf/actions/whats-new.ts
       services:
         - src/lib/coachhelm/v3/foundation/generator-toggles.ts
       db:
@@ -937,7 +1101,6 @@ features:
     review:
       required_docs:
         - memory/features/settings-preferences.md
-        - memory/context/golfhelm-features.md
       required_checks:
         - npm run typecheck
         - npm run test -- --run src/test/coachhelm/v3/notifications.test.ts
@@ -948,10 +1111,11 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: [player_hub]
     docs:
       feature: memory/features/player-hub.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
@@ -973,6 +1137,7 @@ features:
         - src/app/golf/actions/travel.ts
         - src/app/golf/actions/tasks.ts
         - src/app/golf/actions/attendance.ts
+        - src/app/golf/actions/player-hub-data.ts
       services:
         - src/lib/supabase/**
       db:
@@ -988,7 +1153,6 @@ features:
     review:
       required_docs:
         - memory/features/player-hub.md
-        - memory/context/golfhelm-features.md
         - memory/features/team-operations.md
       required_checks:
         - npm run typecheck
@@ -999,10 +1163,11 @@ features:
     status: active
     owner: platform
     criticality: high
+    observability:
+      feature_keys: [admin_dashboard]
     docs:
       feature: memory/features/admin-platform.md
       flows:
-        - memory/context/golfhelm-features.md
         - docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md
         - docs/BI_DASHBOARD_ARCHITECTURE.md
       ui:
@@ -1070,6 +1235,13 @@ features:
     status: active
     owner: platform
     criticality: high
+    observability:
+      feature_keys: []
+      reason: >-
+        Cross-cutting authorization enforced in RLS policies and action guards
+        rather than on a screen. It has no surface of its own to instrument; a
+        failure here shows up as a denial inside whichever feature the user
+        was in.
     docs:
       feature: memory/features/team-access-control.md
       flows:
@@ -1134,6 +1306,12 @@ features:
     status: active
     owner: product
     criticality: high
+    observability:
+      feature_keys: []
+      reason: >-
+        The Capacitor shell wraps the web app. Telemetry attributes to
+        whichever feature the user is in, so a shell-specific key would
+        double-count rather than measure anything new.
     docs:
       feature: memory/features/ios-native-shell.md
       flows:
@@ -1208,3 +1386,19 @@ integrations:
       - datadog/**
       - src/instrumentation*.ts
     criticality: medium
+
+# ---------------------------------------------------------------------------
+# Runtime FeatureKeys with no semantic owner.
+#
+# A key that nobody owns has to be SAID to be unowned. Leaving it off every list
+# is indistinguishable from an oversight, which is the failure this whole
+# reconciliation removes. npm run knowledge:registry-check fails on a runtime
+# key that appears neither here nor in a feature's observability block.
+#
+# classification: observability_only | platform | excluded | feature_awareness_gap
+observability_keys_unowned:
+  integrations:
+    classification: platform
+    reason: >-
+      Inngest job execution. Infrastructure that carries other features' work,
+      not a product feature with behaviour of its own to document.

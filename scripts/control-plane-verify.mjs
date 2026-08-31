@@ -37,6 +37,9 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// The worktree-policy vocabulary has ONE definition. A second literal here is
+// how the two halves of a rule drift apart.
+import { WORKTREE_POLICIES } from './lib/worktree-lifecycle.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -62,6 +65,14 @@ const JSON_OUT = process.argv.includes('--json');
 
 const results = [];
 const add = (section, id, state, detail) => results.push({ section, id, state, detail });
+
+/**
+ * The GitHub CLI, overridable for tests. Same reason as HELM_CONTROL_PLANE_ROOT
+ * and the lifecycle tool's HELM_PR_LOOKUP: a check that decides whether a
+ * control is in place has to be provable able to FAIL, and the only honest way
+ * to prove that is to hand it the failing answer. Read-only either way.
+ */
+const GH = process.env.HELM_CP_GH || 'gh';
 
 function sh(cmd, args, opts = {}) {
   return spawnSync(cmd, args, { cwd: ROOT, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
@@ -89,12 +100,231 @@ function readJson(p) {
  * run's honest summary is "unknown", not "these specific things are broken" —
  * the latter implies everything else was checked.
  */
-export function summarise(all) {
+/**
+ * TWO DIFFERENT THINGS, and the summary line used to print one under the other's
+ * name.
+ *
+ *   registered_gap_count    config/control-plane-gaps.json -> gaps[]
+ *                           the authority. Five, on 2026-08-30.
+ *   gap_state_check_count   checks that returned ACKNOWLEDGED_GAP this run.
+ *                           One, because only sandbox/filesystem reports that
+ *                           state; the other four gaps have no check at all.
+ *
+ * The final line read "1 acknowledged gap(s)" against five registered gaps —
+ * a number that made four owned, dated, closing-condition-bearing gaps invisible
+ * on the one output anybody reads. Exit-code precedence is untouched: gaps never
+ * change it, and UNKNOWN still outranks FAIL.
+ */
+export function summarise(all, registeredGaps = []) {
   const fails = all.filter((r) => r.state === FAIL);
   const unknowns = all.filter((r) => r.state === UNKNOWN);
-  if (unknowns.length) return { outcome: UNKNOWN, code: 2, fails, unknowns };
-  if (fails.length) return { outcome: 'CONTROL FAILURE', code: 1, fails, unknowns };
-  return { outcome: 'VERIFIED', code: 0, fails, unknowns };
+  const counts = {
+    passes: all.filter((r) => r.state === PASS).length,
+    registered_gap_count: registeredGaps.length,
+    gap_state_check_count: all.filter((r) => r.state === GAP).length,
+  };
+  if (unknowns.length) return { outcome: UNKNOWN, code: 2, fails, unknowns, ...counts };
+  if (fails.length) return { outcome: 'CONTROL FAILURE', code: 1, fails, unknowns, ...counts };
+  return { outcome: 'VERIFIED', code: 0, fails, unknowns, ...counts };
+}
+
+/**
+ * Open-PR disposition residue.
+ *
+ * The registry is CURRENT STATE: an open PR needs a row, and a row for a PR
+ * that is no longer open is residue. Both directions fail, and both are load-
+ * bearing — this file carried ACTIVE rows for #1623, #1638, #1679 and #1680
+ * long after they closed.
+ *
+ * THE CLOSING TRAP, and the one exception that removes it.
+ *
+ * A PR that carries its own row makes `main` fail this check the instant it
+ * merges. Measured 2026-08-30: #1687 merged, and `open-pr-residue` went red
+ * seconds later. The only two ways out were a second PR — which needs its own
+ * row, so the same thing happens again — or a direct push to main. The direct
+ * push is what actually happened, twice, bypassing branch protection. A control
+ * whose only exit is bypassing another control is a defect in the first one.
+ *
+ * The exception is deliberately the narrowest thing that closes it:
+ *
+ *     row's PR is no longer OPEN
+ *     AND GitHub says it MERGED
+ *     AND its merge_commit_sha === the verified checkout's HEAD
+ *          -> TRANSITIONALLY CLOSED, not a failure
+ *
+ * That is exact merge IDENTITY, not "merged recently", "merged today", or
+ * "merged within N commits" — all three are time or ancestry approximations
+ * that widen silently as history grows. This one narrows on its own: the
+ * moment any other commit lands on main, HEAD moves and the row fails again.
+ * It survives its own merge, and nothing more. The next ordinary PR clears it
+ * while adding its own row, which is the workflow that removes the trap.
+ *
+ * THE SAME TRAP, BEFORE THE MERGE. A row that lives in its own PR is absent
+ * from main for the PR's whole flight, so "open PR with no recorded
+ * disposition" fails main from the moment the PR opens until it lands. Adding
+ * the row in an EARLIER PR only moves the problem, and pushing it straight to
+ * main is the bypass this whole change exists to remove. Second exception,
+ * proved the same way — by identity, not by assumption:
+ *
+ *     the row is absent from the verified checkout
+ *     AND it IS present in config/open-pr-dispositions.json at that PR's OWN head
+ *          -> IN FLIGHT, not unclassified
+ *
+ * A row that cannot be read at the PR head, or is genuinely not there, still
+ * fails. This distinguishes "arriving" from "missing", which is the same
+ * distinction as everything else here: #1623 sat open for weeks with no row
+ * anywhere, and must still fail.
+ *
+ * Everything else about a stale row still fails, including the cases where the
+ * evidence for the exception is missing. Refusing to grant a RELAXATION on
+ * unreadable evidence is the safe direction; it is not the same as the
+ * fail-safe on the open-PR listing itself, which stays UNKNOWN, because there
+ * we cannot even establish what is open.
+ *
+ * facts:
+ *   openPrs      [{ number, ref }]     PRs GitHub reports OPEN
+ *   recorded     { '<n>': { disposition, worktree_policy } }
+ *   mergeFacts   { '<n>': { lookup: 'OK'|'FAILED', state, mergeCommitSha } }
+ *   headSha      string|null           full sha of the verified checkout's HEAD
+ *   inFlightRows { '<n>': true|false|null }  row present at that PR's own head;
+ *                                            null = could not read, which fails
+ */
+export function classifyDispositionResidue(facts) {
+  const f = facts ?? {};
+  const openPrs = f.openPrs ?? [];
+  const recorded = f.recorded ?? {};
+  const mergeFacts = f.mergeFacts ?? {};
+  const headSha = f.headSha ?? null;
+
+  const openSet = new Set(openPrs.map((p) => String(p.number)));
+  const keys = Object.keys(recorded);
+  const problems = [];
+  const transitional = [];
+
+  const inFlightRows = f.inFlightRows ?? {};
+  const inFlight = [];
+  const unclassified = [];
+  for (const pr of openPrs.filter((p) => !recorded[String(p.number)])) {
+    if (inFlightRows[String(pr.number)] === true) inFlight.push(String(pr.number));
+    else unclassified.push(`${pr.number} ${pr.ref ?? ''}`.trim());
+  }
+  if (unclassified.length) {
+    problems.push('open PRs with no recorded disposition: ' + unclassified.join('; '));
+  }
+
+  const rejected = [];
+  for (const k of keys.filter((k) => !openSet.has(k))) {
+    const m = mergeFacts[k];
+    if (!m || m.lookup !== 'OK') {
+      rejected.push(`#${k} — merge state could not be read, and the exception needs exact merge identity`);
+    } else if (m.state !== 'MERGED') {
+      rejected.push(`#${k} — closed without merging`);
+    } else if (!m.mergeCommitSha) {
+      rejected.push(`#${k} — MERGED but GitHub reports no merge commit`);
+    } else if (!headSha) {
+      rejected.push(`#${k} — could not read local HEAD to compare against`);
+    } else if (m.mergeCommitSha !== headSha) {
+      // The remedy, not just the diagnosis. This row was TRANSITIONALLY closed
+      // while HEAD sat on its merge commit; the grace ends the moment any other
+      // commit lands. A session that meets this failure without the explanation
+      // has no way to tell it from an ordinary stale row, and the fix costs
+      // nothing: delete it in the PR already being opened.
+      rejected.push(`#${k} — merged at ${m.mergeCommitSha.slice(0, 9)}, HEAD has moved past it; its transitional grace has ENDED — delete this row in the PR you are already opening`);
+    } else {
+      transitional.push(k);
+    }
+  }
+  if (rejected.length) {
+    problems.push('disposition rows for PRs no longer open: ' + rejected.join(' | '));
+  }
+
+  const badPolicy = keys
+    .filter((k) => openSet.has(k))
+    .filter((k) => !WORKTREE_POLICIES.has(recorded[k]?.worktree_policy))
+    .map((k) => '#' + k + ' worktree_policy=' + (recorded[k]?.worktree_policy ?? 'unset'));
+  if (badPolicy.length) {
+    problems.push('worktree_policy missing or outside {KEEP, PARK_IF_REPRODUCIBLE}: ' + badPolicy.join('; '));
+  }
+
+  return { problems, transitional, inFlight };
+}
+
+/**
+ * The three aggregate contexts this repo's own rules name as the pre-merge
+ * gates (.claude/rules/code-review-tooling.md). CodeQL's `Analyze (...)`
+ * contexts are required today too, but their names track the languages CodeQL
+ * scans, so pinning them here would make a language change read as a control
+ * regression. The aggregates are what a RENAME breaks — and a rename is exactly
+ * what made every PR unsatisfiable on 2026-08-19, against a context called
+ * `Review Gate / all` that posts nothing.
+ */
+export const REQUIRED_AGGREGATE_CONTEXTS = ['CI aggregate', 'Review Gate aggregate', 'Smoke checks'];
+
+/**
+ * Branch protection on main, as a fact the verifier reads rather than something
+ * a human has to remember.
+ *
+ * On 2026-08-30 two unreviewed commits reached main. Both printed "Bypassed
+ * rule violations for refs/heads/main: Changes must be made through a pull
+ * request", and both were green on all six required contexts afterwards — so
+ * the state of main was never the problem. The problem is that the bypass was
+ * standing, available to ordinary agent credentials, and nothing noticed.
+ *
+ * TWO MECHANISMS, and reading only one is how a check becomes decorative.
+ * Classic branch protection reports `enforce_admins` on
+ * /branches/main/protection. Repository RULESETS are a separate system with
+ * their own bypass_actors list and report on /rulesets — measured 2026-08-30,
+ * this repo has classic protection and zero rulesets, but a bypass reinstated
+ * through the rulesets UI would be invisible to a check that reads only the
+ * first endpoint.
+ *
+ * A KNOWN condition is a gap only while it is REGISTERED. If the admin bypass
+ * exists and config/control-plane-gaps.json does not carry
+ * MAIN_ADMIN_BYPASS_AVAILABLE, that is a FAIL, not a gap — otherwise a check
+ * could quietly excuse a condition nobody owns.
+ *
+ * facts:
+ *   lookup        'OK' | 'FAILED'
+ *   protection    the /branches/main/protection body, or null
+ *   rulesets      [{ name, enforcement, targetsMain, bypassActorCount }] | null
+ *   gapRegistered bool   MAIN_ADMIN_BYPASS_AVAILABLE is open in gaps.json
+ */
+export function classifyBranchProtection(facts) {
+  const f = facts ?? {};
+  if (f.lookup !== 'OK') {
+    return { state: UNKNOWN, detail: 'could not read branch protection for main' };
+  }
+  if (!f.protection) {
+    return { state: FAIL, detail: 'main reports no branch protection at all' };
+  }
+
+  const contexts = f.protection.required_status_checks?.contexts ?? [];
+  const missing = REQUIRED_AGGREGATE_CONTEXTS.filter((c) => !contexts.includes(c));
+  if (missing.length) {
+    return { state: FAIL, detail: `main no longer requires: ${missing.join(', ')}` };
+  }
+
+  if (f.rulesets === null || f.rulesets === undefined) {
+    return { state: UNKNOWN, detail: 'protection reads fine, but repository rulesets could not be listed — a ruleset bypass would be invisible' };
+  }
+  const bypassing = f.rulesets.filter((r) => r.enforcement === 'active' && r.targetsMain && r.bypassActorCount > 0);
+  if (bypassing.length) {
+    return {
+      state: FAIL,
+      detail: `ruleset(s) targeting main carry bypass actors: ${bypassing.map((r) => `${r.name} (${r.bypassActorCount})`).join(', ')}`,
+    };
+  }
+
+  if (f.protection.enforce_admins?.enabled !== true) {
+    return f.gapRegistered
+      ? { state: GAP, detail: 'enforce_admins is off — administrators may bypass the PR and required-check rules (MAIN_ADMIN_BYPASS_AVAILABLE)' }
+      : { state: FAIL, detail: 'enforce_admins is off and no MAIN_ADMIN_BYPASS_AVAILABLE gap is registered — an unowned standing bypass' };
+  }
+
+  return {
+    state: PASS,
+    detail: `protected, ${contexts.length} required context(s), enforce_admins on, no ruleset bypass`,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -378,14 +608,14 @@ function checkGithubCapability() {
     return add('tools', 'github-capability-fingerprint', UNKNOWN, 'no capability fingerprint recorded for the gh path');
   }
 
-  const scopes = sh('gh', ['api', '-i', 'user']);
+  const scopes = sh(GH, ['api', '-i', 'user']);
   if (scopes.status !== 0) {
     return add('tools', 'github-capability-fingerprint', UNKNOWN, 'gh unavailable or unauthenticated — capability could not be measured');
   }
   const m = (scopes.stdout ?? '').match(/^x-oauth-scopes:\s*(.*)$/im);
   const live = {
-    account_id: Number(sh('gh', ['api', 'user', '--jq', '.id']).stdout?.trim()),
-    repo_id: Number(sh('gh', ['api', 'repos/{owner}/{repo}', '--jq', '.id']).stdout?.trim()),
+    account_id: Number(sh(GH, ['api', 'user', '--jq', '.id']).stdout?.trim()),
+    repo_id: Number(sh(GH, ['api', 'repos/{owner}/{repo}', '--jq', '.id']).stdout?.trim()),
     granted_scope_names: (m?.[1] ?? '').split(',').map((x) => x.trim()).filter(Boolean).sort(),
   };
   const digest = githubCapabilityFingerprint(live);
@@ -421,16 +651,121 @@ function checkSandbox() {
       : 'sandbox.filesystem enabled');
 }
 
+/**
+ * config/open-pr-dispositions.json must equal the live open-PR set, in BOTH
+ * directions.
+ *
+ * The missing direction was always checked. The stale direction was not, and
+ * the file had accumulated ACTIVE rows for #1623, #1638, #1679 and #1680 long
+ * after they closed or merged — a current-state registry quietly asserting
+ * things that had stopped being true. A registry that only grows is a history
+ * file wearing a registry's name.
+ *
+ * The vocabulary check lives here rather than in the lifecycle tool because
+ * the lifecycle tool must fail SAFE on a malformed entry (unrecognised policy
+ * => KEEP) and would therefore never report one. Something has to notice.
+ */
 function checkOpenPrResidue() {
-  const r = sh('gh', ['api', 'repos/{owner}/{repo}/pulls?state=open&per_page=50', '--jq', '.[] | "\\(.number) \\(.head.ref)"']);
+  const r = sh(GH, ['api', 'repos/{owner}/{repo}/pulls?state=open&per_page=50', '--jq', '.[] | "\\(.number) \\(.head.ref)"']);
+  // Not knowing what is OPEN is different from a row being wrong. This one stays
+  // UNKNOWN: without the open set, every row below is unclassifiable.
   if (r.status !== 0) return add('github', 'open-pr-residue', UNKNOWN, 'could not list open PRs');
   const lines = (r.stdout ?? '').trim().split('\n').filter(Boolean);
+  const openPrs = lines.map((l) => {
+    const [number, ...rest] = l.split(' ');
+    return { number, ref: rest.join(' ') };
+  });
+
   const known = readJson(resolve(ROOT, 'config/open-pr-dispositions.json')) ?? {};
-  const unclassified = lines.filter((l) => !known[l.split(' ')[0]]);
-  add('github', 'open-pr-residue', unclassified.length ? FAIL : PASS,
-    unclassified.length
-      ? `open PRs with no recorded disposition: ${unclassified.join('; ')}`
-      : `${lines.length} open PR(s), all classified`);
+  // Keys beginning with a dollar sign are documentation, not rows.
+  const recorded = Object.fromEntries(Object.entries(known).filter(([k]) => !k.startsWith('$')));
+
+  // Only rows whose PR is NOT open need a merge lookup. One request each, and
+  // there is at most a handful — the registry is current state, not history.
+  const openSet = new Set(openPrs.map((p) => p.number));
+  const mergeFacts = {};
+  for (const k of Object.keys(recorded).filter((k) => !openSet.has(k))) {
+    const m = sh(GH, ['api', `repos/{owner}/{repo}/pulls/${k}`,
+      '--jq', '"\\(if .merged_at then "MERGED" else (.state|ascii_upcase) end) \\(.merge_commit_sha // "-")"']);
+    if (m.status !== 0) { mergeFacts[k] = { lookup: 'FAILED' }; continue; }
+    const [state, sha] = (m.stdout ?? '').trim().split(/\s+/);
+    mergeFacts[k] = { lookup: 'OK', state, mergeCommitSha: sha && sha !== '-' ? sha : null };
+  }
+
+  // A row that is absent HERE may be arriving in the PR that adds it. Read the
+  // file at that PR's own head and find out, rather than assuming either way.
+  const inFlightRows = {};
+  for (const pr of openPrs.filter((x) => !recorded[x.number])) {
+    if (!pr.ref) { inFlightRows[pr.number] = null; continue; }
+    const c = sh(GH, ['api', `repos/{owner}/{repo}/contents/config/open-pr-dispositions.json?ref=${pr.ref}`,
+      '-H', 'Accept: application/vnd.github.raw']);
+    if (c.status !== 0) { inFlightRows[pr.number] = null; continue; }
+    try {
+      const atHead = JSON.parse(c.stdout);
+      inFlightRows[pr.number] = Object.prototype.hasOwnProperty.call(atHead, pr.number);
+    } catch {
+      inFlightRows[pr.number] = null;
+    }
+  }
+
+  const headSha = git(['rev-parse', 'HEAD']);
+  const { problems, transitional, inFlight } = classifyDispositionResidue({
+    openPrs, recorded, mergeFacts, headSha, inFlightRows,
+  });
+
+  // A transitional row is REPORTED, never silent. It is a row that must go in
+  // the next PR, and a reader who cannot see it will not remove it.
+  const note =
+    (transitional.length
+      ? ` | transitionally closed (merged at HEAD, clear in the next PR): ${transitional.map((k) => '#' + k).join(', ')}`
+      : '') +
+    (inFlight.length
+      ? ` | in flight (row present at the PR's own head): ${inFlight.map((k) => '#' + k).join(', ')}`
+      : '');
+
+  add('github', 'open-pr-residue', problems.length ? FAIL : PASS,
+    problems.length
+      ? problems.join(' | ') + note
+      : `${openPrs.length} open PR(s), all classified or in flight, no stale rows${note}`);
+}
+
+function checkMainBranchProtection() {
+  const prot = sh(GH, ['api', 'repos/{owner}/{repo}/branches/main/protection']);
+  const protection = prot.status === 0 ? (() => { try { return JSON.parse(prot.stdout); } catch { return null; } })() : null;
+
+  // Rulesets are a SECOND mechanism, with their own bypass list. Reading only
+  // classic protection would report PASS against a bypass reinstated there.
+  const rs = sh(GH, ['api', 'repos/{owner}/{repo}/rulesets']);
+  let rulesets = null;
+  if (rs.status === 0) {
+    try {
+      const list = JSON.parse(rs.stdout);
+      rulesets = [];
+      for (const entry of list) {
+        const one = sh(GH, ['api', `repos/{owner}/{repo}/rulesets/${entry.id}`]);
+        if (one.status !== 0) { rulesets = null; break; }
+        const d = JSON.parse(one.stdout);
+        const refs = d.conditions?.ref_name?.include ?? [];
+        rulesets.push({
+          name: d.name ?? String(entry.id),
+          enforcement: d.enforcement,
+          targetsMain: refs.includes('~DEFAULT_BRANCH') || refs.includes('refs/heads/main'),
+          bypassActorCount: (d.bypass_actors ?? []).length,
+        });
+      }
+    } catch {
+      rulesets = null;
+    }
+  }
+
+  const gaps = readJson(resolve(ROOT, 'config/control-plane-gaps.json'))?.gaps ?? [];
+  const verdict = classifyBranchProtection({
+    lookup: prot.status === 0 ? 'OK' : 'FAILED',
+    protection,
+    rulesets,
+    gapRegistered: gaps.some((g) => g.id === 'MAIN_ADMIN_BYPASS_AVAILABLE'),
+  });
+  add('github', 'main-branch-protection', verdict.state, verdict.detail);
 }
 
 // ---------------------------------------------------------------------------
@@ -453,10 +788,11 @@ async function run() {
     checkUserGlobal();
     checkSandbox();
     checkOpenPrResidue();
+    checkMainBranchProtection();
   }
 
   const gaps = readJson(resolve(ROOT, 'config/control-plane-gaps.json'))?.gaps ?? [];
-  const summary = summarise(results);
+  const summary = summarise(results, gaps);
 
   if (JSON_OUT) {
     console.log(JSON.stringify({ mode: STATIC_ONLY ? 'static' : 'full', results, gaps, summary }, null, 2));
@@ -480,8 +816,10 @@ async function run() {
   }
 
   console.log('');
-  console.log(`  ${summary.outcome}  (exit ${summary.code})  —  ${results.filter((r) => r.state === PASS).length} pass, ` +
-    `${summary.fails.length} fail, ${summary.unknowns.length} unknown, ${results.filter((r) => r.state === GAP).length} acknowledged gap(s)`);
+  console.log(`  ${summary.outcome}  (exit ${summary.code})  —  ${summary.passes} pass, ` +
+    `${summary.fails.length} fail, ${summary.unknowns.length} unknown`);
+  console.log(`  REGISTERED OPEN GAPS — ${summary.registered_gap_count}` +
+    `   (checks reporting GAP state this run: ${summary.gap_state_check_count})`);
   if (summary.unknowns.length) {
     console.log('  UNKNOWN is not PASS. A state that could not be established is reported as unknown.');
   }

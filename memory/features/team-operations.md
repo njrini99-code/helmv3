@@ -1,4 +1,4 @@
- jmmmmmmmmmmm                  # Feature: Team Operations
+# Feature: Team Operations
 
 <!-- schema-drift-banner -->
 > **⚠️ 1 identifier named below does not exist in the database.**

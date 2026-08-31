@@ -78,9 +78,14 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 1c. The canonical checkout boundary — what is actually enforced
 
-- **The canonical checkout is the control tower.** All mutating agent work
-  begins in a task worktree: `scripts/new-worktree.sh <task>`.
-- **That is a rule, not a mechanism.** State the narrow truth:
+- **`AGENTS.md` owns workspace and concurrency policy. This section owns only
+  what is mechanically enforced.** Two lines in this file used to answer the
+  same question differently — "All mutating agent work begins in a task
+  worktree" here, and "Never switch branches or create worktrees unless asked"
+  in §2 — while AGENTS.md carried the actual rule: one active session may work
+  in canonical directly; concurrent sessions each take a worktree. Two rules for
+  one decision means neither is followed. The policy is stated once, there.
+- **What is enforced here is narrow, and it is a rule, not a mechanism:**
 
   | Route into canonical | Blocked? | By what |
   | --- | --- | --- |
@@ -106,10 +111,11 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 2. Git and commits
 
-- **Work on the currently checked-out branch; `main` is home.** Never switch
-  branches or create worktrees unless asked; return to clean `main` only when
-  the task is merged and verified — the resting-state policy is AGENTS.md's
-  canonicality section, stated once there. **A push to `main` ships nothing** —
+- **Confirm the branch, then work on it; `main` is home.** Return to clean
+  `main` only when the task is merged and verified. Whether a task takes a
+  worktree or the canonical checkout is AGENTS.md's call, not this file's — its
+  canonicality section is where that policy is stated, once.
+  **A push to `main` ships nothing** —
   `vercel.json` carries `"git": {"deploymentEnabled": {"*": false}}`, so no
   branch auto-deploys; production is an on-demand promote.
 - **`git add <explicit paths>`. Never `git add -A`.** Every agent in this repo
@@ -126,9 +132,13 @@ mechanical, and these are the habits that keep it fixed.
   dependencies. Never `.worktrees/` inside the repo — `.gitignore` hides an
   internal one from git but `find`/`grep` still return it, so agents edit the
   copy nobody ships.
-- **Prune worktrees by PR state, not `--merged`.** This repo squash-merges, so a
-  merged branch never becomes an ancestor of `main` and `git branch --merged`
-  never lists it.
+- **Prune with `npm run worktrees{,:park,:retire}`, never by hand.** This repo
+  squash-merges, so a merged branch never becomes an ancestor of `main` and
+  `git branch --merged` never lists it — which is why the tool keys on PR state
+  and an exact head OID. Since 2026-08-30 it also refuses to park a checkout
+  whose branch has an OPEN PR unless `config/open-pr-dispositions.json` records
+  `worktree_policy: PARK_IF_REPRODUCIBLE` for it. AGENTS.md states the policy;
+  `scripts/worktree-lifecycle.mjs` is the mechanism.
 - **No hook blocks git commands any more.** `guard-bash.sh` was deleted
   2026-08-27 after being unwired; it protected nothing while it sat there.
   What remains, and is PROVEN to fire even under `bypassPermissions`, is
@@ -161,6 +171,13 @@ mechanical, and these are the habits that keep it fixed.
   not found" and every wrapped call reads as a failure. This produced a bogus
   "21 of 21 tests failing" result on 2026-08-20. Use `gtimeout` (coreutils) or
   no wrapper.
+- **zsh eats `:r`, `:h`, `:t`, `:e` after a variable.** `"refs/heads/$b:refs/heads/$b"`
+  becomes `refs/heads/recovered/stash-0efs/heads/recovered/stash-0` — zsh reads
+  `$b:r` as the `:r` history modifier. `git push` then reports
+  `src refspec ... does not match any` for a ref that resolves fine, and the
+  same command typed literally works, so it reads as a git problem. Seven
+  branch pushes failed this way on 2026-08-30. Use `git push origin "$b"`, or
+  `${b}` followed by a literal colon.
 - **`ls` is aliased to `eza` here.** Scripted `ls` with flags it doesn't share
   errors out. Use `/bin/ls` in scripts.
 

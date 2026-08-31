@@ -20,6 +20,13 @@
  * DELETE_MERGED_EXACT, and should do it in the same step that merges a PR. Anything
  * the tool declines — every KEEP_* and UNKNOWN_* — still needs a human.
  *
+ * NARROWED 2026-08-30, after --retire parked a concurrent session's worktree
+ * (agent/round-type-reclassify, PR #1681 OPEN). A checkout whose branch has an
+ * OPEN PR is now PARKABLE only when config/open-pr-dispositions.json records
+ * that PR with worktree_policy PARK_IF_REPRODUCIBLE. Clean + pushed + "lsof saw
+ * nothing" is no longer enough, because lsof answers about one instant and an
+ * agent session between two tool calls is invisible to it.
+ *
  * WHY BRANCH DELETION NEEDS `-D`
  *
  * This repo squash-merges, so a merged branch's commits never become ancestors
@@ -28,7 +35,7 @@
  * head-OID match, and never exposed as a bare command a caller can aim itself.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -127,6 +134,42 @@ function prFor(branch) {
   }
 }
 
+/**
+ * Recorded intent for the CHECKOUT, read from the checkout itself.
+ *
+ * scripts/new-worktree.sh already writes .helm/workspace.json; this adds one
+ * field to it rather than a second ownership store. Every failure mode returns
+ * a marker state and no policy, which classifyWorktree turns into KEEP —
+ * absence is never permission.
+ */
+function workspaceIntent(path) {
+  const f = resolve(path, '.helm/workspace.json');
+  if (!existsSync(f)) return { marker: 'absent', parkPolicy: null };
+  try {
+    const j = JSON.parse(readFileSync(f, 'utf-8'));
+    return { marker: 'present', parkPolicy: typeof j.parkPolicy === 'string' ? j.parkPolicy : null };
+  } catch {
+    return { marker: 'unreadable', parkPolicy: null };
+  }
+}
+
+/**
+ * Recorded owner intent for OPEN PRs. Read from the repository being ACTED ON,
+ * like every other fact here — a fixture repo gets its own file or none, never
+ * the live one's.
+ *
+ * Unreadable or absent is `{}`, which makes every open PR look undisposed and
+ * every such checkout a KEEP. That is the safe direction: a missing file makes
+ * the tool refuse to act, not act without permission.
+ */
+function dispositions() {
+  try {
+    return JSON.parse(readFileSync(resolve(REPO, 'config/open-pr-dispositions.json'), 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+
 function canonicalRoot() {
   // Resolved against REPO, so a fixture repo without the identity module gets
   // null rather than the real checkout's canonical path.
@@ -199,6 +242,7 @@ function du(path) {
 // ---------------------------------------------------------------------------
 
 const CANON = canonicalRoot();
+const DISPOSITIONS = dispositions();
 const SELF = process.cwd();
 const wts = worktrees();
 const byBranch = new Map();
@@ -215,6 +259,28 @@ for (const w of wts) {
   const remoteSha = upstream ? git(['rev-parse', upstream]) : null;
   const dirty = dirtyCount(w.path);
 
+  // PR facts are gathered BEFORE the worktree is classified, because since
+  // 2026-08-30 the worktree verdict depends on them: an OPEN PR's checkout is
+  // parkable only with its owner's recorded consent.
+  //
+  // The lookup runs for the canonical checkout too. It used to be skipped there
+  // and substituted with `{ lookup: 'OK', state: 'NONE' }` — which does not mean
+  // "not checked", it means "checked, and there is no PR". That is a fabricated
+  // fact in the evidence layer, and classifyBranch read it exactly as written:
+  // canonical's own branch always came back UNKNOWN_PR ("no PR found — cannot
+  // prove the work landed") even with an OPEN PR against it, measured on
+  // #1694. Nothing was lost, because UNKNOWN_PR fails safe to KEEP — but the
+  // tool was reaching a right answer from an invented one.
+  //
+  // Skipping it saved nothing either: classifyWorktree returns ACTIVE for
+  // canonical on its FIRST line, before any PR fact is read. Only the BRANCH
+  // verdict ever consumed these, and that is the separate question AGENTS.md
+  // insists on keeping separate — may this CHECKOUT go, vs may this BRANCH be
+  // deleted. The short-circuit conflated them inside the tool that defines the
+  // distinction.
+  const pr = w.branch ? prFor(w.branch) : { lookup: 'OK', state: 'NONE' };
+  const disp = pr.number != null ? (DISPOSITIONS[String(pr.number)] ?? null) : null;
+
   const wFacts = {
     path: w.path,
     isCanonical,
@@ -225,10 +291,17 @@ for (const w of wts) {
     upstream,
     localSha,
     remoteSha,
+    prLookup: pr.lookup,
+    prNumber: pr.number ?? null,
+    prState: pr.state ?? null,
+    disposition: disp?.disposition ?? null,
+    worktreePolicy: disp?.worktree_policy ?? null,
+    ...(isCanonical ? { parkPolicy: null, workspaceMarker: null } : (() => {
+      const ws = workspaceIntent(w.path);
+      return { parkPolicy: ws.parkPolicy, workspaceMarker: ws.marker };
+    })()),
   };
   const wv = classifyWorktree(wFacts);
-
-  const pr = w.branch && !isCanonical ? prFor(w.branch) : { lookup: 'OK', state: 'NONE' };
   const bv = w.branch
     ? classifyBranch({
         branch: w.branch,
@@ -263,6 +336,10 @@ for (const w of wts) {
     prState: pr.state ?? 'UNKNOWN',
     prHeadSha: pr.headSha ? pr.headSha.slice(0, 9) : '-',
     tipMatchesPr: pr.headSha ? (pr.headSha === localSha ? 'yes' : 'no') : '-',
+    parkPolicy: wFacts.parkPolicy ?? '-',
+    workspaceMarker: wFacts.workspaceMarker ?? '-',
+    disposition: wFacts.disposition ?? '-',
+    worktreePolicy: wFacts.worktreePolicy ?? '-',
     worktreeVerdict: wv.verdict,
     branchVerdict: bv.verdict,
     action: combined.action,
@@ -305,6 +382,8 @@ for (const b of allBranches) {
     prState: pr.state ?? 'UNKNOWN',
     prHeadSha: pr.headSha ? pr.headSha.slice(0, 9) : '-',
     tipMatchesPr: pr.headSha ? (pr.headSha === localSha ? 'yes' : 'no') : '-',
+    disposition: '-',
+    worktreePolicy: '-',
     worktreeVerdict: '-',
     branchVerdict: bv.verdict,
     action: bv.verdict === DELETE_MERGED_EXACT ? 'DELETE_BRANCH' : 'KEEP',
@@ -318,7 +397,9 @@ if (JSON_OUT) {
 }
 
 const H = ['BRANCH', 'WORKTREE', 'SIZE', 'DIRTY', 'CWD', 'PR', 'PR_STATE', 'TIP=PR', 'WT_VERDICT', 'BR_VERDICT', 'ACTION'];
-const W = [34, 44, 6, 7, 7, 6, 9, 7, 15, 24, 14];
+// WT_VERDICT is 32 wide because KEEP_WORKSPACE_INTENT_REQUIRED is 30 characters
+// and a report that wraps its own verdict column is a report nobody reads.
+const W = [34, 44, 6, 7, 7, 6, 9, 7, 32, 24, 14];
 const line = (c) => c.map((v, i) => String(v).padEnd(W[i])).join(' ');
 console.log(line(H));
 console.log('-'.repeat(W.reduce((a, b) => a + b + 1, 0)));
@@ -342,13 +423,16 @@ if (unknowns.length) {
   console.log('  UNKNOWN means evidence was unavailable. It is never a licence to remove anything.');
 }
 
-const humanRows = rows.filter((r) => REQUIRES_HUMAN_VERDICTS.has(r.branchVerdict));
+const humanRows = rows.filter(
+  (r) => REQUIRES_HUMAN_VERDICTS.has(r.branchVerdict) || REQUIRES_HUMAN_VERDICTS.has(r.worktreeVerdict),
+);
 if (humanRows.length) {
   console.log('');
   console.log('  STANDING AUTHORIZATION covers ONLY DELETE_MERGED_EXACT and PARKABLE.');
   console.log(`  ${humanRows.length} row(s) carry a verdict that requires a human and will never be`);
   console.log('  acted on automatically — including NO_UPSTREAM_UNIQUE_WORK, which is the');
-  console.log('  only copy of real commits.');
+  console.log('  only copy of real commits, and KEEP_PR_OWNER_INTENT_REQUIRED, which is an');
+  console.log('  open PR whose owner has not recorded that the checkout may go.');
 }
 
 if (!PARK && !GC) {
