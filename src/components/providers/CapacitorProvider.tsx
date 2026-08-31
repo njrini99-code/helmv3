@@ -128,6 +128,41 @@ export function CapacitorProvider() {
             '--keyboard-height',
             `${info.keyboardHeight}px`
           );
+          // Then bring the focused field back into view above the keyboard.
+          //
+          // `resize: 'ionic'` (capacitor.config.ts) does NOT resize the
+          // WebView — it only expects the app to react to the keyboard itself.
+          // In an Ionic app the framework does that; this is not an Ionic app,
+          // so nothing did. The layout viewport stays full height, the browser
+          // believes every input is still visible, and the keyboard simply
+          // covers the bottom ~45% of the screen. Reported against the golf
+          // shot-entry "Distance remaining" field, which sits low enough that
+          // the numeric keypad hides the box you are typing into.
+          //
+          // globals.css already sets, on every input under `body.capacitor`:
+          //     scroll-margin-bottom: calc(var(--keyboard-height) + 40px)
+          // That rule is exactly right and was dead — it shapes where a scroll
+          // LANDS, and no keyboard-aware scroll was ever triggered. This is the
+          // missing trigger, so the fix is one call rather than new machinery.
+          //
+          // It runs after the property is set above, so the margin is live when
+          // the scroll resolves; `block: 'center'` because the height reported
+          // by iOS excludes nothing we can rely on and centring is robust to a
+          // taller keypad (predictive bar, third-party keyboards).
+          //
+          // Deliberately global rather than per-screen: a scroll on
+          // keyboardWillShow is user-initiated by definition — the keyboard
+          // only opens because someone tapped an input. That is a different
+          // event from the unrequested programmatic scroll that
+          // `shouldAutoScrollDistanceInput` guards against during putt tagging,
+          // so this does not undo that guard.
+          const active = document.activeElement;
+          if (active instanceof HTMLElement && active.isConnected) {
+            requestAnimationFrame(() => {
+              if (document.activeElement !== active) return;
+              active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+          }
         });
         const hideListener = Keyboard.addListener('keyboardWillHide', () => {
           document.body.classList.remove('keyboard-open');
