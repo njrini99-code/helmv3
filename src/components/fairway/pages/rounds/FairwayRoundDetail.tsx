@@ -149,6 +149,8 @@ export interface FairwayRoundDetailProps {
   qualifierOptions?: QualifierOption[];
   /** Coach of this round's team — decides the round-type editor's empty copy. */
   viewerIsCoach?: boolean;
+  /** The qualifier read failed, so an empty list means "unknown", not "none". */
+  qualifierReadFailed?: boolean;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -219,6 +221,7 @@ export function FairwayRoundDetail({
   currentQualifierRoundNumber = null,
   qualifierOptions = [],
   viewerIsCoach = false,
+  qualifierReadFailed = false,
 }: FairwayRoundDetailProps) {
   const reviewHref = `/golf/dashboard/rounds/${round.id}/review`;
 
@@ -391,6 +394,7 @@ export function FairwayRoundDetail({
               currentQualifierRoundNumber={currentQualifierRoundNumber}
               qualifierOptions={qualifierOptions}
               viewerIsCoach={viewerIsCoach}
+              qualifierReadFailed={qualifierReadFailed}
             />
           </div>
         )}

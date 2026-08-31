@@ -122,15 +122,8 @@ export default async function RoundDetailPage({
 
   // Check if coach has access by verifying round's player is on their team
   let isCoach = false;
-  // Hoisted: the qualifier picker below needs the same team the access check
-  // used. It is the coach's own team, which is the only team whose qualifiers
-  // they may enter a player into — and the action re-derives it server-side
-  // from the ROUND's team, so a mismatch is refused there rather than trusted
-  // from here.
-  let coachTeamId: string | null = null;
   if (coach?.organization_id && roundData.player_id) {
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
-    coachTeamId = teamId ?? null;
 
     if (teamId) {
       const { data: teamMembership, error: membershipError } = await supabase
@@ -273,6 +266,10 @@ export default async function RoundDetailPage({
     takenRoundNumbers: number[];
     playerEntered: boolean;
   }> = [];
+  // An empty list has two very different causes, and saying "this team has no
+  // open qualifier" when the read simply failed is a confident false statement
+  // of exactly the kind this repo keeps recording.
+  let qualifierReadFailed = false;
   if (canChangeType && roundData.player_id) {
     const { data: entryRows, error: entriesError } = await supabase
       .from('golf_qualifier_entries')
@@ -318,14 +315,24 @@ export default async function RoundDetailPage({
     // the same dead end one step further in. The action re-checks both the
     // role and the team, and creates the entry on save.
     let teamOpen: QualifierRow[] = [];
-    if (isCoach && coachTeamId) {
+    // Scoped by the ROUND's team, not the coach's cookie team. Those are not
+    // the same thing: coach access here is granted by the round's PLAYER being
+    // a member of the cookie team, while the RPC gates the qualifier against
+    // `golf_rounds.team_id`. Measured 2026-08-31, production holds 12 rounds
+    // whose `team_id` is not a membership of their own player, plus 8 with no
+    // team at all — so offering the cookie team's qualifiers would let a coach
+    // pick one the write then refuses, after the player had been entered into
+    // it. Ask the same question the enforcement asks.
+    const roundTeamId = (round as { team_id?: string | null }).team_id ?? null;
+    if (isCoach && roundTeamId) {
       const { data: teamRows, error: teamQualError } = await supabase
         .from('golf_qualifiers')
         .select('id, name, num_rounds, status')
-        .eq('team_id', coachTeamId)
+        .eq('team_id', roundTeamId)
         .neq('status', 'completed');
 
       if (teamQualError) {
+        qualifierReadFailed = true;
         void logServerError(
           `[round detail] team qualifier read failed for round ${id}; the type editor will only offer qualifiers this player is already entered in: ${describeError(teamQualError)}`,
           { action: 'roundDetail.teamQualifiers', featureArea: 'rounds' },
@@ -428,6 +435,7 @@ export default async function RoundDetailPage({
         currentQualifierRoundNumber={roundData.qualifier_round_number}
         qualifierOptions={qualifierOptions}
         viewerIsCoach={isCoach}
+        qualifierReadFailed={qualifierReadFailed}
       />
     </div>
   );

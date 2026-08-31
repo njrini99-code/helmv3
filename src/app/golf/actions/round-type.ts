@@ -185,6 +185,9 @@ async function updateRoundTypeImpl(
       qualifier_round_number?: number | null;
     } = { round_type: roundType };
 
+    /** Set when the coach's save must also enter the player in the qualifier. */
+    let mustEnterPlayer = false;
+
     if (roundType === 'qualifier') {
       const qualifierId = input.qualifierId ?? round.qualifier_id;
       if (!qualifierId) {
@@ -196,7 +199,7 @@ async function updateRoundTypeImpl(
 
       const { data: qualifier, error: qualifierError } = await supabase
         .from('golf_qualifiers')
-        .select('id, status, num_rounds')
+        .select('id, status, num_rounds, team_id')
         .eq('id', qualifierId)
         .maybeSingle();
 
@@ -208,6 +211,19 @@ async function updateRoundTypeImpl(
       if (!qualifier) {
         return { success: false, error: 'That qualifier no longer exists.' };
       }
+      // The qualifier must belong to the ROUND's own team — the same gate the
+      // RPC applies, checked here so the refusal is a sentence and, more
+      // importantly, so it happens BEFORE any entry is created. The page
+      // scopes its picker by the round's team too; this is the server's copy
+      // of that rule, and it is the one that counts.
+      //
+      // Skipped when the round carries no team at all: production holds 8 such
+      // rounds and refusing them would be a regression, not a fix. The RPC
+      // makes the same exception.
+      if (round.team_id && qualifier.team_id && qualifier.team_id !== round.team_id) {
+        return { success: false, error: 'That qualifier belongs to a different team.' };
+      }
+
       if (qualifier.status === 'completed') {
         return {
           success: false,
@@ -242,6 +258,11 @@ async function updateRoundTypeImpl(
       // RLS INSERT on entries is coach-only, so this splits by role rather
       // than pretending both can: a coach enters the player, a player is told
       // who can.
+      //
+      // DECIDED here, WRITTEN below. Creating the entry up here would leave a
+      // stray one behind every time a later check refused the save — the
+      // player would then sit on the coach's leaderboard with zero rounds,
+      // produced by an action that reported failure.
       if (!entry) {
         const failure = await resolveTeamCoach();
         if (failure) return { success: false, error: failure };
@@ -253,19 +274,7 @@ async function updateRoundTypeImpl(
               'You are not in that qualifier yet. Ask your coach to add you to it, then change this round.',
           };
         }
-
-        const { error: enterError } = await supabase
-          .from('golf_qualifier_entries')
-          .upsert(
-            { qualifier_id: qualifierId, player_id: round.player_id },
-            { onConflict: 'qualifier_id,player_id', ignoreDuplicates: true },
-          );
-        if (enterError) {
-          return {
-            success: false,
-            error: 'Could not add this player to that qualifier. Please try again.',
-          };
-        }
+        mustEnterPlayer = true;
       }
 
       const roundNumber = input.qualifierRoundNumber ?? round.qualifier_round_number ?? 1;
@@ -345,6 +354,25 @@ async function updateRoundTypeImpl(
 
     const callReclassify = supabase.rpc as unknown as ReclassifyRpc;
 
+    // Every other check has passed, so this is the last thing that can be
+    // undone cheaply if the write itself refuses. Idempotent —
+    // `UNIQUE (qualifier_id, player_id)` plus ON CONFLICT DO NOTHING — so a
+    // concurrent save that entered the same player first is not an error.
+    if (mustEnterPlayer && update.qualifier_id) {
+      const { error: enterError } = await supabase
+        .from('golf_qualifier_entries')
+        .upsert(
+          { qualifier_id: update.qualifier_id, player_id: round.player_id },
+          { onConflict: 'qualifier_id,player_id', ignoreDuplicates: true },
+        );
+      if (enterError) {
+        return {
+          success: false,
+          error: 'Could not add this player to that qualifier. Please try again.',
+        };
+      }
+    }
+
     const { data: reclassifiedId, error: updateError } = await callReclassify(
       'reclassify_golf_round',
       {
@@ -361,6 +389,27 @@ async function updateRoundTypeImpl(
     }
 
     if (updateError) {
+      // The RPC still refused after every check passed, which means the world
+      // moved between our reads and the write. If this save is what entered
+      // the player, take that back: an entry with no round puts them on the
+      // coach's leaderboard at zero from a save that reported failure.
+      // Best-effort — a failed cleanup is logged, never surfaced on top of the
+      // refusal the coach actually needs to read.
+      if (mustEnterPlayer && update.qualifier_id) {
+        const { error: undoError } = await supabase
+          .from('golf_qualifier_entries')
+          .delete()
+          .eq('qualifier_id', update.qualifier_id)
+          .eq('player_id', round.player_id);
+        if (undoError) {
+          void logServerError(
+            `updateRoundType: could not undo the qualifier entry after a failed reclassify; ${round.player_id} may now sit in qualifier ${update.qualifier_id} with no rounds: ${describeError(undoError)}`,
+            { action: 'updateRoundType.undoEntry', featureArea: 'round_tracking', roundId },
+            'warning',
+          );
+        }
+      }
+
       // `golf_rounds` carries a BEFORE-UPDATE lifecycle guard
       // (helm_private.guard_golf_round_lifecycle) that rejects ANY update to a
       // completed round with SQLSTATE 55000. Reclassifying a round changes

@@ -216,6 +216,21 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   A PLAYER is still offered only qualifiers they are already in, because RLS
   INSERT on entries is coach-only and offering more would move the same dead
   end one step later into a silent zero-row write.
+- **Scope the qualifier picker by the ROUND's team, never the viewer's.** They
+  are different questions and they diverge in production: the round detail page
+  grants coach access when the round's PLAYER is a member of the coach's
+  cookie-resolved team, while `reclassify_golf_round` gates the qualifier
+  against `golf_rounds.team_id`. Measured 2026-08-31: 12 rounds carry a
+  `team_id` that is not a membership of their own player, and 8 carry none at
+  all. Offering the viewer's team's qualifiers therefore lets a coach pick one
+  the write then refuses — after the player has been entered into it. Ask the
+  question the enforcement asks.
+- **Enter the player LAST, and take it back if the write is refused.** The
+  entry is created only after the qualifier, team, round-number and slot-clash
+  checks have all passed, immediately before the RPC, and is deleted again if
+  the RPC still refuses on a race. An entry with no round is not harmless: it
+  puts the player on the coach's leaderboard at zero, produced by a save that
+  reported failure.
 - **The empty state must name a dead end the READER can act on.** The previous
   copy told whoever was looking that "a coach needs to add them to a qualifier
   first" — while the coach was the one reading it. That is a loop, not an

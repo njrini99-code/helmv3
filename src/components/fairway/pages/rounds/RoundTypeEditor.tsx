@@ -108,6 +108,12 @@ export interface RoundTypeEditorProps {
    * was actually describing.
    */
   viewerIsCoach?: boolean;
+  /**
+   * The qualifier read failed upstream, so an empty `qualifierOptions` means
+   * "we could not find out", not "there are none". Reporting the second when
+   * the first is true is the failure mode this repo keeps recording.
+   */
+  qualifierReadFailed?: boolean;
   className?: string;
 }
 
@@ -132,6 +138,7 @@ export function RoundTypeEditor({
   currentQualifierRoundNumber,
   qualifierOptions = [],
   viewerIsCoach = false,
+  qualifierReadFailed = false,
   className,
 }: RoundTypeEditorProps) {
   const router = useRouter();
@@ -212,12 +219,12 @@ export function RoundTypeEditor({
     }
   }
 
+  // Closed, this is the whole control. It was a small ghost button reading
+  // "Change type"; both reports described the feature as MISSING rather than
+  // broken, so it now names the thing it edits and carries a visible boundary
+  // instead of reading as body text.
   if (!open) {
     return (
-      // Was a small ghost button reading "Change type". Two coaches reported
-      // the feature as missing rather than broken, so the control now names
-      // the thing it edits and carries a visible boundary instead of reading
-      // as body text.
       <Button
         type="button"
         variant="secondary"
@@ -252,9 +259,11 @@ export function RoundTypeEditor({
             // has no open qualifier at all, because every open team qualifier
             // is offered to them whether or not the player is entered yet.
             <p className="font-fw-sans text-caption text-text-secondary">
-              {viewerIsCoach
-                ? 'This team has no open qualifier to attach a round to. Create one (or reopen a completed one) and this round can be added to it.'
-                : "You aren't in any open qualifier yet, so this round can't be attached to one. Ask your coach to add you to one."}
+              {qualifierReadFailed
+                ? "We couldn't load this team's qualifiers just now, so there's nothing to choose from. Reload the round and try again."
+                : viewerIsCoach
+                  ? 'This team has no open qualifier to attach a round to. Create one (or reopen a completed one) and this round can be added to it.'
+                  : "You aren't in any open qualifier yet, so this round can't be attached to one. Ask your coach to add you to one."}
             </p>
           ) : (
             <>
