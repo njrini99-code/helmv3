@@ -100,7 +100,8 @@
     "worktrees:park": "node scripts/worktree-lifecycle.mjs --park",
     "worktrees:retire": "node scripts/worktree-lifecycle.mjs --retire",
     "workspace:clean": "node scripts/workspace-clean.mjs",
-    "workspace:clean:apply": "node scripts/workspace-clean.mjs --apply"
+    "workspace:clean:apply": "node scripts/workspace-clean.mjs --apply",
+    "release:status": "node scripts/release-status.mjs"
   },
   "keywords": [],
   "author": "",
