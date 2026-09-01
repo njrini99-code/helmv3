@@ -6443,6 +6443,39 @@ async function savePartialRoundImpl(
           void flightRecorder.finalize('warning');
           return { success: false, error: rpcResult.error };
         }
+        // The round row is GONE. save_partial_round_atomic returns one string for
+        // "no such row" and "not yours", but in practice this is the first: a client
+        // can hold a roundId whose row never landed (a create that failed) or was
+        // deleted, and every auto-save after that targets a row that does not exist.
+        //
+        // Without a distinct key the caller cannot tell this from a transient
+        // failure, so it retries the same dead id forever and the player's round has
+        // nowhere to land. Measured 2026-09-01: three auto-saves at Winchester CC
+        // hole 9 failed this way in 55 seconds, each writing its own error event,
+        // while the round id they named had zero rows in golf_rounds, golf_holes and
+        // golf_shots — it had never existed.
+        //
+        // 'round_missing' lets the client drop the stale id and re-save as a CREATE.
+        // That is safe even in the genuine not-yours case: the new round is owned by
+        // the caller, so this can only ever recreate the caller's own snapshot, never
+        // touch someone else's row. Logged as a warning, not an error — the client
+        // recovers automatically and a recovered save is not an incident.
+        if (typeof rpcResult.error === 'string' && ROUND_MISSING_RPC_ERROR.test(rpcResult.error)) {
+          void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'round_missing' });
+          void flightRecorder.finalize('warning');
+          void logServerError(`Auto-save target round is missing — client will re-create: ${rpcResult.error}`, {
+            action: 'savePartialRound',
+            featureArea: 'shot_tracking',
+            roundId: existingRoundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            helmTraceId: flightRecorder.traceId,
+            traceStep: 'db.save_partial_round_atomic',
+            extra: { rpcError: rpcResult.error, courseName: data.courseName, currentHole: data.currentHole },
+          }, 'warning');
+          return { success: false, error: 'round_missing' };
+        }
         void flightRecorder.fail('db.save_partial_round_atomic', { errorSummary: rpcResult.error });
         void flightRecorder.finalize('failure');
         void logServerError(`Auto-save RPC returned failure: ${rpcResult.error || 'unknown'}`, {
@@ -6826,6 +6859,14 @@ const observedSavePartialRound = withAdminObserved(
   },
   savePartialRoundImpl,
 );
+
+/**
+ * The exact failure save_partial_round_atomic returns when the target row is
+ * not visible to the caller. Kept as one regex so the string lives in a single
+ * place — it is matched against an RPC message, and a second copy is a second
+ * thing to drift out of step with the migration that defines it.
+ */
+const ROUND_MISSING_RPC_ERROR = /round not found or you do not have permission to update it/i;
 
 export async function savePartialRound(
   data: PartialRoundData,
