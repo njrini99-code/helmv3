@@ -550,6 +550,19 @@ function SelfHealLoop({ stages, status }: { stages: SelfHealStageRow[]; status: 
                 {stage.lastError}
               </p>
             ) : null}
+            {/* A note from a run that SUCCEEDED. Muted and clamped to two
+                lines: it is context, not a fault, and the full text belongs on
+                the self-heal board rather than in this summary panel. Before
+                the `lastError`/`lastNote` split these shared one field, and a
+                638-character explanatory note rendered here in danger red. */}
+            {stage.lastNote ? (
+              <p
+                title={stage.lastNote}
+                className="mt-1 line-clamp-2 break-words text-caption text-warm-500 [overflow-wrap:anywhere]"
+              >
+                {stage.lastNote}
+              </p>
+            ) : null}
           </div>
         </li>
       ))}

@@ -119,7 +119,27 @@ export interface SelfHealStageRow extends SelfHealStage {
   status: CronBoardStatus;
   lastRunAt: string | null;
   lastRunStatus: string | null;
+  /**
+   * The last run's `error_message` ONLY when that run actually failed (or
+   * reported itself degraded). A completed run's `error_message` is a NOTE and
+   * belongs in `lastNote` — see below.
+   */
   lastError: string | null;
+  /**
+   * A note the last run left behind while still completing successfully.
+   *
+   * `background_job_logs.error_message` is the only free-text column a stage
+   * has, so a run that succeeds but wants to explain HOW writes its
+   * explanation there. Measured 2026-09-01, the newest `selfheal-triage` row
+   * is `status = 'completed'` carrying a 638-character account of which
+   * credential was missing and what was substituted for it. Rendered through
+   * `lastError` that read as a failure — a red wall of text directly beneath
+   * a green `ok` pill, on a board whose entire purpose is not overstating
+   * what it knows. Splitting the field at the source is what keeps the two
+   * apart everywhere, rather than asking each of the four call sites to
+   * remember the guard.
+   */
+  lastNote: string | null;
   /** True when the run history for this job type could not be READ. Distinct
    *  from `never-ran`: one is "we looked and there is nothing", the other is
    *  "we could not look". Reporting the second as the first is the
