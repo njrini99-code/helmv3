@@ -17,6 +17,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 // ============================================================================
 // TYPES
@@ -148,8 +149,13 @@ async function getInsightEffectivenessImpl(
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: InsightEffectivenessData; error?: string }> {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  // Resilient, not raw: a sub-second GoTrue blip must not tell a signed-in
+  // coach they are not authenticated. getUserResilient retries a transient
+  // auth error once before falling back to a local cookie read — see the
+  // 2026-07-29 incident its docblock records, where 292 AuthRetryableFetchErrors
+  // took the site down because raw getUser() was trusted at face value.
+  const { user } = await getUserResilient(supabase);
+  if (!user) {
     return { success: false, error: 'Unauthorized' };
   }
 
@@ -304,8 +310,13 @@ async function getPredictionPerformanceImpl(
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: PredictionPerformanceData; error?: string }> {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  // Resilient, not raw: a sub-second GoTrue blip must not tell a signed-in
+  // coach they are not authenticated. getUserResilient retries a transient
+  // auth error once before falling back to a local cookie read — see the
+  // 2026-07-29 incident its docblock records, where 292 AuthRetryableFetchErrors
+  // took the site down because raw getUser() was trusted at face value.
+  const { user } = await getUserResilient(supabase);
+  if (!user) {
     return { success: false, error: 'Unauthorized' };
   }
 
@@ -486,8 +497,13 @@ async function getPatternImpactImpl(
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: PatternImpactData; error?: string }> {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  // Resilient, not raw: a sub-second GoTrue blip must not tell a signed-in
+  // coach they are not authenticated. getUserResilient retries a transient
+  // auth error once before falling back to a local cookie read — see the
+  // 2026-07-29 incident its docblock records, where 292 AuthRetryableFetchErrors
+  // took the site down because raw getUser() was trusted at face value.
+  const { user } = await getUserResilient(supabase);
+  if (!user) {
     return { success: false, error: 'Unauthorized' };
   }
 
@@ -689,8 +705,13 @@ async function getCoachHelmOverviewImpl(
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: CoachHelmOverviewData; error?: string }> {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  // Resilient, not raw: a sub-second GoTrue blip must not tell a signed-in
+  // coach they are not authenticated. getUserResilient retries a transient
+  // auth error once before falling back to a local cookie read — see the
+  // 2026-07-29 incident its docblock records, where 292 AuthRetryableFetchErrors
+  // took the site down because raw getUser() was trusted at face value.
+  const { user } = await getUserResilient(supabase);
+  if (!user) {
     return { success: false, error: 'Unauthorized' };
   }
 
@@ -1304,8 +1325,13 @@ async function getInsightTrustSignalsImpl(
   insightIds: string[],
 ): Promise<{ success: true; signals: Record<string, TrustSignal> } | { success: false; error: string }> {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  // Resilient, not raw: a sub-second GoTrue blip must not tell a signed-in
+  // coach they are not authenticated. getUserResilient retries a transient
+  // auth error once before falling back to a local cookie read — see the
+  // 2026-07-29 incident its docblock records, where 292 AuthRetryableFetchErrors
+  // took the site down because raw getUser() was trusted at face value.
+  const { user } = await getUserResilient(supabase);
+  if (!user) {
     return { success: false, error: 'Unauthorized' };
   }
 
