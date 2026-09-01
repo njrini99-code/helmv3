@@ -4928,6 +4928,9 @@ async function resolveSharedScheduleScope(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   attendeeIds: string[],
+  /** The event being edited, when there is one. Its existing attendees are in
+   * scope even if they have since left the roster — see the note below. */
+  excludeEventId?: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const requested = [...new Set(attendeeIds.filter(Boolean))].filter((id) => id !== userId);
   if (requested.length === 0) return { ok: true };
@@ -4979,6 +4982,35 @@ async function resolveSharedScheduleScope(
     if (row.player_id) allowed.add(row.player_id);
   }
 
+  // PLAYERS WHO HAVE LEFT THE TEAM ARE STILL ON THE EVENTS THEY ATTENDED.
+  //
+  // The roster is current; an event's attendee list is historical. When a coach
+  // opens an existing event the editor seeds attendeeIds from that event, so a
+  // single departed player makes every event they ever attended un-checkable —
+  // the whole conflict check is denied, not just their row.
+  //
+  // Measured 2026-09-01 on the Guilford team: 12 current members, but 41 events
+  // carrying attendance rows for 2 players with zero team rows left. That is
+  // the SAME denial message as the 2026-08-20 user-id/player-id bug and a
+  // completely different cause — worth stating, because the message alone sent
+  // the last reader to the wrong fix.
+  //
+  // Widening to "already attending the event under edit" keeps the gate's
+  // point intact: it still refuses an arbitrary id list, and the widening is
+  // bounded by an event the caller's own team owns, which they can already see
+  // in the UI. It is not a general escape hatch.
+  if (excludeEventId) {
+    const existing = await supabase
+      .from('golf_event_attendance')
+      .select('player_id, golf_events!inner(team_id)')
+      .eq('event_id', excludeEventId)
+      .in('golf_events.team_id', teamIds);
+    if (existing.error) return { ok: false, error: RETRY };
+    for (const row of (existing.data ?? []) as Array<{ player_id: string | null }>) {
+      if (row.player_id) allowed.add(row.player_id);
+    }
+  }
+
   if (requested.some((id) => !allowed.has(id))) return { ok: false, error: DENIED };
   return { ok: true };
 }
@@ -5008,7 +5040,7 @@ async function checkScheduleConflictsImpl(
     // arbitrary id list turned this into a scheduling oracle for anyone the
     // caller could name. The editor only ever offers roster members, so
     // requiring a shared team costs legitimate callers nothing.
-    const scope = await resolveSharedScheduleScope(supabase, user.id, attendeeIds);
+    const scope = await resolveSharedScheduleScope(supabase, user.id, attendeeIds, excludeEventId);
     if (!scope.ok) {
       return { success: false, error: scope.error };
     }
