@@ -125,7 +125,7 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 ### Public / staff / admin / API
 | Route | Purpose | Access | Key file(s) |
 |-------|---------|--------|-------------|
-| `/baseball/player/[id]` | Public player profile (auth-checks + gates via `resolvePublicProfileAccess`) | public/gated | `(public)/player/[id]/page.tsx`; `lib/baseball/public-profile-access.ts` |
+| `/baseball/player/[id]` | Public player profile (auth-checks + gates via `resolvePublicProfileAccess`) | public or gated | `(public)/player/[id]/page.tsx`; `lib/baseball/public-profile-access.ts` |
 | `/baseball/packet/[token]` (+`/csv`) | Public scout packet by share token | public (token) | `(public)/packet/[token]/page.tsx`, `/csv/route.ts` (⚠️ #396 CSV returns 200 for invalid tokens) |
 | `/baseball/program/[id]` `/team/[id]` | Public program/team pages | public | `(public)/program/[id]`, `team/[id]` |
 | `/baseball/join/[code]` | Player team join via invite | authed player | `join/[code]/page.tsx`; `actions/teams.ts` |

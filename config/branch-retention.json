@@ -1,0 +1,10 @@
+{
+  "$comment": "Retention decisions for branches whose name matches PROTECTED_PREFIXES in scripts/lib/worktree-lifecycle.mjs (backup/, preserve/, recovered/, stage/). A protected prefix stops automatic deletion but records nothing about WHO preserved the branch or FOR HOW LONG, so protection never expires and the set only grows. An entry here supplies the missing half. It NEVER authorises deletion: every protected branch stays KEEP_PROTECTED whatever this file says, and removing one remains a human action. Run `npm run worktrees` to see which branches still have no entry.",
+  "policy": {
+    "requiredFields": ["owner", "expires"],
+    "expires": "YYYY-MM-DD, or \"never\" for material that must be kept permanently",
+    "onExpiry": "The branch is REPORTED as needing review. Nothing is deleted automatically.",
+    "guidance": "Prefer an annotated tag over an indefinite branch: a tag conveys the same commits, is not a merge target, and does not appear in branch listings agents scan for work."
+  },
+  "branches": {}
+}

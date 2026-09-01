@@ -143,6 +143,56 @@ export function isProtectedBranch(branch) {
 }
 
 /**
+ * Retention status for a PROTECTED_PREFIXES branch.
+ *
+ * A protected prefix asserts that "a human deliberately preserved something".
+ * It does not record WHO, or UNTIL WHEN — so protection never ends and the set
+ * can only grow. Measured 2026-08-31: every `backup/`, `preserve/`,
+ * `recovered/` and `stage/` branch in this repo, the oldest untouched since
+ * July, together holding commits reachable from no other ref. Each was created
+ * by a session that knew why; none of them says why.
+ *
+ * This deliberately changes NO verdict. A protected branch with no retention
+ * record stays KEEP_PROTECTED and stays undeletable — the standing
+ * authorization still covers only DELETE_MERGED_EXACT. What this produces is a
+ * decision list for a human, which is the thing that was missing.
+ *
+ * @param {string} branch
+ * @param {{owner?: string, expires?: string, reason?: string}|null} record
+ * @param {string|null} today  ISO YYYY-MM-DD; omit to skip expiry evaluation
+ * @returns {{status: 'RECORDED'|'MISSING'|'EXPIRED', reason: string}|null}
+ *          null when the branch is not protected at all
+ */
+export function classifyRetention(branch, record, today) {
+  if (!isProtectedBranch(branch)) return null;
+
+  // main/master are permanent by definition — they are listed as protected to
+  // stop deletion, not because someone parked something on them.
+  const isPermanent = PROTECTED_PREFIXES.some((p) => !p.endsWith('/') && branch === p);
+  if (isPermanent) return { status: 'RECORDED', reason: 'permanent branch' };
+
+  if (!record) {
+    return { status: 'MISSING', reason: 'no retention record — needs an owner and an expiry' };
+  }
+  const owner = record.owner;
+  const expires = record.expires;
+  if (!owner) return { status: 'MISSING', reason: 'retention record has no owner' };
+  if (expires === 'never') {
+    return { status: 'RECORDED', reason: `retained permanently by ${owner}` };
+  }
+  if (typeof expires !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(expires)) {
+    return {
+      status: 'MISSING',
+      reason: `retention for ${owner} has no valid expiry (YYYY-MM-DD, or "never")`,
+    };
+  }
+  if (today && expires < today) {
+    return { status: 'EXPIRED', reason: `retention by ${owner} expired ${expires} — needs review` };
+  }
+  return { status: 'RECORDED', reason: `retained by ${owner} until ${expires}` };
+}
+
+/**
  * Classify a WORKTREE.
  *
  * facts:

@@ -30,7 +30,7 @@ Some preferences are saved locally and not yet consumed globally, so agents shou
 - `src/app/golf/actions/v3/notification-prefs.ts`
 - `src/app/golf/actions/coaching-philosophy.ts`
 - `src/app/golf/actions/teams.ts`
-- `src/lib/coachhelm/v3/foundation/flags.ts`
+- `src/lib/coachhelm/v3/foundation/flags.ts` was removed 2026-07-03 (`b0a45ea31`, knip dead-code prune); per-team toggles live in `src/lib/coachhelm/v3/foundation/generator-toggles.ts`
 
 ## Core Data
 

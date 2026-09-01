@@ -30,9 +30,7 @@ It depends on Team Operations, Calendar, and Team Communications. Because it agg
 
 ### Components
 
-- `src/components/golf/player-hub/PlayerHub.tsx`
-- `src/components/golf/player-hub/PlayerHubWrapper.tsx`
-- `src/components/golf/player-hub/PlayerHubAnnouncementsSection.tsx`
+- `src/components/fairway/pages/hub/hub-parts.tsx` — the whole `src/components/golf/player-hub/` tree was removed with the legacy dual-tree (`ffd0fd8ab`)
 - `src/components/golf/player-hub/HubInsightSignalCard.tsx`
 
 ### Actions

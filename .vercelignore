@@ -103,6 +103,25 @@ routes/
 # where they are actually read.
 docs/
 
+# Secrets. This is the .gitignore-is-ignored trap at its worst address.
+#
+# .gitignore keeps the .env family out of git, and that is the ONLY thing that
+# was keeping it out of the upload too — so the moment this file appeared,
+# Vercel stopped consulting .gitignore and every `vercel deploy` began shipping
+# them off this machine. Measured 2026-08-31 by simulating the upload set
+# against this file: .env, .env.local, .env.development.local and
+# .env.production.local were all in it. .env.local is the one that carries
+# SUPABASE_SERVICE_ROLE_KEY, HELM_PROD_POSTGRES_PASSWORD and
+# HELM_PROD_DB_URL_DIRECT — the credentials .claude/rules/shipping.md calls the
+# path that "nothing intercepts".
+#
+# Runtime env comes from Vercel's own project settings, never from an uploaded
+# file, so excluding these changes nothing about how the app runs.
+.env
+.env.*
+# .env.example is documentation and carries no live values — keep it.
+!.env.example
+
 # Native shell — built by Capacitor/Xcode, never by the Vercel build.
 android/
 ios/

@@ -28,9 +28,9 @@ There are three user surfaces:
 
 - `src/components/golf/qualifiers/**`
 - `src/components/golf/coachhelm/v3/QualifyingBoard/**`
-- `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/QualifierViewTabs.tsx`
-- `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/QualifierRoundBreakdown.tsx`
-- `src/app/golf/(dashboard)/dashboard/my-qualifiers/my-qualifiers-client.tsx`
+- `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx`
+- `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx`
+- `src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx`
 
 ### Actions And Engine Code
 

@@ -161,12 +161,12 @@ Players create rounds with shot-by-shot tracking. Rounds populate stats, trigger
 | Route (review) | `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/page.tsx` |
 | Route (continue) | `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx` |
 | Client wizard | `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` |
-| Shot tracking | `src/components/golf/ShotTrackingComprehensive.tsx` |
+| Shot tracking | `src/components/fairway/pages/rounds-tracking/` (FairwayShotTracking.tsx) |
 | Actions | `src/app/golf/actions/golf.ts` (submit, save, delete) |
 | Drafts | `src/app/golf/actions/round-drafts.ts` |
 | Reviews | `src/app/golf/actions/round-reviews.ts` |
 | Shot analytics | `src/app/golf/actions/shot-analytics.ts` |
-| Auto-save hook | `src/hooks/golf/use-auto-save-round.ts` |
+| Auto-save hook | `src/hooks/golf/use-auto-save-round.ts` no longer exists; round persistence is `use-offline-sync.ts` + `use-round-status-sync.ts` |
 | Offline engine | `src/lib/offline/sync-engine.ts` |
 
 ### DB Tables
@@ -277,7 +277,7 @@ Display: getQualifierLeaderboard() → positions, ties, totals
 | Route (detail) | `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx` |
 | Route (new) | `src/app/golf/(dashboard)/dashboard/qualifiers/new/page.tsx` |
 | Actions | `src/app/golf/actions/golf.ts` (qualifier functions) |
-| Components | `src/components/golf/qualifiers/` |
+| Components | `src/components/fairway/pages/qualifiers/` |
 | Hook | `src/hooks/golf/use-qualifier-realtime.ts` |
 
 ### DB Tables
@@ -324,7 +324,7 @@ Calendar views: MonthView, WeekView, DayView, MobileListView
 | Type | Path |
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/calendar/page.tsx` |
-| Wrapper | `src/components/golf/calendar/GolfCalendarWrapper.tsx` |
+| Wrapper | `src/components/fairway/pages/calendar/FairwayCalendar.tsx` |
 | Views | `MonthView.tsx`, `WeekView.tsx`, `DayView.tsx`, `MobileCalendarWrapper.tsx` |
 | Actions | `event-lifecycle.ts`, `recurring-events.ts`, `attendance.ts` |
 | Polling | _not built — no files exist (backlog)_ |
@@ -401,7 +401,7 @@ setTaskReminder() → sets golf_tasks.reminder_at (NOT auto-triggered)
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/tasks/page.tsx` |
 | Actions | `tasks.ts`, `task-templates.ts`, `task-reminders.ts` |
-| Components | `src/components/golf/tasks/` (18 components) |
+| Components | `src/components/fairway/pages/tasks/` |
 | Hook | `src/hooks/golf/use-task-realtime.ts` |
 
 ### DB Tables
@@ -519,7 +519,7 @@ Budget/Expenses (IMPLEMENTED in travel.ts):
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/travel/page.tsx` |
 | Actions | `src/app/golf/actions/travel.ts` |
-| Components | `src/components/golf/travel/` |
+| Components | `src/components/fairway/pages/travel/` |
 
 ### DB Tables
 golf_travel_itineraries, golf_travel_budgets, golf_travel_expenses, golf_travel_expense_splits
@@ -633,7 +633,7 @@ ROUND REVIEW PIPELINE:
 | Learning | `src/lib/coachhelm/v2/learning/` |
 | Reasoning | `src/lib/coachhelm/v2/reasoning/` |
 | NLG | `src/lib/coachhelm/v2/nlg/insight-composer.ts` |
-| Persistence | `src/lib/coachhelm/v2/services/insight-persistence.ts` |
+| Persistence | `src/lib/coachhelm/v2/services/` was removed; see `src/lib/coachhelm/v3/chat/persistence.ts` |
 | Types & constants | `src/lib/coachhelm/types.ts`, `constants.ts` |
 | Actions | `insight-management.ts`, `pattern-management.ts`, `round-reviews.ts`, `alerts.ts`, `coachhelm-analytics.ts`, `development.ts` |
 | UI (80+ components) | `src/components/golf/coachhelm/` |
@@ -692,7 +692,7 @@ Filtering:
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/alerts/page.tsx` |
 | Actions | `src/app/golf/actions/alerts.ts` |
-| Components | `src/components/golf/coachhelm/alerts/` (AlertCard, etc.) |
+| Components | `src/app/golf/(dashboard)/dashboard/alerts` |
 
 ### DB Tables
 | Table | Role |
@@ -730,7 +730,7 @@ Coach actions:
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/patterns/page.tsx` |
 | Actions | `src/app/golf/actions/pattern-management.ts` |
-| Components | `src/components/golf/coachhelm/patterns/` (PatternDashboard, PatternCard, PatternTimeline) |
+| Components | `src/app/golf/(dashboard)/dashboard/patterns` |
 
 ### DB Tables
 | Table | Role |
@@ -797,7 +797,7 @@ Central intelligence hub displaying CoachHelm V2's team-wide AI analysis — ins
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/intelligence/page.tsx` |
 | Actions | `src/app/golf/actions/intelligence-dashboard.ts` |
-| Components | `src/components/golf/coachhelm/v2/IntelligenceCommandCenter` |
+| Components | `src/app/golf/(dashboard)/dashboard/intelligence` |
 
 ### DB Tables
 Multiple CoachHelm tables: golf_patterns_v2, golf_predictions, golf_coach_insights, golf_coach_philosophy, golf_learned_behavior
@@ -826,7 +826,7 @@ Coach-facing analytics dashboard measuring CoachHelm AI system effectiveness —
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/page.tsx` |
 | Actions | `src/app/golf/actions/coachhelm-analytics.ts` |
-| Components | `src/components/golf/coachhelm/analytics/` |
+| Components | `src/app/golf/(dashboard)/dashboard/analytics` |
 
 ### DB Tables
 golf_coach_insights, golf_insight_effectiveness, golf_predictions, golf_patterns_v2, golf_prediction_model_performance, golf_coach_philosophy
@@ -941,7 +941,7 @@ triage (honest-empty, not a placeholder).
 | Route (Dashboard, fetches the data) | `src/app/golf/(dashboard)/dashboard/page.tsx` |
 | Redirect (former Hub route) | `src/app/golf/(dashboard)/dashboard/hub/page.tsx` |
 | Data | `src/app/golf/actions/player-hub-data.ts` (`getPlayerHubSummaryData`) |
-| Component | `src/components/fairway/pages/dashboard/PlayerActionCenter.tsx` |
+| Component | none — `src/components/fairway/pages/dashboard/PlayerActionCenter.tsx` was removed and nothing replaced it |
 | Host component | `src/components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx` |
 | Shared presentational parts | `src/components/fairway/pages/hub/hub-parts.tsx` (TaskRow, RSVPRow, TripRow, TripDetailSheet, AnnouncementsList) |
 | Management surface | `src/app/golf/(dashboard)/dashboard/team-hub/**` (full tasks/travel CRUD) |
@@ -978,7 +978,7 @@ Note: /golf/dashboard/my-insights REDIRECTS here (deprecated route kept for book
 | Route | `src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx` |
 | Redirect | `src/app/golf/(dashboard)/dashboard/my-insights/page.tsx` → redirects to /coachhelm |
 | Actions | `src/app/golf/actions/shot-analytics.ts`, `intelligence-dashboard.ts` |
-| Components | `src/components/golf/coachhelm/PlayerCoachHelmDashboard` |
+| Components | `src/components/golf/coachhelm/home/PlayerCoachHelmHome.tsx` |
 
 ### DB Tables
 golf_players, golf_rounds, golf_shots, golf_coach_philosophy, golf_patterns_v2, golf_predictions, golf_coachhelm_settings

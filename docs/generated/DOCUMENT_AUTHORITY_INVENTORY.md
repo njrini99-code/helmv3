@@ -29,8 +29,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 13 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 19 | 19 | 7 | 17 |
-| `REFERENCE` | 59 | 12 | 17 | 110 |
+| `CURRENT_FEATURE` | 19 | 19 | 7 | 8 |
+| `REFERENCE` | 59 | 12 | 17 | 103 |
 | `GENERATED_TRUTH` | 15 | 3 | 5 | 22 |
 | `PROCESS_CONTRACT` | 8 | 1 | 7 | 10 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
@@ -160,19 +160,19 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/features/admin-platform.md` | current | yes | - | yes | 1 | 43 | 2 |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
-| `memory/features/calendar-events.md` | current | yes | - | - | 2 | 21 | 2 |
+| `memory/features/calendar-events.md` | current | yes | - | - | 2 | 21 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | - | 3 | 23 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 1 | 23 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 10 | - |
-| `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 27 | 2 |
-| `memory/features/player-hub.md` | current | yes | - | yes | 1 | 14 | 3 |
-| `memory/features/qualifiers.md` | current | yes | - | yes | 1 | 10 | - |
+| `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 25 | - |
+| `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
+| `memory/features/qualifiers.md` | current | yes | - | yes | 1 | 13 | - |
 | `memory/features/recruiting.md` | current | yes | - | - | 2 | 15 | - |
-| `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | 2 |
-| `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 10 | 1 |
-| `memory/features/shot-tracking.md` | current | yes | - | yes | 2 | 18 | 3 |
+| `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | - |
+| `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 11 | 1 |
+| `memory/features/shot-tracking.md` | current | yes | - | yes | 2 | 19 | 2 |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 19 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 16 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 2 | 10 | - |
@@ -231,11 +231,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/v3-testing-standards.md` | current | yes | - | - | 7 | 9 | 1 |
 | `docs/v3-wave-sequence.md` | superseded | - | - | yes | 6 | 5 | 1 |
 | `memory/brand/logos.md` | current | - | - | - | 0 | 0 | - |
-| `memory/context/baseballhelm-database.md` | current | yes | - | yes | 5 | 43 | 2 |
+| `memory/context/baseballhelm-database.md` | current | yes | - | yes | 5 | 42 | 1 |
 | `memory/context/baseballhelm-features.md` | current | yes | - | yes | 14 | 24 | 1 |
 | `memory/context/baseballhelm-workflows.md` | current | - | - | yes | 2 | 5 | - |
 | `memory/context/coachhelm-ai.md` | current | yes | - | yes | 19 | 20 | 13 |
-| `memory/context/golfhelm-features.md` | historical | - | - | yes | 39 | 66 | 29 |
+| `memory/context/golfhelm-features.md` | historical | - | - | yes | 39 | 63 | 23 |
 | `memory/prompts/docs-update.md` | current | - | - | - | 1 | 0 | - |
 | `memory/prompts/pr-review.md` | current | - | - | - | 1 | 1 | - |
 | `memory/templates/business-rule.md` | current | - | - | - | 1 | 0 | - |

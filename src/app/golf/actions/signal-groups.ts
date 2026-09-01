@@ -33,6 +33,7 @@ import { synthesizeTeamSignals } from '@/lib/coachhelm/v3/insights/team-synthesi
 import { acknowledgeInsight, dismissInsight } from './intelligence-dashboard';
 import { markPatternAddressed, dismissPattern } from './pattern-management';
 import { describeError } from '@/lib/utils/describe-error';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 // ============================================================================
 // AUTH
@@ -47,9 +48,12 @@ import { describeError } from '@/lib/utils/describe-error';
  */
 async function verifyTeamAccess(teamId: string): Promise<{ authorized: boolean; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Resilient, not raw: a sub-second GoTrue blip must not tell a signed-in
+  // coach they are not authenticated. getUserResilient retries a transient
+  // auth error once before falling back to a local cookie read — see the
+  // 2026-07-29 incident its docblock records, where 292 AuthRetryableFetchErrors
+  // took the site down because raw getUser() was trusted at face value.
+  const { user } = await getUserResilient(supabase);
   if (!user) {
     return { authorized: false, error: 'Not authenticated' };
   }
