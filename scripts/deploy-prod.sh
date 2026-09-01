@@ -31,6 +31,25 @@ set -euo pipefail
 # disable the daemon rather than trust a degraded cache to report honestly.
 git() { command git -c core.fsmonitor=false "$@"; }
 
+# The Vercel CLI is REPO-LOCAL. AGENTS.md: "Use repo-local platform CLIs:
+# ./node_modules/.bin/supabase and ./node_modules/.bin/vercel. Do not assume
+# global Supabase or Vercel binaries."
+#
+# This script called bare `vercel` and therefore could not run at all on a
+# machine without a global install — discovered 2026-09-01 attempting the first
+# promote of nine merged fixes, which died at "vercel: command not found" AFTER
+# passing every guard above it. A deploy script that cannot deploy is worse than
+# no deploy script: it reads as a working release path right up until you need it.
+VERCEL_BIN="./node_modules/.bin/vercel"
+if [ ! -x "$VERCEL_BIN" ]; then
+  VERCEL_BIN="$(command -v vercel || true)"
+fi
+if [ -z "$VERCEL_BIN" ] || [ ! -x "$VERCEL_BIN" ]; then
+  echo "REFUSING: no Vercel CLI found at ./node_modules/.bin/vercel or on PATH." >&2
+  echo "Run \`npm install\` (the CLI is a repo dependency)." >&2
+  exit 1
+fi
+
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 SHA="$(git rev-parse HEAD)"
 SHORT="$(git rev-parse --short HEAD)"
@@ -91,7 +110,7 @@ echo "  scope       -> $SCOPE"
 #   NEXT_PUBLIC_* into the bundle. This is the one that actually matters.
 # --env: available at runtime too, so the server-side Sentry init agrees with
 #   the client bundle rather than reporting a different release.
-vercel deploy --prod --yes \
+"$VERCEL_BIN" deploy --prod --yes \
   --scope "$SCOPE" \
   --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" \
   --env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA"
