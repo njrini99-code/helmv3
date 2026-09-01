@@ -138,6 +138,14 @@ if [ "$HTTP" != "200" ] || [ "$STAMPED" != "1" ]; then
 fi
 
 echo "  release stamp $SHORT found in the served bundle."
+
+# Record the VERIFIED release so the session-start hook can report drift
+# without a network call. Written only after the checks above passed, so this
+# file means "proven live", never "we ran a deploy command". Gitignored: it is
+# machine state, not repo state.
+mkdir -p .claude/session-state 2>/dev/null || true
+printf '%s\n' "$SHA" > .claude/session-state/last-verified-release 2>/dev/null || true
+
 echo
 echo "✅ VERIFIED LIVE: production is serving $SHORT."
 echo
