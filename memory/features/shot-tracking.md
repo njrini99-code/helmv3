@@ -63,7 +63,7 @@ an error sent to Sentry.
 
 ### Components
 
-- `src/components/golf/ShotTrackingComprehensive.tsx`
+- `src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx`
 - `src/components/golf/rounds/**`
@@ -75,7 +75,7 @@ an error sent to Sentry.
 - `src/app/golf/actions/golf.ts`
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/shot-analytics.ts`
-- `src/hooks/golf/use-auto-save-round.ts`
+- `src/hooks/golf/use-auto-save-round.ts` no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`
 - `src/lib/offline/sync-engine.ts`
 - `src/lib/coachhelm/v2/shot-analysis/**`
 

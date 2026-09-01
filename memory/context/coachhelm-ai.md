@@ -25,15 +25,25 @@ CoachHelm is the AI intelligence layer for GolfHelm. It analyzes player round da
 
 Two engine versions coexist:
 
-### V1 (Legacy, still active)
-- `src/lib/coachhelm/insight-engine.ts` — Core insight generation
-- `src/lib/coachhelm/round-review-generator.ts` — Round review creation
-- `src/lib/coachhelm/summary-generator.ts` — Summary text
-- `src/lib/coachhelm/pattern-detector.ts` — Pattern detection
-- `src/lib/coachhelm/highlight-detector.ts` — Highlight moments
-- `src/lib/coachhelm/area-detector.ts` — Problem areas
-- `src/lib/golf/strokes-gained.ts` — SG calculations (moved out of `src/lib/coachhelm/` — verified 2026-08-20)
-- `src/lib/coachhelm/insights/putting.ts` — Putting analysis
+### V1 — REMOVED (this heading read "Legacy, still active" until 2026-08-31)
+
+Every module below was deleted as verified-dead code, and nothing under `src/`
+has imported any of them since. "Legacy, still active" is close to the most
+expensive sentence a doc can carry about deleted code: it invites a session to
+go looking for the file, fail, and then reconstruct it.
+
+- `src/lib/coachhelm/insight-engine.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/round-review-generator.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/summary-generator.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/pattern-detector.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/highlight-detector.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/area-detector.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/insights/putting.ts` — was removed 2026-03-09 (`8ca5989a3`)
+
+V2 and V3 below are the entire live surface. One module from this group
+survives because it moved rather than died:
+
+- `src/lib/golf/strokes-gained.ts` — SG calculations, moved out of `src/lib/coachhelm/` (verified 2026-08-20)
 
 ### V2 (CORRECTED 2026-07-25: still live-writing, but its output is now largely invisible to coaches/players — see V3 below and "Live vs Built-but-Dark")
 Location: `src/lib/coachhelm/v2/`

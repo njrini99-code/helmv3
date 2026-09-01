@@ -60,7 +60,7 @@ The route is shared by coaches and players, but permissions and actions differ. 
 
 ### Components
 
-- `src/components/golf/calendar/GolfCalendarWrapper.tsx`
+- `src/components/fairway/pages/calendar/FairwayCalendar.tsx`
 - `src/components/golf/calendar/PremiumCalendarClient.tsx`
 - `src/components/golf/calendar/MonthView.tsx`
 - `src/components/golf/calendar/WeekView.tsx`
@@ -75,7 +75,7 @@ The route is shared by coaches and players, but permissions and actions differ. 
 - `src/app/golf/actions/calendar-feeds.ts`
 - `src/app/golf/actions/calendar-sync.ts`
 - `src/app/golf/actions/event-documents.ts`
-- `src/app/golf/actions/event-lifecycle.ts`
+- `src/app/golf/actions/golf.ts` — event lifecycle CRUD (createGolfEvent / updateGolfEvent / deleteGolfEvent); the separate `event-lifecycle.ts` no longer exists
 - `src/app/golf/actions/recurring-events.ts`
 - `src/lib/calendar/**`
 

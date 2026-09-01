@@ -21,9 +21,9 @@ Coaches use roster/team views to manage membership and inspect players. Players 
 ### Components
 
 - `src/components/golf/roster/**`
-- `src/app/golf/(dashboard)/dashboard/team/team-settings-client.tsx`
-- `src/app/golf/(dashboard)/dashboard/team/team-info-player.tsx`
-- `src/components/golf/dashboard/team-pulse-card.tsx`
+- `src/components/fairway/pages/team/FairwayTeamSettings.tsx`
+- `src/components/fairway/pages/team/FairwayTeamInfo.tsx`
+- team-pulse-card was removed; no successor component
 
 ### Actions
 
@@ -81,8 +81,8 @@ Team page
 
 ## Tests To Prefer
 
-- `e2e/roster.spec.ts`
-- `src/components/golf/dashboard/__tests__/team-pulse-card.test.tsx`
+- `e2e/roster.spec.ts` no longer exists — golf roster flows are covered by `e2e/golf-dashboard.spec.ts`
+- the team-pulse-card test was removed with its component
 - RLS tests for team membership and join-request changes.
 
 ## Related Docs

@@ -30,8 +30,7 @@ This area depends heavily on shot tracking, stats, round reviews, and CoachHelm 
 - `src/components/golf/coachhelm/v3/GoalCreationModal/**`
 - `src/components/golf/coachhelm/v3/IntentPill/**`
 - `src/components/golf/coachhelm/v3/IntentDrawer/**`
-- `src/components/golf/coachhelm/v3/CounterfactualLine.tsx`
-- `src/components/golf/coachhelm/v3/HeroNarrativeCard.tsx`
+- CounterfactualLine and HeroNarrativeCard were removed; the surviving v3 components are `GoalCreationModal/`, `HoleShotPath/`, `PuttHeatmap/` and `StandingBar/`
 
 ### Actions And Engine Code
 

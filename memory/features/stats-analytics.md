@@ -33,8 +33,8 @@ The current architecture uses cached stats for performance. Cache invalidation m
 
 - `src/components/golf/stats/**`
 - `src/components/golf/stats/sections/**`
-- `src/app/golf/(dashboard)/dashboard/stats/stats-client.tsx`
-- `src/app/golf/(dashboard)/dashboard/stats/team/team-stats-table.tsx`
+- `src/app/golf/(dashboard)/dashboard/stats/page.tsx`
+- `src/app/golf/(dashboard)/dashboard/stats/team/page.tsx`
 
 ### Actions And Services
 
