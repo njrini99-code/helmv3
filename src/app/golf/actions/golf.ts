@@ -2169,6 +2169,47 @@ async function submitGolfRoundComprehensiveImpl(
           // branch here — keyed on an `error === 'internal_error'` value
           // this RPC has never produced — is removed rather than kept as
           // dead code implying a response shape that isn't real.
+          // submit_round_atomic answers "not found", "already completed" and
+          // "not yours" with ONE message, so the raw string cannot tell a player
+          // which of the three happened — and two of them have opposite fixes.
+          // Disambiguate against the row itself before deciding.
+          //
+          // This is the submit-side twin of the savePartialRound 'round_missing'
+          // bug measured 2026-09-01: there, a client held a roundId with no row
+          // and retried forever. Here the failure is user-visible rather than a
+          // silent loop, but the outcome is the same — a finished round that
+          // cannot be submitted.
+          if (typeof rpcResult.error === 'string' && SUBMIT_ROUND_UNAVAILABLE.test(rpcResult.error)) {
+            const alreadyCommitted = await hasConfirmedRoundSubmission(supabase, existingRoundId, player.id);
+            if (alreadyCommitted) {
+              // The round IS submitted — an auto-save racing the submit, or a
+              // double-tap. Acknowledge the durable result rather than telling
+              // the player their finished round is missing.
+              void flightRecorder.complete('db.submit_round_atomic', { metadata: { already_completed: true } });
+              void flightRecorder.finalize('success');
+              round = { id: existingRoundId };
+            } else {
+              // No row for this id. Re-submitting as a NEW round is safe
+              // precisely BECAUSE we just proved nothing is there to duplicate;
+              // blind recreation without this check could duplicate a completed
+              // round, which is why the key is only returned after the lookup.
+              void flightRecorder.warn('db.submit_round_atomic', { errorSummary: 'round_missing' });
+              void flightRecorder.finalize('warning');
+              await logServerError(`Round submit target is missing — client may re-submit as new: ${rpcResult.error}`, {
+                action: 'submitGolfRoundComprehensive',
+                roundId: existingRoundId,
+                playerId: player.id,
+                userId: user.id,
+                userEmail: user.email,
+                holesCount: holesPayload.length,
+                shotsCount,
+                helmTraceId: flightRecorder.traceId,
+                traceStep: 'db.submit_round_atomic',
+                extra: { rpcResult, path: 'existing_round' },
+              }, 'warning');
+              return { success: false, error: 'round_missing' };
+            }
+          } else {
           void flightRecorder.fail('db.submit_round_atomic', { errorSummary: rpcResult.error });
           void flightRecorder.finalize('failure');
           await logServerError(`Round submit RPC returned failure: ${rpcResult.error}`, {
@@ -2184,6 +2225,7 @@ async function submitGolfRoundComprehensiveImpl(
             extra: { rpcResult, path: 'existing_round' },
           }, 'error');
           return { success: false, error: rpcResult.error || 'Failed to submit round.' };
+          }
         } else {
           void flightRecorder.complete('db.submit_round_atomic', { observed: { round_id: existingRoundId } });
           void flightRecorder.finalize('success');
@@ -4928,6 +4970,9 @@ async function resolveSharedScheduleScope(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   attendeeIds: string[],
+  /** The event being edited, when there is one. Its existing attendees are in
+   * scope even if they have since left the roster — see the note below. */
+  excludeEventId?: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const requested = [...new Set(attendeeIds.filter(Boolean))].filter((id) => id !== userId);
   if (requested.length === 0) return { ok: true };
@@ -4979,6 +5024,35 @@ async function resolveSharedScheduleScope(
     if (row.player_id) allowed.add(row.player_id);
   }
 
+  // PLAYERS WHO HAVE LEFT THE TEAM ARE STILL ON THE EVENTS THEY ATTENDED.
+  //
+  // The roster is current; an event's attendee list is historical. When a coach
+  // opens an existing event the editor seeds attendeeIds from that event, so a
+  // single departed player makes every event they ever attended un-checkable —
+  // the whole conflict check is denied, not just their row.
+  //
+  // Measured 2026-09-01 on the Guilford team: 12 current members, but 41 events
+  // carrying attendance rows for 2 players with zero team rows left. That is
+  // the SAME denial message as the 2026-08-20 user-id/player-id bug and a
+  // completely different cause — worth stating, because the message alone sent
+  // the last reader to the wrong fix.
+  //
+  // Widening to "already attending the event under edit" keeps the gate's
+  // point intact: it still refuses an arbitrary id list, and the widening is
+  // bounded by an event the caller's own team owns, which they can already see
+  // in the UI. It is not a general escape hatch.
+  if (excludeEventId) {
+    const existing = await supabase
+      .from('golf_event_attendance')
+      .select('player_id, golf_events!inner(team_id)')
+      .eq('event_id', excludeEventId)
+      .in('golf_events.team_id', teamIds);
+    if (existing.error) return { ok: false, error: RETRY };
+    for (const row of (existing.data ?? []) as Array<{ player_id: string | null }>) {
+      if (row.player_id) allowed.add(row.player_id);
+    }
+  }
+
   if (requested.some((id) => !allowed.has(id))) return { ok: false, error: DENIED };
   return { ok: true };
 }
@@ -5008,7 +5082,7 @@ async function checkScheduleConflictsImpl(
     // arbitrary id list turned this into a scheduling oracle for anyone the
     // caller could name. The editor only ever offers roster members, so
     // requiring a shared team costs legitimate callers nothing.
-    const scope = await resolveSharedScheduleScope(supabase, user.id, attendeeIds);
+    const scope = await resolveSharedScheduleScope(supabase, user.id, attendeeIds, excludeEventId);
     if (!scope.ok) {
       return { success: false, error: scope.error };
     }
@@ -6443,6 +6517,39 @@ async function savePartialRoundImpl(
           void flightRecorder.finalize('warning');
           return { success: false, error: rpcResult.error };
         }
+        // The round row is GONE. save_partial_round_atomic returns one string for
+        // "no such row" and "not yours", but in practice this is the first: a client
+        // can hold a roundId whose row never landed (a create that failed) or was
+        // deleted, and every auto-save after that targets a row that does not exist.
+        //
+        // Without a distinct key the caller cannot tell this from a transient
+        // failure, so it retries the same dead id forever and the player's round has
+        // nowhere to land. Measured 2026-09-01: three auto-saves at Winchester CC
+        // hole 9 failed this way in 55 seconds, each writing its own error event,
+        // while the round id they named had zero rows in golf_rounds, golf_holes and
+        // golf_shots — it had never existed.
+        //
+        // 'round_missing' lets the client drop the stale id and re-save as a CREATE.
+        // That is safe even in the genuine not-yours case: the new round is owned by
+        // the caller, so this can only ever recreate the caller's own snapshot, never
+        // touch someone else's row. Logged as a warning, not an error — the client
+        // recovers automatically and a recovered save is not an incident.
+        if (typeof rpcResult.error === 'string' && ROUND_MISSING_RPC_ERROR.test(rpcResult.error)) {
+          void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'round_missing' });
+          void flightRecorder.finalize('warning');
+          void logServerError(`Auto-save target round is missing — client will re-create: ${rpcResult.error}`, {
+            action: 'savePartialRound',
+            featureArea: 'shot_tracking',
+            roundId: existingRoundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            helmTraceId: flightRecorder.traceId,
+            traceStep: 'db.save_partial_round_atomic',
+            extra: { rpcError: rpcResult.error, courseName: data.courseName, currentHole: data.currentHole },
+          }, 'warning');
+          return { success: false, error: 'round_missing' };
+        }
         void flightRecorder.fail('db.save_partial_round_atomic', { errorSummary: rpcResult.error });
         void flightRecorder.finalize('failure');
         void logServerError(`Auto-save RPC returned failure: ${rpcResult.error || 'unknown'}`, {
@@ -6826,6 +6933,21 @@ const observedSavePartialRound = withAdminObserved(
   },
   savePartialRoundImpl,
 );
+
+/**
+ * The exact failure save_partial_round_atomic returns when the target row is
+ * not visible to the caller. Kept as one regex so the string lives in a single
+ * place — it is matched against an RPC message, and a second copy is a second
+ * thing to drift out of step with the migration that defines it.
+ */
+const ROUND_MISSING_RPC_ERROR = /round not found or you do not have permission to update it/i;
+
+/**
+ * submit_round_atomic's equivalent. It deliberately conflates three causes in
+ * one sentence, so matching it is only the FIRST half of the decision — the
+ * caller must then look the round up to tell "gone" from "already submitted".
+ */
+const SUBMIT_ROUND_UNAVAILABLE = /round not found, already completed, or no permission/i;
 
 export async function savePartialRound(
   data: PartialRoundData,

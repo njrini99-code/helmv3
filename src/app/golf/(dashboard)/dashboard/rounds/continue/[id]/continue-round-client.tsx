@@ -556,6 +556,19 @@ export default function ContinueRoundClient({
           redirectToCompletedRound();
           return false;
         }
+        // The row this URL names is gone. Unlike the new-round screen we cannot
+        // just forget the id — it IS the route — so re-create from the snapshot
+        // we are already sending and move the player onto the round that now
+        // exists. Retrying the dead id here can only ever fail.
+        if (result.error === 'round_missing') {
+          const recreated = await savePartialRound(saveData, undefined);
+          if (recreated.success) {
+            clearEmergencySaveThrough(recreated.data.roundId, playerId, emergencyTimestamp);
+            router.replace(`/golf/dashboard/rounds/continue/${recreated.data.roundId}`);
+            return true;
+          }
+          break;
+        }
         if (result.error !== 'busy' && result.error !== 'retry') break;
       } catch {
         // Retry the finite checkpoint sequence below before asking the player
@@ -575,7 +588,7 @@ export default function ContinueRoundClient({
       showAutoSaveWarning();
     }
     return false;
-  }, [handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, roundId, showAutoSaveWarning]);
+  }, [handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, roundId, router, showAutoSaveWarning]);
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats): Promise<boolean> => {
     allHolesCheckpointedRef.current = false;
@@ -1032,6 +1045,11 @@ export default function ContinueRoundClient({
       if (!result.success && (result.error === 'busy' || result.error === 'retry')) {
         await new Promise((resolve) => setTimeout(resolve, 1_500));
         result = await savePartialRound(buildPartialRoundData(), roundId);
+      }
+
+      // A user-initiated save must not be the one that loses the round.
+      if (!result.success && result.error === 'round_missing') {
+        result = await savePartialRound(buildPartialRoundData(), undefined);
       }
 
       if (!result.success) {
