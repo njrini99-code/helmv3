@@ -42,6 +42,7 @@ import { fileURLToPath } from 'node:url';
 import {
   classifyWorktree,
   classifyBranch,
+  classifyRetention,
   combineVerdicts,
   DELETE_MERGED_EXACT,
   PARKABLE,
@@ -165,6 +166,22 @@ function workspaceIntent(path) {
 function dispositions() {
   try {
     return JSON.parse(readFileSync(resolve(REPO, 'config/open-pr-dispositions.json'), 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Retention decisions for protected branches, keyed by branch name.
+ *
+ * Absent or unreadable is `{}` — which makes every protected branch report as
+ * having NO decision. That is the safe direction here too: the failure mode is
+ * a longer decision list, never a shorter one.
+ */
+function retentionRecords() {
+  try {
+    const cfg = JSON.parse(readFileSync(resolve(REPO, 'config/branch-retention.json'), 'utf-8'));
+    return (cfg && typeof cfg.branches === 'object' && cfg.branches) || {};
   } catch {
     return {};
   }
@@ -490,6 +507,35 @@ const unknowns = rows.filter((r) => String(r.branchVerdict).startsWith('UNKNOWN'
 
 console.log('');
 console.log(`  ${parkable.length} worktree(s) parkable/retirable · ${deletable.length} branch(es) deletable now · ${unknowns.length} row(s) UNKNOWN`);
+
+// Protected branches with no recorded owner/expiry. This reports; it never
+// deletes — every one of these is still KEEP_PROTECTED on its own row above.
+{
+  const today = new Date().toISOString().slice(0, 10);
+  const records = retentionRecords();
+  const seen = new Set();
+  const undecided = [];
+  for (const r of rows) {
+    if (!r.branch || seen.has(r.branch)) continue;
+    seen.add(r.branch);
+    const c = classifyRetention(r.branch, records[r.branch], today);
+    if (c && (c.status === 'MISSING' || c.status === 'EXPIRED')) {
+      undecided.push({ branch: r.branch, ...c });
+    }
+  }
+  if (undecided.length) {
+    console.log('');
+    console.log(`  ${undecided.length} protected branch(es) carry no retention decision.`);
+    console.log('  "Protected" only means never deleted automatically. It does not mean');
+    console.log('  anyone still needs them, and nothing here expires on its own. Record an');
+    console.log('  owner + expiry in config/branch-retention.json, or move the commits to an');
+    console.log('  annotated tag — a tag preserves them without appearing in the branch');
+    console.log('  listings agents scan for work:');
+    for (const u of undecided) {
+      console.log(`    ${u.branch.padEnd(42)} ${u.reason}`);
+    }
+  }
+}
 if (blockedByWorktree.length) {
   console.log('');
   console.log(`  ${blockedByWorktree.length} branch(es) are PROVEN MERGED but still checked out, so they are`);

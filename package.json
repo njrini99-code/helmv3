@@ -98,7 +98,9 @@
     "worktree:deps": "node scripts/ensure-worktree-deps.mjs",
     "worktrees": "node scripts/worktree-lifecycle.mjs",
     "worktrees:park": "node scripts/worktree-lifecycle.mjs --park",
-    "worktrees:retire": "node scripts/worktree-lifecycle.mjs --retire"
+    "worktrees:retire": "node scripts/worktree-lifecycle.mjs --retire",
+    "workspace:clean": "node scripts/workspace-clean.mjs",
+    "workspace:clean:apply": "node scripts/workspace-clean.mjs --apply"
   },
   "keywords": [],
   "author": "",

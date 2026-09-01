@@ -93,7 +93,7 @@ Join code
 ## Tests To Prefer
 
 - `e2e/auth.spec.ts`
-- `e2e/golf-team-join.spec.ts`
+- `e2e/golf-team-join.spec.ts` no longer exists — join flows are covered by `e2e/auth.spec.ts`
 - `src/test/lib/auth/**`
 - RLS tests when membership or join-request tables change.
 

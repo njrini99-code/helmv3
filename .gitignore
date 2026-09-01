@@ -89,8 +89,23 @@ helm-vid/
 *.png
 # Hosted email assets must reach prod — exempt them from the global *.png ignore.
 !public/email/*.png
-# QA visual audit packs (labeled screenshots + manifests)
-!docs/qa/**/*.png
+# QA visual audit packs (labeled screenshots + manifests).
+#
+# SCOPED to the one pack that already exists, deliberately. This read
+# `!docs/qa/**/*.png` until 2026-08-31 — a blanket re-inclusion of every future
+# QA pack, which is how 108 screenshots and 67 MB arrived without anyone
+# choosing to commit them. A visual-audit run is a snapshot of a moment; the
+# findings that outlive it are the INDEX.md / ERRORS.md / NAV_ISSUES.md files,
+# and those are markdown and stay tracked either way.
+#
+# The existing pack is KEPT: deleting it from HEAD would not shrink a clone
+# (every blob stays in the 219 MB pack regardless), its four INDEX.md tables
+# link to the images, and `scripts/build-baseball-qa-pack.mjs` rebuilds it from
+# `/tmp/baseball-qa-full`, which is long gone — so it is not regenerable.
+# Removing it would cost an audit trail and buy nothing measurable.
+#
+# Adding a NEW pack is now a deliberate act: add its own `!` line here.
+!docs/qa/baseball-fairway-visual-audit-2026-07-04/**/*.png
 # Android launcher icons are build inputs — without these the adaptive icon's
 # @mipmap/ic_launcher_foreground does not resolve on a fresh clone and the
 # Gradle build FAILS. The generated vector defaults were removed in favour of

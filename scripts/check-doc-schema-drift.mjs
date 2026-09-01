@@ -54,6 +54,7 @@ import { join } from 'node:path';
 
 const ROOT = process.cwd();
 const TYPES_FILE = join(ROOT, 'src/lib/types/database.ts');
+const MIGRATIONS_DIR = join(ROOT, 'supabase/migrations');
 const BASELINE_FILE = join(ROOT, '.doc-schema-baseline.json');
 
 /** Docs that a session is routed to and will treat as fact. */
@@ -182,6 +183,51 @@ function topLevelKeys(src, blockName) {
   return [...text.matchAll(/^ {6}([a-z_][a-z0-9_]*):/gm)].map((m) => m[1]);
 }
 
+/**
+ * RLS POLICY names, read from the migrations.
+ *
+ * These are a fifth schema surface and they are NOT in database.ts — Supabase's
+ * type generator emits tables, views, functions and enums, and policies appear
+ * in none of them. But these docs render policy names inline (see the header:
+ * the 2026-08-19 audit found phantoms "rendered with full column tables, FK
+ * targets and RLS policy names"), so every policy a doc names was being
+ * reported as a phantom table.
+ *
+ * Measured 2026-08-31: 5 of the 40 remaining baseline identifiers are
+ * `CREATE POLICY` names — baseball_coaches_select, baseball_coaches_select_all,
+ * baseball_players_select, baseball_teams_select, baseball_stat_uploads_insert.
+ * Widening the surface here is the same fix, and the same reasoning, as the
+ * original widening to functions and enums: crying wolf trains people to
+ * ignore the check.
+ *
+ * SCOPE, precisely: this answers "is this identifier a policy name?" — NOT
+ * "does this policy still exist?". A policy dropped by a later migration stays
+ * in this set. That is a deliberately narrower claim than the database.ts
+ * surface makes, and it is the claim needed to stop misclassifying a policy as
+ * a missing table. Verifying live policy existence needs a catalog query, which
+ * this script deliberately does not do.
+ */
+async function loadPolicyNames() {
+  let files;
+  try {
+    files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql'));
+  } catch {
+    return [];
+  }
+  const names = new Set();
+  const re = /create\s+policy\s+(?:if\s+not\s+exists\s+)?"?([a-z_][a-z0-9_]*)"?/gi;
+  for (const f of files) {
+    let text;
+    try {
+      text = await readFile(join(MIGRATIONS_DIR, f), 'utf8');
+    } catch {
+      continue;
+    }
+    for (const m of text.matchAll(re)) names.add(m[1]);
+  }
+  return [...names];
+}
+
 async function loadSchema() {
   const src = await readFile(TYPES_FILE, 'utf8');
   const parts = {
@@ -189,6 +235,7 @@ async function loadSchema() {
     views: topLevelKeys(src, 'Views'),
     functions: topLevelKeys(src, 'Functions'),
     enums: topLevelKeys(src, 'Enums'),
+    policies: await loadPolicyNames(),
   };
   const all = new Set(Object.values(parts).flat());
   if (all.size === 0) {
@@ -315,7 +362,8 @@ async function main() {
 
   console.log(
     `Schema surface: ${parts.tables.length} tables, ${parts.views.length} views, ` +
-      `${parts.functions.length} functions, ${parts.enums.length} enums`
+      `${parts.functions.length} functions, ${parts.enums.length} enums, ` +
+      `${parts.policies.length} RLS policies (from migrations)`
   );
   console.log(
     `Docs reference ${docs.size} golf_*/baseball_* identifiers; ` +
