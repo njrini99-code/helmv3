@@ -5965,6 +5965,10 @@ async function savePartialRoundImpl(
   data: PartialRoundData,
   existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
+  // Hole numbers the salvage path below could not parse and therefore blanked.
+  // Checked against durable server state before the destructive RPC runs — see
+  // the guard beside the save_partial_round_atomic call.
+  let salvagedAwayHoleNumbers: number[] = [];
   try {
     // A browser may retain an older JS bundle across a deployment. Those older
     // bundles built this array sparsely; Server Action transport preserves the
@@ -6076,6 +6080,7 @@ async function savePartialRoundImpl(
         'warning',
       );
 
+      salvagedAwayHoleNumbers = droppedHoles;
       data = { ...data, holes: salvagedHoles } as PartialRoundData;
     }
 
@@ -6457,6 +6462,69 @@ async function savePartialRoundImpl(
       // Optimistic locking: pass expected updated_at to detect concurrent edits
       if (data.expectedUpdatedAt) {
         rpcParams.p_expected_updated_at = data.expectedUpdatedAt;
+      }
+
+      // A SALVAGED HOLE MUST NOT DELETE A HOLE THAT IS ALREADY SAFE.
+      //
+      // The salvage path above blanks an unparseable hole and carries on, on
+      // the stated principle that "a payload mismatch must never cost the
+      // player their shot". That principle is right; the implementation
+      // inverted it, because save_partial_round_atomic is a REPLACE, not a
+      // merge: it deletes every golf_holes and golf_shots row for the round and
+      // rebuilds them from this payload. A blanked hole is filtered out of
+      // completedHoles, so it is rebuilt as {score: null, putts: null} with no
+      // shot group — and the score and shots that were already durable are
+      // gone, while the caller is told the save succeeded.
+      //
+      // Verified against a live database: saving 3 holes then re-saving with a
+      // 1-hole payload leaves exactly 1 hole and 2 shots. The delete is real.
+      //
+      // So: if any blanked hole already has a scored row on the server, refuse
+      // the write and report 'retry' — the same recoverable signal the
+      // unsalvageable branch uses. The next auto-save tick re-sends full state,
+      // and the durable snapshot is untouched in the meantime. If the blanked
+      // holes have nothing stored, there is nothing to lose and the salvage
+      // proceeds exactly as before, which keeps the original fix's benefit:
+      // one bad hole must not discard seventeen good ones.
+      if (salvagedAwayHoleNumbers.length > 0 && existingRoundId) {
+        const { data: durable, error: durableErr } = await supabase
+          .from('golf_holes')
+          .select('hole_number')
+          .eq('round_id', existingRoundId)
+          .in('hole_number', salvagedAwayHoleNumbers)
+          .not('score', 'is', null);
+
+        // A failed read is treated as "assume there IS something to lose".
+        // Guessing the other way is how the data disappears.
+        const atRisk = durableErr
+          ? salvagedAwayHoleNumbers
+          : (durable ?? []).map((h: { hole_number: number }) => h.hole_number);
+
+        if (atRisk.length > 0) {
+          void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'salvage_would_erase' });
+          void flightRecorder.finalize('warning');
+          await logServerError(
+            `Auto-save refused: salvaging hole(s) ${atRisk.join(', ')} would have erased a scored hole already saved`,
+            {
+              action: 'savePartialRound.salvageGuard',
+              featureArea: 'shot_tracking',
+              roundId: existingRoundId,
+              playerId: player.id,
+              userId: user.id,
+              userEmail: user.email,
+              helmTraceId: flightRecorder.traceId,
+              extra: {
+                courseName: data.courseName,
+                currentHole: data.currentHole,
+                salvagedAwayHoleNumbers,
+                atRisk,
+                durableReadFailed: Boolean(durableErr),
+              },
+            },
+            'error',
+          );
+          return { success: false, error: 'retry' };
+        }
       }
 
       void flightRecorder.start('db.save_partial_round_atomic');
