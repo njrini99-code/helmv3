@@ -1,7 +1,7 @@
 # INC-2026-08-22 — partial-save child failure could delete an active round
 
 - Feature: `shot_tracking` (also affects the Golf Round Lifecycle feature)
-- Status: verified — release and production verification pending
+- Status: released — production health verification passed; recurrence observation pending. Repairs `f06c9bf34` (preserve the parent on child-write failure) and `a68d7c299` (durable start/checkpoint) are live. (Read "release and production verification pending" until 2026-09-01.)
 - Risk: R2 — active player workflow and persisted scoring data
 - First seen: 2026-08-22
 - Last seen: 2026-08-22

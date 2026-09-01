@@ -40,18 +40,16 @@ in-progress rather than carrying contradictory completed and active versions.
 Undo and Edit Shot share one local in-flight mutation guard. When an authorized
 delete lookup confirms a shot is already absent, the client removes only its
 stale local reference; it does not retry the delete or bypass server ownership
-checks. The Bridge records that reconciliation as handled informational
-telemetry rather than treating a successfully recovered state as a warning or
-an error sent to Sentry.
+checks. The Bridge records that reconciliation at the `info` tier
+(`shot_not_found` is in `ROUTINE_RECONCILIATION_CODES`,
+`src/lib/admin/observe-action-result.ts`) rather than treating a successfully
+recovered state as a warning or an error sent to Sentry.
 An edit or delete read failure is deliberately different: the client keeps its
 local shot intact and asks the player to retry. Only the database's explicit
-no-visible-row result may trigger stale-reference reconciliation.
-
-Undo and Edit Shot share one local in-flight mutation guard. When an authorized
-delete lookup confirms a shot is already absent, the client removes only its
-stale local reference; it does not retry the delete or bypass server ownership
-checks. The Bridge records that reconciliation as a handled warning rather than
-an error sent to Sentry.
+no-visible-row result may trigger stale-reference reconciliation. As of
+2026-09-01 that includes the player-profile read inside `deleteShot` and
+`updateShot`: a failed `golf_players` lookup returns a retryable sentence, not
+"Player profile not found" and never the `shot_not_found` code.
 
 ## Primary Entry Points
 
@@ -66,7 +64,6 @@ an error sent to Sentry.
 - `src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx`
-- `src/components/golf/rounds/**`
 - `src/components/fairway/pages/rounds-tracking/**`
 - `src/components/fairway/pages/rounds-recover/**`
 
@@ -77,6 +74,10 @@ an error sent to Sentry.
 - `src/app/golf/actions/shot-analytics.ts`
 - `src/hooks/golf/use-auto-save-round.ts` no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`
 - `src/lib/offline/sync-engine.ts`
+- `src/lib/utils/emergency-save.ts` — synchronous device snapshot, keyed by
+  round id (or `new_<playerId>` before one exists)
+- `src/lib/golf/round-missing-recovery.ts` — the one re-create decision every
+  round write shares
 - `src/lib/coachhelm/v2/shot-analysis/**`
 
 ## Core Data
@@ -119,7 +120,28 @@ recording remains opt-in; tracing cannot block a player save or submit.
 ## Business Rules
 
 - Do not lose user-entered shots. Save/submit/recover paths must be idempotent and interruption-tolerant.
-- Do not use DELETE-then-INSERT for save or submit paths.
+- Do not use DELETE-then-INSERT in any TypeScript-level save, submit, or sync
+  write path. The Review Gate blocks it in `save/submit/sync` paths.
+- **Sanctioned exception, and the only one:** the two atomic RPCs
+  `save_partial_round_atomic` (`supabase/migrations/20260820170000_*`) and
+  `submit_round_atomic` (`supabase/migrations/20260821043500_*`) each do
+  `DELETE FROM golf_shots / golf_holes WHERE round_id = …` and rebuild from the
+  payload. That is a full-snapshot REPLACE inside one Postgres transaction,
+  and it is acceptable because of the mitigations that surround it, all of
+  which must stay in place: (1) a single transaction — a failed rebuild rolls
+  the delete back; (2) a row lock taken first — partial save uses
+  `FOR UPDATE NOWAIT`, submit waits up to a `SET LOCAL lock_timeout = '3s'`,
+  and either returns `{success:false, error:'busy'}` instead of queueing
+  (`55P03`); (3) the `invalid_snapshot` preflight (migration
+  `20260825152726`) rejects a payload whose shot groups name a hole absent
+  from the hole snapshot BEFORE any delete runs; (4) every caller sends the
+  complete round state, never a delta; (5) the TypeScript salvage guard
+  (`salvageWouldEraseDurableHole`, `savePartialRound`) refuses with `retry`
+  when a hole blanked by validation salvage already has a scored row on the
+  server — on both the RPC path and the no-id reuse path. Do not write a
+  migration to change the RPC shape without re-deriving all five.
+  `submitRoundDirectFallback` in `golf.ts` is dead code kept deliberately
+  (see its own comment); it is not a live DELETE-then-INSERT path.
 - A failed checkpoint must retain its parent in-progress round and prior saved
   holes/shots. The next checkpoint is an idempotent upsert; cleanup must never
   make Continue Round disappear after a temporary child-write failure.
@@ -160,6 +182,66 @@ recording remains opt-in; tracing cannot block a player save or submit.
   `qualifier_round_number` authoritative, including for a direct stale RPC.
 - Shot data is evidence for stats and CoachHelm; avoid transforming it into lossy summaries too early.
 
+## Save and submit result contract (updated 2026-09-01)
+
+`savePartialRound` and `submitGolfRoundComprehensive` return
+`ActionResult`; the failure `error` is either a sentence or one of these bare
+signal keys, and every client branches on the keys before it shows anything.
+
+- `busy` — single-flight guard. Partial save: `FOR UPDATE NOWAIT` on the
+  `golf_rounds` row; any concurrent writer means this save is SKIPPED, never
+  queued. Clients treat it as silent (no breaker increment, no toast) because
+  every save carries full state and the next tick re-sends it. Submit: a
+  bounded 3s lock wait first, then `busy`, surfaced as "Another save for this
+  round is just finishing — try again in a moment" at warning tier, not as an
+  error.
+- `retry` — a transient the client should not surface as terminal: a failed
+  player read, an unsalvageable payload, or the salvage guard refusing a write
+  that would erase a durable scored hole. Same silent-skip handling as `busy`.
+- `conflict` — optimistic locking: the client sent `expectedUpdatedAt` and the
+  row is newer. The client asks the player to reload.
+- `round_missing` — the server PROVED there is no row for the id it was given
+  (partial save: the RPC's not-found message; submit: that message AND an
+  authenticated read showing no completed row, so an already-submitted round
+  is acknowledged instead). Retrying the id can never succeed. Every caller
+  goes through `writeRoundRecreatingIfMissing`
+  (`src/lib/golf/round-missing-recovery.ts`): re-issue the identical full
+  snapshot once with NO id — the no-id branch creates the row, and for submit
+  creates and completes it in one atomic call — and if that fails too, show a
+  sentence, never the key, and leave the device snapshot in place. Continue
+  Round re-creates from its checkpoint, its mid-hole auto-save and its queued
+  follow-up alike, migrates the device snapshot from the dead id to the new
+  one (`migrateEmergencySave`), targets the new id for any save that races
+  the route change, and `router.replace`s onto it. New Round drops the dead id
+  (`dropStaleRoundId`), re-creates, and migrates the snapshot the same way.
+  The recovery screen and the v1 sync drain re-submit a failed terminal
+  payload as a NEW round rather than retrying the dead id.
+- `invalid_snapshot` (`error_code`, with a sentence in `error`) — the RPC
+  preflight found a shot group whose hole is absent from the hole snapshot.
+  Nothing was deleted; the client retries with a complete snapshot.
+- A LOST RESPONSE on submit is not a failure until proven: a client-side
+  abort/timeout with no SQLSTATE (`isIndeterminateWriteFailure`) triggers an
+  authenticated read of that exact round (`hasConfirmedRoundSubmission`); a
+  `completed` row is acknowledged as success, anything else preserves every
+  server and device copy for retry.
+- Validation salvage: a hole that fails `partialHoleSchema` is blanked to
+  `null` and the save carries on (one bad hole must not discard seventeen good
+  ones); the blanked hole numbers are logged. Before the write, the salvage
+  guard checks the target round for durable scored rows among those holes and
+  answers `retry` if any exist — on the RPC path and on the no-id reuse path.
+- Sand/bunker: `lieBefore`/`result` accept `'sand'`, `approachMissLieType`
+  accepts `'bunker'`; the server preprocesses either spelling into the field's
+  vocabulary so a UI mapping miss cannot fail validation mid-round.
+- Qualifier round number at submit: the persisted `golf_rounds` row is the
+  authority. A stored `qualifier_id` forces `round_type='qualifier'`; a stored
+  `qualifier_round_number` wins, otherwise the supplied one is validated
+  (integer ≥ 1, ≤ `golf_qualifiers.num_rounds`); a client still carrying
+  qualifier data for a round that is no longer a qualifier round has it
+  ignored, with a warning log, rather than being refused.
+- `SyncResult.declined` — the v2 sync engine reports `declined:
+  'already-running'` with EMPTY `errors` when a run is skipped because one is
+  in flight; no surface may render that as a failure.
+
 ## UI Contract
 
 - Mobile usability matters more than decorative layout; the flow should keep controls reachable and content earlier on screen.
@@ -172,10 +254,12 @@ recording remains opt-in; tracing cannot block a player save or submit.
 
 ## Known Risk Areas
 
-- Draft JSON currently lives in `golf_rounds.notes`, which can collide with user notes.
+- Draft JSON lives in `golf_rounds.draft_data` (`src/app/golf/actions/round-drafts.ts`
+  writes it); `notes` is only a legacy READ fallback for rows written before
+  that column existed. (This line said `notes` was the live store until
+  2026-09-01.)
 - Cross-device/session ordering can still produce stale local shot IDs; the
   client reconciles a server-confirmed absent shot, while authorization and
-  in-progress-round validation remain enforced on the server.
   in-progress-round validation remain enforced on the server. Both Edit and
   Delete use the stable `shot_not_found` reconciliation signal: the stale
   local row is removed, hole state is recalculated from the remaining shots,
@@ -186,8 +270,15 @@ recording remains opt-in; tracing cannot block a player save or submit.
   A transient polling failure is retried silently; only a sustained outage is
   reported once with its accurate status-sync context, while the committed
   server round remains the source of truth for recovery.
-- Offline shot sync is disabled because of `ShotRecord` to `OfflineShot` type mismatch; DB auto-save is the path to trust.
-- Strokes-gained columns exist but are not populated from shot data.
+- Normal auto-save deliberately writes NO v1 per-shot offline queue (see
+  Current State; `continue-round-client.offline-consolidation.test.ts` pins
+  it). The legacy IndexedDB bridge holds only a failed final submission, which
+  the dashboard-level v2 sync engine drains. DB auto-save is the path to trust.
+- Strokes-gained columns ARE populated from shot data on submit:
+  `submit_round_atomic` calls `recalculate_round_strokes_gained` (migration
+  `20260821043500`), and `invalidateOnRoundComplete`
+  (`src/lib/cache/golf-stats-calculator.ts`) calls it again explicitly.
+  (This line said the opposite until 2026-09-01.)
 - Putts-per-GIR is not properly implemented.
 - Hydration/hook-order problems in interactive round screens can pass build but fail in browser.
 
@@ -195,6 +286,15 @@ recording remains opt-in; tracing cannot block a player save or submit.
 
 - `e2e/golf-round.spec.ts`
 - `src/app/golf/actions/__tests__/golf-schemas.test.ts`
+- `src/app/golf/actions/__tests__/golf-save-partial-round*.test.ts`
+- `src/app/golf/actions/__tests__/golf-salvage-preserves-durable-holes.test.ts`
+- `src/app/golf/actions/__tests__/golf-shot-actions-player-lookup.test.ts`
+- `src/app/golf/actions/__tests__/golf-round-submit-*.test.ts`
+- `src/lib/golf/__tests__/round-missing-recovery.test.ts`
+- `src/lib/utils/emergency-save.test.ts`
+- `src/lib/offline/__tests__/sync-engine-*.test.ts`
+- `src/app/golf/(dashboard)/dashboard/rounds/**/*.test.ts` (source-contract
+  tests for the two round screens)
 - `src/test/coachhelm/v2/shot-analysis/**`
 - Browser validation on mobile viewports for changed round-entry screens.
 

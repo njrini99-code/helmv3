@@ -42,8 +42,13 @@ import {
   clearEmergencySave,
   clearEmergencySaveThrough,
   isRecoverableRoundSubmitError,
+  migrateEmergencySave,
   type EmergencySaveData
 } from '@/lib/utils/emergency-save';
+import {
+  describeRoundWriteFailure,
+  writeRoundRecreatingIfMissing,
+} from '@/lib/golf/round-missing-recovery';
 import { getRoundRecoverySnapshots } from '@/lib/offline/shot-storage';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
@@ -1386,6 +1391,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     surfaceFailure = true,
   ): Promise<boolean> => {
     pendingServerSaveRef.current = null;
+    // Set when an attempt in this loop came back round_missing: the snapshot
+    // for this checkpoint was written under that id, so once the re-create
+    // lands the snapshot must follow the row (see migrateEmergencySave).
+    let staleRoundId: string | null = null;
 
     for (let attempt = 0; attempt < 3; attempt++) {
       const waitDeadline = Date.now() + 10_000;
@@ -1404,6 +1413,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
             savedRoundIdRef.current = result.data.roundId;
             setSavedRoundId(result.data.roundId);
           }
+          if (staleRoundId) {
+            migrateEmergencySave(staleRoundId, result.data.roundId, playerId, emergencyTimestamp);
+            staleRoundId = null;
+          }
           clearEmergencySaveThrough(savedRoundIdRef.current, playerId, emergencyTimestamp);
           return true;
         }
@@ -1419,6 +1432,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         // rather than breaking out to "this hole has not saved yet", which is
         // what left three auto-saves hammering a dead id at Winchester CC.
         if (result.error === 'round_missing') {
+          staleRoundId = savedRoundIdRef.current;
           dropStaleRoundId();
           continue;
         }
@@ -1679,6 +1693,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           } else if (result.error === 'round_missing') {
             // Re-create immediately with the same snapshot instead of throwing:
             // the circuit breaker must not open on a failure we can recover from.
+            const staleRoundId = savedRoundIdRef.current;
             dropStaleRoundId();
             const recreated = await savePartialRound(
               buildPartialRoundData(undefined, holeIndex, mergedInProgress),
@@ -1689,6 +1704,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
               if (recreated.data.updatedAt) lastServerUpdatedAtRef.current = recreated.data.updatedAt;
               savedRoundIdRef.current = recreated.data.roundId;
               setSavedRoundId(recreated.data.roundId);
+              // The snapshot above was written under the dead id. Clearing
+              // through the new id alone left that copy behind forever, and
+              // New Round later offered it as recoverable against the dead id.
+              migrateEmergencySave(staleRoundId, recreated.data.roundId, playerId, emergencyTimestamp);
               clearEmergencySaveThrough(recreated.data.roundId, playerId, emergencyTimestamp);
             } else {
               consecutiveSaveFailuresRef.current++;
@@ -1852,7 +1871,18 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         qualifierRoundNumber: recoverySetupData.qualifierRoundNumber,
       };
 
-      const result = await submitGolfRoundComprehensive(roundData, savedRoundIdRef.current ?? undefined);
+      // A `round_missing` answer means the server PROVED this id has no row
+      // (it looked, and found nothing to duplicate). Re-submit the same
+      // payload as a NEW round — the no-id branch creates and completes it in
+      // one atomic call — instead of throwing the key at the overlay, which
+      // is what rendered the literal string "round_missing" to players. If
+      // the re-create fails too the result is a sentence, and the device
+      // snapshot written above stays put for the recovery flow.
+      const { result, recreated } = await writeRoundRecreatingIfMissing(
+        submitGolfRoundComprehensive,
+        roundData,
+        savedRoundIdRef.current ?? undefined,
+      );
       if (!result.success) {
         if (isCompletedRoundError(result.error)) {
           redirectToCompletedRound();
@@ -1861,8 +1891,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         throw new Error(result.error);
       }
 
-      // Clear local recovery state after successful submission
+      // Clear local recovery state after successful submission. The snapshot
+      // is keyed by the id it was written under — still the old one here.
       clearEmergencySave(savedRoundIdRef.current, playerId);
+      if (recreated) {
+        savedRoundIdRef.current = result.data.roundId;
+        setSavedRoundId(result.data.roundId);
+      }
 
       // Show success celebration — the overlay auto-navigates to round review
       void triggerHaptic('success');
@@ -2140,9 +2175,15 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       // Restore through the server before reopening the tracker. This keeps
       // the Continue Round contract intact even when the original browser tab
       // was interrupted before its first background save could finish.
-      const result = await savePartialRound(recoveryData, rd.roundId ?? undefined);
+      // The snapshot may name a server id that has since vanished; the
+      // helper re-creates from this same payload and never surfaces the key.
+      const { result } = await writeRoundRecreatingIfMissing(
+        savePartialRound,
+        recoveryData,
+        rd.roundId ?? undefined,
+      );
       if (!result.success) {
-        setError(result.error || 'Unable to restore your saved shots. Keep this screen open and try again.');
+        setError(describeRoundWriteFailure(result.error));
         return;
       }
 

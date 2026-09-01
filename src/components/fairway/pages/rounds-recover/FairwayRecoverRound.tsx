@@ -50,6 +50,7 @@ import {
   type RoundRecoverySnapshot,
 } from '@/lib/offline/shot-storage';
 import { clearEmergencySaveThrough } from '@/lib/utils/emergency-save';
+import { writeRoundRecreatingIfMissing } from '@/lib/golf/round-missing-recovery';
 import type { TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { Flag, ArrowLeft } from 'lucide-react';
 import { ViewHeader, Surface, Button, EmptyState, InlineNotice } from '@/components/fairway';
@@ -501,7 +502,15 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
           })),
         };
 
-        const partialResult = await savePartialRound(partialData, existingRoundId);
+        // If the snapshot's server id has since vanished, the server answers
+        // `round_missing`; the helper re-creates from this same snapshot and
+        // hands back a sentence (never the key) if that fails too. The
+        // device copy is only cleaned up after success, below.
+        const { result: partialResult } = await writeRoundRecreatingIfMissing(
+          savePartialRound,
+          partialData,
+          existingRoundId,
+        );
 
         if (!partialResult.success) {
           setError(partialResult.error || 'Failed to restore round progress.');
@@ -517,7 +526,14 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
 
       const roundData = terminalSubmission;
 
-      const result = await submitGolfRoundComprehensive(roundData, existingRoundId);
+      // Same contract for the terminal payload: a dead id is re-submitted as
+      // a NEW round in one atomic call, never retried. The only time the raw
+      // key reached a player was here and in the two round screens.
+      const { result } = await writeRoundRecreatingIfMissing(
+        submitGolfRoundComprehensive,
+        roundData,
+        existingRoundId,
+      );
 
       if (!result.success) {
         if (existingRoundId && isCompletedRoundError(result.error)) {

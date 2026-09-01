@@ -17,8 +17,10 @@ import {
   clearEmergencySaveThrough,
   isEmergencySaveEquivalentToProgress,
   isRecoverableRoundSubmitError,
+  migrateEmergencySave,
   type EmergencySaveData
 } from '@/lib/utils/emergency-save';
+import { writeRoundRecreatingIfMissing } from '@/lib/golf/round-missing-recovery';
 
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
@@ -94,7 +96,7 @@ interface ContinueRoundClientProps {
 }
 
 export default function ContinueRoundClient({
-  roundId,
+  roundId: routeRoundId,
   playerId,
   setupData,
   qualifierRoundNumberOptions = [],
@@ -109,6 +111,20 @@ export default function ContinueRoundClient({
 }: ContinueRoundClientProps) {
   const router = useRouter();
   const { showToast } = useToast();
+  // After a re-create (recreateMissingRound below) the URL still names the
+  // dead id until router.replace lands. Every save in that window must target
+  // the row that now exists, or each one re-creates again and the player ends
+  // up with duplicate in-progress rounds. Cleared once the route catches up.
+  const recreatedRoundIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (recreatedRoundIdRef.current === routeRoundId) recreatedRoundIdRef.current = null;
+  }, [routeRoundId]);
+  const roundId = recreatedRoundIdRef.current ?? routeRoundId;
+  /** The id a save must target at call time, not at render time. */
+  const liveRoundId = useCallback(
+    () => recreatedRoundIdRef.current ?? routeRoundId,
+    [routeRoundId],
+  );
   // Mirrors new-round-client so the resume flow shares the exact same
   // exit-sheet + submit overlay as a fresh round.
   const ExitRoundModal = FairwaySaveRoundModal;
@@ -522,6 +538,49 @@ export default function ContinueRoundClient({
   }, [setupData]);
 
   /**
+   * The row this URL names is gone. Unlike the new-round screen we cannot just
+   * forget the id — it IS the route — so re-create from the snapshot we are
+   * already sending and move the player onto the round that now exists.
+   * Retrying the dead id can only ever fail.
+   *
+   * One shared path for the completed-hole checkpoint, the mid-hole auto-save
+   * and the queued follow-up. Until 2026-09-01 only the checkpoint had it:
+   * against a vanished row every shot-level save incremented the breaker and
+   * showed "Auto-save is having trouble" after two, while nothing re-created
+   * until a hole completed.
+   */
+  const recreateMissingRound = useCallback(async (
+    saveData: PartialRoundData,
+    emergencyTimestamp: number,
+    // The checkpoint path counts and surfaces its own failure after this
+    // returns false; the auto-save paths rely on this to do it.
+    surfaceFailure = true,
+  ): Promise<boolean> => {
+    const staleRoundId = liveRoundId();
+    const recreated = await savePartialRound(saveData, undefined);
+    if (!recreated.success) {
+      if (surfaceFailure) {
+        consecutiveSaveFailuresRef.current++;
+        if (consecutiveSaveFailuresRef.current >= 2) showAutoSaveWarning();
+      }
+      return false;
+    }
+    consecutiveSaveFailuresRef.current = 0;
+    // The expected updated_at belonged to the row that is gone. The CREATE
+    // path returns none, and sending the old one against the fresh row would
+    // come back as a spurious 'conflict'.
+    lastServerUpdatedAtRef.current = recreated.data.updatedAt;
+    recreatedRoundIdRef.current = recreated.data.roundId;
+    // The snapshot was written under the dead id. Clearing through the new id
+    // alone left that copy behind forever, and New Round later offered it as
+    // recoverable against the dead id. Move anything newer than this save
+    // onto the new id and drop the dead key.
+    migrateEmergencySave(staleRoundId, recreated.data.roundId, playerId, emergencyTimestamp);
+    router.replace(`/golf/dashboard/rounds/continue/${recreated.data.roundId}`);
+    return true;
+  }, [liveRoundId, playerId, router, showAutoSaveWarning]);
+
+  /**
    * Completing a hole is a server checkpoint. Do not advance the player until
    * the full hole-and-shots snapshot is acknowledged by the existing round.
    */
@@ -541,7 +600,7 @@ export default function ContinueRoundClient({
 
       serverSaveInProgressRef.current = true;
       try {
-        const result = await savePartialRound(saveData, roundId);
+        const result = await savePartialRound(saveData, liveRoundId());
         if (result.success) {
           consecutiveSaveFailuresRef.current = 0;
           if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
@@ -561,12 +620,7 @@ export default function ContinueRoundClient({
         // we are already sending and move the player onto the round that now
         // exists. Retrying the dead id here can only ever fail.
         if (result.error === 'round_missing') {
-          const recreated = await savePartialRound(saveData, undefined);
-          if (recreated.success) {
-            clearEmergencySaveThrough(recreated.data.roundId, playerId, emergencyTimestamp);
-            router.replace(`/golf/dashboard/rounds/continue/${recreated.data.roundId}`);
-            return true;
-          }
+          if (await recreateMissingRound(saveData, emergencyTimestamp, false)) return true;
           break;
         }
         if (result.error !== 'busy' && result.error !== 'retry') break;
@@ -588,7 +642,16 @@ export default function ContinueRoundClient({
       showAutoSaveWarning();
     }
     return false;
-  }, [handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, roundId, router, showAutoSaveWarning]);
+  }, [
+    handleRoundSyncConflict,
+    isCompletedRoundError,
+    liveRoundId,
+    playerId,
+    recreateMissingRound,
+    redirectToCompletedRound,
+    roundId,
+    showAutoSaveWarning,
+  ]);
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats): Promise<boolean> => {
     allHolesCheckpointedRef.current = false;
@@ -815,7 +878,7 @@ export default function ContinueRoundClient({
             const mergedInProgress = { ...inProgressShotsByHoleRef.current, [saveHoleIndex]: saveShots };
             const result = await savePartialRound(
               buildPartialRoundData(undefined, saveHoleIndex, mergedInProgress),
-              roundId
+              liveRoundId()
             );
             if (result.success) {
               consecutiveSaveFailuresRef.current = 0;
@@ -828,6 +891,13 @@ export default function ContinueRoundClient({
               // server-side; the next tick re-sends the full state. Not a failure.
             } else if (isCompletedRoundError(result.error)) {
               redirectToCompletedRound();
+            } else if (result.error === 'round_missing') {
+              // The row is gone. Re-create from this same snapshot instead of
+              // counting a failure the player cannot act on.
+              await recreateMissingRound(
+                buildPartialRoundData(undefined, saveHoleIndex, mergedInProgress),
+                saveEmergencyTimestamp,
+              );
             } else {
               consecutiveSaveFailuresRef.current++;
               if (consecutiveSaveFailuresRef.current >= 2) {
@@ -850,14 +920,21 @@ export default function ContinueRoundClient({
                 void (async () => {
                   serverSaveInProgressRef.current = true;
                   try {
-                    const r = await savePartialRound(pending.roundData!, roundId);
+                    const r = await savePartialRound(pending.roundData!, liveRoundId());
                     if (r.success) {
                       consecutiveSaveFailuresRef.current = 0;
                       if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
                     } else if (r.error === 'conflict') {
                       void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+                    } else if (r.error === 'busy' || r.error === 'retry') {
+                      // Single-flight skip, same as the primary save — not a failure.
                     } else if (isCompletedRoundError(r.error)) {
                       redirectToCompletedRound();
+                    } else if (r.error === 'round_missing') {
+                      await recreateMissingRound(
+                        pending.roundData!,
+                        pending.emergencyTimestamp ?? Date.now(),
+                      );
                     }
                   } catch { /* non-critical */ } finally {
                     serverSaveInProgressRef.current = false;
@@ -881,8 +958,10 @@ export default function ContinueRoundClient({
     completedRoundId,
     handleRoundSyncConflict,
     isCompletedRoundError,
+    liveRoundId,
     persistCompletedHole,
     playerId,
+    recreateMissingRound,
     redirectToCompletedRound,
     roundId,
     setupData,
@@ -977,7 +1056,16 @@ export default function ContinueRoundClient({
         qualifierRoundNumber: submitSetupData.qualifierRoundNumber,
       };
 
-      const result = await submitGolfRoundComprehensive(roundData, roundId);
+      // A `round_missing` answer means the server PROVED this id has no row.
+      // Re-submit the same payload as a NEW round — the no-id branch creates
+      // and completes it in one atomic call — instead of throwing the key at
+      // the overlay, which rendered the literal string "round_missing". A
+      // failed re-create comes back as a sentence; the snapshot above stays.
+      const { result } = await writeRoundRecreatingIfMissing(
+        submitGolfRoundComprehensive,
+        roundData,
+        liveRoundId(),
+      );
       if (!result.success) {
         if (isCompletedRoundError(result.error)) {
           redirectToCompletedRound();

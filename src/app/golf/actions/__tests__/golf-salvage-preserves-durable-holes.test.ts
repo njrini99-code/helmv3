@@ -140,3 +140,77 @@ describe('savePartialRound — salvage must not erase a durable hole', () => {
     expect(rpcCalls).toEqual(['save_partial_round_atomic']);
   });
 });
+
+/**
+ * THE GUARD ABOVE ONLY COVERED THE RPC PATH (review of 6a7577c71, P3).
+ *
+ * d170cad53 keyed the guard on `existingRoundId`. The no-id branch can REUSE
+ * another `in_progress` round matched on course + date + qualifier context and
+ * then UPSERT `holesPayload` on (round_id, hole_number). A salvaged hole is
+ * still in that payload as {score: null, putts: null}, so the upsert nulls a
+ * durable scored row exactly as the REPLACE did — reachable from New Round's
+ * "save for later" after a round_missing, or from a restore whose snapshot
+ * carries no id.
+ */
+describe('savePartialRound — salvage guard on the no-id REUSE path', () => {
+  /**
+   * The reuse heuristic (golf.ts, savePartialRound no-id branch) matches on
+   * player + in_progress + course_id + round_date, and requires NULL qualifier
+   * context on both sides — so the seeded row must carry those nulls
+   * explicitly or the query never finds it and the test would silently
+   * exercise the CREATE path instead.
+   */
+  function seedReusable(storedHoles: Array<{ hole_number: number; score: number | null }>) {
+    rpcCalls = [];
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables: {
+        golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
+        golf_team_members: [{ id: 'm-1', team_id: 'team-1', player_id: 'player-1', status: 'active' }],
+        golf_rounds: [{
+          id: ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
+          course_name: 'Winchester CC', round_date: '2026-09-01', status: 'in_progress',
+          qualifier_id: null, qualifier_round_number: null,
+          updated_at: '2026-09-01T02:00:00Z',
+        }],
+        golf_holes: storedHoles.map((h) => ({ id: `hole-${h.hole_number}`, round_id: ROUND, ...h })),
+        golf_shots: [],
+      },
+      rpc: {
+        save_partial_round_atomic: async () => {
+          rpcCalls.push('save_partial_round_atomic');
+          return { data: { success: true, updated_at: '2026-09-01T02:05:00Z' }, error: null };
+        },
+      },
+    });
+    adminFake = fake;
+  }
+
+  it('REFUSES to reuse a round when the blanked hole is already scored there', async () => {
+    seedReusable([{ hole_number: 3, score: 5 }]);
+    const before = JSON.stringify((await fake.from('golf_holes').select('*')).data);
+
+    const result = await savePartialRound(payload, undefined);
+
+    expect(result.success).toBe(false);
+    expect(result.success === false && result.error).toBe('retry');
+    // The decisive assertion: the durable scored row is byte-for-byte intact.
+    expect(JSON.stringify((await fake.from('golf_holes').select('*')).data)).toBe(before);
+    expect(rpcCalls).toEqual([]);
+  });
+
+  it('still reuses and salvages when the blanked hole has nothing stored to lose', async () => {
+    seedReusable([{ hole_number: 1, score: 4 }, { hole_number: 2, score: 4 }]);
+
+    const result = await savePartialRound(payload, undefined);
+
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.roundId).toBe(ROUND);
+    // The reuse path upserts (no RPC); hole 3 lands as an unscored slot and
+    // holes 1 and 2 keep their scores.
+    const holes = (await fake.from('golf_holes').select('*')).data as Array<{ hole_number: number; score: number | null }>;
+    expect(holes.find((h) => h.hole_number === 1)?.score).toBe(4);
+    expect(holes.find((h) => h.hole_number === 3)?.score).toBeNull();
+    expect(rpcCalls).toEqual([]);
+  });
+});

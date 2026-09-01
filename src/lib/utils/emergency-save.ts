@@ -40,6 +40,12 @@ const RECOVERABLE_SUBMIT_ERROR_PATTERNS = [
   'failed to fetch',
   'network',
   'concurrent save',
+  // The server proved the target row is gone. The round is re-created from
+  // the local snapshot (src/lib/golf/round-missing-recovery.ts), so this is
+  // the opposite of terminal — and until 2026-09-01 it matched neither list,
+  // which is how the literal key reached the submit overlay.
+  'round_missing',
+  'could not be re-created',
 ];
 
 export interface EmergencySaveData {
@@ -358,6 +364,34 @@ export function loadLatestEmergencySave(playerId: string): EmergencySaveData | n
   } catch {
     return null;
   }
+}
+
+/**
+ * Move a device snapshot from a round id the server no longer has to the id
+ * that replaced it.
+ *
+ * A re-create writes the same full snapshot under a NEW round id, but every
+ * emergency save so far was keyed by the OLD one. Clearing "through" the new
+ * id therefore cleared nothing, and because keys never expire the dead-id copy
+ * later surfaced as recoverable — pointing restore back at the dead id.
+ *
+ * Anything newer than the acknowledged save is re-keyed under the new id so
+ * it stays recoverable; anything the server already has is simply dropped.
+ * Player-scoped like every other read here: another account's snapshot under
+ * the same id is left alone.
+ */
+export function migrateEmergencySave(
+  fromRoundId: string | null | undefined,
+  toRoundId: string,
+  playerId: string,
+  acknowledgedTimestamp: number,
+): void {
+  const current = loadEmergencySave(fromRoundId, playerId);
+  if (!current) return;
+  if (current.timestamp > acknowledgedTimestamp) {
+    emergencySave({ ...current, roundId: toRoundId });
+  }
+  clearEmergencySave(fromRoundId, playerId);
 }
 
 /**

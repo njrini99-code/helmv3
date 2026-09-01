@@ -627,6 +627,7 @@ class SyncEngine {
 
     const { saveRoundDraft } = await import('@/app/golf/actions/round-drafts');
     const { submitGolfRoundComprehensive } = await import('@/app/golf/actions/golf');
+    const { writeRoundRecreatingIfMissing } = await import('@/lib/golf/round-missing-recovery');
 
     for (const round of pendingRounds) {
       if (this.syncAbortController?.signal.aborted) {
@@ -689,7 +690,18 @@ class SyncEngine {
                   error: 'Your completed round is safely stored on this device, but it needs an in-app recovery before it can be submitted.',
                 };
               }
-              return submitGolfRoundComprehensive(terminalSubmission, round.serverRoundId);
+              // A `round_missing` answer means the server PROVED the row is
+              // gone; retrying the same id every cycle can only fail again
+              // and burn the retry budget. Re-submit once without the id —
+              // the no-id branch creates and completes the round atomically
+              // from this same terminal payload — and sync under the id
+              // that now exists.
+              const outcome = await writeRoundRecreatingIfMissing(
+                submitGolfRoundComprehensive,
+                terminalSubmission,
+                round.serverRoundId,
+              );
+              return outcome.result;
             })()
           : await saveRoundDraft(draftData, round.serverRoundId);
 

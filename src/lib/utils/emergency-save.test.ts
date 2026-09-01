@@ -3,8 +3,10 @@ import {
   clearEmergencySaveThrough,
   emergencySave,
   isEmergencySaveEquivalentToProgress,
+  isRecoverableRoundSubmitError,
   loadEmergencySave,
   loadLatestEmergencySave,
+  migrateEmergencySave,
   type EmergencySaveData,
 } from './emergency-save';
 
@@ -195,5 +197,63 @@ describe('confirmed emergency saves', () => {
       completedHoleStats: [],
       inProgressShotsByHole: {},
     })).toBe(false);
+  });
+});
+
+describe('migrateEmergencySave — a round re-created under a new id', () => {
+  // P5 (review of 6a7577c71): Continue Round wrote its snapshot under the OLD
+  // round id, then cleared through the NEW id after re-creating. Keys never
+  // expire, so the dead-id snapshot lingered, New Round later offered it as
+  // recoverable, and restore targeted the dead id again.
+  const DEAD_ROUND = '00000000-0000-4000-8000-00000000dead';
+  const NEW_ROUND = '00000000-0000-4000-8000-0000000000ee';
+
+  it('re-keys a snapshot newer than the acknowledged save under the new id and drops the dead key', () => {
+    const acknowledgedAt = Date.now() - 5_000;
+    const newer = savedRound(Date.now(), DEAD_ROUND);
+    emergencySave(newer);
+
+    migrateEmergencySave(DEAD_ROUND, NEW_ROUND, PLAYER_ID, acknowledgedAt);
+
+    expect(loadEmergencySave(DEAD_ROUND, PLAYER_ID)).toBeNull();
+    expect(loadEmergencySave(NEW_ROUND, PLAYER_ID)).toEqual({ ...newer, roundId: NEW_ROUND });
+  });
+
+  it('only drops the dead key when the server already acknowledged that snapshot', () => {
+    const timestamp = Date.now();
+    emergencySave(savedRound(timestamp, DEAD_ROUND));
+
+    migrateEmergencySave(DEAD_ROUND, NEW_ROUND, PLAYER_ID, timestamp);
+
+    expect(loadEmergencySave(DEAD_ROUND, PLAYER_ID)).toBeNull();
+    expect(loadEmergencySave(NEW_ROUND, PLAYER_ID)).toBeNull();
+  });
+
+  it('is a no-op without a snapshot under the dead id', () => {
+    expect(() => migrateEmergencySave(DEAD_ROUND, NEW_ROUND, PLAYER_ID, Date.now())).not.toThrow();
+    expect(loadLatestEmergencySave(PLAYER_ID)).toBeNull();
+  });
+
+  it('does not touch another player\'s snapshot stored under the same dead id', () => {
+    const someoneElses = { ...savedRound(Date.now(), DEAD_ROUND), playerId: OTHER_PLAYER_ID };
+    emergencySave(someoneElses);
+
+    migrateEmergencySave(DEAD_ROUND, NEW_ROUND, PLAYER_ID, Date.now() - 1_000);
+
+    expect(loadEmergencySave(DEAD_ROUND, OTHER_PLAYER_ID)).toEqual(someoneElses);
+    expect(loadEmergencySave(NEW_ROUND, PLAYER_ID)).toBeNull();
+  });
+});
+
+describe('isRecoverableRoundSubmitError', () => {
+  it('treats round_missing as recoverable — the round is re-created, not lost', () => {
+    // Before this, the key matched neither list, so a submit that came back
+    // round_missing fell to the terminal error overlay with the raw key as
+    // its message.
+    expect(isRecoverableRoundSubmitError('round_missing')).toBe(true);
+  });
+
+  it('still refuses to route a genuinely terminal submit failure to recovery', () => {
+    expect(isRecoverableRoundSubmitError('This round has already been submitted.')).toBe(false);
   });
 });

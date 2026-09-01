@@ -1,5 +1,18 @@
 # Shot Tracking Data Flow Verification
 
+> **Superseded (2026-09-01).** This document was last edited 2026-05-27 and is
+> kept as historical narrative only. The current-state contract for shot
+> tracking — routes, actions, the atomic RPCs, the save/submit result keys
+> (`busy`, `retry`, `conflict`, `round_missing`, `invalid_snapshot`), salvage,
+> recovery and the sanctioned DELETE-then-INSERT exception — lives in
+> `memory/features/shot-tracking.md`. The `026_add_comprehensive_golf_stats.sql`
+> migration and `supabase db push` instructions below are stale: migrations are
+> applied through reviewed migration files, `supabase db push` is denied by
+> `.claude/settings.json`, and the live schema is `src/lib/types/database.ts`.
+> The `golf_shots` column list below was corrected against that file on
+> 2026-09-01; nothing else in this document has been re-verified.
+
+
 ## ✅ Complete Flow: Shot Tracking → Database → Stats Calculation
 
 ### Overview
@@ -154,26 +167,32 @@ holed_out_type                -- Type of shot holed (chip/pitch/bunker)
 Stores individual shot records (created in migration 026).
 
 ```sql
+-- Verified against src/lib/types/database.ts on 2026-09-01.
 -- Shot identification
-round_id, hole_id, hole_number, shot_number
+id, round_id, hole_id, hole_number, shot_number, created_at, updated_at
 
 -- Shot details
 shot_type                     -- tee/approach/around_green/putting/penalty
 club_type                     -- driver/non_driver/putter
-lie_before                    -- Where shot was taken from
+lie_before                    -- Where shot was taken from ('sand', never 'bunker')
+lie_after                     -- Where it lay after (derived server-side)
 distance_to_hole_before       -- Distance before shot
 distance_unit_before          -- yards/feet
 result                        -- Where shot ended up
 distance_to_hole_after        -- Distance after shot
 distance_unit_after           -- yards/feet
+distance_unit                 -- Legacy single unit column (nullable)
 shot_distance                 -- How far the shot went
 
 -- Shot characteristics
 miss_direction                -- Left/right/straight
 putt_break                    -- For putts only
 putt_slope                    -- For putts only
+putt_distance_feet            -- For putts only (derived when absent)
+putt_made                     -- For putts only (derived when absent)
 is_penalty                    -- True if penalty stroke
 penalty_type                  -- OB/water/unplayable/lost
+notes                         -- Free text (nullable)
 ```
 
 ---

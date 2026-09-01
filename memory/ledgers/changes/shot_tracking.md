@@ -32,7 +32,10 @@
 
 ## 2026-08-22 — serialize local shot mutations
 
-- SHA: 31cf3f845f19af7ff962b362837210f333fc4fe5 (implementation repair commit).
+- SHA: `5eececafc930c1d10718371bd2954c9ec32e758c` on `main` (the
+  `31cf3f845` this entry cited until 2026-09-01 exists only on `codex/*`
+  branches; `main` carries the same repair as `5eececafc`). Follow-up
+  `aea2b5ed5` (#1605) extended the contract to `updateShot`.
 - Incident: `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md`.
 - Change: Undo, Edit Shot save, and Edit Shot delete now share one in-flight
   mutation guard. A server-confirmed absent shot reconciles the stale local
@@ -42,7 +45,11 @@
 
 ## 2026-08-25 — reject mismatched durable snapshots
 
-- Status: uncommitted local reliability repair; not deployed.
+- SHA: `b752bfed4` (#1617) carries migration
+  `20260825152726_guard_round_snapshot_shot_group_integrity.sql`; live, and the
+  migration is APPLIED in production (verified 2026-09-01 via the Supabase
+  connector's `list_migrations`). This entry read "uncommitted; not deployed"
+  until 2026-09-01.
 - Change: the database rejects a save or submit payload whose shot groups do
   not correspond to its hole snapshot before it can replace persisted shots.
 - Why: a stale or malformed client payload must leave the last confirmed shot
@@ -50,7 +57,9 @@
 
 ## 2026-08-25 — rollback-proof shot workflow recorder
 
-- Status: uncommitted local observability work; not deployed.
+- SHA: `641adf741` (#1618); live. Six trace stages that could never be
+  recorded were completed at construction in `dc3b2fec2` (#1712). This entry
+  read "uncommitted; not deployed" until 2026-09-01.
 - Change: autosave and submit now create a fail-open correlation trace, record
   expected server/database/verification/background steps, and link relevant
   Bridge/Sentry errors to that trace ID. The active atomic RPCs emit structured
@@ -73,7 +82,8 @@
 
 ## 2026-08-23 — serialize recovery cleanup and checkpoint retries
 
-- SHA: pending commit on PR #1604; not deployed.
+- SHA: `8d3b2596e` + `49bb447fb` (PR #1604); live. This entry read "pending
+  commit; not deployed" until 2026-09-01.
 - Change: device backups are player-scoped, acknowledgement cleanup cannot
   overtake a later snapshot, and the explicit completed-hole retry shares the
   same synchronous in-flight guard as normal shot submission.
@@ -82,7 +92,8 @@
 
 ## 2026-08-23 — reconcile a stale Edit Shot reference safely
 
-- SHA: pending commit on the stale-edit reconciliation release.
+- SHA: `aea2b5ed5` (#1605); live. This entry read "pending commit" until
+  2026-09-01.
 - Change: `updateShot` now returns the same stable `shot_not_found` code as
   `deleteShot` when the row has already been removed. Edit Shot closes its
   stale editor, removes only that local row, and recomputes the affected
@@ -94,7 +105,7 @@
 
 ## 2026-08-23 — harden legacy checkpoint transport and background re-saves
 
-- SHA: pending commit for the production checkpoint guard.
+- SHA: `94c8f6319`; live. This entry read "pending commit" until 2026-09-01.
 - Incident: `Client error: Completed hole checkpoint failed`, including the
   18:19 EDT occurrence from a cached iPhone bundle.
 - Change: `savePartialRound` materializes every sparse client hole slot as
@@ -108,6 +119,7 @@
 
 ## 2026-08-23 — reconcile committed terminal submissions after response loss
 
+- SHA: `feea49fd2`; live.
 - Change: a timeout or transport abort from `submit_round_atomic` now performs
   an authenticated read of that exact player round. A confirmed completed row
   is acknowledged as success; an unconfirmed result leaves all server and
@@ -130,9 +142,71 @@
 
 ## 2026-08-26 — edit-shot modal footer honours the home indicator
 
-- SHA: f4216fef8.
+- SHA: `15df63726` (#1625). (This entry cited `f4216fef8` until 2026-09-01; that
+  object is on no branch — the change reached `main` inside #1625.)
 - Change: FairwayEditShotModal's hand-rolled sticky footer now carries the
   env(safe-area-inset-bottom) padding formula ModalShell.Footer uses.
 - Why: contentInset:'never' in the iOS shell means web code owns the
   home-indicator inset; a tall shot form runs the panel to its max-height
   cap where plain py-4 left Cancel/Save riding the indicator.
+
+## Entries added 2026-09-01 from `git show --stat` (all live on `main`)
+
+- `e196ef6a8` 2026-08-20 (#1517): single-flight the auto-save per round —
+  `save_partial_round_atomic` takes `FOR UPDATE NOWAIT` and returns `busy`;
+  both round screens treat it as a silent skip.
+- `e1bde2b01` 2026-08-21 (#1554): submit fails fast and clean under save
+  contention — `submit_round_atomic` waits a bounded 3s then returns `busy`;
+  the wrapper classifies the message as expected.
+- `c45d48660` 2026-08-23: a payload mismatch must never cost the player their
+  shot — `savePartialRound` blanks an unparseable hole and salvages the rest.
+- `9e7edc901` 2026-08-23: unmask the auto-save validation error so the log
+  names the failing field, not "holes.16 — Invalid input".
+- `9f74ccccb` 2026-08-23: remove the live destructive submit fallback; the
+  preserved-error path replaces it.
+- `92de87184` 2026-08-25: preserve qualifier round progression through
+  partial save.
+- `c652a9e35` 2026-08-25 (#1614): harden round lifecycle reliability —
+  lifecycle contract migrations, protected atomic submit, roster active-round
+  guard.
+- `3b4204e6a` 2026-08-26 (#1615): harden round reliability telemetry —
+  round-status polling failures retried silently, expected soft failures
+  classified.
+- `ce5914ccc` 2026-08-31 (#1659): stop the keyboard covering the distance
+  field being typed into (shot state machine + CapacitorProvider).
+- `1952ab1c3` 2026-08-31 (#1703): players re-type their own live round from
+  the screen they are on; submit uses the persisted identity.
+- `6cc92de43` 2026-09-01 (#1705): a round that no longer exists broke
+  auto-save, submit and conflict checks — `round_missing` key added; New Round
+  and the Continue checkpoint re-create.
+- `d170cad53` 2026-09-01 (#1711): salvaging an unparseable hole could delete a
+  hole already saved — salvage guard on the RPC path.
+- `dc3b2fec2` 2026-09-01 (#1712): the six trace stages that could never be
+  recorded.
+- `fb425aa2b` 2026-09-01 (#1704): mid-round sync toast — `SyncResult.declined`
+  so a declined run is not rendered as a failure (production is at this SHA).
+
+## 2026-09-01 — round_missing recovery on submit and auto-save; salvage guard on the reuse path
+
+- SHA: this PR (`agent/fix-shot-tracking`); not deployed at the time of writing.
+- Change: `writeRoundRecreatingIfMissing` (`src/lib/golf/round-missing-recovery.ts`)
+  is the one re-create decision. New Round submit, Continue Round submit, the
+  recovery screen (partial restore and terminal re-submit), New Round's
+  snapshot restore, and the v1 sync drain all go through it: a `round_missing`
+  answer re-issues the same full snapshot once without an id, and a failed
+  re-create is shown as a sentence, never the key. Continue Round's mid-hole
+  auto-save and its queued follow-up now re-create on `round_missing` and skip
+  `busy` silently, through the same `recreateMissingRound` path the
+  checkpoint uses; saves that race the route change target the re-created row
+  (`recreatedRoundIdRef`). `migrateEmergencySave` moves the device snapshot off
+  the dead id in every re-create branch on both screens.
+  `isRecoverableRoundSubmitError('round_missing')` is true. The salvage guard
+  is hoisted (`salvageWouldEraseDurableHole`) and applied on the no-id REUSE
+  path after the reused id resolves and before the hole upsert. `deleteShot`
+  and `updateShot` bind the player-lookup error and return a retryable
+  sentence instead of "Player profile not found".
+- Why: measured on HEAD `6a7577c71` (production `fb425aa2b`): a submit
+  `round_missing` rendered the literal key in the overlay with nothing
+  re-submitting; the recover flow retried the dead id; the reuse path could
+  null a durable scored hole through the upsert; a transient player read was
+  reported as a missing profile mid-round.

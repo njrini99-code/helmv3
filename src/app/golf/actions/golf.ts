@@ -6438,6 +6438,65 @@ async function savePartialRoundImpl(
 
     let roundId: string;
 
+    /**
+     * Returns true when writing this payload to `targetRoundId` would replace a
+     * hole the server already holds a SCORE for with the blanked salvage slot.
+     *
+     * Both persistence branches need this, and until 2026-09-01 only one had
+     * it. The RPC branch is a REPLACE (delete + rebuild); the no-id branch can
+     * REUSE another in_progress round matched on course + date + qualifier and
+     * then UPSERT `holesPayload` on (round_id, hole_number) — and a salvaged
+     * hole is still in that payload as {score: null, putts: null}, so the
+     * upsert nulls the durable row exactly as the delete would have. Reachable
+     * from "save for later" after a round_missing, or a restore whose snapshot
+     * carries no id.
+     *
+     * A failed read is treated as "assume there IS something to lose".
+     * Guessing the other way is how the data disappears.
+     */
+    const salvageWouldEraseDurableHole = async (
+      targetRoundId: string,
+      recorder: { traceId: string } | null,
+    ): Promise<boolean> => {
+      if (salvagedAwayHoleNumbers.length === 0) return false;
+
+      const { data: durable, error: durableErr } = await supabase
+        .from('golf_holes')
+        .select('hole_number')
+        .eq('round_id', targetRoundId)
+        .in('hole_number', salvagedAwayHoleNumbers)
+        .not('score', 'is', null);
+
+      const atRisk = durableErr
+        ? salvagedAwayHoleNumbers
+        : (durable ?? []).map((h: { hole_number: number }) => h.hole_number);
+
+      if (atRisk.length === 0) return false;
+
+      await logServerError(
+        `Auto-save refused: salvaging hole(s) ${atRisk.join(', ')} would have erased a scored hole already saved`,
+        {
+          action: 'savePartialRound.salvageGuard',
+          featureArea: 'shot_tracking',
+          roundId: targetRoundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          helmTraceId: recorder?.traceId,
+          extra: {
+            courseName: data.courseName,
+            currentHole: data.currentHole,
+            salvagedAwayHoleNumbers,
+            atRisk,
+            durableReadFailed: Boolean(durableErr),
+            path: recorder ? 'existing_round' : 'reuse',
+          },
+        },
+        'error',
+      );
+      return true;
+    };
+
     if (existingRoundId) {
       const flightRecorder = await createSafeFlightRecorder({
         workflow: 'golf.round.autosave',
@@ -6502,45 +6561,10 @@ async function savePartialRoundImpl(
       // holes have nothing stored, there is nothing to lose and the salvage
       // proceeds exactly as before, which keeps the original fix's benefit:
       // one bad hole must not discard seventeen good ones.
-      if (salvagedAwayHoleNumbers.length > 0 && existingRoundId) {
-        const { data: durable, error: durableErr } = await supabase
-          .from('golf_holes')
-          .select('hole_number')
-          .eq('round_id', existingRoundId)
-          .in('hole_number', salvagedAwayHoleNumbers)
-          .not('score', 'is', null);
-
-        // A failed read is treated as "assume there IS something to lose".
-        // Guessing the other way is how the data disappears.
-        const atRisk = durableErr
-          ? salvagedAwayHoleNumbers
-          : (durable ?? []).map((h: { hole_number: number }) => h.hole_number);
-
-        if (atRisk.length > 0) {
-          void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'salvage_would_erase' });
-          void flightRecorder.finalize('warning');
-          await logServerError(
-            `Auto-save refused: salvaging hole(s) ${atRisk.join(', ')} would have erased a scored hole already saved`,
-            {
-              action: 'savePartialRound.salvageGuard',
-              featureArea: 'shot_tracking',
-              roundId: existingRoundId,
-              playerId: player.id,
-              userId: user.id,
-              userEmail: user.email,
-              helmTraceId: flightRecorder.traceId,
-              extra: {
-                courseName: data.courseName,
-                currentHole: data.currentHole,
-                salvagedAwayHoleNumbers,
-                atRisk,
-                durableReadFailed: Boolean(durableErr),
-              },
-            },
-            'error',
-          );
-          return { success: false, error: 'retry' };
-        }
+      if (await salvageWouldEraseDurableHole(existingRoundId, flightRecorder)) {
+        void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'salvage_would_erase' });
+        void flightRecorder.finalize('warning');
+        return { success: false, error: 'retry' };
       }
 
       void flightRecorder.start('db.save_partial_round_atomic');
@@ -6801,6 +6825,14 @@ async function savePartialRoundImpl(
           return { success: true, data: { roundId: existingRound.id } };
         }
         round = updatedRound;
+
+        // Same durability check as the RPC branch, applied to the round we
+        // just decided to reuse: its scored holes are as durable as any, and
+        // the upsert below would null a salvaged one. 'retry' is the same
+        // recoverable signal — the next save re-sends full state.
+        if (await salvageWouldEraseDurableHole(existingRound.id, null)) {
+          return { success: false, error: 'retry' };
+        }
       }
 
       if (!round) {
@@ -8288,12 +8320,21 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
       return { success: false, error: 'You must be signed in' };
     }
 
-    // Get player record
-    const { data: player } = await supabase
+    // Get player record. The error is BOUND, not discarded: a transport or
+    // RLS failure on this read is not "this user has no profile", and telling
+    // a mid-round player their profile is missing invites them to give up on
+    // a shot that a retry would have saved. Mirrors savePartialRound (fixed
+    // 2026-08-27). The message deliberately carries no `shot_not_found` code —
+    // that is the one signal the client answers by deleting its LOCAL shot.
+    const { data: player, error: playerError } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (playerError) {
+      return { success: false, error: 'Failed to verify your player profile. Please try again.' };
+    }
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -8455,12 +8496,21 @@ async function updateShotImpl(
       return { success: false, error: 'You must be signed in' };
     }
 
-    // Get player record
-    const { data: player } = await supabase
+    // Get player record. The error is BOUND, not discarded: a transport or
+    // RLS failure on this read is not "this user has no profile", and telling
+    // a mid-round player their profile is missing invites them to give up on
+    // a shot that a retry would have saved. Mirrors savePartialRound (fixed
+    // 2026-08-27). The message deliberately carries no `shot_not_found` code —
+    // that is the one signal the client answers by deleting its LOCAL shot.
+    const { data: player, error: playerError } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (playerError) {
+      return { success: false, error: 'Failed to verify your player profile. Please try again.' };
+    }
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };

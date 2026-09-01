@@ -34,14 +34,16 @@
 
 ## 2026-08-22 — single-flight mutation coverage
 
-- SHA: 31cf3f845f19af7ff962b362837210f333fc4fe5 (implementation repair commit).
+- SHA: `5eececafc` on `main` (cited `31cf3f845` until 2026-09-01; that object is
+  only on `codex/*` branches).
 - Added regression coverage for Undo/Edit overlap and stale-shot reconciliation.
 - Updated `src/lib/admin/__tests__/observe-action-result.test.ts` to guarantee
   that `shot_not_found` remains a handled warning and is not captured by Sentry.
 
 ## 2026-08-25 — durable snapshot cross-array contract
 
-- Status: uncommitted local reliability repair; not deployed.
+- SHA: `b752bfed4` (#1617); live, migration applied in production. (Read
+  "uncommitted; not deployed" until 2026-09-01.)
 - Added the atomic snapshot integrity suite in `supabase/tests/rls/` against the
   real authenticated RPC boundary. It catches the regression where a snapshot
   could report success while omitting an unmatched shot group.
@@ -76,3 +78,58 @@
   failing validation.
 - Verification: focused round persistence/recovery coverage, TypeScript, and
   ESLint pass before release.
+
+## Entries added 2026-09-01 for tests that had no ledger line
+
+- `src/app/golf/actions/__tests__/golf-round-submit-busy-carveout.test.ts`
+  (`e1bde2b01`, #1554): submit's bounded lock wait returns `busy` and the
+  wrapper classifies it as expected, not error.
+- `src/app/golf/actions/__tests__/golf-round-submit-abort-no-destructive-fallback.test.ts`
+  (`9f74ccccb`, `feea49fd2`): an aborted submit never runs a delete-and-reinsert
+  fallback; a confirmed committed round is acknowledged after response loss.
+- `src/hooks/golf/__tests__/use-round-status-sync.test.tsx` (`3b4204e6a`,
+  #1615): transient status-poll failures are retried silently; only a
+  sustained outage reports once.
+- `src/hooks/golf/__tests__/use-shot-state-machine.test.ts` keyboard cases
+  (`ce5914ccc`, #1659): the distance field being typed into is not covered by
+  the keyboard.
+- `src/app/golf/actions/__tests__/golf-save-partial-round-missing.test.ts`
+  (`6cc92de43`, #1705): the RPC's not-found message maps to `round_missing`,
+  logged at warning.
+- `src/app/golf/actions/__tests__/golf-salvage-preserves-durable-holes.test.ts`
+  (`d170cad53`, #1711): a salvaged hole never erases a scored durable hole on
+  the RPC path.
+- `src/lib/offline/__tests__/sync-engine-decline.test.ts` (`fb425aa2b`, #1704):
+  a declined sync run carries `declined` and empty `errors`.
+
+## 2026-09-01 — round_missing recovery, reuse-path salvage guard, shot-action player lookup
+
+- Added `src/lib/golf/__tests__/round-missing-recovery.test.ts`: one write on
+  success or any non-`round_missing` failure; exactly one re-issue without an
+  id on `round_missing`, with the identical payload and the dead id handed to
+  the caller first; a failed re-create is a sentence with `code` preserved;
+  no retry without an id; signal keys are described as sentences.
+- Extended `src/lib/utils/emergency-save.test.ts`: `migrateEmergencySave`
+  re-keys a newer snapshot and drops the dead key, drops only when
+  acknowledged, ignores another player's copy;
+  `isRecoverableRoundSubmitError('round_missing')` is true.
+- Extended `src/app/golf/actions/__tests__/golf-salvage-preserves-durable-holes.test.ts`
+  with the no-id REUSE path: refuses with `retry` and leaves `golf_holes`
+  byte-for-byte intact when the blanked hole is scored on the reused round;
+  still reuses and salvages when nothing is at risk.
+- Added `src/app/golf/actions/__tests__/golf-shot-actions-player-lookup.test.ts`:
+  `deleteShot` and `updateShot` report a FAILED player read as retryable
+  (never `Player profile not found`, never `shot_not_found`) and an empty read
+  unchanged.
+- Added `src/lib/offline/__tests__/sync-engine-v1-round-missing.test.ts`: the
+  v1 drain re-submits once without the dead id and marks the record synced
+  under the new one.
+- Added `continue-round-client.round-missing.test.ts` and extended
+  `new-round-client.recovery.test.ts` and
+  `FairwayRecoverRound.recovery.test.ts` (source contracts): shared
+  re-create path, mid-hole and queued `round_missing`/`busy` handling,
+  snapshot migration, route-race targeting, submit/restore through the helper.
+- `src/test/fixtures/fake-supabase.ts` gained `WriteBuilder.not()` so the
+  orphan trim on the reuse path runs under the fake.
+- Verification: see the PR body for the exact typecheck, lint, vitest, build
+  and drift-gate results.
