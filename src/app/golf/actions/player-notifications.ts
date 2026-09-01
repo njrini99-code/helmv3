@@ -18,6 +18,7 @@ import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { verifyPlayerAccess, verifyTeamAccess } from '@/lib/auth/verify-player-access';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 // ============================================================================
 // TYPES
@@ -56,7 +57,8 @@ async function getPlayerNotificationCountsImpl(
   try {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue error must not read as logged out.
+    const { user } = await getUserResilient(supabase);
     if (!user) return { success: false, error: 'Not authenticated' };
 
     // DS: playerId/userId/teamId arrived from the client and were previously
@@ -335,7 +337,8 @@ async function markAnnouncementsSeenImpl(): Promise<ActionResult> {
   try {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue error must not read as logged out.
+    const { user } = await getUserResilient(supabase);
     if (!user) return { success: false, error: 'Not authenticated' };
 
     const { data: player } = await supabase
@@ -396,7 +399,8 @@ async function markTravelSeenImpl(): Promise<ActionResult> {
   try {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue error must not read as logged out.
+    const { user } = await getUserResilient(supabase);
     if (!user) return { success: false, error: 'Not authenticated' };
 
     const { data: player } = await supabase
@@ -460,7 +464,8 @@ async function getPlayerHubAnnouncementsImpl(
   try {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue error must not read as logged out.
+    const { user } = await getUserResilient(supabase);
     if (!user) return { success: false, error: 'Not authenticated' };
 
     // Single RPC call — replaces the 5-query block
