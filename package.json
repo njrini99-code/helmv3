@@ -34,6 +34,7 @@
     "docs:regen": "node scripts/regen-docs.mjs",
     "docs:schema-drift": "node scripts/check-doc-schema-drift.mjs",
     "doctor": "node scripts/doctor.mjs",
+    "diagnostics:health": "node scripts/diagnostics-health.mjs",
     "enforcement:check": "node scripts/gen-enforcement-inventory.mjs --check",
     "enforcement:regen": "node scripts/gen-enforcement-inventory.mjs",
     "evals": "promptfoo eval -c evals/round-review.yaml",
