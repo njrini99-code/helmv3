@@ -6448,6 +6448,22 @@ async function savePartialRoundImpl(
         existingRoundId,
       });
 
+      // THE THREE STAGES THAT COULD NEVER BE RECORDED.
+      //
+      // The workflow contract requires server.validation, server.auth and
+      // server.player, and every autosave trace was missing all three — 1,071
+      // of them. Not because they were skipped, but because the recorder is
+      // constructed HERE, after all three have already run. A stage cannot
+      // report itself to a recorder that does not exist yet.
+      //
+      // Completing them at construction is accurate rather than assumed: this
+      // line is unreachable unless the Zod parse succeeded, auth.getUser()
+      // returned a user, and the golf_players lookup resolved — each of those
+      // returns early on failure, well above this point.
+      void flightRecorder.complete('server.validation');
+      void flightRecorder.complete('server.auth', { observed: { user_id: user.id } });
+      void flightRecorder.complete('server.player', { observed: { player_id: player.id } });
+
       // Use atomic RPC — wraps delete+insert in a single transaction
       // RPC not in generated types yet — use type escape
       const rpcParams: Record<string, unknown> = {
@@ -6635,6 +6651,35 @@ async function savePartialRoundImpl(
       }
 
       void flightRecorder.complete('db.save_partial_round_atomic', { observed: { round_id: existingRoundId } });
+
+      // POST-WRITE VERIFICATION — the point of the remaining three stages.
+      //
+      // A trace that records only the DB call proves the RPC returned success;
+      // it cannot prove the rows are there. That gap is exactly what let a
+      // destructive snapshot replace look healthy. These read the durable state
+      // back and record observed-vs-expected, so a save that silently wrote
+      // fewer holes or shots than it was given is visible in the trace itself.
+      //
+      // Deliberately non-fatal: the write has already committed, so a failed
+      // verification read must not turn a successful save into an error. It
+      // records what it saw and nothing more.
+      try {
+        const [{ count: holeCount }, { count: shotCount }] = await Promise.all([
+          supabase.from('golf_holes').select('id', { count: 'exact', head: true }).eq('round_id', existingRoundId),
+          supabase.from('golf_shots').select('id', { count: 'exact', head: true }).eq('round_id', existingRoundId),
+        ]);
+        const expectedShots = shotsPayload.reduce((sum, g) => sum + g.shots.length, 0);
+        void flightRecorder.complete('verify.round', { observed: { round_id: existingRoundId } });
+        void flightRecorder.complete('verify.holes', {
+          observed: { expected: holesPayload.length, actual: holeCount ?? null },
+        });
+        void flightRecorder.complete('verify.shots', {
+          observed: { expected: expectedShots, actual: shotCount ?? null },
+        });
+      } catch {
+        // Verification is observability, not a gate. The save stands.
+      }
+
       void flightRecorder.finalize('success');
 
       // Log warnings from resilient detail inserts (round saved successfully)
