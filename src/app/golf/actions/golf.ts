@@ -2169,6 +2169,47 @@ async function submitGolfRoundComprehensiveImpl(
           // branch here — keyed on an `error === 'internal_error'` value
           // this RPC has never produced — is removed rather than kept as
           // dead code implying a response shape that isn't real.
+          // submit_round_atomic answers "not found", "already completed" and
+          // "not yours" with ONE message, so the raw string cannot tell a player
+          // which of the three happened — and two of them have opposite fixes.
+          // Disambiguate against the row itself before deciding.
+          //
+          // This is the submit-side twin of the savePartialRound 'round_missing'
+          // bug measured 2026-09-01: there, a client held a roundId with no row
+          // and retried forever. Here the failure is user-visible rather than a
+          // silent loop, but the outcome is the same — a finished round that
+          // cannot be submitted.
+          if (typeof rpcResult.error === 'string' && SUBMIT_ROUND_UNAVAILABLE.test(rpcResult.error)) {
+            const alreadyCommitted = await hasConfirmedRoundSubmission(supabase, existingRoundId, player.id);
+            if (alreadyCommitted) {
+              // The round IS submitted — an auto-save racing the submit, or a
+              // double-tap. Acknowledge the durable result rather than telling
+              // the player their finished round is missing.
+              void flightRecorder.complete('db.submit_round_atomic', { metadata: { already_completed: true } });
+              void flightRecorder.finalize('success');
+              round = { id: existingRoundId };
+            } else {
+              // No row for this id. Re-submitting as a NEW round is safe
+              // precisely BECAUSE we just proved nothing is there to duplicate;
+              // blind recreation without this check could duplicate a completed
+              // round, which is why the key is only returned after the lookup.
+              void flightRecorder.warn('db.submit_round_atomic', { errorSummary: 'round_missing' });
+              void flightRecorder.finalize('warning');
+              await logServerError(`Round submit target is missing — client may re-submit as new: ${rpcResult.error}`, {
+                action: 'submitGolfRoundComprehensive',
+                roundId: existingRoundId,
+                playerId: player.id,
+                userId: user.id,
+                userEmail: user.email,
+                holesCount: holesPayload.length,
+                shotsCount,
+                helmTraceId: flightRecorder.traceId,
+                traceStep: 'db.submit_round_atomic',
+                extra: { rpcResult, path: 'existing_round' },
+              }, 'warning');
+              return { success: false, error: 'round_missing' };
+            }
+          } else {
           void flightRecorder.fail('db.submit_round_atomic', { errorSummary: rpcResult.error });
           void flightRecorder.finalize('failure');
           await logServerError(`Round submit RPC returned failure: ${rpcResult.error}`, {
@@ -2184,6 +2225,7 @@ async function submitGolfRoundComprehensiveImpl(
             extra: { rpcResult, path: 'existing_round' },
           }, 'error');
           return { success: false, error: rpcResult.error || 'Failed to submit round.' };
+          }
         } else {
           void flightRecorder.complete('db.submit_round_atomic', { observed: { round_id: existingRoundId } });
           void flightRecorder.finalize('success');
@@ -6899,6 +6941,13 @@ const observedSavePartialRound = withAdminObserved(
  * thing to drift out of step with the migration that defines it.
  */
 const ROUND_MISSING_RPC_ERROR = /round not found or you do not have permission to update it/i;
+
+/**
+ * submit_round_atomic's equivalent. It deliberately conflates three causes in
+ * one sentence, so matching it is only the FIRST half of the decision — the
+ * caller must then look the round up to tell "gone" from "already submitted".
+ */
+const SUBMIT_ROUND_UNAVAILABLE = /round not found, already completed, or no permission/i;
 
 export async function savePartialRound(
   data: PartialRoundData,
