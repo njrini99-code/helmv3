@@ -89,7 +89,15 @@ const USER_INPUT_REJECTION_PATTERNS: readonly RegExp[] = [
   /already a member of this team/i,
   // Field validation the form states up front. The action is telling the user
   // to correct their input, which is the only thing it could do.
-  /must be after the start/i,
+  // "on or" was the gap: golf.ts has a matched pair of messages, and only one
+  // of them matched here. "End time must be after the start time" tiered as
+  // info; "End date must be on or after the start date" fell through to
+  // error and paged. Same family, same form, one word apart.
+  /must be (?:on or )?after the start/i,
+  // A cleared date field. The action is telling the coach to pick a date —
+  // the same class of "correct your input" as everything else in this block,
+  // and it reached Mission Control as an error only because nothing matched it.
+  /^date must be yyyy-mm-dd$/i,
   /^password must /i,
   /^invalid join code/i,
   /^please complete your player profile/i,
