@@ -62,6 +62,7 @@ import {
 } from '@/components/icons';
 import { createEnrichedAnnouncement } from '@/app/golf/actions/announcements';
 import { uploadGolfDocument, createGolfDocument } from '@/app/golf/actions/documents';
+import { convertHeicToJpeg } from '@/lib/storage/heic-to-jpeg';
 
 /* ─── Types (identical to the legacy flow) ─────────────────────────────────── */
 
@@ -255,7 +256,15 @@ function CreateSheet({
   // behave better one at a time, and per-file failures stay independent.
   async function handleFilesChosen(chosen: File[]) {
     if (!teamId || chosen.length === 0) return;
-    for (const file of chosen) {
+    for (const picked of chosen) {
+      // HEIC in, JPEG out, on the device that can decode it. An iPhone photo
+      // attached to an announcement is stored as-is otherwise, and renders as
+      // a broken image for every player opening it on Android or a laptop.
+      // Falls back to the original when this device cannot decode HEIC.
+      const file = await convertHeicToJpeg(picked);
+
+      // Checked AFTER conversion: a JPEG re-encode changes the size, and the
+      // limit must describe the bytes actually being uploaded.
       if (file.size > MAX_UPLOAD_BYTES) {
         fairwayToast.danger(`${file.name} is over the 25 MB limit`);
         continue;

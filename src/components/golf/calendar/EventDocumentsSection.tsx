@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { logError } from '@/lib/error-logging';
+import { getPreviewUrl } from '@/app/golf/actions/documents';
 import {
   attachDocumentToEvent,
   detachDocumentFromEvent,
@@ -74,6 +75,8 @@ export function EventDocumentsSection({
   isCoach,
   compact = false,
 }: EventDocumentsSectionProps) {
+  /** Document whose signed URL is being fetched, so its row can disable. */
+  const [pendingDocId, setPendingDocId] = useState<string | null>(null);
   const [attached, setAttached] = useState<EventDocumentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -199,15 +202,47 @@ export function EventDocumentsSection({
                   <Icon className="w-4 h-4 text-primary-700" />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <a
-                    href={row.document.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-warm-900 hover:text-primary-700 truncate block"
+                  {/* #1259, second site. Do NOT link `file_url`: it was written
+                      with getPublicUrl() against the PRIVATE `documents`
+                      bucket, so it is a dead `/object/public/…` link that
+                      navigates the user to raw storage JSON —
+                      {"statusCode":"404","error":"Bucket not found"}. The
+                      announcement card was fixed for this; the calendar's copy
+                      was not, and still sent every click to a 404. Ask the
+                      server for a short-lived signed URL at click time. */}
+                  {/* eslint-disable-next-line helm/no-raw-button -- an inline
+                      attachment TITLE that opens the file; it replaced an <a>
+                      and must keep reading as a link, not a pill CTA. Same
+                      treatment as the announcement card's attachment row. */}
+                  <button
+                    type="button"
+                    disabled={pendingDocId === row.document.id}
+                    onClick={() => {
+                      setPendingDocId(row.document.id);
+                      void getPreviewUrl(row.document.id)
+                        .then((res) => {
+                          const url = res?.data?.url;
+                          if (url) {
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          } else {
+                            toast.error(res?.error || "Couldn't open that file. Please try again.");
+                          }
+                        })
+                        .catch((err) => {
+                          logError(
+                            err instanceof Error ? err : new Error(String(err)),
+                            { component: 'EventDocumentsSection', action: 'preview-document', sport: 'golf' },
+                            'medium',
+                          );
+                          toast.error("Couldn't open that file. Please try again.");
+                        })
+                        .finally(() => setPendingDocId(null));
+                    }}
+                    className="text-sm font-medium text-warm-900 hover:text-primary-700 truncate block text-left disabled:opacity-60"
                   >
                     {row.document.title}
                     <ExternalLink className="inline-block w-3 h-3 ml-1 align-middle text-warm-400" />
-                  </a>
+                  </button>
                   <p className="text-eyebrow text-warm-500 truncate">
                     {[row.document.category, sizeLabel].filter(Boolean).join(' · ')}
                   </p>
