@@ -2,8 +2,13 @@
 
 - Feature: `golf_round_lifecycle`
 - Surface: `round_review_ai` recap persist
-- Status: repairing — fix verified against a local reproduction; production
-  apply in progress
+- Status: CLOSED — live in production, verified 2026-09-01 three independent
+  ways: the prod catalog shows `public.save_round_ai_recap` as
+  `prosecdef=true, owner=postgres, authenticated=EXECUTE, anon=none`;
+  `20260825233000 fix_round_recap_wrapper_definer` appears in prod's applied
+  migration history; and Sentry has zero hits for "permission denied for schema
+  helm_private" in 90 days. This line read "repairing — production apply in
+  progress" for a week after the apply had actually landed.
 - Risk: R1 repair of an R3-introduced regression (grants/definer only; no data
   writes, no RLS loosening)
 - Sentry: JAVASCRIPT-NEXTJS-PT (17 events, 9 users, escalating)

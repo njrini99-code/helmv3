@@ -56,6 +56,28 @@ const checks = [
     ok: hasUsableSecret('INTERNAL_LOG_KEY'),
     required: 'INTERNAL_LOG_KEY',
   },
+  {
+    // Inngest was absent from this list entirely — not checked loosely,
+    // not checked at all. `grep -rn INNGEST_SIGNING_KEY scripts/ package.json`
+    // returned zero hits while production was rejecting every signed request
+    // from Inngest Cloud, and every round submitted since 2026-07-30 logged
+    // "Inngest API Error: 404 Event key not found".
+    //
+    // SAY WHAT THIS CANNOT DO: presence is not correctness. A rotated key is
+    // still well-formed and still passes here — which is exactly the failure
+    // that happened. The real detector is the runtime diagnosis in
+    // src/app/api/inngest/route.ts, which measures clock-skew against
+    // key-mismatch and reports which one it saw. This check only closes the
+    // cheaper gap: a key that is missing outright.
+    label: 'Inngest signing key (presence only — cannot detect a stale key)',
+    ok: hasUsableSecret('INNGEST_SIGNING_KEY'),
+    required: 'INNGEST_SIGNING_KEY',
+  },
+  {
+    label: 'Inngest event key (presence only — cannot detect a stale key)',
+    ok: hasUsableSecret('INNGEST_EVENT_KEY'),
+    required: 'INNGEST_EVENT_KEY',
+  },
 ];
 
 const failures = checks.filter((check) => !check.ok);
