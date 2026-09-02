@@ -549,3 +549,96 @@
   `npm run build` (no `.env.local` in the worktree; CI builds),
   `lint:ratchet`, `docs:schema-drift`, `knowledge:check` — the push CI runs
   them.
+
+## 2026-09-02 — Postgres-side Flight Recorder checkpoints reach helm_debug.trace_steps
+
+- Migration: `supabase/migrations/20260902160000_postgres_checkpoints_reach_trace_steps.sql`
+  — HELD, R3, not applied. See `supabase/migrations/HELD.md` for the
+  pre-apply fingerprint and the reviewer-not-yet-performed note.
+- Change: `helm_private.trace_checkpoint` and `helm_private.trace_exception_checkpoint`
+  (called from inside `submit_round_atomic` / `save_partial_round_atomic`,
+  neither of which changed) now UPSERT a row into `helm_debug.trace_steps` in
+  addition to their existing `RAISE LOG`, wrapped in their own
+  `BEGIN...EXCEPTION WHEN OTHERS...END` so a broken checkpoint insert cannot
+  fail or slow the round write. `layer` is always `postgres`, `requiredness`
+  always `best_effort`, `parent_step_key`/`function_name`/`table_name` are
+  derived from the step key (or from an explicit `metadata` key), and neither
+  is ever overwritten once recorded — an UPSERT on an existing key (only
+  possible for the two RPC-level entry keys, which the Server Action side
+  also writes) never fights the application layer over a field it owns.
+- Why: measured in production 2026-09-02, 1313 trace runs / 2420 steps carried
+  ZERO steps with `function_name`/`table_name`/`trigger_name`, because the
+  Postgres-side checkpoints have only ever logged, never persisted, since
+  `20260825200811` shipped them. `src/app/admin/traces/trace-tree.ts` had
+  never rendered a Postgres-layer child under an RPC node as a result — not
+  because the tree builder couldn't (verified it already folds an arbitrary
+  observed `parent_step_key` correctly; no change needed there) but because
+  no such row had ever existed to render.
+- Known limitation, stated in the migration header and in
+  `memory/features/shot-tracking.md`'s Flight Recorder section: the
+  exception-variant's new row does NOT survive the outer RPC's own
+  rollback-and-reraise on any current call site (both RPCs' handler ends in
+  a bare `RAISE`), so `RAISE LOG` remains the only durable failure record
+  today. The write is added anyway — fail-open, harmless, and becomes
+  durable the moment a future caller catches the RPC's error without rolling
+  back the whole transaction.
+- Second known limitation, found while verifying, not by inspection alone:
+  `helm_debug.trace_runs.observed_step_count` (the count `helm_debug_list_traces`
+  shows in the Bridge's trace list) is maintained only by
+  `public.helm_debug_record_trace_step`'s own recount, which these new
+  Postgres-side INSERTs never call — confirmed locally by running a traced
+  `submit_round_atomic` and reading `observed_step_count = 0` against 7 real
+  rows already in `trace_steps`, then confirming one subsequent call to
+  `helm_debug_record_trace_step` for the same trace brought it to 7. Bounded,
+  not indefinite: every current call site reaches that facade once per
+  request immediately after the RPC returns. The trace *detail* view
+  (`helm_debug_get_trace`, this migration's own contract) is unaffected
+  either way, since it reads `trace_steps` directly. Recorded in the
+  migration header and in `supabase/migrations/HELD.md`'s row.
+- Feature-awareness gap closed in the same change: `memory/registry.yml` had
+  no mapping anywhere for `src/lib/observability/helm-flight-recorder.ts` or
+  `golf-round-flight-workflow.ts` before this — `npm run knowledge:map`
+  resolved either file to zero features. Added `src/lib/observability/**` to
+  `shot_tracking.code.services` (the feature that already owns `golf.ts`, the
+  recorder's only caller) and four migration globs
+  (`*helm_flight_recorder*`, `*helm_debug*`, `*trace_*`, alongside the
+  existing `*golf_round*`/`*golf_shot*`) to `shot_tracking.code.db`, since
+  none of the four flight-recorder migration filenames matched the prior
+  globs.
+- Tests: new `supabase/tests/rls/golf_flight_recorder_checkpoints.sql` (20
+  assertions) — real `submit_round_atomic`/`save_partial_round_atomic` calls
+  as an authenticated player with a valid `_helm_trace`, asserting substep
+  rows carry `parent_step_key`/`layer`/`function_name`/`table_name`; the
+  exception variant's own contract (called directly, since triggering it via
+  an actual uncaught RPC exception would require catching the re-raise at a
+  savepoint that then discards the very row under test — see the migration
+  header and the test file's own comment); a checkpoint insert failure
+  (`helm_debug.trace_steps` renamed inside a `SAVEPOINT`) does not fail the
+  round write, and the actual hole/shot data is still persisted; and tracing
+  disabled writes nothing (with an explicit `helm.trace_enabled` reset, since
+  `configure_trace_context` only ever sets that GUC when the CURRENT call
+  asks for tracing, never clears it, so an untraced call sharing one test
+  transaction with a traced one would otherwise inherit the earlier state —
+  not a production concern, since each request there is its own transaction).
+  `supabase/tests/rls/golf_flight_recorder.sql`,
+  `golf_atomic_snapshot_integrity.sql`, `golf_lifecycle_privilege_contracts.sql`
+  and `golf_round_submit_identity.sql` re-run clean against the patched
+  functions (63 assertions, 0 failed).
+- End-to-end, local Docker stack (migration applied there via `psql -f`,
+  atomic, `ON_ERROR_STOP=1`): a real `submit_round_atomic` call with a valid
+  `_helm_trace` produced 7 `helm_debug_get_trace` rows —
+  `db.submit_round_atomic` (started, no parent) plus `.update_round`
+  (`golf_rounds`), `.replace_snapshot`, `.insert_holes` (`golf_holes`),
+  `.insert_shots` (`golf_shots`), `.recalculate_strokes_gained`
+  (`golf_rounds`) and `.commit`, every substep `success`/`best_effort` with
+  `function_name = submit_round_atomic` — matching the migration's design
+  exactly.
+- Verified, each captured to a file, exit code checked: `npm run test:rls`
+  (74/74 files, local Docker stack — 0), `npx vitest run
+  src/app/admin/traces src/lib/observability` (9 files / 82 tests — 0),
+  `npm run typecheck` (0), `npm run lint` (0), `node scripts/sql-lint-ratchet.mjs`
+  (0 regressions — the new migration file itself lints clean under
+  `sqlfluff --dialect postgres --rules core`, zero violations),
+  `node scripts/markdown-lint-ratchet.mjs` (0),
+  `node scripts/knowledge/document-inventory.mjs --check` (0). Not run
+  locally: `npm run build` (no `.env.local` in this worktree; CI builds).
