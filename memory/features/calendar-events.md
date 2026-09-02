@@ -159,6 +159,8 @@ Calendar renders views
 
 - `src/test/lib/calendar/write-integrity.test.ts`
 - `src/test/api/calendar/feed-token-security.test.ts`
+- `src/test/api/calendar/feed-last-synced-waituntil.test.ts` — the feed
+  route's `last_synced_at` stamp is registered with waitUntil and never rejects
 - Browser checks for desktop calendar and mobile RSVP/event sheet behavior.
 - RLS tests when event/attendance/feed tables change.
 
