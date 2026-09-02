@@ -1,0 +1,43 @@
+-- Wave K1 — drop the duplicate index on baseball_decision_log(meeting_item_id).
+--
+-- baseball_decision_log carries TWO byte-identical, non-unique btree indexes
+-- on the same single column:
+--   baseball_decision_log_meeting_item_id_idx
+--     (CREATE INDEX ... USING btree (meeting_item_id))
+--   baseball_decision_log_meeting_item_idx
+--     (CREATE INDEX ... USING btree (meeting_item_id))
+-- Confirmed live via pg_indexes (2026-08-19) and independently flagged right
+-- now by Supabase's own performance advisor (duplicate_index): "Table
+-- `public.baseball_decision_log` has identical indexes
+-- {baseball_decision_log_meeting_item_id_idx,
+--  baseball_decision_log_meeting_item_idx}.
+-- Drop all except one of them."
+--
+-- Neither index backs a constraint: joining pg_constraint on conindid for
+-- both index names returns 0 rows (no PK, no UNIQUE, no FK-referenced
+-- relationship). `select count(*) from baseball_decision_log` = 0 rows.
+-- Dropping either one is a clean, low-risk write-amplification fix, not a
+-- uniqueness-guarantee removal.
+--
+-- Provenance: only `baseball_decision_log_meeting_item_id_idx` is
+-- migration-tracked — created via `CREATE INDEX IF NOT EXISTS` in
+-- 20260710031500_baseball_decision_log_kind_reconcile.sql — and it matches
+-- this table's own established `<table>_<column>_idx` naming convention
+-- (action_id_idx, created_by_idx, decided_by_idx, signal_id_idx all follow
+-- the same pattern). No migration anywhere in this repo creates
+-- `baseball_decision_log_meeting_item_idx` (without `_id`); it is a
+-- prod-only stray object with no seed/repair script that would recreate it
+-- once dropped. So this migration DROPs the untracked stray and KEEPS the
+-- migration-tracked, convention-matching twin.
+--
+-- Plain DROP INDEX (no CONCURRENTLY): the sibling FK-covering-index
+-- migration for this exact change class — 20260710004200_fk_covering_
+-- indexes_batch2_baseball_p_z.sql — uses plain `create index if not exists`
+-- from inside a `DO $$ ... $$` block, and CONCURRENTLY cannot run inside a
+-- PL/pgSQL block or a multi-statement transaction at all (SQLSTATE 25001).
+-- The table is 0 rows, so CONCURRENTLY would buy nothing even if it worked.
+--
+-- BASEBALL-ONLY. NOT applied to any database by this agent — migration file
+-- only, for the lead to review and apply.
+
+DROP INDEX IF EXISTS public.baseball_decision_log_meeting_item_idx;
