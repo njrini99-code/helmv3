@@ -1,4 +1,9 @@
 // @ts-check
+/* global URL -- built into Node, browsers and the Edge runtime. This file
+   lives under src/, where eslint.config.mjs grants no Node globals (only
+   scripts/** gets `globals.node`), so `no-undef` has to be told. Not
+   `import { URL } from "node:url"`: the TS readers bundle this for Next.js,
+   and a lint-only directive cannot change what ships. */
 /**
  * Per-key credential SHAPE validation — one implementation, three consumers.
  *
