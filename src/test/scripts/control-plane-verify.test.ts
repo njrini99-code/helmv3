@@ -526,7 +526,7 @@ describe('open-PR disposition residue — current state, with one exact exceptio
 
 describe('main branch protection is a fact the verifier reads, not one a human remembers', () => {
   const OK = {
-    required_status_checks: { contexts: ['CI aggregate', 'Review Gate aggregate', 'Smoke checks', 'Analyze (python)'] },
+    required_status_checks: { contexts: ['CI aggregate', 'Review Gate aggregate', 'Analyze (python)'] },
     enforce_admins: { enabled: true },
   };
 
@@ -567,7 +567,7 @@ describe('main branch protection is a fact the verifier reads, not one a human r
 
   it('a dropped aggregate context FAILS — a rename is what made every PR unsatisfiable once', async () => {
     const r = await classify({
-      protection: { ...OK, required_status_checks: { contexts: ['CI aggregate', 'Smoke checks'] } },
+      protection: { ...OK, required_status_checks: { contexts: ['CI aggregate', 'Analyze (python)'] } },
     });
     expect(r.state).toBe('FAIL');
     expect(r.detail).toMatch(/Review Gate aggregate/);

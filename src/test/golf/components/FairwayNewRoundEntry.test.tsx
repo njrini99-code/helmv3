@@ -255,6 +255,39 @@ describe('FairwayNewRoundEntry — confirmed course', () => {
     expect(spin.some((el) => el.value === '400')).toBe(true);
   });
 
+  it('saves NINE holes when 9 is picked AFTER the scorecard mounted (Shenandoah 2026-09-01)', () => {
+    // The scorecard mounts at the course default the moment a course is
+    // confirmed; the 9/18 control sits above it on the same screen. Tapping
+    // "9 holes" flips the parent's holesPerRound — the editor below has to
+    // follow, or "Start round" saves the 18 it mounted with.
+    const onHolesSave = vi.fn();
+    const confirmed = (holesPerRound: 9 | 18): FairwayNewRoundEntryProps =>
+      baseProps({
+        cloudPickActive: true,
+        selectedCourse: null,
+        selectedCourseId: null,
+        preloadedHoleConfigs: HOLES,
+        onHolesSave,
+        holesPerRound,
+        nineSelection: 'front',
+      });
+    const { rerender } = render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...confirmed(18)} />
+      </LazyMotion>,
+    );
+    rerender(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...confirmed(9)} />
+      </LazyMotion>,
+    );
+
+    screen.getByRole('button', { name: /start round/i }).click();
+
+    expect(onHolesSave).toHaveBeenCalledTimes(1);
+    expect(onHolesSave.mock.calls[0]![0]).toHaveLength(9);
+  });
+
   it('keeps the full picker when NOTHING has been chosen yet', () => {
     // The "closed the picker without choosing" path — must be untouched.
     render(

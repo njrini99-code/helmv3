@@ -60,7 +60,6 @@ ci:
   unique_check_names:
     - CI aggregate
     - Review Gate aggregate
-    - Smoke checks
 
 vercel:
   # Paths that must NEVER be in a Vercel upload. `.vercelignore` REPLACES the

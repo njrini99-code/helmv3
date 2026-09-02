@@ -165,7 +165,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/coachhelm-ai.md` | current | yes | - | - | 3 | 23 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 1 | 23 | 2 |
-| `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 10 | - |
+| `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 25 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 1 | 13 | - |
@@ -175,7 +175,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/shot-tracking.md` | current | yes | - | yes | 2 | 19 | 2 |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 19 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 16 | - |
-| `memory/features/team-communications.md` | current | yes | - | - | 2 | 10 | - |
+| `memory/features/team-communications.md` | current | yes | - | - | 2 | 11 | - |
 | `memory/features/team-operations.md` | current | yes | - | - | 2 | 18 | - |
 
 ### `REFERENCE`

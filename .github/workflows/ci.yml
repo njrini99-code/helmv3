@@ -1,5 +1,44 @@
 name: CI
 
+# --- SHAPE OF THIS WORKFLOW (2026-09-02, PR throughput) ----------------------
+#
+# Every pull request used to fan out into 22 jobs here, 15 of which each ran
+# their own checkout + setup-node + `npm ci` (68–103 s of install per job,
+# measured on run 33637620180) in front of a few seconds of actual checking:
+# `Route Hygiene P0/P1` did 0 s of work behind 89 s of install, `Bridge env
+# drift` 0 s behind 91 s, `Database types drift` 6 s behind 96 s, `Business
+# contracts` 9 s behind 75 s, `Feature knowledge` 3 s behind 81 s. With ~47
+# check runs per PR across all workflows and a runner pool that behaves like
+# 20 concurrent jobs, two open PRs saturated the account and the third waited
+# 40 minutes for a slot before running a single command.
+#
+# The fix is not fewer CHECKS — every command that ran before still runs, and
+# every one still reports under its own name. It is fewer JOBS:
+#
+#   Static checks   one job, one install, sixteen named steps (the eight tiny
+#                   jobs above plus schema invariants and the Deno type-check).
+#                   Each step is continue-on-error and an aggregate step at the
+#                   end fails the job naming every step that did not succeed —
+#                   so one failure cannot mask another, and a failing control
+#                   still surfaces under its own name (the reason `Control
+#                   plane` was once a dedicated job is preserved as a step).
+#   Lint            ESLint folded into the ratchet job; same aggregate pattern.
+#   TypeScript, Lint   now skip on docs-only PRs like the other heavy jobs —
+#                   a .md diff cannot change what tsc or eslint reports.
+#   Next build      restores its webpack cache on every run but SAVES it only
+#                   on push to main: the save step alone cost 99 s per PR run.
+#
+# PR job count here: 22 → 10 (detect, static, typecheck, lint, 3 unit shards,
+# build, supabase, aggregate). Installs per run: 15 → 8. The push-to-main-only
+# jobs (shifted-timezone unit tests, BaseballHelm authenticated smoke) are
+# untouched.
+#
+# `npm ci` itself is NOT cached as a node_modules tarball, deliberately:
+# measured 2026-09-02 the tree is 3.7 GB, a restore of that size costs about
+# what the install does, and it would evict the Next build cache from the
+# repository's 10 GB cache budget within a few runs.
+# -----------------------------------------------------------------------------
+
 on:
   # merge_group: required for GitHub's merge queue — a queued merge re-runs
   # these checks on the speculative merge result; without this trigger the
@@ -11,7 +50,7 @@ on:
   pull_request:
 
 concurrency:
-  # Per-COMMIT groups on main (playwright.yml's pattern): two merges landing
+  # Per-COMMIT groups on main (playwright.yml's old pattern): two merges landing
   # seconds apart used to cancel the first commit's suite mid-flight, and the
   # always()-running aggregate then FAILED on its cancelled needs — every
   # stacked merge painted a red X on a superseded main commit (owner report
@@ -85,17 +124,32 @@ jobs:
           fi
           echo "--- changed files ---"; echo "$changed"
 
-  database-types:
-    name: Database types drift
+  # ---------------------------------------------------------------------------
+  # Every repo-wide check that finishes in seconds, behind ONE install.
+  #
+  # Runs on docs-only PRs too, on purpose: the knowledge-base gates in here
+  # (schema drift, path drift, the feature router, the generated inventory)
+  # are exactly what a documentation change needs checked, and the whole job
+  # is cheaper than the install it replaces eight of.
+  #
+  # Every step below is `continue-on-error: true` so that ONE failure cannot
+  # hide another — the pattern the Lint job established on 2026-08-18 after a
+  # stale Supabase baseline hid a fail-open regression for a full CI cycle.
+  # The aggregate at the end reads `steps.*.outcome` and fails the job naming
+  # every step that did not succeed. A skipped step counts as a failure: a
+  # gate that did not run is not a gate that passed.
+  # ---------------------------------------------------------------------------
+  static-checks:
+    name: Static checks
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          # Full history: the feature-knowledge checks read git for file
+          # provenance, and the old `Feature knowledge` job fetched it too.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Node
@@ -104,54 +158,39 @@ jobs:
           node-version: 22
           cache: npm
 
+      # supabase/functions/ is EXCLUDED from tsconfig.json, so `npm run typecheck`
+      # has never covered these three Deno edge functions. They are deployed code
+      # that sends push notifications and email; until 2026-08-19 nothing checked
+      # them at all. The first run of this gate found a real type error in
+      # send-fcm-push (crypto.subtle.importKey rejecting a widened Uint8Array).
+      - name: Setup Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed  # v2.0.5
+        with:
+          deno-version: v2.x
+
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify database types are up to date
-        run: npm run check:types-drift
-
-  schema-invariants:
-    name: Schema invariants
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Check schema invariants
+      - name: Schema invariants
+        id: schema_invariants
+        continue-on-error: true
         run: ./scripts/check-schema-invariants.sh
 
       # Catches `.limit(N > 1000)` including behind a named constant, which the
       # ast-grep rule cannot see through — that is exactly where the live
       # shot-drivers truncation hid (SHOT_DRIVERS_FETCH_CAP = 25000).
-      - name: Check PostgREST row caps
+      - name: PostgREST row caps
+        id: row_caps
+        continue-on-error: true
         run: node scripts/check-row-cap-limits.mjs
 
-  control-plane:
-    name: Control plane
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    # A DEDICATED job, not a step inside another one. These checks were first
-    # added under "Feature knowledge", where a control-plane failure would have
-    # surfaced under someone else's name — the same mislabeled-signal class as a
-    # guard timeout rendering as "GlassCard import exists". A control that
-    # reports under the wrong name is a control you will misread.
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Database types drift
+        id: types_drift
+        continue-on-error: true
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npm run check:types-drift
 
       # GENERATED INVENTORY DRIFT — a required PR-time gate as of 2026-08-29.
       #
@@ -166,6 +205,8 @@ jobs:
       # shape could only tell you the docs were stale by first making them
       # correct, which is unusable as a gate.
       - name: Generated inventory is current
+        id: inventory
+        continue-on-error: true
         run: npm run docs:inventory-check
 
       # REPO-WIDE STATIC GUARDS, with honest outcomes.
@@ -178,6 +219,8 @@ jobs:
       #   exit 1  POLICY_FAILURE          ran, found violations
       #   exit 2  INFRASTRUCTURE_FAILURE  did not finish — UNKNOWN, not a pass
       - name: Repo-wide static guards
+        id: guards
+        continue-on-error: true
         run: npm run guards
 
       # VERCEL UPLOAD COVERAGE. `.vercelignore` REPLACES Vercel's default
@@ -202,31 +245,17 @@ jobs:
       #   exit 2  UNKNOWN           a required state could not be established
       #
       # UNKNOWN never becomes PASS. Every control this repo lost was lost by
-      # being assumed rather than checked.
+      # being assumed rather than checked. It was a dedicated job until
+      # 2026-09-02 so that a failure would surface under its own name; it is a
+      # named step now, and the aggregate below prints that name.
       - name: Control plane
+        id: control_plane
+        continue-on-error: true
         run: npm run control-plane:verify:static
 
-  feature-knowledge:
-    name: Feature knowledge
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check feature knowledge registry
+      - name: Feature knowledge registry
+        id: knowledge_check
+        continue-on-error: true
         run: npm run knowledge:check
 
       # Fails when memory/**, CLAUDE.md, AGENTS.md or .claude/rules/* name a
@@ -236,12 +265,15 @@ jobs:
       # This runs HERE, on the per-PR fast path, on purpose, and it covers a
       # class the inventory check cannot: the inventory check compares the
       # generator to its own output, reads only AUTOGEN blocks, and covers 3
-      # files. This one reads the whole knowledge base against the live schema. An audit on 2026-08-19 found
-      # 59 identifiers documented as live tables — with columns, FKs and RLS
-      # policy names — that returned absent from every catalog in production.
-      # Sessions are ordered by CLAUDE.md to read those docs before writing
-      # code, so a wrong doc becomes wrong code with no signal in between.
-      - name: Check knowledge base against the schema
+      # files. This one reads the whole knowledge base against the live schema.
+      # An audit on 2026-08-19 found 59 identifiers documented as live tables —
+      # with columns, FKs and RLS policy names — that returned absent from every
+      # catalog in production. Sessions are ordered by CLAUDE.md to read those
+      # docs before writing code, so a wrong doc becomes wrong code with no
+      # signal in between.
+      - name: Knowledge base against the schema
+        id: schema_drift
+        continue-on-error: true
         run: npm run docs:schema-drift
 
       # Fails when a navigation doc names a file path that does not resolve.
@@ -252,48 +284,35 @@ jobs:
       # as "where the code lives", fails to find it, and either invents a
       # replacement or concludes the feature is missing. Both are confident and
       # wrong.
-      - name: Check navigation docs for dead file paths
+      - name: Navigation docs for dead file paths
+        id: path_drift
+        continue-on-error: true
         run: npm run docs:path-drift
 
       # The feature router (memory/registry.yml) gates governed edits, but
       # path-drift scans only .md files and skips globs — so the one map the
       # edit gate consults was the one map no gate checked. Fails on any
       # registry entry that resolves to nothing; baseline is ZERO.
-      - name: Check the feature router against the tree
+      - name: Feature router against the tree
+        id: registry_globs
+        continue-on-error: true
         run: npm run knowledge:globs
 
-  # Helm Bridge integration env drift.
-  #
-  # Runs in --drift mode, which is a no-op while NONE of these secrets are
-  # provisioned (CI's situation today) and becomes a hard failure the moment
-  # SOME are set and a sibling goes missing. That asymmetry is the point: a
-  # partially-configured Bridge degrades SILENTLY — blank panels, and edge
-  # errors that never reach admin_events because INTERNAL_LOG_KEY is unset —
-  # so a rotated or dropped var otherwise surfaces only during a real
-  # incident, which is the worst possible time to discover it.
-  #
-  # Wiring the secrets into this repo later needs no change here: the job
-  # starts enforcing on its own as soon as any one of them exists.
-  bridge-env:
-    name: Bridge env drift
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check Helm Bridge integration env
+      # Helm Bridge integration env drift.
+      #
+      # Runs in --drift mode, which is a no-op while NONE of these secrets are
+      # provisioned (CI's situation today) and becomes a hard failure the moment
+      # SOME are set and a sibling goes missing. That asymmetry is the point: a
+      # partially-configured Bridge degrades SILENTLY — blank panels, and edge
+      # errors that never reach admin_events because INTERNAL_LOG_KEY is unset —
+      # so a rotated or dropped var otherwise surfaces only during a real
+      # incident, which is the worst possible time to discover it.
+      #
+      # Wiring the secrets into this repo later needs no change here: the step
+      # starts enforcing on its own as soon as any one of them exists.
+      - name: Bridge env drift
+        id: bridge_env
+        continue-on-error: true
         env:
           SENTRY_READ_TOKEN: ${{ secrets.SENTRY_READ_TOKEN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -304,8 +323,71 @@ jobs:
           INTERNAL_LOG_KEY: ${{ secrets.INTERNAL_LOG_KEY }}
         run: node scripts/check-helm-bridge-env.mjs --drift
 
+      # The npm script uses --node-modules-dir=none deliberately — and it
+      # matters MORE now that this step shares a checkout with `npm ci`. With
+      # `auto`, deno resolves npm deps itself and REWRITES node_modules —
+      # locally that silently bumped stripe 22.3.2 -> 22.5.0, whose pinned
+      # API-version type no longer matched src/lib/stripe/server.ts, so
+      # `npm run typecheck` started failing on a file nobody had touched. A
+      # type gate must not mutate the tree it is checking.
+      #
+      # It also passes --minimum-dependency-age=120 (minutes). Deno's default
+      # 24h supply-chain age policy failed this job on 2026-08-21 when rollup
+      # published 4.62.5 upstream — a red CI day for a docs-only merge, with no
+      # code change on our side. 2h keeps the protection against
+      # just-published/compromised versions without a day-long outage every
+      # time a floating transitive dep ships a release. Owner decision
+      # 2026-08-21.
+      - name: Edge functions (Deno)
+        id: edge_functions
+        continue-on-error: true
+        run: npm run typecheck:functions
+
+      - name: Business contracts
+        id: business_contracts
+        continue-on-error: true
+        run: npm run verify:business
+
+      - name: Route Hygiene P0/P1
+        id: route_hygiene
+        continue-on-error: true
+        run: |
+          npm run ui:routes
+          npm run routes:hygiene:p0p1
+
+      # Value-level import cycles typecheck and build cleanly but can crash at
+      # cold runtime (TDZ) — the #803/#804 prod-crash class. Baseline-aware:
+      # fails only on cycles not in .cycles-baseline.json.
+      - name: Import-cycle ratchet
+        id: import_cycles
+        continue-on-error: true
+        run: npm run check:cycles
+
+      # `steps` (the context) holds every step above that carries an `id`, with
+      # the outcome BEFORE continue-on-error rewrote it. Anything other than
+      # `success` — failure, cancelled, or skipped because `npm ci` died first —
+      # fails this job and is printed by name.
+      - name: Static checks aggregate (fails if any check failed)
+        if: always()
+        env:
+          STEP_OUTCOMES: ${{ toJSON(steps) }}
+        run: |
+          bad=0
+          while IFS=$'\t' read -r id outcome; do
+            if [ "$outcome" = "success" ]; then
+              echo "ok      $id"
+            else
+              echo "FAILED  $id -> $outcome"; bad=1
+            fi
+          done < <(jq -r 'to_entries[] | "\(.key)\t\(.value.outcome)"' <<< "$STEP_OUTCOMES")
+          exit "$bad"
+
   typecheck:
     name: TypeScript
+    needs: detect-changes
+    # Docs-only PRs skip this: a .md diff cannot change what tsc reports. The
+    # aggregate still fails on a skip whenever the PR is classified as code.
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -326,46 +408,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-  edge-functions:
-    name: Edge functions (Deno)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # supabase/functions/ is EXCLUDED from tsconfig.json, so `npm run typecheck`
-    # has never covered these three Deno edge functions. They are deployed code
-    # that sends push notifications and email; until 2026-08-19 nothing checked
-    # them at all. The first run of this gate found a real type error in
-    # send-fcm-push (crypto.subtle.importKey rejecting a widened Uint8Array).
-    #
-    # The npm script uses --node-modules-dir=none deliberately. With `auto`,
-    # deno resolves npm deps itself and REWRITES node_modules — locally that
-    # silently bumped stripe 22.3.2 -> 22.5.0, whose pinned API-version type no
-    # longer matched src/lib/stripe/server.ts, so `npm run typecheck` started
-    # failing on a file nobody had touched. A type gate must not mutate the
-    # tree it is checking.
-    #
-    # It also passes --minimum-dependency-age=120 (minutes). Deno's default
-    # 24h supply-chain age policy failed this job on 2026-08-21 when rollup
-    # published 4.62.5 upstream — a red CI day for a docs-only merge, with no
-    # code change on our side. 2h keeps the protection against
-    # just-published/compromised versions without a day-long outage every
-    # time a floating transitive dep ships a release. Owner decision
-    # 2026-08-21.
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed  # v2.0.5
-        with:
-          deno-version: v2.x
-
-      - name: Type-check edge functions
-        run: npm run typecheck:functions
-
   lint:
-    name: ESLint
+    name: Lint
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -383,29 +429,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
+      # `npm run lint` was its own job (35 s of eslint behind 82 s of install)
+      # until 2026-09-02. It is a step here now, first, and reports under the
+      # same name in the aggregate.
+      - name: ESLint
+        id: eslint
+        continue-on-error: true
         run: npm run lint
 
-  lint-ratchet:
-    name: Lint ratchet
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      # The four ratchet steps below carry continue-on-error so that ONE
+      # The ratchet steps below carry continue-on-error so that ONE
       # failure can't mask the others — on 2026-08-18 a stale Supabase
       # baseline hid a fail-open regression for a full CI cycle because the
       # steps ran sequentially and the later ones never ran. Each step still
@@ -453,21 +485,19 @@ jobs:
         continue-on-error: true
         run: npm run lint:duplicate-exports
 
-      - name: Ratchet aggregate (fails if any ratchet failed)
+      - name: Lint aggregate (fails if any check failed)
         if: always()
         env:
-          O_LINT: ${{ steps.ratchet_lint.outcome }}
-          O_SUPABASE: ${{ steps.ratchet_supabase.outcome }}
-          O_FAILOPEN: ${{ steps.ratchet_failopen.outcome }}
-          O_PAGINATED: ${{ steps.ratchet_paginated.outcome }}
-          O_DUPEXPORTS: ${{ steps.ratchet_dupexports.outcome }}
+          STEP_OUTCOMES: ${{ toJSON(steps) }}
         run: |
           bad=0
-          for pair in "lint:$O_LINT" "supabase:$O_SUPABASE" "fail-open:$O_FAILOPEN" "paginated:$O_PAGINATED" "duplicate-exports:$O_DUPEXPORTS"; do
-            name="${pair%%:*}"; outcome="${pair#*:}"
-            echo "ratchet $name -> $outcome"
-            if [ "$outcome" != "success" ]; then bad=1; fi
-          done
+          while IFS=$'\t' read -r id outcome; do
+            if [ "$outcome" = "success" ]; then
+              echo "ok      $id"
+            else
+              echo "FAILED  $id -> $outcome"; bad=1
+            fi
+          done < <(jq -r 'to_entries[] | "\(.key)\t\(.value.outcome)"' <<< "$STEP_OUTCOMES")
           exit "$bad"
 
   unit-tests:
@@ -587,28 +617,6 @@ jobs:
           echo "Runner offset: $(date +%z)  ($(date))"
           npm run test:run -- --shard=${{ matrix.shard }}/3
 
-  business-contracts:
-    name: Business contracts
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Business contracts
-        run: npm run verify:business
-
   next-build:
     name: Next build
     needs: detect-changes
@@ -631,11 +639,18 @@ jobs:
         run: npm ci
 
       # `next build --webpack` keeps its incremental compilation cache in
-      # .next/cache. Only the Playwright browser cache existed before, so every
-      # build was cold. Keyed on the lockfile plus source, with a lockfile-only
+      # .next/cache. Keyed on the lockfile plus source, with a lockfile-only
       # restore-key so a source change still warm-starts.
-      - name: Cache Next build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      #
+      # RESTORE on every run, SAVE only on push to main (2026-09-02). Measured
+      # on run 33637620180: the restore took 59 s and cut the build from ~460 s
+      # cold to 200 s, but the post-job SAVE took another 99 s — on every PR
+      # push, writing an entry keyed on a SHA nothing would ever restore
+      # again, into a 10 GB repository cache budget. Main's entry is what PR
+      # runs restore from (via the lockfile restore-key), so main is the only
+      # place a save changes anything.
+      - name: Restore Next build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .next/cache
           key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
@@ -645,6 +660,13 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Save Next build cache (push to main only)
+        if: github.event_name == 'push'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .next/cache
+          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
 
   supabase:
     name: Supabase lint + RLS tests
@@ -734,55 +756,6 @@ jobs:
         if: always()
         run: supabase stop || true
 
-  route-hygiene:
-    name: Route Hygiene P0/P1
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check route hygiene blockers
-        run: |
-          npm run ui:routes
-          npm run routes:hygiene:p0p1
-
-  import-cycles:
-    name: Import-cycle ratchet
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      # Value-level import cycles typecheck and build cleanly but can crash at
-      # cold runtime (TDZ) — the #803/#804 prod-crash class. Baseline-aware:
-      # fails only on cycles not in .cycles-baseline.json.
-      - name: Check for new runtime import cycles
-        run: npm run check:cycles
-
   baseball-auth-smoke:
     name: BaseballHelm authenticated smoke
     needs: detect-changes
@@ -827,9 +800,8 @@ jobs:
     #    smoke path now fails on the PR that introduces it.
     #
     # COST NOTE: this doubles Playwright-browser-install + a full `npm run
-    # build` on every PR, on top of the existing next-build / Smoke-checks
-    # builds, and adds ~1-2min of `supabase start` — a real, ongoing CI-minutes
-    # tradeoff. Revisit if PR wall-clock time becomes a problem.
+    # build` on every push to main, on top of the existing next-build, and adds
+    # ~1-2min of `supabase start` — a real, ongoing CI-minutes tradeoff.
     runs-on: ubuntu-latest
     # 45, not 30. Measured on this branch: a CLEAN run is ~17 min (supabase start
     # ~1m45s, build ~9-10 min under container contention, seed ~1 min, the smoke
@@ -946,9 +918,9 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # `supabase` (Supabase lint + RLS tests) is now part of the hard gate: the
+    # `supabase` (Supabase lint + RLS tests) is part of the hard gate: the
     # baseball pgTAP RLS suite was greened on main by #517 (supersedes #423), so
-    # RLS regressions now block merge through the required `all` check instead of
+    # RLS regressions block merge through the required aggregate instead of
     # being advisory-only — the gap that let the anon-access hole reach main.
     #
     # `baseball-auth-smoke` is NO LONGER in this gate (owner 2026-08-26, PR
@@ -966,23 +938,20 @@ jobs:
     # before a production promote — not the merge. To restore the
     # pre-merge gate, re-add `- unit-tests-timezone` to `needs` below AND remove
     # its `if: github.event_name == 'push'`.
+    #
+    # `static-checks` (2026-09-02) carries what used to be nine leaf jobs:
+    # Database types drift, Schema invariants, Feature knowledge, Control
+    # plane, Bridge env drift, Edge functions (Deno), Business contracts,
+    # Route Hygiene P0/P1, Import-cycle ratchet. `lint` carries ESLint plus the
+    # ratchets. Nothing left this gate; it got fewer job names.
     needs:
       - detect-changes
-      - database-types
-      - schema-invariants
-      - feature-knowledge
-      - control-plane
-      - bridge-env
+      - static-checks
       - typecheck
-      - edge-functions
       - lint
-      - lint-ratchet
       - unit-tests
-      - business-contracts
       - next-build
-      - route-hygiene
       - supabase
-      - import-cycles
     steps:
       - name: Fail if any required CI check failed
         # A skipped heavy job is fine ONLY on a docs-only PR (code=='false').

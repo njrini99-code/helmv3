@@ -62,6 +62,18 @@ export interface DigestData {
     total: number;
     critical: number;
     topIncidents: Array<{ title: string; occurrences: number; affectedUsers: number }>;
+    /**
+     * Actionable groups the list does NOT name: handled fallbacks ("continuing
+     * without shot drivers"). Counted so a reader can tell "nothing degraded"
+     * from "the list only shows defects".
+     */
+    degraded: number;
+    /**
+     * Groups the Errors tab hides by default — a phone whose POST never left
+     * the device, an expected access denial. Counted, never named: three
+     * WebKit "Load failed" rows were the whole error list on 2026-09-02.
+     */
+    quiet: number;
   };
   sentry: { unresolved: number | null; regressed: number | null };
   signups24h: Array<{ email: string; role: string }>;
@@ -109,6 +121,18 @@ export interface DigestEmail {
   subject: string;
   html: string;
   text: string;
+}
+
+/**
+ * What the incident list deliberately leaves out, said out loud. A digest that
+ * silently drops rows reads as "quiet night"; one that says "3 quiet rows set
+ * aside" can be checked against the Errors tab.
+ */
+function describeSetAside(e: DigestData['errors24h']): string | null {
+  const parts: string[] = [];
+  if (e.degraded > 0) parts.push(`${e.degraded} handled degradation${e.degraded === 1 ? '' : 's'}`);
+  if (e.quiet > 0) parts.push(`${e.quiet} quiet (client connectivity, expected access)`);
+  return parts.length > 0 ? `Not listed: ${parts.join(' · ')}.` : null;
 }
 
 function esc(s: string): string {
@@ -291,6 +315,10 @@ export function buildDigestEmail(data: DigestData): DigestEmail {
 
   lines.push('OVERNIGHT ERRORS');
   lines.push(`  ${data.errors24h.total} error groups (${data.errors24h.critical} critical)`);
+  {
+    const setAside = describeSetAside(data.errors24h);
+    if (setAside) lines.push(`  ${setAside}`);
+  }
   lines.push(
     data.sentry.unresolved === null
       ? '  Sentry: not reachable'
@@ -401,6 +429,11 @@ export function buildDigestEmail(data: DigestData): DigestEmail {
               .join(''),
           )
         : quiet('No incidents worth naming.')
+    }
+    ${
+      describeSetAside(data.errors24h)
+        ? `<p style="margin:10px 0 0;${BODY};color:${MUTED}">${esc(describeSetAside(data.errors24h) ?? '')}</p>`
+        : ''
     }`;
 
   const activityBody = `

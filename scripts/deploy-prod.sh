@@ -31,6 +31,25 @@ set -euo pipefail
 # disable the daemon rather than trust a degraded cache to report honestly.
 git() { command git -c core.fsmonitor=false "$@"; }
 
+# The Vercel CLI is REPO-LOCAL. AGENTS.md: "Use repo-local platform CLIs:
+# ./node_modules/.bin/supabase and ./node_modules/.bin/vercel. Do not assume
+# global Supabase or Vercel binaries."
+#
+# This script called bare `vercel` and therefore could not run at all on a
+# machine without a global install — discovered 2026-09-01 attempting the first
+# promote of nine merged fixes, which died at "vercel: command not found" AFTER
+# passing every guard above it. A deploy script that cannot deploy is worse than
+# no deploy script: it reads as a working release path right up until you need it.
+VERCEL_BIN="./node_modules/.bin/vercel"
+if [ ! -x "$VERCEL_BIN" ]; then
+  VERCEL_BIN="$(command -v vercel || true)"
+fi
+if [ -z "$VERCEL_BIN" ] || [ ! -x "$VERCEL_BIN" ]; then
+  echo "REFUSING: no Vercel CLI found at ./node_modules/.bin/vercel or on PATH." >&2
+  echo "Run \`npm install\` (the CLI is a repo dependency)." >&2
+  exit 1
+fi
+
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 SHA="$(git rev-parse HEAD)"
 SHORT="$(git rev-parse --short HEAD)"
@@ -99,7 +118,7 @@ echo "  scope       -> $SCOPE"
 # / 96.5 MB, comfortably under the file cap, so the cap is no longer the
 # reason; the 10 MB request-body limit is, and a single tarball is what avoids
 # it. Cheap insurance against a class of failure this repo has hit three times.
-vercel deploy --prod --yes \
+"$VERCEL_BIN" deploy --prod --yes \
   --archive=tgz \
   --scope "$SCOPE" \
   --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" \
@@ -114,7 +133,7 @@ echo
 # happened. The instructions are now the implementation.
 echo "Verifying the promote actually took effect..."
 
-ALIAS_DPL="$(vercel inspect helmsportslabs.com --scope "$SCOPE" 2>&1 | awk '/^ *id\t/ {print $2; exit}')"
+ALIAS_DPL="$("$VERCEL_BIN" inspect helmsportslabs.com --scope "$SCOPE" 2>&1 | awk '/^ *id\t/ {print $2; exit}')"
 echo "  alias -> $ALIAS_DPL"
 
 HTTP="$(curl -s -o /dev/null -w '%{http_code}' https://helmsportslabs.com/ || echo 000)"
