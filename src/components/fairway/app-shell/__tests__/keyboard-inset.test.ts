@@ -50,8 +50,10 @@ describe('keyboard inset — who consumes it', () => {
     expect(src).toContain('[.keyboard-open_&]:pb-4');
   });
 
-  it('the shell content wrapper grows by the keyboard height so any focused field can be scrolled above it', () => {
-    const src = read('src/components/fairway/app-shell/AppShell.tsx');
-    expect(src).toContain('[.keyboard-open_&]:!pb-[calc(var(--keyboard-height,0px)+2rem)]');
+  it('<body> grows by the keyboard height so a focused field on ANY page can be scrolled above it', () => {
+    const css = read('src/app/globals.css');
+    expect(css).toMatch(/body\.keyboard-open\s*\{\s*padding-bottom:\s*var\(--keyboard-height\);/);
+    // Not duplicated on the shell wrapper — two pads would stack into dead space.
+    expect(read('src/components/fairway/app-shell/AppShell.tsx')).not.toContain('[.keyboard-open_&]:!pb-');
   });
 });

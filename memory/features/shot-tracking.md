@@ -216,9 +216,9 @@ The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 
 Keyboard (2026-09-02): the "distance to hole" box was still covered on iOS —
 the keyboardWillShow scroll-into-view had nowhere to scroll for a field in the
-bottom ~45% of a page that ends where it ends. `AppShell`'s content wrapper now
-pads by `--keyboard-height` while `body.keyboard-open`, which is the scroll
-range that scroll needed. See ios-native-shell.md.
+bottom ~45% of a page that ends where it ends. `<body>` now pads by
+`--keyboard-height` while `body.keyboard-open` (globals.css), which is the
+scroll range that scroll needed. See ios-native-shell.md.
 
 ## Related Docs
 

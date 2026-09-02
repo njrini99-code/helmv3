@@ -70,8 +70,8 @@ Live Activity — each gated behind a capability entry when its binary lands. Re
   `--keyboard-height` and `body.keyboard-open` — from native
   `keyboardWillShow/Hide`, and since 2026-09-02 from `visualViewport` on the
   web (coarse-pointer only; pinch-zoom is gated out by `scale`). Consumers:
-  `AppShell`'s content wrapper pads by the keyboard height so any focused field
-  can be scrolled above it; a surface that lays itself out against the height
+  `<body>` pads by the keyboard height (globals.css) so a focused field on any
+  page — shell or not — can be scrolled above it; a surface that lays itself out against the height
   instead (`FairwayMessages`) carries `data-fw-keyboard-aware`, which tells the
   provider's scroll-into-view to leave it alone. Contract test:
   `src/components/fairway/app-shell/__tests__/keyboard-inset.test.ts`.
