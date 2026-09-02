@@ -47,9 +47,9 @@ Exactly one hook can refuse a tool call: `guard-canonical-write.mjs` under match
 
 | Kind | Count |
 | --- | --- |
-| `permissions.deny` total | 42 |
-| …covering `mcp__` | 13 |
-| …covering `Bash(` | 22 |
+| `permissions.deny` total | 32 |
+| …covering `mcp__` | 14 |
+| …covering `Bash(` | 11 |
 | …other | 7 |
 
 Deny rules fire even under `bypassPermissions`, and a project-scope
@@ -71,7 +71,7 @@ deny overrides a user-scope allow (probed 2026-08-29).
 | The uninstalled Supabase plugin namespace cannot activate on install | mcp__plugin_supabase_supabase | .claude/settings.json → permissions.deny | CONFIGURED — server-level deny |
 | Arbitrary SQL against production through MCP is refused | NONE | — | UNENFORCED, KNOWINGLY — the only working query path; no read_only enforcement on it |
 | Direct psql / service-role writes to production are refused | NONE | — | UNENFORCED — guard-sql.sh deleted 2026-08-27; SUPABASE_SERVICE_ROLE_KEY carries write capability |
-| A production deploy typed as a vercel command is refused | 14 deny rules | .claude/settings.json → permissions.deny | CONFIGURED — bare, ./node_modules/.bin and npx spellings; fires under bypassPermissions |
+| A production deploy typed as a vercel command is refused | 3 deny rules | .claude/settings.json → permissions.deny | CONFIGURED — bare, ./node_modules/.bin and npx spellings; fires under bypassPermissions |
 | A production deploy run through scripts/deploy-prod.sh is refused | NONE | — | UNENFORCED — scripts/deploy-prod.sh runs `vercel deploy --prod` in a child process; deny rules match the submitted command, which is the script. NOT probed: the only probe is a real production deploy |
 
 <!-- AUTOGEN:enforcement:end -->

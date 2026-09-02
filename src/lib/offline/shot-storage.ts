@@ -98,6 +98,18 @@ export interface SyncResult {
   syncedShots: number;
   failedItems: number;
   errors: string[];
+  /**
+   * Set when the run was DECLINED rather than attempted — currently only
+   * because a sync was already in flight.
+   *
+   * `success: false` alone could not distinguish "we tried and something
+   * broke" from "we did not need to try", and callers rendered both as a
+   * failure. A player mid-round therefore saw a red "Sync error — Sync
+   * already in progress" toast describing the concurrency guard doing its job,
+   * while the in-flight sync it deferred to was busy saving their shots
+   * correctly. Nothing had failed and nothing was lost.
+   */
+  declined?: 'already-running';
 }
 
 /**
