@@ -12,7 +12,6 @@
 > The `golf_shots` column list below was corrected against that file on
 > 2026-09-01; nothing else in this document has been re-verified.
 
-
 ## ✅ Complete Flow: Shot Tracking → Database → Stats Calculation
 
 ### Overview
