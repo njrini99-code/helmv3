@@ -30,6 +30,7 @@ import {
   type SelfHealStageRow,
   type SelfHealLoopStatus,
 } from '@/lib/admin/selfheal-registry';
+import type { CronBoardStatus } from '@/lib/admin/cron-registry';
 import {
   deriveStageCapability,
   deriveLoopCapability,
@@ -39,6 +40,7 @@ import {
   type CapabilityState,
   type LoopVerdict,
 } from '@/lib/admin/selfheal-capability';
+import { deriveRunOutcome, type StageRunOutcome } from '@/lib/admin/selfheal-provenance';
 import { fetchReliabilitySnapshot } from '@/lib/admin/data/reliability';
 import type { ReliabilitySnapshot } from '@/lib/admin/data/reliability';
 import { fetchWorkLog, type WorkLogSnapshot } from '@/lib/admin/github-pr-timeline';
@@ -62,6 +64,14 @@ export interface StageRunRecord {
   errorMessage: string | null;
 }
 
+/**
+ * `background_job_logs.metadata` is `jsonb` and typed `unknown` all the way
+ * through this module. It is narrowed in exactly one place —
+ * `deriveRunOutcome` — so a shape change has one site to fix rather than one
+ * per consumer.
+ */
+export type { StageRunOutcome };
+
 export interface SelfHealStageDetail extends SelfHealStageRow {
   capability: StageCapability;
   /** Newest first, capped at `HISTORY_LIMIT_PER_STAGE` — the run-history
@@ -72,6 +82,26 @@ export interface SelfHealStageDetail extends SelfHealStageRow {
   /** When the next run is expected, from `lastRunAt + cadenceMinutes`. Null
    *  whenever `lastRunAt` is null — there is nothing to add a cadence to. */
   nextExpectedAt: string | null;
+  /**
+   * The instant this stage starts reading OVERDUE — `lastRunAt +
+   * cadenceMinutes * 1.5`, which is exactly where `classifyCronStatus` draws
+   * that line (`ageMinutes > entry.cadenceMinutes * 1.5`, measured from
+   * `started_at`).
+   *
+   * Carried rather than re-derived in the view because the 1.5 multiplier is
+   * the kind of constant that gets copied once and then drifts. A stage past
+   * `nextExpectedAt` but short of this instant is LATE, not overdue, and the
+   * board said neither before this existed — it printed a bare past timestamp
+   * under the label "Next expected" and left the reader to infer a fault that
+   * the classifier had explicitly not found.
+   */
+  overdueAt: string | null;
+  /**
+   * What the most recent run recorded about its own work, including whether a
+   * human did part of it. See `selfheal-provenance.ts` for why a heartbeat's
+   * provenance is a fact this board has to carry rather than assume.
+   */
+  lastOutcome: StageRunOutcome | null;
 }
 
 export interface SelfHealBoard {
@@ -254,18 +284,35 @@ export async function fetchSelfHealBoard(now: Date = new Date()): Promise<AdminF
     const runs = (isUnreadable ? [] : (result?.data ?? [])) as BackgroundJobLogRow[];
     const last = runs[0] ?? null;
 
+    const status: CronBoardStatus = isUnreadable
+      ? 'never-ran'
+      : classifySelfHealStage(
+          stage,
+          last ? { started_at: last.started_at, status: last.status, metadata: last.metadata } : null,
+          now,
+        );
+
+    // THE SPLIT. `error_message` is the only free-text column a stage has, so
+    // a run that succeeds and wants to explain itself writes its explanation
+    // in the error column. Whether that text is an ERROR is decided by the
+    // run's classified status, not by the column it arrived in.
+    //
+    // `failed` and `degraded` are both real faults: the first ran and failed,
+    // the second ran and reported that part of its own work failed. Anything
+    // else that carries text is a note from a run that worked. Keying on the
+    // classified status (rather than on `last.status`) is what makes
+    // `degraded` — which is derived from metadata, not from the status column
+    // — land on the correct side of this line.
+    const isFault = status === 'failed' || status === 'degraded';
+    const freeText = last?.error_message ?? null;
+
     const row: SelfHealStageRow = {
       ...stage,
-      status: isUnreadable
-        ? 'never-ran'
-        : classifySelfHealStage(
-            stage,
-            last ? { started_at: last.started_at, status: last.status, metadata: last.metadata } : null,
-            now,
-          ),
+      status,
       lastRunAt: last?.started_at ?? null,
       lastRunStatus: last?.status ?? null,
-      lastError: last?.error_message ?? null,
+      lastError: isFault ? freeText : null,
+      lastNote: isFault ? null : freeText,
       unreadable: isUnreadable,
     };
 
@@ -284,6 +331,15 @@ export async function fetchSelfHealBoard(now: Date = new Date()): Promise<AdminF
       nextExpectedAt: row.lastRunAt
         ? new Date(new Date(row.lastRunAt).getTime() + stage.cadenceMinutes * 60_000).toISOString()
         : null,
+      // 1.5x the cadence FROM THE LAST RUN — the same anchor and the same
+      // multiplier `classifyCronStatus` uses. Not `nextExpectedAt + half a
+      // cadence`, which lands on the same instant today only because both
+      // are derived from one `lastRunAt`, and would silently diverge the
+      // moment either side gained a grace period.
+      overdueAt: row.lastRunAt
+        ? new Date(new Date(row.lastRunAt).getTime() + stage.cadenceMinutes * 1.5 * 60_000).toISOString()
+        : null,
+      lastOutcome: last ? deriveRunOutcome(last.metadata) : null,
     };
   });
 

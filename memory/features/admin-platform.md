@@ -248,6 +248,31 @@ them would have broken those routes, not the dead one.
   read failed, so capability is `unknown` — never `unproven`. A loop whose
   runtime is `ok` and whose capability is `unproven` must never render as
   healthy.
+- **A heartbeat's free text is not necessarily an error, and a heartbeat row is
+  not necessarily a stage run.** `background_job_logs.error_message` is the only
+  free-text column a stage has, so a run that SUCCEEDS and wants to explain
+  itself writes there; `data/selfheal.ts` and `data/jobs.ts` therefore split it
+  into `lastError` (only when the run classified `failed` or `degraded`) and
+  `lastNote`. The table is also open — a human at a psql prompt produces
+  `status = 'completed'` exactly like a stage does — so
+  `selfheal-provenance.ts` classifies each run as `autonomous`,
+  `operator-assisted` or `instrument-probe` from the strings the runs recorded,
+  and carries the basis with the verdict. An unrecognised shape degrades to
+  `autonomous` with a null basis and renders NO chip: the classifier detects a
+  run that ANNOUNCED human involvement and cannot detect one that stayed quiet.
+- **Late is not overdue.** `classifyCronStatus` only calls a stage overdue at
+  `cadenceMinutes * 1.5`, measured from `started_at`. `SelfHealStageDetail`
+  carries `overdueAt` so the view stops re-deriving that multiplier, and
+  `deriveSchedulePosition` draws the window the classifier actually measures —
+  a stage past its expected time but short of the threshold reads "late by 4h,
+  not yet overdue" rather than as a bare past timestamp under "Next expected".
+- **The Flight Recorder's two axes are never summed.** Instrumentation coverage
+  (how much of the declared pipeline has call sites wired to the recorder) and
+  outcome (whether the work succeeded) are independent. Measured 2026-09-01, 46
+  of 50 production traces miss declared-required steps while 40 of those
+  succeeded — a short trace is not a failed one, and a combined "46 problems"
+  figure would be false. `trace-fleet.ts` counts them separately;
+  `stepCoverage` returns null rather than inventing a denominator.
 - **Reliability is a lens, not a second queue.** `/admin/reliability` keeps
   source health, the blind-source notice, the severity mix, run history and
   the raw snapshot — removing those was never the goal. What it must not do

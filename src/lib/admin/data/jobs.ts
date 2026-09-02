@@ -308,18 +308,27 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     const result = selfHealRuns[i];
     const unreadable = Boolean(result?.error);
     const last = (result?.data?.[0] ?? null) as BackgroundJobLogRow | null;
+    const status = unreadable
+      ? ('never-ran' as const)
+      : classifySelfHealStage(
+          stage,
+          last ? { started_at: last.started_at, status: last.status, metadata: last.metadata } : null,
+          now,
+        );
+    // Same split, same reason as `data/selfheal.ts` — a completed run's
+    // `error_message` is a note, not a fault. Applied here too because this
+    // module builds the SAME `SelfHealStageRow` for the /admin/jobs panel, and
+    // a split that only one of the two producers performs is a split that
+    // stops holding the moment a reader switches tabs.
+    const isFault = status === 'failed' || status === 'degraded';
+    const freeText = last?.error_message ?? null;
     return {
       ...stage,
-      status: unreadable
-        ? 'never-ran'
-        : classifySelfHealStage(
-            stage,
-            last ? { started_at: last.started_at, status: last.status, metadata: last.metadata } : null,
-            now,
-          ),
+      status,
       lastRunAt: last?.started_at ?? null,
       lastRunStatus: last?.status ?? null,
-      lastError: last?.error_message ?? null,
+      lastError: isFault ? freeText : null,
+      lastNote: isFault ? null : freeText,
       unreadable,
     };
   });

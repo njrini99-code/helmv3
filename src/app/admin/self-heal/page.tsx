@@ -14,7 +14,13 @@ import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
-import { SelfHealCircuit, RunHistoryHeatmap, VERDICT_TONE, formatStageAge } from './_components/SelfHealCircuit';
+import {
+  SelfHealCircuit,
+  RunHistoryHeatmap,
+  VERDICT_TONE,
+  formatStageAge,
+  deriveSchedulePosition,
+} from './_components/SelfHealCircuit';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,6 +126,13 @@ function ThroughputPipeline({ evidence }: { evidence: CapabilityEvidence }) {
  * ------------------------------------------------------------------------- */
 
 function LocalRunnerStage({ stage }: { stage: SelfHealStageDetail }) {
+  const schedule = deriveSchedulePosition(
+    stage.lastRunAt,
+    stage.nextExpectedAt,
+    stage.overdueAt,
+    Date.now(),
+  );
+
   return (
     <div className="rounded-fw-md bg-surface-sunken p-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -139,6 +152,16 @@ function LocalRunnerStage({ stage }: { stage: SelfHealStageDetail }) {
             {stage.nextExpectedAt ? <LocalTime iso={stage.nextExpectedAt} variant="datetime" /> : '—'}
           </dd>
         </div>
+        {/* The same framing the circuit's cards carry. A bare future-or-past
+            timestamp under "Next expected" is the thing that read as a fault
+            when the classifier had found none — stating the phase in words
+            here keeps this block and the circuit telling one story. */}
+        {schedule ? (
+          <div className="flex items-baseline justify-between gap-2">
+            <dt className="text-warm-500">Schedule</dt>
+            <dd className="min-w-0 text-right text-warm-600">{schedule.label}</dd>
+          </div>
+        ) : null}
         <div className="flex items-baseline justify-between gap-2">
           <dt className="text-warm-500">Contract</dt>
           <dd className="min-w-0 break-all text-right font-fw-mono text-warm-600">{stage.contract}</dd>
