@@ -1,5 +1,82 @@
 # Admin Platform test ledger
 
+## 2026-09-02 — second audit of `agent/fix-bridge-errors`
+
+- SHA: recorded on merge of `agent/fix-bridge-errors`.
+- New: `src/test/observability/instrumentation-register.test.ts` (3 —
+  `register()` resolves only after the start-up report has, never rejects
+  because of it, and the process handlers are not held behind it; runtime
+  `edge` runs no report).
+- Extended, each red before its fix: `emit-throttle.test.ts` (`releaseEmit`
+  ×3), `credentials.test.ts` (a write that does not land — rejected, timed
+  out, failed inside the `after()` task — does not consume the window; one
+  that lands does ×4), `schedule-bridge-write.test.ts` (awaited fallback
+  registers with `waitUntil`; the `after()` path does not ×2),
+  `integration-health-scheduling.test.ts` (resolves only after the awaited
+  write settled) and `integration-health.test.ts` (async contract),
+  `durable-collapse.test.ts` (guard on the count read / on absence, re-read
+  and retry once on a miss, fail open on a second miss ×4),
+  `server-error-logger-bridge.test.ts` (fake client grew the guarded
+  `update().eq().eq|is().select()` chain).
+
+## 2026-09-01 — error pipeline: scheduling, durable collapse, Inngest credentials, honest badge, aliases, shapes
+
+- SHA: recorded on merge of `agent/fix-bridge-errors`.
+- New: `src/lib/admin/__tests__/schedule-bridge-write.test.ts` (8),
+  `src/lib/admin/__tests__/durable-collapse.test.ts` (8),
+  `src/lib/observability/__tests__/vercel-wait-until.test.ts` (2),
+  `src/lib/observability/__tests__/register-process-error-handlers.test.ts` (7),
+  `src/lib/admin/__tests__/observed-action-scheduling.test.ts` (3),
+  `src/test/lib/admin/integration-health-scheduling.test.ts` (2),
+  `src/lib/inngest/__tests__/credentials.test.ts` (9),
+  `src/lib/inngest/__tests__/is-inngest-configured.test.ts` (4),
+  `src/lib/admin/__tests__/feature-aliases.test.ts` (17),
+  `src/lib/admin/__tests__/credential-shape.test.ts` (26),
+  `src/test/scripts/check-helm-bridge-env.test.ts` (5 — spawns the real
+  script in an env-file-free directory).
+- Extended: `server-error-logger-bridge.test.ts` (durable collapse ×5, Sentry
+  title/fingerprint ×4, alias continuity), `bridge-honest-failure.test.ts`
+  (badge resolves `null`), `admin-shell-health-badge.test.tsx` (unknown chip
+  ×3), `inngest-signature-diagnosis.test.ts` (missing key named as MISSING,
+  silent off production), `use-presence.test.tsx` (value-shaped RPC failure
+  reaches `logError`; success does not), `admin-logger-bridge.test.ts`
+  (sport/feature tags; `bridge_write_failed` capped at 5/min; PGRST205 stays
+  a warning), `vercel-api.test.ts` (negative cache ×2; 11-char token
+  unconfigured), `sentry-api.test.ts` / `vercel-api.test.ts` fixtures moved to
+  well-formed tokens because the old short fixtures are exactly what the
+  shape validators now reject.
+- Guarantees now covered:
+  - **An error-path Bridge write is handed to `after()` in a request scope
+    and AWAITED under a bound elsewhere — never dropped.** Verified both
+    directions: with `after()` mocked to capture, the logger is not called
+    inline and IS called when the captured task runs; with `after()` throwing,
+    the logger is called synchronously and a hung write resolves at the
+    timeout.
+  - **Correlation survives deferral.** The task re-enters the caller's
+    request-context scope; `getRequestId()` inside it equals the caller's.
+  - **A provider fault inside 15 minutes of an open row bumps
+    `metadata.metadata.collapsed_count` (plus the throttle's own count) and
+    writes NOTHING to either table; an unreadable lookup or failed update
+    inserts as before.** Non-provider codes never look; opt-in/out honoured.
+  - **Process-level handlers await the write (resolve after
+    `logServerException` settles), time out at 3s, hand the promise to the
+    Vercel `waitUntil` when present, and rate-limit at 20/min while Sentry
+    still sees every one.**
+  - **A missing/malformed Inngest key in production writes ONE throttled row
+    with `provider_inngest_missing_credential` on `integrations`, naming the
+    variable and never the value; off production it writes nothing; the
+    route names it MISSING and still returns the SDK's own 500.**
+  - **`fetchBridgeErrorBadge` resolves `null` when the feed read throws;
+    `AdminShell` renders no numeric badge plus the "unreadable" chip for
+    `null`, and no chip for 0 or a positive count.**
+  - **Every alias resolves to a registered key and none shadows one; `crm`
+    and `lifting-onboarding` are asserted NOT aliased; an explicit `feature`
+    is aliased exactly like a `featureArea`.**
+  - **Eight 11-character placeholders fail every shape check; the script
+    exits 1 on them, 0 on well-formed values, skips on nothing-set under
+    `--drift`, and fails `--drift` on a placeholder.** Output never contains
+    the value.
+
 ## 2026-08-27 — resolution lifecycle, severity single-source, cn() token drift
 
 - SHA: recorded on merge of `feat/bridge-shot-tracing`.
@@ -341,3 +418,54 @@
 - `src/lib/reliability/__tests__/resolution.test.ts` drops the archive-branch
   cases with the branch itself and gains two for `planReopens`: a fault never
   claimed fixed cannot regress, and each fault matches its OWN resolution.
+
+## 2026-09-01 — self-heal flow and the Errors page
+
+- `src/lib/admin/__tests__/selfheal-flow.test.ts` (new, 30 cases): the stall
+  threshold is `STALL_CYCLES` × the registry cadence, never a literal; a
+  `new`/`diagnosing` incident stalls at Diagnose exactly past the threshold
+  and not one millisecond before; "analysis exists, repair lookup failed"
+  is `unknown`, never a Diagnose stall; a `repairing` incident never stalls;
+  Close's wait starts at deploy + `PRODUCTION_PROOF_WINDOW_MS` and cannot be
+  measured (so cannot stall) without a deploy time; every off-loop lifecycle
+  state maps to its position with no stage; `summarizeFlow` counts per stage
+  in registry order and reports unplaced incidents separately;
+  `selectStalled` orders longest wait first; `describeFlow` names where the
+  stalls are and reads "idle", never an all-clear, on an empty board.
+- `lens.test.ts` gains the `stalled` lens (judged against `computedAt`; a
+  failed repair read is never stalled), the `awaiting-proof` blindness
+  exclusion, and `countLensesForKind` agreeing with `applyIncidentFacets` for
+  every lens under every kind.
+- `attention.test.ts`: `ATTENTION_PRIORITY` contract and sort updated for
+  `stage-stalled`; new cases pin that it outranks `repairable-untouched` for
+  the same incident, never fires on `repair.status === 'unknown'`, and gives
+  a twice-skipped `new` incident the row that state otherwise lacks.
+- `truth-strip.test.ts`: the self-heal cell escalates `ok` to `N STALLED`
+  (warning, linking to the stalled lens), never softens `danger`, keeps
+  PROVEN when work is inside its cycles, carries the backlog when the
+  heartbeats are unreadable, and is byte-identical without `flow`.
+- `error-trend.test.ts` (new): the hourly fold reproduces bucket timestamps
+  from the builder's own clock and returns `[]` for no buckets;
+  `describeWindowDelta` refuses a percentage against a zero prior window and
+  reports unreadable as `unknown`.
+- `error-code-hint.test.ts` (new): known codes, the shared provider-fault
+  hint, and `null` for unknown codes.
+- `unified-incident-card.test.tsx` gains the feature tag (registry label, not
+  key; "untagged" out loud; unregistered key rendered as itself), the sport
+  word, the lifecycle headline, and the details disclosure (code hint, source
+  health word, lifecycle checks with their status word). The Details panel
+  deliberately omits route, action, event and user counts — the row already
+  carries them, and the pre-existing `getByText` assertions caught the
+  duplication first.
+- `errors-filter-bar.test.tsx` (new): groups with label and hint, pressable
+  pills with `aria-pressed`, navigation to the server-computed href, active
+  filters summarised in words each with a clear link, open-by-default only
+  when a filter is active.
+- Verified on the worktree: `vitest --project unit` over
+  `src/lib/admin/incidents`, `selfheal-flow`, `error-trend`, `data/errors`,
+  `incident-count-agreement` (16 files / 251 tests, exit 0 before the last
+  two new files were added); `vitest --project unit-dom src/app/admin`
+  (34 files / 236 tests after the `TriageQueue` default fix); typecheck exit
+  0 before the Errors page rewrite, re-run after it (result recorded in the
+  PR). The page test (`errors/__tests__/page.test.tsx`) covers
+  `loadErrorsPageData` only, by design, and is unchanged.

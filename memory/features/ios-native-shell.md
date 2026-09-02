@@ -64,9 +64,25 @@ Live Activity — each gated behind a capability entry when its binary lands. Re
 - All haptic paths must honor the user's haptics preference at the shared
   gate in `triggerHaptic`.
 - Push tokens are persisted only after an authenticated session exists.
+- The keyboard never resizes the WebView (`resize: 'ionic'` with no
+  `<ion-app>`), and Mobile Safari never resizes its layout viewport. The ONLY
+  keyboard contract is the pair `CapacitorProvider` publishes —
+  `--keyboard-height` and `body.keyboard-open` — from native
+  `keyboardWillShow/Hide`, and since 2026-09-02 from `visualViewport` on the
+  web (coarse-pointer only; pinch-zoom is gated out by `scale`). Consumers:
+  `<body>` pads by the keyboard height (globals.css) so a focused field on any
+  page — shell or not — can be scrolled above it; a surface that lays itself out against the height
+  instead (`FairwayMessages`) carries `data-fw-keyboard-aware`, which tells the
+  provider's scroll-into-view to leave it alone. Contract test:
+  `src/components/fairway/app-shell/__tests__/keyboard-inset.test.ts`.
 
 ## Tests
 
 - `src/test/lib/native-capabilities.test.ts` — capability bridge contract.
 - `src/test/lib/haptics-pref.test.ts` — preference gate.
 - `src/test/lib/push-registration-pending-token.test.ts` — token parking.
+- `src/components/fairway/overlays/keyboard-inset.test.ts` — every overlay
+  edge that touches the bottom of the screen (`Sheet` bottom/left/right,
+  `ModalShell`, the CoachHelm phone drawer) lifts by `--keyboard-height` and
+  carries `data-fw-keyboard-aware`; the WebView never resizes for the keyboard
+  (audit 2026-09-02: 27 sheets/modals carry text inputs).

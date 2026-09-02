@@ -105,6 +105,26 @@ export function CoachHelmChat({
     }
   }, [chat.messages, chat.busy]);
 
+  // Keep the newest answer in view when the transcript's own box changes
+  // height — the phone drawer lifts by --keyboard-height when the composer is
+  // tapped, and scrollTop does not follow, so a transcript that was at its
+  // bottom would show the middle of the last answer at exactly the moment
+  // the coach starts typing. Near-bottom is judged with the height from
+  // BEFORE the change; a coach scrolled up into history is left alone.
+  React.useEffect(() => {
+    const el = scroller.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    let lastHeight = el.clientHeight;
+    const observer = new ResizeObserver(() => {
+      const previousHeight = lastHeight;
+      lastHeight = el.clientHeight;
+      if (el.clientHeight === previousHeight) return;
+      if (el.scrollTop + previousHeight >= el.scrollHeight - 160) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const composer = (
     <PromptComposer
       onSend={chat.send}

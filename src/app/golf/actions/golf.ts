@@ -28,6 +28,7 @@ import { formatSafeErrorResponse, CommonSchemas } from '@/lib/validation/server-
 import { notifyQualifierCreated } from '@/lib/notifications';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
+import { roundStage, classifyAutosaveOutcome, OPERATION } from '@/lib/observability/spans';
 import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
 // 2026-05-17: CoachHelm trigger now runs via after(postRoundTrigger) — see
 // docs/architecture/coachhelm-evidence-contract.md and Plan 04. The previous
@@ -2232,16 +2233,23 @@ async function submitGolfRoundComprehensiveImpl(
       // Use atomic RPC — wraps entire submit in a single transaction
       void flightRecorder.start('db.submit_round_atomic');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
+      const { data: rpcResult, error: rpcError } = await roundStage<{ data: any; error: any }>(
         'submit_round_atomic',
         {
-          p_round_id: existingRoundId,
-          p_round_data: { ...roundData, ...helmTracePayload(flightRecorder.traceId) },
-          p_holes: holesPayload,
-          p_shots: shotsPayload,
-          p_putt_details: puttDetailsPayload,
-          p_approach_details: approachDetailsPayload,
-        }
+          holes_count: holesPayload.length,
+          shots_count: shotsPayload.length,
+          existing_round: true,
+        },
+        () =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any).rpc('submit_round_atomic', {
+            p_round_id: existingRoundId,
+            p_round_data: { ...roundData, ...helmTracePayload(flightRecorder.traceId) },
+            p_holes: holesPayload,
+            p_shots: shotsPayload,
+            p_putt_details: puttDetailsPayload,
+            p_approach_details: approachDetailsPayload,
+          })
       );
 
       if (rpcError) {
@@ -2441,16 +2449,23 @@ async function submitGolfRoundComprehensiveImpl(
       // The stats trigger fires AFTER all hole data exists.
       void flightRecorder.start('db.submit_round_atomic');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
+      const { data: rpcResult, error: rpcError } = await roundStage<{ data: any; error: any }>(
         'submit_round_atomic',
         {
-          p_round_id: newRound.id,
-          p_round_data: { ...roundData, ...helmTracePayload(flightRecorder.traceId) },
-          p_holes: holesPayload,
-          p_shots: shotsPayload,
-          p_putt_details: puttDetailsPayload,
-          p_approach_details: approachDetailsPayload,
-        }
+          holes_count: holesPayload.length,
+          shots_count: shotsPayload.length,
+          existing_round: false,
+        },
+        () =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any).rpc('submit_round_atomic', {
+            p_round_id: newRound.id,
+            p_round_data: { ...roundData, ...helmTracePayload(flightRecorder.traceId) },
+            p_holes: holesPayload,
+            p_shots: shotsPayload,
+            p_putt_details: puttDetailsPayload,
+            p_approach_details: approachDetailsPayload,
+          })
       );
 
       if (rpcError) {
@@ -2632,7 +2647,11 @@ async function submitGolfRoundComprehensiveImpl(
     const backgroundRoundId = round.id;
     after(async () => {
       try {
-        const cacheResult = await invalidateOnRoundComplete(cachePlayerId, cacheRoundId);
+        const cacheResult = await roundStage(
+          'post_submit_stats',
+          { round_id: cacheRoundId, player_id: cachePlayerId, holes_count: cacheHolesCount, shots_count: cacheShotsCount },
+          () => invalidateOnRoundComplete(cachePlayerId, cacheRoundId),
+        );
         if (cacheResult.warnings.length > 0) {
           await logServerError(
             `Stats cache warnings after round submit: ${cacheResult.warnings.join(' | ')}`,
@@ -6913,10 +6932,21 @@ async function savePartialRoundImpl(
       }
 
       void flightRecorder.start('db.save_partial_round_atomic');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
-        'save_partial_round_atomic',
-        rpcParams
+      const { data: rpcResult, error: rpcError } = await roundStage<
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { data: any; error: any }
+      >(
+        'autosave',
+        {
+          [OPERATION]: 'save_partial_round_atomic',
+          round_id: existingRoundId,
+          holes_count: holesPayload.length,
+          shots_count: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
+          save_reason: 'auto',
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        () => (supabase as any).rpc('save_partial_round_atomic', rpcParams),
+        classifyAutosaveOutcome,
       );
 
       if (rpcError) {
@@ -8686,7 +8716,26 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
     // Resilient, not raw — a transient GoTrue blip must not read as a
     // sign-out mid-round (A5, 2026-09-02). See getUserResilient's header.
     const { user } = await getUserResilient(supabase);
+    // #1728 reconciled with A5 at the merge (2026-09-02): getUserResilient
+    // absorbs a blip (one retry, then the local-session fallback) but does
+    // not expose WHY it still came back empty, and that null conflates
+    // "GoTrue ruled against the session" with "GoTrue never ruled". Re-read
+    // the raw error once — on this null path only, so the signed-in path
+    // stays a single call — to keep the honest 'retry' sentence below.
+    const authCheckError = user ? null : (await supabase.auth.getUser()).error;
     if (!user) {
+      // See isTransientAuthCheckFailure. A destructive edit must not be reported as a sign-out when GoTrue was
+      // merely unreachable. The shot is still there; the only honest answer is
+      // 'retry'.
+      if (isTransientAuthCheckFailure(authCheckError)) {
+        void logServerError('Delete-shot auth check failed in transit (NOT a session expiry) — retryable', {
+          action: 'deleteShot',
+          featureArea: 'shot_tracking',
+          errorDetails: authCheckError?.message,
+          extra: { authStatus: authCheckError?.status ?? null },
+        }, 'warning');
+        return { success: false, error: 'Could not verify your session — check your connection and try again. Your shot was not deleted.' };
+      }
       return { success: false, error: 'You must be signed in' };
     }
 
@@ -8864,7 +8913,25 @@ async function updateShotImpl(
     // Resilient, not raw — a transient GoTrue blip must not read as a
     // sign-out mid-round (A5, 2026-09-02). See getUserResilient's header.
     const { user } = await getUserResilient(supabase);
+    // #1728 reconciled with A5 at the merge (2026-09-02): getUserResilient
+    // absorbs a blip (one retry, then the local-session fallback) but does
+    // not expose WHY it still came back empty, and that null conflates
+    // "GoTrue ruled against the session" with "GoTrue never ruled". Re-read
+    // the raw error once — on this null path only, so the signed-in path
+    // stays a single call — to keep the honest 'retry' sentence below.
+    const authCheckError = user ? null : (await supabase.auth.getUser()).error;
     if (!user) {
+      // See isTransientAuthCheckFailure. The player is mid-round correcting a shot. Telling them to sign in costs
+      // them the edit for a failure that never reached the auth server.
+      if (isTransientAuthCheckFailure(authCheckError)) {
+        void logServerError('Update-shot auth check failed in transit (NOT a session expiry) — retryable', {
+          action: 'updateShot',
+          featureArea: 'shot_tracking',
+          errorDetails: authCheckError?.message,
+          extra: { authStatus: authCheckError?.status ?? null },
+        }, 'warning');
+        return { success: false, error: 'Could not verify your session — check your connection and try again. Your change was not saved.' };
+      }
       return { success: false, error: 'You must be signed in' };
     }
 
@@ -9138,8 +9205,20 @@ async function getRoundShotDetailsImpl(
     const supabase = await createClient();
 
     // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authCheckError } = await supabase.auth.getUser();
     if (!user) {
+      // See isTransientAuthCheckFailure. A read, so nothing is at risk but the screen. Still worth separating: a
+      // transit blip rendering as 'Not authenticated' is what sent players to
+      // the login screen mid-round on 2026-08-19.
+      if (isTransientAuthCheckFailure(authCheckError)) {
+        void logServerError('Round shot-review auth check failed in transit (NOT a session expiry) — retryable', {
+          action: 'getRoundShotDetails',
+          featureArea: 'shot_tracking',
+          errorDetails: authCheckError?.message,
+          extra: { authStatus: authCheckError?.status ?? null },
+        }, 'warning');
+        return { success: false, error: 'Could not verify your session — check your connection and try again.' };
+      }
       return { success: false, error: 'Not authenticated' };
     }
 

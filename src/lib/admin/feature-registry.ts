@@ -942,11 +942,20 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'so confirm liveness in the Inngest dashboard (app synced, recent runs) ' +
       'rather than inferring it from an empty error list.',
     knownGaps: [
-      'No success signal is recorded, so a working integration and a ' +
-        'disconnected one look identical from admin_events alone.',
+      'No PASSIVE success signal is recorded, so a working integration and a ' +
+        'disconnected one look identical from admin_events alone. The active ' +
+        'probe `node scripts/inngest-health-check.mjs` (#1726) proves accepted ' +
+        'AND executed on demand; nothing schedules it.',
       'UNSIGNED requests (scanners, uptime checks, curl) are robot noise and ' +
         'are already handled in route.ts — do not read them as this feature ' +
         'failing.',
+      'A MISSING or malformed INNGEST_SIGNING_KEY / INNGEST_EVENT_KEY in ' +
+        'production is reported here as provider_inngest_missing_credential ' +
+        '(src/lib/inngest/credentials.ts) at process start, on every skipped ' +
+        'send and on every signed inbound request — one incident, throttled. ' +
+        'Silence is still not health: with only that one fingerprint the ' +
+        'med tier lands on AMBER, which is the honest reading of "one known ' +
+        'fault"; RED needs the fault to persist across two 24h windows.',
     ],
   },
   // ── BaseballHelm (48) ───────────────────────────────────────────────────
@@ -1690,6 +1699,45 @@ export const FEATURE_AREA_ALIASES: Readonly<Record<string, FeatureKey>> = {
   // approximation that is strictly better than unregistered — not a claim of
   // per-action precision.
   coachhelm: 'coachhelm_ai_engine',
+  // ── Measured 2026-09-01: every key below had admin_events rows in the prior
+  // 30 days and was counted against NOTHING, because resolveFeatureKey only
+  // aliased `featureArea` and never `feature`, and none of these were listed.
+  // Each target is the registry entry whose action manifest owns the emitting
+  // file — read off this file, not guessed.
+  //
+  // src/app/api/cron/event-reminders/route.ts, src/lib/calendar/conflicts.ts,
+  // src/app/golf/actions/event-documents.ts (12 sites; event-documents.ts is
+  // in calendar_events' manifest).
+  calendar: 'calendar_events',
+  // src/app/golf/actions/insight-delivery.ts and player-fingerprint.ts — both
+  // in coachhelm_ai_engine's manifest.
+  insights: 'coachhelm_ai_engine',
+  // src/app/api/coachhelm/v3/chat/stream/route.ts. The V3 LLM layer
+  // (src/lib/coachhelm/v3/llm/**) is engine internals shared by chat and
+  // review; the engine is the umbrella owner, as for `coachhelm` above.
+  coachhelm_chat: 'coachhelm_ai_engine',
+  // Historical rows only — no current emitter. golf_insight_effectiveness is
+  // coachhelm_analytics' primary and heartbeat table.
+  coachhelm_effectiveness: 'coachhelm_analytics',
+  // src/app/golf/join/[code]/page.tsx, src/app/golf/(onboarding)/coach/pending/
+  // page.tsx, teams.validateGolfPlayerCanJoinTeam — all the join flow, and
+  // validateGolfPlayerCanJoinTeam is in join_team_flow's manifest.
+  teams: 'join_team_flow',
+  // src/app/golf/actions/insights.ts (verifyRoundAccess) and golf.ts
+  // (getPlayerTeamId) — round-scoped reads.
+  rounds: 'round_tracking',
+  //
+  // DELIBERATELY NOT ALIASED, and why:
+  //   crm                — src/app/golf/actions/crm-*.ts. The owner directive on
+  //                        crm_recruiting_pipeline is that CRM is never wrapped,
+  //                        tagged, or shown on the Bridge (memory/registry.yml).
+  //                        Aliasing it onto the registry key would tag it.
+  //   lifting-onboarding — src/app/lifting/actions/onboarding.ts (Helm Lifting
+  //   lifting_onboarding   Lab, helm_lifting_* tables). Lift Lab has NO entry in
+  //                        this registry; baseball_lift_onboarding maps a
+  //                        different file (baseball/actions/lift-onboarding.ts).
+  //                        It stays visible as unregistered until a Lift Lab
+  //                        feature is added to FEATURE_COVERAGE.md and here.
 };
 
 /** Every canonical key, for membership tests. */
@@ -1700,17 +1748,25 @@ export const FEATURE_KEYS: ReadonlySet<string> = new Set(
 /**
  * The one place the canonical feature column is decided.
  *
- * Order matters: an explicit `feature` always wins, then a known alias, then a
- * `featureArea` that happens to already BE a registry key, then the raw value
- * (so a new tag stays visible as "unregistered" rather than vanishing).
+ * Order matters: an explicit `feature` wins over `featureArea`; whichever is
+ * used is passed through the alias table; a value that is already a registry
+ * key is returned as-is; and an unknown value comes back raw (so a new tag
+ * stays visible as "unregistered" rather than vanishing).
+ *
+ * `feature` used to bypass the alias table entirely ("an explicit feature
+ * always wins" — returned untouched). Measured 2026-09-01, that let
+ * `feature: 'coachhelm_chat'` and friends land unregistered while the SAME
+ * strings passed as `featureArea` would have been aliased.
  */
 export function resolveFeatureKey(
   feature: string | null | undefined,
   featureArea: string | null | undefined,
 ): string | null {
-  if (feature) return feature;
-  if (!featureArea) return null;
-  return FEATURE_AREA_ALIASES[featureArea] ?? featureArea;
+  const explicit = feature?.trim();
+  if (explicit) return FEATURE_AREA_ALIASES[explicit] ?? explicit;
+  const area = featureArea?.trim();
+  if (!area) return null;
+  return FEATURE_AREA_ALIASES[area] ?? area;
 }
 
 export const TABLE_TO_FEATURE: Readonly<Record<string, FeatureKey>> = (() => {

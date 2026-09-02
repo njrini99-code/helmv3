@@ -5,8 +5,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { check, Status } from '../result.mjs';
+import { coverage } from '../../check-vercelignore-coverage.mjs';
 
-export const meta = { id: 'config', title: 'Scripts, Supabase root, deploy model' };
+export const meta = { id: 'config', title: 'Scripts, Supabase root, deploy model, Vercel upload' };
 
 export async function run(ctx) {
   const out = [];
@@ -55,6 +56,33 @@ export async function run(ctx) {
       );
     } catch (err) {
       out.push(check('config.vercel-json', Status.FAIL, 'vercel.json is not valid JSON', { detail: String(err) }));
+    }
+  }
+
+  // 4. Vercel upload coverage. `.vercelignore` REPLACES the default ignore
+  // set, so every secret-bearing gitignored path must be named there too —
+  // the .env family shipped in every upload until #1714 because nothing
+  // asserted this. The list of paths lives in the manifest (vercel.must_ignore);
+  // the matcher lives in scripts/check-vercelignore-coverage.mjs, which is also
+  // the CI step (`npm run check:vercelignore`). One list, one matcher.
+  const mustIgnore = manifest?.vercel?.must_ignore ?? [];
+  if (mustIgnore.length) {
+    const viPath = join(repoRoot, '.vercelignore');
+    if (!existsSync(viPath)) {
+      out.push(check('config.vercelignore-coverage', Status.FAIL, '.vercelignore is missing — the manifest names paths that must be kept out of the Vercel upload', {
+        expected: `${mustIgnore.length} path(s) excluded`,
+        source: 'config/repo/manifest.yml (vercel.must_ignore)',
+      }));
+    } else {
+      const r = coverage(mustIgnore, readFileSync(viPath, 'utf-8'));
+      out.push(
+        r.uncovered.length === 0
+          ? check('config.vercelignore-coverage', Status.PASS, `.vercelignore covers all ${mustIgnore.length} paths that must never upload`)
+          : check('config.vercelignore-coverage', Status.FAIL, `${r.uncovered.length} path(s) the manifest forbids from the Vercel upload are NOT excluded by .vercelignore`, {
+              evidence: r.uncovered,
+              source: 'config/repo/manifest.yml (vercel.must_ignore)',
+            }),
+      );
     }
   }
 

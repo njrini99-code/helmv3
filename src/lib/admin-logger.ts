@@ -5,6 +5,7 @@
  * Events are stored in admin_events table and streamed via Supabase Realtime.
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
@@ -45,6 +46,54 @@ const ACTIVITY_RECORD_EVENT_TYPES: ReadonlySet<AdminEventType> = new Set([
   'round_submitted',
   'security',
 ]);
+
+/**
+ * Ceiling on `bridge_write_failed` Sentry alerts from this writer — the same
+ * shape and reason as server-error-logger.ts's BRIDGE_WRITE_FAILURE_ALERT_LIMIT.
+ * This module used to `console.error` a failed insert and return null, which
+ * meant a Supabase outage under the activity feed produced an unbounded
+ * stream of console-integration issues with `[object Object]` titles and no
+ * counterpart to the stably-grouped `bridge_write_failed` the error logger
+ * emits. One stable issue, capped, is what an operator can act on.
+ */
+const BRIDGE_WRITE_FAILURE_ALERT_LIMIT = 5;
+let bridgeWriteFailureWindowStart = Date.now();
+let bridgeWriteFailureCount = 0;
+
+function allowBridgeWriteFailureAlert(): boolean {
+  const now = Date.now();
+  if (now - bridgeWriteFailureWindowStart > 60_000) {
+    bridgeWriteFailureWindowStart = now;
+    bridgeWriteFailureCount = 0;
+  }
+  bridgeWriteFailureCount += 1;
+  return bridgeWriteFailureCount <= BRIDGE_WRITE_FAILURE_ALERT_LIMIT;
+}
+
+/** Never recurses into logServerError — the Bridge cannot depend on itself to notice it is failing. */
+function reportBridgeWriteFailure(eventType: AdminEventType, code: string | null, message: string): void {
+  // warn, not error: console.error is itself captured as a Sentry issue by
+  // the console integration, which is exactly the duplicate this replaces.
+  console.warn('[AdminLogger] Bridge write failed', { table: 'admin_events', eventType, code, message });
+  if (!allowBridgeWriteFailureAlert()) return;
+  try {
+    Sentry.captureMessage('bridge_write_failed', {
+      level: 'error',
+      tags: { table: 'admin_events', writer: 'admin-logger', event_type: eventType },
+      // Stable fingerprint (not per-message) so repeated failures during an
+      // outage collapse into one Sentry issue instead of fanning out.
+      fingerprint: ['bridge_write_failed'],
+    });
+  } catch {
+    // Sentry must never block this path either.
+  }
+}
+
+/** Test-only: reset the alert window. */
+export function __resetAdminLoggerAlertWindowForTests(): void {
+  bridgeWriteFailureWindowStart = Date.now();
+  bridgeWriteFailureCount = 0;
+}
 
 interface AdminEventInput {
   eventType: AdminEventType;
@@ -132,13 +181,17 @@ async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
         }
         return null;
       }
-      console.error('[AdminLogger] Failed to log event:', error);
+      reportBridgeWriteFailure(input.eventType, error.code ?? null, error.message ?? String(error));
       return null;
     }
 
     return data?.id ?? null;
   } catch (err) {
-    console.error('[AdminLogger] Error logging event:', err);
+    reportBridgeWriteFailure(
+      input.eventType,
+      (err as { code?: string } | null)?.code ?? null,
+      err instanceof Error ? err.message : String(err),
+    );
     return null;
   }
 }
@@ -198,7 +251,9 @@ export async function logLogin(
 }
 
 /**
- * Log a round submission
+ * Log a round submission. Golf-only caller (submitGolfRoundComprehensive), so
+ * the sport and feature are fixed here rather than left NULL — an untagged row
+ * is counted against no feature and filtered out of every sport-scoped view.
  */
 export async function logRoundSubmitted(
   userId: string,
@@ -213,11 +268,19 @@ export async function logRoundSubmitted(
     userId,
     userEmail,
     metadata: { roundId, ...metadata },
+    sport: 'golf',
+    feature: 'round_tracking',
+    source: 'server_action',
   });
 }
 
+/** Registry key for an AI generation type; the engine is the umbrella owner for anything unlisted. */
+function aiGenerationFeature(generationType: string): FeatureKey {
+  return generationType === 'round_review' ? 'round_review_ai' : 'coachhelm_ai_engine';
+}
+
 /**
- * Log AI generation event
+ * Log AI generation event. Every caller is a golf CoachHelm surface.
  */
 export async function logAIGeneration(
   userId: string,
@@ -233,6 +296,8 @@ export async function logAIGeneration(
     userId,
     userEmail,
     metadata: { generationType, success, ...metadata },
+    sport: 'golf',
+    feature: aiGenerationFeature(generationType),
   });
 }
 

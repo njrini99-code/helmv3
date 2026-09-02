@@ -1,5 +1,115 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — second audit of `agent/fix-bridge-errors`: a throttle that outlived its write, a `void` the siblings had lost, a lost increment
+
+- SHA: recorded on merge of `agent/fix-bridge-errors` (same PR as the entry
+  below; three findings from two independent reviewers against the branch).
+- **The start-up Inngest report could silence the next one and land nothing**
+  (HIGH). `instrumentation.ts` `void`ed `reportInngestCredentialFault('startup')`
+  outside any request scope, so the write took `scheduleBridgeWrite`'s
+  awaited fallback and nothing held that promise either — on a function
+  frozen after start-up the row never landed, while `shouldEmit` had already
+  opened the 60s window and refused the next `send`/`inbound` report. Two
+  halves: `register()` now AWAITS the report (started before the
+  process-handler import, awaited after it, bounded at 2.5s, free in the
+  healthy case), and the awaited fallback in `schedule-bridge-write.ts` also
+  registers the pending write with the Vercel request context's `waitUntil`
+  (`vercel-wait-until.ts`) — the same pair `logProcessErrorToBridge` uses.
+  And a write that does not land gives the window back: `emit-throttle.ts`
+  gains `releaseEmit(key, collapsed)`; `credentials.ts` releases on a
+  rejection inside the deferred task, and on the awaited path whenever the
+  write is not known to have landed (rejection or timeout), at most once per
+  attempt.
+- **`reportIntegrationFault` still `void`ed its scheduled write** (MEDIUM)
+  while `observed-action.ts` and `job-log.ts` await theirs. It is now async
+  and awaited at all eleven call sites in `sentry-api.ts` / `vercel-api.ts`
+  (all inside async functions; the one-liner becomes
+  `failed(await reportIntegrationFault(...))`).
+- **`absorbIntoRecentEvent` computed `collapsed_count` in JS and wrote it
+  unguarded** (LOW): two lambdas reading N both wrote N+1. `admin_events` has
+  no `updated_at` and no increment RPC, so the guard is on the counter itself
+  — `.eq('metadata->metadata->>collapsed_count', <as read>)` or `.is(..., null)`
+  for a never-bumped row, `.select('id')` to see a miss, one re-read and
+  retry, then fail open (`reason: 'lost_race'`). Undercount was the only
+  exposure; a lost row never was.
+
+## 2026-09-01 — Bridge error pipeline: durable collapse, scheduled writes, a missing Inngest key made visible, an honest badge, aliasing, credential shapes
+
+- SHA: recorded on merge of `agent/fix-bridge-errors`.
+- Twelve review findings against HEAD 6a7577c71 (production fb425aa2b), fixed
+  test-first. Measured facts behind each are in the code comments; the rules
+  are in `memory/features/admin-platform.md` (Business Rules, seven new
+  bullets).
+- **Durable flood collapse** (`src/lib/admin/durable-collapse.ts`, wired into
+  `server-error-logger.ts` for every `provider_*` code; `durableCollapse`
+  opt-in/out on the context). 99 identical `provider_vercel_unavailable` rows
+  in 2h05m came from a per-PROCESS throttle on serverless. Fails open. The
+  Vercel insights reader also negative-caches its failure for 5 minutes.
+- **Scheduled, not detached, error-path writes**
+  (`src/lib/admin/schedule-bridge-write.ts`: `after()` in a request scope,
+  awaited-with-timeout otherwise; `bindRequestContext` keeps `requestId`).
+  Wired into `observed-action.ts`, `observe-action-result.ts` (now returns
+  `Promise<void>`; the three sport wrappers call it unawaited, which is safe
+  by construction — the awaited path starts the write synchronously),
+  `job-log.ts`, `integration-health.ts`. Process-level handlers now import
+  the logger statically, use the Vercel request-context `waitUntil` when
+  present (`src/lib/observability/vercel-wait-until.ts`) and await under
+  `BRIDGE_PROCESS_WRITE_TIMEOUT_MS`.
+- **A missing/malformed Inngest credential in production is a Bridge error
+  row** (`src/lib/inngest/credentials.ts`,
+  `provider_inngest_missing_credential`, feature `integrations`) from process
+  start, from every `isInngestConfigured() === false`, and from every signed
+  inbound request to `/api/inngest` (the SDK answers 500 there, never the 401
+  the route's mismatch diagnosis keys on). `isInngestConfigured()` is now
+  shape-aware. The registry entry keeps NO heartbeat, by design; its
+  `knownGaps` say why AMBER, not RED, is what one fingerprint earns.
+  **OWNER ACTION:** set `INNGEST_SIGNING_KEY` (and `INNGEST_EVENT_KEY`) in
+  Vercel Production and redeploy — 4 Sentry "no signing key found" events on
+  fb425aa2b since 14:31Z; this change reports it, it cannot fix it.
+- **Honest nav badge**: `fetchBridgeErrorBadge` returns `null` on a failed
+  read; `AdminShell` renders a distinct "Incidents unreadable" chip.
+- **Feature aliasing**: `resolveFeatureKey` aliases `feature` too; aliases
+  added for `calendar`, `insights`, `coachhelm_chat`,
+  `coachhelm_effectiveness`, `teams`, `rounds`; `budget.ts` tags
+  `coachhelm_ai_engine`. `crm` (directive) and `lifting-onboarding` (no Lift
+  Lab registry entry) deliberately left unaliased and stated as such.
+- **Sentry titles** for message-shaped traces: `ServerTrace: <code>: <summary>`;
+  fingerprint pinned to the `admin_events` fingerprint (tag
+  `bridge_fingerprint`). Existing server-trace issues will regroup once.
+- **admin-logger**: a non-PGRST205 insert failure emits the capped, stably
+  fingerprinted `bridge_write_failed` Sentry message instead of a bare
+  `console.error`; `logRoundSubmitted`/`logAIGeneration` tag sport+feature.
+- **Credential shapes** in one `.mjs` (`src/lib/admin/credential-shape.mjs`)
+  shared by `scripts/check-helm-bridge-env.mjs`, `sentry-api.ts`,
+  `vercel-api.ts`, `inngest/credentials.ts`. The script now fails on the
+  eight 11-character placeholders it used to pass; `--drift` treats a
+  placeholder as provisioned-and-wrong; DSN shape is advisory.
+- **Heartbeat 42501** (finding 3): the client hook now routes the VALUE-shaped
+  RPC failure through `logError` (feature `auth_onboarding`, severity `low`).
+  Grants verified against production 2026-09-01 via the read-only connector:
+  `public.heartbeat()` is SECURITY DEFINER, EXECUTE for `authenticated` and
+  `service_role`, NOT `anon` or PUBLIC — correct, so NO migration was written.
+  The last Sentry occurrence is 2026-08-28T14:50Z, before the `getSession()`
+  guard shipped; the fault was a dead JWT evaluated as `anon`.
+- **rca_analysis rows** (finding 9): already born resolved on HEAD
+  (`analyze-error.ts:143`), pinned by `analyze-error.test.ts:220`; the finding
+  was stale against 6a7577c71. Doc corrected to say so; no code change.
+- Verified from the worktree: `npm run typecheck` exit 0; `npm run lint` exit
+  0 (`--max-warnings 0`); vitest over the four named bridge tests plus every
+  test under `src/lib/admin/**`, `src/app/admin/**`,
+  `src/lib/observability/**`, `src/lib/inngest/**`, `src/app/api/inngest/**`
+  and the added/adjacent suites: 257 files / 3020 tests, 0 failed (255/2976
+  in the batch run + 2/44 for the two files edited last); `npm run build` —
+  see the PR body for the recorded exit.
+- NOT done, and left explicitly: the systemic 1,044-unchecked-reads class
+  (PostgREST failures returned as values) is untouched beyond the one
+  heartbeat call site; the ~21 remaining `Promise.allSettled` sites from
+  INC-2026-08-27 follow-up 2 are still not individually cleared; Lift Lab has
+  no feature-registry entry, so its rows stay visibly unregistered; the three
+  sport action wrappers still call `observeActionSoftFailure` without `void`
+  (outside this change's territory — harmless, the returned promise never
+  rejects).
+
 ## 2026-08-27 — self-healing: error resolution lifecycle, and a cron that lied
 
 - SHA: recorded on merge of `feat/bridge-shot-tracing`.
@@ -669,3 +779,42 @@ data the Feature Health board reads. Needs the local Supabase stack.
 Stale-warning correction: the W7 "★ CI NOTE" said a final polish sweep still
 owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
 0 arbitrary text-[Npx], lint exit 0. Debt already paid; warning removed.
+
+## 2026-09-01 — self-heal flow, and the Errors page reorganised around five questions
+
+- SHA: branch `agent/bridge-selfheal-flow`, PR pending.
+- **What**: `src/lib/admin/selfheal-flow.ts` — the loop's third axis
+  (throughput): every incident placed at the stage whose turn it is, stalled
+  once that stage has had two of its registry cadences to act. Surfaced as
+  the `stalled` lens, the `stage-stalled` attention reason, the Truth Strip
+  self-heal cell escalation, and a per-stage backlog strip on the Overview
+  and the Self-heal page (`SelfHealFlow.tsx`), with the stalled rows listed on
+  the Self-heal page only.
+- **Errors tab**: lens counts measured over the `?kind=` facet
+  (`countLensesForKind`); `awaiting-proof` no longer admits blind-only gaps;
+  window-over-window row counts (`appErrorRows`, `describeWindowDelta`); the
+  hourly chart falls back to the app's own buckets when Sentry's series is
+  unavailable (`sumHourlyBuckets`, `appHourlyComputedAt`); deploy markers
+  outside the plotted hours no longer paint off-axis. The page itself is
+  reorganised (queue → trends → coverage → Sentry → archive), the flat
+  parameter-name chip row is replaced by a grouped, worded, collapsible
+  filter bar (`ErrorsFilterBar`; `ErrorsFilterChips.tsx` deleted), and a
+  closed legend (`HowToReadIncidents`) sits under the header. Each row gains a
+  feature tag in registry words, the lifecycle headline, and a Details
+  disclosure (`error-code-hint.ts` supplies the code gloss).
+- **Overview**: the legacy `TriageQueue` and the Regressed panel stop
+  rendering an unconditional all-clear when Sentry is unreadable.
+- **Why**: measured on this branch's own fixtures and the explorer's map of
+  the read model — the loop reported "Healthy" with a proven history while a
+  `new` incident sat unanalysed for eight days and had no attention row at
+  all; the rail said one count while the faceted list showed another; the
+  Errors page opened with `kind: integrity_ok` as a label. Owner asked for
+  more detail per error, a feature tag, better language and better
+  organisation on the Errors page.
+- **Not done, deliberately**: `attention.ts` still has no per-incident row for
+  `lifecycle.state === 'unknown'` (a blind source is named once, per the
+  module's rule 3); `AttentionQueue` still renders ages off `Date.now()`;
+  `TriageQueue` remains the Overview's queue rather than the unified one.
+- **Verified**: see the tests ledger entry of the same date. `npm run build`
+  NOT run — the volume reported 0 GiB free at the time and a cold `.next`
+  costs up to 5.7 GiB; no `'use server'` surface changed.

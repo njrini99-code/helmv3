@@ -81,10 +81,32 @@ Writes to:
 
 ## Non-async contexts
 
-`logServerError` is async. If you're inside a `.catch(cb)` or a
-synchronous helper, use `void logServerError(...)` — it's a tracked
-fire-and-forget. The function swallows its own errors internally, so
-it's safe to detach.
+`logServerError` is async and swallows its own errors, so it cannot break a
+caller. But **do not `void` it on an error path that then returns or throws.**
+On Vercel a promise nobody awaited and nobody registered with the platform is
+dropped the moment the response is sent — the Sentry capture lands (its SDK
+flushes through the platform), the Bridge row does not. Measured 2026-09-01:
+6 process-level rejections in Sentry, 0 `admin_events` rows for `process.*`
+in 60 days.
+
+Use `scheduleBridgeWrite` from `@/lib/admin/schedule-bridge-write`:
+
+```ts
+await scheduleBridgeWrite(() => logServerError('…', { action: '…' }));
+throw err; // or return
+```
+
+Inside a request scope (server action, route handler, server component) it
+hands the write to Next's `after()` — zero latency on the error path, and the
+function stays alive until it completes. Anywhere `after()` throws (unit
+tests, module init, inside `unstable_cache`, a prerender) it AWAITS the write
+under a bounded timeout instead. It never rejects, and it re-enters the
+caller's correlation scope so `requestId` survives the deferral.
+
+Process-level handlers (`unhandledRejection`, `uncaughtException`) have no
+request scope; `src/lib/observability/register-process-error-handlers.ts`
+awaits the write under `BRIDGE_PROCESS_WRITE_TIMEOUT_MS` and registers it with
+the Vercel request context's `waitUntil` when one exists.
 
 ## Client-side errors
 

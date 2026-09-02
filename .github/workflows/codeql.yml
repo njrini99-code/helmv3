@@ -23,6 +23,16 @@ on:
   schedule:
     - cron: '35 23 * * 4'
 
+concurrency:
+  # This workflow had NO concurrency block until 2026-09-02, so every push to a
+  # PR branch queued three more Analyze jobs and the superseded ones ran to
+  # completion — ~11 runner-minutes per stale push, on the account's shared
+  # runner budget. Same shape as ci.yml: per-commit on main (every main commit
+  # keeps its verdict), per-ref with cancel on branches (a new push supersedes
+  # the old run).
+  group: codeql-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 # Least-privilege DEFAULT for the whole workflow. The `analyze` job below
 # declares its own (wider) block, which correctly overrides this — so this line
 # changes nothing about today's behaviour. It exists so a job added later
@@ -86,9 +96,20 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-          # Prefix this list with "+" to combine it with queries from a config file.
-          # Otherwise, queries listed here override any configured elsewhere.
-          queries: security-extended,security-and-quality
+          # Path scoping (tests, fixtures, archive, docs, public assets are out)
+          # lives in the config file so it is reviewable as data.
+          config-file: ./.github/codeql/codeql-config.yml
+          # `security-extended` ONLY, as of 2026-09-02. The previous value was
+          # `security-extended,security-and-quality`, and the second suite is a
+          # SUPERSET of the first — so the line was asking for every security
+          # query twice plus the code-quality pack (unused variables, useless
+          # conditionals, and the like). Those quality queries were most of the
+          # 8.5-minute JavaScript analysis on every PR, and ESLint already
+          # gates that class on the same PR (`npm run lint`, --max-warnings 0,
+          # plus the lint ratchet). Security coverage is unchanged: every query
+          # in `security-extended` still runs. Put `security-and-quality` back
+          # here if the Security tab's quality alerts are wanted again.
+          queries: security-extended
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81  # v4.37.3

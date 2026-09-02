@@ -133,19 +133,27 @@ Two rules that hold either way:
 
 - **`git add <explicit paths>`, never `git add -A`.** In a shared tree `-A`
   stages whatever another agent happens to have written.
-- **Never assume a `git checkout -b` succeeded** — but the reason has changed.
-  This checkout now sets `core.fsmonitor = false` in `.git/config` (verified
-  2026-08-19: `git config --show-origin --get-all core.fsmonitor` returns that
-  one entry and no global override). So the daemon is off, the
-  `fsmonitor_ipc__send_query: unspecified error` failure it used to cause
-  cannot occur here, and prefixing commands with `-c core.fsmonitor=false` is
-  now cargo cult — it changes nothing.
+- **Never assume a `git checkout -b` succeeded.** The historical cause was the
+  fsmonitor daemon: `fsmonitor_ipc__send_query: unspecified error` made a
+  checkout fail while looking like it had worked. Whether that can happen on
+  the checkout you are in is a `.git/config` question, and `.git/config` is
+  NOT version controlled — so do not take this file's word for it, CHECK:
 
-  Two caveats keep the underlying advice alive. `.git/config` is NOT version
-  controlled, so a fresh clone does not inherit the setting; re-run the check
-  above before relying on it. And confirming the branch you are on is cheap and
-  correct regardless of cause, because in a shared tree another agent's
-  checkout can move `HEAD` under you:
+  ```bash
+  git config --show-origin --get-all core.fsmonitor
+  ```
+
+  No output means the key is unset, which is the git default (daemon off);
+  `true` means the daemon is on and the failure is possible; `false` means it
+  was disabled explicitly. (This paragraph asserted "`core.fsmonitor = false`,
+  verified 2026-08-19" until 2026-09-01, when the command above returned
+  nothing and `.git/config` had no `[core]` section at all — the setting had
+  never travelled, or had been removed, and the prose could not tell.)
+  `scripts/deploy-prod.sh` still passes `-c core.fsmonitor=false` on its own
+  git calls, which is correct regardless of what the config says.
+
+  Confirming the branch you are on is cheap and correct regardless of cause,
+  because in a shared tree another agent's checkout can move `HEAD` under you:
   `git rev-parse --abbrev-ref HEAD` before editing anything.
 
 ### When asking IS right

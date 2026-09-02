@@ -473,3 +473,79 @@
   and `src/lib/utils/` (278 files, 3274 tests, 0 failures).
   `npm run build` deliberately not run (worktree has no `.env.local`; CI
   builds).
+
+## 2026-09-02 (Cluster C) — discard-race zombie rounds, qualifier-closed submit loop, silent backup failure
+
+- SHA: `7d05175ad` on `agent/fix-shot-tracking`. That code commit carried no
+  doc updates (flagged in its own message); these entries were added in the
+  merge commit that brought `main` (through #1737) into the branch.
+- Change (C1, medium-high, zombie rounds): tapping Discard fires
+  `deleteInProgressRound` while a checkpoint or auto-save for the SAME round
+  id can still be in flight; when the delete landed first, that save's
+  `round_missing` answer hit a branch that dropped the id and re-created the
+  round. Both round screens now hold a `roundDiscardedRef`, set synchronously
+  in `handleDeleteRound` BEFORE the delete call (cleared if the delete fails),
+  and every `round_missing` branch that would drop the id or re-create checks
+  it first — New Round's `persistCompletedHole` loop, `handleAutoSave`
+  primary and queued follow-up, `handleSaveForLater`; Continue Round's shared
+  `recreateMissingRound` and `handleSaveForLater`.
+- Change (C3, medium, submit loop): `submit_round_atomic` refuses a submit
+  into a qualifier the coach has closed with a sentence that also contains
+  "already been completed" — about the QUALIFIER — and both round screens'
+  `isCompletedRoundError` matched it as a bare substring, so
+  `redirectToCompletedRound()` sent a still-`in_progress` round to its detail
+  page, which redirected straight back to Continue Round, on every retry.
+  New `isQualifierClosedError` (`src/lib/golf/round-missing-recovery.ts`) is
+  excluded first in both screens and in `FairwayRecoverRound`; a matching
+  submit result sets `qualifierClosed`, which shows a terminal message, hides
+  "Retry submit" (B5 precedent), and offers "Save as practice round" through
+  the existing `updateRoundType` path (`reclassify_golf_round` already
+  accepts an `in_progress` round) via a new
+  `secondaryActionLabel`/`onSecondaryAction` pair on
+  `FairwayRoundSubmitOverlay` — rendered only when both are passed, so no
+  existing caller changes.
+- Change (C5, low, silent backup failure): `emergencySave` returned `false`
+  when localStorage was full or unavailable even after compacting old saves,
+  and no call site in either round screen read that boolean. It now
+  dispatches `EMERGENCY_SAVE_DEGRADED_EVENT` (`src/lib/utils/emergency-save.ts`)
+  at most once per browser session; both round screens listen and show one
+  warning toast. The IndexedDB mirror (`queueRecoverySnapshot`) already ran
+  unconditionally and is unchanged — this covers only the missing notice.
+- Merge reconcile (same commit as these entries): `main`'s #1728 gave
+  `deleteShot`/`updateShot` an `isTransientAuthCheckFailure` branch reading
+  the raw `supabase.auth.getUser()` error, while Cluster A's A5 had replaced
+  that call with `getUserResilient`, which exposes no error. Resolved by
+  keeping `getUserResilient` and re-reading the raw error only on its null
+  path, so a signed-in edit stays one auth call and a transit failure still
+  yields #1728's retry sentence; both suites
+  (`golf-shot-edit-transient-auth.test.ts`, `golf-actions-resilient-auth.test.ts`)
+  pass unchanged.
+- Not done, deliberately, and not silently: C2 — the v1 offline drain
+  (`syncV1Rounds` in `src/lib/offline/sync-engine.ts`) still auto-submits a
+  stored terminal submission unattended, with no staleness compare against
+  the server round's current holes; C4 — recovery-snapshot equivalence
+  normalisation — its red-first spec was committed by `7d05175ad` (the
+  `(C4)` describe block in `src/lib/utils/emergency-save.test.ts`, two of
+  whose cases fail against the unchanged source, despite that commit's own
+  message saying nothing was written) and is `describe.skip`ped in the merge
+  commit rather than deleted, so the follow-up starts by un-skipping it; B7
+  remainder — no
+  correction path for a round already created with a future date (see the
+  Cluster B entry above); migration D — the submit trigger fan-out (measured
+  on the local stack 2026-09-02: one submit fired 38 round updates and 38
+  player-stats recomputes) was not attempted, and this branch carries no
+  migrations.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date.
+- Verified for the merge commit, each captured to a file, exit code checked:
+  `npm run typecheck` (0), `npm run lint` (0), `npx vitest run --project
+  unit --project unit-dom` over `src/app/golf/(dashboard)/dashboard/rounds/`,
+  `src/app/golf/actions/`, `src/components/fairway/pages/rounds-new/`,
+  `src/components/fairway/pages/rounds-recover/`,
+  `src/components/fairway/pages/rounds-tracking/`, `src/hooks/golf/`,
+  `src/lib/golf/`, `src/lib/offline/`, `src/lib/utils/` and `src/lib/auth/`
+  (205 files, 2281 passed, 4 skipped — the C4 block — 0 failed),
+  `node scripts/knowledge/document-inventory.mjs --check` (0),
+  `npm run docs:path-drift` (0, 0 vs baseline 0). Not run locally:
+  `npm run build` (no `.env.local` in the worktree; CI builds),
+  `lint:ratchet`, `docs:schema-drift`, `knowledge:check` — the push CI runs
+  them.

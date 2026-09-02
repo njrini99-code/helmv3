@@ -103,6 +103,7 @@ import { buildBreadcrumbs } from '@/app/baseball/(dashboard)/_components/breadcr
 import { IconSettings, IconLogout, IconHome, IconUsers, IconCalendar, IconArrowLeft } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { teardownDeviceTokenOnSignOut } from '@/lib/utils/push-registration';
 
 // PERF: lazy-load the same heavy global the legacy BaseballDashboardShell
 // mounts unconditionally (mirrors GolfHelm's FairwayDashboardShell).
@@ -502,6 +503,11 @@ function useBaseballSignOut() {
   const { signOut } = useAuth();
 
   const handleSignOut = useCallback(async () => {
+    // BEFORE signOut (the action authenticates the caller), fire-and-forget
+    // (sign-out must never hang on token cleanup): stop this device receiving
+    // the signed-out user's pushes (M2-1). CapacitorProvider registers tokens
+    // globally, so the baseball shell shares the golf teardown.
+    teardownDeviceTokenOnSignOut();
     await signOut();
     router.push('/baseball/login');
   }, [signOut, router]);

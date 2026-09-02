@@ -4,6 +4,7 @@ import { isExpectedAuthNoise } from '@/lib/admin/data/triage';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import { EXPECTED_EMPTY_STATE_CODES } from '@/lib/view-state/expected-empty-states';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { scheduleBridgeWrite } from '@/lib/admin/schedule-bridge-write';
 // Dependency LEAF (no imports of its own) — safe to pull into this
 // 'server-only' module without dragging a graph behind it.
 import { classifyProviderFault } from '@/lib/admin/provider-fault';
@@ -297,17 +298,23 @@ export function classifySoftFailure(
 
 /**
  * Helm Bridge capture class #3 — server actions that return `{ success: false }`
- * instead of throwing. Fire-and-forget; never changes the action result.
+ * instead of throwing. Never changes the action result.
+ *
+ * Returns a promise that resolves once the Bridge write is SCHEDULED past the
+ * response (request scope) or has been awaited under a bound (elsewhere) —
+ * never rejects. Callers that cannot await it lose nothing: on the awaited
+ * path the write is started synchronously, and on the scheduled path Next
+ * owns its completion.
  */
 export function observeActionSoftFailure(
   result: unknown,
   context: ActionSoftFailureContext,
-): void {
+): Promise<void> {
   const failure = extractActionSoftFailure(result);
-  if (!failure) return;
+  if (!failure) return Promise.resolve();
 
   const throttleKey = `soft:${context.action}:${failure.code ?? failure.message.slice(0, 120)}`;
-  if (!shouldEmit(throttleKey)) return;
+  if (!shouldEmit(throttleKey)) return Promise.resolve();
 
   const collapsedCount = drainCollapsedCount(throttleKey);
   const severity = severityForSoftFailure(failure.message, failure.code);
@@ -352,17 +359,16 @@ export function observeActionSoftFailure(
     },
   };
 
-  try {
-    // logServerError's severity param intentionally excludes 'info' (that
-    // tier belongs to logServerEvent) — route empty-state outcomes there so
-    // they land in admin_events at 'info' without widening logServerError's
-    // contract for every other caller of this shared capture class.
-    const capture =
-      severity === 'info'
-        ? logServerEvent(failure.message, logContext, 'info')
-        : logServerError(failure.message, logContext, severity);
-    void Promise.resolve(capture).catch(() => {});
-  } catch {
-    // Fire-and-forget: observability must never change action results.
-  }
+  // logServerError's severity param intentionally excludes 'info' (that
+  // tier belongs to logServerEvent) — route empty-state outcomes there so
+  // they land in admin_events at 'info' without widening logServerError's
+  // contract for every other caller of this shared capture class.
+  //
+  // Scheduled, not `void`ed: observability must never change action results,
+  // and a detached promise is also one Vercel drops once the response is sent.
+  return scheduleBridgeWrite(() =>
+    severity === 'info'
+      ? logServerEvent(failure.message, logContext, 'info')
+      : logServerError(failure.message, logContext, severity),
+  ).then(() => undefined);
 }

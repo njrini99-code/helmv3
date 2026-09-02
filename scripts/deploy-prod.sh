@@ -31,6 +31,25 @@ set -euo pipefail
 # disable the daemon rather than trust a degraded cache to report honestly.
 git() { command git -c core.fsmonitor=false "$@"; }
 
+# The Vercel CLI is REPO-LOCAL. AGENTS.md: "Use repo-local platform CLIs:
+# ./node_modules/.bin/supabase and ./node_modules/.bin/vercel. Do not assume
+# global Supabase or Vercel binaries."
+#
+# This script called bare `vercel` and therefore could not run at all on a
+# machine without a global install — discovered 2026-09-01 attempting the first
+# promote of nine merged fixes, which died at "vercel: command not found" AFTER
+# passing every guard above it. A deploy script that cannot deploy is worse than
+# no deploy script: it reads as a working release path right up until you need it.
+VERCEL_BIN="./node_modules/.bin/vercel"
+if [ ! -x "$VERCEL_BIN" ]; then
+  VERCEL_BIN="$(command -v vercel || true)"
+fi
+if [ -z "$VERCEL_BIN" ] || [ ! -x "$VERCEL_BIN" ]; then
+  echo "REFUSING: no Vercel CLI found at ./node_modules/.bin/vercel or on PATH." >&2
+  echo "Run \`npm install\` (the CLI is a repo dependency)." >&2
+  exit 1
+fi
+
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 SHA="$(git rev-parse HEAD)"
 SHORT="$(git rev-parse --short HEAD)"
@@ -99,7 +118,7 @@ echo "  scope       -> $SCOPE"
 # / 96.5 MB, comfortably under the file cap, so the cap is no longer the
 # reason; the 10 MB request-body limit is, and a single tarball is what avoids
 # it. Cheap insurance against a class of failure this repo has hit three times.
-vercel deploy --prod --yes \
+"$VERCEL_BIN" deploy --prod --yes \
   --archive=tgz \
   --scope "$SCOPE" \
   --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" \
@@ -114,7 +133,7 @@ echo
 # happened. The instructions are now the implementation.
 echo "Verifying the promote actually took effect..."
 
-ALIAS_DPL="$(vercel inspect helmsportslabs.com --scope "$SCOPE" 2>&1 | awk '/^ *id\t/ {print $2; exit}')"
+ALIAS_DPL="$("$VERCEL_BIN" inspect helmsportslabs.com --scope "$SCOPE" 2>&1 | awk '/^ *id\t/ {print $2; exit}')"
 echo "  alias -> $ALIAS_DPL"
 
 HTTP="$(curl -s -o /dev/null -w '%{http_code}' https://helmsportslabs.com/ || echo 000)"
@@ -139,12 +158,26 @@ fi
 
 echo "  release stamp $SHORT found in the served bundle."
 
-# Record the VERIFIED release so the session-start hook can report drift
-# without a network call. Written only after the checks above passed, so this
-# file means "proven live", never "we ran a deploy command". Gitignored: it is
-# machine state, not repo state.
-mkdir -p .claude/session-state 2>/dev/null || true
-printf '%s\n' "$SHA" > .claude/session-state/last-verified-release 2>/dev/null || true
+# Record the VERIFIED release so the session-start hook has an offline answer.
+# Written only after the checks above passed, so this file means "proven
+# live", never "we ran a deploy command". Gitignored: it is machine state, not
+# repo state. Format: `<sha> <ISO-8601 UTC>` — the date is what lets a reader
+# see how old the claim is; the hook labels an old marker as such.
+#
+# WRITTEN TO THE CANONICAL CHECKOUT, NOT JUST THE CWD. Deploys promote from a
+# worktree pinned at the merged main SHA (AGENTS.md), and until 2026-09-01
+# this wrote only `.claude/session-state/` under the cwd — the worktree's,
+# which is retired minutes later — so the canonical marker sat at 53ae81a4c
+# while production served fb425aa2b, and every session opened with "16
+# unreleased commits" against a real figure of 1. `--git-common-dir` is the
+# shared .git from any linked worktree; its parent is the canonical root.
+STAMP="$SHA $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+CANON="$(cd "$(git rev-parse --git-common-dir)/.." 2>/dev/null && pwd -P)"
+for root in "$CANON" "$(pwd -P)"; do
+  [ -n "$root" ] && [ -d "$root" ] || continue
+  mkdir -p "$root/.claude/session-state" 2>/dev/null || true
+  printf '%s\n' "$STAMP" > "$root/.claude/session-state/last-verified-release" 2>/dev/null || true
+done
 
 echo
 echo "✅ VERIFIED LIVE: production is serving $SHORT."

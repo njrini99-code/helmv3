@@ -70,9 +70,11 @@ async function handleBash(repoRoot, sessionId, input) {
   if (featureIds.length > 0) {
     appendEvent(repoRoot, sessionId, { type: 'context_load', source: 'bash', command, feature_ids: featureIds });
   } else {
-    // Zero matches is the "acknowledged gap" signal guard-feature-context.mjs
-    // looks for — recorded per-file, `unmapped: true`, so the gate can find
-    // the exact path the session already ran knowledge:map against.
+    // Zero matches is the "acknowledged gap" signal lib/stop-check.mjs looks
+    // for (unmappedAcknowledged) — recorded per-file, `unmapped: true`, so the
+    // Stop gate can find the exact path the session already ran knowledge:map
+    // against. (An edit-time guard-feature-context.mjs used to consume this
+    // too; it no longer exists, and the Stop gate is the only reader.)
     for (const relPath of relFiles) {
       appendEvent(repoRoot, sessionId, {
         type: 'context_load',

@@ -24,6 +24,8 @@ export default async function AdminLayout({
   // M1 (bridge-chrome): the mobile bottom bar's Errors badge — a single
   // cheap COUNT (see fetchBridgeErrorBadge's doc comment), re-resolved on
   // every navigation + `router.refresh()` under this force-dynamic layout.
+  // `null` means the read failed — same rule as healthCount below: unknown
+  // must never render like zero.
   const errorCount = await fetchBridgeErrorBadge();
 
   // bridge-refit: the Health badge — count of RED features. This layout

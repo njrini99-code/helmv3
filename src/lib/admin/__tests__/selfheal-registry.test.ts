@@ -22,6 +22,7 @@ function row(over: Partial<SelfHealStageRow>): SelfHealStageRow {
     lastRunAt: null,
     lastRunStatus: null,
     lastError: null,
+    lastNote: null,
     unreadable: false,
     ...over,
   };

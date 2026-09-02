@@ -319,3 +319,42 @@ the stated reason, then implemented. Full defect descriptions in
   `src/components/fairway/pages/rounds-tracking/`, `src/hooks/golf/`,
   `src/lib/golf/`, `src/lib/offline/`, `src/lib/admin/`, `src/lib/auth/`,
   and `src/lib/utils/` (278 files, 3274 tests, 0 failures).
+
+## 2026-09-02 (Cluster C) — discard race, qualifier closed, emergency-save degraded
+
+Each written red first against the pre-fix source; defect descriptions in
+`memory/ledgers/changes/shot_tracking.md`, same date.
+
+- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.discard-race.test.ts`
+  and `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.discard-race.test.ts`
+  (C1, new): the `roundDiscardedRef` guard on every `round_missing` branch of
+  both screens.
+- `src/lib/golf/__tests__/round-missing-recovery.test.ts` (C3, extended):
+  `isQualifierClosedError` cases.
+- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.qualifier-closed.test.ts`,
+  `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.qualifier-closed.test.ts`
+  and `src/components/fairway/pages/rounds-recover/FairwayRecoverRound.qualifier-closed.test.ts`
+  (C3, new): the qualifier-closed exclusion ahead of `isCompletedRoundError`,
+  and the `qualifierClosed` state's wiring on both screens.
+- `src/components/fairway/pages/rounds-new/__tests__/FairwayRoundSubmitOverlay.secondary-action.test.tsx`
+  (C3, new, render): the `secondaryActionLabel`/`onSecondaryAction` pair.
+- `src/lib/utils/emergency-save.test.ts` (C5, extended): the
+  `EMERGENCY_SAVE_DEGRADED_EVENT` once-per-session cases.
+- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.emergency-save-degraded.test.ts`
+  and `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.emergency-save-degraded.test.ts`
+  (C5, new): both screens subscribe and show the one-time toast.
+- `src/lib/utils/emergency-save.test.ts` (C4, NOT shipped): the `(C4)`
+  describe block is the red-first spec `7d05175ad` committed ahead of a
+  source change that was never written; `describe.skip`ped in the merge
+  commit (two cases fail against the current comparison, two pass), to be
+  un-skipped by the C4 follow-up.
+- Merge reconcile, no new test: `main`'s
+  `src/app/golf/actions/__tests__/golf-shot-edit-transient-auth.test.ts` (#1728)
+  and this branch's
+  `src/app/golf/actions/__tests__/golf-actions-resilient-auth.test.ts` (A5)
+  both pass against the reconciled `deleteShot`/`updateShot`.
+- Verified for the merge commit, each captured to a file, exit code checked:
+  `npm run typecheck` (0), `npm run lint` (0), and `npx vitest run --project
+  unit --project unit-dom` over the round, shot, offline, utils and auth
+  suites listed in `memory/ledgers/changes/shot_tracking.md`, same date
+  (205 files, 2281 passed, 4 skipped — the C4 block — 0 failed).

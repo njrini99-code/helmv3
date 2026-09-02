@@ -20,6 +20,7 @@ import { INCIDENT_CLASS_ORDER } from '@/lib/admin/incident-classification';
 
 import type { IncidentLens, IncidentLensCounts, UnifiedIncident } from './types';
 import { INCIDENT_LENSES } from './types';
+import { deriveIncidentFlow } from '@/lib/admin/selfheal-flow';
 
 export function matchesLens(incident: UnifiedIncident, lens: IncidentLens): boolean {
   switch (lens) {
@@ -45,12 +46,25 @@ export function matchesLens(incident: UnifiedIncident, lens: IncidentLens): bool
       return incident.lifecycle.state === 'needs-evidence';
     case 'regressions':
       return incident.lifecycle.state === 'regressed';
+    case 'stalled':
+      // Judged against the board's OWN clock (`computedAt`), not an ambient
+      // `Date.now()`: a lens predicate has to give one answer wherever it
+      // runs, and the incident already carries the instant it was computed
+      // at. `deriveIncidentFlow` places a failed read off the loop, so an
+      // incident nobody could read can never land in this lens.
+      return deriveIncidentFlow(incident, Date.parse(incident.computedAt)).stalled;
     case 'awaiting-proof':
+      // A `source-blind` gap is not a fix awaiting proof — it is a read that
+      // failed. Admitting it here let an unreadable Sentry inflate "a fix
+      // exists, the evidence does not" with incidents that have no fix at
+      // all, and the proof-debt overflow link then pointed at a lens whose
+      // count did not match the panel's. Every other gap kind does describe
+      // work that looks solved.
       return (
         incident.lifecycle.state === 'awaiting-proof' ||
         incident.lifecycle.state === 'awaiting-deploy' ||
         incident.lifecycle.state === 'merged' ||
-        incident.proofGaps.length > 0
+        incident.proofGaps.some((gap) => gap.kind !== 'source-blind')
       );
     case 'all':
       return true;
@@ -111,6 +125,24 @@ export function applyIncidentFacets(
   return incidents.filter(
     (incident) => matchesLens(incident, lens) && matchesKind(incident, kind),
   );
+}
+
+/**
+ * Lens counts measured over the list the `?kind=` facet leaves behind — the
+ * numbers the rail must show while that facet is active.
+ *
+ * `countLenses` over the unfaceted board is right for a board-level fact and
+ * wrong for a rail sitting above a faceted list: it told an operator
+ * "Regressions 4" while the list under `?kind=telemetry` showed one. The
+ * feature doc's rule is that a count beside a filter is measured over the
+ * list that filter actually narrows, and `applyIncidentFacets` is what
+ * narrows it — so this counts through the same predicate, by construction.
+ */
+export function countLensesForKind(
+  incidents: readonly UnifiedIncident[],
+  kind: string | undefined,
+): IncidentLensCounts {
+  return countLenses(incidents.filter((incident) => matchesKind(incident, kind)));
 }
 
 /**

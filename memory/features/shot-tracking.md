@@ -682,6 +682,40 @@ signal keys, and every client branches on the keys before it shows anything.
   `20260821043500`), and `invalidateOnRoundComplete`
   (`src/lib/cache/golf-stats-calculator.ts`) calls it again explicitly.
   (This line said the opposite until 2026-09-01.)
+- Discard vs. a save already in flight (2026-09-02, C1): both round screens
+  set `roundDiscardedRef` synchronously in `handleDeleteRound` BEFORE
+  `deleteInProgressRound` runs (cleared if the delete fails), and every
+  `round_missing` branch that would drop the stale id or re-create checks it
+  first — New Round's `persistCompletedHole` loop, `handleAutoSave` primary
+  and queued follow-up, `handleSaveForLater`; Continue Round's shared
+  `recreateMissingRound` and `handleSaveForLater`. A save whose answer lands
+  after the delete can no longer resurrect a discarded round.
+- Qualifier closed between scoring and submit (2026-09-02, C3):
+  `submit_round_atomic`'s refusal for a closed qualifier contains "already
+  been completed" — about the QUALIFIER; the round stays `in_progress` — and
+  used to match `isCompletedRoundError`, redirecting to a detail page that
+  bounced straight back to Continue Round. `isQualifierClosedError`
+  (`src/lib/golf/round-missing-recovery.ts`) is excluded first in both
+  screens and `FairwayRecoverRound`; the submit overlay then shows a terminal
+  message, hides "Retry submit", and offers "Save as practice round"
+  (`updateRoundType`) through `FairwayRoundSubmitOverlay`'s
+  `secondaryActionLabel`/`onSecondaryAction` pair.
+- Silent localStorage backup failure (2026-09-02, C5): `emergencySave`
+  dispatches `EMERGENCY_SAVE_DEGRADED_EVENT` (`src/lib/utils/emergency-save.ts`)
+  at most once per browser session when its synchronous write fails even
+  after compaction; both round screens listen and show one warning toast. The
+  IndexedDB mirror (`queueRecoverySnapshot`) was and is unaffected.
+- Left for follow-up (2026-09-02, explicitly not silently skipped): C2 — the
+  v1 offline drain (`syncV1Rounds` in `src/lib/offline/sync-engine.ts`) still
+  auto-submits a stored terminal submission unattended, with no staleness
+  compare against the server round's current holes; C4 — recovery-snapshot
+  equivalence normalisation: its red-first spec is committed as a
+  `describe.skip` block in `src/lib/utils/emergency-save.test.ts`, the
+  `isEmergencySaveEquivalentToProgress` change itself is not written; B7 remainder —
+  no correction path for a round already created with a future date;
+  migration D — the submit trigger fan-out (one submit fires a round update
+  and a player-stats recompute per hole-row write, not once per round) was
+  not attempted, and this branch carries no migrations.
 - Putts-per-GIR is not properly implemented.
 - Hydration/hook-order problems in interactive round screens can pass build but fail in browser.
 
@@ -701,7 +735,10 @@ signal keys, and every client branches on the keys before it shows anything.
 - `src/lib/golf/__tests__/qualifier-round-number.test.ts` (A2)
 - `src/lib/golf/__tests__/holes-played-assert.test.ts` (A4)
 - `src/lib/admin/__tests__/observe-action-result.test.ts` (A6)
-- `src/lib/utils/emergency-save.test.ts`
+- `src/lib/utils/emergency-save.test.ts` (C5 degraded-event cases)
+- the `*.discard-race`, `*.qualifier-closed` and `*.emergency-save-degraded`
+  tests beside both round clients under
+  `src/app/golf/(dashboard)/dashboard/rounds/` (C1/C3/C5)
 - `src/lib/offline/__tests__/sync-engine-*.test.ts` (includes
   `sync-engine-error-surfacing.test.ts`, B6 — no internal id or bare signal
   key reaches `OfflineIndicator`)
@@ -747,6 +784,12 @@ accent-green selected thumb and full-contrast inactive labels
 (`src/components/fairway/controls/segmented.tsx`); light mode unchanged.
 The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 `warm-*` text tokens that rendered unreadable in dark scope. The new-round hole editor's par chips fire the selection detent as of the same date (§32 gap closed by live bridge-log QA).
+
+Keyboard (2026-09-02): the "distance to hole" box was still covered on iOS —
+the keyboardWillShow scroll-into-view had nowhere to scroll for a field in the
+bottom ~45% of a page that ends where it ends. `<body>` now pads by
+`--keyboard-height` while `body.keyboard-open` (globals.css), which is the
+scroll range that scroll needed. See ios-native-shell.md.
 
 ## Related Docs
 

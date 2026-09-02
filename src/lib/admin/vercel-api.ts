@@ -6,6 +6,7 @@ import {
   ok,
 } from '@/lib/admin/fetch-result';
 import { reportIntegrationFault } from '@/lib/admin/integration-health';
+import { usableCredential } from '@/lib/admin/credential-shape.mjs';
 
 /**
  * Helm Bridge — server-only Vercel deployments client. Reuses the exact
@@ -17,22 +18,43 @@ import { reportIntegrationFault } from '@/lib/admin/integration-health';
 
 const REVALIDATE_SECONDS = 60;
 
-function isPlaceholderSecret(value: string): boolean {
-  return /^(your-|replace-|changeme|todo|example)/i.test(value.trim());
-}
-
-function usableSecret(value: string | undefined): string | null {
-  const trimmed = value?.trim();
-  if (!trimmed || trimmed.length < 10 || isPlaceholderSecret(trimmed)) return null;
-  return trimmed;
-}
-
+/**
+ * Shape-checked, not length-checked — an 11-character placeholder cleared the
+ * old `length >= 10` floor and read as CONFIGURED. One validator for the
+ * script, this reader and sentry-api.ts: src/lib/admin/credential-shape.mjs.
+ */
 function vercelConfig(): { token: string; projectId: string; teamId: string | null } | null {
-  const token = usableSecret(process.env.VERCEL_API_TOKEN);
-  const projectId = process.env.VERCEL_PROJECT_ID?.trim();
-  if (!token || !projectId || isPlaceholderSecret(projectId)) return null;
-  const teamId = process.env.VERCEL_TEAM_ID?.trim();
-  return { token, projectId, teamId: teamId && !isPlaceholderSecret(teamId) ? teamId : null };
+  const token = usableCredential('vercel_api_token', process.env.VERCEL_API_TOKEN);
+  const projectId = usableCredential('vercel_project_id', process.env.VERCEL_PROJECT_ID);
+  if (!token || !projectId) return null;
+  const teamId = usableCredential('vercel_team_id', process.env.VERCEL_TEAM_ID);
+  return { token, projectId, teamId };
+}
+
+/**
+ * Negative cache for the web-insights reader.
+ *
+ * `/admin/deploys` re-renders every 60s and awaits this on each pass. When
+ * the endpoint is down that was one failed round-trip PLUS one
+ * reportIntegrationFault per refresh, per lambda — the per-process throttle
+ * never saw a repeat because each refresh was a new process. Remember the
+ * failure for a few minutes and answer from it: the panel renders the same
+ * "unavailable" state either way, the dependency is probed at most once per
+ * cooldown per process, and the durable collapse in the logger absorbs what
+ * the cooldown cannot see across processes. Per-instance and best-effort, the
+ * same contract as sentry-api.ts's feature-count cooldown.
+ */
+const INSIGHTS_FAILURE_COOLDOWN_MS = 5 * 60_000;
+let insightsFailure: { until: number; error: string } | null = null;
+
+/** TEST-ONLY. Module state that outlives a call needs an explicit reset. */
+export function __resetVercelInsightsCooldown(): void {
+  insightsFailure = null;
+}
+
+function rememberInsightsFailure(error: string): string {
+  insightsFailure = { until: Date.now() + INSIGHTS_FAILURE_COOLDOWN_MS, error };
+  return error;
 }
 
 export type VercelDeployState =
@@ -96,7 +118,7 @@ export async function fetchVercelDeployments(
     });
     if (!res.ok) {
       return failed(
-        reportIntegrationFault('vercel', 'deployments fetch', `Vercel deployments fetch failed: ${res.status}`),
+        await reportIntegrationFault('vercel', 'deployments fetch', `Vercel deployments fetch failed: ${res.status}`),
       );
     }
 
@@ -116,7 +138,7 @@ export async function fetchVercelDeployments(
     return ok(deployments);
   } catch (err) {
     return failed(
-      reportIntegrationFault(
+      await reportIntegrationFault(
         'vercel',
         'deployments fetch',
         `Vercel deployments fetch threw: ${err instanceof Error ? err.message : String(err)}`,
@@ -136,6 +158,9 @@ export interface VercelWebInsights {
 export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelWebInsights>> {
   const cfg = vercelConfig();
   if (!cfg) return unconfigured('Vercel API');
+  if (insightsFailure && Date.now() < insightsFailure.until) {
+    return failed(insightsFailure.error);
+  }
 
   try {
     const baseUrl = 'https://api.vercel.com/v1/web/insights/stats';
@@ -168,18 +193,47 @@ export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelW
       fetchPeriod(daysAgo(7)),
       fetchPeriod(daysAgo(30)),
     ]);
+    // A 404 here is NOT an outage. Vercel answers it when Web Analytics has
+    // never been enabled for the project, and it answers it instantly and
+    // clearly:
+    //
+    //   404 {"error":{"code":"not_found","message":"Web Analytics not found."}}
+    //
+    // Confirmed 2026-09-01 against the live project: Vercel's own API returns
+    // exactly that, so the provider is reachable and the token is valid — the
+    // feature simply does not exist to be read. Reporting it through
+    // reportIntegrationFault produced 99 admin_events in one day, every one
+    // of them saying "vercel could not be reached", which is the opposite of
+    // what happened and sent a reader looking for a network or credential
+    // problem that was never there.
+    //
+    // `unconfigured` is the state that already exists for exactly this: the
+    // Bridge renders a "not configured" panel instead of a fault, and nothing
+    // is logged. Enabling Web Analytics in the Vercel dashboard turns the
+    // panel into real numbers with no code change.
+    //
+    // Every other status is still a genuine fault: 401/403 mean the token is
+    // wrong or misscoped, 5xx means Vercel actually broke.
+    if (httpFailureStatus === 404) {
+      return unconfigured('Vercel Web Analytics');
+    }
     if (httpFailureStatus !== null) {
       return failed(
-        reportIntegrationFault('vercel', 'web insights fetch', `Vercel web insights fetch failed: ${httpFailureStatus}`),
+        rememberInsightsFailure(
+          await reportIntegrationFault('vercel', 'web insights fetch', `Vercel web insights fetch failed: ${httpFailureStatus}`),
+        ),
       );
     }
+    insightsFailure = null;
     return ok({ visitors24h: v24h, visitors7d: v7d, visitors30d: v30d });
   } catch (err) {
     return failed(
-      reportIntegrationFault(
-        'vercel',
-        'web insights fetch',
-        `Vercel web insights threw: ${err instanceof Error ? err.message : String(err)}`,
+      rememberInsightsFailure(
+        await reportIntegrationFault(
+          'vercel',
+          'web insights fetch',
+          `Vercel web insights threw: ${err instanceof Error ? err.message : String(err)}`,
+        ),
       ),
     );
   }

@@ -1,0 +1,50 @@
+{
+  "$comment": [
+    "Account-level MCP connectors as the session tool inventory actually names them.",
+    "",
+    "Measured 2026-09-01: the connectors that .claude/settings.json and the tool",
+    "authority matrix call mcp__claude_ai_Supabase__*, mcp__claude_ai_Vercel__* and",
+    "mcp__claude_ai_Sentry__* appear in the live session under a UUID prefix",
+    "(mcp__<uuid>__<tool>) and NOT under any mcp__claude_ai_* name. A deny rule",
+    "keyed on the display-name spelling therefore matches nothing the session can",
+    "call. The UUID spellings are denied too, and this file is the ONE place the",
+    "ids live so the tool-authority fingerprint, the enforcement inventory and the",
+    "verifier all read the same value.",
+    "",
+    "UUID STABILITY ACROSS SESSIONS IS UNVERIFIED. One session cannot prove it.",
+    "If a connector is re-installed or re-authorised its id may rotate, at which",
+    "point every mcp__<uuid>__ deny rule silently matches nothing again. That is",
+    "registered as gap MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS in",
+    "config/control-plane-gaps.json, and `npm run control-plane:verify` reports the",
+    "ids here against the deny rules on every run (tools/mcp-deny-connector-ids).",
+    "",
+    "To re-measure: in an interactive session, list the tool inventory and copy the",
+    "prefix of the connector's tools here. Update observed_at when you do."
+  ],
+  "connectors": [
+    {
+      "service": "Supabase",
+      "id": "e139bbde-4728-4ed3-977f-7b1b22f4b69c",
+      "display_name_prefix": "mcp__claude_ai_Supabase__",
+      "observed_at": "2026-09-01",
+      "evidence": "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__list_projects -> one project, Helm-Production/qmnssrrolpinvwjjnufo (account-scoped). All ten project-mutating tools plus execute_sql present under this prefix. No mcp__claude_ai_Supabase__* name in the inventory.",
+      "stability": "UNVERIFIED across sessions"
+    },
+    {
+      "service": "Vercel",
+      "id": "fba2ada3-c190-4053-b91a-3e81f5296483",
+      "display_name_prefix": "mcp__claude_ai_Vercel__",
+      "observed_at": "2026-09-01",
+      "evidence": "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__list_projects -> team_WYEGBoW9Hpg2tB1QClWuVxc5, project helmv3. deploy_to_vercel, pause_project, buy_domain, buy_pro, buy_credits, buy_addon and update_project_deployment_protection all present under this prefix. No mcp__claude_ai_Vercel__* name in the inventory.",
+      "stability": "UNVERIFIED across sessions"
+    },
+    {
+      "service": "Sentry",
+      "id": "7524981b-0003-40de-9f86-c5275420784a",
+      "display_name_prefix": "mcp__claude_ai_Sentry__",
+      "observed_at": "2026-09-01",
+      "evidence": "mcp__7524981b-0003-40de-9f86-c5275420784a__find_organizations -> org helm-xs (us.sentry.io), byte-identical to the 2026-08-29 authority observation. update_issue present under this prefix; not denied (read-only observability is the authority's role and the Sentry mutator is out of scope for repo policy). No mcp__claude_ai_Sentry__* name in the inventory.",
+      "stability": "UNVERIFIED across sessions"
+    }
+  ]
+}

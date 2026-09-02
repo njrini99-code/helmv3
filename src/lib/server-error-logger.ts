@@ -32,6 +32,7 @@ import { getRequestId } from '@/lib/admin/request-context';
 import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump } from '@/lib/utils/describe-error';
 import { redactSensitiveUrl } from '@/lib/security/redact-url';
 import { resolveFeatureKey } from '@/lib/admin/feature-registry';
+import { absorbIntoRecentEvent } from '@/lib/admin/durable-collapse';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -62,6 +63,8 @@ interface RoundErrorContext {
   source?: ServerTraceSource;
   statusCode?: number | null;
   requestId?: string | null;
+  /** Sentry trace id. Auto-populated from the active span when not explicitly passed — see enrichTraceContext. */
+  traceId?: string | null;
   /** Opaque workflow correlation ID from the flight recorder. Never auth data. */
   helmTraceId?: string | null;
   /** Canonical expected workflow step active when the error was recorded. */
@@ -101,6 +104,15 @@ interface RoundErrorContext {
    * route, message) so identical failures collapse in the triage queue.
    */
   dbFingerprint?: string;
+  /**
+   * Helm Bridge: absorb this occurrence into the most recent UNRESOLVED
+   * admin_events row with the same fingerprint (15-minute window) instead of
+   * inserting, bumping that row's `metadata.metadata.collapsed_count`.
+   * Defaults to true for `provider_*` error codes — an upstream fault is one
+   * incident however many lambdas notice it — and false otherwise. See
+   * durable-collapse.ts for why the per-process throttle was not enough.
+   */
+  durableCollapse?: boolean;
 }
 
 const SENTRY_SEVERITY_MAP: Record<ServerTraceSeverity, Sentry.SeverityLevel> = {
@@ -120,6 +132,7 @@ function normalizeContext(context: RoundErrorContext, traceMessage?: string): Re
     source: context.source ?? 'server_action',
     statusCode: context.statusCode ?? null,
     requestId: context.requestId ?? null,
+    traceId: context.traceId ?? null,
     helmTraceId: context.helmTraceId ?? null,
     traceStep: context.traceStep ?? null,
     parentTraceStep: context.parentTraceStep ?? null,
@@ -170,17 +183,51 @@ function buildUrl(context: RoundErrorContext): string | null {
   return null;
 }
 
-function buildFingerprint(context: RoundErrorContext, severity: ServerTraceSeverity): string[] {
+/**
+ * The Sentry grouping key. An explicit `context.fingerprint` always wins; the
+ * default is the SAME incident signature written to `admin_events.fingerprint`,
+ * so one Bridge incident is one Sentry issue and the two surfaces agree.
+ *
+ * It used to be `[source, featureArea, action, errorCode ?? severity]`. That
+ * was stable but unrelated to the Bridge's own grouping, and once the
+ * synthetic error below started carrying a real message the default grouping
+ * had to be pinned explicitly anyway — so it is pinned to the key the Bridge
+ * already uses rather than to a second one.
+ */
+function buildFingerprint(context: RoundErrorContext, dbFingerprint: string): string[] {
   if (context.fingerprint?.length) {
     return context.fingerprint;
   }
+  return ['helm-server-trace', dbFingerprint];
+}
 
-  return [
-    context.source ?? 'server_action',
-    context.featureArea ?? 'unknown',
-    context.action,
-    context.errorCode ?? severity,
-  ];
+/**
+ * The single stable DB grouping key for this trace — `admin_events.fingerprint`
+ * and, by default, the Sentry fingerprint. Provider faults hash on their code
+ * alone (see buildIncidentSignature), so the same fault is one key across
+ * call sites, routes, wording and severity.
+ */
+function resolveDbFingerprint(
+  message: string,
+  context: RoundErrorContext,
+  severity: ServerTraceSeverity,
+): string {
+  return (
+    context.dbFingerprint ??
+    buildIncidentSignature({
+      severity: severity as IncidentSeverity,
+      errorCode: context.errorCode ?? null,
+      route: context.route ?? context.url ?? null,
+      // Collapsed, not masked: see the note at the message assignment in
+      // captureServerTrace. A per-address mask still fragments a grouping key.
+      message: collapseEmailsForGrouping(message),
+    })
+  );
+}
+
+/** Whether this trace should be absorbed into an open row rather than inserted. */
+function shouldCollapseDurably(context: RoundErrorContext): boolean {
+  return context.durableCollapse ?? Boolean(context.errorCode?.startsWith('provider_'));
 }
 
 /** Infer sport when legacy emitters omit context.sport (most baseball actions pre-withBaseballAction). */
@@ -201,10 +248,32 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
   // months and not one of ~60 call sites ever passed it. An explicitly
   // supplied requestId always wins.
   const ambientRequestId = getRequestId();
-  const context: RoundErrorContext =
+  // Same defaulting shape as requestId above, and the same reasoning: a
+  // per-call-site "please pass traceId" convention is the design that
+  // already failed once for requestId. getActiveSpan() reads whatever trace
+  // is live on the current async context — the request-action span opened
+  // by Sentry's own Next.js instrumentation, or a roundStage() child span
+  // when one is active — so this line is what lets a Golf Tracer /
+  // admin_events row be joined back to its Sentry trace with no call-site
+  // changes anywhere.
+  // Defensive: several test suites mock '@sentry/nextjs' with a partial
+  // surface that predates this field (getActiveSpan undefined on the mock).
+  // Observability must never be able to throw inside a logging call itself —
+  // same rule as withSupabaseTracing.
+  let ambientTraceId: string | null = null;
+  try {
+    ambientTraceId = Sentry.getActiveSpan()?.spanContext().traceId ?? null;
+  } catch {
+    ambientTraceId = null;
+  }
+  const withRequestId: RoundErrorContext =
     rawContext.requestId || !ambientRequestId
       ? rawContext
       : { ...rawContext, requestId: ambientRequestId };
+  const context: RoundErrorContext =
+    withRequestId.traceId || !ambientTraceId
+      ? withRequestId
+      : { ...withRequestId, traceId: ambientTraceId };
 
   const sport = inferSport(message, context);
   if (!sport) return context;
@@ -372,16 +441,19 @@ async function writeAdminTables(
     timestamp,
   }, { onConflict: 'id' });
 
-  const dbFingerprint =
-    context.dbFingerprint ??
-    buildIncidentSignature({
-      severity: severity as IncidentSeverity,
-      errorCode: context.errorCode ?? null,
-      route: context.route ?? context.url ?? null,
-      // Collapsed, not masked: see the note at the message assignment. A
-      // per-address mask still fragments a grouping key.
-      message: collapseEmailsForGrouping(message),
-    });
+  const dbFingerprint = resolveDbFingerprint(message, context, severity);
+
+  // Durable flood collapse. The per-process throttle at the call sites
+  // collapses repeats within ONE lambda; this absorbs the occurrence into the
+  // open row across lambdas. Fails open: any read/update problem falls
+  // through to the inserts below, so the signal is never lost to the
+  // de-duplication of it.
+  if (shouldCollapseDurably(context)) {
+    const throttled = context.metadata?.collapsed_count;
+    const by = 1 + (typeof throttled === 'number' && Number.isFinite(throttled) ? throttled : 0);
+    const outcome = await absorbIntoRecentEvent(admin, { fingerprint: dbFingerprint, by });
+    if (outcome.collapsed) return;
+  }
 
   const writeAdminEvent = () => admin.from('admin_events').upsert({
     id: adminEventId,
@@ -446,8 +518,21 @@ function sentryCaptureTitle(context: RoundErrorContext): string {
   return `[${context.action}] server trace`;
 }
 
-function syntheticTraceError(message: string): Error {
-  const err = new Error('Server trace error');
+/**
+ * The Error Sentry receives when a caller logged a MESSAGE rather than an
+ * exception. Its message is the Sentry issue TITLE, and it used to be the
+ * constant 'Server trace error' — six issues in one week all titled
+ * "Error: Server trace error", distinguishable only by opening each. Now:
+ * `<errorCode>: <short summary>` (the summary is the already-redacted trace
+ * message, whitespace-collapsed and capped). Grouping does not depend on this
+ * text — buildFingerprint pins it — so a varying title cannot fragment issues.
+ */
+const SENTRY_TITLE_SUMMARY_CHARS = 160;
+
+function syntheticTraceError(message: string, context: RoundErrorContext): Error {
+  const summary = message.replace(/\s+/g, ' ').trim().slice(0, SENTRY_TITLE_SUMMARY_CHARS) || 'server trace';
+  const err = new Error(context.errorCode ? `${context.errorCode}: ${summary}` : summary);
+  err.name = 'ServerTrace';
   err.cause = message;
   return err;
 }
@@ -459,9 +544,13 @@ function captureSentryTrace(
   severity: ServerTraceSeverity,
   forceException: boolean,
 ) {
+  const dbFingerprint = resolveDbFingerprint(message, context, severity);
   Sentry.withScope((scope) => {
     scope.setLevel(SENTRY_SEVERITY_MAP[severity] ?? 'error');
     scope.setTag('action', context.action);
+    // The admin_events.fingerprint this trace lands under — lets a Sentry
+    // issue be opened at /admin/errors/<fingerprint> without a second lookup.
+    scope.setTag('bridge_fingerprint', dbFingerprint);
     scope.setTag('error_source', context.source ?? 'server_action');
     scope.setTag('feature_area', context.featureArea ?? 'unknown');
     scope.setTag('feature', resolveFeatureKey(context.feature, context.featureArea) ?? 'unknown');
@@ -489,7 +578,7 @@ function captureSentryTrace(
     }
 
     scope.setContext('server_trace', normalizeContext(context, message));
-    scope.setFingerprint(buildFingerprint(context, severity));
+    scope.setFingerprint(buildFingerprint(context, dbFingerprint));
 
     // Route by severity: info/warning are messages (control-flow signals,
     // skipped-record counters, threshold starvation), error/critical are
@@ -503,7 +592,7 @@ function captureSentryTrace(
     if (isMessage) {
       Sentry.captureMessage(sentryTitle, SENTRY_SEVERITY_MAP[severity] ?? 'warning');
     } else {
-      Sentry.captureException(error ?? syntheticTraceError(message));
+      Sentry.captureException(error ?? syntheticTraceError(message, context));
     }
   });
 }
@@ -582,7 +671,7 @@ async function captureServerTrace(
     (err) => reportRedactionFailure(err, 'message'),
   );
   const enriched = enrichTraceContext(message, context);
-  const normalizedError = error ?? syntheticTraceError(message);
+  const normalizedError = error ?? syntheticTraceError(message, enriched);
 
   // Skip, don't rethrow: callers already decide how the original error
   // propagates; our only job is to not record framework signals as incidents.

@@ -17,6 +17,10 @@
 import 'server-only';
 
 import { createClient } from '@supabase/supabase-js';
+import {
+  SUPABASE_TRACE_PROPAGATION,
+  withSupabaseTracing,
+} from '@/lib/observability/supabase-tracing';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -97,9 +101,16 @@ let adminClientUnavailableLogged = false;
  * makes every `.upsert()`/`.update()` below a type error.
  */
 function createRateLimitAdminClient(url: string, serviceRoleKey: string) {
-  return createClient(url, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  // `withSupabaseTracing` is generic and returns its argument's exact type, so
+  // the `ReturnType<typeof createRateLimitAdminClient>` alias below still
+  // resolves the real per-call generics rather than collapsing to `never` —
+  // the failure mode the comment above this function warns about.
+  return withSupabaseTracing(
+    createClient(url, serviceRoleKey, {
+      tracePropagation: SUPABASE_TRACE_PROPAGATION,
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  );
 }
 
 type RateLimitAdminClient = ReturnType<typeof createRateLimitAdminClient>;

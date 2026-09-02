@@ -43,11 +43,94 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SETTINGS = resolve(ROOT, '.claude/settings.json');
 const OUT = resolve(ROOT, 'docs/CONTROL_PLANE_ENFORCEMENT.md');
 
+/**
+ * A deny rule that refuses one of the Vercel MCP's production-mutating tools,
+ * under either spelling of the server segment (`mcp__claude_ai_Vercel__…` or
+ * `mcp__<uuid>__…`). The whole alternation is anchored: a rule naming
+ * `deploy_to_vercel_preview` or `pause_project_status` is a DIFFERENT tool and
+ * must not be counted as cover for the one this claim is about. An earlier
+ * spelling anchored only the last alternative, so every other one matched as
+ * a substring (CodeQL js/regex/missing-regexp-anchor).
+ *
+ * `update_project_deployment_protection` joined the set 2026-09-02: the
+ * connector file had recorded it as present under the Vercel prefix while no
+ * deny rule named it. Its read twin `get_project_deployment_protection` must
+ * NOT match, which the anchoring guarantees.
+ *
+ * Supabase also exposes `pause_project`; callers exclude that server through
+ * `vercelMutatingDenyHits`, which takes the Supabase prefixes from the
+ * connector file rather than carrying an id of its own.
+ */
+export const VERCEL_MUTATING_TOOL_RE =
+  /^mcp__.+__(?:deploy_to_vercel|buy_(?:domain|pro|credits|addon)|pause_project|update_project_deployment_protection)$/;
+
 const START = '<!-- AUTOGEN:enforcement:start -->';
 const END = '<!-- AUTOGEN:enforcement:end -->';
 
 /** Hooks that can REFUSE a tool call. Everything else records or reports. */
 const BLOCKING_EVENTS = new Set(['PreToolUse']);
+
+/**
+ * A Stop hook cannot refuse a TOOL CALL, but it can refuse the END OF A TURN
+ * by emitting `{"decision":"block"}`. Until 2026-09-01 this generator rendered
+ * every non-PreToolUse hook as "records/reports only", which described
+ * stop-verify.sh as an observer while it was pushing back on unverified work
+ * once per tree state. Read the script rather than assume: a Stop hook that
+ * never emits a block decision really is an observer.
+ */
+function stopRefusalOf(rel) {
+  if (!rel) return null;
+  try {
+    const src = readFileSync(resolve(ROOT, rel), 'utf-8');
+    return /decision"?\s*:\s*"?block/.test(src) ? 'not a tool call — refuses turn-end once per tree state (`{"decision":"block"}`)' : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Connector ids the session actually exposes, from the one file that holds them. */
+function loadConnectorIds() {
+  const p = resolve(ROOT, 'config/mcp-connector-ids.json');
+  if (!existsSync(p)) return [];
+  try {
+    return JSON.parse(readFileSync(p, 'utf-8')).connectors ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/** Every rule prefix a connector's tools can appear under: `mcp__<uuid>__` and the display name. */
+function connectorPrefixes(service, connectorIds) {
+  return (connectorIds ?? [])
+    .filter((c) => c.service === service)
+    .flatMap((c) => [typeof c.id === 'string' && c.id ? `mcp__${c.id}__` : null, c.display_name_prefix || null])
+    .filter(Boolean);
+}
+
+/**
+ * Deny rules that count as cover for the Vercel claim, split by spelling.
+ *
+ * Supabase also exposes `pause_project`, so a rule naming it under a Supabase
+ * prefix is not Vercel cover. Both Supabase prefixes — the UUID the session
+ * exposes and the display name — come from `connectorIds`, i.e. from
+ * config/mcp-connector-ids.json, the one place the ids live. Until 2026-09-02
+ * the exclusion was the literal `/Supabase|e139bbde/`: the Supabase id written
+ * into this generator by hand, beside a parameter that already carried it.
+ * Had that connector been re-installed and its id rotated — the connector
+ * file says its stability is UNVERIFIED — the new Supabase `pause_project`
+ * rule would have been counted as Vercel cover.
+ */
+export function vercelMutatingDenyHits(denyRules, connectorIds = loadConnectorIds()) {
+  const excluded = connectorPrefixes('Supabase', connectorIds);
+  const vercelIds = (connectorIds ?? [])
+    .filter((c) => c.service === 'Vercel' && typeof c.id === 'string' && c.id)
+    .map((c) => c.id);
+  const hits = (denyRules ?? []).filter(
+    (r) => VERCEL_MUTATING_TOOL_RE.test(r) && !excluded.some((p) => r.startsWith(p)),
+  );
+  const uuidHits = hits.filter((r) => vercelIds.some((id) => r.startsWith(`mcp__${id}__`)));
+  return { hits, uuidHits };
+}
 
 function loadSettings() {
   return JSON.parse(readFileSync(SETTINGS, 'utf-8'));
@@ -69,12 +152,16 @@ export function collectHooks(settings) {
     for (const entry of entries ?? []) {
       for (const hook of entry.hooks ?? []) {
         const rel = scriptFromCommand(hook.command);
+        const blocking = BLOCKING_EVENTS.has(event);
         rows.push({
           event,
           matcher: entry.matcher ?? '(all tools)',
           script: rel,
           exists: rel ? existsSync(resolve(ROOT, rel)) : null,
-          blocking: BLOCKING_EVENTS.has(event),
+          blocking,
+          refusal: blocking
+            ? 'yes'
+            : (event === 'Stop' && stopRefusalOf(rel)) || 'no — records/reports only',
         });
       }
     }
@@ -99,7 +186,7 @@ export function collectDenies(settings) {
  * Adding a row here is how you make a safety claim: it must name the mechanism
  * that would be searched for, and the generator decides whether it is real.
  */
-function resolveClaims(hooks, denies) {
+function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
   const blockingHooks = hooks.filter((h) => h.blocking);
   const matcherCovers = (re) => blockingHooks.filter((h) => re.test(h.matcher));
 
@@ -215,16 +302,71 @@ function resolveClaims(hooks, denies) {
       },
     },
     {
-      claim: 'Account-wide Supabase MCP mutation is refused',
+      claim: 'Account-wide Supabase MCP mutation is refused (display-name spelling `mcp__claude_ai_Supabase__*`)',
       resolve: () => {
         const hits = denies.mcp.filter((r) => r.startsWith('mcp__claude_ai_Supabase__'));
         return hits.length
           ? {
               mechanism: `${hits.length} deny rules`,
               where: '.claude/settings.json → permissions.deny',
-              observed: 'EXERCISED 2026-08-29 — the denied tools left the session tool set; list_tables still loaded',
+              observed: 'EXERCISED 2026-08-29 — the denied tools left the session tool set; list_tables still loaded. Measured 2026-09-01: no mcp__claude_ai_* name exists in the session inventory, so these rules match nothing the session can call today; kept because the spelling may return',
             }
           : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED' };
+      },
+    },
+    {
+      // The spelling the session ACTUALLY exposes. Measured 2026-09-01: the
+      // account connectors appear as mcp__<uuid>__<tool>, not under any
+      // mcp__claude_ai_* name, so the row above covers a name that is not in
+      // the inventory. The ids come from config/mcp-connector-ids.json — the
+      // one place they live — and their stability across sessions is an
+      // acknowledged gap, not a verified property.
+      claim: 'Account-wide Supabase MCP mutation is refused (UUID spelling the session exposes)',
+      resolve: () => {
+        const ids = connectorIds.filter((c) => c.service === 'Supabase').map((c) => c.id);
+        if (!ids.length) {
+          return { mechanism: 'NONE', where: '—', observed: 'UNKNOWN — no Supabase connector id recorded in config/mcp-connector-ids.json' };
+        }
+        const hits = denies.mcp.filter((r) => ids.some((id) => r.startsWith(`mcp__${id}__`)));
+        return hits.length
+          ? {
+              mechanism: `${hits.length} deny rules`,
+              where: '.claude/settings.json → permissions.deny (ids: config/mcp-connector-ids.json)',
+              observed: 'CONFIGURED 2026-09-01 — written against the prefix observed in that session; NOT yet observed to remove the tools; id stability across sessions UNVERIFIED (gap MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS)',
+            }
+          : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED — the connector id is recorded but no deny rule names it' };
+      },
+    },
+    {
+      claim: 'A production deploy, purchase, pause or deployment-protection change through the Vercel MCP is refused',
+      resolve: () => {
+        const { hits, uuidHits } = vercelMutatingDenyHits(denies.mcp, connectorIds);
+        return hits.length
+          ? {
+              mechanism: `${hits.length} deny rules (${uuidHits.length} under the UUID spelling)`,
+              where: '.claude/settings.json → permissions.deny',
+              observed: uuidHits.length
+                ? 'CONFIGURED — display-name and UUID spellings; NOT probed (the only probe is a real production deploy, a purchase, or a protection change); id stability UNVERIFIED'
+                : 'CONFIGURED — display-name spelling only, which measured 2026-09-01 is not in the session inventory',
+            }
+          : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED' };
+      },
+    },
+    {
+      // Desktop Commander writes files and spawns processes from outside every
+      // hook (no PreToolUse matcher reaches mcp__) and outside the Bash sandbox
+      // (it is not Bash). Denied at project scope 2026-09-01. This is a NEW
+      // restriction the owner can drop by deleting the rules.
+      claim: 'A file write or process spawn through the Desktop Commander MCP is refused',
+      resolve: () => {
+        const hits = denies.mcp.filter((r) => /Desktop_Commander__|desktop-commander__/.test(r));
+        return hits.length
+          ? {
+              mechanism: `${hits.length} deny rules`,
+              where: '.claude/settings.json → permissions.deny',
+              observed: 'CONFIGURED 2026-09-01 — both the account connector and plugin spellings; NOT probed. Read tools stay allowed',
+            }
+          : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED — Desktop Commander bypasses guard-canonical-write.mjs and the Bash sandbox' };
       },
     },
     {
@@ -259,12 +401,35 @@ function resolveClaims(hooks, denies) {
     },
     {
       // Narrow on purpose, like the destructive-SQL matcher above: `--prod`
-      // and the three verbs, not the word "vercel". `vercel env ls` and
+      // and the two verbs, not the word "vercel". `vercel env ls` and
       // `vercel inspect` are allow rules in the same file and must not be
       // counted as a production-deploy mechanism.
-      claim: 'A production deploy typed as a vercel command is refused',
+      //
+      // This row and the next used to be ONE row matching `alias set` as well,
+      // which reported "3 deny rules — CONFIGURED" for a production deploy
+      // after e5ec5e7b8 (2026-09-01) had GRANTED the deploy and kept only the
+      // alias rules. A mechanism for a different claim was standing in for the
+      // one that had been removed. Split so each claim resolves on its own.
+      claim: 'A production deploy typed as a vercel command (`deploy --prod`, `promote`, `rollback`) is refused',
       resolve: () => {
-        const hits = denyMatch((r) => /vercel.*(--prod|promote|rollback|alias set)/.test(r));
+        const hits = denyMatch((r) => /vercel.*(--prod|promote|rollback)/.test(r));
+        return hits.length
+          ? {
+              mechanism: `${hits.length} deny rules`,
+              where: '.claude/settings.json → permissions.deny',
+              observed: 'CONFIGURED — fires under bypassPermissions',
+            }
+          : {
+              mechanism: 'NONE',
+              where: '—',
+              observed: 'UNENFORCED, BY OWNER GRANT — e5ec5e7b8 (2026-09-01) removed these rules so scripts/deploy-prod.sh is the one sanctioned promote path; AGENTS.md still forbids a production action the user did not ask for',
+            };
+      },
+    },
+    {
+      claim: 'Re-pointing the production alias (`vercel alias set`) is refused',
+      resolve: () => {
+        const hits = denyMatch((r) => /vercel alias set/.test(r));
         return hits.length
           ? {
               mechanism: `${hits.length} deny rules`,
@@ -355,7 +520,7 @@ export function renderBlock() {
     L.push(
       `| ${esc(h.event)} | \`${esc(h.matcher)}\` | \`${esc(h.script ?? '(inline)')}\` | ${
         h.exists === null ? 'n/a' : h.exists ? 'yes' : '**MISSING**'
-      } | ${h.blocking ? 'yes' : 'no — records/reports only'} |`,
+      } | ${esc(h.refusal)} |`,
     );
   }
   const blocking = hooks.filter((h) => h.blocking);
@@ -416,9 +581,11 @@ A generator can establish the first two. It cannot establish the third, so
 EXERCISED is only claimed where a specific observation is named.
 
 **Scope:** this reads PROJECT configuration only. User-global
-\`~/.claude/settings.json\` can add capability that this file cannot see, and
-its \`autoMode\` prose currently repeats a stale claim sourced from this repo —
-see \`.claude/rules/database.md\`.
+\`~/.claude/settings.json\` can add capability that this file cannot see. Its
+\`autoMode\` prose once repeated a stale hook claim sourced from this repo;
+whether that claim is present NOW is measured by
+\`npm run control-plane:verify\` (\`user-global/no-stale-hook-claim\`), never
+asserted here — see \`.claude/rules/database.md\`.
 
 ${START}${'\n'}
 ${END}
@@ -434,16 +601,21 @@ function build() {
   return `${existing.slice(0, s + START.length)}\n${renderBlock()}\n${existing.slice(e)}`;
 }
 
-const next = build();
-if (process.argv.includes('--check')) {
-  const current = existsSync(OUT) ? readFileSync(OUT, 'utf-8') : '';
-  if (current !== next) {
-    console.error('❌ docs/CONTROL_PLANE_ENFORCEMENT.md is stale.');
-    console.error('   Run: node scripts/gen-enforcement-inventory.mjs && commit the result.');
-    process.exit(1);
+// Only the CLI entry point generates or checks; an `import` of this module (the
+// unit test over VERCEL_MUTATING_TOOL_RE) must not touch the doc. Same guard as
+// gen-tool-authority.mjs.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const next = build();
+  if (process.argv.includes('--check')) {
+    const current = existsSync(OUT) ? readFileSync(OUT, 'utf-8') : '';
+    if (current !== next) {
+      console.error('❌ docs/CONTROL_PLANE_ENFORCEMENT.md is stale.');
+      console.error('   Run: node scripts/gen-enforcement-inventory.mjs && commit the result.');
+      process.exit(1);
+    }
+    console.log('✅ enforcement inventory matches live configuration');
+  } else {
+    writeFileSync(OUT, next);
+    console.log(`wrote ${OUT.replace(`${ROOT}/`, '')}`);
   }
-  console.log('✅ enforcement inventory matches live configuration');
-} else {
-  writeFileSync(OUT, next);
-  console.log(`wrote ${OUT.replace(`${ROOT}/`, '')}`);
 }

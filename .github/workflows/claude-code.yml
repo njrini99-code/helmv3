@@ -21,9 +21,23 @@ concurrency:
 jobs:
   claude:
     name: Claude guarded PR agent
+    # AUTHOR GATE. This job holds `contents: write` and `id-token: write`, and
+    # an issue or review comment can be posted by anyone with a GitHub account.
+    # Until 2026-09-01 the only condition was that the body contained
+    # "@claude", so any outside account could start a write-capable agent run
+    # on this repo by leaving a comment. The comment-triggered paths now also
+    # require the commenter to be OWNER, MEMBER or COLLABORATOR — the same
+    # people who can already push. The label path is unchanged: applying a
+    # label needs triage permission, so the label IS the authorisation there.
+    # (The "Refuse unsafe labels" step below is the second gate, on content.)
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (
+        (
+          (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+        ) &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      ) ||
       (github.event_name == 'issues' && github.event.label.name == 'agent:ready')
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -77,7 +91,7 @@ jobs:
       #   - API billing: secret ANTHROPIC_API_KEY.
       - name: Run Claude Code
         if: ${{ vars.ENABLE_CLAUDE_CODE_ACTION == 'true' }}
-        uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b  # v1
+        uses: anthropics/claude-code-action@1f291e1cfe0f5fc21db2aef19af844591600ade7  # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

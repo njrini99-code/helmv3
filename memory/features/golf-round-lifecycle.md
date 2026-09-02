@@ -372,6 +372,13 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Continue Round uses the shared Fairway mobile header, scorecard controls,
   buttons, and recovery modal. Its save-and-exit action is secondary; the live
   shot/complete control is the only primary action in the thumb zone.
+- The confirmed-course scorecard editor (`FairwayHoleConfig`) follows the
+  9/18 and Front/Back controls that sit above it on the same screen: a change
+  to the seeded baseline re-seeds the editable holes (compared by content, so
+  the player's own par/yardage edits survive ordinary re-renders), and Start
+  round saves exactly the holes on screen. Before 2026-09-01 the editor seeded
+  once on mount, so "9 holes · Front 9" tapped after the course was confirmed
+  still started an 18-hole round (Shenandoah field report).
 
 ## Known Risk Areas
 
@@ -393,6 +400,22 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   the active round (see the multi-device business rule above), the same way
   an explicit save `conflict` does — a stale device must never overwrite
   newer server holes, whether the staleness was noticed by a poll or a save.
+- Discarding a round races any save already in flight for the same id
+  (2026-09-02, C1): a `round_missing` answer that landed after the delete
+  used to re-create the round. Both round screens now refuse to drop the id
+  or re-create once `handleDeleteRound` has marked the round discarded. See
+  `memory/features/shot-tracking.md`.
+- A qualifier the coach closes between scoring and submit (2026-09-02, C3)
+  leaves the round `in_progress` — `submit_round_atomic` refuses before any
+  write — so the round screens no longer read that refusal as "round already
+  completed"; they offer reclassify-to-practice (`updateRoundType`, whose
+  RPC has accepted an `in_progress` round since migration `20260830120000`)
+  as the way out instead of a retry that cannot succeed.
+- Open from the same pass, none started: C2 (the v1 offline drain's
+  unattended auto-submit, and a staleness compare before recovery
+  re-submits), C4 (recovery-snapshot equivalence normalisation — its spec is
+  committed and skipped, the fix is unwritten), the B7 correction path
+  above, and the submit trigger fan-out (migration D).
 - Bad route revalidation after acknowledgement or player feedback.
 - Hook-order or hydration issues in round-entry and review screens.
 - Schema replay drift in Supabase migrations touching round/shot/review tables.
@@ -400,6 +423,11 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Lifecycle migrations that introduce a completed-round guard can strand older
   direct writers unless their compatible RPC path and regression tests ship in
   the same release.
+- The post-round AI recap (`round-recap.ts`) must be handed the player's own
+  first name (`golf_players.first_name`, cleaned by `promptSafeName`, falling
+  back to "the player") both as a fact and in the third-person rule. Until
+  2026-09-02 the prompt named nobody and offered "Nick" as an example, and the
+  model copied the example into a Shenandoah player's stored recap.
 
 ## Tests To Prefer
 
