@@ -3,9 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds } from '@/app/golf/actions/messages';
+import { withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
 import { postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
+
+/** Pause before the single transport-failure retry of a message send. */
+const SEND_TRANSPORT_RETRY_DELAY_MS = 750;
 
 export interface GolfConversationParticipant {
   id: string;
@@ -384,7 +388,15 @@ export function useGolfMessages(conversationId: string) {
     setMessages(prev => [...prev, optimisticMessage]);
 
     try {
-      const result = await sendGolfMessage(conversationId, content);
+      // The action POST can die on the wire in WKWebView ("Load failed") with
+      // the phone reporting itself online: two Shenandoah players hit it
+      // mid-send on 2026-09-01/02, and Vercel logged no message_sent for
+      // either, so the request never arrived. One retry after a beat is what
+      // they did by hand — see withOneTransportRetry for why that is safe here.
+      const result = await withOneTransportRetry(
+        () => sendGolfMessage(conversationId, content),
+        SEND_TRANSPORT_RETRY_DELAY_MS,
+      );
 
       // Check if the result indicates an error
       if (result && 'error' in result && result.error) {

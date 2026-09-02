@@ -344,6 +344,17 @@
     padding-bottom: var(--keyboard-height);
   }
 
+  /* Room to scroll a focused field above the keyboard, on EVERY page. The
+     WebView never resizes for the keyboard (resize: 'ionic', no ion-app) and
+     Safari does not either, so a page that ends at the fold has nowhere to
+     scroll a field in its bottom ~45% — the round-entry distance box, the
+     onboarding steps, a join form. keyboardWillShow's scrollIntoView
+     (CapacitorProvider) is what this range exists for. Set on <body> rather
+     than a shell wrapper so pages outside AppShell get it too. */
+  body.keyboard-open {
+    padding-bottom: var(--keyboard-height);
+  }
+
   /* Make sure inputs scroll into view with breathing room above */
   body.capacitor input,
   body.capacitor textarea,

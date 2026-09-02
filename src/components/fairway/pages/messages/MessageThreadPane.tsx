@@ -411,6 +411,29 @@ export function MessageThreadPane({
     pendingInitialScrollConversationIdRef.current = null;
   }, [conversation?.id, loading, messages, scrollToMessageId]);
 
+  // Keep the newest message in view when the scroll region itself changes
+  // height. The iOS keyboard opening shrinks it (FairwayMessages subtracts
+  // --keyboard-height) and scrollTop does not move on its own, so a thread
+  // that was pinned to its newest message would show the bottom of the
+  // conversation hidden behind the composer at exactly the moment the player
+  // starts typing. Near-bottom is judged with the height from BEFORE the
+  // change, so a shrink cannot disqualify a thread that was pinned a moment
+  // ago. A reader scrolled up into history is left where they are.
+  React.useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return undefined;
+    let lastHeight = container.clientHeight;
+    const observer = new ResizeObserver(() => {
+      const previousHeight = lastHeight;
+      lastHeight = container.clientHeight;
+      if (container.clientHeight === previousHeight) return;
+      const wasNearBottom = container.scrollTop + previousHeight >= container.scrollHeight - 100;
+      if (wasNearBottom) container.scrollTop = container.scrollHeight;
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   // Auto-scroll to bottom on new messages — ONLY when near the bottom.
   // PRESERVES the legacy near-bottom check (scrollTop + clientHeight >= scrollHeight - 100).
   // P265: honor prefers-reduced-motion — reduced-motion users get an instant jump

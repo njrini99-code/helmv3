@@ -194,7 +194,9 @@ export function PromptComposer({
   return (
     <div
       ref={root}
-      className={cn('relative', safeArea && 'pb-[env(safe-area-inset-bottom)]', className)}
+      // The home-indicator pad is a dead band while the keyboard covers the
+      // home indicator.
+      className={cn('relative', safeArea && 'pb-[env(safe-area-inset-bottom)] [.keyboard-open_&]:pb-0', className)}
     >
       {/* ── Context chips — always visible, always removable ────────────── */}
       {context.length > 0 && (
