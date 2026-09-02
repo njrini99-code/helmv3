@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Sentry + Supabase tracing
 
 How a Helm request is observed end to end, what is actually wired today, and
@@ -15,7 +16,7 @@ These complement each other. None replaces another, and knowing which one is
 broken is usually the whole debugging problem.
 
 | Mechanism | What it does | Where it lives |
-|---|---|---|
+| --- | --- | --- |
 | **Sentry Supabase integration** | Turns supabase-js calls into semantic `db` spans and captures their errors | `src/lib/observability/supabase-tracing.ts` |
 | **W3C trace propagation** | Carries ONE trace id across the Helm → Supabase network boundary | `propagateTraceparent` in both `instrumentation*.ts`, `tracePropagation` on each client |
 | **Supabase → Sentry Log Drain** | Copies Supabase *platform* logs into Sentry Logs | **Not enabled.** Paid. See §7 |
@@ -33,7 +34,7 @@ Sentry only registers a global OpenTelemetry propagator on **two** of the three
 runtimes. This single fact drives the whole design:
 
 | Runtime | Sentry OTel propagator | So propagation comes from | supabase-js `tracePropagation` |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Node (server actions, RSC, routes) | Yes — `@sentry/node` `sdk/initOtel.js` | Sentry propagator, read by supabase-js | **Enabled** |
 | Middleware/proxy (`src/proxy.ts`) — runs as Node.js on Vercel, confirmed via live runtime logs, not the legacy Edge runtime | Yes — `@sentry/node` `sdk/initOtel.js` | Sentry propagator, read by supabase-js | **Enabled — confirmed same runtime as everything else, see below** |
 | Browser | **No** — `@sentry/browser` 10.68.0 contains zero OpenTelemetry references | Sentry's own fetch/XHR instrumentation | **Deliberately off** |
@@ -77,7 +78,7 @@ at the single call site in `supabase-tracing.ts`. Verified in
 paths:
 
 | Path | With the flag false |
-|---|---|
+| --- | --- |
 | span attribute `db.query` | withheld |
 | span attribute `db.body` | withheld |
 | breadcrumb `data.{query,body}` | withheld |
@@ -118,7 +119,7 @@ is a volume change worth watching for a day.
 Verified against Supabase's current documentation, not assumed:
 
 | Surface | Carries `trace_id`? |
-|---|---|
+| --- | --- |
 | API Gateway logs (PostgREST, Auth, Storage, Realtime) | **Yes** |
 | Edge Function logs | **Yes** |
 | **Postgres logs** | **No** |
@@ -184,7 +185,7 @@ and confirm the field name on the first live trace (§11).
 Not enabled. Current, verified pricing:
 
 | Item | Cost |
-|---|---|
+| --- | --- |
 | Plan requirement | **Pro, Team, or Enterprise** (not Free) |
 | Per drain | **$0.0822/hour ≈ $60/month** |
 | Events | **$0.20 per 1M events** |
@@ -248,7 +249,7 @@ rollback.
 Options, with the rollback property called out:
 
 | Mechanism | Survives rollback? | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `RAISE LOG` from PL/pgSQL | **Yes** — goes to the Postgres log, not a table | Lands in Postgres logs, which carry **no trace_id** (§4) |
 | Table insert in the same txn | **No** | Useless for the failing case |
 | `pg_background` / autonomous txn | Yes | Extra extension, more moving parts |
@@ -283,7 +284,7 @@ against Logs Ingest.
 ## 11. Verification status — read this before trusting anything above
 
 | Claim | Status |
-|---|---|
+| --- | --- |
 | APIs exist and are exported | **Verified** against installed packages |
 | `sendOperationData: false` suppresses query/body | **Verified** by reading the SDK source |
 | Guard skips plain-object mocks | **Verified** by test |
