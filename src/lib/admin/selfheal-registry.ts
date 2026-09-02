@@ -88,8 +88,13 @@ export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
     jobType: 'selfheal-triage',
     step: 1,
     title: 'Diagnose',
-    runner: 'cloud-routine',
-    cadenceMinutes: DAILY,
+    // Moved off the Anthropic-hosted cloud routine onto a Vercel cron
+    // (src/app/api/cron/selfheal-triage/route.ts) — this deployment already
+    // carries SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY and CRON_SECRET,
+    // which the cloud routine's environment never had. See
+    // docs/ai-system/selfheal/README.md and triage-contract.md.
+    runner: 'vercel-cron',
+    cadenceMinutes: 6 * 60,
     what: 'Reads every unresolved fingerprint in the last 72h, groups them by root cause, and writes one rca_analysis row per fingerprint.',
     contract: 'docs/ai-system/selfheal/triage-contract.md',
   },
