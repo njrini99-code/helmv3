@@ -157,7 +157,15 @@ export function CapacitorProvider() {
           // `shouldAutoScrollDistanceInput` guards against during putt tagging,
           // so this does not undo that guard.
           const active = document.activeElement;
-          if (active instanceof HTMLElement && active.isConnected) {
+          // A surface that resizes itself against --keyboard-height (the
+          // messages screen) has already put the field above the keys;
+          // centring it in the full, keyboard-covered viewport would only
+          // scroll its own header away.
+          if (
+            active instanceof HTMLElement &&
+            active.isConnected &&
+            !active.closest('[data-fw-keyboard-aware]')
+          ) {
             requestAnimationFrame(() => {
               if (document.activeElement !== active) return;
               active.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -192,7 +200,31 @@ export function CapacitorProvider() {
         pushAuthUnsubscribe();
       };
     }
-    return undefined;
+
+    // Web fallback for the same two hooks the native path publishes above
+    // (`--keyboard-height`, `body.keyboard-open`), so a screen that lays out
+    // against them behaves the same in Mobile Safari / the installed PWA.
+    // Safari does not resize the layout viewport for the keyboard either; the
+    // only signal is `visualViewport` shrinking. A pinch-zoom shrinks it too,
+    // which is why `scale` gates the reading — zooming is not a keyboard.
+    // Fine-pointer devices have no soft keyboard; skip them entirely so a
+    // desktop window resize never masquerades as one.
+    const viewport = window.visualViewport;
+    if (!viewport || !window.matchMedia('(pointer: coarse)').matches) return undefined;
+    const publish = () => {
+      const inset =
+        viewport.scale > 1.01 ? 0 : Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop));
+      document.documentElement.style.setProperty('--keyboard-height', `${inset}px`);
+      document.body.classList.toggle('keyboard-open', inset > 120);
+    };
+    viewport.addEventListener('resize', publish);
+    viewport.addEventListener('scroll', publish);
+    return () => {
+      viewport.removeEventListener('resize', publish);
+      viewport.removeEventListener('scroll', publish);
+      document.documentElement.style.removeProperty('--keyboard-height');
+      document.body.classList.remove('keyboard-open');
+    };
   }, []);
 
   return null;

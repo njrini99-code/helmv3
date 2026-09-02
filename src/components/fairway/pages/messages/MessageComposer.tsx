@@ -182,7 +182,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     // Sunken matte composer track — mirrors AskThreadPane's composer slot.
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border-subtle bg-surface-sunken p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4"
+      className="border-t border-border-subtle bg-surface-sunken p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-4 lg:pb-4"
     >
       {/* Pending attachment previews — REUSED component, render only when present. */}
       {pendingAttachments.length > 0 && (
