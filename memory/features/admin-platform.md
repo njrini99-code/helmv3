@@ -276,6 +276,21 @@ them would have broken those routes, not the dead one.
   succeeded — a short trace is not a failed one, and a combined "46 problems"
   figure would be false. `trace-fleet.ts` counts them separately;
   `stepCoverage` returns null rather than inventing a denominator.
+- **A Sentry rate limit gets one honoured retry before it counts as blind.**
+  `fetchSentryIssues` (`src/lib/admin/sentry-api.ts`) waits out the 429's
+  `Retry-After` (capped at 30s; a sane default when the header is absent)
+  and retries exactly once. If the retry also fails, the envelope is marked
+  `degraded: true` rather than a bare error. The Reliability tab's
+  `SourceStatus` (`src/lib/reliability/types.ts`) carries this through as its
+  own `'degraded'` value — ranked worse than `partial` but better than
+  `blind` in `worstStatus`, since a rate limit "usually clears on its own"
+  (the same wording `integration-health.ts`'s `KIND_COPY` already used for
+  this fault kind) — with reason `'rate limited'`. Scoped to the Reliability
+  tab only: the Incidents tab's separate `SourceHealth` union
+  (`src/lib/admin/incidents/types.ts`) has no `degraded` member and a
+  degraded reliability arm folds into its existing `'blind'` there, which is
+  the conservative direction and consistent with "no all-clear while a
+  required source is blind".
 - **A canceled preview deployment is not a build problem.** `collectVercel`
   rates a `CANCELED` Vercel deployment `info` unless its `target` is
   `production`, where a canceled deploy means the intended release never

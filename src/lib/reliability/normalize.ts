@@ -80,13 +80,17 @@ const SEVERITY_RANK: Record<ReliabilitySeverity, number> = {
 /**
  * Worst arm wins.
  *
- * `blind` outranks `partial` outranks `ok`, so a run whose Sentry arm could not
- * authenticate can never present itself as a clean run. This is the single
- * function standing between "we checked three sources and found nothing" and
- * "we checked one source and found nothing".
+ * `blind` outranks `degraded` outranks `partial` outranks `ok`, so a run
+ * whose Sentry arm could not authenticate can never present itself as a
+ * clean run. `degraded` sits below `blind` deliberately — it means a rate
+ * limit survived a retry, a cause that usually clears on its own, which is a
+ * materially better story than a dead credential or an unreachable provider.
+ * This is the single function standing between "we checked three sources and
+ * found nothing" and "we checked one source and found nothing".
  */
 export function worstStatus(statuses: SourceStatus[]): SourceStatus {
   if (statuses.includes('blind')) return 'blind';
+  if (statuses.includes('degraded')) return 'degraded';
   if (statuses.includes('partial')) return 'partial';
   return 'ok';
 }

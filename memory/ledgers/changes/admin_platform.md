@@ -1,5 +1,46 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (f) — a Sentry 429 gets one honoured retry before it reads as blind
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (f) of the
+  six-defect sweep).
+- **`fetchSentryIssues` no longer gives up on the first 429.** On a 429 it
+  waits out `Retry-After` (parsed, clamped to 30s max, a fixed 1s fallback
+  when the header is missing) and retries the same request exactly once.
+  Only if that retry ALSO fails does it give up — any other status (500,
+  403, ...) still fails immediately, since there's no reason to believe a
+  second attempt changes those.
+- **A rate limit that survives the retry is `degraded`, not `blind`.**
+  `AdminFetchResult` gained an optional `degraded?: boolean` (`fetch-result.ts`,
+  `failed()`); `SourceStatus` in `src/lib/reliability/types.ts` gained a
+  `'degraded'` member, ranked in `worstStatus` between `partial` and `blind`
+  (worse than partial, better than blind — a rate limit usually clears on
+  its own). `statusFromFetch` (`sources.ts`) maps a degraded envelope to
+  `{status: 'degraded', reason: 'rate limited'}`. `readingCount`
+  (`reliability-view.ts`) excludes degraded arms from "arms that returned
+  data", same as blind. `collectVercel`... n/a here; `collect.ts`'s job-log
+  `error_message` now names degraded arms alongside blind ones without
+  flipping the run's `completed`/`failed` status for a degraded-only run.
+- **Deliberately NOT widened**: the Incidents tab's separate `SourceHealth`
+  union (`src/lib/admin/incidents/types.ts`) has no `'degraded'` member. A
+  degraded reliability arm folds into its existing `'blind'` there via
+  `readReliability()`'s ternary in `fetch.ts` — the conservative direction,
+  and consistent with "no all-clear while a required source is blind". A
+  full second-union widening (8 files: `types.ts`, `fetch.ts`, `correlate.ts`,
+  `sources.ts`, `reconciliation.ts`, `triage-engine.ts`,
+  `SourceCoverage.tsx`, `EvidenceWall.tsx`) was assessed and set aside as
+  disproportionate to this fix; the Reliability tab is where the fact
+  ("Sentry reads ... mark the source degraded") is anchored and is now
+  correct end to end.
+- **Verified**: new failing-first retry/degraded cases in
+  `src/lib/admin/__tests__/sentry-api.test.ts` (43/43 passing — a test-only
+  `__setSentryRetryDelayForTests` stub keeps the 429 tests instant instead of
+  actually pausing 30s), new `worstStatus` ranking cases in
+  `normalize.test.ts`; `npx vitest run src/lib/reliability/__tests__/
+  src/lib/admin/__tests__/sentry-api.test.ts src/app/admin/reliability`
+  (139/139); `npm run typecheck`, `lint`, `lint:ratchet`,
+  `audit:supabase-errors` all green.
+
 ## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (c) — canceled preview deploys stop reading as a build problem
 
 - SHA: pending (branch `agent/reliability-bridge-fixes`, defect (c) of a

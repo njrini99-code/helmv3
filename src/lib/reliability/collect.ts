@@ -120,8 +120,17 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
   // production rather than assumed: all 19,832 existing rows use those two and
   // nothing else. An earlier draft wrote 'success', which no other writer emits
   // and every status-based filter would have missed.
+  // `degraded` (a rate limit that survived retry) does not flip the run to
+  // 'failed' — it usually clears on its own, same reasoning as a `partial`
+  // arm — but it is worth naming in the error_message so it isn't invisible
+  // on the jobs board.
   const jobStatus = overallStatus === 'blind' ? 'failed' : 'completed';
   const blindArms = results.filter((r) => r.status === 'blind').map((r) => r.source);
+  const degradedArms = results.filter((r) => r.status === 'degraded').map((r) => r.source);
+  const statusNotes = [
+    ...(blindArms.length > 0 ? [`blind sources: ${blindArms.join(', ')}`] : []),
+    ...(degradedArms.length > 0 ? [`degraded sources: ${degradedArms.join(', ')}`] : []),
+  ];
 
   const { data, error } = await admin
     .from('background_job_logs')
@@ -131,7 +140,7 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
       started_at: startedAt.toISOString(),
       completed_at: completedAt.toISOString(),
       duration_ms: completedAt.getTime() - startedAt.getTime(),
-      error_message: blindArms.length > 0 ? `blind sources: ${blindArms.join(', ')}` : null,
+      error_message: statusNotes.length > 0 ? statusNotes.join('; ') : null,
       // `ReliabilityRun` is a closed, JSON-only shape (strings, numbers, arrays
       // of the same) so the cast to the generated `Json` type is safe rather
       // than merely convenient — there is no Date, Map or undefined in it.

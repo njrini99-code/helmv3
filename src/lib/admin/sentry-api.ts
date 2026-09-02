@@ -134,6 +134,31 @@ async function sentryGet(path: string, params: URLSearchParams, token: string): 
   });
 }
 
+/** Cap on how long a single 429 retry will wait, regardless of what Sentry's
+ *  Retry-After asks for — a page render must not hang on someone else's
+ *  quota. */
+const MAX_RATE_LIMIT_RETRY_MS = 30_000;
+/** Retry-After is not guaranteed to be present on a 429; this is the wait
+ *  when Sentry omits it. */
+const DEFAULT_RATE_LIMIT_RETRY_MS = 1_000;
+
+function rateLimitRetryDelayMs(retryAfterHeader: string | null): number {
+  if (!retryAfterHeader) return DEFAULT_RATE_LIMIT_RETRY_MS;
+  const seconds = Number(retryAfterHeader);
+  if (!Number.isFinite(seconds) || seconds <= 0) return DEFAULT_RATE_LIMIT_RETRY_MS;
+  return Math.min(seconds * 1000, MAX_RATE_LIMIT_RETRY_MS);
+}
+
+type RetryDelayFn = (ms: number) => Promise<void>;
+const realRetryDelay: RetryDelayFn = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+let retryDelay: RetryDelayFn = realRetryDelay;
+
+/** TEST-ONLY. A real 429 wait is real time; tests inject an instant stub
+ *  rather than actually pausing. Pass null to restore the real delay. */
+export function __setSentryRetryDelayForTests(fn: RetryDelayFn | null): void {
+  retryDelay = fn ?? realRetryDelay;
+}
+
 export async function fetchSentryIssues(opts?: {
   query?: string;
   limit?: number;
@@ -159,15 +184,25 @@ export async function fetchSentryIssues(opts?: {
       });
       if (cursor) params.set('cursor', cursor);
 
-      const res = await sentryGet(`/organizations/${cfg.org}/issues/`, params, cfg.token);
+      let res = await sentryGet(`/organizations/${cfg.org}/issues/`, params, cfg.token);
+      // A 429 is treated as transient: wait out (a capped version of) what
+      // Sentry itself asked for, then try exactly once more before giving up.
+      // Anything else that isn't ok fails immediately — no reason to believe
+      // a 500 or a 403 will resolve itself a second later.
+      if (res.status === 429) {
+        await retryDelay(rateLimitRetryDelayMs(res.headers.get('retry-after')));
+        res = await sentryGet(`/organizations/${cfg.org}/issues/`, params, cfg.token);
+      }
       if (!res.ok) {
         const retryAfter = res.headers.get('retry-after');
+        const rateLimited = res.status === 429;
         return failed(
           await reportIntegrationFault(
             'sentry',
             'issues fetch',
-            `Sentry issues fetch failed: ${res.status}${retryAfter ? ` (retry-after ${retryAfter}s)` : ''}`,
+            `Sentry issues fetch failed: ${res.status}${retryAfter ? ` (retry-after ${retryAfter}s)` : ''}${rateLimited ? ' — rate limited after one retry' : ''}`,
           ),
+          rateLimited ? { degraded: true } : undefined,
         );
       }
       const rows = (await res.json()) as RawIssue[];

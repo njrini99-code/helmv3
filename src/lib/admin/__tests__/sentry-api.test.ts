@@ -8,6 +8,7 @@ import {
   fetchSentryFeatureCounts,
   updateSentryIssueStatus,
   __resetSentryFeatureCountCooldown,
+  __setSentryRetryDelayForTests,
 } from '@/lib/admin/sentry-api';
 
 // Well-formed by shape (an org token). The old fixtures — 'sentry-read-token',
@@ -28,13 +29,24 @@ function issuePayload(id: string) {
 }
 
 describe('fetchSentryIssues', () => {
+  // The retry delay is real in production (it exists to honour Retry-After);
+  // it is stubbed to instant here so a 429 test does not actually pause the
+  // suite for up to 30 seconds.
+  const delaysMs: number[] = [];
   beforeEach(() => {
     vi.stubEnv('SENTRY_READ_TOKEN', READ_TOKEN);
     vi.stubEnv('SENTRY_ORG', 'helm-xs');
     vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
     fetchMock.mockReset();
+    delaysMs.length = 0;
+    __setSentryRetryDelayForTests(async (ms) => {
+      delaysMs.push(ms);
+    });
   });
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    __setSentryRetryDelayForTests(null);
+  });
 
   it('returns unconfigured (NOT an error) when neither token env is set', async () => {
     vi.stubEnv('SENTRY_READ_TOKEN', '');
@@ -118,11 +130,48 @@ describe('fetchSentryIssues', () => {
     expect(res.truncated).toBe(false);
   });
 
-  it('fails soft on 429 without throwing', async () => {
+  it('fails soft on 429 without throwing, after retrying once', async () => {
     fetchMock.mockResolvedValue(new Response('slow down', { status: 429, headers: { 'retry-after': '60' } }));
     const res = await fetchSentryIssues();
     expect(res.status).toBe('error');
     expect(res.error).toContain('429');
+    // One retry after the first 429, so exactly two calls total.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('honours Retry-After on a 429, capped at 30 seconds', async () => {
+    fetchMock.mockResolvedValue(new Response('slow down', { status: 429, headers: { 'retry-after': '9999' } }));
+    await fetchSentryIssues();
+    expect(delaysMs).toEqual([30_000]);
+  });
+
+  it('retries once on 429 and succeeds if the retry returns a clean response', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response('slow down', { status: 429, headers: { 'retry-after': '2' } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([issuePayload('1')]), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      }));
+    const res = await fetchSentryIssues();
+    expect(res.status).toBe('ok');
+    expect(res.data).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(delaysMs).toEqual([2_000]);
+  });
+
+  it('marks the result degraded with a rate-limited reason when the retry also 429s', async () => {
+    fetchMock.mockResolvedValue(new Response('slow down', { status: 429, headers: { 'retry-after': '5' } }));
+    const res = await fetchSentryIssues();
+    expect(res.status).toBe('error');
+    expect(res.degraded).toBe(true);
+  });
+
+  it('does not mark the result degraded for a non-rate-limit failure', async () => {
+    fetchMock.mockResolvedValue(new Response('nope', { status: 500 }));
+    const res = await fetchSentryIssues();
+    expect(res.status).toBe('error');
+    expect(res.degraded).toBeFalsy();
+    // 500 is not a rate limit — no retry, one call only.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('fails soft on network errors', async () => {

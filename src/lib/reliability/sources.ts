@@ -38,6 +38,12 @@ function statusFromFetch<T>(res: AdminFetchResult<T>): { status: SourceStatus; r
     return { status: 'blind', reason: res.error ?? 'not configured' };
   }
   if (res.status === 'error') {
+    // A rate limit that survived one honoured Retry-After retry (see
+    // `fetchSentryIssues`) is transient and usually clears on its own —
+    // worth telling apart from a dead token or an unreachable provider.
+    if (res.degraded) {
+      return { status: 'degraded', reason: 'rate limited' };
+    }
     return { status: 'blind', reason: res.error ?? 'fetch failed' };
   }
   if (res.truncated) {
