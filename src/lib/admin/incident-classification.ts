@@ -336,7 +336,14 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
   //     actionable degradations. Same class, same verdict. Server-side
   //     transport failures (undici's "fetch failed" from a Vercel function)
   //     are deliberately NOT matched here and stay actionable — those are ours.
-  if (source === 'client' && isTransientNetworkErrorMessage(haystack)) {
+  //     A stale-deployment chunk failure ("Failed to fetch dynamically
+  //     imported module") shares the wording but not the cause; rule 5b owns
+  //     it, so it is excluded here rather than re-filed as connectivity.
+  if (
+    source === 'client' &&
+    isTransientNetworkErrorMessage(haystack) &&
+    !matchesAny(haystack, STALE_DEPLOYMENT_PHRASES)
+  ) {
     return done(
       'integration',
       false,

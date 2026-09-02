@@ -45,6 +45,18 @@ describe('classifyIncident — a client fetch that never reached the server', ()
     expect(c.actionable).toBe(true);
   });
 
+  it('leaves a stale-deployment chunk failure to the rule that already recovers it', () => {
+    const c = classifyIncident({
+      title: 'Failed to fetch dynamically imported module: /_next/static/chunks/x.js',
+      message: 'Failed to fetch dynamically imported module: /_next/static/chunks/x.js',
+      severity: 'warning',
+      source: 'client',
+      errorCode: 'ChunkLoadError',
+    });
+    expect(c.klass).toBe('degradation');
+    expect(c.reason).toMatch(/StaleDeploymentRecoveryScript/);
+  });
+
   it('does not let a client-reported AbortError hide behind the same rule — that timeout budget is ours', () => {
     const c = classifyIncident({
       title: 'Client error: AbortError',
