@@ -330,6 +330,22 @@ export async function runBaseballEngineCore(
   // eventDerivedByPlayer EMPTY, so every player degrades to their legacy
   // scalar this run -- never a partial event/legacy blend.
   const { data: engineEventRows, error: eventRowsErr } = await loadEngineEventRows(db, teamId, playerIds);
+  if (eventRowsErr) {
+    await logServerError(
+      `[baseballEngineRun] event telemetry read failed; velocity-derived signals were skipped for this run: ${describeError(eventRowsErr)}`,
+      {
+        action: 'baseball.engineRun.loadEventTelemetry',
+        featureArea: 'coachhelm',
+        source: 'background_job',
+        sport: 'baseball',
+        teamId,
+        errorCode: eventRowsErr.code ?? undefined,
+        errorDetails: eventRowsErr.message,
+        dbFingerprint: 'baseball-coachhelm-event-telemetry-read',
+      },
+      'warning',
+    );
+  }
   const eventDerivedByPlayer: Record<string, EventDerivedVelocityInput> =
     !eventRowsErr && engineEventRows
       ? buildEventDerivedByPlayer(playerIds, engineEventRows.pitches, engineEventRows.battedBalls)
@@ -467,7 +483,7 @@ export async function runBaseballEngineCore(
   const importSinceIso = new Date(Date.parse(nowIso) - 14 * 86400_000).toISOString();
   const { data: importRunRows } = await db
     .from('baseball_import_runs')
-    .select('id, import_type, source_label, status, row_count, warning_count, error_count, created_at')
+    .select('id, import_type, source_label, status, total_rows, warning_count, error_count, created_at')
     .eq('team_id', teamId)
     .gte('created_at', importSinceIso)
     .order('created_at', { ascending: false })

@@ -8,27 +8,66 @@ Require aggregate checks instead of every leaf job. Leaf jobs still run and
 remain visible on PRs, but branch protection depends on stable aggregate names
 so a job split/rename does not silently break protection.
 
-> ### ⚠️ WHAT IS ACTUALLY ENFORCED — verified live 2026-07-30
+> ### ✅ MIGRATION COMPLETED — verified live 2026-08-19
 >
 > ```bash
 > gh api repos/njrini99-code/helmv3/branches/main/protection \
 >   -q '.required_status_checks | {strict, contexts}'
-> # => {"strict": true, "contexts": ["CodeQL", "all", "Smoke checks"]}
+> # => {"strict": true, "contexts": [
+> #      "Smoke checks", "CI aggregate", "Review Gate aggregate",
+> #      "Analyze (actions)", "Analyze (javascript-typescript)", "Analyze (python)"
+> #    ]}
 > ```
 >
-> **THREE contexts, and the names are bare** — `all`, not `CI / all`. That matters,
-> because **both `ci.yml` and `review-gate.yml` define a job named `all`**, so the
-> single required context `all` cannot distinguish them. On PR #1125 a check-runs
-> query returned `all → success` while the `BaseballHelm authenticated smoke` job
-> that CI's `all` `needs` was still `in_progress` — the green was Review Gate's, and
-> the smoke then failed. This is very likely how a PR with failing `Unit tests`
-> merged on 2026-07-29. See `docs/CI_RUNBOOK.md` §1 for the CI-run-scoped query to
-> use instead of trusting the name.
+> **Updated 2026-08-20:** `strict` is now `false` (owner decision); see
+> **Other settings** below for the current, API-verified state. The six
+> required contexts are unchanged.
 >
-> **Fixing it needs both halves at once:** rename one aggregate job AND update
-> `required_status_checks` in the same change. Renaming alone leaves protection
-> waiting forever for a context named `all` that no longer exists, which blocks
-> every PR.
+> **The window this section used to warn about was OPEN, and is now closed.**
+> The job rename (`all` → `CI aggregate` / `Review Gate aggregate`) had already
+> landed on `main`, but the required-context list had not been updated — exactly
+> the Option A failure mode described below. `all` was a required context that
+> nothing could ever post again. Every PR-based merge was unsatisfiable, masked
+> only by `enforce_admins: false` letting the owner push straight past it.
+>
+> **`CodeQL` was a phantom too, and the migration plan below did not catch it.**
+> Both orderings above end with `contexts[]=CodeQL`, but no check run and no
+> commit status is named `CodeQL` — this workflow's matrix posts three separate
+> runs, `Analyze (actions)`, `Analyze (javascript-typescript)` and
+> `Analyze (python)`. So of the three contexts formerly required, **two were
+> phantoms and only `Smoke checks` was real.** Verified by asking for the names
+> that actually exist rather than the ones the docs assumed:
+>
+> ```bash
+> gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs --paginate \
+>   -q '.check_runs[] | .name' | sort -u
+> gh api repos/njrini99-code/helmv3/commits/<sha>/status -q '.statuses[] | .context'
+> ```
+>
+> Do that before adding any context to this list. A required context is matched
+> by NAME against what actually posts; a name that posts nothing is
+> indistinguishable from a check that never finishes, and GitHub will not warn
+> you.
+>
+> All six required contexts were confirmed to run on **both** `push` to `main`
+> and on `pull_request` with no path filters, so none of them can hang a PR:
+> `ci.yml` and `review-gate.yml` trigger on `pull_request` unrestricted,
+> `playwright.yml`'s `smoke` job has `if: push || pull_request`, and
+> `codeql.yml` has all three matrix legs on `push`/`pull_request` to `main`.
+>
+> **Also changed 2026-08-19:** `allow_force_pushes` **true → false**. Until now
+> `.claude/hooks/guard-bash.sh` (deleted 2026-08-27) was the only thing
+> preventing a rewrite of
+> shared history on `main`; the hook stays as belt-and-braces, but it is no
+> longer load-bearing. Note `CLAUDE.md` rule 0 still describes force pushes as
+> "ENABLED on GitHub" — that sentence is now stale.
+>
+> **Not required, but real:** CircleCI posts two commit statuses,
+> `ci/circleci: android-compile` and `ci/circleci: ios-compile`. They are
+> genuine gates that nothing enforces. They were deliberately NOT added here,
+> because the `ios` workflow only triggers on `main`/`release/*`/`ios/*`/
+> `capacitor/*` — requiring a context that does not post on every PR
+> re-creates the exact bug this section documents.
 >
 > `CodeRabbit` is **no longer required** (dropped 2026-07-20). The bullet below is
 > kept struck through rather than deleted so the change is visible to anyone
@@ -75,7 +114,6 @@ Advisory checks:
 - `Vercel` and `Vercel Preview Comments` (non-main preview builds skipped —
   see `docs/operations/COST_CONTROLS.md`)
 - ~~`the external review bot`~~ — **DELETED 2026-07-20**; the retired rules directory is gone.
-- `ci/circleci: lighthouse-preview`
 - `Playwright PR smoke (a11y)` — public routes only, path-filtered within PRs
 - `Playwright (chromium)` — main + manual only
 - `Course picker screenshots` — manual `workflow_dispatch` only
@@ -91,14 +129,13 @@ Advisory checks:
 (`e2e/baseball-smoke.spec.ts` + `e2e/baseball-onboarding-smoke.spec.ts`) and
 its fail-loud auth setup already existed and ran on every `main` push via
 `playwright.yml`'s `e2e` job, but only post-merge — a real authenticated
-regression could land on `main` before this ever ran. `ci.yml` now runs the
-same specs (steps copied, not moved) as a required PR gate. It skips rather
-than fails on fork/Dependabot PRs (no repo secrets available to them);
-same-repo, non-Dependabot pushes and PRs must have the required secrets
-configured or the job fails loudly. Note the added cost: a second full
-`npm run build` + Playwright-chromium install on every same-repo,
-non-Dependabot PR, on top of the existing `Next build` / `Smoke checks`
-builds.
+regression could land on `main` before this ever ran. `ci.yml` ran the
+same specs (steps copied, not moved) as a required PR gate until 2026-08-26,
+when the owner moved it out of the PR gate (out of `CI aggregate`'s `needs`,
+`if:` limited to push-to-`main`) after two consecutive PR runs died to runner
+shutdowns mid-build without executing a test. Post-merge coverage on `main`
+remains; a red run there blocks the next production promote rather than PR
+merges. See the job's own comment in `ci.yml` for the revert recipe.
 
 **HISTORICAL (both AI reviewers were dropped 2026-07-20).** `the external review bot` was
 intentionally advisory, not required: its `its config` skipped
@@ -119,12 +156,26 @@ sqlfluff, hadolint) plus CodeQL cover the same hard rules and report on every PR
 
 ## Other settings
 
-- Require branches to be up to date before merging: **ON**
-- Require linear history: **ON** (or rebase-only — team preference)
-- Require pull request reviews before merging: **ON**, 1 approval minimum
-- Dismiss stale pull request approvals when new commits are pushed: **ON**
-- Restrict who can push to matching branches: **ON** (admins only)
-- **Do not allow bypassing the above settings: ON** (no admin bypass)
+> **Verified live against the GitHub API 2026-08-20** (`gh api …/branches/main/protection`).
+> This list is the ACTUAL state, not the aspiration — several items were relaxed
+> by owner decision and this doc had drifted from them until this sync.
+
+- Require branches to be up to date before merging: **OFF** — `strict` was set to
+  `false` on 2026-08-20 (owner decision). With multiple sessions landing commits,
+  `strict: true` forced every open PR to restart its full check suite each time
+  `main` moved, starving small PRs. Squash-merge already linearizes history, so the
+  up-to-date requirement bought little here; the compensating control is
+  `git pull main` before branching.
+- Require linear history: **ON**
+- Require pull request reviews before merging: **OFF** — 0 approvals required
+  (owner works solo and is the only reviewer).
+- Dismiss stale pull request approvals when new commits are pushed: **N/A** (no
+  reviews required).
+- Restrict who can push to matching branches: **OFF** (no push-restriction list).
+- Do not allow bypassing the above settings: **OFF** — `enforce_admins` is
+  disabled, so the owner can direct-push to `main`.
+- Allow force pushes: **OFF**. Required status checks: Smoke checks, CI aggregate,
+  Review Gate aggregate, Analyze (actions / javascript-typescript / python).
 
 ## Why this matters
 

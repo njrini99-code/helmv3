@@ -251,6 +251,30 @@ export interface TrajectoryForecast {
   // Model info
   modelConfidence: number;
   primaryModel: 'linear' | 'seasonal' | 'pattern_based' | 'ensemble';
+
+  /**
+   * How many completed rounds (capped at 100 — the query's own limit) fed
+   * this forecast. Added 2026-08-21 (#1485) wiring the first consumer: a
+   * statistical projection with no visible sample size is unfalsifiable, and
+   * CoachHelm's honesty rules require the basis to be visible wherever a
+   * projection renders.
+   */
+  roundsAnalyzed: number;
+}
+
+/**
+ * The subset of `TrajectoryForecast` a read surface actually renders (#1485
+ * — the coach-facing Trajectory card). `getPlayerTrajectory` returns this
+ * instead of the full forecast: `scenarios` alone repeats the whole
+ * `projections` series four times (best/likely/conservative/worst), which is
+ * real compute the forecaster needs internally but nothing crossing the RSC
+ * boundary should have to serialize just to read a scoring-average line.
+ */
+export interface PlayerTrajectorySummary {
+  horizonDays: number;
+  projections: TrajectoryPoint[];
+  roundsAnalyzed: number;
+  modelConfidence: number;
 }
 
 /** A point on the trajectory */

@@ -278,7 +278,7 @@ export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitch
               ) : (
                 <>
                   <IconUpload size={14} className="mr-1.5" />
-                  Upload & Match Players
+                  Upload &amp; Match Players
                 </>
               )}
             </Button>

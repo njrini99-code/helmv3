@@ -7,17 +7,16 @@
  * The flag-on redesign of the PLAYER /golf/dashboard/rounds/recover route — the
  * incomplete-round recovery flow. A self-contained client (mirroring the legacy
  * RecoverRoundClient shape) that scans the SAME offline storage — modern + legacy
- * IndexedDB plus localStorage emergency saves — and re-submits a recoverable
- * draft through the SAME verbatim server action (submitGolfRoundComprehensive).
+ * IndexedDB plus localStorage emergency saves — and either restores unfinished
+ * progress to Continue Round or re-submits a completed round that failed to post.
  *
- * PLUMBING IS PRESERVED 1:1 with the legacy client:
+ * RECOVERY INVARIANTS:
  *   • identical state machine (rounds / loading / recovering / error),
- *   • identical scan useEffect (Promise.allSettled over legacy + modern stores,
- *     localStorage fallback, hasRecoverableStats filter, dedup),
- *   • identical recover handler — same submitGolfRoundComprehensive call, same
- *     re-try-without-id branch, same already-submitted short-circuit, same
- *     non-destructive cleanupRecoveredRound (delete only AFTER a confirmed
- *     server submit; NEVER delete-then-reinsert),
+ *   • storage scan over legacy + modern stores and the independent recovery
+ *     mirror, with a progress-aware filter and deduplication,
+ *   • recovery handler restores partial progress through savePartialRound and
+ *     only submits a full round that was already in a failed final submission,
+ *     with non-destructive cleanup only after a confirmed server save,
  *   • no new fetch is introduced — the storage scan IS the data source.
  * Only the PRESENTATION changes: Fairway Surface/Button/EmptyState/InlineNotice/
  * ViewHeader + fairwayToast (never legacy useToast).
@@ -32,15 +31,26 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { submitGolfRoundComprehensive } from '@/app/golf/actions/golf';
+import {
+  savePartialRound,
+  submitGolfRoundComprehensive,
+  type PartialRoundData,
+} from '@/app/golf/actions/golf';
 import { fairwayToast } from '@/components/fairway';
-import type { HoleStats } from '@/lib/types/golf';
+import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import {
   getPendingRounds as getModernPendingRounds,
-  deleteOfflineRound as deleteModernOfflineRound,
+  getFailedRounds as getModernFailedRounds,
+  deleteOfflineRoundThrough as deleteModernOfflineRoundThrough,
   type OfflineRound as ModernOfflineRound,
 } from '@/lib/offline/indexed-db';
-import { clearEmergencySave } from '@/lib/utils/emergency-save';
+import {
+  clearRoundRecoverySnapshotThrough,
+  getRoundRecoverySnapshots,
+  type RoundRecoverySnapshot,
+} from '@/lib/offline/shot-storage';
+import { clearEmergencySaveThrough } from '@/lib/utils/emergency-save';
+import type { TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { Flag, ArrowLeft } from 'lucide-react';
 import { ViewHeader, Surface, Button, EmptyState, InlineNotice } from '@/components/fairway';
 
@@ -51,9 +61,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 
 // Emergency save localStorage key prefix (must match emergency-save.ts)
 const EMERGENCY_SAVE_PREFIX = 'golf_emergency_save';
-const EMERGENCY_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-type StorageSource = 'legacy-indexeddb' | 'modern-indexeddb' | 'localstorage';
+type StorageSource = 'legacy-indexeddb' | 'modern-indexeddb' | 'localstorage' | 'recovery-cache';
 
 interface OfflineRoundData {
   id: string;
@@ -80,19 +88,20 @@ interface OfflineRoundData {
     currentHoleIndex: number;
     inProgressShots?: Record<number, unknown[]>;
     submissionIntent?: string;
+    terminalSubmission?: TerminalRoundSubmissionData;
   };
   timestamp: number;
 }
 
-function hasRecoverableStats(round: OfflineRoundData): boolean {
+function hasRecoverableProgress(round: OfflineRoundData): boolean {
   const completedHoleStats = round.draftData?.completedHoleStats;
-  if (!Array.isArray(completedHoleStats)) {
-    return false;
-  }
-
-  return completedHoleStats.some(
-    (hole): hole is HoleStats => hole != null && typeof hole === 'object' && 'score' in hole && hole.score > 0
+  const hasCompletedHole = Array.isArray(completedHoleStats) && completedHoleStats.some(
+    (hole): hole is HoleStats => hole != null && typeof hole === 'object' && 'score' in hole && hole.score > 0,
   );
+  const hasInProgressShot = Object.values(round.draftData?.inProgressShots ?? {})
+    .some((shots) => Array.isArray(shots) && shots.length > 0);
+
+  return hasCompletedHole || hasInProgressShot;
 }
 
 function isCompletedRoundError(message?: string): boolean {
@@ -169,14 +178,25 @@ async function getAllLegacyOfflineRounds(): Promise<OfflineRoundData[]> {
   });
 }
 
-async function deleteLegacyOfflineRoundById(roundId: string): Promise<void> {
+async function deleteLegacyOfflineRoundThrough(
+  roundId: string,
+  acknowledgedTimestamp: number,
+): Promise<void> {
   const db = await openLegacyDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(ROUNDS_STORE, 'readwrite');
     const store = transaction.objectStore(ROUNDS_STORE);
-    store.delete(roundId);
+    const getRequest = store.get(roundId);
+    getRequest.onsuccess = () => {
+      const current = getRequest.result as { timestamp?: unknown } | undefined;
+      if (!current || (typeof current.timestamp === 'number' && current.timestamp > acknowledgedTimestamp)) return;
+      const deleteRequest = store.delete(roundId);
+      deleteRequest.onerror = () => reject(new Error('Failed to clear acknowledged legacy round'));
+    };
+    getRequest.onerror = () => reject(new Error('Failed to read legacy round for acknowledged cleanup'));
     transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(new Error('Failed to delete'));
+    transaction.onerror = () => reject(new Error('Failed to clear acknowledged legacy round'));
+    transaction.onabort = () => reject(new Error('Acknowledged legacy round cleanup aborted'));
   });
 }
 
@@ -185,7 +205,7 @@ async function deleteLegacyOfflineRoundById(roundId: string): Promise<void> {
  * This is a fallback for when IndexedDB data is unavailable (e.g. cleared by browser,
  * different storage partition) but the synchronous localStorage emergency save survived.
  */
-function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
+export function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
   const results: OfflineRoundData[] = [];
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -195,30 +215,39 @@ function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
         const raw = localStorage.getItem(key);
         if (!raw) continue;
         const parsed = JSON.parse(raw);
-        // Skip expired saves
-        if (Date.now() - parsed.timestamp > EMERGENCY_MAX_AGE_MS) continue;
-        // Must have completed hole stats with actual scores
-        if (!parsed.completedHoleStats || !Array.isArray(parsed.completedHoleStats)) continue;
-        const completedCount = parsed.completedHoleStats.filter(
-          (h: HoleStats | null) => h != null && typeof h === 'object' && 'score' in h && h.score > 0
+        // Active rounds intentionally do not expire. A valid timestamp is
+        // enough; recovery is removed only after the golfer completes or
+        // deletes the round (or clears browser storage themselves).
+        if (!Number.isFinite(parsed.timestamp) || typeof parsed.playerId !== 'string') continue;
+        const completedHoleStats = Array.isArray(parsed.completedHoleStats)
+          ? parsed.completedHoleStats
+          : [];
+        const completedCount = completedHoleStats.filter(
+          (h: HoleStats | null) => h != null && typeof h === 'object' && 'score' in h && h.score > 0,
         ).length;
-        if (completedCount === 0) continue;
+        const hasInProgressShot = Object.values(parsed.inProgressShotsByHole ?? {})
+          .some((shots) => Array.isArray(shots) && shots.length > 0);
+        // A first-hole shot is real player work even though it has not reached
+        // a scorecard checkpoint yet. Keep it recoverable rather than hiding
+        // it until a hole is completed.
+        if (completedCount === 0 && !hasInProgressShot) continue;
 
         // Convert to OfflineRoundData format
         const roundId = key.replace(`${EMERGENCY_SAVE_PREFIX}_`, '') || `ls_${Date.now()}_${i}`;
         results.push({
           id: `localStorage_${roundId}`,
-          playerId: '',
+          playerId: parsed.playerId,
           storageSource: 'localstorage',
           draftData: {
             step: 'tracking',
             roundId: roundId !== 'new' ? roundId : undefined,
             setupData: parsed.setupData,
             holes: parsed.holes || [],
-            completedHoleStats: parsed.completedHoleStats,
+            completedHoleStats,
             currentHoleIndex: parsed.currentHoleIndex ?? 0,
             inProgressShots: parsed.inProgressShotsByHole,
             submissionIntent: parsed.submissionIntent,
+            terminalSubmission: parsed.terminalSubmission,
           },
           timestamp: parsed.timestamp,
         });
@@ -263,8 +292,36 @@ function mapModernPendingRound(round: ModernOfflineRound): OfflineRoundData | nu
       currentHoleIndex: typeof draftData.currentHoleIndex === 'number' ? draftData.currentHoleIndex : 0,
       inProgressShots: draftData.inProgressShots,
       submissionIntent: typeof draftData.submissionIntent === 'string' ? draftData.submissionIntent : undefined,
+      terminalSubmission: draftData.terminalSubmission,
     },
     timestamp: round.timestamp,
+  };
+}
+
+function mapRecoverySnapshot(snapshot: RoundRecoverySnapshot): OfflineRoundData {
+  const data = snapshot.data;
+  return {
+    id: `recoveryCache_${snapshot.key}`,
+    playerId: data.playerId,
+    storageSource: 'recovery-cache',
+    serverRoundId: data.roundId ?? undefined,
+    draftData: {
+      step: 'tracking',
+      roundId: data.roundId ?? undefined,
+      setupData: data.setupData,
+      holes: data.holes.map((hole) => ({
+        number: hole.number,
+        par: hole.par,
+        yardage: hole.yardage,
+        score: hole.score ?? null,
+      })),
+      completedHoleStats: data.completedHoleStats,
+      currentHoleIndex: data.currentHoleIndex,
+      inProgressShots: data.inProgressShotsByHole,
+      submissionIntent: data.submissionIntent,
+      terminalSubmission: data.terminalSubmission,
+    },
+    timestamp: data.timestamp,
   };
 }
 
@@ -293,17 +350,34 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
   useEffect(() => {
     Promise.allSettled([
       getAllLegacyOfflineRounds(),
-      getModernPendingRounds().then(allRounds => allRounds.map(mapModernPendingRound).filter(Boolean) as OfflineRoundData[]),
+      Promise.all([getModernPendingRounds(), getModernFailedRounds()])
+        .then(([pending, failed]) => {
+          const seenIds = new Set<string>();
+          return [...pending, ...failed]
+            .filter((round) => !seenIds.has(round.id) && (seenIds.add(round.id), true))
+            .map(mapModernPendingRound)
+            .filter(Boolean) as OfflineRoundData[];
+        }),
+      getRoundRecoverySnapshots().then((snapshots) => snapshots.map(mapRecoverySnapshot)),
     ])
-      .then(([legacyResult, modernResult]) => {
+      .then(([legacyResult, modernResult, recoveryCacheResult]) => {
         const legacyRounds = legacyResult.status === 'fulfilled' ? legacyResult.value : [];
         const modernRounds = modernResult.status === 'fulfilled' ? modernResult.value : [];
+        const recoveryCacheRounds = recoveryCacheResult.status === 'fulfilled' ? recoveryCacheResult.value : [];
         const emergencySaves = getEmergencySavesFromLocalStorage();
         const dedupedRounds: OfflineRoundData[] = [];
         const seenKeys = new Set<string>();
 
-        for (const round of [...modernRounds, ...legacyRounds, ...emergencySaves]) {
-          if (!hasRecoverableStats(round)) {
+        for (const round of [...recoveryCacheRounds, ...modernRounds, ...legacyRounds, ...emergencySaves]
+          .sort((left, right) => right.timestamp - left.timestamp)) {
+          // Browser storage belongs to the device, not the account. Never
+          // offer a local backup unless it was created by this signed-in
+          // player; otherwise a shared iPad can surface another golfer's
+          // shots and the recovery action can incorrectly create a new round.
+          if (round.playerId !== playerId) {
+            continue;
+          }
+          if (!hasRecoverableProgress(round)) {
             continue;
           }
 
@@ -316,7 +390,12 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
           dedupedRounds.push(round);
         }
 
-        if (dedupedRounds.length === 0 && legacyResult.status === 'rejected' && modernResult.status === 'rejected') {
+        if (
+          dedupedRounds.length === 0
+          && legacyResult.status === 'rejected'
+          && modernResult.status === 'rejected'
+          && recoveryCacheResult.status === 'rejected'
+        ) {
           setError('Could not access offline storage. Make sure you are using the same browser and device.');
           return;
         }
@@ -325,8 +404,11 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
       })
       .catch(() => {
         const emergencySaves = getEmergencySavesFromLocalStorage();
-        if (emergencySaves.length > 0) {
-          setRounds(emergencySaves.filter(hasRecoverableStats));
+        const ownedEmergencySaves = emergencySaves.filter(
+          (round) => round.playerId === playerId && hasRecoverableProgress(round),
+        );
+        if (ownedEmergencySaves.length > 0) {
+          setRounds(ownedEmergencySaves);
         } else {
           setError('Could not access offline storage. Make sure you are using the same browser and device.');
         }
@@ -336,20 +418,23 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
 
   const cleanupRecoveredRound = async (round: OfflineRoundData): Promise<void> => {
     const existingRoundId = getExistingRoundId(round);
-    clearEmergencySave(existingRoundId ?? null);
+    clearEmergencySaveThrough(existingRoundId ?? null, playerId, round.timestamp);
 
     if (round.storageSource === 'localstorage') {
-      const lsKey = round.id.replace('localStorage_', '');
-      try { localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_${lsKey}`); } catch { /* ignore */ }
       return;
     }
 
     if (round.storageSource === 'modern-indexeddb') {
-      await deleteModernOfflineRound(round.id);
+      await deleteModernOfflineRoundThrough(round.id, round.timestamp);
       return;
     }
 
-    await deleteLegacyOfflineRoundById(round.id);
+    if (round.storageSource === 'recovery-cache') {
+      await clearRoundRecoverySnapshotThrough(existingRoundId ?? null, playerId, round.timestamp);
+      return;
+    }
+
+    await deleteLegacyOfflineRoundThrough(round.id, round.timestamp);
   };
 
   const handleRecover = async (round: OfflineRoundData) => {
@@ -361,33 +446,78 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
       const stats = draft.completedHoleStats.filter(
         (h): h is HoleStats => h != null && typeof h === 'object' && 'score' in h && h.score > 0
       );
+      const existingRoundId = getExistingRoundId(round);
+      const inProgressShots = Object.entries(draft.inProgressShots ?? {})
+        .filter(([, shots]) => Array.isArray(shots) && shots.length > 0)
+        .map(([holeIndex, shots]) => {
+          const index = Number(holeIndex);
+          return {
+            holeNumber: draft.holes[index]?.number ?? index + 1,
+            shots: shots as ShotRecord[],
+          };
+        });
 
-      if (stats.length === 0) {
-        setError('No completed hole data found in this draft.');
+      if (stats.length === 0 && inProgressShots.length === 0) {
+        setError('No shot data found in this draft.');
         setRecovering(null);
         return;
       }
 
-      const roundData = {
-        courseName: draft.setupData.courseName,
-        courseCity: draft.setupData.courseCity || undefined,
-        courseState: draft.setupData.courseState || undefined,
-        courseRating: draft.setupData.courseRating ? parseFloat(draft.setupData.courseRating) : undefined,
-        courseSlope: draft.setupData.courseSlope ? parseInt(draft.setupData.courseSlope) : undefined,
-        teesPlayed: draft.setupData.teesPlayed || undefined,
-        roundType: draft.setupData.roundType,
-        roundDate: draft.setupData.roundDate,
-        qualifierId: draft.setupData.qualifierId || undefined,
-        qualifierRoundNumber: draft.setupData.qualifierRoundNumber || undefined,
-        holes: stats,
-      };
+      const allHolesScored = draft.holes.length > 0
+        && stats.length === draft.holes.length
+        && draft.holes.every((hole) => hole.score != null);
 
-      const existingRoundId = getExistingRoundId(round);
-      let result = await submitGolfRoundComprehensive(roundData, existingRoundId);
+      // A failed final submit is the only recovery that should complete a
+      // round automatically. Any other backup — including a first-hole shot —
+      // is restored as an in-progress server round and sent back to Continue
+      // Round, so a golfer never loses partial work or accidentally submits it.
+      const terminalSubmission = draft.terminalSubmission;
+      if (
+        draft.submissionIntent !== 'submit'
+        || !allHolesScored
+        || !existingRoundId
+        || !terminalSubmission
+      ) {
+        const holesToPlay = draft.holes.length === 9 ? 9 : 18;
+        const partialData: PartialRoundData = {
+          courseName: draft.setupData.courseName,
+          courseCity: draft.setupData.courseCity || undefined,
+          courseState: draft.setupData.courseState || undefined,
+          courseRating: draft.setupData.courseRating ? parseFloat(draft.setupData.courseRating) : undefined,
+          courseSlope: draft.setupData.courseSlope ? parseInt(draft.setupData.courseSlope) : undefined,
+          teesPlayed: draft.setupData.teesPlayed || undefined,
+          roundType: draft.setupData.roundType,
+          roundDate: draft.setupData.roundDate,
+          qualifierId: draft.setupData.qualifierId || undefined,
+          qualifierRoundNumber: draft.setupData.qualifierRoundNumber || undefined,
+          currentHole: Math.max(1, Math.min(draft.currentHoleIndex + 1, holesToPlay)),
+          holesToPlay,
+          holes: stats,
+          inProgressShots,
+          holeConfigs: draft.holes.map((hole, index) => ({
+            holeNumber: hole.number ?? index + 1,
+            par: hole.par,
+            yardage: hole.yardage,
+          })),
+        };
 
-      if (!result.success && existingRoundId && /round not found or you do not have permission/i.test(result.error)) {
-        result = await submitGolfRoundComprehensive(roundData);
+        const partialResult = await savePartialRound(partialData, existingRoundId);
+
+        if (!partialResult.success) {
+          setError(partialResult.error || 'Failed to restore round progress.');
+          setRecovering(null);
+          return;
+        }
+
+        await cleanupRecoveredRound(round).catch(() => {});
+        fairwayToast.success('Round progress restored.');
+        router.push(`/golf/dashboard/rounds/continue/${partialResult.data.roundId}`);
+        return;
       }
+
+      const roundData = terminalSubmission;
+
+      const result = await submitGolfRoundComprehensive(roundData, existingRoundId);
 
       if (!result.success) {
         if (existingRoundId && isCompletedRoundError(result.error)) {
@@ -439,7 +569,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
       <ViewHeader
         eyebrow="Recover Round"
         title="Restore an unfinished round."
-        description="Drafts saved on this device when a submit could not finish appear here — recover one to post it without re-entering anything."
+        description="Progress saved on this device after an interruption or a failed submit appears here. Restore it without re-entering shots."
         meta={
           count > 0 ? (
             <span className="tabular-nums">{count} recoverable {count === 1 ? 'round' : 'rounds'}</span>

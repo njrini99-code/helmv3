@@ -21,15 +21,19 @@
  * B's source_insight_ids ⊆ rule A's source_insight_ids and A fires, B is
  * suppressed (implemented in `synthesis.ts`).
  *
- * 10 of 11 implementable rules ship here (per Part IX.2 amended for the
+ * 9 of 11 implementable rules ship here (per Part IX.2 amended for the
  * 3-bucket club model). Rule #3 "Tee-club mismatch" still needs hole-level
- * outcome joining and stays deferred.
+ * outcome joining and stays deferred. `long_approach_3putt_cascade` (W28)
+ * was deleted 2026-08-21 (#1475, #1502) — its trigger intersection never
+ * fired in production (0 rows ever), it duplicated `lag_distance_3putt`
+ * coverage on the same players, and its copy cited "> 25 ft lag putting"
+ * research against a gate that actually fired at 31 ft. See the removed
+ * file's git history for the full measurement.
  */
 
 // W28 — insight-driven composites
 import pressureDecel from './rules/pressure-decel-chain';
 import bunkerMissSide from './rules/bunker-miss-side-amplifier';
-import longApproach3Putt from './rules/long-approach-3putt-cascade';
 // W30.5 — insight-driven composites
 import lagDistance3Putt from './rules/lag-distance-3putt';
 import shortApproachGap from './rules/short-approach-proximity-gap';
@@ -48,7 +52,6 @@ export const COMPOSITE_RULES: readonly CompositeRule[] = [
   lagDistance3Putt,
   doublesAfterBogey,
   bunkerMissSide,
-  longApproach3Putt,
   shortApproachGap,
   shortSideScrambling,
   flyerLieOverGreen,

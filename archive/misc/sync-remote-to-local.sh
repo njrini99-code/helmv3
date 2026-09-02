@@ -14,7 +14,7 @@ echo ""
 REMOTE_HOST="db.dgvlnelygibgrrjehbyc.supabase.co"
 REMOTE_PORT="5432"
 REMOTE_USER="postgres"
-REMOTE_PASSWORD="EHl4yASa9zM1sb1k"
+REMOTE_PASSWORD="${REMOTE_PASSWORD:?Set REMOTE_PASSWORD in your environment. This script no longer ships a hardcoded credential; the one that used to be here is in git history and must be treated as compromised.}"
 REMOTE_DB="postgres"
 
 # Local database credentials

@@ -71,6 +71,32 @@ const DATA_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 let dbInstance: IDBDatabase | null = null;
 
+/**
+ * Same idea as `shot-storage.ts`'s `idbUnavailableThisSession` — this is a
+ * SEPARATE database (`golfhelm_offline` here vs. `golfhelm_offline_v2`
+ * there), so it gets its own flag, but the reasoning is identical: a
+ * device-level `indexedDB.open()` failure ("Internal error opening backing
+ * store", WebKit storage-eviction/quota quirks) does not resolve mid-session,
+ * so once seen, every later `openDatabase()` call fails fast with the cached
+ * error instead of repeating the same OS-level failure and re-logging it.
+ */
+let idbUnavailableThisSession = false;
+let idbUnavailableError: Error | null = null;
+
+function reportIdbUnavailableOnce(error: Error): void {
+  if (idbUnavailableThisSession) return;
+  idbUnavailableThisSession = true;
+  idbUnavailableError = error;
+  // Dynamic import: this v1 module has no existing dependency on
+  // error-logging.ts, and importing it eagerly would pull Sentry into every
+  // caller's bundle for a path that fires at most once per session.
+  import('@/lib/error-logging')
+    .then(({ logError }) => logError(error, { component: 'indexed-db', action: 'openDatabase' }, 'low'))
+    .catch(() => {
+      // Logging must never be the reason offline storage fails to degrade.
+    });
+}
+
 function isClosingConnectionError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   return error.name === 'InvalidStateError'
@@ -86,6 +112,10 @@ function resetDatabase(expected?: IDBDatabase): void {
  * Open or create the IndexedDB database
  */
 export async function openDatabase(): Promise<IDBDatabase> {
+  if (idbUnavailableThisSession) {
+    throw idbUnavailableError ?? new Error('IndexedDB unavailable this session');
+  }
+
   if (dbInstance) {
     try {
       // `objectStoreNames` is still readable after close(); transaction
@@ -107,7 +137,9 @@ export async function openDatabase(): Promise<IDBDatabase> {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
-      reject(new Error('Failed to open IndexedDB'));
+      const error = new Error(`Failed to open IndexedDB: ${request.error?.message ?? 'unknown error'}`);
+      reportIdbUnavailableOnce(error);
+      reject(error);
     };
 
     request.onsuccess = () => {
@@ -151,18 +183,29 @@ export async function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
-async function openTransaction(
+/**
+ * Run `runOnTransaction` against a freshly-created transaction, retrying
+ * setup once on a stale cached connection. See `shot-storage.ts`'s
+ * `withShotTransaction` for why the request MUST be placed synchronously
+ * inside `runOnTransaction` rather than on a transaction handed back across
+ * an `await` — the same auto-commit race applies to this database.
+ */
+async function withTransaction<T>(
   stores: string | string[],
   mode: IDBTransactionMode,
-): Promise<IDBTransaction> {
+  runOnTransaction: (transaction: IDBTransaction) => Promise<T>,
+): Promise<T> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const db = await openDatabase();
+    let transaction: IDBTransaction;
     try {
-      return db.transaction(stores, mode);
+      transaction = db.transaction(stores, mode);
     } catch (error) {
       if (attempt > 0 || !isClosingConnectionError(error)) throw error;
       resetDatabase(db);
+      continue;
     }
+    return runOnTransaction(transaction);
   }
   throw new Error('Failed to open IndexedDB transaction');
 }
@@ -481,6 +524,35 @@ export async function getFailedRounds(): Promise<OfflineRound[]> {
 }
 
 /**
+ * Remove an offline draft only when it is no newer than the server state that
+ * was just acknowledged. This prevents a recovery action from deleting a
+ * pagehide save written concurrently on the same device.
+ */
+export async function deleteOfflineRoundThrough(
+  id: string,
+  acknowledgedTimestamp: number,
+): Promise<void> {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(ROUNDS_STORE, 'readwrite');
+    const store = transaction.objectStore(ROUNDS_STORE);
+    const getRequest = store.get(id);
+
+    getRequest.onsuccess = () => {
+      const current = getRequest.result as OfflineRound | undefined;
+      if (!current || current.timestamp > acknowledgedTimestamp) return;
+      const deleteRequest = store.delete(id);
+      deleteRequest.onerror = () => reject(new Error('Failed to clear acknowledged offline round'));
+    };
+    getRequest.onerror = () => reject(new Error('Failed to read offline round for acknowledged cleanup'));
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(new Error('Failed to clear acknowledged offline round'));
+    transaction.onabort = () => reject(new Error('Acknowledged offline round cleanup aborted'));
+  });
+}
+
+/**
  * Get the count of pending rounds in this (v1) database.
  *
  * Used by the v2 stats/sync layer so that rounds stranded here by
@@ -488,16 +560,14 @@ export async function getFailedRounds(): Promise<OfflineRound[]> {
  * pending badge and drained by the global reconnect sync.
  */
 export async function getPendingRoundCount(): Promise<number> {
-  const transaction = await openTransaction(ROUNDS_STORE, 'readonly');
-
-  return new Promise((resolve, reject) => {
+  return withTransaction(ROUNDS_STORE, 'readonly', (transaction) => new Promise((resolve, reject) => {
     const store = transaction.objectStore(ROUNDS_STORE);
     const index = store.index('syncStatus');
     const request = index.count('pending');
 
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(new Error('Failed to count pending rounds'));
-  });
+  }));
 }
 
 /**

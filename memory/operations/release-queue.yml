@@ -1,0 +1,115 @@
+# GolfHelm release queue — verified repair units, not raw telemetry.
+#
+# Schema (spec: docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md §17;
+# runtime contract: memory/system/golfhelm-engineering-os.md "Release queue").
+# A raw Sentry/Vercel/Bridge event does not belong here — only a verified
+# repair unit does.
+#
+# HOW IT IS POPULATED TODAY: by hand, by the session that verifies a repair
+# unit, following the schema below. This header claimed the opposite until
+# 2026-08-30 — "empty until then, not a placeholder for hand-written entries" —
+# while sitting directly above hand-written items. The automated writer
+# (npm run reliability:collect / release:*) is still specified and still absent;
+# when it lands it takes over this file, and the schema is what makes that
+# handover mechanical rather than a rewrite. Until then, hand-written entries
+# are the intended use, not a violation of it.
+#
+# Per-item fields:
+#   id:                 stable identifier for this repair unit
+#   feature_id:         memory/registry.yml feature id this repair belongs to
+#   root_cause:          the verified root cause, not a symptom description
+#   incident_id:        memory/incidents/<feature_id>/INC-*.md this resolves
+#   status:              observed | triaging | reproduced | repairing |
+#                        verification_failed | verified | queued_for_release |
+#                        released | verified_in_production | blocked |
+#                        wont_fix | expected | duplicate
+#   risk:                R0 | R1 | R2 | R3 (memory/system/golfhelm-engineering-os.md "Risk tiers")
+#   sha:                 commit SHA carrying the fix, once merged
+#   pr:                  PR URL or number
+#   regression_tests:    list of test file paths added/updated to cover this
+#   queued_for_release:  boolean — true once prepared for the next release window
+#   first_seen:          ISO 8601 timestamp of the first observed occurrence
+
+version: 1
+items:
+  - id: qualifier-manual-close-only-2026-08-22
+    feature_id: qualifiers
+    root_cause: qualifier lifecycle allowed system-driven completion from schedule or entrant progress instead of requiring a coach action
+    incident_id: memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md
+    status: verified_in_production
+    risk: R1
+    sha: 82aaa3bf7c26fe7b956f6310e9f7f18ac6029323
+    pr: null
+    regression_tests:
+      - src/lib/golf/__tests__/qualifier-lifecycle.test.ts
+      - src/app/golf/actions/__tests__/golf-qualifier-progress.test.ts
+      - src/test/coachhelm/v3/qualifying.test.ts
+    queued_for_release: false
+    first_seen: '2026-08-22T21:00:00-04:00'
+  - id: confirmed-snapshot-recovery-prompt-2026-08-22
+    feature_id: shot_tracking
+    root_cause: timestamp-only recovery treated a confirmed iOS page-hide snapshot as unsaved work
+    incident_id: memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md
+    status: verified_in_production
+    risk: R2
+    sha: 48b41e1c4d8c86f12f5a2becd11454f5bd3899e2
+    pr: null
+    regression_tests:
+      - src/lib/utils/emergency-save.test.ts
+    queued_for_release: false
+    first_seen: '2026-08-22T21:00:00-04:00'
+  - id: cron-failure-invisible-to-bridge-2026-08-27
+    feature_id: admin_platform
+    root_cause: >-
+      Promise.allSettled rejection reasons were discarded in event-reminders, so
+      a failing send incremented a counter, the route returned 200, recordJobRun
+      wrote 'completed', and admin_events never learned of it. Sentry alone saw
+      47 escalating occurrences.
+    incident_id: memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md
+    status: repairing
+    risk: R2
+    sha: null
+    pr: null
+    regression_tests:
+      - src/test/api/cron/event-reminders.test.ts
+    queued_for_release: false
+    first_seen: '2026-08-25T12:02:47Z'
+  - id: coachhelm-safety-net-anon-client-2026-08-27
+    feature_id: coachhelm_ai
+    root_cause: >-
+      The coachhelm-safety-net path reached from event-reminders reads
+      baseball_players and baseball_coaches_public with an anon-scoped client.
+      service_role already holds SELECT on both; the shared property of the two
+      failing objects is that neither grants anon. NOT to be fixed by granting
+      anon — baseball_coaches_public is one of the four ERROR-level
+      security_definer_view advisories, so that would expose coach data to
+      unauthenticated callers.
+    incident_id: memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md
+    status: triaging
+    risk: R3
+    sha: null
+    pr: null
+    regression_tests: []
+    queued_for_release: false
+    first_seen: '2026-08-25T12:02:47Z'
+  - id: error-resolution-lifecycle-2026-08-27
+    feature_id: admin_platform
+    root_cause: >-
+      admin_events.resolved is per-row, so a fixed fault could not be recorded as
+      fixed and its next occurrence returned indistinguishable from a regression.
+      Resolution now belongs to the fingerprint.
+    incident_id: null
+    no_incident_reason: >-
+      Not a defect repair. admin_events.resolved was per-row by design and the
+      change moves resolution to the fingerprint — a capability the model did
+      not have, not a fault it had. There is nothing to file as a confirmed
+      product defect, and filing one would put a design change in the incident
+      system where a reader would later look for a broken thing that never was.
+    status: verified
+    risk: R3
+    sha: null
+    pr: null
+    regression_tests:
+      - src/lib/reliability/__tests__/resolution.test.ts
+    queued_for_release: false
+    first_seen: '2026-08-27T03:00:00Z'

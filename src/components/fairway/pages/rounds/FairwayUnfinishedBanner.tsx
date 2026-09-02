@@ -38,6 +38,7 @@ import type { RoundLibraryRound } from './FairwayRoundsLibrary';
 
 export interface FairwayUnfinishedBannerProps {
   rounds: RoundLibraryRound[];
+  playerId: string;
 }
 
 function relativeTime(round: RoundLibraryRound): string {
@@ -52,7 +53,7 @@ function relativeTime(round: RoundLibraryRound): string {
 }
 
 /** The player-only "In progress" resume strip. */
-export function FairwayUnfinishedBanner({ rounds }: FairwayUnfinishedBannerProps) {
+export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedBannerProps) {
   const router = useRouter();
   const [localRounds, setLocalRounds] = React.useState(rounds);
 
@@ -77,6 +78,7 @@ export function FairwayUnfinishedBanner({ rounds }: FairwayUnfinishedBannerProps
           <UnfinishedRow
             key={round.id}
             round={round}
+            playerId={playerId}
             onDiscarded={() => {
               setLocalRounds((prev) => prev.filter((r) => r.id !== round.id));
               router.refresh();
@@ -90,9 +92,11 @@ export function FairwayUnfinishedBanner({ rounds }: FairwayUnfinishedBannerProps
 
 function UnfinishedRow({
   round,
+  playerId,
   onDiscarded,
 }: {
   round: RoundLibraryRound;
+  playerId: string;
   onDiscarded: () => void;
 }) {
   const router = useRouter();
@@ -122,7 +126,7 @@ function UnfinishedRow({
       setError(null);
       const result = await deleteInProgressRound(round.id);
       if (!result.success) throw new Error(result.error);
-      clearEmergencySave(round.id);
+      clearEmergencySave(round.id, playerId);
       onDiscarded();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to discard round');

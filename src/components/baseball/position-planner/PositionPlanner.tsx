@@ -10,7 +10,7 @@ import { RuledStatLine, InkBadge, PaperCard } from '@/components/baseball/living
 import { Button, Select } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { IconTarget, IconFilter } from '@/components/icons';
-import type { WatchlistWithPlayer, Player, PipelineStage } from '@/lib/types';
+import type { WatchlistWithPlayer, BaseballPlayer as Player, PipelineStage } from '@/lib/types';
 
 interface PositionPlannerProps {
   watchlist: WatchlistWithPlayer[];

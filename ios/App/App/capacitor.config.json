@@ -3,8 +3,9 @@
 	"appName": "Helm Sports Labs",
 	"webDir": "public",
 	"server": {
-		"url": "https://www.helmsportslabs.com/golf/login",
+		"url": "https://www.helmsportslabs.com/golf/dashboard",
 		"cleartext": false,
+		"errorPath": "offline.html",
 		"allowNavigation": [
 			"*.helmsportslabs.com",
 			"helmsportslabs.com"
@@ -17,6 +18,12 @@
 		"preferredContentMode": "mobile",
 		"contentInset": "never",
 		"appendUserAgent": "HelmSportsLabsApp"
+	},
+	"android": {
+		"appendUserAgent": "HelmSportsLabsApp",
+		"allowMixedContent": false,
+		"webContentsDebuggingEnabled": false,
+		"backgroundColor": "#EDE0C8"
 	},
 	"plugins": {
 		"Keyboard": {
@@ -33,7 +40,9 @@
 			]
 		},
 		"SplashScreen": {
-			"launchAutoHide": false,
+			"launchAutoHide": true,
+			"launchShowDuration": 10000,
+			"backgroundColor": "#EDE0C8",
 			"showSpinner": false
 		},
 		"StatusBar": {

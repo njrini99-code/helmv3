@@ -36,7 +36,9 @@ import type {
   InsightCategory,
   InsightGroup,
   InsightTone,
+  PlayerTrajectorySummary,
 } from '@/lib/coachhelm/v2/types';
+import { TrajectoryForecaster } from '@/lib/coachhelm/v2/prediction/trajectory-forecaster';
 import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
@@ -51,13 +53,17 @@ import { classifyDashboardFailure } from '@/lib/coachhelm/v2/dashboard-error-cla
 import { logServerError, logServerEvent, logServerException } from '@/lib/server-error-logger';
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
-import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import {
+  verifyPlayerAccess as sharedVerifyPlayerAccess,
+  verifyRoundBelongsToPlayer,
+  verifyPlayersOnTeam,
+} from '@/lib/auth/verify-player-access';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 // 2026-08-01: gateCoachHelmEngineCall used to live here (private). Lifted into
 // @/lib/auth/action-rate-limit so alerts.ts, round-recap.ts, schedule-image.ts
 // and v3/llm.ts share ONE definition. Key is unchanged (`coachhelm:engine:<id>`),
 // so live counters are not orphaned.
-import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
+import { gateCoachHelmEngineCall, gateUserAction } from '@/lib/auth/action-rate-limit';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -106,20 +112,27 @@ interface InsightRecord {
   status: 'active';
 }
 
-interface TeamPlayerRow {
+export interface TeamPlayerRow {
   id: string;
   first_name: string | null;
   last_name: string | null;
 }
 
-interface PlayerStatsCacheRow {
+export interface PlayerStatsCacheRow {
   player_id: string;
   rounds_in_calculation: number | null;
-  strokes_gained_total: number | null;
-  strokes_gained_tee: number | null;
-  strokes_gained_approach: number | null;
-  strokes_gained_around_green: number | null;
-  strokes_gained_putting: number | null;
+  // Per-round SG averages — NOT strokes_gained_total/tee/approach/
+  // around_green/putting, which are season-cumulative SUMs on the same
+  // golf_player_stats_cache row (see #1297/#1300: reading the cumulative
+  // family here produced coach-facing text like "SG Approach -85.84" for
+  // a player whose actual per-round SG was -6.6 — the two families are
+  // written atomically by the same function from the same query, so this
+  // was always a reader-side column choice, not stale/inconsistent data).
+  sg_total_per_round: number | null;
+  sg_tee_per_round: number | null;
+  sg_approach_per_round: number | null;
+  sg_around_green_per_round: number | null;
+  sg_putting_per_round: number | null;
   gir_percentage: number | null;
   driving_accuracy_percentage: number | null;
   scrambling_percentage: number | null;
@@ -2305,7 +2318,7 @@ async function generateTeamInsightImpl(): Promise<{
     const { data: statsRows } = await supabase
       .from('golf_player_stats_cache')
       .select(
-        'player_id, rounds_in_calculation, scoring_average, scoring_average_vs_par, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, gir_percentage, driving_accuracy_percentage, scrambling_percentage, putts_per_round, approach_proximity_average, three_putt_percentage, penalty_strokes_per_round, putt_make_pct_5_10ft, putt_make_pct_10_15ft, putt_make_pct_15_25ft, approach_miss_left_pct, approach_miss_right_pct, approach_miss_short_pct, approach_miss_long_pct, par3_average, par4_average, par5_average, last_5_average, improvement_trend, trend_direction, best_round, worst_round'
+        'player_id, rounds_in_calculation, scoring_average, scoring_average_vs_par, sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, gir_percentage, driving_accuracy_percentage, scrambling_percentage, putts_per_round, approach_proximity_average, three_putt_percentage, penalty_strokes_per_round, putt_make_pct_5_10ft, putt_make_pct_10_15ft, putt_make_pct_15_25ft, approach_miss_left_pct, approach_miss_right_pct, approach_miss_short_pct, approach_miss_long_pct, par3_average, par4_average, par5_average, last_5_average, improvement_trend, trend_direction, best_round, worst_round'
       )
       .in('player_id', playerIds);
 
@@ -2749,6 +2762,135 @@ export async function generateTournamentPrep(playerId: string): Promise<{
 }
 
 // ============================================================================
+// GET PLAYER TRAJECTORY (#1485 — the first consumer of TrajectoryForecaster)
+// ============================================================================
+
+/**
+ * Own bucket, not `coachhelm:engine`. That shared 5/min/user bucket exists for
+ * discrete "Analyze" / "Generate plan" button clicks — this action instead
+ * fires on ordinary page navigation (the player deep-dive's Scouting Report
+ * tab), so sharing the bucket would let a coach browsing five players in a
+ * minute exhaust the budget an "Analyze" click on the SIXTH page actually
+ * needs. Room to click through a full roster without tripping it.
+ */
+const TRAJECTORY_RATE_LIMIT = { maxAttempts: 20, windowMs: 60 * 1000 } as const;
+
+async function getPlayerTrajectoryImpl(playerId: string): Promise<{
+  success: boolean;
+  trajectory?: PlayerTrajectorySummary;
+  /**
+   * Set true ONLY when `success` is false because the forecaster itself
+   * found too little round history (`TrajectoryForecaster`'s own
+   * `rounds.length < 10` gate) — every other failure (auth, rate-limit,
+   * disabled, unexpected) must NOT be presented to a coach as "not enough
+   * rounds", which would be a false claim for a player with plenty of
+   * history. The caller (the player deep-dive page) branches on this flag
+   * rather than on `error`'s text.
+   */
+  insufficientHistory?: boolean;
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Coach-only surface (see the player deep-dive page's own gate). Calls
+    // the SHARED verifyPlayerAccess directly rather than this file's local
+    // wrapper: the wrapper's `coachId` is read straight from the shared
+    // helper's return value, but that helper's coach branch
+    // (verify-player-access.ts:116-155) returns
+    // `{ allowed: !!isCoach, reason: isCoach ? 'coach' : 'denied' }` — no
+    // `coachId` is ever assigned, despite the field's own docblock claiming
+    // it is. Gating on `!access.coachId` here rejected every real coach.
+    // `reason` (which the local wrapper drops entirely) is the one signal
+    // that actually distinguishes coach-access from self-access.
+    const access = await sharedVerifyPlayerAccess(playerId, user.id, supabase);
+    if (!access.allowed) {
+      return { success: false, error: 'Not authorized to access this player' };
+    }
+    if (access.reason !== 'coach') {
+      return { success: false, error: 'Not authorized' };
+    }
+
+    // See TRAJECTORY_RATE_LIMIT above for why this is its own bucket.
+    const rateLimit = await gateUserAction(
+      'coachhelm:trajectory',
+      user.id,
+      TRAJECTORY_RATE_LIMIT,
+      'Too many trajectory requests in the last minute — please wait a moment and try again.',
+    );
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error };
+    }
+
+    const status = await isCoachHelmEnabledForPlayer(playerId);
+    if (!status.effectivelyEnabled) {
+      return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
+    }
+
+    // Calls the forecaster directly rather than coachHelmIntelligence.analyzePlayer():
+    // the full orchestrator unconditionally runs ~20 tier-1 generators + composite
+    // synthesis + feature extraction on every call regardless of which optional
+    // flags are set (see orchestrator.ts's analyzePlayer body) — a write-heavy,
+    // multi-second run that is the wrong cost for "show the trajectory card".
+    // TrajectoryForecaster.forecastTrajectory() alone is read-only: one feature
+    // extraction + one 100-row golf_rounds query, no writes.
+    const trajectory = await new TrajectoryForecaster(playerId).forecastTrajectory();
+    if (!trajectory) {
+      // success: true, not false — this is a NORMAL, common outcome (any
+      // player under 10 rounds: early season, a new signee, a redshirt),
+      // not an error. withAdminObserved (below, no observeSoftFailures
+      // override) records every `{success: false}` return as an admin_events
+      // soft failure — returning false here would file one on every such
+      // page view, the same "an unconfigured team gets treated as broken"
+      // class of bug coachhelm-review.md's budget-resolution note warns
+      // about. `insufficientHistory` carries the reason for a caller that
+      // wants to distinguish it from a genuine "nothing to show" result.
+      return { success: true, insufficientHistory: true };
+    }
+
+    // Trimmed to what the card renders — see PlayerTrajectorySummary's
+    // docblock for why the full forecast (scenarios alone repeat the whole
+    // projections series 4x) doesn't cross this boundary.
+    return {
+      success: true,
+      trajectory: {
+        horizonDays: trajectory.horizonDays,
+        projections: trajectory.projections,
+        roundsAnalyzed: trajectory.roundsAnalyzed,
+        modelConfidence: trajectory.modelConfidence,
+      },
+    };
+  } catch (error) {
+    await logServerError(`getPlayerTrajectory failed: ${describeError(error)}`, {
+      action: 'getPlayerTrajectory',
+      featureArea: 'insights',
+      playerId,
+    });
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+const observedGetPlayerTrajectory = withAdminObserved(
+  'getPlayerTrajectory',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getPlayerTrajectoryImpl,
+);
+export async function getPlayerTrajectory(playerId: string): Promise<{
+  success: boolean;
+  trajectory?: PlayerTrajectorySummary;
+  insufficientHistory?: boolean;
+  error?: string;
+}> {
+  return observedGetPlayerTrajectory(playerId);
+}
+
+// ============================================================================
 // GET PLAYER PATTERNS
 // ============================================================================
 
@@ -2881,6 +3023,15 @@ async function generateRoundReviewImpl(
     const access = await verifyRoundAccess(roundId);
     if (!access.authorized) {
       return { success: false, error: access.error || 'Not authorized' };
+    }
+
+    // ...and that the round is actually THIS player's. The check above
+    // authorizes the ROUND and says nothing about `playerId`, so a caller
+    // holding one accessible round could name any player id and have the
+    // engine build the analysis from that player's history instead. Both
+    // arguments must describe the same subject before the engine runs.
+    if (!(await verifyRoundBelongsToPlayer(roundId, playerId))) {
+      return { success: false, error: 'Not authorized' };
     }
 
     // Rate-limit engine entrypoint
@@ -3315,7 +3466,25 @@ async function loadEvidenceBackedInsights(
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (error || !data) return [];
+    if (error || !data) {
+      // This function's ComposedInsight[] return bypasses withAdminObserved's
+      // soft-failure detection entirely (extractActionSoftFailure returns
+      // null for an array), so a real read failure here previously
+      // vanished — indistinguishable from "the player has no persisted
+      // insights yet". Observability only; the fallback [] is unchanged.
+      void logServerError(
+        `loadEvidenceBackedInsights read failed: ${error?.message ?? 'no data returned'}`,
+        {
+          action: 'loadEvidenceBackedInsights',
+          featureArea: 'insights',
+          playerId,
+          errorCode: error?.code,
+          errorDetails: error?.details,
+        },
+        'warning'
+      );
+      return [];
+    }
 
     const projected = data
       .filter((row): row is typeof row & { evidence: Record<string, unknown> } => !!row.evidence)
@@ -3370,7 +3539,17 @@ async function loadEvidenceBackedInsights(
       activeGoals,
     );
     return ranked.map((r) => r._ref);
-  } catch {
+  } catch (err) {
+    void logServerError(
+      `loadEvidenceBackedInsights threw: ${describeError(err)}`,
+      {
+        action: 'loadEvidenceBackedInsights',
+        featureArea: 'insights',
+        playerId,
+        extra: { stack: err instanceof Error ? err.stack : undefined },
+      },
+      'error'
+    );
     return [];
   }
 }
@@ -3498,11 +3677,14 @@ function buildStatInsightsForTeam(
   );
 
   const teamAverages = {
-    sgTotal: averageNumber(statsRows.map((row) => row.strokes_gained_total)),
-    sgTee: averageNumber(statsRows.map((row) => row.strokes_gained_tee)),
-    sgApproach: averageNumber(statsRows.map((row) => row.strokes_gained_approach)),
-    sgAround: averageNumber(statsRows.map((row) => row.strokes_gained_around_green)),
-    sgPutting: averageNumber(statsRows.map((row) => row.strokes_gained_putting)),
+    // Per-round averages (sg_*_per_round), so averaging across players with
+    // different rounds_in_calculation stays comparable — averaging the
+    // cumulative strokes_gained_* SUMs here mixed scales across players.
+    sgTotal: averageNumber(statsRows.map((row) => row.sg_total_per_round)),
+    sgTee: averageNumber(statsRows.map((row) => row.sg_tee_per_round)),
+    sgApproach: averageNumber(statsRows.map((row) => row.sg_approach_per_round)),
+    sgAround: averageNumber(statsRows.map((row) => row.sg_around_green_per_round)),
+    sgPutting: averageNumber(statsRows.map((row) => row.sg_putting_per_round)),
     gir: averageNumber(statsRows.map((row) => row.gir_percentage)),
     fairway: averageNumber(statsRows.map((row) => row.driving_accuracy_percentage)),
     scrambling: averageNumber(statsRows.map((row) => row.scrambling_percentage)),
@@ -3562,28 +3744,28 @@ function buildStatInsightsForTeam(
         {
           key: 'strokes_gained_tee',
           label: 'Off the Tee',
-          value: stats.strokes_gained_tee,
+          value: stats.sg_tee_per_round,
           action: `Drill: 10-ball dispersion test on the range — aim at a fairway-width target (30 yds) from 250 yds. Track hit rate. Goal: 7/10. Also practice tee shot strategy: pick a specific miss side for each hole shape.`,
           teamAvg: teamAverages.sgTee,
         },
         {
           key: 'strokes_gained_approach',
           label: 'Approach',
-          value: stats.strokes_gained_approach,
+          value: stats.sg_approach_per_round,
           action: `Drill: Proximity ladder — hit 5 shots each from 100, 125, 150, 175 yds. Measure average distance to pin. Goal: inside 25 ft from 150 yds. Focus on distance control over direction.`,
           teamAvg: teamAverages.sgApproach,
         },
         {
           key: 'strokes_gained_around_green',
           label: 'Around the Green',
-          value: stats.strokes_gained_around_green,
+          value: stats.sg_around_green_per_round,
           action: `Drill: Up-and-down challenge from 4 spots (short-sided rough, fringe, bunker, long-sided). 10 balls each spot. Track up-and-down %. Goal: 50%+ from each lie. Emphasize landing spot selection.`,
           teamAvg: teamAverages.sgAround,
         },
         {
           key: 'strokes_gained_putting',
           label: 'Putting',
-          value: stats.strokes_gained_putting,
+          value: stats.sg_putting_per_round,
           action: `Drill: 3-putt eliminator — putt 10 balls from 30-40 ft, count how many finish inside 3 ft. Goal: 8/10. Also run gate drill for start line: two tees just wider than ball, 3 ft away. 20 putts, track makes.`,
           teamAvg: teamAverages.sgPutting,
         },
@@ -3784,6 +3966,20 @@ async function acknowledgeComposedInsightImpl(
     // and the men's/women's toggle). Falls back to the coach's primary team.
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
+    // `teamId` is server-resolved and therefore trustworthy; `playerId` is not.
+    // It is the caller's argument and was written straight onto the insight
+    // row, so a coach could file insight state against a player on a team they
+    // do not staff and pollute that player's feed. Bind the two.
+    const roster = await verifyPlayersOnTeam(teamId ?? '', [playerId], supabase);
+    if (!roster.ok) {
+      return {
+        success: false,
+        error: roster.reason === 'unavailable'
+          ? "Couldn't confirm your roster just now. Please try again."
+          : 'That player is not on your team',
+      };
+    }
+
     // Insert the insight with acknowledged status
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: insertError } = await (supabase as any)
@@ -3888,6 +4084,20 @@ async function dismissComposedInsightImpl(
     // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
     // and the men's/women's toggle). Falls back to the coach's primary team.
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+
+    // `teamId` is server-resolved and therefore trustworthy; `playerId` is not.
+    // It is the caller's argument and was written straight onto the insight
+    // row, so a coach could file insight state against a player on a team they
+    // do not staff and pollute that player's feed. Bind the two.
+    const roster = await verifyPlayersOnTeam(teamId ?? '', [playerId], supabase);
+    if (!roster.ok) {
+      return {
+        success: false,
+        error: roster.reason === 'unavailable'
+          ? "Couldn't confirm your roster just now. Please try again."
+          : 'That player is not on your team',
+      };
+    }
 
     // Insert the insight with dismissed status
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -4423,6 +4633,10 @@ async function triggerPlayerInsightsAfterRoundImpl(
             const { sendPushNotification } = await import('@/lib/notifications/push');
             await sendPushNotification('coachhelm_insight', coachUser.user_id, {
               insightTitle: `${newInsights.length} new insight${newInsights.length > 1 ? 's' : ''} after round`,
+              // Explicit even though it is the default — this recipient is the
+              // team COACH (resolved from golf_coaches above), and the payload
+              // picks a coach-vs-player destination off this field.
+              audience: 'coach',
             });
           }
         } catch (pushErr) {

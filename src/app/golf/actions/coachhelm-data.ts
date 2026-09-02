@@ -238,11 +238,11 @@ function mapStatsCacheToMetrics(
     driving_accuracy_percentage: number | null;
     putts_per_round: number | null;
     scrambling_percentage: number | null;
-    strokes_gained_total: number | null;
-    strokes_gained_tee: number | null;
-    strokes_gained_approach: number | null;
-    strokes_gained_around_green: number | null;
-    strokes_gained_putting: number | null;
+    sg_total_per_round: number | null;
+    sg_tee_per_round: number | null;
+    sg_approach_per_round: number | null;
+    sg_around_green_per_round: number | null;
+    sg_putting_per_round: number | null;
   },
 ): Record<string, number> {
   return {
@@ -251,11 +251,14 @@ function mapStatsCacheToMetrics(
     fairwayPct: Number(row.driving_accuracy_percentage ?? 0),
     puttsPerRound: Number(row.putts_per_round ?? 0),
     scramblePct: Number(row.scrambling_percentage ?? 0),
-    sgTotal: Number(row.strokes_gained_total ?? 0),
-    sgOffTee: Number(row.strokes_gained_tee ?? 0),
-    sgApproach: Number(row.strokes_gained_approach ?? 0),
-    sgAroundGreen: Number(row.strokes_gained_around_green ?? 0),
-    sgPutting: Number(row.strokes_gained_putting ?? 0),
+    // Per-round SG averages (sg_*_per_round) — z-scoring the season-cumulative
+    // strokes_gained_* SUMs here compared players with different
+    // rounds_in_calculation on an incomparable scale (#1297/#1300).
+    sgTotal: Number(row.sg_total_per_round ?? 0),
+    sgOffTee: Number(row.sg_tee_per_round ?? 0),
+    sgApproach: Number(row.sg_approach_per_round ?? 0),
+    sgAroundGreen: Number(row.sg_around_green_per_round ?? 0),
+    sgPutting: Number(row.sg_putting_per_round ?? 0),
   };
 }
 
@@ -377,11 +380,11 @@ async function getPlayerProfileImpl(
       driving_accuracy_percentage: number | null;
       putts_per_round: number | null;
       scrambling_percentage: number | null;
-      strokes_gained_total: number | null;
-      strokes_gained_tee: number | null;
-      strokes_gained_approach: number | null;
-      strokes_gained_around_green: number | null;
-      strokes_gained_putting: number | null;
+      sg_total_per_round: number | null;
+      sg_tee_per_round: number | null;
+      sg_approach_per_round: number | null;
+      sg_around_green_per_round: number | null;
+      sg_putting_per_round: number | null;
     }
 
     let teamStats: StatsCacheRow[] = [];
@@ -396,7 +399,7 @@ async function getPlayerProfileImpl(
       const admin = createAdminClient();
       const { data: statsData } = await admin
         .from('golf_player_stats_cache')
-        .select('player_id, scoring_average, gir_percentage, driving_accuracy_percentage, putts_per_round, scrambling_percentage, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
+        .select('player_id, scoring_average, gir_percentage, driving_accuracy_percentage, putts_per_round, scrambling_percentage, sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round')
         .in('player_id', teamPlayerIds);
 
       teamStats = (statsData ?? []) as StatsCacheRow[];
@@ -528,11 +531,14 @@ async function getPlayerProfileImpl(
     //    state). Friendly metric keys humanize cleanly via formatMetricLabel. ──
     let improvements: ProfileImprovement[] = [];
     if (playerStatsRow) {
+      // Per-round SG averages — see mapStatsCacheToMetrics above; a
+      // cumulative strokes_gained_* SUM would never rank sensibly against
+      // the 0 (tour-average) baseline rankImprovementOpportunities compares to.
       const sgBreakdown: Record<string, number> = {
-        offTheTee: Number(playerStatsRow.strokes_gained_tee ?? 0),
-        approach: Number(playerStatsRow.strokes_gained_approach ?? 0),
-        aroundGreen: Number(playerStatsRow.strokes_gained_around_green ?? 0),
-        putting: Number(playerStatsRow.strokes_gained_putting ?? 0),
+        offTheTee: Number(playerStatsRow.sg_tee_per_round ?? 0),
+        approach: Number(playerStatsRow.sg_approach_per_round ?? 0),
+        aroundGreen: Number(playerStatsRow.sg_around_green_per_round ?? 0),
+        putting: Number(playerStatsRow.sg_putting_per_round ?? 0),
       };
       // A minimal PlayerProfile is enough — rankImprovementOpportunities only
       // reads the SG breakdown (the profile arg is currently unused by it).
@@ -790,7 +796,7 @@ async function getPlayerShotContextImpl(
     }
 
     if (!shotsData || shotsData.length === 0) {
-      return { success: false, error: 'No shot data available for analysis' };
+      return { success: false, error: 'No shot data available for analysis', code: 'no_shot_data' };
     }
 
     // Map DB shots to ShotData interface
@@ -825,7 +831,7 @@ async function getPlayerShotContextImpl(
       });
 
     if (shots.length === 0) {
-      return { success: false, error: 'Insufficient shot data with distance information' };
+      return { success: false, error: 'Insufficient shot data with distance information', code: 'no_shot_detail' };
     }
 
     // Build default SG baseline

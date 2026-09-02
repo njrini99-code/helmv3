@@ -10,7 +10,7 @@ import {
 } from '@/lib/admin/feature-registry';
 
 // The canonical key list per docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md
-// §1.1 (24) + §1.2 (13) + §1.3 (48) + §1.4 (1 excluded) = 86. Hard-coded here on purpose —
+// §1.1 (24) + §1.2 (14) + §1.3 (48) + §1.4 (1 excluded) = 87. Hard-coded here on purpose —
 // the doc is canonical, this list is the tripwire that catches drift between
 // the spec and the registry.
 const EXPECTED_KEYS: FeatureKey[] = [
@@ -53,6 +53,7 @@ const EXPECTED_KEYS: FeatureKey[] = [
   'my_development',
   'drills_practice_rx',
   'coachhelm_v3_goals',
+  'integrations',
   // §1.3 BaseballHelm (48)
   'baseball_academics',
   'baseball_announcements',
@@ -237,9 +238,9 @@ function scanExports(relPath: string): string[] {
 
 describe('FEATURE_REGISTRY completeness', () => {
   it('has exactly 86 entries with unique keys', () => {
-    expect(FEATURE_REGISTRY).toHaveLength(86);
+    expect(FEATURE_REGISTRY).toHaveLength(87);
     const keys = FEATURE_REGISTRY.map((f) => f.key);
-    expect(new Set(keys).size).toBe(86);
+    expect(new Set(keys).size).toBe(87);
   });
 
   it('matches the FEATURE_COVERAGE.md §1 canonical key list exactly', () => {
@@ -315,17 +316,18 @@ describe('FEATURE_REGISTRY completeness', () => {
   // insights.ts's explicit array, which still lists the now-private
   // triggerPlayerInsightsAfterRound by name) are unaffected since this count
   // sums `manifest.length` for those, not a live export scan.
-  // 2026-07-10 feature-flow sweep: +2 to 421. The qualifiers manifest gains
-  // `updateGolfQualifierDetails` (the previously-missing edit-qualifier flow)
-  // and `reconcileQualifierStatus` (view-time lifecycle self-heal) — both new
-  // withAdminObserved-wrapped exports in golf.ts.
+  // 2026-07-10 feature-flow sweep: qualifiers manifest gained
+  // `updateGolfQualifierDetails` (the previously-missing edit-qualifier flow).
+  // The old `reconcileQualifierStatus` page-view mutation was intentionally
+  // removed on 2026-08-22: qualifiers now close only through the coach's
+  // explicit manual action.
   // 2026-07-17 course-library-owner-gate fix (#913): +1 to 422. New read
   // action `getCourseTeeHoles` (course-library.ts) powers the course detail
   // sheet's read-only "Holes" summary. course-library.ts is already
   // 'ALL'-mapped to `course_library`, so this new withAdminObserved-wrapped
   // export is picked up by the live `scanExports` count with no manifest
   // edit required.
-  it('total manifest size is exactly 429 (excludes the CRM row)', () => {
+  it('total manifest size is exactly 438 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -351,7 +353,20 @@ describe('FEATURE_REGISTRY completeness', () => {
     // redeeming it (staff join flow).
     // 432: signupWithStaffInviteAction (auth.ts) — create account for staff
     // invited to join a program. auth.ts is already 'ALL'-mapped.
-    expect(total).toBe(432);
+    // 437: +listTeamCoachingStaff — the coaching-staff list added when
+    // assistants began joining at signup and were visible nowhere.
+    // 438: +getAdminStuckRounds (admin-data.ts) — status/updated_at-correct
+    // stuck-rounds query for the admin overview "Rounds" card. admin-data.ts
+    // is already 'ALL'-mapped, so scanExports picks it up with no manifest
+    // edit needed.
+    // 439 as of #1485 (+1): +getPlayerTrajectory, added to insights.ts's
+    // explicit array under coachhelm_ai_engine (insights.ts is one of the
+    // six non-'ALL' multi-feature files, so unlike admin-data.ts above this
+    // one DID need a manifest edit — manifest.length grows by 1 here).
+    // 2026-08-22: -1 removes reconcileQualifierStatus. It was an implicit
+    // page-view lifecycle mutation; qualifiers now close only by a coach's
+    // explicit action.
+    expect(total).toBe(438);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {
@@ -394,7 +409,7 @@ describe('FEATURE_REGISTRY completeness', () => {
 
   it('rpcInput() excludes the CRM row and carries heartbeat tables', () => {
     const input = rpcInput();
-    expect(input).toHaveLength(85);
+    expect(input).toHaveLength(86);
     expect(input.some((i) => i.key === 'crm_recruiting_pipeline')).toBe(false);
     const roundTracking = input.find((i) => i.key === 'round_tracking');
     expect(roundTracking?.heartbeat_table).toBe('golf_rounds');

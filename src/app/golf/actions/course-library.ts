@@ -1324,7 +1324,7 @@ async function setCourseImageUrlImpl(
     // project ref ships in the client bundle — so both are logged verbatim.
     await logServerError(
       `setCourseImageUrl rejected an image URL. received=${JSON.stringify(imageUrl)} ` +
-        `expectedPrefix=${JSON.stringify(`${supabaseUrl.replace(/\/+$/, '')}/storage/v1/object/public/course-images/`)} ` +
+        `expectedPrefix=${JSON.stringify(`${supabaseUrl.trim().replace(/\/+$/, '')}/storage/v1/object/public/course-images/`)} ` +
         `envPresent=${Boolean(supabaseUrl)}`,
       { action: 'courseLibrary.setCourseImageUrl', featureArea: 'course_library' },
       'warning',

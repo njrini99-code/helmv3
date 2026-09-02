@@ -19,6 +19,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import {
   verifyPlayerAccess as sharedVerifyPlayerAccess,
   verifyTeamAccess as sharedVerifyTeamAccess,
+  verifyRoundBelongsToPlayer,
 } from '@/lib/auth/verify-player-access';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -889,6 +890,15 @@ async function generateAndStoreRoundReviewImpl(
   const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
   if (!access.authorized) {
     return { success: false, error: access.error || 'Not authorized to generate review for this player' };
+  }
+
+  // The check above authorizes the PLAYER and takes `roundId` on trust — the
+  // exact mirror image of generateRoundReview in insights.ts, which authorized
+  // the round and trusted the player. Either half alone lets a caller pair a
+  // subject they may read with a round they may not, and the review is then
+  // written against the authorized player. Bind the two before computing.
+  if (!(await verifyRoundBelongsToPlayer(roundId, playerId, supabase))) {
+    return { success: false, error: 'Not authorized to generate review for this round' };
   }
 
   // Single-flight by round_id: join an in-progress analysis instead of

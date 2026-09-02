@@ -45,8 +45,14 @@ executors:
       xcode: "26.4.1"
     resource_class: m4pro.medium
   # Linux + Android SDK. Far cheaper than the macOS class the iOS job needs,
-  # which is why the Android check can afford to run on every android/** change
-  # rather than only on a release branch.
+  # which is why the Android check can afford wider BRANCH-NAME coverage
+  # (see the `android:` workflow below: main, release/*, android/*,
+  # capacitor/*, ci/android-*) rather than only running on a release
+  # branch. This is branch-name gating, not path-based — a PR from a
+  # differently-named branch that edits android/** will NOT trigger this
+  # job. True "runs when android/** changes, regardless of branch name"
+  # gating isn't implemented; see README.md's "Future upgrades" section
+  # (circleci/path-filtering orb) for that path if it's ever wanted.
   android:
     docker:
       - image: cimg/android:2025.04
@@ -86,7 +92,27 @@ jobs:
           command: npm install --no-save knip
       - run:
           name: Knip — unused exports, files, deps
-          command: npx knip --no-config-hints --reporter compact || true
+          # `|| true` used to swallow EVERY exit code, including 2 (bad config).
+          # knip.json carried a "_comment" key knip rejects, so for as long as
+          # that was true this job posted green while the tool never started.
+          # Distinguish the two: 1 = findings (a report, not a failure — the
+          # backlog is not yet ratcheted), 2+ = knip could not run, which is a
+          # broken gate and must go red.
+          command: |
+            # No pipe: CircleCI runs steps with -eo pipefail, so a piped knip
+            # exiting 1 would abort this step before the check below could run,
+            # and $? would be tee's status rather than knip's. Redirect instead,
+            # then cat, so $code is unambiguously knip's.
+            set +e
+            npx knip --no-config-hints --reporter compact > knip-report.txt 2>&1
+            code=$?
+            set -e
+            cat knip-report.txt
+            if [ "$code" -ge 2 ]; then
+              echo "knip failed to RUN (exit $code) — broken gate, not a finding."
+              exit "$code"
+            fi
+            echo "knip ran (exit $code); findings are published as an artifact."
       - store_artifacts:
           path: knip-report.txt
           destination: knip
@@ -128,18 +154,33 @@ jobs:
 
   # ---------- Weekly: full-repo SQL lint ----------
   sqlfluff-full:
+    # Was: `|| true` on the lint command -- this job could never fail no
+    # matter what it found, and nothing downstream checked its output either
+    # (only artifacts, no aggregator). Fixed 2026-08-19 (Wave L / Lane C) the
+    # same way review-gate.yml's per-PR sqlfluff job was fixed: run
+    # scripts/sql-lint-ratchet.mjs (a full-scope, per-rule count ratchet;
+    # fails only if a rule's violation count goes UP vs. the checked-in
+    # .sqlfluff-baseline.json) instead of a bare lint-and-discard.
+    #
+    # Note this job is now largely a BACKSTOP, not the primary coverage: the
+    # per-PR review-gate.yml sqlfluff job used to be changed-files-only
+    # (which is why THIS "full-repo" weekly job existed as a separate,
+    # broader check) but as of the same 2026-08-19 fix it also runs the
+    # identical full-repo ratchet on every PR. Keeping this weekly run
+    # anyway as independent defense-in-depth against the required-check
+    # ambiguity documented in .github/branch-protection.md (a red PR-level
+    # check could theoretically still merge if the wrong `all`-named
+    # aggregate reported green — see that doc's PR #1125 incident) rather
+    # than assuming the PR-level gate is airtight.
     executor: python
     steps:
       - checkout
       - run: pip install --quiet sqlfluff
+      - node/install:
+          node-version: "22.13"
       - run:
-          name: sqlfluff lint full migrations + seed
-          command: |
-            sqlfluff lint \
-              --dialect postgres \
-              --rules core \
-              --processes 4 \
-              supabase/migrations supabase/seed || true
+          name: SQL lint ratchet (full repo)
+          command: node scripts/sql-lint-ratchet.mjs
 
   # ---------- Weekly: Postgres migration safety scan ----------
   squawk-migrations:
@@ -292,65 +333,6 @@ jobs:
           path: android/app/build/outputs/apk/debug
           destination: debug-apk
 
-  # ---------- On-PR: Lighthouse CI against Vercel preview ----------
-  # Polls the Vercel API for the preview deployment matching this PR's
-  # commit SHA, then runs lhci against landing + login routes. Asserts
-  # in lighthouserc.cjs — a11y + CLS are hard errors, perf is a warning.
-  # Required env vars in CircleCI project settings:
-  #   VERCEL_TOKEN, VERCEL_PROJECT_ID, (optional) VERCEL_TEAM_ID
-  lighthouse-preview:
-    executor: node-large
-    steps:
-      - checkout
-      - install-node-deps
-      - run:
-          name: Install lhci + jq
-          command: |
-            sudo apt-get update -qq && sudo apt-get install -y -qq jq
-            npm install --no-save @lhci/cli
-      - run:
-          name: Wait for Vercel preview to be READY
-          command: |
-            set +e
-            URL=$(bash .circleci/scripts/wait-for-vercel-preview.sh 2> /tmp/vercel-preview.err)
-            status=$?
-            set -e
-            cat /tmp/vercel-preview.err >&2
-            if [ "$status" -eq 0 ]; then
-              echo "export PREVIEW_URL='${URL}'" >> "$BASH_ENV"
-              echo "export LIGHTHOUSE_PREVIEW_READY='true'" >> "$BASH_ENV"
-            elif grep -Eq \
-              "(Timeout after|is not configured|No Vercel deployment found|Vercel API call failed|Vercel deployment (ERROR|CANCELED))" \
-              /tmp/vercel-preview.err; then
-              echo "Vercel preview was unavailable; skipping advisory Lighthouse run."
-              echo "export LIGHTHOUSE_PREVIEW_READY='false'" >> "$BASH_ENV"
-            else
-              echo "Vercel preview lookup failed for a non-timeout reason."
-              exit "$status"
-            fi
-      - run:
-          name: Run Lighthouse CI
-          command: |
-            if [ "${LIGHTHOUSE_PREVIEW_READY:-false}" != "true" ]; then
-              echo "Skipping Lighthouse CI: no preview URL available."
-              exit 0
-            fi
-            set +e
-            npx lhci autorun --config=lighthouserc.cjs 2>&1 | tee /tmp/lhci.log
-            status=${PIPESTATUS[0]}
-            set -e
-            if [ "$status" -eq 0 ]; then
-              exit 0
-            fi
-            if grep -Eiq "(assertion|categories:|largest-contentful-paint|cumulative-layout-shift|total-blocking-time|interaction-to-next-paint)" /tmp/lhci.log; then
-              echo "Advisory Lighthouse score/assertion findings detected; see artifact for details."
-              exit 0
-            fi
-            echo "Lighthouse CI failed for a runtime/tool/upload reason."
-            exit "$status"
-      - store_artifacts:
-          path: .lighthouseci/
-          destination: lighthouse
 
   # ---------- Weekly: Promptfoo LLM evals ----------
   # Scored evaluation of CoachHelm composer prompts. Catches silent
@@ -396,10 +378,17 @@ workflows:
       - stryker-coachhelm
       - promptfoo-evals
 
-  # iOS compile verification — runs on every PR that touches ios/**,
-  # capacitor.config.ts, or any Capacitor plugin in package.json, plus
-  # on every push to main. Keeps the iOS app green without paying GHA
-  # macOS rates.
+  # iOS compile verification. Gated by BRANCH NAME, not by which files
+  # changed: only runs on `main`, `release/*`, `ios/*`, `capacitor/*`, or
+  # `agent/fix-circleci-ios-*` (see the `filters.branches.only` list
+  # below) — a PR from any other branch name touching ios/**,
+  # capacitor.config.ts, or a Capacitor plugin in package.json will NOT
+  # trigger this job. Name your branch accordingly to opt in (see
+  # README.md's "What runs when" table). True path-based gating (trigger
+  # on which files changed, independent of branch name) isn't
+  # implemented; README.md's "Future upgrades" section already names the
+  # circleci/path-filtering orb as the way to add it later. Keeps the iOS
+  # app green without paying GHA macOS rates.
   ios:
     when:
       not: << pipeline.parameters.run-weekly >>
@@ -427,18 +416,3 @@ workflows:
                 - /android\/.*/
                 - /capacitor\/.*/
                 - /ci\/android-.*/
-
-  # Lighthouse runs on every push (excluding the scheduled weekly).
-  # The wait-for-vercel-preview script returns early with a useful
-  # message if Vercel isn't deploying that branch (e.g. main pushes
-  # that re-use an existing deployment).
-  lighthouse:
-    when:
-      not: << pipeline.parameters.run-weekly >>
-    jobs:
-      - lighthouse-preview:
-          filters:
-            branches:
-              ignore:
-                - /docs\/.*/
-                - /chore\/.*-noop/

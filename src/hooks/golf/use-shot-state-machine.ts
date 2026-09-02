@@ -107,6 +107,7 @@ export type ShotAction =
   | { type: 'SET_EDIT_FORM_DATA'; payload: EditFormData }
   | { type: 'EDIT_SAVE_START' }
   | { type: 'EDIT_SAVE_COMPLETE'; payload: { updatedHistory: ShotRecord[] } }
+  | { type: 'RECONCILE_MISSING_SHOT'; payload: { newHistory: ShotRecord[] } }
   | { type: 'EDIT_SAVE_ERROR'; payload: string }
   | { type: 'SHOW_DELETE_CONFIRM' }
   | { type: 'HIDE_DELETE_CONFIRM' }
@@ -360,6 +361,28 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         ...state,
         shotHistory: updatedHistory,
         currentShot: updatedHistory.length + 1,
+        ...restored,
+        ...CLEAR_INPUT,
+        editSaving: false,
+        showEditModal: false,
+        editingShot: null,
+        editFormData: null,
+        editError: null,
+        showDeleteConfirm: false,
+      };
+    }
+
+    // The server is authoritative when a local shot ID no longer exists. This
+    // is a reconciliation, not a successful edit: close the stale editor,
+    // restore the input state from the remaining history, and never surface a
+    // false "Shot not found" failure to the player.
+    case 'RECONCILE_MISSING_SHOT': {
+      const { newHistory } = action.payload;
+      const restored = computeRestoredState(newHistory, state.holeYardage);
+      return {
+        ...state,
+        shotHistory: newHistory,
+        currentShot: newHistory.length + 1,
         ...restored,
         ...CLEAR_INPUT,
         editSaving: false,
@@ -817,9 +840,23 @@ export function useShotStateMachine({
       if (!el) return;
 
       if (shouldAutoScrollDistanceInput(shotType)) {
-        el.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        // `center`, not `nearest`. This runs BEFORE the keyboard exists, so the
+        // input is already inside the (full-height) viewport and `nearest`
+        // resolves to "do nothing" — then the keyboard slides up over the
+        // bottom ~45% and covers the field the player is about to type into.
+        // Centring at least leaves it above the keyboard's eventual top edge.
+        el.scrollIntoView({ behavior: 'auto', block: 'center' });
         distanceFocusTimeoutRef.current = setTimeout(() => {
-          distanceInputRef.current?.focus({ preventScroll: true });
+          // DO NOT re-add `preventScroll: true` here. It was added to stop this
+          // focus double-scrolling against the line above, but the line above
+          // was a no-op, so all `preventScroll` actually suppressed was the one
+          // scroll with any knowledge of the keyboard. Focus-driven scrolling
+          // honours `scroll-margin-bottom`, which globals.css already sets to
+          // `calc(var(--keyboard-height) + 40px)` on every input under
+          // `body.capacitor` — that rule was written for this scroll and had
+          // nothing triggering it. If you are here chasing a double-scroll,
+          // fix the redundant call above rather than muting this one.
+          distanceInputRef.current?.focus();
         }, 0);
       }
     }, 0);

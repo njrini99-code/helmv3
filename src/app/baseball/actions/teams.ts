@@ -697,10 +697,34 @@ async function processTeamInvitationImpl(inviteCode: string, playerId: string) {
     // Join the team
     const joinResult = await joinTeam(validatedData.player_id, invitation.team_id);
     if (!joinResult.success) {
-      await supabase.rpc(
+      // Compensating action: the seat was already claimed by the redeem above,
+      // so a failed join must give it back or the invite silently loses a use.
+      //
+      // Runs through the ADMIN client deliberately. The RPC it calls is
+      // SECURITY DEFINER with an unconditional `used_count - 1` and no
+      // ownership check of any kind, so granting it to `authenticated` makes
+      // it callable directly with any invitation id — which defeats a coach's
+      // max_uses cap. It is being revoked from `authenticated`, and this call
+      // is the ONLY legitimate caller, so it has to hold a privileged client
+      // of its own rather than riding the caller's session.
+      //
+      // ORDERING: this change must ship BEFORE the REVOKE lands, or the
+      // rollback below starts failing silently against the deployed code.
+      const admin = createAdminClient();
+      const { error: releaseError } = await admin.rpc(
         'release_baseball_team_invitation_redemption' as never,
         { p_invitation_id: invitation.invitation_id } as never,
       );
+      // Previously unchecked. A failed release is not fatal to the caller —
+      // they already have a join error to report — but swallowing it entirely
+      // means the seat leaks with no trace of why.
+      if (releaseError) {
+        await logServerError(
+          `[processTeamInvitation] could not release redemption for invitation ${invitation.invitation_id}; the invite has lost a use: ${describeError(releaseError)}`,
+          { action: 'baseball.processTeamInvitation', featureArea: 'roster' },
+          'warning',
+        );
+      }
       return joinResult;
     }
 

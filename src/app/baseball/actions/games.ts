@@ -14,6 +14,7 @@ import {
 } from '@/lib/baseball/csv-utils';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import { assertPlayersOnBaseballTeam } from '@/lib/baseball/resolve-team';
 import {
   withBaseballAction,
   BaseballUnauthorizedError,
@@ -163,6 +164,27 @@ const createGameAction = withBaseballAction(
     }
 
     let eventId = input.event_id ?? null;
+
+    // A supplied event_id was linked to the new game with no check that it
+    // belongs to this team, so a coach who knew another team's event id could
+    // attach it and have downstream calendar/game views follow the link into
+    // that team's event metadata. Events created below are team-scoped by
+    // construction; only the caller-supplied one needs verifying.
+    if (eventId) {
+      const { data: linkedEvent, error: linkedEventError } = await supabase
+        .from('baseball_events')
+        .select('id')
+        .eq('id', eventId)
+        .eq('team_id', teamId)
+        .maybeSingle();
+
+      if (linkedEventError) {
+        return { success: false, error: "Couldn't verify that calendar event. Please try again." };
+      }
+      if (!linkedEvent) {
+        return { success: false, error: 'That calendar event does not belong to this team' };
+      }
+    }
 
     if (input.create_calendar_event && !eventId) {
       const startDateTime = input.event_time
@@ -918,6 +940,17 @@ const saveFullBoxScoreAction = withBaseballAction(
     if (!game) return { success: false, error: 'Game not found' };
 
     await requireBaseballCapability(game.team_id, 'can_manage_stats');
+
+    // The capability covers the GAME's team. The player ids inside the payload
+    // are separate: a coach could submit another team's player UUID in a
+    // batting or pitching line and write stats for them under this game, which
+    // then feeds season-stat recalculation. Stat correctness is the point of
+    // this surface, so poisoning it across teams matters more here than the
+    // row count suggests.
+    await assertPlayersOnBaseballTeam(supabase, game.team_id, [
+      ...batting.map((line) => line.player_id),
+      ...pitching.map((line) => line.player_id),
+    ]);
 
     const battingPayload = buildBattingRpcPayload(batting);
     const pitchingPayload = buildPitchingRpcPayload(pitching);

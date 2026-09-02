@@ -31,7 +31,7 @@ import { useToast } from '@/components/ui/sonner';
 import { cn, getFullName } from '@/lib/utils';
 import { SectionMasthead, PaperCard, InkBadge, EditorsLetter, Eyebrow } from '@/components/baseball/living-annual';
 import { searchRecruitablePlayers, getComparablePlayers, canAddPlayerToCompare } from './actions';
-import type { Player } from '@/lib/types';
+import type { BaseballPlayer as Player } from '@/lib/types';
 
 const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 

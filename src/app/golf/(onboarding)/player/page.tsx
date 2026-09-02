@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
+import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
+import { CourseScene } from '@/components/golf/scenes/CourseScene';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +51,8 @@ function parseHandicapInput(raw: string): number | undefined {
 
 function GolfPlayerOnboardingContent() {
   const prefersReducedMotion = useReducedMotion();
+  // Matches the signup gate: one scene per viewport, swapped after hydration.
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -219,13 +224,24 @@ function GolfPlayerOnboardingContent() {
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-dvh bg-auth-golf relative">
-      {/* Floating Orbs (CSS-driven, matches login/signup) */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-primary-400/40 to-primary-500/25" />
-        <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-primary-400/25 to-primary-400/15" />
-        <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-primary-300/20 to-primary-400/15" />
-      </div>
+    <div className="min-h-dvh bg-canvas relative overflow-hidden">
+      {/*
+       * The SAME painterly scene the signup gate renders, not the old
+       * `auth-orb` blur field.
+       *
+       * Onboarding is the screen immediately after signup, and it was the one
+       * surface in the join flow still wearing the previous look — reported
+       * 2026-08-20 as "this onboarding screen is not fairway it's old and
+       * crappy". Reusing the scene makes gate -> signup -> onboarding read as
+       * one flow instead of three eras, and the cards below now sit on
+       * `bg-surface` with a token border rather than the retired glass
+       * material (design-system.md 4.2: border OR shadow, never both).
+       *
+       * Exactly one scene renders per viewport, matching the signup page:
+       * portrait CourseScene is the SSR default (and our iOS target),
+       * CoastalScene swaps in on desktop >= 768px after hydration.
+       */}
+      {isDesktop ? <CoastalScene idSuffix="onboarding-player-coastal" /> : <CourseScene idSuffix="onboarding-player" />}
 
       <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <LazyMotion features={loadFeatures}>
@@ -274,10 +290,10 @@ function GolfPlayerOnboardingContent() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
                       About you
                     </h1>
-                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                    <p className="text-text-secondary mt-2 text-sm sm:text-base">
                       Help your coach get to know you
                     </p>
                   </m.div>
@@ -285,7 +301,7 @@ function GolfPlayerOnboardingContent() {
                   {/* Form Card */}
                   <m.div
                     variants={staggerItem}
-                    className="auth-glass-card rounded-3xl p-6 sm:p-8"
+                    className="bg-surface border border-border-subtle rounded-fw-lg p-6 sm:p-8"
                   >
                     <div className="space-y-5">
                       {/* Name */}
@@ -333,7 +349,7 @@ function GolfPlayerOnboardingContent() {
 
                       {/* Hometown */}
                       <div>
-                        <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                        <p className="text-label font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                           Hometown
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -389,7 +405,7 @@ function GolfPlayerOnboardingContent() {
                   <m.div variants={staggerItem}>
                     <Button variant="ghost"
                       onClick={() => goBack('about')}
-                      className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
+                      className="flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-surface-sunken"
                     >
                       <IconArrowLeft size={16} />
                       Back
@@ -398,10 +414,10 @@ function GolfPlayerOnboardingContent() {
 
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
                       Your profile
                     </h1>
-                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                    <p className="text-text-secondary mt-2 text-sm sm:text-base">
                       Add a photo so your coach and teammates can recognize you
                     </p>
                   </m.div>
@@ -409,7 +425,7 @@ function GolfPlayerOnboardingContent() {
                   {/* Form Card */}
                   <m.div
                     variants={staggerItem}
-                    className="auth-glass-card rounded-3xl p-6 sm:p-8"
+                    className="bg-surface border border-border-subtle rounded-fw-lg p-6 sm:p-8"
                   >
                     <div className="space-y-6">
                       {/* Avatar Upload - Centered */}
@@ -526,17 +542,17 @@ function GolfPlayerOnboardingContent() {
                       stays. What changes is the claim about the TEAM, which is the
                       part that can be false. */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-2">
                       Welcome, {firstName || 'Player'}!
                     </h1>
                     {joinedTeam === false ? (
-                      <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
+                      <p className="text-text-secondary text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
                         Your profile is saved, but we couldn&apos;t add you to your coach&apos;s
                         team with that invite link. Ask your coach to re-send it, or enter the
                         code below.
                       </p>
                     ) : (
-                      <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
+                      <p className="text-text-secondary text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
                         Your profile is ready. Head to your dashboard to see your team, track rounds, and connect with your coach.
                       </p>
                     )}

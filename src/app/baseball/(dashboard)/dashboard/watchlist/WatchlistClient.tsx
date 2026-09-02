@@ -65,6 +65,7 @@ import {
 } from '@/components/icons';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   removeFromWatchlist,
   updateWatchlistStatus,
@@ -74,7 +75,7 @@ import {
 import { searchRecruitablePlayers } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
 import { getFullName, getPipelineStageLabel, cn } from '@/lib/utils';
 import { PIPELINE_STAGES } from '@/lib/recruiting/stages';
-import type { PipelineStage, Player, WatchlistWithPlayer } from '@/lib/types';
+import type { PipelineStage, BaseballPlayer as Player, WatchlistWithPlayer } from '@/lib/types';
 
 // Sortable columns
 type SortKey = 'name' | 'position' | 'state' | 'gradYear' | 'stage' | 'dateAdded';
@@ -318,6 +319,10 @@ export function WatchlistClient() {
   const { showToast } = useToast();
   const { coach } = useAuth();
   const { watchlist, loading, refetch } = useWatchlist();
+  // Desktop-only autofocus for the add-player search: on touch, focusing it
+  // as the dialog opens summons the iOS keyboard over the results list
+  // (2026-08-26 mobile focus rule). The keyboard waits for a tap.
+  const finePointer = useMediaQuery('(pointer: fine)');
   const reducedMotion = useReducedMotion() ?? false;
 
   // Filters
@@ -1049,8 +1054,8 @@ export function WatchlistClient() {
               }}
               placeholder="Search by name or school…"
               leading={<IconSearch size={16} />}
-              // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary search input in add-to-watchlist dialog
-              autoFocus
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional on desktop: primary search input in add-to-watchlist dialog
+              autoFocus={finePointer}
             />
 
             {searchingPlayers ? (

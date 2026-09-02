@@ -8,6 +8,12 @@
 
 Team Communications covers realtime team messaging and coach-to-team announcements. Messaging is conversational and realtime; announcements are structured broadcasts with urgency, targeting, linked documents, inline tasks, and acknowledgement tracking.
 
+When a player or coach opens a conversation, the thread starts at the newest
+loaded message. Later realtime messages preserve a reader's position unless
+they are already near the bottom; an explicit search result takes precedence
+and opens at its matched message instead. The search target consumes the
+initial-open sentinel so it cannot be overwritten by a stale initial scroll.
+
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 
 ## Primary Entry Points
@@ -20,6 +26,7 @@ These surfaces are operationally important because they touch files, notificatio
 ### Components
 
 - `src/components/golf/messages/**`
+- `src/components/fairway/pages/messages/**`
 - `src/components/golf/announcements/**`
 
 ### Actions
@@ -54,6 +61,9 @@ Message send
   -> Supabase Realtime pushes to participants
 
 Announcement create
+  -> optional direct file upload from the composer (uploadGolfDocument ->
+     createGolfDocument: file lands in the team document library, then the
+     new document id joins documentIds)
   -> createEnrichedAnnouncement()
   -> INSERT golf_announcements
   -> INSERT targeted recipients or broadcast metadata
@@ -73,9 +83,31 @@ Announcement create
 ## UI Contract
 
 - Messaging needs realtime update behavior, attachment preview, read state, and empty conversation states.
+- Opening a conversation must land at its newest message without forcing a
+  reader back to the bottom after they scroll upward.
 - Announcement coach view needs creation, targeting, urgency, documents, tasks, and acknowledgement tracking.
+- The composer's Attachments section renders for any coach with a team (2026-08-26): it offers direct device upload (25 MB cap, mirrors the Documents-page accept list) plus the library picker; it must NOT be hidden just because the team library is empty.
 - Announcement player view needs compact cards, clear acknowledgement action, linked documents/tasks, and urgency state.
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.
+
+## Conversation Rail Failure Semantics (2026-08-27)
+
+The rail distinguishes "backend failed" from "genuinely empty" — a failed load
+must never render the cheerful "No conversations yet" (P257).
+
+`useGolfConversations` reads from TWO sources: the
+`get_golf_conversations_with_details` RPC (primary) and a direct
+`golf_conversation_participants` query for team chats (supplement, "in case DB
+function doesn't include them"). The terminal decision is
+`(rpcError ?? groupConvsError) && !conversationsData?.length` →
+`setError(true)`; `MessageConversationRail` then renders explain + Retry.
+
+Deliberately NOT an early return at the team-chat query: it supplements the RPC,
+so returning on its failure would blank a rail whose DMs loaded fine. The rail
+keeps rows on screen when `error && conversations.length > 0`. Before
+2026-08-27 that query's failure was logged and then fell through, so a user
+whose team-chat read was denied saw an empty inbox with no error — the exact
+masquerade P257 exists to stop.
 
 ## Known Risk Areas
 

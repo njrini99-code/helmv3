@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { normalizeIncidentRoute } from '@/lib/admin/incident-grouping';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { classifyInProgressActivity } from '@/lib/golf/tracer-round-activity';
+import { tracerIncidentGroupKey } from '@/app/admin/golf/tracer/tracer-shared';
 
 // ============================================
 // TYPES
@@ -114,10 +116,19 @@ interface TracerAdminEventRecord {
   resolved_at: string | null;
   resolved_by: string | null;
   created_at: string;
+  /** Write-time grouping key — see tracerIncidentGroupKey. */
+  fingerprint: string | null;
 }
 
 export interface TracerActivityEvent {
-  type: 'round_started' | 'round_completed' | 'round_in_progress' | 'round_stuck' | 'round_error' | 'detail_warning';
+  type:
+    | 'round_started'
+    | 'round_completed'
+    | 'round_in_progress'
+    | 'round_stuck'
+    | 'round_abandoned'
+    | 'round_error'
+    | 'detail_warning';
   player_name: string;
   player_id: string;
   round_id: string | null;
@@ -126,7 +137,7 @@ export interface TracerActivityEvent {
   score_to_par: number | null;
   error_message: string | null;
   timestamp: string;
-  /** Current hole for in-progress/stuck rounds */
+  /** Current hole for in-progress/stuck/abandoned rounds */
   current_hole?: number | null;
   /** Expected holes (9 or 18) */
   expected_holes?: number;
@@ -134,7 +145,7 @@ export interface TracerActivityEvent {
   actual_holes?: number;
   /** Total shots recorded so far */
   total_shots?: number;
-  /** Hours stuck (only for round_stuck type) */
+  /** Hours idle (only for round_stuck / round_abandoned types) */
   hours_stuck?: number;
 }
 
@@ -162,8 +173,9 @@ export interface TracerData {
   }[];
   /**
    * True if any of the bounded queries (rounds, players, etc.) hit their
-   * row limit. UI can surface "showing latest N — older not shown" when set.
-   * Tonight: just expose, don't render.
+   * row limit. Wired into TracerTab -> TracerHealthOverview -> TracerKPICards'
+   * "Completion Rate" card as a "first 500 rounds" caveat (Bridge audit
+   * 2026-08-21 — this was computed but never read for months).
    */
   truncated: boolean;
   /** Per-round integrity data from hole-level aggregation */
@@ -222,35 +234,11 @@ function asString(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
-function normalizeTracerMessage(message: string): string {
-  return message
-    .trim()
-    .toLowerCase()
-    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, ':uuid')
-    .replace(/\b[a-f0-9]{16,}\b/gi, ':id')
-    .replace(/\b\d{5,}\b/g, ':id')
-    .replace(/\s+/g, ' ');
-}
-
 // Delegates to the shared admin helper so the tracer-side route normalisation
 // stays in lockstep with the System tab grouping. Keeping the local name lets
 // the rest of this file stay untouched while we centralise the implementation.
 function normalizeTracerPath(pathOrUrl: string | null): string {
   return normalizeIncidentRoute(pathOrUrl);
-}
-
-function normalizeTracerIncidentKey(
-  message: string,
-  routeOrUrl: string | null,
-  action: string | null,
-  errorCode: string | null,
-): string {
-  return [
-    normalizeTracerMessage(message),
-    normalizeTracerPath(routeOrUrl),
-    action ?? '',
-    errorCode ?? '',
-  ].join('::');
 }
 
 function buildTracerIncidentContext(rawContext: unknown): TracerIncidentContext {
@@ -516,13 +504,9 @@ function buildTracerIncidents(events: TracerAdminEventRecord[]): TracerIncident[
     const context = buildTracerIncidentContext(event.metadata);
     if (!isShotTrackingTracerEvent(event, context)) continue;
 
-    const keyMessage = getTracerEventMessage(event);
-    const key = normalizeTracerIncidentKey(
-      keyMessage,
-      context.route ?? event.url ?? context.url,
-      context.action,
-      context.errorCode,
-    );
+    // Same key the Errors tab groups this row under — see
+    // tracerIncidentGroupKey in tracer-shared.ts.
+    const key = tracerIncidentGroupKey(event.fingerprint, event.id);
     const createdAt = event.created_at;
     const severity = normalizeTracerSeverity(event.severity);
     const existing = groups.get(key);
@@ -833,26 +817,39 @@ async function getTracerDataImpl(): Promise<TracerData> {
       });
     }
 
-    // Activity: round in progress or stuck
+    // Activity: round in progress, stuck, or abandoned. Gated the same way
+    // as round_started above — classifyInProgressActivity returns null for
+    // anything untouched in 30+ days, so a round nobody has touched since
+    // May doesn't sit in "recent activity" forever. Within that window, only
+    // a round that has ALSO been idle less than STUCK_TIER_MAX_IDLE_HOURS
+    // renders as "stuck" (loud, red, highest priority); one idle longer
+    // renders as the quieter "abandoned" tier instead of screaming
+    // stuck/critical on every load.
     if (r.status === 'in_progress' && r.updated_at) {
-      const hoursInactive = (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60);
-      const isStuck = hoursInactive >= 1; // 1+ hours = stuck
-      activityFeed.push({
-        type: isStuck ? 'round_stuck' : 'round_in_progress',
-        player_name: playerName,
-        player_id: r.player_id,
-        round_id: r.id,
-        course_name: r.course_name,
-        score: null,
-        score_to_par: null,
-        error_message: isStuck
-          ? `Stuck at hole ${r.current_hole ?? '?'} for ${Math.round(hoursInactive)}h — no activity since ${new Date(r.updated_at).toLocaleString()}`
-          : null,
-        timestamp: r.updated_at,
-        current_hole: r.current_hole ?? null,
-        expected_holes: r.holes_played || 18,
-        hours_stuck: isStuck ? hoursInactive : undefined,
-      });
+      const activityType = classifyInProgressActivity(r.updated_at);
+      if (activityType) {
+        const hoursInactive = (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60);
+        const isStuck = activityType === 'round_stuck';
+        const isAbandoned = activityType === 'round_abandoned';
+        activityFeed.push({
+          type: activityType,
+          player_name: playerName,
+          player_id: r.player_id,
+          round_id: r.id,
+          course_name: r.course_name,
+          score: null,
+          score_to_par: null,
+          error_message: isStuck
+            ? `Stuck at hole ${r.current_hole ?? '?'} for ${Math.round(hoursInactive)}h — no activity since ${new Date(r.updated_at).toLocaleString()}`
+            : isAbandoned
+              ? `Abandoned at hole ${r.current_hole ?? '?'} — no activity since ${new Date(r.updated_at).toLocaleString()}`
+              : null,
+          timestamp: r.updated_at,
+          current_hole: r.current_hole ?? null,
+          expected_holes: r.holes_played || 18,
+          hours_stuck: isStuck || isAbandoned ? hoursInactive : undefined,
+        });
+      }
     }
   }
 
@@ -909,7 +906,7 @@ async function getTracerDataImpl(): Promise<TracerData> {
     // Limit reduced from 800 to 300 (sufficient for 45-day error window at current volume).
     adminDb
       .from('admin_events')
-      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
+      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at, fingerprint')
       .eq('event_type', 'error')
       .gte('created_at', ago45d)
       .order('created_at', { ascending: false })
@@ -1204,17 +1201,25 @@ async function getTracerEnrichedDataImpl(): Promise<TracerEnrichedData> {
 
     adminDb
       .from('admin_events')
-      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
+      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at, fingerprint')
       .eq('event_type', 'error')
       .gte('created_at', ago30d)
       .order('created_at', { ascending: true }),
 
-    // Stuck rounds (in_progress with updated_at > 1 hour ago)
+    // Candidate stuck rounds (in_progress, updated_at > 1 hour ago, within
+    // the same 30-day window as everything else here). classifyInProgressActivity
+    // below tells a round idle < STUCK_TIER_MAX_IDLE_HOURS (stuck — belongs
+    // on this alert panel) apart from one idle longer (not alert-worthy —
+    // see the `.filter` below) using `updated_at` alone; `created_at` is no
+    // longer part of that decision and isn't selected here. The `.gte`
+    // bound also keeps rows this query returns from growing unboundedly as
+    // abandoned rounds accumulate over time.
     adminDb
       .from('golf_rounds')
       .select('id, player_id, course_name, current_hole, holes_played, updated_at')
       .eq('status', 'in_progress')
-      .lt('updated_at', oneHourAgo),
+      .lt('updated_at', oneHourAgo)
+      .gte('updated_at', ago30d),
   ]);
 
   // Aggregate into daily counts
@@ -1253,8 +1258,17 @@ async function getTracerEnrichedDataImpl(): Promise<TracerEnrichedData> {
     }
   }
 
+  // Only the 'round_stuck' tier belongs on this dataset — it feeds admin
+  // alert panels (TracerAlertPanel's generateAlerts, StuckRoundsPanel on
+  // /admin/golf/tracer) that treat every row as urgent and actionable. A
+  // round abandoned long ago (classifyInProgressActivity's 'round_abandoned'
+  // tier, or null when even further outside the window) isn't that — it
+  // stays visible and resolvable via the Tracer round inspector table
+  // (TracerRoundInspector's own abandoned tier), just not screaming on an
+  // alert panel forever.
   const stuckRounds = stuckData
     .filter((r): r is typeof r & { updated_at: string } => r.updated_at != null)
+    .filter((r) => classifyInProgressActivity(r.updated_at) === 'round_stuck')
     .map((r) => ({
       round_id: r.id,
       player_id: r.player_id,
@@ -1368,7 +1382,7 @@ async function getTracerRoundDiagnosticImpl(roundId: string): Promise<TracerRoun
 
     adminDb
       .from('admin_events')
-      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
+      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at, fingerprint')
       .eq('event_type', 'error')
       .eq('metadata->>roundId', roundId)
       .gte('created_at', ago45d)
@@ -1494,7 +1508,7 @@ async function fixRoundDataImpl(
 
       if (error) return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: `DB update failed: ${error.message}` };
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,
@@ -1549,7 +1563,7 @@ async function fixRoundDataImpl(
         .update({ total_gir: newGir, total_gir_possible: newGirTotal })
         .eq('id', roundId);
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,
@@ -1594,7 +1608,7 @@ async function fixRoundDataImpl(
         }
       }
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,
@@ -1626,7 +1640,7 @@ async function fixRoundDataImpl(
           .eq('id', roundId);
       }
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,
@@ -1698,7 +1712,7 @@ async function fixRoundDataImpl(
         return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: `Failed to remove stale round: ${error.message}` };
       }
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,

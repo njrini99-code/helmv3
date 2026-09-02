@@ -122,5 +122,48 @@ describe('POST /api/admin/log-event', () => {
     expect(insertedRows[0]?.event_type).toBe('error');
     expect(insertedRows[0]?.user_id).toBe('user-1');
     expect(logServerErrorMock).not.toHaveBeenCalled();
+    // 'error' is a real incident and must stay open for triage — it must NOT
+    // be written pre-resolved the way 'system' (below) is.
+    expect(insertedRows[0]?.resolved).toBeUndefined();
+  });
+
+  // A 'system' row here is client perf telemetry (slow page load) — a pure
+  // activity record, not an incident. Nothing ever triages or resolves it
+  // (auto-resolve.ts and the triage UI both filter event_type='error'), so it
+  // sat resolved=false forever with no consumer that cared. Born resolved
+  // instead — see CLIENT_ACTIVITY_RECORD_EVENT_TYPES in route.ts.
+  it('writes a client "system" (perf telemetry) event already resolved', async () => {
+    mockAuthedUser();
+
+    const insertedRows: Array<Record<string, unknown>> = [];
+    createAdminMock.mockReturnValueOnce({
+      from: vi.fn(() => ({
+        insert: vi.fn((payload: Record<string, unknown>) => {
+          insertedRows.push(payload);
+          return {
+            select: vi.fn(() => ({
+              single: vi.fn(async () => ({ data: { id: 'event-456' }, error: null })),
+            })),
+          };
+        }),
+      })),
+    } as never);
+
+    const res = await POST(
+      request(
+        JSON.stringify({
+          eventType: 'system',
+          title: 'Slow page load detected',
+          severity: 'warning',
+          message: 'Page took 12000ms to load',
+        })
+      )
+    );
+
+    expect(res.status).toBe(200);
+    expect(insertedRows).toHaveLength(1);
+    expect(insertedRows[0]?.event_type).toBe('system');
+    expect(insertedRows[0]?.resolved).toBe(true);
+    expect(typeof insertedRows[0]?.resolved_at).toBe('string');
   });
 });

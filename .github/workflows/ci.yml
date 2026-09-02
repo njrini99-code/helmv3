@@ -1,14 +1,24 @@
 name: CI
 
 on:
+  # merge_group: required for GitHub's merge queue — a queued merge re-runs
+  # these checks on the speculative merge result; without this trigger the
+  # queue waits forever for contexts that never arrive and every merge times out.
+  merge_group:
   push:
     branches:
       - main
   pull_request:
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Per-COMMIT groups on main (playwright.yml's pattern): two merges landing
+  # seconds apart used to cancel the first commit's suite mid-flight, and the
+  # always()-running aggregate then FAILED on its cancelled needs — every
+  # stacked merge painted a red X on a superseded main commit (owner report
+  # 2026-08-20 22:15). On PR branches the old behavior stands: a new push
+  # supersedes the previous run.
+  group: ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -25,6 +35,56 @@ env:
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
+  detect-changes:
+    name: Detect code-relevant paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Classify changed paths (fail closed to code=true)
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          # Non-PR events (push to main) always run the full suite.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "non-PR event -> full suite"; exit 0
+          fi
+          # FAIL CLOSED (e3's criterion): any inability to classify the diff
+          # resolves to code=true. A misclassified docs PR wastes one suite; a
+          # misclassified code PR ships ungated — so uncertainty must be code.
+          if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "missing base/head sha -> code (fail closed)"; exit 0
+          fi
+          if ! changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "git diff failed -> code (fail closed)"; exit 0
+          fi
+          if [ -z "$changed" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "empty diff -> code (fail closed)"; exit 0
+          fi
+          # docs-only = EVERY changed file is under docs/ or ends in .md. If ANY
+          # file is outside that set the whole PR is code. Deliberately NARROW:
+          # config (ci.yml, settings.json, package.json, migrations, *.yml) is
+          # NOT docs-only — it can break the build, so it runs the full suite.
+          # Count files that are NOT docs/markdown. Count-based (not grep -q)
+          # so the classification is identical on GNU and BSD grep and testable
+          # locally. Defaults to 1 (=> code) if the count is somehow empty.
+          nondoc="$(echo "$changed" | grep -cvE '^docs/|\.md$' || true)"
+          if [ "${nondoc:-1}" -gt 0 ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "code-relevant paths changed ($nondoc) -> full suite"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"; echo "docs/markdown-only diff -> heavy jobs skip"
+          fi
+          echo "--- changed files ---"; echo "$changed"
+
   database-types:
     name: Database types drift
     runs-on: ubuntu-latest
@@ -69,6 +129,73 @@ jobs:
       - name: Check PostgREST row caps
         run: node scripts/check-row-cap-limits.mjs
 
+  control-plane:
+    name: Control plane
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # A DEDICATED job, not a step inside another one. These checks were first
+    # added under "Feature knowledge", where a control-plane failure would have
+    # surfaced under someone else's name — the same mislabeled-signal class as a
+    # guard timeout rendering as "GlassCard import exists". A control that
+    # reports under the wrong name is a control you will misread.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # GENERATED INVENTORY DRIFT — a required PR-time gate as of 2026-08-29.
+      #
+      # Before this, drift was caught by a scheduled workflow that opened a
+      # FOLLOW-UP PR (#1623 sat open while main carried a stale route count),
+      # and that workflow's own header records that PRs created with
+      # GITHUB_TOKEN may receive no required CI. `created != integrated` is the
+      # same class of control this repo keeps finding does not actually run.
+      #
+      # --check is NON-MUTATING: it computes the expected blocks and compares,
+      # leaving the tree byte-identical. The previous `docs:regen && git diff`
+      # shape could only tell you the docs were stale by first making them
+      # correct, which is unusable as a gate.
+      - name: Generated inventory is current
+        run: npm run docs:inventory-check
+
+      # REPO-WIDE STATIC GUARDS, with honest outcomes.
+      #
+      # These ran inside the `unit` project until 2026-08-29, where a sweep that
+      # timed out was reported using the same shape as a failed assertion — CI
+      # printed red against "no imports of GlassCard ... remain in src" when the
+      # guard had never finished asking. The runner distinguishes:
+      #   exit 0  PASS
+      #   exit 1  POLICY_FAILURE          ran, found violations
+      #   exit 2  INFRASTRUCTURE_FAILURE  did not finish — UNKNOWN, not a pass
+      - name: Repo-wide static guards
+        run: npm run guards
+
+      # THE CONTROL PLANE VERIFIES THE CONTROL PLANE.
+      #
+      # Static mode only: no user-global config, no network beyond gh, no
+      # machine-specific state. READ-ONLY by construction — it regenerates
+      # nothing and deletes nothing, so it can report what is wrong instead of
+      # quietly fixing it.
+      #
+      #   exit 0  VERIFIED
+      #   exit 1  CONTROL FAILURE   a control that should hold does not
+      #   exit 2  UNKNOWN           a required state could not be established
+      #
+      # UNKNOWN never becomes PASS. Every control this repo lost was lost by
+      # being assumed rather than checked.
+      - name: Control plane
+        run: npm run control-plane:verify:static
+
   feature-knowledge:
     name: Feature knowledge
     runs-on: ubuntu-latest
@@ -91,6 +218,39 @@ jobs:
 
       - name: Check feature knowledge registry
         run: npm run knowledge:check
+
+      # Fails when memory/**, CLAUDE.md, AGENTS.md or .claude/rules/* name a
+      # golf_*/baseball_* database object that does not exist in
+      # src/lib/types/database.ts.
+      #
+      # This runs HERE, on the per-PR fast path, on purpose, and it covers a
+      # class the inventory check cannot: the inventory check compares the
+      # generator to its own output, reads only AUTOGEN blocks, and covers 3
+      # files. This one reads the whole knowledge base against the live schema. An audit on 2026-08-19 found
+      # 59 identifiers documented as live tables — with columns, FKs and RLS
+      # policy names — that returned absent from every catalog in production.
+      # Sessions are ordered by CLAUDE.md to read those docs before writing
+      # code, so a wrong doc becomes wrong code with no signal in between.
+      - name: Check knowledge base against the schema
+        run: npm run docs:schema-drift
+
+      # Fails when a navigation doc names a file path that does not resolve.
+      # An audit on 2026-08-20 found 47 dead paths across memory/**,
+      # .claude/rules/**, CLAUDE.md, AGENTS.md and docs/REPO_MAP.md — components,
+      # hooks and tests that moved or were deleted while the docs naming them
+      # were not. Those docs read as inventories, so a session treats a dead path
+      # as "where the code lives", fails to find it, and either invents a
+      # replacement or concludes the feature is missing. Both are confident and
+      # wrong.
+      - name: Check navigation docs for dead file paths
+        run: npm run docs:path-drift
+
+      # The feature router (memory/registry.yml) gates governed edits, but
+      # path-drift scans only .md files and skips globs — so the one map the
+      # edit gate consults was the one map no gate checked. Fails on any
+      # registry entry that resolves to nothing; baseline is ZERO.
+      - name: Check the feature router against the tree
+        run: npm run knowledge:globs
 
   # Helm Bridge integration env drift.
   #
@@ -155,6 +315,44 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+  edge-functions:
+    name: Edge functions (Deno)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # supabase/functions/ is EXCLUDED from tsconfig.json, so `npm run typecheck`
+    # has never covered these three Deno edge functions. They are deployed code
+    # that sends push notifications and email; until 2026-08-19 nothing checked
+    # them at all. The first run of this gate found a real type error in
+    # send-fcm-push (crypto.subtle.importKey rejecting a widened Uint8Array).
+    #
+    # The npm script uses --node-modules-dir=none deliberately. With `auto`,
+    # deno resolves npm deps itself and REWRITES node_modules — locally that
+    # silently bumped stripe 22.3.2 -> 22.5.0, whose pinned API-version type no
+    # longer matched src/lib/stripe/server.ts, so `npm run typecheck` started
+    # failing on a file nobody had touched. A type gate must not mutate the
+    # tree it is checking.
+    #
+    # It also passes --minimum-dependency-age=120 (minutes). Deno's default
+    # 24h supply-chain age policy failed this job on 2026-08-21 when rollup
+    # published 4.62.5 upstream — a red CI day for a docs-only merge, with no
+    # code change on our side. 2h keeps the protection against
+    # just-published/compromised versions without a day-long outage every
+    # time a floating transitive dep ships a release. Owner decision
+    # 2026-08-21.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed  # v2.0.5
+        with:
+          deno-version: v2.x
+
+      - name: Type-check edge functions
+        run: npm run typecheck:functions
 
   lint:
     name: ESLint
@@ -236,6 +434,15 @@ jobs:
         continue-on-error: true
         run: npm run audit:paginated-reads
 
+      # Duplicate exports had a committed baseline (.duplicate-exports-baseline.json,
+      # 27 grandfathered) and a process.exit(1) on anything new — but NO job ran it,
+      # so the ratchet could never ratchet and new duplicates landed silently. A
+      # baseline nothing compares against is a green that means nothing.
+      - name: Duplicate exports (ratchet)
+        id: ratchet_dupexports
+        continue-on-error: true
+        run: npm run lint:duplicate-exports
+
       - name: Ratchet aggregate (fails if any ratchet failed)
         if: always()
         env:
@@ -243,9 +450,10 @@ jobs:
           O_SUPABASE: ${{ steps.ratchet_supabase.outcome }}
           O_FAILOPEN: ${{ steps.ratchet_failopen.outcome }}
           O_PAGINATED: ${{ steps.ratchet_paginated.outcome }}
+          O_DUPEXPORTS: ${{ steps.ratchet_dupexports.outcome }}
         run: |
           bad=0
-          for pair in "lint:$O_LINT" "supabase:$O_SUPABASE" "fail-open:$O_FAILOPEN" "paginated:$O_PAGINATED"; do
+          for pair in "lint:$O_LINT" "supabase:$O_SUPABASE" "fail-open:$O_FAILOPEN" "paginated:$O_PAGINATED" "duplicate-exports:$O_DUPEXPORTS"; do
             name="${pair%%:*}"; outcome="${pair#*:}"
             echo "ratchet $name -> $outcome"
             if [ "$outcome" != "success" ]; then bad=1; fi
@@ -254,6 +462,8 @@ jobs:
 
   unit-tests:
     name: Unit tests
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Sharded because the suite is runner-bound, not config-bound: 8,657 tests
@@ -328,6 +538,12 @@ jobs:
   # ---------------------------------------------------------------------------
   unit-tests-timezone:
     name: Unit tests (shifted timezone)
+    # PUSH/MAIN ONLY (owner 2026-08-20, PR throughput): this 2-tz x 3-shard
+    # matrix added 6 jobs to every PR and was the dominant PR-time cost. It now
+    # runs on push to main only; timezone regressions are caught post-merge
+    # (with fast rollback) rather than pre-merge. Revert this `if` to restore the
+    # pre-merge gate — see the CI-aggregate note about incident #1123.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -385,6 +601,8 @@ jobs:
 
   next-build:
     name: Next build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -420,6 +638,8 @@ jobs:
 
   supabase:
     name: Supabase lint + RLS tests
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -429,6 +649,15 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520
@@ -440,6 +669,38 @@ jobs:
 
       - name: Lint migrations
         run: supabase db lint --schema public
+
+      # Schema invariants, run against the stack this job just rebuilt FROM
+      # MIGRATIONS. `db:drift:check` existed in package.json with no workflow
+      # caller since it was written — a script nothing invokes is not a gate,
+      # which `.claude/rules/quality-gates.md` names explicitly.
+      #
+      # WHAT THIS DOES AND DOES NOT PROVE. The script's own header frames these
+      # as production-correctness invariants, and against production it would
+      # answer "has production drifted". It cannot ask that here: the check needs
+      # DATABASE_URL or SUPABASE_DB_PASSWORD, and neither exists as a repo secret
+      # (verified 2026-08-27 — Actions holds ACCESS_TOKEN, SERVICE_ROLE_KEY,
+      # PROJECT_ID, ANON_KEY and no database password).
+      #
+      # Pointed at the local stack it answers a different and still valuable
+      # question: do the migrations, replayed from scratch, produce a schema that
+      # satisfies all 12 invariants? Every one of them encodes a real past
+      # production defect (#651 missing Baseball columns, #728/#887 stale stat
+      # aliases, #732 a phantom rate_limits table, admin rollup gates that must
+      # check is_super_admin). This catches a migration that reintroduces one
+      # before it is ever applied anywhere.
+      #
+      # To ALSO gate production drift, add a SUPABASE_DB_PASSWORD repo secret and
+      # a second scheduled job — deliberately not per-PR, since production drift
+      # is not something a pull request introduces.
+      #
+      # Fail-closed: exit 2 is "could not connect", and it fails this step rather
+      # than passing quietly. A drift guard that goes green when it never reached
+      # a database is the exact false-green shape check:types-drift already has.
+      - name: Schema invariants (migrations rebuild)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run db:drift:check
 
       - name: Run pgTAP RLS suites
         run: |
@@ -514,6 +775,17 @@ jobs:
 
   baseball-auth-smoke:
     name: BaseballHelm authenticated smoke
+    needs: detect-changes
+    # PUSH/MAIN ONLY (owner 2026-08-26, PR throughput): removed from the PR
+    # gate after it blocked a golf production hotfix twice in one afternoon —
+    # both times the runner died ("shutdown signal") during the TypeScript
+    # step of this job's in-job build, before a single test ran. Same
+    # mechanism as unit-tests-timezone: it now runs on push to main only, so
+    # a baseball smoke regression is caught post-merge (blocking the next
+    # promote) instead of gating every PR. To restore the pre-merge gate,
+    # revert this `if` AND re-add `- baseball-auth-smoke` to the CI-aggregate
+    # `needs` list.
+    if: github.event_name == 'push' && needs.detect-changes.outputs.code == 'true'
     # #372: promotes the already-built, already-mandatory baseball-smoke +
     # onboarding-smoke specs (e2e/baseball-smoke.spec.ts,
     # e2e/baseball-onboarding-smoke.spec.ts) from push/workflow_dispatch-only
@@ -650,7 +922,17 @@ jobs:
         run: supabase stop || true
 
   all:
-    name: all
+    # Renamed from the bare `all` (2026-08-19): review-gate.yml's aggregate
+    # job was ALSO named `all`, so both workflows posted an identically-named
+    # check run and a single required context "all" could not tell them
+    # apart — see .github/branch-protection.md and docs/CI_RUNBOOK.md for the
+    # PR #1125 incident this caused (a red BaseballHelm smoke merged because
+    # Review Gate's "all" reported green while CI's "all" was still running).
+    # This job's id stays `all` (nothing references it via `needs:` — grepped
+    # repo-wide before renaming) so the diff is name-only; only the `name:`
+    # field below is what GitHub uses as the check-run/required-context
+    # string, and it must stay globally unique across every workflow.
+    name: CI aggregate
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -659,34 +941,45 @@ jobs:
     # RLS regressions now block merge through the required `all` check instead of
     # being advisory-only — the gap that let the anon-access hole reach main.
     #
-    # `baseball-auth-smoke` (BaseballHelm authenticated coach/player smoke,
-    # #372) is part of the hard gate for the same reason: an authenticated
-    # smoke suite that only ran post-merge could not have caught a real
-    # regression before it landed on `main`.
+    # `baseball-auth-smoke` is NO LONGER in this gate (owner 2026-08-26, PR
+    # throughput — see the note on the job itself). Like unit-tests-timezone,
+    # it now runs on push to main only; a red baseball smoke on `main` blocks
+    # the next production promote rather than every PR merge.
     #
-    # `unit-tests-timezone` is a hard gate, not advisory, on the same principle: a
-    # timezone-dependent fixture is a test that reports a different answer
-    # depending on when and where it runs, and one already took `main` red at 8pm
-    # EDT (#1123). Advisory would let the next one land. The suite is verified
-    # clean at both offsets, so this blocks nothing that exists today.
+    # `unit-tests-timezone` is NO LONGER in this gate (owner 2026-08-20, PR
+    # throughput). It caught a real 8pm-EDT regression (#1123) as a pre-merge
+    # gate, but at 6 jobs/PR it was the dominant PR-time cost. It now runs on
+    # push to MAIN only (see its `if`), so a timezone regression is caught
+    # post-merge with fast rollback rather than blocking every PR. The
+    # enforcement point moves accordingly: a red timezone job on `main` now
+    # blocks the DEPLOY — it is caught by the pre-promote check of main's CI
+    # before a production promote — not the merge. To restore the
+    # pre-merge gate, re-add `- unit-tests-timezone` to `needs` below AND remove
+    # its `if: github.event_name == 'push'`.
     needs:
+      - detect-changes
       - database-types
       - schema-invariants
       - feature-knowledge
+      - control-plane
+      - bridge-env
       - typecheck
+      - edge-functions
       - lint
       - lint-ratchet
       - unit-tests
-      - unit-tests-timezone
       - business-contracts
       - next-build
       - route-hygiene
       - supabase
       - import-cycles
-      - baseball-auth-smoke
     steps:
       - name: Fail if any required CI check failed
-        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        # A skipped heavy job is fine ONLY on a docs-only PR (code=='false').
+        # On a code PR or a push, a skip is a real problem and still fails.
+        if: >-
+          contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') ||
+          (needs.detect-changes.outputs.code == 'true' && contains(needs.*.result, 'skipped'))
         run: |
           echo "One or more CI checks failed."
           exit 1

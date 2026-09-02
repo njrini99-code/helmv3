@@ -1,0 +1,23 @@
+# Search-surface control (ripgrep/Grep honors this like .gitignore, git does NOT).
+#
+# Everything listed is historical evidence, tool output, or vendored bulk that
+# CLAUDE.md/AGENTS.md already mark non-authoritative. Keeping it out of every
+# repo-wide search is what makes "the archive is not the source of truth"
+# mechanical instead of advisory. To deliberately search history:
+#   rg --no-ignore -g 'docs/archive/**' <pattern>
+docs/archive/
+supabase/migrations_archive/
+archive/
+tools/**/node_modules/
+.claude/skills/**/node_modules/
+.agents/skills/**/node_modules/
+.momentic/
+.momentic-mcp/
+.playwright-mcp/
+frames/
+test-results/
+playwright-report/
+.helm/
+.superpowers/
+.ultracode/
+.dev-assets/

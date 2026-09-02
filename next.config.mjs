@@ -34,6 +34,12 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
+// Vercel supplies the commit SHA while it builds the release, but that system
+// variable is not guaranteed to be present in every serverless invocation.
+// Bake the same release value into the application bundle so runtime Sentry
+// events carry the release that owns their uploaded source maps.
+const sentryRelease = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true, // Enable to catch potential issues
@@ -58,6 +64,7 @@ const nextConfig = {
   // Expose deployment target to the browser bundle (preview vs production).
   env: {
     NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
+    NEXT_PUBLIC_SENTRY_RELEASE: sentryRelease || '',
   },
 
   // Allow images from Supabase storage
@@ -376,7 +383,7 @@ export default isDev
         // Suspect Commits ("this error was introduced by commit abc123") and
         // the per-release commit list in the UI.
         release: {
-          name: process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA,
+          name: sentryRelease,
           setCommits: {
             auto: true,
             // Don't fail the build if no GitHub integration is wired up yet —

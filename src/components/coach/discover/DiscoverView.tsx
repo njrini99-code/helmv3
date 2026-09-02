@@ -6,7 +6,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
 import { logError } from '@/lib/error-logging';
-import type { Player, Organization } from '@/lib/types';
+import type { BaseballPlayer as Player, Organization } from '@/lib/types';
 import { DiscoverToggle, type DiscoverMode } from './DiscoverToggle';
 import { PlayerCardData } from './PlayerCard';
 import { PlayerCardGrid } from './PlayerCardGrid';

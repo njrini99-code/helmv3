@@ -60,18 +60,40 @@ export default function Loading() {
               ))}
             </div>
 
+            {/* Templates rail — coach-only ({isCoach && teamId}-gated at
+                FairwayTasks.tsx:556), so this column intentionally mirrors
+                the coach view; players never see it. */}
             <div className="lg:col-span-1">
-              <Surface elevation="border" padding="none" className="overflow-hidden">
-                <div className="flex items-center gap-2 border-b border-border-subtle px-4 py-3">
-                  <Skeleton className="h-[18px] w-[18px] rounded-fw-sm" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-                <div className="flex flex-col gap-2 p-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-full rounded-fw-md" />
-                  ))}
-                </div>
-              </Surface>
+              <div className="flex flex-col gap-4">
+                {/* Templates — COLLAPSED by default (showTemplates starts
+                    false, FairwayTasks.tsx:232): header row only, no
+                    expanded template rows (FairwayTasks.tsx:587-594). */}
+                <Surface elevation="border" padding="none" className="overflow-hidden">
+                  <div className="flex items-center justify-between gap-2 px-5 py-4">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-[18px] w-[18px] rounded-fw-sm" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                    <Skeleton className="h-[18px] w-[18px] rounded-fw-sm" />
+                  </div>
+                </Surface>
+
+                {/* Quick stats — always rendered under Templates, not
+                    gated by showTemplates (FairwayTasks.tsx:597-618). */}
+                <Surface elevation="border" padding="md">
+                  <Skeleton className="h-3 w-20" />
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-2 rounded-fw-md bg-surface-sunken p-4">
+                      <Skeleton className="h-6 w-8" />
+                      <Skeleton className="h-3 w-14" />
+                    </div>
+                    <div className="flex flex-col gap-2 rounded-fw-md bg-surface-sunken p-4">
+                      <Skeleton className="h-6 w-10" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                </Surface>
+              </div>
             </div>
           </div>
         </div>

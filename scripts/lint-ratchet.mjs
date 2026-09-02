@@ -2,8 +2,16 @@
 /**
  * lint-ratchet.mjs
  *
- * Runs `npx eslint src --format json`, tallies warnings per rule-id, and
- * compares them against .lint-baseline.json.
+ * Runs `npx eslint src scripts --format json`, tallies warnings per rule-id,
+ * and compares them against .lint-baseline.json.
+ *
+ * SCOPE NOTE (2026-08-19): `scripts/` was added. It had been covered by NO
+ * gate at all — `npm run lint` is `eslint "src/**"`, tsconfig.json EXCLUDES
+ * `scripts`, and this ratchet ran on `src` alone. Those files run in CI and
+ * against production, so "not linted, not typechecked" was the widest hole in
+ * the gate coverage. Adding it here rather than to `npm run lint` is
+ * deliberate: there are 41 pre-existing errors, and a hard gate would have to
+ * either fail CI immediately or be switched off again.
  *
  * Exit codes:
  *   0 — no regression (all rule counts <= baseline)
@@ -34,7 +42,7 @@ try {
   // pollute the JSON stdout buffer we parse below.
   eslintOutput = execFileSync(
     'npx',
-    ['eslint', 'src', '--format', 'json', '--max-warnings', '999999'],
+    ['eslint', 'src', 'scripts', '--format', 'json', '--max-warnings', '999999'],
     // maxBuffer: 64 MB — the full-repo JSON output is ~10 MB today and will
     // grow; 64 MB leaves ample headroom without meaningful memory cost.
     { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] }
@@ -63,10 +71,19 @@ try {
 const current = {};
 for (const file of files) {
   for (const msg of file.messages) {
+    const rule = msg.ruleId ?? '(null)';
     if (msg.severity === 1) {
-      // severity 1 = warning; severity 2 = error
-      const rule = msg.ruleId ?? '(null)';
       current[rule] = (current[rule] ?? 0) + 1;
+    } else if (msg.severity === 2) {
+      // Errors are tallied too, under an ERROR: prefix, and here is why the
+      // distinction matters. For `src/` this is belt-and-braces: `npm run lint`
+      // is `eslint "src/**" --max-warnings 0`, which already exits non-zero on
+      // any error there. For `scripts/` nothing did — it is excluded from
+      // tsconfig.json and was outside `npm run lint`'s glob — so counting only
+      // severity 1 would have widened this ratchet's scope while still leaving
+      // 41 real errors completely ungated, and the green tick would have
+      // claimed otherwise.
+      current[`ERROR:${rule}`] = (current[`ERROR:${rule}`] ?? 0) + 1;
     }
   }
 }

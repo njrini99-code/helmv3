@@ -61,6 +61,28 @@ function chain(table: string) {
   return node;
 }
 
+/**
+ * The hub gained an authorization gate on 2026-08-19: it is a `'use server'`
+ * export taking a caller-supplied (teamId, playerId) pair and previously had no
+ * auth of any kind, relying entirely on RLS. These tests are about read-failure
+ * honesty, so they run as the player themselves — authorized — and the gate is
+ * exercised separately at the bottom of this file.
+ */
+const sessionProfile = {
+  value: {
+    userId: 'u1',
+    role: 'player' as const,
+    coach: null,
+    player: { id: 'p1' },
+  } as unknown,
+};
+vi.mock('@/lib/auth/session', () => ({
+  getGolfSessionProfile: async () => sessionProfile.value,
+}));
+vi.mock('@/lib/golf/resolve-team', () => ({
+  validateCoachTeamAccess: async () => false,
+}));
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     from: (table: string) => chain(table),
@@ -114,5 +136,72 @@ describe('getPlayerHubSummaryData — an unreadable hub must not look like an em
     expect(
       logServerError.mock.calls.some((call) => /tasks read failed/.test(String((call as unknown[])[0]))),
     ).toBe(true);
+  });
+});
+
+
+describe('getPlayerHubSummaryData — authorization', () => {
+  beforeEach(() => {
+    logServerError.mockClear();
+    outcomes.clear();
+    rpcOutcome = { data: [], error: null };
+    sessionProfile.value = {
+      userId: 'u1',
+      role: 'player' as const,
+      coach: null,
+      player: { id: 'p1' },
+    };
+  });
+
+  it('REFUSES a player asking for a different player', async () => {
+    sessionProfile.value = {
+      userId: 'u2',
+      role: 'player' as const,
+      coach: null,
+      player: { id: 'someone-else' },
+    };
+
+    await expect(hub()).rejects.toThrow(/Unauthorized/i);
+  });
+
+  it('REFUSES a coach who does not staff the team', async () => {
+    // validateCoachTeamAccess is mocked to false above — an unstaffed coach.
+    sessionProfile.value = {
+      userId: 'u3',
+      role: 'coach' as const,
+      coach: { id: 'coach-1', organization_id: 'org-1' },
+      player: null,
+    };
+
+    await expect(hub()).rejects.toThrow(/Unauthorized/i);
+  });
+
+  it('REFUSES an unauthenticated caller', async () => {
+    sessionProfile.value = null;
+
+    await expect(hub()).rejects.toThrow(/Unauthorized/i);
+  });
+
+  it('refusal THROWS rather than returning an empty hub', async () => {
+    // The critical distinction: PlayerHubSummaryData has no error field, so a
+    // denied caller receiving {trips: [], tasks: [], ...} would be
+    // indistinguishable from a real player on a genuinely quiet team.
+    sessionProfile.value = {
+      userId: 'u2',
+      role: 'player' as const,
+      coach: null,
+      player: { id: 'someone-else' },
+    };
+
+    const result = await hub().then(
+      (v) => ({ threw: false, v }),
+      () => ({ threw: true, v: null }),
+    );
+    expect(result.threw).toBe(true);
+  });
+
+  it('ALLOWS the player asking about themselves', async () => {
+    // Without this the gate could be a blanket refusal and still look green.
+    await expect(hub()).resolves.toMatchObject({ trips: [], tasks: [] });
   });
 });

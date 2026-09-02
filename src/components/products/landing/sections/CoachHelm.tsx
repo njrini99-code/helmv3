@@ -130,9 +130,9 @@ export function CoachHelm() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                     {[
-                      { label: 'Green speeds changed mid-season', why: 'no temporal precedence' },
-                      { label: 'Putting practice volume dropped', why: 'no dose–response' },
-                      { label: 'Equipment change', why: 'confounded with travel' },
+                      { label: 'Green speeds changed mid-season', why: 'timing doesn’t line up' },
+                      { label: 'Putting practice volume dropped', why: 'amount didn’t matter' },
+                      { label: 'Equipment change', why: 'tangled up with travel' },
                     ].map((c) => (
                       <div
                         key={c.label}

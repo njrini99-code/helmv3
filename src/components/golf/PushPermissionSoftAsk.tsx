@@ -101,10 +101,10 @@ export function PushPermissionSoftAsk() {
           <IconBell size={28} className="text-white" />
         </m.div>
 
-        <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] tracking-tight">
+        <h2 className="text-h3 font-medium text-text-primary tracking-[-0.015em] tracking-tight">
           Stay in the loop
         </h2>
-        <p className="text-sm text-warm-500 mt-1.5 max-w-sm">
+        <p className="text-sm text-text-secondary mt-1.5 max-w-sm">
           Turn on notifications so you never miss what matters from your team.
         </p>
 
@@ -140,13 +140,13 @@ export function PushPermissionSoftAsk() {
           <Button variant="ghost"
             type="button"
             onClick={handleDismiss}
-            className="w-full text-sm text-warm-500 hover:text-warm-700 py-2.5 font-medium transition-colors"
+            className="w-full text-sm text-text-secondary hover:text-text-primary py-2.5 font-medium transition-colors"
           >
             Not now
           </Button>
         </div>
 
-        <p className="text-eyebrow text-warm-600 mt-2 max-w-xs leading-relaxed">
+        <p className="text-eyebrow text-text-tertiary mt-2 max-w-xs leading-relaxed">
           You can change this anytime in Settings.
         </p>
       </div>
@@ -170,8 +170,8 @@ function SoftAskBullet({
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-warm-900">{title}</p>
-        <p className="text-xs text-warm-500 leading-snug">{description}</p>
+        <p className="text-sm font-medium text-text-primary">{title}</p>
+        <p className="text-xs text-text-secondary leading-snug">{description}</p>
       </div>
     </li>
   );

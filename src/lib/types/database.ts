@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -159,6 +159,54 @@ export type Database = {
           page_url?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      admin_error_resolutions: {
+        Row: {
+          created_at: string
+          fingerprint: string
+          fixed_in_sha: string | null
+          last_seen_at_resolution: string | null
+          note: string | null
+          pr_number: number | null
+          pr_url: string | null
+          reopened_at: string | null
+          reopened_count: number
+          resolution_source: string
+          resolved_at: string
+          resolved_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fingerprint: string
+          fixed_in_sha?: string | null
+          last_seen_at_resolution?: string | null
+          note?: string | null
+          pr_number?: number | null
+          pr_url?: string | null
+          reopened_at?: string | null
+          reopened_count?: number
+          resolution_source?: string
+          resolved_at?: string
+          resolved_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fingerprint?: string
+          fixed_in_sha?: string | null
+          last_seen_at_resolution?: string | null
+          note?: string | null
+          pr_number?: number | null
+          pr_url?: string | null
+          reopened_at?: string | null
+          reopened_count?: number
+          resolution_source?: string
+          resolved_at?: string
+          resolved_by?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -460,6 +508,225 @@ export type Database = {
           retry_count?: number | null
           started_at?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      backup_ci_junk_rounds_20260821: {
+        Row: {
+          ai_recap: string | null
+          ai_recap_generated_at: string | null
+          back_nine: number | null
+          coachhelm_analyzed_at: string | null
+          coachhelm_failed_at: string | null
+          coachhelm_failure_reason: string | null
+          course_city: string | null
+          course_id: string | null
+          course_name: string | null
+          course_rating: number | null
+          course_slope: number | null
+          course_state: string | null
+          created_at: string | null
+          current_hole: number | null
+          draft_data: Json | null
+          front_nine: number | null
+          holes_played: number | null
+          id: string | null
+          notes: string | null
+          player_id: string | null
+          qualifier_id: string | null
+          qualifier_round_number: number | null
+          round_date: string | null
+          round_type: string | null
+          score_to_par: number | null
+          status: string | null
+          strokes_gained_approach: number | null
+          strokes_gained_around_green: number | null
+          strokes_gained_putting: number | null
+          strokes_gained_tee: number | null
+          strokes_gained_total: number | null
+          team_id: string | null
+          tee_id: string | null
+          tees_played: string | null
+          total_fairways: number | null
+          total_fairways_hit: number | null
+          total_gir: number | null
+          total_gir_possible: number | null
+          total_penalties: number | null
+          total_putts: number | null
+          total_score: number | null
+          updated_at: string | null
+          weather_conditions: string | null
+        }
+        Insert: {
+          ai_recap?: string | null
+          ai_recap_generated_at?: string | null
+          back_nine?: number | null
+          coachhelm_analyzed_at?: string | null
+          coachhelm_failed_at?: string | null
+          coachhelm_failure_reason?: string | null
+          course_city?: string | null
+          course_id?: string | null
+          course_name?: string | null
+          course_rating?: number | null
+          course_slope?: number | null
+          course_state?: string | null
+          created_at?: string | null
+          current_hole?: number | null
+          draft_data?: Json | null
+          front_nine?: number | null
+          holes_played?: number | null
+          id?: string | null
+          notes?: string | null
+          player_id?: string | null
+          qualifier_id?: string | null
+          qualifier_round_number?: number | null
+          round_date?: string | null
+          round_type?: string | null
+          score_to_par?: number | null
+          status?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
+          team_id?: string | null
+          tee_id?: string | null
+          tees_played?: string | null
+          total_fairways?: number | null
+          total_fairways_hit?: number | null
+          total_gir?: number | null
+          total_gir_possible?: number | null
+          total_penalties?: number | null
+          total_putts?: number | null
+          total_score?: number | null
+          updated_at?: string | null
+          weather_conditions?: string | null
+        }
+        Update: {
+          ai_recap?: string | null
+          ai_recap_generated_at?: string | null
+          back_nine?: number | null
+          coachhelm_analyzed_at?: string | null
+          coachhelm_failed_at?: string | null
+          coachhelm_failure_reason?: string | null
+          course_city?: string | null
+          course_id?: string | null
+          course_name?: string | null
+          course_rating?: number | null
+          course_slope?: number | null
+          course_state?: string | null
+          created_at?: string | null
+          current_hole?: number | null
+          draft_data?: Json | null
+          front_nine?: number | null
+          holes_played?: number | null
+          id?: string | null
+          notes?: string | null
+          player_id?: string | null
+          qualifier_id?: string | null
+          qualifier_round_number?: number | null
+          round_date?: string | null
+          round_type?: string | null
+          score_to_par?: number | null
+          status?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
+          team_id?: string | null
+          tee_id?: string | null
+          tees_played?: string | null
+          total_fairways?: number | null
+          total_fairways_hit?: number | null
+          total_gir?: number | null
+          total_gir_possible?: number | null
+          total_penalties?: number | null
+          total_putts?: number | null
+          total_score?: number | null
+          updated_at?: string | null
+          weather_conditions?: string | null
+        }
+        Relationships: []
+      }
+      backup_class_semester_20260813: {
+        Row: {
+          class_name: string | null
+          id: string | null
+          player_id: string | null
+          semester: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          class_name?: string | null
+          id?: string | null
+          player_id?: string | null
+          semester?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          class_name?: string | null
+          id?: string | null
+          player_id?: string | null
+          semester?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      backup_prevyear_classes_20260821: {
+        Row: {
+          building: string | null
+          class_name: string | null
+          color: string | null
+          created_at: string | null
+          credits: number | null
+          days: string[] | null
+          end_time: string | null
+          id: string | null
+          instructor: string | null
+          notes: string | null
+          player_id: string | null
+          room: string | null
+          semester: string | null
+          start_time: string | null
+          team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          building?: string | null
+          class_name?: string | null
+          color?: string | null
+          created_at?: string | null
+          credits?: number | null
+          days?: string[] | null
+          end_time?: string | null
+          id?: string | null
+          instructor?: string | null
+          notes?: string | null
+          player_id?: string | null
+          room?: string | null
+          semester?: string | null
+          start_time?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          building?: string | null
+          class_name?: string | null
+          color?: string | null
+          created_at?: string | null
+          credits?: number | null
+          days?: string[] | null
+          end_time?: string | null
+          id?: string | null
+          instructor?: string | null
+          notes?: string | null
+          player_id?: string | null
+          room?: string | null
+          semester?: string | null
+          start_time?: string | null
+          team_id?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -14811,6 +15078,7 @@ export type Database = {
       }
       golf_players: {
         Row: {
+          anonymized_at: string | null
           avatar_url: string | null
           created_at: string | null
           email: string | null
@@ -14828,9 +15096,10 @@ export type Database = {
           profile_complete: boolean | null
           state: string | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          anonymized_at?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -14848,9 +15117,10 @@ export type Database = {
           profile_complete?: boolean | null
           state?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          anonymized_at?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -14868,7 +15138,7 @@ export type Database = {
           profile_complete?: boolean | null
           state?: string | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -16137,6 +16407,68 @@ export type Database = {
             columns: ["round_id"]
             isOneToOne: false
             referencedRelation: "golf_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_staff_invite_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by_coach_id: string | null
+          expires_at: string
+          organization_id: string
+          role: string
+          team_id: string
+          token: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by_coach_id?: string | null
+          expires_at: string
+          organization_id: string
+          role: string
+          team_id: string
+          token: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by_coach_id?: string | null
+          expires_at?: string
+          organization_id?: string
+          role?: string
+          team_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_staff_invite_codes_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_staff_invite_codes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_staff_invite_codes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_staff_invite_codes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
             referencedColumns: ["id"]
           },
         ]
@@ -19937,6 +20269,36 @@ export type Database = {
           },
         ]
       }
+      schema_migrations_pruned_20260820: {
+        Row: {
+          created_by: string | null
+          idempotency_key: string | null
+          name: string | null
+          pruned_at: string | null
+          rollback: string[] | null
+          statements: string[] | null
+          version: string
+        }
+        Insert: {
+          created_by?: string | null
+          idempotency_key?: string | null
+          name?: string | null
+          pruned_at?: string | null
+          rollback?: string[] | null
+          statements?: string[] | null
+          version: string
+        }
+        Update: {
+          created_by?: string | null
+          idempotency_key?: string | null
+          name?: string | null
+          pruned_at?: string | null
+          rollback?: string[] | null
+          statements?: string[] | null
+          version?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null
@@ -20250,6 +20612,34 @@ export type Database = {
     }
     Functions: {
       __admin_rollup_b_gate: { Args: never; Returns: undefined }
+      admin_auto_resolve_error_fingerprint: {
+        Args: {
+          p_fingerprint: string
+          p_fixed_in_sha?: string
+          p_last_seen_at: string
+          p_note?: string
+        }
+        Returns: boolean
+      }
+      admin_mark_error_regressed: {
+        Args: { p_fingerprint: string }
+        Returns: undefined
+      }
+      admin_resolve_error_fingerprint: {
+        Args: {
+          p_fingerprint: string
+          p_fixed_in_sha?: string
+          p_last_seen_at?: string
+          p_note?: string
+          p_pr_number?: number
+          p_pr_url?: string
+        }
+        Returns: undefined
+      }
+      admin_unresolve_error_fingerprint: {
+        Args: { p_fingerprint: string }
+        Returns: undefined
+      }
       baseball_accept_staff_invite: { Args: { p_token: string }; Returns: Json }
       baseball_announcement_has_recipients: {
         Args: { p_announcement_id: string }
@@ -20261,6 +20651,10 @@ export type Database = {
       }
       baseball_can_invite_staff: {
         Args: { p_team_id: string }
+        Returns: boolean
+      }
+      baseball_conversation_has_other_participant: {
+        Args: { p_conversation_id: string }
         Returns: boolean
       }
       baseball_conversation_on_my_team: {
@@ -20727,6 +21121,10 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
+      golf_conversation_has_other_participant: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       golf_conversation_on_my_team: {
         Args: { p_conversation_id: string }
         Returns: boolean
@@ -20773,6 +21171,36 @@ export type Database = {
         Returns: boolean
       }
       heartbeat: { Args: never; Returns: undefined }
+      helm_debug_finalize_trace: {
+        Args: { p_metadata?: Json; p_status: string; p_trace_id: string }
+        Returns: undefined
+      }
+      helm_debug_get_trace: { Args: { p_trace_id: string }; Returns: Json }
+      helm_debug_list_traces: {
+        Args: { p_limit?: number; p_round_id?: string; p_workflow?: string }
+        Returns: Json
+      }
+      helm_debug_prune: { Args: { p_retention_days?: number }; Returns: Json }
+      helm_debug_record_trace_step: {
+        Args: {
+          p_layer: string
+          p_metadata?: Json
+          p_requiredness: string
+          p_status: string
+          p_step_key: string
+          p_trace_id: string
+        }
+        Returns: undefined
+      }
+      helm_debug_start_trace: {
+        Args: {
+          p_environment: string
+          p_metadata?: Json
+          p_trace_id: string
+          p_workflow: string
+        }
+        Returns: string
+      }
       helm_lifting_accept_invite: { Args: { p_token: string }; Returns: Json }
       helm_lifting_assign_team: {
         Args: {
@@ -20877,11 +21305,29 @@ export type Database = {
         Args: { p_season_year?: number; p_team_id: string }
         Returns: undefined
       }
+      reclassify_golf_round: {
+        Args: {
+          p_qualifier_id: string
+          p_qualifier_round_number: number
+          p_round_id: string
+          p_round_type: string
+        }
+        Returns: string
+      }
       recompute_golf_round_totals: {
         Args: { p_round_id: string }
         Returns: undefined
       }
       recompute_team_sg: { Args: { p_team_id: string }; Returns: undefined }
+      record_round_coachhelm_terminal_state: {
+        Args: {
+          p_analyzed_at: string
+          p_failed_at: string
+          p_failure_reason: string
+          p_round_id: string
+        }
+        Returns: string
+      }
       refresh_crm_coach_engagement: { Args: never; Returns: undefined }
       refresh_player_standing: {
         Args: { p_team_ids: string[] }
@@ -20961,6 +21407,10 @@ export type Database = {
           p_round_id: string
           p_shots: Json
         }
+        Returns: Json
+      }
+      save_round_ai_recap: {
+        Args: { p_recap: string; p_round_id: string }
         Returns: Json
       }
       select_stalest_teams: {
@@ -21155,12 +21605,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -21184,11 +21634,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -21209,11 +21659,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -21234,11 +21684,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -21251,11 +21701,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

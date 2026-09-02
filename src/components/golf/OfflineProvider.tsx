@@ -114,7 +114,13 @@ export function OfflineProvider({
         // Set up callbacks
         syncEngine.setCallbacks({
           onSyncStart: () => {
-            useOfflineSyncStore.getState().startSync();
+            // Mirror the engine's state — do NOT call startSync(). The engine
+            // sets isSyncingFlag BEFORE it fires this callback, so starting
+            // again re-enters syncPendingData(), hits the concurrency guard and
+            // comes back declined. On a resumed round that surfaced to players
+            // as a red "Sync error" over the scorecard while the save had in
+            // fact succeeded. new-round-client.tsx already does the right thing.
+            useOfflineSyncStore.getState().markSyncStarted();
           },
           onSyncProgress: () => {
             // Could update progress in store if needed

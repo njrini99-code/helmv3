@@ -18,6 +18,20 @@ import { golfPlayerTest as test, hasGolfPlayerAuth } from './fixtures/golf-auth'
  * an always-visible inline panel (FairwayShotEntry) — and the in-round exit
  * action is "Save & exit" (FairwayScorecardHeader's desktop band), not a
  * generic "Save"/"Pause" button.
+ *
+ * ⚠️ DATA: there is no staging environment for this suite — it writes
+ * through NEXT_PUBLIC_SUPABASE_URL, whatever Supabase project the run's env
+ * happens to point at. "should save round in progress" below creates a REAL
+ * in_progress golf_rounds row for the E2E_GOLF_* login. Until 65fe08a7b
+ * (2026-08-20) `playwright.yml`'s full chromium job ran on every push to
+ * main and its post-merge run seeded PRODUCTION fixtures directly — 37
+ * "Progress Test Course" rounds accumulated there before anyone noticed and
+ * cleaned them up. That job is manual-only now (workflow_dispatch,
+ * `full_e2e: true`), but a manual run still hits whatever project the env
+ * secrets resolve to — most likely still production, since nothing about
+ * manual-only changes the env wiring. Treat every run of this file as
+ * possibly-production and never add a round-creating test without a
+ * matching teardown.
  */
 
 async function closeCoursePicker(page: import('@playwright/test').Page): Promise<void> {
@@ -105,9 +119,30 @@ test.describe('Golf Round - Complete Flow', () => {
 
         // Verify round is saved
         await page.goto('/golf/dashboard/rounds');
-        await expect(
-          page.getByRole('region', { name: 'Rounds in progress' }).getByText('Progress Test Course'),
-        ).toBeVisible();
+        const inProgressRegion = page.getByRole('region', { name: 'Rounds in progress' });
+        await expect(inProgressRegion.getByText('Progress Test Course')).toBeVisible();
+
+        // TEARDOWN — this test just created a real golf_rounds row (see the
+        // file-header data warning). Discard it through the same UI a real
+        // player would use (FairwayUnfinishedBanner's "Discard" → "Confirm
+        // discard", which calls the app's own deleteInProgressRound action —
+        // no direct DB access from the test), so re-running this spec does
+        // not accumulate junk rounds the way it did before 65fe08a7b (37 of
+        // them, cleaned up by hand). The dedupe in FairwayRoundsLibrary
+        // collapses same-fingerprint in-progress rounds to one visible row,
+        // so the course-name text match below resolves to exactly this run's
+        // row even if an earlier failed run left one behind.
+        // Fairway's <Button> wraps its label in a nested <span> (see
+        // src/components/fairway/controls/button.tsx's "CHILDREN CONTRACT"),
+        // so the predicate below matches on the button's full string-value
+        // (normalize-space(.)) rather than text() — text() would only see
+        // direct text-node children of <button> and never match.
+        const progressRow = inProgressRegion
+          .getByText('Progress Test Course', { exact: true })
+          .locator('xpath=ancestor::div[.//button[normalize-space(.)="Discard"]][1]');
+        await progressRow.getByRole('button', { name: 'Discard', exact: true }).click();
+        await progressRow.getByRole('button', { name: 'Confirm discard' }).click();
+        await expect(inProgressRegion.getByText('Progress Test Course')).toHaveCount(0, { timeout: 10000 });
       }
     }
   });
@@ -158,13 +193,19 @@ test.describe('Golf Round - Stats Calculation', () => {
     // Navigate to stats page
     await page.goto('/golf/dashboard/stats');
 
-    // The stats redesign exposes drill cards as named buttons.
-    await expect(page.getByRole('button', { name: /^Open Scoring/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^Open Putting/ })).toBeVisible();
+    // The stats redesign exposes drill cards as named buttons. These are
+    // page-load-readiness checks ("did the stats page finish rendering its
+    // drill cards"), not a perf budget — raised from the 5000ms default to
+    // 15000ms 2026-08-19 (Wave L, Lane C) after this exact assertion missed
+    // its window on real CI under the workers 1->3 contention (run
+    // c31cfb1d6: "Open Scoring" button not found within 5000ms, retry
+    // passed). A real render failure still fails at 15s.
+    await expect(page.getByRole('button', { name: /^Open Scoring/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: /^Open Putting/ })).toBeVisible({ timeout: 15_000 });
 
     // Click on putting to see detailed stats
     await page.getByRole('button', { name: /^Open Putting/ }).click();
-    await expect(page.getByRole('heading', { name: 'Putting by distance' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Putting by distance' })).toBeVisible({ timeout: 15_000 });
 
     // Should see putting stats (if rounds exist)
     // Stats visibility depends on having rounds

@@ -1183,7 +1183,7 @@ export function FairwayDocuments({
             <span className="flex flex-col items-center justify-center gap-1">
               <IconPlus size={22} className="text-text-tertiary" />
               <span className="font-fw-sans text-body-sm font-medium text-text-secondary">Add more files</span>
-              <span className="font-fw-sans text-caption text-text-tertiary">Click or drag & drop</span>
+              <span className="font-fw-sans text-caption text-text-tertiary">Click or drag &amp; drop</span>
             </span>
           </Button>
 

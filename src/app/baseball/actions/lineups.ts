@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import { assertPlayersOnBaseballTeam } from '@/lib/baseball/resolve-team';
 import {
   withBaseballAction,
   BaseballUnauthorizedError,
@@ -82,6 +83,12 @@ const saveLineupAction = withBaseballAction(
     const validationError = validateLineupPositions(positions);
     if (validationError) return { success: false, error: validationError };
 
+    // validateLineupPositions checks SHAPE (batting order, duplicates), not
+    // tenancy — every playerId in it went into baseball_lineup_positions
+    // unchecked, so a lineup could reference a player from another team and
+    // surface that identity through lineup reads and roster joins.
+    await assertPlayersOnBaseballTeam(supabase, teamId, positions.map((p) => p.playerId));
+
     const { data: lineup, error: lineupError } = await supabase
       .from('baseball_team_lineups')
       .insert({
@@ -151,6 +158,11 @@ const updateLineupAction = withBaseballAction(
 
     const validationError = validateLineupPositions(positions);
     if (validationError) return { success: false, error: validationError };
+
+    // Team comes from the lineup row, which is right; the incoming positions
+    // are still an unchecked client array. Editing was the easier of the two
+    // routes to a foreign player in a lineup, since it needs no new row.
+    await assertPlayersOnBaseballTeam(supabase, lineup.team_id, positions.map((p) => p.playerId));
 
     const positionsData = positions.map((pos) => ({
       batting_order: pos.order,

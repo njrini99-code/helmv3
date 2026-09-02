@@ -1,6 +1,40 @@
+import '@supabase/supabase-js/tracing';
 import { createServerClient } from '@supabase/ssr';
+import * as Sentry from '@sentry/nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/lib/types/database';
+
+/**
+ * The HTTP abort is a BACKSTOP, not the request budget. The invariant that
+ * matters: it must sit ABOVE whatever `statement_timeout` is in force for the
+ * call, so a slow request surfaces as a PostgreSQL error the caller can branch
+ * on (57014, a constraint name, a deadlock) rather than an abort whose outcome
+ * is unknowable.
+ *
+ * This was 10s, chosen against the role-level `statement_timeout` of 8s. That
+ * reasoning holds for ordinary PostgREST queries and breaks for any function
+ * that raises its own budget in `proconfig` — `submit_round_atomic` sets 30s and
+ * `save_partial_round_atomic` sets 20s. Those calls were being aborted at 10s
+ * while Postgres kept working and COMMITTED, which cost a player an entire round
+ * on 2026-08-20. The same 10s cap was also silently truncating CoachHelm insight
+ * delivery, where the caller catches and continues, so a coach just saw missing
+ * insights and no error at all.
+ * See docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md.
+ *
+ * Raising this does NOT make ordinary queries slower to fail: `authenticated`
+ * still carries `statement_timeout=8s`, so a normal query returns a DB error at
+ * 8s and never reaches the abort. The abort only ever bites on operations that
+ * legitimately hold more DB budget than the old cap allowed.
+ */
+const REQUEST_TIMEOUT_MS = 35_000;
+
+/** Uploads are bounded by the uplink, not by statement_timeout. */
+const STORAGE_TIMEOUT_MS = 120_000;
+
+function timeoutForRequest(fetchUrl: RequestInfo | URL): number {
+  const href = typeof fetchUrl === 'string' ? fetchUrl : fetchUrl.toString();
+  return href.includes('/storage/v1/') ? STORAGE_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
+}
 
 /**
  * Create a Supabase client for use in Server Components, Server Actions, and Route Handlers
@@ -17,7 +51,7 @@ export async function createClient() {
   }
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
+  const client = createServerClient<Database>(
     url,
     anonKey,
     {
@@ -39,11 +73,16 @@ export async function createClient() {
       },
       global: {
         fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
-          // 10s HTTP abort — DB statement_timeout is 8s, so DB error bubbles up first
-          const signal = options.signal ?? AbortSignal.timeout(10_000);
+          const signal = options.signal ?? AbortSignal.timeout(timeoutForRequest(fetchUrl));
           return fetch(fetchUrl, { ...options, signal });
         },
       },
+      tracePropagation: {
+        enabled: true,
+        respectSamplingDecision: false,
+      },
     }
   );
+  Sentry.instrumentSupabaseClient(client, { sendOperationData: false });
+  return client;
 }

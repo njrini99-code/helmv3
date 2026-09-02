@@ -12,6 +12,8 @@ import {
 // Value import: the gate runs at call time. product-modules.ts is pure (no
 // Supabase, no React, no env reads), safe to call from this server-only module.
 import { isRecruitingEnabled } from '@/lib/baseball/product-modules';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
   'college',
@@ -158,10 +160,31 @@ export async function requireAcademicsCoachRoute(redirectTo = '/baseball/dashboa
 
   const programType = await getActiveProgramType();
   const supabase = await createClient();
-  const { data } = await fromUntyped(supabase, 'baseball_program_settings')
+  const { data, error: settingsError } = await fromUntyped(supabase, 'baseball_program_settings')
     .select('academics_module_enabled')
     .eq('team_id', ctx.activeTeamId)
     .maybeSingle();
+
+  // The error was previously destructured away, which made a FAILED read
+  // indistinguishable from "this team has no settings row yet" — and the two
+  // want opposite answers. A missing row correctly falls back to the
+  // program-type default; a failed read falling back to that same default
+  // serves the module to a team that deliberately turned it OFF, because
+  // college/JUCO default it ON (program-type-variants.ts). So the failure is
+  // strictly MORE permissive than the persisted setting.
+  //
+  // The fallback is left in place: flipping it to deny would lock a team that
+  // has Academics enabled out of it during any read blip, and which way that
+  // should go is a product call, not a cleanup. What is not defensible is that
+  // it happened silently. Recorded now, so a run of these is traceable to the
+  // query rather than looking like a settings change nobody made.
+  if (settingsError) {
+    await logServerError(
+      `[requireAcademicsCoachRoute] program settings read failed for team ${ctx.activeTeamId}; falling back to the ${programType ?? 'college'} default, which may be more permissive than the team's saved setting: ${describeError(settingsError)}`,
+      { action: 'baseball.requireAcademicsCoachRoute', featureArea: 'academics' },
+      'warning',
+    );
+  }
 
   const raw = (data as { academics_module_enabled?: unknown } | null)?.academics_module_enabled;
   const academicsEnabled =

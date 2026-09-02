@@ -6,8 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
-  Radar, CreditCard,
-  RefreshCw, Dumbbell, Search,
+  Radar, CreditCard, GitBranch, Trophy, Waypoints,
+  RefreshCw, Dumbbell, Search, LogOut, Recycle,
 } from 'lucide-react';
 import {
   AppShell,
@@ -23,6 +23,9 @@ import { FairwayBottomNav } from '@/components/fairway/app-shell/FairwayBottomNa
 import { selectOverflow, summarizeMoreTab } from '@/components/fairway/app-shell/more-nav';
 import type { NavItem } from '@/components/fairway/app-shell/types';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
+import { createClient } from '@/lib/supabase/client';
+import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
+import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import { ADMIN_NAV, hrefForShortcut, BRIDGE_BOTTOM_NAV_HREFS, BRIDGE_BOTTOM_NAV_LABELS } from './admin-nav';
 import { RelativeTime } from './RelativeTime';
@@ -33,6 +36,9 @@ import { RelativeTime } from './RelativeTime';
 const SUBROUTE_LABELS: Record<string, string> = {
   tracer: 'Tracer',
   'view-as': 'View as',
+  // titleCaseSegment would render this "Self Heal"; the product name is one
+  // hyphenated word.
+  'self-heal': 'Self-heal',
 };
 
 /** Dynamic-route segments (uuids, opaque ids) are never surfaced verbatim. */
@@ -99,6 +105,16 @@ const NAV_ICON_BY_HREF = {
   '/admin': LayoutDashboard,
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
+  '/admin/traces': GitBranch,
+  '/admin/qualifiers': Trophy,
+  // Waypoints, not another alert glyph: this tab's subject is the CORRELATION
+  // between three sources, and it sits directly beside Errors in the same
+  // section — a second warning triangle would read as a duplicate of it.
+  '/admin/reliability': Waypoints,
+  // A closed loop, not another gauge: this tab's subject is a CIRCUIT that
+  // either completes or does not, and it sits beside Reliability where a
+  // second measurement glyph would read as a variant of it.
+  '/admin/self-heal': Recycle,
   '/admin/auth': KeyRound,
   '/admin/utilization': Gauge,
   '/admin/golf': Flag,
@@ -180,6 +196,37 @@ function BridgeMoreSheetHeader({
 }
 
 /**
+ * Helm Bridge shares the authenticated GolfHelm session. Signing out must
+ * clear the active-team cookie as well as revoke the browser session: without
+ * it, the next person on a shared admin device could inherit an old team
+ * selection after they sign in. Cookie cleanup is best-effort so a transient
+ * server-action failure never traps an administrator in a signed-in session.
+ */
+function useBridgeSignOut() {
+  const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = useCallback(async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+
+    try {
+      await clearActiveTeam().catch(() => undefined);
+      const { error } = await createClient().auth.signOut();
+      if (error) throw error;
+
+      router.replace('/golf/login');
+      router.refresh();
+    } catch {
+      setIsSigningOut(false);
+      toast.error('Could not sign out', { description: 'Please try again.' });
+    }
+  }, [isSigningOut, router]);
+
+  return { isSigningOut, handleSignOut };
+}
+
+/**
  * Helm Bridge chrome: Fairway AppShell (warm-black rail + cream canvas) as
  * the neutral ops shell. Sport inks appear ONLY inside sport-scoped panes.
  * Keyboard: 1-9 then 0 jump the 10 tabs (see admin-nav.ts), R refreshes,
@@ -194,15 +241,24 @@ function BridgeMoreSheetHeader({
 export function AdminShell({
   email,
   errorCount,
+  healthCount,
   children,
 }: {
   email: string;
   /** Bridge bottom-nav Errors badge — 0 renders no badge (honest-only). */
   errorCount: number;
+  /** Bridge bottom-nav Health badge — count of RED features, computed in
+   *  layout.tsx via fetchFeatureHealthRedCount() (see its doc comment for
+   *  the DB-only, Sentry-free cost tradeoff). `null` means the pipeline was
+   *  degraded/unreachable — "unknown" must never render like "zero", so
+   *  both `null` and `0` render no badge, and only a real positive count
+   *  shows one (honest-only). */
+  healthCount: number | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isSigningOut, handleSignOut } = useBridgeSignOut();
   const [commandOpen, setCommandOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -371,10 +427,10 @@ export function AdminShell({
   const shellUser = useMemo(() => ({ name: 'Super admin', teamName: email }), [email]);
 
   // M1 (bridge-chrome): the daily-loop four (Synthesis Decision 6). Memoized
-  // on `errorCount` alone — `FairwayBottomNav` is `React.memo`'d on this
-  // ARRAY's reference identity, so a fresh literal every render (e.g. every
-  // unrelated pathname-driven re-render) would defeat it. Only the Errors
-  // tab carries a badge, and only when > 0 (honest-only).
+  // on `errorCount`/`healthCount` — `FairwayBottomNav` is `React.memo`'d on
+  // this ARRAY's reference identity, so a fresh literal every render (e.g.
+  // every unrelated pathname-driven re-render) would defeat it. Only Errors
+  // and Health carry a badge, and only when > 0 (honest-only).
   const bottomNavItems: NavItem[] = useMemo(
     () =>
       BRIDGE_BOTTOM_NAV_HREFS.map((href) => ({
@@ -382,9 +438,14 @@ export function AdminShell({
         href,
         icon: NAV_ICON_BY_HREF[href],
         activeMatch: (p: string) => (href === '/admin' ? p === '/admin' : p.startsWith(href)),
-        badge: href === '/admin/errors' && errorCount > 0 ? errorCount : undefined,
+        badge:
+          href === '/admin/errors' && errorCount > 0
+            ? errorCount
+            : href === '/admin/health' && healthCount !== null && healthCount > 0
+              ? healthCount
+              : undefined,
       })),
-    [errorCount],
+    [errorCount, healthCount],
   );
 
   // M1 (more-sheet-nav, docs/MOBILE_DOCTRINE.md Rule 6/10): the More sheet's
@@ -450,11 +511,40 @@ export function AdminShell({
   );
   const moreSheetFooter = useMemo(
     () => (
-      <p className="truncate font-fw-sans text-caption text-text-tertiary">
-        Signed in as {email}
-      </p>
+      <div className="space-y-2 border-t border-border-subtle pt-3">
+        <p className="truncate font-fw-sans text-caption text-text-tertiary">
+          Signed in as {email}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          fullWidth
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          leftIcon={<LogOut size={16} aria-hidden />}
+          className="justify-start text-text-secondary hover:bg-fw-danger/10 hover:text-fw-danger-ink"
+        >
+          {isSigningOut ? 'Signing out…' : 'Sign out'}
+        </Button>
+      </div>
     ),
-    [email],
+    [email, handleSignOut, isSigningOut],
+  );
+  const sidebarFooter = useMemo(
+    () => (
+      <Button
+        type="button"
+        variant="ghost"
+        fullWidth
+        onClick={handleSignOut}
+        disabled={isSigningOut}
+        leftIcon={<LogOut size={16} aria-hidden />}
+        className="justify-start text-nav-text-dim hover:bg-fw-danger/10 hover:text-fw-danger-ink"
+      >
+        {isSigningOut ? 'Signing out…' : 'Sign out'}
+      </Button>
+    ),
+    [handleSignOut, isSigningOut],
   );
 
   return (
@@ -464,6 +554,7 @@ export function AdminShell({
         sections={sections}
         brand={brand}
         user={shellUser}
+        sidebarFooter={sidebarFooter}
         pathname={pathname}
         linkComponent={Link}
         breadcrumbs={breadcrumbs}

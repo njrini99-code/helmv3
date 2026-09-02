@@ -39,7 +39,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(20);
+SELECT plan(26);
 
 -- ============================================================================
 -- Seed as service_role (RLS bypassed for setup).
@@ -126,8 +126,18 @@ BEGIN
     (v_team_x, v_player, 'active')
   ON CONFLICT DO NOTHING;
 
+  -- The player-write assertions below exercise an in-progress round. Keep the
+  -- cross-round compatibility row completed so this fixture also verifies the
+  -- normal terminal-state read path without treating completed history as
+  -- editable data.
+  --
+  -- Completed rows are normally created only by the SECURITY DEFINER submit
+  -- RPC. The fixture is running as that function owner, so opt into its
+  -- transaction-local guard marker instead of weakening the production guard.
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
+
   INSERT INTO public.golf_rounds (id, player_id, team_id, round_date, status) VALUES
-    (v_round,   v_player, v_team_x, CURRENT_DATE, 'completed'),
+    (v_round,   v_player, v_team_x, CURRENT_DATE, 'in_progress'),
     (v_round_y, v_player, v_team_y, CURRENT_DATE, 'completed')
   ON CONFLICT DO NOTHING;
 
@@ -163,6 +173,50 @@ BEGIN
     (v_shot_appr, 'long')
   ON CONFLICT DO NOTHING;
 END $$;
+
+-- The recalculation RPC may refresh only derived strokes-gained values after
+-- completion. This protects the cache path while the lifecycle guard continues
+-- to reject all user-controlled score/history mutations.
+SELECT lives_ok(
+  $$SELECT public.recalculate_round_strokes_gained('00000000-0000-0000-0000-00000000d046'::uuid)$$,
+  'server SG recalculation can refresh derived data on a completed round'
+);
+
+SELECT lives_ok(
+  $$SELECT public.record_round_coachhelm_terminal_state(
+    '00000000-0000-0000-0000-00000000d046'::uuid,
+    clock_timestamp(),
+    null,
+    null
+  )$$,
+  'service-only CoachHelm terminal writer can mark a completed round analyzed'
+);
+
+SELECT ok(
+  (SELECT coachhelm_analyzed_at is not null
+   FROM public.golf_rounds
+   WHERE id = '00000000-0000-0000-0000-00000000d046'::uuid),
+  'CoachHelm terminal writer persists only its processing metadata'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.golf_rounds
+    SET total_score = 999
+    WHERE id = '00000000-0000-0000-0000-00000000d046'::uuid$$,
+  '55000',
+  'Completed rounds are permanent history and cannot be changed.',
+  'terminal metadata permission does not reopen completed score history'
+);
+
+SELECT is(
+  has_function_privilege(
+    'authenticated',
+    'public.record_round_coachhelm_terminal_state(uuid, timestamptz, timestamptz, text)',
+    'EXECUTE'
+  ),
+  false,
+  'authenticated callers cannot invoke the CoachHelm terminal writer'
+);
 
 -- ----------------------------------------------------------------------------
 -- Row-count probes for the write assertions.
@@ -330,6 +384,14 @@ SELECT is(
   pg_temp.update_putt_rows('00000000-0000-0000-0000-00000000d045', true),
   1,
   'player CAN update their own putt_details'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.putt_details SET made = true
+    WHERE shot_id = '00000000-0000-0000-0000-00000000d047'$$,
+  '55000',
+  'This round is already completed and its saved shot details cannot be changed.',
+  'player CANNOT change putt_details on their completed round'
 );
 
 RESET role;

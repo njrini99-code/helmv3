@@ -1,0 +1,16 @@
+{
+  "//": [
+    "Mirrors the `paths` block in tsconfig.json for tooling that does not load",
+    "the TypeScript plugin. ESLint resolves @/* through the TS parser, so Claude",
+    "Code and the CI gates were always fine — but Cursor, Devin and plain",
+    "editors could not resolve `@/lib/types` at all.",
+    "If tsconfig.json's paths change, change this too; nothing enforces it."
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "exclude": ["node_modules", ".next", "archive", ".claude/worktrees"]
+}

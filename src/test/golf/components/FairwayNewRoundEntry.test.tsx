@@ -77,6 +77,8 @@ function baseProps(overrides: Partial<FairwayNewRoundEntryProps> = {}): FairwayN
     onRetryQualifiers: vi.fn(),
     selectedQualifierId: null,
     setSelectedQualifierId: vi.fn(),
+    qualifierRoundError: null,
+    onRetryQualifierRound: vi.fn(),
     availableRounds: [],
     selectedRoundNumber: null,
     setSelectedRoundNumber: vi.fn(),
@@ -139,6 +141,43 @@ describe('FairwayNewRoundEntry — casing normalization (#157)', () => {
     );
 
     expect(screen.getByText('New round · Augusta National Golf Club')).toBeInTheDocument();
+  });
+});
+
+describe('FairwayNewRoundEntry — qualifier availability feedback', () => {
+  it('shows the exact open-cap explanation and prevents an opaque start attempt', () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry
+          {...baseProps({
+            setupData: { ...setupData, roundType: 'qualifier' },
+            qualifiers: [{
+              id: 'qualifier-1',
+              name: 'Fall Qualifier',
+              description: null,
+              courseName: null,
+              location: null,
+              numRounds: 1,
+              holesPerRound: 18,
+              startDate: '2026-08-23',
+              endDate: null,
+              status: 'in_progress',
+              roundsCompleted: 1,
+              completedRoundNumbers: [1],
+              totalScore: 74,
+              totalToPar: 2,
+              showLiveLeaderboard: true,
+            }],
+            selectedQualifierId: 'qualifier-1',
+            qualifierRoundError: 'This qualifier is still open, but your coach configured 1 round. You have submitted 1 of 1. Ask a coach to raise the round count before starting another round.',
+          })}
+        />
+      </LazyMotion>,
+    );
+
+    expect(screen.getByText(/this qualifier is still open/i)).toBeInTheDocument();
+    expect(screen.getByText(/you have submitted 1 of 1/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /next: configure holes/i })).toBeDisabled();
   });
 });
 
@@ -214,6 +253,39 @@ describe('FairwayNewRoundEntry — confirmed course', () => {
     const spin = screen.getAllByRole('spinbutton') as HTMLInputElement[];
     expect(spin.length).toBeGreaterThan(0);
     expect(spin.some((el) => el.value === '400')).toBe(true);
+  });
+
+  it('saves NINE holes when 9 is picked AFTER the scorecard mounted (Shenandoah 2026-09-01)', () => {
+    // The scorecard mounts at the course default the moment a course is
+    // confirmed; the 9/18 control sits above it on the same screen. Tapping
+    // "9 holes" flips the parent's holesPerRound — the editor below has to
+    // follow, or "Start round" saves the 18 it mounted with.
+    const onHolesSave = vi.fn();
+    const confirmed = (holesPerRound: 9 | 18): FairwayNewRoundEntryProps =>
+      baseProps({
+        cloudPickActive: true,
+        selectedCourse: null,
+        selectedCourseId: null,
+        preloadedHoleConfigs: HOLES,
+        onHolesSave,
+        holesPerRound,
+        nineSelection: 'front',
+      });
+    const { rerender } = render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...confirmed(18)} />
+      </LazyMotion>,
+    );
+    rerender(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...confirmed(9)} />
+      </LazyMotion>,
+    );
+
+    screen.getByRole('button', { name: /start round/i }).click();
+
+    expect(onHolesSave).toHaveBeenCalledTimes(1);
+    expect(onHolesSave.mock.calls[0]![0]).toHaveLength(9);
   });
 
   it('keeps the full picker when NOTHING has been chosen yet', () => {

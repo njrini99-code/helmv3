@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
+import { resolveClientIp } from '@/lib/security/client-ip';
 import {
   checkRateLimit,
   resetRateLimit,
@@ -28,9 +29,12 @@ import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { verifyStaffInvite } from '@/lib/golf/staff-invite';
+import { joinTeamAsAssistantCoach, redeemStaffInvite } from '@/app/golf/actions/teams';
+import { resolveStaffInviteCode } from '@/lib/golf/staff-invite-lookup';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
 import { verifySignupGate } from '@/lib/golf/signup-gate';
+import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 
 export type LoginResult = {
   success: boolean;
@@ -75,7 +79,7 @@ async function loginActionImpl(
   const normalizedEmail = email.toLowerCase().trim();
 
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
   const userAgent = headersList.get('user-agent') || 'unknown';
   const country = headersList.get('x-vercel-ip-country') ?? undefined;
   const city = headersList.get('x-vercel-ip-city') ?? undefined;
@@ -244,9 +248,14 @@ async function loginActionImpl(
         : declaredRole;
 
   if (resolvedRole === 'coach') {
-    if (!coachProfile || !coachProfile.onboarding_completed) {
-      redirectTo = '/golf/coach';
-    }
+    // NOT `!onboarding_completed -> '/golf/coach'`. That flag is false for both
+    // a PENDING and an APPROVED assistant coach, and '/golf/coach' is
+    // new-program onboarding — completing it overwrites their
+    // organization_id and detaches them from the program they joined. The
+    // resolver keys on the golf_team_coach_staff row instead, which is the same
+    // thing the RLS access helpers read. See lib/golf/coach-entry-path.ts.
+    const entry = await resolveGolfCoachEntry(data.user.id);
+    redirectTo = entry.path;
   } else if (resolvedRole === 'player') {
     if (!playerProfile || !playerProfile.onboarding_completed) {
       redirectTo = '/golf/player';
@@ -284,14 +293,35 @@ export type SignupResult = {
 /**
  * Golf-specific signup with rate limiting
  */
+/**
+ * What the signup form may ask for.
+ *
+ * `assistant_request` is deliberately NOT a role — it is a request for one. It
+ * exists because the head coach and the assistant share ONE code (the team
+ * join code), so the choice has to be made in the UI rather than sealed into a
+ * separate credential. Everyone holding that code is on the roster, so letting
+ * the choice grant itself would let any player self-promote to assistant coach
+ * and read every teammate's rounds and PII. That is the escalation reverted in
+ * 266d02d91 (2026-08-05); the approval step below is what lets the single-code
+ * flow ship without re-opening it.
+ */
+export type GolfSignupRole = 'player' | 'coach' | 'assistant_request';
+
 async function signupActionImpl(
   email: string,
   password: string,
-  role: 'player' | 'coach',
+  role: GolfSignupRole,
   firstName?: string,
   lastName?: string
 ): Promise<SignupResult> {
   const normalizedEmail = email.toLowerCase().trim();
+
+  // An assistant-coach REQUEST is a coach account as far as auth is concerned;
+  // what makes it a request rather than a grant is that no
+  // golf_team_coach_staff row is written for it below. Both access helpers
+  // (is_golf_team_coach / is_golf_team_head_coach) read that table and nothing
+  // else, so until a head coach approves, this account can see no team data.
+  const authRole: 'player' | 'coach' = role === 'assistant_request' ? 'coach' : role;
 
   // Validate password strength FIRST (before rate limiting to provide immediate feedback)
   const passwordValidation = validatePassword(password);
@@ -303,7 +333,7 @@ async function signupActionImpl(
   }
 
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
 
   // Check rate limit
   const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
@@ -345,7 +375,7 @@ async function signupActionImpl(
     password,
     options: {
       data: {
-        role,
+        role: authRole,
         sport: 'golf',
         first_name: firstName || '',
         last_name: lastName || '',
@@ -425,7 +455,7 @@ async function signupActionImpl(
   }
 
   // Log signup event (fire-and-forget)
-  logSignup(data.user.id, normalizedEmail, role, { ip }).catch(() => {});
+  logSignup(data.user.id, normalizedEmail, authRole, { ip }).catch(() => {});
 
   // Auth state changed (session established) — revalidate dashboard like loginAction
   // so server components re-read the new authenticated session.
@@ -443,8 +473,115 @@ async function signupActionImpl(
   // no team attached, and had to be invited a second time. Coaches keep going
   // to their own onboarding — a join code is meaningless for them, since they
   // create the team rather than join one.
-  const carryJoinCode = role === 'player' && gate.teamJoinCode;
-  const redirectTo = role === 'coach'
+  // A STAFF INVITE CODE cleared the gate: attach them to the inviting program
+  // instead of running new-program onboarding (which would mint a duplicate
+  // organization — the failure the owner's assistant would otherwise hit).
+  //
+  // The role is NOT taken from `role` above. It is read from the signed token
+  // the code resolves to, inside redeemStaffInvite. That is the whole reason
+  // this is safe to expose at signup: typing a code cannot choose a role, and
+  // the roster join_code lives in a different namespace entirely, so a player
+  // credential can still only ever produce a player.
+  if (gate.staffInviteCode) {
+    const token = await resolveStaffInviteCode(gate.staffInviteCode);
+    if (token) {
+      const redeemed = await redeemStaffInvite(
+        token,
+        [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
+      );
+      if (redeemed.success) {
+        return { success: true, redirectTo: '/golf/dashboard' };
+      }
+      // The account EXISTS at this point, so failing the whole signup would
+      // strand them with credentials and no program. Send them to the accept
+      // screen, which states the real reason (expired / already used) and lets
+      // them retry with a fresh code once signed in.
+      await logServerError(
+        `[signupAction] staff invite redemption failed after account creation: ${redeemed.error ?? 'unknown'}`,
+        { action: 'auth.signupAction' },
+        'warning',
+      );
+    }
+    return { success: true, redirectTo: `/golf/staff/join/${encodeURIComponent(gate.staffInviteCode)}` };
+  }
+
+  // ASSISTANT COACH on the shared team code — attached IMMEDIATELY.
+  //
+  // Creates a real coach profile bound to the inviting PROGRAM and writes a
+  // golf_team_coach_staff row for every team in it. Those rows are the whole of
+  // team access — both is_golf_team_coach and is_golf_team_head_coach are
+  // EXISTS() over that table and read nothing else — so writing them is what
+  // makes the account work on first sign-in, with no waiting page in between.
+  //
+  // There is deliberately NO approval step (owner decision 2026-08-20): "The
+  // approval is them having the access code, and putting it in when they hit
+  // sign up." See joinTeamAsAssistantCoach in actions/teams.ts for the
+  // trade-off that decision accepts.
+  //
+  // Anchored to gate.teamJoinCode, never to anything the browser sent: without
+  // a team code there is no program to join, and the signup is refused rather
+  // than silently downgraded to a stray coach account.
+  // A ROSTER CODE OUTRANKS THE ROLE THE BROWSER SENT.
+  //
+  // `role` arrives from the client. The form derives 'assistant_request' from
+  // the resolved code scope, but the server never checked that, so a submission
+  // of role:'coach' carrying a roster code skipped the branch below and fell
+  // through to `role === 'coach' ? '/golf/coach'` — new-program onboarding, the
+  // duplicate-organization dead end this whole change exists to close.
+  //
+  // That is not hypothetical during a deploy. Anyone still holding the PREVIOUS
+  // bundle is holding the one that offers "Coach" on a roster code, and their
+  // tab posts to the NEW server — so the promote that fixes this also opens the
+  // window where it fires, for exactly the Guilford and Shenandoah users who are
+  // retrying right now.
+  //
+  // Holding a team code means joining THAT program; it cannot mean creating a
+  // new one. The staff-invite branch above already defends itself this way
+  // (see its comment: "typing a code cannot choose a role") — this is the same
+  // rule for the roster path, which was the one missing it.
+  const roleForGate: GolfSignupRole =
+    gate.teamJoinCode && role === 'coach' ? 'assistant_request' : role;
+
+  if (roleForGate === 'assistant_request') {
+    if (!gate.teamJoinCode) {
+      return {
+        success: false,
+        error: 'Assistant coaches need their team\'s code. Ask your head coach for it and try again.',
+      };
+    }
+    const joined = await joinTeamAsAssistantCoach(
+      data.user.id,
+      gate.teamJoinCode,
+      [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
+      normalizedEmail,
+    );
+    if (!joined.success) {
+      // The auth account exists by now, so refusing the whole signup would
+      // strand them with credentials and nothing to sign into. But unlike the
+      // old request-and-wait flow, a failure here means they genuinely have NO
+      // team access — so say so instead of sending them to a dashboard that
+      // would render empty.
+      await logServerError(
+        `[signupAction] assistant coach team attach failed after account creation: ${joined.error ?? 'unknown'}`,
+        { action: 'auth.signupAction' },
+        'error',
+      );
+      return {
+        success: false,
+        error: joined.error ?? 'We created your account but could not add you to the team. Please sign in and try again.',
+      };
+    }
+    // Straight to the dashboard. They are on the team.
+    return { success: true, redirectTo: '/golf/dashboard' };
+  }
+
+  // `roleForGate`, not `role` — a roster code has already been resolved to
+  // 'assistant_request' above and handled there, so reaching this line with a
+  // team code in hand and 'coach' selected is no longer possible. Reading the
+  // gated value here too means a future edit cannot reopen that path by
+  // accident.
+  const carryJoinCode = roleForGate === 'player' && gate.teamJoinCode;
+  const redirectTo = roleForGate === 'coach'
     ? '/golf/coach'
     : carryJoinCode
       ? `/golf/player?joinCode=${encodeURIComponent(gate.teamJoinCode as string)}`
@@ -465,7 +602,7 @@ const observedSignupAction = withAdminObserved(
 export async function signupAction(
   email: string,
   password: string,
-  role: 'player' | 'coach',
+  role: GolfSignupRole,
   firstName?: string,
   lastName?: string
 ): Promise<SignupResult> {
@@ -512,7 +649,7 @@ async function requestPasswordResetActionImpl(
   // on ip+email gives each teammate their own budget at that IP while still
   // bounding how many times any single (ip, email) pair can be hammered.
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
   const ipRateLimit = await checkRateLimit(
     `password-reset:ip:${ip}:${normalizedEmail}`,
     PASSWORD_RESET_IP_LIMIT,
@@ -651,7 +788,7 @@ async function signupWithStaffInviteActionImpl(
   }
 
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+  const ip = resolveClientIp(headersList);
 
   const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
   if (!rateLimit.allowed) {

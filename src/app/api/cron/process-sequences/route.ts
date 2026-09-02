@@ -80,6 +80,14 @@ interface CoachRow {
   email_status: string | null;
 }
 
+function splitCoachName(name: string | null): Pick<CoachRow, 'first_name' | 'last_name'> {
+  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  return {
+    first_name: parts[0] ?? null,
+    last_name: parts.length > 1 ? parts.slice(1).join(' ') : null,
+  };
+}
+
 interface TemplateRow {
   id: string;
   subject: string;
@@ -276,7 +284,7 @@ async function processEnrollment(
   const { data: coachRaw, error: coachErr } = await client
     .from('crm_coaches')
     .select(
-      'id, name, email, first_name, last_name, title, school, conference, division, program, team_size, current_software, email_status',
+      'id, name, email, title, school, conference, division, program, team_size, current_software, email_status',
     )
     .eq('id', enrollment.coach_id)
     .single();
@@ -285,7 +293,13 @@ async function processEnrollment(
     await stopEnrollment(client, enrollment.id, 'manual');
     return { outcome: 'stopped' };
   }
-  const coach = coachRaw as CoachRow;
+  // `crm_coaches` has a canonical full-name field in both the local and
+  // production contracts.  first_name/last_name were never database columns,
+  // so selecting them caused PostgREST to reject the entire cron lookup.
+  const coach = {
+    ...(coachRaw as Omit<CoachRow, 'first_name' | 'last_name'>),
+    ...splitCoachName((coachRaw as { name: string | null }).name),
+  } satisfies CoachRow;
 
   // ── Stop condition: bounced / complained / unsubscribed status ──
   const status = (coach.email_status ?? 'valid').toLowerCase();

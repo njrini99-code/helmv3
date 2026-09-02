@@ -280,3 +280,127 @@ export async function verifyInsightAccess(
     coachId: team.coachId,
   };
 }
+
+/**
+ * Result of a roster-containment check.
+ *
+ * `ok: false` never distinguishes *how* the ids failed for the caller's
+ * message — see `reason`. `offending` is populated only for `'not-members'`
+ * and is capped, since the caller must not echo an unbounded attacker-chosen
+ * list back into a UI string.
+ */
+export interface RosterCheckResult {
+  ok: boolean;
+  reason: 'empty' | 'members' | 'not-members' | 'unavailable';
+  offending?: string[];
+}
+
+/** Cap on ids named in a denial, so an attacker cannot inflate a log line. */
+const MAX_REPORTED_OFFENDERS = 5;
+
+/**
+ * Verify that every supplied player id is a member of `teamId`.
+ *
+ * This closes the class that survived deepsec wave 1. Wave 1 fixed *team*
+ * scope almost everywhere — an action proves "you are a coach of team X"
+ * before it writes. It did not fix scope of the ids *inside* that call: the
+ * same action then accepted an arbitrary `player_ids[]` and wrote it, so a
+ * coach of team A could assign a task to, create a lineup slot for, or file
+ * academic data against a player on team B. Semgrep's `ai.detection.authz`
+ * pack found 29 instances of exactly this shape on 2026-07-26.
+ *
+ * Three deliberate choices:
+ *
+ * 1. AN EMPTY LIST PASSES. Several callers legitimately pass `[]` and then
+ *    branch — `createTaskFromTemplateImpl` treats an empty array as "assign
+ *    to the whole roster". A helper that rejected `[]` would break that path
+ *    while looking stricter, which is the worst of both.
+ *
+ * 2. FAIL CLOSED ON A FAILED READ, AND SAY SO. `reason: 'unavailable'` is
+ *    NOT `'not-members'`. The distinction is load-bearing: this repo has
+ *    already shipped the bug where a discarded roster-read error produced an
+ *    empty result set and the code either sailed on or told a coach their own
+ *    player "is not on your team" (see `createFocusAreaImpl` and
+ *    `createTaskFromTemplateImpl`, both of which carry that scar in a
+ *    comment). Callers must render a retry message for `'unavailable'` and an
+ *    authorization message only for `'not-members'`.
+ *
+ * 3. MEMBERSHIP, NOT LIFECYCLE. Any `golf_team_members` row counts, including
+ *    `pending`/`inactive` and a NULL status. The defect being closed is
+ *    cross-TEAM writes; whether a `removed` player may still be assigned work
+ *    is a separate product question, and silently folding it in here would
+ *    change behavior at 29 call sites under cover of a security fix. Callers
+ *    that already gate on `status = 'active'` keep doing so on their own.
+ */
+export async function verifyPlayersOnTeam(
+  teamId: string,
+  playerIds: readonly (string | null | undefined)[],
+  supabase?: SupabaseClient,
+): Promise<RosterCheckResult> {
+  const unique = [...new Set(playerIds.filter((id): id is string => Boolean(id)))];
+  if (unique.length === 0) return { ok: true, reason: 'empty' };
+  if (!teamId) {
+    return { ok: false, reason: 'not-members', offending: unique.slice(0, MAX_REPORTED_OFFENDERS) };
+  }
+
+  const sb = supabase ?? (await createClient());
+
+  const { data, error } = await probeWithRetry(() =>
+    sb
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', teamId)
+      .in('player_id', unique),
+  );
+
+  if (error) {
+    const failure = await reportProbeFailure('verifyPlayersOnTeam failed', error, {
+      action: 'auth.verifyPlayersOnTeam',
+      metadata: { teamId, requested: unique.length },
+    });
+    // Both failure tiers deny. Only the transport tier is retryable, and the
+    // caller's message depends on knowing which.
+    return { ok: false, reason: failure.reason === 'unavailable' ? 'unavailable' : 'not-members' };
+  }
+
+  const rows = (data ?? []) as unknown as Array<{ player_id: string }>;
+  const found = new Set(rows.map((row) => row.player_id));
+  const missing = unique.filter((id) => !found.has(id));
+  if (missing.length > 0) {
+    return { ok: false, reason: 'not-members', offending: missing.slice(0, MAX_REPORTED_OFFENDERS) };
+  }
+  return { ok: true, reason: 'members' };
+}
+
+/**
+ * Verify that `roundId` belongs to `playerId`.
+ *
+ * `generateRoundReview` and `generateAndStoreRoundReview` are mirror images
+ * of the same defect: one authorizes the ROUND and takes the player id on
+ * trust, the other authorizes the PLAYER and takes the round id on trust.
+ * Either way the engine can be pointed at one player's history under another
+ * player's authorization. Both need this same predicate, so it lives here
+ * rather than twice in two action files.
+ */
+export async function verifyRoundBelongsToPlayer(
+  roundId: string,
+  playerId: string,
+  supabase?: SupabaseClient,
+): Promise<boolean> {
+  if (!roundId || !playerId) return false;
+  const sb = supabase ?? (await createClient());
+
+  const { data, error } = await probeWithRetry(() =>
+    sb.from('golf_rounds').select('player_id').eq('id', roundId).maybeSingle(),
+  );
+
+  if (error) {
+    await reportProbeFailure('verifyRoundBelongsToPlayer failed', error, {
+      action: 'auth.verifyRoundBelongsToPlayer',
+      metadata: { roundId, playerId },
+    });
+    return false;
+  }
+
+  return (data as { player_id: string } | null)?.player_id === playerId;
+}

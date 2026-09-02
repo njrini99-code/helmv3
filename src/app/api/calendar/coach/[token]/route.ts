@@ -5,9 +5,18 @@
  * Uses token-based auth via golf_calendar_feeds — no session required,
  * so external calendar apps (Google, Apple, Outlook) can fetch via webcal://.
  *
- * The token is looked up in golf_calendar_feeds. The feed's team_id MUST be
- * coach-staffed by feed.user_id (verified via golf_team_coach_staff). Player
- * memberships do NOT satisfy this endpoint — those go through /api/calendar/feeds.
+ * The token is looked up in golf_calendar_feeds. Whatever team this request
+ * ends up serving MUST be coach-staffed by feed.user_id at request time
+ * (verified via golf_team_coach_staff). Player memberships do NOT satisfy this
+ * endpoint — those go through /api/calendar/feeds.
+ *
+ * That check runs on BOTH paths, and the "at request time" is load-bearing.
+ * A 'personal' feed (team_id null — createCalendarFeed('personal') is not
+ * role-gated) used to skip verify_coach_owns_team entirely and re-derive a team
+ * from the coach's organization_id, so a coach who had since been removed from
+ * golf_team_coach_staff kept a live bearer token returning the CURRENT roster's
+ * practice and travel locations. Nothing deactivates a feed row on staff
+ * removal, so per-request verification — not revocation — is what closes it.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -97,7 +106,10 @@ export async function GET(
       return new NextResponse('Coach profile not found', { status: 404 });
     }
 
-    // Resolve team_id: prefer feed.team_id, fall back to coach's org → team
+    // Resolve team_id: prefer feed.team_id (already verified above), else fall
+    // back to coach's org → team. The org fallback is a GUESS about which team
+    // this coach means, so it has to clear the same staffing bar the explicit
+    // team_id path clears — otherwise the guess becomes an authorization.
     let teamId = feed.team_id;
     if (!teamId && coach.organization_id) {
       const { data: team } = await supabase
@@ -105,7 +117,32 @@ export async function GET(
         .select('id')
         .eq('organization_id', coach.organization_id)
         .maybeSingle();
-      teamId = team?.id ?? null;
+      const candidateTeamId = team?.id ?? null;
+
+      if (candidateTeamId) {
+        const { data: authorized, error: authError } = await (
+          supabase as unknown as CoachTeamAuthRpcClient
+        ).rpc('verify_coach_owns_team', {
+          p_team_id: candidateTeamId,
+          p_user_id: feed.user_id,
+        });
+
+        if (authError) {
+          // Fail CLOSED. A failed staffing read must not read as "not staffed,
+          // so serve the team anyway" — it must read as "unproven", which here
+          // means the coach gets only their own events.
+          await logServerException(
+            authError,
+            {
+              action: 'calendar.coachFeed.verifyOrgFallbackTeam',
+              featureArea: 'calendar',
+            },
+            'warning',
+          );
+        } else if (authorized === true) {
+          teamId = candidateTeamId;
+        }
+      }
     }
 
     // Get team timezone
@@ -137,7 +174,9 @@ export async function GET(
     if (teamId) {
       eventsQuery = eventsQuery.eq('team_id', teamId);
     } else {
-      // Fallback: only events this coach created
+      // No VERIFIED team — either the feed carries no team_id and the org guess
+      // could not be confirmed, or the staffing read failed. Serve only events
+      // this coach authored themselves, which is data they already had.
       eventsQuery = eventsQuery.eq('created_by', coach.id);
     }
 

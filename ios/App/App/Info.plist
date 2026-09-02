@@ -61,11 +61,14 @@
 	</array>
 	<key>UIRequiresFullScreen</key>
 	<true/>
+	<!-- Portrait-only on iPhone (2026-08-26, iOS premium audit F-ORIENT-01):
+	     the product is designed portrait-first and iPhone landscape was
+	     declared but never audited. Plan rule: make it excellent or restrict
+	     it intentionally — this is the intentional restriction. Revisit only
+	     with real landscape QA behind it. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

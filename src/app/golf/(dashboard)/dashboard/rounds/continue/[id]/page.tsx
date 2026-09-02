@@ -10,6 +10,7 @@ import type { Tables } from '@/lib/types/database';
 import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { logServerError } from '@/lib/server-error-logger';
+import { RoundTypeEditor } from '@/components/fairway/pages/rounds/RoundTypeEditor';
 
 export const metadata: Metadata = {
   title: 'Continue Round | GolfHelm',
@@ -80,6 +81,12 @@ function derivePuttDistanceFeet(shot: GolfShot): number | undefined {
     : shot.distance_to_hole_before;
   // Clamp to DB CHECK constraint max (500 feet)
   return Math.min(feet, 500);
+}
+
+function parsePositiveRoundNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : undefined;
 }
 
 function mapShotToRecord(
@@ -253,6 +260,14 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     }, 'critical');
   }
 
+  // A Continue Round session must never treat an unread scorecard as an empty
+  // scorecard. Mounting the tracker with fallback arrays would let the next
+  // auto-save replace durable holes/shots with that empty snapshot. Keep the
+  // saved round untouched and use the route boundary's real retry instead.
+  if (holesError || shotsError) {
+    throw new Error("Couldn't load this round's saved scorecard. Nothing was changed; please try again.");
+  }
+
   if (courseHolesError) {
     await logServerError(`Continue round course-hole load failed: ${courseHolesError.message}`, {
       action: 'continueRoundPage.courseHoles',
@@ -322,6 +337,13 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       }, 'warning');
     }
 
+    // Shot-detail rows are part of the authoritative round graph. A partial
+    // read is unsafe because a subsequent full snapshot save could erase
+    // details that this client did not receive.
+    if (puttRes?.error || approachRes?.error) {
+      throw new Error("Couldn't load this round's shot details. Nothing was changed; please try again.");
+    }
+
     for (const pd of (puttRes?.data || [])) {
       puttDetailsByShot.set(pd.shot_id, { miss_tags: pd.miss_tags });
     }
@@ -333,8 +355,6 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       });
     }
   }
-
-  // Errors are handled gracefully - holes/shots will be empty if fetch fails
 
   // Group shots by hole number for easy lookup
   const shotsByHole = new Map<number, GolfShot[]>();
@@ -411,6 +431,74 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     }
   }
 
+  // Some older in-progress qualifier rows predate the durable
+  // qualifier_round_number field. Keep a valid number from their existing
+  // server-backed draft when it is still available; otherwise give the player
+  // an explicit, constrained choice at final submit. Never guess a qualifier
+  // result number from a client cache.
+  let qualifierRoundNumber = round.qualifier_round_number ?? undefined;
+  let qualifierRoundNumberOptions: number[] = [];
+  let qualifierRoundNumberUnavailableReason: string | undefined;
+  if (round.qualifier_id && qualifierRoundNumber == null) {
+    const [qualifierResult, playerRoundResult] = await Promise.all([
+      supabase
+        .from('golf_qualifiers')
+        .select('num_rounds, status')
+        .eq('id', round.qualifier_id)
+        .maybeSingle(),
+      supabase
+        .from('golf_rounds')
+        .select('id, status, qualifier_round_number')
+        .eq('qualifier_id', round.qualifier_id)
+        .eq('player_id', player.id),
+    ]);
+
+    if (qualifierResult.error || playerRoundResult.error || !qualifierResult.data) {
+      qualifierRoundNumberUnavailableReason =
+        'We could not verify the available qualifier rounds. Reload before submitting.';
+      await logServerError('Continue round legacy qualifier number lookup failed', {
+        action: 'continueRoundPage.qualifierRoundNumber',
+        source: 'server_component',
+        featureArea: 'qualifiers',
+        route: `/golf/dashboard/rounds/continue/${id}`,
+        roundId: id,
+        playerId: player.id,
+        userId: session.userId,
+        errorCode: qualifierResult.error?.code ?? playerRoundResult.error?.code,
+        errorHint: qualifierResult.error?.hint ?? playerRoundResult.error?.hint,
+        errorDetails: qualifierResult.error?.details ?? playerRoundResult.error?.details,
+      }, 'warning');
+    } else if (qualifierResult.data.status === 'completed') {
+      qualifierRoundNumberUnavailableReason =
+        'This qualifier is closed. Your scorecard remains saved until a coach reopens it.';
+    } else {
+      const configuredRounds = parsePositiveRoundNumber(qualifierResult.data.num_rounds) ?? 1;
+      const usedRoundNumbers = new Set(
+        (playerRoundResult.data ?? [])
+          .filter((candidate) => candidate.id !== id && candidate.status !== 'abandoned')
+          .map((candidate) => parsePositiveRoundNumber(candidate.qualifier_round_number))
+          .filter((candidate): candidate is number => candidate != null),
+      );
+      qualifierRoundNumberOptions = Array.from(
+        { length: configuredRounds },
+        (_, index) => index + 1,
+      ).filter((candidate) => !usedRoundNumbers.has(candidate));
+
+      const draftSetupData = draftData?.setupData;
+      const draftRoundNumber = draftSetupData && typeof draftSetupData === 'object'
+        ? parsePositiveRoundNumber(
+          (draftSetupData as Record<string, unknown>).qualifierRoundNumber,
+        )
+        : undefined;
+      if (draftRoundNumber && qualifierRoundNumberOptions.includes(draftRoundNumber)) {
+        qualifierRoundNumber = draftRoundNumber;
+      } else if (qualifierRoundNumberOptions.length === 0) {
+        qualifierRoundNumberUnavailableReason =
+          'Every configured qualifier round is already saved for you. Your scorecard remains safe; ask a coach to correct the qualifier setup.';
+      }
+    }
+  }
+
   const allHoles = Array.from({ length: totalHoles }, (_, i) => {
     const existingHole = holeConfigMap.get(i + 1);
     const draftHole = draftHoleConfigs?.find(h => h.number === i + 1);
@@ -425,6 +513,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   // Setup data from round
   const setupData = {
     courseName: round.course_name || 'Unknown Course',
+    courseId: round.course_id ?? undefined,
+    teeId: round.tee_id ?? undefined,
     courseCity: round.course_city || '',
     courseState: round.course_state || '',
     courseRating: round.course_rating?.toString() || '',
@@ -433,7 +523,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     roundType: roundTypeFromDb(round.round_type || 'practice'),
     roundDate: round.round_date,
     qualifierId: round.qualifier_id || undefined,
-    qualifierRoundNumber: round.qualifier_round_number || undefined,
+    qualifierRoundNumber,
   };
 
   // Determine the starting hole index
@@ -478,11 +568,97 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     allInProgressShots[i] = sorted.map(s => mapShotToRecord(s, puttDetailsByShot.get(s.id), approachDetailsByShot.get(s.id)));
   }
 
+  // ── Re-typing a LIVE round, from the screen the player is already on ──────
+  //
+  // Owner instruction 2026-08-31: "players should be able to edit it", and
+  // coaches deliberately cannot — no coach surface lists an in-progress round,
+  // and the round detail page sends every unfinished round here. This is
+  // therefore the only place a live round's type can be changed, which is why
+  // it lives on the scoring screen rather than behind it.
+  //
+  // Player rules, not coach rules: only qualifiers this player is ALREADY
+  // entered in. RLS makes entry creation coach-only, so offering more would be
+  // a dead end one step later. `viewerIsCoach={false}` picks the matching copy.
+  //
+  // Rendered from the server component, deliberately outside
+  // ContinueRoundClient: that component owns live scoring, autosave and
+  // recovery, and a type picker has no business inside that state machine.
+  // Saving calls `router.refresh()`, which re-runs this page and rebuilds
+  // `setupData` — so the qualifier identity the submit path reads is the one
+  // that was just written, not the one this page loaded with.
+  let liveQualifierOptions: Array<{
+    id: string;
+    name: string;
+    numRounds: number;
+    takenRoundNumbers: number[];
+    playerEntered: boolean;
+    isCompleted: boolean;
+  }> = [];
+  let liveQualifierReadFailed = false;
+
+  {
+    const { data: entryRows, error: entriesError } = await supabase
+      .from('golf_qualifier_entries')
+      .select('qualifier:golf_qualifiers(id, name, num_rounds, status)')
+      .eq('player_id', player.id);
+
+    if (entriesError) {
+      liveQualifierReadFailed = true;
+      void logServerError(
+        `[continue round] qualifier options read failed for round ${id}; the type editor will offer nothing to attach to: ${entriesError.message}`,
+        { action: 'continueRound.qualifierOptions', featureArea: 'rounds', roundId: id },
+        'warning',
+      );
+    }
+
+    type QRow = { id: string; name: string | null; num_rounds: number | null; status: string | null };
+    const entered = (entryRows ?? [])
+      .map((row) => {
+        const q = (row as { qualifier?: unknown }).qualifier;
+        return (Array.isArray(q) ? q[0] : q) as QRow | null | undefined;
+      })
+      .filter((q): q is QRow => Boolean(q && q.id));
+
+    // Which slots this player's OTHER rounds already hold. Excludes THIS round
+    // so a round already sitting in a slot does not read its own as taken.
+    const { data: takenRows } = entered.length
+      ? await supabase
+          .from('golf_rounds')
+          .select('qualifier_id, qualifier_round_number')
+          .eq('player_id', player.id)
+          .in('qualifier_id', entered.map((q) => q.id))
+          .neq('status', 'abandoned')
+          .neq('id', id)
+      : { data: [] as Array<{ qualifier_id: string | null; qualifier_round_number: number | null }> };
+
+    liveQualifierOptions = entered.map((q) => ({
+      id: q.id,
+      name: q.name ?? 'Qualifier',
+      numRounds: q.num_rounds ?? 1,
+      takenRoundNumbers: (takenRows ?? [])
+        .filter((r) => r.qualifier_id === q.id && r.qualifier_round_number != null)
+        .map((r) => r.qualifier_round_number as number),
+      playerEntered: true,
+      isCompleted: q.status === 'completed',
+    }));
+  }
+
   return (
     <AnimatedPage>
       <AnimatedItem>
+        <RoundTypeEditor
+          roundId={id}
+          currentType={round.round_type}
+          currentQualifierId={round.qualifier_id}
+          currentQualifierRoundNumber={round.qualifier_round_number}
+          qualifierOptions={liveQualifierOptions}
+          qualifierReadFailed={liveQualifierReadFailed}
+          viewerIsCoach={false}
+          className="mb-3"
+        />
         <ContinueRoundClient
           roundId={id}
+          playerId={player.id}
           setupData={setupData}
           holes={allHoles}
           completedHoleStats={completedHoleStats}
@@ -491,6 +667,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
           initialShotNumber={startShotNumber}
           initialInProgressShotsByHole={allInProgressShots}
           serverDataTimestamp={round.updated_at ?? undefined}
+          qualifierRoundNumberOptions={qualifierRoundNumberOptions}
+          qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
         />
       </AnimatedItem>
     </AnimatedPage>

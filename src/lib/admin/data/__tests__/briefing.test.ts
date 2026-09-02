@@ -3,11 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Generic chainable Supabase query-builder mock: every fluent method (select,
 // eq, gte, lt, not, in, order, limit, ...) returns the same chain object, and
 // the chain itself is thenable so `await` resolves it at whatever point the
-// real code stops chaining. `gte()` additionally records its calls per-table
-// so tests can assert a recency bound was actually applied to the query,
-// since the mock can't emulate real Postgres row filtering.
+// real code stops chaining. `gte()`/`lt()`/`in()` additionally record their
+// calls per-table so tests can assert a recency bound or a scope filter was
+// actually applied to the query, since the mock can't emulate real Postgres
+// row filtering — data returned is whatever `tableResults[table]` says
+// regardless of which filters were chained.
 const mocks = vi.hoisted(() => ({
   gteCalls: [] as Array<{ table: string; column: string; value: unknown }>,
+  ltCalls: [] as Array<{ table: string; column: string; value: unknown }>,
+  inCalls: [] as Array<{ table: string; column: string; value: unknown }>,
   tableResults: {} as Record<string, { data: unknown[] | null; error: unknown; count?: number }>,
 }));
 
@@ -17,8 +21,14 @@ function makeChain(table: string) {
     select: () => chain,
     eq: () => chain,
     not: () => chain,
-    in: () => chain,
-    lt: () => chain,
+    in: (column: string, value: unknown) => {
+      mocks.inCalls.push({ table, column, value });
+      return chain;
+    },
+    lt: (column: string, value: unknown) => {
+      mocks.ltCalls.push({ table, column, value });
+      return chain;
+    },
     order: () => chain,
     limit: () => chain,
     maybeSingle: () => Promise.resolve(result()),
@@ -51,7 +61,9 @@ import {
   findNewlyDormantTeams,
   topErrorCluster,
   fetchBriefing,
+  plural,
 } from '@/lib/admin/data/briefing';
+import { DEMO_TEAM_IDS } from '@/app/golf/actions/admin/demo-teams';
 
 describe('rankBriefingItems', () => {
   it('puts every attention item before every watch item', () => {
@@ -197,5 +209,186 @@ describe('fetchBriefing — checkAuthFailureConcentration recency bound', () => 
     mocks.tableResults.login_attempts = { data: [], error: null };
     const { items } = await fetchBriefing();
     expect(items.some((i) => i.headline.includes('failed sign-in'))).toBe(false);
+  });
+});
+
+describe('plural', () => {
+  it('pluralizes "-ch" endings with "-es", not a bare "-s" ("N coachs" was the bug)', () => {
+    expect(plural(2, 'coach')).toBe('2 coaches');
+    expect(plural(5, 'coach')).toBe('5 coaches');
+    expect(plural(1, 'coach')).toBe('1 coach');
+  });
+
+  it('still pluralizes ordinary words the old way, unaffected by the added branch', () => {
+    expect(plural(3, 'round')).toBe('3 rounds');
+    expect(plural(2, 'signup')).toBe('2 signups');
+    expect(plural(2, 'team')).toBe('2 teams');
+    expect(plural(2, 'occurrence')).toBe('2 occurrences');
+    expect(plural(2, 'failed sign-in')).toBe('2 failed sign-ins');
+  });
+});
+
+describe('fetchBriefing — checkStuckRounds recency window', () => {
+  beforeEach(() => {
+    mocks.gteCalls.length = 0;
+    mocks.ltCalls.length = 0;
+    mocks.inCalls.length = 0;
+    mocks.tableResults = {};
+  });
+
+  it('bounds golf_rounds.updated_at with BOTH a ~1h lower cutoff and a ~24h upper cutoff', async () => {
+    mocks.tableResults.golf_rounds = { data: [], error: null, count: 0 };
+    await fetchBriefing();
+
+    const roundLts = mocks.ltCalls.filter((c) => c.table === 'golf_rounds' && c.column === 'updated_at');
+    const roundGtes = mocks.gteCalls.filter((c) => c.table === 'golf_rounds' && c.column === 'updated_at');
+    expect(roundLts.length).toBeGreaterThan(0);
+    // The fix under test: an upper bound now exists at all. Before this, the
+    // query only had a lower bound, so a round idle 2,573h (months-old,
+    // abandoned) counted identically to one idle 90 minutes.
+    expect(roundGtes.length).toBeGreaterThan(0);
+
+    const lowerAgeMs = Date.now() - new Date(roundLts[0]!.value as string).getTime();
+    const upperAgeMs = Date.now() - new Date(roundGtes[0]!.value as string).getTime();
+    expect(lowerAgeMs).toBeLessThan(2 * 3600_000);
+    expect(upperAgeMs).toBeGreaterThan(23 * 3600_000);
+    expect(upperAgeMs).toBeLessThan(25 * 3600_000);
+  });
+
+  it('surfaces nothing when the only stuck-shaped rows fall outside the window (mocked as an empty result)', async () => {
+    mocks.tableResults.golf_rounds = { data: [], error: null, count: 0 };
+    const { items } = await fetchBriefing();
+    expect(items.some((i) => i.headline.includes('stuck in-progress'))).toBe(false);
+  });
+});
+
+describe('fetchBriefing — checkStuckOnboarding recency window', () => {
+  beforeEach(() => {
+    mocks.gteCalls.length = 0;
+    mocks.ltCalls.length = 0;
+    mocks.inCalls.length = 0;
+    mocks.tableResults = {};
+  });
+
+  it('bounds created_at with a 7-day lower AND a 30-day upper cutoff, on both golf_players and golf_coaches', async () => {
+    mocks.tableResults.golf_players = { data: [], error: null, count: 0 };
+    mocks.tableResults.golf_coaches = { data: [], error: null, count: 0 };
+    await fetchBriefing();
+
+    for (const table of ['golf_players', 'golf_coaches'] as const) {
+      const lts = mocks.ltCalls.filter((c) => c.table === table && c.column === 'created_at');
+      const gtes = mocks.gteCalls.filter((c) => c.table === table && c.column === 'created_at');
+      expect(lts.length, `${table} lower bound`).toBeGreaterThan(0);
+      // The fix under test: an upper bound now exists. Production had two
+      // rows from February and March pinned at the top of "Needs your eyes"
+      // forever because the old query had no ceiling.
+      expect(gtes.length, `${table} upper bound`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('fetchBriefing — checkInactiveCoaches golf-only scope + demo exclusion', () => {
+  const [demoTeamId] = [...DEMO_TEAM_IDS];
+
+  beforeEach(() => {
+    mocks.gteCalls.length = 0;
+    mocks.ltCalls.length = 0;
+    mocks.inCalls.length = 0;
+    mocks.tableResults = {};
+  });
+
+  it('scopes the demo-staff lookup to just the two demo team ids, not a full-table scan', async () => {
+    mocks.tableResults.golf_coaches = { data: [], error: null };
+    mocks.tableResults.golf_team_coach_staff = { data: [], error: null };
+    await fetchBriefing();
+    const staffScope = mocks.inCalls.find(
+      (c) => c.table === 'golf_team_coach_staff' && c.column === 'team_id',
+    );
+    expect(staffScope).toBeDefined();
+    expect(staffScope!.value).toEqual([...DEMO_TEAM_IDS]);
+  });
+
+  it('excludes demo-team coaches from the users.id scope filter, keeps real ones', async () => {
+    mocks.tableResults.golf_coaches = {
+      data: [
+        { id: 'coach-real', user_id: 'user-real' },
+        { id: 'coach-demo', user_id: 'user-demo' },
+      ],
+      error: null,
+    };
+    mocks.tableResults.golf_team_coach_staff = {
+      data: [{ coach_id: 'coach-demo', team_id: demoTeamId }],
+      error: null,
+    };
+    mocks.tableResults.users = { data: [], error: null, count: 0 };
+    await fetchBriefing();
+
+    const usersScope = mocks.inCalls.find((c) => c.table === 'users' && c.column === 'id');
+    expect(usersScope).toBeDefined();
+    const scoped = usersScope!.value as string[];
+    expect(scoped).toContain('user-real');
+    expect(scoped).not.toContain('user-demo');
+  });
+
+  it('returns no candidate — not a throw — when every real golf coach is filtered out', async () => {
+    mocks.tableResults.golf_coaches = { data: [{ id: 'coach-demo', user_id: 'user-demo' }], error: null };
+    mocks.tableResults.golf_team_coach_staff = {
+      data: [{ coach_id: 'coach-demo', team_id: demoTeamId }],
+      error: null,
+    };
+    const { items, degradedChecks } = await fetchBriefing();
+    expect(degradedChecks).not.toContain('checkInactiveCoaches');
+    expect(items.some((i) => i.headline.includes('inactive for over'))).toBe(false);
+  });
+
+  it('a headline for multiple inactive coaches reads "coaches", never "coachs"', async () => {
+    mocks.tableResults.golf_coaches = {
+      data: [
+        { id: 'coach-1', user_id: 'user-1' },
+        { id: 'coach-2', user_id: 'user-2' },
+      ],
+      error: null,
+    };
+    mocks.tableResults.golf_team_coach_staff = { data: [], error: null };
+    mocks.tableResults.users = { data: [], error: null, count: 2 };
+    const { items } = await fetchBriefing();
+    const hit = items.find((i) => i.headline.includes('inactive for over'));
+    expect(hit).toBeDefined();
+    expect(hit!.headline).toContain('2 coaches');
+    expect(hit!.headline).not.toContain('coachs');
+  });
+});
+
+describe('fetchBriefing — checkNewlyDormantTeams excludes demo teams', () => {
+  const [demoTeamId] = [...DEMO_TEAM_IDS];
+  const daysAgo = (d: number) => new Date(Date.now() - d * 86400_000).toISOString();
+
+  beforeEach(() => {
+    mocks.gteCalls.length = 0;
+    mocks.ltCalls.length = 0;
+    mocks.inCalls.length = 0;
+    mocks.tableResults = {};
+  });
+
+  it('never surfaces a demo team even with a leftover completed round inside the newly-dormant window', async () => {
+    mocks.tableResults.golf_teams = {
+      data: [
+        { id: demoTeamId, name: 'Demo University Golf' },
+        { id: 'real-team', name: 'Real State Golf' },
+      ],
+      error: null,
+    };
+    mocks.tableResults.golf_rounds = {
+      data: [
+        { team_id: demoTeamId, created_at: daysAgo(16) },
+        { team_id: 'real-team', created_at: daysAgo(16) },
+      ],
+      error: null,
+    };
+    const { items } = await fetchBriefing();
+    const hit = items.find((i) => i.headline.includes('just went dormant'));
+    expect(hit).toBeDefined();
+    expect(hit!.headline).toContain('Real State Golf');
+    expect(hit!.headline).not.toContain('Demo University');
   });
 });

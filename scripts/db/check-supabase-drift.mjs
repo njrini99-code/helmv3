@@ -21,6 +21,8 @@
  */
 import postgres from 'postgres';
 import { config as loadEnv } from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { resolve as resolvePath } from 'node:path';
 
 const POOLER_HOST = 'aws-0-us-east-1.pooler.supabase.com';
 
@@ -60,6 +62,31 @@ const REQUIRED_651_COLUMNS = [
   ['baseball_catching_events', 'catcher_id'],
   ['baseball_plate_appearances', 'data_context'],
   ['baseball_decision_log', 'detail'],
+];
+
+// 2026-08-25 reconciliation: these are literal fields selected by shipped
+// Baseball actions/read models. Checking only the old #651 subset gave a false
+// green while PostgREST rejected the acknowledgement, CoachHelm telemetry, and
+// workload reads in production. Keep this list limited to active query shapes,
+// not every optional field from the newer local event model.
+const REQUIRED_ACTIVE_BASEBALL_QUERY_COLUMNS = [
+  ['baseball_timeline_event_acks', 'team_id'],
+  ['baseball_timeline_event_acks', 'player_id'],
+  ['baseball_timeline_event_acks', 'acked_by'],
+  ['baseball_timeline_event_acks', 'acked_at'],
+  ['baseball_timeline_event_acks', 'user_id'],
+  ['baseball_timeline_event_acks', 'acknowledged_at'],
+  ['baseball_pitch_events', 'batter_id'],
+  ['baseball_pitch_events', 'player_id'],
+  ['baseball_pitch_events', 'pitch_type_classified'],
+  ['baseball_pitch_events', 'is_called_strike'],
+  ['baseball_pitch_events', 'count_state'],
+  ['baseball_workload_events', 'count'],
+  ['baseball_workload_events', 'high_intent_count'],
+  ['baseball_camp_registrations', 'registered_at'],
+  ['baseball_camp_registrations', 'attended_at'],
+  ['crm_coaches', 'role_level'],
+  ['crm_coaches', 'is_primary_contact'],
 ];
 
 // Historical golf drift (pre-2026-07 sessions) — kept as a framework
@@ -110,6 +137,26 @@ const CHECKS = [
       return missing.length === 0
         ? { ok: true, detail: `all ${REQUIRED_651_COLUMNS.length} columns present` }
         : { ok: false, detail: `missing: ${missing.join(', ')}` };
+    },
+  },
+  {
+    name: 'active Baseball acknowledgement, CoachHelm, and workload query columns exist',
+    async run(sql) {
+      const rows = await sql`
+        select table_name, column_name
+        from information_schema.columns
+        where table_schema = 'public'
+      `;
+      const present = new Set(rows.map((r) => `${r.table_name}.${r.column_name}`));
+      const missing = REQUIRED_ACTIVE_BASEBALL_QUERY_COLUMNS
+        .map(([t, c]) => `${t}.${c}`)
+        .filter((k) => !present.has(k));
+      return missing.length === 0
+        ? { ok: true, detail: `all ${REQUIRED_ACTIVE_BASEBALL_QUERY_COLUMNS.length} active-query columns present` }
+        : {
+            ok: false,
+            detail: `missing active-query columns: ${missing.join(', ')}. These fields are selected by timeline acknowledgements, CoachHelm telemetry, or the workload view.`,
+          };
     },
   },
   {
@@ -237,7 +284,9 @@ const CHECKS = [
       const rows = await sql`
         select p.proname
         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public' and pg_get_functiondef(p.oid) ilike '%public.rate_limits%'
+        where n.nspname = 'public'
+          and p.prokind = 'f'
+          and pg_get_functiondef(p.oid) ilike '%public.rate_limits%'
       `;
       return rows.length === 0
         ? { ok: true, detail: 'no function references public.rate_limits; public.rate_limits does not exist' }
@@ -268,7 +317,10 @@ const CHECKS = [
           and (proname = any(${ADMIN_ROLLUP_FUNCTIONS}) or proname = '__admin_rollup_b_gate')
       `;
       const inconsistent = rows
-        .filter((r) => !stripLineComments(r.def).includes('is_super_admin'))
+        .filter((r) => {
+          const executable = stripLineComments(r.def);
+          return !executable.includes('is_super_admin') && !executable.includes('__admin_rollup_b_gate');
+        })
         .map((r) => r.proname);
       return inconsistent.length === 0
         ? { ok: true, detail: 'every rollup gate (directly or via __admin_rollup_b_gate) checks is_super_admin()' }
@@ -325,19 +377,134 @@ const CHECKS = [
   },
 ];
 
+/**
+ * Serialize an interpolated value as a SQL literal for the Management API
+ * transport.
+ *
+ * The `postgres` driver sends `${…}` as a bind parameter; the Management API
+ * takes one SQL string, so interpolations must become literals. That is only
+ * safe because of what this script actually interpolates: two call sites, both
+ * passing `ADMIN_ROLLUP_FUNCTIONS`, a module constant of hardcoded function
+ * names. Nothing here is caller-supplied.
+ *
+ * It is still validated rather than trusted — a future edit that interpolates
+ * something dynamic should fail loudly here instead of silently building a
+ * concatenated query.
+ */
+const SAFE_IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
+
+function toSqlLiteral(value) {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (typeof item !== 'string' || !SAFE_IDENTIFIER.test(item)) {
+        throw new Error(
+          `drift guard: refusing to inline a non-identifier array value (${String(item)}). ` +
+            'The Management API transport only supports interpolating hardcoded identifiers.'
+        );
+      }
+    }
+    return `array[${value.map((v) => `'${v}'`).join(', ')}]`;
+  }
+  throw new Error(
+    `drift guard: unsupported interpolation type ${typeof value} for the Management API transport.`
+  );
+}
+
+/** Only read-only statements may cross this transport. */
+const READ_ONLY_START = /^\s*(select|with)\b/i;
+
+/**
+ * A `postgres`-shaped tagged-template handle backed by the Supabase Management
+ * API, so this guard can run wherever a Management access token exists even
+ * though no database password does.
+ *
+ * WHY THIS TRANSPORT EXISTS. Reaching production Postgres directly needs
+ * DATABASE_URL or SUPABASE_DB_PASSWORD. Neither is a repo secret (checked
+ * 2026-08-27: Actions holds ACCESS_TOKEN, SERVICE_ROLE_KEY, PROJECT_ID and
+ * ANON_KEY). SUPABASE_ACCESS_TOKEN authenticates the Management API, which can
+ * run SQL — so the credential to gate production drift in CI already exists; it
+ * simply was not a transport this script knew how to speak.
+ *
+ * The direct connection stays PREFERRED when available: it is a real Postgres
+ * session, and this path should never be the reason a genuine connection issue
+ * goes unnoticed.
+ *
+ * Every statement is asserted read-only before it is sent. This script only
+ * ever SELECTs, and the Management API executes with elevated privileges — so
+ * the assertion is what keeps a future edit from turning a drift guard into a
+ * production write path.
+ */
+function createManagementApiSql(projectId, accessToken) {
+  const endpoint = `https://api.supabase.com/v1/projects/${encodeURIComponent(projectId)}/database/query`;
+
+  const sql = async (strings, ...values) => {
+    const query = strings.reduce(
+      (acc, part, i) => acc + part + (i < values.length ? toSqlLiteral(values[i]) : ''),
+      ''
+    );
+    if (!READ_ONLY_START.test(query)) {
+      throw new Error('drift guard: refusing to send a non-SELECT statement over the Management API.');
+    }
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+    if (!response.ok) {
+      // Never the body verbatim — an auth failure echoes the request back.
+      throw new Error(`Management API returned ${response.status} ${response.statusText}`);
+    }
+    const rows = await response.json();
+    return Array.isArray(rows) ? rows : [];
+  };
+
+  // The direct driver exposes .end(); keep the shape so main() needs no branch.
+  sql.end = async () => {};
+  return sql;
+}
+
 async function main() {
   const connectionString = buildConnectionString();
-  if (!connectionString) {
+  const accessToken = process.env.SUPABASE_ACCESS_TOKEN;
+  const projectId = process.env.SUPABASE_PROJECT_ID;
+  const useManagementApi = !connectionString && Boolean(accessToken && projectId);
+
+  if (!connectionString && !useManagementApi) {
     console.error(
-      'Missing DATABASE_URL (or SUPABASE_PROJECT_ID + SUPABASE_DB_PASSWORD). This script only performs read-only SELECTs.'
+      'Missing DATABASE_URL (or SUPABASE_PROJECT_ID + SUPABASE_DB_PASSWORD), and no ' +
+        'SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_ID to fall back on. ' +
+        'This script only performs read-only SELECTs.'
     );
     process.exit(2);
   }
 
-  const sql = postgres(connectionString, { ssl: 'require', max: 1, prepare: false });
+  // Supabase production poolers require TLS. The local Docker/Postgres port
+  // intentionally does not, and forcing TLS there makes every read-only
+  // invariant look like a database failure before the first query executes.
+  const isLocalConnection = connectionString
+    ? /(?:localhost|127\.0\.0\.1|\[::1\])/.test(connectionString)
+    : false;
+  const sql = useManagementApi
+    ? createManagementApiSql(projectId, accessToken)
+    : postgres(connectionString, {
+        ssl: isLocalConnection ? false : 'require',
+        max: 1,
+        prepare: false,
+      });
   let failures = 0;
 
-  console.log('Supabase drift guard — read-only checks\n' + '='.repeat(60));
+  // Say which database was actually reached. "All checks passed" against the
+  // wrong target is the failure mode this line exists to prevent — a local
+  // rebuild proves the migrations are sound, not that production is.
+  const target = useManagementApi
+    ? `production via Management API (project ${projectId})`
+    : isLocalConnection
+      ? 'local stack (migrations rebuild)'
+      : 'remote database via direct connection';
+  console.log(`Supabase drift guard — read-only checks\ntarget: ${target}\n` + '='.repeat(60));
   try {
     for (const check of CHECKS) {
       try {
@@ -361,4 +528,18 @@ async function main() {
   console.log('All checks passed.');
 }
 
-main();
+// Run only when invoked directly. Without this guard, importing the module to
+// test its helpers would execute every check (and call process.exit) as a side
+// effect of the import — which is why the Management API transport and its
+// read-only assertion had no test until now.
+const invokedDirectly =
+  process.argv[1] !== undefined && fileURLToPath(import.meta.url) === resolvePath(process.argv[1]);
+
+if (invokedDirectly) {
+  main();
+}
+
+// Exported for scripts/__tests__/check-supabase-drift-transport.test.mjs. The
+// read-only assertion below is the only thing standing between a drift GUARD
+// and a production WRITE path, so it is tested rather than assumed.
+export { toSqlLiteral, createManagementApiSql, buildConnectionString };

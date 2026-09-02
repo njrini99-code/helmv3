@@ -40,6 +40,21 @@ function mockSupabaseForSave() {
         }),
       };
     }
+    if (table === 'baseball_team_members') {
+      // saveFullBoxScore now verifies every player_id in the payload is on the
+      // GAME's team before writing stats, so the roster probe has to answer.
+      // Every id these tests use is on team-1.
+      return {
+        select: () => ({
+          eq: () => ({
+            in: async () => ({
+              data: [{ player_id: 'p1' }, { player_id: 'p2' }, { player_id: 'p3' }],
+              error: null,
+            }),
+          }),
+        }),
+      };
+    }
     if (table === 'baseball_team_coach_staff') {
       // capabilities.ts requests the full row via .select('*') and resolves
       // with .maybeSingle() — primary coach holds every capability.

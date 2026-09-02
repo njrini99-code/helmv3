@@ -28,8 +28,13 @@ function SectionCardSkeleton({ titleWidth, rows = 2 }: { titleWidth: string; row
  *
  * Shape-matches FairwaySettingsGeneral: a `max-w-[1200px]` ViewHeader
  * masthead, the identity card (avatar + name/email), and a stack of
- * SectionCard panels (Personal info, Email, Password, Appearance,
- * Notifications) in the same order the live page renders them.
+ * SectionCard panels. FairwaySettingsGeneral's panel stack is role-conditional
+ * (coach vs. player render different subsets — Golf scoring/Event reminders/
+ * CoachHelm toggle/Team settings/Invite settings are coach-only, Player golf
+ * details is player-only), so no single loading state can mirror one exact
+ * render. The skeleton below approximates the coach-role stack, the longer of
+ * the two, so the fallback doesn't visibly collapse height on the common case
+ * before the page's own role-aware branches replace it.
  */
 export default function SettingsLoading() {
   return (
@@ -59,10 +64,21 @@ export default function SettingsLoading() {
             </div>
           </div>
 
+          {/* Personal info, Email, Password, Appearance, Distance units,
+              Haptics, Notifications, Golf scoring, Event reminders, CoachHelm
+              toggle, Team settings, Invite settings — the coach-role stack. */}
           <SectionCardSkeleton titleWidth="w-40" />
           <SectionCardSkeleton titleWidth="w-32" rows={1} />
           <SectionCardSkeleton titleWidth="w-44" />
-          <SectionCardSkeleton titleWidth="w-28" rows={3} />
+          <SectionCardSkeleton titleWidth="w-36" rows={1} />
+          <SectionCardSkeleton titleWidth="w-40" rows={1} />
+          <SectionCardSkeleton titleWidth="w-28" rows={1} />
+          <SectionCardSkeleton titleWidth="w-32" rows={3} />
+          <SectionCardSkeleton titleWidth="w-36" />
+          <SectionCardSkeleton titleWidth="w-40" />
+          <SectionCardSkeleton titleWidth="w-44" rows={1} />
+          <SectionCardSkeleton titleWidth="w-32" />
+          <SectionCardSkeleton titleWidth="w-28" rows={2} />
         </div>
       </div>
     </div>

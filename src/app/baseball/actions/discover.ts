@@ -2,7 +2,7 @@
 
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { createClient } from '@/lib/supabase/server';
-import type { Organization, Player } from '@/lib/types';
+import type { Organization, BaseballPlayer as Player } from '@/lib/types';
 import { logServerError } from '@/lib/server-error-logger';
 import {
   getPrivatePlayerIds,

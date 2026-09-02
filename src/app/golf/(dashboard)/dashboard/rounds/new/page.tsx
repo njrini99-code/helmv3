@@ -39,7 +39,7 @@ export default async function NewRoundPage() {
   return (
     <AnimatedPage>
       <AnimatedItem>
-        <NewRoundClient />
+        <NewRoundClient playerId={player.id} />
       </AnimatedItem>
     </AnimatedPage>
   );

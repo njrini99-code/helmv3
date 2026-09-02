@@ -63,6 +63,9 @@ export class FakeObjectStore {
   get(key: unknown) {
     return makeRequest(() => this.rows.get(key));
   }
+  getAll() {
+    return makeRequest(() => [...this.rows.values()]);
+  }
   delete(key: unknown) {
     this.rows.delete(key);
     return makeRequest(() => undefined);

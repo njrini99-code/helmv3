@@ -6,6 +6,10 @@ name: Playwright E2E
 # SECURITY: zero untrusted user input in run: blocks except github.sha.
 
 on:
+  # merge_group: required for GitHub's merge queue — a queued merge re-runs
+  # these checks on the speculative merge result; without this trigger the
+  # queue waits forever for contexts that never arrive and every merge times out.
+  merge_group:
   push:
     branches: [main]
   pull_request:
@@ -20,33 +24,30 @@ on:
         options:
           - "false"
           - "true"
-      screenshots:
-        description: Capture course picker screenshots
-        required: false
-        default: "false"
-        type: choice
-        options:
-          - "false"
-          - "true"
-      baseball_seeded:
-        description: Run seeded BaseballHelm smoke
-        required: false
-        default: "false"
-        type: choice
-        options:
-          - "false"
-          - "true"
 
 concurrency:
-  group: playwright-${{ github.ref }}
-  # Cancel superseded runs on PR branches (saves runner minutes, harmless there),
-  # but NEVER on main. Main pushes land in bursts — 2026-08-18 had three inside
-  # 32 minutes, two of them 43 seconds apart — and with a blanket
-  # cancel-in-progress each push killed the previous commit's E2E run. The
-  # result was a wall of `cancelled`, which reads as "not red" at a glance, so
-  # nothing surfaced that this suite had failed on every main run that actually
-  # finished. A commit on main must produce a verdict, even if a newer one is
-  # already on its way.
+  # On main, the group is per-COMMIT, so main pushes never contend with each
+  # other at all. On PR branches the group is per-ref, so a new push supersedes
+  # the old one.
+  #
+  # `cancel-in-progress: false` was NOT enough, and the reason is a GitHub
+  # behaviour the previous comment did not account for: that flag protects a run
+  # that is already IN PROGRESS, but GitHub keeps only ONE PENDING run per
+  # concurrency group. A newly queued run cancels the previously *pending* one
+  # regardless of the flag. So a burst of pushes still erased earlier commits'
+  # verdicts — just at the queued stage instead of the running one.
+  #
+  # Observed live on 2026-08-19: run 32288775383 (b90f4b8a8) was cancelled 3
+  # minutes after it queued, superseded by the next push. `gh run view --json
+  # jobs` returned `{"jobs":[]}` — zero jobs ever started, which is what proves
+  # it died queued rather than running.
+  #
+  # This matters more than runner minutes. A wall of `cancelled` reads as "not
+  # red" at a glance, which is exactly how it went unnoticed that this suite had
+  # failed on every main run that actually finished (2026-08-16 onward). A
+  # commit on main must produce a verdict, even if a newer one is already on its
+  # way — and now each one gets its own lane to do it in.
+  group: playwright-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
@@ -57,18 +58,13 @@ env:
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
   E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
   E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
-  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-  E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
-  E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
-  E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
-  E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
   COMMIT_SHA: ${{ github.sha }}
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
   smoke:
     name: Smoke checks
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -91,14 +87,16 @@ jobs:
 
   e2e:
     name: Playwright (chromium)
+    # MANUAL ONLY (owner 2026-08-20): chromium E2E no longer runs automatically
+    # on push to main — it was PR-skipped already and its post-merge run also
+    # seeded PRODUCTION fixtures. Trigger on demand via the workflow_dispatch
+    # "Run full Playwright E2E suite" input when you actually want it.
     if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && inputs.full_e2e == 'true')
+      github.event_name == 'workflow_dispatch' && inputs.full_e2e == 'true'
     runs-on: ubuntu-latest
     # MUST stay comfortably above the `timeout <N>m` on "Run Playwright
     # tests" below, plus the ~25min of setup that precedes it (npm ci,
-    # browser install, next build, two seed runs, the blocking smoke, and
-    # the route crawler). When the JOB timeout fires first, GitHub cancels
+    # browser install, next build, and the blocking mobile smoke). When the JOB timeout fires first, GitHub cancels
     # the job outright and the `if: always()` artifact-upload steps never
     # run — which is how #953 produced three consecutive `cancelled` runs
     # with no report to diagnose from. Step timeout < job timeout is what
@@ -109,35 +107,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-
-      - name: Compute BaseballHelm auth readiness
-        id: baseball-auth-ready
-        run: |
-          missing=()
-          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && missing+=("SUPABASE_SERVICE_ROLE_KEY")
-          [ -z "$E2E_BASEBALL_COACH_EMAIL" ] && missing+=("E2E_BASEBALL_COACH_EMAIL")
-          [ -z "$E2E_BASEBALL_COACH_PASSWORD" ] && missing+=("E2E_BASEBALL_COACH_PASSWORD")
-          [ -z "$E2E_BASEBALL_PLAYER_EMAIL" ] && missing+=("E2E_BASEBALL_PLAYER_EMAIL")
-          [ -z "$E2E_BASEBALL_PLAYER_PASSWORD" ] && missing+=("E2E_BASEBALL_PLAYER_PASSWORD")
-
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            printf 'missing=%s\n' "${missing[*]}" >> "$GITHUB_OUTPUT"
-            echo "BaseballHelm auth secrets unavailable: ${missing[*]}"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "missing=" >> "$GITHUB_OUTPUT"
-            echo "BaseballHelm auth secrets available."
-          fi
-
-      - name: Fail missing BaseballHelm secrets on main runs
-        if: steps.baseball-auth-ready.outputs.ready != 'true'
-        env:
-          MISSING_BASEBALL_SECRETS: ${{ steps.baseball-auth-ready.outputs.missing }}
-        run: |
-          echo "::error::Missing required secret(s): ${MISSING_BASEBALL_SECRETS}"
-          echo "Main-branch Playwright needs BaseballHelm E2E secrets for seeded smoke."
-          exit 1
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -166,77 +135,30 @@ jobs:
       #
       # The per-PR required gate (.github/workflows/ci.yml's
       # `baseball-auth-smoke`) was moved to a throwaway local stack on
-      # 2026-07-30. This job was NOT, and the reason is specific: it runs the
-      # full chromium suite, including the golf specs that authenticate as
-      # E2E_GOLF_EMAIL against real golf data. A job has one
-      # NEXT_PUBLIC_SUPABASE_URL, so pointing the baseball half at loopback would
-      # point the golf half there too, where no golf fixture exists. Rehoming
-      # this job means seeding golf locally first — a separate piece of work.
-      #
-      # What changed here is honesty, not target: `scripts/seed-baseball-e2e.ts`
-      # had NO target guard at all, so this was a silent production write. Both
-      # scripts now refuse a non-local target unless it is named, which is why
-      # `--allow-prod` appears below. If these steps ever start failing with
-      # "REFUSING TO SEED", that is the guard working — check the URL before
-      # adding a flag.
-      #
-      # This job runs on push to main and manual dispatch, never on a PR, so
-      # nothing here writes to production on behalf of an unreviewed change.
-      - name: Seed BaseballHelm E2E fixtures into PRODUCTION (issue 375)
-        if: env.SUPABASE_SERVICE_ROLE_KEY != ''
-        run: npm run seed:baseball:e2e -- --confirm --allow-prod
-
-      - name: Seed BaseballHelm CI accounts into PRODUCTION
-        if: steps.baseball-auth-ready.outputs.ready == 'true'
-        run: npm run seed:baseball:ci -- --allow-prod
-
+      # BASEBALL IS GONE FROM THIS WORKFLOW (owner, 2026-08-20: "get rid of
+      # the playwright baseball thing" / "stop seeding baseball every time").
+      # The two steps that stood here seeded PRODUCTION baseball fixtures
+      # (--allow-prod) before every run — which, while this job still ran on
+      # push, meant every merge to main wrote to the live database. The
+      # workflow env no longer carries SUPABASE_SERVICE_ROLE_KEY or any
+      # E2E_BASEBALL_* secret, so this workflow cannot write to production
+      # even if a step is added back by mistake — the specs self-skip without
+      # them. Baseball E2E coverage lives in ci.yml's baseball-auth-smoke,
+      # which seeds a LOCAL throwaway stack and gates PRs via CI aggregate.
       # One invocation = one webServer lifecycle (CI serves the production
       # build via `next start` — see playwright.config.ts). The mobile viewport
       # regression projects (blocking; e2e/mobile-viewports.spec.ts — the
       # #799/#806 phone-width defect classes at 320/390/430px) ride the same
       # Playwright process as the mandatory smoke instead of booting a second
       # webServer that could hit port-3000 contention.
-      - name: Run BaseballHelm mandatory smoke + mobile viewport regression (blocking)
-        if: steps.baseball-auth-ready.outputs.ready == 'true'
+      - name: Run mobile viewport regression (blocking)
         run: |
           npx playwright test \
             --project=chromium \
-            --project=baseball-coach \
-            --project=baseball-player \
             --project=mobile-public \
             --project=mobile-coach \
             --project=mobile-player \
-            e2e/baseball-onboarding-smoke.spec.ts \
-            e2e/baseball-smoke.spec.ts \
             e2e/mobile-viewports.spec.ts
-
-      # #373: authenticated route crawler — discovers visible coach/player
-      # nav links from the live DOM and asserts none of them 404/500, bounce
-      # to /login, redirect wrong-sport, render an error boundary, get stuck
-      # on a loading spinner, or render near-blank. Kept as its own step
-      # (separate from the mandatory smoke above) since DOM-driven discovery
-      # and the stuck-spinner/near-blank heuristics are new, unproven surface
-      # area — isolating it here means a flake in this step can't be
-      # confused with the already-proven mandatory smoke failing. This job
-      # is advisory (not a required check), so a real failure here surfaces
-      # without blocking any merge.
-      - name: Run BaseballHelm authenticated route crawler (advisory)
-        if: steps.baseball-auth-ready.outputs.ready == 'true'
-        continue-on-error: true
-        run: |
-          npx playwright test \
-            --project=baseball-coach \
-            --project=baseball-player \
-            e2e/baseball-route-crawler.spec.ts
-
-      - name: Upload route crawler report
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: baseball-route-crawler-report
-          path: test-results/baseball-route-crawler-*-report.json
-          retention-days: 3
-          if-no-files-found: ignore
 
       # NOTE: previously `|| echo "Playwright suite has failures..."`, which
       # masked the exit code for every spec in this job — a real failure
@@ -255,8 +177,6 @@ jobs:
       # the second only ever bought us a slower red. The blocking smoke step
       # above deliberately keeps the full 2 retries.
       - name: Run Playwright tests
-        env:
-          PLAYWRIGHT_BASEBALL_SEEDED: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && '1' || '' }}
         run: timeout 60m npx playwright test --project=chromium --retries=1
 
       - name: Upload Playwright report
@@ -274,116 +194,3 @@ jobs:
           name: playwright-results-json
           path: test-results/
           retention-days: 3
-
-  picker-screenshots:
-    name: Course picker screenshots
-    if: github.event_name == 'workflow_dispatch' && inputs.screenshots == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Build (the suite serves this build via `next start`)
-        run: npm run build
-
-      - name: Run course-library spec (capture screenshots)
-        # No `|| echo`: masking the exit code made this job report SUCCESS while
-        # its own log said tests failed — the same defect already fixed for the
-        # chromium job above (#812). This job is advisory, not a required check,
-        # so an honest red here cannot block a merge; it only makes the badge
-        # mean what it says. Artifacts still upload via `if: always()` below.
-        run: npx playwright test course-library.spec.ts --reporter=line
-
-      - name: Upload course-picker screenshots
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: course-picker-screenshots
-          path: e2e-screenshots/
-          retention-days: 3
-          if-no-files-found: ignore
-
-      - name: Upload Playwright report (picker)
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: picker-playwright-report
-          path: playwright-report/
-          retention-days: 3
-
-  baseball-smoke:
-    name: BaseballHelm seeded smoke (advisory)
-    if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && inputs.baseball_seeded == 'true')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      PLAYWRIGHT_BASEBALL_SEEDED: ${{ secrets.PLAYWRIGHT_BASEBALL_SEEDED }}
-      E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
-      E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
-      E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
-      E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Build (the suite serves this build via `next start`)
-        run: npm run build
-
-      - name: Run baseball-smoke spec
-        # Same unmasking as the course-library step above. Observed 2026-08-18:
-        # this job reported conclusion=success while its log read "2 failed".
-        run: npx playwright test baseball-stats-smoke.spec.ts --reporter=line
-
-      - name: Upload Playwright report (baseball-smoke)
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: baseball-smoke-playwright-report
-          path: playwright-report/
-          retention-days: 3
-          if-no-files-found: ignore

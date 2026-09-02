@@ -13,14 +13,15 @@ export default function Loading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas font-fw-sans')}>
       <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
-        {/* ViewHeader skeleton — eyebrow · title · description · primary action */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1 space-y-3">
-            <Skeleton className="h-3 w-28" />
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64" />
-          </div>
-          <Skeleton className="h-11 w-40 rounded-fw-md" />
+        {/* ViewHeader skeleton — eyebrow · title · description.
+            No primary-action skeleton: the create CTA is coach-only
+            (FairwayAnnouncements.tsx:216-218), and this fallback renders
+            before role is known — a button that vanishes for players is
+            worse than no button. */}
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64" />
         </div>
 
         {/* Card feed skeleton — mirrors the flex flex-col gap-3 feed */}

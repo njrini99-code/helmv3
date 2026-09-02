@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import type { Page as AxePage } from 'playwright-core';
 
 /**
  * Accessibility audit for the admin CRM via axe-core.
@@ -20,6 +21,13 @@ import AxeBuilder from '@axe-core/playwright';
 
 const CRM_PATH = '/golf/admin/crm';
 
+// axe-core's peer type can resolve to a separately installed patch release of
+// playwright-core. The page is supplied by the same Playwright 1.62 runtime;
+// keep that package-layout adapter local to these accessibility tests.
+function toAxePage(page: import('@playwright/test').Page): AxePage {
+  return page as unknown as AxePage;
+}
+
 test(`a11y — admin CRM (${CRM_PATH}, resilient to auth redirect)`, async ({ page }) => {
   await page.goto(CRM_PATH);
 
@@ -28,7 +36,7 @@ test(`a11y — admin CRM (${CRM_PATH}, resilient to auth redirect)`, async ({ pa
   // flake-prone with polling; the 5s ceiling prevents an indefinite hang.
   await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 
-  const { violations } = await new AxeBuilder({ page })
+  const { violations } = await new AxeBuilder({ page: toAxePage(page) })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     // Exclude third-party widgets we don't control.
     .exclude('[data-vercel-toolbar]')

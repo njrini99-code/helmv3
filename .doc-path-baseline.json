@@ -1,0 +1,5 @@
+{
+  "$comment": "Paths named in the navigation docs that do not resolve. May only go DOWN. Do NOT bulk-repoint by basename — see scripts/check-doc-path-drift.mjs.",
+  "total": 0,
+  "entries": []
+}

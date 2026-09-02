@@ -20,9 +20,23 @@ import { logServerError } from '@/lib/server-error-logger';
  *   3. Add to Vercel env (Preview + Production)
  *   4. Deploy — Inngest auto-syncs functions from the production URL.
  */
+/**
+ * The canonical production domain is deliberately code-owned.
+ *
+ * `INNGEST_SERVE_ORIGIN` otherwise overrides the URL registered with Inngest.
+ * A stale preview/deployment URL there makes Inngest call an old deployment,
+ * whose credentials can legitimately differ from the live app. That produces
+ * the misleading loop of rotating valid keys while signature validation keeps
+ * failing. Preview and local environments retain normal request-based origin
+ * discovery.
+ */
+const productionServeOrigin =
+  process.env.VERCEL_ENV === 'production' ? 'https://helmsportslabs.com' : undefined;
+
 const handlers = serve({
   client: inngest,
   functions,
+  ...(productionServeOrigin ? { serveOrigin: productionServeOrigin } : {}),
 });
 
 /**
@@ -101,14 +115,28 @@ function quietUnsignedProbes(handler: InngestHandler, method: string): InngestHa
           : null;
         const expired = skewSeconds !== null && skewSeconds > 300;
 
+        // `skewSeconds` is DELIBERATELY not interpolated into either message.
+        // admin_events fingerprints hash the first 80 characters of the
+        // message, and `(signature was ${skewSeconds}s old` sits at roughly
+        // character 70 — so a one-digit measurement landed inside the hashed
+        // prefix and split one continuous outage into five incidents. Measured
+        // on production 2026-08-27: 450 of the 751 error events in 30 days were
+        // this single fault wearing 5 fingerprints, purely because the elapsed
+        // seconds read 0, 1, 2, 3 or 4. The normaliser cannot save this — it
+        // collapses UUIDs, long hex and integers of 5+ digits, and a 1-digit
+        // number is none of those.
+        //
+        // Same lesson already written down for Cloudflare Ray IDs in
+        // describe-error.ts: a message that is fingerprinted must be STABLE
+        // across occurrences. The number is still reported, on `errorHint`
+        // (rendered by the Bridge's Forensics panel) and `extra` — neither of
+        // which is hashed — so nothing is lost from triage.
         await logServerError(
           expired
-            ? `[inngest] A SIGNED request was rejected because its signature was ${skewSeconds}s old, past the ` +
+            ? '[inngest] A SIGNED request was rejected because its signature was past the ' +
               "SDK's 5-minute tolerance. This is a clock/latency problem, NOT a bad key — do not reissue " +
               'INNGEST_SIGNING_KEY on the strength of this line.'
             : '[inngest] A SIGNED request failed signature validation' +
-              (skewSeconds === null ? '' : ` (signature was ${skewSeconds}s old, well inside the 5-minute window, ` +
-                'so this is a key mismatch and not clock skew)') +
               ' — the INNGEST_SIGNING_KEY in Vercel Production does not match the Inngest app that is calling us. ' +
               'Corroborating evidence, not inference: these land within seconds of every production deploy, which ' +
               'is Inngest Cloud re-syncing; and INNGEST_EVENT_KEY from the same pair is rejected too — every round ' +
@@ -119,7 +147,35 @@ function quietUnsignedProbes(handler: InngestHandler, method: string): InngestHa
               'Vercel Production — or delete the manual overrides and let the Inngest↔Vercel integration manage ' +
               'them — then redeploy, because Vercel bakes env vars in at build time. ' +
               'Until then durable jobs are degraded: round analysis runs inline, with no retry and no crash recovery.',
-          { action: 'inngest.signatureValidation', featureArea: 'integrations' },
+          {
+            action: 'inngest.signatureValidation',
+            featureArea: 'integrations',
+            // A credential that IS present and IS being rejected — the exact
+            // definition of provider-fault kind `invalid_credential`. Setting
+            // it explicitly rather than leaving it to provider-fault.ts's
+            // pattern match, which near-misses this text: its rule reads
+            // /signature verification failed/ and this route says "failed
+            // signature validation". That one-word gap is why all 450 of these
+            // rows carry NO errorCode today while the client-side send path's
+            // 12 rows are correctly tagged `provider_inngest_invalid_credential`
+            // — same root cause, two different groups, one of them invisible to
+            // the Jobs panel, which detects Inngest rejection with
+            // `metadata->>errorCode LIKE 'provider_inngest_%'`.
+            //
+            // buildIncidentSignature() gives any `provider_`-prefixed code its
+            // own branch, hashing `provider::<code>` alone — so this also folds
+            // the route's failures in with the send path's across call site,
+            // route, wording and severity. One upstream fault, one incident.
+            //
+            // The EXPIRED branch deliberately gets no provider code: a
+            // signature past the 5-minute tolerance is a clock/latency problem
+            // on our side, not the provider rejecting a credential. Tagging it
+            // `invalid_credential` would tell an operator to reissue keys — the
+            // exact advice its own message warns against.
+            ...(expired ? {} : { errorCode: 'provider_inngest_invalid_credential' }),
+            ...(skewSeconds === null ? {} : { errorHint: `signature was ${skewSeconds}s old when checked` }),
+            extra: { skewSeconds, expired },
+          },
         );
       }
 

@@ -18,11 +18,15 @@ export interface StatsRow {
   rounds_in_calculation: number | null;
   scoring_average: number | null;
   scoring_average_vs_par: number | null;
-  strokes_gained_total: number | null;
-  strokes_gained_tee: number | null;
-  strokes_gained_approach: number | null;
-  strokes_gained_around_green: number | null;
-  strokes_gained_putting: number | null;
+  // Per-round SG averages, not the season-cumulative strokes_gained_* SUMs
+  // that also live on golf_player_stats_cache — see #1297/#1300. This file's
+  // gap/threshold constants (0.5, 0.8, 55%) were authored for per-round
+  // scale and were being fed cumulative totals.
+  sg_total_per_round: number | null;
+  sg_tee_per_round: number | null;
+  sg_approach_per_round: number | null;
+  sg_around_green_per_round: number | null;
+  sg_putting_per_round: number | null;
   gir_percentage: number | null;
   driving_accuracy_percentage: number | null;
   scrambling_percentage: number | null;
@@ -161,8 +165,8 @@ function detectShortGameWeakness(
   const sgArgValues: Array<{ id: string; val: number }> = [];
 
   for (const [id, stats] of statsMap) {
-    if (stats.strokes_gained_around_green !== null) {
-      sgArgValues.push({ id, val: stats.strokes_gained_around_green });
+    if (stats.sg_around_green_per_round !== null) {
+      sgArgValues.push({ id, val: stats.sg_around_green_per_round });
     }
   }
 
@@ -207,16 +211,16 @@ function detectScoringComposition(
   const patterns: MinedPattern[] = [];
 
   const categories = [
-    { key: 'strokes_gained_putting', label: 'Putting' },
-    { key: 'strokes_gained_tee', label: 'Off the Tee' },
-    { key: 'strokes_gained_approach', label: 'Approach' },
+    { key: 'sg_putting_per_round', label: 'Putting' },
+    { key: 'sg_tee_per_round', label: 'Off the Tee' },
+    { key: 'sg_approach_per_round', label: 'Approach' },
   ] as const;
 
   for (const cat of categories) {
     const values: Array<{ id: string; sgCat: number; sgTotal: number }> = [];
     for (const [id, stats] of statsMap) {
       const catVal = stats[cat.key];
-      const total = stats.strokes_gained_total;
+      const total = stats.sg_total_per_round;
       if (catVal !== null && total !== null && total !== 0) {
         values.push({ id, sgCat: catVal, sgTotal: total });
       }

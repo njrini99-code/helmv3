@@ -21,7 +21,7 @@
  * no warm-* / primary-* legacy classes, no surface-matte / surface-stone.
  * ========================================================================== */
 
-import { useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
@@ -45,7 +45,6 @@ import {
   IconCheck,
   IconRefresh,
   IconLink,
-  IconUsers,
   IconCalendar,
   IconPlus,
 } from '@/components/icons';
@@ -55,6 +54,12 @@ import {
   regenerateJoinCode,
   createStaffInvite,
   addSecondTeam,
+  listPendingAssistantCoaches,
+  listTeamCoachingStaff,
+  type TeamCoachingStaffMember,
+  approvePendingAssistantCoach,
+  declinePendingAssistantCoach,
+  type PendingAssistantCoach,
 } from '@/app/golf/actions/teams';
 import { setActiveTeam } from '@/app/golf/actions/team-switcher';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -126,7 +131,11 @@ function defaultSeason(): string {
 
 const EM_DASH = '—';
 
-export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSettingsProps) {
+// `coach` stays in the props interface for the server page that passes it, but
+// is no longer destructured: its last consumer was the "Managed by" footer,
+// which named the VIEWER rather than the head coach and was replaced by the
+// Coaching staff section.
+export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
@@ -712,7 +721,11 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
         </Surface>
       </section>
 
+      {/* ── Coaching staff ──────────────────────────────────────────────── */}
+      <CoachingStaffSection teamId={team?.id ?? null} />
+
       {/* ── Staff invitations ───────────────────────────────────────────── */}
+      <PendingAssistantsSection teamId={team?.id ?? null} />
       <StaffInviteSection teamId={team?.id ?? null} />
 
       {/* ── Team information (editable) ─────────────────────────────────── */}
@@ -883,15 +896,10 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
         )}
       </section>
 
-      {/* Quiet coach attribution — honest about what we know. */}
-      <p
-        className={cn(
-          'mt-8 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary',
-        )}
-      >
-        <IconUsers size={13} aria-hidden />
-        Managed by {coach.full_name || EM_DASH}
-      </p>
+      {/* The old footer here said "Managed by {viewing coach}" — it named
+          whoever happened to be LOOKING at the page, so an assistant saw the
+          team as managed by themselves. The Coaching staff section above now
+          carries attribution with real roles. */}
     </div>
   );
 }
@@ -910,9 +918,203 @@ export function FairwayTeamSettings({ coach, team, programTeams }: FairwayTeamSe
  * token. The recipient cannot change it, and the team join code can never
  * confer staff access — see the header of src/lib/golf/staff-invite.ts.
  */
+/**
+ * Approve the assistants who signed up with THIS TEAM'S CODE.
+ *
+ * The head coach hands out one code. Whoever types it picks Player or
+ * Assistant coach; players attach immediately, assistants land here. Until a
+ * row appears in golf_team_coach_staff they hold nothing — both
+ * is_golf_team_coach and is_golf_team_head_coach are EXISTS() over that table
+ * and read nothing else — so this button IS the grant.
+ *
+ * That is what lets the single-code flow ship without re-opening the
+ * escalation reverted in 266d02d91: every player on the roster holds the team
+ * code, so the choice may not grant itself.
+ */
+/**
+ * The coaching staff, visibly ON the team.
+ *
+ * Added 2026-08-20: assistants now join with full access at signup — and were
+ * then visible nowhere. The head coach's only evidence an assistant had joined
+ * was a one-time notification; this list is the durable answer to "did it put
+ * him on the team?".
+ */
+function CoachingStaffSection({ teamId }: { teamId: string | null }) {
+  const [staff, setStaff] = useState<TeamCoachingStaffMember[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!teamId) return;
+    let cancelled = false;
+    void listTeamCoachingStaff(teamId).then((result) => {
+      if (cancelled) return;
+      if (result.success) setStaff(result.staff ?? []);
+      setLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [teamId]);
+
+  // Nothing readable (not staffed, or a failed read): render nothing rather
+  // than an empty box or a false "no staff".
+  if (!teamId || !loaded || staff.length === 0) return null;
+
+  return (
+    <section className="mt-10">
+      <Surface elevation="border" padding="md" className="flex flex-col gap-4">
+        <div>
+          <h2 className="font-fw-display text-h3 text-text-primary">Coaching staff</h2>
+          <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
+            Everyone with coaching access to this team.
+          </p>
+        </div>
+        <ul className="flex flex-col gap-2">
+          {staff.map((member) => (
+            <li
+              key={member.coachId}
+              className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-fw-sans text-body text-text-primary">
+                  {member.fullName || EM_DASH}
+                </p>
+                {member.title ? (
+                  <p className="truncate font-fw-sans text-caption text-text-tertiary">
+                    {member.title}
+                  </p>
+                ) : null}
+              </div>
+              <span
+                className={cn(
+                  'shrink-0 rounded-full px-2.5 py-1 font-fw-sans text-caption font-medium',
+                  member.role === 'head_coach'
+                    ? 'bg-accent-subtle text-text-primary'
+                    : 'bg-surface-sunken text-text-secondary',
+                )}
+              >
+                {member.role === 'head_coach' ? 'Head coach' : 'Assistant coach'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Surface>
+    </section>
+  );
+}
+
+function PendingAssistantsSection({ teamId }: { teamId: string | null }) {
+  const [pending, setPending] = useState<PendingAssistantCoach[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!teamId) return;
+    setLoading(true);
+    try {
+      const result = await listPendingAssistantCoaches(teamId);
+      if (!result.success) {
+        // Not a head coach of this team is guidance, not a fault — the section
+        // simply stays empty for assistants rather than showing them an alarm.
+        setError(result.error ?? null);
+        setPending([]);
+        return;
+      }
+      setError(null);
+      setPending(result.pending ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, [teamId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const act = async (coachId: string, approve: boolean) => {
+    if (!teamId) return;
+    setBusyId(coachId);
+    try {
+      const result = approve
+        ? await approvePendingAssistantCoach(coachId, teamId)
+        : await declinePendingAssistantCoach(coachId, teamId);
+      if (!result.success) {
+        fairwayToast.error(result.error ?? 'That did not go through.');
+        return;
+      }
+      fairwayToast.success(approve ? 'Assistant coach approved' : 'Request declined');
+      // Optimistically drop the row, then reconcile against the server.
+      setPending((rows) => rows.filter((row) => row.coachId !== coachId));
+      void refresh();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // Nothing waiting, still loading, or the viewer is not a head coach: render
+  // nothing at all rather than an empty box on every visit.
+  if (!teamId || loading || error || pending.length === 0) return null;
+
+  return (
+    <section className="mt-10">
+      <Surface elevation="border" padding="md" className="flex flex-col gap-4">
+        <div>
+          <h2 className="font-fw-display text-h3 text-text-primary">
+            Assistant coach requests
+            <span className="ml-2 rounded-full bg-accent-subtle px-2 py-0.5 align-middle font-fw-mono text-caption text-text-primary">
+              {pending.length}
+            </span>
+          </h2>
+          <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
+            These people signed up with your team code and chose assistant coach.
+            They can see nothing until you approve them.
+          </p>
+        </div>
+
+        <ul className="flex flex-col gap-2">
+          {pending.map((row) => (
+            <li
+              key={row.coachId}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border-subtle p-3"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-fw-sans text-body text-text-primary">
+                  {row.fullName?.trim() || row.email || 'Unnamed coach'}
+                </p>
+                {row.fullName?.trim() && row.email && (
+                  <p className="truncate font-fw-sans text-caption text-text-tertiary">{row.email}</p>
+                )}
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  variant="secondary"
+                  busy={busyId === row.coachId}
+                  onClick={() => void act(row.coachId, false)}
+                >
+                  Decline
+                </Button>
+                <Button
+                  variant="primary"
+                  busy={busyId === row.coachId}
+                  onClick={() => void act(row.coachId, true)}
+                >
+                  Approve
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Surface>
+    </section>
+  );
+}
+
+
 function StaffInviteSection({ teamId }: { teamId: string | null }) {
   const [role, setRole] = useState<StaffInviteRole>('coach');
   const [link, setLink] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -922,6 +1124,7 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
     setBusy(true);
     setError(null);
     setLink(null);
+    setCode(null);
     try {
       const result = await createStaffInvite(teamId, role);
       if (!result.success || !result.token) {
@@ -931,6 +1134,7 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
         return;
       }
       setLink(`${window.location.origin}/golf/staff/join/${result.token}`);
+      setCode(result.code ?? null);
     } finally {
       setBusy(false);
     }
@@ -952,8 +1156,9 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
         <div>
           <h2 className="font-fw-display text-h3 text-text-primary">Staff invitations</h2>
           <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
-            Add an assistant coach or a program admin. Staff need their own invite —
-            the team code is for players and never grants staff access.
+            Assistant coaches can simply sign up with the team code. Use an
+            invite to add a program admin, or to hand an assistant a direct
+            link instead of the code.
           </p>
         </div>
 
@@ -983,6 +1188,30 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
           <InlineNotice tone="warning" title="Could not create invitation">
             {error}
           </InlineNotice>
+        )}
+
+        {code && (
+          <div className="flex flex-col gap-2">
+            <p className="font-fw-sans text-body-sm text-text-secondary">
+              They can enter this code on the sign-up screen — it already carries
+              the role, so there is nothing for them to pick.
+            </p>
+            <code className="rounded-card border border-border-subtle bg-surface p-3 text-center font-fw-mono text-h3 tracking-[0.2em] text-text-primary">
+              {code}
+            </code>
+            <div>
+              <Button
+                variant="secondary"
+                leftIcon={<IconCopy size={16} />}
+                onClick={() => void navigator.clipboard.writeText(code).then(
+                  () => fairwayToast.success('Staff code copied'),
+                  () => fairwayToast.error('Could not copy to clipboard'),
+                )}
+              >
+                Copy staff code
+              </Button>
+            </div>
+          </div>
         )}
 
         {link && (

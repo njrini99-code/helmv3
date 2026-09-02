@@ -1,0 +1,31 @@
+# Make clones deterministic across platforms.
+#
+# .git/config here sets `ignorecase = true` and `precomposeunicode = true`
+# (macOS defaults). Those are local settings and do NOT travel with a clone, so
+# a Linux checkout can disagree about path casing and Unicode normalisation
+# with no error — the kind of difference that shows up as a phantom diff or a
+# module that resolves locally and 404s in CI.
+
+* text=auto eol=lf
+
+# Binary — never normalise, never diff as text.
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.webp      binary
+*.pdf       binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.jar       binary
+*.keystore  binary
+
+# Generated: 690 KB of Supabase types. Collapse it in diffs so a regen does not
+# bury a real change, but keep it TRACKED and readable — CLAUDE.md rule 3 tells
+# agents to read it, and .cursorignore was un-ignoring it for the same reason.
+src/lib/types/database.ts linguist-generated=true
+
+# Lockfile: same reasoning.
+package-lock.json linguist-generated=true

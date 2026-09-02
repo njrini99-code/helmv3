@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { IconLink, IconCheck, IconCopy } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/sonner';
+import { generateInviteCode } from '@/lib/security/invite-code';
 
 interface InviteModalProps {
   teamId: string;
@@ -38,8 +39,12 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
     try {
       const supabase = createClient();
 
-      // Generate a unique code
-      const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+      // CSPRNG, not Math.random(). Possession of this code is the ENTIRE
+      // authorization check for joining the team, which makes it a bearer
+      // credential rather than an identifier — and Math.random()'s state is
+      // recoverable from a few observed outputs, so codes minted from it are
+      // derivable from other codes (CWE-338, security scan finding F9).
+      const code = generateInviteCode();
 
       // Calculate expiration date
       const expiresAt = new Date();

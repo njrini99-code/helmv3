@@ -5,10 +5,19 @@
  * Fairway · Calendar · FairwayCalendarMemberRail — coach availability filter
  * ----------------------------------------------------------------------------
  * The Fairway-native re-skin of the legacy CalendarAvatarSidebar. A horizontal
- * avatar rail (coach-only) that multi-selects up to 8 team members (color-coded)
- * to overlay their schedules on the calendar — "ALL" shows the team calendar,
- * picking players switches to the color-coded availability overlay so the coach
- * can see a player's schedule / find common free time.
+ * avatar rail (coach-only) that multi-selects team members to overlay their
+ * schedules on the calendar — "ALL" selects every roster member (their
+ * combined availability overlay), picking specific players narrows it to just
+ * them, so the coach can see one player's schedule / find common free time.
+ * Deselecting everything (clicking ALL again, or Clear) drops back to the
+ * plain team calendar.
+ *
+ * Manual selection stays capped at 8 (one per color tint, see MAX_SELECTION
+ * below) so each selected player reads as a distinct color. "ALL" bypasses
+ * that cap — past 8 simultaneous selections there is no unambiguous color
+ * left to assign, so those members render identified by initials + a
+ * per-person tint (the same fallback FairwayMonthGrid already uses for
+ * class-owner chips) instead of a numbered palette color.
  *
  * Reuses the EXACT legacy PLAYER_COLORS palette so colors match across the app.
  * Selection state is parent-owned; this is presentation only.
@@ -103,21 +112,37 @@ export function FairwayCalendarMemberRail({
 
   if (teamMembers.length === 0) return null;
 
-  const allSelected = selectedPlayerIds.length === 0;
+  // Two distinct "nothing picked" concepts: `noneSelected` is the DEFAULT
+  // state (team calendar, no overlay) and gates the quiet initials key below.
+  // `isAllSelected` is "every roster member is in the overlay" — the state
+  // ALL now produces — and drives the pill's own pressed/fill styling. They
+  // are different states (empty vs. full), not two names for the same thing.
+  const noneSelected = selectedPlayerIds.length === 0;
+  const isAllSelected = teamMembers.every((m) => selectedPlayerIds.includes(m.id));
+
   // At the cap, `toggle` below silently drops a click on any UNSELECTED chip.
   // Five of the nine teams in production carry rosters larger than
   // MAX_SELECTION (Hampden-Sydney 15, Shenandoah 12, Guilford 12, UNCW 10,
   // Lynchburg 10 — measured 2026-08-17), so on most teams the trailing chips
   // become dead controls the moment eight are picked. The cap itself is
-  // correct — it equals AVATAR_TINT_COUNT, one selectable member per tint,
-  // which is what keeps the overlay legible — so the fix is to SAY so rather
-  // than to raise it (raising it is the open design question on #1470).
-  const atCap = selectedPlayerIds.length >= MAX_SELECTION;
+  // correct for MANUAL selection — it equals AVATAR_TINT_COUNT, one
+  // selectable member per tint, which is what keeps the overlay legible — so
+  // the fix there is to SAY so rather than to raise it.
+  //
+  // ALL is a different path (#1470): it bypasses the cap outright rather than
+  // silently refusing it, because past 8 selections the per-index color
+  // scheme has already given way to the initials-only fallback below — one
+  // more selected member doesn't make that fallback any less legible. Once a
+  // selection is already over the cap (only reachable via ALL), individual
+  // toggles stay uncapped too, so deselecting one member and picking them
+  // back doesn't get silently refused the way #1470 originally described.
+  const useInitialsOnlyColoring = selectedPlayerIds.length > MAX_SELECTION;
+  const atCap = selectedPlayerIds.length >= MAX_SELECTION && !useInitialsOnlyColoring;
 
   const toggle = (id: string) => {
     if (selectedPlayerIds.includes(id)) {
       onSelect(selectedPlayerIds.filter((x) => x !== id));
-    } else if (selectedPlayerIds.length < MAX_SELECTION) {
+    } else if (selectedPlayerIds.length < MAX_SELECTION || useInitialsOnlyColoring) {
       onSelect([...selectedPlayerIds, id]);
     }
   };
@@ -161,21 +186,26 @@ export function FairwayCalendarMemberRail({
             canScrollRight && 'pr-7 scroll-pr-7',
           )}
         >
-        {/* ALL — visible pill stays h-9 (36px); the Button itself floors at the
-            44px touch target and centers the pill inside, so only the invisible
-            hit area grows. */}
+        {/* ALL — selects every roster member (bypassing the manual 8 cap) so
+            the overlay shows the whole team's schedule, not less than picking
+            a single player (#1470). Pressing it again while everyone is
+            already selected clears back to the plain team calendar; the
+            "Clear" control in the legend below does the same. Visible pill
+            stays h-9 (36px); the Button itself floors at the 44px touch
+            target and centers the pill inside, so only the invisible hit
+            area grows. */}
         <Button
           type="button"
           variant="ghost"
-          onClick={() => onSelect([])}
-          aria-pressed={allSelected}
+          onClick={() => onSelect(isAllSelected ? [] : teamMembers.map((m) => m.id))}
+          aria-pressed={isAllSelected}
           haptic="none"
           className="group flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-full p-0 hover:bg-transparent active:bg-transparent"
         >
           <span
             className={cn(
               'flex h-9 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
-              allSelected
+              isAllSelected
                 ? 'bg-accent-650 text-text-on-accent shadow-flat'
                 : 'border border-border-subtle bg-surface-sunken text-text-secondary group-hover:bg-surface-tint',
             )}
@@ -189,7 +219,11 @@ export function FairwayCalendarMemberRail({
         {teamMembers.map((m) => {
           const idx = selectedPlayerIds.indexOf(m.id);
           const selected = idx !== -1;
-          const color = selected ? PLAYER_COLORS[idx % PLAYER_COLORS.length]! : null;
+          // Past the cap (only reachable via ALL), the index-based palette
+          // wraps and two different members would render the same color —
+          // so `indexColor` is deliberately null there and the chip falls
+          // back to the id-hash tint instead (see `useInitialsOnlyColoring`).
+          const indexColor = selected && !useInitialsOnlyColoring ? PLAYER_COLORS[idx % PLAYER_COLORS.length]! : null;
           const tint = tintFor(m.id);
           // Unselectable right now, because the cap is full. `aria-disabled`
           // rather than `disabled`: the chip stays focusable and hoverable, so
@@ -229,12 +263,17 @@ export function FairwayCalendarMemberRail({
               <span
                 className={cn(
                   'relative grid h-9 w-9 place-items-center overflow-visible rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle transition-transform group-hover:ring-border-strong',
-                  selected && 'scale-[1.06] text-white ring-0',
+                  indexColor && 'scale-[1.06] text-white ring-0',
+                  // Selected past the cap: no palette color to carry the
+                  // "selected" cue, so an accent ring does that job instead
+                  // (the tint background/text stays the same as unselected —
+                  // it's the person's fixed id-hash color either way).
+                  selected && !indexColor && 'scale-[1.06] ring-2 ring-accent-650',
                   capped && 'opacity-40 grayscale',
                 )}
                 style={
-                  selected && color
-                    ? { backgroundColor: color.bg, color: '#fff', boxShadow: `0 0 0 2px ${color.border}` }
+                  indexColor
+                    ? { backgroundColor: indexColor.bg, color: '#fff', boxShadow: `0 0 0 2px ${indexColor.border}` }
                     : m.avatar_url
                       ? undefined
                       : { backgroundColor: tint.bg, color: tint.text }
@@ -245,11 +284,11 @@ export function FairwayCalendarMemberRail({
                 ) : (
                   <span>{initials(m)}</span>
                 )}
-                {selected && color && (
+                {indexColor && (
                   <span
                     aria-hidden
                     className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-canvas text-microbadge font-bold text-white"
-                    style={{ backgroundColor: color.bg }}
+                    style={{ backgroundColor: indexColor.bg }}
                   >
                     {idx + 1}
                   </span>
@@ -262,7 +301,7 @@ export function FairwayCalendarMemberRail({
       </div>
 
       {/* Legend / clear */}
-      {!allSelected ? (
+      {!noneSelected ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
             Viewing
@@ -270,10 +309,15 @@ export function FairwayCalendarMemberRail({
           {selectedPlayerIds.map((id, idx) => {
             const m = teamMembers.find((x) => x.id === id);
             if (!m) return null;
-            const color = PLAYER_COLORS[idx % PLAYER_COLORS.length]!;
+            // Same fallback as the chips above: past the cap the index-based
+            // palette wraps and stops being unambiguous, so identify by the
+            // person's own id-hash tint instead.
+            const dotColor = useInitialsOnlyColoring
+              ? tintFor(id).text
+              : PLAYER_COLORS[idx % PLAYER_COLORS.length]!.bg;
             return (
               <span key={id} className="flex items-center gap-1.5">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color.bg }} />
+                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
                 <span className="font-fw-sans text-caption text-text-secondary">{m.first_name}</span>
               </span>
             );

@@ -8,6 +8,13 @@ import {
   type CronBoardStatus,
   type CronRegistryEntry,
 } from '@/lib/admin/cron-registry';
+import {
+  SELFHEAL_STAGES,
+  classifySelfHealStage,
+  summarizeLoop,
+  type SelfHealStageRow,
+  type SelfHealLoopStatus,
+} from '@/lib/admin/selfheal-registry';
 
 export interface CronRunSummary {
   startedAt: string;
@@ -74,11 +81,22 @@ export interface JobsTab {
   integrity: IntegrityRow[];
   logHealth: LogHealth;
   inngest: InngestHealth;
+  /** The error→diagnosis→repair→closure circuit, one row per stage. Two of
+   *  its three runners live outside this deployment, so their only evidence of
+   *  life is the heartbeat row they write — see `selfheal-registry.ts`. */
+  selfHeal: SelfHealStageRow[];
+  /** The loop's worst stage, in one word. `'unknown'` when any stage's history
+   *  was unreadable — a failed read is never reported as a healthy loop. */
+  selfHealStatus: SelfHealLoopStatus;
 }
 
 interface BackgroundJobLogRow {
   job_type: string;
   status: string;
+  /** Carries `degraded: true` when a run finished but reported that part of
+   *  its own work failed. Selected AND passed through — a status derived from
+   *  a column the query never fetched is a status that never fires. */
+  metadata: unknown;
   duration_ms: number | null;
   error_message: string | null;
   started_at: string;
@@ -87,10 +105,52 @@ interface BackgroundJobLogRow {
 /** Runs kept per job for the recent-history strip / failure-rate summary. */
 const RECENT_RUNS_PER_JOB = 20;
 
+/** Only a title shaped exactly like this (written by
+ *  src/app/api/cron/integrity-check/route.ts) is a real integrity-check
+ *  result. Anything else sharing `source='integrity'` — currently
+ *  integration-health.ts's reachability faults — is a different signal and
+ *  must not be parsed as a check name. */
+const INTEGRITY_TITLE_PATTERN = /^Integrity (?:PASS|FAIL): (.+) \(\d+\)$/;
+
+/**
+ * Latest result per real integrity check, newest-first input assumed (the
+ * first occurrence per check name wins). Exported and pure so both bugs
+ * fixed here (the nested-metadata read, and the source='integrity' name
+ * collision with integration-health.ts) have a direct unit test against a
+ * realistic row shape, without mocking Supabase.
+ */
+export function parseIntegrityRows(rows: readonly IntegrityEventRow[]): Map<string, IntegrityRow> {
+  const latestIntegrity = new Map<string, IntegrityRow>();
+  for (const row of rows) {
+    const match = row.title.match(INTEGRITY_TITLE_PATTERN);
+    if (!match) continue;
+    const name = match[1]!;
+    if (!latestIntegrity.has(name)) {
+      latestIntegrity.set(name, {
+        check: name,
+        status: row.severity === 'info' ? 'pass' : 'fail',
+        count: row.metadata?.metadata?.count ?? 0,
+        lastRunAt: row.created_at,
+        sample: row.metadata?.metadata?.sample ?? [],
+      });
+    }
+  }
+  return latestIntegrity;
+}
+
 interface IntegrityEventRow {
   title: string;
   severity: string;
-  metadata: { count?: number; sample?: unknown[] } | null;
+  // The write path (src/app/api/cron/integrity-check/route.ts -> logServerEvent
+  // -> writeAdminTables/normalizeContext in server-error-logger.ts) stores the
+  // FULL context envelope in this column, with the caller's own `{count,
+  // sample}` payload nested one level deeper at `metadata.metadata` —
+  // normalizeContext always writes `metadata: context.metadata ?? {}` as ONE
+  // field of the outer envelope it persists, it never IS the envelope. A flat
+  // `{count, sample}` read here silently always finds `undefined` and falls
+  // back to `0`/`[]`, masked today because every live integrity check passes
+  // with count 0 anyway.
+  metadata: { metadata?: { count?: number; sample?: unknown[] } } | null;
   created_at: string;
 }
 
@@ -104,7 +164,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
   const admin = createAdminClient();
   const now = new Date();
 
-  // One bounded query PER job type (18 registry entries, each capped at
+  // One bounded query PER job type (CRON_REGISTRY.length entries, each capped at
   // RECENT_RUNS_PER_JOB) instead of a single globally-ordered top-500 query.
   // The prior single-query shape let high-frequency crons (refresh-engagement
   // every 5min, event/task-reminders hourly) crowd low-frequency ones
@@ -113,12 +173,20 @@ export async function fetchJobsTab(): Promise<JobsTab> {
   // non-alarming status) even after actually failing days earlier. 18
   // parallel queries is the documented, migration-free fix (no window-
   // function RPC — no new migrations in this batch).
-  const [jobRunsPerJob, integrityRows, adminEventsCount, errorLogsCount, jobLogsCount, inngestFaults] = await Promise.all([
+  const [
+    jobRunsPerJob,
+    integrityRows,
+    adminEventsCount,
+    errorLogsCount,
+    jobLogsCount,
+    inngestFaults,
+    selfHealRuns,
+  ] = await Promise.all([
     Promise.all(
       CRON_REGISTRY.map((entry) =>
         admin
           .from('background_job_logs')
-          .select('job_type, status, duration_ms, error_message, started_at')
+          .select('job_type, status, duration_ms, error_message, started_at, metadata')
           .eq('job_type', entry.jobType)
           .order('started_at', { ascending: false })
           .limit(RECENT_RUNS_PER_JOB),
@@ -147,6 +215,20 @@ export async function fetchJobsTab(): Promise<JobsTab> {
       .like('metadata->>errorCode', 'provider_inngest_%')
       .order('created_at', { ascending: false })
       .limit(1),
+    // One read per stage, same bounded shape as the cron board above. A stage
+    // running daily would be crowded out of any globally-ordered window by the
+    // 30-minute crons, and would then read "never-ran" — the neutral status —
+    // while actually being days overdue.
+    Promise.all(
+      SELFHEAL_STAGES.map((stage) =>
+        admin
+          .from('background_job_logs')
+          .select('job_type, status, duration_ms, error_message, started_at, metadata')
+          .eq('job_type', stage.jobType)
+          .order('started_at', { ascending: false })
+          .limit(1),
+      ),
+    ),
   ]);
 
   // FAIL LOUDLY. None of these 21 results had its `.error` inspected, so a
@@ -181,7 +263,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     const failures = runs.filter((r) => r.status === 'failed').length;
     return {
       ...entry,
-      status: classifyCronStatus(entry, last ? { started_at: last.started_at, status: last.status } : null, now),
+      status: classifyCronStatus(entry, last ? { started_at: last.started_at, status: last.status, metadata: last.metadata } : null, now),
       lastRunAt: last?.started_at ?? null,
       lastDurationMs: last?.duration_ms ?? null,
       lastError: last?.error_message ?? null,
@@ -196,23 +278,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     };
   });
 
-  // Latest per check: admin_events rows are titled
-  // `Integrity PASS: <check> (<count>)` / `Integrity FAIL: <check> (<count>)`
-  // by the integrity-check cron. Rows are already newest-first from the
-  // query above, so the first occurrence per check name wins.
-  const latestIntegrity = new Map<string, IntegrityRow>();
-  for (const row of (integrityRows.data ?? []) as IntegrityEventRow[]) {
-    const name = row.title.replace(/^Integrity (PASS|FAIL): /, '').replace(/ \(\d+\)$/, '');
-    if (!latestIntegrity.has(name)) {
-      latestIntegrity.set(name, {
-        check: name,
-        status: row.severity === 'info' ? 'pass' : 'fail',
-        count: row.metadata?.count ?? 0,
-        lastRunAt: row.created_at,
-        sample: row.metadata?.sample ?? [],
-      });
-    }
-  }
+  const latestIntegrity = parseIntegrityRows((integrityRows.data ?? []) as IntegrityEventRow[]);
 
   // Order matters: absent keys is a more fundamental truth than a stale fault
   // row, so 'not-configured' wins outright. 2026-07-25: isInngestConfigured()
@@ -234,8 +300,34 @@ export async function fetchJobsTab(): Promise<JobsTab> {
       ? { status: 'rejecting', faultCode, faultLastSeenAt: openFault.created_at ?? null }
       : { status: 'activated', faultCode: null, faultLastSeenAt: null };
 
+  // Self-healing stages. A stage whose read FAILED is marked unreadable and
+  // never classified — `summarizeLoop` turns any unreadable stage into
+  // `'unknown'` for the whole loop, because a circuit you could not inspect is
+  // not a circuit you can call closed.
+  const selfHeal: SelfHealStageRow[] = SELFHEAL_STAGES.map((stage, i) => {
+    const result = selfHealRuns[i];
+    const unreadable = Boolean(result?.error);
+    const last = (result?.data?.[0] ?? null) as BackgroundJobLogRow | null;
+    return {
+      ...stage,
+      status: unreadable
+        ? 'never-ran'
+        : classifySelfHealStage(
+            stage,
+            last ? { started_at: last.started_at, status: last.status, metadata: last.metadata } : null,
+            now,
+          ),
+      lastRunAt: last?.started_at ?? null,
+      lastRunStatus: last?.status ?? null,
+      lastError: last?.error_message ?? null,
+      unreadable,
+    };
+  });
+
   return {
     board,
+    selfHeal,
+    selfHealStatus: summarizeLoop(selfHeal),
     /** Job types whose run history could not be read — status is UNKNOWN for
      *  these, not "never ran". Empty in the normal case. */
     unreadableJobs,

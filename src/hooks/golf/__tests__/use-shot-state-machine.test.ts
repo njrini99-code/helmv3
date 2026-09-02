@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   shotReducer,
   computeRestoredState,
@@ -713,5 +715,76 @@ describe('shotReducer', () => {
       const next = shotReducer(state, { type: 'CLEAR_INPUT_STATE' });
       expect(next.distanceAfterUnit).toBe('feet');
     });
+  });
+});
+
+// ============================================================================
+// Keyboard avoidance — regression guard
+// ============================================================================
+
+/**
+ * The auto-focus effect lives inside a `useEffect` behind two nested
+ * `setTimeout`s and only matters on a real iOS keyboard, which neither jsdom
+ * nor a desktop browser produces. So these assert against the SOURCE TEXT —
+ * the same technique the Bridge's proof tests use to pin a constant across a
+ * module boundary. They cannot prove the field is visible on a phone; they can
+ * prove the two lines that made it invisible do not come back unnoticed.
+ */
+describe('the distance input must not focus behind the keyboard', () => {
+  const source = readFileSync(
+    join(__dirname, '..', 'use-shot-state-machine.ts'),
+    'utf8',
+  );
+
+  /**
+   * `focus({ preventScroll: true })` suppressed the only scroll that had any
+   * knowledge of the keyboard. It was originally added to avoid double-scrolling
+   * against the `scrollIntoView` immediately above it — but that call used
+   * `block: 'nearest'`, which is a no-op when the element is already inside the
+   * pre-keyboard viewport, so there was no second scroll to collide with.
+   *
+   * If a double-scroll ever does appear, fix the redundant `scrollIntoView`
+   * above; do not mute the focus.
+   */
+  it('does not pass preventScroll when focusing the distance input', () => {
+    expect(source).not.toMatch(/distanceInputRef\.current\?\.focus\(\s*\{[^}]*preventScroll/);
+  });
+
+  /**
+   * `nearest` resolves to "do nothing" here, because this runs before the
+   * keyboard exists and the input is still inside the full-height viewport.
+   * Centring leaves it above where the keyboard's top edge will land.
+   */
+  it('centres the distance input rather than scrolling it the minimum amount', () => {
+    expect(source).toMatch(/scrollIntoView\(\{\s*behavior:\s*'auto',\s*block:\s*'center'\s*\}\)/);
+  });
+});
+
+/**
+ * The CSS that decides where a keyboard-aware scroll LANDS, and the listener
+ * that TRIGGERS one, live in two different files and are useless apart. The
+ * rule shipped without the trigger, which is why the golf distance field sat
+ * under the keypad. Pin both ends so neither is removed as "unused".
+ */
+describe('keyboard-aware scrolling keeps both of its halves', () => {
+  it('globals.css still reserves room for the keyboard under every input', () => {
+    const css = readFileSync(
+      join(__dirname, '..', '..', '..', 'app', 'globals.css'),
+      'utf8',
+    );
+    expect(css).toMatch(/scroll-margin-bottom:\s*calc\(var\(--keyboard-height\)\s*\+\s*40px\)/);
+  });
+
+  it('CapacitorProvider still scrolls the focused element on keyboardWillShow', () => {
+    const provider = readFileSync(
+      join(__dirname, '..', '..', '..', 'components', 'providers', 'CapacitorProvider.tsx'),
+      'utf8',
+    );
+    const showHandler = provider.slice(
+      provider.indexOf("addListener('keyboardWillShow'"),
+      provider.indexOf("addListener('keyboardWillHide'"),
+    );
+    expect(showHandler).toContain('--keyboard-height');
+    expect(showHandler).toMatch(/scrollIntoView\(/);
   });
 });

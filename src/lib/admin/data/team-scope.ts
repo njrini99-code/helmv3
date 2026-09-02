@@ -296,7 +296,12 @@ export async function resolveTeamErrorCounts(
         .select('id, team_id, user_id')
         .eq('event_type', 'error')
         // severity is NOT NULL, so .in() cannot silently drop untyped rows.
-        .in('severity', INCIDENT_SEVERITIES),
+        .in('severity', INCIDENT_SEVERITIES)
+        // Live 2026-08-21: 456 of 456 error/warning/critical rows in the
+        // trailing window are resolved=true. Without this, a team's "errors
+        // this week" counts fully-closed incidents — matches /admin/errors'
+        // own `.eq('resolved', false)` convention (errors.ts:201).
+        .eq('resolved', false),
     ).gte('created_at', since);
 
   async function readErrors(

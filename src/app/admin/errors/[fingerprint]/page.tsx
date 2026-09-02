@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFingerprintDetail } from '@/lib/admin/data/errors';
-import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
+import { InlineNotice, StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
 import { extractActionName, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
 import { PanelBoundary } from '../../_components/PanelBoundary';
@@ -11,7 +11,28 @@ import { CopyReportButton } from '../../_components/CopyReportButton';
 import { ResolveErrorButton } from '../../_components/ResolveErrorButton';
 import { SportBadge, type BridgeSport } from '../../_components/SportBadge';
 import { LocalTime } from '../../_components/LocalTime';
-
+import { ForensicsHeader } from '../_components/ForensicsHeader';
+import { TrendStrip } from '../_components/TrendStrip';
+import { RcaPanel } from '../_components/RcaPanel';
+import { LifecycleSpine, LifecycleWhy } from '../_components/LifecycleSpine';
+import {
+  DeploymentProofCard,
+  EvidenceWall,
+  RepairCard,
+  RootCauseCard,
+} from '../_components/EvidenceWall';
+import {
+  EvidenceCoverageStrip,
+  ProofDots,
+  ProofGapList,
+  ProofLegend,
+} from '../../_components/ProofDots';
+import { fetchIncidentById } from '@/lib/admin/incidents/fetch';
+import type { UnifiedIncident } from '@/lib/admin/incidents/types';
+import { RcaAnalysisView } from '../_components/RcaAnalysisView';
+import { FieldCopy } from '../_components/FieldCopy';
+import { fetchResolutionArchive } from '@/lib/admin/data/resolutions';
+import { resolveArchivedResolution, RegressionBanner, ResolutionSummary } from '../_components/ResolutionPanels';
 export const dynamic = 'force-dynamic';
 
 const SEVERITY_TONE: Record<TriageSeverity, FwStatusTone> = {
@@ -29,12 +50,10 @@ function normalizeSport(raw: string | null | undefined): BridgeSport | null {
   return raw === 'golf' || raw === 'baseball' || raw === 'shared' ? raw : null;
 }
 
-/** Mirrors TriageQueue's detailLine() so the same source/feature/action
- *  context an operator sees on the list view is also visible per-event
- *  here, plus the resolveActionFilePath() "where it was" line — previously
- *  computed only for the hidden copy-for-Claude report (incident-report.ts's
- *  own comment calls that "the single highest-value line"), now surfaced
- *  on-screen too. */
+
+
+
+
 function EventDetailLine({
   source,
   feature,
@@ -81,10 +100,96 @@ export default async function FingerprintDetailPage({
   // Decode for display — the data layer decodes again idempotently.
   const fingerprint = decodeURIComponent(rawFingerprint);
 
-  async function Body() {
-    const { events, report, summary } = await fetchFingerprintDetail(rawFingerprint);
+  /**
+   * THE STORY, above the forensics.
+   *
+   * Everything below this section is evidence an operator reads when they
+   * already know what they are looking at: raw occurrences, stack traces,
+   * bracketing deploys. This section is what they are looking at — first
+   * seen, which sources saw it, what caused it, what is being done, whether
+   * it shipped, and what remains unproven. Reaching that story previously
+   * meant joining four surfaces by hand.
+   *
+   * `incident` is null when the fault falls outside even the detail page's
+   * wider 7-day window. That is a real state, not an error: the forensics
+   * below still render, and claiming a lifecycle we cannot compute would be
+   * worse than showing none.
+   */
+  function IncidentCommand({ incident }: { incident: UnifiedIncident }) {
+    return (
+      <section aria-label="Incident command" className="space-y-3">
+        <Surface padding="sm" className="min-w-0">
+          <LifecycleSpine incident={incident} />
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-warm-200 pt-3">
+            <ProofDots proof={incident.proof} size="md" />
+            <ProofLegend />
+          </div>
+          <div className="mt-2">
+            <ProofGapList gaps={incident.proofGaps} />
+          </div>
+        </Surface>
 
-    if (events.length === 0) {
+        <Surface padding="sm" className="min-w-0">
+          <LifecycleWhy verdict={incident.lifecycle} />
+        </Surface>
+
+        <EvidenceWall sources={incident.sources} />
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <RootCauseCard analysis={incident.analysis} />
+          <RepairCard repair={incident.repair} />
+        </div>
+
+        <DeploymentProofCard proof={incident.deployProof} resolution={incident.resolution} />
+
+        <Surface padding="sm" className="min-w-0">
+          <h2 className="text-eyebrow uppercase text-warm-500">Evidence coverage</h2>
+          <div className="mt-2">
+            <EvidenceCoverageStrip coverage={incident.evidenceCoverage} />
+          </div>
+        </Surface>
+      </section>
+    );
+  }
+
+  async function Body() {
+    // The unified incident is fetched ALONGSIDE the forensics, not instead of
+    // them: this page is the one surface where the raw occurrences still
+    // matter, and a lifecycle read that fails must not take them down with it.
+    const [{ events, report, summary, forensics, trend, storedRca }, unified] = await Promise.all([
+      fetchFingerprintDetail(rawFingerprint),
+      fetchIncidentById(fingerprint).catch(() => null),
+    ]);
+
+    if (events.length === 0 || !forensics) {
+      // A reliability-sourced fingerprint (`rel:<signature>`, from the nightly
+      // triage of Sentry/Vercel signals) has a stored analysis but no
+      // `admin_events` error rows — so there are no occurrences to render, but
+      // there IS a root-cause analysis, and it must not vanish behind a blank
+      // "no events" state (the exact bug fixed 2026-08-28). Show it.
+      if (storedRca) {
+        return (
+          <div className="space-y-4">
+            <InlineNotice tone="info">
+              This is a correlated reliability signal (Sentry / Vercel / Supabase), not an
+              application error logged directly. Its occurrences live on the{' '}
+              <Link href="/admin/reliability" className="underline">
+                Reliability tab
+              </Link>
+              ; what follows is the root-cause analysis the nightly triage wrote for it.
+            </InlineNotice>
+            {unified ? <IncidentCommand incident={unified.incident} /> : null}
+            <Surface padding="sm" className="min-w-0">
+              <h2 className="border-b border-warm-200 pb-2 text-eyebrow uppercase text-warm-500">
+                Root-cause analysis
+              </h2>
+              <div className="mt-3">
+                <RcaAnalysisView analysis={storedRca} />
+              </div>
+            </Surface>
+          </div>
+        );
+      }
       return (
         <PanelNoData
           label="No events for this fingerprint"
@@ -93,8 +198,66 @@ export default async function FingerprintDetailPage({
       );
     }
 
+    // Resolution lifecycle: has this fingerprint ever been marked fixed, and
+    // has it come back? Synthetic `row:<id>` keys (pre-fingerprinting legacy
+    // rows — see fetchFingerprintDetail's own scoped() branch) never carry a
+    // resolution row, since admin_auto_resolve_error_fingerprint is only ever
+    // called with a real `fingerprint` column value — skip the read outright
+    // rather than querying a key that can never match.
+    //
+    // fetchResolutionArchive() reads the whole table (it is the Archive
+    // panel's data source, with no per-fingerprint variant — see that
+    // module's doc comment) — one extra bounded read on an admin page, traded
+    // for reusing its already-computed shipStatus/regressed rather than
+    // re-deriving them here.
+    const isRowKey = fingerprint.startsWith('row:');
+    const archive = isRowKey ? null : await fetchResolutionArchive();
+    // A FAILED read is not evidence this fingerprint was never resolved —
+    // collapsing the two would be exactly the error→[] shape the engineering
+    // OS forbids. Render the failure honestly instead of silently falling
+    // through to "never resolved". See resolveArchivedResolution's own doc
+    // comment for why this is a separate, directly-testable pure function.
+    const { resolution, resolutionReadFailed } = resolveArchivedResolution(fingerprint, archive);
+
     return (
-      <>
+      <div className="space-y-3">
+        {resolutionReadFailed ? (
+          <Surface padding="sm" className="border border-fw-warning/30 bg-fw-warning/5">
+            <p className="text-body-sm text-warm-800">
+              Resolution status unavailable —{' '}
+              <span className="font-fw-mono text-caption">{archive?.error ?? 'unknown error'}</span>. This does not
+              mean the fault was never resolved; it means the resolution record could not be read.
+            </p>
+          </Surface>
+        ) : null}
+
+        {/* Regression, above everything else: a fault that was already
+            declared fixed and came back is a more urgent fact than "this is
+            broken", and must not be missable. */}
+        {resolution?.regressed ? <RegressionBanner resolution={resolution} /> : null}
+
+        {resolution ? <ResolutionSummary resolution={resolution} /> : null}
+
+        {unified ? <IncidentCommand incident={unified.incident} /> : null}
+
+        {/* Suspect deploy, elevated: the first thing an operator should read —
+            "what shipped right before this started" — not buried in the
+            bracketing-deploy list further down. */}
+        {forensics.suspectDeploy ? (
+          <Surface padding="sm" className="border border-fw-warning/30 bg-fw-warning/5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-warm-800">
+                First seen after deploy{' '}
+                <span className="font-fw-mono">
+                  {(forensics.suspectDeploy.sha ?? 'unknown-sha').slice(0, 7)}
+                </span>{' '}
+                (<LocalTime iso={forensics.suspectDeploy.time} variant="datetime" />)
+              </p>
+              <FieldCopy label="suspect deploy sha" value={forensics.suspectDeploy.sha} className="w-auto" />
+            </div>
+          </Surface>
+        ) : null}
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-warm-600">
             {summary.truncated
@@ -109,10 +272,12 @@ export default async function FingerprintDetailPage({
           </div>
         </div>
 
+        <ForensicsHeader forensics={forensics} />
+
         {/* Rollup the data layer already computed but previously discarded —
             an operator had to Copy the report and paste it elsewhere to see
             first-seen, unique users, or which deploys bracket the incident. */}
-        <Surface padding="sm" className="mt-3">
+        <Surface padding="sm">
           <StatStrip count={4} mdColumns={4} edgeBleedClassName="-mx-4 px-4" ariaLabel="Incident rollup">
             <div className="rounded-fw-md bg-surface-sunken px-3 py-2">
               <p className="text-caption uppercase tracking-widest text-warm-500">Occurrences</p>
@@ -128,7 +293,11 @@ export default async function FingerprintDetailPage({
                 {summary.truncated ? '+' : ''}
               </p>
               <p className="text-caption text-warm-500">
-                {summary.truncated ? 'lower bound' : 'distinct'}
+                {forensics.hasUnknownAffectedUsers
+                  ? 'unknown — no identity captured'
+                  : summary.truncated
+                    ? 'lower bound'
+                    : 'distinct'}
               </p>
             </div>
             <div className="rounded-fw-md bg-surface-sunken px-3 py-2">
@@ -158,7 +327,19 @@ export default async function FingerprintDetailPage({
           ) : null}
         </Surface>
 
-        <ul className="mt-3 space-y-3">
+        <Surface padding="sm">
+          <h2 className="text-eyebrow uppercase text-warm-500">7-day trend</h2>
+          <TrendStrip
+            buckets={trend.buckets}
+            truncated={trend.truncated}
+            unavailable={trend.unavailable}
+            className="mt-2"
+          />
+        </Surface>
+
+        <RcaPanel fingerprint={fingerprint} initialAnalysis={forensics.storedRca} />
+
+        <ul className="space-y-3">
           {events.map((e) => (
             <Surface as="li" key={e.id} padding="sm" className="min-w-0">
               <div className="flex min-w-0 items-start justify-between gap-3">
@@ -190,7 +371,7 @@ export default async function FingerprintDetailPage({
             </Surface>
           ))}
         </ul>
-      </>
+      </div>
     );
   }
 

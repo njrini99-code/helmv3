@@ -11,6 +11,7 @@ import { SportBadge } from '../../_components/SportBadge';
 import { LocalTime } from '../../_components/LocalTime';
 import { enterViewAs } from '../../actions/view-as';
 import { EngagementPanel } from './EngagementPanel';
+import { GolfPlayerDetailPanel } from './GolfPlayerDetailPanel';
 import { ViewAsButton } from './ViewAsButton';
 
 export const dynamic = 'force-dynamic';
@@ -122,6 +123,21 @@ export default async function UserDetailPage({
         <PanelBoundary title="Engagement" skeleton={ENGAGEMENT_SKELETON}>
           <EngagementPanel userId={id} />
         </PanelBoundary>
+
+        {/* Golf-specific enrichment (round history, stuck rounds, qualifier
+            participation, 7d errors) — mounted only when this account has
+            golf involvement at all, so a baseball-only account never shows a
+            skeleton for a panel that would just render nothing. `sports`
+            (deriveUserSports) is golf_players OR golf_coaches, so a golf
+            COACH still mounts this: `fetchPlayerDetail` pays one cheap
+            golf_players lookup, finds none, and the panel renders nothing —
+            that one lookup is not worth a second, narrower check here just
+            to skip it. */}
+        {user.sports.includes('golf') ? (
+          <PanelBoundary title="Golf player detail" skeleton={<PanelPageSkeleton stats={4} rows={5} />}>
+            <GolfPlayerDetailPanel userId={id} />
+          </PanelBoundary>
+        ) : null}
 
         <Surface padding="sm">
           <SectionLabel>Memberships</SectionLabel>

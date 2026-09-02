@@ -18,6 +18,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
+import { verifyPlayersOnTeam } from '@/lib/auth/verify-player-access';
 import {
   generateOccurrences,
   serializeRecurrenceRule,
@@ -302,6 +303,24 @@ async function createTaskImpl(
       return { success: false, error: 'Not authorized for this team' };
     }
 
+    // The gate above proves the caller coaches THIS team. It says nothing
+    // about the ids in `assignToPlayerIds`, which arrive from the client and
+    // used to be written straight into golf_task_assignments — so a coach of
+    // team A could assign a task to a player on team B, who would then see
+    // the title, description, due date and coach identity in their own hub.
+    //
+    // Checked BEFORE the task insert, not after: a rejection here must not
+    // leave an orphan task behind that the coach can see but nobody owns.
+    const roster = await verifyPlayersOnTeam(teamId, assignToPlayerIds ?? [], supabase);
+    if (!roster.ok) {
+      return {
+        success: false,
+        error: roster.reason === 'unavailable'
+          ? "Couldn't confirm your roster just now, so nothing was created. Please try again."
+          : 'Some selected players are not on this team',
+      };
+    }
+
     // Create the task
     const { data: task, error: taskError } = await supabase
       .from('golf_tasks')
@@ -376,7 +395,12 @@ async function createTaskImpl(
           const { data: userRows, error: userRowsError } = await supabase
             .from('users')
             .select('id, email')
-            .in('id', playerRows.map(p => p.user_id));
+            // `user_id` is nullable once an account is deleted and the player's history
+            // is preserved (20260819200000). A null is not a recipient — drop it so the
+            // rest of the batch still gets notified, matching the three fan-outs in
+            // golf.ts that already do this. NOT NULL in production today, so this
+            // removes nothing yet: that is what lets it ship before the migration.
+            .in('id', playerRows.map(p => p.user_id).filter((id): id is string => Boolean(id)));
 
           if (userRowsError) {
             await logServerError(
@@ -1365,6 +1389,18 @@ async function createTaskFromTemplateImpl(
       return { success: false, error: 'Only coaches can create tasks from templates' };
     }
 
+    // Same team gate createTask already carries. This path never had one at
+    // all: it proved "is a coach" and then wrote `team_id: teamId` straight
+    // from the argument, so a coach staffed only on the men's team could
+    // instantiate a template onto the women's team. It also has to run before
+    // the `all_players` roster read below, which scopes on that same teamId.
+    if (!coach.organization_id) {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
+    }
+    if (!(await validateCoachTeamAccess(supabase, coach.id, teamId, coach.organization_id))) {
+      return { success: false, error: 'Not authorized for this team' };
+    }
+
     // Fetch the template
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: template, error: templateError } = await (supabase as any)
@@ -1415,6 +1451,21 @@ async function createTaskFromTemplateImpl(
       }
 
       playerIds = (teamMembers || []).map(tm => tm.player_id);
+    }
+
+    // A CALLER-SUPPLIED list skips the roster read above entirely — that
+    // branch only fires when the array is empty — so until now nothing ever
+    // checked those ids against the team. Check them here instead, still
+    // before any write. The self-resolved branch passes trivially, since
+    // every id in it came out of golf_team_members for this same team.
+    const roster = await verifyPlayersOnTeam(teamId, playerIds, supabase);
+    if (!roster.ok) {
+      return {
+        success: false,
+        error: roster.reason === 'unavailable'
+          ? "Couldn't confirm your roster just now, so nothing was created. Please try again."
+          : 'Some selected players are not on this team',
+      };
     }
 
     // Create the task

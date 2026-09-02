@@ -1,0 +1,4666 @@
+{
+ "__admin_rollup_b_gate": {
+  "hits": {
+   "other": 12,
+   "script": 2,
+   "generated": 1,
+   "migration": 18
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/operations/SUPABASE_DRIFT_GUARD.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "script": [
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260606210000_admin_platform_stat_averages.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql"
+   ]
+  }
+ },
+ "baseball_accept_staff_invite": {
+  "hits": {
+   "other": 24,
+   "test": 6,
+   "script": 2,
+   "app": 2,
+   "generated": 1,
+   "migration": 12
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/audits/ISSUE_LEDGER_2026-07-03.md",
+    "docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/staff-invite-email-ownership.test.ts"
+   ],
+   "script": [
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/baseball/actions/roster.ts",
+    "src/app/baseball/actions/staff.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260624000062_baseball_accept_staff_invite_rpc.sql",
+    "supabase/migrations/20260624000081_baseball_staff_roles_scope_audit.sql"
+   ]
+  }
+ },
+ "baseball_announcement_has_recipients": {
+  "hits": {
+   "other": 10,
+   "script": 1,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/audits/DB_READINESS_PACKET_2026-07-02.md",
+    "docs/baseball/PRODUCTION_READINESS_MASTER_PLAN.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "script": [
+    "scripts/seed-baseball-demo.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260702100000_baseball_652_announcements_rls_fix.sql"
+   ]
+  }
+ },
+ "baseball_announcement_is_recipient": {
+  "hits": {
+   "other": 10,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/audits/DB_READINESS_PACKET_2026-07-02.md",
+    "docs/baseball/PRODUCTION_READINESS_MASTER_PLAN.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260702100000_baseball_652_announcements_rls_fix.sql"
+   ]
+  }
+ },
+ "baseball_can_invite_staff": {
+  "hits": {
+   "other": 18,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/qa/helm-database-map.md",
+    "memory/context/baseballhelm-database.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260624000030_baseball_staff_capabilities.sql",
+    "supabase/migrations/20260624000081_baseball_staff_roles_scope_audit.sql",
+    "supabase/migrations/20260701000000_baseball_rls_legacy_policy_cleanup.sql"
+   ]
+  }
+ },
+ "baseball_conversation_has_other_participant": {
+  "hits": {
+   "other": 3,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260819070000_conversation_creator_cannot_inject_third_party.sql"
+   ]
+  }
+ },
+ "baseball_conversation_on_my_team": {
+  "hits": {
+   "other": 3,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260807030300_baseball_conversations_recursion_and_tenant_binding.sql",
+    "supabase/migrations/20260819070000_conversation_creator_cannot_inject_third_party.sql"
+   ]
+  }
+ },
+ "baseball_is_announcement_coach": {
+  "hits": {
+   "other": 15,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_READINESS_PACKET_2026-07-02.md",
+    "docs/baseball/PRODUCTION_READINESS_MASTER_PLAN.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260702100000_baseball_652_announcements_rls_fix.sql"
+   ]
+  }
+ },
+ "baseball_register_for_camp": {
+  "hits": {
+   "other": 7,
+   "test": 3,
+   "app": 2,
+   "generated": 1,
+   "migration": 3
+  },
+  "where": {
+   "other": [
+    "docs/audits/BASEBALL_REGRESSION_PACK_2026-07-03.md",
+    "docs/audits/ISSUE_LEDGER_2026-07-03.md",
+    "docs/baseball/BASEBALLHELM_EXECUTION_PLAN.md",
+    "docs/plans/ITEM2_TWO_SESSION_PLAN.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/register-for-camp.test.ts"
+   ],
+   "app": [
+    "src/app/baseball/actions/camps.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260701000442_baseball_camp_register_atomic.sql"
+   ]
+  }
+ },
+ "baseball_replace_lineup_positions": {
+  "hits": {
+   "other": 7,
+   "test": 1,
+   "app": 1,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/qa/helm-database-map.md",
+    "memory/context/baseballhelm-database.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/lineups-atomic-replacement.test.ts"
+   ],
+   "app": [
+    "src/app/baseball/actions/lineups.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260624001600_baseball_replace_lineup_positions_rpc.sql"
+   ]
+  }
+ },
+ "baseball_staff_has_note_capability": {
+  "hits": {
+   "other": 11,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/qa/helm-database-map.md",
+    "memory/context/baseballhelm-database.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260624000900_baseball_coach_notes.sql"
+   ]
+  }
+ },
+ "calculate_round_strokes_gained": {
+  "hits": {
+   "other": 26,
+   "app": 1,
+   "generated": 1,
+   "migration": 14
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/STATS_CORRECTNESS_AUDIT_2026-06-06.md",
+    "docs/archive/2026-06/audits/STATS_DUPLICATE_CALC_AND_DB_LAYER_2026-06-06.md",
+    "docs/archive/2026-06/audits/STATS_END_TO_END_REMEDIATION_PLAN_2026-06-06.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md"
+   ],
+   "app": [
+    "src/lib/golf/sg-benchmarks.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606200000_converge_legacy_round_sg.sql",
+    "supabase/migrations/20260607170000_gender_aware_strokes_gained.sql",
+    "supabase/migrations/20260607200000_per_team_sg_baseline.sql"
+   ]
+  }
+ },
+ "can_insert_baseball_team_member": {
+  "hits": {
+   "other": 11,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_READINESS_PACKET_2026-07-02.md",
+    "docs/baseballhelm-overnight/ISSUE_LEDGER.md",
+    "docs/plans/ITEM2_TWO_SESSION_PLAN.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260630233000_baseball_team_join_policy_rls.sql",
+    "supabase/migrations/20260702100300_baseball_anon_grant_drift_revoke.sql"
+   ]
+  }
+ },
+ "can_manage_baseball_lift_group": {
+  "hits": {
+   "other": 19,
+   "script": 2,
+   "generated": 1,
+   "migration": 56
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/26_final_auth_lifting_current_app_v11/v11_auth_team_join_staff_roles.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/audits/ISSUE_LEDGER_2026-07-03.md"
+   ],
+   "script": [
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql",
+    "supabase/migrations/20260624000061_baseball_lifting_performance.sql",
+    "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql",
+    "supabase/migrations/20260630170248_harden_baseball_phase1_rls_rollup.sql"
+   ]
+  }
+ },
+ "can_notify_baseball_user": {
+  "hits": {
+   "other": 12,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/baseballhelm-overnight/CURRENT_PRIORITIES.md",
+    "docs/baseballhelm-overnight/DATABASE_STATUS.md",
+    "docs/baseballhelm-overnight/FINAL_REPORT.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260729000100_baseball_tenant_isolation_rls_a_additive.sql",
+    "supabase/migrations/20260729000200_baseball_tenant_isolation_rls_b_policies.sql"
+   ]
+  }
+ },
+ "can_read_golf_shot_detail": {
+  "hits": {
+   "other": 7,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/baseballhelm-overnight/DATABASE_STATUS.md",
+    "memory/glossary.md",
+    "supabase/tests/rls/golf_shot_detail_visibility.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260728030000_shot_detail_rls_correlated.sql"
+   ]
+  }
+ },
+ "check_rate_limit_atomic": {
+  "hits": {
+   "other": 2,
+   "app": 7,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/archive/superseded-2026-08/SECURITY_SWEEP_2026_08_01.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/lib/auth/supabase-rate-limit.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260801100000_auth_rate_limits_atomic_rpc.sql"
+   ]
+  }
+ },
+ "coach_id_for_team": {
+  "hits": {
+   "other": 15,
+   "test": 1,
+   "app": 4,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-analytics.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-qualifying.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/archive/remediation-2026-08-18/PRIVILEGED_RPC_MANIFEST.md"
+   ],
+   "test": [
+    "src/test/lib/auth/verify-player-access.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/drills.ts",
+    "src/app/golf/actions/player-notifications.ts",
+    "src/lib/auth/verify-player-access.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "current_coach_id": {
+  "hits": {
+   "other": 46,
+   "app": 2,
+   "generated": 1,
+   "migration": 21
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-hub.md",
+    "docs/archive/superseded-2026-08/COACHHELM_STATE_2026-05-26.md",
+    "docs/archive/superseded-2026-08/coachhelm-command-center-plan.md"
+   ],
+   "app": [
+    "src/app/golf/actions/v3/goals.ts",
+    "src/app/golf/actions/v3/intent.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql",
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260528010000_reapply_v3_goals_suggestions_rls.sql",
+    "supabase/migrations/20260725170000_coachhelm_action_runs_and_ui_parts.sql"
+   ]
+  }
+ },
+ "current_player_id": {
+  "hits": {
+   "other": 47,
+   "app": 1,
+   "generated": 1,
+   "migration": 20
+  },
+  "where": {
+   "other": [
+    ".claude/rules/database.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-genome.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-profile-self.md",
+    "docs/archive/superseded-2026-08/COACHHELM_STATE_2026-05-26.md"
+   ],
+   "app": [
+    "src/app/golf/actions/v3/goals.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql",
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260528010000_reapply_v3_goals_suggestions_rls.sql"
+   ]
+  }
+ },
+ "find_baseball_player_by_email_for_roster": {
+  "hits": {
+   "other": 4,
+   "test": 2,
+   "app": 2,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/PRIVILEGED_RPC_MANIFEST.md",
+    "docs/baseballhelm-overnight/DATABASE_STATUS.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/roster-assignable-player-search.test.ts"
+   ],
+   "app": [
+    "src/app/baseball/actions/roster.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260729000100_baseball_tenant_isolation_rls_a_additive.sql",
+    "supabase/migrations/20260729000200_baseball_tenant_isolation_rls_b_policies.sql"
+   ]
+  }
+ },
+ "get_active_sessions": {
+  "hits": {
+   "other": 28,
+   "app": 7,
+   "generated": 1,
+   "migration": 17
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/plans/2026-07-01-helm-bridge-command-center.md",
+    "docs/superpowers/plans/helm-bridge/EXECUTION_LOG.md"
+   ],
+   "app": [
+    "src/app/admin/health/page.tsx",
+    "src/lib/admin/data/auth.ts",
+    "src/lib/admin/data/feature-health.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260701130000_bridge_rpcs_sessions_resolve.sql",
+    "supabase/migrations/20260702090000_admin_events_feature_health.sql",
+    "supabase/migrations/20260710010000_get_active_sessions_per_user_filter.sql"
+   ]
+  }
+ },
+ "get_admin_analytics_rollup": {
+  "hits": {
+   "other": 16,
+   "script": 2,
+   "app": 4,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/audits/COACHHELM_ROOT_CAUSE_ROUND_ANALYSIS_STALL_2026-07-25.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260421000007_admin_analytics.sql"
+   ],
+   "script": [
+    "scripts/admin-rollup-smoke.mjs",
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-c.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_admin_baseball_rollup": {
+  "hits": {
+   "other": 15,
+   "test": 1,
+   "script": 2,
+   "app": 3,
+   "generated": 1,
+   "migration": 12
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/operations/context/SYSTEMS_AND_DATA_MAP.md"
+   ],
+   "test": [
+    "src/app/golf/actions/admin/__tests__/rollup-b.test.ts"
+   ],
+   "script": [
+    "scripts/admin-rollup-smoke.mjs",
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-b.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_admin_coachhelm_rollup": {
+  "hits": {
+   "other": 9,
+   "script": 2,
+   "app": 2,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/operations/context/SYSTEMS_AND_DATA_MAP.md",
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/plans/helm-bridge/waves/w08-golf-tab.md",
+    "docs/superpowers/specs/2026-07-01-helm-bridge-command-center-design.md"
+   ],
+   "script": [
+    "scripts/admin-rollup-smoke.mjs",
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-a.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_admin_dashboard_rollup": {
+  "hits": {
+   "other": 9,
+   "script": 2,
+   "app": 4,
+   "generated": 1,
+   "migration": 11
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/specs/2026-07-01-helm-bridge-command-center-design.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260421000001_admin_dashboard_rollup.sql"
+   ],
+   "script": [
+    "scripts/db/check-supabase-drift.mjs",
+    "scripts/rpc-smoke.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql",
+    "supabase/migrations/20260708020000_gate_admin_telemetry_rpcs_pii.sql"
+   ]
+  }
+ },
+ "get_admin_errors_rollup": {
+  "hits": {
+   "other": 10,
+   "test": 3,
+   "script": 2,
+   "app": 4,
+   "generated": 1,
+   "migration": 14
+  },
+  "where": {
+   "other": [
+    "docs/baseballhelm-overnight/DATABASE_STATUS.md",
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/plans/helm-bridge/waves/w03-server-data-layer.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/golf/actions/admin/__tests__/rollup-b.test.ts"
+   ],
+   "script": [
+    "scripts/admin-rollup-smoke.mjs",
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-b.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260701130000_bridge_rpcs_sessions_resolve.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql"
+   ]
+  }
+ },
+ "get_admin_event_summary": {
+  "hits": {
+   "other": 17,
+   "script": 1,
+   "app": 4,
+   "generated": 1,
+   "migration": 26
+  },
+  "where": {
+   "other": [
+    "docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260214220000_create_admin_events.sql"
+   ],
+   "script": [
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-b.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_admin_feature_adoption_rollup": {
+  "hits": {
+   "other": 6,
+   "script": 2,
+   "app": 2,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260421000005_admin_rollups_a.sql",
+    "supabase/migrations_archive/pre_20260527/20260428020000_vercel_error_triage_fixes.sql"
+   ],
+   "script": [
+    "scripts/admin-rollup-smoke.mjs",
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-a.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_admin_platform_stat_averages": {
+  "hits": {
+   "other": 9,
+   "test": 1,
+   "script": 1,
+   "app": 4,
+   "generated": 1,
+   "migration": 2
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/2026-06/audits/STATS_END_TO_END_REMEDIATION_PLAN_2026-06-06.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "test": [
+    "src/app/golf/actions/admin/__tests__/rollup-b.test.ts"
+   ],
+   "script": [
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-b.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260606210000_admin_platform_stat_averages.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql"
+   ]
+  }
+ },
+ "get_admin_rounds_rollup": {
+  "hits": {
+   "other": 8,
+   "script": 2,
+   "app": 4,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/plans/helm-bridge/waves/w08-golf-tab.md",
+    "docs/superpowers/specs/2026-07-01-helm-bridge-command-center-design.md",
+    "memory/glossary.md"
+   ],
+   "script": [
+    "scripts/admin-rollup-smoke.mjs",
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/admin/golf/page.tsx",
+    "src/app/golf/actions/admin/rollup-a.ts",
+    "src/lib/admin/data/team-detail.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_admin_teams_scoring_rollup": {
+  "hits": {
+   "other": 9,
+   "test": 1,
+   "script": 2,
+   "app": 4,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/specs/2026-07-01-helm-bridge-command-center-design.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/golf/actions/admin/__tests__/rollup-b.test.ts"
+   ],
+   "script": [
+    "scripts/admin-rollup-smoke.mjs",
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-b.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260606210000_admin_platform_stat_averages.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql"
+   ]
+  }
+ },
+ "get_admin_users_rollup": {
+  "hits": {
+   "other": 6,
+   "script": 2,
+   "app": 2,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260421000005_admin_rollups_a.sql",
+    "supabase/migrations_archive/pre_20260527/20260428020000_vercel_error_triage_fixes.sql"
+   ],
+   "script": [
+    "scripts/admin-rollup-smoke.mjs",
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-a.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_api_performance_summary": {
+  "hits": {
+   "other": 8,
+   "app": 3,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/DEAD_INVENTORY.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-system-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql"
+   ]
+  }
+ },
+ "get_audit_log_recent": {
+  "hits": {
+   "other": 10,
+   "generated": 1,
+   "migration": 16
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/AUDIT_LOG_SCOPE.md",
+    "docs/archive/remediation-2026-08-18/OVERNIGHT_REPORT.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260704063000_liftlab_rls_split_and_audit_log_gate.sql",
+    "supabase/migrations/20260704110000_crm_rpcs_admin_gate.sql"
+   ]
+  }
+ },
+ "get_baseball_conversations_with_details": {
+  "hits": {
+   "other": 18,
+   "app": 1,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/archive/remediation-2026-08-18/FINDINGS.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/archive/remediation-2026-08-18/PRIVILEGED_RPC_MANIFEST.md"
+   ],
+   "app": [
+    "src/hooks/use-messages.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260803120100_bind_definer_rpcs_to_session.sql"
+   ]
+  }
+ },
+ "get_baseball_public_player_stats": {
+  "hits": {
+   "other": 13,
+   "test": 1,
+   "app": 1,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    ".claude/agents/db-migration-reviewer.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_WF2_CONFORM_REPORT.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md"
+   ],
+   "test": [
+    "src/lib/baseball/__tests__/public-player-profile-anon-membership.test.ts"
+   ],
+   "app": [
+    "src/lib/baseball/public-profile-access.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260624001401_baseball_public_player_stats_rpc.sql"
+   ]
+  }
+ },
+ "get_baseball_team_join_context": {
+  "hits": {
+   "other": 4,
+   "test": 6,
+   "app": 3,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/archive/remediation-2026-08-18/PRIVILEGED_RPC_MANIFEST.md",
+    "docs/baseballhelm-overnight/DATABASE_STATUS.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/join-team-by-code-rpc.test.ts",
+    "src/app/baseball/actions/__tests__/team-join-code.test.ts"
+   ],
+   "app": [
+    "src/app/baseball/actions/teams.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260729000100_baseball_tenant_isolation_rls_a_additive.sql",
+    "supabase/migrations/20260729000200_baseball_tenant_isolation_rls_b_policies.sql"
+   ]
+  }
+ },
+ "get_coach_effectiveness_metrics": {
+  "hits": {
+   "other": 13,
+   "app": 1,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md",
+    "docs/archive/remediation-2026-08-18/DEAD_INVENTORY.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-people-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260807030400_gate_qualifier_leaderboard.sql"
+   ]
+  }
+ },
+ "get_coach_today_schedule": {
+  "hits": {
+   "other": 14,
+   "test": 4,
+   "script": 1,
+   "app": 4,
+   "generated": 1,
+   "migration": 11
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/GOLFHELM_E2E_FULL_FINDINGS_2026-06-20.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coach-home.md",
+    "docs/archive/superseded-2026-08/COACHHELM_STATE_2026-05-26.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/dashboard-data.test.ts",
+    "src/lib/utils/__tests__/timezone.test.ts",
+    "src/test/fixtures/fake-supabase.test.ts"
+   ],
+   "script": [
+    "scripts/rpc-smoke.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/dashboard-data.ts",
+    "src/lib/utils/timezone.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260806020100_coach_today_schedule_excludes_classes.sql"
+   ]
+  }
+ },
+ "get_crm_click_destinations": {
+  "hits": {
+   "other": 7,
+   "test": 3,
+   "app": 3,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/crm-insights.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/crm-insights.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260708021000_gate_ungated_definer_rpcs.sql",
+    "supabase/migrations/20260720130000_crm_insights_rpc_fixes.sql"
+   ]
+  }
+ },
+ "get_crm_coach_email_events": {
+  "hits": {
+   "other": 20,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/MIGRATIONS_TEN_READS.md",
+    "docs/archive/superseded-2026-08/SESSION_REPORT_2026-05-27_PART2.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260528012000_relock_crm_admin_rpcs.sql"
+   ]
+  }
+ },
+ "get_crm_coach_stage_history": {
+  "hits": {
+   "other": 3,
+   "app": 3,
+   "generated": 1,
+   "migration": 4
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/golf/actions/crm-stage-history.ts",
+    "src/app/golf/admin/crm/components/detail/stage-history-format.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260720150000_crm_stage_tracking.sql"
+   ]
+  }
+ },
+ "get_crm_email_stats": {
+  "hits": {
+   "other": 8,
+   "app": 1,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-03/superpowers/plans/2026-03-28-crm-premium-upgrade.md",
+    "docs/archive/2026-03/superpowers/specs/2026-03-28-crm-premium-upgrade-design.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/golf/admin/crm/components/EmailTrackingView.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260617190000_fix_crm_email_stats_scope.sql"
+   ]
+  }
+ },
+ "get_crm_email_stats_detailed": {
+  "hits": {
+   "other": 18,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/MIGRATIONS_TEN_READS.md",
+    "docs/archive/superseded-2026-08/SESSION_REPORT_2026-05-27_PART2.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260528012000_relock_crm_admin_rpcs.sql"
+   ]
+  }
+ },
+ "get_crm_events_in_range": {
+  "hits": {
+   "other": 4,
+   "app": 1,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260214210000_create_crm_events.sql"
+   ],
+   "app": [
+    "src/app/golf/admin/crm/components/CalendarView.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260704110000_crm_rpcs_admin_gate.sql"
+   ]
+  }
+ },
+ "get_crm_funnel": {
+  "hits": {
+   "other": 3,
+   "app": 2,
+   "generated": 1,
+   "migration": 15
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/golf/actions/crm-insights.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260720150000_crm_stage_tracking.sql",
+    "supabase/migrations/20260720170000_crm_metric_alignment.sql"
+   ]
+  }
+ },
+ "get_crm_stage_ages": {
+  "hits": {
+   "other": 3,
+   "app": 4,
+   "generated": 1,
+   "migration": 4
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/golf/actions/crm-stage-ages.ts",
+    "src/app/golf/admin/crm/components/PipelineView.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260720150000_crm_stage_tracking.sql"
+   ]
+  }
+ },
+ "get_crm_template_performance": {
+  "hits": {
+   "other": 7,
+   "test": 3,
+   "app": 4,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/crm-insights.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/crm-gmail-send.ts",
+    "src/app/golf/actions/crm-insights.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260708021000_gate_ungated_definer_rpcs.sql",
+    "supabase/migrations/20260720130000_crm_insights_rpc_fixes.sql",
+    "supabase/migrations/20260720170000_crm_metric_alignment.sql"
+   ]
+  }
+ },
+ "get_crm_time_to_open": {
+  "hits": {
+   "other": 6,
+   "app": 3,
+   "generated": 1,
+   "migration": 11
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260429T4_crm_insights_rpcs.sql"
+   ],
+   "app": [
+    "src/app/golf/actions/crm-insights.ts",
+    "src/app/golf/admin/crm/components/insights/TimeToOpenChart.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260704110000_crm_rpcs_admin_gate.sql",
+    "supabase/migrations/20260720130000_crm_insights_rpc_fixes.sql",
+    "supabase/migrations/20260720170000_crm_metric_alignment.sql"
+   ]
+  }
+ },
+ "get_crm_weekly_kpis": {
+  "hits": {
+   "other": 3,
+   "app": 2,
+   "generated": 1,
+   "migration": 11
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/golf/actions/crm-kpis.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260720150000_crm_stage_tracking.sql",
+    "supabase/migrations/20260720170000_crm_metric_alignment.sql"
+   ]
+  }
+ },
+ "get_current_golf_player_id": {
+  "hits": {
+   "other": 7,
+   "script": 6,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260204235000_fix_golf_rls_recursion_final.sql",
+    "supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql"
+   ],
+   "script": [
+    "scripts/check-policies.ts",
+    "scripts/check-rls.ts",
+    "scripts/diagnose-rls.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "get_current_player_team_ids": {
+  "hits": {
+   "other": 8,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/archive/superseded-2026-08/the-claude-session-who-wasnt-smart-enough.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "get_db_telemetry": {
+  "hits": {
+   "other": 13,
+   "app": 4,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/DEAD_INVENTORY.md",
+    "docs/archive/remediation-2026-08-18/DUPLICATE_NAME_ANALYSIS.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-system-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_enhanced_system_health": {
+  "hits": {
+   "other": 7,
+   "app": 3,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/DEAD_INVENTORY.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-system-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql"
+   ]
+  }
+ },
+ "get_error_summary": {
+  "hits": {
+   "other": 14,
+   "app": 5,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260214230000_create_admin_rpc_functions.sql",
+    "supabase/migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-b.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_feature_health": {
+  "hits": {
+   "other": 22,
+   "test": 1,
+   "app": 14,
+   "generated": 1,
+   "migration": 30
+  },
+  "where": {
+   "other": [
+    "docs/archive/superseded-2026-08/the-claude-session-who-wasnt-smart-enough.md",
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/plans/helm-bridge/EXECUTION_LOG.md",
+    "docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md"
+   ],
+   "test": [
+    "src/test/lib/admin/feature-registry-heartbeats.test.ts"
+   ],
+   "app": [
+    "src/app/admin/health/page.tsx",
+    "src/lib/admin/data/baseball.ts",
+    "src/lib/admin/data/feature-health.ts",
+    "src/lib/admin/feature-registry.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260702090000_admin_events_feature_health.sql",
+    "supabase/migrations/20260806030000_feature_health_ceiling_and_baseball_heartbeat.sql",
+    "supabase/migrations/20260807020000_feature_health_heartbeat_column_and_lifting.sql"
+   ]
+  }
+ },
+ "get_golf_conversations_with_details": {
+  "hits": {
+   "other": 21,
+   "app": 2,
+   "generated": 1,
+   "migration": 13
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/GOLFHELM_E2E_FULL_FINDINGS_2026-06-20.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/messages.md",
+    "docs/audits/GOLFHELM_E2E_TAB_AUDIT_2026-06-20.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "app": [
+    "src/app/actions/messages.ts",
+    "src/hooks/golf/use-golf-messages.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260621041824_harden_get_golf_conversations_rpc.sql",
+    "supabase/migrations/20260710160000_mark_golf_messages_read_rpc.sql",
+    "supabase/migrations/20260803120100_bind_definer_rpcs_to_session.sql"
+   ]
+  }
+ },
+ "get_golf_message_attachments": {
+  "hits": {
+   "other": 9,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-05/superpowers/plans/2026-05-11-security-hardening-bundle.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/058_golf_message_attachments.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "get_my_baseball_conversation_ids": {
+  "hits": {
+   "other": 22,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/archive/superseded-2026-08/audit-college-coach-2026-02-22.md",
+    "docs/archive/superseded-2026-08/audit-db-security-2026-02-22.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260807030300_baseball_conversations_recursion_and_tenant_binding.sql"
+   ]
+  }
+ },
+ "get_my_baseball_player_id": {
+  "hits": {
+   "other": 84,
+   "app": 3,
+   "generated": 1,
+   "migration": 91
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/26_final_auth_lifting_current_app_v11/v11_auth_team_join_staff_roles.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md"
+   ],
+   "app": [
+    "src/app/baseball/actions/daily-contract.ts",
+    "src/app/baseball/actions/passport-settings.ts",
+    "src/app/baseball/actions/player-actions.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql",
+    "supabase/migrations/20260624000061_baseball_lifting_performance.sql",
+    "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql",
+    "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
+   ]
+  }
+ },
+ "get_my_coach_id": {
+  "hits": {
+   "other": 149,
+   "generated": 1,
+   "migration": 47
+  },
+  "where": {
+   "other": [
+    "docs/BASEBALL_RLS_SECURITY_AUDIT.md",
+    "docs/archive/2026-02/FIX_AUDIT_ISSUES.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql",
+    "supabase/migrations/20260624000061_baseball_lifting_performance.sql",
+    "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
+   ]
+  }
+ },
+ "get_my_player_id": {
+  "hits": {
+   "other": 108,
+   "generated": 1,
+   "migration": 19
+  },
+  "where": {
+   "other": [
+    "docs/BASEBALL_RLS_SECURITY_AUDIT.md",
+    "docs/archive/2026-02/FIX_AUDIT_ISSUES.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/archive/superseded-2026-08/audit-college-coach-2026-02-22.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql",
+    "supabase/migrations/20260702100000_baseball_652_announcements_rls_fix.sql"
+   ]
+  }
+ },
+ "get_onboarding_funnel_analysis": {
+  "hits": {
+   "other": 8,
+   "app": 1,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md",
+    "docs/archive/remediation-2026-08-18/DEAD_INVENTORY.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-people-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql"
+   ]
+  }
+ },
+ "get_pending_task_reminders": {
+  "hits": {
+   "other": 4,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/056_task_enhancements.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260708021000_gate_ungated_definer_rpcs.sql"
+   ]
+  }
+ },
+ "get_platform_health_stats": {
+  "hits": {
+   "other": 9,
+   "test": 1,
+   "app": 7,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260214230000_create_admin_rpc_functions.sql"
+   ],
+   "test": [
+    "src/test/static/admin-platform-health-auth-client.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-data.ts",
+    "src/app/golf/admin/page.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260708020000_gate_admin_telemetry_rpcs_pii.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_player_hub_announcements": {
+  "hits": {
+   "other": 12,
+   "test": 2,
+   "script": 1,
+   "app": 2,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/team-hub-and-info.md",
+    "docs/audits/COMPLETE_FINDINGS_2026_08_18.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "test": [
+    "src/components/fairway/pages/team-hub/FairwayTeamHub.announcements-parity.test.tsx"
+   ],
+   "script": [
+    "scripts/rpc-smoke.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/player-notifications.ts",
+    "src/components/fairway/pages/team-hub/FairwayTeamHub.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "get_player_hub_events": {
+  "hits": {
+   "other": 12,
+   "script": 1,
+   "app": 1,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-home.md",
+    "docs/audits/COMPLETE_FINDINGS_2026_08_18.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "script": [
+    "scripts/rpc-smoke.mjs"
+   ],
+   "app": [
+    "src/app/golf/actions/player-hub-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "get_player_stats_summary": {
+  "hits": {
+   "other": 7,
+   "app": 2,
+   "generated": 1,
+   "migration": 11
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/STATS_DUPLICATE_CALC_AND_DB_LAYER_2026-06-06.md",
+    "docs/archive/superseded-2026-08/SHOT_TRACKING_DEEP_SCRUB.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/lib/cache/golf-stats-calculator.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260803120100_bind_definer_rpcs_to_session.sql"
+   ]
+  }
+ },
+ "get_qualifier_leaderboard": {
+  "hits": {
+   "other": 11,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-01/audits/DATABASE_RLS_AUDIT_REPORT.md",
+    "docs/archive/superseded-2026-08/the-claude-session-who-wasnt-smart-enough.md",
+    "docs/operations/context/SYSTEMS_AND_DATA_MAP.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260807030400_gate_qualifier_leaderboard.sql"
+   ]
+  }
+ },
+ "get_resend_activity_stats": {
+  "hits": {
+   "other": 8,
+   "test": 3,
+   "app": 4,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260420000000_resend_activity_mirror.sql"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/crm-insights.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/crm-insights.ts",
+    "src/app/golf/actions/resend-activity.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql",
+    "supabase/migrations/20260720130000_crm_insights_rpc_fixes.sql"
+   ]
+  }
+ },
+ "get_resend_domain_breakdown": {
+  "hits": {
+   "other": 6,
+   "app": 1,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260420000000_resend_activity_mirror.sql"
+   ],
+   "app": [
+    "src/app/golf/actions/resend-activity.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_shot_data_quality": {
+  "hits": {
+   "other": 8,
+   "test": 1,
+   "app": 5,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260428210000_get_shot_data_quality.sql"
+   ],
+   "test": [
+    "src/test/static/admin-platform-health-auth-client.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "get_team_health_dashboard": {
+  "hits": {
+   "other": 8,
+   "app": 1,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md",
+    "docs/archive/remediation-2026-08-18/DEAD_INVENTORY.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-people-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql"
+   ]
+  }
+ },
+ "get_user_engagement_summary": {
+  "hits": {
+   "other": 14,
+   "app": 3,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md",
+    "docs/archive/remediation-2026-08-18/DEAD_INVENTORY.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-bi-data.ts",
+    "src/app/golf/actions/admin-people-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql"
+   ]
+  }
+ },
+ "get_user_golf_organization_id": {
+  "hits": {
+   "other": 8,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260119000001_fix_golf_team_members_rls_recursion.sql",
+    "supabase/migrations_archive/pre_20260527/20260204200000_fix_golf_rls_infinite_recursion.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260803120000_golf_coaches_scope_select.sql"
+   ]
+  }
+ },
+ "get_user_golf_team_ids": {
+  "hits": {
+   "other": 8,
+   "script": 3,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260119000001_fix_golf_team_members_rls_recursion.sql",
+    "supabase/migrations_archive/pre_20260527/20260204200000_fix_golf_rls_infinite_recursion.sql"
+   ],
+   "script": [
+    "scripts/diagnose-rls.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "get_user_last_active": {
+  "hits": {
+   "other": 2,
+   "generated": 1,
+   "migration": 4
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "get_users_with_auth": {
+  "hits": {
+   "other": 7,
+   "app": 1,
+   "generated": 1,
+   "migration": 11
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260214230000_create_admin_rpc_functions.sql"
+   ],
+   "app": [
+    "src/app/golf/actions/admin/rollup-c.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260708020000_gate_admin_telemetry_rpcs_pii.sql",
+    "supabase/migrations/20260709010100_gate_admin_event_summary.sql"
+   ]
+  }
+ },
+ "golf_announcement_addressed_to_me": {
+  "hits": {
+   "other": 1,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260802115900_golf_announcement_addressed_to_me_fn.sql",
+    "supabase/migrations/20260802120000_golf_announcements_recipient_scoped_select.sql"
+   ]
+  }
+ },
+ "golf_conversation_created_by_me": {
+  "hits": {
+   "other": 3,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260807080000_golf_dm_join_requires_creator.sql",
+    "supabase/migrations/20260819070000_conversation_creator_cannot_inject_third_party.sql"
+   ]
+  }
+ },
+ "golf_conversation_has_other_participant": {
+  "hits": {
+   "other": 4,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260819070000_conversation_creator_cannot_inject_third_party.sql"
+   ]
+  }
+ },
+ "golf_conversation_on_my_team": {
+  "hits": {
+   "other": 3,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260807030000_golf_conversation_participants_tenant_isolation.sql",
+    "supabase/migrations/20260807030300_baseball_conversations_recursion_and_tenant_binding.sql",
+    "supabase/migrations/20260807080000_golf_dm_join_requires_creator.sql",
+    "supabase/migrations/20260819070000_conversation_creator_cannot_inject_third_party.sql"
+   ]
+  }
+ },
+ "golf_join_team_with_code": {
+  "hits": {
+   "other": 3,
+   "test": 12,
+   "app": 4,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/superseded-2026-08/the-claude-session-who-wasnt-smart-enough.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/join-team-rls-blocked-read.test.ts",
+    "src/app/golf/actions/__tests__/program-onboarding.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/teams.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260803120200_golf_join_code_requires_proof.sql",
+    "supabase/migrations/20260807030600_golf_join_one_team_rule_ignores_status.sql"
+   ]
+  }
+ },
+ "golf_my_join_requests": {
+  "hits": {
+   "other": 2,
+   "test": 2,
+   "app": 2,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/GOLF_UNWIRED.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/join-team-rls-blocked-read.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/teams.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260807030100_golf_my_join_requests_rpc.sql"
+   ]
+  }
+ },
+ "golf_normalize_name": {
+  "hits": {
+   "other": 25,
+   "test": 1,
+   "script": 1,
+   "app": 4,
+   "generated": 3,
+   "migration": 15
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-08/claude-workflows/course-library-phase5-verify.mjs",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/tests/rls/golf_course_library.sql"
+   ],
+   "test": [
+    "src/lib/golf/__tests__/course-library.test.ts"
+   ],
+   "script": [
+    "scripts/seed-course-library-scorecards.ts"
+   ],
+   "app": [
+    "src/components/golf/courses/CourseImage.tsx",
+    "src/lib/golf/course-image-assets.ts",
+    "src/lib/golf/course-library.ts",
+    "src/lib/golf/course-scorecard-generator.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts",
+    "src/lib/types/golf-course.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260613160000_course_library_phase1.sql",
+    "supabase/migrations/20260613160100_course_library_normalize_fix.sql",
+    "supabase/migrations/20260613190000_course_library_normalize_unique.sql"
+   ]
+  }
+ },
+ "golf_team_by_join_code": {
+  "hits": {
+   "other": 11,
+   "test": 7,
+   "app": 7,
+   "generated": 1,
+   "migration": 4
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/archive/superseded-2026-08/the-claude-session-who-wasnt-smart-enough.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/join-team-rls-blocked-read.test.ts",
+    "src/app/golf/actions/__tests__/program-onboarding.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/teams.ts",
+    "src/app/golf/join/[code]/page.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260803120200_golf_join_code_requires_proof.sql"
+   ]
+  }
+ },
+ "has_any_baseball_team_membership": {
+  "hits": {
+   "other": 4,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/baseballhelm-overnight/ISSUE_LEDGER.md",
+    "memory/glossary.md",
+    "supabase/tests/rls/baseball_tenant_isolation.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260729000100_baseball_tenant_isolation_rls_a_additive.sql",
+    "supabase/migrations/20260729000200_baseball_tenant_isolation_rls_b_policies.sql"
+   ]
+  }
+ },
+ "has_baseball_staff_capability": {
+  "hits": {
+   "other": 143,
+   "app": 4,
+   "generated": 1,
+   "migration": 248
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_UIUX_VERIFICATION.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/26_final_auth_lifting_current_app_v11/v11_auth_team_join_staff_roles.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md"
+   ],
+   "app": [
+    "src/app/baseball/actions/staff.ts",
+    "src/app/baseball/actions/teams.ts",
+    "src/lib/baseball/capabilities.ts",
+    "src/lib/baseball/capability-groups.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql",
+    "supabase/migrations/20260624000061_baseball_lifting_performance.sql",
+    "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql",
+    "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
+   ]
+  }
+ },
+ "heartbeat": {
+  "hits": {
+   "other": 43,
+   "test": 24,
+   "script": 39,
+   "app": 38,
+   "generated": 1,
+   "migration": 19
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/19_breakthrough_product_systems_v5/v5_competitive_system_blueprints.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/24_subsystem_execution_blueprint_v9/v9_integration_adapter_contracts.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/27_live_ultracode_command_center_v12/source_ultracode_agent_city_command_center_spec.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/27_live_ultracode_command_center_v12/v12_claude_task_zero_live_command_center.md"
+   ],
+   "test": [
+    "src/hooks/__tests__/use-presence.test.tsx",
+    "src/lib/admin/__tests__/feature-registry.test.ts",
+    "src/lib/admin/data/__tests__/feature-health.test.ts",
+    "src/lib/baseball/__tests__/scheduled-evaluator.test.ts"
+   ],
+   "script": [
+    "tools/baseballhelm-command-center/CONTRACT.md",
+    "tools/baseballhelm-command-center/app.js",
+    "tools/baseballhelm-command-center/city-crew.js",
+    "tools/baseballhelm-command-center/city-engine.js"
+   ],
+   "app": [
+    "src/app/admin/_components/FeatureHealthCard.tsx",
+    "src/app/admin/teams/page.tsx",
+    "src/app/baseball/actions/coachhelm.ts",
+    "src/components/fairway/charts/EkgSparkline.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260703040000_revoke_anon_secdef_rpc_drift_full.sql",
+    "supabase/migrations/20260806030000_feature_health_ceiling_and_baseball_heartbeat.sql",
+    "supabase/migrations/20260807020000_feature_health_heartbeat_column_and_lifting.sql"
+   ]
+  }
+ },
+ "helm_lifting_accept_invite": {
+  "hits": {
+   "other": 8,
+   "app": 4,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md",
+    "docs/baseballhelm-overnight/ISSUE_LEDGER.md",
+    "docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md"
+   ],
+   "app": [
+    "src/app/lifting/actions/invites.ts",
+    "src/app/lifting/join/[token]/join-client.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260625000030_helm_lifting_accept_invite_rpc.sql",
+    "supabase/migrations/20260625150000_baseball_lifting_drift_closure.sql"
+   ]
+  }
+ },
+ "helm_lifting_assign_team": {
+  "hits": {
+   "other": 5,
+   "test": 2,
+   "app": 4,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "test": [
+    "src/app/lifting/actions/__tests__/assignments.test.ts"
+   ],
+   "app": [
+    "src/app/lifting/actions/assignments.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260625000030_helm_lifting_accept_invite_rpc.sql"
+   ]
+  }
+ },
+ "helm_lifting_can_edit_org": {
+  "hits": {
+   "other": 150,
+   "app": 5,
+   "generated": 1,
+   "migration": 146
+  },
+  "where": {
+   "other": [
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/baseball/actions/lifting-v11.ts",
+    "src/app/baseball/actions/lifting.ts",
+    "src/app/baseball/actions/roster.ts",
+    "src/lib/baseball/lifting/group-audit-writer.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260625000000_helm_lifting_identity.sql",
+    "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql",
+    "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql",
+    "supabase/migrations/20260625000030_helm_lifting_accept_invite_rpc.sql"
+   ]
+  }
+ },
+ "helm_lifting_can_view_org": {
+  "hits": {
+   "other": 54,
+   "app": 2,
+   "generated": 1,
+   "migration": 49
+  },
+  "where": {
+   "other": [
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/baseball/(dashboard)/dashboard/performance/programs/page.tsx",
+    "src/app/baseball/actions/lifting-v11.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260625000000_helm_lifting_identity.sql",
+    "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql",
+    "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql",
+    "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+   ]
+  }
+ },
+ "helm_lifting_coach_for_org": {
+  "hits": {
+   "other": 6,
+   "generated": 1,
+   "migration": 13
+  },
+  "where": {
+   "other": [
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260625000000_helm_lifting_identity.sql",
+    "supabase/migrations/20260625150000_baseball_lifting_drift_closure.sql"
+   ]
+  }
+ },
+ "helm_lifting_is_head_coach_viewer": {
+  "hits": {
+   "other": 8,
+   "generated": 1,
+   "migration": 11
+  },
+  "where": {
+   "other": [
+    "docs/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql",
+    "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+   ]
+  }
+ },
+ "helm_lifting_is_my_athlete": {
+  "hits": {
+   "other": 61,
+   "test": 1,
+   "app": 9,
+   "generated": 2,
+   "migration": 63
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/PRIVILEGED_RPC_MANIFEST.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "test": [
+    "src/lib/lifting/__tests__/access.test.ts"
+   ],
+   "app": [
+    "src/app/baseball/(dashboard)/dashboard/lift/[sessionId]/page.tsx",
+    "src/app/baseball/actions/lifting-v11.ts",
+    "src/app/lifting/(dashboard)/dashboard/lift/[sessionId]/page.tsx",
+    "src/app/lifting/(dashboard)/dashboard/lift/page.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts",
+    "src/lib/types/helm-lifting.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260625000000_helm_lifting_identity.sql",
+    "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql",
+    "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql",
+    "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+   ]
+  }
+ },
+ "helm_lifting_mark_athlete_onboarded": {
+  "hits": {
+   "other": 5,
+   "app": 3,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/PRIVILEGED_RPC_MANIFEST.md",
+    "docs/baseballhelm-overnight/ISSUE_LEDGER.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "app": [
+    "src/app/baseball/actions/lift-onboarding.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260702120000_baseball_helm_lifting_athletes_onboarded_at.sql"
+   ]
+  }
+ },
+ "helm_lifting_sync_org_athletes": {
+  "hits": {
+   "other": 16,
+   "test": 5,
+   "app": 11,
+   "generated": 1,
+   "migration": 14
+  },
+  "where": {
+   "other": [
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/baseballhelm-overnight/ISSUE_LEDGER.md",
+    "docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/publish-lift-day-helm-bridge.integration.test.ts",
+    "src/app/lifting/actions/__tests__/assignments.test.ts"
+   ],
+   "app": [
+    "src/app/baseball/actions/lifting-v11.ts",
+    "src/app/baseball/actions/roster.ts",
+    "src/app/lifting/actions/assignments.ts",
+    "src/app/lifting/actions/athletes.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260625000030_helm_lifting_accept_invite_rpc.sql",
+    "supabase/migrations/20260729000300_helm_lifting_sync_refreshes_identity.sql"
+   ]
+  }
+ },
+ "hypopg_reset": {
+  "hits": {
+   "other": 7,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260518124505_fix_live_db_lint_errors.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql"
+   ]
+  }
+ },
+ "ingest_external_round_atomic": {
+  "hits": {
+   "other": 2,
+   "test": 3,
+   "app": 1,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/test/coachhelm/v3/ingest/arccos-transactional.test.ts"
+   ],
+   "app": [
+    "src/lib/coachhelm/v3/ingest/providers/arccos.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260621130000_ingest_external_round_atomic.sql"
+   ]
+  }
+ },
+ "is_admin": {
+  "hits": {
+   "other": 119,
+   "test": 2,
+   "app": 1,
+   "generated": 1,
+   "migration": 50
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-01/architecture/SCHEMA.md",
+    "docs/archive/remediation-2026-08-18/AUDIT_LOG_SCOPE.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md"
+   ],
+   "test": [
+    "src/test/golf/actions/round-review-feedback-write-integrity.test.ts",
+    "src/test/lib/notifications/golf-message-fanout.test.ts"
+   ],
+   "app": [
+    "src/lib/notifications/golf-message-fanout.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260614020000_recruit_documents.sql",
+    "supabase/migrations/20260703040000_revoke_anon_secdef_rpc_drift_full.sql"
+   ]
+  }
+ },
+ "is_baseball_player_recruiting_discoverable": {
+  "hits": {
+   "other": 19,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/baseballhelm-overnight/DATABASE_STATUS.md",
+    "memory/glossary.md",
+    "supabase/tests/rls/baseball_tenant_isolation.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260729000100_baseball_tenant_isolation_rls_a_additive.sql",
+    "supabase/migrations/20260729000200_baseball_tenant_isolation_rls_b_policies.sql"
+   ]
+  }
+ },
+ "is_baseball_primary_coach": {
+  "hits": {
+   "other": 78,
+   "app": 3,
+   "generated": 1,
+   "migration": 40
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/26_final_auth_lifting_current_app_v11/v11_auth_team_join_staff_roles.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/archive/superseded-2026-08/audit-college-coach-2026-02-22.md"
+   ],
+   "app": [
+    "src/app/baseball/actions/teams.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260624000030_baseball_staff_capabilities.sql",
+    "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql",
+    "supabase/migrations/20260624000090_baseball_settings_os.sql"
+   ]
+  }
+ },
+ "is_baseball_team_coach": {
+  "hits": {
+   "other": 265,
+   "generated": 1,
+   "migration": 97
+  },
+  "where": {
+   "other": [
+    "docs/BASEBALL_RLS_SECURITY_AUDIT.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/archive/superseded-2026-08/audit-college-coach-2026-02-22.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260624000020_baseball_import_lineage.sql",
+    "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql",
+    "supabase/migrations/20260624000500_baseball_import_raw_file_and_hash.sql"
+   ]
+  }
+ },
+ "is_baseball_team_coach_v2": {
+  "hits": {
+   "other": 93,
+   "app": 6,
+   "generated": 1,
+   "migration": 66
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-05/operations/2026-05-27-v3-production-readiness.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/archive/superseded-2026-08/CLEANSLATE_JOB_LIST.md"
+   ],
+   "app": [
+    "src/app/baseball/actions/daily-contract.ts",
+    "src/app/baseball/actions/passport-settings.ts",
+    "src/lib/baseball/timeline-writer.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260528000000_baseball_recalc_body_guards.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260624000040_baseball_timeline_and_acks.sql"
+   ]
+  }
+ },
+ "is_baseball_team_member": {
+  "hits": {
+   "other": 67,
+   "test": 3,
+   "generated": 1,
+   "migration": 59
+  },
+  "where": {
+   "other": [
+    "docs/BASEBALL_RLS_SECURITY_AUDIT.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_WF1_BUILD_COMPLETE.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md"
+   ],
+   "test": [
+    "src/test/schema/no-self-referencing-rls-policy.test.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql",
+    "supabase/migrations/20260624000061_baseball_lifting_performance.sql",
+    "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
+   ]
+  }
+ },
+ "is_baseball_team_member_v2": {
+  "hits": {
+   "other": 17,
+   "generated": 1,
+   "migration": 12
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/archive/superseded-2026-08/audit-db-security-2026-02-22.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql",
+    "supabase/migrations/20260624000040_baseball_timeline_and_acks.sql",
+    "supabase/migrations/20260624000220_baseball_player_passport_and_daily_contract.sql"
+   ]
+  }
+ },
+ "is_baseball_team_player": {
+  "hits": {
+   "other": 32,
+   "generated": 1,
+   "migration": 13
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md",
+    "docs/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md",
+    "docs/operations/context/SYSTEMS_AND_DATA_MAP.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "is_baseball_team_staff": {
+  "hits": {
+   "other": 217,
+   "app": 3,
+   "generated": 1,
+   "migration": 98
+  },
+  "where": {
+   "other": [
+    ".claude/rules/database.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/26_final_auth_lifting_current_app_v11/v11_auth_team_join_staff_roles.md",
+    "docs/archive/remediation-2026-08-18/DEAD_INVENTORY.md"
+   ],
+   "app": [
+    "src/app/baseball/actions/stat-visual-views.ts",
+    "src/lib/baseball/capabilities.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql",
+    "supabase/migrations/20260624000061_baseball_lifting_performance.sql",
+    "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql",
+    "supabase/migrations/20260624000070_baseball_coach_insights_attribution.sql"
+   ]
+  }
+ },
+ "is_golf_coach": {
+  "hits": {
+   "other": 15,
+   "generated": 1,
+   "migration": 15
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/tests/rls/golf_course_library_write_scoping.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260719120000_course_library_role_scoping.sql"
+   ]
+  }
+ },
+ "is_golf_team_coach": {
+  "hits": {
+   "other": 332,
+   "test": 10,
+   "script": 1,
+   "app": 21,
+   "generated": 1,
+   "migration": 147
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-05/superpowers/plans/2026-05-11-security-hardening-bundle.md",
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/2026-06/audits/GOLFHELM_E2E_FULL_FINDINGS_2026-06-20.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-qualifying.md"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/auth-assistant-request-signup.test.ts",
+    "src/app/golf/actions/__tests__/join-team-rls-blocked-read.test.ts",
+    "src/app/golf/actions/__tests__/team-create-rls-returning.test.ts",
+    "src/test/api/calendar-events-class-scoping.test.ts"
+   ],
+   "script": [
+    "scripts/check-policies.ts"
+   ],
+   "app": [
+    "src/app/actions/messages.ts",
+    "src/app/golf/(dashboard)/layout.tsx",
+    "src/app/golf/actions/auth.ts",
+    "src/app/golf/actions/course-library.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260602191000_round_reviews_insert_coach_policy.sql",
+    "supabase/migrations/20260612130000_team_toggle_rls_staff_scope.sql",
+    "supabase/migrations/20260613160000_course_library_phase1.sql"
+   ]
+  }
+ },
+ "is_golf_team_head_coach": {
+  "hits": {
+   "other": 13,
+   "app": 6,
+   "generated": 1,
+   "migration": 13
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/superpowers/plans/2026-06-12-team-toggle-complete.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "docs/archive/remediation-2026-08-18/OVERNIGHT_REPORT.md",
+    "docs/archive/remediation-2026-08-18/TEAM_CHARTER.md"
+   ],
+   "app": [
+    "src/app/golf/(dashboard)/layout.tsx",
+    "src/app/golf/actions/auth.ts",
+    "src/app/golf/actions/teams.ts",
+    "src/components/fairway/pages/team/FairwayTeamSettings.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260612120000_team_toggle_data_model.sql",
+    "supabase/migrations/20260819030000_golf_staff_invite_single_use.sql",
+    "supabase/migrations/20260819040000_golf_staff_invite_codes.sql",
+    "supabase/migrations/20260819060000_restrict_round_history_delete_to_head_coach.sql"
+   ]
+  }
+ },
+ "is_golf_team_player": {
+  "hits": {
+   "other": 89,
+   "test": 5,
+   "script": 7,
+   "app": 5,
+   "generated": 1,
+   "migration": 43
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-05/superpowers/plans/2026-05-11-security-hardening-bundle.md",
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/2026-06/audits/GOLFHELM_E2E_FULL_FINDINGS_2026-06-20.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-qualifying.md"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/join-team-rls-blocked-read.test.ts",
+    "src/app/golf/actions/__tests__/team-create-rls-returning.test.ts",
+    "src/test/api/calendar-events-class-scoping.test.ts",
+    "src/test/schema/golf-rounds-team-write-check.test.ts"
+   ],
+   "script": [
+    "scripts/check-policies.ts",
+    "scripts/check-rls.ts",
+    "scripts/diagnose-rls.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/round-recap.ts",
+    "src/app/golf/actions/round-review-system.ts",
+    "src/app/golf/actions/teams.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260609210000_golf_rounds_update_with_check_and_penalty_backfill.sql",
+    "supabase/migrations/20260610070000_calendar_integrity_and_self_rsvp.sql",
+    "supabase/migrations/20260612130000_team_toggle_rls_staff_scope.sql"
+   ]
+  }
+ },
+ "is_golf_team_primary_coach": {
+  "hits": {
+   "other": 22,
+   "app": 3,
+   "generated": 1,
+   "migration": 12
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coaching-settings.md",
+    "docs/archive/2026-06/superpowers/plans/2026-06-12-team-toggle-complete.md",
+    "docs/archive/superseded-2026-08/COACHHELM_STATE_2026-05-26.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "app": [
+    "src/app/golf/actions/insights.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260612120000_team_toggle_data_model.sql",
+    "supabase/migrations/20260612130000_team_toggle_rls_staff_scope.sql"
+   ]
+  }
+ },
+ "is_in_team": {
+  "hits": {
+   "other": 12,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/archive/superseded-2026-08/COACHHELM_STATE_2026-05-26.md",
+    "docs/business/03-product-invariants.md",
+    "docs/qa/helm-database-map.md",
+    "docs/v3-master-plan.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "is_super_admin": {
+  "hits": {
+   "other": 74,
+   "test": 4,
+   "script": 6,
+   "app": 17,
+   "generated": 1,
+   "migration": 65
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/archive/remediation-2026-08-18/PROTOCOL.md",
+    "docs/audits/COMPLETE_FINDINGS_2026_08_18.md"
+   ],
+   "test": [
+    "src/lib/admin/__tests__/require-super-admin.test.ts"
+   ],
+   "script": [
+    "scripts/db/check-supabase-drift.mjs"
+   ],
+   "app": [
+    "src/app/admin/actions/sessions.ts",
+    "src/app/admin/actions/triage.ts",
+    "src/app/admin/health/page.tsx",
+    "src/app/api/admin/crm/send-email/route.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260701110000_admin_allowlist_is_super_admin.sql",
+    "supabase/migrations/20260701130000_bridge_rpcs_sessions_resolve.sql",
+    "supabase/migrations/20260701140000_revoke_user_sessions_rpc.sql",
+    "supabase/migrations/20260701150000_run_integrity_checks_rpc.sql"
+   ]
+  }
+ },
+ "is_team_coach": {
+  "hits": {
+   "other": 70,
+   "app": 2,
+   "generated": 1,
+   "migration": 17
+  },
+  "where": {
+   "other": [
+    ".claude/rules/database.md",
+    "docs/archive/2026-02/FIX_AUDIT_ISSUES.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coachhelm-genome.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md"
+   ],
+   "app": [
+    "src/app/golf/actions/v3/goals.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql",
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260528010000_reapply_v3_goals_suggestions_rls.sql"
+   ]
+  }
+ },
+ "is_team_player": {
+  "hits": {
+   "other": 31,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    ".claude/rules/database.md",
+    "docs/archive/superseded-2026-08/COACHHELM_STATE_2026-05-26.md",
+    "docs/business/00-business-context.md",
+    "docs/business/01-personas.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "is_user_on_team": {
+  "hits": {
+   "other": 18,
+   "test": 2,
+   "app": 2,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-05/superpowers/plans/2026-05-11-security-hardening-bundle.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/test/api/calendar/feed-token-security.test.ts"
+   ],
+   "app": [
+    "src/app/api/calendar/feeds/[token]/route.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "mark_golf_messages_read": {
+  "hits": {
+   "other": 3,
+   "app": 2,
+   "generated": 1,
+   "migration": 3
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/actions/messages.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260710160000_mark_golf_messages_read_rpc.sql"
+   ]
+  }
+ },
+ "mark_player_stats_stale": {
+  "hits": {
+   "other": 17,
+   "app": 9,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/superseded-2026-08/SHOT_TRACKING_DEEP_SCRUB.md",
+    "docs/audits/COACHHELM_FULL_VALIDITY_AND_FACET_AUDIT_2026-06-06.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-data.ts",
+    "src/app/golf/actions/admin-tracer-data.ts",
+    "src/lib/cache/golf-stats-calculator.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql",
+    "supabase/migrations/20260608130000_cache_proximity_miss_puttspergir_alignment.sql"
+   ]
+  }
+ },
+ "mark_task_reminder_sent": {
+  "hits": {
+   "other": 4,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/056_task_enhancements.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260708021000_gate_ungated_definer_rpcs.sql"
+   ]
+  }
+ },
+ "owns_golf_shot": {
+  "hits": {
+   "other": 7,
+   "generated": 1,
+   "migration": 12
+  },
+  "where": {
+   "other": [
+    "docs/baseballhelm-overnight/DATABASE_STATUS.md",
+    "memory/glossary.md",
+    "supabase/tests/rls/golf_shot_detail_visibility.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260728030000_shot_detail_rls_correlated.sql"
+   ]
+  }
+ },
+ "prune_stale_player_standing": {
+  "hits": {
+   "other": 4,
+   "test": 3,
+   "app": 1,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/test/api/cron/standing-refresh.test.ts"
+   ],
+   "app": [
+    "src/app/api/cron/v3/standing-refresh/route.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260606120200_v3_prune_stale_player_standing.sql",
+    "supabase/migrations/20260610040100_prune_standing_global_orphans.sql"
+   ]
+  }
+ },
+ "recalculate_baseball_season_stats": {
+  "hits": {
+   "other": 51,
+   "test": 5,
+   "script": 15,
+   "app": 9,
+   "generated": 1,
+   "migration": 23
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-05/operations/2026-05-27-v3-production-readiness.md",
+    "docs/archive/2026-06/audits/BASEBALLHELM_MIGRATION_APPLY_PLAN.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/archive/superseded-2026-08/SESSION_REPORT_2026-05-27_PART2.md"
+   ],
+   "test": [
+    "e2e/README.md",
+    "src/app/baseball/actions/__tests__/operational-signals-cold-streak.test.ts",
+    "src/contracts/baseball/stats/command-center-stats-center-drift.test.ts",
+    "src/contracts/baseball/stats/seeded-stats-non-empty.smoke.test.ts"
+   ],
+   "script": [
+    "scripts/db/check-supabase-drift.mjs",
+    "scripts/seed-baseball-demo-program.ts",
+    "scripts/seed-baseball-e2e.ts",
+    "scripts/seed-baseball-stats.mjs"
+   ],
+   "app": [
+    "src/app/baseball/actions/games.ts",
+    "src/app/baseball/actions/imports.ts",
+    "src/app/baseball/actions/operational-signals.ts",
+    "src/components/baseball/player-profile/PlayerProfileClient.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260528000000_baseball_recalc_body_guards.sql",
+    "supabase/migrations/20260624001000_baseball_official_stat_breadth.sql",
+    "supabase/migrations/20260630000000_baseball_save_full_box_score_rpc.sql"
+   ]
+  }
+ },
+ "recalculate_round_strokes_gained": {
+  "hits": {
+   "other": 37,
+   "script": 1,
+   "app": 8,
+   "generated": 1,
+   "migration": 18
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/GOLFHELM_STATS_ACCURACY_AUDIT_2026-06-09.md",
+    "docs/archive/2026-06/audits/STATS_DUPLICATE_CALC_AND_DB_LAYER_2026-06-06.md",
+    "docs/archive/2026-06/audits/STATS_END_TO_END_REMEDIATION_PLAN_2026-06-06.md",
+    "docs/archive/2026-07-devibe/DATA_QUALITY_TAB_ARCHITECTURE.md"
+   ],
+   "script": [
+    "scripts/recompute-sg-cache.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-data.ts",
+    "src/app/golf/actions/admin-tracer-data.ts",
+    "src/components/golf/coachhelm/round-review/RoundSGSummary.tsx",
+    "src/lib/cache/golf-stats-calculator.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606140000_fix_sg_expected_strokes_baseline_calibration.sql",
+    "supabase/migrations/20260606150000_recalc_sg_sync_golf_rounds.sql",
+    "supabase/migrations/20260606200000_converge_legacy_round_sg.sql"
+   ]
+  }
+ },
+ "recalculate_team_baseball_season_stats": {
+  "hits": {
+   "other": 26,
+   "app": 1,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-05/operations/2026-05-27-v3-production-readiness.md",
+    "docs/archive/2026-06/baseballhelm_revolution_plan_v2/20_stats_integrations_coachhelm_deep_dive_v6/v6_current_app_supabase_deep_dive.md",
+    "docs/archive/superseded-2026-08/SESSION_REPORT_2026-05-27_PART2.md",
+    "docs/audits/BASEBALLHELM_CANONICAL_SPEC.md"
+   ],
+   "app": [
+    "src/app/baseball/actions/games.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260528000000_baseball_recalc_body_guards.sql"
+   ]
+  }
+ },
+ "recompute_golf_round_totals": {
+  "hits": {
+   "other": 15,
+   "app": 2,
+   "generated": 1,
+   "migration": 11
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/STATS_DUPLICATE_CALC_AND_DB_LAYER_2026-06-06.md",
+    "docs/archive/2026-06/audits/STATS_END_TO_END_REMEDIATION_PLAN_2026-06-06.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md"
+   ],
+   "app": [
+    "src/lib/golf/round-total.ts",
+    "src/lib/golf/stat-formulas.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606190000_fix_fairway_denominator.sql",
+    "supabase/migrations/20260708141000_gate_secdef_ownership_and_redemption.sql"
+   ]
+  }
+ },
+ "recompute_team_sg": {
+  "hits": {
+   "other": 8,
+   "app": 3,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/coaching-settings.md",
+    "docs/archive/remediation-2026-08-18/DEAD_INVENTORY.md",
+    "docs/archive/superseded-2026-08/golfhelm-engine-upgrade-plan.md"
+   ],
+   "app": [
+    "src/app/golf/actions/team-sg-baseline.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260607200000_per_team_sg_baseline.sql",
+    "supabase/migrations/20260608120000_charge_penalties_in_sg.sql",
+    "supabase/migrations/20260610040200_drop_dead_stats_functions.sql",
+    "supabase/migrations/20260622130000_pga_lpga_only_sg_baselines.sql"
+   ]
+  }
+ },
+ "refresh_crm_coach_engagement": {
+  "hits": {
+   "other": 7,
+   "app": 4,
+   "generated": 1,
+   "migration": 9
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/app/api/cron/refresh-engagement/route.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260708021000_gate_ungated_definer_rpcs.sql",
+    "supabase/migrations/20260801053000_refresh_engagement_xact_lock.sql"
+   ]
+  }
+ },
+ "refresh_player_standing": {
+  "hits": {
+   "other": 41,
+   "test": 3,
+   "script": 1,
+   "app": 14,
+   "generated": 1,
+   "migration": 36
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_INSIGHT_ENGINE_AUDIT_2026-06-05.md",
+    "docs/archive/2026-06/audits/COACHHELM_SMARTER_BUILD_STATUS_2026-06-05.md",
+    "docs/archive/2026-06/audits/COACHHELM_SMARTER_BY_CONTEXT_PLAN_2026-06-05.md",
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md"
+   ],
+   "test": [
+    "src/test/api/cron/standing-refresh.test.ts"
+   ],
+   "script": [
+    "scripts/seed-demo-player.ts"
+   ],
+   "app": [
+    "src/app/api/cron/v3/standing-backfill/route.ts",
+    "src/app/api/cron/v3/standing-refresh/route.ts",
+    "src/lib/coachhelm/v2/insights/standing-injection.ts",
+    "src/lib/coachhelm/v3/generators/course-mgmt.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260605120000_v3_cohort_population_baseline.sql",
+    "supabase/migrations/20260605130000_v3_approach_proximity_standing.sql",
+    "supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql"
+   ]
+  }
+ },
+ "refresh_player_standing_round_metrics": {
+  "hits": {
+   "other": 23,
+   "test": 1,
+   "app": 6,
+   "generated": 1,
+   "migration": 24
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/superpowers/plans/2026-06-07-coachhelm-to-90.md",
+    "docs/audits/COACHHELM_FULL_VALIDITY_AND_FACET_AUDIT_2026-06-06.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "test": [
+    "src/test/api/cron/standing-refresh.test.ts"
+   ],
+   "app": [
+    "src/app/api/cron/v3/standing-backfill/route.ts",
+    "src/app/api/cron/v3/standing-refresh/route.ts",
+    "src/lib/coachhelm/v3/generators/pressure-gap.ts",
+    "src/lib/coachhelm/v3/generators/warmup-hole.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql",
+    "supabase/migrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql",
+    "supabase/migrations/20260607200000_per_team_sg_baseline.sql"
+   ]
+  }
+ },
+ "refresh_player_standing_shot_metrics": {
+  "hits": {
+   "other": 16,
+   "test": 1,
+   "app": 4,
+   "generated": 1,
+   "migration": 17
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_SMARTER_BUILD_STATUS_2026-06-05.md",
+    "docs/archive/2026-06/audits/STATS_CORRECTNESS_AUDIT_2026-06-06.md",
+    "docs/archive/2026-06/audits/STATS_DUPLICATE_CALC_AND_DB_LAYER_2026-06-06.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "test": [
+    "src/test/api/cron/standing-refresh.test.ts"
+   ],
+   "app": [
+    "src/app/api/cron/v3/standing-backfill/route.ts",
+    "src/app/api/cron/v3/standing-refresh/route.ts",
+    "src/lib/coachhelm/v3/standing/refresh.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260605130000_v3_approach_proximity_standing.sql",
+    "supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql",
+    "supabase/migrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql",
+    "supabase/migrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql"
+   ]
+  }
+ },
+ "refresh_player_stats_cache": {
+  "hits": {
+   "other": 60,
+   "test": 4,
+   "script": 2,
+   "app": 33,
+   "generated": 1,
+   "migration": 24
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/2026-06/audits/COACHHELM_VALIDITY_REMEDIATION_2026-06-07.md",
+    "docs/archive/2026-06/audits/GOLFHELM_STATS_ACCURACY_AUDIT_2026-06-09.md",
+    "docs/archive/2026-06/audits/STATS_DUPLICATE_CALC_AND_DB_LAYER_2026-06-06.md"
+   ],
+   "test": [
+    "src/test/api/cron/standing-refresh.test.ts"
+   ],
+   "script": [
+    "scripts/seed-demo-player.ts",
+    "scripts/verify-stats-consistency.ts"
+   ],
+   "app": [
+    "src/app/admin/golf/tracer/TracerRoundDiagnostic.tsx",
+    "src/app/api/cron/v3/standing-refresh/route.ts",
+    "src/app/golf/actions/admin-data.ts",
+    "src/app/golf/actions/admin-tracer-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql",
+    "supabase/migrations/20260606150000_recalc_sg_sync_golf_rounds.sql",
+    "supabase/migrations/20260606170000_refresh_cache_calls_putt_make_pct.sql"
+   ]
+  }
+ },
+ "release_baseball_team_invitation_redemption": {
+  "hits": {
+   "other": 23,
+   "test": 2,
+   "app": 1,
+   "generated": 1,
+   "migration": 14
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/audits/DB_READINESS_PACKET_2026-07-02.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/team-join-code.test.ts"
+   ],
+   "app": [
+    "src/app/baseball/actions/teams.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260630180200_baseball_team_invitation_redeem_rpc.sql",
+    "supabase/migrations/20260702100300_baseball_anon_grant_drift_revoke.sql",
+    "supabase/migrations/20260708141000_gate_secdef_ownership_and_redemption.sql",
+    "supabase/migrations/20260819180639_revoke_release_baseball_invitation_redemption.sql"
+   ]
+  }
+ },
+ "resolve_admin_event": {
+  "hits": {
+   "other": 30,
+   "test": 1,
+   "app": 10,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/baseballhelm-overnight/FINAL_REPORT.md",
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/plans/2026-07-01-helm-bridge-command-center.md",
+    "docs/superpowers/plans/helm-bridge/EXECUTION_LOG.md"
+   ],
+   "test": [
+    "src/lib/admin/__tests__/require-super-admin.test.ts"
+   ],
+   "app": [
+    "src/app/admin/_components/BulkResolveButton.tsx",
+    "src/app/admin/_components/TriageQueue.tsx",
+    "src/app/admin/actions/triage.ts",
+    "src/lib/admin/incident-resolver.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260701130000_bridge_rpcs_sessions_resolve.sql",
+    "supabase/migrations/20260702090000_admin_events_feature_health.sql",
+    "supabase/migrations/20260729120000_admin_events_unresolve_rpc.sql"
+   ]
+  }
+ },
+ "resolve_baseball_team_by_join_code": {
+  "hits": {
+   "other": 17,
+   "test": 7,
+   "app": 2,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/baseballhelm-overnight/CURRENT_PRIORITIES.md",
+    "docs/baseballhelm-overnight/DATABASE_STATUS.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/join-team-by-code-rpc.test.ts",
+    "src/app/baseball/actions/__tests__/team-join-code.test.ts",
+    "src/app/baseball/join/[code]/__tests__/page.test.tsx"
+   ],
+   "app": [
+    "src/app/baseball/actions/teams.ts",
+    "src/app/baseball/join/[code]/page.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260729000100_baseball_tenant_isolation_rls_a_additive.sql",
+    "supabase/migrations/20260729000200_baseball_tenant_isolation_rls_b_policies.sql"
+   ]
+  }
+ },
+ "resolve_baseball_team_invitation_by_code": {
+  "hits": {
+   "other": 15,
+   "test": 8,
+   "app": 2,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "memory/glossary.md",
+    "supabase/tests/rls/baseball_team_invitation_code_isolation.sql"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/team-join-code.test.ts",
+    "src/app/baseball/join/[code]/__tests__/page.test.tsx"
+   ],
+   "app": [
+    "src/app/baseball/actions/teams.ts",
+    "src/app/baseball/join/[code]/page.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260729000100_baseball_tenant_isolation_rls_a_additive.sql",
+    "supabase/migrations/20260729000200_baseball_tenant_isolation_rls_b_policies.sql"
+   ]
+  }
+ },
+ "revoke_user_sessions": {
+  "hits": {
+   "other": 21,
+   "app": 7,
+   "generated": 1,
+   "migration": 6
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/AUDIT_LOG_SCOPE.md",
+    "docs/archive/remediation-2026-08-18/OVERNIGHT_REPORT.md",
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/plans/2026-07-01-helm-bridge-command-center.md"
+   ],
+   "app": [
+    "src/app/admin/_components/SessionsPanel.tsx",
+    "src/app/admin/actions/sessions.ts",
+    "src/lib/admin/data/feature-health.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260701140000_revoke_user_sessions_rpc.sql"
+   ]
+  }
+ },
+ "run_integrity_checks": {
+  "hits": {
+   "other": 16,
+   "app": 6,
+   "generated": 1,
+   "migration": 11
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "docs/superpowers/plans/2026-07-01-helm-bridge-command-center.md",
+    "docs/superpowers/plans/helm-bridge/waves/w11-jobs-integrity.md"
+   ],
+   "app": [
+    "src/app/admin/jobs/page.tsx",
+    "src/app/api/cron/integrity-check/route.ts",
+    "src/lib/utils/describe-error.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260701150000_run_integrity_checks_rpc.sql",
+    "supabase/migrations/20260702093000_revoke_anon_grant_drift_log_tables.sql",
+    "supabase/migrations/20260704130000_integrity_check_admin_readability_tripwire.sql"
+   ]
+  }
+ },
+ "save_baseball_full_box_score": {
+  "hits": {
+   "other": 23,
+   "test": 5,
+   "script": 2,
+   "app": 13,
+   "generated": 1,
+   "migration": 21
+  },
+  "where": {
+   "other": [
+    ".claude/rules/baseball-review.md",
+    "docs/archive/superseded-2026-08/the-claude-session-who-wasnt-smart-enough.md",
+    "docs/baseball/legacy-backfill-runbook.md",
+    "docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/save-full-box-score.test.ts",
+    "src/app/baseball/actions/__tests__/upload-box-score-csv.test.ts"
+   ],
+   "script": [
+    "scripts/seed-baseball-stats.mjs"
+   ],
+   "app": [
+    "src/app/baseball/(dashboard)/dashboard/stats/upload/page.tsx",
+    "src/app/baseball/actions/games.ts",
+    "src/app/baseball/actions/imports.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260630000000_baseball_save_full_box_score_rpc.sql",
+    "supabase/migrations/20260701009000_baseball_save_full_box_score_season_year.sql",
+    "supabase/migrations/20260708150000_baseball_box_score_upsert_and_error_detail.sql",
+    "supabase/migrations/20260715141727_baseball_legacy_stats_backfill.sql"
+   ]
+  }
+ },
+ "save_partial_round_atomic": {
+  "hits": {
+   "other": 43,
+   "app": 2,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/round-create.md",
+    "docs/archive/2026-08/claude-workflows/round-flow-rewire-analyze.mjs",
+    "docs/archive/superseded-2026-08/SHOT_TRACKING_DEEP_SCRUB.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "app": [
+    "src/app/golf/actions/golf.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260613170000_course_library_round_tee_id.sql",
+    "supabase/migrations/20260614000000_round_atomic_rpcs_persist_course_id.sql",
+    "supabase/migrations/20260819060000_restrict_round_history_delete_to_head_coach.sql"
+   ]
+  }
+ },
+ "select_stalest_teams": {
+  "hits": {
+   "other": 4,
+   "test": 4,
+   "app": 3,
+   "generated": 1,
+   "migration": 4
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/test/api/cron/standing-refresh.test.ts"
+   ],
+   "app": [
+    "src/app/api/cron/v3/standing-refresh/route.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260606120300_v3_select_stalest_teams.sql"
+   ]
+  }
+ },
+ "sg_baseline_scale": {
+  "hits": {
+   "other": 3,
+   "test": 2,
+   "app": 3,
+   "generated": 1,
+   "migration": 4
+  },
+  "where": {
+   "other": [
+    "docs/archive/superseded-2026-08/golfhelm-engine-upgrade-plan.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "test": [
+    "src/lib/golf/__tests__/sg-baseline-options.test.ts"
+   ],
+   "app": [
+    "src/components/golf/coachhelm/round-review/shot-strokes-gained.ts",
+    "src/lib/golf/sg-benchmarks.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260607200000_per_team_sg_baseline.sql",
+    "supabase/migrations/20260622130000_pga_lpga_only_sg_baselines.sql"
+   ]
+  }
+ },
+ "sg_estimate_from_holes": {
+  "hits": {
+   "other": 16,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/GOLFHELM_STATS_ACCURACY_AUDIT_2026-06-09.md",
+    "docs/archive/2026-06/audits/STATS_DUPLICATE_CALC_AND_DB_LAYER_2026-06-06.md",
+    "docs/archive/superseded-2026-08/SHOT_TRACKING_DEEP_SCRUB.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606150000_recalc_sg_sync_golf_rounds.sql",
+    "supabase/migrations/20260607170000_gender_aware_strokes_gained.sql",
+    "supabase/migrations/20260607200000_per_team_sg_baseline.sql"
+   ]
+  }
+ },
+ "sg_normalize_lie": {
+  "hits": {
+   "other": 17,
+   "generated": 1,
+   "migration": 33
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/STATS_CORRECTNESS_AUDIT_2026-06-06.md",
+    "docs/archive/superseded-2026-08/SHOT_TRACKING_DEEP_SCRUB.md",
+    "docs/qa/helm-database-map.md",
+    "docs/superpowers/plans/2026-04-21-coachhelm-fix/01-team-a-database-foundation.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606150000_recalc_sg_sync_golf_rounds.sql",
+    "supabase/migrations/20260606200000_converge_legacy_round_sg.sql",
+    "supabase/migrations/20260607170000_gender_aware_strokes_gained.sql"
+   ]
+  }
+ },
+ "sg_scale_for_player": {
+  "hits": {
+   "other": 7,
+   "test": 1,
+   "app": 10,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/GOLFHELM_E2E_FULL_FINDINGS_2026-06-20.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/stats-personal.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "test": [
+    "src/lib/golf/__tests__/sg-baseline-options.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/player-profile-stats.ts",
+    "src/app/golf/actions/stats-data.ts",
+    "src/app/golf/actions/team-sg-baseline.ts",
+    "src/components/golf/coachhelm/round-review/FilmstripReview.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260607200000_per_team_sg_baseline.sql",
+    "supabase/migrations/20260608120000_charge_penalties_in_sg.sql",
+    "supabase/migrations/20260622130000_pga_lpga_only_sg_baselines.sql"
+   ]
+  }
+ },
+ "shares_my_baseball_organization": {
+  "hits": {
+   "other": 12,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/baseballhelm-overnight/CURRENT_PRIORITIES.md",
+    "docs/baseballhelm-overnight/DATABASE_STATUS.md",
+    "memory/glossary.md",
+    "supabase/tests/rls/baseball_coaches_org_scope.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260729200000_baseball_coaches_org_scope.sql",
+    "supabase/migrations/20260803120000_golf_coaches_scope_select.sql"
+   ]
+  }
+ },
+ "shares_my_golf_organization": {
+  "hits": {
+   "other": 2,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/superseded-2026-08/the-claude-session-who-wasnt-smart-enough.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260803120000_golf_coaches_scope_select.sql"
+   ]
+  }
+ },
+ "show_limit": {
+  "hits": {
+   "other": 2,
+   "generated": 1
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ]
+  }
+ },
+ "show_trgm": {
+  "hits": {
+   "other": 2,
+   "generated": 1
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ]
+  }
+ },
+ "submit_round_atomic": {
+  "hits": {
+   "other": 37,
+   "test": 3,
+   "app": 5,
+   "generated": 1,
+   "migration": 14
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/GOLFHELM_STATS_ACCURACY_AUDIT_2026-06-09.md",
+    "docs/archive/2026-06/audits/STATS_END_TO_END_REMEDIATION_PLAN_2026-06-06.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/round-create.md",
+    "docs/archive/remediation-2026-08-18/PROTOCOL.md"
+   ],
+   "test": [
+    "src/app/golf/actions/__tests__/golf-round-submit-after-chain.test.ts",
+    "src/app/golf/actions/__tests__/golf-round-submit-inngest-routing.test.ts"
+   ],
+   "app": [
+    "src/app/api/admin/log-event/route.ts",
+    "src/app/golf/actions/admin-data.ts",
+    "src/app/golf/actions/golf.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606200000_converge_legacy_round_sg.sql",
+    "supabase/migrations/20260610040200_drop_dead_stats_functions.sql",
+    "supabase/migrations/20260613170000_course_library_round_tee_id.sql"
+   ]
+  }
+ },
+ "try_redeem_baseball_team_invitation": {
+  "hits": {
+   "other": 21,
+   "test": 3,
+   "app": 1,
+   "generated": 1,
+   "migration": 10
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_A.md",
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/audits/DB_READINESS_PACKET_2026-07-02.md",
+    "docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md"
+   ],
+   "test": [
+    "src/app/baseball/actions/__tests__/team-join-code.test.ts"
+   ],
+   "app": [
+    "src/app/baseball/actions/teams.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260630180200_baseball_team_invitation_redeem_rpc.sql",
+    "supabase/migrations/20260702100300_baseball_anon_grant_drift_revoke.sql",
+    "supabase/migrations/20260708141000_gate_secdef_ownership_and_redemption.sql"
+   ]
+  }
+ },
+ "unresolve_admin_event": {
+  "hits": {
+   "other": 3,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/baseballhelm-overnight/FINAL_REPORT.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260729120000_admin_events_unresolve_rpc.sql"
+   ]
+  }
+ },
+ "update_player_distance_proximity": {
+  "hits": {
+   "other": 4,
+   "generated": 1,
+   "migration": 15
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/2026-06/audits/STATS_END_TO_END_REMEDIATION_PLAN_2026-06-06.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260606220000_player_distance_proximity_writer.sql",
+    "supabase/migrations/20260607030000_lock_distance_proximity_putt_rpcs_to_service_role.sql",
+    "supabase/migrations/20260608130000_cache_proximity_miss_puttspergir_alignment.sql",
+    "supabase/migrations/20260608140000_cache_penalty_from_golf_holes_canonical.sql"
+   ]
+  }
+ },
+ "update_player_putt_make_pct": {
+  "hits": {
+   "other": 12,
+   "test": 3,
+   "app": 9,
+   "generated": 1,
+   "migration": 22
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/COACHHELM_TO_95_REGRADE_2026-06-09.md",
+    "docs/archive/2026-06/audits/STATS_END_TO_END_REMEDIATION_PLAN_2026-06-06.md",
+    "docs/archive/2026-06/superpowers/plans/2026-06-07-coachhelm-to-90.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "test": [
+    "src/components/golf/coachhelm/round-review/__tests__/round-review-shots.test.ts",
+    "src/test/api/cron/standing-refresh.test.ts"
+   ],
+   "app": [
+    "src/components/golf/coachhelm/round-review/round-review-shots.ts",
+    "src/lib/cache/golf-stats-calculator.ts",
+    "src/lib/coachhelm/v3/generators/putt-distance.ts",
+    "src/lib/coachhelm/v3/standing/refresh.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260606160000_putt_make_pct_by_distance_writer.sql",
+    "supabase/migrations/20260606170000_refresh_cache_calls_putt_make_pct.sql",
+    "supabase/migrations/20260606220000_player_distance_proximity_writer.sql",
+    "supabase/migrations/20260607030000_lock_distance_proximity_putt_rpcs_to_service_role.sql"
+   ]
+  }
+ },
+ "update_player_stats_strokes_gained": {
+  "hits": {
+   "other": 32,
+   "script": 1,
+   "app": 7,
+   "generated": 1,
+   "migration": 13
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/STATS_DUPLICATE_CALC_AND_DB_LAYER_2026-06-06.md",
+    "docs/archive/2026-06/audits/STATS_END_TO_END_REMEDIATION_PLAN_2026-06-06.md",
+    "docs/archive/superseded-2026-08/SHOT_TRACKING_DEEP_SCRUB.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "script": [
+    "scripts/recompute-sg-cache.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/admin-data.ts",
+    "src/lib/cache/golf-stats-calculator.ts",
+    "src/lib/utils/golf-stats-calculator-shots.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260606140000_fix_sg_expected_strokes_baseline_calibration.sql",
+    "supabase/migrations/20260610040200_drop_dead_stats_functions.sql"
+   ]
+  }
+ },
+ "update_qualifier_leaderboard": {
+  "hits": {
+   "other": 4,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-01/audits/DATABASE_RLS_AUDIT_REPORT.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/024_golf_qualifiers.sql"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "update_user_last_seen": {
+  "hits": {
+   "other": 3,
+   "app": 1,
+   "generated": 1,
+   "migration": 7
+  },
+  "where": {
+   "other": [
+    "docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md"
+   ],
+   "app": [
+    "src/components/admin/LastSeenUpdater.tsx"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260708021000_gate_ungated_definer_rpcs.sql"
+   ]
+  }
+ },
+ "user_conversation_ids": {
+  "hits": {
+   "other": 40,
+   "test": 2,
+   "app": 3,
+   "generated": 1,
+   "migration": 29
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/PROTOCOL.md",
+    "docs/archive/superseded-2026-08/the-claude-session-who-wasnt-smart-enough.md",
+    "docs/qa/helm-bug-risk-register.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "test": [
+    "src/test/actions/create-conversation-rls.test.ts",
+    "src/test/schema/storage-buckets-tracked.test.ts"
+   ],
+   "app": [
+    "src/app/actions/messages.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260710160000_mark_golf_messages_read_rpc.sql",
+    "supabase/migrations/20260801080000_golf_attachments_storage_bucket.sql",
+    "supabase/migrations/20260803120100_bind_definer_rpcs_to_session.sql"
+   ]
+  }
+ },
+ "user_has_pending_join_request_to_coach_team": {
+  "hits": {
+   "other": 6,
+   "test": 2,
+   "generated": 1,
+   "migration": 12
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260205000000_allow_coaches_see_join_request_players.sql",
+    "supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql"
+   ],
+   "test": [
+    "src/test/schema/join-request-predicate-staff-strict.test.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260808170000_join_request_predicate_staff_strict.sql"
+   ]
+  }
+ },
+ "user_is_coach_of_golf_player": {
+  "hits": {
+   "other": 17,
+   "test": 1,
+   "script": 1,
+   "generated": 1,
+   "migration": 12
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/superpowers/plans/2026-06-12-team-toggle-complete.md",
+    "docs/archive/2026-08/claude-scratch/GOLFHELM_DATABASE_AUDIT_REPORT.md",
+    "docs/archive/superseded-2026-08/the-claude-session-who-wasnt-smart-enough.md",
+    "docs/qa/helm-database-map.md"
+   ],
+   "test": [
+    "src/test/schema/join-request-predicate-staff-strict.test.ts"
+   ],
+   "script": [
+    "scripts/check-policies.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260612130000_team_toggle_rls_staff_scope.sql",
+    "supabase/migrations/20260803120100_bind_definer_rpcs_to_session.sql",
+    "supabase/migrations/20260808170000_join_request_predicate_staff_strict.sql"
+   ]
+  }
+ },
+ "user_is_golf_team_member": {
+  "hits": {
+   "other": 4,
+   "script": 7,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260204235000_fix_golf_rls_recursion_final.sql"
+   ],
+   "script": [
+    "scripts/check-policies.ts",
+    "scripts/check-rls.ts",
+    "scripts/diagnose-rls.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "user_is_teammate_of_golf_player": {
+  "hits": {
+   "other": 5,
+   "test": 1,
+   "generated": 1,
+   "migration": 8
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/qa/helm-database-map.md",
+    "memory/glossary.md",
+    "supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql"
+   ],
+   "test": [
+    "src/test/schema/join-request-predicate-staff-strict.test.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql",
+    "supabase/migrations/20260803120100_bind_definer_rpcs_to_session.sql",
+    "supabase/migrations/20260808170000_join_request_predicate_staff_strict.sql"
+   ]
+  }
+ },
+ "verify_coach_owns_player": {
+  "hits": {
+   "other": 22,
+   "test": 1,
+   "app": 7,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/2026-06/audits/GOLFHELM_E2E_FULL_FINDINGS_2026-06-20.md",
+    "docs/archive/2026-06/audits/GOLFHELM_REMEDIATION_PLAN_2026-06-20.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/RECONCILIATION_2026-06-21.md",
+    "docs/archive/2026-06/audits/_e2e_tab_audit_2026-06-20/player-detail-coach.md"
+   ],
+   "test": [
+    "src/test/lib/auth/verify-player-access.test.ts"
+   ],
+   "app": [
+    "src/app/golf/actions/player-fingerprint.ts",
+    "src/app/golf/actions/round-review-system.ts",
+    "src/app/golf/actions/round-reviews.ts",
+    "src/app/golf/actions/stats-data.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ },
+ "verify_coach_owns_team": {
+  "hits": {
+   "other": 10,
+   "test": 6,
+   "app": 5,
+   "generated": 1,
+   "migration": 5
+  },
+  "where": {
+   "other": [
+    "docs/archive/remediation-2026-08-18/OBSERVATIONS_LANE_B.md",
+    "docs/archive/remediation-2026-08-18/PRIVILEGED_RPC_MANIFEST.md",
+    "docs/qa/helm-database-map.md",
+    "docs/qa/helm-route-inventory.md"
+   ],
+   "test": [
+    "src/test/api/calendar/feed-token-security.test.ts"
+   ],
+   "app": [
+    "src/app/api/calendar/coach/[token]/route.ts"
+   ],
+   "generated": [
+    "src/lib/types/database.ts"
+   ],
+   "migration": [
+    "supabase/migrations/20260527000000_prod_public_baseline.sql"
+   ]
+  }
+ }
+}

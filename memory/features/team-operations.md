@@ -1,5 +1,17 @@
 # Feature: Team Operations
 
+<!-- schema-drift-banner -->
+> **⚠️ 1 identifier named below does not exist in the database.**
+> Verified 2026-08-19 against production. `golf_travel_expense_splits`
+>
+> It is described here as if live. Do not query, type, or build on it —
+> check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
+> before trusting any table name in this file. Tracked in
+> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
+> Removing this is a ratchet-down — re-run
+> `node scripts/check-doc-schema-drift.mjs --update` after.
+
+
 ## Status
 
 - active
@@ -95,6 +107,10 @@ Player Team Hub
 ## Business Rules
 
 - Coach task/document/travel writes must be team-scoped.
+- Removing a player from a roster must fail safe when they have a saved
+  in-progress round: retain the round and tell the coach to have the player
+  finish or explicitly discard it. This is a handled warning, not a server
+  error.
 - Player task completion must only update assignments for that player.
 - Task templates create defaults, but assigned task records remain the operational truth.
 - Travel itinerary data can include hotel, flight, room, packing, and uniform details; treat as potentially sensitive.

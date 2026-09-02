@@ -36,6 +36,7 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { assertSafeTarget } from './lib/prod-target-guard.mjs';
 
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
 
@@ -201,6 +202,18 @@ async function main() {
   if (!supabaseUrl || !serviceKey) throw new Error('Missing SUPABASE env vars');
 
   const dryRun = process.argv.includes('--dry-run');
+
+  // Deletes the destination players' existing rounds before cloning, and holes
+  // and shots go with them. Header documents .vercel/.env.production.local as
+  // the target.
+  assertSafeTarget({
+    url: supabaseUrl,
+    allowProd: process.argv.includes('--allow-prod'),
+    dryRun,
+    scriptName: 'seed-demo-team-from-guilford',
+    deletes: ['golf_rounds', 'golf_holes', 'golf_shots'],
+  });
+
   const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false },
   });

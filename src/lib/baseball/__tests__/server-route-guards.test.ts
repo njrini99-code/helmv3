@@ -36,6 +36,8 @@ const mocks = vi.hoisted(() => ({
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
   }),
+  logServerError: vi.fn(),
+  describeError: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -54,11 +56,20 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: mocks.createClient,
 }));
 
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: mocks.logServerError,
+}));
+
+vi.mock('@/lib/utils/describe-error', () => ({
+  describeError: mocks.describeError,
+}));
+
 import {
   requireBaseballPlayerRoute,
   requireRecruitingCoachRoute,
   requireRecruitingPlayerRoute,
   requireShowcaseOrgRoute,
+  requireAcademicsCoachRoute,
 } from '../server-route-guards';
 
 /** Builds a fake Supabase client whose `.from(table).select().eq().maybeSingle()`
@@ -267,5 +278,107 @@ describe('getActiveProgramType team_type fallback (Discover redirect-guard fix)'
     await expect(requireShowcaseOrgRoute()).rejects.toThrow(
       'REDIRECT:/baseball/dashboard/command-center',
     );
+  });
+});
+
+describe('requireAcademicsCoachRoute (Academics module gate)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getSessionProfile.mockResolvedValue({
+      userId: 'u1',
+      role: 'coach',
+      coach: { id: 'c1', coach_type: 'college' },
+      player: null,
+    });
+    mocks.getActiveBaseballContext.mockResolvedValue({ activeTeamId: 'team-1' });
+    mocks.describeError.mockReturnValue('Network timeout');
+  });
+
+  it('redirects unauthenticated users to login (delegates to requireBaseballCoachRoute)', async () => {
+    mocks.getSessionProfile.mockResolvedValue(null);
+    await expect(requireAcademicsCoachRoute()).rejects.toThrow('REDIRECT:/baseball/login');
+  });
+
+  it('allows a coach when academics_module_enabled is true', async () => {
+    const session = {
+      userId: 'u1',
+      role: 'coach',
+      coach: { id: 'c1', coach_type: 'college' },
+      player: null,
+    };
+    mocks.getSessionProfile.mockResolvedValue(session);
+    mocks.createClient.mockResolvedValue(
+      fakeSupabaseClient({ program_type: 'college', academics_module_enabled: true }),
+    );
+
+    await expect(requireAcademicsCoachRoute()).resolves.toEqual(session);
+  });
+
+  it('redirects a coach when academics_module_enabled is false', async () => {
+    mocks.createClient.mockResolvedValue(
+      fakeSupabaseClient({ program_type: 'college', academics_module_enabled: false }),
+    );
+
+    await expect(requireAcademicsCoachRoute()).rejects.toThrow(
+      'REDIRECT:/baseball/dashboard/command-center',
+    );
+  });
+
+  it('falls back to program-type default when no settings row exists (college defaults to ON)', async () => {
+    const session = {
+      userId: 'u1',
+      role: 'coach',
+      coach: { id: 'c1', coach_type: 'college' },
+      player: null,
+    };
+    mocks.getSessionProfile.mockResolvedValue(session);
+    mocks.createClient.mockResolvedValue(fakeSupabaseClient(null)); // no row
+
+    await expect(requireAcademicsCoachRoute()).resolves.toEqual(session);
+  });
+
+  it('falls back to program-type default (high_school defaults to OFF) when no settings row exists', async () => {
+    mocks.createClient.mockResolvedValue(fakeSupabaseClient(null)); // no row
+    mocks.getActiveBaseballContext.mockResolvedValue({
+      activeTeamId: 'team-hs',
+    });
+
+    // Mock getActiveProgramType to return 'high_school'
+    mocks.createClient.mockResolvedValueOnce(
+      fakeSupabaseClient({ program_type: 'high_school', team_type: null }),
+    );
+    mocks.createClient.mockResolvedValueOnce(fakeSupabaseClient(null)); // no settings row
+
+    await expect(requireAcademicsCoachRoute()).rejects.toThrow(
+      'REDIRECT:/baseball/dashboard/command-center',
+    );
+  });
+
+  it('logs a warning and falls back to program-type default when settings read fails', async () => {
+    const session = {
+      userId: 'u1',
+      role: 'coach',
+      coach: { id: 'c1', coach_type: 'college' },
+      player: null,
+    };
+    mocks.getSessionProfile.mockResolvedValue(session);
+
+    const readError = new Error('Database connection lost');
+    const query = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: readError }),
+    };
+    mocks.createClient.mockResolvedValueOnce({ from: vi.fn().mockReturnValue(query) }); // for getActiveProgramType
+    mocks.createClient.mockResolvedValueOnce({ from: vi.fn().mockReturnValue(query) }); // for settings read
+
+    await expect(requireAcademicsCoachRoute()).resolves.toEqual(session);
+
+    expect(mocks.logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('[requireAcademicsCoachRoute] program settings read failed'),
+      expect.objectContaining({ action: 'baseball.requireAcademicsCoachRoute' }),
+      'warning',
+    );
+    expect(mocks.describeError).toHaveBeenCalledWith(readError);
   });
 });

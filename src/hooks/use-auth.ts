@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { useAuthStore } from '@/stores/auth-store';
 import { invalidateAuthCache } from '@/hooks/use-baseball-auth';
-import type { Player, CoachWithOrganization } from '@/lib/types';
+import type { BaseballPlayer as Player, CoachWithOrganization } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
 // Module-level auth coordination.

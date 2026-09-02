@@ -183,7 +183,12 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
             {player.sg_total != null ? formatSgTotal(player.sg_total) : '—'}
           </p>
           {player.standing_tier ? (
-            <p className="mt-0.5 truncate font-fw-sans text-caption leading-tight text-text-tertiary" title={player.standing_tier}>
+            // Wraps rather than truncating: at 390pt this cell is ~77px of text
+            // width while the tier phrases run 19-25 characters ("Top quartile
+            // on your team"), so `truncate` cut inside the phrase and left
+            // "Top quartile…" — and the `title` tooltip that was the fallback
+            // does nothing on a touch device (owner device report, 2026-08-26).
+            <p className="mt-0.5 font-fw-sans text-caption leading-tight text-text-tertiary">
               {player.standing_tier}
             </p>
           ) : null}

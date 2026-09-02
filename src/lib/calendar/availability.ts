@@ -476,9 +476,27 @@ export async function getUserBusyPeriodsWithStatus(
   // the availability overlay labels and colors busy blocks off `type`.
   for (const classId of ownedClassIds) {
     for (const event of classEventsByClassId.get(classId) ?? []) {
+      // Route through eventBusyInterval like the other three push sites, rather
+      // than reading end_time as a raw instant.
+      //
+      // For a TIMED event the raw form is correct, and every class occurrence is
+      // timed today (measured 2026-08-19: 0 of 1,589 class events have
+      // all_day). So this changes no current behaviour. It closes a latent
+      // divergence: golf_events.end_time on an all-day event is the INCLUSIVE
+      // last day at UTC midnight, so the raw form would end the block a day
+      // early -- and for an Eastern team would also leave every evening after
+      // 8pm bookable on a day the player is in class.
+      //
+      // Worth closing rather than noting, because this repo has already shipped
+      // that exact off-by-one across six surfaces. The other three loops here
+      // were fixed; this one was missed because it is the only push site that
+      // does not go through the helper.
+      const interval = eventBusyInterval(event, classTimeZone);
+      if (!interval || !overlapsWindow(interval, timeMin, timeMax)) continue;
+
       busyPeriods.push({
-        start: new Date(event.start_time),
-        end: new Date(event.end_time || event.start_time),
+        start: interval.start,
+        end: interval.end,
         type: 'class',
         title: event.title,
         eventId: event.id,

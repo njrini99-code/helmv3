@@ -155,6 +155,137 @@ describe('FairwayCalendarMemberRail — the selection cap explains itself', () =
   });
 });
 
+/**
+ * #1470: "ALL" used to fire `onSelect([])` — empty selection, which renders
+ * as the plain team calendar (FairwayCalendar.tsx's `availabilityMode` is
+ * `false` when nothing is selected). That's strictly LESS than picking a
+ * single player, whose overlay includes their classes/blocked time on top of
+ * team events. ALL now selects every roster member instead, bypassing the
+ * manual 8-selection cap (that cap exists to keep the per-index color palette
+ * unambiguous; past it, chips fall back to initials + an id-hash tint —
+ * covered below).
+ */
+describe('FairwayCalendarMemberRail — ALL shows the whole team, not less than one player (#1470)', () => {
+  it('selects every member id when ALL is pressed (the acceptance criterion)', async () => {
+    const onSelect = vi.fn();
+    const roster = Array.from({ length: 5 }, (_, i) =>
+      member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
+    );
+    render(<FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={[]} onSelect={onSelect} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'All' }));
+
+    expect(onSelect).toHaveBeenCalledWith(roster.map((m) => m.id));
+  });
+
+  it('selects every member id even on a roster larger than the 8-member cap, bypassing it', async () => {
+    const onSelect = vi.fn();
+    const roster = Array.from({ length: 12 }, (_, i) =>
+      member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
+    );
+    render(<FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={[]} onSelect={onSelect} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'All' }));
+
+    expect(onSelect).toHaveBeenCalledWith(roster.map((m) => m.id));
+    expect(onSelect.mock.calls[0]![0]).toHaveLength(12);
+  });
+
+  it('overrides a partial manual selection — ALL means everyone, not "add the rest"', async () => {
+    const onSelect = vi.fn();
+    const roster = Array.from({ length: 4 }, (_, i) =>
+      member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
+    );
+    render(
+      <FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={['p0', 'p2']} onSelect={onSelect} />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'All' }));
+
+    expect(onSelect).toHaveBeenCalledWith(roster.map((m) => m.id));
+  });
+
+  it('pressing ALL again while everyone is selected clears back to the team-only state', async () => {
+    const onSelect = vi.fn();
+    const roster = Array.from({ length: 5 }, (_, i) =>
+      member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
+    );
+    render(
+      <FairwayCalendarMemberRail
+        teamMembers={roster}
+        selectedPlayerIds={roster.map((m) => m.id)}
+        onSelect={onSelect}
+      />,
+    );
+
+    const allButton = screen.getByRole('button', { name: 'All' });
+    expect(allButton).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(allButton);
+
+    expect(onSelect).toHaveBeenCalledWith([]);
+  });
+
+  it('the existing Clear control also returns to team-only from an ALL-selected state', async () => {
+    const onSelect = vi.fn();
+    const roster = Array.from({ length: 5 }, (_, i) =>
+      member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
+    );
+    render(
+      <FairwayCalendarMemberRail
+        teamMembers={roster}
+        selectedPlayerIds={roster.map((m) => m.id)}
+        onSelect={onSelect}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+
+    expect(onSelect).toHaveBeenCalledWith([]);
+  });
+
+  it('does not disable or grey out any chip once ALL has pushed the selection past the 8-member cap', () => {
+    const roster = Array.from({ length: 10 }, (_, i) =>
+      member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
+    );
+    render(
+      <FairwayCalendarMemberRail
+        teamMembers={roster}
+        selectedPlayerIds={roster.map((m) => m.id)}
+        onSelect={vi.fn()}
+      />,
+    );
+    for (const m of roster) {
+      const chip = screen.getByRole('button', { name: new RegExp(`${m.first_name} ${m.last_name}\\b`) });
+      expect(chip).not.toHaveAttribute('aria-disabled', 'true');
+    }
+    // The 8-cap notice is specific to the manual-selection cap; it must not
+    // appear once ALL has intentionally exceeded it.
+    expect(screen.queryByText(/clear one to swap/i)).not.toBeInTheDocument();
+  });
+
+  it('re-selecting a member deselected from an over-the-cap ALL state is not silently refused', async () => {
+    // Reproduces the #1470 "silent cap" failure mode one level up: start
+    // ALL-selected on an 11-member roster (past the cap), deselect one
+    // member (10 left, still past the cap), then click them again — this
+    // must re-add them, not drop the click the way the cap used to for a
+    // fresh 9th manual selection.
+    const roster = Array.from({ length: 11 }, (_, i) =>
+      member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
+    );
+    const tenSelected = roster.slice(1).map((m) => m.id); // p0 deselected
+    const onSelect = vi.fn();
+    render(
+      <FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={tenSelected} onSelect={onSelect} />,
+    );
+
+    const chip = screen.getByRole('button', { name: new RegExp(`${roster[0]!.first_name} ${roster[0]!.last_name}\\b`) });
+    expect(chip).not.toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(chip);
+
+    expect(onSelect).toHaveBeenCalledWith([...tenSelected, 'p0']);
+  });
+});
+
 describe('FairwayCalendarMemberRail — scroll affordance (finding #123)', () => {
   it('renders the scrollable rail without asserting a hard visual cutoff', () => {
     const members = Array.from({ length: 12 }, (_, i) => member({ id: `p${i}`, first_name: `P${i}`, last_name: 'X' }));

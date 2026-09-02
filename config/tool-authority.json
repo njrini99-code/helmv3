@@ -1,0 +1,82 @@
+{
+  "$comment": [
+    "Static declaration of which tool namespace is AUTHORITATIVE for each service.",
+    "",
+    "This file says what SHOULD be true. docs/TOOL_AUTHORITY_MATRIX.md is generated",
+    "by comparing it against configuration on disk and against recorded behavioral",
+    "observations in config/control-plane-observations.json.",
+    "",
+    "The five columns are NOT synonyms and must never be collapsed:",
+    "  CONFIGURED  a file declares it",
+    "  CONNECTED   the server answered at all",
+    "  EXPOSED     its real tools are present in the session, not just authenticate",
+    "  ALLOWED     permission rules permit calling it",
+    "  EXERCISED   someone actually called it and it worked",
+    "",
+    "ET-4 lost two days because 'CONFIGURED' was read as 'that is all there is'.",
+    "#1671 is that story. Do not infer any column from any other."
+  ],
+  "services": [
+    {
+      "service": "Supabase",
+      "authority": "mcp__supabase__*",
+      "authoritySource": ".mcp.json (this repo)",
+      "scope": "project-scoped: qmnssrrolpinvwjjnufo, read_only=true",
+      "note": "The sanctioned route. Its OAuth grant requests ONLY :read scopes (organizations, projects, database, analytics, secrets, edge_functions, environment, storage) — a connector-enforced capability restriction, not a URL string. Awaiting owner OAuth completion; until then it is CONFIGURED but not CONNECTED.",
+      "alternates": [
+        {
+          "namespace": "mcp__claude_ai_Supabase__*",
+          "disposition": "TEMPORARY_FALLBACK",
+          "reason": "Account-scoped (list_organizations succeeds), so it is NOT project-scoped and carries no read_only enforcement. Its ten project-mutating tools are denied at project scope (#1673). execute_sql is deliberately retained ONLY because the sanctioned path is not yet connected — it is the sole working query path. It is UNENFORCED, not safe. Remove once mcp__supabase__* is connected and exercised."
+        },
+        {
+          "namespace": "mcp__plugin_supabase_supabase__*",
+          "disposition": "PHANTOM_REMOVED",
+          "reason": "No such plugin is installed on this machine. It held user-global ALLOW grants for execute_sql and apply_migration that would have activated the moment anyone installed it. Those grants were removed 2026-08-29; the namespace remains denied at project scope."
+        }
+      ]
+    },
+    {
+      "service": "Sentry",
+      "authority": "mcp__claude_ai_Sentry__*",
+      "authoritySource": "account connector",
+      "scope": "org helm-xs",
+      "note": "Chosen because it is the namespace already exercised and recorded (ET-4's grouped search_events aggregate, documented in .claude/rules/shipping.md). Read-only observability.",
+      "alternates": [
+        {
+          "namespace": "mcp__plugin_sentry_sentry__*",
+          "disposition": "REDUNDANT_DENIED",
+          "reason": "Probed 2026-08-29: connected, and find_organizations returns byte-identical results to the authority (org helm-xs, same region). A duplicate full tool set with no distinct capability. Denied at project scope. REVERSIBLE: if the account connector is ever disconnected, delete one deny line to restore this path — it is a duplicate, not a dead end."
+        }
+      ]
+    },
+    {
+      "service": "Vercel",
+      "authority": "mcp__claude_ai_Vercel__*",
+      "authoritySource": "account connector",
+      "scope": "account",
+      "note": "Deployment reads. Production mutation remains governed separately by the project CLI deny rules, which this does not weaken.",
+      "alternates": [
+        {
+          "namespace": "mcp__plugin_vercel_vercel__*",
+          "disposition": "DEAD_DENIED",
+          "reason": "Probed 2026-08-29: exposes ONLY authenticate/complete_authentication, so it is CONFIGURED but not CONNECTED and cannot operate. Denied at project scope so a dead namespace cannot sit beside the live one as though equivalent."
+        }
+      ]
+    },
+    {
+      "service": "GitHub",
+      "authority": "gh CLI (gh api)",
+      "authoritySource": "scripts/worktree-lifecycle.mjs",
+      "scope": "repo njrini99-code/helmv3",
+      "note": "The lifecycle-critical path: branch deletion depends on PR state and PR head OID. Deliberately the CLI and not mcp__github__*, because the classifier must run in scripts and in CI where MCP is unavailable. A failed lookup is UNKNOWN, never 'no PR' (#1668).",
+      "alternates": [
+        {
+          "namespace": "mcp__github__*",
+          "disposition": "RETAINED_INTERACTIVE",
+          "reason": "Declared globally in ~/.claude.json. Retained for interactive use; it is NOT on the lifecycle path and no automation depends on it. Not denied, because it removes no safety property and provides real interactive capability."
+        }
+      ]
+    }
+  ]
+}

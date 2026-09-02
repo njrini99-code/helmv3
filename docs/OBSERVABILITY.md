@@ -1,8 +1,21 @@
-# Observability convention
+# Observability convention — how application code emits
 
-**Last updated:** 2026-04-21 (Team F, Phase 1)
+**Scope, narrowed 2026-08-30.** This document owns **emission**: the API, the
+convention, and the examples for getting an error out of Helm code. It does not
+define what each surface *knows*, and the table below describes the intended
+path for errors that reach `logServerError` — not every failure in production.
 
-## TL;DR — where errors go
+**What each surface actually knows, and which one is authoritative for a given
+class of error, is `docs/OBSERVABILITY_AUTHORITY.md`.** Read it before
+concluding anything from a count. Measured 2026-08-30: `admin_events` reported
+zero error-or-worse rows over 48 hours while Sentry held twelve unresolved
+issues, and both were correct — unhandled framework and platform errors never
+pass through `logServerError` at all, which `src/instrumentation.ts` documents
+as intended.
+
+**Last updated:** 2026-04-21 (Team F, Phase 1); scope corrected 2026-08-30.
+
+## TL;DR — where errors go *when code calls `logServerError`*
 
 | Surface | Where to see it | How to send to it |
 |---|---|---|

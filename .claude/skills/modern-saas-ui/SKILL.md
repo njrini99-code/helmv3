@@ -1,15 +1,46 @@
 ---
 name: modern-saas-ui
 description: >-
-  Premium SaaS UI design system for Helm Sports Labs. Use when building or
-  restyling GolfHelm/BaseballHelm product surfaces that must match the existing
-  Fairway design system — dashboards, cards, tables, nav, empty states, and
-  marketing pages. Covers the app's own tokens, spacing scale and component
-  idioms rather than generic design advice. Prefer this over general UI skills
-  for anything inside this repo, because it encodes the tokens already shipped.
+  Generic premium-SaaS UI craft guidance — visual hierarchy, density, motion,
+  empty states, when a surface should feel like chrome vs. data. Use for
+  reasoning about how a screen should FEEL. It does NOT define this repo's
+  design system: the binding rule is .claude/rules/design-system.md and the
+  canonical tokens are src/styles/design-tokens.css. Read those first and let
+  them override anything here. For Fairway dashboard implementation prefer the
+  rule plus the shipped components; for layout/overlay/breakpoint defects use
+  ui-stability-debugger-v2.
 ---
 
 # Modern SaaS UI — App Enhancement Guide
+
+> ## ⚠️ THIS SKILL IS NOT A SOURCE OF TRUTH FOR HELM'S DESIGN SYSTEM
+>
+> It is **procedure and craft judgement only**. It contains **zero** references
+> to this repo's canonical sources, and its concrete recipes below —
+> particularly the Glass Effects section, `bg-white`, and `gray-*` Tailwind —
+> describe a visual language that `.claude/rules/design-system.md` declares
+> **RETIRED** under `src/app/golf/(dashboard)/`:
+>
+> > "The old GolfDashboardShell/GolfSidebar fork and its
+> > `glass-standard`/`cream-100`/`warm-*` visual language are retired — don't
+> > reintroduce them."
+>
+> **Authority order, highest first:**
+>
+> 1. `src/styles/design-tokens.css` — the `--fw-*` tokens. Tokens win over all prose.
+> 2. `src/components/fairway/**` — the shipped components. Reuse before inventing.
+> 3. `.claude/rules/design-system.md` — the binding invariant.
+> 4. This skill — how to think about hierarchy, density and motion.
+>
+> **Before applying any recipe here to product code**, read the tokens file and
+> use `bg-canvas` / `bg-surface` / `text-text-primary` / `rounded-card` /
+> `shadow-soft`. Do not copy the raw Tailwind in this document into
+> `src/app/golf/(dashboard)/**`.
+>
+> Why the guard rail: `AGENTS.md` routes mobile and product UI work here, so
+> until now the constitution pointed at a skill the rules contradict — and
+> which one a session followed was not decided by anything legible. The craft
+> advice below is still good. Its *vocabulary* is not current.
 
 Premium SaaS UI design system for Helm Sports Labs and similar products.
 

@@ -1,5 +1,17 @@
 # CoachHelm AI — Intelligence Engine Reference
 
+<!-- schema-drift-banner -->
+> **⚠️ 5 identifiers named below do not exist in the database.**
+> Verified 2026-08-19 against production. `golf_insight_feedback`, `golf_insight_weights`, `golf_player_insight_preferences`, `golf_review_insights`, `golf_validations`
+>
+> They are described here as if live. Do not query, type, or build on them —
+> check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
+> before trusting any table name in this file. Tracked in
+> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
+> Removing these is a ratchet-down — re-run
+> `node scripts/check-doc-schema-drift.mjs --update` after.
+
+
 > Last updated: 2026-02-13
 > Corrected 2026-07-25: a top-down live-path trace found several statements below stale or wrong — engine version status (V2 vs V3), confidence calibration, the behavior learner, insight lifecycle-state names, composite-rule `sample_n`, effectiveness/trust signals, and which components actually render insights to a coach/player. Corrections are inline and marked "CORRECTED 2026-07-25"; original prose is kept, not deleted. A new "Live vs Built-but-Dark (as of 2026-07-25)" section near the end has the consolidated file:line evidence.
 
@@ -13,15 +25,25 @@ CoachHelm is the AI intelligence layer for GolfHelm. It analyzes player round da
 
 Two engine versions coexist:
 
-### V1 (Legacy, still active)
-- `src/lib/coachhelm/insight-engine.ts` — Core insight generation
-- `src/lib/coachhelm/round-review-generator.ts` — Round review creation
-- `src/lib/coachhelm/summary-generator.ts` — Summary text
-- `src/lib/coachhelm/pattern-detector.ts` — Pattern detection
-- `src/lib/coachhelm/highlight-detector.ts` — Highlight moments
-- `src/lib/coachhelm/area-detector.ts` — Problem areas
-- `src/lib/coachhelm/strokes-gained.ts` — SG calculations
-- `src/lib/coachhelm/insights/putting.ts` — Putting analysis
+### V1 — REMOVED (this heading read "Legacy, still active" until 2026-08-31)
+
+Every module below was deleted as verified-dead code, and nothing under `src/`
+has imported any of them since. "Legacy, still active" is close to the most
+expensive sentence a doc can carry about deleted code: it invites a session to
+go looking for the file, fail, and then reconstruct it.
+
+- `src/lib/coachhelm/insight-engine.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/round-review-generator.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/summary-generator.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/pattern-detector.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/highlight-detector.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/area-detector.ts` — was removed 2026-02-23 (`54d461f8b`)
+- `src/lib/coachhelm/insights/putting.ts` — was removed 2026-03-09 (`8ca5989a3`)
+
+V2 and V3 below are the entire live surface. One module from this group
+survives because it moved rather than died:
+
+- `src/lib/golf/strokes-gained.ts` — SG calculations, moved out of `src/lib/coachhelm/` (verified 2026-08-20)
 
 ### V2 (CORRECTED 2026-07-25: still live-writing, but its output is now largely invisible to coaches/players — see V3 below and "Live vs Built-but-Dark")
 Location: `src/lib/coachhelm/v2/`
@@ -74,7 +96,7 @@ Location: `src/lib/coachhelm/v3/`
 
 This doc previously described only V1/V2 and never mentioned V3, even though V3 is what the shared read-time filter `applyInsightVisibility` (`src/lib/coachhelm/v3/insight-visibility.ts:34,38,77-82`) requires — `engine_version='v3'` OR `signature LIKE 'v3:%'`, `lifecycle_state IN (detected, matured, addressed, resolved)`, `status <> 'dismissed'` — before a row can reach *any* coach/player surface (Triage Desk, player Hub/CoachHelm feed, per-player Scouting Report, round-review takeaway, roster top-insight card, morning-digest email). Key modules, verified live:
 - `v3/insight-visibility.ts` — the shared visibility gate, called from ~20 sites across insight-delivery.ts, insight-management.ts, alerts.ts, intelligence-dashboard.ts, drills.ts, whats-new.ts, command-palette.ts, coachhelm-analytics.ts, player-effectiveness.ts, v3/chat/tools.ts, v3/recap/builder.ts, v2/analytics/effectiveness-writer.ts, and the coach-morning-digest cron
-- `v3/composite/rules/*.ts` — 10 composite rule files (lag-distance-3putt, pressure-decel-chain, short-approach-proximity-gap, bunker-miss-side-amplifier, long-approach-3putt-cascade, closing-hole-fatigue, doubles-after-bogey, flyer-lie-over-the-green, front-9-starter, short-side-scrambling-chain) plus `composite/synthesis.ts` (`normalizeCompositeEvidence`)
+- `v3/composite/rules/*.ts` — 9 composite rule files (lag-distance-3putt, pressure-decel-chain, short-approach-proximity-gap, bunker-miss-side-amplifier, closing-hole-fatigue, doubles-after-bogey, flyer-lie-over-the-green, front-9-starter, short-side-scrambling-chain) plus `composite/synthesis.ts` (`normalizeCompositeEvidence`). `long-approach-3putt-cascade` was deleted 2026-08-21 (#1475, #1502) — never fired in production, redundant with `lag_distance_3putt`, and its research citation didn't match its own gate.
 - `v3/ranking/score.ts` — self-documented as "the SINGLE ranking contract for every read surface" (`coachabilityBoost`, `scoreInsight`)
 - `v3/insights/upsert-v3.ts` — the only write path that stamps `engine_version='v3'`
 - `v3/effectiveness/event-ledger.ts` — the exposure/action/outcome ledger (`getInsightEffectivenessSignals`); backs `InsightTrustChips`, which is built and correct but rendered nowhere — see "Live vs Built-but-Dark" below
@@ -250,7 +272,7 @@ Added by a top-down live-path trace, cross-checked against a live prod `golf_coa
 | `coach-behavior.ts` (derivePreferences/prioritizeForCoach/recordAction/queryActions) | DARK | `golf_coach_behavior_log` has 0 rows ever written in prod |
 | `CrossLearner.transferLearning` (cold-start pattern transfer) | Built, unused | No caller outside its own test; `golf_global_patterns` (25 rows) proves the team-level half it builds on works |
 | `ConfidenceCalibrator` empty-construction + epsilon bucket bug | **FIXED on this branch (2026-07-25)** | Was DARK/wrong before; now correct, but still bootstrapped only for `score_to_par` — other reasoning types get mislabeled raw confidence |
-| `sample_n` on `short_approach_proximity_gap`, `bunker_miss_side_amplifier`, `long_approach_3putt_cascade` composite rules | WRONG (hardcoded literal, not computed) | Each rule's `compose()` ships a literal (10, 5, 5); `lag-distance-3putt.ts` and `pressure-decel-chain.ts` compute it correctly from evidence and are the pattern to copy |
+| `sample_n` on `short_approach_proximity_gap`, `bunker_miss_side_amplifier` composite rules | WRONG (hardcoded literal, not computed) | Each rule's `compose()` ships a literal (10, 5); `lag-distance-3putt.ts` and `pressure-decel-chain.ts` compute it correctly from evidence and are the pattern to copy. (`long_approach_3putt_cascade`, the third rule that used to have this bug, was deleted 2026-08-21 — #1475, #1502.) |
 | 17 insight rows (3 players) with `coach_id=NULL AND team_id=NULL` | DARK for every coach | `resolvePlayerOwnership()` returns nulls when no active roster row exists at generation time; coach-side authorization keys off live team membership, not the row's own columns — permanently unreachable until the player has/regains an active roster row |
 
 None of the above indicates fabricated or mock insight data — every DARK item is real computed output with no live consumer, not invented content. No route was found rendering mock/sample/placeholder insight data in production code.

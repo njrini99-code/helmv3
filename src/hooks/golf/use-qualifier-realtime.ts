@@ -36,10 +36,9 @@ interface QualifierDetails {
   description: string | null;
   course_name: string | null;
   course_id: string | null;
-  // F029/F138: golf_qualifiers has NO num_rounds / holes_per_round columns
-  // (removed in the 2026-05-27 schema rebuild). They were declared here but the
-  // `select('*')` never populated them, so every read was silently `undefined`.
-  // Removed so the typed shape matches the real table.
+  // This is the server-enforced qualifier round cap. Keep it in the realtime
+  // shape so a coach's cap edit is not represented by a stale local contract.
+  num_rounds: number;
   start_date: string;
   end_date: string | null;
   entry_deadline: string | null;

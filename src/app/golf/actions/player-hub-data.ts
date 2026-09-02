@@ -17,6 +17,8 @@
  * ========================================================================== */
 
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { getTopInsightForPlayer } from '@/app/golf/actions/insight-delivery';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -78,6 +80,46 @@ async function getPlayerHubSummaryDataImpl(
   playerId: string,
 ): Promise<PlayerHubSummaryData> {
   const supabase = await createClient();
+
+  // Both ids are caller-supplied and, until now, nothing here checked either —
+  // this `'use server'` export had no auth of any kind. The real caller
+  // (dashboard/page.tsx) passes server-resolved values, but the browser can
+  // POST this action with any pair of uuids.
+  //
+  // Every read below runs on the RLS-scoped client, so today RLS is what keeps
+  // another team's travel itineraries and announcements out of the response.
+  // That is exactly the assumption that failed on 2026-08-19 in
+  // goals_coach_create — a policy authored twice and never applied in prod — so
+  // it does not get to be the only thing standing here either.
+  //
+  // Allowed: the player asking about themselves, or a coach who staffs the team.
+  // Refusal THROWS rather than returning an empty hub, deliberately. This
+  // shape has no error field, so a denied caller returning `{trips: [], ...}`
+  // would be indistinguishable from a real player on a genuinely quiet team —
+  // the same "honest empty vs. silent failure" confusion
+  // player-hub-read-failure.test.ts already guards elsewhere in this file.
+  // Throwing matches this function's documented contract above and surfaces
+  // through the route's error boundary. Both real callers pass server-resolved
+  // ids, so a throw here means a bug or an attack, never normal traffic.
+  const session = await getGolfSessionProfile();
+  if (!session) {
+    throw new Error('Unauthorized: no golf session');
+  }
+
+  let authorized = session.player?.id === playerId;
+
+  if (!authorized && session.coach) {
+    authorized = await validateCoachTeamAccess(
+      supabase,
+      session.coach.id,
+      teamId,
+      session.coach.organization_id,
+    );
+  }
+
+  if (!authorized) {
+    throw new Error('Unauthorized: not this player, and not a coach of this team');
+  }
 
   const eventSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const tripsSince = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);

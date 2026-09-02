@@ -1,47 +1,20 @@
-import Link from 'next/link';
-import { StatusPill } from '@/components/fairway';
-import type { FeatureHealthSummary } from '@/lib/admin/data/feature-health';
+import { FeatureHealthSummary } from './FeatureHealthSummary';
+import type { FeatureHealthSummary as FeatureHealthSummaryData } from '@/lib/admin/data/feature-health';
 
 /**
- * W16 Task 5 — compact Feature-Health rollup for the Overview tab.
- * Banner-disciplined (N6): a small "N green / M amber / R red / K neutral"
- * summary + up to 4 inline red/amber chips, all linking to /admin/health.
- * Never a celebration wall — the all-green case renders the SAME one quiet
- * line, nothing more.
+ * W16 Task 5 — compact Feature-Health rollup for the Overview tab (and its
+ * golf/baseball counterparts). Kept as its OWN export, with its OWN exact
+ * `{ summary }` prop shape, because `src/app/admin/page.tsx` — a file this
+ * task does not own — imports and renders it directly.
+ *
+ * Health-consolidation pass: the rendering itself now lives in
+ * `FeatureHealthSummary` (`variant="compact"` there is byte-for-byte what
+ * this component used to render inline), so the Overview banner, the golf
+ * page's cross-link, the baseball page's cross-link, and the Health board's
+ * per-group header all read the SAME "N green / M amber / R red / K
+ * neutral" vocabulary from ONE place instead of three independent
+ * renderings of it.
  */
-export function FeatureHealthRollup({ summary }: { summary: FeatureHealthSummary }) {
-  if (summary.degraded) {
-    return (
-      <p className="text-xs text-warm-600">
-        Feature health unavailable this refresh — showing last-known Overview data, not a fabricated state.
-      </p>
-    );
-  }
-
-  const flagged = [
-    ...summary.redFeatures.map((f) => ({ ...f, tone: 'danger' as const })),
-    ...summary.amberFeatures.map((f) => ({ ...f, tone: 'warning' as const })),
-  ];
-  const chips = flagged.slice(0, 4);
-  const overflow = flagged.length - chips.length;
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Link href="/admin/health" className="font-fw-mono text-xs tabular-nums text-warm-700 hover:underline">
-        Features: {summary.green} green · {summary.amber} amber · {summary.red} red · {summary.neutral} neutral
-      </Link>
-      {chips.map((c) => (
-        <Link key={c.key} href={`/admin/errors?feature=${c.key}`} className="rounded-full transition-opacity hover:opacity-80">
-          <StatusPill tone={c.tone} dot size="sm">
-            {c.label}
-          </StatusPill>
-        </Link>
-      ))}
-      {overflow > 0 ? (
-        <Link href="/admin/health" className="text-xs font-medium text-accent-700 underline underline-offset-2">
-          +{overflow} more → Health
-        </Link>
-      ) : null}
-    </div>
-  );
+export function FeatureHealthRollup({ summary }: { summary: FeatureHealthSummaryData }) {
+  return <FeatureHealthSummary variant="compact" summary={summary} />;
 }

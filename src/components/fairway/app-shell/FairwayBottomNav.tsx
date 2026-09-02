@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils';
 import { NavPendingDot } from './NavPending';
 import { IconLayoutGrid } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import type { FairwayIcon, NavItem, ShellLinkComponent } from './types';
 
 /** Segment-boundary active match (mirrors FairwaySidebar's `matchActive`). */
@@ -157,6 +158,11 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 aria-label={item.label}
+                // Tab tap = selection detent per the Helm feedback grammar
+                // (plan §19: "Selection: tabs"). The visual cause is the
+                // active indicator/color change; no-op off native and when
+                // haptics are disabled in settings (fwHaptic gates both).
+                onClick={() => fwHaptic('selection')}
                 className={cn(
                   // Full-height column ≥44px tall touch target. `min-w-0`
                   // overrides the flex item's default `min-width: auto` floor

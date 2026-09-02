@@ -2,36 +2,43 @@ import Link from 'next/link';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import {
-  parseErrorsFilters,
-  fetchErrorsTab,
-  buildFilteredIncidentsReport,
-} from '@/lib/admin/data/errors';
+import { parseErrorsFilters, fetchErrorsTab, buildFilteredIncidentsReport } from '@/lib/admin/data/errors';
 import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
-import {
-  INCIDENT_CLASS_ORDER,
-  INCIDENT_CLASS_LABEL,
-  INCIDENT_CLASS_DESCRIPTION,
-} from '@/lib/admin/incident-classification';
+import { INCIDENT_CLASS_LABEL, INCIDENT_CLASS_DESCRIPTION } from '@/lib/admin/incident-classification';
 import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
-import { TriageQueue } from '../_components/TriageQueue';
+import { applyIncidentFacets, suppressedByClass } from '@/lib/admin/incidents/lens';
+import { canClaimAllClear } from '@/lib/admin/incidents/sources';
+import {
+  INCIDENT_LENSES,
+  INCIDENT_LENS_LABEL,
+  parseIncidentLens,
+  type IncidentLens,
+} from '@/lib/admin/incidents/types';
+import { UnifiedIncidentQueue } from '../_components/UnifiedIncidentQueue';
+import { IncidentLensRail } from '../_components/IncidentLensRail';
+import { BlindnessBeacon } from '../_components/BlindnessBeacon';
+import { ErrorSurfaceReconciliation } from '../_components/ErrorSurfaceReconciliation';
+import { reconcileErrorSurfaces } from '@/lib/admin/incidents/reconciliation';
+import { SourceCoverageSummaryLine } from '../_components/SourceCoverage';
 import { ErrorsOverTime } from '../_components/ErrorsOverTime';
 import { KpiTile } from '../_components/KpiTile';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelAllClear, PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { LocalTime } from '../_components/LocalTime';
 import { CopyReportButton } from '../_components/CopyReportButton';
 import { BulkResolveButton } from '../_components/BulkResolveButton';
 import { ErrorsFilterChips } from './ErrorsFilterChips';
-
+import { ArchivePanel } from './_components/ArchivePanel';
+import { loadErrorsPageData } from './_data';
 export const dynamic = 'force-dynamic';
 
 const CHIP_SETS: Array<{ param: 'sport' | 'severity' | 'source' | 'window' | 'kind'; values: string[] }> = [
   { param: 'sport', values: ['golf', 'baseball', 'shared'] },
   { param: 'severity', values: ['critical', 'error', 'warning', 'info'] },
   { param: 'source', values: ['server_action', 'rls_denial', 'auth', 'cron', 'client'] },
-  { param: 'window', values: ['24', '168'] },
+  { param: 'window', values: ['24', '72', '168'] },
   // Kind axis. No chip for 'defect' — that IS the unfiltered default view, so
   // a "defect" chip would read as a narrowing that changes nothing.
   { param: 'kind', values: ['all', 'telemetry', 'empty_state', 'access', 'integration', 'degradation', 'integrity_ok'] },
@@ -66,6 +73,17 @@ function chipHref(current: URLSearchParams, param: string, value: string): strin
   const qs = next.toString();
   return qs ? `/admin/errors?${qs}` : '/admin/errors';
 }
+
+/**
+ * The triage read and the archive read, fetched together — pulled out of
+ * `Body` as a pure(ish) async function so the wiring itself is directly
+ * unit-testable (mock the two fetchers, call this, assert both ran and both
+ * results made it through) without needing to render `Body`. `Body` is an
+ * async Server Component embedded via `<Suspense>`, which this repo's test
+ * harness cannot resolve client-side — React 19 supports async components
+ * only on the server — so a full-page render test can prove the shell
+ * mounted but not that its resolved content is what this function produced.
+ */
 
 function clearParamHref(current: URLSearchParams, param: string): string {
   const next = new URLSearchParams(current);
@@ -147,9 +165,15 @@ function ErrorTraceabilityStrip({ appIncidents }: { appIncidents: Awaited<Return
   );
 }
 
+/** Section heading per lens — the list says which question it is answering. */
+function lensHeading(lens: IncidentLens): string {
+  return lens === 'all' ? 'All incidents' : `${INCIDENT_LENS_LABEL[lens]} incidents`;
+}
+
 const FEATURE_LABELS: Record<string, string> = Object.fromEntries(
   FEATURE_REGISTRY.map((f) => [f.key, f.label]),
 );
+
 
 export default async function ErrorsPage({
   searchParams,
@@ -159,13 +183,81 @@ export default async function ErrorsPage({
   await requireSuperAdmin();
   const params = await searchParams;
   const filters = parseErrorsFilters(params);
+  const lens: IncidentLens = parseIncidentLens(params.lens);
   const current = new URLSearchParams(
     Object.entries(params).flatMap(([k, v]) => (typeof v === 'string' ? [[k, v] as [string, string]] : [])),
   );
 
   async function Body() {
-    const tab = await fetchErrorsTab(filters);
+    const { tab, archiveResult, board } = await loadErrorsPageData(filters);
     const { counts } = tab;
+    // Both facets narrow the SAME canonical list: lens by lifecycle/attention,
+    // kind by what the classifier decided the incident is. Neither forks it.
+    const lensed = applyIncidentFacets(board.incidents, lens, filters.kind);
+    const allClearAllowed = canClaimAllClear(board.coverage);
+
+    // The two surfaces, separately. Counting INCIDENTS rather than raw rows is
+    // deliberate: an incident is one production cause, so twelve Sentry events
+    // of one fault are one thing wrong, not twelve. Worth knowing before
+    // comparing screens — this number will NOT match the Sentry dashboard's
+    // unresolved-issue count, and is not meant to.
+    //
+    // The two counts are also asymmetric on purpose. The application side takes
+    // error-or-worse only, because admin_events is GRADED and that grading is
+    // its whole value. The runtime side takes every correlated Sentry incident,
+    // ungraded, because docs/OBSERVABILITY_AUTHORITY.md forbids silencing Sentry
+    // issues Helm happens to grade info — Helm's opinion of a fault it never
+    // handled is not evidence about that fault.
+    //
+    // A source that could not be read contributes null, never 0. That
+    // substitution is the entire defect being fixed.
+    const healthOf = (name: 'app' | 'sentry') =>
+      board.freshness.find((f) => f.source === name)?.health ?? 'unknown';
+    const readable = (name: 'app' | 'sentry') => {
+      const h = healthOf(name);
+      return h !== 'blind' && h !== 'unknown';
+    };
+    const reconciliation = reconcileErrorSurfaces({
+      application: {
+        health: healthOf('app'),
+        count: readable('app')
+          ? board.incidents.filter(
+              (i) =>
+                i.appFingerprints.length > 0 && (i.severity === 'error' || i.severity === 'critical'),
+            ).length
+          : null,
+      },
+      runtime: {
+        health: healthOf('sentry'),
+        count: readable('sentry')
+          ? board.incidents.filter((i) => i.sentryIssueIds.length > 0).length
+          : null,
+      },
+    });
+    // fingerprint-keyed 24h histograms, re-keyed to incident ids. An incident
+    // folds one or more fingerprints, so the series is the FIRST one that has
+    // history rather than a sum — summing two independent histograms would
+    // draw a shape neither source ever produced.
+    //
+    // A Sentry-origin incident folds NO app fingerprints, so the app histogram
+    // lookup alone leaves it with no sparkline at all — which is how the old
+    // TriageQueue's second series source (`sentryStats24h`) quietly went unused
+    // when this queue replaced it. Sentry bakes its own 24h stats into each
+    // issue, so fall back to those, keyed by the incident's Sentry issue ids.
+    const sentrySeriesById = new Map<string, number[]>();
+    for (const issue of tab.sentry.data ?? []) {
+      const series = issue.stats24h.map(([, count]) => count);
+      if (series.length >= 2) sentrySeriesById.set(issue.id, series);
+    }
+    const seriesByIncident: Record<string, number[]> = {};
+    for (const incident of board.incidents) {
+      const series =
+        incident.appFingerprints
+          .map((fp) => tab.appHourlyBuckets[fp])
+          .find((s) => Array.isArray(s) && s.length >= 2) ??
+        incident.sentryIssueIds.map((id) => sentrySeriesById.get(id)).find((s) => s !== undefined);
+      if (series) seriesByIncident[incident.id] = series;
+    }
     // Sentry-origin and app-origin incidents are concatenated independently
     // by mergeTriage() with no invariant coupling them — tab.incidents can be
     // non-empty (legacy Sentry issues) while app incidents are genuinely zero
@@ -176,10 +268,10 @@ export default async function ErrorsPage({
     // broken down by class — a filter that silently hides most of the feed is
     // worse than no filter, because the operator cannot tell the queue is
     // being curated at all.
-    const suppressedBreakdown = INCIDENT_CLASS_ORDER
-      .filter((k) => k !== 'defect' && (tab.kindCounts.byClass[k] ?? 0) > 0)
-      .map((k) => ({ klass: k, count: tab.kindCounts.byClass[k] ?? 0 }));
-    const showSuppressedNotice = !filters.kind && tab.kindCounts.suppressed > 0;
+    const suppressedBreakdown = suppressedByClass(board.incidents);
+    const shownActionable = board.incidents.filter((incident) => incident.actionable).length;
+    const heldBack = suppressedBreakdown.reduce((sum, entry) => sum + entry.count, 0);
+    const showSuppressedNotice = !filters.kind && heldBack > 0;
     const showWiderWindowHint =
       tab.incidents.length === 0 &&
       filters.windowHours < 168 &&
@@ -196,13 +288,46 @@ export default async function ErrorsPage({
 
     return (
       <div className="space-y-6">
+        {/* THE HEADER STATES ITS OWN PROVENANCE. Counts, the sources behind
+            them, the window they cover, and how long ago they were
+            reconciled — because a count without those four is a claim about
+            the present made from data of unknown vintage. */}
+        <header className="space-y-2">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h1 className="text-h2 font-semibold text-warm-900">Incidents</h1>
+            <p className="font-fw-mono text-caption tabular-nums text-warm-500">
+              {board.lensCounts.actionable} actionable · {board.lensCounts.regressions} regression
+              {board.lensCounts.regressions === 1 ? '' : 's'} · {board.lensCounts.repairable} repairable
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-mono text-caption text-warm-400">
+            <SourceCoverageSummaryLine coverage={board.coverage} />
+            <span aria-hidden>·</span>
+            <span>{board.windowHours}h window</span>
+            <span aria-hidden>·</span>
+            <span>
+              reconciled <LocalTime iso={board.computedAt} />
+            </span>
+          </div>
+        </header>
+
+        <BlindnessBeacon note={board.blindnessNote} coverage={board.coverage} />
+
+        <ErrorSurfaceReconciliation verdict={reconciliation} />
+
+        <IncidentLensRail
+          active={lens}
+          counts={board.lensCounts}
+          hrefFor={(next) => hrefWithOverrides(current, { lens: next === 'actionable' ? null : next })}
+        />
+
         {showSuppressedNotice ? (
           <Surface padding="sm">
             <p className="text-body-sm text-warm-800">
               Showing{' '}
-              <span className="font-fw-mono tabular-nums">{tab.kindCounts.actionable}</span>{' '}
-              actionable {tab.kindCounts.actionable === 1 ? 'incident' : 'incidents'}.{' '}
-              <span className="font-fw-mono tabular-nums">{tab.kindCounts.suppressed}</span> held
+              <span className="font-fw-mono tabular-nums">{shownActionable}</span>{' '}
+              actionable {shownActionable === 1 ? 'incident' : 'incidents'}.{' '}
+              <span className="font-fw-mono tabular-nums">{heldBack}</span> held
               back as not-a-bug:{' '}
               {suppressedBreakdown.map((entry, i) => (
                 <span key={entry.klass}>
@@ -265,6 +390,41 @@ export default async function ErrorsPage({
             </p>
           </Surface>
         ) : null}
+        {/* THE canonical list. One incident per production cause, every
+            source that saw it attached, and no second copy of it anywhere on
+            this page — which is the entire point of the read model behind it.
+            It sits ABOVE the KPI grid deliberately: six KPI blocks stacked
+            over the problem list is exactly the top-of-screen chrome the
+            mobile doctrine exists to cut. */}
+        <Surface as="section" padding="sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-accent-600/25 pb-2">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+              {INCIDENT_LENSES.includes(lens) ? lensHeading(lens) : 'Incidents'}
+              <span className="ml-2 font-fw-mono tabular-nums text-warm-400">{lensed.length}</span>
+            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <CopyReportButton
+                report={buildFilteredIncidentsReport(tab.incidents, filters)}
+                label={`Copy all (filtered) · ${tab.incidents.length}`}
+              />
+              <BulkResolveButton eventIds={lensed.flatMap((i) => board.eventIdsByIncident[i.id] ?? [])} />
+            </div>
+          </div>
+          <UnifiedIncidentQueue
+            incidents={lensed}
+            eventIdsByIncident={board.eventIdsByIncident}
+            seriesByIncident={seriesByIncident}
+            canClaimAllClear={allClearAllowed}
+            blindnessNote={board.blindnessNote}
+            checkedAt={board.computedAt}
+          />
+          <p className="mt-2 text-xs text-warm-500">
+            Row detail: <span className="font-fw-mono">/admin/errors/&lt;incident id&gt;</span> — click any
+            title. Reliability-origin incidents resolve under their{' '}
+            <span className="font-fw-mono">rel:</span> signature.
+          </p>
+        </Surface>
+
         <section className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
           <Surface padding="sm" className="min-w-0">
             {/* Below sm: 2-col + a full-width trailing cell (Mobile Doctrine
@@ -420,24 +580,20 @@ export default async function ErrorsPage({
           )}
         </Surface>
 
-        <Surface as="section" padding="sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-accent-600/25 pb-2">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">In-app incidents</h2>
-            <div className="flex flex-wrap items-center gap-2">
-              <CopyReportButton
-                report={buildFilteredIncidentsReport(tab.incidents, filters)}
-                label={`Copy all (filtered) · ${tab.incidents.length}`}
-              />
-              <BulkResolveButton
-                eventIds={appIncidents.flatMap((incident) => incident.eventIds)}
-              />
-            </div>
-          </div>
-          <TriageQueue items={tab.incidents} />
-          <p className="mt-2 text-xs text-warm-500">
-            Row detail: <span className="font-fw-mono">/admin/errors/&lt;fingerprint&gt;</span> (click-through from each app row title)
-          </p>
-        </Surface>
+        {/* Archive / Fixed and the Sentry source panel sit BELOW this. This
+            is the canonical list — one incident per production cause, with
+            every source that saw it attached. There is deliberately no second
+            incident list anywhere on this page. */}
+
+        {/* Archive / Fixed — clearly separated from the live triage queue
+            above by a divider and its own top margin. Reference material for
+            "was this ever fixed, and did it ship", not the headline: the open
+            queue above stays the primary content on this page. ArchivePanel
+            owns its own "Archive" heading/empty/error states — this wrapper
+            only adds the visual break. */}
+        <div className="border-t border-warm-200 pt-6">
+          <ArchivePanel result={archiveResult} />
+        </div>
       </div>
     );
   }

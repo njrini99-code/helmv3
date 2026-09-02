@@ -11,38 +11,54 @@ updated.
 
 ## 1. Status classification — hard gate vs. advisory
 
-**THREE** required contexts are actually enforced on `main` — read live from the
-API, not from this table:
+**SIX** required contexts are enforced on `main` as of 2026-08-19 — read live
+from the API, not from this table:
 
 ```bash
 gh api repos/njrini99-code/helmv3/branches/main/protection \
   -q '.required_status_checks | {strict, contexts}'
-# => {"strict": true, "contexts": ["CodeQL", "all", "Smoke checks"]}
+# => {"strict": true, "contexts": [
+#      "Smoke checks", "CI aggregate", "Review Gate aggregate",
+#      "Analyze (actions)", "Analyze (javascript-typescript)", "Analyze (python)"
+#    ]}
 ```
 
 `CodeRabbit` **is no longer one of them** — dropped by founder decision on
 2026-07-20 and removed from the required set (the app itself still needs an owner
 uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 
-> ### ⚠️ `all` IS AMBIGUOUS, AND A GREEN `all` DOES NOT MEAN CI PASSED
+> ### ✅ RESOLVED 2026-08-19 — `all` is gone, and two contexts were PHANTOMS
 >
-> `ci.yml` and `review-gate.yml` **both** define a job named `all`, so both emit a
-> check run named `all` — and `all` is a required context. GitHub cannot tell them
-> apart by name.
+> The ambiguity this section warned about is fixed, but not the way it expected.
+> The job rename had already landed on `main` while the required-context list
+> still said `all`, so for some time **no check could satisfy it** — `all` was a
+> required context that nothing would ever post again. PRs were unsatisfiable;
+> only `enforce_admins: false` hid it, by letting the owner push straight past.
 >
-> **Observed on PR #1125, 2026-07-30:** a check-runs query scoped to the head commit
-> returned `all → success` while `BaseballHelm authenticated smoke`, a job that
-> CI's `all` explicitly `needs`, was still `in_progress`. The green was **Review
-> Gate's**. That smoke job then **failed**, and CI's `all` failed with it. A
-> name-based readiness check reads green before CI has finished, and can read green
-> while CI is red.
+> Worse, `CodeQL` was a phantom too. Nothing posts a check run or a commit
+> status by that name — `codeql.yml` runs a three-language matrix that emits
+> `Analyze (actions)`, `Analyze (javascript-typescript)` and `Analyze (python)`.
+> **Of the three contexts formerly required, two matched nothing and only
+> `Smoke checks` was real.**
 >
-> This is the most likely explanation for a PR with failing **Unit tests** merging on
-> 2026-07-29. Note `Unit tests` is *not* a required context by name — it is required
-> only transitively, because CI's `all` job `needs` it.
+> Now required: `Smoke checks`, `CI aggregate`, `Review Gate aggregate`, and the
+> three `Analyze (...)` runs. All six verified to run on both `push` to `main`
+> and `pull_request`, with no path filters, so none can hang a PR.
 >
-> **Never decide "ready to merge" from a check named `all`.** Resolve the PR's head
-> SHA, find the run whose `.name == "CI"`, and read that run's own jobs:
+> **The transferable lesson: a required context is matched by NAME against what
+> actually posts, and a name that posts nothing looks exactly like a check that
+> has not finished yet.** GitHub never warns you. Before adding a context, ask
+> for the names that exist:
+>
+> ```bash
+> gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs --paginate \
+>   -q '.check_runs[] | .name' | sort -u
+> gh api repos/njrini99-code/helmv3/commits/<sha>/status -q '.statuses[] | .context'
+> ```
+>
+> The advice below still stands for reading a PR's real state: resolve the head
+> SHA, find the run whose `.name == "CI"`, and read that run's own jobs rather
+> than trusting an aggregate check name.
 >
 > ```bash
 > sha=$(gh pr view <PR> --json headRefOid -q .headRefOid)
@@ -52,18 +68,16 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 >   -q '.jobs[]|"\(.conclusion // .status)\t\(.name)"'
 > ```
 >
-> To identify which workflow a given check run came from, read its `html_url` — it
-> contains the run id.
->
-> **Fixing this needs the repo owner, so do not do it unilaterally.** Renaming
-> either job changes its check-run name, and branch protection would then wait
-> forever for a context named `all` that no longer exists — blocking every PR. The
-> rename and the `required_status_checks` update have to land together.
+> **Historical, for why this mattered:** on PR #1125 (2026-07-30) a check-runs
+> query returned `all → success` while `BaseballHelm authenticated smoke` — a
+> job CI's `all` explicitly `needs` — was still `in_progress`. The green was
+> Review Gate's. That smoke then failed. This is the most likely explanation for
+> a PR with failing **Unit tests** merging on 2026-07-29.
 
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
-| `all` (CI) | `ci.yml` | aggregate: DB-types drift, schema invariants, feature knowledge, typecheck, ESLint, lint-ratchet, unit tests, business contracts, `next build`, route hygiene, **Supabase lint + RLS tests**, **BaseballHelm authenticated coach/player smoke (#372)** | **Hard gate** — but see the ambiguity warning above: this shares the required context name `all` with the Review Gate job below, so a green `all` may not be this one |
-| `all` (Review Gate) | `review-gate.yml` | aggregate: ast-grep, semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint | **Hard gate** — same shared name; verify which workflow reported |
+| `CI aggregate` | `ci.yml` | aggregate: DB-types drift, schema invariants, feature knowledge, typecheck, ESLint, lint-ratchet, unit tests, business contracts, `next build`, route hygiene, **Supabase lint + RLS tests**, **BaseballHelm authenticated coach/player smoke (#372)** | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
+| `Review Gate aggregate` | `review-gate.yml` | aggregate: ast-grep, semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint | **Hard gate** — uniquely named since 2026-08-19 |
 | `Smoke checks` | `playwright.yml` (PRs + main push) | build-only smoke: `npm ci` + `next build` (no full E2E) | **Hard gate** |
 | `Playwright PR smoke (a11y)` | `pr-smoke.yml` | public-route accessibility Playwright only when frontend/e2e paths change | Advisory |
 | `CodeRabbit` | CodeRabbit GitHub App | ~~assertive line-level review + blocking custom checks~~ | **DROPPED 2026-07-20** — removed from the required set by founder decision; `.coderabbit.yaml` is a disable stub. If a `CodeRabbit` status still appears, it is informational. The custom rule packs under `.coderabbit/` REMAIN and are consumed directly by the Review Gate. |
@@ -95,10 +109,14 @@ Don't treat a check as "stuck" before its normal window has passed:
 - **Full Playwright** (`playwright.yml`, main + manual only) — `e2e` job
   75-minute budget; `picker-screenshots` and `baseball-smoke` 20 minutes each;
   main-push `Smoke checks` 15 minutes.
-- **`CI / all`'s `baseball-auth-smoke` job (#372)** — 30-minute budget. It
+- **`baseball-auth-smoke` (#372)** — 30-minute budget. It
   installs Playwright chromium, runs a full `npm run build`, seeds BaseballHelm
-  CI accounts, then runs the mandatory coach/player smoke. Separate from — and in
-  addition to — the broader `Smoke checks` build.
+  CI accounts, then runs the coach/player smoke. Separate from — and in
+  addition to — the broader `Smoke checks` build. **Out of the PR gate since
+  2026-08-26 (owner decision)**: it runs on push to `main` only and no longer
+  feeds `CI aggregate` — a red run on `main` blocks the next production
+  promote, not PR merges. It had failed two consecutive PR runs with the
+  runner dying ("shutdown signal") mid-TypeScript, before any test ran.
 
   **This job's target changed on 2026-07-30 (PR #1125).** Before: it seeded
   **production** using repo secrets, and **skipped** on fork/Dependabot PRs because
@@ -166,14 +184,12 @@ your diff — `main` itself was already red when you branched.
   their env vars aren't set (`PLAYWRIGHT_BASEBALL_SEEDED`, `E2E_GOLF_*`,
   `GOLFHELM_*`). A skip is not a failure.
 
-  **But `baseball-auth-smoke` (#372) no longer skips, and that is deliberate.**
-  It used to skip on fork/Dependabot `pull_request` runs because those never
-  receive repo secrets. As of PR #1125 it needs no secrets — it seeds a
-  throwaway stack on the runner — so it runs everywhere. If you see it skipped
-  now, that is *not* expected: check the job's `if:` condition rather than
-  waving it through. A **required** gate that silently skipped for a whole class
-  of PR was a hole in the gate, which is why the skip was removed rather than
-  documented.
+  **`baseball-auth-smoke` (#372) skipping on a PR is now expected** — since
+  2026-08-26 (owner decision) its `if:` limits it to push-to-`main` events, so
+  every `pull_request` run shows it skipped. What remains deliberate from the
+  PR #1125 rework: it needs no secrets (it seeds a throwaway stack on the
+  runner), so on `main` pushes it runs unconditionally — a skip THERE is not
+  expected and means the `if:` or path-detect logic changed.
 
 ---
 

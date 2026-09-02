@@ -10,6 +10,12 @@
 set -euo pipefail
 
 PROJECT_REF="${SUPABASE_PROJECT_REF:-qmnssrrolpinvwjjnufo}"
+SUPABASE_CLI="./node_modules/.bin/supabase"
+
+if [[ ! -x "$SUPABASE_CLI" ]]; then
+  echo "::error::Repository Supabase CLI not found at $SUPABASE_CLI"
+  exit 1
+fi
 
 if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
   echo "::warning::SUPABASE_ACCESS_TOKEN is not configured; skipping authoritative types-drift check against production. Set the secret to enforce this gate."
@@ -19,7 +25,7 @@ fi
 TMP="$(mktemp -t helmv3-types.XXXXXX)"
 trap 'rm -f "$TMP"' EXIT
 
-if ! npx --no-install supabase gen types typescript --project-id "$PROJECT_REF" > "$TMP" 2>/dev/null; then
+if ! "$SUPABASE_CLI" gen types typescript --project-id "$PROJECT_REF" > "$TMP" 2>/dev/null; then
   echo "::error::supabase gen types failed for project $PROJECT_REF"
   exit 1
 fi

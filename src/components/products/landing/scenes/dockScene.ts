@@ -245,6 +245,18 @@ export function dockScene(ctx: SceneContext): void | (() => void) {
   // 3. Interpolate FIRST → LAST, scrubbed. `ease: none` because on a scrubbed
   //    timeline the reader's scroll IS the easing; adding a curve on top makes
   //    the tiles feel like they are fighting the wheel.
+  //
+  // NOT `scale: true`. It looks like the fix for the flagship tile's content
+  // clipping mid-dock (see TeamManagement.tsx's `overflow: hidden` note for
+  // the actual fix), but this scene already tracks the tile's OWN `scale`
+  // (0.72/0.82 → 1) as an extra Flip prop two blocks up — `getState(tiles,
+  // { props: 'rotate,scale' })` — and that measurement runs AFTER the manual
+  // scale is applied, so the FIRST bounding rect Flip records is already
+  // shrunk by it. Adding `scale: true` here would ask Flip to ALSO express
+  // its own first→last size reconciliation as a transform scale, stacking a
+  // second scale on top of a ratio the first one already accounts for —
+  // untestable in jsdom (every rect is 0 there) and not worth the risk to a
+  // transition that took four attempts to get the wiring measurement right.
   const dockTl = Flip.from(scattered, {
     duration: 1,
     ease: EASE.none,
@@ -508,7 +520,15 @@ function operateBoard(
   if (cutRule) cutTl.to(cutRule, { scaleX: 1, duration: DUR.medium, ease: EASE.glide }, 0);
   // "Travel cut", the row washes, and "Squad locked" all carry copy, so every
   // one of them snaps rather than ramps (caught parked at 0.62 and 0.80).
-  if (cutLabel) arrive(cutTl, [cutLabel], 0.24);
+  //
+  // `cutLabel` snaps at 0, the SAME position `cutRule` starts growing from,
+  // not partway through its draw. It used to arrive at 0.24 while the rule
+  // began at 0 — for that whole 0.24s window a growing, unlabeled bar sat
+  // between rank 4 and rank 5 with no "Travel cut" text next to it, which is
+  // exactly what a mid-scrub screenshot caught. The label is copy, so per the
+  // rule above it must be legible or absent, never explaining a rule that
+  // already started drawing without it.
+  if (cutLabel) arrive(cutTl, [cutLabel], 0);
   if (washes.length) arrive(cutTl, washes, 0.3);
   if (checks.length) {
     arrive(cutTl, checks, 0.34, { scale: 1, duration: DUR.short, ease: EASE.emphasized });
@@ -530,8 +550,18 @@ function operateBoard(
     // telling the reader.
     links.forEach((link) => {
       if (!link.readout) return;
+      // `autoAlpha`, not bare `opacity`. This readout's HIDDEN state, set above
+      // in "Initial state: nothing decided", is `gsap.set(l.readout, {
+      // autoAlpha: 0, y: 10 })` — `autoAlpha` writes `visibility: hidden`
+      // alongside `opacity: 0`. A tween that only animates `opacity` back to 1
+      // never touches `visibility`, which GSAP leaves exactly where the
+      // earlier `set()` left it — so on mobile this readout reached
+      // `opacity: 1` while staying `visibility: hidden` forever, regardless of
+      // scroll position, browser, or anything else. Not a race: a permanent,
+      // deterministic mismatch between the property the base state used and
+      // the property the reveal animated.
       gsap.to(link.readout, {
-        opacity: 1,
+        autoAlpha: 1,
         y: 0,
         duration: DUR.medium,
         ease: EASE.glide,

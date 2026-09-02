@@ -1,0 +1,1531 @@
+[
+ {
+  "table": "admin_api_perf_log",
+  "reads": 113,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/admin-data.ts",
+   "hooks/useAdminRealtime.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "admin_client_errors",
+  "reads": 120,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "hooks/useAdminRealtime.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "scripts/seed-admin-events.ts"
+  ]
+ },
+ {
+  "table": "api_call_logs",
+  "reads": 5,
+  "touch": 0,
+  "reach": 0,
+  "orphans": [],
+  "reachfiles": [],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "audit_log",
+  "reads": 163797,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/admin/actions/sessions.ts",
+   "app/admin/actions/view-as.ts",
+   "app/golf/actions/admin/rollup-b.ts"
+  ],
+  "insert_sites": [
+   "app/admin/actions/view-as.ts"
+  ],
+  "read_sites": []
+ },
+ {
+  "table": "auth_metrics_hourly",
+  "reads": 9,
+  "touch": 1,
+  "reach": 0,
+  "orphans": [
+   "app/golf/actions/admin-system-data.ts"
+  ],
+  "reachfiles": [],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "baseball_academic_eligibility",
+  "reads": 506,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/academics.ts",
+   "lib/admin/feature-registry.ts",
+   "lib/baseball/read-models/player-snapshot-cards.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/academics.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/academics.ts",
+   "lib/baseball/read-models/player-snapshot-cards.ts"
+  ]
+ },
+ {
+  "table": "baseball_actions",
+  "reads": 47218,
+  "touch": 10,
+  "reach": 10,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/coachhelm-actions.ts",
+   "app/baseball/actions/decision-room.ts",
+   "app/baseball/actions/player-actions.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/coachhelm-actions.ts",
+   "app/baseball/actions/signals.ts",
+   "app/baseball/actions/video-classes.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/decision-room.ts",
+   "app/baseball/actions/player-actions.ts",
+   "app/baseball/actions/signals.ts",
+   "lib/baseball/coachhelm/outcome-sweep.ts",
+   "lib/baseball/read-models/player-today.ts",
+   "lib/baseball/read-models/signal-inbox.ts",
+   "test/fixtures/fake-supabase-fail-select.ts"
+  ]
+ },
+ {
+  "table": "baseball_ai_audit",
+  "reads": 271,
+  "touch": 4,
+  "reach": 4,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/ai-governance.ts",
+   "components/baseball/settings/AiAuditLog.tsx",
+   "lib/admin/feature-registry.ts"
+  ],
+  "insert_sites": [
+   "lib/baseball/coachhelm/engine-run.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/ai-governance.ts"
+  ]
+ },
+ {
+  "table": "baseball_baserunning_events",
+  "reads": 121102,
+  "touch": 4,
+  "reach": 4,
+  "orphans": [],
+  "reachfiles": [
+   "lib/baseball/coachhelm/engine-run.ts",
+   "lib/baseball/read-models/stat-visuals.ts",
+   "lib/baseball/read-models/stats-center.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "lib/baseball/coachhelm/engine-run.ts",
+   "lib/baseball/read-models/stats-center.ts"
+  ]
+ },
+ {
+  "table": "baseball_batted_ball_events",
+  "reads": 29997,
+  "touch": 10,
+  "reach": 9,
+  "orphans": [
+   "lib/baseball/stat-layer-manifest.ts"
+  ],
+  "reachfiles": [
+   "app/baseball/actions/stat-event-imports.ts",
+   "components/baseball/import-center/ImportWizardClient.tsx",
+   "lib/baseball/adapters/event-rows.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "lib/baseball/coachhelm/engine-event-derived.ts",
+   "lib/baseball/coachhelm/engine-run.ts",
+   "lib/baseball/read-models/player-snapshot-cards.ts"
+  ]
+ },
+ {
+  "table": "baseball_box_score_uploads",
+  "reads": 799,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/account/delete/route.ts",
+   "app/baseball/actions/games.ts",
+   "app/baseball/actions/teams.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/games.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/games.ts",
+   "app/baseball/actions/teams.ts"
+  ]
+ },
+ {
+  "table": "baseball_catching_events",
+  "reads": 120980,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "lib/baseball/coachhelm/engine-run.ts",
+   "lib/baseball/read-models/player-snapshot-cards.ts",
+   "lib/baseball/read-models/stat-visuals.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "lib/baseball/coachhelm/engine-run.ts",
+   "lib/baseball/read-models/player-snapshot-cards.ts",
+   "lib/baseball/read-models/stat-visuals.ts",
+   "lib/baseball/read-models/stats-center.ts"
+  ]
+ },
+ {
+  "table": "baseball_class_conflicts",
+  "reads": 23198,
+  "touch": 6,
+  "reach": 6,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/(dashboard)/dashboard/academics/AcademicsClient.tsx",
+   "app/baseball/(dashboard)/dashboard/academics/ClassScheduleModal.tsx",
+   "app/baseball/actions/practice.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/video-classes.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/practice.ts",
+   "app/baseball/actions/video-classes.ts",
+   "lib/baseball/read-models/decision-room/tasks-conflicts.ts"
+  ]
+ },
+ {
+  "table": "baseball_coach_notes",
+  "reads": 23748,
+  "touch": 6,
+  "reach": 6,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/coach-notes.ts",
+   "components/baseball/player-today/PlayerTodayClient.tsx",
+   "lib/admin/feature-registry.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/coach-notes.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/coach-notes.ts",
+   "lib/baseball/read-models/coach-notes.ts",
+   "lib/baseball/read-models/player-today.ts"
+  ]
+ },
+ {
+  "table": "baseball_coach_philosophy",
+  "reads": 15,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/(dashboard)/dashboard/settings/philosophy/page.tsx",
+   "app/baseball/actions/philosophy.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/philosophy.ts"
+  ],
+  "read_sites": [
+   "app/baseball/(dashboard)/dashboard/settings/philosophy/page.tsx",
+   "app/baseball/actions/philosophy.ts"
+  ]
+ },
+ {
+  "table": "baseball_coach_player_notes",
+  "reads": 29,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/signals.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/signals.ts"
+  ],
+  "read_sites": []
+ },
+ {
+  "table": "baseball_coach_recruiting_philosophy",
+  "reads": 71,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/(dashboard)/dashboard/settings/recruiting-preferences/page.tsx",
+   "app/baseball/actions/recruiting-philosophy.ts",
+   "lib/admin/feature-registry.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/recruiting-philosophy.ts"
+  ],
+  "read_sites": [
+   "app/baseball/(dashboard)/dashboard/settings/recruiting-preferences/page.tsx",
+   "app/baseball/actions/recruiting-philosophy.ts"
+  ]
+ },
+ {
+  "table": "baseball_decision_log",
+  "reads": 23111,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/decision-room.ts",
+   "lib/baseball/read-models/decision-room/agenda-ledger.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/decision-room.ts"
+  ],
+  "read_sites": [
+   "lib/baseball/read-models/decision-room/agenda-ledger.ts"
+  ]
+ },
+ {
+  "table": "baseball_event_attendance",
+  "reads": 23966,
+  "touch": 4,
+  "reach": 4,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/calendar.ts",
+   "components/baseball/calendar/BaseballCalendarWrapper.tsx",
+   "lib/baseball/marketing/landing-copy.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/calendar.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/calendar.ts",
+   "lib/baseball/read-models/decision-room/readiness.ts"
+  ]
+ },
+ {
+  "table": "baseball_fielding_events",
+  "reads": 121105,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "lib/baseball/coachhelm/engine-run.ts",
+   "lib/baseball/read-models/player-snapshot-cards.ts",
+   "lib/baseball/read-models/stat-visuals.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "lib/baseball/coachhelm/engine-run.ts",
+   "lib/baseball/read-models/player-snapshot-cards.ts",
+   "lib/baseball/read-models/stats-center.ts"
+  ]
+ },
+ {
+  "table": "baseball_integration_configs",
+  "reads": 360,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/program-settings.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/program-settings.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/program-settings.ts"
+  ]
+ },
+ {
+  "table": "baseball_lineup_positions",
+  "reads": 59,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/(dashboard)/dashboard/roster/SavedLineupsPanel.tsx",
+   "app/baseball/actions/lineups.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/lineups.ts"
+  ],
+  "read_sites": []
+ },
+ {
+  "table": "baseball_meeting_items",
+  "reads": 23252,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/decision-room.ts",
+   "app/baseball/actions/signals.ts",
+   "components/baseball/staff-decision-room/StaffDecisionRoomFairway.tsx"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/decision-room.ts",
+   "app/baseball/actions/signals.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/decision-room.ts",
+   "lib/baseball/read-models/decision-room/agenda-ledger.ts"
+  ]
+ },
+ {
+  "table": "baseball_pitch_events",
+  "reads": 30048,
+  "touch": 9,
+  "reach": 9,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/stat-event-imports.ts",
+   "components/baseball/import-center/ImportWizardClient.tsx",
+   "lib/admin/data/users.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "lib/admin/data/users.ts",
+   "lib/baseball/coachhelm/engine-event-derived.ts",
+   "lib/baseball/coachhelm/engine-run.ts"
+  ]
+ },
+ {
+  "table": "baseball_plate_appearances",
+  "reads": 29906,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "lib/baseball/read-models/elite-stat-events.ts",
+   "lib/coachhelm/baseball/loaders-events.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "baseball_player_classes",
+  "reads": 538,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/academics.ts",
+   "app/baseball/actions/practice.ts",
+   "app/baseball/actions/video-classes.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/academics.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/academics.ts",
+   "app/baseball/actions/practice.ts",
+   "app/baseball/actions/video-classes.ts",
+   "lib/baseball/read-models/player-snapshot-cards.ts"
+  ]
+ },
+ {
+  "table": "baseball_player_comparisons",
+  "reads": 80,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/(dashboard)/dashboard/compare/actions.ts",
+   "lib/admin/feature-registry.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/(dashboard)/dashboard/compare/actions.ts"
+  ],
+  "read_sites": [
+   "app/baseball/(dashboard)/dashboard/compare/actions.ts"
+  ]
+ },
+ {
+  "table": "baseball_player_daily_contracts",
+  "reads": 92943,
+  "touch": 5,
+  "reach": 4,
+  "orphans": [
+   "lib/baseball/daily-contract/missed-sweep.ts"
+  ],
+  "reachfiles": [
+   "app/baseball/actions/daily-contract.ts",
+   "lib/admin/feature-registry.ts",
+   "lib/baseball/read-models/coach-daily-contracts.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/daily-contract.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/daily-contract.ts",
+   "lib/baseball/daily-contract/missed-sweep.ts",
+   "lib/baseball/read-models/coach-daily-contracts.ts",
+   "lib/baseball/read-models/player-daily-contract.ts"
+  ]
+ },
+ {
+  "table": "baseball_player_development_metrics",
+  "reads": 12,
+  "touch": 3,
+  "reach": 2,
+  "orphans": [
+   "app/baseball/actions/development-metrics.ts"
+  ],
+  "reachfiles": [
+   "lib/baseball/read-models/elite-stat-events.ts",
+   "lib/coachhelm/baseball/generators/class-ops.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/development-metrics.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/development-metrics.ts"
+  ]
+ },
+ {
+  "table": "baseball_player_engagement_events",
+  "reads": 110817,
+  "touch": 7,
+  "reach": 7,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/account/delete/route.ts",
+   "app/baseball/(dashboard)/dashboard/college-interest/CollegeInterestClient.tsx",
+   "app/baseball/(public)/player/[id]/page.tsx"
+  ],
+  "insert_sites": [
+   "app/baseball/(public)/player/[id]/page.tsx",
+   "app/baseball/actions/player-peek.ts",
+   "app/baseball/actions/watchlist.ts"
+  ],
+  "read_sites": [
+   "app/api/account/delete/route.ts",
+   "app/baseball/(dashboard)/dashboard/college-interest/CollegeInterestClient.tsx",
+   "app/baseball/(public)/player/[id]/page.tsx",
+   "hooks/use-analytics.ts",
+   "hooks/use-journey.ts"
+  ]
+ },
+ {
+  "table": "baseball_player_passport_settings",
+  "reads": 24207,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/(dashboard)/dashboard/players/[id]/scout-packet/page.tsx",
+   "app/baseball/actions/passport-settings.ts",
+   "app/baseball/actions/scout-packet.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/passport-settings.ts"
+  ],
+  "read_sites": [
+   "app/baseball/(dashboard)/dashboard/players/[id]/scout-packet/page.tsx",
+   "app/baseball/actions/passport-settings.ts",
+   "app/baseball/actions/scout-packet.ts",
+   "lib/baseball/read-models/player-passport.ts",
+   "lib/baseball/read-models/scout-packet.ts"
+  ]
+ },
+ {
+  "table": "baseball_player_passport_share_tokens",
+  "reads": 90,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/scout-packet.ts",
+   "lib/admin/feature-registry.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/scout-packet.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/scout-packet.ts"
+  ]
+ },
+ {
+  "table": "baseball_player_percentiles",
+  "reads": 66,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/recruiting-philosophy.ts",
+   "lib/baseball/product-modules.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "app/baseball/actions/recruiting-philosophy.ts"
+  ]
+ },
+ {
+  "table": "baseball_player_settings",
+  "reads": 5542,
+  "touch": 8,
+  "reach": 8,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/(dashboard)/dashboard/compare/actions.ts",
+   "app/baseball/(dashboard)/dashboard/settings/privacy/page.tsx",
+   "app/baseball/(public)/player/[id]/PlayerProfileClient.tsx"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/teams.ts",
+   "components/player/settings/PrivacySettingsForm.tsx"
+  ],
+  "read_sites": [
+   "app/baseball/(dashboard)/dashboard/compare/actions.ts",
+   "app/baseball/(dashboard)/dashboard/settings/privacy/page.tsx",
+   "app/baseball/(public)/player/[id]/page.tsx",
+   "app/baseball/actions/teams.ts",
+   "components/player/settings/PrivacySettingsForm.tsx",
+   "lib/baseball/player-visibility.ts",
+   "lib/baseball/public-profile-access.ts"
+  ]
+ },
+ {
+  "table": "baseball_practice_block_objectives",
+  "reads": 7,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/practice-effectiveness.ts",
+   "lib/coachhelm/baseball/effectiveness/engine.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/practice-effectiveness.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/practice-effectiveness.ts"
+  ]
+ },
+ {
+  "table": "baseball_practice_effectiveness_reviews",
+  "reads": 52178,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/practice-effectiveness.ts",
+   "lib/baseball/read-models/decision-room/effectiveness.ts",
+   "lib/baseball/read-models/practice-effectiveness.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/practice-effectiveness.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/practice-effectiveness.ts",
+   "lib/baseball/read-models/decision-room/effectiveness.ts",
+   "lib/baseball/read-models/practice-effectiveness.ts"
+  ]
+ },
+ {
+  "table": "baseball_practice_lineup_slots",
+  "reads": 8,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/practice-scrimmage.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/practice-scrimmage.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/practice-scrimmage.ts"
+  ]
+ },
+ {
+  "table": "baseball_practice_scrimmages",
+  "reads": 9,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/practice-scrimmage.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/practice-scrimmage.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/practice-scrimmage.ts"
+  ]
+ },
+ {
+  "table": "baseball_recruiting_interests",
+  "reads": 170,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/(public)/player/[id]/page.tsx",
+   "app/baseball/actions/interests.ts",
+   "hooks/use-colleges.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/interests.ts"
+  ],
+  "read_sites": [
+   "app/baseball/(public)/player/[id]/page.tsx",
+   "app/baseball/actions/interests.ts",
+   "hooks/use-colleges.ts",
+   "hooks/use-journey.ts"
+  ]
+ },
+ {
+  "table": "baseball_staff_audit_events",
+  "reads": 9,
+  "touch": 0,
+  "reach": 0,
+  "orphans": [],
+  "reachfiles": [],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "baseball_staff_invitations",
+  "reads": 23491,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/staff.ts",
+   "app/baseball/staff/join/[code]/page.tsx",
+   "lib/baseball/read-models/decision-room/staff-settings.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/staff.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/staff.ts",
+   "app/baseball/staff/join/[code]/page.tsx",
+   "lib/baseball/read-models/decision-room/staff-settings.ts"
+  ]
+ },
+ {
+  "table": "baseball_stat_sources",
+  "reads": 29098,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/stat-event-imports.ts",
+   "lib/baseball/read-models/stat-visuals.ts",
+   "lib/baseball/stat-import-adapters.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/stat-event-imports.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/stat-event-imports.ts",
+   "lib/baseball/read-models/stat-visuals.ts"
+  ]
+ },
+ {
+  "table": "baseball_stat_visual_views",
+  "reads": 6655,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/stat-visual-views.ts",
+   "components/baseball/stat-visuals/StatVisualsSection.tsx",
+   "components/baseball/stat-visuals/index.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "baseball_swing_events",
+  "reads": 29995,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/stat-event-imports.ts",
+   "components/baseball/import-center/ImportWizardClient.tsx",
+   "lib/baseball/adapters/event-rows.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "baseball_task_templates",
+  "reads": 12,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/tasks.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/tasks.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/tasks.ts"
+  ]
+ },
+ {
+  "table": "baseball_team_invitations",
+  "reads": 44,
+  "touch": 6,
+  "reach": 6,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/account/delete/route.ts",
+   "app/baseball/(dashboard)/dashboard/teams/TeamsClient.tsx",
+   "app/baseball/actions/teams.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/teams.ts",
+   "components/coach/InviteModal.tsx"
+  ],
+  "read_sites": [
+   "app/api/account/delete/route.ts",
+   "app/baseball/(dashboard)/dashboard/teams/TeamsClient.tsx",
+   "app/baseball/actions/teams.ts"
+  ]
+ },
+ {
+  "table": "baseball_team_lineups",
+  "reads": 75,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/lineups.ts",
+   "app/baseball/actions/teams.ts",
+   "lib/admin/feature-registry.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/lineups.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/lineups.ts",
+   "app/baseball/actions/teams.ts"
+  ]
+ },
+ {
+  "table": "baseball_timeline_event_acks",
+  "reads": 25,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/timeline-acks.ts",
+   "lib/baseball/read-models/timeline.ts",
+   "lib/coachhelm/baseball/generators/class-ops.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/timeline-acks.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/timeline-acks.ts",
+   "lib/baseball/read-models/timeline.ts"
+  ]
+ },
+ {
+  "table": "baseball_video_events",
+  "reads": 1476,
+  "touch": 8,
+  "reach": 8,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/video-classes.ts",
+   "app/baseball/actions/videos.ts",
+   "components/baseball/video/VideoCard.tsx"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/video-classes.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/video-classes.ts",
+   "lib/baseball/coachhelm/engine-run.ts",
+   "lib/baseball/read-models/scout-packet.ts",
+   "lib/baseball/read-models/video-classes.ts"
+  ]
+ },
+ {
+  "table": "baseball_workload_events",
+  "reads": 29976,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "lib/baseball/read-models/stat-visuals.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "lib/baseball/read-models/stat-visuals.ts"
+  ]
+ },
+ {
+  "table": "billing_customers",
+  "reads": 10,
+  "touch": 0,
+  "reach": 0,
+  "orphans": [],
+  "reachfiles": [],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "billing_invoices",
+  "reads": 21,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/admin/actions/billing.ts",
+   "app/api/webhooks/stripe/route.ts"
+  ],
+  "insert_sites": [
+   "app/api/webhooks/stripe/route.ts"
+  ],
+  "read_sites": [
+   "app/admin/actions/billing.ts",
+   "app/api/webhooks/stripe/route.ts"
+  ]
+ },
+ {
+  "table": "crm_events",
+  "reads": 238,
+  "touch": 9,
+  "reach": 9,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/account/delete/route.ts",
+   "app/api/crm/google-calendar/sync/route.ts",
+   "app/golf/actions/crm-timeline.ts"
+  ],
+  "insert_sites": [
+   "app/golf/admin/crm/components/EventDetailModal.tsx",
+   "app/golf/admin/crm/components/QuickActionsPanel.tsx",
+   "app/golf/admin/crm/components/ScheduleEventModal.tsx"
+  ],
+  "read_sites": [
+   "app/api/crm/google-calendar/sync/route.ts",
+   "app/golf/actions/crm-timeline.ts",
+   "app/golf/admin/crm/components/CalendarView.tsx",
+   "app/golf/admin/crm/components/EventDetailModal.tsx",
+   "app/golf/admin/crm/components/ScheduleEventModal.tsx"
+  ]
+ },
+ {
+  "table": "crm_google_calendar_tokens",
+  "reads": 123,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/crm/google-calendar/auth/route.ts",
+   "app/api/crm/google-calendar/callback/route.ts",
+   "app/api/crm/google-calendar/sync/route.ts"
+  ],
+  "insert_sites": [
+   "app/api/crm/google-calendar/auth/route.ts",
+   "app/api/crm/google-calendar/callback/route.ts"
+  ],
+  "read_sites": [
+   "app/api/crm/google-calendar/auth/route.ts",
+   "app/api/crm/google-calendar/sync/route.ts"
+  ]
+ },
+ {
+  "table": "crm_segments",
+  "reads": 112,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/crm-foundations.ts",
+   "app/golf/actions/crm-sequences.ts",
+   "app/golf/admin/crm/types/foundations.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/crm-foundations.ts"
+  ],
+  "read_sites": [
+   "app/golf/actions/crm-foundations.ts",
+   "app/golf/actions/crm-sequences.ts"
+  ]
+ },
+ {
+  "table": "crm_tasks",
+  "reads": 187,
+  "touch": 6,
+  "reach": 6,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/cron/admin-digest/route.ts",
+   "app/api/webhooks/resend/route.ts",
+   "app/golf/actions/crm-dedup.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/crm-foundations.ts"
+  ],
+  "read_sites": [
+   "app/api/cron/admin-digest/route.ts",
+   "app/golf/actions/crm-foundations.ts",
+   "app/golf/actions/crm-timeline.ts"
+  ]
+ },
+ {
+  "table": "error_rate_hourly",
+  "reads": 10,
+  "touch": 1,
+  "reach": 0,
+  "orphans": [
+   "app/golf/actions/admin-system-data.ts"
+  ],
+  "reachfiles": [],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "golf_academic_exclusions",
+  "reads": 65,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/account/delete/route.ts",
+   "app/golf/actions/recurring-events.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/recurring-events.ts"
+  ],
+  "read_sites": [
+   "app/golf/actions/recurring-events.ts"
+  ]
+ },
+ {
+  "table": "golf_announcement_tasks",
+  "reads": 35340,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/announcements.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/announcements.ts"
+  ],
+  "read_sites": [
+   "app/golf/actions/announcements.ts"
+  ]
+ },
+ {
+  "table": "golf_attendance_summary",
+  "reads": 56458,
+  "touch": 0,
+  "reach": 0,
+  "orphans": [],
+  "reachfiles": [],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "golf_coach_behavior_log",
+  "reads": 16,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "lib/coachhelm/v2/feedback/index.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "golf_coach_blocked_time",
+  "reads": 53,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/golf.ts",
+   "lib/calendar/availability.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/golf.ts"
+  ],
+  "read_sites": [
+   "app/golf/actions/golf.ts",
+   "lib/calendar/availability.ts"
+  ]
+ },
+ {
+  "table": "golf_coach_player_intent",
+  "reads": 9364,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/v3/intent.ts",
+   "lib/coachhelm/v3/intent/loader.ts",
+   "lib/coachhelm/v3/intent/types.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/v3/intent.ts"
+  ],
+  "read_sites": [
+   "lib/coachhelm/v3/intent/loader.ts"
+  ]
+ },
+ {
+  "table": "golf_course_holes",
+  "reads": 4035,
+  "touch": 3,
+  "reach": 2,
+  "orphans": [
+   "app/golf/actions/courses.ts"
+  ],
+  "reachfiles": [
+   "app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx",
+   "lib/coachhelm/v2/mining/course-management.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/courses.ts"
+  ],
+  "read_sites": [
+   "app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx",
+   "app/golf/actions/courses.ts",
+   "lib/coachhelm/v2/mining/course-management.ts"
+  ]
+ },
+ {
+  "table": "golf_event_documents",
+  "reads": 178,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/event-documents.ts",
+   "components/baseball/calendar/BaseballCalendarWrapper.tsx",
+   "components/golf/calendar/EventDetailModal.tsx"
+  ],
+  "insert_sites": [
+   "app/golf/actions/event-documents.ts"
+  ],
+  "read_sites": [
+   "app/golf/actions/event-documents.ts"
+  ]
+ },
+ {
+  "table": "golf_ingest_connections",
+  "reads": 32,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/cron/v3/ingest-sync/route.ts",
+   "lib/coachhelm/v3/ingest/providers/arccos.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "app/api/cron/v3/ingest-sync/route.ts",
+   "lib/coachhelm/v3/ingest/providers/arccos.ts"
+  ]
+ },
+ {
+  "table": "golf_ingest_sync_log",
+  "reads": 13,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/cron/v3/ingest-sync/route.ts"
+  ],
+  "insert_sites": [
+   "app/api/cron/v3/ingest-sync/route.ts"
+  ],
+  "read_sites": []
+ },
+ {
+  "table": "golf_message_attachments",
+  "reads": 76,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/message-attachments.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/message-attachments.ts"
+  ],
+  "read_sites": [
+   "app/golf/actions/message-attachments.ts"
+  ]
+ },
+ {
+  "table": "golf_platform_metrics_daily",
+  "reads": 14,
+  "touch": 1,
+  "reach": 0,
+  "orphans": [
+   "app/golf/actions/admin-bi-data.ts"
+  ],
+  "reachfiles": [],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "golf_practice_sessions",
+  "reads": 36,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "lib/coachhelm/v3/ingest/providers/trackman.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "golf_qualifier_selections",
+  "reads": 1072,
+  "touch": 8,
+  "reach": 8,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/account/delete/route.ts",
+   "app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+   "app/golf/actions/v3/qualifying.ts"
+  ],
+  "insert_sites": [
+   "lib/coachhelm/v3/qualifying/service.ts"
+  ],
+  "read_sites": [
+   "app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+   "components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx",
+   "lib/coachhelm/v3/qualifying/loader.ts",
+   "lib/coachhelm/v3/qualifying/player-notify.ts",
+   "lib/coachhelm/v3/qualifying/service.ts"
+  ]
+ },
+ {
+  "table": "golf_review_events",
+  "reads": 178,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "lib/baseball/lifting/group-audit-writer.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "golf_staff_invite_codes",
+  "reads": 25,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/teams.ts",
+   "lib/golf/signup-gate.ts",
+   "lib/golf/staff-invite-lookup.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/teams.ts"
+  ],
+  "read_sites": [
+   "lib/golf/signup-gate.ts",
+   "lib/golf/staff-invite-lookup.ts"
+  ]
+ },
+ {
+  "table": "golf_staff_invite_redemptions",
+  "reads": 7,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/teams.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/teams.ts"
+  ],
+  "read_sites": []
+ },
+ {
+  "table": "golf_travel_budgets",
+  "reads": 60,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "app/golf/actions/travel.ts"
+  ],
+  "insert_sites": [
+   "app/golf/actions/travel.ts"
+  ],
+  "read_sites": [
+   "app/golf/actions/travel.ts"
+  ]
+ },
+ {
+  "table": "helm_lifting_availability_statuses",
+  "reads": 44254,
+  "touch": 12,
+  "reach": 12,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/(dashboard)/dashboard/performance/live/page.tsx",
+   "app/baseball/actions/lifting-v11.ts",
+   "app/lifting/(dashboard)/dashboard/sessions/live/page.tsx"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/lifting-v11.ts",
+   "app/lifting/actions/readiness.ts"
+  ],
+  "read_sites": [
+   "app/baseball/(dashboard)/dashboard/performance/live/page.tsx",
+   "app/lifting/(dashboard)/dashboard/sessions/live/page.tsx",
+   "app/lifting/actions/readiness.ts",
+   "lib/baseball/read-models/decision-room/readiness.ts",
+   "lib/baseball/read-models/lift-builder.ts",
+   "lib/baseball/read-models/live-weight-room.ts",
+   "lib/baseball/read-models/performance-command.ts",
+   "lib/baseball/read-models/player-snapshot-cards.ts",
+   "lib/baseball/read-models/player-today.ts",
+   "lib/baseball/read-models/strength-groups.ts"
+  ]
+ },
+ {
+  "table": "helm_lifting_exercise_substitutions",
+  "reads": 14,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "lib/supabase/untyped.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": []
+ },
+ {
+  "table": "helm_lifting_group_audit",
+  "reads": 9,
+  "touch": 1,
+  "reach": 1,
+  "orphans": [],
+  "reachfiles": [
+   "lib/baseball/lifting/group-audit-writer.ts"
+  ],
+  "insert_sites": [
+   "lib/baseball/lifting/group-audit-writer.ts"
+  ],
+  "read_sites": []
+ },
+ {
+  "table": "helm_lifting_import_rows",
+  "reads": 12,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/lifting/actions/imports.ts",
+   "lib/supabase/untyped.ts"
+  ],
+  "insert_sites": [
+   "app/lifting/actions/imports.ts"
+  ],
+  "read_sites": []
+ },
+ {
+  "table": "helm_lifting_import_runs",
+  "reads": 14,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/lifting/(dashboard)/dashboard/import/page.tsx",
+   "app/lifting/actions/imports.ts",
+   "lib/supabase/untyped.ts"
+  ],
+  "insert_sites": [
+   "app/lifting/actions/imports.ts"
+  ],
+  "read_sites": [
+   "app/lifting/(dashboard)/dashboard/import/page.tsx",
+   "app/lifting/actions/imports.ts"
+  ]
+ },
+ {
+  "table": "helm_lifting_nutrition_plan_assignments",
+  "reads": 22338,
+  "touch": 4,
+  "reach": 4,
+  "orphans": [],
+  "reachfiles": [
+   "app/lifting/actions/nutrition.ts",
+   "app/lifting/actions/performance-profile.ts",
+   "components/lifting/performance/PlayerNutritionPlans.tsx"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "app/lifting/actions/nutrition.ts"
+  ]
+ },
+ {
+  "table": "helm_lifting_nutrition_plans",
+  "reads": 12,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/lifting/actions/nutrition.ts",
+   "app/lifting/actions/performance-profile.ts",
+   "lib/supabase/untyped.ts"
+  ],
+  "insert_sites": [
+   "app/lifting/actions/nutrition.ts"
+  ],
+  "read_sites": [
+   "app/lifting/actions/nutrition.ts",
+   "app/lifting/actions/performance-profile.ts"
+  ]
+ },
+ {
+  "table": "helm_lifting_prs",
+  "reads": 1257,
+  "touch": 6,
+  "reach": 6,
+  "orphans": [],
+  "reachfiles": [
+   "app/baseball/actions/lifting-v11.ts",
+   "app/lifting/(dashboard)/dashboard/athletes/[athleteId]/page.tsx",
+   "app/lifting/actions/performance-profile.ts"
+  ],
+  "insert_sites": [
+   "app/baseball/actions/lifting-v11.ts"
+  ],
+  "read_sites": [
+   "app/baseball/actions/lifting-v11.ts",
+   "app/lifting/(dashboard)/dashboard/athletes/[athleteId]/page.tsx",
+   "app/lifting/actions/performance-profile.ts",
+   "lib/admin/data/lifting.ts",
+   "lib/baseball/read-models/performance-command.ts"
+  ]
+ },
+ {
+  "table": "helm_lifting_soreness_check_requests",
+  "reads": 22360,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/lifting/actions/performance-profile.ts",
+   "app/lifting/actions/soreness.ts",
+   "lib/supabase/untyped.ts"
+  ],
+  "insert_sites": [],
+  "read_sites": [
+   "app/lifting/actions/soreness.ts"
+  ]
+ },
+ {
+  "table": "helm_lifting_soreness_check_schedules",
+  "reads": 14,
+  "touch": 2,
+  "reach": 2,
+  "orphans": [],
+  "reachfiles": [
+   "app/lifting/actions/soreness.ts",
+   "lib/supabase/untyped.ts"
+  ],
+  "insert_sites": [
+   "app/lifting/actions/soreness.ts"
+  ],
+  "read_sites": [
+   "app/lifting/actions/soreness.ts"
+  ]
+ },
+ {
+  "table": "helm_lifting_weight_checkin_requests",
+  "reads": 22336,
+  "touch": 5,
+  "reach": 5,
+  "orphans": [],
+  "reachfiles": [
+   "app/lifting/actions/performance-profile.ts",
+   "app/lifting/actions/weight-checkins.ts",
+   "components/lifting/weight/WeightCheckInCard.tsx"
+  ],
+  "insert_sites": [
+   "app/lifting/actions/weight-checkins.ts"
+  ],
+  "read_sites": [
+   "app/lifting/actions/weight-checkins.ts"
+  ]
+ },
+ {
+  "table": "helm_lifting_weight_checkin_schedules",
+  "reads": 14,
+  "touch": 3,
+  "reach": 3,
+  "orphans": [],
+  "reachfiles": [
+   "app/lifting/actions/weight-checkins.ts",
+   "components/lifting/weight/WeightCheckInScheduleBuilder.tsx",
+   "lib/supabase/untyped.ts"
+  ],
+  "insert_sites": [
+   "app/lifting/actions/weight-checkins.ts"
+  ],
+  "read_sites": [
+   "app/lifting/actions/weight-checkins.ts"
+  ]
+ },
+ {
+  "table": "push_subscriptions",
+  "reads": 111,
+  "touch": 4,
+  "reach": 4,
+  "orphans": [],
+  "reachfiles": [
+   "app/api/push-subscriptions/route.ts",
+   "app/golf/actions/task-reminders.ts",
+   "hooks/golf/use-push-subscription.ts"
+  ],
+  "insert_sites": [
+   "app/api/push-subscriptions/route.ts"
+  ],
+  "read_sites": [
+   "app/api/push-subscriptions/route.ts",
+   "app/golf/actions/task-reminders.ts"
+  ]
+ }
+]

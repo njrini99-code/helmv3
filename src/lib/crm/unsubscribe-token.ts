@@ -47,19 +47,33 @@ function requireUnsubSecret(): string {
 }
 
 // VERIFY-ONLY dated dual-verify window: links emailed before this fix was
-// deployed were signed with the old hardcoded literal. Accept those too so
-// in-flight unsubscribe links keep working, without letting any NEW link use the
-// weak key (nothing signs with it -- signUnsubToken() only ever uses
-// CRM_UNSUB_SECRET, and scripts/process-sequence-batch.mjs now fails closed too).
+// deployed were signed with the old key. Accept those too so in-flight
+// unsubscribe links keep working, without letting any NEW link use the weak key
+// (nothing signs with it -- signUnsubToken() only ever uses CRM_UNSUB_SECRET,
+// and scripts/process-sequence-batch.mjs fails closed too).
 //
-// Residual risk, accepted deliberately until the date below: because the literal
-// is in source, anyone can still forge a suppression for a coach id they already
-// know (ids are UUIDs, so not enumerable). Breaking live unsubscribe links is the
-// worse failure, so the window stands -- but it is enforced in code, not by a
-// comment: past LEGACY_VERIFY_UNTIL the fallback stops being consulted at all.
-// TODO(2026-11-01): delete LEGACY_SECRET + LEGACY_VERIFY_UNTIL and this block.
-const LEGACY_SECRET = 'helm-sports-unsub-v1';
+// 2026-08-27 (security scan finding F6, CWE-798): the legacy key used to be a
+// PLAINTEXT LITERAL right here, and the window runs until November — so it was
+// live, in source, today. The original trade-off was sound
+// and is preserved: breaking a live unsubscribe link is worse than a forgeable
+// suppression for a coach id someone already knows. What was wrong was WHERE the
+// key lived. Anyone who could read this file could forge suppressions; now it is
+// an env var like every other secret, and this file names none.
+//
+// FAIL-CLOSED: if CRM_UNSUB_LEGACY_SECRET is unset, the legacy branch is simply
+// not consulted. That is the safe default, and it means the behaviour is now the
+// owner's explicit choice rather than a literal nobody revisits. To keep
+// pre-fix links working until the cutoff, set CRM_UNSUB_LEGACY_SECRET to the old
+// value in production; leaving it unset retires the weak key immediately.
+//
+// TODO(2026-11-01): delete this block and the env var — past LEGACY_VERIFY_UNTIL
+// the fallback stops being consulted regardless of whether the var is set.
 const LEGACY_VERIFY_UNTIL = Date.parse('2026-11-01T00:00:00Z');
+
+function resolveLegacyUnsubSecret(): string | null {
+  const raw = process.env.CRM_UNSUB_LEGACY_SECRET?.trim();
+  return raw ? raw : null;
+}
 
 // Base URL for the emailed unsubscribe link. scripts/process-sequence-batch.mjs uses
 // NEXT_PUBLIC_APP_URL (default https://helmsportslabs.com); keep that FIRST so existing
@@ -95,14 +109,18 @@ function constantTimeMatch(token: string, expected: string): boolean {
  * legacy hardcoded key, so unsubscribe links already emailed before the
  * fail-closed fix keep working. Deliberately does NOT throw when the env var is
  * missing: an unset secret must not turn a one-click unsubscribe into a 5xx.
- * See the LEGACY_SECRET removal note above.
+ * The legacy key is now read from CRM_UNSUB_LEGACY_SECRET and this branch is a
+ * no-op when that is unset — see the note above it.
  */
 export function verifyUnsubToken(coachId: string | null | undefined, token: string | null | undefined): coachId is string {
   if (!coachId || !token) return false;
   const secret = resolveUnsubSecret();
   if (secret && constantTimeMatch(token, hmacToken(coachId, secret))) return true;
   if (Date.now() >= LEGACY_VERIFY_UNTIL) return false;
-  return constantTimeMatch(token, hmacToken(coachId, LEGACY_SECRET));
+  // Absent env var => the legacy key is retired and this branch does nothing.
+  const legacy = resolveLegacyUnsubSecret();
+  if (!legacy) return false;
+  return constantTimeMatch(token, hmacToken(coachId, legacy));
 }
 
 /**

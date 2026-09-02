@@ -60,7 +60,7 @@ export function StepIndicator<T extends string>({ currentStep, steps }: StepIndi
                 aria-hidden="true"
                 className={cn(
                   'h-[2px] w-8 sm:w-12 transition-colors duration-500',
-                  isCompleted ? 'bg-primary-500' : 'bg-warm-200'
+                  isCompleted ? 'bg-accent-600' : 'bg-border-subtle'
                 )}
               />
             )}
@@ -73,8 +73,8 @@ export function StepIndicator<T extends string>({ currentStep, steps }: StepIndi
                 className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-medium',
                   isCompleted && 'bg-primary-600 text-white shadow-sm shadow-primary-600/30',
-                  isCurrent && 'bg-cream-50 border-2 border-primary-600 text-primary-600 shadow-sm',
-                  !isCompleted && !isCurrent && 'bg-warm-100 text-warm-400'
+                  isCurrent && 'bg-surface border-2 border-primary-600 text-primary-600 shadow-sm',
+                  !isCompleted && !isCurrent && 'bg-surface-sunken text-text-tertiary'
                 )}
                 aria-hidden="true"
               >
@@ -83,7 +83,7 @@ export function StepIndicator<T extends string>({ currentStep, steps }: StepIndi
               <span
                 className={cn(
                   'text-label font-medium transition-colors duration-500',
-                  isCurrent ? 'text-warm-900' : isCompleted ? 'text-primary-600' : 'text-warm-400'
+                  isCurrent ? 'text-text-primary' : isCompleted ? 'text-primary-600' : 'text-text-tertiary'
                 )}
               >
                 {step.label}

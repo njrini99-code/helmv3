@@ -35,6 +35,24 @@ const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
   /^player profile not found$/i,
   /^only coaches can/i,
   /^you do not have permission/i,
+  // createGolfConversationImpl's tenancy gate (src/app/golf/actions/
+  // messages.ts): the caller or a requested recipient isn't in the target
+  // team's audience (roster + coaches). An ordinary authorization denial —
+  // the same class as `you do not have permission` above, just worded for
+  // messaging specifically — not a defect.
+  /^you do not have access to this team[.!]?$/i,
+  /^one or more recipients are not on this team[.!]?$/i,
+  // Round submit's single-flight guard (submit_round_atomic, see
+  // supabase/migrations/20260821043500_single_flight_round_submit.sql):
+  // a same-round auto-save (or a second submit) still held the row past the
+  // RPC's bounded 3s wait. `submitGolfRoundComprehensive` is
+  // withAdminObserved-wrapped, unlike `savePartialRound`'s identical 'busy'
+  // carve-out, so this wrapper's own auto-log is the only thing standing
+  // between this outcome and an 'error'-severity admin_events/Sentry write —
+  // the golf.ts call sites deliberately skip their own logServerError call
+  // for it. Without this pattern, contention that resolves itself on the
+  // next tap would page as an incident.
+  /^another save for this round is just finishing/i,
 ];
 
 /**
@@ -49,6 +67,21 @@ const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
  * warning-tier incident competing with real regressions for attention.
  */
 const USER_INPUT_REJECTION_PATTERNS: readonly RegExp[] = [
+  // QUALIFIER CONTROL OUTCOMES, NOT DEFECTS.
+  //
+  // The product refusing a 4th round in a 3-round qualifier is the rule
+  // WORKING. It reached Mission Control at error severity — 24 of the 132
+  // August golf rows — purely because nothing matched the message, and
+  // severityForSoftFailure defaults unmatched text to 'error'. They then
+  // compete for attention with real data-loss defects on the same board.
+  //
+  // Both strings are generated with interpolated counts
+  // ("configured 3 rounds. You have submitted 3 of 3"), so these anchor on
+  // the stable prose around the numbers rather than the whole sentence.
+  /this qualifier is still open, but your coach configured/i,
+  /ask a coach to raise the round count/i,
+  /this qualifier has already been completed/i,
+  /you have already submitted this qualifier round/i,
   /^invalid email or password/i,
   /^too many login attempts/i,
   /^account (?:is )?locked/i,
@@ -71,7 +104,15 @@ const USER_INPUT_REJECTION_PATTERNS: readonly RegExp[] = [
   /already a member of this team/i,
   // Field validation the form states up front. The action is telling the user
   // to correct their input, which is the only thing it could do.
-  /must be after the start/i,
+  // "on or" was the gap: golf.ts has a matched pair of messages, and only one
+  // of them matched here. "End time must be after the start time" tiered as
+  // info; "End date must be on or after the start date" fell through to
+  // error and paged. Same family, same form, one word apart.
+  /must be (?:on or )?after the start/i,
+  // A cleared date field. The action is telling the coach to pick a date —
+  // the same class of "correct your input" as everything else in this block,
+  // and it reached Mission Control as an error only because nothing matched it.
+  /^date must be yyyy-mm-dd$/i,
   /^password must /i,
   /^invalid join code/i,
   /^please complete your player profile/i,
@@ -113,6 +154,33 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
   // whereas the empty-state codes describe an outcome that was never a
   // failure at all.
   'engine_no_team_membership',
+  // A round-entry client can legitimately retain a shot ID when a concurrent
+  // delete (another tab, a recovered retry, or Undo vs. Edit) already removed
+  // it. The action keeps returning a failure envelope so callers reconcile
+  // explicitly, while the Bridge records it as a handled warning rather than
+  // sending a misleading server-error event to Sentry.
+  'shot_not_found',
+  // These are server-protected qualifier lifecycle outcomes. The player sees
+  // an exact message and keeps all saved round data; they are not production
+  // faults and should not mint Sentry incidents.
+  'qualifier_closed',
+  'qualifier_round_limit_reached',
+  'qualifier_round_already_exists',
+  // A roster delete was correctly stopped because it would strand an
+  // unfinished player round. The action provides the coach's next step and
+  // keeps the round intact, so this is a handled warning, not a Sentry error.
+  'active_round_in_progress',
+]);
+
+/**
+ * Success-equivalent outcomes where the caller has already reconciled state
+ * locally or will retry after the native session finishes propagating. They
+ * are operationally useful at info level, but must not appear as warnings in
+ * the operator error queue.
+ */
+const ROUTINE_RECONCILIATION_CODES: ReadonlySet<string> = new Set([
+  'shot_not_found',
+  'UNAUTHORIZED_RETRYABLE',
 ]);
 
 /*
@@ -184,6 +252,7 @@ export function isExpectedEmptyStateCode(code: string | null): boolean {
 type SoftFailureSeverity = 'info' | 'warning' | 'error';
 
 function severityForSoftFailure(message: string, code: string | null): SoftFailureSeverity {
+  if (code != null && ROUTINE_RECONCILIATION_CODES.has(code)) return 'info';
   if (isExpectedEmptyStateCode(code)) return 'info';
   if (isUserInputRejection(message)) return 'info';
   return isExpectedSoftFailureMessage(message, code) ? 'warning' : 'error';

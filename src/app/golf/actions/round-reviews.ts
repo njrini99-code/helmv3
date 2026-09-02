@@ -900,6 +900,16 @@ async function shareReviewWithPlayerImpl(
       return { success: false, error: 'Review not found or access denied' };
     }
 
+    // "or access denied" in the message above was aspirational: the read keys
+    // on the review id and nothing verified the caller against the review's
+    // player, so this leaned entirely on golf_round_reviews RLS. Sharing
+    // publishes coach-authored feedback to a student-athlete, so it gets the
+    // same explicit coach gate as publishReview.
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
+    if (!access.authorized || access.callerRole !== 'coach') {
+      return { success: false, error: access.error || 'Not authorized to share this review' };
+    }
+
     const extData = review.patterns_detected as ReviewExtendedData | null;
 
     if (extData?.shared_with_player) {
@@ -1683,6 +1693,35 @@ async function publishReviewImpl(
       return { success: false, error: 'Not authorized - coach access required' };
     }
 
+    // "Is a coach" was the whole gate, and the UPDATE below keys on the review
+    // id alone — so any coach who could guess or obtain a review id could
+    // publish another program's review to that player. Every other mutation in
+    // this file resolves the review's player first and runs it through
+    // verifyReviewAccess; this one skipped that step. Coach-only here, since
+    // publishing is a coach action.
+    const { data: review, error: reviewError } = await supabase
+      .from('golf_round_reviews')
+      .select('player_id')
+      .eq('id', reviewId)
+      .maybeSingle();
+
+    if (reviewError) {
+      await logServerError(`publishReview review lookup failed: ${reviewError.message}`, {
+        action: 'publishReview',
+        featureArea: 'round_review_ai',
+        extra: { reviewId },
+      });
+      return { success: false, error: 'Could not verify this review. Please try again.' };
+    }
+    if (!review) {
+      return { success: false, error: 'Review not found' };
+    }
+
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
+    if (!access.authorized || access.callerRole !== 'coach') {
+      return { success: false, error: access.error || 'Not authorized to publish this review' };
+    }
+
     const { error } = await supabase
       .from('golf_round_reviews')
       .update({
@@ -1759,6 +1798,15 @@ async function createFocusAreaFromReviewImpl(
 
     if (reviewError || !review) {
       return { success: false, error: 'Review not found' };
+    }
+
+    // The review's player was already resolved above — it just was not
+    // authorized against. "Is a coach" plus a review id let any coach create a
+    // development focus area on another program's player, which then appears
+    // in that player's own plan.
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
+    if (!access.authorized || access.callerRole !== 'coach') {
+      return { success: false, error: access.error || 'Not authorized for this player' };
     }
 
     // Create the focus area
