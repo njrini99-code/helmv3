@@ -623,7 +623,38 @@
   `supabase/tests/rls/golf_flight_recorder.sql`,
   `golf_atomic_snapshot_integrity.sql`, `golf_lifecycle_privilege_contracts.sql`
   and `golf_round_submit_identity.sql` re-run clean against the patched
-  functions (63 assertions, 0 failed).
+  functions (63 assertions, 0 failed). Two assertions were added after a
+  review pass surfaced that the first draft's fail-open and UPSERT-ownership
+  claims were each *asserted* but not *discriminated*: (1) the renamed-table
+  test originally checked only that the round write still succeeded, which
+  would be equally true if PL/pgSQL's plan cache had resolved the INSERT to
+  the renamed relation by OID and let it through silently — added a direct
+  count against the renamed table for that trace_id, confirmed 0 (RENAME
+  does force a relcache-invalidation replan here, so the checkpoint's own
+  `EXCEPTION WHEN OTHERS` genuinely fires); (2) `db.submit_round_atomic` /
+  `db.save_partial_round_atomic` are two of the eight step keys the JS layer
+  already records for every traced call, so the `ON CONFLICT` branch these
+  functions' entry checkpoint always hits is the NORMAL production path for
+  those two keys, not an edge case — yet no assertion had pre-seeded a
+  JS-shaped row (`layer = 'supabase'`, `requiredness = 'required'`) and
+  confirmed the Postgres UPSERT leaves both fields alone. Added a fifth
+  fixture trace exercising exactly that; both fields held. 24 assertions
+  total in `golf_flight_recorder_checkpoints.sql` now, full `test:rls` still
+  74/74 files, 0 failed.
+- Confirmed via the Supabase MCP (`execute_sql`, read-only `SELECT`) that
+  `helm_debug.trace_steps`, `public.submit_round_atomic`,
+  `public.save_partial_round_atomic`, `helm_private.trace_checkpoint` and
+  `helm_private.trace_exception_checkpoint` are ALL owned by `postgres` in
+  production — the specific fact the migration header's "runs with the
+  table owner's implicit privileges" claim depends on, checked directly
+  rather than inferred from the one earlier ownership query the header
+  already cited for `trace_steps` alone.
+- Also confirmed with a direct `sqlfluff lint ... --dialect postgres --rules
+  core` run against exactly
+  `supabase/migrations/20260902160000_postgres_checkpoints_reach_trace_steps.sql`:
+  zero violations, matching what `node scripts/sql-lint-ratchet.mjs`'s
+  no-regressions result implied but did not, on its own, prove for this one
+  file.
 - End-to-end, local Docker stack (migration applied there via `psql -f`,
   atomic, `ON_ERROR_STOP=1`): a real `submit_round_atomic` call with a valid
   `_helm_trace` produced 7 `helm_debug_get_trace` rows —
@@ -640,5 +671,23 @@
   (0 regressions — the new migration file itself lints clean under
   `sqlfluff --dialect postgres --rules core`, zero violations),
   `node scripts/markdown-lint-ratchet.mjs` (0),
-  `node scripts/knowledge/document-inventory.mjs --check` (0). Not run
+  `node scripts/knowledge/document-inventory.mjs --check` (0),
+  `tsx scripts/knowledge/gen-feature-map.ts --check` (0). Not run
   locally: `npm run build` (no `.env.local` in this worktree; CI builds).
+- **Merge caution, not a defect in this branch.** This branch's base
+  (`9298170b1`) predates `main`'s `b3ec84872`, which flipped three
+  `HELD.md` rows (the two baseball index migrations and
+  `20260901140000`) to `APPLIED — hold discharged`. This branch's own
+  `HELD.md` diff is additive against its OWN base — it does not touch
+  those three rows — but a merge/rebase onto current `main` must keep
+  `main`'s discharge wording for those three and land only this branch's
+  new `20260902160000` row underneath them. Resolving the conflict the
+  other way (keeping this branch's pre-discharge copies) would silently
+  revert three already-applied migrations back to `HOLD`, which is the
+  exact failure `HELD.md`'s own header exists to prevent.
+- The local Docker stack's `supabase_migrations.schema_migrations` now
+  carries a row for `20260902160000` (this migration was applied there,
+  deliberately, for the end-to-end verification above) even though it is
+  `HELD` in production. That is correct for a local dev stack and must not
+  be read as evidence of a production apply — `HELD.md` is the source of
+  truth for production state, not the local schema_migrations table.

@@ -14,7 +14,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(20);
+SELECT plan(24);
 
 DO $$
 DECLARE
@@ -38,7 +38,8 @@ BEGIN
     ('00000000-0000-0000-0000-0000000fc101', v_player_id, CURRENT_DATE, 'in_progress', 'practice'),
     ('00000000-0000-0000-0000-0000000fc102', v_player_id, CURRENT_DATE, 'in_progress', 'practice'),
     ('00000000-0000-0000-0000-0000000fc103', v_player_id, CURRENT_DATE, 'in_progress', 'practice'),
-    ('00000000-0000-0000-0000-0000000fc104', v_player_id, CURRENT_DATE, 'in_progress', 'practice')
+    ('00000000-0000-0000-0000-0000000fc104', v_player_id, CURRENT_DATE, 'in_progress', 'practice'),
+    ('00000000-0000-0000-0000-0000000fc105', v_player_id, CURRENT_DATE, 'in_progress', 'practice')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO helm_debug.trace_runs (trace_id, workflow, environment)
@@ -46,7 +47,24 @@ BEGIN
     ('00000000-0000-0000-0000-0000000fc201', 'golf.round.submit', 'test'),
     ('00000000-0000-0000-0000-0000000fc202', 'golf.round.autosave', 'test'),
     ('00000000-0000-0000-0000-0000000fc203', 'golf.round.autosave', 'test'),
-    ('00000000-0000-0000-0000-0000000fc204', 'golf.round.submit', 'test')
+    ('00000000-0000-0000-0000-0000000fc204', 'golf.round.submit', 'test'),
+    ('00000000-0000-0000-0000-0000000fc205', 'golf.round.submit', 'test')
+  ON CONFLICT DO NOTHING;
+
+  -- Fixture for Test F: the row the JS application layer would already have
+  -- written for this trace's RPC-level key BEFORE the RPC runs (per
+  -- golf-round-flight-workflow.ts, which declares db.submit_round_atomic
+  -- layer 'supabase', requiredness 'required') -- this is the real
+  -- production shape, since db.submit_round_atomic is one of the eight step
+  -- keys the JS side already records for every traced call.
+  INSERT INTO helm_debug.trace_steps (trace_id, step_key, layer, status, requiredness)
+  VALUES (
+    '00000000-0000-0000-0000-0000000fc205',
+    'db.submit_round_atomic',
+    'supabase',
+    'started',
+    'required'
+  )
   ON CONFLICT DO NOTHING;
 END $$;
 
@@ -368,11 +386,79 @@ SELECT is(
   'the hole this call wrote is actually persisted, not just success=true'
 );
 
+-- Discriminates the actual claim from a false positive: PL/pgSQL caches a
+-- query plan by relation OID, and ALTER TABLE RENAME does not change the
+-- OID. If PostgreSQL's relcache invalidation did not force a re-parse of
+-- helm_private.trace_checkpoint's INSERT here, the statement could resolve
+-- to the renamed relation via its already-cached plan and succeed silently
+-- -- in which case the two assertions above would be equally true with the
+-- EXCEPTION handler never having run, proving nothing about fail-open. It
+-- does force a re-parse (RENAME fires a relcache invalidation the plan
+-- cache listens for), so the INSERT re-resolves the name, finds no
+-- `helm_debug.trace_steps` relation, and raises 42P01 -- caught by the
+-- checkpoint's own handler. Assert that directly: zero rows landed on the
+-- renamed relation for this trace.
+SELECT is(
+  (SELECT count(*)::int FROM helm_debug.trace_steps_deliberately_missing
+   WHERE trace_id = '00000000-0000-0000-0000-0000000fc203'),
+  0,
+  'the checkpoint insert genuinely failed -- it did not land on the renamed table via a cached plan'
+);
+
 ROLLBACK TO SAVEPOINT sp_broken_checkpoint;
 
 SELECT ok(
   to_regclass('helm_debug.trace_steps') IS NOT NULL,
   'trace_steps table name is restored after the savepoint rollback'
+);
+
+-- ---------------------------------------------------------------------------
+-- F: the UPSERT path a live request actually takes -- db.submit_round_atomic
+-- and db.save_partial_round_atomic are two of the eight step keys the JS
+-- application layer already records for every traced call (see this file's
+-- header / the migration header), so the ON CONFLICT branch this fixture
+-- exercises is the NORMAL path every production trace takes for its own
+-- entry key, not an edge case. The migration's whole ownership argument --
+-- "layer and requiredness are deliberately NOT in the SET list ... must
+-- never override a value the JS application layer already recorded" -- is
+-- asserted in the migration header and untested by A-E, which only ever see
+-- this writer's OWN first insert for a key. Pin it here.
+-- ---------------------------------------------------------------------------
+
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-0000000fc001", "role": "authenticated"}';
+
+SELECT is(
+  public.submit_round_atomic(
+    '00000000-0000-0000-0000-0000000fc105',
+    '{"course_name":"Upsert Ownership","holes_played":1,"total_score":4,"total_putts":2,"_helm_trace":{"trace_id":"00000000-0000-0000-0000-0000000fc205","enabled":true}}'::jsonb,
+    '[{"hole_number":1,"par":4,"score":4,"putts":2}]'::jsonb,
+    '[{"hole_number":1,"shots":[{"shot_number":1,"shot_type":"tee","distance_to_hole_before":400,"distance_unit_before":"yards","result":"fairway"}]}]'::jsonb,
+    '[]'::jsonb,
+    '[]'::jsonb
+  )->>'success',
+  'true',
+  'submit_round_atomic succeeds when its own entry key already carries a JS-written row'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
+SELECT is(
+  (SELECT layer FROM helm_debug.trace_steps
+   WHERE trace_id = '00000000-0000-0000-0000-0000000fc205'
+     AND step_key = 'db.submit_round_atomic'),
+  'supabase',
+  'the Postgres checkpoint UPSERT never overwrites a layer the JS layer already recorded'
+);
+
+SELECT is(
+  (SELECT requiredness FROM helm_debug.trace_steps
+   WHERE trace_id = '00000000-0000-0000-0000-0000000fc205'
+     AND step_key = 'db.submit_round_atomic'),
+  'required',
+  'the Postgres checkpoint UPSERT never overwrites a requiredness the JS layer already recorded'
 );
 
 SELECT * FROM finish();
