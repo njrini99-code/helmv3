@@ -372,8 +372,9 @@ them would have broken those routes, not the dead one.
   coachhelm_analytics`, `teams → join_team_flow`, `rounds → round_tracking`.
   Deliberately NOT aliased: `crm` (owner directive — CRM is never tagged onto
   the Bridge) and `lifting-onboarding` (Helm Lifting Lab has no registry entry
-  at all; `baseball_lift_onboarding` maps a different file). Every alias must
-  resolve to a registered key and never shadow one —
+  at all; the Baseball Lift Onboarding `FeatureKey` maps a different file,
+  `src/app/baseball/actions/lift-onboarding.ts`, not the Lift Lab one). Every
+  alias must resolve to a registered key and never shadow one —
   `src/lib/admin/__tests__/feature-aliases.test.ts`.
 - **Credential values are validated by SHAPE, in one module.** Every one of
   the eight Bridge values in the local `.env.local` was exactly 11 characters,
