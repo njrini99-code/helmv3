@@ -28,12 +28,24 @@ vi.mock('@/lib/supabase/admin', () => ({
           mocks.lookups += 1;
           return { data: mocks.recentRow ? [mocks.recentRow] : [], error: mocks.lookupError };
         },
-        update: (patch: Record<string, unknown>) => ({
-          eq: async (_col: string, id: string) => {
-            mocks.updates.push({ id, patch });
-            return { error: null };
-          },
-        }),
+        // The durable-collapse bump is a guarded UPDATE: `.eq('id')`, then an
+        // `.eq`/`.is` on the counter as it was read, then `.select('id')` so
+        // a guard miss is visible as zero rows. Always matches here.
+        update: (patch: Record<string, unknown>) => {
+          let id = '';
+          const builder = {
+            eq: (col: string, v: unknown) => {
+              if (col === 'id') id = String(v);
+              return builder;
+            },
+            is: () => builder,
+            select: async () => {
+              mocks.updates.push({ id, patch });
+              return { data: [{ id }], error: null };
+            },
+          };
+          return builder;
+        },
         upsert: (row: Record<string, unknown>) => {
           mocks.inserts.push({ table, row });
           if ((mocks.transientFailures[table] ?? 0) > 0) {

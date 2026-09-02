@@ -118,7 +118,7 @@ export async function fetchVercelDeployments(
     });
     if (!res.ok) {
       return failed(
-        reportIntegrationFault('vercel', 'deployments fetch', `Vercel deployments fetch failed: ${res.status}`),
+        await reportIntegrationFault('vercel', 'deployments fetch', `Vercel deployments fetch failed: ${res.status}`),
       );
     }
 
@@ -138,7 +138,7 @@ export async function fetchVercelDeployments(
     return ok(deployments);
   } catch (err) {
     return failed(
-      reportIntegrationFault(
+      await reportIntegrationFault(
         'vercel',
         'deployments fetch',
         `Vercel deployments fetch threw: ${err instanceof Error ? err.message : String(err)}`,
@@ -196,7 +196,7 @@ export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelW
     if (httpFailureStatus !== null) {
       return failed(
         rememberInsightsFailure(
-          reportIntegrationFault('vercel', 'web insights fetch', `Vercel web insights fetch failed: ${httpFailureStatus}`),
+          await reportIntegrationFault('vercel', 'web insights fetch', `Vercel web insights fetch failed: ${httpFailureStatus}`),
         ),
       );
     }
@@ -205,7 +205,7 @@ export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelW
   } catch (err) {
     return failed(
       rememberInsightsFailure(
-        reportIntegrationFault(
+        await reportIntegrationFault(
           'vercel',
           'web insights fetch',
           `Vercel web insights threw: ${err instanceof Error ? err.message : String(err)}`,

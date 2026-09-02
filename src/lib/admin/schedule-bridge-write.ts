@@ -1,5 +1,6 @@
 import { after } from 'next/server';
 import { bindRequestContext } from '@/lib/admin/request-context';
+import { vercelWaitUntil } from '@/lib/observability/vercel-wait-until';
 
 /**
  * Helm Bridge — schedule an error-path write so it is neither dropped nor paid
@@ -94,7 +95,16 @@ export function scheduleBridgeWrite(
     // fall through to the awaited path.
   }
 
-  return withBoundedTimeout(task(), opts.timeoutMs ?? DEFAULT_BRIDGE_WRITE_TIMEOUT_MS).then(
+  // The awaited fallback, belt and braces — the same pair as
+  // logProcessErrorToBridge. Hand the write to the platform's own waitUntil
+  // when there is one: start-up on Vercel has a request CONTEXT but no request
+  // SCOPE, so after() throws while waitUntil still works. AND await it under
+  // the bound, because outside Vercel the registration is nothing. Neither
+  // alone is enough: the bound is a promise the caller can still drop —
+  // instrumentation `void`ed exactly this and the start-up row never landed.
+  const pending = task();
+  vercelWaitUntil(pending);
+  return withBoundedTimeout(pending, opts.timeoutMs ?? DEFAULT_BRIDGE_WRITE_TIMEOUT_MS).then(
     () => 'awaited' as const,
   );
 }

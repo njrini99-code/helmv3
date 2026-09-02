@@ -1,5 +1,5 @@
 import { classifyCredential } from '@/lib/admin/credential-shape.mjs';
-import { shouldEmit, drainCollapsedCount } from '@/lib/admin/emit-throttle';
+import { shouldEmit, drainCollapsedCount, releaseEmit } from '@/lib/admin/emit-throttle';
 import { scheduleBridgeWrite } from '@/lib/admin/schedule-bridge-write';
 import { logServerError } from '@/lib/server-error-logger';
 
@@ -101,31 +101,57 @@ export async function reportInngestCredentialFault(
     if (!shouldEmit(throttleKey)) return false;
     const collapsed = drainCollapsedCount(throttleKey);
 
+    // The window shouldEmit just opened is a promise to write, not a record
+    // of one. The start-up trigger has no request scope, so its write takes
+    // the awaited fallback — and on a function frozen after start-up it never
+    // landed, while the window it had already opened refused the next
+    // `send`/`inbound` report for 60s: no row, and the next trigger silenced.
+    // A write that does not land gives the window (and the count it was
+    // carrying) back. At most once per attempt: the awaited path can time out
+    // and later reject.
+    let landed = false;
+    let released = false;
+    const release = (): void => {
+      if (released) return;
+      released = true;
+      releaseEmit(throttleKey, collapsed);
+    };
+
     const clauses = describeInngestCredentialFault(state).join('; ');
-    await scheduleBridgeWrite(() =>
-      logServerError(
-        `[inngest] Durable background jobs are OFF in production: ${clauses}. ` +
-          'Every round submit runs its analysis inline, and scheduled reminders, coach insights and the ' +
-          'reliability automation do not run at all. Fix: copy the CURRENT event + signing keys from ' +
-          'app.inngest.com into Vercel Production (or let the Inngest<->Vercel integration manage them), then ' +
-          'REDEPLOY — Vercel bakes env vars in at build time. Verify with `node scripts/inngest-health-check.mjs`.',
-        {
-          action: `inngest.credentials.${trigger}`,
-          source: 'integrity',
-          feature: 'integrations',
-          sport: 'shared',
-          errorCode: INNGEST_MISSING_CREDENTIAL_CODE,
-          errorHint: TRIGGER_COPY[trigger],
-          // Sentry already has the SDK's own console.error for this; the
-          // Bridge is the destination that was missing.
-          skipSentry: true,
-          handled: true,
-          extra: { signingKey: state.signingKey, eventKey: state.eventKey, trigger },
-          ...(collapsed > 0 ? { metadata: { collapsed_count: collapsed } } : {}),
-        },
-        'error',
-      ),
-    );
+    const scheduling = await scheduleBridgeWrite(async () => {
+      try {
+        await logServerError(
+          `[inngest] Durable background jobs are OFF in production: ${clauses}. ` +
+            'Every round submit runs its analysis inline, and scheduled reminders, coach insights and the ' +
+            'reliability automation do not run at all. Fix: copy the CURRENT event + signing keys from ' +
+            'app.inngest.com into Vercel Production (or let the Inngest<->Vercel integration manage them), then ' +
+            'REDEPLOY — Vercel bakes env vars in at build time. Verify with `node scripts/inngest-health-check.mjs`.',
+          {
+            action: `inngest.credentials.${trigger}`,
+            source: 'integrity',
+            feature: 'integrations',
+            sport: 'shared',
+            errorCode: INNGEST_MISSING_CREDENTIAL_CODE,
+            errorHint: TRIGGER_COPY[trigger],
+            // Sentry already has the SDK's own console.error for this; the
+            // Bridge is the destination that was missing.
+            skipSentry: true,
+            handled: true,
+            extra: { signingKey: state.signingKey, eventKey: state.eventKey, trigger },
+            ...(collapsed > 0 ? { metadata: { collapsed_count: collapsed } } : {}),
+          },
+          'error',
+        );
+        landed = true;
+      } catch (err) {
+        release();
+        throw err;
+      }
+    });
+    // On the after() path the platform holds the door and the task releases on
+    // its own failure. On the awaited path "not landed" is a rejection or the
+    // bound expiring — either way nothing is known to be written.
+    if (scheduling === 'awaited' && !landed) release();
     return true;
   } catch {
     return false;

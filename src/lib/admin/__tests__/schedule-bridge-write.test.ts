@@ -13,6 +13,7 @@ vi.mock('next/server', () => ({ after: mocks.after }));
 
 import { scheduleBridgeWrite, withBoundedTimeout } from '@/lib/admin/schedule-bridge-write';
 import { __runWithRequestContextForTests, getRequestId } from '@/lib/admin/request-context';
+import { __setVercelRequestContextForTests } from '@/lib/observability/vercel-wait-until';
 
 const outsideRequestScope = () => {
   mocks.after.mockImplementation(() => {
@@ -25,7 +26,30 @@ describe('scheduleBridgeWrite', () => {
     mocks.after.mockReset();
   });
   afterEach(() => {
+    __setVercelRequestContextForTests(null);
     vi.useRealTimers();
+  });
+
+  it("hands the awaited fallback to the platform's waitUntil when one exists — the bound alone cannot stop a freeze", async () => {
+    outsideRequestScope();
+    const waitUntil = vi.fn();
+    __setVercelRequestContextForTests({ waitUntil });
+    const write = vi.fn(async () => {});
+
+    await expect(scheduleBridgeWrite(write)).resolves.toBe('awaited');
+
+    expect(waitUntil).toHaveBeenCalledTimes(1);
+    expect(waitUntil.mock.calls[0]![0]).toBeInstanceOf(Promise);
+  });
+
+  it('does not register twice on the after() path — after() already holds the door', async () => {
+    mocks.after.mockImplementation(() => {});
+    const waitUntil = vi.fn();
+    __setVercelRequestContextForTests({ waitUntil });
+
+    await expect(scheduleBridgeWrite(vi.fn(async () => {}))).resolves.toBe('after');
+
+    expect(waitUntil).not.toHaveBeenCalled();
   });
 
   it('hands the write to after() when a request scope exists, without running it inline', async () => {

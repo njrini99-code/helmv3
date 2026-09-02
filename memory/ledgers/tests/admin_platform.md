@@ -1,5 +1,24 @@
 # Admin Platform test ledger
 
+## 2026-09-02 — second audit of `agent/fix-bridge-errors`
+
+- SHA: recorded on merge of `agent/fix-bridge-errors`.
+- New: `src/test/observability/instrumentation-register.test.ts` (3 —
+  `register()` resolves only after the start-up report has, never rejects
+  because of it, and the process handlers are not held behind it; runtime
+  `edge` runs no report).
+- Extended, each red before its fix: `emit-throttle.test.ts` (`releaseEmit`
+  ×3), `credentials.test.ts` (a write that does not land — rejected, timed
+  out, failed inside the `after()` task — does not consume the window; one
+  that lands does ×4), `schedule-bridge-write.test.ts` (awaited fallback
+  registers with `waitUntil`; the `after()` path does not ×2),
+  `integration-health-scheduling.test.ts` (resolves only after the awaited
+  write settled) and `integration-health.test.ts` (async contract),
+  `durable-collapse.test.ts` (guard on the count read / on absence, re-read
+  and retry once on a miss, fail open on a second miss ×4),
+  `server-error-logger-bridge.test.ts` (fake client grew the guarded
+  `update().eq().eq|is().select()` chain).
+
 ## 2026-09-01 — error pipeline: scheduling, durable collapse, Inngest credentials, honest badge, aliases, shapes
 
 - SHA: recorded on merge of `agent/fix-bridge-errors`.

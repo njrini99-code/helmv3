@@ -163,7 +163,7 @@ export async function fetchSentryIssues(opts?: {
       if (!res.ok) {
         const retryAfter = res.headers.get('retry-after');
         return failed(
-          reportIntegrationFault(
+          await reportIntegrationFault(
             'sentry',
             'issues fetch',
             `Sentry issues fetch failed: ${res.status}${retryAfter ? ` (retry-after ${retryAfter}s)` : ''}`,
@@ -183,7 +183,7 @@ export async function fetchSentryIssues(opts?: {
     return { ...ok(issues), truncated: cursor !== null };
   } catch (err) {
     return failed(
-      reportIntegrationFault(
+      await reportIntegrationFault(
         'sentry',
         'issues fetch',
         `Sentry issues fetch threw: ${err instanceof Error ? err.message : String(err)}`,
@@ -211,7 +211,7 @@ export async function fetchSentryHourlyStats(): Promise<AdminFetchResult<SentryS
     });
     const res = await sentryGet(`/organizations/${cfg.org}/stats_v2/`, params, cfg.token);
     if (!res.ok) {
-      return failed(reportIntegrationFault('sentry', 'stats fetch', `Sentry stats fetch failed: ${res.status}`));
+      return failed(await reportIntegrationFault('sentry', 'stats fetch', `Sentry stats fetch failed: ${res.status}`));
     }
     const body = (await res.json()) as {
       intervals: string[];
@@ -225,7 +225,7 @@ export async function fetchSentryHourlyStats(): Promise<AdminFetchResult<SentryS
     return ok(points);
   } catch (err) {
     return failed(
-      reportIntegrationFault(
+      await reportIntegrationFault(
         'sentry',
         'stats fetch',
         `Sentry stats fetch threw: ${err instanceof Error ? err.message : String(err)}`,
@@ -426,7 +426,7 @@ export async function updateSentryIssueStatus(
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
         return failed(
-          reportIntegrationFault(
+          await reportIntegrationFault(
             'sentry',
             'issue status update',
             `Sentry issue update failed: ${res.status} — token lacks event:write / issue write scope — add a token with write scope`,
@@ -434,7 +434,7 @@ export async function updateSentryIssueStatus(
         );
       }
       return failed(
-        reportIntegrationFault(
+        await reportIntegrationFault(
           'sentry',
           'issue status update',
           `Sentry issue update failed: ${res.status}`,
@@ -446,7 +446,7 @@ export async function updateSentryIssueStatus(
     return ok({ id: body.id, status: body.status });
   } catch (err) {
     return failed(
-      reportIntegrationFault(
+      await reportIntegrationFault(
         'sentry',
         'issue status update',
         `Sentry issue update threw: ${err instanceof Error ? err.message : String(err)}`,

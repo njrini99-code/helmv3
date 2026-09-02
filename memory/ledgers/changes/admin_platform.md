@@ -1,5 +1,38 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — second audit of `agent/fix-bridge-errors`: a throttle that outlived its write, a `void` the siblings had lost, a lost increment
+
+- SHA: recorded on merge of `agent/fix-bridge-errors` (same PR as the entry
+  below; three findings from two independent reviewers against the branch).
+- **The start-up Inngest report could silence the next one and land nothing**
+  (HIGH). `instrumentation.ts` `void`ed `reportInngestCredentialFault('startup')`
+  outside any request scope, so the write took `scheduleBridgeWrite`'s
+  awaited fallback and nothing held that promise either — on a function
+  frozen after start-up the row never landed, while `shouldEmit` had already
+  opened the 60s window and refused the next `send`/`inbound` report. Two
+  halves: `register()` now AWAITS the report (started before the
+  process-handler import, awaited after it, bounded at 2.5s, free in the
+  healthy case), and the awaited fallback in `schedule-bridge-write.ts` also
+  registers the pending write with the Vercel request context's `waitUntil`
+  (`vercel-wait-until.ts`) — the same pair `logProcessErrorToBridge` uses.
+  And a write that does not land gives the window back: `emit-throttle.ts`
+  gains `releaseEmit(key, collapsed)`; `credentials.ts` releases on a
+  rejection inside the deferred task, and on the awaited path whenever the
+  write is not known to have landed (rejection or timeout), at most once per
+  attempt.
+- **`reportIntegrationFault` still `void`ed its scheduled write** (MEDIUM)
+  while `observed-action.ts` and `job-log.ts` await theirs. It is now async
+  and awaited at all eleven call sites in `sentry-api.ts` / `vercel-api.ts`
+  (all inside async functions; the one-liner becomes
+  `failed(await reportIntegrationFault(...))`).
+- **`absorbIntoRecentEvent` computed `collapsed_count` in JS and wrote it
+  unguarded** (LOW): two lambdas reading N both wrote N+1. `admin_events` has
+  no `updated_at` and no increment RPC, so the guard is on the counter itself
+  — `.eq('metadata->metadata->>collapsed_count', <as read>)` or `.is(..., null)`
+  for a never-bumped row, `.select('id')` to see a miss, one re-read and
+  retry, then fail open (`reason: 'lost_race'`). Undercount was the only
+  exposure; a lost row never was.
+
 ## 2026-09-01 — Bridge error pipeline: durable collapse, scheduled writes, a missing Inngest key made visible, an honest badge, aliasing, credential shapes
 
 - SHA: recorded on merge of `agent/fix-bridge-errors`.

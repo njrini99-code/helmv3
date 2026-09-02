@@ -311,12 +311,18 @@ them would have broken those routes, not the dead one.
   latency on the error path, Vercel keeps the function alive), and an AWAITED
   write under a bounded timeout wherever `after()` throws (unit tests, module
   init, inside `unstable_cache`, a prerender). The fallback is the awaited
-  path on purpose — a dropped write is the failure being removed. It captures
+  path on purpose — a dropped write is the failure being removed, and it is
+  ALSO handed to the Vercel request context's `waitUntil` when one exists
+  (start-up on Vercel has a request context but no request scope). It captures
   the correlation scope (`bindRequestContext`) because `after()` callbacks run
   outside the request's AsyncLocalStorage and would otherwise lose
   `requestId`. Wired into `observed-action.ts`, `observe-action-result.ts`
-  (which now returns a promise), `job-log.ts`, `integration-health.ts` and
-  `src/lib/inngest/credentials.ts`. The process-level handlers
+  (which now returns a promise), `job-log.ts`, `integration-health.ts`
+  (`reportIntegrationFault` is async and its callers `await` it — a `void`ed
+  bounded await is still a promise nobody holds) and
+  `src/lib/inngest/credentials.ts`; `instrumentation.ts`'s `register()`
+  AWAITS the start-up credential report, after starting the process-handler
+  import so a slow Bridge cannot delay the catch-all. The process-level handlers
   (`register-process-error-handlers.ts`) have no request scope, so they import
   the logger statically, hand the write to the Vercel request context's
   `waitUntil` when one exists (`vercel-wait-until.ts` — `@sentry/core`'s own
@@ -330,8 +336,13 @@ them would have broken those routes, not the dead one.
   now runs `absorbIntoRecentEvent` (`src/lib/admin/durable-collapse.ts`)
   before inserting any `provider_*` fault: an UNRESOLVED row with the same
   fingerprint inside 15 minutes gets its `metadata.metadata.collapsed_count`
-  bumped (plus `last_seen_at`) instead of a new row. Fails OPEN — an
-  unreadable lookup inserts as before. Opt in for other codes with
+  bumped (plus `last_seen_at`) instead of a new row. The bump is a
+  compare-and-swap — the UPDATE is guarded on the counter exactly as it was
+  read (`metadata->metadata->>collapsed_count`, or its absence), re-read and
+  retried once on a miss — because the new count is computed in JS and two
+  lambdas that both read N would otherwise both write N+1. Fails OPEN — an
+  unreadable lookup, a failed update, or a second guard miss (`lost_race`)
+  inserts as before. Opt in for other codes with
   `durableCollapse: true`, out with `false`. Severity is never changed by it.
   The Vercel insights reader additionally negative-caches its own failure for
   5 minutes per process so a dead endpoint is not re-probed on every refresh.
@@ -348,7 +359,11 @@ them would have broken those routes, not the dead one.
   every SIGNED inbound request to `/api/inngest` when the signing key is
   unusable (the SDK answers 500 there, so the route's 401 mismatch diagnosis
   never fires). Throttled per process, collapsed across processes, one
-  incident. With one fingerprint the med tier lands on AMBER — the honest
+  incident — and the throttle window is a promise to write, not a record of
+  one: a write that does not land (rejected, timed out on the awaited path,
+  or failed inside the `after()` task) gives the window and its drained count
+  back via `releaseEmit`, so a frozen start-up cannot silence the next
+  trigger for 60s. With one fingerprint the med tier lands on AMBER — the honest
   reading of one known fault; RED needs two consecutive 24h windows. The
   registry entry still carries NO heartbeat, deliberately: silence between a
   Monday cron and a round submit is normal, and `scripts/inngest-health-check.mjs`

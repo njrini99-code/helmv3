@@ -87,22 +87,27 @@ export function inferIntegrationFaultKind(detail: string): IntegrationFaultKind 
 
 /**
  * Record that a Bridge integration failed. Safe to call on every failed
- * fetch — throttling and error-swallowing are handled here.
+ * fetch — throttling and error-swallowing are handled here. Never rejects.
  *
- * Returns the envelope-ready error string unchanged so a call site can stay
- * a one-liner: `return failed(reportIntegrationFault('sentry', '…', msg))`.
+ * Resolves the envelope-ready error string unchanged so a call site can stay
+ * a one-liner: `return failed(await reportIntegrationFault('sentry', '…', msg))`.
  */
-export function reportIntegrationFault(
+export async function reportIntegrationFault(
   integration: IntegrationId,
   what: string,
   detail: string,
-): string {
+): Promise<string> {
   try {
     const kind = inferIntegrationFaultKind(detail);
     const throttleKey = `integration:${integration}:${kind}`;
     if (shouldEmit(throttleKey)) {
       const collapsed = drainCollapsedCount(throttleKey);
-      void scheduleBridgeWrite(() => logServerEvent(
+      // Awaited, not `void`ed — the same reason as observed-action.ts and
+      // job-log.ts. Inside a request scope this resolves at once (after() has
+      // the write, the render pays nothing). Outside one — a cron body, a
+      // prerender — the bounded await IS what keeps the function alive, and a
+      // `void`ed bounded await is a promise nobody holds.
+      await scheduleBridgeWrite(() => logServerEvent(
         `${integration} ${KIND_COPY[kind]} (${what})`,
         {
           action: `integration.${integration}`,
