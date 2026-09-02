@@ -17,6 +17,7 @@ import {
   applyIncidentFacets,
   applyLens,
   countLenses,
+  countLensesForKind,
   matchesKind,
   matchesLens,
   suppressedByClass,
@@ -250,5 +251,81 @@ describe('the kind facet', () => {
       { klass: 'empty_state', count: 1 },
       { klass: 'telemetry', count: 1 },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The stalled lens — throughput as a filter over the SAME model.
+// ---------------------------------------------------------------------------
+
+describe('the stalled lens', () => {
+  const COMPUTED_AT = '2026-08-28T12:00:00.000Z';
+  const daysBefore = (d: number) => new Date(Date.parse(COMPUTED_AT) - d * 86_400_000).toISOString();
+
+  it('includes an unanalysed incident Diagnose has had two cycles to reach, judged against computedAt', () => {
+    const stalled = incident({ id: 'old', state: 'new', firstSeen: daysBefore(5), computedAt: COMPUTED_AT });
+    const fresh = incident({ id: 'fresh', state: 'diagnosing', firstSeen: daysBefore(0.5), computedAt: COMPUTED_AT });
+    expect(matchesLens(stalled, 'stalled')).toBe(true);
+    expect(matchesLens(fresh, 'stalled')).toBe(false);
+  });
+
+  it('never includes an incident whose repair state could not be read', () => {
+    const unreadable = incident({
+      id: 'unread',
+      state: 'diagnosing',
+      firstSeen: daysBefore(10),
+      computedAt: COMPUTED_AT,
+      analysis: {
+        category: 'fix-here',
+        probableCause: 'c',
+        suggestedFix: 'FIX HERE: x',
+        confidence: 'high',
+        suspectFiles: [],
+        relatedFingerprints: [],
+        model: 'm',
+        generatedAt: daysBefore(9),
+        repairVerdict: 'not-reviewed',
+      },
+      repair: { status: 'unknown', prNumber: null, prUrl: null, branch: null, checks: null, mergedAt: null, mergeSha: null, note: null },
+    });
+    expect(matchesLens(unreadable, 'stalled')).toBe(false);
+  });
+
+  it('is counted like every other lens', () => {
+    const counts = countLenses([
+      incident({ id: 'old', state: 'new', firstSeen: daysBefore(5), computedAt: COMPUTED_AT }),
+      incident({ id: 'fresh', state: 'new' }),
+    ]);
+    expect(counts.stalled).toBe(1);
+  });
+});
+
+describe('awaiting-proof and blindness', () => {
+  it('does not admit an incident whose only gap is a blind source — a failed read is not a fix awaiting proof', () => {
+    const blindOnly = incident({ id: 'b', state: 'new', proofGaps: [gap('source-blind')] });
+    expect(matchesLens(blindOnly, 'awaiting-proof')).toBe(false);
+  });
+
+  it('still admits a real proof gap that happens to sit beside a blind one', () => {
+    const both = incident({ id: 'b', state: 'new', proofGaps: [gap('source-blind'), gap('awaiting-deploy')] });
+    expect(matchesLens(both, 'awaiting-proof')).toBe(true);
+  });
+});
+
+describe('countLensesForKind — the rail agrees with the faceted list', () => {
+  it('measures each lens over the list the kind facet leaves', () => {
+    const rows = board();
+    for (const kind of [undefined, 'all', 'telemetry'] as const) {
+      const counts = countLensesForKind(rows, kind);
+      for (const lens of INCIDENT_LENSES) {
+        expect(counts[lens]).toBe(applyIncidentFacets(rows, lens, kind).length);
+      }
+    }
+  });
+
+  it('differs from the unfaceted count exactly when the facet holds rows back — the drift it exists to close', () => {
+    const rows = board();
+    expect(countLensesForKind(rows, undefined).all).toBeLessThan(countLenses(rows).all);
+    expect(countLensesForKind(rows, 'all')).toEqual(countLenses(rows));
   });
 });

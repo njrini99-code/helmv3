@@ -2,16 +2,24 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Sparkles, GitPullRequest, CloudOff, CheckCheck } from 'lucide-react';
+import { Sparkles, GitPullRequest, CloudOff, CheckCheck, ChevronRight } from 'lucide-react';
 import { Button, Sparkline } from '@/components/fairway';
+import { cn } from '@/lib/utils';
 import {
   LIFECYCLE_LABEL,
   LIFECYCLE_TONE,
   INCIDENT_SOURCE_LABEL,
+  SOURCE_HEALTH_LABEL,
   type UnifiedIncident,
   type IncidentSourceEvidence,
   type IncidentLifecycleState,
+  type LifecycleReasonLine,
 } from '@/lib/admin/incidents/types';
+import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
+import { INCIDENT_CLASS_LABEL } from '@/lib/admin/incident-classification';
+import { RCA_CATEGORY_LABEL } from '@/lib/admin/rca-category';
+import { describeErrorCode } from '@/lib/admin/error-code-hint';
+import { deriveIncidentFlow, FLOW_STAGE_TITLE } from '@/lib/admin/selfheal-flow';
 import { routeLabel } from './IncidentCard';
 import { LocalTime } from './LocalTime';
 import { CopyReportButton } from './CopyReportButton';
@@ -69,6 +77,23 @@ import { RailRow, RowHead, FactLine, RowPath, RowFoot, StateChip } from './Row';
  *      `Row.tsx`'s own `RAIL`/`SEVERITY_INK` tables reserve for verified-good
  *      semantics — one extra branch, not a second implementation of the row
  *      language.
+ *
+ * And, since 2026-09-01, three things an operator asked for by name:
+ *
+ *   E. A FEATURE TAG that reads as a product area, not a registry key. The
+ *      key was already in the fact line as `round_tracking`; the tag says
+ *      "Round Tracking" and says "untagged" out loud when the error was
+ *      logged without one, because an untagged error counts against no
+ *      feature's health and that is worth seeing on the row.
+ *   F. THE LIFECYCLE HEADLINE — the one sentence `lifecycle.ts` writes to
+ *      explain the chip ("Seen recently — Diagnose has not had a chance to
+ *      analyse it yet."). It rendered only on the detail page; a chip an
+ *      operator cannot interrogate is a chip they stop believing.
+ *   G. A DETAILS DISCLOSURE, closed by default, with what the row already
+ *      knows and did not show: first and last seen, every source and its
+ *      health, the error code with a plain-language hint, the analysis, the
+ *      repair, and the ordered checks behind the lifecycle state. The scan
+ *      stays dense; the detail is one tap away instead of one page away.
  */
 
 /**
@@ -113,6 +138,201 @@ function affectedUsersLabel(incident: Pick<UnifiedIncident, 'affectedUsers' | 'a
   return `${n} user${n === 1 ? '' : 's'}`;
 }
 
+/** Registry key -> label, built once. A key the registry does not know
+ *  renders as itself, dashed — visible, not laundered into a real label. */
+const FEATURE_LABEL: ReadonlyMap<string, string> = new Map(FEATURE_REGISTRY.map((f) => [f.key, f.label]));
+
+const SPORT_LABEL: Readonly<Record<NonNullable<UnifiedIncident['sport']>, string>> = {
+  golf: 'Golf',
+  baseball: 'Baseball',
+  shared: 'Shared',
+};
+
+/**
+ * A labelled attribute tag. NOT a `StateChip`: chips are for state and are
+ * capped at five; this is the row saying which product area it belongs to,
+ * at the lowest weight that still reads as a tag. Lowercase, rounded-full,
+ * no colour — everything a state chip is not.
+ */
+function Tag({
+  label,
+  value,
+  title,
+  muted = false,
+}: {
+  label: string;
+  value: string;
+  title?: string;
+  muted?: boolean;
+}) {
+  return (
+    <span
+      title={title}
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption leading-4',
+        muted ? 'border border-dashed border-warm-300 text-warm-500' : 'bg-warm-100 text-warm-700',
+      )}
+    >
+      <span className="text-warm-500">{label}</span>
+      <span className={cn(!muted && 'font-medium')}>{value}</span>
+    </span>
+  );
+}
+
+const REASON_INK: Readonly<Record<LifecycleReasonLine['status'], string>> = {
+  met: 'text-fw-success-ink',
+  pending: 'text-fw-warning-ink',
+  failed: 'text-fw-danger-ink',
+};
+
+const REASON_WORD: Readonly<Record<LifecycleReasonLine['status'], string>> = {
+  met: 'met',
+  pending: 'pending',
+  failed: 'failed',
+};
+
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-eyebrow uppercase tracking-wide text-warm-500">{label}</dt>
+      <dd className="break-words text-caption leading-5 text-warm-800 [overflow-wrap:anywhere]">{children}</dd>
+    </div>
+  );
+}
+
+/**
+ * Everything the row already carries and did not show, one tap away.
+ *
+ * A native `<details>`, so it works with no JavaScript, costs nothing while
+ * closed, and does not turn a list of thirty rows into thirty controlled
+ * components. Nothing in here is fetched — every field is already on the
+ * `UnifiedIncident` the card was handed.
+ *
+ * ONLY WHAT THE ROW DOES NOT ALREADY SAY. The route, the action, the event
+ * count and the user count are on the row above this; repeating them here
+ * would make the disclosure read as a summary rather than as depth, and
+ * doubles every string a test or a screen reader has to disambiguate.
+ */
+function IncidentDetails({ incident }: { incident: UnifiedIncident }) {
+  const codeHint = describeErrorCode(incident.errorCode);
+  const analysis = incident.analysis;
+  const repair = incident.repair;
+
+  return (
+    <details className="group mt-1.5">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-caption text-accent-700 hover:underline [&::-webkit-details-marker]:hidden">
+        <ChevronRight size={12} aria-hidden className="transition-transform group-open:rotate-90 motion-reduce:transition-none" />
+        Details
+      </summary>
+      <div className="mt-2 space-y-3 rounded-fw-md bg-surface-sunken p-3">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+          <Fact label="First seen">
+            <LocalTime iso={incident.firstSeen} variant="datetime" />
+          </Fact>
+          <Fact label="Last seen">
+            <LocalTime iso={incident.lastSeen} variant="datetime" />
+          </Fact>
+          <Fact label="Error code">
+            {incident.errorCode ? (
+              <>
+                <span className="font-fw-mono">{incident.errorCode}</span>
+                {codeHint ? <span className="text-warm-600"> · {codeHint}</span> : null}
+              </>
+            ) : (
+              '—'
+            )}
+          </Fact>
+          <Fact label="Kind">
+            {INCIDENT_CLASS_LABEL[incident.klass]}
+            <span className="text-warm-600"> · {incident.klassReason}</span>
+          </Fact>
+          <Fact label="Seen by">
+            {incident.sources.length === 0
+              ? '—'
+              : incident.sources.map((s, i) => (
+                  <span key={s.source}>
+                    {i > 0 ? ', ' : ''}
+                    {s.permalink ? (
+                      <a href={s.permalink} target="_blank" rel="noreferrer" className="underline">
+                        {INCIDENT_SOURCE_LABEL[s.source]}
+                      </a>
+                    ) : (
+                      INCIDENT_SOURCE_LABEL[s.source]
+                    )}
+                    <span className="text-warm-500"> ({SOURCE_HEALTH_LABEL[s.health].toLowerCase()})</span>
+                  </span>
+                ))}
+          </Fact>
+        </dl>
+
+        {analysis ? (
+          <div>
+            <p className="text-eyebrow uppercase tracking-wide text-warm-500">Analysis</p>
+            <p className="mt-0.5 text-caption leading-5 text-warm-800">
+              <span className="font-medium">{RCA_CATEGORY_LABEL[analysis.category]}</span>
+              <span className="text-warm-600">
+                {' '}
+                · confidence {analysis.confidence} · {analysis.model} ·{' '}
+                <LocalTime iso={analysis.generatedAt} variant="datetime" />
+              </span>
+            </p>
+            <p className="mt-1 break-words text-caption leading-5 text-warm-700 [overflow-wrap:anywhere]">
+              {analysis.probableCause}
+            </p>
+            <p className="mt-1 break-words font-fw-mono text-caption leading-5 text-warm-600 [overflow-wrap:anywhere]">
+              {analysis.suggestedFix}
+            </p>
+          </div>
+        ) : null}
+
+        {repair && repair.status !== 'none' ? (
+          <div>
+            <p className="text-eyebrow uppercase tracking-wide text-warm-500">Repair</p>
+            <p className="mt-0.5 text-caption leading-5 text-warm-800">
+              {repair.prUrl && repair.prNumber ? (
+                <a href={repair.prUrl} target="_blank" rel="noreferrer" className="font-medium underline">
+                  PR #{repair.prNumber}
+                </a>
+              ) : (
+                <span className="font-medium">{repair.prNumber ? `PR #${repair.prNumber}` : 'No PR yet'}</span>
+              )}
+              <span className="text-warm-600"> · {repair.status}</span>
+              {repair.checks ? (
+                <span className="text-warm-600">
+                  {' '}
+                  · checks {repair.checks.passed} passed, {repair.checks.failed} failed, {repair.checks.pending} pending
+                </span>
+              ) : (
+                <span className="text-warm-600"> · checks could not be read</span>
+              )}
+              {repair.note ? <span className="text-warm-600"> · {repair.note}</span> : null}
+            </p>
+          </div>
+        ) : null}
+
+        <div>
+          <p className="text-eyebrow uppercase tracking-wide text-warm-500">
+            Why &ldquo;{LIFECYCLE_LABEL[incident.lifecycle.state]}&rdquo;
+          </p>
+          <ul className="mt-1 space-y-1">
+            {incident.lifecycle.because.map((line, i) => (
+              <li key={i} className="flex items-start gap-2 text-caption leading-5 text-warm-700">
+                <span className={cn('w-14 shrink-0 font-fw-mono font-semibold uppercase', REASON_INK[line.status])}>
+                  {REASON_WORD[line.status]}
+                </span>
+                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{line.text}</span>
+              </li>
+            ))}
+            {incident.lifecycle.because.length === 0 ? (
+              <li className="text-caption text-warm-500">No checks were recorded for this state.</li>
+            ) : null}
+          </ul>
+        </div>
+      </div>
+    </details>
+  );
+}
+
 export function UnifiedIncidentCard({
   incident,
   series,
@@ -127,12 +347,33 @@ export function UnifiedIncidentCard({
   const path = routeLabel(incident.route);
   const primary = primarySource(incident.sources);
   const anyBlind = incident.sources.some((s) => s.health === 'blind');
+  // Against the board's own clock, not `Date.now()`: this is a client
+  // component, and a stall verdict that flips between server and client
+  // render is a hydration mismatch wearing a warning chip. `computedAt` is
+  // the instant every other fact on this card was true at.
+  const flow = deriveIncidentFlow(incident, Date.parse(incident.computedAt));
+
+  const featureLabel = incident.featureId ? (FEATURE_LABEL.get(incident.featureId) ?? null) : null;
 
   // Priority order, highest-value first — see the header for why this is
   // capped rather than open-ended.
   const chips: Array<{ key: string; node: ReactNode }> = [];
 
   chips.push({ key: 'lifecycle', node: <LifecycleChip state={incident.lifecycle.state} /> });
+
+  // Second, ahead of corroboration: the lifecycle chip says WHERE the
+  // incident is, this one says the loop has had its chances there and not
+  // moved it — the fact that changes what an operator does next.
+  if (flow.stalled && flow.stageId !== null) {
+    chips.push({
+      key: 'stalled',
+      node: (
+        <StateChip tone="warning" title={flow.why}>
+          {`STALLED · ${FLOW_STAGE_TITLE[flow.stageId].toUpperCase()}`}
+        </StateChip>
+      ),
+    });
+  }
 
   if (incident.corroboration >= 2) {
     chips.push({
@@ -223,11 +464,35 @@ export function UnifiedIncidentCard({
       </RowHead>
 
       <FactLine
-        items={[incident.errorCode, incident.featureId, incident.actionName, primary ? INCIDENT_SOURCE_LABEL[primary.source] : null]}
+        items={[incident.errorCode, incident.actionName, primary ? INCIDENT_SOURCE_LABEL[primary.source] : null]}
         emphasizeFirst={Boolean(incident.errorCode)}
       />
 
       {path ? <RowPath>{path}</RowPath> : null}
+
+      {/* The feature tag — a product area in words, or "untagged" out loud. */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5" data-testid="unified-incident-tags">
+        {incident.featureId ? (
+          <Tag
+            label="Feature"
+            value={featureLabel ?? incident.featureId}
+            muted={featureLabel === null}
+            title={
+              featureLabel === null
+                ? `"${incident.featureId}" is not a key in the feature registry — it counts against no feature's health and cannot be filtered on`
+                : `Tagged to the ${featureLabel} feature`
+            }
+          />
+        ) : (
+          <Tag
+            label="Feature"
+            value="untagged"
+            muted
+            title="Logged without a featureArea — this error counts against no feature's health"
+          />
+        )}
+        {incident.sport ? <Tag label="Sport" value={SPORT_LABEL[incident.sport]} /> : null}
+      </div>
 
       {visibleChips.length > 0 ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-1">
@@ -238,6 +503,22 @@ export function UnifiedIncidentCard({
           ))}
         </div>
       ) : null}
+
+      {/* What the lifecycle chip MEANS, in the one sentence lifecycle.ts
+          wrote for it. Header point F. */}
+      <p className="mt-1.5 break-words text-caption leading-5 text-warm-700 [overflow-wrap:anywhere]">
+        {incident.lifecycle.headline}
+      </p>
+
+      {/* Why it is stalled, in the flow model's own words — which stage,
+          how many of its cycles have passed, what it did not do. */}
+      {flow.stalled ? (
+        <p className="mt-1 break-words text-caption leading-5 text-fw-warning-ink [overflow-wrap:anywhere]">{flow.why}</p>
+      ) : null}
+
+      {/* The single most useful line on the redesigned card — see header
+          point C. Never the gap's category label; always its own detail. */}
+      {firstGap ? <p className="mt-1 break-words text-caption leading-5 text-warm-500 [overflow-wrap:anywhere]">{firstGap.detail}</p> : null}
 
       <RowFoot
         meta={
@@ -275,9 +556,7 @@ export function UnifiedIncidentCard({
         ) : null}
       </RowFoot>
 
-      {/* The single most useful line on the redesigned card — see header
-          point C. Never the gap's category label; always its own detail. */}
-      {firstGap ? <p className="mt-1 break-words text-caption leading-5 text-warm-500">{firstGap.detail}</p> : null}
+      <IncidentDetails incident={incident} />
 
       {error ? <p className="mt-1 text-caption text-fw-danger-ink">Resolve failed — {error}</p> : null}
     </RailRow>

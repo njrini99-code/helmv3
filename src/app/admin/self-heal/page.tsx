@@ -1,4 +1,9 @@
 import { ChevronRight } from 'lucide-react';
+import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
+import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
+import { canClaimAllClear } from '@/lib/admin/incidents/sources';
+import { summarizeFlow, selectStalled, STALL_CYCLES } from '@/lib/admin/selfheal-flow';
+import { SelfHealFlowStrip, StalledIncidentList } from '../_components/SelfHealFlow';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchSelfHealBoard, type SelfHealStageDetail } from '@/lib/admin/data/selfheal';
 import type { CapabilityEvidence } from '@/lib/admin/selfheal-capability';
@@ -198,6 +203,42 @@ function LocalRunnerBlock({ stages }: { stages: readonly SelfHealStageDetail[] }
 }
 
 /* ---------------------------------------------------------------------------
+ * Flow — the third axis. Runtime says the stages ran; capability says they
+ * have produced output before; this says whether they are moving the
+ * incidents in front of them RIGHT NOW, and names the ones they skipped.
+ * Its own boundary: the incident board is a Sentry pull plus a GitHub read
+ * on top of the heartbeats above, and the circuit must not wait on it.
+ * ------------------------------------------------------------------------- */
+
+async function FlowBody() {
+  const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+  const now = Date.now();
+  const allClear = canClaimAllClear(board.coverage);
+
+  return (
+    <div className="space-y-4">
+      <SelfHealFlowStrip summary={summarizeFlow(board.incidents, now)} canClaimAllClear={allClear} />
+      <div>
+        <Eyebrow as="h3" tone="tertiary">
+          Stalled
+        </Eyebrow>
+        <p className="mt-1 text-xs text-warm-500">
+          Incidents a stage has had {STALL_CYCLES} of its own cycles to act on and has not — within the{' '}
+          {board.windowHours}h incident board. A failed read never puts an incident here.
+        </p>
+        <div className="mt-2">
+          <StalledIncidentList
+            rows={selectStalled(board.incidents, now)}
+            canClaimAllClear={allClear}
+            checkedAt={board.computedAt}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
  * Body
  * ------------------------------------------------------------------------- */
 
@@ -277,6 +318,18 @@ export default async function SelfHealPage() {
       <PanelBoundary title="Self-heal" skeleton={<PanelPageSkeleton rows={6} />}>
         <SelfHealBody />
       </PanelBoundary>
+      <Surface padding="sm">
+        <Eyebrow as="h2">Flow</Eyebrow>
+        <p className="mt-1 text-xs text-warm-500">
+          What is waiting on each stage right now, and what the loop has skipped — throughput, the axis a green
+          heartbeat and a proven history cannot show.
+        </p>
+        <div className="mt-3">
+          <PanelBoundary title="Self-heal flow" skeleton={<PanelPageSkeleton rows={4} />}>
+            <FlowBody />
+          </PanelBoundary>
+        </div>
+      </Surface>
     </div>
   );
 }

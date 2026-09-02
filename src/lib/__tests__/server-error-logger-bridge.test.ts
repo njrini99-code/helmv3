@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   },
   captureException: vi.fn(),
   captureMessage: vi.fn(),
+  getActiveSpan: vi.fn(() => undefined),
 }));
 
 vi.mock('@/lib/supabase/admin', () => ({

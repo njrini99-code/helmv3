@@ -13,7 +13,7 @@ export interface TeamsSortChip {
 /**
  * Teams pulse's sort switcher — built on the Fairway FilterPill primitive
  * (same href-based, server-computed navigation as WorkFilterChips /
- * ErrorsFilterChips / AuthFilterChips / UserRoleFilterChips) instead of a
+ * ErrorsFilterBar / AuthFilterChips / UserRoleFilterChips) instead of a
  * hand-rolled <Link> pill row, so it gets the shared chip visuals + a11y
  * (aria-pressed) everywhere else in the console uses.
  */

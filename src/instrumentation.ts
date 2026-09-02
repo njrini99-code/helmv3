@@ -1,3 +1,22 @@
+// Opt-in OpenTelemetry runtime for supabase-js `tracePropagation`. The IMPORT
+// ITSELF is the opt-in — the module has no exports; it registers a process-wide
+// trace-context extractor built on @opentelemetry/api. Without it, a client
+// configured with `tracePropagation` logs a one-time warning and sends requests
+// with no trace headers at all.
+//
+// This file is Next's instrumentation hook and is evaluated once per SERVER
+// runtime — Node and Edge each get their own module graph and therefore their
+// own registration, which is exactly the "once per runtime" placement supabase
+// documents. Both runtimes have a Sentry OpenTelemetry propagator for it to
+// read from (@sentry/node sdk/initOtel.js; @sentry/vercel-edge
+// `propagation.setGlobalPropagator(new SentryPropagator())`).
+//
+// The BROWSER is deliberately not covered here: @sentry/browser registers no
+// OpenTelemetry propagator, so there would be nothing to extract. The browser
+// propagates `traceparent` through Sentry's own fetch instrumentation instead —
+// see `propagateTraceparent` / `tracePropagationTargets` in
+// src/instrumentation-client.ts.
+import '@supabase/supabase-js/tracing';
 import * as Sentry from '@sentry/nextjs';
 import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';

@@ -63,6 +63,8 @@ interface RoundErrorContext {
   source?: ServerTraceSource;
   statusCode?: number | null;
   requestId?: string | null;
+  /** Sentry trace id. Auto-populated from the active span when not explicitly passed — see enrichTraceContext. */
+  traceId?: string | null;
   /** Opaque workflow correlation ID from the flight recorder. Never auth data. */
   helmTraceId?: string | null;
   /** Canonical expected workflow step active when the error was recorded. */
@@ -130,6 +132,7 @@ function normalizeContext(context: RoundErrorContext, traceMessage?: string): Re
     source: context.source ?? 'server_action',
     statusCode: context.statusCode ?? null,
     requestId: context.requestId ?? null,
+    traceId: context.traceId ?? null,
     helmTraceId: context.helmTraceId ?? null,
     traceStep: context.traceStep ?? null,
     parentTraceStep: context.parentTraceStep ?? null,
@@ -245,10 +248,32 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
   // months and not one of ~60 call sites ever passed it. An explicitly
   // supplied requestId always wins.
   const ambientRequestId = getRequestId();
-  const context: RoundErrorContext =
+  // Same defaulting shape as requestId above, and the same reasoning: a
+  // per-call-site "please pass traceId" convention is the design that
+  // already failed once for requestId. getActiveSpan() reads whatever trace
+  // is live on the current async context — the request-action span opened
+  // by Sentry's own Next.js instrumentation, or a roundStage() child span
+  // when one is active — so this line is what lets a Golf Tracer /
+  // admin_events row be joined back to its Sentry trace with no call-site
+  // changes anywhere.
+  // Defensive: several test suites mock '@sentry/nextjs' with a partial
+  // surface that predates this field (getActiveSpan undefined on the mock).
+  // Observability must never be able to throw inside a logging call itself —
+  // same rule as withSupabaseTracing.
+  let ambientTraceId: string | null = null;
+  try {
+    ambientTraceId = Sentry.getActiveSpan()?.spanContext().traceId ?? null;
+  } catch {
+    ambientTraceId = null;
+  }
+  const withRequestId: RoundErrorContext =
     rawContext.requestId || !ambientRequestId
       ? rawContext
       : { ...rawContext, requestId: ambientRequestId };
+  const context: RoundErrorContext =
+    withRequestId.traceId || !ambientTraceId
+      ? withRequestId
+      : { ...withRequestId, traceId: ambientTraceId };
 
   const sport = inferSport(message, context);
   if (!sport) return context;
