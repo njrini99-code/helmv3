@@ -210,3 +210,78 @@
   re-submitting; the recover flow retried the dead id; the reuse path could
   null a durable scored hole through the upsert; a transient player read was
   reported as a missing profile mid-round.
+
+## 2026-09-02 — reuse-safety gate, qualifier-number 23505 loop, hole_invalid, holes_played assertion, resilient auth, telemetry tiers
+
+- SHA: this PR (`agent/fix-shot-tracking`), on top of `536f99d39`; not
+  deployed at the time of writing.
+- Change (A1, data loss): `savePartialRound`'s no-id branch no longer reuses a
+  course/date/qualifier-matched `in_progress` round unconditionally.
+  `isEmptyShellRound` gates reuse to an empty shell (no scored hole, no
+  `golf_shots` row) unless the caller passes a new explicit option,
+  `{ allowReuse: true }` — set only by New Round's recovered-snapshot restore
+  (`handleRestoreRecovery`) and FairwayRecoverRound's partial restore, never
+  by `persistRoundStart`, and never forwarded into the `round_missing`
+  recreate retry inside `writeRoundRecreatingIfMissing` (new
+  `RoundWriteHooks.firstCallOptions`, forwarded to the caller's first write
+  only). When reuse does happen, the durable-hole guard
+  (`salvageWouldEraseDurableHole` renamed `holesAtRiskOfErasure`, now
+  parameterized on a caller-supplied hole-number list) checks every
+  null-score hole in the reuse-path payload, not only salvaged ones; the
+  orphan-hole trim gained `.is('score', null)` so it can never delete a
+  scored hole regardless of whether the payload named it.
+- Change (A2, stuck qualifier round): `savePartialRound`'s qualifier
+  round-number derivation and `getNextQualifierRoundNumber` now share one
+  implementation, `resolveQualifierRoundNumber`
+  (`src/lib/golf/qualifier-round-number.ts`), which checks the player's
+  in-progress round on that qualifier FIRST and returns it for reuse instead
+  of deriving a number to insert with — closing a 23505 loop against the
+  unique index on `golf_rounds` over `(qualifier_id, player_id,
+  qualifier_round_number)` (migration `20260823000000`, not scoped to
+  `status='in_progress'`) that repeated on every retry. The no-id branch's
+  course/date-match query is also matched against the RESOLVED number, not
+  the raw incoming one, which was null whenever the client relies on
+  server-side derivation.
+- Change (A3, silent hole loss): a salvaged hole with no durable row on the
+  target round no longer succeeds silently. New
+  `checkNonDurableSalvageBeforeWrite` runs before any write (the parent round
+  row included) and returns `{ error: 'hole_invalid', code: 'hole_invalid',
+  hole, field, message }`, built by new `humanizeHoleFieldIssue`/
+  `describeHoleInvalidDetail`. A salvaged hole that IS durable is unchanged —
+  `holesAtRiskOfErasure` still refuses with `retry`.
+  `submitGolfRoundComprehensive`'s own Zod-failure message uses the same
+  humanizer instead of the raw `Invalid round data: holes.N.shots.0...` text,
+  and carries `code: 'hole_invalid'` when the failing field is inside a hole.
+- Change (A4, defense in depth): new `assertHolesPlayedMatchesPayload`
+  (`src/lib/golf/holes-played-assert.ts`) checks `roundData.holes_played`
+  against `holesPayload.length` before either `submit_round_atomic` call,
+  since the RPC's own check
+  (`COALESCE((p_round_data->>'holes_played')::INT, v_supplied_holes)`)
+  accepts any count when the field is omitted.
+- Change (A5, GoTrue resilience): `deleteShot`, `updateShot`,
+  `deleteInProgressRound`, `getNextQualifierRoundNumber`, and
+  `getPlayerQualifiers` now call `getUserResilient`
+  (`src/lib/auth/resilient-get-user.ts`) instead of raw
+  `supabase.auth.getUser()`, matching the transient-vs-real distinction
+  `savePartialRound`/`submitGolfRoundComprehensive` already had for
+  auto-save.
+- Change (A6, telemetry): `src/lib/admin/observe-action-result.ts` — the
+  `shot_not_found` code moved out of `ROUTINE_RECONCILIATION_CODES` (was
+  `info`, now falls through to `EXPECTED_SOFT_FAILURE_CODES` at `warning`);
+  the "This qualifier has already been completed" message moved from
+  `USER_INPUT_REJECTION_PATTERNS` (`info`) to `EXPECTED_SOFT_FAILURE_PATTERNS`
+  (`warning`). The neighbouring qualifier-lifecycle messages
+  (still-open-with-a-cap, already-submitted) are untouched.
+- Why: A1 — two legitimate in-progress rounds can share course + date (a
+  replayed round, or a practice round with no qualifier context), and
+  reusing one unconditionally let a fresh round's mostly-null holes silently
+  overwrite the OTHER round's scored holes. A2 — a lost roundId on a
+  server-derived qualifier round looped on 23505 with no in-app way out
+  (mirrors the 33-hour-stuck incident the numberless-round guard was built
+  for). A3 — a hole salvaged silently with nothing durable behind it meant
+  the server never received it while the UI showed it complete, surfacing
+  later as raw Zod text at submit. A4/A5/A6 close smaller gaps the same
+  review pass found: a defense-in-depth check with no live failure mode
+  today, five reads that could bounce a validly signed-in player mid-round,
+  and two telemetry outcomes mis-tiered as nothing-failed 'info' when they
+  represent loss or a stuck player.

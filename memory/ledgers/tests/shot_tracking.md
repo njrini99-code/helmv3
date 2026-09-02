@@ -133,3 +133,60 @@
   orphan trim on the reuse path runs under the fake.
 - Verification: see the PR body for the exact typecheck, lint, vitest, build
   and drift-gate results.
+
+## 2026-09-02 — reuse-safety gate, qualifier-number reuse, hole_invalid, holes_played, resilient auth, telemetry tiers
+
+- Added `src/app/golf/actions/__tests__/golf-partial-round-reuse-safety.test.ts`
+  (A1): no-id branch does NOT merge into a same-course/date round holding a
+  scored hole or shots; DOES reuse a genuine empty shell; DOES reuse a scored
+  round with explicit `{ allowReuse: true }`; the orphan trim never deletes a
+  durable scored hole even when it is absent from the new payload's
+  `holeConfigs`.
+- Added `src/lib/golf/__tests__/qualifier-round-number.test.ts` and
+  `src/app/golf/actions/__tests__/golf-qualifier-round-reuse.test.ts` (A2):
+  an in-progress round is returned for reuse instead of a fresh number being
+  derived and colliding with it (23505); more than one in-progress round
+  refuses rather than guesses; first-unused-configured-number vs
+  `max(completed) + 1`; a fully-used cap returns `qualifier_round_limit_reached`
+  instead of inserting; a failed active-round read is marked `transient`
+  rather than inventing slot 1.
+- Extended `src/app/golf/actions/__tests__/golf-salvage-preserves-durable-holes.test.ts`
+  (A3): the two `still salvages`/`still reuses and salvages` cases (both
+  non-durable) now assert `hole_invalid` with no write at all — including
+  under explicit reuse intent — instead of a silent success; added a case
+  confirming the ORIGINAL durable-hole `retry` refusal is unchanged even with
+  `{ allowReuse: true }`.
+- Added `src/app/golf/actions/__tests__/golf-hole-invalid.test.ts` (A3):
+  `savePartialRound` returns a structured `hole_invalid` result (hole/field/
+  message, "Hole N, shot M" phrasing, yards unit) and writes nothing for a
+  brand-new round with no candidate to reuse;
+  `submitGolfRoundComprehensive`'s Zod-failure message is humanized with
+  `code: 'hole_invalid'` instead of the raw `Invalid round data: holes.N...`
+  text.
+- Added `src/lib/golf/__tests__/holes-played-assert.test.ts` (A4): passes
+  when equal; fails on missing/null/non-finite/mismatched values with a
+  message naming both numbers.
+- Added `src/app/golf/actions/__tests__/golf-actions-resilient-auth.test.ts`
+  (A5): `deleteShot`, `updateShot`, `deleteInProgressRound`,
+  `getNextQualifierRoundNumber`, and `getPlayerQualifiers` each proceed on a
+  resilient (degraded-but-present) user the raw client would report as
+  signed out, and still refuse a genuine sign-out — proven by mocking
+  `getUserResilient` separately from the fake client's own `auth.getUser()`.
+- Extended `src/lib/admin/__tests__/observe-action-result.test.ts` (A6):
+  `shot_not_found` now classifies `warning`/`skipSentry:true` (was `info`);
+  the qualifier-already-completed message classifies `warning` and is no
+  longer a user-input rejection, while the neighbouring
+  already-submitted/still-open messages stay `info`.
+- Extended `src/lib/golf/__tests__/round-missing-recovery.test.ts`: two
+  pre-existing exact-call-args assertions updated for the action type's new
+  3rd (options) parameter; added a case proving `firstCallOptions` reaches
+  ONLY the caller's first write, never the round_missing recreate retry.
+- Verified from the worktree, each captured to a file, exit code checked:
+  `npm run typecheck` (0), `npm run lint` (0), and `npx vitest run` over
+  `src/app/golf/actions/__tests__/`, `src/lib/golf/__tests__/`,
+  `src/lib/admin/__tests__/observe-action-result.test.ts`,
+  `src/lib/auth/__tests__/resilient-get-user.test.ts`,
+  `src/lib/offline/__tests__/`, `src/lib/utils/emergency-save.test.ts`,
+  `src/app/golf/(dashboard)/dashboard/rounds/`,
+  `src/components/fairway/pages/rounds-recover/`, and
+  `src/hooks/golf/__tests__/` (142 files, 1300 tests, 0 failures).

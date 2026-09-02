@@ -172,10 +172,15 @@ describe('observe-action-result', () => {
     expect(isExpectedSoftFailureMessage('anything at all', 'some_other_code')).toBe(false);
   });
 
-  it('records a stale deleted-shot reconciliation as info, not a warning incident', () => {
+  it('A6 (2026-09-02): records a stale deleted-shot reconciliation as warning, not info — it is still a loss signal', () => {
+    // Still an EXPECTED soft failure (not a hard error worth paging), but no
+    // longer collapsed to 'info' alongside genuinely nothing-failed outcomes:
+    // a reconciled-away shot means a shot the client no longer has is
+    // absent from the server too, which is worth an operator's attention if
+    // it recurs for one player.
     expect(isExpectedSoftFailureMessage('Shot not found', 'shot_not_found')).toBe(true);
     expect(classifySoftFailure('Shot not found', 'shot_not_found')).toEqual({
-      severity: 'info',
+      severity: 'warning',
       skipSentry: true,
     });
   });
@@ -185,6 +190,23 @@ describe('observe-action-result', () => {
       severity: 'info',
       skipSentry: true,
     });
+  });
+
+  it('A6 (2026-09-02): tiers the qualifier-already-completed refusal as warning — a player can be stuck on it', () => {
+    // Reached while a player is mid-submit or mid-save with a fully-scored,
+    // unsubmitted round on their device: the coach closed the qualifier out
+    // from under them, and their round now has nowhere to land. That is a
+    // stuck-player signal, not ordinary "you typed something wrong" input
+    // rejection — unlike the OTHER qualifier-lifecycle messages nearby
+    // (still-open-with-a-cap, already-submitted), which stay at 'info'.
+    const message = 'This qualifier has already been completed. Rounds can no longer be submitted.';
+    expect(isUserInputRejection(message)).toBe(false);
+    expect(classifySoftFailure(message, null)).toEqual({
+      severity: 'warning',
+      skipSentry: true,
+    });
+    // The neighbouring qualifier-lifecycle outcomes are untouched.
+    expect(classifySoftFailure('You have already submitted this qualifier round.', null).severity).toBe('info');
   });
 
   it('classifies engine_no_recent_rounds as an empty-state code, not a generic soft failure', () => {

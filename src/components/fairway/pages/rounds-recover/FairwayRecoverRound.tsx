@@ -506,10 +506,19 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
         // `round_missing`; the helper re-creates from this same snapshot and
         // hands back a sentence (never the key) if that fails too. The
         // device copy is only cleaned up after success, below.
+        //
+        // `allowReuse: true` (A1) — this whole screen exists to reconnect a
+        // real device snapshot to its server round, including when
+        // `existingRoundId` is unknown (a pure local backup). The default
+        // (empty-shell-only) reuse gate would refuse the very round this
+        // flow is recovering; explicit intent is what makes that safe here.
+        // Never propagated to the round_missing re-create retry inside the
+        // helper — that retry's intent is CREATE.
         const { result: partialResult } = await writeRoundRecreatingIfMissing(
           savePartialRound,
           partialData,
           existingRoundId,
+          { firstCallOptions: { allowReuse: true } },
         );
 
         if (!partialResult.success) {

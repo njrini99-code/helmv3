@@ -45,7 +45,9 @@ describe('writeRoundRecreatingIfMissing', () => {
       staleRoundId: null,
     });
     expect(action).toHaveBeenCalledTimes(1);
-    expect(action).toHaveBeenCalledWith({ any: 'payload' }, DEAD_ROUND);
+    // A 3rd (options) argument is always passed through now — `undefined`
+    // here since no `firstCallOptions` was given.
+    expect(action).toHaveBeenCalledWith({ any: 'payload' }, DEAD_ROUND, undefined);
   });
 
   it('passes every other failure through untouched — conflict is not a reason to re-create', async () => {
@@ -69,7 +71,10 @@ describe('writeRoundRecreatingIfMissing', () => {
     const outcome = await writeRoundRecreatingIfMissing(action, snapshot, DEAD_ROUND, { onRoundMissing });
 
     expect(action).toHaveBeenCalledTimes(2);
-    expect(action.mock.calls[0]).toEqual([snapshot, DEAD_ROUND]);
+    // A 3rd (options) argument is always passed through now — `undefined`
+    // here since no `firstCallOptions` was given — see the
+    // firstCallOptions-specific test below for the case where one is.
+    expect(action.mock.calls[0]).toEqual([snapshot, DEAD_ROUND, undefined]);
     expect(action.mock.calls[1]).toEqual([snapshot, undefined]);
     // The caller learns which id died so it can re-key any device snapshot
     // still stored under it — and learns it BEFORE the re-create runs.
@@ -80,6 +85,33 @@ describe('writeRoundRecreatingIfMissing', () => {
       recreated: true,
       staleRoundId: DEAD_ROUND,
     });
+  });
+
+  /**
+   * A1 (2026-09-02) — `savePartialRound` gained a 3rd `options` parameter
+   * (`{ allowReuse?: boolean }`). `hooks.firstCallOptions` forwards it to
+   * ONLY the caller's own first write, never to the round_missing re-create
+   * retry: that retry's intent is CREATE (the server already proved the
+   * given id is gone), and forwarding reuse intent there would re-open
+   * exactly the merge-into-an-unrelated-round hazard A1 closed.
+   */
+  it('forwards firstCallOptions to the first write only, never to the round_missing recreate retry', async () => {
+    type OptResult = RoundWriteResult<{ roundId: string }>;
+    const action = vi.fn(async (_data: unknown, existingRoundId?: string): Promise<OptResult> =>
+      existingRoundId
+        ? { success: false, error: ROUND_MISSING_ERROR }
+        : { success: true, data: { roundId: NEW_ROUND } });
+    const snapshot = { holes: [] };
+
+    await writeRoundRecreatingIfMissing(action, snapshot, DEAD_ROUND, {
+      firstCallOptions: { allowReuse: true },
+    });
+
+    expect(action).toHaveBeenCalledTimes(2);
+    expect(action.mock.calls[0]).toEqual([snapshot, DEAD_ROUND, { allowReuse: true }]);
+    // The recreate retry carries no options at all — not even `undefined`
+    // explicitly forwarded — matching the plain no-hooks call shape.
+    expect(action.mock.calls[1]).toEqual([snapshot, undefined]);
   });
 
   it('turns a failed re-create into a sentence, never the raw key, and keeps the code', async () => {

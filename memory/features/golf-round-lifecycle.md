@@ -162,6 +162,22 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   `record_round_coachhelm_terminal_state`, and recap text through
   `save_round_ai_recap`. App code must never update a completed
   `golf_rounds` row directly.
+- A lost local round id must not silently merge into an unrelated round, nor
+  silently drop invalid data while reporting success. `savePartialRound`'s
+  no-id branch (2026-09-02) reuses a course/date-matched `in_progress` round
+  only when it is an empty shell or the caller passed explicit recovery/reuse
+  intent, and never salvages a hole that has no durable server row without
+  telling the caller exactly which hole/field is wrong (`hole_invalid`). Full
+  mechanics live in `memory/features/shot-tracking.md`'s save/submit result
+  contract, since the RPCs and TypeScript guards this touches are shared with
+  shot tracking, not lifecycle-specific.
+- A qualifier round number derived server-side (the client sent none) must
+  never re-mint a number the player's own in-progress round already holds —
+  the unique index on `golf_rounds` over `(qualifier_id, player_id,
+  qualifier_round_number)` (migration `20260823000000`) covers `in_progress`
+  rows, not only `completed` ones. `getNextQualifierRoundNumber` and
+  `savePartialRound`'s derivation share one implementation
+  (`src/lib/golf/qualifier-round-number.ts`) for exactly this reason.
 
 ### Reclassification — changing what a round counts toward
 

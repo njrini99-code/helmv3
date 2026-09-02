@@ -34,9 +34,16 @@ export type RoundWriteResult<T> =
   | { success: true; data: T }
   | { success: false; error: string; code?: string };
 
-export type RoundWriteAction<TData, TResult> = (
+/**
+ * `TOptions` is a 3rd, optional call-shape parameter — `savePartialRound`'s
+ * `{ allowReuse?: boolean }` (see its own header, A1) — that
+ * `submitGolfRoundComprehensive` does not have. Defaulting it to `never`
+ * keeps every existing 2-arg action assignable here unchanged.
+ */
+export type RoundWriteAction<TData, TResult, TOptions = never> = (
   data: TData,
   existingRoundId?: string,
+  options?: TOptions,
 ) => Promise<RoundWriteResult<TResult>>;
 
 export interface RoundWriteOutcome<TResult> {
@@ -47,12 +54,23 @@ export interface RoundWriteOutcome<TResult> {
   staleRoundId: string | null;
 }
 
-export interface RoundWriteHooks {
+export interface RoundWriteHooks<TOptions = never> {
   /**
    * Called with the dead id BEFORE the re-create runs, so a caller can forget
    * the id (and the `updated_at` that belonged to it) ahead of the new write.
    */
   onRoundMissing?: (staleRoundId: string) => void | Promise<void>;
+  /**
+   * Passed to ONLY the first write below — never to the round_missing
+   * re-create retry. That retry's intent is CREATE (the server already
+   * proved the given id is gone), so it must never carry reuse intent: doing
+   * so would re-open exactly the merge-into-an-unrelated-round hazard A1
+   * closed. Set this when the CALLER's own first write is itself a
+   * recovery/restore (a real device snapshot being reconnected to the
+   * server, not a plain "begin new" call) — see `savePartialRound`'s
+   * `allowReuse` option.
+   */
+  firstCallOptions?: TOptions;
 }
 
 /**
@@ -78,13 +96,13 @@ export function describeRoundWriteFailure(error: string | undefined): string {
  * more without the id. A second failure comes back as a sentence, never a key,
  * with `code: 'round_missing'` preserved for anything that classifies it.
  */
-export async function writeRoundRecreatingIfMissing<TData, TResult extends { roundId: string }>(
-  action: RoundWriteAction<TData, TResult>,
+export async function writeRoundRecreatingIfMissing<TData, TResult extends { roundId: string }, TOptions = never>(
+  action: RoundWriteAction<TData, TResult, TOptions>,
   data: TData,
   existingRoundId: string | undefined,
-  hooks?: RoundWriteHooks,
+  hooks?: RoundWriteHooks<TOptions>,
 ): Promise<RoundWriteOutcome<TResult>> {
-  const first = await action(data, existingRoundId);
+  const first = await action(data, existingRoundId, hooks?.firstCallOptions);
   if (first.success || first.error !== ROUND_MISSING_ERROR) {
     return { result: first, recreated: false, staleRoundId: null };
   }
@@ -101,6 +119,9 @@ export async function writeRoundRecreatingIfMissing<TData, TResult extends { rou
 
   await hooks?.onRoundMissing?.(existingRoundId);
 
+  // Deliberately NO options here — see RoundWriteHooks.firstCallOptions.
+  // This retry's intent is CREATE (the server already proved the given id is
+  // gone), never reuse.
   const second = await action(data, undefined);
   if (second.success) {
     return { result: second, recreated: true, staleRoundId: existingRoundId };

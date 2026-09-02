@@ -2177,10 +2177,19 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       // was interrupted before its first background save could finish.
       // The snapshot may name a server id that has since vanished; the
       // helper re-creates from this same payload and never surfaces the key.
+      //
+      // `allowReuse: true` (A1) — this IS a real restore, not a plain "begin
+      // new" call: when `rd.roundId` is unknown, the payload carries real
+      // progress the player already has, and it should reconnect to a
+      // matching in_progress round rather than always inserting a duplicate.
+      // Never propagated to the round_missing re-create retry inside the
+      // helper (see RoundWriteHooks.firstCallOptions) — that retry's intent
+      // is CREATE, since the server already proved the given id is gone.
       const { result } = await writeRoundRecreatingIfMissing(
         savePartialRound,
         recoveryData,
         rd.roundId ?? undefined,
+        { firstCallOptions: { allowReuse: true } },
       );
       if (!result.success) {
         setError(describeRoundWriteFailure(result.error));
