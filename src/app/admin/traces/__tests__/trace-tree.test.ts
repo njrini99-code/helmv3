@@ -143,3 +143,136 @@ describe('buildTraceTree — robustness against real-world data', () => {
     expect(buildTraceTree(junk, 'unknown').flat.length).toBe(REAL_STEPS.length);
   });
 });
+
+describe('buildTraceTree — observedStepCount', () => {
+  it('counts exactly the observed rows, never the synthesised missing ones', () => {
+    // golf.round.submit synthesises verify.round/verify.holes/verify.shots as
+    // missing (never observed) against REAL_STEPS — those must not inflate
+    // this count. This is the single definition the list RPC's own
+    // observed_step_count column is reconciled against in bridgeGetFlightTrace.
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    expect(tree.observedStepCount).toBe(REAL_STEPS.length);
+    expect(tree.missingRequiredCount).toBeGreaterThan(0);
+  });
+
+  it('increments when an undeclared-but-observed row is present', () => {
+    const withExtra = [
+      ...REAL_STEPS,
+      {
+        step_key: 'db.submit_round_atomic.checkpoint_extra',
+        parent_step_key: 'db.submit_round_atomic',
+        layer: 'postgres',
+        status: 'success',
+        requiredness: 'best_effort',
+        duration_ms: 4,
+        function_name: 'submit_round_atomic',
+        table_name: 'golf_shots',
+      },
+    ];
+    expect(buildTraceTree(withExtra, 'golf.round.submit').observedStepCount).toBe(REAL_STEPS.length + 1);
+  });
+});
+
+describe('buildTraceTree — undeclared observed steps', () => {
+  it('marks an observed row nested under a declared parent as undeclared, not missing', () => {
+    // db.submit_round_atomic.lock_round etc. are already observed today and
+    // already nest correctly (see the containment describe block above) —
+    // but golf.round.submit's own workflow definition declares ONLY the
+    // top-level db.submit_round_atomic key, so every one of those children is,
+    // by definition, not in the declared step set. A future postgres-layer
+    // checkpoint (the db checkpoints migration) writes exactly this shape.
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    const child = tree.flat.find((n) => n.key === 'db.submit_round_atomic.lock_round')!;
+    expect(child.isUndeclared).toBe(true);
+    expect(child.isMissing).toBe(false);
+  });
+
+  it('does not count an undeclared observed row in missingRequiredCount', () => {
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    expect(tree.missingRequiredCount).toBe(3); // verify.round, verify.holes, verify.shots
+  });
+
+  it('leaves a declared, top-level, actually-observed step as not undeclared', () => {
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    const rpc = tree.flat.find((n) => n.key === 'db.submit_round_atomic')!;
+    expect(rpc.isUndeclared).toBe(false);
+  });
+
+  it('never marks a synthesised missing node as undeclared', () => {
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    for (const node of tree.flat.filter((n) => n.isMissing)) {
+      expect(node.isUndeclared).toBe(false);
+    }
+  });
+
+  it('for an unknown workflow, treats every observed row as undeclared (nothing was declared to check against)', () => {
+    const tree = buildTraceTree(REAL_STEPS, 'some.workflow.from.the.future');
+    expect(tree.flat.every((n) => n.isUndeclared)).toBe(true);
+  });
+});
+
+describe('buildTraceTree — point-in-time steps and metadata error fallback', () => {
+  it('flags a row with only finished_at as point-in-time, with no duration', () => {
+    const checkpointOnly = [{
+      step_key: 'db.checkpoint_only',
+      layer: 'postgres',
+      status: 'success',
+      requiredness: 'best_effort',
+      finished_at: '2026-09-01T00:00:00.000Z',
+    }];
+    const node = buildTraceTree(checkpointOnly, 'unknown').flat[0]!;
+    expect(node.isPointInTime).toBe(true);
+    expect(node.durationMs).toBeNull();
+  });
+
+  it('does not flag a synthesised missing node as point-in-time', () => {
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    for (const node of tree.flat.filter((n) => n.isMissing)) {
+      expect(node.isPointInTime).toBe(false);
+    }
+  });
+
+  it('does not flag a row with both started_at and finished_at as point-in-time', () => {
+    const timed = [{
+      step_key: 'x', layer: 'postgres', status: 'success', requiredness: 'required',
+      started_at: '2026-08-27T10:00:00.000Z', finished_at: '2026-08-27T10:00:00.250Z',
+    }];
+    expect(buildTraceTree(timed, 'unknown').flat[0]!.isPointInTime).toBe(false);
+  });
+
+  it('reads a SQLSTATE from metadata.sqlstate when error_code column is absent, matching trace_exception_checkpoint', () => {
+    // trace_exception_checkpoint (helm_private, see the flight recorder
+    // migration) writes { sqlstate, message } inside metadata, never a
+    // top-level error_code column.
+    const row = [{
+      step_key: 'db.submit_round_atomic.exception',
+      layer: 'postgres',
+      status: 'failure',
+      requiredness: 'required',
+      metadata: { sqlstate: '40001', message: 'could not serialize access' },
+    }];
+    const node = buildTraceTree(row, 'unknown').flat[0]!;
+    expect(node.errorCode).toBe('40001');
+  });
+
+  it('prefers a real error_code column over the metadata fallback', () => {
+    const row = [{
+      step_key: 'x', layer: 'postgres', status: 'failure', requiredness: 'required',
+      error_code: '23505', metadata: { sqlstate: '40001' },
+    }];
+    expect(buildTraceTree(row, 'unknown').flat[0]!.errorCode).toBe('23505');
+  });
+
+  it('falls back to metadata.failure_code when sqlstate is absent too', () => {
+    const row = [{
+      step_key: 'x', layer: 'postgres', status: 'failure', requiredness: 'required',
+      metadata: { failure_code: 'BLOCKED' },
+    }];
+    expect(buildTraceTree(row, 'unknown').flat[0]!.errorCode).toBe('BLOCKED');
+  });
+
+  it('is unaffected by a non-object metadata value', () => {
+    const row = [{ step_key: 'x', layer: 'postgres', status: 'failure', requiredness: 'required', metadata: 'not an object' }];
+    expect(buildTraceTree(row, 'unknown').flat[0]!.errorCode).toBeNull();
+  });
+});
