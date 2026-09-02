@@ -79,6 +79,15 @@ Announcement create
 - Required acknowledgements need durable tracking per player.
 - Inline announcement tasks must stay consistent with task assignment state.
 - Urgent announcements may need push/email/in-app notification treatment; check current notification wiring before claiming it exists.
+- A text send retries ONCE, after 750 ms, when the server-action POST fails
+  at the transport layer (WebKit "Load failed", Chromium "Failed to fetch" —
+  `withOneTransportRetry` in `src/lib/transient-network-error.ts`). Any other
+  failure, and a second transport failure, still surface the toast and keep
+  the draft. Field evidence 2026-09-01/02: two Shenandoah phones lost a send
+  this way with `navigator.onLine === true`, and Vercel logged no
+  `message_sent` for either — the request never arrived. A retry carries the
+  same duplicate risk as the player's own re-tap and nothing more; a
+  schema-backed idempotency key is the answer if duplicates ever become costly.
 
 ## UI Contract
 
