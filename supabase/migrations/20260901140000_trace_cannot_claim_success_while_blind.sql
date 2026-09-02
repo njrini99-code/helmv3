@@ -2,10 +2,12 @@
 --
 -- Measured in production 2026-09-01, over 7 days of helm_debug.trace_runs:
 --
---   golf.round.autosave   1041 runs  status=success  avg observed 1.02 / expected 8
---                                    1038 of them with missing_required_step_count > 0
---   golf.round.submit       23 runs  status=success  avg observed 1.00 / expected 11
---                                    all 23 with missing_required_step_count > 0
+--   golf.round.autosave   1041 runs  status=success
+--                         avg observed 1.02 / expected 8
+--                         1038 of them with missing_required_step_count > 0
+--   golf.round.submit       23 runs  status=success
+--                         avg observed 1.00 / expected 11
+--                         all 23 with missing_required_step_count > 0
 --
 -- Every one of those recorded exactly one step — `db.save_partial_round_atomic`
 -- or `db.submit_round_atomic`, the checkpoint the RPC writes itself. The steps
@@ -49,7 +51,8 @@
 -- Live fingerprint of the function this replaces, read 2026-09-01:
 --   md5    5bfaba551f001460e12e6477c663d18e   (length 1074)
 -- Verify with:
---   select md5(pg_get_functiondef('public.helm_debug_finalize_trace(uuid,text,jsonb)'::regprocedure));
+--   select md5(pg_get_functiondef(
+--     'public.helm_debug_finalize_trace(uuid,text,jsonb)'::regprocedure));
 -- and STOP if it differs from whatever you read at apply time versus what the
 -- body below assumes, because CREATE OR REPLACE discards anything that moved.
 --
@@ -58,14 +61,14 @@
 -- relabelling recorded history is how a system stops being auditable.
 
 CREATE OR REPLACE FUNCTION public.helm_debug_finalize_trace(
-  p_trace_id uuid,
-  p_status text,
-  p_metadata jsonb DEFAULT '{}'::jsonb
+    p_trace_id uuid,
+    p_status text,
+    p_metadata jsonb DEFAULT '{}'::jsonb
 )
- RETURNS void
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'pg_catalog', 'helm_debug', 'helm_private'
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'pg_catalog', 'helm_debug', 'helm_private'
 AS $function$
 declare
   v_metadata jsonb := helm_private.trace_safe_metadata(p_metadata);
