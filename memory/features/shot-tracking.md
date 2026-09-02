@@ -638,6 +638,14 @@ signal keys, and every client branches on the keys before it shows anything.
   player is actually on when a recoverable snapshot is found, including the
   setup step before any server round exists (B4) — not only after tracking
   has already begun on a brand-new round.
+- The scorecard header's phone Prev/Next controls MOVE to a hole under the
+  same rule as the hole pills — earlier holes always, a later hole only once
+  it has a score — and are disabled with the reason ("Finish this hole to move
+  on") otherwise; they used to only scroll the pill strip, so an enabled
+  "Next →" did nothing visible (mobile audit 2026-09-02, UI-10). The autosave
+  chip always says "Save failed" in words, compact or not (UI-11). The
+  round-detail pulse chart scales to its column (viewBox + width 100%) instead
+  of clipping at a fixed 520px (UI-1).
 
 ## Known Risk Areas
 

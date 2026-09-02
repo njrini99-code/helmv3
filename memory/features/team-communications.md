@@ -105,6 +105,11 @@ Announcement create
   region shrinks, and the composer drops its home-indicator pad while the
   keyboard covers the home indicator. The screen carries
   `data-fw-keyboard-aware` so the shell's global scroll-into-view stays out.
+- On a phone with a thread open, the inbox masthead (`ViewHeader`) is hidden
+  (`hidden md:block`) so the thread gets the screen; the thread header carries
+  Back. With both stacked, 100–272px of an 844px viewport was left for the
+  conversation and read as "doesn't load the newest message" (mobile audit
+  2026-09-02, UI-4).
 
 ## Conversation Rail Failure Semantics (2026-08-27)
 
