@@ -592,7 +592,7 @@
 
 ## 2026-09-02 — Flight Recorder: recorder writes survive the response returning
 
-- SHA: pending (this commit).
+- SHA: `58543052f`.
 - Change: `helm-flight-recorder.ts`'s internal `failOpen` — the single choke
   point every `persistStart`/`persistStep`/`persistFinalize` write passes
   through — now registers the write's own promise with `vercelWaitUntil`
