@@ -1,19 +1,31 @@
 name: Review Gate
 
-# Mirrors CodeRabbit's pre-merge gate so devs catch issues before pushing.
-# Runs the same toolchain CodeRabbit invokes (ast-grep, semgrep, gitleaks,
-# ruff, shellcheck, actionlint, yamllint, markdownlint, sqlfluff, hadolint)
-# scoped to changed paths. Each tool runs in parallel.
+# Mirrors the pre-merge gate the external AI reviewers used to run, so devs
+# catch issues before pushing. Runs the same toolchain (ast-grep, semgrep,
+# gitleaks, ruff, shellcheck, actionlint, yamllint, markdownlint, sqlfluff,
+# hadolint) scoped to changed paths.
+#
+# SHAPE (2026-09-02, PR throughput). Until this date every tool here was its
+# own job — twelve jobs per pull request, each paying a runner slot and a
+# checkout to do between 0 and 45 seconds of work (measured on run
+# 33639256848: actionlint 0 s, hadolint 0 s, ruff 0 s, gitleaks 3 s, sqlfluff
+# 45 s). On an account whose runner pool behaves like 20 concurrent jobs, that
+# was more than half of one PR's entire allowance spent on setup. They are
+# now STEPS of one `checks` job: every tool still runs, every tool still
+# reports under its own name, and the aggregate step at the end fails the job
+# naming each step that did not succeed — so one failure cannot mask another
+# (the pattern ci.yml's ratchet job established on 2026-08-18). semgrep keeps
+# its own job because it runs inside a pinned container.
 #
 # SECURITY: This workflow consumes ZERO untrusted user input (no
 # github.event.*.title, .body, .message, .ref, etc. in any run: block).
 # All ${{ }} expressions are either trusted refs (github.ref for
-# concurrency), platform tokens (secrets.GITHUB_TOKEN), or job-status
-# metadata (needs.*.result).
+# concurrency), platform tokens (secrets.GITHUB_TOKEN), job-status
+# metadata (needs.*.result), or the steps context (passed through env,
+# never interpolated into a script).
 #
-# Required status check: "Review Gate / all" - wire into
-# .github/branch-protection.md so it blocks merge alongside `build` and
-# the Supabase RLS job.
+# Required status check: "Review Gate aggregate" — see
+# .github/branch-protection.md. It blocks merge alongside `CI aggregate`.
 
 on:
   # merge_group: required for GitHub's merge queue — a queued merge re-runs
@@ -34,27 +46,63 @@ permissions:
   pull-requests: read
 
 jobs:
-  ast-grep:
-    name: ast-grep (project rules)
+  checks:
+    name: Review Gate checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      # Read by .github/scripts/changed-files.sh in every scoped step below.
+      BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Install ast-grep
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+
+      # Every tool, installed once, OUTSIDE the checkout so no archive or
+      # binary lands in the tree the scanners below walk.
+      - name: Install linters
         run: |
-          curl -L https://github.com/ast-grep/ast-grep/releases/download/0.44.0/app-x86_64-unknown-linux-gnu.zip -o ast-grep.zip
+          set -euo pipefail
+          tools="$(mktemp -d)"
+          cd "$tools"
+
+          # ast-grep: pinned release.
+          curl -fsSL https://github.com/ast-grep/ast-grep/releases/download/0.44.0/app-x86_64-unknown-linux-gnu.zip -o ast-grep.zip
           unzip -q ast-grep.zip
           sudo mv ast-grep /usr/local/bin/sg
           sg --version
 
-      - name: Scan changed TypeScript with blocking project rules
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          # actionlint: pinned to an immutable release tag (was `main`, a
+          # mutable branch — a compromised main could inject arbitrary code
+          # into this security gate via the piped install).
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash)
+          sudo mv ./actionlint /usr/local/bin/actionlint
+          actionlint -version
+
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          pip install yamllint ruff pylint sqlfluff
+
+          # markdownlint-cli2 PINNED to the devDependency version
+          # (package.json). Unpinned, this floated to latest — and a
+          # markdownlint release changes rule behavior, which silently
+          # redefines the ratchet baseline: measured 2026-08-20, +102 phantom
+          # MD049s between two tool versions with zero doc edits. The
+          # baseline is only meaningful under the version that wrote it.
+          npm install -g markdownlint-cli2@0.23.2
+
+      - name: ast-grep (project rules)
+        id: ast_grep
+        continue-on-error: true
         run: |
           set -euo pipefail
           # Exclude rule-pack positive fixtures from CI scans — they exist
@@ -154,6 +202,163 @@ jobs:
 
           exit $fail
 
+      - name: gitleaks
+        id: gitleaks
+        continue-on-error: true
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+      - name: actionlint
+        id: actionlint
+        continue-on-error: true
+        run: |
+          mapfile -t workflows < <(bash .github/scripts/changed-files.sh '.github/workflows/*.yml' '.github/workflows/*.yaml')
+          if [ "${#workflows[@]}" -eq 0 ]; then
+            echo "No changed GitHub workflow files for actionlint."
+            exit 0
+          fi
+          actionlint -color "${workflows[@]}"
+
+      - name: yamllint
+        id: yamllint
+        continue-on-error: true
+        run: |
+          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '\.ya?ml$' || true)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed YAML files for yamllint."
+            exit 0
+          fi
+          yamllint -s -d '{extends: default, rules: {line-length: {max: 200}, document-start: disable, truthy: {check-keys: false}}}' "${files[@]}"
+
+      - name: shellcheck (changed scripts)
+        id: shellcheck
+        continue-on-error: true
+        run: |
+          mapfile -t files < <(bash .github/scripts/changed-files.sh 'scripts/*.sh' 'scripts/*.bash' 'supabase/scripts/*.sh' 'supabase/scripts/*.bash')
+          if [ "${#files[@]}" -ne 0 ]; then
+            shellcheck --severity=warning --color=always "${files[@]}"
+          else
+            echo "No changed shell scripts for shellcheck."
+          fi
+
+      # .claude/hooks/*.sh were covered by NOTHING. They are few, short and
+      # stable, so unlike the rest of the repo they can be checked in FULL on
+      # every run rather than only when changed: a hook that stops working is
+      # not something to learn about from the diff that happened to touch it.
+      # One of them has already shipped a silent bug (a BSD-sed
+      # incompatibility that made a rule match nothing while appearing to
+      # work).
+      #
+      # This is a GLOB, deliberately. guard-bash.sh and guard-sql.sh were
+      # deleted 2026-08-27 after being unwired, and the step kept passing
+      # because it never named them.
+      - name: shellcheck (safety hooks, always)
+        id: shellcheck_hooks
+        continue-on-error: true
+        run: |
+          # SC2088 is excluded for this glob ONLY. It was a false positive
+          # for guard-bash.sh, which inspected the raw command STRING an agent
+          # proposed (where `~` is still unexpanded) and so matched a literal
+          # tilde on purpose. That hook is gone; the exclusion is kept because
+          # a future hook inspecting command text would hit the same thing.
+          shellcheck --severity=warning --exclude=SC2088 --color=always .claude/hooks/*.sh
+
+      # Was: changed-files-only lint piped through `|| true`, so this check
+      # was structurally incapable of failing no matter what it found —
+      # yet it sat in the required aggregate. Measured 2026-08-19:
+      # 34,576 pre-existing violations across the full docs/ + CLAUDE.md +
+      # AGENTS.md scope (dominated by MD013 line-length and MD060
+      # table-column-style — rules this repo has never enforced on prose),
+      # far too many to unmask as a hard zero-violations gate. Replaced with
+      # a full-scope, per-rule count ratchet (scripts/markdown-lint-ratchet.mjs,
+      # same shape as scripts/lint-ratchet.mjs): the existing backlog is
+      # grandfathered via .markdownlint-baseline.json, and the step fails
+      # only if any rule's count goes UP. Full-scope (not changed-files) on
+      # purpose — a ratchet baseline is only meaningful if measured over a
+      # scope that doesn't shift under it. The script only imports node:
+      # builtins, so it needs no `npm ci` / node_modules at all.
+      - name: markdownlint (ratchet)
+        id: markdownlint
+        continue-on-error: true
+        run: node scripts/markdown-lint-ratchet.mjs
+
+      - name: ruff
+        id: ruff
+        continue-on-error: true
+        run: |
+          mapfile -t files < <(bash .github/scripts/changed-files.sh 'tools/*.py' 'tools/**/*.py')
+          if [ "${#files[@]}" -gt 0 ]; then
+            ruff check "${files[@]}"
+          else
+            echo "No changed Python files for ruff."
+          fi
+
+      - name: pylint
+        id: pylint
+        continue-on-error: true
+        run: |
+          mapfile -t files < <(bash .github/scripts/changed-files.sh 'tools/*.py' 'tools/**/*.py')
+          if [ "${#files[@]}" -gt 0 ]; then
+            pylint --disable=C,R --exit-zero "${files[@]}" | tee pylint.log
+            if grep -E "^[EF][0-9]+" pylint.log; then
+              exit 1
+            fi
+          else
+            echo "No changed Python files for pylint."
+          fi
+
+      # Same story as markdownlint: a `|| true` lint that could never fail,
+      # replaced 2026-08-19 with a full-scope, per-rule count ratchet
+      # (scripts/sql-lint-ratchet.mjs) over supabase/migrations/*.sql +
+      # supabase/seed/*.sql. The existing backlog (7,649 violations across
+      # 264 of 303 files at the time; sqlfluff's own 20KB large-file safety
+      # limit skips the other 18) is grandfathered via .sqlfluff-baseline.json,
+      # and the step fails only if any rule's count goes UP. Full-scope on
+      # purpose, for the same reason.
+      - name: sqlfluff (ratchet)
+        id: sqlfluff
+        continue-on-error: true
+        run: node scripts/sql-lint-ratchet.mjs
+
+      - name: hadolint
+        id: hadolint
+        continue-on-error: true
+        run: |
+          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '(^|/)Dockerfile[^/]*$' || true)
+          if [ "${#files[@]}" -gt 0 ]; then
+            curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64 -o /tmp/hadolint
+            chmod +x /tmp/hadolint
+            /tmp/hadolint "${files[@]}"
+          else
+            echo "No changed Dockerfiles for hadolint."
+          fi
+
+      - name: env-secrets
+        id: env_secrets
+        continue-on-error: true
+        run: node scripts/check-env-secret-fallbacks.mjs
+
+      # `steps` (the context) holds every step above that carries an `id`, with
+      # the outcome BEFORE continue-on-error rewrote it. Anything other than
+      # `success` — failure, cancelled, or skipped because the install died —
+      # fails this job and is printed by name.
+      - name: Review Gate checks aggregate (fails if any check failed)
+        if: always()
+        env:
+          STEP_OUTCOMES: ${{ toJSON(steps) }}
+        run: |
+          bad=0
+          while IFS=$'\t' read -r id outcome; do
+            if [ "$outcome" = "success" ]; then
+              echo "ok      $id"
+            else
+              echo "FAILED  $id -> $outcome"; bad=1
+            fi
+          done < <(jq -r 'to_entries[] | "\(.key)\t\(.value.outcome)"' <<< "$STEP_OUTCOMES")
+          exit "$bad"
+
   semgrep:
     name: semgrep (custom rules)
     runs-on: ubuntu-latest
@@ -210,261 +415,6 @@ jobs:
           fi
           semgrep --error --config p/ci --skip-unknown-extensions "${files[@]}"
 
-  gitleaks:
-    name: gitleaks
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_CONFIG: .gitleaks.toml
-
-  actionlint:
-    name: actionlint
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Run actionlint
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          # Pinned to an immutable release tag (was `main`, a mutable branch —
-          # a compromised main could inject arbitrary code into this security
-          # gate via the piped install).
-          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash)
-          mapfile -t workflows < <(bash .github/scripts/changed-files.sh '.github/workflows/*.yml' '.github/workflows/*.yaml')
-          if [ "${#workflows[@]}" -eq 0 ]; then
-            echo "No changed GitHub workflow files for actionlint."
-            exit 0
-          fi
-          ./actionlint -color "${workflows[@]}"
-
-  yamllint:
-    name: yamllint
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-      - run: pip install yamllint
-      - name: Run yamllint
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '\.ya?ml$' || true)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No changed YAML files for yamllint."
-            exit 0
-          fi
-          yamllint -s -d '{extends: default, rules: {line-length: {max: 200}, document-start: disable, truthy: {check-keys: false}}}' "${files[@]}"
-
-  shellcheck:
-    name: shellcheck
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Run shellcheck
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          mapfile -t files < <(bash .github/scripts/changed-files.sh 'scripts/*.sh' 'scripts/*.bash' 'supabase/scripts/*.sh' 'supabase/scripts/*.bash')
-          if [ "${#files[@]}" -ne 0 ]; then
-            shellcheck --severity=warning --color=always "${files[@]}"
-          else
-            echo "No changed shell scripts for shellcheck."
-          fi
-
-      # .claude/hooks/*.sh were covered by NOTHING. They are few, short and
-      # stable, so unlike the rest of the repo they can be checked in FULL on
-      # every run rather than only when changed: a hook that stops working is
-      # not something to learn about from the diff that happened to touch it.
-      # One of them has already shipped a silent bug (a BSD-sed
-      # incompatibility that made a rule match nothing while appearing to
-      # work).
-      #
-      # This is a GLOB, deliberately. guard-bash.sh and guard-sql.sh were
-      # deleted 2026-08-27 after being unwired, and the step kept passing
-      # because it never named them.
-      - name: Run shellcheck on the safety hooks (always, not just when changed)
-        run: |
-          # SC2088 is excluded for this glob ONLY. It was a false positive
-          # for guard-bash.sh, which inspected the raw command STRING an agent
-          # proposed (where `~` is still unexpanded) and so matched a literal
-          # tilde on purpose. That hook is gone; the exclusion is kept because
-          # a future hook inspecting command text would hit the same thing.
-          shellcheck --severity=warning --exclude=SC2088 --color=always .claude/hooks/*.sh
-
-  markdownlint:
-    name: markdownlint
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-      # PINNED to the devDependency version (package.json). Unpinned, this
-      # floated to latest — and a markdownlint release changes rule behavior,
-      # which silently redefines the ratchet baseline: measured 2026-08-20,
-      # +102 phantom MD049s between two tool versions with zero doc edits.
-      # The baseline is only meaningful under the version that wrote it.
-      - run: npm install -g markdownlint-cli2@0.23.2
-      # Was: changed-files-only lint piped through `|| true`, so this job
-      # was structurally incapable of failing no matter what it found —
-      # yet it sat in the required `all` aggregate. Measured 2026-08-19:
-      # 34,576 pre-existing violations across the full docs/ + CLAUDE.md +
-      # AGENTS.md scope (dominated by MD013 line-length and MD060
-      # table-column-style — rules this repo has never enforced on prose),
-      # far too many to unmask as a hard zero-violations gate. Replaced with
-      # a full-scope, per-rule count ratchet (scripts/markdown-lint-ratchet.mjs,
-      # same shape as scripts/lint-ratchet.mjs): the existing backlog is
-      # grandfathered via .markdownlint-baseline.json, and the job fails
-      # only if any rule's count goes UP. Full-scope (not changed-files) on
-      # purpose — a ratchet baseline is only meaningful if measured over a
-      # scope that doesn't shift under it.
-      # Invoked directly (not via `npm run`) — the script only imports
-      # node: builtins, so it needs no `npm ci` / node_modules at all,
-      # keeping this job as cheap as the `|| true` version it replaces.
-      - name: Markdown lint ratchet
-        run: node scripts/markdown-lint-ratchet.mjs
-
-  python:
-    name: ruff + pylint
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-      - run: pip install ruff pylint
-      - name: ruff check
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          mapfile -t files < <(bash .github/scripts/changed-files.sh 'tools/*.py' 'tools/**/*.py')
-          if [ "${#files[@]}" -gt 0 ]; then
-            ruff check "${files[@]}"
-          else
-            echo "No changed Python files for ruff."
-          fi
-      - name: pylint
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          mapfile -t files < <(bash .github/scripts/changed-files.sh 'tools/*.py' 'tools/**/*.py')
-          if [ "${#files[@]}" -gt 0 ]; then
-            pylint --disable=C,R --exit-zero "${files[@]}" | tee pylint.log
-            if grep -E "^[EF][0-9]+" pylint.log; then
-              exit 1
-            fi
-          else
-            echo "No changed Python files for pylint."
-          fi
-
-  sqlfluff:
-    name: sqlfluff
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-      - run: pip install sqlfluff
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-      # Was: changed-files-only lint piped through `|| true`, so this job
-      # was structurally incapable of failing no matter what it found —
-      # yet it sat in the required `all` aggregate. Measured 2026-08-19:
-      # 7,649 pre-existing violations across supabase/migrations/*.sql +
-      # supabase/seed/*.sql (264 of 303 files; sqlfluff's own 20KB
-      # large-file safety limit skips the other 18 rather than parser-
-      # locking on them), far too many to unmask as a hard zero-violations
-      # gate without a repo-wide SQL reformat nobody asked for. Replaced
-      # with a full-scope, per-rule count ratchet
-      # (scripts/sql-lint-ratchet.mjs, same shape as scripts/lint-ratchet.mjs):
-      # the existing backlog is grandfathered via .sqlfluff-baseline.json,
-      # and the job fails only if any rule's count goes UP. Full-scope (not
-      # changed-files) on purpose — a ratchet baseline is only meaningful if
-      # measured over a scope that doesn't shift under it. Invoked directly
-      # (not via `npm run`) — the script only imports node: builtins, so it
-      # needs no `npm ci` / node_modules.
-      - name: SQL lint ratchet
-        run: node scripts/sql-lint-ratchet.mjs
-
-  hadolint:
-    name: hadolint
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Run hadolint
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '(^|/)Dockerfile[^/]*$' || true)
-          if [ "${#files[@]}" -gt 0 ]; then
-            curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64 -o hadolint
-            chmod +x hadolint
-            ./hadolint "${files[@]}"
-          else
-            echo "No changed Dockerfiles for hadolint."
-          fi
-
-  env-secrets:
-    name: env-secrets
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-      - name: Check for hardcoded secret fallbacks
-        run: node scripts/check-env-secret-fallbacks.mjs
-
   all:
     # Renamed from the bare `all` (2026-08-19): ci.yml's aggregate job was
     # ALSO named `all`, so both workflows posted an identically-named check
@@ -479,17 +429,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs:
-      - ast-grep
+      - checks
       - semgrep
-      - gitleaks
-      - actionlint
-      - yamllint
-      - shellcheck
-      - markdownlint
-      - python
-      - sqlfluff
-      - hadolint
-      - env-secrets
     steps:
       - name: Fail if any required check failed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
