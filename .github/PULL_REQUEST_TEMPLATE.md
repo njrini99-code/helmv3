@@ -1,6 +1,6 @@
 <!--
-  Keep this short and honest. The six required checks (Smoke checks,
-  CI aggregate, Review Gate aggregate, and the three Analyze (...) runs)
+  Keep this short and honest. The five required checks (CI aggregate,
+  Review Gate aggregate, and the three Analyze (...) runs)
   gate merge automatically — this template is the human layer.
 -->
 

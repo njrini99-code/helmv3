@@ -11,12 +11,13 @@ first; this file is just the workflow summary.
    required reviews + checks). Never push to it directly.
 2. **Open a PR** and fill out the template. Stale branches are auto-deleted on
    merge; use the "Update branch" button if you fall behind.
-3. **Pass the required checks.** A PR can merge only when these six are
-   green: `Smoke checks`, `CI aggregate`, `Review Gate aggregate`,
-   `Analyze (actions)`, `Analyze (javascript-typescript)` and
-   `Analyze (python)`. Treat `Supabase lint + RLS tests`, `Lint ratchet`,
-   `ESLint`, `TypeScript`, `Unit tests`, and `Next build` as must-pass too —
-   they gate the aggregates.
+3. **Pass the required checks.** A PR can merge only when these five are
+   green: `CI aggregate`, `Review Gate aggregate`, `Analyze (actions)`,
+   `Analyze (javascript-typescript)` and `Analyze (python)`. Treat
+   `Supabase lint + RLS tests`, `Static checks`, `Lint`, `TypeScript`,
+   `Unit tests`, and `Next build` as must-pass too — they gate `CI aggregate`.
+   (`Smoke checks` was a sixth required check until 2026-09-02; it was a
+   second copy of `Next build` and was removed with its job.)
 
    This list was wrong until 2026-08-19. It named `CodeRabbit` (dropped
    2026-07-20), `CodeQL` (never a check name — that workflow posts three
