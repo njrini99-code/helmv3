@@ -46,6 +46,14 @@
       "closes_when": "the owner turns on 'Include administrators' / 'Do not allow bypassing the above settings' for main in GitHub settings, and github/main-branch-protection observes enforce_admins.enabled=true with the three aggregate contexts still required and no ruleset bypass actors. Emergency access is then break-glass: relax, act, restore — never a standing grant."
     },
     {
+      "id": "MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS",
+      "owner": "founder",
+      "opened": "2026-09-01",
+      "scope": ".claude/settings.json permissions.deny rules of the form mcp__<uuid>__<tool>; config/mcp-connector-ids.json",
+      "reason": "Permission rules match tool NAMES, and the session names an account connector's tools by a UUID prefix (mcp__e139bbde-...__apply_migration), not by the display-name spelling (mcp__claude_ai_Supabase__apply_migration) every deny rule used until 2026-09-01. Measured that day: no mcp__claude_ai_* name existed in the inventory at all, so fourteen MCP deny rules matched nothing the session could call while the enforcement inventory reported them EXERCISED. The UUID spellings are now denied too, and the ids live in config/mcp-connector-ids.json so the fingerprint, the inventory and the verifier read one value. What nothing here can establish is whether the id is STABLE: one session cannot prove that a re-install or re-authorisation keeps it, and if it rotates every UUID rule silently matches nothing again — the same shape as the display-name rules today. control-plane:verify reports the recorded ids against the deny rules on every run (tools/mcp-deny-connector-ids) so a rule and its id cannot drift apart unnoticed, but it cannot see the live inventory. Registered rather than called fixed because a deny rule that may or may not name the tool is not enforcement, it is a bet.",
+      "closes_when": "either the harness offers a stable server-level name for account connectors that deny rules can key on (at which point the UUID rules are replaced and this file's ids are deleted), or the ids are re-measured across at least three separate sessions on two dates and found identical, recorded in config/mcp-connector-ids.json with stability set to VERIFIED and the observation dates listed."
+    },
+    {
       "id": "MIGRATIONS_REPO_PRODUCTION_LEDGER_DIVERGENCE",
       "owner": "founder",
       "opened": "2026-08-30",

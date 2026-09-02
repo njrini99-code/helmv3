@@ -223,6 +223,16 @@ jobs:
         continue-on-error: true
         run: npm run guards
 
+      # VERCEL UPLOAD COVERAGE. `.vercelignore` REPLACES Vercel's default
+      # ignore set, so every gitignored secret is uploaded unless that file
+      # names it too — the .env family shipped in every production upload
+      # until #1714, found by a hand simulation. config/repo/manifest.yml
+      # (vercel.must_ignore) is the maintained list; this fails when any entry
+      # is not matched by .vercelignore. It proves the FILE, not the upload —
+      # only Vercel can prove the upload — which is the half that rots.
+      - name: Vercel upload excludes every secret-bearing path
+        run: npm run check:vercelignore
+
       # THE CONTROL PLANE VERIFIES THE CONTROL PLANE.
       #
       # Static mode only: no user-global config, no network beyond gh, no

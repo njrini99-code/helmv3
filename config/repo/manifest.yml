@@ -60,3 +60,58 @@ ci:
   unique_check_names:
     - CI aggregate
     - Review Gate aggregate
+
+vercel:
+  # Paths that must NEVER be in a Vercel upload. `.vercelignore` REPLACES the
+  # default ignore set, so `.gitignore` protects none of these once that file
+  # exists — the .env family shipped in every upload until #1714 for exactly
+  # that reason. `npm run check:vercelignore` (also `repo:doctor` →
+  # config.vercelignore-coverage, and CI's control-plane job) asserts each of
+  # these is matched by `.vercelignore`. A trailing slash means directory.
+  #
+  # Adding a secret-bearing gitignored path to `.gitignore` without adding it
+  # here is how the next one leaks. Keep the two in step.
+  must_ignore:
+    # Live credentials
+    - .env
+    - .env.local
+    - .env.development.local
+    - .env.production.local
+    - .cursor/mcp.json                 # sbp_ Supabase access token (.gitleaks.toml)
+    - context7.json                    # Context7 api_key
+    - playwright/.auth/                # Supabase session cookies (storage state)
+    - momentic/auth/                   # test-account auth
+    - .momentic-mcp/                   # captured environment values incl. credentials
+    - android/keystore.properties      # upload keystore password
+    - android/upload.keystore          # representative of *.keystore
+    - probe.jks                        # representative of *.jks
+    - probe.pem                        # representative of *.pem
+    - .claude/settings.local.json      # per-machine allowlist, once leaked to this repo
+    - .claude/session-state/           # per-session ledgers, machine state
+    - .vercel/                         # project link + org id
+    - supabase/.temp/                  # linked project ref + CLI scratch
+    # Tracked or local artifacts that are never a build input
+    - .momentic/
+    - .dev-assets/
+    - .dev-screenshots/
+    - .codex/
+    - .design-sync/
+    - .ultracode/
+    - .vscode/
+    - .idea/
+    - .agents/
+    - .playwright-mcp/
+    - .ruff_cache/
+    - .deepsec/
+    - .worktrees/
+    - .claude/worktrees/
+    - audit/
+    - tools/
+    - routes/
+    - docs/
+    - deno.lock
+    - node_modules/
+    - .next/
+    - coverage/
+    - test-results/
+    - playwright-report/

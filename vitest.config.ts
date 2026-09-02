@@ -150,6 +150,23 @@ export default defineConfig({
             // accepted as a loopback suffix) both passed a grep happily.
             'scripts/lib/__tests__/seed-target-guard.test.ts',
             'scripts/repo-doctor/__tests__/repo-doctor.test.ts',
+            // MCP deny rules vs the connector ids the session actually exposes
+            // (config/mcp-connector-ids.json). Named here for the same reason as
+            // its neighbours; it is the failure-injection suite for the
+            // tools/mcp-deny-connector-ids verifier check.
+            'scripts/__tests__/mcp-deny-connector-ids.test.ts',
+            // The anchored matcher behind the enforcement inventory's "Vercel
+            // deploy/purchase refused" claim. Pinned so a rule naming a
+            // DIFFERENT tool with the same prefix can never count as cover.
+            'scripts/__tests__/enforcement-inventory-vercel-deny.test.ts',
+            // .vercelignore REPLACES the default ignore set; this is the matcher
+            // behind `npm run check:vercelignore` and repo:doctor's
+            // config.vercelignore-coverage, run against the live manifest.
+            'scripts/__tests__/vercelignore-coverage.test.ts',
+            // SessionStart's release line: live probe preferred and labelled,
+            // canonical marker as the labelled fallback, UNKNOWN otherwise.
+            // Real fixture repos, same shape as src/test/hooks/.
+            'scripts/__tests__/session-context-release.test.ts',
             // The demo-seed guards. Same rationale as the secrets guard above:
             // they were written for `node --test` and so ran under nothing, and
             // what they protect — a script that creates auth users and deletes
@@ -385,14 +402,16 @@ export default defineConfig({
         test: {
           ...sharedTestConfig,
           name: 'rls',
-          // Selects ZERO files today — no `src/**/*.rls.test.*` exists, and
-          // `npm run test:rls` consequently does nothing. That is not a gap:
-          // RLS is tested for real by the pgTAP suites in
+          // Selects ZERO files today — no `src/**/*.rls.test.*` exists. That
+          // is not a gap: RLS is tested for real by the pgTAP suites in
           // supabase/tests/rls/*.sql, which run against a fresh Postgres in
-          // CI's "Supabase lint + RLS tests" job and currently carry 93
-          // assertions. Kept as a defined project so the naming convention
-          // stays available, but do not read a green `test:rls` as evidence
-          // of anything.
+          // CI's "Supabase lint + RLS tests" job, and `npm run test:rls` runs
+          // THOSE (`bash scripts/test-pgtap.sh`), not this project — this
+          // comment said `test:rls` "does nothing" long after the script was
+          // repointed. Kept as a defined project so the naming convention
+          // stays available; `vitest run --project rls` on its own is still
+          // evidence of nothing. (The assertion count that used to sit here
+          // is gone: it was a number in a comment, and it rotted.)
           include: ['src/**/*.rls.test.{ts,tsx}'],
           exclude: ['node_modules', '.next'],
           testTimeout: 30_000,
