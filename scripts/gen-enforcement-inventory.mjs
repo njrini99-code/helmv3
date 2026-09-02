@@ -43,6 +43,20 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SETTINGS = resolve(ROOT, '.claude/settings.json');
 const OUT = resolve(ROOT, 'docs/CONTROL_PLANE_ENFORCEMENT.md');
 
+/**
+ * A deny rule that refuses one of the Vercel MCP's production-mutating tools,
+ * under either spelling of the server segment (`mcp__claude_ai_Vercel__…` or
+ * `mcp__<uuid>__…`). The whole alternation is anchored: a rule naming
+ * `deploy_to_vercel_preview` or `pause_project_status` is a DIFFERENT tool and
+ * must not be counted as cover for the one this claim is about. An earlier
+ * spelling anchored only the last alternative, so every other one matched as
+ * a substring (CodeQL js/regex/missing-regexp-anchor).
+ *
+ * Supabase also exposes `pause_project`; callers exclude that server by id.
+ */
+export const VERCEL_MUTATING_TOOL_RE =
+  /^mcp__.+__(?:deploy_to_vercel|buy_(?:domain|pro|credits|addon)|pause_project)$/;
+
 const START = '<!-- AUTOGEN:enforcement:start -->';
 const END = '<!-- AUTOGEN:enforcement:end -->';
 
@@ -286,7 +300,7 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
     {
       claim: 'A production deploy or purchase through the Vercel MCP is refused',
       resolve: () => {
-        const hits = denies.mcp.filter((r) => /deploy_to_vercel|buy_(domain|pro|credits|addon)|Vercel__pause_project|pause_project$/.test(r) && !/Supabase|e139bbde/.test(r));
+        const hits = denies.mcp.filter((r) => VERCEL_MUTATING_TOOL_RE.test(r) && !/Supabase|e139bbde/.test(r));
         const ids = connectorIds.filter((c) => c.service === 'Vercel').map((c) => c.id);
         const uuidHits = hits.filter((r) => ids.some((id) => r.startsWith(`mcp__${id}__`)));
         return hits.length
@@ -549,16 +563,21 @@ function build() {
   return `${existing.slice(0, s + START.length)}\n${renderBlock()}\n${existing.slice(e)}`;
 }
 
-const next = build();
-if (process.argv.includes('--check')) {
-  const current = existsSync(OUT) ? readFileSync(OUT, 'utf-8') : '';
-  if (current !== next) {
-    console.error('❌ docs/CONTROL_PLANE_ENFORCEMENT.md is stale.');
-    console.error('   Run: node scripts/gen-enforcement-inventory.mjs && commit the result.');
-    process.exit(1);
+// Only the CLI entry point generates or checks; an `import` of this module (the
+// unit test over VERCEL_MUTATING_TOOL_RE) must not touch the doc. Same guard as
+// gen-tool-authority.mjs.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const next = build();
+  if (process.argv.includes('--check')) {
+    const current = existsSync(OUT) ? readFileSync(OUT, 'utf-8') : '';
+    if (current !== next) {
+      console.error('❌ docs/CONTROL_PLANE_ENFORCEMENT.md is stale.');
+      console.error('   Run: node scripts/gen-enforcement-inventory.mjs && commit the result.');
+      process.exit(1);
+    }
+    console.log('✅ enforcement inventory matches live configuration');
+  } else {
+    writeFileSync(OUT, next);
+    console.log(`wrote ${OUT.replace(`${ROOT}/`, '')}`);
   }
-  console.log('✅ enforcement inventory matches live configuration');
-} else {
-  writeFileSync(OUT, next);
-  console.log(`wrote ${OUT.replace(`${ROOT}/`, '')}`);
 }

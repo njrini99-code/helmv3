@@ -155,6 +155,10 @@ export default defineConfig({
             // its neighbours; it is the failure-injection suite for the
             // tools/mcp-deny-connector-ids verifier check.
             'scripts/__tests__/mcp-deny-connector-ids.test.ts',
+            // The anchored matcher behind the enforcement inventory's "Vercel
+            // deploy/purchase refused" claim. Pinned so a rule naming a
+            // DIFFERENT tool with the same prefix can never count as cover.
+            'scripts/__tests__/enforcement-inventory-vercel-deny.test.ts',
             // .vercelignore REPLACES the default ignore set; this is the matcher
             // behind `npm run check:vercelignore` and repo:doctor's
             // config.vercelignore-coverage, run against the live manifest.

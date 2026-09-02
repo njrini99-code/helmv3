@@ -84,8 +84,12 @@ export function loadConnectorIds() {
  * Deliberately narrow: only the rules and declarations that could change what
  * this service can do. A fingerprint over the whole settings file would go
  * stale on every unrelated edit and train people to ignore STALE.
+ *
+ * `connectors` is optional: every production caller omits it and gets the
+ * ids on file (config/mcp-connector-ids.json); tests pass their own so the
+ * UUID-spelled path is provable without editing that file.
  */
-export function fingerprintFor(service, { settings, mcp, connectors }) {
+export function fingerprintFor(service, { settings, mcp, connectors = loadConnectorIds() }) {
   const keys = [
     ...(SERVICE_KEYS[service] ?? [service.toLowerCase()]),
     ...connectorIdsFor(service, connectors),

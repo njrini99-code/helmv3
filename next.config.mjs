@@ -329,14 +329,19 @@ const nextConfig = {
           // ANALYTICS HOSTS. src/app/layout.tsx mounts PostHogProvider and
           // DatadogProvider; both initialise client-side whenever their
           // NEXT_PUBLIC_* keys are set outside localhost, and both then POST
-          // to hosts that until 2026-09-01 appeared nowhere in connect-src —
-          // so every capture was blocked by this very header. The hosts below
-          // follow the DEFAULTS in those providers (us.i.posthog.com;
-          // Datadog site datadoghq.com -> browser-intake-datadoghq.com). A
-          // non-default NEXT_PUBLIC_POSTHOG_HOST or NEXT_PUBLIC_DD_SITE needs
-          // its host added here too, or it is blocked the same way.
-          // posthog-js also lazy-loads its recorder/surveys bundles from
-          // us-assets.i.posthog.com, which is why that host is in script-src.
+          // to hosts that until 2026-09-01 appeared nowhere in the connect
+          // directive below, so every capture was blocked by this very header.
+          // The hosts there follow the DEFAULTS in those providers
+          // (us.i.posthog.com, and Datadog site datadoghq.com, whose intake is
+          // browser-intake-datadoghq.com). A non-default NEXT_PUBLIC_POSTHOG_HOST
+          // or NEXT_PUBLIC_DD_SITE needs its host added there too, or it is
+          // blocked the same way. posthog-js also lazy-loads its recorder and
+          // surveys bundles from us-assets.i.posthog.com, which is why that host
+          // is in the script directive as well.
+          //
+          // Do not write the literal directive names in this comment: the CSP
+          // test (src/lib/security/__tests__/local-supabase-csp.test.ts) locates
+          // the directive by its first occurrence in this file.
           {
             key: 'Content-Security-Policy',
             value: `
