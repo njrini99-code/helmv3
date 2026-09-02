@@ -5,6 +5,7 @@ import {
   failed,
   ok,
 } from '@/lib/admin/fetch-result';
+import { usableCredential } from '@/lib/admin/credential-shape.mjs';
 import { reportIntegrationFault } from '@/lib/admin/integration-health';
 
 /**
@@ -50,16 +51,13 @@ export function __resetSentryFeatureCountCooldown(): void {
   featureCountCooldownUntil = 0;
 }
 
-function isPlaceholderSecret(value: string): boolean {
-  return /^(your-|replace-|changeme|todo|example)/i.test(value.trim());
-}
-
-function usableSecret(value: string | undefined): string | null {
-  const trimmed = value?.trim();
-  if (!trimmed || trimmed.length < 10 || isPlaceholderSecret(trimmed)) return null;
-  return trimmed;
-}
-
+/**
+ * Shape-checked, not length-checked. The local `.env.local` carries
+ * 11-character placeholder tokens that cleared the old `length >= 10` floor,
+ * so this module treated Sentry as CONFIGURED and every local read failed soft
+ * and silently (.claude/rules/shipping.md). One validator for the deploy-time
+ * script, this reader and vercel-api.ts: src/lib/admin/credential-shape.mjs.
+ */
 function config(): { token: string; org: string; project: string } | null {
   // Fall back to the CI sourcemap-upload token when the dedicated read token
   // isn't provisioned yet (`||`, not `??` — an unset OR blank-string env var
@@ -67,9 +65,11 @@ function config(): { token: string; org: string; project: string } | null {
   // fail-soft: if SENTRY_AUTH_TOKEN lacks event:read the calls below
   // 404/403 and every panel degrades to its existing not-configured/stale
   // state, never a crash.
-  const token = usableSecret(process.env.SENTRY_READ_TOKEN) ?? usableSecret(process.env.SENTRY_AUTH_TOKEN);
-  const org = process.env.SENTRY_ORG?.trim();
-  const project = process.env.SENTRY_PROJECT?.trim();
+  const token =
+    usableCredential('sentry_auth_token', process.env.SENTRY_READ_TOKEN) ??
+    usableCredential('sentry_auth_token', process.env.SENTRY_AUTH_TOKEN);
+  const org = usableCredential('sentry_slug', process.env.SENTRY_ORG);
+  const project = usableCredential('sentry_slug', process.env.SENTRY_PROJECT);
   if (!token || !org || !project) return null;
   return { token, org, project };
 }

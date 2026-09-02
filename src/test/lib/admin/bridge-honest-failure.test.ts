@@ -59,6 +59,47 @@ describe('provider faults reach the integration classifier', () => {
   });
 });
 
+describe('the nav badge refuses to report a fault as zero', () => {
+  // overview.ts turned the throw below back into `0` with `catch { return 0 }`,
+  // and unstable_cache then held that false zero for 60s — no badge, exactly
+  // what "no incidents" renders. Twenty lines away layout.tsx did the opposite
+  // for the Health badge ("null — never 0").
+  it('fetchBridgeErrorBadge resolves null — never 0 — when the feed read fails', async () => {
+    vi.resetModules();
+    vi.doMock('next/cache', () => ({
+      unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+      revalidateTag: vi.fn(),
+      updateTag: vi.fn(),
+    }));
+    vi.doMock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: () => ({}) }) }));
+    vi.doMock('@/lib/admin/vercel-api', () => ({ fetchVercelDeployments: vi.fn(), deployAgeMinutes: vi.fn() }));
+    vi.doMock('@/lib/admin/data/feature-health', () => ({
+      fetchFeatureHealth: vi.fn(),
+      summarizeFeatureHealth: vi.fn(),
+      computeFeatureHealthBanner: vi.fn(),
+    }));
+    vi.doMock('@/lib/admin/data/incident-feed', () => ({
+      DEFAULT_INCIDENT_WINDOW_HOURS: 24,
+      cachedIncidentFeed: vi.fn(),
+      buildIncidentFeedFromSources: vi.fn(),
+      queryAppErrorEvents: async () => {
+        throw new Error('statement timeout');
+      },
+    }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { fetchBridgeErrorBadge } = await import('@/lib/admin/data/overview');
+    await expect(fetchBridgeErrorBadge()).resolves.toBeNull();
+
+    warn.mockRestore();
+    vi.doUnmock('@/lib/admin/data/incident-feed');
+    vi.doUnmock('@/lib/admin/data/feature-health');
+    vi.doUnmock('@/lib/admin/vercel-api');
+    vi.doUnmock('@/lib/supabase/admin');
+    vi.doUnmock('next/cache');
+  });
+});
+
 describe('the incident feed refuses to report a fault as zero', () => {
   it('throws when the underlying page read fails', async () => {
     vi.resetModules();

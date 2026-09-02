@@ -15,6 +15,7 @@ const {
   onAuthStateChangeMock,
   rpcMock,
   unsubscribeMock,
+  logErrorMock,
 } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
   getUserMock: vi.fn(),
@@ -22,7 +23,10 @@ const {
   onAuthStateChangeMock: vi.fn(),
   rpcMock: vi.fn(),
   unsubscribeMock: vi.fn(),
+  logErrorMock: vi.fn(),
 }));
+
+vi.mock('@/lib/error-logging', () => ({ logError: logErrorMock }));
 
 /** A live session for `user-1` — the default in every test that expects a
  *  heartbeat to actually go out. */
@@ -40,6 +44,7 @@ describe('usePresence authenticated heartbeat lifecycle (#1016)', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     rpcMock.mockReset().mockResolvedValue({ data: undefined, error: null });
+    logErrorMock.mockReset();
     getUserMock.mockReset();
     getSessionMock.mockReset().mockResolvedValue(liveSession());
     unsubscribeMock.mockReset();
@@ -212,10 +217,39 @@ describe('usePresence authenticated heartbeat lifecycle (#1016)', () => {
     );
     expect(getUserMock).toHaveBeenCalledTimes(2);
 
+    // The value-shaped failure now enters the Bridge pipeline. 15 Sentry
+    // events in 7d for this exact message, 0 admin_events rows — because
+    // PostgREST returned it as a value and nothing routed it. Tagged to the
+    // auth feature (a dead JWT evaluated as anon), 'low' because the hook
+    // recovers on its own, and never with the round page's feature.
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+    const [loggedError, context, severity] = logErrorMock.mock.calls[0] as [Error, Record<string, unknown>, string];
+    expect(loggedError.message).toContain('permission denied for function heartbeat');
+    expect(context).toMatchObject({
+      component: 'usePresence',
+      action: 'presence.heartbeat',
+      feature: 'auth_onboarding',
+      errorCode: '42501',
+    });
+    expect(severity).toBe('low');
+
     await act(async () => {
       await vi.advanceTimersByTimeAsync(180_000);
     });
     expect(rpcMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not report a heartbeat that succeeded', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(logErrorMock).not.toHaveBeenCalled();
   });
 
   it('creates one stable Supabase client across rerenders', async () => {

@@ -3,11 +3,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
 
-import { fetchVercelDeployments, fetchVercelWebInsights } from '@/lib/admin/vercel-api';
+import {
+  fetchVercelDeployments,
+  fetchVercelWebInsights,
+  __resetVercelInsightsCooldown,
+} from '@/lib/admin/vercel-api';
+import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
+
+// Well-formed by shape (>= 20 opaque chars) — a short fixture like the old
+// 'vercel-api-token' is exactly what credential-shape.mjs now rejects.
+const GOOD_TOKEN = 'A1b2C3d4E5f6G7h8I9j0K1l2';
 
 describe('fetchVercelDeployments', () => {
   beforeEach(() => {
-    vi.stubEnv('VERCEL_API_TOKEN', 'vercel-api-token');
+    vi.stubEnv('VERCEL_API_TOKEN', GOOD_TOKEN);
     vi.stubEnv('VERCEL_PROJECT_ID', 'prj_1');
     vi.stubEnv('VERCEL_TEAM_ID', 'team_1');
     fetchMock.mockReset();
@@ -23,6 +32,13 @@ describe('fetchVercelDeployments', () => {
 
   it('treats placeholder or too-short tokens as unconfigured', async () => {
     vi.stubEnv('VERCEL_API_TOKEN', 'your-vercel-api-token-here');
+    const res = await fetchVercelDeployments();
+    expect(res.status).toBe('unconfigured');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('treats an 11-character opaque token as unconfigured — shape, not length', async () => {
+    vi.stubEnv('VERCEL_API_TOKEN', 'abcdefghijk');
     const res = await fetchVercelDeployments();
     expect(res.status).toBe('unconfigured');
     expect(fetchMock).not.toHaveBeenCalled();
@@ -59,12 +75,17 @@ describe('fetchVercelDeployments', () => {
 
 describe('fetchVercelWebInsights', () => {
   beforeEach(() => {
-    vi.stubEnv('VERCEL_API_TOKEN', 'vercel-api-token');
+    vi.stubEnv('VERCEL_API_TOKEN', GOOD_TOKEN);
     vi.stubEnv('VERCEL_PROJECT_ID', 'prj_1');
     vi.stubEnv('VERCEL_TEAM_ID', 'team_1');
     fetchMock.mockReset();
+    __resetVercelInsightsCooldown();
+    __resetEmitThrottleForTests();
   });
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.useRealTimers();
+  });
 
   it('returns unconfigured when the token trio is absent', async () => {
     vi.stubEnv('VERCEL_PROJECT_ID', '');
@@ -100,5 +121,42 @@ describe('fetchVercelWebInsights', () => {
     const res = await fetchVercelWebInsights();
     expect(res.status).toBe('error');
     expect(res.error).toContain('network down');
+  });
+
+  // /admin/deploys refreshes every 60s. Without this, every refresh re-probed
+  // a dead endpoint AND re-reported the fault from a fresh lambda: 99 rows in
+  // 2h05m on production 2026-09-01.
+  describe('negative cache', () => {
+    it('does not re-probe a failed endpoint inside the cooldown', async () => {
+      fetchMock.mockResolvedValue(new Response('nope', { status: 503 }));
+      const first = await fetchVercelWebInsights();
+      expect(first.status).toBe('error');
+      const probes = fetchMock.mock.calls.length;
+      expect(probes).toBeGreaterThan(0);
+
+      const second = await fetchVercelWebInsights();
+      expect(second.status).toBe('error');
+      expect(second.error).toBe(first.error);
+      expect(fetchMock.mock.calls.length).toBe(probes); // no new round-trip
+    });
+
+    it('probes again once the cooldown elapses, and clears on success', async () => {
+      vi.useFakeTimers();
+      fetchMock.mockResolvedValue(new Response('nope', { status: 503 }));
+      await fetchVercelWebInsights();
+      const probes = fetchMock.mock.calls.length;
+
+      vi.advanceTimersByTime(5 * 60_000 + 1);
+      // A fresh Response per call — a body can only be consumed once and the
+      // reader fetches three periods.
+      fetchMock.mockImplementation(async () => new Response(JSON.stringify({ data: { visitors: 1 } }), { status: 200 }));
+      const recovered = await fetchVercelWebInsights();
+      expect(recovered.status).toBe('ok');
+      expect(fetchMock.mock.calls.length).toBeGreaterThan(probes);
+
+      // Cleared: the next call probes live rather than serving the old failure.
+      const again = await fetchVercelWebInsights();
+      expect(again.status).toBe('ok');
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 /**
  * /api/inngest answers three different callers and must tell them apart.
@@ -35,11 +35,20 @@ function request(signature?: string) {
 const signatureAgedSeconds = (seconds: number) =>
   `t=${Math.floor(Date.now() / 1000) - seconds}&s=${'a'.repeat(64)}`;
 
+// A well-formed signing key on OUR side, so the tests below exercise the
+// mismatch/skew diagnosis and not the missing-credential branch.
+const GOOD_SIGNING_KEY = `signkey-prod-${'0a'.repeat(32)}`;
+
 describe('/api/inngest signature diagnosis', () => {
   beforeEach(() => {
     logServerError.mockClear();
     sdkGet.mockClear();
     serve.mockClear();
+    vi.stubEnv('INNGEST_SIGNING_KEY', GOOD_SIGNING_KEY);
+    vi.stubEnv('INNGEST_EVENT_KEY', 'E'.repeat(86));
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('pins production discovery to the canonical domain, never a stale deployment URL', async () => {
@@ -51,8 +60,45 @@ describe('/api/inngest signature diagnosis', () => {
     expect(serve).toHaveBeenCalledWith(
       expect.objectContaining({ serveOrigin: 'https://helmsportslabs.com' }),
     );
+  });
 
-    vi.unstubAllEnvs();
+  // The third caller. With NO signing key on our side the SDK cannot attempt
+  // validation — it logs "In cloud mode but no signing key found" and answers
+  // 500 — so the 401 diagnosis never fires and, before 2026-09-01, nothing
+  // reached admin_events at all (4 Sentry console events after that day's
+  // deploy, 0 Bridge rows). It must be named as MISSING, never as a mismatch.
+  it('reports a MISSING signing key as provider_inngest_missing_credential in production, not as a mismatch', async () => {
+    vi.resetModules();
+    vi.stubEnv('VERCEL_ENV', 'production');
+    vi.stubEnv('INNGEST_SIGNING_KEY', '');
+    sdkGet.mockResolvedValueOnce(new Response('{}', { status: 500 }));
+    const { GET } = await import('@/app/api/inngest/route');
+
+    const response = await call(GET, request(signatureAgedSeconds(2)));
+
+    expect(response.status).toBe(500); // the SDK's own answer, untouched
+    expect(sdkGet).toHaveBeenCalledTimes(1); // still delegated
+    expect(logServerError).toHaveBeenCalledTimes(1);
+    const [message, context] = logServerError.mock.calls[0] as [string, Record<string, unknown>];
+    expect(message).toMatch(/INNGEST_SIGNING_KEY is missing/);
+    expect(message).not.toMatch(/does not match the Inngest app/);
+    expect(context).toMatchObject({
+      errorCode: 'provider_inngest_missing_credential',
+      feature: 'integrations',
+      action: 'inngest.credentials.inbound',
+    });
+  });
+
+  it('says nothing about credentials off production when the key is absent — a preview opts out legitimately', async () => {
+    vi.resetModules();
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    vi.stubEnv('INNGEST_SIGNING_KEY', '');
+    sdkGet.mockResolvedValueOnce(new Response('{}', { status: 500 }));
+    const { GET } = await import('@/app/api/inngest/route');
+
+    await call(GET, request(signatureAgedSeconds(2)));
+
+    expect(logServerError).not.toHaveBeenCalled();
   });
 
   it('answers an unsigned probe 401 without reporting it, and without waking the SDK', async () => {

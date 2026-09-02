@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { describeError } from '@/lib/utils/describe-error';
+import { logError } from '@/lib/error-logging';
 
 const HEARTBEAT_INTERVAL = 60000; // 1 minute
 const INITIAL_HEARTBEAT_DELAY = 5000;
@@ -85,6 +86,33 @@ export function usePresence() {
         if (!error) return;
 
         console.debug('[Presence] Heartbeat failed:', describeError(error));
+
+        // PostgREST returns failures as VALUES, so nothing here ever threw and
+        // nothing ever entered the Bridge pipeline: 15 Sentry events in 7d for
+        // `permission denied for function heartbeat` (2026-08-26..28, Chrome
+        // and WKWebView on /golf/dashboard/rounds/*), every one reported by the
+        // Supabase driver's own auto-instrumentation and ZERO admin_events
+        // rows. Route the value through the client logger so it reaches
+        // /api/log-error with a feature key. Grants were verified against
+        // production 2026-09-01 — `heartbeat()` is SECURITY DEFINER with
+        // EXECUTE for `authenticated` and `service_role` only, which is
+        // correct — so a 42501 here is a session-validity fault (the JWT
+        // expired between the getSession() check above and the call), which
+        // is why it is tagged to the auth feature rather than to whatever
+        // page happened to be open. 'low': the hook recovers by itself.
+        // logError de-duplicates per tab, so this cannot flood.
+        logError(
+          new Error(`Presence heartbeat RPC failed: ${describeError(error)}`),
+          {
+            component: 'usePresence',
+            action: 'presence.heartbeat',
+            feature: 'auth_onboarding',
+            featureArea: 'presence',
+            sport: 'shared',
+            errorCode: (error as { code?: string | null }).code ?? null,
+          },
+          'low',
+        );
 
         // Supabase RPC failures resolve through `error` rather than throwing.
         // Re-check auth so an expired/signed-out session cannot keep emitting

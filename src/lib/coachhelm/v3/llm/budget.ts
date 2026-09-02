@@ -100,7 +100,7 @@ async function noteUnconfiguredBudgetOnce(coach_id: string): Promise<void> {
   LOGGED_UNCONFIGURED_BUDGET_COACHES.add(coach_id);
   await logServerEvent(
     `budget: coach_id=${coach_id} has no configured daily budget; using the platform default of $${PLATFORM_DEFAULT_DAILY_BUDGET_USD}`,
-    { action: 'v3.llm.budget.platform_default' },
+    { action: 'v3.llm.budget.platform_default', feature: 'coachhelm_ai_engine' },
     'info',
   ).catch(() => {});
 }
@@ -236,6 +236,7 @@ export async function recordSpend(
     // loudly instead so the miss shows up in the admin dashboard/Sentry.
     await logServerError(`recordSpend upsert failed: ${error.message}`, {
       action: 'v3.llm.recordSpend',
+      feature: 'coachhelm_ai_engine',
       errorCode: error.code,
       extra: { coach_id: args.coach_id, date, cost_usd: args.cost_usd },
     });
@@ -272,7 +273,7 @@ async function resolveDefaultBudgetForCoach(
     // Guessing a budget here would spend money on an unattributable request.
     await logServerError(
       `budget: coach_id=${coach_id} has no team staff row; cannot resolve a budget`,
-      { action: 'v3.llm.budget.no_team' },
+      { action: 'v3.llm.budget.no_team', feature: 'coachhelm_ai_engine' },
       'warning',
     );
     return { budget_usd: 0, source: 'unresolved' };
@@ -315,7 +316,7 @@ async function resolveDefaultBudgetForCoach(
     // deliberate zero.
     await logServerError(
       `budget: settings lookup failed for coach_id=${coach_id} — ${settingsError.message}`,
-      { action: 'v3.llm.budget.settings' },
+      { action: 'v3.llm.budget.settings', feature: 'coachhelm_ai_engine' },
       'warning',
     );
     return { budget_usd: 0, source: 'unresolved' };

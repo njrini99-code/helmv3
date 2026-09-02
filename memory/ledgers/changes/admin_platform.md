@@ -1,5 +1,82 @@
 # Admin Platform change ledger
 
+## 2026-09-01 — Bridge error pipeline: durable collapse, scheduled writes, a missing Inngest key made visible, an honest badge, aliasing, credential shapes
+
+- SHA: recorded on merge of `agent/fix-bridge-errors`.
+- Twelve review findings against HEAD 6a7577c71 (production fb425aa2b), fixed
+  test-first. Measured facts behind each are in the code comments; the rules
+  are in `memory/features/admin-platform.md` (Business Rules, seven new
+  bullets).
+- **Durable flood collapse** (`src/lib/admin/durable-collapse.ts`, wired into
+  `server-error-logger.ts` for every `provider_*` code; `durableCollapse`
+  opt-in/out on the context). 99 identical `provider_vercel_unavailable` rows
+  in 2h05m came from a per-PROCESS throttle on serverless. Fails open. The
+  Vercel insights reader also negative-caches its failure for 5 minutes.
+- **Scheduled, not detached, error-path writes**
+  (`src/lib/admin/schedule-bridge-write.ts`: `after()` in a request scope,
+  awaited-with-timeout otherwise; `bindRequestContext` keeps `requestId`).
+  Wired into `observed-action.ts`, `observe-action-result.ts` (now returns
+  `Promise<void>`; the three sport wrappers call it unawaited, which is safe
+  by construction — the awaited path starts the write synchronously),
+  `job-log.ts`, `integration-health.ts`. Process-level handlers now import
+  the logger statically, use the Vercel request-context `waitUntil` when
+  present (`src/lib/observability/vercel-wait-until.ts`) and await under
+  `BRIDGE_PROCESS_WRITE_TIMEOUT_MS`.
+- **A missing/malformed Inngest credential in production is a Bridge error
+  row** (`src/lib/inngest/credentials.ts`,
+  `provider_inngest_missing_credential`, feature `integrations`) from process
+  start, from every `isInngestConfigured() === false`, and from every signed
+  inbound request to `/api/inngest` (the SDK answers 500 there, never the 401
+  the route's mismatch diagnosis keys on). `isInngestConfigured()` is now
+  shape-aware. The registry entry keeps NO heartbeat, by design; its
+  `knownGaps` say why AMBER, not RED, is what one fingerprint earns.
+  **OWNER ACTION:** set `INNGEST_SIGNING_KEY` (and `INNGEST_EVENT_KEY`) in
+  Vercel Production and redeploy — 4 Sentry "no signing key found" events on
+  fb425aa2b since 14:31Z; this change reports it, it cannot fix it.
+- **Honest nav badge**: `fetchBridgeErrorBadge` returns `null` on a failed
+  read; `AdminShell` renders a distinct "Incidents unreadable" chip.
+- **Feature aliasing**: `resolveFeatureKey` aliases `feature` too; aliases
+  added for `calendar`, `insights`, `coachhelm_chat`,
+  `coachhelm_effectiveness`, `teams`, `rounds`; `budget.ts` tags
+  `coachhelm_ai_engine`. `crm` (directive) and `lifting-onboarding` (no Lift
+  Lab registry entry) deliberately left unaliased and stated as such.
+- **Sentry titles** for message-shaped traces: `ServerTrace: <code>: <summary>`;
+  fingerprint pinned to the `admin_events` fingerprint (tag
+  `bridge_fingerprint`). Existing server-trace issues will regroup once.
+- **admin-logger**: a non-PGRST205 insert failure emits the capped, stably
+  fingerprinted `bridge_write_failed` Sentry message instead of a bare
+  `console.error`; `logRoundSubmitted`/`logAIGeneration` tag sport+feature.
+- **Credential shapes** in one `.mjs` (`src/lib/admin/credential-shape.mjs`)
+  shared by `scripts/check-helm-bridge-env.mjs`, `sentry-api.ts`,
+  `vercel-api.ts`, `inngest/credentials.ts`. The script now fails on the
+  eight 11-character placeholders it used to pass; `--drift` treats a
+  placeholder as provisioned-and-wrong; DSN shape is advisory.
+- **Heartbeat 42501** (finding 3): the client hook now routes the VALUE-shaped
+  RPC failure through `logError` (feature `auth_onboarding`, severity `low`).
+  Grants verified against production 2026-09-01 via the read-only connector:
+  `public.heartbeat()` is SECURITY DEFINER, EXECUTE for `authenticated` and
+  `service_role`, NOT `anon` or PUBLIC — correct, so NO migration was written.
+  The last Sentry occurrence is 2026-08-28T14:50Z, before the `getSession()`
+  guard shipped; the fault was a dead JWT evaluated as `anon`.
+- **rca_analysis rows** (finding 9): already born resolved on HEAD
+  (`analyze-error.ts:143`), pinned by `analyze-error.test.ts:220`; the finding
+  was stale against 6a7577c71. Doc corrected to say so; no code change.
+- Verified from the worktree: `npm run typecheck` exit 0; `npm run lint` exit
+  0 (`--max-warnings 0`); vitest over the four named bridge tests plus every
+  test under `src/lib/admin/**`, `src/app/admin/**`,
+  `src/lib/observability/**`, `src/lib/inngest/**`, `src/app/api/inngest/**`
+  and the added/adjacent suites: 257 files / 3020 tests, 0 failed (255/2976
+  in the batch run + 2/44 for the two files edited last); `npm run build` —
+  see the PR body for the recorded exit.
+- NOT done, and left explicitly: the systemic 1,044-unchecked-reads class
+  (PostgREST failures returned as values) is untouched beyond the one
+  heartbeat call site; the ~21 remaining `Promise.allSettled` sites from
+  INC-2026-08-27 follow-up 2 are still not individually cleared; Lift Lab has
+  no feature-registry entry, so its rows stay visibly unregistered; the three
+  sport action wrappers still call `observeActionSoftFailure` without `void`
+  (outside this change's territory — harmless, the returned promise never
+  rejects).
+
 ## 2026-08-27 — self-healing: error resolution lifecycle, and a cron that lied
 
 - SHA: recorded on merge of `feat/bridge-shot-tracing`.

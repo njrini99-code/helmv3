@@ -255,6 +255,16 @@ export async function register() {
       .then((m) => m.recordDeployMarker())
       .catch(() => {});
 
+    // Helm Bridge: an absent or malformed Inngest credential in production is
+    // a fault, not a config state — every durable job silently turns off. The
+    // SDK's own "no signing key found" console.error fires here at start-up
+    // (3 of the 4 Sentry events on 2026-09-01 carried no request URL), so
+    // start-up is where the Bridge row is written too. Production-gated,
+    // throttled, collapsed across cold starts — see src/lib/inngest/credentials.ts.
+    void import('@/lib/inngest/credentials')
+      .then((m) => m.reportInngestCredentialFault('startup'))
+      .catch(() => {});
+
     // `process.on` is a Node-only API. Load the handler module only from the
     // Node runtime so Edge builds never evaluate that implementation.
     void import('@/lib/observability/register-process-error-handlers')
