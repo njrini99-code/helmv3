@@ -117,6 +117,7 @@ interface OfflineSyncActions {
   onSyncError: (error: string) => void;
   completeSync: (success: boolean) => void;
   failSync: (error: string) => void;
+  markSyncStarted: () => void;
 
   // Ready state
   setReady: (ready: boolean) => void;
@@ -313,14 +314,22 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
 
             set((s) => {
               s.isSyncing = false;
-              s.syncStatus = result.success ? 'success' : 'error';
+              // A DECLINED run leaves the status untouched. Marking it 'error'
+              // made the concurrency guard look like a failure and, through
+              // OfflineIndicator's `if (!isOnline || syncError) setOpen(true)`,
+              // forced a red toast over a player's scorecard mid-round.
+              s.syncStatus = result.declined
+                ? s.syncStatus
+                : result.success
+                  ? 'success'
+                  : 'error';
               s.showSyncProgress = false;
 
               if (result.success && (result.syncedRounds > 0 || result.syncedHoles > 0 || result.syncedShots > 0)) {
                 s.lastSuccessfulSync = new Date();
               }
 
-              if (!result.success && result.errors.length > 0) {
+              if (!result.success && !result.declined && result.errors.length > 0) {
                 s.syncError = result.errors[0] ?? null;
               }
             });
@@ -469,6 +478,18 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
         },
 
         // Simplified sync failure handler (for provider compatibility)
+        // Reflect a sync the ENGINE started. This is the only thing a
+        // sync-start callback may do: the run is already under way, so calling
+        // startSync() from here re-enters syncPendingData(), trips its
+        // isSyncingFlag guard, and returns a declined result the caller then
+        // has to explain away. Mirror the state; never start a second run.
+        markSyncStarted: () => {
+          set((state) => {
+            state.isSyncing = true;
+            state.syncStatus = 'syncing';
+          });
+        },
+
         failSync: (error: string) => {
           set((state) => {
             state.isSyncing = false;
@@ -603,10 +624,7 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
 
           const callbacks: SyncCallback = {
             onSyncStart: () => {
-              set((state) => {
-                state.isSyncing = true;
-                state.syncStatus = 'syncing';
-              });
+              get().markSyncStarted();
             },
             onSyncProgress: (progress) => {
               get().updateSyncProgress(progress);

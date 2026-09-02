@@ -1,6 +1,6 @@
 import type { InngestFunction } from 'inngest';
 import { inngest } from './client';
-import { logServerException } from '@/lib/server-error-logger';
+import { logServerException, logServerEvent } from '@/lib/server-error-logger';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 
@@ -75,6 +75,64 @@ export const weeklyHealthPing: InngestFunction.Any = inngest.createFunction(
     }),
 );
 
+/**
+ * Health probe — the ONLY way to prove Inngest is actually working end to end.
+ *
+ * Two credentials fail independently and a passing check on one says nothing
+ * about the other:
+ *
+ *   INNGEST_EVENT_KEY    outbound. We send an event TO Inngest.
+ *                        Broken -> "Inngest API Error: 404 Event key not found"
+ *   INNGEST_SIGNING_KEY  inbound.  Inngest calls /api/inngest to RUN the
+ *                        function. Broken -> signature validation fails and the
+ *                        function never executes, while the send still looked
+ *                        fine.
+ *
+ * Production carried exactly that split: the event key was rejected from
+ * 2026-07-27, and the signing key has been rejecting Inngest's own calls since
+ * 2026-08-07 — so "is Inngest configured?" was true, every send after the key
+ * rotation was lost, and the scheduled/derived work behind it silently did not
+ * run. `isInngestConfigured()` only reads that the variables EXIST.
+ *
+ * This function writes a row keyed by a caller-supplied probeId. The row can
+ * only exist if Inngest accepted the event AND successfully called back in to
+ * execute this handler. Its presence is the proof; nothing else in the system
+ * writes that action.
+ *
+ * Harmless by construction: one admin_events row, no user data read or
+ * written, idempotent, safe to run against production at any time.
+ * Drive it with `node scripts/inngest-health-check.mjs`.
+ */
+export const healthPing: InngestFunction.Any = inngest.createFunction(
+  {
+    id: 'inngest-health-probe',
+    triggers: [{ event: 'helm/health.ping' }],
+    onFailure: async ({ error }: { error: Error }) => {
+      await logServerException(error, { action: 'inngest.health-probe', source: 'background_job' }, 'error');
+    },
+  },
+  async ({ event, step }) =>
+    withBridgeLogging('inngest-health-probe', async () => {
+      const probeId = String((event.data as { probeId?: unknown })?.probeId ?? 'unknown');
+
+      await step.run('record-arrival', async () => {
+        await logServerEvent(
+          `Inngest health probe executed (${probeId})`,
+          {
+            action: 'inngest.health-probe',
+            source: 'background_job',
+            metadata: { probeId, sentAt: (event.data as { sentAt?: unknown })?.sentAt ?? null },
+            skipSentry: true,
+          },
+          'info',
+        );
+        return true;
+      });
+
+      return { ok: true, probeId };
+    }),
+);
+
 interface CoachHelmRoundSubmittedEventData {
   roundId: string;
   playerId: string;
@@ -145,4 +203,4 @@ export const onCoachHelmRoundSubmitted: InngestFunction.Any = inngest.createFunc
 // present. Confirmed by reading this file: only weeklyHealthPing existed
 // before this change. When that baseball function lands, add it to the
 // array below alongside these two rather than replacing either entry.
-export const functions = [weeklyHealthPing, onCoachHelmRoundSubmitted];
+export const functions = [weeklyHealthPing, onCoachHelmRoundSubmitted, healthPing];

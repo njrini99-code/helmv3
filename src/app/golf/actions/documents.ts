@@ -11,6 +11,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { resolveMimeType } from '@/lib/storage/mime';
 
 // Type helper for golf_document_versions table (until types are regenerated)
 interface DocumentVersionRow {
@@ -337,7 +338,7 @@ async function createDocumentImpl(
 
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(storagePath, file);
+      .upload(storagePath, file, { contentType: resolveMimeType(file) });
 
     if (uploadError) throw uploadError;
 
@@ -354,7 +355,7 @@ async function createDocumentImpl(
         title,
         description: options.description || null,
         file_url: urlData.publicUrl,
-        file_type: file.type,
+        file_type: resolveMimeType(file),
         file_size: file.size,
         category: options.category || 'other',
         is_public: options.playerVisible ?? true,
@@ -377,7 +378,7 @@ async function createDocumentImpl(
         file_url: urlData.publicUrl,
         file_name: file.name,
         file_size: file.size,
-        mime_type: file.type,
+        mime_type: resolveMimeType(file),
         storage_path: storagePath,
         change_notes: 'Initial upload',
         uploaded_by: user.id,
@@ -723,7 +724,7 @@ async function uploadNewVersionImpl(
 
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(storagePath, file);
+      .upload(storagePath, file, { contentType: resolveMimeType(file) });
 
     if (uploadError) throw uploadError;
 
@@ -744,7 +745,7 @@ async function uploadNewVersionImpl(
         file_url: urlData.publicUrl,
         file_name: file.name,
         file_size: file.size,
-        mime_type: file.type,
+        mime_type: resolveMimeType(file),
         storage_path: storagePath,
         change_notes: changeNotes || null,
         uploaded_by: user.id,
@@ -762,7 +763,7 @@ async function uploadNewVersionImpl(
       .from('golf_documents')
       .update({
         file_url: urlData.publicUrl,
-        file_type: file.type,
+        file_type: resolveMimeType(file),
         file_size: file.size,
         version_count: newVersionNumber,
       })
@@ -1219,7 +1220,7 @@ async function uploadGolfDocumentImpl(
 
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(storagePath, file);
+      .upload(storagePath, file, { contentType: resolveMimeType(file) });
 
     if (uploadError) throw uploadError;
 

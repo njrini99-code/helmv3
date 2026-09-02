@@ -3,6 +3,8 @@
 import { useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { fairwayToast } from '@/components/fairway';
+import { logError } from '@/lib/error-logging';
 import { IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -82,7 +84,47 @@ export function AttachmentButton({
       if (!files || files.length === 0) return;
 
       const fileArray = Array.from(files).slice(0, maxFiles);
-      const validFiles = fileArray.filter((file) => validateFile(file).valid);
+
+      // A rejected file used to vanish. `.filter(f => validateFile(f).valid)`
+      // threw away a reason `validateFile` had already computed — "File type
+      // not supported…" or "File too large…" — so a player tapped attach,
+      // picked a photo, and NOTHING happened: no toast, no console line, no
+      // log, and no network call, because rejection happens before any request
+      // is made.
+      //
+      // That silence is why "we can't do pictures" could not be investigated
+      // from production. This failure leaves no Sentry event, no storage
+      // object and no database row — the same evidence profile as nobody
+      // having tried. The most likely trigger is a device reporting a
+      // `file.type` that `ALLOWED_MIME_TYPES` does not carry (an empty string,
+      // or an HEIC variant), which is exactly the case a phone produces and a
+      // desktop does not.
+      //
+      // Telling the person is the fix. The log is `low` severity so an
+      // ordinary oversized photo is not treated as an incident, but the
+      // filename and mime type reach Sentry so the NEXT occurrence is
+      // diagnosable instead of invisible.
+      const validFiles: File[] = [];
+      for (const file of fileArray) {
+        const result = validateFile(file);
+        if (result.valid) {
+          validFiles.push(file);
+          continue;
+        }
+        fairwayToast.danger(result.error || `${file.name} can't be attached`);
+        logError(
+          new Error(`Attachment rejected: ${result.error || 'unknown reason'}`),
+          {
+            component: 'AttachmentButton',
+            action: 'validate-file',
+            sport: 'golf',
+            fileName: file.name,
+            mimeType: file.type || '(none reported)',
+            fileSize: file.size,
+          },
+          'low',
+        );
+      }
 
       if (validFiles.length > 0) {
         onFilesSelected(validFiles);
