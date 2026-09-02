@@ -63,6 +63,7 @@ import type { CoverageSummary } from '@/lib/admin/incidents/sources';
 // importing `type RcaAnalysis` from a server-only module is safe while
 // importing a VALUE from one is not.
 import type { SelfHealStageDetail } from '@/lib/admin/data/selfheal';
+import { deriveIncidentFlow, FLOW_STAGE_TITLE } from '@/lib/admin/selfheal-flow';
 
 // ---------------------------------------------------------------------------
 // The row
@@ -73,6 +74,7 @@ export type AttentionReason =
   | 'critical'
   | 'stage-dead'
   | 'repair-ci-failed'
+  | 'stage-stalled'
   | 'repairable-untouched'
   | 'needs-evidence'
   | 'proof-overdue'
@@ -131,6 +133,13 @@ export interface AttentionInput {
  *      expected to resolve on its own, because if the loop is dead nothing
  *      below this line is getting worked without a human.
  *   4. `repair-ci-failed`      — automation actively tried and broke.
+ *   4b. `stage-stalled`        — the loop is running and has skipped this
+ *      incident for `STALL_CYCLES` of the owning stage's own cadence
+ *      (`selfheal-flow.ts`). Ranked above `repairable-untouched` because it
+ *      is the stronger fact about the same incident: not "a human could
+ *      trigger Repair" but "Repair has had its chances and did nothing" —
+ *      the calm-heartbeat failure `selfheal-capability.ts` was built for,
+ *      now visible per incident rather than per stage.
  *   5. `repairable-untouched`  — automation found a fix and has not acted;
  *      a human unblocks it by triggering or reviewing Repair.
  *   6. `needs-evidence`        — automation cannot safely proceed without a
@@ -149,6 +158,7 @@ export const ATTENTION_PRIORITY: readonly AttentionReason[] = [
   'critical',
   'stage-dead',
   'repair-ci-failed',
+  'stage-stalled',
   'repairable-untouched',
   'needs-evidence',
   'platform-attention',
@@ -247,6 +257,10 @@ const REASON_TONE: Readonly<Record<AttentionReason, StateTone>> = {
   critical: 'danger',
   'stage-dead': 'danger',
   'repair-ci-failed': 'danger',
+  // Warning, not danger: nothing is broken outright, and the stage's own
+  // heartbeat may well be green. That calm is exactly the point — this row
+  // is the one that says the calm is not evidence of work.
+  'stage-stalled': 'warning',
   'repairable-untouched': 'accent',
   'needs-evidence': 'warning',
   'proof-overdue': 'warning',
@@ -414,6 +428,26 @@ function deriveIncidentRow(incident: UnifiedIncident, now: number): AttentionRow
       ageMs: null, // no failure timestamp exists on IncidentRepair — never fabricated.
       href: repair.prUrl ?? incident.linkTarget,
       tone: REASON_TONE['repair-ci-failed'],
+    };
+  }
+
+  // 4b. stage-stalled — the loop has had STALL_CYCLES of the owning stage's
+  //     cadence to act on this incident and has not. Checked BEFORE
+  //     `repairable-untouched` so the stronger fact wins for a repairable
+  //     incident Repair has skipped twice. A failed read never reaches here:
+  //     `deriveIncidentFlow` places `repair.status === 'unknown'` and an
+  //     unreadable deploy off the loop, where nothing can stall (rule 2).
+  const flow = deriveIncidentFlow(incident, now);
+  if (flow.stalled && flow.stageId !== null) {
+    return {
+      key: incident.id,
+      reason: 'stage-stalled',
+      state: `STALLED · ${FLOW_STAGE_TITLE[flow.stageId].toUpperCase()}`,
+      headline: incident.description,
+      why: flow.why,
+      ageMs: flow.waitingMs,
+      href: incident.linkTarget,
+      tone: REASON_TONE['stage-stalled'],
     };
   }
 

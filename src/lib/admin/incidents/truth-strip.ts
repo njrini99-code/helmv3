@@ -19,6 +19,7 @@
 import type { DeployFreshness } from '@/lib/admin/deploy-freshness';
 import type { CoverageSummary } from './sources';
 import type { StateTone, UnifiedIncident } from './types';
+import { describeFlow, type FlowSummary } from '@/lib/admin/selfheal-flow';
 
 /**
  * One cell. `state` is the word that renders next to the colour — colour is
@@ -55,6 +56,13 @@ export interface TruthStripInput {
   loop: { tone: 'ok' | 'warning' | 'danger' | 'unknown'; label: string; detail: string } | null;
   /** Age of the self-heal reading in ms, or null when unknown. */
   loopAgeMs: number | null;
+  /**
+   * The loop's throughput — what is waiting on each stage and what has
+   * stalled (`summarizeFlow`). Optional and nullable so a caller that only
+   * has heartbeats still gets a strip; when present it can ESCALATE the
+   * self-heal cell but never soften it.
+   */
+  flow?: FlowSummary | null;
   computedAt: string;
   now: number;
 }
@@ -109,6 +117,14 @@ const DEPLOY_TONE: Readonly<Record<DeployFreshness['state'], StateTone>> = {
  *   summing them into one meaningless total.
  *
  *   OBSERVATION never renders an all-clear while a source is blind.
+ *
+ *   SELF-HEAL is the worst of THREE axes, not two. Runtime and capability
+ *   arrive folded into `loop`; throughput arrives as `flow`. A loop whose
+ *   heartbeats are green and whose history is proven can still be skipping
+ *   the same incident every night, and that is the case this cell exists to
+ *   refuse to call PROVEN — a stalled incident escalates an `ok` or
+ *   `warning` loop to STALLED. It never downgrades a `danger` or `unknown`
+ *   loop, because those are already the worse fact.
  */
 export function buildTruthStrip(input: TruthStripInput): TruthCell[] {
   const { incidents, coverage, deploy, loop, now } = input;
@@ -186,17 +202,27 @@ export function buildTruthStrip(input: TruthStripInput): TruthCell[] {
         : ''),
   };
 
+  const flowWords = input.flow ? describeFlow(input.flow) : null;
+  const stalled = input.flow?.stalled ?? 0;
+  // Throughput can only make the cell WORSE. `danger` (failed/overdue) and
+  // `unknown` (unreadable) already outrank a stall and keep their word.
+  const escalate = loop !== null && stalled > 0 && (loop.tone === 'ok' || loop.tone === 'warning');
+
   const selfHeal: TruthCell = loop
     ? {
         id: 'self-heal',
         label: 'Self-heal',
         value: loop.label,
-        state: loop.tone === 'ok' ? 'PROVEN' : loop.tone.toUpperCase(),
-        tone: LOOP_TONE_TO_STATE[loop.tone],
+        state: escalate
+          ? `${stalled} STALLED`
+          : loop.tone === 'ok'
+            ? 'PROVEN'
+            : loop.tone.toUpperCase(),
+        tone: escalate ? 'warning' : LOOP_TONE_TO_STATE[loop.tone],
         freshness: ageWords(input.loopAgeMs),
         source: 'background_job_logs',
-        href: '/admin/self-heal',
-        detail: loop.detail,
+        href: escalate ? '/admin/errors?lens=stalled' : '/admin/self-heal',
+        detail: flowWords ? `${loop.detail} ${flowWords.detail}` : loop.detail,
       }
     : {
         id: 'self-heal',
@@ -207,7 +233,9 @@ export function buildTruthStrip(input: TruthStripInput): TruthCell[] {
         freshness: 'age unknown',
         source: 'background_job_logs',
         href: '/admin/self-heal',
-        detail: 'The self-healing stage heartbeats could not be read, so the loop cannot be judged.',
+        detail:
+          'The self-healing stage heartbeats could not be read, so the loop cannot be judged.' +
+          (flowWords ? ` ${flowWords.detail}` : ''),
       };
 
   const observation: TruthCell = {

@@ -21,6 +21,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { buildTruthStrip, ageWords, type TruthStripInput } from '@/lib/admin/incidents/truth-strip';
+import type { FlowSummary } from '@/lib/admin/selfheal-flow';
 import type { CoverageSummary } from '@/lib/admin/incidents/sources';
 import type { DeployFreshness } from '@/lib/admin/deploy-freshness';
 import type { IncidentLifecycleState, UnifiedIncident } from '@/lib/admin/incidents/types';
@@ -323,5 +324,84 @@ describe('ageWords', () => {
     expect(ageWords(18 * 60_000)).toBe('18m ago');
     expect(ageWords(5 * 3_600_000)).toBe('5h ago');
     expect(ageWords(4 * 24 * 3_600_000)).toBe('4d ago');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The self-heal cell carries THROUGHPUT, and throughput can only make it worse.
+// ---------------------------------------------------------------------------
+
+describe('Truth Strip — the self-heal cell and the loop’s flow', () => {
+  function flow(stalled: number, waiting = stalled, unknown = 0): FlowSummary {
+    const state = stalled > 0 ? 'stalled' : waiting > 0 ? 'flowing' : 'idle';
+    return {
+      stages: [
+        { stageId: 'triage', title: 'Diagnose', waiting, stalled, oldestWaitingMs: 3 * 86_400_000, unmeasured: 0, state },
+        { stageId: 'repair', title: 'Repair', waiting: 0, stalled: 0, oldestWaitingMs: null, unmeasured: 0, state: 'idle' },
+        { stageId: 'close', title: 'Close', waiting: 0, stalled: 0, oldestWaitingMs: null, unmeasured: 0, state: 'idle' },
+      ],
+      waiting,
+      stalled,
+      unknown,
+      byPosition: {
+        diagnose: waiting,
+        repair: 0,
+        close: 0,
+        review: 0,
+        deploy: 0,
+        traffic: 0,
+        owner: 0,
+        done: 0,
+        unknown,
+      },
+    };
+  }
+
+  it('escalates a healthy loop to STALLED when incidents have waited past a stage’s cycles', () => {
+    const cell = cellsById(buildTruthStrip(input({ flow: flow(2) })))['self-heal']!;
+    expect(cell.state).toBe('2 STALLED');
+    expect(cell.tone).toBe('warning');
+    expect(cell.href).toBe('/admin/errors?lens=stalled');
+    expect(cell.detail).toMatch(/2 incidents have waited/);
+    expect(cell.detail).toMatch(/2 on Diagnose/);
+    // The runtime/capability sentence is kept, not replaced — this is a third
+    // fact beside the other two, not a substitute for them.
+    expect(cell.detail).toContain('Every stage ran and produced output.');
+  });
+
+  it('never softens a failing loop — danger keeps its own word and tone', () => {
+    const cell = cellsById(
+      buildTruthStrip(
+        input({
+          loop: { tone: 'danger', label: 'Overdue', detail: 'A stage missed its schedule.' },
+          flow: flow(2),
+        }),
+      ),
+    )['self-heal']!;
+    expect(cell.state).toBe('DANGER');
+    expect(cell.tone).toBe('danger');
+    expect(cell.href).toBe('/admin/self-heal');
+    expect(cell.detail).toMatch(/2 incidents have waited/);
+  });
+
+  it('keeps PROVEN when work is waiting inside its cycles', () => {
+    const cell = cellsById(buildTruthStrip(input({ flow: flow(0, 3) })))['self-heal']!;
+    expect(cell.state).toBe('PROVEN');
+    expect(cell.tone).toBe('success');
+    expect(cell.detail).toMatch(/3 incidents are waiting/);
+  });
+
+  it('carries the backlog even when the heartbeats could not be read', () => {
+    const cell = cellsById(buildTruthStrip(input({ loop: null, flow: flow(1) })))['self-heal']!;
+    expect(cell.state).toBe('UNREADABLE');
+    expect(cell.tone).toBe('neutral');
+    expect(cell.detail).toMatch(/1 incident has waited/);
+  });
+
+  it('is unchanged when no flow is supplied', () => {
+    const withFlow = cellsById(buildTruthStrip(input({ flow: null })))['self-heal']!;
+    const without = cellsById(buildTruthStrip(input()))['self-heal']!;
+    expect(withFlow).toEqual(without);
+    expect(without.state).toBe('PROVEN');
   });
 });

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
 import { resolveTriageEvents } from '@/app/admin/actions/triage';
 import { resolveSentryIssueAction } from '@/app/admin/actions/sentry-resolve';
-import { PanelAllClear } from './PanelStates';
+import { PanelAllClear, PanelNoData } from './PanelStates';
 import { IncidentCard } from './IncidentCard';
 
 const SENTRY_KEY_PREFIX = 'sentry:';
@@ -34,6 +34,7 @@ export function TriageQueue({
   appHourlyBuckets = {},
   sentryStats24h = {},
   grouped = true,
+  canClaimAllClear = true,
 }: {
   items: TriageItem[];
   onResolve?: (eventIds: string[]) => Promise<{ resolvedCount: number }>;
@@ -52,6 +53,15 @@ export function TriageQueue({
    * where every row is the same kind of thing and a heading is pure chrome).
    */
   grouped?: boolean;
+  /**
+   * Whether an empty list is entitled to read as an all-clear. Defaults to
+   * true so existing call sites keep their behaviour; the Overview passes the
+   * Sentry pull's status, because this feed's only external witness is
+   * Sentry and an empty queue under a failed or unconfigured pull is a
+   * partial count — the rule `UnifiedIncidentQueue` already takes from
+   * `canClaimAllClear`, applied to the surface that never got it.
+   */
+  canClaimAllClear?: boolean;
 }) {
   const router = useRouter();
   const [hiddenKeys, setHiddenKeys] = useState<ReadonlySet<string>>(new Set());
@@ -61,10 +71,15 @@ export function TriageQueue({
   const visible = items.filter((i) => !hiddenKeys.has(i.key));
 
   if (visible.length === 0) {
-    return (
+    return canClaimAllClear ? (
       <PanelAllClear
         label="Nothing in the queue — no unresolved incidents"
         checkedAt={new Date().toISOString()}
+      />
+    ) : (
+      <PanelNoData
+        label="No incidents found in readable sources"
+        description="At least one source could not be read this refresh, so this is a partial count rather than an all-clear."
       />
     );
   }

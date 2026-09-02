@@ -39,6 +39,8 @@ import { fetchChangeTimeline } from '@/lib/admin/data/change-timeline';
 import { ChangeTimeline } from './_components/ChangeTimeline';
 import { selectAttention } from '@/lib/admin/incidents/attention';
 import { AttentionQueue } from './_components/AttentionQueue';
+import { summarizeFlow } from '@/lib/admin/selfheal-flow';
+import { SelfHealFlowStrip } from './_components/SelfHealFlow';
 
 export const dynamic = 'force-dynamic';
 
@@ -457,16 +459,27 @@ async function TriagePanel() {
               Sentry live pull not configured (SENTRY_READ_TOKEN) — showing in-app incidents only.
             </p>
           ) : null}
-          <TriageQueue items={actionableItems.slice(0, 25)} />
+          {/* The legacy feed's only external witness is Sentry, so an
+              unconfigured or failed Sentry pull makes an empty queue a
+              partial count, not an all-clear — the same rule
+              UnifiedIncidentQueue takes from canClaimAllClear. */}
+          <TriageQueue items={actionableItems.slice(0, 25)} canClaimAllClear={sentry.status === 'ok'} />
         </Surface>
         <Surface as="section" padding="sm" className="min-w-0">
           <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
             Regressed — a fix failed
           </h2>
           {regressed.length === 0 ? (
-            <PanelAllClear label="No regressed issues" checkedAt={new Date().toISOString()} />
+            sentry.status === 'ok' ? (
+              <PanelAllClear label="No regressed issues" checkedAt={new Date().toISOString()} />
+            ) : (
+              <PanelNoData
+                label="No regressed issues in readable sources"
+                description="Sentry could not be read this refresh, so a regression it alone would have shown is invisible right now."
+              />
+            )
           ) : (
-            <TriageQueue items={regressed} />
+            <TriageQueue items={regressed} canClaimAllClear={sentry.status === 'ok'} />
           )}
         </Surface>
       </div>
@@ -544,13 +557,18 @@ async function MissionTruthStrip() {
     fetchDeployFreshness(),
   ]);
 
+  const now = Date.now();
   const loopData = loop.status === 'ok' ? loop.data : null;
-  const loopAgeMs = loopData ? Date.now() - Date.parse(loopData.computedAt) : null;
+  const loopAgeMs = loopData ? now - Date.parse(loopData.computedAt) : null;
 
   const cells = buildTruthStrip({
     incidents: board.incidents,
     coverage: board.coverage,
     deploy,
+    // Throughput — the third axis of the self-heal cell. Computed from the
+    // same board as the incidents cell, so a stall the strip escalates on is
+    // an incident the queue below actually lists.
+    flow: summarizeFlow(board.incidents, now),
     // The running deployment identifies itself through the env of the
     // deployment it is running in — no API token required, and no chance of
     // reporting a deploy other than the one serving this request.
@@ -558,7 +576,7 @@ async function MissionTruthStrip() {
     loop: loopData?.verdict ?? null,
     loopAgeMs: Number.isFinite(loopAgeMs) ? loopAgeMs : null,
     computedAt: board.computedAt,
-    now: Date.now(),
+    now,
   });
 
   return (
@@ -566,6 +584,26 @@ async function MissionTruthStrip() {
       <TruthStrip cells={cells} />
       <BlindnessBeacon note={board.blindnessNote} coverage={board.coverage} />
     </div>
+  );
+}
+
+/**
+ * SELF-HEAL FLOW — where the loop's backlog sits, as counts.
+ *
+ * Reads the same memoised board as the truth strip, so the "N stalled" the
+ * strip's self-heal cell escalates on and the per-stage numbers here cannot
+ * disagree. Counts only, on purpose: the Overview has one attention list and
+ * one incident list, and a stalled incident already earns its row in the
+ * first (`attention.ts`'s `stage-stalled`). The rows themselves live on
+ * /admin/self-heal, the loop's own board.
+ */
+async function SelfHealFlowPanel() {
+  const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+  return (
+    <SelfHealFlowStrip
+      summary={summarizeFlow(board.incidents, Date.now())}
+      canClaimAllClear={canClaimAllClear(board.coverage)}
+    />
   );
 }
 
@@ -753,6 +791,17 @@ export default async function AdminOverviewPage() {
         <PanelBoundary title="Incident operations" skeleton={<SkeletonList />}>
           <TriagePanel />
         </PanelBoundary>
+        <Surface as="section" padding="sm">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-accent-600/25 pb-2">
+            <Eyebrow as="h3" tone="tertiary">Self-heal flow</Eyebrow>
+            <p className="text-caption text-warm-500">What is waiting on each stage, and what the loop has skipped</p>
+          </div>
+          <div className="mt-2">
+            <PanelBoundary title="Self-heal flow" skeleton={<SkeletonStat />}>
+              <SelfHealFlowPanel />
+            </PanelBoundary>
+          </div>
+        </Surface>
         <Surface as="section" padding="sm">
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-accent-600/25 pb-2">
             <Eyebrow as="h3" tone="tertiary">Proof debt</Eyebrow>

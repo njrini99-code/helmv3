@@ -315,6 +315,7 @@ describe('ATTENTION_PRIORITY', () => {
       'critical',
       'stage-dead',
       'repair-ci-failed',
+      'stage-stalled',
       'repairable-untouched',
       'needs-evidence',
       'platform-attention',
@@ -345,6 +346,12 @@ describe('ATTENTION_PRIORITY', () => {
           mergeSha: null,
           note: null,
         },
+      }),
+      // Stalled: an unanalysed incident Diagnose has had well over two of its
+      // daily cycles to reach. `firstSeen` is what the flow model measures.
+      incident('stage-stalled', {
+        lifecycle: { state: 'new', headline: 'h', because: [] },
+        firstSeen: '2026-08-20T00:00:00.000Z',
       }),
       incident('repairable-untouched', {
         lifecycle: { state: 'repairable', headline: 'h', because: [] },
@@ -479,5 +486,83 @@ describe('platform checks share the one attention queue', () => {
 
   it('is absent, not empty, when no briefing is supplied', () => {
     expect(selectAttention(base)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stage-stalled — the loop ran, and skipped this incident anyway.
+// ---------------------------------------------------------------------------
+
+describe('selectAttention — stage-stalled', () => {
+  const analysis = {
+    category: 'fix-here' as const,
+    probableCause: 'c',
+    suggestedFix: 'FIX HERE: x',
+    confidence: 'high' as const,
+    suspectFiles: [],
+    relatedFingerprints: [],
+    model: 'm',
+    generatedAt: '2026-08-20T00:00:00.000Z',
+    repairVerdict: 'not-reviewed' as const,
+  };
+
+  it('outranks repairable-untouched for the same incident once Repair has had its cycles', () => {
+    const rows = selectAttention({
+      incidents: [
+        incident('skipped', {
+          lifecycle: { state: 'repairable', headline: 'h', because: [] },
+          analysis,
+          repair: null,
+        }),
+      ],
+      stages: [],
+      coverage: coverage(),
+      now: NOW,
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.reason).toBe('stage-stalled');
+    expect(rows[0]!.state).toBe('STALLED · REPAIR');
+    expect(rows[0]!.tone).toBe('warning');
+    expect(rows[0]!.why).toMatch(/Repair has had \d+ daily cycles/);
+    expect(rows[0]!.why).toMatch(/without opening a pull request/);
+    expect(rows[0]!.ageMs).toBe(NOW - Date.parse(analysis.generatedAt));
+    expect(rows[0]!.href).toBe('/admin/errors/skipped');
+  });
+
+  it('never fires on a failed repair lookup — that is not evidence Repair skipped anything', () => {
+    const rows = selectAttention({
+      incidents: [
+        incident('unread', {
+          lifecycle: { state: 'diagnosing', headline: 'h', because: [] },
+          firstSeen: '2026-08-10T00:00:00.000Z',
+          analysis,
+          repair: {
+            status: 'unknown',
+            prNumber: null,
+            prUrl: null,
+            branch: null,
+            checks: null,
+            mergedAt: null,
+            mergeSha: null,
+            note: null,
+          },
+        }),
+      ],
+      stages: [],
+      coverage: coverage(),
+      now: NOW,
+    });
+    expect(rows.map((r) => r.reason)).not.toContain('stage-stalled');
+  });
+
+  it('gives a NEW incident a row once Diagnose has skipped it twice — a state that otherwise has none', () => {
+    const fresh = incident('fresh', { lifecycle: { state: 'new', headline: 'h', because: [] } });
+    const skipped = incident('skipped', {
+      lifecycle: { state: 'new', headline: 'h', because: [] },
+      firstSeen: '2026-08-20T00:00:00.000Z',
+    });
+    const rows = selectAttention({ incidents: [fresh, skipped], stages: [], coverage: coverage(), now: NOW });
+    expect(rows.map((r) => r.key)).toEqual(['skipped']);
+    expect(rows[0]!.state).toBe('STALLED · DIAGNOSE');
   });
 });
