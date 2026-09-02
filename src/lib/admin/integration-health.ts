@@ -1,5 +1,6 @@
 import { logServerEvent } from '@/lib/server-error-logger';
 import { shouldEmit, drainCollapsedCount } from '@/lib/admin/emit-throttle';
+import { scheduleBridgeWrite } from '@/lib/admin/schedule-bridge-write';
 
 /**
  * Helm Bridge capture class — DEAD INTEGRATIONS.
@@ -38,9 +39,20 @@ import { shouldEmit, drainCollapsedCount } from '@/lib/admin/emit-throttle';
  *   unthrottled report would write a row per page view for as long as the
  *   integration stayed down — turning a signal into the noise this session
  *   just finished removing.
- * - FIRE-AND-FORGET by contract, exactly like `rls-denial.ts`: reporting a
- *   dead integration must never fail, slow, or change the render that
- *   noticed it.
+ * - That throttle is PER PROCESS, and on serverless a 60s auto-refresh lands
+ *   on a fresh lambda most of the time — measured 2026-09-01, 99 identical
+ *   `provider_vercel_unavailable` rows in 2h05m from `/admin/deploys` alone.
+ *   The durable half is `durable-collapse.ts`, applied inside the logger for
+ *   every `provider_*` code: an occurrence inside 15 minutes of an open row
+ *   with the same fingerprint bumps that row's `collapsed_count` instead of
+ *   inserting. The readers ALSO negative-cache their own failure
+ *   (vercel-api.ts) so a dead endpoint is probed at most every few minutes.
+ * - NEVER fails, slows, or changes the render that noticed it — exactly like
+ *   `rls-denial.ts`. The write is scheduled past the response with
+ *   `scheduleBridgeWrite` (Next `after()` in a request scope, an awaited
+ *   bounded write otherwise) rather than detached with `void`, because a
+ *   detached promise on a serverless function is dropped once the response is
+ *   sent. Same signal, no latency, actually persisted.
  * - Only genuine FAILURES are reported, never `unconfigured`. A missing env
  *   var is a config state, not an incident — it is already surfaced by the
  *   status banner (which now treats any non-`ok` feed as stale) and by the
@@ -75,22 +87,27 @@ export function inferIntegrationFaultKind(detail: string): IntegrationFaultKind 
 
 /**
  * Record that a Bridge integration failed. Safe to call on every failed
- * fetch — throttling and error-swallowing are handled here.
+ * fetch — throttling and error-swallowing are handled here. Never rejects.
  *
- * Returns the envelope-ready error string unchanged so a call site can stay
- * a one-liner: `return failed(reportIntegrationFault('sentry', '…', msg))`.
+ * Resolves the envelope-ready error string unchanged so a call site can stay
+ * a one-liner: `return failed(await reportIntegrationFault('sentry', '…', msg))`.
  */
-export function reportIntegrationFault(
+export async function reportIntegrationFault(
   integration: IntegrationId,
   what: string,
   detail: string,
-): string {
+): Promise<string> {
   try {
     const kind = inferIntegrationFaultKind(detail);
     const throttleKey = `integration:${integration}:${kind}`;
     if (shouldEmit(throttleKey)) {
       const collapsed = drainCollapsedCount(throttleKey);
-      void logServerEvent(
+      // Awaited, not `void`ed — the same reason as observed-action.ts and
+      // job-log.ts. Inside a request scope this resolves at once (after() has
+      // the write, the render pays nothing). Outside one — a cron body, a
+      // prerender — the bounded await IS what keeps the function alive, and a
+      // `void`ed bounded await is a promise nobody holds.
+      await scheduleBridgeWrite(() => logServerEvent(
         `${integration} ${KIND_COPY[kind]} (${what})`,
         {
           action: `integration.${integration}`,
@@ -108,7 +125,7 @@ export function reportIntegrationFault(
         // showing an incomplete picture, which an operator must know about.
         // Rate limiting is self-healing, so it stays a warning.
         kind === 'rate_limited' ? 'warning' : 'error',
-      ).catch(() => {});
+      ));
     }
   } catch {
     // Reporting a dead integration must never break the caller that noticed.

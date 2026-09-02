@@ -102,6 +102,64 @@ describe('MessageThreadPane initial thread position', () => {
     expect(scrollContainer!.scrollTop).toBe(640);
   });
 
+  it('stays pinned to the newest message when the scroll region shrinks under it (keyboard opening)', () => {
+    // jsdom has no ResizeObserver; capture the callback the pane registers.
+    // It has no scrollIntoView either, and the new-message effect calls it.
+    const callbacks: Array<() => void> = [];
+    const OriginalResizeObserver = globalThis.ResizeObserver;
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+    class FakeResizeObserver {
+      constructor(cb: () => void) {
+        callbacks.push(cb);
+      }
+      observe() {}
+      disconnect() {}
+    }
+    (globalThis as { ResizeObserver: unknown }).ResizeObserver = FakeResizeObserver;
+    try {
+      const conversation = { id: 'group-1', is_group: true, title: 'Team group', unread_count: 0 } as GolfConversationWithMeta;
+      const messages = [
+        { id: 'm1', conversation_id: 'group-1', sender_id: 'p1', content: 'a', created_at: '2026-09-01T00:00:00Z', read: false, is_deleted: false, edited_at: null, has_attachments: false },
+      ] as MessageWithReadStatus[];
+      const props: MessageThreadPaneProps = {
+        conversation, messages, loading: false, userId: 'coach-1', currentUserId: 'coach-1', isOtherTyping: false,
+        onBack: vi.fn(), onNewMessage: vi.fn(), editingMessageId: null, editContent: '', isEditSaving: false,
+        deleteConfirmId: null, mobileActionsId: null, onStartEdit: vi.fn(), onEditContentChange: vi.fn(),
+        onCancelEdit: vi.fn(), onSaveEdit: vi.fn(), onDeleteClick: vi.fn(), onConfirmDelete: vi.fn(),
+        onCancelDelete: vi.fn(), onSetMobileActions: vi.fn(),
+      };
+      const { container } = render(createElement(MessageThreadPane, props));
+      const region = container.querySelector<HTMLElement>('[data-scroll-container]')!;
+      expect(callbacks).toHaveLength(1);
+
+      // Pinned to the bottom of a 640px thread in a 400px-tall region. A real
+      // ResizeObserver reports the initial size right after observe(); jsdom's
+      // clientHeight is 0 until we define it, so deliver that first report.
+      let clientHeight = 400;
+      Object.defineProperty(region, 'scrollHeight', { configurable: true, value: 640 });
+      Object.defineProperty(region, 'clientHeight', { configurable: true, get: () => clientHeight });
+      callbacks[0]!();
+      region.scrollTop = 240;
+
+      // ...then the keyboard opens and the region loses 300px. scrollTop does
+      // not move on its own, so 240 would now show the middle of the thread.
+      clientHeight = 100;
+      callbacks[0]!();
+      expect(region.scrollTop).toBe(640);
+
+      // A reader scrolled up into history is left alone.
+      clientHeight = 400;
+      region.scrollTop = 0;
+      clientHeight = 100;
+      callbacks[0]!();
+      expect(region.scrollTop).toBe(0);
+    } finally {
+      (globalThis as { ResizeObserver: unknown }).ResizeObserver = OriginalResizeObserver;
+      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    }
+  });
+
   it('yields the first scroll to an explicit search target instead of retaining an old-thread sentinel', () => {
     const source = readFileSync(
       join(process.cwd(), 'src/components/fairway/pages/messages/MessageThreadPane.tsx'),

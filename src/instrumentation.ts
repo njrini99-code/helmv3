@@ -1,3 +1,22 @@
+// Opt-in OpenTelemetry runtime for supabase-js `tracePropagation`. The IMPORT
+// ITSELF is the opt-in — the module has no exports; it registers a process-wide
+// trace-context extractor built on @opentelemetry/api. Without it, a client
+// configured with `tracePropagation` logs a one-time warning and sends requests
+// with no trace headers at all.
+//
+// This file is Next's instrumentation hook and is evaluated once per SERVER
+// runtime — Node and Edge each get their own module graph and therefore their
+// own registration, which is exactly the "once per runtime" placement supabase
+// documents. Both runtimes have a Sentry OpenTelemetry propagator for it to
+// read from (@sentry/node sdk/initOtel.js; @sentry/vercel-edge
+// `propagation.setGlobalPropagator(new SentryPropagator())`).
+//
+// The BROWSER is deliberately not covered here: @sentry/browser registers no
+// OpenTelemetry propagator, so there would be nothing to extract. The browser
+// propagates `traceparent` through Sentry's own fetch instrumentation instead —
+// see `propagateTraceparent` / `tracePropagationTargets` in
+// src/instrumentation-client.ts.
+import '@supabase/supabase-js/tracing';
 import * as Sentry from '@sentry/nextjs';
 import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
@@ -255,11 +274,34 @@ export async function register() {
       .then((m) => m.recordDeployMarker())
       .catch(() => {});
 
+    // Helm Bridge: an absent or malformed Inngest credential in production is
+    // a fault, not a config state — every durable job silently turns off. The
+    // SDK's own "no signing key found" console.error fires here at start-up
+    // (3 of the 4 Sentry events on 2026-09-01 carried no request URL), so
+    // start-up is where the Bridge row is written too. Production-gated,
+    // throttled, collapsed across cold starts — see src/lib/inngest/credentials.ts.
+    //
+    // Started here, AWAITED below. register() runs before the first request
+    // and has no request scope, so `after()` is unavailable and the write
+    // takes scheduleBridgeWrite's awaited fallback (bounded at 2.5s, and handed
+    // to the Vercel request context's waitUntil when one exists). `void`ing
+    // that made it a promise nobody held on a function that freezes: the row
+    // never landed, and the throttle window it had opened silenced the next
+    // `send`/`inbound` report. In the healthy case it returns before any I/O,
+    // so cold start pays nothing.
+    const inngestCredentialReport = import('@/lib/inngest/credentials')
+      .then((m) => m.reportInngestCredentialFault('startup'))
+      .catch(() => false);
+
     // `process.on` is a Node-only API. Load the handler module only from the
     // Node runtime so Edge builds never evaluate that implementation.
     void import('@/lib/observability/register-process-error-handlers')
       .then((m) => m.registerProcessErrorHandlers())
       .catch(() => {});
+
+    // After the handlers are on their way, never before them: a slow Bridge
+    // must not delay the process-level catch-all.
+    await inngestCredentialReport;
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {

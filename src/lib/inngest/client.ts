@@ -1,5 +1,5 @@
 import { Inngest, type LogArg, type Logger } from 'inngest';
-
+import { inngestCredentialState, reportInngestCredentialFault } from './credentials';
 
 /**
  * Inngest client — durable, retryable, observable background jobs.
@@ -85,6 +85,24 @@ export const inngest = new Inngest({
  * (src/lib/admin/data/jobs.ts) call this instead of each re-deriving the
  * same boolean from process.env, so the two can't silently drift apart.
  */
+/**
+ * Two things changed here on 2026-09-01, and both are deliberate:
+ *
+ *   1. SHAPE, not presence. `Boolean(a && b)` accepted any non-empty string,
+ *      including the 11-character placeholders in the local `.env.local`. A
+ *      key that cannot possibly validate is not "configured".
+ *   2. A `false` answer in production is WRITTEN DOWN. Every caller of this
+ *      function that gets `false` falls back silently — the round-submit
+ *      routing branch runs its analysis inline with no retry, the Jobs board
+ *      says "not configured" — and until now that was the only trace. In
+ *      production Inngest is not optional, so the skipped path is reported as
+ *      `provider_inngest_missing_credential` on feature `integrations`
+ *      (throttled per process, collapsed across processes; see
+ *      credentials.ts). Off production it stays a config state.
+ */
 export function isInngestConfigured(): boolean {
-  return Boolean(process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY);
+  const state = inngestCredentialState();
+  if (state.usable) return true;
+  void reportInngestCredentialFault('send');
+  return false;
 }

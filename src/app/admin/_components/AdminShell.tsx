@@ -245,8 +245,12 @@ export function AdminShell({
   children,
 }: {
   email: string;
-  /** Bridge bottom-nav Errors badge — 0 renders no badge (honest-only). */
-  errorCount: number;
+  /** Bridge bottom-nav Incidents badge — 0 renders no badge (honest-only).
+   *  `null` means the incident feed could not be READ: it renders no numeric
+   *  badge (there is no number) plus a distinct "unreadable" chip in the top
+   *  bar, so a broken read is never mistaken for an empty queue. Same rule as
+   *  `healthCount` below. */
+  errorCount: number | null;
   /** Bridge bottom-nav Health badge — count of RED features, computed in
    *  layout.tsx via fetchFeatureHealthRedCount() (see its doc comment for
    *  the DB-only, Sentry-free cost tradeoff). `null` means the pipeline was
@@ -439,7 +443,7 @@ export function AdminShell({
         icon: NAV_ICON_BY_HREF[href],
         activeMatch: (p: string) => (href === '/admin' ? p === '/admin' : p.startsWith(href)),
         badge:
-          href === '/admin/errors' && errorCount > 0
+          href === '/admin/errors' && errorCount !== null && errorCount > 0
             ? errorCount
             : href === '/admin/health' && healthCount !== null && healthCount > 0
               ? healthCount
@@ -484,9 +488,25 @@ export function AdminShell({
   // EVERY breakpoint (was `lg:`-only text) — phone had no manual refresh at
   // all before this. Spins once on tap while `doRefresh`'s transition is
   // pending (see REFRESH_SPIN_CLASS's doc comment).
+  // The incident badge's UNKNOWN state. `fetchBridgeErrorBadge` returns null
+  // when the feed read failed; a null must be visibly different from "no
+  // incidents" at every breakpoint, and a numeric bottom-nav badge cannot say
+  // it, so the top bar does. Deliberately NOT hidden below `sm` like the prod
+  // pill: the phone is exactly where the bottom-nav badge is the only signal.
   const topBarActions = useMemo(
     () => (
       <div className="flex items-center gap-2">
+        {errorCount === null ? (
+          <span
+            role="status"
+            data-testid="bridge-incidents-unreadable"
+            title="The incident count could not be read. The Incidents tab may be showing a partial or empty list — this is not zero."
+            className="inline-flex items-center gap-1 rounded-full border border-fw-warning/40 bg-fw-warning/10 px-2.5 py-1 font-fw-mono text-caption uppercase text-fw-warning-ink"
+          >
+            <AlertTriangle size={12} aria-hidden />
+            Incidents unreadable
+          </span>
+        ) : null}
         <span className="hidden rounded-full border border-warm-200 bg-surface px-2.5 py-1 font-fw-mono text-caption uppercase text-warm-600 sm:inline-flex">
           prod
         </span>
@@ -495,7 +515,7 @@ export function AdminShell({
         </IconButton>
       </div>
     ),
-    [doRefresh, refreshing],
+    [doRefresh, refreshing, errorCount],
   );
 
   const moreSheetHeader = useMemo(

@@ -293,6 +293,30 @@ describe('runtime evidence expires when its configuration moves', () => {
     expect(fingerprintFor('Vercel', { settings: moved, mcp })).toBe(before);
   });
 
+  it('a deny rule written against the connector UUID is part of the fingerprint', async () => {
+    // Measured 2026-09-01: the session names an account connector's tools
+    // `mcp__<uuid>__<tool>`, a spelling that contains no service name. A
+    // fingerprint keyed on display names alone would let an edit to exactly
+    // the rules that match what the session can call stale nothing.
+    const { fingerprintFor } = await import('../../../scripts/gen-tool-authority.mjs');
+    const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
+    const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
+    const id = '0badf00d-0000-4000-8000-000000000000';
+    const connectors = [{ service: 'Vercel', id, display_name_prefix: 'mcp__claude_ai_Vercel__' }];
+    const before = fingerprintFor('Vercel', { settings, mcp, connectors });
+    const moved = JSON.parse(JSON.stringify(settings));
+    // `pause_project`, not `deploy_to_vercel`: the tool name must carry no
+    // service name, or the display-name keys would match it and the rule
+    // would be fingerprinted by accident rather than by the recorded id.
+    moved.permissions.deny.push(`mcp__${id}__pause_project`);
+    expect(fingerprintFor('Vercel', { settings: moved, mcp, connectors })).not.toBe(before);
+    // Without the id on file the same edit is invisible — which is the gap the
+    // connectors argument exists to close, and why it must be recorded.
+    expect(fingerprintFor('Vercel', { settings: moved, mcp, connectors: [] })).toBe(
+      fingerprintFor('Vercel', { settings, mcp, connectors: [] }),
+    );
+  });
+
   it('a service governed by nothing is marked ungoverned, not silently fresh', async () => {
     const { fingerprintFor, isUngoverned } = await import('../../../scripts/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
@@ -502,7 +526,7 @@ describe('open-PR disposition residue — current state, with one exact exceptio
 
 describe('main branch protection is a fact the verifier reads, not one a human remembers', () => {
   const OK = {
-    required_status_checks: { contexts: ['CI aggregate', 'Review Gate aggregate', 'Smoke checks', 'Analyze (python)'] },
+    required_status_checks: { contexts: ['CI aggregate', 'Review Gate aggregate', 'Analyze (python)'] },
     enforce_admins: { enabled: true },
   };
 
@@ -543,7 +567,7 @@ describe('main branch protection is a fact the verifier reads, not one a human r
 
   it('a dropped aggregate context FAILS — a rename is what made every PR unsatisfiable once', async () => {
     const r = await classify({
-      protection: { ...OK, required_status_checks: { contexts: ['CI aggregate', 'Smoke checks'] } },
+      protection: { ...OK, required_status_checks: { contexts: ['CI aggregate', 'Analyze (python)'] } },
     });
     expect(r.state).toBe('FAIL');
     expect(r.detail).toMatch(/Review Gate aggregate/);

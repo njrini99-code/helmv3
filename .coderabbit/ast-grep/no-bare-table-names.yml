@@ -1,7 +1,10 @@
 # ast-grep rule: forbid Supabase `.from()` calls against unprefixed tables.
-# In helmv3 every Supabase table is sport-prefixed (golf_*, baseball_*),
-# plus a small allowlist of cross-sport tables (users, organizations,
-# memberships, audit_log, feature_flags).
+# In helmv3 every Supabase table is sport-prefixed (golf_*, baseball_*,
+# helm_lifting_*), plus a small allowlist of cross-sport tables (users,
+# organizations, audit_log). `memberships` and `feature_flags` were listed
+# here until 2026-09-01; neither exists in src/lib/types/database.ts, and an
+# allowlist entry for a table that does not exist only teaches readers a
+# name they will then try to query.
 #
 # CLAUDE.md "Table Names — ALWAYS Use Sport Prefix" is the source rule.
 #
@@ -18,8 +21,8 @@ message: >
   (golf_* or baseball_*). Bare names like "coaches", "players",
   "teams", "rounds", "events" do not exist in production.
 note: >
-  Allowed unprefixed tables: users, organizations, memberships,
-  audit_log, feature_flags. Anything else needs a sport prefix.
+  Allowed unprefixed tables: users, organizations, audit_log.
+  Anything else needs a sport prefix (golf_, baseball_, helm_lifting_).
   Storage bucket calls (`supabase.storage.from('<bucket>')`) are
   excluded — they reference Supabase Storage buckets, not DB tables.
 rule:

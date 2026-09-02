@@ -89,6 +89,25 @@ export function runWithRequestContext<T>(
   }
 }
 
+/**
+ * Capture the active scope so work deferred past this frame — a `next/server`
+ * `after()` callback, a `waitUntil` task — can re-enter it. Those callbacks run
+ * outside the AsyncLocalStorage continuation the request opened, so without
+ * this a Bridge write scheduled past the response would land with
+ * `requestId: null` and lose the very correlation this module exists for.
+ *
+ * Returns an identity runner when no scope is open. Never throws.
+ */
+export function bindRequestContext(): <T>(fn: () => T) => T {
+  try {
+    const existing = requestContext.getStore();
+    if (!existing) return (fn) => fn();
+    return (fn) => requestContext.run(existing, fn);
+  } catch {
+    return (fn) => fn();
+  }
+}
+
 /** Active correlation id, or null when no scope is open. Never throws. */
 export function getRequestId(): string | null {
   try {

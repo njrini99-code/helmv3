@@ -14,14 +14,19 @@ Loads automatically when you touch SQL, migrations, or Supabase client code.
 ## Where the truth is
 
 - **Columns**: `memory/context/golfhelm-database.md`, the `AUTOGEN:columns` block
-  at the bottom. Generated from `src/lib/types/database.ts`; covers all 266
-  tables. The narrative above that block is stale — do not read column names off it.
+  at the bottom. Generated from `src/lib/types/database.ts`; covers every
+  table in that file (the count lives in the block, not here). The narrative
+  above that block is stale — do not read column names off it.
 - **Purposes / relationships**: `memory/glossary.md`.
 - **Live check**: `mcp__claude_ai_Supabase__execute_sql` against
   `information_schema.columns`. Free and always right — prefer it over guessing.
 
-Table names are sport-prefixed: `golf_*`, `baseball_*`, `lift_*`. An unprefixed
-name (`players`, `rounds`, `teams`) does not exist.
+Table names are sport-prefixed: `golf_*`, `baseball_*`, `helm_lifting_*`. An
+unprefixed name (`players`, `rounds`, `teams`) does not exist — and neither
+does a `lift_*` table: this line said `lift_*` until 2026-09-01 while
+`src/lib/types/database.ts` held dozens of `helm_lifting_` tables and zero
+`lift_` ones. The few cross-sport tables (`users`, `organizations`,
+`audit_log`) are the allowlist in `.coderabbit/ast-grep/no-bare-table-names.yml`.
 
 ## Load the Supabase skill for real Supabase work
 
@@ -53,12 +58,17 @@ paths, and the only PreToolUse hook in the repo says in its own header that it
 "does not look at branch names, file names, features or prompts — it compares
 two absolute paths."
 
-**The false version escaped this repo.** `~/.claude/settings.json`'s autoMode
-environment block repeats it as *"DROP TABLE / TRUNCATE / unqualified DELETE
-are blocked by a PreToolUse hook **per repo docs**"* — sourced from here, and
-now informing permission decisions across every project on the machine. That
-file is user-global and outside this project's mutation boundary, so it is NOT
-corrected here. Repo claim: corrected. User-global copy: still stale.
+**The false version escaped this repo, once.** `~/.claude/settings.json`'s
+autoMode environment block repeated it as *"DROP TABLE / TRUNCATE / unqualified
+DELETE are blocked by a PreToolUse hook **per repo docs**"* — sourced from
+here, and for a while informing permission decisions across every project on
+the machine. That file is user-global and outside this project's mutation
+boundary, so it was never corrected from here. Whether the sentence is present
+NOW is not something this paragraph can know: `npm run control-plane:verify`
+measures it on every run (`user-global/no-stale-hook-claim`), and on
+2026-09-01 that check read PASS — the copy had been fixed on the owner's side.
+(This paragraph said "User-global copy: still stale" until then, which had
+become its own stale claim.)
 
 What actually protects the database is that a destructive change is the owner's
 to make by hand, where the blast radius is visible. That is a convention, not a

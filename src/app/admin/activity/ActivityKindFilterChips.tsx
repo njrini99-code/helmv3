@@ -13,7 +13,7 @@ export interface ActivityKindChip {
 /**
  * The Activity tab's kind filter row (All + the 9 activity kinds) — built on
  * the same Fairway FilterPill primitive + server-computed href pattern as
- * ErrorsFilterChips. Single-select: choosing a kind navigates to
+ * ErrorsFilterBar. Single-select: choosing a kind navigates to
  * `?type=<kind>`; re-selecting it (or "All") clears the param. Server
  * refetch on every change — never client-side row hiding.
  */

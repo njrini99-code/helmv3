@@ -142,8 +142,11 @@ mechanical, and these are the habits that keep it fixed.
 - **No hook blocks git commands any more.** `guard-bash.sh` was deleted
   2026-08-27 after being unwired; it protected nothing while it sat there.
   What remains, and is PROVEN to fire even under `bypassPermissions`, is
-  `permissions.deny` in `.claude/settings.json` — 29 prefix rules. Force push
-  and `git clean -fd` are no longer blocked locally; GitHub's own
+  `permissions.deny` in `.claude/settings.json`. How many rules, and what
+  each one covers, is a count that belongs in the generated
+  `docs/CONTROL_PLANE_ENFORCEMENT.md`, not here — this line said "29" while
+  the file held 32, and a number in prose reads as current forever. Force
+  push and `git clean -fd` are no longer blocked locally; GitHub's own
   `allow_force_pushes: false` still refuses the remote.
 - **`git stash` is not blocked.** Worth knowing anyway: `refs/stash` is
   repo-global, so a stash pushed in one worktree is visible and poppable from
@@ -279,7 +282,14 @@ withholds the `.env.local` family from worktrees.
 `bypassPermissions`: `supabase config push` (pushes the whole `config.toml`,
 including the dev `site_url` — would overwrite production's and break every
 auth email link), `supabase db reset` (drops and recreates from migrations),
-and `supabase db push` / `migration up`, each in four spellings.
+and `supabase db push` / `migration up`. Which SPELLINGS each is denied under
+is what matters, because the bare `supabase` binary does not resolve on this
+machine (`npm run doctor` says so) — only `./node_modules/.bin/supabase` and
+`npx supabase` actually run. Until 2026-09-01 `config push` and `db reset`
+were denied in the bare spelling only, i.e. the one that cannot execute, while
+this line said "each in four spellings". The rule count and spellings live in
+`docs/CONTROL_PLANE_ENFORCEMENT.md` ("The Supabase CLI migration path is
+refused"), which is regenerated from the file that enforces them.
 - **Never grant `anon` EXECUTE** on a `SECURITY DEFINER` function, and never
   `GRANT ALL`. Recreating a matview or view **re-grants `anon`** — REVOKE after,
   then verify.

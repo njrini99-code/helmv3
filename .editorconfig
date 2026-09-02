@@ -1,11 +1,14 @@
 # Formatting source of truth for editors and agents that do NOT run ESLint.
 #
 # This repo has no Prettier and no Biome; formatting is enforced by
-# eslint.config.mjs, and .claude/hooks/post-edit.sh runs `eslint --fix` on
-# edited files. That covers Claude Code, but not Cursor, Devin, or a plain
-# editor without the ESLint extension — those fall back to their own defaults
-# for indent, line endings and final newline, which produces noise diffs that
-# look like real changes.
+# eslint.config.mjs, run by hand (`npm run lint`) and in CI. No hook formats
+# edited files: the `.claude/hooks/post-edit.sh` this header once credited
+# with running `eslint --fix` does not exist and is not wired in
+# .claude/settings.json (docs/CONTROL_PLANE_ENFORCEMENT.md lists what is).
+# So every editor — Claude Code, Cursor, Devin, a plain editor without the
+# ESLint extension — falls back to its own defaults for indent, line endings
+# and final newline unless this file says otherwise, which produces noise
+# diffs that look like real changes.
 #
 # Values below match what the tree already is, not an aspiration.
 
@@ -29,7 +32,9 @@ indent_size = 2
 
 [*.sql]
 # supabase/migrations is linted by sqlfluff with an 80-column LT05 rule and a
-# 7,649-violation ratchet; keep this consistent with that.
+# per-rule count ratchet (.sqlfluff-baseline.json holds the counts; they are
+# not repeated here because a number in a comment rots — this one did).
+# Keep this consistent with that.
 indent_size = 4
 max_line_length = 80
 

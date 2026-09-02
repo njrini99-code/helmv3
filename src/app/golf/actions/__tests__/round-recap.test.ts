@@ -42,6 +42,8 @@ let mockRound: MockRoundRow | null = null;
 let mockStats: { scoring_average: number | null; best_round: number | null; rounds_played: number | null } | null = null;
 let persistedRecap: { p_round_id: string; p_recap: string | null } | null = null;
 let persistError: { message: string; code?: string } | null = null;
+// The round's player as golf_players knows them. Null = no first name on file.
+let mockPlayerFirstName: string | null = null;
 
 function createChainableMock(maybeSingleData: unknown) {
   const chain: Record<string, unknown> = { data: null, error: null };
@@ -63,7 +65,8 @@ const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_players') {
     // verifyPlayerAccess self-access probe: the round's player_id belongs
     // to the acting user, so this always resolves as the self-access case.
-    return createChainableMock({ id: 'player-1' });
+    // The same row serves the recap's first-name lookup.
+    return createChainableMock({ id: 'player-1', first_name: mockPlayerFirstName });
   }
   // golf_team_members / golf_team_coach_staff — no billing coach on file
   return createChainableMock(null);
@@ -243,5 +246,53 @@ describe('generateRoundRecap — revalidatePath gating (prod incident d0a9265f)'
       }),
       'warning',
     );
+  });
+});
+
+describe('generateRoundRecap — the prompt names THIS player (Shenandoah field report, 2026-09-01)', () => {
+  // The prompt used to name nobody and offer "Nick" as an example of the
+  // third person. The model copied the example: a Shenandoah player's stored
+  // recap opened "Nick's back nine collapse".
+  beforeEach(() => {
+    mockRound = { ...baseRound };
+    mockStats = null;
+    persistedRecap = null;
+    persistError = null;
+    mockPlayerFirstName = null;
+    composeMock.mockClear();
+    mockFrom.mockClear();
+  });
+
+  function promptHandedToTheModel(): string {
+    expect(composeMock).toHaveBeenCalledTimes(1);
+    return composeMock.mock.calls[0]![0].prompt;
+  }
+
+  it("hands the model the player's own first name, and never the old example", async () => {
+    mockPlayerFirstName = 'Caden';
+    await generateRoundRecap('round-1');
+    const prompt = promptHandedToTheModel();
+    expect(prompt).toContain('Player: Caden');
+    expect(prompt).toContain('as "Caden" in the third person');
+    expect(prompt).not.toMatch(/\bNick\b/);
+  });
+
+  it('falls back to "the player" when no first name is on file', async () => {
+    await generateRoundRecap('round-1');
+    const prompt = promptHandedToTheModel();
+    expect(prompt).toContain('as "the player" in the third person');
+    expect(prompt).not.toMatch(/\bNick\b/);
+  });
+
+  it('cleans quotes, backticks and line breaks out of the name before it enters the prompt', async () => {
+    mockPlayerFirstName = '  Ca"den\nSher`man  ';
+    await generateRoundRecap('round-1');
+    expect(promptHandedToTheModel()).toContain('as "Caden Sherman" in the third person');
+  });
+
+  it("keeps an apostrophe — D'Angelo stays D'Angelo", async () => {
+    mockPlayerFirstName = "D'Angelo";
+    await generateRoundRecap('round-1');
+    expect(promptHandedToTheModel()).toContain(`as "D'Angelo" in the third person`);
   });
 });

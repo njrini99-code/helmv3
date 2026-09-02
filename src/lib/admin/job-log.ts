@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerEvent } from '@/lib/server-error-logger';
+import { scheduleBridgeWrite } from '@/lib/admin/schedule-bridge-write';
 import { describeError } from '@/lib/utils/describe-error';
 
 /**
@@ -9,9 +10,11 @@ import { describeError } from '@/lib/utils/describe-error';
  * completed_at). SUCCESSES are logged too — a board that only shows
  * failures cannot distinguish healthy from dead.
  *
- * Fire-and-forget-swallowed: a logging failure (e.g. background_job_logs
- * itself is unreachable) must NEVER fail the cron. The original result or
- * thrown error from `fn` always passes through unchanged.
+ * Self-swallowing: a logging failure (e.g. background_job_logs itself is
+ * unreachable) must NEVER fail the cron. The original result or thrown error
+ * from `fn` always passes through unchanged. The admin_events write is
+ * scheduled past the response (`scheduleBridgeWrite`), not `void`ed — a
+ * detached promise is dropped once a serverless response is sent.
  *
  * Noise discipline: successes write ONLY to background_job_logs (the cron
  * board reads that table). Only FAILURES also write an admin_events
@@ -29,15 +32,13 @@ export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Pr
     if (result instanceof Response && result.status >= 400) {
       const message = await extractResponseErrorLine(result);
       await writeRow(jobType, 'failed', startedAt, message);
-      try {
-        void logServerEvent(
+      await scheduleBridgeWrite(() =>
+        logServerEvent(
           `Cron failed: ${jobType}`,
           { action: `cron.${jobType}`, source: 'cron', errorDetails: message },
           'error',
-        ).catch(() => {});
-      } catch {
-        /* never mask the real failure */
-      }
+        ),
+      );
       return result;
     }
     const metadata =
@@ -51,15 +52,13 @@ export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Pr
     // safe to store. See summariseErrorBody / describeError.
     const message = summariseErrorBody(describeError(err));
     await writeRow(jobType, 'failed', startedAt, message);
-    try {
-      void logServerEvent(
+    await scheduleBridgeWrite(() =>
+      logServerEvent(
         `Cron failed: ${jobType}`,
         { action: `cron.${jobType}`, source: 'cron', errorDetails: message },
         'error',
-      ).catch(() => {});
-    } catch {
-      /* never mask the real failure */
-    }
+      ),
+    );
     throw err;
   }
 }

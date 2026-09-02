@@ -1,8 +1,8 @@
 {
-  "1698": {
+  "1738": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Opened 2026-08-31 from the canonical checkout. Trims the Vercel upload from 6,667 files / 268 MB to 5,712 / 101 MB by excluding docs/ (145 MB the build never reads) and five untracked tooling directories that upload precisely BECAUSE they are gitignored — the third recurrence of the .vercelignore-replaces-.gitignore trap. Also corrects shipping.md's stale claim that the repo exceeds the 15,000-file cap. No production state, no migration. Canonical checkout — nothing to park. Clears #1697's row."
+    "note": "Opened 2026-09-02 from /private/tmp/helmv3-worktrees/fix-repo-config (branch agent/fix-repo-config, base 6a7577c71). Repo-configuration only: deny rules for the Supabase CLI spellings the repo prescribes and for the UUID-keyed MCP connector names, .vercelignore coverage plus its check, the release marker written to the canonical checkout, claude-code.yml author gate, and stale rule text. No src/**, no migration, no production state. Clears #1698 (merged at 57b292203). KEEP until the owner releases it; the checkout is clean and pushed, so PARK_IF_REPRODUCIBLE is safe whenever that is decided."
   },
   "1725": {
     "disposition": "ACTIVE",
