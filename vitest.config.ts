@@ -178,6 +178,14 @@ export default defineConfig({
             // canonical marker as the labelled fallback, UNKNOWN otherwise.
             // Real fixture repos, same shape as src/test/hooks/.
             'scripts/__tests__/session-context-release.test.ts',
+            // deploy-prod.sh's verification block, run for real against a fake
+            // `vercel` and `curl` in a real clone + linked worktree. Pins that
+            // the CLI's output is read IN FULL (2026-09-02: an early-exit awk
+            // closed the pipe, the CLI OOM-aborted, exit 134, marker never
+            // written), that a CLI abort cannot stop the HTTP/stamp checks,
+            // and that any crash in verification is reported as DEPLOY NOT
+            // VERIFIED naming the command — never a bare non-zero exit.
+            'scripts/__tests__/deploy-prod-verify.test.ts',
             // The demo-seed guards. Same rationale as the secrets guard above:
             // they were written for `node --test` and so ran under nothing, and
             // what they protect — a script that creates auth users and deletes

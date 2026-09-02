@@ -124,6 +124,44 @@ echo "  scope       -> $SCOPE"
   --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" \
   --env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA"
 
+# --- From here on the deploy has HAPPENED. ---------------------------------
+#
+# Every exit path below must say what it knows about the release, because
+# "the script died" and "nothing was deployed" are no longer the same thing.
+#
+# 2026-09-02: the promote of a9638cecf succeeded — READY, alias moved, stamp in
+# the served bundle — and this script then died with a bare exit 134 right
+# after "Verifying the promote actually took effect...". Nothing else printed,
+# the marker was never written, and it took a macOS crash report to learn that
+# the DEPLOY had been fine and only the CHECK had crashed. `set -e` is the
+# right default for the guards above (a refusal should stop everything); after
+# the deploy it turns any tool failure into a silent abort that reads as a
+# failed release. So from here on an unexpected non-zero exit is reported as
+# DEPLOY NOT VERIFIED, naming the command that died and the evidence gathered
+# up to that point, and pointing at the by-hand check.
+VERIFY_VERDICT=""   # "verified" | "not-verified" once a verdict has been printed
+ALIAS_DPL="?"; HTTP="?"; STAMPED="?"; CHUNK_TMP=""
+FAILED_RC=""; FAILED_CMD=""; FAILED_LINE=""
+on_err() { FAILED_RC=$?; FAILED_CMD=$BASH_COMMAND; FAILED_LINE=$1; }
+on_exit() {
+  local rc=$?
+  [ -n "$CHUNK_TMP" ] && rm -f "$CHUNK_TMP"
+  [ "$rc" -ne 0 ] || return 0
+  [ -z "$VERIFY_VERDICT" ] || return 0
+  echo >&2
+  echo "DEPLOY NOT VERIFIED." >&2
+  echo "  The deploy command finished, but this script CRASHED before it could record a verdict:" >&2
+  echo "    exit ${FAILED_RC:-$rc} from: ${FAILED_CMD:-unknown command} (line ${FAILED_LINE:-?})" >&2
+  echo "  Evidence gathered before the crash: alias=$ALIAS_DPL  http=$HTTP  release-stamp-found=$STAMPED  expected-sha=$SHORT" >&2
+  echo "  This is a failure to CHECK, not evidence that the deploy failed — production may" >&2
+  echo "  well be serving $SHORT. Do not redeploy on this alone. Check by hand:" >&2
+  echo "    npm run release:status" >&2
+  echo "  (The session-start hook re-probes the served bundle and rewrites the marker" >&2
+  echo "  itself once that check can reach the site.)" >&2
+}
+trap 'on_err $LINENO' ERR
+trap on_exit EXIT
+
 echo
 # VERIFY, DO NOT NARRATE.
 #
@@ -133,21 +171,72 @@ echo
 # happened. The instructions are now the implementation.
 echo "Verifying the promote actually took effect..."
 
-ALIAS_DPL="$("$VERCEL_BIN" inspect helmsportslabs.com --scope "$SCOPE" 2>&1 | awk '/^ *id\t/ {print $2; exit}')"
-echo "  alias -> $ALIAS_DPL"
+# 1. Which deployment the production alias points at. Informational — the id
+#    should match the one the deploy printed — and NEVER fatal.
+#
+# READ EVERYTHING THE CLI PRINTS BEFORE PARSING ANY OF IT. This used to be
+#
+#     "$VERCEL_BIN" inspect ... 2>&1 | awk '/^ *id\t/ {print $2; exit}'
+#
+# and that `exit` is what killed the 2026-09-02 promote. awk hung up on the
+# pipe as soon as it saw the `id` row — the second row the CLI prints; name,
+# target, status, url, created and the alias list all follow it, and the CLI
+# prints every one of them to STDERR, which `2>&1` had put on that same pipe.
+# The CLI's next write got EPIPE, and rather than exiting it allocated until
+# V8 aborted at the --max-old-space-size ceiling about 90 seconds later
+# (crash report: node::OOMErrorHandler <- Heap::FatalProcessOutOfMemory).
+# SIGABRT is exit 134; `pipefail` carried it out of the command substitution
+# and `set -e` turned it into a dead script with the deploy already done.
+# Reproduced deterministically with that pipeline; gone the moment the reader
+# consumes the whole stream. Capture first, parse second, and never let a
+# reader hang up on a process that is still talking.
+INSPECT_RC=0
+INSPECT_OUT="$("$VERCEL_BIN" inspect helmsportslabs.com --scope "$SCOPE" 2>&1)" || INSPECT_RC=$?
+ALIAS_DPL="$(printf '%s\n' "$INSPECT_OUT" | awk '/^ *id\t/ && !seen { print $2; seen = 1 }')" || ALIAS_DPL=""
+if [ "$INSPECT_RC" -ne 0 ]; then
+  ALIAS_DPL="UNKNOWN"
+  echo "  alias -> UNKNOWN (vercel inspect exited $INSPECT_RC — informational only; verification continues)"
+elif [ -z "$ALIAS_DPL" ]; then
+  ALIAS_DPL="UNKNOWN"
+  echo "  alias -> UNKNOWN (no 'id' row in vercel inspect output — informational only; verification continues)"
+else
+  echo "  alias -> $ALIAS_DPL"
+fi
+if [ "$ALIAS_DPL" = "UNKNOWN" ]; then
+  # The macOS keychain lines are Node reading system CAs (NODE_USE_SYSTEM_CA);
+  # they are noise here and would crowd out the line that says what broke.
+  printf '%s\n' "$INSPECT_OUT" | grep -v 'failed to copy trust settings' | tail -n 5 | sed 's/^/    | /' || true
+fi
 
-HTTP="$(curl -s -o /dev/null -w '%{http_code}' https://helmsportslabs.com/ || echo 000)"
+# 2. The site answers.
+HTTP="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 https://helmsportslabs.com/ || echo 000)"
 echo "  https://helmsportslabs.com/ -> $HTTP"
 
-# The release stamp is inlined into the JS chunks, never the HTML — grepping the
-# page source finds nothing even on a correct deploy (verified 2026-08-16, the
-# stamp appeared in 2 of 32 chunks). So sample chunks, not the document.
+# 3. The release stamp reached the BUNDLE. It is inlined into the JS chunks,
+#    never the HTML — grepping the page source finds nothing even on a correct
+#    deploy (verified 2026-08-16, the stamp appeared in 2 of 32 chunks). So
+#    sample chunks, not the document.
+#
+# No pipes into early-exiting readers here either. `curl | grep -q` — the
+# previous shape — is the awk defect in miniature: grep -q hangs up on the
+# first match, curl can then get EPIPE writing the rest and exit 23, and
+# `pipefail` would report a FOUND stamp as a failed check. Each chunk goes to
+# a file and is grepped from disk.
 STAMPED=0
-for c in $(curl -s https://helmsportslabs.com/ | grep -o '/_next/static/chunks/[^"]*\.js' | sort -u | head -12); do
-  if curl -s "https://helmsportslabs.com$c" | grep -q "$SHA"; then STAMPED=1; break; fi
+PAGE="$(curl -s --max-time 30 https://helmsportslabs.com/ || true)"
+CHUNKS="$(printf '%s' "$PAGE" | grep -o '/_next/static/chunks/[^"]*\.js' | sort -u | awk 'NR <= 12')" || CHUNKS=""
+CHUNK_TMP="$(mktemp)"
+for c in $CHUNKS; do
+  if curl -s --max-time 30 -o "$CHUNK_TMP" "https://helmsportslabs.com$c" && grep -q "$SHA" "$CHUNK_TMP"; then
+    STAMPED=1
+    break
+  fi
 done
+rm -f "$CHUNK_TMP"
+CHUNK_TMP=""
 
 if [ "$HTTP" != "200" ] || [ "$STAMPED" != "1" ]; then
+  VERIFY_VERDICT="not-verified"
   echo >&2
   echo "DEPLOY NOT VERIFIED." >&2
   echo "  http=$HTTP  release-stamp-found=$STAMPED  expected-sha=$SHORT" >&2
@@ -172,12 +261,18 @@ echo "  release stamp $SHORT found in the served bundle."
 # unreleased commits" against a real figure of 1. `--git-common-dir` is the
 # shared .git from any linked worktree; its parent is the canonical root.
 STAMP="$SHA $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-CANON="$(cd "$(git rev-parse --git-common-dir)/.." 2>/dev/null && pwd -P)"
+CANON="$(cd "$(git rev-parse --git-common-dir)/.." 2>/dev/null && pwd -P)" || CANON=""
+RECORDED=""
 for root in "$CANON" "$(pwd -P)"; do
   [ -n "$root" ] && [ -d "$root" ] || continue
+  case " $RECORDED " in *" $root/.claude/session-state/last-verified-release "*) continue ;; esac
   mkdir -p "$root/.claude/session-state" 2>/dev/null || true
-  printf '%s\n' "$STAMP" > "$root/.claude/session-state/last-verified-release" 2>/dev/null || true
+  if printf '%s\n' "$STAMP" > "$root/.claude/session-state/last-verified-release" 2>/dev/null; then
+    RECORDED="$RECORDED $root/.claude/session-state/last-verified-release"
+  fi
 done
+echo "  recorded ->${RECORDED:- NOWHERE (marker could not be written; the session hook will re-probe)}"
+VERIFY_VERDICT="verified"
 
 echo
 echo "✅ VERIFIED LIVE: production is serving $SHORT."

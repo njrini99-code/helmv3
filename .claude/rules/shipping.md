@@ -315,6 +315,15 @@ refused"), which is regenerated from the file that enforces them.
   A new untracked tooling directory is therefore a new upload, silently.
 - Team-scoped and integration env vars **do not show in `vercel env ls`**. Its
   absence from that listing is not evidence a variable is unset.
+- **Never let a reader hang up on the Vercel CLI mid-output.** The 2026-09-02
+  promote deployed fine and then died with a bare exit 134 in
+  `vercel inspect ... 2>&1 | awk '/id/ {print $2; exit}'`. The CLI prints every
+  row to stderr; awk closed the pipe at the second one; the CLI's next write
+  got EPIPE and it allocated until V8 aborted ~90 s later (SIGABRT), which
+  `pipefail` + `set -e` turned into a dead script and an unwritten release
+  marker. Capture the whole output into a variable, then parse it.
+  `scripts/deploy-prod.sh` carries the mechanism and
+  `scripts/__tests__/deploy-prod-verify.test.ts` pins it.
 
 ---
 
