@@ -2,7 +2,7 @@ name: Database types regen
 
 # THE SELF-HEALING HALF OF THE TYPES-DRIFT GATE.
 #
-# `Database types drift` (ci.yml) fails every open PR the moment the live
+# `Database types drift` (a step of ci.yml's `Static checks` job) fails every open PR the moment the live
 # schema and src/lib/types/database.ts disagree — by design, because MCP-applied
 # schema changes are invisible to git. What was missing was the repair arm:
 # on 2026-08-20 a single audit table created at 19:00 redded every open PR's
@@ -95,7 +95,7 @@ jobs:
           body: |
             Automated regeneration — the live schema changed and the committed
             types drifted. Merging this restores the `Database types drift`
-            gate to green for every open PR.
+            step (ci.yml, `Static checks`) to green for every open PR.
 
             🤖 Opened by `.github/workflows/types-regen.yml`
           add-paths: src/lib/types/database.ts

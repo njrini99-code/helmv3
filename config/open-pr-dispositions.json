@@ -9,6 +9,11 @@
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
     "note": "Opened 2026-09-01 by an earlier session; adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep. One file: scripts/deploy-prod.sh calls the repo-local ./node_modules/.bin/vercel instead of a bare vercel; main's --archive=tgz and verify block kept in the merge. No production state. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
   },
+  "1747": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "CI throughput: 47 check runs per PR -> ~19 (job consolidation, Smoke checks context removed first, CodeQL scoped). Merge as soon as its own lean CI is green; every later PR run benefits."
+  },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
     "exactly — control-plane:verify FAILS on a missing entry AND on a stale one.",

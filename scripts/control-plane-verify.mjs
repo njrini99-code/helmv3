@@ -250,15 +250,22 @@ export function classifyDispositionResidue(facts) {
 }
 
 /**
- * The three aggregate contexts this repo's own rules name as the pre-merge
+ * The two aggregate contexts this repo's own rules name as the pre-merge
  * gates (.claude/rules/code-review-tooling.md). CodeQL's `Analyze (...)`
  * contexts are required today too, but their names track the languages CodeQL
  * scans, so pinning them here would make a language change read as a control
  * regression. The aggregates are what a RENAME breaks — and a rename is exactly
  * what made every PR unsatisfiable on 2026-08-19, against a context called
  * `Review Gate / all` that posts nothing.
+ *
+ * `Smoke checks` was the third entry until 2026-09-02. It was playwright.yml's
+ * build-only job — `npm ci` + `next build`, the same steps ci.yml's `Next
+ * build` runs inside `CI aggregate` — so it doubled every PR's build for no
+ * second fact. The job and the required context were removed together (the
+ * context first, via the branch-protection API, so no PR was ever left waiting
+ * on a name nothing posts).
  */
-export const REQUIRED_AGGREGATE_CONTEXTS = ['CI aggregate', 'Review Gate aggregate', 'Smoke checks'];
+export const REQUIRED_AGGREGATE_CONTEXTS = ['CI aggregate', 'Review Gate aggregate'];
 
 /**
  * Branch protection on main, as a fact the verifier reads rather than something
