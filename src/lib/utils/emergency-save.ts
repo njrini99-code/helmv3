@@ -244,6 +244,46 @@ export function clearEmergencySaveThrough(
 }
 
 /**
+ * C5: fired at most once per browser session when the synchronous
+ * localStorage backup has failed even after compacting old saves.
+ *
+ * `emergencySave` has 13 call sites across both round screens, and none of
+ * them checked its boolean return value — a device whose localStorage is
+ * full (a shared kiosk near its quota) or unavailable (private browsing that
+ * has since filled its allotment) silently lost its FAST local safety net
+ * on every shot, with nothing telling the player. The independent
+ * IndexedDB mirror (`queueRecoverySnapshot`, above) is unaffected by this —
+ * it runs unconditionally on every call regardless of localStorage's
+ * outcome — but it is deliberately slower and best-effort, and the player
+ * deserves to know the fast path specifically is down. A listener (both
+ * round screens) shows a one-time toast; this module only decides WHETHER
+ * to notify, never how.
+ */
+export const EMERGENCY_SAVE_DEGRADED_EVENT = 'golf:emergency-save-degraded';
+
+let hasNotifiedEmergencySaveDegraded = false;
+
+function notifyEmergencySaveDegraded(): void {
+  if (hasNotifiedEmergencySaveDegraded) return;
+  hasNotifiedEmergencySaveDegraded = true;
+  if (typeof window === 'undefined') return;
+  try {
+    // A plain `Event` rather than `CustomEvent` — no payload is needed, and
+    // this keeps the source independent of whether the runtime's global
+    // `CustomEvent` constructor is available (Node's is version-gated;
+    // `Event`/`EventTarget` are the longer-standing baseline).
+    window.dispatchEvent(new Event(EMERGENCY_SAVE_DEGRADED_EVENT));
+  } catch {
+    // Non-critical — the IndexedDB mirror above already ran regardless.
+  }
+}
+
+/** Test-only: the "at most once per session" flag is module state. */
+export function resetEmergencySaveDegradedNoticeForTests(): void {
+  hasNotifiedEmergencySaveDegraded = false;
+}
+
+/**
  * Synchronously save round data to localStorage.
  * This is safe to call in visibilitychange/pagehide handlers because
  * localStorage.setItem is synchronous and completes before the page freezes.
@@ -268,6 +308,7 @@ export function emergencySave(data: EmergencySaveData): boolean {
       localStorage.setItem(key, JSON.stringify(data));
       return true;
     } catch {
+      notifyEmergencySaveDegraded();
       return false;
     }
   }

@@ -40,6 +40,15 @@ interface FairwayRoundSubmitOverlayProps {
   onRetry?: () => void;
   onSaveAndExit?: () => void;
   onDiscard?: () => void;
+  /**
+   * C3: a distinct escape hatch for a refusal that is not a transient
+   * failure and cannot be fixed by retrying the identical payload (e.g. the
+   * qualifier this round targets was closed by the coach). Rendered only
+   * when both this and `onSecondaryAction` are provided, so every existing
+   * caller is unaffected.
+   */
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
 }
 
 export function FairwayRoundSubmitOverlay({
@@ -53,6 +62,8 @@ export function FairwayRoundSubmitOverlay({
   onRetry,
   onSaveAndExit,
   onDiscard,
+  secondaryActionLabel,
+  onSecondaryAction,
 }: FairwayRoundSubmitOverlayProps) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
@@ -360,6 +371,11 @@ export function FairwayRoundSubmitOverlay({
                 {onRetry && (
                   <Button variant="primary" className="w-full" onClick={onRetry}>
                     Retry submit
+                  </Button>
+                )}
+                {onSecondaryAction && secondaryActionLabel && (
+                  <Button variant="primary" className="w-full" onClick={onSecondaryAction}>
+                    {secondaryActionLabel}
                   </Button>
                 )}
                 {onSaveAndExit && (

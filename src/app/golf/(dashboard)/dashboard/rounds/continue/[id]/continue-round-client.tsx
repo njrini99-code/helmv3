@@ -18,9 +18,16 @@ import {
   isEmergencySaveEquivalentToProgress,
   isRecoverableRoundSubmitError,
   migrateEmergencySave,
+  EMERGENCY_SAVE_DEGRADED_EVENT,
   type EmergencySaveData
 } from '@/lib/utils/emergency-save';
-import { writeRoundRecreatingIfMissing, ROUND_CONFLICT_MESSAGE, describeRoundWriteResult } from '@/lib/golf/round-missing-recovery';
+import {
+  writeRoundRecreatingIfMissing,
+  ROUND_CONFLICT_MESSAGE,
+  describeRoundWriteResult,
+  isQualifierClosedError,
+} from '@/lib/golf/round-missing-recovery';
+import { updateRoundType } from '@/app/golf/actions/round-type';
 
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
@@ -165,6 +172,13 @@ export default function ContinueRoundClient({
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [completedRoundId, setCompletedRoundId] = useState<string | null>(null);
+  // C3: the coach closed the qualifier this round targets between the
+  // player finishing scoring and tapping submit. Distinct from a completed
+  // round — this round is still `in_progress` and stays that way, so the
+  // submit overlay offers a way OUT (reclassify to practice) instead of
+  // "Retry submit", which would return the identical refusal forever.
+  const [qualifierClosed, setQualifierClosed] = useState(false);
+  const [reclassifying, setReclassifying] = useState(false);
   const [selectedQualifierRoundNumber, setSelectedQualifierRoundNumber] = useState<number | undefined>(
     setupData.qualifierRoundNumber,
   );
@@ -203,6 +217,16 @@ export default function ContinueRoundClient({
   // the phone locks mid-round. Treat exactly the next apparent staleness
   // after a pending beacon as self-caused and adopt it instead of blocking.
   const pendingBeaconRef = useRef(false);
+  // C1: set synchronously in `handleDeleteRound`, BEFORE the delete call —
+  // the race is a checkpoint/auto-save already in flight for this SAME
+  // round id whose `round_missing` response lands after the delete. The
+  // ONE shared re-create path (`recreateMissingRound`, below) and Save &
+  // Exit's own inline recreate both check this before re-creating, so a
+  // discard can never be resurrected. Cleared if the delete itself fails —
+  // a failed discard means the round is still live. A plain ref is
+  // sufficient: an in-flight promise's closure still sees this same ref
+  // object after the component unmounts and navigates away.
+  const roundDiscardedRef = useRef(false);
   // Track the furthest hole the player has naturally progressed to (for re-edit navigation)
   const activeProgressHoleRef = useRef(startHoleIndex);
   // A failed completed-hole checkpoint can be retried from the same hole. Keep
@@ -246,6 +270,17 @@ export default function ContinueRoundClient({
 
   const isCompletedRoundError = useCallback((message?: string) => {
     if (typeof message !== 'string') {
+      return false;
+    }
+
+    // C3: the qualifier-closed refusal ALSO contains "already been
+    // completed" — about the QUALIFIER, not the round — and the round is
+    // still `in_progress` when it fires. Treating it as "this round is
+    // complete" redirects to the round's own detail page, which redirects
+    // BACK here for an in_progress round: an infinite loop every time
+    // submit is retried. Excluded here; `handleRoundSubmit` classifies it
+    // separately via `isQualifierClosedError`.
+    if (isQualifierClosedError(message)) {
       return false;
     }
 
@@ -334,6 +369,23 @@ export default function ContinueRoundClient({
     if (now - lastAutoSaveWarningRef.current < 60_000) return;
     lastAutoSaveWarningRef.current = now;
     showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+  }, [showToast]);
+
+  // C5: `emergencySave` fires this at most once per session when the
+  // synchronous localStorage backup has failed (full or unavailable) even
+  // after compacting old saves — 13 call sites across both round screens
+  // never checked its boolean return, so this was previously silent. The
+  // independent IndexedDB mirror still runs regardless; this is specifically
+  // about the FAST path being down.
+  useEffect(() => {
+    const handleEmergencySaveDegraded = () => {
+      showToast(
+        'This device could not save a quick local backup of your shots. They are still being saved to a slower backup and to the server.',
+        'warning',
+      );
+    };
+    window.addEventListener(EMERGENCY_SAVE_DEGRADED_EVENT, handleEmergencySaveDegraded);
+    return () => window.removeEventListener(EMERGENCY_SAVE_DEGRADED_EVENT, handleEmergencySaveDegraded);
   }, [showToast]);
 
   const persistFailedSubmission = useCallback(async (
@@ -652,6 +704,9 @@ export default function ContinueRoundClient({
     surfaceFailure = true,
   ): Promise<boolean> => {
     const staleRoundId = liveRoundId();
+    // C1: the delete landed while this save was in flight — re-creating now
+    // would resurrect the round the player just discarded.
+    if (roundDiscardedRef.current) return false;
     const recreated = await savePartialRound(saveData, undefined);
     if (!recreated.success) {
       if (surfaceFailure) {
@@ -1124,6 +1179,7 @@ export default function ContinueRoundClient({
     isSubmittingRef.current = true;
     setSubmitting(true);
     setError('');
+    setQualifierClosed(false);
     // Clear any queued auto-save to prevent race conditions during submit
     pendingServerSaveRef.current = null;
 
@@ -1212,6 +1268,18 @@ export default function ContinueRoundClient({
         liveRoundId(),
       );
       if (!result.success) {
+        // C3: distinguish the qualifier-closed refusal from the round itself
+        // being complete BEFORE the (now-narrowed) completed-round check —
+        // the round stays `in_progress`, so redirecting to its detail page
+        // would bounce straight back here. Surface a terminal message and a
+        // real way out (reclassify to practice) instead of looping.
+        if (isQualifierClosedError(result.error)) {
+          setQualifierClosed(true);
+          setError(result.error);
+          isSubmittingRef.current = false;
+          // Stay in `submitting` so the overlay shows the message + action.
+          return;
+        }
         if (isCompletedRoundError(result.error)) {
           redirectToCompletedRound();
           return;
@@ -1246,6 +1314,43 @@ export default function ContinueRoundClient({
       setError(message);
       isSubmittingRef.current = false;
       // Stay in submitting state so the overlay shows the error
+    }
+  };
+
+  /**
+   * C3: the existing reclassify path (`updateRoundType` /
+   * `reclassify_golf_round`, `src/app/golf/actions/round-type.ts`) already
+   * supports an `in_progress` round — it was extended to do exactly that on
+   * 2026-08-30 — it just had no client entry point while a round was still
+   * being tracked. Converting to 'practice' clears `qualifier_id` /
+   * `qualifier_round_number` server-side without touching `status`, so the
+   * round can then be submitted normally.
+   *
+   * `setupData` here is a PROP from the server page that loaded this round,
+   * not local state — there is nothing to update client-side to reflect the
+   * new type. Reload rather than trying to patch it in memory and resubmit:
+   * that would mean calling `handleRoundSubmit` from inside THIS closure with
+   * data this closure never had, the exact stale-closure shape that produced
+   * the recorded `ReferenceError: round is not defined` in `savePartialRound`
+   * (see round-missing-recovery.ts / shot-tracking.md, B9). A fresh page load
+   * re-fetches the round as `practice` and the player taps the same submit
+   * control they already know.
+   */
+  const handleSaveAsPractice = async () => {
+    if (reclassifying) return;
+    setReclassifying(true);
+    try {
+      const result = await updateRoundType({ roundId, roundType: 'practice' });
+      if (!result.success) {
+        showToast(result.error || 'Could not change this round to practice. Please try again.', 'error');
+        return;
+      }
+      showToast('Saved as a practice round. Reloading…', 'success');
+      window.location.reload();
+    } catch {
+      showToast('Could not change this round to practice. Please try again.', 'error');
+    } finally {
+      setReclassifying(false);
     }
   };
 
@@ -1287,7 +1392,10 @@ export default function ContinueRoundClient({
       }
 
       // A user-initiated save must not be the one that loses the round.
-      if (!result.success && result.error === 'round_missing') {
+      // C1: unless the player discarded this exact round moments ago (Save &
+      // Exit and Discard are two buttons in the same exit dialog) — in that
+      // case re-creating would resurrect it.
+      if (!result.success && result.error === 'round_missing' && !roundDiscardedRef.current) {
         result = await savePartialRound(buildPartialRoundData(), undefined);
       }
 
@@ -1320,9 +1428,17 @@ export default function ContinueRoundClient({
   const activeShotNumber = activeHoleShots.length > 0 ? activeHoleShots.length + 1 : initialShotNumber;
 
   const handleDeleteRound = async () => {
+    // C1: mark BEFORE the delete call, not after it resolves — the window
+    // this closes is between the delete request landing and any concurrent
+    // save's response, so marking after would already be too late for the
+    // race it exists to prevent.
+    roundDiscardedRef.current = true;
     try {
       const result = await deleteInProgressRound(roundId);
       if (result && 'success' in result && !result.success) {
+        // The round is still live — a later round_missing for it is a real
+        // anomaly, not this race, so re-creating should still be allowed.
+        roundDiscardedRef.current = false;
         // Surface the action's OWN message. It distinguishes "this round can no
         // longer be discarded — already finished or removed" from a transient
         // failure, and the next line clears the local recovery snapshot
@@ -1335,6 +1451,7 @@ export default function ContinueRoundClient({
       setShowExitModal(false);
       router.push('/golf/dashboard/rounds');
     } catch {
+      roundDiscardedRef.current = false;
       showToast?.('Failed to delete round. Please try again.', 'error');
     }
   };
@@ -1646,17 +1763,20 @@ export default function ContinueRoundClient({
         onGoBack={() => {
           setSubmitting(false);
           setError('');
+          setQualifierClosed(false);
           isSubmittingRef.current = false;
           // Always re-show the finish confirm so user can submit again
           if (pendingFinalStats) {
             setShowFinishConfirm(true);
           }
         }}
-        onRetry={pendingFinalStats ? () => {
+        onRetry={qualifierClosed ? undefined : (pendingFinalStats ? () => {
           setError('');
           isSubmittingRef.current = false;
           void requestRoundSubmission(pendingFinalStats);
-        } : undefined}
+        } : undefined)}
+        secondaryActionLabel={qualifierClosed ? 'Save as practice round' : undefined}
+        onSecondaryAction={qualifierClosed ? handleSaveAsPractice : undefined}
         onSaveAndExit={async () => {
           setError('');
           isSubmittingRef.current = false;

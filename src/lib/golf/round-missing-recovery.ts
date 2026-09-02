@@ -102,6 +102,32 @@ const SIGNAL_KEY_MESSAGES: Readonly<Record<string, string>> = {
   hole_invalid: 'One of your holes needs a fix before this can be saved. Open it to see what to change.',
 };
 
+/**
+ * C3, 2026-09-02: `submit_round_atomic` refuses a submit into a qualifier the
+ * coach has closed with an exact sentence
+ * (`supabase/migrations/20260823000000_preserve_started_round_identity.sql`):
+ * "This qualifier has already been completed. Rounds can no longer be
+ * submitted." That sentence ALSO contains "already been completed" — about
+ * the QUALIFIER, not the round — and both round screens' `isCompletedRoundError`
+ * matched it as a bare substring, so a qualifier closure was treated exactly
+ * like the round itself being complete: `redirectToCompletedRound()` sends
+ * the player to `/golf/dashboard/rounds/<id>`, which redirects BACK to
+ * Continue Round for a still-`in_progress` round (the refusal fires before
+ * any write, so the round never actually completes) — an infinite loop
+ * between the two routes every time the player taps submit again.
+ *
+ * Checked for "qualifier" together with "already been completed" rather than
+ * matching the sentence verbatim, so a minor wording change in the migration
+ * does not silently stop excluding it — but specific enough that it cannot
+ * match any of the round-already-completed sentences (`golf.ts`), none of
+ * which mention a qualifier at all.
+ */
+export function isQualifierClosedError(message: string | undefined): boolean {
+  if (typeof message !== 'string') return false;
+  const normalized = message.toLowerCase();
+  return normalized.includes('qualifier') && normalized.includes('already been completed');
+}
+
 /** A player-readable sentence for any round-write failure string. */
 export function describeRoundWriteFailure(error: string | undefined): string {
   const trimmed = (error ?? '').trim();

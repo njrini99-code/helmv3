@@ -50,7 +50,11 @@ import {
   type RoundRecoverySnapshot,
 } from '@/lib/offline/shot-storage';
 import { clearEmergencySaveThrough } from '@/lib/utils/emergency-save';
-import { writeRoundRecreatingIfMissing, describeRoundWriteResult } from '@/lib/golf/round-missing-recovery';
+import {
+  writeRoundRecreatingIfMissing,
+  describeRoundWriteResult,
+  isQualifierClosedError,
+} from '@/lib/golf/round-missing-recovery';
 import type { TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { Flag, ArrowLeft } from 'lucide-react';
 import { ViewHeader, Surface, Button, EmptyState, InlineNotice } from '@/components/fairway';
@@ -107,6 +111,13 @@ function hasRecoverableProgress(round: OfflineRoundData): boolean {
 
 function isCompletedRoundError(message?: string): boolean {
   if (typeof message !== 'string') {
+    return false;
+  }
+
+  // C3: the qualifier-closed refusal ALSO contains "already been completed"
+  // — about the QUALIFIER, not the round, which stays `in_progress` — see
+  // the round screens' identical exclusion for the full loop it prevents.
+  if (isQualifierClosedError(message)) {
     return false;
   }
 

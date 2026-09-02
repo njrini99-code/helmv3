@@ -26,6 +26,7 @@ import {
   ROUND_RECREATE_FAILED_MESSAGE,
   describeRoundWriteFailure,
   describeRoundWriteResult,
+  isQualifierClosedError,
   writeRoundRecreatingIfMissing,
   type RoundWriteResult,
 } from '../round-missing-recovery';
@@ -227,5 +228,40 @@ describe('describeRoundWriteResult', () => {
   it('never returns an empty string, even with nothing to work from', () => {
     expect(describeRoundWriteResult(undefined).length).toBeGreaterThan(0);
     expect(describeRoundWriteResult({ error: '' }).length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * C3: the qualifier-closed refusal from `submit_round_atomic`
+ * (`supabase/migrations/20260823000000_preserve_started_round_identity.sql`,
+ * the guard's `new_update_anchor` block) ALSO contains "already been
+ * completed" — about the QUALIFIER, not the round — and both round screens'
+ * `isCompletedRoundError` matched it as a substring, redirecting to the
+ * round's own detail page. That page redirects BACK to Continue Round for an
+ * `in_progress` round (the refusal fires before any write, so the round
+ * never actually completes), looping submit forever. `isQualifierClosedError`
+ * is checked FIRST and excluded from `isCompletedRoundError`'s own match in
+ * both screens.
+ */
+describe('isQualifierClosedError', () => {
+  it('matches the literal RPC refusal (20260823000000_preserve_started_round_identity.sql)', () => {
+    expect(isQualifierClosedError(
+      'This qualifier has already been completed. Rounds can no longer be submitted.',
+    )).toBe(true);
+  });
+
+  it('does not match the round-already-completed sentences (golf.ts)', () => {
+    expect(isQualifierClosedError(
+      'This round has already been submitted. It cannot be submitted again.',
+    )).toBe(false);
+    expect(isQualifierClosedError('This round may have already been completed.')).toBe(false);
+  });
+
+  it('does not match a bare "already completed" with no mention of a qualifier', () => {
+    expect(isQualifierClosedError('This round is already completed.')).toBe(false);
+  });
+
+  it('handles non-string input', () => {
+    expect(isQualifierClosedError(undefined)).toBe(false);
   });
 });
