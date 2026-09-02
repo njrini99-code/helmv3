@@ -405,6 +405,13 @@ export function FairwayEventEditor({
   const pristineRef = React.useRef<GolfEventFormData | null>(null);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // The banner renders at the top of a body the coach has usually scrolled to
+  // the bottom of to reach Save — measured at y: -7, i.e. above the fold, so
+  // "Create event" looked like a silent no-op (audit 2026-09-02, UI-5 / P1-8).
+  const errorRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [error]);
   const [conflicts, setConflicts] = React.useState<ConflictData | null>(null);
   // Two DISTINCT destructive confirms, matching weight (a real ModalShell
   // confirm dialog with consequence copy — same pattern as Delete Task),
@@ -926,7 +933,7 @@ export function FairwayEventEditor({
           */}
           <ModalShell.Body className="flex flex-col gap-5 pb-8 pr-7 [scrollbar-gutter:stable]">
             {error ? (
-              <div className="flex items-center gap-2 rounded-fw-md border border-fw-danger/25 bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger-ink">
+              <div ref={errorRef} role="alert" className="flex items-center gap-2 rounded-fw-md border border-fw-danger/25 bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger-ink">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden />
                 {error}
               </div>

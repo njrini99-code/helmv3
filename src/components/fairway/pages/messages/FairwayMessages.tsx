@@ -487,7 +487,11 @@ export function FairwayMessages() {
       className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-max(56px+env(safe-area-inset-bottom,0px),var(--keyboard-height,0px)))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]')}
     >
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 py-6 sm:px-6 lg:py-8">
-        {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ── */}
+        {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ──
+            On a phone with a thread open it steps aside: the masthead plus the
+            thread's own header left 100–272px of an 844px screen for messages
+            (audit 2026-09-02, UI-4). The thread header carries Back. */}
+        <div className={mobileShowChat ? 'hidden md:block' : undefined}>
         <ViewHeader
           eyebrow="Messages"
           title="Team messages"
@@ -515,11 +519,12 @@ export function FairwayMessages() {
             </Button>
           }
         />
+        </div>
 
         {/* ── Two-pane inbox: rail (supporting aside) + thread (focal hero) ──── */}
         {/* flex-1 min-h-0 on the grid so it fills remaining height without
             overflowing; min-h-0 overrides the implicit min-h-auto on flex items. */}
-        <div className="mt-6 flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6">
+        <div className={`${mobileShowChat ? 'mt-0 md:mt-6' : 'mt-6'} flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6`}>
           {/* TRIAGE — conversation rail. On mobile it hides when a chat is open. */}
           <aside
             className={

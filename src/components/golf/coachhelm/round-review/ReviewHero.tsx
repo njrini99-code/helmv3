@@ -413,7 +413,7 @@ export function ReviewHero({
             </>
           ) : (
             <p className="font-fw-sans text-body-sm text-text-tertiary">
-              Hover or tap a hole to see what happened.
+              Tap or hover over a hole to see what happened.
             </p>
           )}
         </div>
