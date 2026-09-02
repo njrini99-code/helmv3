@@ -334,6 +334,50 @@ them would have broken those routes, not the dead one.
   function) is not matched and stays actionable. The phrase list is shared
   with `error-logging` and the message-send retry so the three cannot drift.
 
+- **The self-healing loop has THREE axes, and throughput is the one a
+  heartbeat cannot show.** Runtime (`selfheal-registry.ts`: is each stage on
+  schedule) and capability (`selfheal-capability.ts`: has it ever produced its
+  output) were both green on a loop that skipped the same incident every
+  night. `src/lib/admin/selfheal-flow.ts` (2026-09-01) places every incident
+  on the board at the stage whose turn it is, from the lifecycle `lifecycle.ts`
+  already derived, and calls it STALLED once that stage has had
+  `STALL_CYCLES` (2) of its own registry cadence to act and has not. Three
+  rules: a failed read (`repair.status === 'unknown'`, an unreadable deploy, a
+  blind source) places the incident at `unknown` and can never stall a stage;
+  the threshold is the stage's cadence from `SELFHEAL_STAGES`, never a literal;
+  an active stage (`repairing`) is never stalled. Close's wait starts when
+  silence became proof — deploy time plus `PRODUCTION_PROOF_WINDOW_MS` — not
+  at the deploy. The model reaches four surfaces from one function: the
+  `stalled` lens on the Errors tab (judged against `computedAt`, never
+  `Date.now()`), the `stage-stalled` attention reason (ranked after
+  `repair-ci-failed`, before `repairable-untouched`, because "Repair had its
+  chances" is the stronger fact about the same incident), the Truth Strip's
+  self-heal cell (a stall escalates `ok`/`warning` to `N STALLED`; it never
+  softens `danger`/`unknown`), and the per-stage backlog strip on the Overview
+  and the Self-heal page. Counts only on the Overview: a stalled incident
+  already earns its attention row, and a third list is the split this read
+  model exists to remove.
+- **Lens counts are measured over the faceted list.** `countLensesForKind`
+  counts through the same `matchesKind` predicate `applyIncidentFacets`
+  narrows with, so the number beside a lens equals what clicking it shows
+  while `?kind=` is active. `board.lensCounts` stays the board-level fact.
+  Separately, the `awaiting-proof` lens no longer admits an incident whose
+  ONLY proof gap is `source-blind`: a failed read is not a fix awaiting proof.
+- **The legacy `TriageQueue` takes `canClaimAllClear` too.** Defaults to true
+  for existing call sites; the Overview passes the Sentry pull's status,
+  because that feed's only external witness is Sentry and an empty queue
+  under a failed or unconfigured pull is a partial count.
+- **The Errors tab has one "compared to what".** `fetchErrorsTab` counts
+  error-or-worse rows written in the current window and the equal window
+  before it (sport filter applies, the others do not, so the pair stays
+  comparable); `describeWindowDelta` refuses a percentage against a zero prior
+  window and reports an unreadable count as `unknown`, never a flat 0%. When
+  Sentry's hourly series is unavailable, `sumHourlyBuckets` folds the app's
+  own per-fingerprint 24h histograms into one series against the exact clock
+  they were built on (`appHourlyComputedAt`) and the chart says "app events
+  only" — one witness, labelled as one, rather than a blank chart over data
+  the Bridge already held.
+
 ## UI Contract
 
 - Admin surfaces should be dense, scannable, and operational rather than marketing-style.
@@ -342,6 +386,21 @@ them would have broken those routes, not the dead one.
   severity mix, then the triage queue. Posture KPIs live in a disclosure below
   it, not above it. Each KPI carries its own source note — the provenance is
   per-tile, not a separate panel.
+- The Incidents page (`/admin/errors`) is organised as five questions, top to
+  bottom, each under a heading that says which one it answers: what needs
+  attention (the canonical queue), is it getting worse (window-over-window,
+  hourly, by source and by feature), is the Bridge seeing everything (source
+  reconciliation, wiring, traceability), what Sentry still holds open, and what
+  was fixed. Filters are grouped and labelled in words with an explicit "All"
+  per group (`ErrorsFilterBar`), collapsed until one is active; the legend
+  (`HowToReadIncidents`) is a closed `<details>` under the header. Every
+  incident row carries a feature TAG in registry words ("untagged" said out
+  loud, an unregistered key rendered as itself, dashed), the lifecycle
+  headline sentence, and a Details disclosure with only what the row does not
+  already say: first/last seen, the error code with a plain-language hint
+  (`error-code-hint.ts`, null for codes it does not know), the kind and its
+  reason, every source with its health, the analysis, the repair, and the
+  ordered checks behind the lifecycle state.
 - An error's detail page shows what was actually captured — Postgres error code
   and hint, request id, runtime, handled/unhandled, source file, and the flight
   trace link when one exists — each copyable on its own. A field with no value

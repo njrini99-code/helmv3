@@ -341,3 +341,54 @@
 - `src/lib/reliability/__tests__/resolution.test.ts` drops the archive-branch
   cases with the branch itself and gains two for `planReopens`: a fault never
   claimed fixed cannot regress, and each fault matches its OWN resolution.
+
+## 2026-09-01 — self-heal flow and the Errors page
+
+- `src/lib/admin/__tests__/selfheal-flow.test.ts` (new, 30 cases): the stall
+  threshold is `STALL_CYCLES` × the registry cadence, never a literal; a
+  `new`/`diagnosing` incident stalls at Diagnose exactly past the threshold
+  and not one millisecond before; "analysis exists, repair lookup failed"
+  is `unknown`, never a Diagnose stall; a `repairing` incident never stalls;
+  Close's wait starts at deploy + `PRODUCTION_PROOF_WINDOW_MS` and cannot be
+  measured (so cannot stall) without a deploy time; every off-loop lifecycle
+  state maps to its position with no stage; `summarizeFlow` counts per stage
+  in registry order and reports unplaced incidents separately;
+  `selectStalled` orders longest wait first; `describeFlow` names where the
+  stalls are and reads "idle", never an all-clear, on an empty board.
+- `lens.test.ts` gains the `stalled` lens (judged against `computedAt`; a
+  failed repair read is never stalled), the `awaiting-proof` blindness
+  exclusion, and `countLensesForKind` agreeing with `applyIncidentFacets` for
+  every lens under every kind.
+- `attention.test.ts`: `ATTENTION_PRIORITY` contract and sort updated for
+  `stage-stalled`; new cases pin that it outranks `repairable-untouched` for
+  the same incident, never fires on `repair.status === 'unknown'`, and gives
+  a twice-skipped `new` incident the row that state otherwise lacks.
+- `truth-strip.test.ts`: the self-heal cell escalates `ok` to `N STALLED`
+  (warning, linking to the stalled lens), never softens `danger`, keeps
+  PROVEN when work is inside its cycles, carries the backlog when the
+  heartbeats are unreadable, and is byte-identical without `flow`.
+- `error-trend.test.ts` (new): the hourly fold reproduces bucket timestamps
+  from the builder's own clock and returns `[]` for no buckets;
+  `describeWindowDelta` refuses a percentage against a zero prior window and
+  reports unreadable as `unknown`.
+- `error-code-hint.test.ts` (new): known codes, the shared provider-fault
+  hint, and `null` for unknown codes.
+- `unified-incident-card.test.tsx` gains the feature tag (registry label, not
+  key; "untagged" out loud; unregistered key rendered as itself), the sport
+  word, the lifecycle headline, and the details disclosure (code hint, source
+  health word, lifecycle checks with their status word). The Details panel
+  deliberately omits route, action, event and user counts — the row already
+  carries them, and the pre-existing `getByText` assertions caught the
+  duplication first.
+- `errors-filter-bar.test.tsx` (new): groups with label and hint, pressable
+  pills with `aria-pressed`, navigation to the server-computed href, active
+  filters summarised in words each with a clear link, open-by-default only
+  when a filter is active.
+- Verified on the worktree: `vitest --project unit` over
+  `src/lib/admin/incidents`, `selfheal-flow`, `error-trend`, `data/errors`,
+  `incident-count-agreement` (16 files / 251 tests, exit 0 before the last
+  two new files were added); `vitest --project unit-dom src/app/admin`
+  (34 files / 236 tests after the `TriageQueue` default fix); typecheck exit
+  0 before the Errors page rewrite, re-run after it (result recorded in the
+  PR). The page test (`errors/__tests__/page.test.tsx`) covers
+  `loadErrorsPageData` only, by design, and is unchanged.

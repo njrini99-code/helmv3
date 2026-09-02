@@ -11,9 +11,19 @@ import type { SentryStatsPoint } from '@/lib/admin/sentry-api';
 export function ErrorsOverTime({
   points,
   deployMarkers,
+  source = 'sentry',
+  note,
 }: {
   points: SentryStatsPoint[];
   deployMarkers: number[];
+  /**
+   * Which system the bars came from. `app` is this application's own
+   * `admin_events` rows, used when Sentry's hourly series is unavailable —
+   * a real trend, honestly labelled as one witness rather than two.
+   */
+  source?: 'sentry' | 'app';
+  /** One line under the title saying why this series and not the other. */
+  note?: string;
 }) {
   const hasPoints = points.length > 0;
   const max = Math.max(1, ...points.map((p) => p.total));
@@ -21,9 +31,13 @@ export function ErrorsOverTime({
   const end = points[points.length - 1]?.timestamp ?? start + 1;
   const span = Math.max(1, end - start);
   const totalErrors = points.reduce((sum, p) => sum + p.total, 0);
+  // A deploy outside the plotted hours has nowhere honest to sit: unclamped
+  // it painted at a negative or >100% offset, i.e. off the chart's own axis.
+  const visibleMarkers = deployMarkers.filter((t) => t >= start && t <= end);
+  const title = source === 'app' ? 'App errors per hour' : 'Errors per hour';
 
   const tableData: ChartTableData = {
-    caption: 'Errors per hour, with production deploy markers',
+    caption: `${title}, with production deploy markers`,
     columns: [
       { key: 'time', label: 'Hour' },
       { key: 'errors', label: 'Errors', numeric: true },
@@ -36,11 +50,11 @@ export function ErrorsOverTime({
 
   return (
     <ChartFrame
-      title="Errors per hour"
+      title={title}
       subtitle={
         hasPoints
-          ? `${new Date(start).toLocaleTimeString()} — ${new Date(end).toLocaleTimeString()} · ticks mark production deploys`
-          : undefined
+          ? `${new Date(start).toLocaleTimeString()} — ${new Date(end).toLocaleTimeString()} · ticks mark production deploys${note ? ` · ${note}` : ''}`
+          : note
       }
       takeaway={hasPoints ? `${totalErrors} errors across ${points.length} hourly buckets` : 'No hourly data'}
       state={hasPoints ? 'ready' : 'empty'}
@@ -58,7 +72,7 @@ export function ErrorsOverTime({
           />
         ))}
       </div>
-      {deployMarkers.map((t) => (
+      {visibleMarkers.map((t) => (
         <span
           key={t}
           title={`deploy ${new Date(t).toLocaleTimeString()}`}

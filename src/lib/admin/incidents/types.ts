@@ -538,6 +538,7 @@ export const INCIDENT_LENSES = [
   'repairable',
   'needs-evidence',
   'regressions',
+  'stalled',
   'awaiting-proof',
   'all',
 ] as const;
@@ -549,6 +550,7 @@ export const INCIDENT_LENS_LABEL: Readonly<Record<IncidentLens, string>> = {
   repairable: 'Repairable',
   'needs-evidence': 'Needs evidence',
   regressions: 'Regressions',
+  stalled: 'Stalled',
   'awaiting-proof': 'Awaiting proof',
   all: 'All',
 };
@@ -560,6 +562,7 @@ export const INCIDENT_LENS_DESCRIPTION: Readonly<Record<IncidentLens, string>> =
   repairable: 'An analysis says FIX HERE, or a repair candidate is confirmed.',
   'needs-evidence': 'Analysis cannot safely progress without more evidence.',
   regressions: 'Previously resolved, and observed again since.',
+  stalled: 'Waiting on a self-heal stage past two of its cycles — the loop is running, and not moving these.',
   'awaiting-proof': 'A fix exists; the evidence to close it does not yet.',
   all: 'Everything, including non-defects and expected control flow.',
 };

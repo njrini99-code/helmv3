@@ -228,6 +228,7 @@ const lensCounts: IncidentLensCounts = {
   repairable: 1,
   'needs-evidence': 0,
   regressions: 0,
+  stalled: 0,
   'awaiting-proof': 3,
   all: 9,
 };
@@ -260,5 +261,78 @@ describe('IncidentLensRail', () => {
     const needsEvidence = screen.getByRole('link', { name: new RegExp(INCIDENT_LENS_LABEL['needs-evidence']) });
     expect(needsEvidence).toBeInTheDocument();
     expect(needsEvidence).toHaveTextContent('0');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 2026-09-01 — the feature tag, the lifecycle headline, and the details
+// disclosure: the three things an operator asked the row to say out loud.
+// ---------------------------------------------------------------------------
+
+describe('UnifiedIncidentCard — feature tag', () => {
+  it('renders the registry LABEL for a known feature key, not the key', () => {
+    render(<UnifiedIncidentCard incident={{ ...baseIncident, featureId: 'round_tracking' }} series={null} />);
+    const tags = screen.getByTestId('unified-incident-tags');
+    expect(tags).toHaveTextContent('Feature');
+    expect(tags).toHaveTextContent('Round Tracking');
+    expect(tags).not.toHaveTextContent('round_tracking');
+  });
+
+  it('says "untagged" out loud when the error was logged without a feature', () => {
+    render(<UnifiedIncidentCard incident={{ ...baseIncident, featureId: null }} series={null} />);
+    expect(screen.getByTestId('unified-incident-tags')).toHaveTextContent('untagged');
+  });
+
+  it('renders an unregistered key as itself, never laundered into a label', () => {
+    render(<UnifiedIncidentCard incident={{ ...baseIncident, featureId: 'not_in_registry' }} series={null} />);
+    expect(screen.getByTestId('unified-incident-tags')).toHaveTextContent('not_in_registry');
+  });
+
+  it('names the sport in words', () => {
+    render(<UnifiedIncidentCard incident={{ ...baseIncident, sport: 'baseball' }} series={null} />);
+    expect(screen.getByTestId('unified-incident-tags')).toHaveTextContent('Baseball');
+  });
+});
+
+describe('UnifiedIncidentCard — lifecycle headline and details', () => {
+  it('renders the lifecycle headline sentence on the row', () => {
+    render(
+      <UnifiedIncidentCard
+        incident={{
+          ...baseIncident,
+          lifecycle: { state: 'diagnosing', headline: 'Seen recently — Diagnose has not had a chance to analyse it yet.', because: [] },
+        }}
+        series={null}
+      />,
+    );
+    expect(screen.getByText('Seen recently — Diagnose has not had a chance to analyse it yet.')).toBeInTheDocument();
+  });
+
+  it('carries the error code hint, every source with its health, and the lifecycle checks in the details disclosure', () => {
+    render(
+      <UnifiedIncidentCard
+        incident={{
+          ...baseIncident,
+          errorCode: '42501',
+          lifecycle: {
+            state: 'new',
+            headline: 'New — not yet analysed.',
+            because: [
+              { status: 'pending', text: 'First seen 3 days ago.' },
+              { status: 'failed', text: 'A source could not be read.' },
+            ],
+          },
+        }}
+        series={null}
+      />,
+    );
+    expect(screen.getByText('Details')).toBeInTheDocument();
+    expect(screen.getByText(/permission denied/)).toBeInTheDocument();
+    // Each source carries its health word beside its name in the disclosure.
+    expect(screen.getByText('(reading)')).toBeInTheDocument();
+    expect(screen.getByText('First seen 3 days ago.')).toBeInTheDocument();
+    expect(screen.getByText('A source could not be read.')).toBeInTheDocument();
+    // The status WORD travels with each check — colour is never the only channel.
+    expect(screen.getByText('failed')).toBeInTheDocument();
   });
 });
