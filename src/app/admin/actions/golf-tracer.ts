@@ -28,6 +28,15 @@ export type FlightTraceRun = {
   round_id: string | null;
   failure_step: string | null;
   missing_required_step_count: number;
+  /**
+   * Declared vs actually-recorded step counts. Returned by
+   * `helm_debug_list_traces` (verified against production 2026-09-01) but
+   * absent from this type until now, so the fleet summary could not read
+   * them. Optional because the RPC is the contract and a store that predates
+   * these columns must degrade rather than render `undefined` as a number.
+   */
+  expected_step_count?: number | null;
+  observed_step_count?: number | null;
 };
 
 export type FlightTraceDetail = {

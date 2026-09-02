@@ -68,6 +68,7 @@ import { usePresence } from '@/hooks/use-presence';
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { teardownDeviceTokenOnSignOut } from '@/lib/utils/push-registration';
 import { cn } from '@/lib/utils';
 import { IconSettings, IconLogout } from '@/components/icons';
 
@@ -233,6 +234,10 @@ function useGolfSignOut() {
     if (isSigningOut) return; // guard double-tap (legacy shell guarded this too)
     setIsSigningOut(true);
     void triggerHaptic('heavy');
+    // BEFORE signOut (the action authenticates the caller), fire-and-forget
+    // (sign-out must never hang on token cleanup): stop this device receiving
+    // the signed-out user's pushes (M2-1).
+    teardownDeviceTokenOnSignOut();
     const supabase = createClient();
     await clearActiveTeam();
     await supabase.auth.signOut();

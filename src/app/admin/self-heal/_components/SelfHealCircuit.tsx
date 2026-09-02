@@ -1,6 +1,8 @@
-import { StatusPill, type FwStatusTone } from '@/components/fairway';
+import { Cloud, Laptop, Server, type LucideIcon } from 'lucide-react';
+import { StatusPill, Badge, type FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
-import { SELFHEAL_RUNNER_LABEL } from '@/lib/admin/selfheal-registry';
+import { SELFHEAL_RUNNER_LABEL, type SelfHealRunner } from '@/lib/admin/selfheal-registry';
+import { RUN_PROVENANCE_LABEL, type StageRunOutcome } from '@/lib/admin/selfheal-provenance';
 import type { SelfHealStageDetail, StageRunRecord } from '@/lib/admin/data/selfheal';
 import type { CapabilityState, LoopVerdict } from '@/lib/admin/selfheal-capability';
 import { PanelNoData } from '../../_components/PanelStates';
@@ -101,6 +103,241 @@ export function formatStageAge(iso: string): string {
 }
 
 /* ---------------------------------------------------------------------------
+ * Where a stage actually runs — the architectural fact this board exists for.
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Three stages, three machines, three completely different failure modes —
+ * and "it is not running" has a different FIX in each case: redeploy, re-enable
+ * the routine, wake the laptop. `selfheal-registry.ts` records the runner for
+ * exactly that reason; until now the board printed it as a word in a
+ * definition list, where it read as trivia rather than as the reason two
+ * thirds of this loop is invisible to the deployment hosting the board.
+ */
+const RUNNER_ICON: Record<SelfHealRunner, LucideIcon> = {
+  'vercel-cron': Server,
+  'cloud-routine': Cloud,
+  'local-agent': Laptop,
+};
+
+/** What this deployment can actually SEE of a stage running there. Not
+ *  decoration — it is why an `ok` heartbeat means less for two of the three. */
+const RUNNER_REACH: Record<SelfHealRunner, string> = {
+  'vercel-cron': 'In this deployment — a failure raises here.',
+  'cloud-routine': 'Outside this deployment — only its heartbeat is visible.',
+  'local-agent': "On the owner's laptop — silence is indistinguishable from sleep.",
+};
+
+function RunnerBand({ runner }: { runner: SelfHealRunner }) {
+  const Icon = RUNNER_ICON[runner];
+  return (
+    <div className="flex items-start gap-2 rounded-fw-md bg-surface-sunken px-2.5 py-2">
+      <Icon aria-hidden className="mt-px h-3.5 w-3.5 shrink-0 text-warm-500" />
+      <div className="min-w-0">
+        <p className="text-caption font-semibold text-warm-700">{SELFHEAL_RUNNER_LABEL[runner]}</p>
+        <p className="mt-0.5 break-words text-caption text-warm-500 [overflow-wrap:anywhere]">
+          {RUNNER_REACH[runner]}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * Cadence meter — where this stage sits in its own schedule window.
+ * ------------------------------------------------------------------------- */
+
+/** Compact magnitude for a delta between two instants. Mirrors
+ *  `formatStageAge`'s day/hour/minute buckets so the card never shows "2h ago"
+ *  beside "in 120m" for the same size of gap. */
+function formatSpan(ms: number): string {
+  const minutes = Math.round(Math.max(0, ms) / 60_000);
+  if (minutes < 1) return 'under a minute';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
+}
+
+interface SchedulePosition {
+  /** 0-100, where 100 is the instant the stage starts reading overdue. */
+  nowPercent: number;
+  /** 0-100 position of the "next expected" tick — 66.7 for every stage today,
+   *  computed rather than hardcoded so a stage with a different grace window
+   *  still draws its own tick in the right place. */
+  duePercent: number;
+  phase: 'on-schedule' | 'late' | 'overdue';
+  label: string;
+}
+
+/**
+ * Where `now` sits between the last run and the overdue threshold.
+ *
+ * The track spans `lastRunAt -> overdueAt`, which is 1.5 cadences — the exact
+ * window `classifyCronStatus` measures (`ageMinutes > cadenceMinutes * 1.5`,
+ * anchored on `started_at`). Drawing it any other way — a full cadence with
+ * the threshold half a width past the end, say — would put the meter and the
+ * status pill on different clocks, which is the class of disagreement this
+ * whole board exists to eliminate.
+ *
+ * The middle phase is the one the board could not previously express. A stage
+ * past its expected time but short of the threshold is LATE and still
+ * classified `ok`; the old card printed a bare past timestamp under "Next
+ * expected" and left the reader to infer a fault the classifier had explicitly
+ * declined to find.
+ */
+export function deriveSchedulePosition(
+  lastRunAt: string | null,
+  nextExpectedAt: string | null,
+  overdueAt: string | null,
+  now: number,
+): SchedulePosition | null {
+  if (!lastRunAt || !nextExpectedAt || !overdueAt) return null;
+  const last = Date.parse(lastRunAt);
+  const due = Date.parse(nextExpectedAt);
+  const overdue = Date.parse(overdueAt);
+  if (!Number.isFinite(last) || !Number.isFinite(due) || !Number.isFinite(overdue)) return null;
+
+  const span = overdue - last;
+  if (span <= 0) return null;
+
+  const clamp = (n: number) => Math.max(0, Math.min(100, n));
+  const nowPercent = clamp(((now - last) / span) * 100);
+  const duePercent = clamp(((due - last) / span) * 100);
+
+  if (now >= overdue) {
+    return { nowPercent, duePercent, phase: 'overdue', label: `overdue by ${formatSpan(now - overdue)}` };
+  }
+  if (now >= due) {
+    return { nowPercent, duePercent, phase: 'late', label: `late by ${formatSpan(now - due)}, not yet overdue` };
+  }
+  return { nowPercent, duePercent, phase: 'on-schedule', label: `due in ${formatSpan(due - now)}` };
+}
+
+const PHASE_FILL: Record<SchedulePosition['phase'], string> = {
+  'on-schedule': 'bg-fw-success',
+  late: 'bg-fw-warning',
+  overdue: 'bg-fw-danger',
+};
+
+const PHASE_TEXT: Record<SchedulePosition['phase'], string> = {
+  'on-schedule': 'text-warm-600',
+  late: 'text-fw-warning-ink',
+  overdue: 'text-fw-danger-ink',
+};
+
+/**
+ * A static track — no animation, no gradient, no glow. The fill encodes
+ * elapsed time against a threshold and nothing else; the tick is where the run
+ * was expected. Both facts are stated in words directly beneath it, so the
+ * bar is `aria-hidden` and carries no information of its own.
+ */
+function CadenceMeter({ position }: { position: SchedulePosition }) {
+  return (
+    <div className="mt-1.5">
+      <div aria-hidden className="relative h-1.5 w-full overflow-hidden rounded-full bg-warm-200">
+        <div
+          className={cn('absolute inset-y-0 left-0 rounded-full', PHASE_FILL[position.phase])}
+          style={{ width: `${position.nowPercent}%` }}
+        />
+        {/* The expected-run tick. Sits ON the track rather than above it so a
+            narrow card never separates the mark from the thing it marks. */}
+        <div
+          className="absolute inset-y-0 w-px bg-warm-500"
+          style={{ left: `${position.duePercent}%` }}
+        />
+      </div>
+      <p className={cn('mt-1 text-caption', PHASE_TEXT[position.phase])}>{position.label}</p>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * What the last run actually did.
+ * ------------------------------------------------------------------------- */
+
+const PROVENANCE_TONE: Record<StageRunOutcome['provenance']['kind'], FwStatusTone> = {
+  // An autonomous run is the thing this loop claims about itself, so it gets
+  // no chip at all — see LastRunOutcome. These two tones apply only to the
+  // rows that announced a human in the loop.
+  autonomous: 'neutral',
+  'operator-assisted': 'warning',
+  'instrument-probe': 'info',
+};
+
+/**
+ * The recorded counts, plus — and this is the part that matters — whether the
+ * run that produced them was a stage doing its job or a person standing in for
+ * it. `background_job_logs` is an open table; see `selfheal-provenance.ts`.
+ *
+ * An `autonomous` classification renders NO chip, deliberately. The classifier
+ * detects runs that announced human involvement and cannot detect one that
+ * stayed quiet, so a green "autonomous" badge would assert more than the
+ * evidence supports. Silence here means "nothing said otherwise".
+ */
+function LastRunOutcome({ outcome }: { outcome: StageRunOutcome }) {
+  const { provenance, facts, blockedReason } = outcome;
+  const flagged = provenance.kind !== 'autonomous';
+  if (!flagged && facts.length === 0 && !blockedReason) return null;
+
+  return (
+    <div className="mt-1.5 space-y-1.5">
+      {facts.length > 0 ? (
+        <dl className="flex flex-wrap gap-x-3 gap-y-0.5">
+          {facts.map((fact) => (
+            <div key={fact.label} className="flex items-baseline gap-1">
+              <dt className="text-caption text-warm-500">{fact.label}</dt>
+              <dd className="font-fw-mono text-caption tabular-nums text-warm-700">{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      {blockedReason ? (
+        <p className="break-words font-fw-mono text-caption text-fw-warning-ink [overflow-wrap:anywhere]">
+          blocked: {blockedReason}
+        </p>
+      ) : null}
+
+      {flagged ? (
+        <div>
+          <Badge tone={PROVENANCE_TONE[provenance.kind]} variant="outline" size="sm">
+            {RUN_PROVENANCE_LABEL[provenance.kind]}
+          </Badge>
+          {provenance.basis ? (
+            <p className="mt-1 break-words text-caption text-warm-500 [overflow-wrap:anywhere]">
+              {provenance.basis}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A note from a run that SUCCEEDED, behind a disclosure.
+ *
+ * Collapsed because these run to hundreds of characters — the live
+ * `selfheal-triage` note is 638 — and expanded-by-default it becomes the
+ * tallest thing on the card, which is how a successful run came to dominate a
+ * board about failures. `<details>` rather than a state hook so this stays a
+ * Server Component and works with JS disabled.
+ */
+function StageNote({ note }: { note: string }) {
+  return (
+    <details className="mt-1.5 group">
+      <summary className="cursor-pointer list-none text-caption text-warm-500 underline decoration-warm-300 underline-offset-2 hover:text-warm-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500">
+        Run note ({note.length.toLocaleString()} chars)
+      </summary>
+      <p className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-fw-md bg-surface-sunken p-2 text-caption text-warm-600 [overflow-wrap:anywhere]">
+        {note}
+      </p>
+    </details>
+  );
+}
+
+/* ---------------------------------------------------------------------------
  * Connector — the line between two stage cards.
  * ------------------------------------------------------------------------- */
 
@@ -158,6 +395,15 @@ export function StageCard({ stage }: { stage: SelfHealStageDetail }) {
   // has not yet completed — not merely because the stage "looks busy".
   const latestRun = stage.history[0] ?? null;
   const inProgress = Boolean(latestRun?.startedAt) && latestRun?.completedAt == null;
+  // Same single-render reasoning as `formatStageAge` — a Server Component
+  // renders once per request and embeds the result, so there is no client
+  // re-render for this to disagree with.
+  const schedule = deriveSchedulePosition(
+    stage.lastRunAt,
+    stage.nextExpectedAt,
+    stage.overdueAt,
+    Date.now(),
+  );
 
   return (
     <div className="min-w-0 flex-1 rounded-fw-md border border-warm-200 bg-surface p-4 md:max-w-[19rem]">
@@ -172,6 +418,10 @@ export function StageCard({ stage }: { stage: SelfHealStageDetail }) {
       </div>
 
       <p className="mt-1.5 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">{stage.what}</p>
+
+      <div className="mt-2.5">
+        <RunnerBand runner={stage.runner} />
+      </div>
 
       {/* Runtime block — is the process running on schedule. */}
       <div className="mt-3 border-t border-warm-200 pt-2.5">
@@ -213,19 +463,27 @@ export function StageCard({ stage }: { stage: SelfHealStageDetail }) {
             </dd>
           </div>
           <div className="flex items-baseline justify-between gap-2">
-            <dt className="text-warm-500">Runner</dt>
-            <dd className="min-w-0 text-right text-warm-600">{SELFHEAL_RUNNER_LABEL[stage.runner]}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-2">
             <dt className="text-warm-500">Cadence</dt>
             <dd className="min-w-0 text-right text-warm-600">{formatCadence(stage.cadenceMinutes)}</dd>
           </div>
         </dl>
+
+        {/* The schedule window, drawn. Suppressed while the stage is
+            unreadable: a meter rendered from a read that failed would be a
+            picture of a fact nobody has. */}
+        {!stage.unreadable && schedule ? <CadenceMeter position={schedule} /> : null}
+
+        {/* A genuine fault — the run failed, or reported part of its own work
+            failed. `lastError` is now only ever populated in those two cases
+            (see data/selfheal.ts), so danger red here always means danger. */}
         {stage.lastError ? (
           <p className="mt-1.5 break-words text-caption text-fw-danger-ink [overflow-wrap:anywhere]">
             {stage.lastError}
           </p>
         ) : null}
+
+        {stage.lastOutcome ? <LastRunOutcome outcome={stage.lastOutcome} /> : null}
+        {stage.lastNote ? <StageNote note={stage.lastNote} /> : null}
       </div>
 
       {/* Capability block — has it EVER produced its output. */}
