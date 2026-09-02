@@ -1,19 +1,29 @@
 name: Playwright E2E
 
-# Full browser CI — main branch pushes and manual workflow_dispatch only.
+# Full browser CI — MANUAL workflow_dispatch only.
+#
 # Pull requests use .github/workflows/pr-smoke.yml (cheap public a11y subset).
+#
+# The `smoke` job ("Smoke checks") that used to live here is GONE as of
+# 2026-09-02. It was `npm ci` + `npm run build` and nothing else — the exact
+# steps ci.yml's `Next build` job already runs on every PR and every push to
+# main, with the same env — so every pull request paid for two identical
+# 8-to-9-minute builds and two runner slots to learn one fact. It was also a
+# required branch-protection context, so removing the JOB without first
+# removing the CONTEXT would have made every PR unsatisfiable (the phantom
+# check trap in .github/branch-protection.md). The context was dropped from
+# main's required set in the same change; `CI aggregate` carries the build
+# verdict. Verified by reading the check-run names on a PR head, not by
+# assuming: .github/branch-protection.md shows the command.
+#
+# With `smoke` gone, nothing in this file runs on push or pull_request, so
+# those triggers (and the merge_group one) are gone too — a workflow that
+# fires on every event and skips every job still costs a run and a line on
+# the PR.
 #
 # SECURITY: zero untrusted user input in run: blocks except github.sha.
 
 on:
-  # merge_group: required for GitHub's merge queue — a queued merge re-runs
-  # these checks on the speculative merge result; without this trigger the
-  # queue waits forever for contexts that never arrive and every merge times out.
-  merge_group:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       full_e2e:
@@ -26,29 +36,9 @@ on:
           - "true"
 
 concurrency:
-  # On main, the group is per-COMMIT, so main pushes never contend with each
-  # other at all. On PR branches the group is per-ref, so a new push supersedes
-  # the old one.
-  #
-  # `cancel-in-progress: false` was NOT enough, and the reason is a GitHub
-  # behaviour the previous comment did not account for: that flag protects a run
-  # that is already IN PROGRESS, but GitHub keeps only ONE PENDING run per
-  # concurrency group. A newly queued run cancels the previously *pending* one
-  # regardless of the flag. So a burst of pushes still erased earlier commits'
-  # verdicts — just at the queued stage instead of the running one.
-  #
-  # Observed live on 2026-08-19: run 32288775383 (b90f4b8a8) was cancelled 3
-  # minutes after it queued, superseded by the next push. `gh run view --json
-  # jobs` returned `{"jobs":[]}` — zero jobs ever started, which is what proves
-  # it died queued rather than running.
-  #
-  # This matters more than runner minutes. A wall of `cancelled` reads as "not
-  # red" at a glance, which is exactly how it went unnoticed that this suite had
-  # failed on every main run that actually finished (2026-08-16 onward). A
-  # commit on main must produce a verdict, even if a newer one is already on its
-  # way — and now each one gets its own lane to do it in.
-  group: playwright-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  # One manual run per ref at a time; a newer dispatch supersedes a queued one.
+  group: playwright-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -62,29 +52,6 @@ env:
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
-  smoke:
-    name: Smoke checks
-    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'merge_group'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
   e2e:
     name: Playwright (chromium)
     # MANUAL ONLY (owner 2026-08-20): chromium E2E no longer runs automatically
