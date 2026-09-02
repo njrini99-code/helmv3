@@ -33,18 +33,34 @@ import { FW_Z, CLOSE_BUTTON_CLASS } from './_shared';
 export type SheetSide = 'bottom' | 'top' | 'left' | 'right';
 
 /** Per-side panel position + leading-edge radius + slide axis sizing. */
+// The soft keyboard never resizes the WebView (`resize: 'ionic'`, no
+// <ion-app>), and Safari never resizes its layout viewport, so a sheet pinned
+// to `bottom-0` sits under the keys the moment a field inside it is tapped —
+// 27 sheets/modals carry text inputs (audit 2026-09-02). Every edge that
+// touches the bottom of the screen is lifted by the `--keyboard-height`
+// CapacitorProvider publishes (0px on desktop and with the keyboard down),
+// and the bottom sheet's cap shrinks by the same amount so it still clears
+// the status bar. The 250 ms `bottom` transition tracks the keyboard's own
+// slide; vaul's inline transform transition is only present while it opens
+// or closes, so the two never fight.
+const KEYBOARD_LIFT =
+  'bottom-[var(--keyboard-height,0px)] transition-[bottom] duration-[250ms] motion-reduce:transition-none ';
+
 const SIDE_CLASS: Record<SheetSide, string> = {
   bottom:
-    'inset-x-0 bottom-0 mt-24 max-h-[88dvh] rounded-t-fw-lg ' +
+    KEYBOARD_LIFT +
+    'inset-x-0 mt-24 max-h-[calc(88dvh-var(--keyboard-height,0px))] rounded-t-fw-lg ' +
     'border-t border-border-subtle',
   top:
     'inset-x-0 top-0 mb-24 max-h-[88dvh] rounded-b-fw-lg ' +
     'border-b border-border-subtle',
   left:
-    'inset-y-0 left-0 mr-24 w-[min(26rem,calc(100vw-3rem))] rounded-r-fw-lg ' +
+    KEYBOARD_LIFT +
+    'top-0 left-0 mr-24 w-[min(26rem,calc(100vw-3rem))] rounded-r-fw-lg ' +
     'border-r border-border-subtle',
   right:
-    'inset-y-0 right-0 ml-24 w-[min(26rem,calc(100vw-3rem))] rounded-l-fw-lg ' +
+    KEYBOARD_LIFT +
+    'top-0 right-0 ml-24 w-[min(26rem,calc(100vw-3rem))] rounded-l-fw-lg ' +
     'border-l border-border-subtle',
 };
 
@@ -181,6 +197,10 @@ function SheetRoot({
 
         <Drawer.Content
           data-slot={dataSlot}
+          // Lifted above the keyboard by SIDE_CLASS; the provider's global
+          // keyboardWillShow scroll-into-view must not also scroll the page
+          // behind the scrim.
+          data-fw-keyboard-aware
           // fairway-ds scope = warm tokens/fonts for everything inside.
           className={cn(
             'fairway-ds fixed flex flex-col outline-none',
