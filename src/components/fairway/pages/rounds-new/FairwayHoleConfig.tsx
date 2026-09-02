@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Input } from '@/components/fairway/forms/Input';
 import type { HoleConfig } from '@/lib/types/golf-course';
@@ -78,6 +79,15 @@ function seedHoles(initialHoles: HoleConfig[] | undefined, holesPerRound: 9 | 18
   });
 }
 
+/**
+ * Stable identity of the seed inputs, so the editor can tell "the baseline
+ * changed" from "the parent re-rendered with an equal-content new array".
+ */
+function seedIdentity(initialHoles: HoleConfig[] | undefined, holesPerRound: 9 | 18): string {
+  const holes = initialHoles?.map((h) => `${h.holeNumber}:${h.par}:${h.yardage}`).join('|') ?? '';
+  return `${holesPerRound}#${holes}`;
+}
+
 export function FairwayHoleConfig({
   initialHoles,
   onSave,
@@ -100,6 +110,26 @@ export function FairwayHoleConfig({
 
   const [activeTab, setActiveTab] = useState<'front' | 'back'>('front');
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Re-seed when the BASELINE changes under a mounted editor. On the
+  // confirmed-course screen this editor mounts the moment a course is picked —
+  // at the course's default hole count — and the 9/18 + Front/Back controls sit
+  // ABOVE it on the same screen. `useState` seeds once, so a player who then
+  // tapped "9 holes · Front 9" saw the Holes tile flip to 9 while the list
+  // underneath (and what "Start round" saved) stayed at 18. Field report,
+  // Shenandoah 2026-09-01: "it still shows up as 18 even if u click 9".
+  // Compared by CONTENT, not reference: the parent rebuilds `initialHoles` on
+  // every render, and a reference check would wipe the player's edits on each
+  // keystroke. A changed baseline discards edits on purpose — they belonged to
+  // holes that are no longer being played.
+  const seedKey = seedIdentity(initialHoles, holesPerRound);
+  const [appliedSeedKey, setAppliedSeedKey] = useState(seedKey);
+  if (seedKey !== appliedSeedKey) {
+    setAppliedSeedKey(seedKey);
+    setHoles(seedHoles(initialHoles, holesPerRound));
+    setActiveTab('front');
+    setValidationError(null);
+  }
 
   const is9Hole = holesPerRound === 9;
 
@@ -234,7 +264,13 @@ export function FairwayHoleConfig({
                         type="button"
                         aria-label={`Hole ${hole.holeNumber} par ${par}`}
                         aria-pressed={selected}
-                        onClick={() => updateHole(hole.holeNumber, 'par', par)}
+                        // Par step = selection detent (grammar §19/§32; gap
+                        // found in live simulator QA 2026-08-26 — the chip
+                        // toggled silently). Yardage typing stays silent.
+                        onClick={() => {
+                          fwHaptic('selection');
+                          updateHole(hole.holeNumber, 'par', par);
+                        }}
                         className={cn(
                           'h-9 w-9 rounded-fw-md font-fw-mono text-body-sm font-semibold tabular-nums transition-colors',
                           selected

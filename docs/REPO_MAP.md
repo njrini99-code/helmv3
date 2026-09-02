@@ -266,11 +266,13 @@ Fairway-tokened boundary per its own comment), but:
    `checkSuperAdminAccess()` at the layout level still bubbles to the root
    `src/app/error.tsx` (non-Bridge chrome). Known follow-up, not a bug to
    silently "fix" in an unrelated change.
-3. `src/app/golf/admin/components/AdminErrorBoundary.tsx` is an **older
-   class-component** boundary (`Component`/`componentDidCatch`, lines
-   1-40) that predates and coexists with `RouteErrorBoundary` — a
+3. `src/app/golf/admin/components/AdminErrorBoundary.tsx` no longer exists —
+   it was removed on 2026-08-26 with the rest of the legacy `/golf/admin`
+   dashboard. It had been an older class-component boundary
+   (`Component`/`componentDidCatch`) coexisting with `RouteErrorBoundary`, a
    genuinely different mechanism (React class boundary vs. Next.js
-   `error.tsx` file convention), not just a naming variant.
+   `error.tsx` file convention) rather than a naming variant. The Bridge's
+   own panel-level boundary is `src/app/admin/_components/PanelBoundary.tsx`.
 
 ---
 

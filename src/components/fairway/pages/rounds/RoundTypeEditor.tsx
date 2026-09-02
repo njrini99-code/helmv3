@@ -30,6 +30,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button, Segmented } from '@/components/fairway';
 import { NativeSelect } from '@/components/ui/native-select';
+import { useToast } from '@/components/ui/sonner';
 // The ACTION comes from the 'use server' module; the vocabulary comes from the
 // plain one. They are split because a 'use server' file may export only async
 // functions — see lib/golf/round-type-options.ts.
@@ -50,6 +51,50 @@ export interface QualifierOption {
   name: string;
   /** How many rounds this qualifier is configured for. */
   numRounds: number;
+  /**
+   * Round numbers in this qualifier that ANOTHER of this player's rounds
+   * already holds. Excludes the round being edited, so a round already sitting
+   * in slot 2 does not see its own slot as taken.
+   *
+   * This is the field whose absence was the bug. The picker used to offer
+   * every number from 1 to `numRounds` and default to 1 — but a player fixing
+   * a mis-tapped round has usually already recorded the qualifier's earlier
+   * rounds, so slot 1 is exactly the one that is NOT free. The save then died
+   * on the server's clash check ("Round 1 of that qualifier is already taken")
+   * with no way to see which numbers were available, which is what "players
+   * still cannot edit round type" turned out to mean on 2026-08-30.
+   */
+  takenRoundNumbers?: number[];
+  /**
+   * Whether this player already has a `golf_qualifier_entries` row for this
+   * qualifier. `false` means the save will create one.
+   *
+   * Only a coach is ever offered a qualifier where this is false, because RLS
+   * makes entry creation coach-only. Offering it to a player would rebuild the
+   * dead end one step further along.
+   */
+  playerEntered?: boolean;
+  /**
+   * This qualifier has already been concluded. Still a valid target — there is
+   * no time limit on correcting what a round counts toward — but attaching a
+   * round to it MOVES A PUBLISHED RESULT, so it is named at the point of
+   * choosing rather than discovered afterwards.
+   */
+  isCompleted?: boolean;
+}
+
+/**
+ * Round numbers still free in a qualifier, in order.
+ *
+ * Exported for tests: the whole defect was an off-by-default here, and a rule
+ * this cheap to get wrong deserves a test that does not need a DOM.
+ */
+export function freeRoundNumbers(option: QualifierOption | undefined): number[] {
+  if (!option) return [];
+  const taken = new Set(option.takenRoundNumbers ?? []);
+  return Array.from({ length: Math.max(option.numRounds, 1) }, (_, i) => i + 1).filter(
+    (n) => !taken.has(n),
+  );
 }
 
 export interface RoundTypeEditorProps {
@@ -63,7 +108,35 @@ export interface RoundTypeEditorProps {
    * would be a dead end dressed as a choice.
    */
   qualifierOptions?: QualifierOption[];
+  /**
+   * Whether the person looking at this is a coach of the round's team. Decides
+   * which dead end the empty state describes — telling a coach that "a coach
+   * needs to add them" is a loop, and that loop is what the 2026-08-31 report
+   * was actually describing.
+   */
+  viewerIsCoach?: boolean;
+  /**
+   * The qualifier read failed upstream, so an empty `qualifierOptions` means
+   * "we could not find out", not "there are none". Reporting the second when
+   * the first is true is the failure mode this repo keeps recording.
+   */
+  qualifierReadFailed?: boolean;
   className?: string;
+}
+
+/** What actually changed, in the words a coach would use. */
+function describeSaved(
+  type: EditableRoundType,
+  chosen: QualifierOption | undefined,
+  roundNumber: number,
+): string {
+  if (type !== 'qualifier') {
+    return `This round now counts as a ${type} round and no longer counts toward a qualifier.`;
+  }
+  if (!chosen) return 'This round now counts as a qualifier round.';
+  const entered = chosen.playerEntered === false ? ' The player was added to it.' : '';
+  const finished = chosen.isCompleted ? ' That qualifier is finished, so its standings have changed.' : '';
+  return `Saved as round ${roundNumber} of ${chosen.name}. It now counts in the standings.${entered}${finished}`;
 }
 
 export function RoundTypeEditor({
@@ -72,9 +145,12 @@ export function RoundTypeEditor({
   currentQualifierId,
   currentQualifierRoundNumber,
   qualifierOptions = [],
+  viewerIsCoach = false,
+  qualifierReadFailed = false,
   className,
 }: RoundTypeEditorProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [type, setType] = React.useState<EditableRoundType>(
     (EDITABLE_ROUND_TYPES as readonly string[]).includes(currentType ?? '')
@@ -88,6 +164,25 @@ export function RoundTypeEditor({
 
   const needsQualifier = type === 'qualifier';
   const chosen = qualifierOptions.find((q) => q.id === qualifierId);
+  const free = freeRoundNumbers(chosen);
+  // A qualifier with every slot already filled by this player's other rounds
+  // is a dead end, and saying so here is the difference between an
+  // explanation and a failed save.
+  const noFreeSlots = Boolean(chosen) && free.length === 0;
+
+  // Keep the chosen number on a FREE slot. Without this the picker defaults to
+  // 1 — usually the one slot already taken — and every save fails on the
+  // server's clash check. Runs when the qualifier changes, not on every
+  // render, so a deliberate pick is never overridden.
+  const lastQualifierRef = React.useRef<string>(qualifierId);
+  React.useEffect(() => {
+    if (lastQualifierRef.current === qualifierId) return;
+    lastQualifierRef.current = qualifierId;
+    const nextFree = freeRoundNumbers(qualifierOptions.find((q) => q.id === qualifierId));
+    if (nextFree.length > 0 && !nextFree.includes(roundNumber)) {
+      setRoundNumber(nextFree[0]!);
+    }
+  }, [qualifierId, qualifierOptions, roundNumber]);
   const unchanged =
     type === currentType &&
     (!needsQualifier || (qualifierId === (currentQualifierId ?? '') && roundNumber === (currentQualifierRoundNumber ?? 1)));
@@ -106,6 +201,15 @@ export function RoundTypeEditor({
         setError(res.error ?? 'That did not save.');
         return;
       }
+      // Closing the panel was the only thing that used to happen on success.
+      // A control that changes what a round counts toward — and that a coach
+      // has already been told twice is broken — has to say plainly that it
+      // worked, and say what it did.
+      addToast({
+        type: 'success',
+        title: 'Round type updated',
+        description: describeSaved(type, chosen, roundNumber),
+      });
       setOpen(false);
       router.refresh();
     } catch (err) {
@@ -123,16 +227,20 @@ export function RoundTypeEditor({
     }
   }
 
+  // Closed, this is the whole control. It was a small ghost button reading
+  // "Change type"; both reports described the feature as MISSING rather than
+  // broken, so it now names the thing it edits and carries a visible boundary
+  // instead of reading as body text.
   if (!open) {
     return (
       <Button
         type="button"
-        variant="ghost"
+        variant="secondary"
         size="sm"
         onClick={() => setOpen(true)}
         className={className}
       >
-        Change type
+        Change round type
       </Button>
     );
   }
@@ -140,10 +248,26 @@ export function RoundTypeEditor({
   return (
     <div
       className={cn(
-        'mt-3 flex flex-col gap-3 rounded-card border border-border-subtle bg-surface p-4',
+        'mt-3 flex w-full flex-col gap-3 rounded-card border border-border-subtle bg-surface p-4',
+        // Fills a phone, stops stretching on a desktop column. Without the
+        // ceiling the selects ran the full content width on a laptop, which
+        // read as a form field for the whole page rather than for this card.
+        'sm:max-w-md',
         className,
       )}
     >
+      {/* The panel replaces the button that opened it, so without a heading
+          the segmented control arrives with nothing naming it. `aria-label`
+          covered a screen reader and left everyone else guessing. */}
+      <div className="flex flex-col gap-0.5">
+        <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+          Change round type
+        </h3>
+        <p className="font-fw-sans text-caption text-text-tertiary">
+          Changes what this round counts toward. Its scores are not affected.
+        </p>
+      </div>
+
       <Segmented
         options={EDITABLE_ROUND_TYPES.map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
         value={type}
@@ -154,12 +278,16 @@ export function RoundTypeEditor({
       {needsQualifier && (
         <div className="flex flex-col gap-2">
           {qualifierOptions.length === 0 ? (
-            // Honest dead-end rather than an empty dropdown: the server would
-            // refuse this anyway ("not entered in that qualifier"), and saying
-            // so here is the difference between a bug and an explanation.
+            // Honest dead-end rather than an empty dropdown. Which dead end
+            // depends on who is reading: a coach sees this only when the TEAM
+            // has no open qualifier at all, because every open team qualifier
+            // is offered to them whether or not the player is entered yet.
             <p className="font-fw-sans text-caption text-text-secondary">
-              This player isn&apos;t entered in any open qualifier, so this round can&apos;t be
-              attached to one. A coach needs to add them to a qualifier first.
+              {qualifierReadFailed
+                ? "We couldn't load this team's qualifiers just now, so there's nothing to choose from. Reload the round and try again."
+                : viewerIsCoach
+                  ? 'This team has no open qualifier to attach a round to. Create one (or reopen a completed one) and this round can be added to it.'
+                  : "You aren't in any open qualifier yet, so this round can't be attached to one. Ask your coach to add you to one."}
             </p>
           ) : (
             <>
@@ -171,7 +299,8 @@ export function RoundTypeEditor({
                 value={qualifierId}
                 onChange={(e) => setQualifierId(e.target.value)}
                 className={cn(
-                  'min-h-[40px] rounded-fw-md border border-border-subtle bg-canvas px-3',
+                  'min-h-[40px] [@media(pointer:coarse)]:min-h-[44px] w-full',
+                  'rounded-fw-md border border-border-subtle bg-canvas px-3',
                   'font-fw-sans text-body-sm text-text-primary',
                   'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                 )}
@@ -179,31 +308,66 @@ export function RoundTypeEditor({
                 <option value="">Select…</option>
                 {qualifierOptions.map((q) => (
                   <option key={q.id} value={q.id}>
-                    {q.name}
+                    {q.isCompleted ? `${q.name} (completed)` : q.name}
                   </option>
                 ))}
               </NativeSelect>
 
-              {chosen && chosen.numRounds > 1 && (
+              {chosen?.isCompleted && (
+                <p className="font-fw-sans text-caption text-text-secondary">
+                  {chosen.name} is already finished. Adding this round will change its final
+                  standings.
+                </p>
+              )}
+
+              {chosen && chosen.playerEntered === false && (
+                <p className="font-fw-sans text-caption text-text-secondary">
+                  This player isn&apos;t in {chosen.name} yet — saving will add them to it, and
+                  this round will count as the round number you pick below.
+                </p>
+              )}
+
+              {noFreeSlots && (
+                <p className="font-fw-sans text-caption text-text-secondary">
+                  Every round of {chosen?.name} is already filled by another of this player&apos;s
+                  rounds, so this one can&apos;t be added to it. Re-type the round that&apos;s in the
+                  wrong slot first, or pick a different qualifier.
+                </p>
+              )}
+
+              {/* Rendered whenever a qualifier is chosen and something is free —
+                  including a single-round qualifier. It used to be hidden when
+                  numRounds === 1, which silently pinned the number to 1 and gave
+                  a player whose slot 1 was taken no control and no explanation. */}
+              {chosen && !noFreeSlots && (
                 <>
                   <label className="font-fw-sans text-caption text-text-tertiary" htmlFor="rt-num">
-                    Which round of it? (1–{chosen.numRounds})
+                    Which round of it? ({free.length} of {chosen.numRounds} still open)
                   </label>
                   <NativeSelect
                     id="rt-num"
                     value={roundNumber}
                     onChange={(e) => setRoundNumber(Number(e.target.value))}
                     className={cn(
-                      'min-h-[40px] rounded-fw-md border border-border-subtle bg-canvas px-3',
+                      'min-h-[40px] [@media(pointer:coarse)]:min-h-[44px] w-full',
+                  'rounded-fw-md border border-border-subtle bg-canvas px-3',
                       'font-fw-sans text-body-sm text-text-primary',
                       'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                     )}
                   >
-                    {Array.from({ length: chosen.numRounds }, (_, i) => i + 1).map((n) => (
-                      <option key={n} value={n}>
-                        Round {n}
-                      </option>
-                    ))}
+                    {Array.from({ length: chosen.numRounds }, (_, i) => i + 1).map((n) => {
+                      const taken = !free.includes(n);
+                      return (
+                        // Taken slots stay VISIBLE but unselectable: a player
+                        // looking for "round 3" needs to see that 1 and 2 exist
+                        // and why they are not on offer. Removing them entirely
+                        // would renumber the list and read as data loss.
+                        <option key={n} value={n} disabled={taken}>
+                          Round {n}
+                          {taken ? ' — already recorded' : ''}
+                        </option>
+                      );
+                    })}
                   </NativeSelect>
                 </>
               )}
@@ -224,7 +388,10 @@ export function RoundTypeEditor({
           variant="primary"
           size="sm"
           onClick={save}
-          disabled={busy || unchanged || (needsQualifier && !qualifierId)}
+          // `noFreeSlots` joins the list because the save is guaranteed to
+          // fail on the server's clash check — an enabled button that cannot
+          // succeed is how this bug reached players in the first place.
+          disabled={busy || unchanged || (needsQualifier && (!qualifierId || noFreeSlots))}
         >
           {busy ? 'Saving…' : 'Save'}
         </Button>

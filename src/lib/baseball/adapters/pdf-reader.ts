@@ -34,6 +34,12 @@ export interface PdfExtractResult {
   warnings: string[];
 }
 
+/**
+ * Per-stream inflate ceiling for an entirely attacker-supplied PDF. See the
+ * bounded `inflateSync` call in readPdfText for why this is a hard memory cap.
+ */
+const MAX_PDF_STREAM_BYTES = 16 * 1024 * 1024;
+
 const PDF_MAGIC = '%PDF-';
 
 /** True when a buffer begins with the PDF magic bytes. */
@@ -99,6 +105,12 @@ export function extractPdfText(bytes: Uint8Array): PdfExtractResult {
 
   const pieces: string[] = [];
   let streamsRead = 0;
+  let oversizedStreams = 0;
+  // One reused inflate target. fflate returns a view sized to the real output
+  // rather than this buffer itself, and strFromU8 copies before the next
+  // iteration overwrites it, so a single scratch buffer is safe here — and
+  // avoids allocating the ceiling once per content stream.
+  let inflateScratch: Uint8Array | null = null;
 
   const streamRe = /stream\r?\n/g;
   let sm: RegExpExecArray | null;
@@ -117,8 +129,24 @@ export function extractPdfText(bytes: Uint8Array): PdfExtractResult {
     let content = '';
     if (isFlate) {
       try {
-        content = strFromU8(inflateSync(rawBytes));
-        streamsRead++;
+        // Bounded inflate. This was `inflateSync(rawBytes)` with no ceiling, so
+        // a coach-uploaded PDF carrying a small FlateDecode stream that expands
+        // to gigabytes exhausted the function instance's memory — the same
+        // decompression-bomb shape as the .xlsx path.
+        //
+        // fflate truncates to `out` rather than throwing when the result does
+        // not fit (measured against fflate 0.8.3), so a capped buffer is a hard
+        // memory ceiling. A stream that fills the cap exactly is assumed
+        // truncated and dropped: half a content stream yields garbage text
+        // operands, which is worse than omitting it.
+        inflateScratch ??= new Uint8Array(MAX_PDF_STREAM_BYTES);
+        const inflated = inflateSync(rawBytes, { out: inflateScratch });
+        if (inflated.length >= MAX_PDF_STREAM_BYTES) {
+          oversizedStreams++;
+        } else {
+          content = strFromU8(inflated);
+          streamsRead++;
+        }
       } catch {
         // Some encoders prepend the zlib header differently; skip silently.
       }
@@ -130,6 +158,12 @@ export function extractPdfText(bytes: Uint8Array): PdfExtractResult {
       const t = extractTextOperands(content);
       if (t) pieces.push(t);
     }
+  }
+
+  if (oversizedStreams > 0) {
+    warnings.push(
+      `${oversizedStreams} content stream(s) in this PDF expanded past the ${MAX_PDF_STREAM_BYTES}-byte per-stream limit and were skipped.`,
+    );
   }
 
   const text = pieces.join('\n').trim();

@@ -31,16 +31,29 @@
 # this script stays bash for the loop-safety/exit-code machinery that was
 # already correct and untouched by the attribution bug.
 #
-# Git is now a FALLBACK cross-check only, for the one case session-state
-# cannot cover by construction: a session with ZERO recorded touches (either
-# it genuinely wrote nothing, or the recording hooks did not fire — e.g. an
-# older harness, a disabled hook, a wiring bug). In that case the old
+# Git is now a FALLBACK cross-check only, for the case session-state cannot
+# cover by construction: a session with nothing left to verify (it genuinely
+# wrote nothing, the recording hooks did not fire, or — since Phase 7B —
+# everything it wrote has already landed on origin/main). In that case the old
 # baseline-diff mechanism still runs, but ADVISORY ONLY — it can no longer
 # block, because it is exactly the mechanism proven unable to attribute
-# correctly under concurrency. See the ADVISORY branch below.
+# correctly under concurrency.
+#
+# The advisory has TWO shapes, on purpose. Before Phase 7B, reaching this
+# branch implied the ledger was empty, so one message ("the hook may not be
+# firing") was always true. Now the counts are derived from what still DIFFERS
+# from origin/main, and a session whose work merged reports zero to verify with
+# a full ledger — telling that reader their recording hook is broken would be a
+# wrong diagnosis introduced by the very change that made the gate accurate.
 set -uo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
+# shellcheck source=lib/active-root.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/active-root.sh"
+
+# ACTIVE worktree. Verifying the wrong checkout is how a Stop gate passes
+# while the work it was meant to verify sits in another tree.
+ACTIVE_ROOT="$(helm_active_root)"
+cd "$ACTIVE_ROOT" 2>/dev/null || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 command -v jq >/dev/null 2>&1 || exit 0
@@ -58,7 +71,7 @@ SESSION_ID=$(printf '%s' "$STDIN_JSON" | jq -r '.session_id // empty' 2>/dev/nul
 [ -z "$SESSION_ID" ] && SESSION_ID="ppid-$PPID"
 SESSION_ID_SAFE=$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')
 
-STOP_CHECK_JSON=$(node "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/lib/stop-check.mjs" "$SESSION_ID" 2>/dev/null)
+STOP_CHECK_JSON=$(node "$ACTIVE_ROOT/.claude/hooks/lib/stop-check.mjs" "$SESSION_ID" 2>/dev/null)
 printf '%s' "$STOP_CHECK_JSON" | jq -e . >/dev/null 2>&1 || STOP_CHECK_JSON='{"touchedFiles":[]}'
 
 # Counts/lists below are computed from .verifiableFiles, NOT .touchedFiles —
@@ -75,6 +88,14 @@ CONTEXT_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.contextGaps | length')
 MEMORY_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.memoryGaps | length')
 DATE_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.dateGaps | length')
 DELEGATED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.delegatedFiles | length')
+# HISTORICAL touch count, deliberately separate from the counts above. Since
+# Phase 7B those counts are derived from what is still DIFFERENT from
+# origin/main, so "zero to verify" no longer implies "recorded nothing" — a
+# session whose work has all merged reports 0 verifiable and N historical. The
+# advisory below has to tell those two apart or it misdiagnoses a healthy
+# session as a broken hook.
+HISTORICAL_TOUCH_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.touchedFiles | length')
+SETTLED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.settledTouchedFiles | length')
 
 # `.git` is a DIRECTORY in a normal clone and a FILE in a worktree.
 GITDIR=$(git rev-parse --git-dir 2>/dev/null || echo ".git")
@@ -108,7 +129,8 @@ if [ "${TOUCHED_SRC_COUNT:-0}" -eq 0 ] && [ "${MAPPING_GAP_COUNT:-0}" -eq 0 ] \
   GIT_ONLY_COUNT=$(printf '%s' "$NEW_SINCE_BASELINE" | grep -cE "$SRC_RE" || true)
   printf '%s\n' "$DIRTY_NOW" > "$BASE"
   if [ "${GIT_ONLY_COUNT:-0}" -gt 0 ]; then
-    cat >&2 <<ADVISORY
+    if [ "${HISTORICAL_TOUCH_COUNT:-0}" -eq 0 ]; then
+      cat >&2 <<ADVISORY
 [stop-verify] git shows ${GIT_ONLY_COUNT} dirty source file(s) since this session's
 last stop, but this session's OWN ledger (.claude/session-state/${SESSION_ID_SAFE}.jsonl)
 recorded zero touches. Either these are a peer session's changes (git cannot
@@ -117,6 +139,17 @@ record-session-touch.mjs hook is not wired/firing for this session. This is a
 NOTE, not a block: verify the hook is active if these files are actually yours.
   ${NEW_SINCE_BASELINE}
 ADVISORY
+    else
+      cat >&2 <<ADVISORY
+[stop-verify] git shows ${GIT_ONLY_COUNT} dirty source file(s) since this session's
+last stop. This session's ledger DID record ${HISTORICAL_TOUCH_COUNT} touch(es), but all of
+them are settled against origin/main (${SETTLED_COUNT} settled), so none is an outstanding
+verification demand. The dirty files below are therefore a peer session's
+changes, or were written by a path that records no touch event (Bash, for
+one). This is a NOTE, not a block.
+  ${NEW_SINCE_BASELINE}
+ADVISORY
+    fi
   fi
   exit 0
 fi
@@ -126,9 +159,21 @@ STATE=$(printf '%s%s%s' "$(git rev-parse HEAD 2>/dev/null)" \
                         "$(git status --porcelain 2>/dev/null)" \
                         "$(git diff --stat 2>/dev/null)" \
         | shasum | cut -d' ' -f1)
-MARK="$GITDIR/claude-stop-verify-$STATE"
+# SESSION-SCOPED, not state-scoped. The hash alone was a cross-session
+# fail-open: session A gets nagged at tree state X, leaves the mark, and a
+# DIFFERENT session B arriving at the same state finds it and exits silently —
+# B is never told about its OWN unverified files, context gaps or memory gaps.
+# One session's suppression swallowed another session's warning, invisibly.
+#
+# Note what this mark is NOT: there is no "verification passed" state here. It
+# is written BEFORE the block is emitted and means "this tree state has already
+# been nagged". That property is deliberate and preserved — without it the gate
+# re-blocks every Stop at an unchanged tree and a session that legitimately
+# cannot satisfy a gate can never end its turn. Adding the session id keeps the
+# loop safety and makes it un-shareable.
+MARK="$GITDIR/claude-stop-verify-$SESSION_ID_SAFE-$STATE"
 
-# Already pushed back on this exact tree state — let it go (loop safety).
+# Already pushed back on this exact tree state IN THIS SESSION — let it go.
 [ -f "$MARK" ] && exit 0
 
 find "$GITDIR" -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 -delete 2>/dev/null

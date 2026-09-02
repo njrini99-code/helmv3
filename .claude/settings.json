@@ -1,5 +1,4 @@
 {
-  "autoMemoryEnabled": false,
   "permissions": {
     "allow": [
       "Bash(git add:*)",
@@ -48,23 +47,58 @@
       "Glob",
       "Grep",
       "WebFetch",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh api:*)",
+      "Bash(gh run rerun:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(supabase:*)",
+      "Bash(docker:*)",
+      "Bash(npm run:*)",
+      "Bash(./node_modules/.bin/vercel inspect:*)",
+      "Bash(./node_modules/.bin/vercel ls:*)",
+      "Bash(./node_modules/.bin/vercel logs:*)",
+      "Bash(./node_modules/.bin/vercel env ls:*)",
+      "Bash(./node_modules/.bin/supabase migration list:*)",
+      "Bash(./node_modules/.bin/supabase db dump:*)",
+      "Bash(./node_modules/.bin/supabase db diff:*)",
+      "Bash(./node_modules/.bin/supabase projects list:*)",
+      "Bash(./node_modules/.bin/supabase status:*)",
+      "Bash(./node_modules/.bin/supabase inspect db:*)",
+      "Bash(./node_modules/.bin/supabase functions list:*)"
     ],
     "deny": [
       "Bash(supabase config push:*)",
       "Bash(supabase db reset:*)",
-      "Bash(vercel deploy --prod:*)",
-      "Bash(vercel deploy --prod)",
-      "Bash(vercel --prod:*)",
-      "Bash(vercel promote:*)",
-      "Bash(vercel rollback:*)",
       "Bash(vercel alias set:*)",
       "Read(./.env)",
       "Read(./.env.local)",
       "Read(./.env.*.local)",
+      "Read(./context7.json)",
+      "Read(./.momentic-mcp/**)",
       "Read(./secrets/**)",
       "Read(./credentials/**)",
-      "Read(./supabase/.temp/**)"
+      "Bash(supabase db push:*)",
+      "Bash(supabase migration up:*)",
+      "Bash(./node_modules/.bin/vercel alias set:*)",
+      "Bash(./node_modules/.bin/supabase db push:*)",
+      "Bash(./node_modules/.bin/supabase migration up:*)",
+      "Bash(npx vercel alias set:*)",
+      "Bash(npx supabase db push:*)",
+      "Bash(npx supabase migration up:*)",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "mcp__claude_ai_Supabase__create_branch",
+      "mcp__claude_ai_Supabase__create_project",
+      "mcp__claude_ai_Supabase__delete_branch",
+      "mcp__claude_ai_Supabase__deploy_edge_function",
+      "mcp__claude_ai_Supabase__merge_branch",
+      "mcp__claude_ai_Supabase__pause_project",
+      "mcp__claude_ai_Supabase__rebase_branch",
+      "mcp__claude_ai_Supabase__reset_branch",
+      "mcp__claude_ai_Supabase__restore_project",
+      "mcp__plugin_supabase_supabase",
+      "mcp__plugin_sentry_sentry",
+      "mcp__plugin_vercel_vercel",
+      "mcp__claude_ai_Vercel__deploy_to_vercel"
     ]
   },
   "hooks": {
@@ -87,41 +121,11 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh",
-            "timeout": 10,
-            "statusMessage": "guard: bash"
-          }
-        ]
-      },
-      {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-sql.sh",
-            "timeout": 10,
-            "statusMessage": "guard: sql grants"
-          },
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-feature-context.mjs",
-            "timeout": 10,
-            "statusMessage": "guard: feature context"
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__.*(apply_migration|execute_sql)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-sql.sh",
-            "timeout": 10,
-            "statusMessage": "guard: prod sql"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-canonical-write.mjs"
           }
         ]
       }
@@ -146,12 +150,6 @@
             "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-session-touch.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: record touch"
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit.sh",
-            "timeout": 30,
-            "statusMessage": "eslint --fix"
           }
         ]
       }
@@ -168,5 +166,13 @@
         ]
       }
     ]
-  }
+  },
+  "enabledPlugins": {
+    "claude-security@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "sentry@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true
+  },
+  "autoMemoryEnabled": false
 }

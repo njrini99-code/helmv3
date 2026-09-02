@@ -18,6 +18,7 @@
 // src/instrumentation-client.ts.
 import '@supabase/supabase-js/tracing';
 import * as Sentry from '@sentry/nextjs';
+import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
@@ -68,14 +69,111 @@ const sharedIgnoreErrors = [
   'PlayerAccessError',
 ];
 
-/** Best-effort per-app classification for RSC/route errors that never went through a sport-aware wrapper (those already scope.setTag('sport', ...) themselves). */
-function deriveSportFromUrl(url: string | undefined): 'baseball' | 'golf' | 'lifting' | 'admin' | 'marketing' {
-  const path = url?.split('?')[0] ?? '';
+/**
+ * Best-effort per-app classification for RSC/route errors that never went
+ * through a sport-aware wrapper (those already `scope.setTag('sport', ...)`).
+ *
+ * `cron` and `unattributed` are separate outcomes from `marketing`, and the
+ * distinction is not cosmetic. Verified in production 2026-08-27: a real
+ * permission-denied failure on `GET /api/cron/event-reminders` arrived in
+ * Sentry tagged `sport: marketing`, because a cron path matches none of the
+ * app prefixes and fell through to the default. Filtering Sentry by
+ * `sport:marketing` — the marketing site — therefore returned a broken
+ * BACKGROUND JOB, and filtering the other way hid it.
+ *
+ * A wrong label is worse than an honest "unattributed": it puts the event in
+ * someone else's bucket, where it is neither looked for nor found.
+ */
+function deriveSportFromUrl(
+  url: string | undefined,
+): 'baseball' | 'golf' | 'lifting' | 'admin' | 'cron' | 'marketing' | 'unattributed' {
+  if (!url) return 'unattributed';
+  const path = url.split('?')[0] ?? '';
+  // Crons first: a job is named for what it does, not the app it reads from,
+  // and several touch more than one sport in a single invocation.
+  if (/\/api\/cron(\/|$)/.test(path)) return 'cron';
   if (/\/baseball(\/|$)/.test(path)) return 'baseball';
   if (/\/golf(\/|$)/.test(path)) return 'golf';
   if (/\/lifting(\/|$)/.test(path)) return 'lifting';
   if (/\/admin(\/|$)/.test(path)) return 'admin';
-  return 'marketing';
+  // Only a genuine site path is 'marketing'. An /api/* route that matched none
+  // of the above is unattributed — saying so is honest; calling it marketing is
+  // a guess that reads as a fact.
+  if (/^https?:\/\/[^/]+\/?$/.test(path) || !/\/api(\/|$)/.test(path)) return 'marketing';
+  return 'unattributed';
+}
+
+/**
+ * Keep database spans at full rate while leaving page loads sampled.
+ *
+ * `tracesSampleRate: 0.2` is a sensible ceiling for page-load volume and a bad
+ * one for database work: it discards four out of five Supabase spans, so the
+ * slow or failing query you are hunting is usually simply absent. Sampling is
+ * meant to bound cost on the high-volume, low-information spans — and page
+ * loads are exactly that, while `db.*` spans are the opposite.
+ *
+ * DB operations are comparatively rare per request and carry the highest
+ * diagnostic value, so they sample at 1.0. Everything else keeps the previous
+ * behaviour unchanged, which is why this is close to free: the added volume is
+ * the DB spans that were already being generated and then thrown away.
+ *
+ * Sampling decisions are inherited by child spans, so this reads the ROOT
+ * span's attributes — a `db.*` op nested under a page-load transaction is
+ * governed by that transaction's decision, not this one. Naming the op
+ * explicitly here is what makes a Supabase call made from a server action
+ * (its own root) reliably kept.
+ */
+function makeTracesSampler(isDev: boolean): Sentry.NodeOptions['tracesSampler'] {
+  const base = isDev ? 0.1 : 0.2;
+  return (samplingContext) => {
+    // Respect an upstream sampling decision so a distributed trace stays whole
+    // rather than being half-recorded.
+    if (typeof samplingContext.parentSampled === 'boolean') {
+      return samplingContext.parentSampled;
+    }
+    const attributes = samplingContext.attributes ?? {};
+    const op = String(attributes['sentry.op'] ?? samplingContext.name ?? '');
+    if (op.startsWith('db.') || op.startsWith('db ')) return 1.0;
+    return base;
+  };
+}
+
+/**
+ * Postgres error codes as the grouping key.
+ *
+ * PostgREST surfaces failures as VALUES carrying a `code` (`42501` RLS denial,
+ * `23505` unique violation, `PGRST116` no-rows-for-single), and the human
+ * message around that code embeds table names, column names and constraint
+ * names. Grouping on the message therefore scatters one bad policy across many
+ * Sentry issues — the same splitting already documented for
+ * `normalizeIncidentMessagePrefix`, and visible in production right now, where
+ * one Inngest key mismatch occupies four fingerprints because the message
+ * carries "signature was 1s old" vs "2s".
+ *
+ * Fingerprinting on the code makes the class countable: "42501 is up 40x this
+ * hour" is actionable, where forty separately-named issues are not.
+ *
+ * Only applied when a code is actually present, so nothing else regroups.
+ */
+function fingerprintByPostgresCode(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
+  if (event.fingerprint) return event; // never override a deliberate one
+  const candidates = [
+    (event.contexts?.postgres as { code?: unknown } | undefined)?.code,
+    (event.extra as Record<string, unknown> | undefined)?.code,
+    (event.extra as Record<string, unknown> | undefined)?.errorCode,
+    event.tags?.pg_code,
+  ];
+  const code = candidates.find(
+    (c): c is string => typeof c === 'string' && /^(PGRST\d{3}|[0-9A-Z]{5})$/.test(c),
+  );
+  if (!code) return event;
+  return {
+    ...event,
+    tags: { ...event.tags, pg_code: code },
+    // `{{ default }}` keeps Sentry's own grouping as a secondary axis, so two
+    // genuinely different 42501s do not collapse into one issue.
+    fingerprint: ['{{ default }}', `pg:${code}`],
+  };
 }
 
 const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
@@ -109,7 +207,9 @@ const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   // telemetry; the pair identifies a person and where they were.
   //
   // Applied last, so it also covers anything the tagging above introduced.
-  return redactEventPii(event);
+  // Postgres-code fingerprinting runs on the redacted event, so grouping never
+  // depends on a value that was about to be scrubbed.
+  return fingerprintByPostgresCode(redactEventPii(event));
 };
 
 export async function register() {
@@ -130,6 +230,9 @@ export async function register() {
       release,
       environment,
       debug: false,
+      // Supabase JS uses the W3C traceparent header when its tracing runtime
+      // is loaded. Sentry must emit that header instead of only sentry-trace.
+      propagateTraceparent: true,
 
       integrations: [
         ...(!isDev && profilingIntegration ? [profilingIntegration] : []),
@@ -152,17 +255,10 @@ export async function register() {
       // Enable Sentry SDK structured logs (separate from error events).
       enableLogs: true,
 
-      // 20% in prod controls span volume on hot endpoints; 10% in dev for speed.
-      tracesSampleRate: isDev ? 0.1 : 0.2,
+      // Page loads stay sampled; db.* spans are kept at 1.0 — see makeTracesSampler.
+      tracesSampler: makeTracesSampler(isDev),
       profileSessionSampleRate: isDev ? 0 : 0.3,
       profileLifecycle: 'trace',
-
-      // Emit W3C `traceparent` in addition to Sentry's own `sentry-trace`, and
-      // — because @sentry/node's propagator is the global OpenTelemetry
-      // propagator — make that same trace id available to supabase-js's
-      // `tracePropagation`. This is the join key between a Sentry trace and a
-      // Supabase API Gateway log line.
-      propagateTraceparent: true,
 
       beforeSend: scrubPii,
       ignoreErrors: sharedIgnoreErrors,
@@ -178,7 +274,11 @@ export async function register() {
       .then((m) => m.recordDeployMarker())
       .catch(() => {});
 
-    registerProcessErrorHandlers();
+    // `process.on` is a Node-only API. Load the handler module only from the
+    // Node runtime so Edge builds never evaluate that implementation.
+    void import('@/lib/observability/register-process-error-handlers')
+      .then((m) => m.registerProcessErrorHandlers())
+      .catch(() => {});
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {
@@ -187,16 +287,13 @@ export async function register() {
       release,
       environment,
       debug: false,
+      propagateTraceparent: true,
       integrations: [
         Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] }),
         Sentry.captureConsoleIntegration({ levels: ['error'] }),
       ],
       enableLogs: true,
-      tracesSampleRate: isDev ? 0.1 : 0.2,
-      // Same W3C propagation as the Node runtime. @sentry/vercel-edge installs
-      // a SentryPropagator as the global OpenTelemetry propagator, so the
-      // proxy/middleware Supabase client can read the active trace too.
-      propagateTraceparent: true,
+      tracesSampler: makeTracesSampler(isDev),
       beforeSend: scrubPii,
       ignoreErrors: sharedIgnoreErrors,
     });
@@ -350,81 +447,4 @@ export async function onRequestError(
   } catch {
     // Bridge write must never break Next's own error handling.
   }
-}
-
-// --- process-level fallback: catches errors that never flow through Next's
-// request lifecycle at all (detached timers, fire-and-forget promises,
-// background job code). nodejs runtime only — process doesn't exist on edge.
-let processHandlersRegistered = false;
-
-// Shared 20-writes/minute ceiling across both handlers so a rejection storm
-// (e.g. a bad dependency spinning on a promise) can't flood admin_events.
-const BRIDGE_PROCESS_WRITE_LIMIT = 20;
-let bridgeProcessWindowStart = Date.now();
-let bridgeProcessWriteCount = 0;
-
-function allowBridgeProcessWrite(): boolean {
-  const now = Date.now();
-  if (now - bridgeProcessWindowStart > 60_000) {
-    bridgeProcessWindowStart = now;
-    bridgeProcessWriteCount = 0;
-  }
-  bridgeProcessWriteCount += 1;
-  return bridgeProcessWriteCount <= BRIDGE_PROCESS_WRITE_LIMIT;
-}
-
-function logProcessErrorToBridge(action: string, error: Error, metadata?: Record<string, unknown>): void {
-  if (!allowBridgeProcessWrite()) return;
-  void import('@/lib/server-error-logger')
-    .then((m) =>
-      m.logServerException(
-        error,
-        { action, source: 'background_job', handled: false, ...(metadata ? { metadata } : {}) },
-        'error'
-      )
-    )
-    .catch(() => {});
-}
-
-function registerProcessErrorHandlers(): void {
-  if (processHandlersRegistered) return;
-  processHandlersRegistered = true;
-
-  process.on('unhandledRejection', (reason) => {
-    let error: Error;
-    if (reason instanceof Error) {
-      error = reason;
-    } else {
-      // Non-Error rejection reasons (a promise rejected with a string,
-      // plain object, number, etc.) used to become `new Error(String(reason))`
-      // — that Error's OWN stack always points at THIS handler, so Next dev's
-      // code-frame overlay blamed instrumentation.ts for every such
-      // rejection instead of the real throw site. console.error the RAW
-      // reason FIRST (before any synthesis) so the true payload is never
-      // masked, then build a clearly-labeled synthetic Error: `name` marks
-      // it as synthetic (not a real thrown Error) rather than masquerading
-      // as one, the message is PREFIXED with the stringified reason so it
-      // still reads naturally in Sentry/logs, and the untouched original
-      // reason is preserved in the Bridge metadata for anyone triaging the
-      // admin_events row (a stringified reason alone can lose structure —
-      // e.g. a plain `{ code, message }` rejection collapses to
-      // "[object Object]").
-      console.error('[instrumentation] unhandledRejection: non-Error reason', reason);
-      error = new Error(`${String(reason)} (unhandled promise rejection with a non-Error reason)`);
-      error.name = 'UnhandledRejection';
-    }
-    Sentry.captureException(error);
-    logProcessErrorToBridge(
-      'process.unhandledRejection',
-      error,
-      reason instanceof Error ? undefined : { reason }
-    );
-  });
-
-  process.on('uncaughtException', (error) => {
-    Sentry.captureException(error);
-    logProcessErrorToBridge('process.uncaughtException', error);
-    // Do NOT process.exit() or rethrow here — Sentry's own uncaughtException
-    // integration (wired via Sentry.init above) owns fatality/exit behavior.
-  });
 }

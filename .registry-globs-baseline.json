@@ -1,0 +1,5 @@
+{
+  "$comment": "Registry entries that resolve to nothing. May only go DOWN. Fix by re-pointing the entry at where the code lives now (often src/components/fairway/pages/*) — never by deleting the feature.",
+  "total": 0,
+  "entries": []
+}

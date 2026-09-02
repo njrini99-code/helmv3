@@ -40,11 +40,18 @@ in-progress rather than carrying contradictory completed and active versions.
 Undo and Edit Shot share one local in-flight mutation guard. When an authorized
 delete lookup confirms a shot is already absent, the client removes only its
 stale local reference; it does not retry the delete or bypass server ownership
-checks. The Bridge records that reconciliation as a handled warning rather than
+checks. The Bridge records that reconciliation as handled informational
+telemetry rather than treating a successfully recovered state as a warning or
 an error sent to Sentry.
 An edit or delete read failure is deliberately different: the client keeps its
 local shot intact and asks the player to retry. Only the database's explicit
 no-visible-row result may trigger stale-reference reconciliation.
+
+Undo and Edit Shot share one local in-flight mutation guard. When an authorized
+delete lookup confirms a shot is already absent, the client removes only its
+stale local reference; it does not retry the delete or bypass server ownership
+checks. The Bridge records that reconciliation as a handled warning rather than
+an error sent to Sentry.
 
 ## Primary Entry Points
 
@@ -56,7 +63,7 @@ no-visible-row result may trigger stale-reference reconciliation.
 
 ### Components
 
-- `src/components/golf/ShotTrackingComprehensive.tsx`
+- `src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx`
 - `src/components/golf/rounds/**`
@@ -68,7 +75,7 @@ no-visible-row result may trigger stale-reference reconciliation.
 - `src/app/golf/actions/golf.ts`
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/shot-analytics.ts`
-- `src/hooks/golf/use-auto-save-round.ts`
+- `src/hooks/golf/use-auto-save-round.ts` no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`
 - `src/lib/offline/sync-engine.ts`
 - `src/lib/coachhelm/v2/shot-analysis/**`
 
@@ -96,10 +103,30 @@ Round setup
   -> update qualifier entry if qualifier_id exists
 ```
 
+## Flight Recorder
+
+The highest-risk autosave and submit paths now create a fail-open Helm trace
+with an opaque UUID. The trace links Server Action validation/auth/player
+resolution, the atomic Supabase RPC, read-only round/hole/shot verification,
+qualifier transition, stats invalidation, and CoachHelm post-round work.
+
+The private `helm_debug` schema stores the visual tree through service-role
+facades only. The atomic RPCs additionally emit `HELM_TRACE` PostgreSQL log
+checkpoints, so Docker's optional `npm run trace:db` collector can preserve the
+last database checkpoint after a business transaction rolls back. Production
+recording remains opt-in; tracing cannot block a player save or submit.
+
 ## Business Rules
 
 - Do not lose user-entered shots. Save/submit/recover paths must be idempotent and interruption-tolerant.
 - Do not use DELETE-then-INSERT for save or submit paths.
+- A failed checkpoint must retain its parent in-progress round and prior saved
+  holes/shots. The next checkpoint is an idempotent upsert; cleanup must never
+  make Continue Round disappear after a temporary child-write failure.
+- Before an atomic snapshot replaces persisted round data, every supplied shot
+  group must map to a supplied hole. A mismatched snapshot must return a safe
+  failure before durable holes or shots change; it must never be acknowledged
+  as saved while silently omitting shots.
 - A failed child upsert must not delete its in-progress parent round; failure
   returns a retryable error while durable server and device state remain intact.
 - Do not enter tracking until the in-progress parent has been created on the
@@ -148,12 +175,17 @@ Round setup
 - Draft JSON currently lives in `golf_rounds.notes`, which can collide with user notes.
 - Cross-device/session ordering can still produce stale local shot IDs; the
   client reconciles a server-confirmed absent shot, while authorization and
+  in-progress-round validation remain enforced on the server.
   in-progress-round validation remain enforced on the server. Both Edit and
   Delete use the stable `shot_not_found` reconciliation signal: the stale
   local row is removed, hole state is recalculated from the remaining shots,
   and the client never recreates a row the server has confirmed is absent.
   Transport and database read failures never use that signal, so temporary
   outages cannot make the client hide valid local progress.
+- Continue Round background status polling is separate from the save path.
+  A transient polling failure is retried silently; only a sustained outage is
+  reported once with its accurate status-sync context, while the committed
+  server round remains the source of truth for recovery.
 - Offline shot sync is disabled because of `ShotRecord` to `OfflineShot` type mismatch; DB auto-save is the path to trust.
 - Strokes-gained columns exist but are not populated from shot data.
 - Putts-per-GIR is not properly implemented.
@@ -166,9 +198,38 @@ Round setup
 - `src/test/coachhelm/v2/shot-analysis/**`
 - Browser validation on mobile viewports for changed round-entry screens.
 
+## iOS shell presentation (added 2026-08-26)
+
+Shot-entry surfaces render under the round chrome, which now carries the iOS
+status-bar inset (see golf-round-lifecycle.md, same-date section). Haptics on
+shot entry are unchanged and remain wired at the control primitives
+(`Button` → light impact, `Segmented` → selection); the app-shell bottom-nav
+tabs additionally fire the selection haptic as of this date (grammar
+alignment, FairwayBottomNav).
+
+Addendum (same date, live owner QA): the shared `Segmented` control — used
+across round entry (front/back nine, 9/18 holes) — gained a dark-scope
+accent-green selected thumb and full-contrast inactive labels
+(`src/components/fairway/controls/segmented.tsx`); light mode unchanged.
+The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
+`warm-*` text tokens that rendered unreadable in dark scope. The new-round hole editor's par chips fire the selection detent as of the same date (§32 gap closed by live bridge-log QA).
+
+Keyboard (2026-09-02): the "distance to hole" box was still covered on iOS —
+the keyboardWillShow scroll-into-view had nowhere to scroll for a field in the
+bottom ~45% of a page that ends where it ends. `<body>` now pads by
+`--keyboard-height` while `body.keyboard-open` (globals.css), which is the
+scroll range that scroll needed. See ios-native-shell.md.
+
 ## Related Docs
 
 - `memory/context/golfhelm-features.md`
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
 - `docs/ROUND_REVIEW_ACCURACY_REPORT.md`
+
+## iOS shell chrome (updated 2026-08-26)
+
+Shot-entry surfaces render under the safe-area-corrected scorecard header
+(see golf-round-lifecycle.md, same date). No shot-tracking contract change.
+Evidence: `docs/audits/evidence/ios-premium-2026-08-25/` (active-round
+header collision before/after, shot-entry walkthrough captures).

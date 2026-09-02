@@ -283,10 +283,67 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
       expect(result.data.roundId).toBe('round-same');
     }
   });
+
+  it('does not invent a qualifier slot when the completed-round read fails', async () => {
+    const tables = baseTables();
+    seedAs('u-p1', tables);
+
+    const originalFrom = fake.from.bind(fake);
+    fake.from = ((table: string) => {
+      const api = originalFrom(table);
+      if (table !== 'golf_rounds') return api;
+
+      const unavailable = { data: null, error: { code: '08006', message: 'connection reset' } };
+      const builder: Record<string, unknown> = {};
+      builder.eq = () => builder;
+      builder.then = (
+        onfulfilled?: (value: unknown) => unknown,
+        onrejected?: (reason: unknown) => unknown,
+      ) => Promise.resolve(unavailable).then(onfulfilled, onrejected);
+
+      // This intentionally returns a minimal thenable error result, rather
+      // than a full Supabase query builder.  Keep that test double isolated
+      // from the production builder type.
+      return { ...api, select: () => builder } as unknown as typeof api;
+    }) as typeof fake.from;
+
+    const result = await savePartialRound({
+      courseName: 'Qualifier Course',
+      courseId: COURSE_A,
+      roundType: 'qualifier',
+      qualifierId: '33333333-3333-4333-8333-333333333333',
+      roundDate: '2026-08-25',
+      currentHole: 1,
+      holesToPlay: 18,
+      holes: [],
+    });
+
+    // The durable contract (either failure semantics): a failed history read
+    // must never be interpreted as "no prior rounds" and mint slot 1. On main
+    // the derivation is skipped and the save continues numberless; in this
+    // mock world every golf_rounds read is broken, so the save itself then
+    // fails — but no round row may exist claiming a qualifier slot.
+    expect(result.success).toBe(false);
+    const inventedSlot = tables.golf_rounds.find(
+      (r) =>
+        r.qualifier_id === '33333333-3333-4333-8333-333333333333' &&
+        r.qualifier_round_number != null,
+    );
+    expect(inventedSlot).toBeUndefined();
+  });
 });
 
 describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
-  it('refuses a stale link after a coach has explicitly closed the qualifier', async () => {
+  // Reversed 2026-08-31 on the owner's instruction: "there should be no time
+  // constraints." A closed qualifier used to refuse here, which meant opening
+  // only the SUBMIT-side check would have been half a fix — a round has to be
+  // started before it can be submitted, so this would have become the new dead
+  // end one step earlier.
+  //
+  // The rules that actually protect the standings are untouched and are
+  // asserted by the neighbouring cases: the player must be ENTERED, and the
+  // round cap (`num_rounds`) still applies. Only the clock stopped mattering.
+  it('ALLOWS a round in a closed qualifier — no time limit, cap still applies', async () => {
     const tables = baseTables();
     tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
     tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'completed' }];
@@ -294,8 +351,7 @@ describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
 
     const result = await getNextQualifierRoundNumber('qualifier-1');
 
-    expect(result.success).toBe(false);
-    expect(result.success === false && result.error).toMatch(/closed by the coach/i);
+    expect(result.success).toBe(true);
   });
 
   it('explains an open qualifier round cap without falsely calling the qualifier completed', async () => {
@@ -318,6 +374,63 @@ describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
     expect(result.success === false && result.error).toMatch(/still open/i);
     expect(result.success === false && result.error).toMatch(/coach.*raise.*round/i);
     expect(result.success === false && result.error).not.toMatch(/completed every round/i);
+  });
+
+  it('does not use a scheduled end date to close an in-progress qualifier', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{
+      id: 'qualifier-1',
+      num_rounds: 2,
+      status: 'in_progress',
+      // This date is intentionally historical. Only an explicit coach status
+      // change may close a qualifier.
+      end_date: '2020-01-01',
+    }];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 1, availableRounds: [1] },
+    });
+  });
+
+  it('returns the first missing configured round instead of skipping over a legacy gap', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
+    tables.golf_rounds = [
+      { id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed' },
+      { id: 'round-3', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 3, status: 'completed' },
+    ];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 2, availableRounds: [2] },
+    });
+  });
+
+  it('progresses a three-round qualifier in order', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
+    tables.golf_rounds = [
+      { id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed' },
+      { id: 'round-2', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 2, status: 'completed' },
+    ];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 3, availableRounds: [3] },
+    });
   });
 });
 

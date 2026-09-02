@@ -5,19 +5,9 @@
 > designing changes TO this system, not for daily work. If this file and the
 > long spec disagree, the long spec wins and this file is the one to fix.
 
-> **Build status (verified 2026-08-21, updated P2):** Live today:
-> `knowledge:map` / `knowledge:context` / `knowledge:check` / `knowledge:report`,
-> `repo:doctor`, `preflight`, `config/release-policy.yml`, this file, the
-> `.claude/rules/golfhelm-engineering-os.md` path-scoped pointer,
-> `.claude/session-state/<session_id>.jsonl` event recording, the
-> `guard-feature-context` PreToolUse gate, and the session-owned Stop gate
-> (mapping/context/memory checks, see "Session mechanics" below). **Not built
-> yet** (later phases of the same install): `knowledge:registry-check`,
-> `reliability:collect`/`report`, `release:status`/`budget`/`prepare`/`check`,
-> the `golfhelm-daily-reliability`/`golfhelm-release-manager` skills, and the
-> 12 new `repo:doctor` OS-wiring checks. Where this file still says a rule
-> "will" enforce something, that phrasing has not caught up for the items
-> just listed as live — read it as already in force for those.
+> **Everything in this file is live and in force** except where a line says
+> "planned" — planned items exist only in the long spec, and the "Planned
+> extensions" section at the end is the complete list of what is not built.
 
 ## Source-of-truth hierarchy (highest first)
 
@@ -63,10 +53,20 @@ Governed paths: everything `memory/registry.yml` maps, plus
    multi-feature files, every materially impacted feature).
 3. Verify names, columns, and paths against generated/live truth.
 
-The `guard-feature-context` PreToolUse hook enforces this mechanically:
-edits to governed files are denied until the session has actually loaded the
-mapped feature context (reading the doc or running `knowledge:context`
-counts; writing a flag does not).
+**This is policy, and it is DETECTED, not prevented.** The Stop gate reports a
+governed edit made without the mapped context after the fact; no PreToolUse hook
+refuses it. You can complete an entire governed change with no context loaded
+and only find out when you try to stop.
+
+This paragraph read "The `guard-feature-context` PreToolUse hook enforces this
+mechanically: edits to governed files are denied…" until 2026-08-30. There is no
+`guard-feature-context.mjs` on disk and no such hook in `.claude/settings.json`;
+the only wired PreToolUse hook matches `Write|Edit|MultiEdit` and refuses writes
+into the canonical checkout. `docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated
+from the live configuration and has recorded the true state — POST-HOC — the
+whole time.
+
+Load the context because the work needs it. Nothing will stop you if you don't.
 
 ## After meaningful behavioral mutation
 
@@ -168,59 +168,49 @@ product decision. More accurate truth, not quieter dashboards.
 
 ```text
 npm run knowledge:map / knowledge:context / knowledge:check   # live
-npm run knowledge:registry-check    # router vs runtime registry — planned
-npm run reliability:collect         # daily telemetry, read-only — planned
-npm run release:status | release:budget | release:prepare | release:check  # planned
-npm run repo:doctor                 # live; OS-wiring checks arrive with the checks above
+npm run repo:doctor                 # live
 npm run preflight                   # live — the blocking static gate set
 ```
+
+Planned commands (`knowledge:registry-check`, `reliability:collect`,
+`release:*`) are specified in the long spec; they do not exist yet and
+nothing should be described as depending on them.
 
 ## Session mechanics (live)
 
 SessionStart initializes `.claude/session-state/<session_id>.jsonl` and
 announces this OS. PostToolUse records the feature contexts you actually
 load and every file you touch (event-time ownership — git is never asked to
-guess whose change is whose). PreToolUse denies governed edits without
-loaded context (`guard-feature-context.mjs`), and denies production deploy
-shapes outright (`.claude/settings.json` permission denies plus a
-`guard-bash.sh` belt-and-braces rule). Stop verifies mapping, context, and
-memory evidence against your session's own state before allowing the turn to
-end (`stop-verify.sh` + `lib/stop-check.mjs`); git is a fallback cross-check
-only, used solely when a session's own ledger recorded zero touches.
+guess whose change is whose). Stop verifies mapping, context, and memory
+evidence against your session's own state before allowing the turn to end
+(`stop-verify.sh` + `lib/stop-check.mjs`); git is a fallback cross-check only,
+used solely when a session's own ledger recorded zero touches.
 
-## Advanced Reliability Layer
+**Exactly one PreToolUse hook is wired**, matching `Write|Edit|MultiEdit`, and
+it refuses writes into the canonical checkout — `guard-canonical-write.mjs`.
+Production deploy shapes are refused by `permissions.deny` in
+`.claude/settings.json`, which is a permission rule rather than a hook.
 
-Extends this OS — same `feature_id` vocabulary, no new sources of truth, no
-second memory system, no second release process, no duplicate registry.
-Detail: `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md`.
+Two mechanisms named here until 2026-08-30 do not exist:
+`guard-feature-context.mjs` was never on disk, and `guard-bash.sh` was deleted
+on 2026-08-27 after a period of sitting unwired. Neither absence changed what
+the deny rules do; both made this contract claim more enforcement than the
+repository has.
 
-Sixteen additions, all keyed by the existing `feature_id`: a live
-dependency/blast-radius graph
-(`memory/graph/feature-dependencies.yml` — not present yet); golden-path
-product health and outcome contracts; executable production data
-invariants; an incident replay lab (recorded failure fixtures a repair
-must pass against); automated change-risk scoring; feature flags + kill
-switches + lifecycle governance; staged/canary release inside existing
-release windows; a rollback recommendation engine; a known-good scenario
-library; flaky-test intelligence; per-feature performance and cost
-baselines; CoachHelm AI evaluation memory; product-analytics/behavioral
-anomaly signals; repair-quality scoring; reliability-learning metrics.
+**Do not take an enforcement claim from this file.**
+`docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated from `.claude/settings.json`
+and the hook scripts actually on disk, and resolves every claim to a mechanism,
+a location, and how it was observed. Where the two disagree, it is right and
+this file is the thing to fix.
 
-Same hard wall as the base OS: daily reliability may analyze, replay,
-score, and prepare — never deploy, promote, or roll back production. Canary
-and flag-gated rollouts happen only inside an owner-approved release
-window, never as a standalone daily action.
+## Planned extensions (none wired — specs only)
 
-**Implementation status: phased rollout pending — see the extension doc.**
-None of this is wired yet — no graph file, no invariant registry, no replay
-fixtures, no risk model, no flag registry, no baselines, no eval registry
-exist in the repo today. Nothing above is a live command, registry, or gate
-until its phase lands; treat every noun in this section as planned, not
-present.
+Two future layers are specified but have no live command, registry, file, or
+gate in this repo today. This contract describes what is in force; the specs
+describe what is planned:
 
-### Autonomy Control Plane (arc 3, pending)
+- Advanced Reliability Layer → `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md`
+- Autonomy Control Plane → `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md`
 
-Deep-research extension beyond the layer above: world model, agent flight
-recorder, verification ensemble, earned autonomy, and more — detail at
-`docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md`. Sequenced after this base OS
-and the Advanced Reliability Layer; nothing in it is wired yet.
+Both inherit this OS's hard wall: daily reliability never deploys, promotes,
+or rolls back production.

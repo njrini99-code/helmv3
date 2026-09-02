@@ -1,0 +1,39 @@
+name: golfhelm-qualifier-hell
+include:
+  - "tests/golf/qualifier-hell/**/*.test.yaml"
+gitMainBranch: main
+fileFormat: v2
+retries: 0
+parallel: 1
+recordVideo: true
+environments:
+  - name: production-qualifier-hell
+    baseUrl: https://helmsportslabs.com
+    envVariables:
+      COACH_EMAIL: ${HELM_COACH_EMAIL}
+      COACH_PASSWORD: ${HELM_COACH_PASSWORD}
+      PLAYER_EMAIL: ${HELM_PLAYER_EMAIL}
+      PLAYER_PASSWORD: ${HELM_PLAYER_PASSWORD}
+      QA_RUN_ID: ${QA_RUN_ID}
+      QA_QUALIFIER_NAME: ${QA_QUALIFIER_NAME}
+      QA_COURSE_R1: ${QA_COURSE_R1}
+      QA_COURSE_R2: ${QA_COURSE_R2}
+      QA_COURSE_R3: ${QA_COURSE_R3}
+      QA_COURSE_R4: ${QA_COURSE_R4}
+      QA_START_DATE: ${QA_START_DATE}
+      QA_END_DATE: ${QA_END_DATE}
+browser:
+  defaultBrowserType: Chromium
+  timezone: America/New_York
+  smartWaitingTimeoutMs: 7000
+  pageLoadTimeoutMs: 15000
+  disableSecondaryCacheResolution: true
+ai:
+  useMemory: true
+  failureRecovery: false
+  agentConfig:
+    locator: v4.2
+    assertion: v4.1
+    visual-assertion: v4.0
+    text-extraction: v3.0
+    failure-recovery: v2.1

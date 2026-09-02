@@ -74,6 +74,7 @@ import {
 } from '@/components/golf/calendar/event-form-helpers';
 import { parseRecurrenceRule, describeRecurrenceRule } from '@/lib/golf/recurrence';
 import { tintFor } from './FairwayCalendarMemberRail';
+import { localDayIso } from '@/lib/golf/local-day';
 
 interface TeamPlayer {
   id: string;
@@ -135,9 +136,13 @@ const fieldCls =
   'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2 font-fw-sans text-body-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25 disabled:opacity-50';
 const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
 
+/**
+ * Hand-rolled here and identical to `localDayIso()`, which the two legacy
+ * editors already call. Three copies of one date rule is three chances to fix
+ * two of them.
+ */
 function getTodayDate(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return localDayIso();
 }
 
 /** "HH:MM" -> minutes since midnight, or null if unparseable. */
@@ -162,6 +167,55 @@ function addOneDay(iso: string): string | null {
   if (!y || !m || !d) return null;
   const dt = new Date(y, m - 1, d + 1);
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+/** "2026-08-14" + n days, via local parts for the same reason addOneDay uses them. */
+function addDays(iso: string, days: number): string | null {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const dt = new Date(y, m - 1, d + days);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+/** Whole days from `from` to `to`, negative if `to` is earlier. */
+function daysBetween(from: string, to: string): number | null {
+  const [fy, fm, fd] = from.slice(0, 10).split('-').map(Number);
+  const [ty, tm, td] = to.slice(0, 10).split('-').map(Number);
+  if (!fy || !fm || !fd || !ty || !tm || !td) return null;
+  const a = new Date(fy, fm - 1, fd).getTime();
+  const b = new Date(ty, tm - 1, td).getTime();
+  return Math.round((b - a) / 86_400_000);
+}
+
+/**
+ * Move the start DATE and carry the end date with it, preserving the span.
+ *
+ * The exact twin of shiftStartTime below, for the field that had no such
+ * helper. Editing an event ALWAYS prefills a concrete endDate — every read-side
+ * mapper falls back `end_time || start_time`, so even a single-day event opens
+ * with endDate === startDate, behind a placeholder reading "Same day" that
+ * never shows because the value is populated. Rescheduling via the Start date
+ * picker alone therefore moved start PAST a stale end, and the first thing that
+ * noticed was the server: golf.ts refineEventEndAfterStart answering "End date
+ * must be on or after the start date" for a coach whose intent — move the event
+ * later — was entirely valid.
+ *
+ * Measured: the Guilford head coach hit exactly this on 2026-09-01 02:36:24Z.
+ *
+ * Same restraint as shiftStartTime: with no usable end, the start moves alone
+ * rather than inventing a date the coach never entered.
+ */
+export function shiftStartDate(form: GolfEventFormData, nextStartDate: string | null): GolfEventFormData {
+  if (!nextStartDate) return { ...form, startDate: '' };
+  if (!form.startDate || !form.endDate) return { ...form, startDate: nextStartDate };
+  const span = daysBetween(form.startDate, form.endDate);
+  if (span === null) return { ...form, startDate: nextStartDate };
+  if (span <= 0) {
+    // Single-day (or already-inverted): keep it single-day rather than
+    // preserving a span that was never meaningful.
+    return { ...form, startDate: nextStartDate, endDate: nextStartDate };
+  }
+  return { ...form, startDate: nextStartDate, endDate: addDays(nextStartDate, span) ?? nextStartDate };
 }
 
 /**
@@ -615,6 +669,16 @@ export function FairwayEventEditor({
       setError('Event title is required');
       return;
     }
+    // react-day-picker in single-select mode lets a coach DESELECT the chosen
+    // day by clicking it again, which reaches DateChooser as null and lands
+    // here as ''. Nothing checked it, so the empty string travelled all the way
+    // to zod's dateString regex and came back as "Date must be YYYY-MM-DD" —
+    // a format complaint about a field the coach had simply cleared. Measured
+    // on 2026-09-01 02:39:34Z.
+    if (!formData.startDate) {
+      setError('Start date is required');
+      return;
+    }
     // Catch an inverted window here rather than letting the server do it. The
     // only previous check was zod's superRefine (golf.ts) with a 23514 CHECK
     // behind it, so the coach filled the whole form, submitted, and got a
@@ -709,7 +773,15 @@ export function FairwayEventEditor({
   };
 
   const selectSuggestedTime = (s: { start: Date; end: Date }) => {
-    const startDate = s.start.toISOString().split('T')[0];
+    // ONE instant, ONE zone. This paired `toISOString()` — which renders the
+    // instant in UTC — with `toTimeString()`, which renders it locally. West of
+    // Greenwich those disagree for the last hours of every day: at 22:36 EDT
+    // the date said tomorrow while the time said 22:36 tonight, so accepting a
+    // conflict suggestion silently moved the event a day.
+    //
+    // localDayIso's own docblock is about exactly this shape
+    // (`new Date().toISOString().split('T')[0]`) and exactly this consequence.
+    const startDate = localDayIso(s.start);
     const startTime = s.start.toTimeString().slice(0, 5);
     const endTime = s.end.toTimeString().slice(0, 5);
     setFormData((prev) => ({ ...prev, startDate: startDate || prev.startDate, startTime, endTime, allDay: false }));
@@ -963,7 +1035,7 @@ export function FairwayEventEditor({
                   label="Start date"
                   labelIcon={<CalendarIcon className="h-3.5 w-3.5 text-accent-700" />}
                   value={formData.startDate || null}
-                  onChange={(iso) => setFormData({ ...formData, startDate: iso ?? '' })}
+                  onChange={(iso) => setFormData(shiftStartDate(formData, iso))}
                   disabled={locked}
                 />
                 <DateChooser

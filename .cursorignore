@@ -49,3 +49,15 @@ public/videos/
 
 # Supabase local
 supabase/.temp/
+
+# Historical evidence and tool artifacts — non-authoritative by AGENTS.md.
+# Mirrors the root .ignore (which governs ripgrep/Claude searches).
+docs/archive/
+supabase/migrations_archive/
+tools/**/node_modules/
+.momentic/
+.momentic-mcp/
+.helm/
+.superpowers/
+.ultracode/
+frames/

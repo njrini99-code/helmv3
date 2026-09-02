@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -159,6 +159,54 @@ export type Database = {
           page_url?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      admin_error_resolutions: {
+        Row: {
+          created_at: string
+          fingerprint: string
+          fixed_in_sha: string | null
+          last_seen_at_resolution: string | null
+          note: string | null
+          pr_number: number | null
+          pr_url: string | null
+          reopened_at: string | null
+          reopened_count: number
+          resolution_source: string
+          resolved_at: string
+          resolved_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fingerprint: string
+          fixed_in_sha?: string | null
+          last_seen_at_resolution?: string | null
+          note?: string | null
+          pr_number?: number | null
+          pr_url?: string | null
+          reopened_at?: string | null
+          reopened_count?: number
+          resolution_source?: string
+          resolved_at?: string
+          resolved_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fingerprint?: string
+          fixed_in_sha?: string | null
+          last_seen_at_resolution?: string | null
+          note?: string | null
+          pr_number?: number | null
+          pr_url?: string | null
+          reopened_at?: string | null
+          reopened_count?: number
+          resolution_source?: string
+          resolved_at?: string
+          resolved_by?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -15030,6 +15078,7 @@ export type Database = {
       }
       golf_players: {
         Row: {
+          anonymized_at: string | null
           avatar_url: string | null
           created_at: string | null
           email: string | null
@@ -15047,9 +15096,10 @@ export type Database = {
           profile_complete: boolean | null
           state: string | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          anonymized_at?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -15067,9 +15117,10 @@ export type Database = {
           profile_complete?: boolean | null
           state?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          anonymized_at?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -15087,7 +15138,7 @@ export type Database = {
           profile_complete?: boolean | null
           state?: string | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -20561,6 +20612,34 @@ export type Database = {
     }
     Functions: {
       __admin_rollup_b_gate: { Args: never; Returns: undefined }
+      admin_auto_resolve_error_fingerprint: {
+        Args: {
+          p_fingerprint: string
+          p_fixed_in_sha?: string
+          p_last_seen_at: string
+          p_note?: string
+        }
+        Returns: boolean
+      }
+      admin_mark_error_regressed: {
+        Args: { p_fingerprint: string }
+        Returns: undefined
+      }
+      admin_resolve_error_fingerprint: {
+        Args: {
+          p_fingerprint: string
+          p_fixed_in_sha?: string
+          p_last_seen_at?: string
+          p_note?: string
+          p_pr_number?: number
+          p_pr_url?: string
+        }
+        Returns: undefined
+      }
+      admin_unresolve_error_fingerprint: {
+        Args: { p_fingerprint: string }
+        Returns: undefined
+      }
       baseball_accept_staff_invite: { Args: { p_token: string }; Returns: Json }
       baseball_announcement_has_recipients: {
         Args: { p_announcement_id: string }
@@ -21092,6 +21171,36 @@ export type Database = {
         Returns: boolean
       }
       heartbeat: { Args: never; Returns: undefined }
+      helm_debug_finalize_trace: {
+        Args: { p_metadata?: Json; p_status: string; p_trace_id: string }
+        Returns: undefined
+      }
+      helm_debug_get_trace: { Args: { p_trace_id: string }; Returns: Json }
+      helm_debug_list_traces: {
+        Args: { p_limit?: number; p_round_id?: string; p_workflow?: string }
+        Returns: Json
+      }
+      helm_debug_prune: { Args: { p_retention_days?: number }; Returns: Json }
+      helm_debug_record_trace_step: {
+        Args: {
+          p_layer: string
+          p_metadata?: Json
+          p_requiredness: string
+          p_status: string
+          p_step_key: string
+          p_trace_id: string
+        }
+        Returns: undefined
+      }
+      helm_debug_start_trace: {
+        Args: {
+          p_environment: string
+          p_metadata?: Json
+          p_trace_id: string
+          p_workflow: string
+        }
+        Returns: string
+      }
       helm_lifting_accept_invite: { Args: { p_token: string }; Returns: Json }
       helm_lifting_assign_team: {
         Args: {
@@ -21196,6 +21305,15 @@ export type Database = {
         Args: { p_season_year?: number; p_team_id: string }
         Returns: undefined
       }
+      reclassify_golf_round: {
+        Args: {
+          p_qualifier_id: string
+          p_qualifier_round_number: number
+          p_round_id: string
+          p_round_type: string
+        }
+        Returns: string
+      }
       recompute_golf_round_totals: {
         Args: { p_round_id: string }
         Returns: undefined
@@ -21289,6 +21407,10 @@ export type Database = {
           p_round_id: string
           p_shots: Json
         }
+        Returns: Json
+      }
+      save_round_ai_recap: {
+        Args: { p_recap: string; p_round_id: string }
         Returns: Json
       }
       select_stalest_teams: {
@@ -21483,12 +21605,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -21512,11 +21634,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -21537,11 +21659,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -21562,11 +21684,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -21579,11 +21701,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { normalizeIncidentRoute } from '@/lib/admin/incident-grouping';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { classifyInProgressActivity } from '@/lib/golf/tracer-round-activity';
+import { tracerIncidentGroupKey } from '@/app/admin/golf/tracer/tracer-shared';
 
 // ============================================
 // TYPES
@@ -119,6 +120,8 @@ interface TracerAdminEventRecord {
   resolved_at: string | null;
   resolved_by: string | null;
   created_at: string;
+  /** Write-time grouping key — see tracerIncidentGroupKey. */
+  fingerprint: string | null;
 }
 
 export interface TracerActivityEvent {
@@ -228,35 +231,11 @@ function asString(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
-function normalizeTracerMessage(message: string): string {
-  return message
-    .trim()
-    .toLowerCase()
-    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, ':uuid')
-    .replace(/\b[a-f0-9]{16,}\b/gi, ':id')
-    .replace(/\b\d{5,}\b/g, ':id')
-    .replace(/\s+/g, ' ');
-}
-
 // Delegates to the shared admin helper so the tracer-side route normalisation
 // stays in lockstep with the System tab grouping. Keeping the local name lets
 // the rest of this file stay untouched while we centralise the implementation.
 function normalizeTracerPath(pathOrUrl: string | null): string {
   return normalizeIncidentRoute(pathOrUrl);
-}
-
-function normalizeTracerIncidentKey(
-  message: string,
-  routeOrUrl: string | null,
-  action: string | null,
-  errorCode: string | null,
-): string {
-  return [
-    normalizeTracerMessage(message),
-    normalizeTracerPath(routeOrUrl),
-    action ?? '',
-    errorCode ?? '',
-  ].join('::');
 }
 
 function buildTracerIncidentContext(rawContext: unknown): TracerIncidentContext {
@@ -517,13 +496,9 @@ function buildTracerIncidents(events: TracerAdminEventRecord[]): TracerIncident[
     const context = buildTracerIncidentContext(event.metadata);
     if (!isShotTrackingTracerEvent(event, context)) continue;
 
-    const keyMessage = getTracerEventMessage(event);
-    const key = normalizeTracerIncidentKey(
-      keyMessage,
-      context.route ?? event.url ?? context.url,
-      context.action,
-      context.errorCode,
-    );
+    // Same key the Errors tab groups this row under — see
+    // tracerIncidentGroupKey in tracer-shared.ts.
+    const key = tracerIncidentGroupKey(event.fingerprint, event.id);
     const createdAt = event.created_at;
     const severity = normalizeTracerSeverity(event.severity);
     const existing = groups.get(key);
@@ -923,7 +898,7 @@ async function getTracerDataImpl(): Promise<TracerData> {
     // Limit reduced from 800 to 300 (sufficient for 45-day error window at current volume).
     adminDb
       .from('admin_events')
-      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
+      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at, fingerprint')
       .eq('event_type', 'error')
       .gte('created_at', ago45d)
       .order('created_at', { ascending: false })
@@ -1218,7 +1193,7 @@ async function getTracerEnrichedDataImpl(): Promise<TracerEnrichedData> {
 
     adminDb
       .from('admin_events')
-      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
+      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at, fingerprint')
       .eq('event_type', 'error')
       .gte('created_at', ago30d)
       .order('created_at', { ascending: true }),
@@ -1399,7 +1374,7 @@ async function getTracerRoundDiagnosticImpl(roundId: string): Promise<TracerRoun
 
     adminDb
       .from('admin_events')
-      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
+      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at, fingerprint')
       .eq('event_type', 'error')
       .eq('metadata->>roundId', roundId)
       .gte('created_at', ago45d)
@@ -1525,7 +1500,7 @@ async function fixRoundDataImpl(
 
       if (error) return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: `DB update failed: ${error.message}` };
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,
@@ -1580,7 +1555,7 @@ async function fixRoundDataImpl(
         .update({ total_gir: newGir, total_gir_possible: newGirTotal })
         .eq('id', roundId);
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,
@@ -1625,7 +1600,7 @@ async function fixRoundDataImpl(
         }
       }
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,
@@ -1657,7 +1632,7 @@ async function fixRoundDataImpl(
           .eq('id', roundId);
       }
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,
@@ -1729,7 +1704,7 @@ async function fixRoundDataImpl(
         return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: `Failed to remove stale round: ${error.message}` };
       }
 
-      revalidatePath('/golf/admin');
+      revalidatePath('/admin/golf/tracer');
       return {
         success: true,
         fix_type: fixType,

@@ -1,6 +1,26 @@
 # FEATURE_COVERAGE.md — Helm Bridge Total Error-Capture Coverage + Feature Health
 
-**Status:** Canonical spec (W15 instrumentation + W16 board build against THIS file).
+**Status:** DESIGN_SPEC — historical. **Not a current feature registry.**
+
+> Demoted from "Canonical spec" on 2026-08-30. This document was written as the
+> design contract for the W15/W16 Helm Bridge waves and it is still the best
+> account of *why* the instrumentation is shaped the way it is — the
+> noise-discipline charter below is the reasoning nothing else records.
+>
+> It is no longer a source of truth for **which features exist or what they
+> cover**. That moved, and to two different places:
+>
+> - **`src/lib/admin/feature-registry.ts`** owns the runtime `FeatureKey`
+>   vocabulary, action manifests, primary tables, traffic tiers and health
+>   signals. It is imported by shipped code, so it cannot drift from what runs.
+> - **`memory/registry.yml`** owns semantic feature identity and which runtime
+>   keys each feature owns, checked by `npm run knowledge:registry-check`.
+>
+> A directory named `specs/` cannot hold a live registry: nothing regenerates
+> this file and nothing fails when it drifts. Where a table here disagrees with
+> either of the two above, they are right.
+>
+> See `memory/decisions/ADR-2026-08-30-helm-knowledge-authority.md`.
 **Scope (updated 2026-07-04):** GOLFHELM + COACHHELM + BASEBALLHELM. BaseballHelm server actions are now first-class Helm Bridge emitters and registry rows. CRM is NEVER touched (no wrapping, no tagging, no board presence beyond the "excluded" registry row).
 
 **Companion plans:**
@@ -78,7 +98,7 @@ Column meanings:
 | `my_game_profile` | Player Profile Surfaces (My Game / My Standing / Team Hub) | `player-profile-stats.ts:*` | `golf_player_stats_cache` | low | Profile stat reads succeed. Route-ownership partially unverified (map gap) — remaining data-fetch paths get coverage via the shared RLS helper only until traced. Low-tier |
 | `admin_dashboard` | Admin Platform (self-referential) | `admin-bi-data.ts:*`, `admin-data.ts:*`, `admin-people-data.ts:*`, `admin-system-data.ts:*`, `admin-tracer-data.ts:*`, `admin/rollup-c.ts:*`, `src/app/admin/actions/triage.ts:*` | `admin_events` | med | Rollup RPCs return in budget; no 42501 on SECURITY DEFINER rollups. **Never NEUTRAL** — foundational infra; integrity-check failures red it immediately (§5 override). Dogfoods its own pipeline; wrapped FIRST (W15 Batch 0) |
 
-### 1.2 CoachHelm (app: `coachhelm`) — 13 features
+### 1.2 CoachHelm (app: `coachhelm`) — 14 features
 
 | Key | Label | Action globs | Primary table | Tier | healthSignal + thresholds |
 |---|---|---|---|---|---|
@@ -95,6 +115,7 @@ Column meanings:
 | `my_development` | My Development (player) | `development.ts:{acceptFocusArea,declineFocusArea,updateFocusAreaProgress}`, `insights.ts:{getPlayerFocusAreas}` | `golf_player_focus_areas` | low | Player accept/decline/progress writes succeed; reads RLS-clean for own player_id. Low-tier |
 | `drills_practice_rx` | Drills & Practice Rx | `drills.ts:*`, `v3/practice-rx.ts:*`, `v3/team-practice-rx.ts:*` | `golf_drills` | low | Rx generation + drill matching return (empty match set = degraded quality signal on drill-in, NOT an error). Low-tier |
 | `coachhelm_v3_goals` | Goals & Progress (V3) | `v3/goals.ts:*`, `v3/goal-progress.ts:*`, `v3/focus-area-progress.ts:*`, `v3/intent.ts:*` | `golf_goals` | med | Goal CRUD/suggestions/progress evaluators complete. V3 surface = documented drift from the 28-feature doc, now first-class here. Med-tier |
+| `integrations` | Integrations (Inngest) | — (API route + function registry, not server actions) | — | med | Inngest reaches `/api/inngest` with a VALID signature. Silence is NOT health: the only triggers are a Mon 14:00 UTC cron and round-submitted, so liveness must be confirmed in the Inngest dashboard, never inferred from an empty error list. Quiet renders NEUTRAL, never green — `neverNeutral` is deliberately NOT set here (it skips the neutral gate and falls through to green, correct for admin_dashboard, wrong for this). A quiet card is genuinely ambiguous: key fixed vs. Inngest no longer calling, and the second reading means durable jobs are dead silently. `seasonalEmpty` picks the neutral reason (expected-empty, not the false "instrumentation not yet reporting" — it reported 454 times). Unsigned requests are robot noise, already handled in route.ts. Med-tier |
 
 ### 1.3 BaseballHelm (app: `baseballhelm`) — 48 features
 

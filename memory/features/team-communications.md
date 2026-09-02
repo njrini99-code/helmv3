@@ -61,6 +61,9 @@ Message send
   -> Supabase Realtime pushes to participants
 
 Announcement create
+  -> optional direct file upload from the composer (uploadGolfDocument ->
+     createGolfDocument: file lands in the team document library, then the
+     new document id joins documentIds)
   -> createEnrichedAnnouncement()
   -> INSERT golf_announcements
   -> INSERT targeted recipients or broadcast metadata
@@ -76,6 +79,15 @@ Announcement create
 - Required acknowledgements need durable tracking per player.
 - Inline announcement tasks must stay consistent with task assignment state.
 - Urgent announcements may need push/email/in-app notification treatment; check current notification wiring before claiming it exists.
+- A text send retries ONCE, after 750 ms, when the server-action POST fails
+  at the transport layer (WebKit "Load failed", Chromium "Failed to fetch" —
+  `withOneTransportRetry` in `src/lib/transient-network-error.ts`). Any other
+  failure, and a second transport failure, still surface the toast and keep
+  the draft. Field evidence 2026-09-01/02: two Shenandoah phones lost a send
+  this way with `navigator.onLine === true`, and Vercel logged no
+  `message_sent` for either — the request never arrived. A retry carries the
+  same duplicate risk as the player's own re-tap and nothing more; a
+  schema-backed idempotency key is the answer if duplicates ever become costly.
 
 ## UI Contract
 
@@ -83,8 +95,35 @@ Announcement create
 - Opening a conversation must land at its newest message without forcing a
   reader back to the bottom after they scroll upward.
 - Announcement coach view needs creation, targeting, urgency, documents, tasks, and acknowledgement tracking.
+- The composer's Attachments section renders for any coach with a team (2026-08-26): it offers direct device upload (25 MB cap, mirrors the Documents-page accept list) plus the library picker; it must NOT be hidden just because the team library is empty.
 - Announcement player view needs compact cards, clear acknowledgement action, linked documents/tasks, and urgency state.
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.
+- On a phone the messages column shrinks by whichever is taller of the bottom
+  chrome (56px nav + safe area) and `--keyboard-height`, so the composer sits
+  directly above the keys ("I can't see what I'm typing", Shenandoah team
+  chat 2026-09-01); the thread pane re-pins to the newest message when its
+  region shrinks, and the composer drops its home-indicator pad while the
+  keyboard covers the home indicator. The screen carries
+  `data-fw-keyboard-aware` so the shell's global scroll-into-view stays out.
+
+## Conversation Rail Failure Semantics (2026-08-27)
+
+The rail distinguishes "backend failed" from "genuinely empty" — a failed load
+must never render the cheerful "No conversations yet" (P257).
+
+`useGolfConversations` reads from TWO sources: the
+`get_golf_conversations_with_details` RPC (primary) and a direct
+`golf_conversation_participants` query for team chats (supplement, "in case DB
+function doesn't include them"). The terminal decision is
+`(rpcError ?? groupConvsError) && !conversationsData?.length` →
+`setError(true)`; `MessageConversationRail` then renders explain + Retry.
+
+Deliberately NOT an early return at the team-chat query: it supplements the RPC,
+so returning on its failure would blank a rail whose DMs loaded fine. The rail
+keeps rows on screen when `error && conversations.length > 0`. Before
+2026-08-27 that query's failure was logged and then fell through, so a user
+whose team-chat read was denied saw an empty inbox with no error — the exact
+masquerade P257 exists to stop.
 
 ## Known Risk Areas
 

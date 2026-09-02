@@ -104,6 +104,14 @@
     {
       "path": "/api/cron/ingest-gmail-replies",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/helm-debug-prune",
+      "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/reliability-triage",
+      "schedule": "0 */3 * * *"
     }
   ]
 }

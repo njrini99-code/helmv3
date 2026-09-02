@@ -109,10 +109,14 @@ Don't treat a check as "stuck" before its normal window has passed:
 - **Full Playwright** (`playwright.yml`, main + manual only) — `e2e` job
   75-minute budget; `picker-screenshots` and `baseball-smoke` 20 minutes each;
   main-push `Smoke checks` 15 minutes.
-- **`CI / all`'s `baseball-auth-smoke` job (#372)** — 30-minute budget. It
+- **`baseball-auth-smoke` (#372)** — 30-minute budget. It
   installs Playwright chromium, runs a full `npm run build`, seeds BaseballHelm
-  CI accounts, then runs the mandatory coach/player smoke. Separate from — and in
-  addition to — the broader `Smoke checks` build.
+  CI accounts, then runs the coach/player smoke. Separate from — and in
+  addition to — the broader `Smoke checks` build. **Out of the PR gate since
+  2026-08-26 (owner decision)**: it runs on push to `main` only and no longer
+  feeds `CI aggregate` — a red run on `main` blocks the next production
+  promote, not PR merges. It had failed two consecutive PR runs with the
+  runner dying ("shutdown signal") mid-TypeScript, before any test ran.
 
   **This job's target changed on 2026-07-30 (PR #1125).** Before: it seeded
   **production** using repo secrets, and **skipped** on fork/Dependabot PRs because
@@ -180,14 +184,12 @@ your diff — `main` itself was already red when you branched.
   their env vars aren't set (`PLAYWRIGHT_BASEBALL_SEEDED`, `E2E_GOLF_*`,
   `GOLFHELM_*`). A skip is not a failure.
 
-  **But `baseball-auth-smoke` (#372) no longer skips, and that is deliberate.**
-  It used to skip on fork/Dependabot `pull_request` runs because those never
-  receive repo secrets. As of PR #1125 it needs no secrets — it seeds a
-  throwaway stack on the runner — so it runs everywhere. If you see it skipped
-  now, that is *not* expected: check the job's `if:` condition rather than
-  waving it through. A **required** gate that silently skipped for a whole class
-  of PR was a hole in the gate, which is why the skip was removed rather than
-  documented.
+  **`baseball-auth-smoke` (#372) skipping on a PR is now expected** — since
+  2026-08-26 (owner decision) its `if:` limits it to push-to-`main` events, so
+  every `pull_request` run shows it skipped. What remains deliberate from the
+  PR #1125 rework: it needs no secrets (it seeds a throwaway stack on the
+  runner), so on `main` pushes it runs unconditionally — a skip THERE is not
+  expected and means the `if:` or path-detect logic changed.
 
 ---
 

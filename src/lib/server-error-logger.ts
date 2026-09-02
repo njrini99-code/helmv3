@@ -18,7 +18,10 @@
 // it needs fetch-all-rows.ts to stop depending on the admin logger.
 
 import * as Sentry from '@sentry/nextjs';
-import { maskEmails, collapseEmailsForGrouping } from '@/lib/observability/redact-pii';
+import {
+  collapseEmailsForGrouping,
+  redactFreeTextForStorage,
+} from '@/lib/observability/redact-pii';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
@@ -28,6 +31,7 @@ import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { getRequestId } from '@/lib/admin/request-context';
 import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump } from '@/lib/utils/describe-error';
 import { redactSensitiveUrl } from '@/lib/security/redact-url';
+import { resolveFeatureKey } from '@/lib/admin/feature-registry';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -60,6 +64,11 @@ interface RoundErrorContext {
   requestId?: string | null;
   /** Sentry trace id. Auto-populated from the active span when not explicitly passed — see enrichTraceContext. */
   traceId?: string | null;
+  /** Opaque workflow correlation ID from the flight recorder. Never auth data. */
+  helmTraceId?: string | null;
+  /** Canonical expected workflow step active when the error was recorded. */
+  traceStep?: string | null;
+  parentTraceStep?: string | null;
   runtime?: 'nodejs' | 'edge' | 'unknown';
   handled?: boolean;
   roundId?: string | null;
@@ -109,11 +118,14 @@ function normalizeContext(context: RoundErrorContext, traceMessage?: string): Re
     route: context.route ?? null,
     url: redactSensitiveUrl(context.url ?? null),
     featureArea: context.featureArea ?? null,
-    feature: context.feature ?? context.featureArea ?? null,
+    feature: resolveFeatureKey(context.feature, context.featureArea),
     source: context.source ?? 'server_action',
     statusCode: context.statusCode ?? null,
     requestId: context.requestId ?? null,
     traceId: context.traceId ?? null,
+    helmTraceId: context.helmTraceId ?? null,
+    traceStep: context.traceStep ?? null,
+    parentTraceStep: context.parentTraceStep ?? null,
     runtime: context.runtime ?? process.env.NEXT_RUNTIME ?? 'nodejs',
     handled: context.handled ?? true,
     roundId: context.roundId ?? null,
@@ -226,7 +238,7 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
   return {
     ...context,
     sport,
-    feature: context.feature ?? classified.feature ?? context.featureArea ?? null,
+    feature: context.feature ?? classified.feature ?? resolveFeatureKey(null, context.featureArea),
   };
 }
 
@@ -282,6 +294,26 @@ const MAX_CAUSE_DEPTH = 5;
 const STACK_BUDGET = 8000;
 
 /**
+ * Report a redaction failure without ever becoming one. Passed as the
+ * `onError` hook to the shared `redactFreeTextForStorage`, which returns a
+ * withheld-content placeholder regardless — so this is telemetry about the
+ * failure, never the thing that decides whether the row gets written.
+ */
+function reportRedactionFailure(error: unknown, field: 'stack' | 'message'): void {
+  console.error(
+    `[ServerErrorLogger] ${field} redaction failed; persisting a placeholder instead of the raw value`,
+    error,
+  );
+  try {
+    Sentry.captureException(error, {
+      tags: { component: 'server-error-logger-redaction', field },
+    });
+  } catch {
+    // Sentry must never block this path either.
+  }
+}
+
+/**
  * Serialises `error.stack` PLUS its `error.cause` chain into the single
  * `stack` string persisted to error_logs.stack / admin_events.stack_trace.
  *
@@ -333,7 +365,9 @@ function buildStackWithCauseChain(error: unknown): string | null {
     break;
   }
 
-  return parts.join('\n').slice(0, STACK_BUDGET);
+  return redactFreeTextForStorage(parts.join('\n'), STACK_BUDGET, (err) =>
+    reportRedactionFailure(err, 'stack'),
+  );
 }
 
 async function writeAdminTables(
@@ -390,7 +424,7 @@ async function writeAdminTables(
     team_id: enriched.teamId ?? null,
     fingerprint: dbFingerprint,
     source: enriched.source ?? 'server_action',
-    feature: enriched.feature ?? enriched.featureArea ?? null,
+    feature: resolveFeatureKey(enriched.feature, enriched.featureArea),
   }, { onConflict: 'id' });
 
   const [errorLogResult, adminEventResult] = await Promise.allSettled([
@@ -455,12 +489,14 @@ function captureSentryTrace(
     scope.setTag('action', context.action);
     scope.setTag('error_source', context.source ?? 'server_action');
     scope.setTag('feature_area', context.featureArea ?? 'unknown');
-    scope.setTag('feature', context.feature ?? context.featureArea ?? 'unknown');
+    scope.setTag('feature', resolveFeatureKey(context.feature, context.featureArea) ?? 'unknown');
     if (context.sport) scope.setTag('sport', context.sport);
     scope.setTag('handled', String(context.handled ?? true));
     if (context.errorCode) scope.setTag('pg_error_code', context.errorCode);
     if (context.statusCode) scope.setTag('http_status', String(context.statusCode));
     if (context.requestId) scope.setTag('request_id', context.requestId);
+    if (context.helmTraceId) scope.setTag('helm.trace_id', context.helmTraceId);
+    if (context.traceStep) scope.setTag('helm.trace_step', context.traceStep);
 
     if (context.tags) {
       for (const [key, value] of Object.entries(context.tags)) {
@@ -557,8 +593,18 @@ async function captureServerTrace(
   // structured admin-only column that retention prunes. That is a design
   // decision and is left exactly as it is -- this masks free text, never the
   // columns built to hold identity.
-  const message = maskEmails(
+  //
+  // Also strips a URL-shaped secret embedded anywhere in the text (a failed
+  // fetch/redirect target, a Postgres error echoing an offending value) —
+  // this `message` becomes admin_events.message AND, via buildAdminTitle,
+  // admin_events.title. See redactFreeTextForStorage's doc comment for why
+  // that stopped being purely internal data. 10000 matches
+  // writeAdminTables's admin_events.message slice, the larger of its two
+  // downstream bounds.
+  const message = redactFreeTextForStorage(
     collapseEmbeddedHtml(rawMessage) ?? collapseEmbeddedRawJsonDump(rawMessage) ?? rawMessage,
+    10000,
+    (err) => reportRedactionFailure(err, 'message'),
   );
   const enriched = enrichTraceContext(message, context);
   const normalizedError = error ?? syntheticTraceError(message);

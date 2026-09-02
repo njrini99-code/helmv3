@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AlertTriangle, Activity, SearchCheck, Users, ShieldCheck, RadioTower } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchErrorsTab } from '@/lib/admin/data/errors';
-import { fetchUsersTab, type RosterPlayerInsight, type TeamRosterInsight } from '@/lib/admin/data/users';
+import { fetchUsersTab } from '@/lib/admin/data/users';
 import { fetchBaseballTab } from '@/lib/admin/data/baseball';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
 import { Surface, StatStrip, StatTile, StatusPill, TrendChart } from '@/components/fairway';
@@ -11,9 +11,10 @@ import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
 import { KpiTile } from '../_components/KpiTile';
 import { TeamHealthTable, type TeamHealthEntry } from '../_components/TeamHealthTable';
+import { TeamCommandCard } from '../_components/TeamCommandCard';
+import { PlayerWatchlist } from '../_components/PlayerWatchlist';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
-import { LocalTime } from '../_components/LocalTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,117 +31,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // rule above the card title.
 function KeyPanelRule() {
   return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
-}
-
-function playerTone(player: RosterPlayerInsight): 'success' | 'warning' | 'danger' | 'neutral' {
-  if (player.errors7d > 0 || player.profileQuality === 'missing') return 'danger';
-  if (player.activity30d === 0 || player.profileQuality === 'partial') return 'warning';
-  return 'success';
-}
-
-function TeamCommandCard({ team }: { team: TeamRosterInsight }) {
-  const quiet = team.players.filter((player) => player.activity30d === 0).length;
-  const profileGaps = team.players.filter((player) => player.profileQuality !== 'complete').length;
-  const topPlayers = team.players.slice(0, 5);
-
-  return (
-    <Surface padding="sm" className="h-full">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <KeyPanelRule />
-          <Link
-            href={`/admin/users?team=${team.teamId}`}
-            className="block truncate text-base font-semibold text-warm-900 underline-offset-2 hover:underline"
-          >
-            {team.name}
-          </Link>
-          <p className="mt-1 font-fw-mono text-xs text-warm-500">
-            {team.playerCount} players · last{' '}
-            {team.lastActivity ? <LocalTime iso={team.lastActivity} variant="date" fallback="never" /> : 'never'}
-          </p>
-        </div>
-        <StatusPill tone={team.errors7d > 0 || team.attentionPlayers > 0 ? 'warning' : 'success'} dot size="sm">
-          {team.attentionPlayers > 0 ? `${team.attentionPlayers} watch` : 'clear'}
-        </StatusPill>
-      </div>
-
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <StatTile label="Active" value={team.activePlayers} tone="neutral" mono />
-        <StatTile label="Quiet" value={quiet} tone="neutral" mono goodDirection="down" />
-        <StatTile label="Profile gaps" value={profileGaps} tone="neutral" mono goodDirection="down" />
-      </div>
-
-      <div className="mt-4 divide-y divide-warm-200/60">
-        {topPlayers.length === 0 ? (
-          <PanelNoData label="No players attached" description="Roster rows appear once active memberships exist." />
-        ) : (
-          topPlayers.map((player) => (
-            <div key={`${team.teamId}:${player.playerId}`} className="flex items-center justify-between gap-3 py-2">
-              <div className="min-w-0">
-                {player.href ? (
-                  <Link href={player.href} className="truncate text-sm font-medium text-warm-900 hover:underline">
-                    {player.name}
-                  </Link>
-                ) : (
-                  <p className="truncate text-sm font-medium text-warm-900">{player.name}</p>
-                )}
-                <p className="truncate font-fw-mono text-xs text-warm-500">
-                  {player.position ?? 'no position'} · {player.detail}
-                </p>
-              </div>
-              <StatusPill tone={playerTone(player)} size="sm" dot>
-                {player.errors7d > 0 ? `${player.errors7d} errors` : player.activity30d > 0 ? `${player.activity30d} signals` : 'quiet'}
-              </StatusPill>
-            </div>
-          ))
-        )}
-      </div>
-    </Surface>
-  );
-}
-
-function PlayerWatchlist({ players }: { players: RosterPlayerInsight[] }) {
-  return (
-    <Surface padding="sm">
-      <SectionLabel>Player-by-player watchlist</SectionLabel>
-      <div className="mt-3 divide-y divide-warm-200/70">
-        {players.length === 0 ? (
-          <PanelNoData label="No player watch items" description="Baseball players with errors, quiet activity, or missing profiles appear here." />
-        ) : (
-          players.map((player) => (
-            <div key={`${player.teamId}:${player.playerId}`} className="grid gap-3 py-3 2xl:grid-cols-[minmax(0,1fr)_120px_120px_120px] 2xl:items-center">
-              <div className="min-w-0">
-                {player.href ? (
-                  <Link href={player.href} className="text-sm font-semibold text-warm-900 underline-offset-2 hover:underline">
-                    {player.name}
-                  </Link>
-                ) : (
-                  <p className="text-sm font-semibold text-warm-900">{player.name}</p>
-                )}
-                <p className="mt-1 truncate text-xs text-warm-500">
-                  {player.email ?? 'no email'} · {player.position ?? 'no position'} · {player.detail}
-                </p>
-              </div>
-              <span className="font-fw-mono text-xs tabular-nums text-warm-600">
-                {player.activity30d} signals 30d
-              </span>
-              <span className="font-fw-mono text-xs tabular-nums text-warm-600">
-                last{' '}
-                {player.lastActivity ?? player.lastSeen ? (
-                  <LocalTime iso={(player.lastActivity ?? player.lastSeen) as string} variant="date" fallback="never" />
-                ) : (
-                  'never'
-                )}
-              </span>
-              <StatusPill tone={playerTone(player)} dot size="sm">
-                {player.profileQuality}
-              </StatusPill>
-            </div>
-          ))
-        )}
-      </div>
-    </Surface>
-  );
 }
 
 async function BaseballBody() {
@@ -334,12 +224,17 @@ async function BaseballBody() {
               <PanelNoData label="No team cards yet" description="Team cards appear when baseball teams have roster membership." />
             </Surface>
           ) : (
-            topTeams.map((team) => <TeamCommandCard key={team.teamId} team={team} />)
+            topTeams.map((team) => (
+              <TeamCommandCard key={team.teamId} team={team} teamHref={`/admin/users?team=${team.teamId}`} />
+            ))
           )}
         </div>
 
         <div className="space-y-4">
-          <PlayerWatchlist players={watchlist} />
+          <PlayerWatchlist
+            players={watchlist}
+            emptyDescription="Baseball players with errors, quiet activity, or missing profiles appear here."
+          />
           <Surface padding="sm">
             <SectionLabel>Error trace hooks</SectionLabel>
             <div className="mt-3 grid grid-cols-2 gap-3">

@@ -516,7 +516,7 @@ export async function submitDemoRequest(
     }
 
     // Refresh admin CRM lead lists so a new submission appears immediately.
-    revalidatePath('/golf/admin');
+    revalidatePath('/golf/admin/crm');
     revalidatePath('/baseball/admin');
 
     return { success: true };

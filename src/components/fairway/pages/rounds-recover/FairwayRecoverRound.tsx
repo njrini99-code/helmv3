@@ -205,7 +205,7 @@ async function deleteLegacyOfflineRoundThrough(
  * This is a fallback for when IndexedDB data is unavailable (e.g. cleared by browser,
  * different storage partition) but the synchronous localStorage emergency save survived.
  */
-function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
+export function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
   const results: OfflineRoundData[] = [];
   try {
     for (let i = 0; i < localStorage.length; i++) {

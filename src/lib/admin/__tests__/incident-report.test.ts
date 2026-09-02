@@ -7,7 +7,14 @@ import {
   extractActionName,
   extractRoute,
   extractCollapsedCount,
+  extractErrorHint,
+  extractRequestId,
+  extractHelmTraceId,
+  extractRuntime,
+  extractHandled,
+  hasUnknownAffectedUsers,
   selectNearbyDeploys,
+  selectSuspectDeploy,
   type IncidentReportInput,
 } from '@/lib/admin/incident-report';
 
@@ -141,6 +148,130 @@ describe('buildIncidentReport', () => {
     const report = buildIncidentReport({ ...minimal, sentryUrl: 'https://sentry.io/organizations/helm/issues/1/' });
     expect(report).toContain('https://sentry.io/organizations/helm/issues/1/');
   });
+
+  it('renders forensics fields explicitly, dash-filled when absent', () => {
+    const report = buildIncidentReport(minimal);
+    expect(report).toContain('- Error code: —');
+    expect(report).toContain('- Request id: —');
+    expect(report).toContain('- Trace id: —');
+    expect(report).toContain('- Runtime: —');
+    expect(report).toContain('- Handled: —');
+  });
+
+  it('renders error code with its hint appended, and handled/unhandled in words', () => {
+    const report = buildIncidentReport({
+      ...minimal,
+      errorCode: '23505',
+      errorHint: 'duplicate key value violates unique constraint',
+      requestId: 'req-abc123',
+      helmTraceId: 'trace-xyz789',
+      runtime: 'edge',
+      handled: false,
+    });
+    expect(report).toContain('- Error code: 23505 — duplicate key value violates unique constraint');
+    expect(report).toContain('- Request id: req-abc123');
+    expect(report).toContain('- Trace id: trace-xyz789');
+    expect(report).toContain('- Runtime: edge');
+    expect(report).toContain('- Handled: no — unhandled');
+  });
+
+  it('renders handled: yes for an explicit true', () => {
+    const report = buildIncidentReport({ ...minimal, handled: true });
+    expect(report).toContain('- Handled: yes');
+  });
+
+  it('flags affected users as unknown for a zero-user app-origin incident with real occurrences', () => {
+    const report = buildIncidentReport({ ...minimal, source: 'server_action', affectedUserCount: 0, eventCount: 5 });
+    expect(report).toContain('- Affected users: 0 (unknown — no identity captured on these rows; not necessarily zero people affected)');
+  });
+
+  it('never labels a Sentry-origin zero-user count as unknown — Sentry userCount is real', () => {
+    const report = buildIncidentReport({ ...minimal, source: 'sentry', affectedUserCount: 0, eventCount: 40 });
+    expect(report).toContain('- Affected users: 0');
+    expect(report).not.toContain('unknown');
+  });
+
+  it('does not flag a genuinely zero-occurrence report as unknown', () => {
+    const report = buildIncidentReport({ ...minimal, affectedUserCount: 0, eventCount: 0 });
+    expect(report).toContain('- Affected users: 0');
+    expect(report).not.toContain('unknown');
+  });
+
+  it('surfaces the suspect deploy as the first line of the Nearby deploys section', () => {
+    const report = buildIncidentReport({
+      ...minimal,
+      firstSeen: '2026-07-01T06:00:00.000Z',
+      deployMarkers: [
+        { time: '2026-07-01T00:00:00.000Z', sha: 'aaa1111' },
+        { time: '2026-06-30T12:00:00.000Z', sha: 'bbb2222' },
+      ],
+    });
+    expect(report).toContain(
+      'Suspect deploy (last production deploy at/before first-seen): aaa1111 @ 2026-07-01T00:00:00.000Z',
+    );
+  });
+
+  it('renders a stored RCA section only when one is present', () => {
+    const without = buildIncidentReport(minimal);
+    expect(without).not.toContain('Root-cause analysis');
+
+    const withRca = buildIncidentReport({
+      ...minimal,
+      rca: {
+        probableCause: 'Null pointer in the save path',
+        confidence: 'high',
+        suggestedFix: 'Guard the null case',
+        model: 'anthropic/claude-sonnet-5',
+        generatedAt: '2026-08-25T10:05:00.000Z',
+      },
+    });
+    expect(withRca).toContain('## Root-cause analysis (stored)');
+    expect(withRca).toContain('- Probable cause: Null pointer in the save path');
+    expect(withRca).toContain('- Confidence: high');
+    expect(withRca).toContain('- Suggested fix: Guard the null case');
+    expect(withRca).toContain('- Model: anthropic/claude-sonnet-5 · generated 2026-08-25T10:05:00.000Z');
+  });
+});
+
+describe('extractErrorHint / extractRequestId / extractHelmTraceId / extractRuntime / extractHandled', () => {
+  it('extracts every forensics field from a normalizeContext-shaped metadata blob', () => {
+    const metadata = {
+      errorHint: 'duplicate key value violates unique constraint',
+      requestId: 'req-abc123',
+      helmTraceId: 'trace-xyz789',
+      runtime: 'edge',
+      handled: false,
+    };
+    expect(extractErrorHint(metadata)).toBe('duplicate key value violates unique constraint');
+    expect(extractRequestId(metadata)).toBe('req-abc123');
+    expect(extractHelmTraceId(metadata)).toBe('trace-xyz789');
+    expect(extractRuntime(metadata)).toBe('edge');
+    expect(extractHandled(metadata)).toBe(false);
+  });
+
+  it('distinguishes an explicit handled:false from a genuinely absent field', () => {
+    expect(extractHandled({ handled: false })).toBe(false);
+    expect(extractHandled({ handled: true })).toBe(true);
+    expect(extractHandled({})).toBeNull();
+    expect(extractHandled(null)).toBeNull();
+  });
+
+  it('degrades to null for missing or malformed metadata', () => {
+    expect(extractErrorHint(null)).toBeNull();
+    expect(extractErrorHint({ errorHint: 42 })).toBeNull();
+    expect(extractRequestId(undefined)).toBeNull();
+    expect(extractHelmTraceId('not an object')).toBeNull();
+    expect(extractRuntime({})).toBeNull();
+  });
+});
+
+describe('hasUnknownAffectedUsers', () => {
+  it('is true only for a non-Sentry origin, zero known users, with real occurrences', () => {
+    expect(hasUnknownAffectedUsers(false, 0, 5)).toBe(true);
+    expect(hasUnknownAffectedUsers(false, 0, 0)).toBe(false);
+    expect(hasUnknownAffectedUsers(false, 2, 5)).toBe(false);
+    expect(hasUnknownAffectedUsers(true, 0, 40)).toBe(false);
+  });
 });
 
 describe('resolveActionFilePath', () => {
@@ -249,6 +380,36 @@ describe('selectNearbyDeploys', () => {
     const result = selectNearbyDeploys(deploys, null, null, 1);
     expect(result).toHaveLength(1);
     expect(result[0]!.sha).toBe('bbb2222');
+  });
+});
+
+describe('selectSuspectDeploy', () => {
+  const nearby = [
+    { sha: 'bbb2222', time: '2026-07-01T12:00:00.000Z' },
+    { sha: 'aaa1111', time: '2026-07-01T00:00:00.000Z' },
+  ];
+
+  it('picks the last deploy at/before first-seen, never one that fired after', () => {
+    expect(selectSuspectDeploy(nearby, '2026-07-01T06:00:00.000Z')).toEqual({
+      sha: 'aaa1111',
+      time: '2026-07-01T00:00:00.000Z',
+    });
+  });
+
+  it('picks the deploy exactly at first-seen over an earlier one', () => {
+    expect(selectSuspectDeploy(nearby, '2026-07-01T12:00:00.000Z')).toEqual({
+      sha: 'bbb2222',
+      time: '2026-07-01T12:00:00.000Z',
+    });
+  });
+
+  it('returns null — not a guess — when every deploy fired after first-seen', () => {
+    expect(selectSuspectDeploy(nearby, '2026-06-30T00:00:00.000Z')).toBeNull();
+  });
+
+  it('returns null when first-seen or the deploy list is empty/unknown', () => {
+    expect(selectSuspectDeploy(nearby, null)).toBeNull();
+    expect(selectSuspectDeploy([], '2026-07-01T06:00:00.000Z')).toBeNull();
   });
 });
 

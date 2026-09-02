@@ -31,6 +31,25 @@ set -euo pipefail
 # disable the daemon rather than trust a degraded cache to report honestly.
 git() { command git -c core.fsmonitor=false "$@"; }
 
+# The Vercel CLI is REPO-LOCAL. AGENTS.md: "Use repo-local platform CLIs:
+# ./node_modules/.bin/supabase and ./node_modules/.bin/vercel. Do not assume
+# global Supabase or Vercel binaries."
+#
+# This script called bare `vercel` and therefore could not run at all on a
+# machine without a global install — discovered 2026-09-01 attempting the first
+# promote of nine merged fixes, which died at "vercel: command not found" AFTER
+# passing every guard above it. A deploy script that cannot deploy is worse than
+# no deploy script: it reads as a working release path right up until you need it.
+VERCEL_BIN="./node_modules/.bin/vercel"
+if [ ! -x "$VERCEL_BIN" ]; then
+  VERCEL_BIN="$(command -v vercel || true)"
+fi
+if [ -z "$VERCEL_BIN" ] || [ ! -x "$VERCEL_BIN" ]; then
+  echo "REFUSING: no Vercel CLI found at ./node_modules/.bin/vercel or on PATH." >&2
+  echo "Run \`npm install\` (the CLI is a repo dependency)." >&2
+  exit 1
+fi
+
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 SHA="$(git rev-parse HEAD)"
 SHORT="$(git rev-parse --short HEAD)"
@@ -91,13 +110,65 @@ echo "  scope       -> $SCOPE"
 #   NEXT_PUBLIC_* into the bundle. This is the one that actually matters.
 # --env: available at runtime too, so the server-side Sentry init agrees with
 #   the client bundle rather than reporting a different release.
-vercel deploy --prod --yes \
+# --archive=tgz: .claude/rules/shipping.md has required this since the
+# 2026-08-03 and 2026-08-09 rejections (48,139 and 19,795 files against a
+# 15,000 cap) and the 2026-08-20 promote that stalled at "Uploading (0.0B/1.6GB)".
+# This script never passed it — the rule lived only in prose while the one
+# command it governs ignored it. Measured 2026-09-01 the upload is 5,720 files
+# / 96.5 MB, comfortably under the file cap, so the cap is no longer the
+# reason; the 10 MB request-body limit is, and a single tarball is what avoids
+# it. Cheap insurance against a class of failure this repo has hit three times.
+"$VERCEL_BIN" deploy --prod --yes \
+  --archive=tgz \
   --scope "$SCOPE" \
   --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" \
   --env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA"
 
 echo
-echo "Deployed. READY is not LIVE — verify all three before trusting it:"
+# VERIFY, DO NOT NARRATE.
+#
+# This block used to print three commands for a human to run. Nobody ran them,
+# and on 2026-09-01 eight merged fixes sat unreleased without anyone noticing —
+# a deploy that is never checked is indistinguishable from a deploy that never
+# happened. The instructions are now the implementation.
+echo "Verifying the promote actually took effect..."
+
+ALIAS_DPL="$("$VERCEL_BIN" inspect helmsportslabs.com --scope "$SCOPE" 2>&1 | awk '/^ *id\t/ {print $2; exit}')"
+echo "  alias -> $ALIAS_DPL"
+
+HTTP="$(curl -s -o /dev/null -w '%{http_code}' https://helmsportslabs.com/ || echo 000)"
+echo "  https://helmsportslabs.com/ -> $HTTP"
+
+# The release stamp is inlined into the JS chunks, never the HTML — grepping the
+# page source finds nothing even on a correct deploy (verified 2026-08-16, the
+# stamp appeared in 2 of 32 chunks). So sample chunks, not the document.
+STAMPED=0
+for c in $(curl -s https://helmsportslabs.com/ | grep -o '/_next/static/chunks/[^"]*\.js' | sort -u | head -12); do
+  if curl -s "https://helmsportslabs.com$c" | grep -q "$SHA"; then STAMPED=1; break; fi
+done
+
+if [ "$HTTP" != "200" ] || [ "$STAMPED" != "1" ]; then
+  echo >&2
+  echo "DEPLOY NOT VERIFIED." >&2
+  echo "  http=$HTTP  release-stamp-found=$STAMPED  expected-sha=$SHORT" >&2
+  echo "  A READY build whose alias never moved serves nobody. Investigate before" >&2
+  echo "  treating $SHORT as live:  npm run release:status" >&2
+  exit 1
+fi
+
+echo "  release stamp $SHORT found in the served bundle."
+
+# Record the VERIFIED release so the session-start hook can report drift
+# without a network call. Written only after the checks above passed, so this
+# file means "proven live", never "we ran a deploy command". Gitignored: it is
+# machine state, not repo state.
+mkdir -p .claude/session-state 2>/dev/null || true
+printf '%s\n' "$SHA" > .claude/session-state/last-verified-release 2>/dev/null || true
+
+echo
+echo "✅ VERIFIED LIVE: production is serving $SHORT."
+echo
+echo "Reference — what was checked:"
 echo "  1. vercel inspect helmsportslabs.com --scope $SCOPE"
 echo "     The printed deployment id must equal the one above. A READY"
 echo "     production build whose alias never moved serves nobody."

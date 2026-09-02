@@ -192,8 +192,12 @@ export const CalendarSurface = React.forwardRef<
    * the 'next' default — clicking BACK first slid the grid forwards. Cosmetic,
    * but wrong every time a coach's first move is backwards.
    *
-   * Mirrors DayPicker's own resolution order (month → defaultMonth → selected →
-   * today) so the seed matches whatever it actually rendered. Read through a
+   * Resolution order month → defaultMonth → selected → today. NOTE this is NOT
+   * DayPicker's own order: getInitialMonth (react-day-picker 10.0.1,
+   * helpers/getInitialMonth.js) is literally `month || defaultMonth || today`
+   * and never consults `selected`. This comment claimed it mirrored DayPicker
+   * until 2026-09-01. It does not, and that difference WAS the bug fixed
+   * below — the seed here happened to be right while DayPicker's was wrong. Read through a
    * runtime helper rather than by narrowing the generic `mode` union: `selected`
    * is Date | Date[] | DateRange depending on mode, and type-narrowing that here
    * would cost far more than the animation is worth.
@@ -382,6 +386,25 @@ export const CalendarSurface = React.forwardRef<
             ),
             ...(classNames ?? {}),
           }}
+          // OPEN ON THE SELECTED DATE'S MONTH, NOT TODAY'S.
+          //
+          // react-day-picker resolves its initial month as
+          // `month || defaultMonth || today` and never looks at `selected`
+          // (10.0.1, helpers/getInitialMonth.js). CalendarSurface passed
+          // neither, so a picker opened on an event in any other month showed
+          // TODAY, with the selected day off-screen — a coach editing an
+          // August event on 1 September opens the Start-date field and is
+          // looking at September.
+          //
+          // This was invisible for as long as "today" and the selected date
+          // shared a month, which is why two month-navigation suites passed
+          // every day until the month rolled over and eight of their
+          // assertions failed at once. The tests were right; the component
+          // was wrong.
+          //
+          // Placed BEFORE the spread so an explicit month/defaultMonth from
+          // the caller still wins.
+          defaultMonth={seedMonth()}
           {...dayPickerProps}
         />
       </div>

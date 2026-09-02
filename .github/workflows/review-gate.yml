@@ -141,6 +141,17 @@ jobs:
             '^(src/lib/supabase/admin|src/lib/supabase/service|src/lib/auth/supabase-rate-limit|src/lib/notifications/push|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)' \
             'no-admin/scripts/edge'
 
+          # Server-action rule — a catch whose entire body returns []/null/{}
+          # swallows the failure with nothing an operator could ever see. This
+          # scan passes whole changed FILE paths, not diff hunks, so it can
+          # only be registered at `error` because the action tree is currently
+          # clean of the pattern (verified 2026-08-26). If a legitimate silent
+          # fallback is ever needed, log first, then return.
+          run_rule .coderabbit/ast-grep/no-silent-catch-fallback.yml \
+            '^src/app/.*/actions/.*\.tsx?$' \
+            '(\.test\.tsx?$|/__tests__/)' \
+            'actions-only'
+
           exit $fail
 
   semgrep:
@@ -285,23 +296,24 @@ jobs:
             echo "No changed shell scripts for shellcheck."
           fi
 
-      # .claude/hooks/*.sh were covered by NOTHING. They are the load-bearing
-      # safety hooks — guard-bash.sh is what blocks force-push, destructive rm
-      # and unscoped SQL — and one of them has already shipped a silent bug
-      # (a BSD-sed incompatibility that made a rule match nothing while
-      # appearing to work). They are also short, stable and few, so unlike the
-      # rest of the repo they can be checked in FULL on every run rather than
-      # only when changed: a hook that stops working is not something to learn
-      # about from the diff that happened to touch it.
+      # .claude/hooks/*.sh were covered by NOTHING. They are few, short and
+      # stable, so unlike the rest of the repo they can be checked in FULL on
+      # every run rather than only when changed: a hook that stops working is
+      # not something to learn about from the diff that happened to touch it.
+      # One of them has already shipped a silent bug (a BSD-sed
+      # incompatibility that made a rule match nothing while appearing to
+      # work).
+      #
+      # This is a GLOB, deliberately. guard-bash.sh and guard-sql.sh were
+      # deleted 2026-08-27 after being unwired, and the step kept passing
+      # because it never named them.
       - name: Run shellcheck on the safety hooks (always, not just when changed)
         run: |
-          # SC2088 is excluded for this glob ONLY, and it is a false positive
-          # both times it fires. guard-bash.sh inspects the raw command STRING
-          # an agent proposed, in which `~` is still an unexpanded character,
-          # so it matches a LITERAL tilde on purpose and expands it by hand.
-          # Following SC2088 here would make `rm -rf ~` stop being blocked.
-          # Excluded from the CI invocation rather than annotated inline
-          # because .claude/hooks/ is deliberately not agent-writable.
+          # SC2088 is excluded for this glob ONLY. It was a false positive
+          # for guard-bash.sh, which inspected the raw command STRING an agent
+          # proposed (where `~` is still unexpanded) and so matched a literal
+          # tilde on purpose. That hook is gone; the exclusion is kept because
+          # a future hook inspecting command text would hit the same thing.
           shellcheck --severity=warning --exclude=SC2088 --color=always .claude/hooks/*.sh
 
   markdownlint:
@@ -443,11 +455,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
       - name: Check for hardcoded secret fallbacks

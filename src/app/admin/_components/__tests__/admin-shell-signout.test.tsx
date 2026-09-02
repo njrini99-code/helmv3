@@ -67,7 +67,7 @@ describe('AdminShell sign out', () => {
   });
 
   it('offers sign out in both shell surfaces and clears shared-session state before redirecting', async () => {
-    render(<AdminShell email="admin@helm.test" errorCount={0}><div>Bridge content</div></AdminShell>);
+    render(<AdminShell email="admin@helm.test" errorCount={0} healthCount={0}><div>Bridge content</div></AdminShell>);
 
     const signOutButtons = screen.getAllByRole('button', { name: 'Sign out' });
     expect(signOutButtons).toHaveLength(2);
@@ -81,7 +81,7 @@ describe('AdminShell sign out', () => {
 
   it('keeps the sign-out controls retryable and explains a session-revocation failure', async () => {
     mocks.signOut.mockResolvedValueOnce({ error: new Error('network unavailable') });
-    render(<AdminShell email="admin@helm.test" errorCount={0}><div>Bridge content</div></AdminShell>);
+    render(<AdminShell email="admin@helm.test" errorCount={0} healthCount={0}><div>Bridge content</div></AdminShell>);
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Sign out' })[0]!);
 

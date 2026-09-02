@@ -34,9 +34,6 @@ const MAX_PAGES = 20;
 // load. Same `truncated: true` contract as the page ceiling: if the deadline
 // hits while a next-page cursor still exists, the caller is told honestly.
 const MAX_WALL_CLOCK_MS = 8_000;
-/** In-flight ceiling for the per-feature count sweep — see
- *  fetchSentryFeatureCounts' doc comment for why this is not unbounded. */
-const FEATURE_COUNT_CONCURRENCY = 6;
 /** How long to skip the per-feature sweep entirely after one fails. Matches
  *  REVALIDATE_SECONDS: long enough to break the 429 feedback loop, short
  *  enough that a transient blip costs at most one minute of feature counts. */
@@ -284,48 +281,178 @@ export async function fetchSentryFeatureCounts(
   if (keys.length === 0) return {};
   if (Date.now() < featureCountCooldownUntil) return null;
 
-  const counts: Record<string, { total: number; critical: number }> = {};
-  let sweepFailed = false;
-  let nextIndex = 0;
-
-  // Hand-rolled worker pool rather than a new dependency: each worker pulls
-  // the next key until the list is exhausted, or until a sibling has already
-  // failed and made the rest of the sweep worthless.
-  async function worker(): Promise<void> {
-    for (;;) {
-      if (sweepFailed) return;
-      const key = keys[nextIndex++];
-      if (key === undefined) return;
-
-      const res = await fetchSentryIssues({ query: `is:unresolved feature:${key}`, limit: 100 });
-      if (res.status !== 'ok' || !res.data) {
-        sweepFailed = true;
-        return;
-      }
-      counts[key] = {
-        total: res.data.length,
-        critical: res.data.filter((issue) => issue.level === 'fatal').length,
-      };
-    }
-  }
+  // ONE aggregate query, grouped on the tag, instead of one query per feature.
+  //
+  // Measured against production Sentry (org helm-xs, 2026-08-29, one authorised
+  // probe): the Discover events endpoint answers the whole question in a single
+  // request. The previous implementation issued one PAGINATING request per
+  // feature key — roughly 85 distinct URLs against an endpoint whose observed
+  // limit is `x-sentry-rate-limit-limit: 10`. That fanout is what earned the
+  // sustained 429s the Bridge reports as integration faults, and no amount of
+  // caching fixed it: `sentryGet` already sets a 60s revalidate, so the cost was
+  // 85 distinct URLs per instance per window, not per page load.
+  //
+  // `count_unique(issue)` is deliberate. `count()` returns EVENTS where this
+  // function's contract is ISSUES — in the same probe, 7/1/2 events against
+  // 4/1/1 issues. Using `count()` would silently redefine the number.
+  const params = new URLSearchParams({
+    dataset: 'errors',
+    query: 'is:unresolved',
+    statsPeriod: '24h',
+    project: '-1',
+    per_page: '100',
+  });
+  params.append('field', 'feature');
+  params.append('field', 'level');
+  params.append('field', 'count_unique(issue)');
 
   try {
-    const workers = Math.min(FEATURE_COUNT_CONCURRENCY, keys.length);
-    await Promise.all(Array.from({ length: workers }, () => worker()));
-  } catch {
-    sweepFailed = true;
-  }
+    const res = await sentryGet(`/organizations/${cfg.org}/events/`, params, cfg.token);
+    if (!res.ok) {
+      featureCountCooldownUntil = Date.now() + FEATURE_COUNT_COOLDOWN_MS;
+      return null;
+    }
+    const body = (await res.json()) as unknown;
+    const rows = aggregateRows(body);
+    if (rows === null) {
+      featureCountCooldownUntil = Date.now() + FEATURE_COUNT_COOLDOWN_MS;
+      return null;
+    }
 
-  if (sweepFailed) {
+    // Seed every REQUESTED key at zero. Absent from an aggregate means the
+    // query asked globally and this feature had none — genuinely zero, unlike
+    // the old sweep where absence could only mean "we never asked".
+    const counts: Record<string, { total: number; critical: number }> = {};
+    for (const key of keys) counts[key] = { total: 0, critical: 0 };
+
+    for (const row of rows) {
+      const feature = typeof row.feature === 'string' ? row.feature : '';
+      const bucket = counts[feature];
+      // The aggregate returns every feature in the org, including '' and
+      // 'unknown'. Only requested keys belong in the result.
+      if (!bucket) continue;
+      const n = Number(row['count_unique(issue)']);
+      if (!Number.isFinite(n)) continue;
+      bucket.total += n;
+      if (row.level === 'fatal') bucket.critical += n;
+    }
+    return counts;
+  } catch {
     featureCountCooldownUntil = Date.now() + FEATURE_COUNT_COOLDOWN_MS;
     return null;
   }
-  return counts;
+}
+
+/**
+ * Rows out of a Discover aggregate response, or `null` when the envelope is
+ * not what we expect.
+ *
+ * The `{ data: [...] }` envelope is what the REST endpoint documents and what
+ * the Discover URL implies; the shape was confirmed through the Sentry MCP
+ * rather than by parsing a raw response body, so a bare array is accepted too.
+ * Anything else returns `null` — an unrecognised envelope is unreadable, and
+ * silently treating it as zero rows would report every feature as healthy.
+ */
+function aggregateRows(body: unknown): Array<Record<string, unknown>> | null {
+  const raw = Array.isArray(body)
+    ? body
+    : body && typeof body === 'object' && Array.isArray((body as { data?: unknown }).data)
+      ? (body as { data: unknown[] }).data
+      : null;
+  if (raw === null) return null;
+  return raw.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object');
 }
 
 export interface SentryReleaseHealth {
   crashFreeSessions: number | null;
   crashFreeUsers: number | null;
+}
+
+/**
+ * WRITE side — resolve/ignore a Sentry issue directly from the Bridge, so an
+ * operator can close it out without switching to sentry.io. Every other
+ * export in this file is read-only against SENTRY_READ_TOKEN (or the
+ * SENTRY_AUTH_TOKEN fallback); that same token frequently lacks write scope,
+ * since it was provisioned for org:read + project:read + event:read. This
+ * call still goes through `config()` and inherits the same fail-soft
+ * contract (never throws) — a token that can list issues but cannot mutate
+ * them degrades through the 401/403 branch below exactly like a missing
+ * token degrades through `unconfigured()`, both readable by the caller
+ * without a try/catch.
+ */
+export async function updateSentryIssueStatus(
+  issueId: string,
+  status: 'resolved' | 'ignored',
+): Promise<AdminFetchResult<{ id: string; status: string }>> {
+  const cfg = config();
+  if (!cfg) return unconfigured('Sentry read API');
+
+  const trimmedId = (issueId ?? '').trim();
+  if (!trimmedId) return failed('A Sentry issue id is required');
+
+  // The id lands in a URL PATH segment, so it is validated rather than merely
+  // trimmed. Sentry issue ids are numeric ids or short-ids like `HELMV3-4C`;
+  // nothing legitimate needs a slash, a dot segment, a backslash or an
+  // encoded one. Without this, `../../` walks to a different endpoint and a
+  // leading `//` re-points the request at another host entirely — with an
+  // Authorization header attached. Super-admin-gated is not a reason to skip
+  // it: the token is far more privileged than the operator holding it.
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(trimmedId)) {
+    return failed('Invalid Sentry issue id');
+  }
+
+  const url = `${API}/organizations/${encodeURIComponent(cfg.org)}/issues/${encodeURIComponent(trimmedId)}/`;
+  const doPut = () =>
+    fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${cfg.token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    });
+
+  try {
+    let res = await doPut();
+    // One retry, 5xx only. A 4xx means the request itself is wrong (bad id,
+    // insufficient scope, already-deleted issue) — retrying it would just
+    // repeat the identical rejection. A 5xx is plausibly a transient upstream
+    // blip, and this is a single operator click, not a poll loop, so one
+    // extra attempt is worth it before giving up.
+    if (!res.ok && res.status >= 500) {
+      res = await doPut();
+    }
+
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        return failed(
+          reportIntegrationFault(
+            'sentry',
+            'issue status update',
+            `Sentry issue update failed: ${res.status} — token lacks event:write / issue write scope — add a token with write scope`,
+          ),
+        );
+      }
+      return failed(
+        reportIntegrationFault(
+          'sentry',
+          'issue status update',
+          `Sentry issue update failed: ${res.status}`,
+        ),
+      );
+    }
+
+    const body = (await res.json()) as { id: string; status: string };
+    return ok({ id: body.id, status: body.status });
+  } catch (err) {
+    return failed(
+      reportIntegrationFault(
+        'sentry',
+        'issue status update',
+        `Sentry issue update threw: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
+  }
 }
 
 /** CONDITIONAL widget (OQ3): renders 'not configured' until session

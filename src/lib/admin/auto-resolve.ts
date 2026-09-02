@@ -133,6 +133,15 @@ import { isOperatorGatedFaultCode } from '@/lib/admin/provider-fault';
 import { fetchVercelDeployments, type VercelDeployment } from '@/lib/admin/vercel-api';
 import { classifyIncident } from '@/lib/admin/incident-classification';
 import { extractErrorCode } from '@/lib/admin/incident-report';
+import {
+  recordAutoResolutions,
+  markRegressions,
+  fetchResolutionsFor,
+  type ResolutionEntry,
+  type LedgerWriteResult,
+  type RegressionWriteResult,
+} from '@/lib/admin/resolution-ledger';
+import { planReopens } from '@/lib/reliability/resolution';
 
 /** Exported so incident-feed.ts's read-time Sentry filter (the "mirror of
  *  Rule A" described in its own doc comment) can never drift from the
@@ -195,6 +204,20 @@ export interface AutoResolveResult {
    *  still runs regardless (see module doc). */
   releaseSkippedReason?: string;
   deploySha?: string | null;
+  /**
+   * Fingerprint-level ledger writes made from THIS pass's decisions. Separate
+   * from the row counts above because they answer a different question: the
+   * counts say how many rows were hidden, these say what the system now
+   * remembers about why.
+   */
+  ledger: LedgerWriteResult;
+  regressions: RegressionWriteResult;
+  /**
+   * Set when regression detection could not run — the resolutions read
+   * failed, so "nothing regressed" was never established. Reported rather
+   * than rendered as a clean zero.
+   */
+  regressionSkippedReason?: string;
 }
 
 interface DeployAnchor {
@@ -485,6 +508,41 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   //
   // Silence is not recovery. These stay open until a human clears them.
 
+  // ── Regression detection, BEFORE anything below records a new resolution.
+  //
+  // Order is load-bearing. Recording a resolution overwrites
+  // `last_seen_at_resolution`, which is the exact baseline a regression is
+  // measured against — so detecting afterwards would compare this pass's
+  // occurrences against a baseline this pass just moved past them, and no
+  // fault would ever be seen to come back.
+  //
+  // `maxByFingerprint` is built from currently-UNRESOLVED rows, which is
+  // precisely where a recurrence lands: a fault that fires again after being
+  // archived arrives as a fresh row with `resolved` defaulting to false.
+  const knownFingerprints = [...maxByFingerprint.keys()];
+  const stored = await fetchResolutionsFor(admin, knownFingerprints);
+
+  let regressions: RegressionWriteResult = { marked: 0, failed: 0, capped: 0, firstError: null };
+  let regressedSet = new Set<string>();
+  let regressionSkippedReason: string | undefined;
+
+  if (stored.error) {
+    // A failed READ is not evidence that nothing regressed. Skipping loudly
+    // beats reporting a clean zero we never established.
+    regressionSkippedReason = `resolutions read failed: ${stored.error}`;
+  } else {
+    const reopen = planReopens({
+      openFaults: [...maxByFingerprint].map(([fingerprint, maxT]) => ({
+        fingerprint,
+        lastSeenAt: new Date(maxT).toISOString(),
+        occurrences: 0,
+      })),
+      resolutions: stored.resolutions,
+    });
+    regressedSet = new Set(reopen.map((r) => r.fingerprint));
+    regressions = await markRegressions(admin, [...regressedSet]);
+  }
+
   const deploy = await getProductionDeployAt(now);
 
   const releaseFingerprints: string[] = [];
@@ -540,6 +598,42 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   // read for Rules A/B.
   const resolvedNonActionable = await resolveNonActionable(admin, resolvedAtIso);
 
+  // ── Record WHAT was decided, at fingerprint level.
+  //
+  // Only Rules A and B: those are fix CLAIMS. Rule C (aged-out rows with no
+  // fingerprint) has nothing to key on, and Rule D (the classifier says nobody
+  // needs to act) asserts the row was never actionable — neither claims
+  // anything was fixed, so neither writes a resolution.
+  //
+  // A fingerprint that regressed in this same pass is excluded. It has come
+  // back, and re-archiving it in the pass that noticed would erase the signal
+  // immediately after raising it.
+  const ledgerEntries: ResolutionEntry[] = [];
+  const addEntry = (fingerprint: string, fixedInSha: string | null, note: string) => {
+    if (regressedSet.has(fingerprint)) return;
+    const maxT = maxByFingerprint.get(fingerprint);
+    if (maxT === undefined) return;
+    ledgerEntries.push({
+      fingerprint,
+      lastSeenAt: new Date(maxT).toISOString(),
+      fixedInSha,
+      note,
+    });
+  };
+
+  for (const fp of releaseFingerprints) {
+    addEntry(fp, deploy.deploySha, 'rule A: quiet since a production deploy at least 24h old');
+  }
+  for (const fp of quietFingerprints) {
+    // Deliberately null: Rule B infers from 14 days of silence alone and
+    // claims no deploy evidence. Crediting the current production SHA would
+    // attribute the fix to a release that may have nothing to do with it, and
+    // `shipStatus` already answers honestly with a null SHA.
+    addEntry(fp, null, 'rule B: no occurrence in 14 days; no deploy evidence claimed');
+  }
+
+  const ledger = await recordAutoResolutions(admin, ledgerEntries);
+
   return {
     resolvedRelease,
     resolvedQuiet,
@@ -548,5 +642,8 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
     fingerprints: releaseFingerprints.length + quietFingerprints.length,
     ...(releaseFingerprints.length === 0 && releaseSkippedReason ? { releaseSkippedReason } : {}),
     deploySha: deploy.deploySha,
+    ledger,
+    regressions,
+    ...(regressionSkippedReason ? { regressionSkippedReason } : {}),
   };
 }

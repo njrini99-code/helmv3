@@ -1,9 +1,7 @@
+import '@supabase/supabase-js/tracing';
 import { createClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/nextjs';
 import type { Database } from '@/lib/types/database';
-import {
-  SUPABASE_TRACE_PROPAGATION,
-  withSupabaseTracing,
-} from '@/lib/observability/supabase-tracing';
 
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -16,23 +14,16 @@ export function createAdminClient() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing for admin client.');
   }
 
-  // Service-role client. Instrumented like every other factory: verified that
-  // Sentry's auth instrumentation names spans from `operation.name` only
-  // (`auth (admin) createUser`) and never reads `argumentsList`, so no email,
-  // user id, or token reaches telemetry from this highest-privilege surface.
-  // `sendOperationData: false` (inside withSupabaseTracing) keeps mutation
-  // bodies off the spans.
-  //
-  // The service-role KEY itself is only ever read here into the Supabase client
-  // and is never passed to Sentry — instrumentation wraps the client, not its
-  // construction arguments.
-  return withSupabaseTracing(
-    createClient<Database>(url, serviceRoleKey, {
-      tracePropagation: SUPABASE_TRACE_PROPAGATION,
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    })
-  );
+  const client = createClient<Database>(url, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+    tracePropagation: {
+      enabled: true,
+      respectSamplingDecision: false,
+    },
+  });
+  Sentry.instrumentSupabaseClient(client, { sendOperationData: false });
+  return client;
 }

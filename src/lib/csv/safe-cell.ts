@@ -1,0 +1,85 @@
+/**
+ * CSV cell encoding that is safe to open in a spreadsheet.
+ *
+ * Two separate problems, both present in the CRM export before 2026-08-27
+ * (security scan finding F15, CWE-1236):
+ *
+ * 1. FORMULA / DDE INJECTION. Excel, Google Sheets and LibreOffice evaluate a
+ *    cell whose value begins with `=`, `+`, `-` or `@` as a formula — and RFC
+ *    4180 quoting does NOT prevent it, because the quotes are stripped by the
+ *    parser before the value is interpreted. A coach name imported from a
+ *    scraped list reading `=HYPERLINK("http://evil","click")`, or the classic
+ *    `=cmd|'/C calc'!A0` DDE payload, therefore executes the moment an operator
+ *    opens the export. The data is externally sourced (bulk CSV import) and the
+ *    reader is an internal operator, which is the whole shape of the attack.
+ *
+ * 2. BROKEN QUOTING. The old exporter doubled embedded quotes on exactly one
+ *    field (`notes`) and wrapped every field in quotes regardless — so a `"` in
+ *    a name or school silently terminated the field early and shifted every
+ *    subsequent column. That is a correctness bug that also destroys the
+ *    evidence value of the export.
+ *
+ * The leading apostrophe is the standard mitigation: spreadsheets treat it as
+ * "this is text", display the original value, and never evaluate it. It is
+ * applied only to values that would otherwise be interpreted, so ordinary data
+ * is untouched.
+ */
+
+/** Characters that make a spreadsheet treat the rest of the cell as a formula. */
+const FORMULA_LEADERS = ['=', '+', '-', '@'];
+
+/**
+ * Control characters that can be used to sneak a formula leader past a naive
+ * check — a leading tab or CR is stripped by the spreadsheet before it decides
+ * whether the cell is a formula, so `\t=1+1` is still a formula.
+ */
+// Stripping control characters IS the point here: a leading tab/CR/NUL is
+// removed by the spreadsheet BEFORE it decides whether the cell is a formula,
+// so `\t=1+1` still evaluates. Written with \x escapes because the source
+// previously carried LITERAL NUL and \x1f bytes, which made git treat this file
+// as binary ("Bin 0 -> 3273 bytes" in the commit stat) and hid the regex from
+// review entirely. `[\t\r\n\x00-\x1f]` was the original class; \t, \r and \n
+// are all inside \x00-\x1f, so this is the same set, verified case-by-case.
+// eslint-disable-next-line no-control-regex -- deliberate; see above
+const LEADING_CONTROL_RE = /^[\x00-\x1f]+/;
+
+/**
+ * Encode one value as an RFC 4180 field, neutralising formula injection.
+ *
+ * Always returns a quoted field: quoting is what makes embedded commas,
+ * newlines and quotes safe, and doing it unconditionally removes the "did this
+ * field need quoting?" judgement that the previous implementation got wrong.
+ */
+export function csvCell(value: unknown): string {
+  if (value === null || value === undefined) return '""';
+
+  const raw = String(value);
+
+  // Decide on the value with leading control characters removed, so a payload
+  // cannot hide behind one, but prefix the ORIGINAL so nothing is lost.
+  const probe = raw.replace(LEADING_CONTROL_RE, '');
+  const needsGuard = FORMULA_LEADERS.some((lead) => probe.startsWith(lead));
+
+  const guarded = needsGuard ? `'${raw}` : raw;
+
+  // RFC 4180: double every embedded quote, wrap the whole field in quotes.
+  return `"${guarded.replace(/"/g, '""')}"`;
+}
+
+/** Join one record's cells. */
+export function csvRow(cells: readonly unknown[]): string {
+  return cells.map(csvCell).join(',');
+}
+
+/**
+ * Build a full CSV document from a header row and body rows.
+ *
+ * CRLF line endings per RFC 4180 — Excel on Windows is the dominant consumer of
+ * these exports and is the least forgiving about bare LF.
+ */
+export function buildCsv(
+  headers: readonly string[],
+  rows: readonly (readonly unknown[])[],
+): string {
+  return [csvRow(headers), ...rows.map(csvRow)].join('\r\n');
+}

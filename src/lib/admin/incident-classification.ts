@@ -41,6 +41,8 @@
  *   direction for a triage tool.
  */
 
+import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
+
 export type IncidentClass =
   /** A genuine unexpected failure. Belongs in triage. */
   | 'defect'
@@ -65,6 +67,19 @@ export interface IncidentClassification {
    * being deleted — nothing is ever hidden irrecoverably.
    */
   actionable: boolean;
+  /**
+   * Did a CONTENT rule recognise this, or did it fall through to the severity
+   * ladder at the bottom?
+   *
+   * The distinction only matters in one direction, and it matters a lot there.
+   * `false` with `actionable: false` means "we did not recognise this, and it
+   * happened to be logged at info" — which is an argument from silence, not a
+   * verdict. Any automatic path that CLOSES things must require `true`;
+   * otherwise a row nobody understood gets archived because whoever wrote the
+   * log line picked a quiet severity. Measured 2026-08-27: 4 of 13 rows the
+   * triage engine offered to close were in exactly this state.
+   */
+  matched: boolean;
   /** Which rule fired, in operator-readable words. Surfaced in the UI. */
   reason: string;
   /**
@@ -105,6 +120,19 @@ const INTEGRITY_PASS = ['integrity pass'];
  * "Free tier users do not have access to this model", which is a BILLING
  * fault (classified `integration` below), not an access-control outcome.
  */
+/**
+ * Postgres's own privilege-error wording, and only that. `permission denied
+ * for table x` / `for view x` / `for function x` / `for schema x` / `for
+ * sequence x` / `for relation x` — every one of these is SQLSTATE 42501 coming
+ * back at our own service code, never a denial this application issued.
+ *
+ * Deliberately narrow: it requires the object-kind word, so `permission denied`
+ * on its own — the phrasing an app uses when telling a person no — still falls
+ * through to ACCESS_PHRASES below and stays non-actionable.
+ */
+const POSTGRES_PRIVILEGE_ERROR =
+  /permission denied for (table|view|function|schema|sequence|relation|materialized view)\s/i;
+
 const ACCESS_PHRASES = [
   'you do not have access',
   'unauthorized',
@@ -114,6 +142,12 @@ const ACCESS_PHRASES = [
   'permission denied',
   'not a super admin',
   'invalid email or password',
+  // Supabase Auth's own wording for the same event. `invalid email or
+  // password` above is OUR copy; `AuthApiError: Invalid login credentials` is
+  // what the provider throws, and it reached Sentry as an unclassified error
+  // while the identical outcome logged by our own code classified correctly.
+  // One event, two vocabularies — the list has to carry both.
+  'invalid login credentials',
   'you must be signed in',
   'must be signed in',
   'only coaches can',
@@ -148,6 +182,12 @@ const TELEMETRY_PHRASES = [
   'refusing to emit',
   'resizeobserver loop',
   'cron 24h sent=',
+  // A Vercel build superseded by a newer push. It is the platform doing
+  // exactly what it should, reported to the reliability collector as a signal
+  // — 18 of them in one 72h window on 2026-08-27, purely from normal pushes.
+  // Not an application error at all, and nothing to act on.
+  'deployment canceled',
+  'deployment cancelled',
 ];
 
 /** Upstream provider faults — quota, billing, rate limiting, model errors. */
@@ -167,6 +207,27 @@ const INTEGRATION_PHRASES = [
   'paid credits',
   'free tier',
   'inngest api error',
+];
+
+/**
+ * A client asking for a JavaScript chunk that no longer exists.
+ *
+ * This is the stale-deployment case and it ALREADY self-recovers:
+ * `src/components/providers/StaleDeploymentRecoveryScript.tsx` reloads the
+ * page when it sees one. The visitor's tab was open across a deploy; the new
+ * build has different content hashes; the old chunk 404s. Nothing is broken in
+ * the code that gets fetched.
+ *
+ * Its own class rather than a DEGRADATION_PHRASES entry, because those are
+ * phrased as "the call site explicitly continued" and this one is recovered by
+ * a different mechanism entirely — a full reload — which is worth saying in
+ * the reason string rather than flattening into a generic fallback.
+ */
+const STALE_DEPLOYMENT_PHRASES = [
+  'loading chunk',
+  'chunkloaderror',
+  'failed to fetch dynamically imported module',
+  'importing a module script failed',
 ];
 
 /** Handled fallbacks — the call site explicitly continued. */
@@ -202,11 +263,17 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
 
   const hasDegradedMessage = matchesAny(haystack, DEGRADED_MESSAGE_MARKERS) !== null;
 
-  const done = (klass: IncidentClass, actionable: boolean, reason: string): IncidentClassification => ({
+  const done = (
+    klass: IncidentClass,
+    actionable: boolean,
+    reason: string,
+    matched = true,
+  ): IncidentClassification => ({
     klass,
     actionable,
     reason,
     hasDegradedMessage,
+    matched,
   });
 
   // 1. Integrity checks that PASSED. Most specific rule, runs first — these
@@ -222,10 +289,66 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
     return done('access', true, 'RLS denial tripwire — possible permission regression');
   }
 
-  // 3. Expected access control. Not a bug: the system correctly said no.
+  // 3. A POSTGRES PRIVILEGE ERROR IS NOT AN ACCESS CONTROL DECISION, and this
+  //    check must run before the ACCESS_PHRASES sweep below, which contains the
+  //    bare string 'permission denied' and would otherwise swallow it.
+  //
+  //    The difference is who said no and to whom. `You do not have permission
+  //    to edit this` is THIS APPLICATION correctly denying a user — expected,
+  //    non-actionable, exactly what rule 3b is for. `permission denied for
+  //    table baseball_players` is POSTGRES refusing OUR OWN code because a
+  //    GRANT is missing: nobody was denied anything they should not have had,
+  //    a feature is simply broken.
+  //
+  //    Found 2026-08-27 by running the triage engine against 72h of production
+  //    and reading what it proposed to close: `GET /api/cron/event-reminders`
+  //    failing 23 times on `permission denied for table baseball_players` was
+  //    ranked non-actionable and sat in the closeable pile. Auto-resolve's Rule
+  //    D resolves on exactly this verdict, so any such row that reached
+  //    `admin_events` would have been closed unread — a live grant failure
+  //    filed as "the system correctly said no". That is the `unknown → healthy`
+  //    inversion the OS contract forbids, arrived at through a phrase match.
+  //
+  //    Anchored to Postgres's own wording (`for <object-kind> <name>`) and to
+  //    SQLSTATE 42501 so ordinary app prose containing "permission denied"
+  //    still classifies as before.
+  if (POSTGRES_PRIVILEGE_ERROR.test(haystack) || errorCode === '42501') {
+    return done(
+      'defect',
+      true,
+      'Postgres privilege error (42501) — a missing GRANT on our own code, not an access-control decision',
+    );
+  }
+
+  // 3b. Expected access control. Not a bug: the system correctly said no.
   const accessHit = matchesAny(haystack, ACCESS_PHRASES);
   if (accessHit) {
     return done('access', false, `Expected access control ("${accessHit}")`);
+  }
+
+  // 3c. A CLIENT fetch that never reached the server. WebKit says "Load
+  //     failed", Chromium "Failed to fetch" — the TypeError carries no status
+  //     because there was no HTTP response to carry one. Rule 4 below already
+  //     treats a client-reported provider fault as the visitor's connectivity,
+  //     but its phrase list only knew the generic "network error" wording, so
+  //     the overnight digest of 2026-09-02 paged on three "Client error: Load
+  //     failed" rows (two Shenandoah phones mid-send, one route boundary) as
+  //     actionable degradations. Same class, same verdict. Server-side
+  //     transport failures (undici's "fetch failed" from a Vercel function)
+  //     are deliberately NOT matched here and stay actionable — those are ours.
+  //     A stale-deployment chunk failure ("Failed to fetch dynamically
+  //     imported module") shares the wording but not the cause; rule 5b owns
+  //     it, so it is excluded here rather than re-filed as connectivity.
+  if (
+    source === 'client' &&
+    isTransientNetworkErrorMessage(haystack) &&
+    !matchesAny(haystack, STALE_DEPLOYMENT_PHRASES)
+  ) {
+    return done(
+      'integration',
+      false,
+      'Client-side connectivity — the request never reached the server (transport-layer TypeError)',
+    );
   }
 
   // 4. Provider/upstream faults. Checked before empty-state and telemetry
@@ -259,6 +382,16 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
     return done('empty_state', false, `Empty state, not a failure ("${emptyHit}")`);
   }
 
+  // 5b. Stale-deployment chunk failures — recovered by a reload, not by us.
+  const staleHit = matchesAny(haystack, STALE_DEPLOYMENT_PHRASES);
+  if (staleHit) {
+    return done(
+      'degradation',
+      false,
+      `Stale-deployment asset ("${staleHit}") — StaleDeploymentRecoveryScript reloads the page`,
+    );
+  }
+
   // 6. Routine operational instrumentation.
   const telemetryHit = matchesAny(haystack, TELEMETRY_PHRASES);
   if (telemetryHit) {
@@ -275,12 +408,12 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
   //    critically an unmatched error/critical defaults to a VISIBLE defect —
   //    a new unanticipated failure must never be silently filtered away.
   if (severity === 'critical' || severity === 'error') {
-    return done('defect', true, 'Unexpected failure (severity-derived)');
+    return done('defect', true, 'Unexpected failure (severity-derived)', false);
   }
   if (severity === 'warning') {
-    return done('degradation', true, 'Warning-level degradation (severity-derived)');
+    return done('degradation', true, 'Warning-level degradation (severity-derived)', false);
   }
-  return done('telemetry', false, 'Informational (severity-derived)');
+  return done('telemetry', false, 'Informational (severity-derived)', false);
 }
 
 /** Human label for a class — used by chips, the detail page, and the report. */

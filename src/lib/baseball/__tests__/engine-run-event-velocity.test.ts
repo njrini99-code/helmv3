@@ -11,6 +11,10 @@ import { DEFAULT_AI_POLICY } from '@/lib/baseball/ai-policy';
 import type { BaseballInsightCandidate } from '@/lib/coachhelm/baseball/generators';
 import type { BaseballV10EngineInputs } from '@/lib/coachhelm/baseball/engine';
 
+const { logServerError } = vi.hoisted(() => ({ logServerError: vi.fn() }));
+
+vi.mock('@/lib/server-error-logger', () => ({ logServerError }));
+
 const NOW = '2026-06-30T12:00:00.000Z';
 const TEAM_ID = 'team-1';
 const ORG_ID = 'org-1';
@@ -160,5 +164,14 @@ describe('runBaseballEngineCore — #852 event-derived velocity wiring', () => {
     const mixed = capturedInputs!.players.find((p) => p.playerId === MIXED_PLAYER);
     expect(mixed!.metrics.avg_exit_velocity?.value).toBe(80);
     expect(mixed!.metrics.avg_exit_velocity?.source_refs[0]?.table).toBe('baseball_player_stats');
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('event telemetry read failed'),
+      expect.objectContaining({
+        action: 'baseball.engineRun.loadEventTelemetry',
+        teamId: TEAM_ID,
+        errorCode: undefined,
+      }),
+      'warning',
+    );
   });
 });

@@ -3466,7 +3466,25 @@ async function loadEvidenceBackedInsights(
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (error || !data) return [];
+    if (error || !data) {
+      // This function's ComposedInsight[] return bypasses withAdminObserved's
+      // soft-failure detection entirely (extractActionSoftFailure returns
+      // null for an array), so a real read failure here previously
+      // vanished — indistinguishable from "the player has no persisted
+      // insights yet". Observability only; the fallback [] is unchanged.
+      void logServerError(
+        `loadEvidenceBackedInsights read failed: ${error?.message ?? 'no data returned'}`,
+        {
+          action: 'loadEvidenceBackedInsights',
+          featureArea: 'insights',
+          playerId,
+          errorCode: error?.code,
+          errorDetails: error?.details,
+        },
+        'warning'
+      );
+      return [];
+    }
 
     const projected = data
       .filter((row): row is typeof row & { evidence: Record<string, unknown> } => !!row.evidence)
@@ -3521,7 +3539,17 @@ async function loadEvidenceBackedInsights(
       activeGoals,
     );
     return ranked.map((r) => r._ref);
-  } catch {
+  } catch (err) {
+    void logServerError(
+      `loadEvidenceBackedInsights threw: ${describeError(err)}`,
+      {
+        action: 'loadEvidenceBackedInsights',
+        featureArea: 'insights',
+        playerId,
+        extra: { stack: err instanceof Error ? err.stack : undefined },
+      },
+      'error'
+    );
     return [];
   }
 }
@@ -4605,6 +4633,10 @@ async function triggerPlayerInsightsAfterRoundImpl(
             const { sendPushNotification } = await import('@/lib/notifications/push');
             await sendPushNotification('coachhelm_insight', coachUser.user_id, {
               insightTitle: `${newInsights.length} new insight${newInsights.length > 1 ? 's' : ''} after round`,
+              // Explicit even though it is the default — this recipient is the
+              // team COACH (resolved from golf_coaches above), and the payload
+              // picks a coach-vs-player destination off this field.
+              audience: 'coach',
             });
           }
         } catch (pushErr) {

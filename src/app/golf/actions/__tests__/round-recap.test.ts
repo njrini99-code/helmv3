@@ -34,34 +34,30 @@ interface MockRoundRow {
   ai_recap_generated_at: string | null;
 }
 
+const { logServerErrorMock } = vi.hoisted(() => ({
+  logServerErrorMock: vi.fn(async () => undefined),
+}));
+
 let mockRound: MockRoundRow | null = null;
 let mockStats: { scoring_average: number | null; best_round: number | null; rounds_played: number | null } | null = null;
-let persistedUpdate: Record<string, unknown> | null = null;
+let persistedRecap: { p_round_id: string; p_recap: string | null } | null = null;
+let persistError: { message: string; code?: string } | null = null;
+// The round's player as golf_players knows them. Null = no first name on file.
+let mockPlayerFirstName: string | null = null;
 
-function createChainableMock(maybeSingleData: unknown, onUpdate?: (payload: Record<string, unknown>) => void) {
+function createChainableMock(maybeSingleData: unknown) {
   const chain: Record<string, unknown> = { data: null, error: null };
   const methods = ['select', 'eq', 'limit'];
   for (const method of methods) {
     chain[method] = vi.fn(() => chain);
   }
-  chain.update = vi.fn((payload: Record<string, unknown>) => {
-    onUpdate?.(payload);
-    // The action treats a 0-row update result as a failed persist (see
-    // round-recap.ts's `.select('id')` check after `.update(...)`) — these
-    // tests exercise a successful, RLS-visible update, so the chain must
-    // resolve with a non-empty row once `.select('id')` is awaited.
-    chain.data = [{ id: 'round-1' }];
-    return chain;
-  });
   chain.maybeSingle = vi.fn(async () => ({ data: maybeSingleData, error: null }));
   return chain;
 }
 
 const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_rounds') {
-    return createChainableMock(mockRound, (payload) => {
-      persistedUpdate = payload;
-    });
+    return createChainableMock(mockRound);
   }
   if (table === 'golf_player_stats_cache') {
     return createChainableMock(mockStats);
@@ -69,16 +65,25 @@ const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_players') {
     // verifyPlayerAccess self-access probe: the round's player_id belongs
     // to the acting user, so this always resolves as the self-access case.
-    return createChainableMock({ id: 'player-1' });
+    // The same row serves the recap's first-name lookup.
+    return createChainableMock({ id: 'player-1', first_name: mockPlayerFirstName });
   }
   // golf_team_members / golf_team_coach_staff — no billing coach on file
   return createChainableMock(null);
 });
 
 const mockGetUser = vi.fn(async () => ({ data: { user: { id: 'user-1' } }, error: null }));
+const mockRpc = vi.fn(async (_name: string, args: { p_round_id: string; p_recap: string | null }) => {
+  persistedRecap = args;
+  return { data: persistError ? null : { success: true }, error: persistError };
+});
 
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(async () => ({ from: mockFrom, auth: { getUser: mockGetUser } })),
+  createClient: vi.fn(async () => ({ from: mockFrom, rpc: mockRpc, auth: { getUser: mockGetUser } })),
+}));
+
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: logServerErrorMock,
 }));
 
 // compose() returns the deterministic fallback verbatim (budget gate denied /
@@ -130,9 +135,12 @@ describe('generateRoundRecap — 9-hole vs 18-hole average comparisons', () => {
   beforeEach(() => {
     mockRound = null;
     mockStats = null;
-    persistedUpdate = null;
+    persistedRecap = null;
+    persistError = null;
     composeMock.mockClear();
     mockFrom.mockClear();
+    mockRpc.mockClear();
+    logServerErrorMock.mockClear();
     revalidatePathMock.mockClear();
   });
 
@@ -147,9 +155,9 @@ describe('generateRoundRecap — 9-hole vs 18-hole average comparisons', () => {
     expect(result.recap).not.toContain('sets a new low');
     expect(result.recap).toContain('37 on the card at Pinehurst No. 2');
 
-    // The persisted recap must match what was returned (it lands in
-    // golf_rounds.ai_recap, so a bad comparison would be permanent).
-    expect(persistedUpdate?.ai_recap).toBe(result.recap);
+    // The recap is written through the lifecycle RPC, not a direct update of
+    // immutable completed-round history.
+    expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: result.recap });
 
     // The LLM prompt must not offer the 18-hole figures as comparison fodder
     // for a 9-hole score either.
@@ -184,9 +192,12 @@ describe('generateRoundRecap — revalidatePath gating (prod incident d0a9265f)'
   beforeEach(() => {
     mockRound = { ...baseRound };
     mockStats = { scoring_average: 74.2, best_round: 70, rounds_played: 12 };
-    persistedUpdate = null;
+    persistedRecap = null;
+    persistError = null;
     composeMock.mockClear();
     mockFrom.mockClear();
+    mockRpc.mockClear();
+    logServerErrorMock.mockClear();
     revalidatePathMock.mockClear();
   });
 
@@ -216,5 +227,72 @@ describe('generateRoundRecap — revalidatePath gating (prod incident d0a9265f)'
 
     expect(result.cached).toBe(true);
     expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('records a precise warning and does not claim a recap was saved when the lifecycle RPC rejects it', async () => {
+    persistError = { message: 'round recap write rejected', code: '55000' };
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result).toEqual({ recap: null, cached: false });
+    expect(logServerErrorMock).toHaveBeenCalledWith(
+      'Round recap persistence failed: round recap write rejected',
+      expect.objectContaining({
+        action: 'generateRoundRecap.persist',
+        featureArea: 'round_review_ai',
+        roundId: 'round-1',
+        playerId: 'player-1',
+        errorCode: '55000',
+      }),
+      'warning',
+    );
+  });
+});
+
+describe('generateRoundRecap — the prompt names THIS player (Shenandoah field report, 2026-09-01)', () => {
+  // The prompt used to name nobody and offer "Nick" as an example of the
+  // third person. The model copied the example: a Shenandoah player's stored
+  // recap opened "Nick's back nine collapse".
+  beforeEach(() => {
+    mockRound = { ...baseRound };
+    mockStats = null;
+    persistedRecap = null;
+    persistError = null;
+    mockPlayerFirstName = null;
+    composeMock.mockClear();
+    mockFrom.mockClear();
+  });
+
+  function promptHandedToTheModel(): string {
+    expect(composeMock).toHaveBeenCalledTimes(1);
+    return composeMock.mock.calls[0]![0].prompt;
+  }
+
+  it("hands the model the player's own first name, and never the old example", async () => {
+    mockPlayerFirstName = 'Caden';
+    await generateRoundRecap('round-1');
+    const prompt = promptHandedToTheModel();
+    expect(prompt).toContain('Player: Caden');
+    expect(prompt).toContain('as "Caden" in the third person');
+    expect(prompt).not.toMatch(/\bNick\b/);
+  });
+
+  it('falls back to "the player" when no first name is on file', async () => {
+    await generateRoundRecap('round-1');
+    const prompt = promptHandedToTheModel();
+    expect(prompt).toContain('as "the player" in the third person');
+    expect(prompt).not.toMatch(/\bNick\b/);
+  });
+
+  it('cleans quotes, backticks and line breaks out of the name before it enters the prompt', async () => {
+    mockPlayerFirstName = '  Ca"den\nSher`man  ';
+    await generateRoundRecap('round-1');
+    expect(promptHandedToTheModel()).toContain('as "Caden Sherman" in the third person');
+  });
+
+  it("keeps an apostrophe — D'Angelo stays D'Angelo", async () => {
+    mockPlayerFirstName = "D'Angelo";
+    await generateRoundRecap('round-1');
+    expect(promptHandedToTheModel()).toContain(`as "D'Angelo" in the third person`);
   });
 });

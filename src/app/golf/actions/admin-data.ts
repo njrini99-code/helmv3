@@ -1319,6 +1319,15 @@ const observedResolveDashboardIncident = withAdminObserved(
   resolveDashboardIncidentImpl,
 );
 
+// UNCALLED as of 2026-08-26. Its only consumer was the legacy /golf/admin
+// ErrorFeed, deleted with the rest of that dashboard; the Bridge resolves
+// through resolve_admin_event (src/app/admin/actions/triage.ts) instead, which
+// is the single write path documented in memory/features/admin-platform.md.
+// Left in place rather than deleted in the same change: removing exports here
+// moves the count that src/lib/admin/__tests__/coverage-contract.foundation.test.ts
+// pins, so it belongs in a deliberate dead-action sweep rather than as a
+// side effect of a UI deletion. Do not build anything new on it.
+
 export async function resolveDashboardIncident(input: {
   incidentKey: string;
   title: string;

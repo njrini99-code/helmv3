@@ -6,8 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
-  Radar, CreditCard,
-  RefreshCw, Dumbbell, Search, LogOut,
+  Radar, CreditCard, GitBranch, Trophy, Waypoints,
+  RefreshCw, Dumbbell, Search, LogOut, Recycle,
 } from 'lucide-react';
 import {
   AppShell,
@@ -36,6 +36,9 @@ import { RelativeTime } from './RelativeTime';
 const SUBROUTE_LABELS: Record<string, string> = {
   tracer: 'Tracer',
   'view-as': 'View as',
+  // titleCaseSegment would render this "Self Heal"; the product name is one
+  // hyphenated word.
+  'self-heal': 'Self-heal',
 };
 
 /** Dynamic-route segments (uuids, opaque ids) are never surfaced verbatim. */
@@ -102,6 +105,16 @@ const NAV_ICON_BY_HREF = {
   '/admin': LayoutDashboard,
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
+  '/admin/traces': GitBranch,
+  '/admin/qualifiers': Trophy,
+  // Waypoints, not another alert glyph: this tab's subject is the CORRELATION
+  // between three sources, and it sits directly beside Errors in the same
+  // section — a second warning triangle would read as a duplicate of it.
+  '/admin/reliability': Waypoints,
+  // A closed loop, not another gauge: this tab's subject is a CIRCUIT that
+  // either completes or does not, and it sits beside Reliability where a
+  // second measurement glyph would read as a variant of it.
+  '/admin/self-heal': Recycle,
   '/admin/auth': KeyRound,
   '/admin/utilization': Gauge,
   '/admin/golf': Flag,
@@ -228,11 +241,19 @@ function useBridgeSignOut() {
 export function AdminShell({
   email,
   errorCount,
+  healthCount,
   children,
 }: {
   email: string;
   /** Bridge bottom-nav Errors badge — 0 renders no badge (honest-only). */
   errorCount: number;
+  /** Bridge bottom-nav Health badge — count of RED features, computed in
+   *  layout.tsx via fetchFeatureHealthRedCount() (see its doc comment for
+   *  the DB-only, Sentry-free cost tradeoff). `null` means the pipeline was
+   *  degraded/unreachable — "unknown" must never render like "zero", so
+   *  both `null` and `0` render no badge, and only a real positive count
+   *  shows one (honest-only). */
+  healthCount: number | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -406,10 +427,10 @@ export function AdminShell({
   const shellUser = useMemo(() => ({ name: 'Super admin', teamName: email }), [email]);
 
   // M1 (bridge-chrome): the daily-loop four (Synthesis Decision 6). Memoized
-  // on `errorCount` alone — `FairwayBottomNav` is `React.memo`'d on this
-  // ARRAY's reference identity, so a fresh literal every render (e.g. every
-  // unrelated pathname-driven re-render) would defeat it. Only the Errors
-  // tab carries a badge, and only when > 0 (honest-only).
+  // on `errorCount`/`healthCount` — `FairwayBottomNav` is `React.memo`'d on
+  // this ARRAY's reference identity, so a fresh literal every render (e.g.
+  // every unrelated pathname-driven re-render) would defeat it. Only Errors
+  // and Health carry a badge, and only when > 0 (honest-only).
   const bottomNavItems: NavItem[] = useMemo(
     () =>
       BRIDGE_BOTTOM_NAV_HREFS.map((href) => ({
@@ -417,9 +438,14 @@ export function AdminShell({
         href,
         icon: NAV_ICON_BY_HREF[href],
         activeMatch: (p: string) => (href === '/admin' ? p === '/admin' : p.startsWith(href)),
-        badge: href === '/admin/errors' && errorCount > 0 ? errorCount : undefined,
+        badge:
+          href === '/admin/errors' && errorCount > 0
+            ? errorCount
+            : href === '/admin/health' && healthCount !== null && healthCount > 0
+              ? healthCount
+              : undefined,
       })),
-    [errorCount],
+    [errorCount, healthCount],
   );
 
   // M1 (more-sheet-nav, docs/MOBILE_DOCTRINE.md Rule 6/10): the More sheet's

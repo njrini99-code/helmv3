@@ -46,6 +46,7 @@ import { pct } from '@/lib/golf/stat-formulas';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
+import { logServerError } from '@/lib/server-error-logger';
 
 interface RoundContext {
   id: string;
@@ -65,6 +66,17 @@ interface RoundContext {
   holes_played: number | null;
   front_nine: number | null;
   back_nine: number | null;
+}
+
+/**
+ * A player's first name as it may appear inside the prompt: double quotes and
+ * backticks stripped (the instruction quotes it), all whitespace including
+ * line breaks collapsed to one space, capped, and never empty. Apostrophes
+ * stay — D'Angelo is D'Angelo.
+ */
+function promptSafeName(raw: string | null | undefined): string {
+  const cleaned = (raw ?? '').replace(/["`]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  return cleaned || 'the player';
 }
 
 interface PlayerStatContext {
@@ -135,6 +147,38 @@ async function generateRoundRecapImpl(
     .eq('player_id', round.player_id)
     .maybeSingle<PlayerStatContext>();
 
+  // 2b. The player's own first name, for the prompt. Until 2026-09-02 the
+  // prompt named nobody and offered "Nick" as an EXAMPLE of third person, and
+  // the model did what examples do: a Shenandoah player's recap opened
+  // "Nick's back nine collapse". The name is user data, so it is cleaned
+  // (promptSafeName) before it is placed inside the instruction.
+  const { data: playerRow, error: playerError } = await supabase
+    .from('golf_players')
+    .select('first_name')
+    .eq('id', round.player_id)
+    .maybeSingle<{ first_name: string | null }>();
+  if (playerError) {
+    // The name is a nicety: the recap still reads correctly as "the player".
+    // Logged, not raised, so a broken lookup can neither block the recap nor
+    // silently rename every recap without a trace.
+    await logServerError(
+      `Recap player-name lookup failed (continuing as "the player"): ${playerError.message}`,
+      {
+        action: 'generateRoundRecap.playerName',
+        featureArea: 'round_review_ai',
+        roundId,
+        playerId: round.player_id,
+        userId: user.id,
+        errorCode: playerError.code,
+        errorHint: playerError.hint,
+        errorDetails: playerError.details,
+        skipSentry: true,
+      },
+      'warning',
+    );
+  }
+  const playerName = promptSafeName(playerRow?.first_name);
+
   // 3. Build deterministic fallback first — compose() needs a fallback to
   // return when the budget gate denies, the LLM errors, or citations fail.
   const deterministic = buildDeterministicRecap(round, stats);
@@ -148,24 +192,35 @@ async function generateRoundRecapImpl(
   // budget gate + golf_coachhelm_llm_calls log + citation verifier as
   // round-review / hero-narrative. Falls back to `deterministic` if
   // gated or on error.
-  const recap = await generateLLMRecap(round, stats, coachId, deterministic);
+  const recap = await generateLLMRecap(round, stats, coachId, deterministic, playerName);
 
-  // 4. Persist. Cast through unknown until the generated DB types pick up
-  // the new ai_recap columns (migration 20260503000000_golf_round_ai_recap).
-  // DS: chain .select('id') and treat a 0-row result as a failed persist —
-  // the ownership gate above should make this unreachable now, but a silent
-  // RLS-filtered no-op here previously meant a recap was generated on every
-  // call and never cached.
-  const { data: persisted } = await supabase
-    .from('golf_rounds')
-    .update({
-      ai_recap: recap,
-      ai_recap_generated_at: new Date().toISOString(),
-    } as unknown as never)
-    .eq('id', roundId)
-    .select('id');
+  // 6. Persist the derived recap through the dedicated lifecycle RPC. Completed
+  // round score history is immutable, so a direct `golf_rounds.update()` is
+  // rightly rejected by the guard even though a recap is not a scoring change.
+  // The RPC permits precisely the two recap columns, rechecks player/coach
+  // access in the database, and records the write under its own lifecycle
+  // capability. Do not replace this with a broader completed-round exception.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: persisted, error: persistError } = await (supabase as any).rpc(
+    'save_round_ai_recap',
+    { p_round_id: roundId, p_recap: recap },
+  );
 
-  if (!persisted || (persisted as unknown[]).length === 0) {
+  if (persistError || persisted?.success !== true) {
+    await logServerError(
+      `Round recap persistence failed: ${persistError?.message ?? 'the database did not confirm the write'}`,
+      {
+        action: 'generateRoundRecap.persist',
+        featureArea: 'round_review_ai',
+        roundId,
+        playerId: round.player_id,
+        userId: user.id,
+        errorCode: persistError?.code,
+        errorHint: persistError?.hint,
+        errorDetails: persistError?.details,
+      },
+      'warning',
+    );
     return { recap: null, cached: false };
   }
 
@@ -208,6 +263,7 @@ async function generateLLMRecap(
   stats: PlayerStatContext | null,
   coachId: string | null,
   fallbackText: string,
+  playerName: string,
 ): Promise<string | null> {
   // Auth is handled by the SDK via Vercel's OIDC token (auto-rotated)
   // inside compose(). compose() also enforces the v3 budget gate, logs
@@ -226,6 +282,7 @@ async function generateLLMRecap(
       : null;
 
   const facts: string[] = [
+    `Player: ${playerName}`,
     `Score: ${round.total_score} (${scoreChip}) over ${round.holes_played ?? 18} holes`,
     `Course: ${round.course_name ?? 'Unknown'}${round.course_city ? ` in ${round.course_city}, ${round.course_state ?? ''}` : ''}`,
     `Round type: ${round.round_type ?? 'practice'}`,
@@ -257,7 +314,7 @@ Strict rules:
 - Exactly two sentences.
 - ≤ 36 words total.
 - No exclamation points. No emojis. No em-dashes — use periods or commas.
-- Use the player's third person ("Nick", "the round") or second person ("you"), not first person.
+- Refer to the player as "${playerName}" in the third person, or as "you" in the second person. Never the first person, and never any other name.
 - Don't restate the score number more than once.
 - Reference at least one specific stat by number.
 

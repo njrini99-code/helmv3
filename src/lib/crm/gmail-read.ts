@@ -666,11 +666,67 @@ function isPermanentFailureDsn(deliveryStatusText: string): boolean {
   return false;
 }
 
-/** Paragraph-scoped prose window for the last-resort fallback above. */
+/**
+ * Longest body we will scan for bounce prose. A bounce notice is short; the cap
+ * exists so an attacker-supplied body cannot drive the scan super-linear.
+ */
+const MAX_BOUNCE_SCAN_CHARS = 64 * 1024;
+
+/** Window taken from the matched phrase — the extraction only needs prose. */
+const BOUNCE_WINDOW_CHARS = 8 * 1024;
+
+/**
+ * The literal openers the old alternation matched, lower-cased for indexOf.
+ * `delivery to the following recipient[s]? failed` is spelled out as both
+ * arms rather than a pattern, so this stays a literal search.
+ */
+const BOUNCE_OPENERS = [
+  'failed permanently',
+  "wasn't delivered to",
+  "couldn't be delivered to",
+  'delivery to the following recipient failed',
+  'delivery to the following recipients failed',
+] as const;
+
+/**
+ * Paragraph-scoped prose window for the last-resort fallback above.
+ *
+ * This used to be one unanchored regex with a leading multi-branch literal
+ * alternation and two lazy `[\s\S]*?` spans, run over the FULL body of any
+ * email an outside sender could send to the admin mailbox. On a body with no
+ * newline anywhere, each literal hit forced a failed suffix scan to the end of
+ * the input, so ~1MB of repeated openers cost on the order of 10^10 character
+ * comparisons — enough to burn the ingest cron's whole execution budget. And
+ * because bounce rows are not deduped by `message_id` the way replies are, the
+ * same poison message came back on every scheduled run until it aged out of the
+ * lookback window (up to 365 days).
+ *
+ * Now: cap the input, locate the opener with indexOf (no backtracking), and run
+ * the paragraph scan only inside a small bounded window from that offset.
+ */
 function scopedBounceParagraph(bodyText: string): string | null {
-  const re =
-    /(?:failed permanently|wasn't delivered to|couldn't be delivered to|delivery to the following recipient[s]? failed)[\s\S]*?\n\s*\n[\s\S]*?(?=\n\s*\n|$)/i;
-  return bodyText.match(re)?.[0] ?? null;
+  const body =
+    bodyText.length > MAX_BOUNCE_SCAN_CHARS ? bodyText.slice(0, MAX_BOUNCE_SCAN_CHARS) : bodyText;
+  const haystack = body.toLowerCase();
+
+  let start = -1;
+  for (const opener of BOUNCE_OPENERS) {
+    const at = haystack.indexOf(opener);
+    if (at !== -1 && (start === -1 || at < start)) start = at;
+  }
+  if (start === -1) return null;
+
+  const window = body.slice(start, start + BOUNCE_WINDOW_CHARS);
+
+  // Original semantics: from the opener, skip to the first blank-line break,
+  // then return through the paragraph that follows, ending at the next blank
+  // line (or, here, the end of the bounded window).
+  const separator = /\n\s*\n/g;
+  const firstBreak = separator.exec(window);
+  if (!firstBreak) return null;
+  separator.lastIndex = firstBreak.index + firstBreak[0].length;
+  const secondBreak = separator.exec(window);
+  return window.slice(0, secondBreak ? secondBreak.index : window.length);
 }
 
 // ---------------------------------------------------------------------------

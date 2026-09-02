@@ -25,7 +25,7 @@ Two things are measured, not assumed. Both run on every PR:
 | Gate | Command | Finding | Baseline |
 |---|---|---|---|
 | Schema drift | `npm run docs:schema-drift` | **59 database identifiers** named here don't exist in production — confirmed absent from `pg_class`, `pg_proc`, `pg_type` | `.doc-schema-baseline.json` |
-| Path drift | `npm run docs:path-drift` | **46 file paths** named here don't resolve | `.doc-path-baseline.json` |
+| Path drift | `npm run docs:path-drift` | file paths named here don't resolve (count: see baseline) | `.doc-path-baseline.json` |
 
 Both counts **may only go DOWN**. Anything new fails CI.
 
@@ -51,7 +51,8 @@ visibly broken path for a confidently wrong one. Fix by hand.
 memory/
 ├── README.md          ← you are here
 ├── registry.yml       Feature routing table. AGENTS.md's entry point.
-│                      Maps code paths → feature docs. 25 features.
+│                      Maps code paths → feature docs, and each feature to its
+│                      runtime observability keys.
 ├── glossary.md        Table/enum/type lookup. AUTOGEN blocks authoritative;
 │                      the by-feature index above them is NOT (see its header).
 ├── context/           Gen-1 knowledge. Large, per-product.
@@ -62,20 +63,22 @@ memory/
 └── brand/             Logo and brand asset notes.
 ```
 
-## ⚠️ Two generations exist. `features/` wins.
+## `features/` is the current-state corpus. `context/` is history.
 
-`context/golfhelm-features.md` (~58k chars) and `features/*.md` (16 files, ~66k)
-describe **the same features**. `CLAUDE.md` routes to the first, `AGENTS.md` →
-`registry.yml` routes to the second.
+`context/golfhelm-features.md` and `features/*.md` described **the same
+features** through two generations of this knowledge base. That is resolved:
+`features/*.md` is the only generation routed as any feature's current-state
+doc, and `context/golfhelm-features.md` is retained as historical evidence.
 
-**`AGENTS.md` is the repo constitution and outranks `CLAUDE.md`, so
-`features/` wins on disagreement.** Use `context/golfhelm-features.md` only for
-features the registry doesn't map.
+Neither was ever authoritative for names, and the split did not create a check —
+it doubled the surface: `features/calendar-events.md` reproduced all 10 of the
+older doc's non-existent tables rather than re-verifying them. Names come from
+`glossary.md`'s AUTOGEN blocks or `src/lib/types/database.ts`, from either
+generation.
 
-Neither is authoritative for names. The split did not create a check — it
-doubled the surface: `features/calendar-events.md` reproduced all 10 of the
-older doc's non-existent tables rather than re-verifying them. **Collapsing
-these to one generation is real work still owed.**
+`context/baseballhelm-features.md` and `context/coachhelm-ai.md` are a different
+case and stay routed: no `features/` doc covers that ground yet, so they are the
+current corpus for it, not a duplicate of one.
 
 ---
 
@@ -88,7 +91,7 @@ these to one generation is real work still owed.**
 | How a golf feature behaves | `registry.yml` → the mapped `features/*.md` |
 | Baseball behaviour | `context/baseballhelm-features.md` + `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` |
 | CoachHelm AI internals | `context/coachhelm-ai.md` |
-| Where code lives | `projects/golfhelm.md` (AUTOGEN) or `docs/REPO_MAP.md` (⚠️ 192 commits stale) |
+| Where code lives | `projects/golfhelm.md` (AUTOGEN) or `docs/REPO_MAP.md` (⚠️ stale — it records its anchor SHA; measure the distance yourself) |
 | To add a feature doc | copy from `templates/` and register it in `registry.yml` |
 
 ---

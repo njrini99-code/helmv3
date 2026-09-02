@@ -45,6 +45,17 @@ export default tseslint.config(
       "node_modules/**",
       ".next/**",
       "eslint-rules/**",
+      // `.gitignore` line 158 is a blanket `scripts/*.js`, and NOTHING matching
+      // it is tracked — every one is a local scratch/workflow file. ESLint was
+      // still linting them, so `npm run lint:ratchet` failed on a dev machine
+      // with violations that cannot exist in CI (the files aren't in the repo)
+      // and cannot be fixed by a PR (a fix couldn't be committed either).
+      // Measured 2026-08-26: exactly +12 over baseline, all 12 from a single
+      // untracked file. Ignoring them costs no coverage and makes the local
+      // ratchet count equal CI's. Keep this pattern identical to the
+      // `.gitignore` line — `scripts/*.js`, not `scripts/**/*.js`, which would
+      // also swallow committed files in subdirectories.
+      "scripts/*.js",
     ],
   },
   {

@@ -68,7 +68,8 @@ Thumbs.db
 
 # Supabase
 supabase/.branches
-supabase/.temp
+supabase/.temp/*
+!supabase/.temp/project-ref
 
 # Temporary/bundled docs (keep docs/ but not bundles)
 helm-docs-bundle/
@@ -88,8 +89,23 @@ helm-vid/
 *.png
 # Hosted email assets must reach prod — exempt them from the global *.png ignore.
 !public/email/*.png
-# QA visual audit packs (labeled screenshots + manifests)
-!docs/qa/**/*.png
+# QA visual audit packs (labeled screenshots + manifests).
+#
+# SCOPED to the one pack that already exists, deliberately. This read
+# `!docs/qa/**/*.png` until 2026-08-31 — a blanket re-inclusion of every future
+# QA pack, which is how 108 screenshots and 67 MB arrived without anyone
+# choosing to commit them. A visual-audit run is a snapshot of a moment; the
+# findings that outlive it are the INDEX.md / ERRORS.md / NAV_ISSUES.md files,
+# and those are markdown and stay tracked either way.
+#
+# The existing pack is KEPT: deleting it from HEAD would not shrink a clone
+# (every blob stays in the 219 MB pack regardless), its four INDEX.md tables
+# link to the images, and `scripts/build-baseball-qa-pack.mjs` rebuilds it from
+# `/tmp/baseball-qa-full`, which is long gone — so it is not regenerable.
+# Removing it would cost an audit trail and buy nothing measurable.
+#
+# Adding a NEW pack is now a deliberate act: add its own `!` line here.
+!docs/qa/baseball-fairway-visual-audit-2026-07-04/**/*.png
 # Android launcher icons are build inputs — without these the adaptive icon's
 # @mipmap/ic_launcher_foreground does not resolve on a fresh clone and the
 # Gradle build FAILS. The generated vector defaults were removed in favour of
@@ -128,6 +144,9 @@ playwright/.auth/
 /momentic/auth/*.json
 /momentic/auth/.momentic.env
 !/momentic/auth/.gitkeep
+# Momentic captures environment values, including test-account credentials.
+/.momentic-mcp/environment-variables-*.json
+/tests/golf/qualifier-hell/.momentic-mcp/environment-variables-*.json
 # Local product-audit browser states use several historical layouts. Keep the
 # generated JSON out of Git even when an audit writes outside playwright/.auth/.
 /audit/**/auth/*.json
@@ -240,3 +259,38 @@ deno.lock
 __pycache__/
 *.pyc
 *.pyo
+# Env files: explicit list, NOT a bare .env* — a blanket glob silently
+# blocks future templates like .env.example (tracked) from ever changing
+# hands without -f. Local secret files only.
+.env
+.env.local
+.env.*.local
+# Orphaned agent-framework state (untracked 2026-08-26): stale
+# UNDERSTANDING/ISSUES/spec files that read as authoritative but are not.
+# The canonicality rule in AGENTS.md is the durable statement; this makes
+# it mechanical. Files remain on disk; also excluded from search via .ignore.
+.helm/
+.ultracode/
+.superpowers/
+
+# Momentic MCP scratch — screenshots, videos, captured env. Never track:
+# a background scan found captured credentials in the env JSONs (never
+# committed), and screenshots of auth flows are risky to publish.
+.momentic-mcp/
+tests/**/.momentic-mcp/
+
+# Extracted from PR #1638 (closed as superseded 2026-08-29) — the one piece of
+# it that is still true. The rest of that PR described a lifecycle that no
+# longer exists (it predates PARK vs RETIRE, the branch classifier, the
+# enforcement inventory and the tool authority matrix) and flipped
+# autoMemoryEnabled to true, which this project deliberately sets false.
+#
+# graphify knowledge-graph output. `graphify-out/graph.json` is the single
+# largest object in this repo's history at 53.5 MiB (git-sizer, 2026-08-27,
+# flagged at its highest concern level). It is not tracked today but was not
+# ignored either, so nothing prevented it being committed again.
+graphify-out/
+
+# Staging snapshot from the OS backfill. Its incident-mining JSON accounts for
+# ~8.6 MiB of blobs in history and nothing prevented it recurring.
+_staging-snapshot/

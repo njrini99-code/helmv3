@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
-import { Surface, Eyebrow, StatusPill } from '@/components/fairway';
+import { Surface, Eyebrow } from '@/components/fairway';
+import { RailRow, RowHead, RowFoot } from './Row';
 import type { FeatureHealth } from '@/lib/admin/data/feature-health';
 
 /**
@@ -48,20 +49,23 @@ export function FeatureHealthCard({ feature }: { feature: FeatureHealth }) {
       <p className="mt-1 text-xs text-warm-500">{feature.summary}</p>
 
       {feature.topSignatures.length > 0 ? (
-        <ul className="mt-3 space-y-1">
+        <ul className="mt-3">
+          {/* Ported to the shared row language (./Row) 2026-08-27. These were
+              one truncated line per signature with a leading severity pill —
+              the same inversion the Errors queue had, where the pill led and
+              the title (the thing you are looking for) came second and got
+              clipped first. 'error' and 'critical' both read danger here, as
+              they do everywhere else in the console: severity is never demoted
+              to amber just because it is on a summary card. The type here is
+              'error' or 'critical' only — tsc rejected a 'warning' branch, which
+              is why there isn't one. */}
           {feature.topSignatures.slice(0, 3).map((sig) => (
-            <li key={sig.fingerprint} className="truncate text-xs text-warm-700">
-              {/* 'error' AND 'critical' both read as danger/red — matches the
-                  console-wide severity tone (TriageQueue, errors/[fingerprint]),
-                  which never demotes 'error' to amber. */}
-              <StatusPill tone="danger" size="sm" dot>
-                {sig.severity}
-              </StatusPill>{' '}
-              <span className="font-medium text-warm-900">&ldquo;{sig.title}&rdquo;</span>{' '}
-              <span className="font-fw-mono tabular-nums text-warm-500">
-                ({sig.count}×, last seen {relTime(sig.lastSeen)})
-              </span>
-            </li>
+            <RailRow key={sig.fingerprint} severity={sig.severity}>
+              <RowHead value={sig.count} valueLabel={`${sig.count} occurrences`} clamp={1}>
+                {sig.title}
+              </RowHead>
+              <RowFoot meta={<>last seen {relTime(sig.lastSeen)}</>} />
+            </RailRow>
           ))}
         </ul>
       ) : (

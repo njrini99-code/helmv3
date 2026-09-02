@@ -24,6 +24,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { SELFHEAL_CLOSE_JOB_TYPE } from '@/lib/admin/selfheal-registry';
 import { archiveKnownResolvedIncidents } from '@/lib/admin/incident-resolver';
 import { autoResolveFixedIncidents, type AutoResolveResult } from '@/lib/admin/auto-resolve';
 import type { Database } from '@/lib/types/database';
@@ -141,11 +142,29 @@ function purgeJobLogsBefore(admin: AdminClient, before: string): Promise<number>
   );
 }
 
-/** Fail-soft wrapper — an auto-resolve bug/outage must never fail the
- *  retention cron's own purge work. Failure is logged, not thrown. */
+/**
+ * Fail-soft wrapper — an auto-resolve bug/outage must never fail the retention
+ * cron's own purge work. Failure is logged, not thrown.
+ *
+ * WHY THE INNER `recordJobRun`. Auto-resolution IS the self-healing loop's
+ * CLOSE stage, and it used to have no heartbeat of its own: `SELFHEAL_STAGES`
+ * read `log-retention`'s. But this function exists precisely to let
+ * auto-resolve fail while retention carries on, so the route still returned
+ * 200 and recorded `log-retention` = 'completed' — and the Self-Heal circuit
+ * read a closed loop off a heartbeat belonging to different work. Retention
+ * succeeding is not evidence about Close.
+ *
+ * `recordJobRun` writes 'failed' and RETHROWS, so the catch stays OUTSIDE it:
+ * the throw is what marks the close run failed, and catching here is what
+ * keeps retention independent. Catching inside would write 'completed' and
+ * rebuild the same false-green one layer down.
+ *
+ * No new Vercel schedule — the same nightly invocation now reports two facts
+ * instead of one.
+ */
 async function runAutoResolve(): Promise<AutoResolveResult | { error: string }> {
   try {
-    return await autoResolveFixedIncidents();
+    return await recordJobRun(SELFHEAL_CLOSE_JOB_TYPE, () => autoResolveFixedIncidents());
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[log-retention] autoResolveFixedIncidents failed', message);
@@ -177,12 +196,61 @@ export async function GET(req: NextRequest) {
     deleted += await purgeErrorLogsBefore(admin, ago13mo);
     deleted += await purgeJobLogsBefore(admin, ago90d);
 
+    // Flatten the resolution-lifecycle outcome into TOP-LEVEL SCALARS.
+    //
+    // `recordJobRun`'s `extractOutcomeMetadata` (src/lib/admin/job-log.ts)
+    // keeps only top-level string/number/boolean fields and silently drops
+    // objects and arrays — so `releaseAutoResolve` below (kept for anyone
+    // reading the raw HTTP response) never reaches background_job_logs.metadata,
+    // and the cron board would show `completed` regardless of whether the
+    // ledger/regression writes actually succeeded. That is the exact shape of
+    // invisibility INC-2026-08-27 was about: a discarded reason, not a missing
+    // count. See memory/features/admin-platform.md.
+    const autoResolveFailed = 'error' in autoResolve;
+    const ledger = autoResolveFailed
+      ? { recorded: 0, skippedManual: 0, failed: 0, capped: 0, firstError: autoResolve.error }
+      : autoResolve.ledger;
+    const regressions = autoResolveFailed
+      ? { marked: 0, failed: 0, capped: 0, firstError: null }
+      : autoResolve.regressions;
+    const regressionSkippedReason = autoResolveFailed ? undefined : autoResolve.regressionSkippedReason;
+
+    // DELIBERATELY still 200/`ok: true`, even when ledger or regression writes
+    // failed. This route's contract (see purgeBatch above and the sibling
+    // event-reminders cron) is that a retryable per-fingerprint failure is not
+    // a reason to fail the whole run — recordAutoResolutions/markRegressions
+    // already isolate one RPC failure from the rest of the batch, and this
+    // pass's misses are simply re-decided next night from fresh occurrence
+    // data. `degraded` carries the honest signal instead of the status code.
+    //
+    // `regressionSkippedReason` counts too: unlike `releaseSkippedReason`
+    // (Rule A benignly not firing until a deploy is 24h old),
+    // `regressionSkippedReason`'s one assignment site in auto-resolve.ts is a
+    // FAILED resolutions read — regression detection never ran, so "nothing
+    // regressed" was never established. Reporting that pass as `degraded:
+    // false` is exactly the unknown→healthy collapse the OS contract bans;
+    // see memory/features/admin-platform.md "A source that could not be read
+    // is never reported as zero problems."
+    const degraded =
+      autoResolveFailed || ledger.failed > 0 || regressions.failed > 0 || regressionSkippedReason !== undefined;
+
     return NextResponse.json({
       ok: true,
+      degraded,
       deleted,
       autoResolved: hygiene.archived,
       buckets: hygiene.buckets,
       releaseAutoResolve: autoResolve,
+      ledgerRecorded: ledger.recorded,
+      ledgerSkippedManual: ledger.skippedManual,
+      ledgerFailed: ledger.failed,
+      ledgerCapped: ledger.capped,
+      ...(ledger.firstError ? { ledgerFirstError: ledger.firstError } : {}),
+      regressionsMarked: regressions.marked,
+      regressionsFailed: regressions.failed,
+      regressionsCapped: regressions.capped,
+      ...(regressions.firstError ? { regressionsFirstError: regressions.firstError } : {}),
+      ...(regressionSkippedReason ? { regressionSkippedReason } : {}),
     });
   });
 }

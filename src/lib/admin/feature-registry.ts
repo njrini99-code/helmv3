@@ -45,7 +45,7 @@ export type FeatureKey =
   | 'whats_new'
   | 'my_game_profile'
   | 'admin_dashboard'
-  // CoachHelm (13)
+  // CoachHelm (14)
   | 'coachhelm_ai_engine'
   | 'alerts_system'
   | 'patterns_dashboard'
@@ -59,6 +59,7 @@ export type FeatureKey =
   | 'my_development'
   | 'drills_practice_rx'
   | 'coachhelm_v3_goals'
+  | 'integrations'
   // BaseballHelm (48)
   | 'baseball_academics'
   | 'baseball_announcements'
@@ -895,6 +896,59 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'V3 surface = documented drift from the 28-feature doc, now first-class here.',
     ],
   },
+  {
+    key: 'integrations',
+    label: 'Integrations (Inngest)',
+    app: 'coachhelm',
+    // Deliberately EMPTY. The Inngest surface is an API route
+    // (src/app/api/inngest/route.ts) and a function registry
+    // (src/lib/inngest/functions.ts), not server actions — the manifest
+    // invariants in feature-registry.test.ts are defined over action-boundary
+    // exports, so listing non-action files here would corrupt the count rather
+    // than document anything.
+    actions: {},
+    primaryTable: null,
+    // No heartbeat table ON PURPOSE, and this is the whole point of the entry.
+    // Inngest calls us on exactly two triggers: a Mon 14:00 UTC cron and a
+    // round-submitted event. Between them, silence is the NORMAL state — so a
+    // staleness heartbeat here would measure the calendar, not the integration.
+    heartbeatTable: null,
+    tier: 'med',
+    // Silence must never render as GREEN, and `neverNeutral` would do exactly
+    // that — read computeFeatureStatus(): it SKIPS the neutral-first gate so a
+    // zero-everything feature falls through to green. That is right for
+    // admin_dashboard (foundational infra, heartbeat table always has rows). It
+    // is wrong here, so this entry deliberately does NOT set it: quiet must
+    // land on NEUTRAL, the honest "we do not know" state.
+    //
+    // Verified in production 2026-08-27: 454 signature-validation errors ran
+    // 2026-08-07 -> 2026-08-24 14:05 (the last minutes after that Monday's
+    // 14:00 UTC cron), then NOTHING — through a production deploy on 08-27,
+    // while admin_events took 104 other events that same day. The Bridge is
+    // demonstrably alive and this feature is simply quiet, which has TWO
+    // readings the database cannot separate: the signing key was fixed, or
+    // Inngest Cloud stopped calling this app at all. The second is worse than
+    // the errors were — durable jobs dead silently, round analysis running
+    // inline with no retry or crash recovery.
+    //
+    // seasonalEmpty picks the neutral REASON text. True, because quiet between
+    // a Monday cron and a round submission genuinely is expected. The false
+    // branch reads "instrumentation not yet reporting", which would be a plain
+    // falsehood — it reported 454 times.
+    seasonalEmpty: true,
+    healthSignal:
+      'Inngest reaches /api/inngest with a VALID signature. Silence is not ' +
+      'health: the only triggers are a Mon 14:00 UTC cron and round-submitted, ' +
+      'so confirm liveness in the Inngest dashboard (app synced, recent runs) ' +
+      'rather than inferring it from an empty error list.',
+    knownGaps: [
+      'No success signal is recorded, so a working integration and a ' +
+        'disconnected one look identical from admin_events alone.',
+      'UNSIGNED requests (scanners, uptime checks, curl) are robot noise and ' +
+        'are already handled in route.ts — do not read them as this feature ' +
+        'failing.',
+    ],
+  },
   // ── BaseballHelm (48) ───────────────────────────────────────────────────
   {
     key: 'baseball_academics',
@@ -1592,6 +1646,73 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
  * appears first, resolving collisions deterministically without a second
  * override structure.
  */
+/**
+ * Legacy free-text `featureArea` values → their canonical FEATURE_REGISTRY key.
+ *
+ * WHY THIS EXISTS. `server-error-logger.ts` resolves the canonical column as
+ * `context.feature ?? context.featureArea ?? null`. `featureArea` is the OLDER
+ * free-text field kept for continuity of saved Sentry searches, so a call site
+ * that sets only `featureArea` has its free text PROMOTED into
+ * `admin_events.feature`, where a registry key belongs. It then looks canonical
+ * and is not: no tier, no hysteresis, no owner, and
+ * `resolveActionFilePath(feature, action)` returns null, so the Bridge's error
+ * detail renders a blank SOURCE FILE for an error whose file is perfectly well
+ * known. Measured 2026-08-27 against production: 811 of 2,443 events in 7 days
+ * carried one of the values below.
+ *
+ * Aliasing here fixes all 131 affected call sites at once. Retagging them
+ * individually would be 131 edits across 35 files, each an opportunity to pick
+ * a different key for the same concept — which is how the drift started.
+ *
+ * DELIBERATELY NOT EXHAUSTIVE. An unrecognised `featureArea` still passes
+ * through unchanged, so the Health board keeps flagging it as an unregistered
+ * tag. That warning is the intended way a genuinely-new feature surfaces
+ * (`integrations`, which owns the Inngest handler, is exactly that and needs a
+ * real registry entry — not an alias to something it is not). Silencing it here
+ * would trade a visible gap for an invisible one.
+ */
+export const FEATURE_AREA_ALIASES: Readonly<Record<string, FeatureKey>> = {
+  // src/app/golf/actions/golf.ts — savePartialRound/deleteShot/updateShot are
+  // already listed under round_tracking's own `actions` manifest above.
+  shot_tracking: 'round_tracking',
+  // src/app/golf/actions/stats.ts — cache invalidation for the stats surface.
+  stats_cache: 'stats_analytics',
+  // src/lib/coachhelm/v2/mining/** — pattern-miner and causal-engine are engine
+  // internals, not a separate product surface.
+  'coachhelm.mining': 'coachhelm_ai_engine',
+  // A FILE PATH that reached production as a feature tag (3 events, 3 errors,
+  // from generateWorstHolesInsights). Mapped rather than left to look like a
+  // feature name; the emitting call site should be corrected separately.
+  'coachhelm/v2/mining/course-management': 'coachhelm_ai_engine',
+  // 75 call sites across 26 files use the bare product name. The engine is the
+  // umbrella owner; some of these (insights.rateInsight, insights.rosterRead)
+  // arguably belong to insights_management, so this mapping is a deliberate
+  // approximation that is strictly better than unregistered — not a claim of
+  // per-action precision.
+  coachhelm: 'coachhelm_ai_engine',
+};
+
+/** Every canonical key, for membership tests. */
+export const FEATURE_KEYS: ReadonlySet<string> = new Set(
+  FEATURE_REGISTRY.map((f) => f.key),
+);
+
+/**
+ * The one place the canonical feature column is decided.
+ *
+ * Order matters: an explicit `feature` always wins, then a known alias, then a
+ * `featureArea` that happens to already BE a registry key, then the raw value
+ * (so a new tag stays visible as "unregistered" rather than vanishing).
+ */
+export function resolveFeatureKey(
+  feature: string | null | undefined,
+  featureArea: string | null | undefined,
+): string | null {
+  if (feature) return feature;
+  if (!featureArea) return null;
+  return FEATURE_AREA_ALIASES[featureArea] ?? featureArea;
+}
+
 export const TABLE_TO_FEATURE: Readonly<Record<string, FeatureKey>> = (() => {
   const map: Record<string, FeatureKey> = {};
   for (const def of FEATURE_REGISTRY) {

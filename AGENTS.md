@@ -172,3 +172,209 @@ a CA, Chrome must be restarted to pick it up.
 `npm run test:rls` / `npm run test:integration` require the local Supabase
 stack running (steps 1–2 above). See `README.md` / `CLAUDE.md` "Commands" for
 the full list.
+
+<!-- HELM_AGENT_CANONICALITY_START -->
+## Helm agent canonicality
+
+The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
+
+- **Git resting-state policy:** `main` is home — the normal clean resting
+  branch. Task branches are temporary active work. Never silently switch away
+  from a dirty task branch or from work not yet represented on `main`. Once a
+  task is merged and verified, retire its branch/worktree and return the
+  canonical checkout to clean `main`. Never assume `main` is what is currently
+  checked out.
+- **Concurrent sessions: one checkout cannot serialize them.** The
+  resting-state policy governs the canonical checkout; it cannot stop two
+  live sessions from moving one HEAD under each other. When more than one
+  agent session works in this repo at once, each session doing task work
+  takes its own worktree via `scripts/new-worktree.sh <task>` — the one
+  supported path, which places it at `~/worktrees/helmv3/<task>` OUTSIDE the
+  repo — and leaves the canonical checkout alone. **It does not install
+  dependencies** — run `node scripts/ensure-worktree-deps.mjs <dir>` when a
+  command actually needs them, so a docs or config task never pays for a
+  ~3.8 GiB node_modules it will not use. Use it because it guarantees
+  `--no-track`: creating a task branch from a REMOTE-TRACKING ref such as
+  `origin/main` without disabling tracking lets git's `autoSetupMerge` default
+  configure `agent/foo -> origin/main`, and a bare push then targets main.
+  Branching from a local ref does not do this. Deploys promote
+  from a worktree pinned at the exact merged `main` SHA, never from a
+  checkout another session may be mutating.
+
+  **`scripts/worktree-lifecycle.mjs` is the lifecycle authority** (
+  `retire-worktrees.sh` forwards to it). It separates two things the old tool
+  conflated:
+
+  ```text
+  PARK    remove the disposable checkout, KEEP the branch
+  RETIRE  park, AND delete a branch proven merged by exact PR head OID
+  ```
+
+  **It reports on REMOTE branches as well as local ones, and the distinction
+  is the whole point.** Until 2026-08-31 it enumerated `refs/heads` only, so a
+  branch whose local copy had been pruned — which is every branch merged with
+  `--delete-branch`, plus anything pushed from another machine — was invisible
+  to it. Measured that day: three such branches, one a PR MERGED for days,
+  while the report said `0 branches to delete` and GitHub's branch list still
+  showed it. A cleanup tool that cannot see the residue it exists to remove
+  reports success at having looked at the wrong place. Remote deletion carries
+  its own verdict (`DELETE_REMOTE`, a `git push origin --delete`) and is never
+  rendered as `DELETE_BRANCH`: one is recoverable from the reflog, the other
+  is not.
+
+  **A total evidence blackout exits 2, and is never a clean report.** If every
+  PR lookup fails, the tool prints `INFRASTRUCTURE_FAILURE` and refuses to
+  present the result as a finding. The failure mode this closes was observed,
+  not theorised: `gh` cannot reach GitHub from inside the Bash sandbox (Go's
+  TLS cannot read the macOS keychain there), so every row read `UNKNOWN` and
+  the summary read `0 branches deletable` — indistinguishable from a genuinely
+  clean repository. Re-run outside the sandbox rather than trusting a report
+  whose every lookup failed. Same convention as `npm run guards`:
+  PASS / POLICY_FAILURE / INFRASTRUCTURE_FAILURE, where the third exits
+  non-zero and never presents as the first.
+
+  Parking is what lets an open PR waiting on a human stop costing ~3.8 GiB.
+  Branch deletion is proven by `PR MERGED` + `local tip === PR head OID`, never
+  by a remote tip — `delete_branch_on_merge` removes that exactly when the
+  branch becomes safe, which is #1654's shipped defect.
+
+  **An OPEN PR's checkout is parked only with its owner's recorded consent.**
+  That line above used to end "(no PR needed)", and on 2026-08-30 `--retire`
+  removed a concurrent session's worktree (`agent/round-type-reclassify`, PR
+  #1681, OPEN) on exactly that basis: clean, tip identical to its pushed remote,
+  and no process whose cwd `lsof` could see. Nothing was lost — parking keeps
+  the branch — but the checkout had an owner and the tool had no way to know.
+
+  The unsound step is reading silence as absence. `lsof +D` samples one instant,
+  and an agent session between two tool calls has no visible cwd:
+
+  ```text
+  hasLiveProcess == true    proof of activity          — a sound veto
+  hasLiveProcess == false   NOT proof of inactivity    — proves nothing
+  ```
+
+  So a worktree whose branch has an OPEN PR is PARKABLE only when
+  `config/open-pr-dispositions.json` records that PR with a `worktree_policy`:
+
+  ```text
+  PARK_IF_REPRODUCIBLE    may be parked once clean and pushed; the branch stays
+  KEEP                    never parked automatically
+  ```
+
+  A missing row, an unrecognised policy, or a disposition of `ACTIVE`/`UNKNOWN`
+  all yield `KEEP_PR_OWNER_INTENT_REQUIRED` — a verdict deliberately distinct
+  from both ACTIVE (nothing proved anyone is using it) and UNKNOWN (the PR read
+  fine; what is missing is a decision). #1659 is the case this preserves: an
+  open PR waiting on a physical-device test, released explicitly by its owner.
+
+  **A checkout is disposable only if it says so itself.** That rule above is
+  keyed on a PR, and a session starts working before one exists — so it left the
+  window where the failure actually happens. Since 2026-08-30 the answer comes
+  from the workspace's own identity instead:
+
+  ```text
+  .helm/workspace.json  ->  { "parkPolicy": "KEEP" }   written at creation
+                            "PARK_IF_REPRODUCIBLE"     only if a human sets it
+  ```
+
+  `new-worktree.sh` always writes `KEEP`. Releasing a checkout is a positive
+  act, and everything else keeps it: no marker, no key, an unknown value, a file
+  that will not parse. The gate runs before the reproducibility checks and
+  independently of any PR, so both must permit — an OPEN PR its owner released
+  still cannot override a workspace `KEEP`. Verdict:
+  `KEEP_WORKSPACE_INTENT_REQUIRED`, outside the standing authorization.
+
+  The two remain different questions, and conflating them is what caused this:
+
+  ```text
+  workspace identity   may this CHECKOUT go?
+  PR state             may this BRANCH be deleted?
+  ```
+
+  `WORKTREE_PARK_NO_PR_OWNERSHIP` is closed by this, but **not** the way its
+  closing condition asked. That asked for a session id checked for LIVENESS,
+  which is the same unsound negative-evidence inference in a new costume: a
+  session between two tool calls looks dead. Declared intent needs no probe.
+
+  **Retire the worktree in the SAME step that merges its PR** — not at the end
+  of a session, and not by reporting it to the owner. `--remove` carries a
+  STANDING OWNER AUTHORIZATION (granted 2026-08-29, narrowed 2026-08-30 by the
+  paragraph above) for any worktree the tool itself verdicts PARKABLE/RETIRABLE,
+  and for branch deletion ONLY when the classifier returns
+  `DELETE_MERGED_EXACT`:
+
+  ```text
+  PR state           === MERGED
+  local tip          === PR head OID      (exact, never ancestry)
+  protected          === false
+  checked out        === false
+  ```
+
+  Every other verdict requires a human, and the exclusion list is explicit:
+  `UNKNOWN_PR`, `KEEP_OPEN`, `KEEP_DIVERGED_AFTER_PR`, `KEEP_PROTECTED`,
+  `KEEP_WORKTREE_ACTIVE`, `KEEP_DIRTY`, `NO_UPSTREAM_UNIQUE_WORK`,
+  `UNKNOWN_REMOTE`, `UNKNOWN_IDENTITY`, `KEEP_PR_OWNER_INTENT_REQUIRED`.
+  `NO_UPSTREAM_UNIQUE_WORK` is the
+  sharpest of those: measured 2026-08-29, ten branches hold up to 19 commits
+  that exist nowhere else. A branch count is not a health metric; unexplained
+  branches are.
+
+  The authorization is also stated in the tool's own output, so a reader never
+  has to remember this paragraph.
+
+  **One mutation workspace at a time.** `HELM_MAX_MUTATION_WORKTREES` defaults
+  to 1 and `new-worktree.sh` refuses BEFORE `git worktree add` and before any
+  dependency install. Classification fails TOWARD mutation: an unreadable or
+  undeclared workspace counts against the budget.
+
+  For the worktree half:
+
+  ```bash
+  gh pr merge <n> --squash && node scripts/worktree-lifecycle.mjs --retire
+  ```
+
+  That grant exists because the old rule caused the failure it was meant to
+  prevent. Retirement shipped in #1654 as report-only with owner approval
+  required, and nothing ever invoked it. On 2026-08-29 one session created six
+  worktrees, ran the tool six times, printed "retirable" six times, and asked
+  instead of acting — until the volume hit **zero bytes free**, at which point
+  no command could run at all, because even writing a command's output needs
+  disk. The approval step was the seventh check on top of six the tool had
+  already passed, and it was the one that never fired in time.
+  The seven that DO fire — canonical checkout, uncommitted changes, live process
+  cwd, no PR, PR not MERGED, tip past its remote, and since 2026-08-30 an OPEN
+  PR without recorded owner consent — are what the grant relies on.
+  Anything the tool declines still needs a human. (Added 2026-08-26 after three concurrent
+  sessions — iOS, bridge, hotfix — contended over one HEAD; the hotfix
+  session's worktree dodge is now the rule.)
+- A single active session may work in the canonical checkout directly; do
+  not create a worktree without a reason (concurrency above, or an explicit
+  user request), and remove any temporary worktree when its task completes.
+- `archive/**` and `docs/archive/**` are historical evidence only. Never use them as the source of truth for current architecture, schema, routes, configuration, features, or implementation.
+- Current source code, current migrations, current tests, `AGENTS.md`, `CLAUDE.md`, and active non-archive documentation outrank archived material.
+- Use repo-local platform CLIs: `./node_modules/.bin/supabase` and `./node_modules/.bin/vercel`. Do not assume global Supabase or Vercel binaries.
+- **One sanctioned Supabase MCP path: `mcp__supabase__*`**, declared in this
+  repo's `.mcp.json`, project-scoped to the single production project and
+  carrying `read_only=true`. Schema changes belong in the local development
+  stack and reviewed migrations.
+  - `mcp__supabase__apply_migration` is **owner-authorized** — stated three
+    times in `~/.claude/settings.json` autoMode, "owner's own infrastructure;
+    migrations are reviewed before apply". That authorization is deliberate.
+    Note it targets exactly the combination `shipping.md` records as
+    UNVERIFIED (`apply_migration` under `read_only=true`); do not resolve that
+    by trying it against production.
+  - **Other Supabase MCP namespaces are NOT sanctioned.** An account-level
+    connector (`mcp__claude_ai_Supabase__*`) reaches the whole account, not one
+    project — `list_organizations` succeeds through it. Its project-mutating
+    tools are denied in `.claude/settings.json`; its read tools are kept,
+    because measured 2026-08-29 it is the ONLY Supabase MCP that is actually
+    connected, and removing a working read path to satisfy a sentence is the
+    #1671 mistake.
+  - This line previously read "Production Supabase MCP access must remain
+    project-scoped and read-only", full stop. That was in force at the same
+    time as the owner's migration authorization, and the two contradicted.
+    A rule that contradicts a live grant does not get enforced — it gets
+    ignored, and six unreviewed MCP grants sat unnoticed underneath it.
+- Never treat an agent memory store, code index, or cache as more authoritative than the current repository and current database evidence.
+- Never deploy/promote/rollback Vercel production unless the user explicitly requests that production action.
+<!-- HELM_AGENT_CANONICALITY_END -->

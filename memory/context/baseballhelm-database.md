@@ -90,7 +90,7 @@ baseball_team_coach_staff                baseball_team_members
 - **`baseball_teams.team_type`** and **`baseball_coaches.coach_type`** both use the SAME enum
   `baseball_coach_type` (college | juco | high_school | showcase) — a team's type mirrors its
   owning organization's coach-facing type, not a separate `baseball_player_type`-style value.
-- Confirmed programmatically by `src/lib/baseball/player-record-access.ts` and
+- Confirmed programmatically by `src/lib/baseball/resolve-team.ts` and
   `src/lib/baseball/recruitability.ts`: the canonical coach→team resolution is
   `baseball_coaches.organization_id → baseball_teams.organization_id` (one org, looked up via
   `.single()` — i.e. the app code currently assumes **one team per organization**, even though
@@ -165,7 +165,7 @@ FKs: player_id → baseball_players.id
 RLS: player owns own rows; coaches on the player's team can SELECT (academic visibility, per `docs/BASEBALL_RLS_SECURITY_AUDIT.md` §12 "Academic"). [`supabase/migrations/20260527000000_prod_public_baseline.sql`]
 
 ### baseball_player_settings
-Purpose: Per-player app preferences, notably `profile_visibility` (public/private) which gates recruiting discoverability alongside `recruiting_activated`.
+Purpose: Per-player app preferences, notably `profile_visibility` (public or private) which gates recruiting discoverability alongside `recruiting_activated`.
 Key columns: id, player_id (unique), profile_visibility (text), notification prefs
 FKs: player_id → baseball_players.id
 RLS: player-owned only (self CRUD). Read by `src/lib/baseball/recruitability.ts:97-100` as part of the recruitability gate (`profile_visibility === 'private'` → denied). [`supabase/migrations/20260527000000_prod_public_baseline.sql`]
@@ -528,164 +528,32 @@ RLS: per-user rows only, team-scoped via `is_baseball_team_member`; table uses *
 > `npm run docs:schema-drift` does not fail on them. **Deleting or migrating
 > this section is a ratchet-down** — re-run `node scripts/check-doc-schema-drift.mjs --update`
 > afterwards.
+The Lift Lab generations below are retired, and their per-table specs have
+been REMOVED rather than kept: they described 24 tables that no longer exist,
+in column-level detail, formatted exactly like the live ones. That is the
+failure this file's own header warns about, and the paragraph above sanctions
+the removal — "deleting or migrating this section is a ratchet-down".
 
-The two generations below are both retired. Kept for design intent only: 
+The design intent they carried (materialize-at-publish, the staff/player
+visibility split, capability gating) is stated in full above and carried over
+to the live family. For the live shape read `src/lib/types/database.ts`;
+`git log -p -- memory/context/baseballhelm-database.md` still has every removed
+spec if the historical detail is ever wanted.
 
-**Generation 1 ("Lite")** — `supabase/migrations/20260624000061_baseball_lifting_performance.sql`:
+    Generation 1 ("Lite")     20260624000061_baseball_lifting_performance.sql
+    Generation 2 ("Premium")  20260624000063_baseball_v11_premium_lifting.sql
+    superseded by             20260625000080_helm_lifting_backfill_from_baseball.sql
+    dropped by                20260704090000_graveyard_legacy_liftlab_tables_phase3.sql
+
+`baseball_exercises` is the one table in this group that is still LIVE, so its
+spec stays:
+
 
 ### baseball_exercises
 Purpose: Lite exercise library (global rows + per-team rows) used by the original Lite lifting surface.
 Key columns: id, team_id (nullable for global rows), name, category, is_global, created_by_coach_id
 FKs: team_id → baseball_teams.id
 RLS: SELECT — global rows readable by any staff, team rows by that team's staff/players; writes gated by `has_baseball_staff_capability(team_id,'can_manage_lifting')`.
-
-### baseball_lift_assignments
-Purpose: Staff-prescribed lift assignment for a player or a scoped group (jsonb prescription payload); Lite surface.
-Key columns: id, team_id, player_id (nullable), group_scope (uuid[]), exercise_id, prescription (jsonb), status (assigned/in_progress/completed/skipped/archived)
-FKs: team_id → baseball_teams.id; player_id → baseball_players.id; exercise_id → baseball_exercises.id
-RLS: SELECT — own player row OR staff via `can_manage_baseball_lift_group(team_id, player_id)`; writes staff-only via same helper.
-
-### baseball_lift_results
-Purpose: Player-logged set results (sets/reps/weight/RPE) for Lite assignments, with import lineage.
-Key columns: id, team_id, player_id, assignment_id, sets/reps/weight/rpe, source (manual/import/system), import_run_id
-FKs: player_id → baseball_players.id; assignment_id → baseball_lift_assignments.id; import_run_id → baseball_import_runs.id
-RLS: player owns full CRUD on own rows only; staff via `can_manage_baseball_lift_group`; teammates can never read another player's loads.
-
-### baseball_readiness_checkins
-Purpose: Daily player wellness/readiness self-report (sleep, energy, soreness, arm status, mood); later extended with stress/lower-body/illness/readiness score+band/visibility by V11.
-Key columns: id, team_id, player_id, check_date (unique per player/day), sleep_hours/energy_level/soreness_level, arm_status, readiness_score/readiness_band (V11), visibility (staff/performance_staff/head_coach_only, V11)
-FKs: player_id → baseball_players.id
-RLS: player owns full CRUD on own rows; staff SELECT requires `has_baseball_staff_capability(team_id,'can_view_readiness')` AND `can_view_baseball_player` — V11 corrected the capability gate from the originally-wrong `can_view_medical`. Never framed as medical diagnosis.
-
-**Generation 2 ("V11 Premium")** — `supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql`,
-a full periodized program model: `programs → weeks → days → sections → prescriptions →
-program_assignments → sessions → session_exercises → set_results`:
-
-### baseball_strength_groups
-Purpose: How the strength coach organizes athletes into training groups (static/dynamic/imported/temporary), with a `rule_json` for dynamic auto-membership.
-Key columns: id, team_id, name, group_type, rule_json (jsonb), is_active
-FKs: team_id → baseball_teams.id
-RLS: SELECT — `is_baseball_team_staff(team_id)`; writes — `can_manage_lifting`. No player access.
-
-### baseball_strength_group_members
-Purpose: Membership rows linking a player into a strength group.
-Key columns: id, group_id, player_id, source (manual/rule/import), starts_at/ends_at; UNIQUE(group_id, player_id)
-FKs: group_id → baseball_strength_groups.id; player_id → baseball_players.id
-RLS: staff-scoped (SELECT via `is_baseball_team_staff`, writes via `can_manage_lifting`) — not directly player-visible.
-
-### baseball_strength_group_audit
-Purpose: Append-only ledger of strength-group lifecycle/membership-delta events (created/rule_changed/member_added/member_removed/recomputed) for traceability.
-Key columns: id, team_id, group_id, event_type, player_id (nullable), source, detail, meta_json
-FKs: team_id → baseball_teams.id; group_id → baseball_strength_groups.id (CASCADE); player_id → baseball_players.id; actor_coach_id → baseball_coaches.id
-RLS: SELECT — `is_baseball_team_staff`; INSERT only, gated by `can_manage_lifting` + a check that the group belongs to the asserted team. **No UPDATE/DELETE policy exists — immutable by design.** [`supabase/migrations/20260624000440_baseball_strength_group_audit.sql`]
-
-### baseball_lift_exercises
-Purpose: V11 "premium" typed exercise library (distinct from Lite `baseball_exercises`) — full biomechanical/tracking metadata (pattern, body region, unit, tracked metrics, coaching cues).
-Key columns: id, team_id (nullable=global), category/primary_pattern/body_region, default_unit, track_load/reps/velocity (bool), coaching_cues (text[]), is_global
-FKs: team_id → baseball_teams.id
-RLS: SELECT — global readable by team staff, team-scoped readable by that team's staff (same pattern as `baseball_exercises`); writes gated by `can_manage_lifting`.
-
-### baseball_lift_exercise_substitutions
-Purpose: Declares one lift exercise as a valid substitute for another (used when materializing sessions if a prescribed exercise is unavailable).
-Key columns: id, team_id, exercise_id, substitute_exercise_id, reason
-FKs: team_id → baseball_teams.id; exercise_id/substitute_exercise_id → baseball_lift_exercises.id
-RLS: SELECT — `is_baseball_team_staff`; writes — `can_manage_lifting`.
-
-### baseball_lift_programs
-Purpose: Top of the periodized program hierarchy — a named strength program with phase (in_season/postseason/etc), goal, visibility, draft/active/archived status.
-Key columns: id, team_id, phase/goal, visibility (staff_only/assigned_players), status (draft/active/archived), is_template, start_date/end_date
-FKs: team_id → baseball_teams.id
-RLS: SELECT — `is_baseball_team_staff`; writes — `can_manage_lifting`. Programs are staff-only; players see materialized `baseball_lift_sessions` instead.
-
-### baseball_lift_weeks
-Purpose: One week within a lift program (week_number, optional deload flag).
-Key columns: id, program_id, week_number (unique per program), theme, deload
-FKs: program_id → baseball_lift_programs.id (CASCADE)
-RLS: single `FOR ALL` policy, staff of the owning team.
-
-### baseball_lift_days
-Purpose: One training day within a program week (day_type: lower/upper/full_body/recovery/etc, plus a baseball-specific `baseball_context` like bullpen_day/starter_plus_1/travel_day).
-Key columns: id, week_id, day_number (unique per week), day_type, baseball_context, estimated_minutes
-FKs: week_id → baseball_lift_weeks.id (CASCADE)
-RLS: `FOR ALL` policy, staff-scoped via week→program→team chain.
-
-### baseball_lift_sections
-Purpose: A named block within a lift day (warmup/movement_prep/power/main_strength/accessory/arm_care/mobility/conditioning), ordered by section_order.
-Key columns: id, lift_day_id, section_order, section_type, instructions
-FKs: lift_day_id → baseball_lift_days.id (CASCADE)
-RLS: `FOR ALL` policy, staff-scoped.
-
-### baseball_lift_prescriptions
-Purpose: A single prescribed exercise slot within a section — sets/reps/load (fixed, %1RM, RPE, velocity, coach_load, or player_select), rest, tempo, optional substitution group.
-Key columns: id, section_id, exercise_id, prescription_type, sets/reps/load_value/percent_1rm/target_rpe/target_velocity_min/max, rest_seconds
-FKs: section_id → baseball_lift_sections.id (CASCADE); exercise_id → baseball_lift_exercises.id; substitution_group_id → baseball_lift_exercise_substitutions.id
-RLS: `FOR ALL` policy, staff-scoped via section→day→week→program→team chain.
-
-### baseball_lift_program_assignments
-Purpose: Turns a program day into a scheduled assignment for a team/group/player on a specific date — the publish step that later materializes into `baseball_lift_sessions`.
-Key columns: id, team_id, program_id, lift_day_id, assignment_type (team/group/player), group_id (nullable), player_id (nullable), event_id (nullable), scheduled_date, status (draft/published/cancelled), player_visible_at
-FKs: team_id → baseball_teams.id; program_id → baseball_lift_programs.id; lift_day_id → baseball_lift_days.id; group_id → baseball_strength_groups.id; player_id → baseball_players.id; event_id → baseball_events.id
-RLS: SELECT — `is_baseball_team_staff`; writes — `can_manage_lifting`. Staff-only; players never query this directly.
-
-### baseball_lift_sessions
-Purpose: MATERIALIZED per-player workout session created at publish time (spec explicitly forbids on-the-fly template math) — the surface the player app actually reads.
-Key columns: id, program_assignment_id, team_id, player_id, event_id (nullable), scheduled_date, status (assigned/started/completed/missed/excused/modified), readiness_checkin_id, coach_review_status; UNIQUE(program_assignment_id, player_id)
-FKs: program_assignment_id → baseball_lift_program_assignments.id (CASCADE); team_id → baseball_teams.id; player_id → baseball_players.id; readiness_checkin_id → baseball_readiness_checkins.id
-RLS: SELECT/UPDATE/DELETE — owning player OR staff via `can_manage_baseball_lift_group`; INSERT staff-only via same helper.
-
-### baseball_lift_session_exercises
-Purpose: A materialized exercise slot within a session, snapshotting exercise/section name at publish time plus prescribed vs. modified values.
-Key columns: id, session_id, prescription_id (nullable), exercise_id (nullable), exercise_name_snapshot, prescribed_sets/reps/load/rpe, status (assigned/completed/skipped/substituted)
-FKs: session_id → baseball_lift_sessions.id (CASCADE); prescription_id → baseball_lift_prescriptions.id; exercise_id → baseball_lift_exercises.id
-RLS: SELECT via EXISTS join to parent session (owning player or managing staff); writes similarly scoped.
-
-### baseball_lift_set_results
-Purpose: A single logged set (actual reps/load/RPE/RIR/velocity) against a materialized session exercise.
-Key columns: id, session_exercise_id, team_id, player_id, set_number (unique per session_exercise), actual_reps/actual_load/rpe/rir/velocity, coach_observed
-FKs: session_exercise_id → baseball_lift_session_exercises.id (CASCADE); player_id → baseball_players.id
-RLS: SELECT — owning player OR staff via `can_manage_baseball_lift_group`; no peer-player read.
-
-### baseball_soreness_maps
-Purpose: Body-region soreness detail attached to a readiness check-in (region, side, 0-10 severity).
-Key columns: id, checkin_id, team_id, player_id, body_region, side (left/right/both/center), severity (0-10)
-FKs: checkin_id → baseball_readiness_checkins.id (CASCADE); player_id → baseball_players.id
-RLS: SELECT — owning player OR staff with `can_view_readiness`; writes player-own only.
-
-### baseball_bodyweight_entries
-Purpose: Daily bodyweight log entry per player.
-Key columns: id, team_id, player_id, entry_date (unique per player/day), weight_lbs (0-700 check), source (player/coach/import)
-FKs: player_id → baseball_players.id
-RLS: same pattern as soreness maps — owning player full access; staff SELECT requires `can_view_readiness`.
-
-### baseball_availability_statuses
-Purpose: Staff-authored player availability status for strength training (available/limited/hold/return_to_play/unavailable) with a reason category and visibility tier.
-Key columns: id, team_id, player_id, status, reason_category, visibility (staff/performance_staff/head_coach_only), starts_at/ends_at
-FKs: player_id → baseball_players.id
-RLS: staff-authored writes (`can_manage_lifting`); SELECT — owning player OR staff with `can_view_readiness`.
-
-### baseball_strength_maxes
-Purpose: Tracked 1RM/training-max/velocity-profile values per player per exercise.
-Key columns: id, team_id, player_id, exercise_id, max_type (estimated_1rm/tested_1rm/training_max/velocity_profile), value/unit, source
-FKs: player_id → baseball_players.id; exercise_id → baseball_lift_exercises.id (CASCADE)
-RLS: SELECT — owning player OR staff via `can_manage_baseball_lift_group`; INSERT/UPDATE/DELETE staff-scoped only (no player self-entry path in policy).
-
-### baseball_strength_prs
-Purpose: Personal-record ledger per player per exercise (load/reps/estimated_1rm/velocity/volume PR types), optionally tied to the session it was set in and coach-verified.
-Key columns: id, team_id, player_id, exercise_id, pr_type, value/unit, achieved_at, lift_session_id (nullable), verified_by_coach_id
-FKs: player_id → baseball_players.id; exercise_id → baseball_lift_exercises.id (CASCADE); lift_session_id → baseball_lift_sessions.id
-RLS: SELECT — owning player OR staff; INSERT — player-own OR managing staff; UPDATE/DELETE staff-scoped only.
-
-### baseball_lift_import_runs
-Purpose: Audited, rollback-able bulk import batch header for lift data (source: TeamBuildr/TrainHeroic/Bridge/Volt/Google Sheets/CSV/manual), tracking match/unmatch counts and status lifecycle.
-Key columns: id, team_id, source, import_kind (lift_assignment/lift_result/testing/wellness/attendance), file_hash, mapping_json/units_json, status (staged/validated/committed/rolled_back/failed), source_confidence
-FKs: team_id → baseball_teams.id
-RLS: fully staff-only — SELECT `is_baseball_team_staff`; write/update/delete `can_manage_lifting`.
-
-### baseball_lift_import_rows
-Purpose: Per-row staged import data (raw JSON payload) for a lift import run, with match status against a resolved player.
-Key columns: id, import_run_id, team_id, row_number, raw_json (jsonb), matched_player_id (nullable), match_status (matched/unmatched/ambiguous/skipped), validation_error
-FKs: import_run_id → baseball_lift_import_runs.id (CASCADE); matched_player_id → baseball_players.id
-RLS: single `FOR ALL` policy — SELECT via `is_baseball_team_staff`, write via `can_manage_lifting`.
 
 ### 2e. Messaging / Calendar / Tasks / Travel / Documents (19 tables)
 
@@ -751,9 +619,9 @@ RLS: originally defined in `supabase/migrations/20260624000040_baseball_timeline
 
 ### baseball_timeline_event_acks
 Purpose: Acknowledgement of a `baseball_player_timeline_events` row (NOT a calendar event) — e.g. a coach marking "I've seen this stat milestone/AI insight." Deliberately a separate table from `baseball_event_acknowledgements` because the FK target and visibility scoping differ.
-Key columns: id, timeline_event_id, user_id, acknowledged_at; UNIQUE(timeline_event_id, user_id)
-FKs: timeline_event_id → baseball_player_timeline_events.id (CASCADE); user_id → auth.users.id (CASCADE)
-RLS: RLS enabled, no anon grant; write invariant `user_id = auth.uid()`; visibility mirrors the underlying timeline event's own SELECT policy (a player can never ack a `staff_only` row they can't read). [`supabase/migrations/20260624000430_baseball_timeline_event_acks.sql`]
+Key columns: id, timeline_event_id, team_id, player_id, user_id/acked_by, acknowledged_at/acked_at; UNIQUE(timeline_event_id, user_id) and UNIQUE(timeline_event_id, acked_by) during the compatibility window.
+FKs: timeline_event_id → baseball_player_timeline_events.id (CASCADE); team_id → baseball_teams.id (CASCADE); player_id → baseball_players.id (CASCADE); user_id/acked_by → auth.users.id (CASCADE)
+RLS: RLS enabled, no anon grant; write invariant binds both `user_id` and `acked_by` to `auth.uid()` during the production/local compatibility window. Visibility mirrors the underlying timeline event's own SELECT policy (a player can never ack a `staff_only` row they can't read); the owner-only DELETE policy supports a player withdrawing their own acknowledgement. The live contract carries the event's `team_id`/`player_id` plus both `acked_at`/`acknowledged_at` timestamp aliases. [`supabase/migrations/20260825222432_reconcile_baseball_timeline_ack_contract.sql`]
 
 ### baseball_tasks
 Purpose: A to-do/assignment issued by a coach to the team (conditioning, academic, admin, practice, game-prep).

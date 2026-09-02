@@ -46,20 +46,52 @@ Pick one of these before dispatching, never neither:
 
 - **Serialize** — agent 1 finishes and commits, *then* agent 2 starts. Simplest,
   and correct when the work is small or the agents touch the same files.
-- **Give each agent its own worktree** — real isolation, real parallelism:
+- **Give each agent its own worktree** — real isolation, real parallelism.
+  **There is exactly one supported way to make one:**
 
   ```bash
-  git worktree add ../helmv3-wt-1 -b agent/task-one
-  git worktree add ../helmv3-wt-2 -b agent/task-two
-  # ...agents work in ../helmv3-wt-1 and ../helmv3-wt-2, each with its own HEAD
-  git worktree remove ../helmv3-wt-1   # when merged
+  scripts/new-worktree.sh <task-name>
+  # -> ~/worktrees/helmv3/<task-name> on branch agent/<task-name>
   git worktree list                    # what's still checked out
+  npm run worktrees:retire             # when merged — never a raw remove
   ```
 
-**A worktree goes OUTSIDE the repo — never `.worktrees/` inside it.** Note the
-`../` above; it is load-bearing. `.gitignore` line 5 hides `.worktrees/` from
-git, and that is exactly the trap: `find`, `grep`, `ls` and most agent file
-search do NOT honour gitignore. Observed 2026-08-18 —
+  Use it because it guarantees four things at once: an external managed
+  location, the `agent/<task>` branch name, `--no-track`, and a known base.
+
+  It no longer installs dependencies. A checkout cost ~3.8 GiB of node_modules
+  whether or not the task needed one, and most control-plane, docs and config
+  work never runs a test — that coupling is why six worktrees in one day took
+  the volume to zero bytes free. Install when something actually needs it:
+
+  ```bash
+  node scripts/ensure-worktree-deps.mjs <dir>   # or: new-worktree.sh <task> --install
+  ```
+
+  which applies a reserve-plus-budget policy instead of starting and hoping.
+
+  The proven failure mode is narrower than "raw git is dangerous". It is
+  specifically **creating a task branch from a REMOTE-TRACKING ref (such as
+  `origin/main`) without disabling tracking**. Git's `autoSetupMerge` default
+  then configures the new branch to track that ref:
+
+  ```text
+  agent/foo -> origin/main
+  ```
+
+  and a later bare `git push` from `agent/foo` targets **main**. That was live
+  on a consolidation branch carrying 23 commits that existed nowhere else.
+  Branching from a local ref does not produce this, and `--no-track` prevents
+  it in either case. Check with:
+
+  ```bash
+  git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads
+  ```
+
+**A worktree goes OUTSIDE the repo — never `.worktrees/` inside it.**
+`.gitignore` line 5 hides `.worktrees/` from git, and that is exactly the trap:
+`find`, `grep`, `ls` and most agent file search do NOT honour gitignore.
+Observed 2026-08-18 —
 `.worktrees/codex-golf-team-operations/` held **4,314** `.ts`/`.tsx` files
 against `src/`'s 3,884, so a search from the repo root returned two hits for
 essentially every file:
@@ -73,25 +105,26 @@ Agents picked one at random and edited a branch nobody was shipping, then
 reported success. That is the mechanical cause of "the agents keep getting
 lost". Put worktrees in a sibling directory and this cannot happen.
 
-**Prune by PR state, not by `--merged`.** This repo squash-merges, so a merged
-branch's commits never become ancestors of `main` and
-`git branch --merged` will never list it — `codex/golf-team-operations` still
-reported "10 commits not in main" long after #1513 had shipped as `a9f2c7f37`.
-Cleanup keyed on `--merged` therefore never fires and worktrees accumulate
-forever. Use the PR instead:
+**Prune through the lifecycle authority. Do not hand-roll a second one.**
+This repo squash-merges, so a merged branch's commits never become ancestors of
+`main` and `git branch --merged` will never list it — `codex/golf-team-operations`
+still reported "10 commits not in main" long after #1513 had shipped as
+`a9f2c7f37`. Cleanup keyed on `--merged` never fires and worktrees accumulate
+forever.
 
 ```bash
-gh pr list --state merged --limit 20 --json headRefName,number,mergeCommit
-git worktree remove --force <path> && git branch -D <branch>
+npm run worktrees          # report — the default, and always safe
+npm run worktrees:park     # remove disposable checkouts, KEEP their branches
+npm run worktrees:retire   # park, AND delete branches proven merged
 ```
 
-Before removing anything, check nothing still holds it — a stale process whose
-cwd is inside a worktree turns the removal into deleted-inode confusion rather
-than a clean error:
-
-```bash
-lsof +D <worktree-path> | awk '$4=="cwd"'
-```
+This block used to spell out `git worktree remove --force`, `git branch -D` and
+an `lsof +D` pre-check. All three are gone deliberately: `scripts/worktree-lifecycle.mjs`
+is the single lifecycle authority, a hand-run recipe is a second deletion
+algorithm that nothing tests, and the `lsof` step in particular taught the exact
+inference that removed a live checkout on 2026-08-30 — `lsof` answers about one
+instant, so seeing no process is not evidence that nobody is using a worktree.
+The policy boundary lives in AGENTS.md; the mechanism lives in the tool.
 
   Worktrees share the object store, so branches and commits are visible from the
   main checkout immediately — no pushing between them.
@@ -137,7 +170,34 @@ the output. If a claim rests on something you could not run locally, name that
 limit once. Do not hedge work that is done and checked, and do not re-audit
 your own phrasing after the fact.
 
-The guard hooks in `.claude/hooks/` are the safety net — they block the shapes
-that actually matter (force push, destructive SQL, unscoped recursive delete)
-deterministically and are not suspended by permission allow rules. That is
-what makes acting without asking safe here. Trust them and work.
+### What actually makes acting without asking safe
+
+Not the hooks. This section used to say the guard hooks "block the shapes that
+actually matter (force push, destructive SQL, unscoped recursive delete)" and
+concluded "trust them and work." **All three examples were false**, measured
+2026-08-29: no hook and no deny rule covers force push, destructive SQL, or
+recursive `rm`. One `PreToolUse` hook exists and it refuses exactly one thing —
+`Write`/`Edit`/`MultiEdit` into the canonical checkout.
+
+That mattered more than the other stale claims, because this was the paragraph
+telling you it was safe to proceed without asking. A false safety claim used to
+justify autonomy is the worst possible place for one.
+
+What is actually true:
+
+- `permissions.deny` fires deterministically, is not suspended by allow rules
+  or by `bypassPermissions`, and a project-scope deny overrides a user-scope
+  allow. That is real, and it is what covers the Supabase CLI migration path
+  and the account-wide Supabase MCP mutations.
+- One `PreToolUse` hook covers canonical writes via three tool names, and by
+  its own header does not read intent, match keywords, or look at features.
+- Everything else on the destructive list is on you.
+
+`docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated from the live configuration
+and resolves each claim to a mechanism, a location, and how it was observed.
+Check there before believing any sentence in these rules that says something is
+blocked — including this one.
+
+So: work autonomously because the owner asked for it and because the work is
+recoverable through git and PR review, not because a machine will catch a
+destructive mistake. Mostly it will not.

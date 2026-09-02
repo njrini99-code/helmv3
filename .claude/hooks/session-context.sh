@@ -6,28 +6,103 @@
 # structured form is explicit and survives future changes to that behaviour.
 set -uo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
+# shellcheck source=lib/active-root.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/active-root.sh"
+
+# The ACTIVE worktree, not the original project dir — reporting the canonical
+# checkout's branch/dirty state to a session working in a worktree is the P0
+# this fixes. See .claude/hooks/lib/workspace-identity.mjs.
+cd "$(helm_active_root)" 2>/dev/null || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+# node and jq are new dependencies as of the identity consolidation: this hook
+# now reads one JSON blob from the authority instead of running its own git.
+# A SessionStart hook must degrade silently rather than break a session, so
+# guard them exactly like git above.
+command -v node >/dev/null 2>&1 || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
 
-BRANCH=$(git branch --show-current 2>/dev/null || echo "detached")
-DIRTY=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
-AHEAD=$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo "?")
-# Behind-main is the number that matters most: this repo once sat 131 commits
-# behind main for 8 days while parallel work happened in a /private/tmp
-# worktree, and every session read stale code without ever being told.
-BEHIND=$(git rev-list --count "HEAD..main" 2>/dev/null || echo "?")
+# ONE call to the identity authority, then read fields off it. This hook used
+# to compute four of these itself:
+#
+#     git branch --show-current
+#     git status --porcelain
+#     git rev-list --count "@{u}..HEAD"      <- ahead of MY OWN remote branch
+#     git rev-list --count "HEAD..main"      <- against LOCAL main
+#
+# Both distance metrics were wrong for this repo's workspace model, in
+# different ways:
+#
+#   - `@{u}..HEAD` asks "how far ahead of my own task branch's remote am I".
+#     scripts/new-worktree.sh creates task branches with --no-track ON PURPOSE,
+#     so there is no @{u} and the number degraded to "?" even though git can
+#     compute the real distance perfectly. And after the first push, @{u} is
+#     origin/agent/<task> — so the answer becomes "ahead of myself", which is 0
+#     by construction and says nothing about the trunk.
+#
+#   - `HEAD..main` measures against the LOCAL main ref, which can be stale,
+#     ahead, or divergent from origin/main. Local main is not integration
+#     truth.
+#
+# Both now come from workspaceIdentity(), which measures against origin/main.
+IDENTITY=$(node "$(dirname "${BASH_SOURCE[0]}")/lib/workspace-identity.mjs" --identity-json 2>/dev/null)
+printf '%s' "$IDENTITY" | jq -e . >/dev/null 2>&1 || exit 0
+
+jqs() { printf '%s' "$IDENTITY" | jq -r "$1 // \"?\"" 2>/dev/null || printf '?'; }
+
+BRANCH=$(jqs '.branch')
+[ "$BRANCH" = "?" ] && BRANCH="detached"
+DIRTY=$(jqs '.dirtyCount')
+AHEAD=$(jqs '.ahead')
+BEHIND=$(jqs '.behind')
+# Short form of the exact ref the numbers were measured against. A
+# remote-tracking ref is only as fresh as the last fetch, so a distance with an
+# invisible basis is a number nobody can check. This hook does NOT fetch.
+BASE_SHA=$(jqs '.baseSha')
+[ "$BASE_SHA" != "?" ] && BASE_SHA=$(printf '%s' "$BASE_SHA" | cut -c1-12)
 
 CTX="Repo state at session start:
 - branch: ${BRANCH}
 - uncommitted files: ${DIRTY}
-- commits ahead of upstream: ${AHEAD}
-- commits BEHIND main: ${BEHIND}"
+- commits ahead of origin/main: ${AHEAD}
+- commits behind origin/main: ${BEHIND}
+- origin/main ref: ${BASE_SHA} (not fetched by this hook)"
 
+# The number that matters most: this repo once sat 131 commits behind the trunk
+# for 8 days while parallel work happened in another worktree, and every
+# session read stale code without ever being told.
 if [ "$BEHIND" != "?" ] && [ "${BEHIND:-0}" -gt 20 ] 2>/dev/null; then
   CTX="${CTX}
-- WARNING: this branch is ${BEHIND} commits behind main. You are reading stale
-  code. Merge or rebase before trusting anything about project state."
+- WARNING: this branch is ${BEHIND} commits behind origin/main. You are reading
+  stale code. Merge or rebase before trusting anything about project state."
+fi
+
+# RELEASE DRIFT — merged is not shipped.
+#
+# On 2026-09-01 eight fixes sat merged on main with none in production. Nobody
+# ignored it; nothing said it. Every session was told how far it was from
+# origin/main and nothing about how far origin/main was from the users.
+#
+# Pure git, no network: scripts/deploy-prod.sh writes this file ONLY after it
+# has verified the release stamp in the served bundle, so its presence means
+# "proven live", not "a deploy command ran". A session-start hook must never
+# make a network call — `npm run release:status` is the online check.
+LVR_FILE=".claude/session-state/last-verified-release"
+if [ -f "$LVR_FILE" ]; then
+  LVR=$(tr -d '[:space:]' < "$LVR_FILE" 2>/dev/null)
+  if [ -n "$LVR" ] && git cat-file -e "${LVR}^{commit}" 2>/dev/null; then
+    UNRELEASED=$(git rev-list --count "${LVR}..origin/main" 2>/dev/null || echo "?")
+    if [ "$UNRELEASED" != "?" ] && [ "${UNRELEASED:-0}" -gt 0 ] 2>/dev/null; then
+      CTX="${CTX}
+- UNRELEASED: ${UNRELEASED} commit(s) are merged to origin/main but NOT in
+  production (last verified live: $(echo "$LVR" | cut -c1-9)). Merging does not
+  ship — vercel.json disables git deploys. Confirm with: npm run release:status"
+    fi
+  fi
+else
+  CTX="${CTX}
+- release state: UNKNOWN — no verified production release recorded on this
+  machine. Do not assume main is live. Check with: npm run release:status"
 fi
 
 WT=$(git worktree list 2>/dev/null | wc -l | tr -d ' ')
@@ -36,15 +111,13 @@ if [ "${WT:-1}" -gt 1 ]; then
 - worktrees: ${WT} (work may be happening in another checkout of this repo)"
 fi
 
-# main is the working branch here by owner decision (2026-08-15). It does NOT
-# deploy — vercel.json has carried "git": {"deploymentEnabled": {"*": false}}
-# since 2026-07-08, so production is an on-demand CLI promote and a push to
-# main ships nothing. The old "you are on main, branch before editing" warning
-# was guarding a fact that had been false for five weeks.
+# Branch policy is AGENTS.md canonicality: work on the currently checked-out
+# branch; never switch unless asked. A push to main ships nothing (vercel.json
+# deploymentEnabled all-false; production is an on-demand promote).
 if [ "$BRANCH" != "main" ]; then
   CTX="${CTX}
-- NOTE: you are on '${BRANCH}', not main. main is the working branch in this
-  repo — check this is deliberate before building on it."
+- NOTE: you are on task branch '${BRANCH}'. Work here; do not switch to main
+  unless asked. Merging to main does not deploy."
 fi
 
 jq -nc --arg ctx "$CTX" \

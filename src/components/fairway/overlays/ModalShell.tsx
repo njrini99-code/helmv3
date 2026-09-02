@@ -45,6 +45,10 @@ import {
 
 /* ── size variants ────────────────────────────────────────────────────────── */
 
+/** Bottom inset of the dialog box: safe area, or the keyboard when it is up. */
+const MODAL_BOTTOM_INSET =
+  'max(1rem, env(safe-area-inset-bottom), calc(var(--keyboard-height, 0px) + 1rem))';
+
 const SIZE_CLASS = {
   sm: 'max-w-sm',
   md: 'max-w-md',
@@ -158,6 +162,25 @@ function ModalShellRoot({
     [contentNode],
   );
 
+  // Keyboard-on-open guard (owner TestFlight report, 2026-08-26): Radix's
+  // FocusScope autofocuses the first TABBABLE element on open. In a form modal
+  // that is a text input, and on a touch device focusing an input summons the
+  // software keyboard over the modal the user just opened — the New-event
+  // editor opened with the iOS keyboard burying everything below the name
+  // field. On coarse pointers we cancel that input autofocus and land focus on
+  // the panel itself (`tabIndex={-1}` below) — still INSIDE the dialog, so the
+  // focus trap, Escape, and Tab order are unchanged; the keyboard now waits
+  // for an intentional tap. Fine pointers keep Radix's default: first-field
+  // focus is correct on desktop, and the select-focus jsdom tests (where the
+  // matchMedia mock always reports `matches: false`) pin that path.
+  const handleOpenAutoFocus = React.useCallback((event: Event) => {
+    if (!window.matchMedia('(pointer: coarse)').matches) return;
+    event.preventDefault();
+    // `event.target` is the FocusScope container (the panel div) — the state
+    // `contentNode` may not have committed yet when this fires.
+    (event.target as HTMLElement | null)?.focus({ preventScroll: true });
+  }, []);
+
   const titleIsString = typeof title === 'string';
 
   return (
@@ -190,20 +213,53 @@ function ModalShellRoot({
               className="fairway-ds"
               aria-describedby={description ? undefined : ''}
               onEscapeKeyDown={handleContentEscapeKeyDown}
+              onOpenAutoFocus={handleOpenAutoFocus}
             >
               <motion.div
                 ref={setContentNode}
                 data-slot={dataSlot}
                 role="dialog"
+                // Focus target for the coarse-pointer open path (see
+                // handleOpenAutoFocus) — a dialog panel is the one place a
+                // negative tabindex on a div is the a11y-correct move.
+                tabIndex={-1}
                 // `position: fixed` is set inline because `.fw-glass-strong` is an
                 // UNLAYERED rule that sets `position: relative` — and unlayered CSS
                 // wins over Tailwind's `@layer utilities` `.fixed`. Centering uses
                 // `inset-0 m-auto` (auto-margin) instead of `-translate-*` so the
                 // framer-motion enter transform (scale/y) can't clobber it.
-                style={{ zIndex: FW_Z.modal, position: 'fixed' }}
+                // Top/bottom insets and the height cap are INLINE because they
+                // must resolve `env(safe-area-inset-*)`: a flat
+                // `max-h-[calc(100dvh-4rem)]` reserved 2rem at each edge, which
+                // is less than the iPhone's ~59pt top inset, so a tall modal
+                // (the focus-area form) rendered its header up underneath the
+                // status bar and Dynamic Island — the clock painted on top of
+                // the panel (owner device report, 2026-08-26). Centring still
+                // comes from `m-auto` + `h-fit`; it now centres inside the SAFE
+                // box rather than the raw viewport, which also stays correct
+                // when the two insets differ (they always do on iPhone).
+                // The bottom inset also clears the soft keyboard: the WebView
+                // never resizes for it (`resize: 'ionic'`, no <ion-app>) and
+                // Safari does not either, so a modal centred in the raw
+                // viewport put its lower half — the field being typed into,
+                // the Save button — under the keys. `--keyboard-height` is 0px
+                // with the keyboard down, so the safe-area form is unchanged
+                // then; with it up, `m-auto` re-centres the panel in the
+                // visible box and the body scrolls inside the shorter cap.
+                style={{
+                  zIndex: FW_Z.modal,
+                  position: 'fixed',
+                  top: 'max(1rem, env(safe-area-inset-top))',
+                  bottom: MODAL_BOTTOM_INSET,
+                  maxHeight: `calc(100dvh - max(1rem, env(safe-area-inset-top)) - ${MODAL_BOTTOM_INSET})`,
+                  transition: reduced ? undefined : 'bottom 250ms ease-out',
+                }}
+                // The panel handles its own keyboard clearance; the provider's
+                // global keyboardWillShow scroll must leave the page alone.
+                data-fw-keyboard-aware
                 className={cn(
-                  'fixed inset-0 m-auto h-fit w-[calc(100vw-2rem)]',
-                  'max-h-[calc(100dvh-4rem)] overflow-hidden',
+                  'fixed inset-x-0 m-auto h-fit w-[calc(100vw-2rem)]',
+                  'overflow-hidden',
                   'rounded-fw-lg text-text-primary',
                   'flex flex-col',
                   GLASS_STRONG_CLASS,

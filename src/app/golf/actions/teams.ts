@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { describeError } from '@/lib/utils/describe-error';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import {
   signStaffInvite,
   verifyStaffInvite,
@@ -1143,9 +1144,10 @@ export async function createTeamJoinRequest(
 async function getTeamJoinRequestsImpl(): Promise<TeamActionResult<JoinRequestData[]>> {
   const supabase = await createClient();
 
-  // Verify user is authenticated
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  // Resilient, not raw — fetched from a client component on mount, so a
+  // transient GoTrue error here surfaces as a false "Not authenticated".
+  const { user } = await getUserResilient(supabase);
+  if (!user) {
     return { success: false, error: 'Not authenticated' };
   }
 

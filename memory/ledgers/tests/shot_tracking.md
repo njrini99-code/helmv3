@@ -39,6 +39,12 @@
 - Updated `src/lib/admin/__tests__/observe-action-result.test.ts` to guarantee
   that `shot_not_found` remains a handled warning and is not captured by Sentry.
 
+## 2026-08-25 — durable snapshot cross-array contract
+
+- Status: uncommitted local reliability repair; not deployed.
+- Added the atomic snapshot integrity suite in `supabase/tests/rls/` against the
+  real authenticated RPC boundary. It catches the regression where a snapshot
+  could report success while omitting an unmatched shot group.
 ## 2026-08-22 — failed checkpoint and reopened-hole regression coverage
 
 - SHA: `4276cec7e2556aa4b1dffc92851ba780d2a67b1a`.

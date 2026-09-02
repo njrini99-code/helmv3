@@ -60,7 +60,10 @@ function copyViaExecCommand(text: string): boolean {
   return succeeded;
 }
 
-async function copyText(text: string): Promise<boolean> {
+/** Shared clipboard-write helper — exported so FieldCopy (single-field
+ *  forensics copy control) reuses the exact same fallback chain instead of a
+ *  second, drifting copy of it. */
+export async function copyTextToClipboard(text: string): Promise<boolean> {
   if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text);
@@ -91,7 +94,7 @@ export function CopyReportButton({
   );
 
   async function handleClick() {
-    const succeeded = await copyText(report);
+    const succeeded = await copyTextToClipboard(report);
     if (!succeeded) return; // Fail silently — a clipboard denial shouldn't throw a toast war.
     setCopied(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

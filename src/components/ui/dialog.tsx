@@ -4,6 +4,7 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { isCoarsePointer } from '@/lib/utils/pointer';
 
 const Dialog = DialogPrimitive.Root;
 
@@ -33,11 +34,22 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onOpenAutoFocus, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      // Same coarse-pointer guard as fairway's ModalShell: on touch, Radix's
+      // default first-tabbable autofocus summons the iOS keyboard over the
+      // dialog on open. Cancel it and keep focus on the panel; a caller's own
+      // handler runs first and wins if it preventDefaults.
+      onOpenAutoFocus={(event) => {
+        onOpenAutoFocus?.(event);
+        if (!event.defaultPrevented && isCoarsePointer()) {
+          event.preventDefault();
+          (event.target as HTMLElement | null)?.focus({ preventScroll: true });
+        }
+      }}
       className={cn(
         'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4',
         'border border-warm-200 bg-white p-6 shadow-lg rounded-xl',

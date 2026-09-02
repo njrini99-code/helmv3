@@ -115,11 +115,6 @@ export default async function RoundDetailPage({
     notFound();
   }
 
-  // Redirect to continue page if round is still in progress
-  if (round.status === 'in_progress') {
-    redirect(`/golf/dashboard/rounds/continue/${id}`);
-  }
-
   const roundData = {
     ...round,
     player: Array.isArray(round.player) ? round.player[0] : round.player,
@@ -160,6 +155,26 @@ export default async function RoundDetailPage({
     redirect('/golf/dashboard');
   }
 
+  // An unfinished round goes to the scoring screen, for everyone.
+  //
+  // Reverted 2026-08-31, same day it shipped. The previous version sent only
+  // PLAYERS here and let a coach through to the detail page, so a coach could
+  // re-type a live round. Measured before reverting: NO coach surface anywhere
+  // in the product lists or links an in-progress round. All four coach-facing
+  // reads in dashboard-data.ts filter `.eq('status','completed')`, and every
+  // in_progress read in golf.ts is player-scoped (savePartialRound,
+  // deleteInProgressRound, getNextQualifierRoundNumber). The exception was
+  // reachable only by typing a URL.
+  //
+  // So it bought nothing and widened what a coach can touch, which the owner
+  // ruled against directly: coaches deal with submitted rounds. The lifecycle
+  // guard still permits re-typing a live round (20260830120000) — that
+  // capability is simply unused until a surface exists that should use it,
+  // which is the right order.
+  if (round.status === 'in_progress') {
+    redirect(`/golf/dashboard/rounds/continue/${id}`);
+  }
+
   // The owning player OR a coach of their team may retype the round. Deliberately
   // includes the player: the coach's question was "can they edit on their end?",
   // and `golf_rounds_update` (RLS) already permits the owning player to write
@@ -174,10 +189,18 @@ export default async function RoundDetailPage({
   // Generate (or fetch cached) AI round recap. Server action persists the
   // result on first call so subsequent visits are instant. Failure here
   // never blocks the page render — recap stays null.
+  //
+  // Skipped for a round still in progress. Those reach this page now (a coach
+  // opening a live round to change its type), and there is nothing to recap
+  // yet: the action would spend an LLM call on a partial scorecard and then
+  // fail to persist it anyway, because the lifecycle guard's `round_recap`
+  // branch only permits the write when the round is already completed.
   let aiRecap: string | null = null;
   try {
-    const result = await generateRoundRecap(id);
-    aiRecap = result.recap;
+    if (round.status === 'completed') {
+      const result = await generateRoundRecap(id);
+      aiRecap = result.recap;
+    }
   } catch (err) {
     if (process.env.NODE_ENV === 'development') {
       console.warn('[round-detail] recap generation failed:', err);
@@ -236,7 +259,18 @@ export default async function RoundDetailPage({
   // Degrades rather than throws: an empty list makes the editor say "not
   // entered in any open qualifier" instead of taking the whole page down, and
   // the practice/tournament choices still work without it.
-  let qualifierOptions: Array<{ id: string; name: string; numRounds: number }> = [];
+  let qualifierOptions: Array<{
+    id: string;
+    name: string;
+    numRounds: number;
+    takenRoundNumbers: number[];
+    playerEntered: boolean;
+    isCompleted: boolean;
+  }> = [];
+  // An empty list has two very different causes, and saying "this team has no
+  // open qualifier" when the read simply failed is a confident false statement
+  // of exactly the kind this repo keeps recording.
+  let qualifierReadFailed = false;
   if (canChangeType && roundData.player_id) {
     const { data: entryRows, error: entriesError } = await supabase
       .from('golf_qualifier_entries')
@@ -251,18 +285,119 @@ export default async function RoundDetailPage({
       );
     }
 
-    qualifierOptions = (entryRows ?? [])
+    type QualifierRow = {
+      id: string;
+      name: string | null;
+      num_rounds: number | null;
+      status: string | null;
+    };
+
+    const entered = (entryRows ?? [])
       .map((row) => {
         const q = (row as { qualifier?: unknown }).qualifier;
-        return (Array.isArray(q) ? q[0] : q) as
-          | { id: string; name: string | null; num_rounds: number | null; status: string | null }
-          | null
-          | undefined;
+        return (Array.isArray(q) ? q[0] : q) as QualifierRow | null | undefined;
       })
-      .filter((q): q is { id: string; name: string | null; num_rounds: number | null; status: string | null } =>
-        Boolean(q && q.id && q.status !== 'completed'),
-      )
-      .map((q) => ({ id: q.id, name: q.name ?? 'Qualifier', numRounds: q.num_rounds ?? 1 }));
+      // Completed qualifiers are included deliberately — see the coach's
+      // instruction recorded in 20260831180000. The editor marks them.
+      .filter((q): q is QualifierRow => Boolean(q && q.id));
+
+    const enteredIds = new Set(entered.map((q) => q.id));
+
+    // A coach also gets the team's OTHER open qualifiers — the ones this
+    // player is not entered in yet.
+    //
+    // Without this, "change a practice round into a qualifier round" was
+    // impossible for exactly the players who most needed it: a player with no
+    // entry row saw an EMPTY dropdown and a message telling them a coach must
+    // add them — which the coach was already reading. Measured 2026-08-31 on
+    // one production team, two players held six practice rounds between them
+    // and zero qualifier entries.
+    //
+    // Coach-only because RLS INSERT on golf_qualifier_entries is coach-only:
+    // offering a player a qualifier they cannot be entered into would rebuild
+    // the same dead end one step further in. The action re-checks both the
+    // role and the team, and creates the entry on save.
+    let teamOpen: QualifierRow[] = [];
+    // Scoped by the ROUND's team, not the coach's cookie team. Those are not
+    // the same thing: coach access here is granted by the round's PLAYER being
+    // a member of the cookie team, while the RPC gates the qualifier against
+    // `golf_rounds.team_id`. Measured 2026-08-31, production holds 12 rounds
+    // whose `team_id` is not a membership of their own player, plus 8 with no
+    // team at all — so offering the cookie team's qualifiers would let a coach
+    // pick one the write then refuses, after the player had been entered into
+    // it. Ask the same question the enforcement asks.
+    const roundTeamId = (round as { team_id?: string | null }).team_id ?? null;
+    if (isCoach && roundTeamId) {
+      const { data: teamRows, error: teamQualError } = await supabase
+        .from('golf_qualifiers')
+        .select('id, name, num_rounds, status')
+        .eq('team_id', roundTeamId);
+
+      if (teamQualError) {
+        qualifierReadFailed = true;
+        void logServerError(
+          `[round detail] team qualifier read failed for round ${id}; the type editor will only offer qualifiers this player is already entered in: ${describeError(teamQualError)}`,
+          { action: 'roundDetail.teamQualifiers', featureArea: 'rounds' },
+          'warning',
+        );
+      }
+
+      teamOpen = ((teamRows ?? []) as QualifierRow[]).filter((q) => !enteredIds.has(q.id));
+    }
+
+    qualifierOptions = [...entered, ...teamOpen].map((q) => ({
+      id: q.id,
+      name: q.name ?? 'Qualifier',
+      numRounds: q.num_rounds ?? 1,
+      takenRoundNumbers: [] as number[],
+      playerEntered: enteredIds.has(q.id),
+      isCompleted: q.status === 'completed',
+    }));
+
+    // Which slots this player's OTHER rounds already occupy.
+    //
+    // Without this the editor offered every round number and defaulted to 1 —
+    // and a player fixing a mis-tapped round has usually already recorded the
+    // qualifier's earlier rounds, so 1 is precisely the slot that is not free.
+    // Every save then failed on the action's clash check with no way to see
+    // which numbers were available. That is the 2026-08-30 "players still
+    // cannot edit round type after the round" report: not a permission
+    // problem, a picker that could only offer a losing move.
+    //
+    // Excludes THIS round, so a round already sitting in slot 2 does not read
+    // its own slot as taken. Mirrors the action's clash query, including its
+    // `abandoned` exclusion.
+    if (qualifierOptions.length > 0) {
+      const { data: takenRows, error: takenError } = await supabase
+        .from('golf_rounds')
+        .select('qualifier_id, qualifier_round_number')
+        .eq('player_id', roundData.player_id)
+        .in('qualifier_id', qualifierOptions.map((q) => q.id))
+        .neq('status', 'abandoned')
+        .neq('id', id);
+
+      if (takenError) {
+        // Degrade to "nothing known taken" rather than dropping the editor:
+        // the action still refuses a real clash, so the worst case is the old
+        // behaviour (a save that fails with an explanation), not a bad write.
+        void logServerError(
+          `[round detail] taken qualifier slots read failed for round ${id}; the type editor may offer a slot that is already used: ${describeError(takenError)}`,
+          { action: 'roundDetail.takenSlots', featureArea: 'rounds' },
+          'warning',
+        );
+      }
+
+      const byQualifier = new Map<string, number[]>();
+      for (const row of takenRows ?? []) {
+        if (!row.qualifier_id || typeof row.qualifier_round_number !== 'number') continue;
+        const list = byQualifier.get(row.qualifier_id) ?? [];
+        list.push(row.qualifier_round_number);
+        byQualifier.set(row.qualifier_id, list);
+      }
+      for (const option of qualifierOptions) {
+        option.takenRoundNumbers = byQualifier.get(option.id) ?? [];
+      }
+    }
   }
 
   const reviewStats = (reviewRow?.round_stats ?? null) as
@@ -302,6 +437,8 @@ export default async function RoundDetailPage({
         currentQualifierId={roundData.qualifier_id}
         currentQualifierRoundNumber={roundData.qualifier_round_number}
         qualifierOptions={qualifierOptions}
+        viewerIsCoach={isCoach}
+        qualifierReadFailed={qualifierReadFailed}
       />
     </div>
   );

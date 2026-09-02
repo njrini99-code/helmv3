@@ -174,11 +174,30 @@ export async function sweepActionOutcomes(
   // eventRows null, so every action's `eventDerivedForPlayer` below resolves
   // to no event data (legacy scalar fallback for every player this pass) --
   // never a partial event/legacy blend (mirrors loadEngineStatRows's own rule).
-  const { data: eventRows }: { data: EngineEventRows | null } = await loadEngineEventRows(
+  const { data: eventRows, error: eventRowsErr }: {
+    data: EngineEventRows | null;
+    error: { message: string; code?: string | null } | null;
+  } = await loadEngineEventRows(
     supabase,
     teamId,
     playerIds,
   );
+  if (eventRowsErr) {
+    await logServerError(
+      `[baseballOutcomeSweep] event telemetry read failed; velocity outcomes were measured only from available non-event metrics: ${eventRowsErr.message}`,
+      {
+        action: 'baseball.outcomeSweep.loadEventTelemetry',
+        featureArea: 'coachhelm',
+        source: 'background_job',
+        sport: 'baseball',
+        teamId,
+        errorCode: eventRowsErr.code ?? undefined,
+        errorDetails: eventRowsErr.message,
+        dbFingerprint: 'baseball-coachhelm-outcome-event-telemetry-read',
+      },
+      'warning',
+    );
+  }
 
   const nowIso = new Date().toISOString();
   let measured = 0;

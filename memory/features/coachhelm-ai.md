@@ -83,13 +83,19 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Coach views need fast triage: new, acknowledged, dismissed, resolved, and priority states must be visible.
 - Player views need clear actionability: what changed, why it matters, and what to do next.
 - Loading states should use skeletons that match final layout.
-- Empty states should stay compact and explain whether there is no data, no permission, or no insight yet.
+- Empty states should stay compact and explain whether there is no data, no permission, or no insight yet. The Ask page's `ProgramOpening` renders a compact honest empty state when the program pulse has no items (2026-08-26) — it must never return nothing and leave the column blank.
 - Mobile views must use the shared app shell, Standard or Action headers, and bottom-nav clearance from `AGENTS.md`.
+- The Ask composer autofocuses only on fine-pointer (desktop) clients (2026-08-26). On touch, no CoachHelm surface may focus a text input on open — iOS answers that focus with a keyboard over an unread page.
+- The phone Ask drawer (`CoachHelmDrawer`) lifts by `--keyboard-height` and the composer drops its home-indicator pad while `body.keyboard-open` (2026-09-02) — the WebView never resizes for the keyboard, so a `bottom-0` drawer put the composer under the keys exactly like the messages screen.
 
 ## Known Risk Areas
 
 - Generated insight evidence can drift from real data if adapters or fallback paths skip citation validation.
 - Safety-net fallback behavior can mask generator failures if logs are ignored.
+- Course-management "worst holes" insights require at least five samples,
+  matching the persisted insight writer's validation contract. Smaller samples
+  are intentionally skipped rather than surfacing a validation warning after a
+  player submits a round.
 - A completed round's CoachHelm terminal state is written only through the
   service-only `record_round_coachhelm_terminal_state` RPC. It may update
   processing metadata but cannot modify score, shots, identity, or status.

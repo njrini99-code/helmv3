@@ -1361,6 +1361,25 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
    * task. Coalesce any older shot save, wait for its lock to clear, then keep
    * the player on the hole until this complete snapshot is acknowledged.
    */
+  /**
+   * Forget a roundId the server has no row for.
+   *
+   * savePartialRound returns 'round_missing' when the target round does not
+   * exist (a create that never landed, or a deleted round). Retrying the same
+   * id can never succeed, so the only way the player's round survives is to
+   * drop the id and let the next save go through the CREATE path — every save
+   * already sends the complete snapshot, so nothing is lost by re-creating.
+   *
+   * lastServerUpdatedAt is cleared too: it belongs to the round that is gone,
+   * and sending it as expectedUpdatedAt against a fresh row would come back as
+   * a spurious 'conflict'.
+   */
+  const dropStaleRoundId = useCallback(() => {
+    savedRoundIdRef.current = null;
+    setSavedRoundId(null);
+    lastServerUpdatedAtRef.current = undefined;
+  }, []);
+
   const persistCompletedHole = useCallback(async (
     saveData: PartialRoundData,
     emergencyTimestamp: number,
@@ -1396,6 +1415,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           redirectToCompletedRound();
           return false;
         }
+        // The row is gone. Drop the id and let this same loop retry as a create
+        // rather than breaking out to "this hole has not saved yet", which is
+        // what left three auto-saves hammering a dead id at Winchester CC.
+        if (result.error === 'round_missing') {
+          dropStaleRoundId();
+          continue;
+        }
         if (result.error !== 'busy' && result.error !== 'retry') break;
       } catch {
         // Retry the finite checkpoint sequence below before asking the player
@@ -1416,7 +1442,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       showAutoSaveWarning();
     }
     return false;
-  }, [handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, showAutoSaveWarning]);
+  }, [dropStaleRoundId, handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, showAutoSaveWarning]);
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats): Promise<boolean> => {
     const pendingCheckpoint = pendingHoleCheckpointRef.current;
@@ -1650,6 +1676,25 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
             // circuit breaker, warn, or throw.
           } else if (isCompletedRoundError(result.error)) {
             redirectToCompletedRound();
+          } else if (result.error === 'round_missing') {
+            // Re-create immediately with the same snapshot instead of throwing:
+            // the circuit breaker must not open on a failure we can recover from.
+            dropStaleRoundId();
+            const recreated = await savePartialRound(
+              buildPartialRoundData(undefined, holeIndex, mergedInProgress),
+              undefined,
+            );
+            if (recreated.success) {
+              consecutiveSaveFailuresRef.current = 0;
+              if (recreated.data.updatedAt) lastServerUpdatedAtRef.current = recreated.data.updatedAt;
+              savedRoundIdRef.current = recreated.data.roundId;
+              setSavedRoundId(recreated.data.roundId);
+              clearEmergencySaveThrough(recreated.data.roundId, playerId, emergencyTimestamp);
+            } else {
+              consecutiveSaveFailuresRef.current++;
+              if (consecutiveSaveFailuresRef.current >= 2) showAutoSaveWarning();
+              throw new Error(`Auto-save could not re-create the round: ${recreated.error}`);
+            }
           } else {
             consecutiveSaveFailuresRef.current++;
             if (consecutiveSaveFailuresRef.current >= 2) {
@@ -1697,6 +1742,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
                   void handleRoundSyncConflict('This round was updated on another device. Please reload.');
                 } else if (isCompletedRoundError(r.error)) {
                   redirectToCompletedRound();
+                } else if (r.error === 'round_missing') {
+                  // Queued follow-up: just forget the id. The next primary save
+                  // re-creates, and this one's state is already in that snapshot.
+                  dropStaleRoundId();
                 }
               } catch { /* queued save failure — non-critical, circuit breaker tracks primary saves */ } finally {
                 serverSaveInProgressRef.current = false;
@@ -1709,6 +1758,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   }, [
     buildPartialRoundData,
     completedRoundId,
+    dropStaleRoundId,
     handleRoundSyncConflict,
     isCompletedRoundError,
     playerId,
@@ -1847,6 +1897,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     if (!result.success && (result.error === 'busy' || result.error === 'retry')) {
       await new Promise((resolve) => setTimeout(resolve, 1_500));
       result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
+    }
+
+    // A user-initiated save must not be the one that loses the round: if the id
+    // is dead, re-create rather than reporting a failure the player cannot act on.
+    if (!result.success && result.error === 'round_missing') {
+      dropStaleRoundId();
+      result = await savePartialRound(buildPartialRoundData(), undefined);
     }
 
     if (!result.success) {

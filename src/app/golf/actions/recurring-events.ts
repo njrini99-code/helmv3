@@ -799,7 +799,58 @@ async function createRecurringEventImpl(
     // of a per-occurrence loop — a series can carry up to
     // MAX_SERIES_OCCURRENCES rows.
     if (input.attendeeIds && input.attendeeIds.length > 0) {
-      const invitedPlayerIds = input.attendeeIds;
+      // ONLY PLAYERS ON THE SERIES' OWN TEAM MAY BE ATTACHED.
+      //
+      // The comment above says this "mirrors the one-off create path's
+      // sendEventInvitations". It mirrored that function's WRITE and skipped
+      // its roster intersect — the one check that makes the one-off path safe
+      // was the single thing not carried over. `input.attendeeIds` was then
+      // used verbatim as `player_id`, on every occurrence in the series.
+      //
+      // RLS does not close this. `golf_event_attendance_insert_coach` checks
+      // only `is_golf_team_coach(e.team_id)` — that the caller coaches the
+      // EVENT's team — and never that the named player belongs to it. So any
+      // `golf_players.id` on the platform, including one from a program the
+      // coach has no relationship to, was upserted as a pending attendee and
+      // counted in that event's attendance totals.
+      //
+      // `teamId` is the resolved, ownership-proven team from
+      // resolveTeamForCoach above — not anything the client sent.
+      const { data: roster, error: rosterError } = await supabase
+        .from('golf_team_members')
+        .select('player_id')
+        .eq('team_id', teamId)
+        .eq('status', 'active');
+
+      // Cannot establish who belongs => attach nobody, but still fall through
+      // to the team-wide fan-out below: the series exists and stays created,
+      // and a coach can invite through the per-occurrence edit flow. Writing
+      // the unvalidated list on a failed read is exactly the defect being
+      // fixed, so this fails closed rather than open.
+      if (rosterError) {
+        await logServerError(
+          `[createRecurringEvent attendance Error]: could not verify the series roster, attached nobody: ${describeError(rosterError)}`,
+          {
+            action: 'recurring_events.createRecurringEvent.attendance',
+            featureArea: 'calendar',
+            extra: { rootId },
+          },
+        );
+      }
+
+      const onTeam = new Set(
+        (roster ?? []).map((row: { player_id: string | null }) => row.player_id).filter(Boolean),
+      );
+      // rosterError => empty set => nobody eligible => no attendance rows written.
+      const invitedPlayerIds = rosterError ? [] : input.attendeeIds.filter((id) => onTeam.has(id));
+      const rejectedIds = rosterError ? [] : input.attendeeIds.filter((id) => !onTeam.has(id));
+
+      if (rejectedIds.length > 0) {
+        console.warn(
+          `[recurringEvents] refused to attach ${rejectedIds.length} player(s) who are not active members of team ${teamId} to series ${rootId}`,
+        );
+      }
+
       const attendanceRows = seriesEventIds.flatMap((eventId) =>
         invitedPlayerIds.map((playerId) => ({
           event_id: eventId,

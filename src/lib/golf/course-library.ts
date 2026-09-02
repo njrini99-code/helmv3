@@ -71,7 +71,7 @@ export function courseImageExt(mime: string): string {
  *  removes a whole class of environment-shaped failure. */
 export function isCourseImagePublicUrl(url: string, supabaseUrl: string): boolean {
   if (!url || !supabaseUrl) return false;
-  const base = supabaseUrl.replace(/\/+$/, '');
+  const base = supabaseUrl.trim().replace(/\/+$/, '');
   return url.startsWith(`${base}/storage/v1/object/public/${COURSE_IMAGE_BUCKET}/`);
 }
 

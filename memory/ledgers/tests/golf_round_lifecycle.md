@@ -1,5 +1,18 @@
 # Golf Round Lifecycle test ledger
 
+## 2026-08-26 — flight-recorder wiring contract
+
+- SHA: recorded in the follow-up ledger commit on `feat/bridge-refit`.
+- Added `golf-round-submit-flight-recorder.test.ts` and
+  `golf-save-partial-round-flight-recorder.test.ts`.
+- Guarantees: the `_helm_trace` payload reaches the RPC argument; a recorder
+  that throws at any stage never fails or alters the save; `helmTraceId`
+  reaches the Bridge log context on the failure path.
+- Verification: the existing round-lifecycle suites were re-run unchanged —
+  inngest routing, save-partial-round, abort-no-destructive-fallback,
+  busy-carveout, and after-chain — alongside the full unit + unit-dom suite
+  (1210 files, 11,120 tests, 0 failures).
+
 ## 2026-08-22 — confirmed-snapshot recovery contract
 
 - SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.
@@ -37,6 +50,33 @@
   Undo reconciles a server-confirmed `shot_not_found` response instead of
   leaving the active round blocked.
 
+## 2026-08-25 — recovery and protected-lifecycle regression suite
+
+- Release candidate: round-lifecycle reliability promotion.
+- Added/updated coverage for no-expiry emergency saves, stale recovery prompt
+  suppression, coach-facing active-round roster guards, qualifier manual
+  closure, recap lifecycle writes, checkpoint validation, and the database
+  lifecycle/RLS contracts.
+- Evidence before promotion: focused round tests, local Supabase lifecycle/RLS
+  SQL suites, typecheck, lint, and production build; the release run records
+  final command outcomes against the promoted SHA.
+
+## 2026-08-25 — atomic snapshot integrity regression
+
+- Status: uncommitted local reliability repair; not deployed.
+- Added the atomic snapshot integrity suite in `supabase/tests/rls/`.
+- Guarantees: both atomic RPCs reject an unmatched shot-group/hole pair before
+  replacing data; a rejected partial save keeps its durable shot, and a
+  rejected submit keeps the round in progress with its durable hole and shot.
+
+## 2026-08-25 — failed submission/checkpoint durability
+
+- Status: uncommitted local reliability repair; not deployed.
+- Added regression coverage for a SQL-returned submit RPC failure and a
+  fallback hole-upsert failure against an existing in-progress round.
+- Guarantees: neither condition issues a destructive delete. A committed
+  submit is reconciled by read-back; an uncommitted one remains recoverable,
+  and every prior checkpoint remains visible in Continue Round.
 ## 2026-08-22 — durable checkpoint navigation contract
 
 - SHA: `4276cec7e2556aa4b1dffc92851ba780d2a67b1a`.
@@ -75,3 +115,27 @@
   without executing any destructive fallback.
 - An unconfirmed abort remains safely retryable: its in-progress parent,
   holes, shots, and persisted recovery backup are left untouched.
+
+## 2026-08-25 — recap wrapper guarantee flipped, call-path now exercised
+
+- The round-recap lifecycle pgTAP suite (`supabase/tests/rls/`) previously
+  asserted the public recap
+  endpoint "remains SECURITY INVOKER" — that assertion enshrined the 42501
+  schema-permission bug. It now asserts the definer boundary + pinned
+  search_path, and a new test executes the endpoint as the `authenticated`
+  role, proving the call reaches the private implementation instead of dying
+  at the schema boundary. Catalog-only suites cannot catch grant/visibility
+  regressions; the call-path test is the load-bearing guarantee.
+
+## 2026-08-25 — lifecycle privilege-contract suite
+
+- Added the lifecycle privilege-contract suite in `supabase/tests/rls/`: the
+  privilege contract of the whole lifecycle RPC surface asserted at the
+  catalog level (schema USAGE, EXECUTE grants, owner, definer mode, pinned
+  search_path), plus two zero tripwires — no public definer function is
+  anon-executable, and none is left on default PUBLIC ACLs.
+- Exists because the recap outage passed behavioral testing locally while
+  production denied the same privilege path (P1-10): catalog assertions
+  hold identically in every environment built from this chain, so a grant
+  regression fails CI even where local runtime behavior is lax. This suite
+  is the complement to the call-path test above, not a replacement for it.
