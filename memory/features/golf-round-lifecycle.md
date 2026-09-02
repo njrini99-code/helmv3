@@ -348,6 +348,11 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Lifecycle migrations that introduce a completed-round guard can strand older
   direct writers unless their compatible RPC path and regression tests ship in
   the same release.
+- The post-round AI recap (`round-recap.ts`) must be handed the player's own
+  first name (`golf_players.first_name`, cleaned by `promptSafeName`, falling
+  back to "the player") both as a fact and in the third-person rule. Until
+  2026-09-02 the prompt named nobody and offered "Nick" as an example, and the
+  model copied the example into a Shenandoah player's stored recap.
 
 ## Tests To Prefer
 
