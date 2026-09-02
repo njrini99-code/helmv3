@@ -42,6 +42,12 @@ import {
   type SyncResult,
   type SyncStatus,
 } from './shot-storage';
+// B6: turns a bare round-write signal key (busy/retry/conflict/round_missing)
+// into a player sentence — client-safe, no server imports (see its own
+// docstring). A static import here (unlike the actions dynamically imported
+// below to avoid a lib/ → app/ circular dependency) is safe: this module has
+// no such dependency.
+import { describeRoundWriteFailure } from '@/lib/golf/round-missing-recovery';
 
 // Dynamic import to avoid lib/ → app/ circular dependency
 type RoundDraftData = import('@/app/golf/actions/round-drafts').RoundDraftData;
@@ -567,7 +573,10 @@ class SyncEngine {
         } else {
           await markRoundFailed(round._offline_id, result.error);
           failed++;
-          errors.push(`Round ${round._offline_id}: ${result.error}`);
+          // B6: never surface the internal offline id, and never a bare
+          // signal key (busy/retry/conflict/round_missing) — this string
+          // reaches the player directly via OfflineIndicator's `syncError`.
+          errors.push(describeRoundWriteFailure(result.error));
           this.notifyCallbacks('onItemFailed', 'round', round._offline_id, result.error);
         }
 
@@ -575,7 +584,7 @@ class SyncEngine {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         await markRoundFailed(round._offline_id, errorMessage);
         failed++;
-        errors.push(`Round ${round._offline_id}: ${errorMessage}`);
+        errors.push(describeRoundWriteFailure(errorMessage));
         this.notifyCallbacks('onItemFailed', 'round', round._offline_id, errorMessage);
       }
 
@@ -653,7 +662,8 @@ class SyncEngine {
             round.error ?? 'Max sync attempts reached'
           );
           failed++;
-          errors.push(`Round ${round.id}: max sync attempts reached`);
+          // B6: never surface the internal offline id to the player.
+          errors.push('This round could not be saved after several attempts. It remains safely stored on this device.');
           this.notifyCallbacks('onItemFailed', 'round', round.id, 'Max sync attempts reached');
         }
         continue;
@@ -715,7 +725,10 @@ class SyncEngine {
           // backoff, keep it pending for retry (or mark failed once exhausted).
           await legacy.recordOfflineRoundSyncFailure(round.id, result.error, MAX_RETRY_COUNT);
           failed++;
-          errors.push(`Round ${round.id}: ${result.error}`);
+          // B6: never surface the internal offline id, and never a bare
+          // signal key — this string reaches the player directly via
+          // OfflineIndicator's `syncError`.
+          errors.push(describeRoundWriteFailure(result.error));
           this.notifyCallbacks('onItemFailed', 'round', round.id, result.error);
         }
       } catch (error) {
@@ -728,7 +741,7 @@ class SyncEngine {
           /* swallow — the round stays pending and will be retried next cycle */
         }
         failed++;
-        errors.push(`Round ${round.id}: ${errorMessage}`);
+        errors.push(describeRoundWriteFailure(errorMessage));
         this.notifyCallbacks('onItemFailed', 'round', round.id, errorMessage);
       }
 

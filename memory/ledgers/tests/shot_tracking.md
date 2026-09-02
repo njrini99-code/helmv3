@@ -207,3 +207,115 @@
 - Verification: both new tests plus the full `rounds/new/` and
   `rounds/continue/` suites (6 files, 27 tests, 0 failures); `npm run
   typecheck` (0); `npm run lint` (0).
+
+## 2026-09-02 (Cluster B) — client-side round tracking, nine items
+
+Every item written failing-first against the pre-fix source (or, for
+component tests, a mocked prop forcing the buggy branch), watched fail for
+the stated reason, then implemented. Full defect descriptions in
+`memory/ledgers/changes/shot_tracking.md`, same date.
+
+- `src/hooks/golf/__tests__/shot-mutation-recovery.test.tsx` (B1, +5 net):
+  rewrote the pre-existing "removes a server-deleted shot from Edit" test,
+  which had pinned the BUGGY behavior (`RECONCILE_MISSING_SHOT` with the
+  shot filtered out, edit discarded) — now asserts the edit is applied and
+  reaches `onAutoSave`. Added: an RLS-hidden-case variant (same
+  `shot_not_found` code path, different real-world cause, deliberately
+  indistinguishable — the fix is intentionally code-path-agnostic); B1
+  regressions proving Undo/Delete's existing shot_not_found handling was
+  already correct (applies the removal, reaches `onAutoSave`); two B3×B1
+  guard tests proving a rejected `onAutoSave` (per B3's new
+  await-and-rethrow) does not surface as `EDIT_SAVE_ERROR`/`UNDO_FAIL` for
+  Edit/Delete/Undo — the mutation and its device snapshot already succeeded.
+- `src/hooks/golf/__tests__/use-round-status-sync.test.tsx` (B2, +3): proves
+  the poll does NOT adopt a newer server `updated_at` when it proves this
+  device is behind (`isStale`), fires `onRoundStale` exactly once per new
+  server version, and DOES adopt the value when polling confirms this
+  device is already current.
+- `continue-round-client.autosave-await.test.ts` (B3, new): source-inspection
+  — `handleAutoSave` never fires its primary save with `void`, throws on an
+  unrecognized failure, and keeps `persistCompletedHole` on its own already-
+  awaited path.
+- `continue-round-client.conflict-block.test.ts` (B2/B9, new):
+  source-inspection — `onRoundStale` wired into `useRoundStatusSync`;
+  `handleRoundSyncConflict` adopts the server `updated_at` ONLY inside the
+  `pendingBeaconRef` self-heal window (index-ordering assertions, not a
+  bare "string absent" check, since B9 legitimately reintroduces one guarded
+  adoption); every write entry point checks `roundConflictBlockedRef`; the
+  beacon call marks `pendingBeaconRef.current = true`; `handleBeforeUnload`
+  checks the same flag; the blocked banner renders a Reload control.
+- `continue-round-client.hole-invalid-checkpoint.test.ts` (B5, new):
+  source-inspection — `persistCompletedHole` checks `hole_invalid` BEFORE
+  its generic busy/retry fallback and returns `false` without retrying;
+  `handleAutoSave` checks it before its generic throw.
+- `continue-round-client.round-missing.test.ts` (updated, B3 fallout): two
+  P2 tests' markers (`const executeServerSave`, `// Queued from
+  handleHoleComplete`) no longer exist after B3 inlined that helper —
+  re-pointed at the new marker (`// Server save — AWAITED (B3)`) and the
+  now-single queued-follow-up block; assertions unchanged.
+- `continue-round-client.hole-invalid.test.ts` (updated, B6 fallout): the
+  dedicated `result.error === 'hole_invalid'` branch this test pinned was
+  replaced by the shared `describeRoundWriteResult` helper — updated to
+  assert the helper call and the absence of any unconditional
+  `showToast(result.error...)`.
+- `src/lib/golf/__tests__/round-missing-recovery.test.ts` (B6, +6):
+  `describeRoundWriteFailure('conflict')` matches the new
+  `ROUND_CONFLICT_MESSAGE`; `describeRoundWriteResult` prefers `message` for
+  savePartialRound's bare-key shape, uses `error` directly for submit's
+  already-a-sentence shape, falls back to `describeRoundWriteFailure` for
+  every other key, and never returns empty.
+- `src/app/golf/actions/__tests__/golf-save-partial-round.test.ts` (B9, +1
+  assertion on an existing test): the no-id reuse success path now returns
+  the row's real `updated_at` (was hard-coded `undefined`) — this assertion
+  is what caught the `ReferenceError: round is not defined` scope bug in
+  the first attempt at this fix, before it shipped.
+- `new-round-client.hardening.test.ts` (B2/B4/B5/B6/B7/B9 for New Round,
+  new, 12 cases): mirrors the Continue Round wiring-contract tests above for
+  every fix mirrored onto New Round, plus B4-specific (recovery dialog in
+  the setup/holes step, Discard's key fix, the new visible tracking-step
+  error banner) and B7-specific (`maxRoundDate` wired to the date input,
+  `validateBeforeStart` rejects a future date) assertions.
+- `FairwayHoleConfig.bounds.test.tsx` (B5, new, render test): a seeded
+  5000-yard hole blocks Save with an inline "999" message; every-hole-in-
+  bounds saves normally.
+- `FairwayShotEntry.distance-bound.test.tsx` (B5/B8, new, render tests, 6
+  cases): blocks Next Shot for a >1000-yard distance remaining and for a
+  0-yard/0-foot (green-proximity) distance, in each case with the specific
+  inline message; does not block a within-bounds value.
+- `FairwayShotTracking.ready-state-parity.test.ts` (B5/B8, new,
+  source-inspection): `isReadyForNextShot` (the PARENT function that
+  actually gates the disabled state — `nextShotBlocker` in the child only
+  computes a message and short-circuits to `null` whenever `ready` is true)
+  mirrors both new bounds; a full render test was judged not worth the
+  extensive multi-sub-hook mocking `FairwayShotTracking.tsx` would need,
+  given the sibling `FairwayShotEntry` render tests already prove the
+  underlying logic correct in isolation.
+- `FairwayShotTracking.stale-checkpoint.test.ts` (B8, new,
+  source-inspection): `currentHoleIndexRef` exists and is kept live;
+  `handleNextShot` compares it against the hole a checkpoint started on
+  AFTER the `completeHole` call, guarding both the success and the
+  catch-block failure status update.
+- `FairwayRecoverRound.raw-key.test.ts` (B6, new, source-inspection): no
+  `setError(<var>.error || ...)` fallback pattern remains; both round-write
+  failure branches route through `describeRoundWriteResult`.
+- `sync-engine-error-surfacing.test.ts` (B6, new): `syncRounds`'s per-item
+  failure never contains the internal offline id and never returns the bare
+  `'busy'` key verbatim — mocks `../shot-storage` (the v2 path `syncRounds`
+  actually uses), distinct from the sibling
+  `sync-engine-v1-round-missing.test.ts`'s `../indexed-db` mock (the LEGACY
+  v1 path `syncV1Rounds` uses) — conflating the two during authoring
+  produced an unhandled-rejection false failure from the constructor's
+  fire-and-forget `loadSyncMetadata()` touching real IndexedDB, resolved by
+  mocking the correct module instead of installing a fake IndexedDB.
+- Verified from the worktree, each captured to a file, exit code checked:
+  `npm run typecheck` (0), `npm run lint` (0, one `helm/no-raw-button`
+  warning fixed — New Round's new Dismiss control uses `FwButton`, not a
+  raw `<button>`), `npm run docs:schema-drift` (0, baseline 35),
+  `npm run docs:path-drift` (0, baseline 0), and `npx vitest run` over
+  every file listed above plus
+  `src/app/golf/(dashboard)/dashboard/rounds/`, `src/app/golf/actions/`,
+  `src/components/fairway/pages/rounds-new/`,
+  `src/components/fairway/pages/rounds-recover/`,
+  `src/components/fairway/pages/rounds-tracking/`, `src/hooks/golf/`,
+  `src/lib/golf/`, `src/lib/offline/`, `src/lib/admin/`, `src/lib/auth/`,
+  and `src/lib/utils/` (278 files, 3274 tests, 0 failures).

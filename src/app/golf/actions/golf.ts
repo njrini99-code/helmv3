@@ -6656,6 +6656,12 @@ async function savePartialRoundImpl(
     }
 
     let roundId: string;
+    // B9: `round` (below) is scoped to the no-id branch's own block and does
+    // not survive to the shared holes/shots upsert + final-return code past
+    // it — this outer-scoped twin carries its `updated_at` that far so the
+    // no-id create/reuse success path can return the real value instead of
+    // a hard-coded `undefined`.
+    let roundUpdatedAtForResponse: string | null | undefined;
 
     /**
      * Returns true when writing this payload to `targetRoundId` would replace a
@@ -7146,7 +7152,10 @@ async function savePartialRoundImpl(
       const holeInvalid = await checkNonDurableSalvageBeforeWrite(existingRound?.id ?? null);
       if (holeInvalid) return holeInvalid;
 
-      let round: { id: string } | null = null;
+      // `updated_at` is carried through so the no-id create/reuse success
+      // path below can return it (B9) — both queries already `.select()`
+      // the full row; the prior narrower type just discarded the column.
+      let round: { id: string; updated_at?: string | null } | null = null;
       if (existingRound) {
         // Identity columns (player_id, team_id, qualifier_id, qualifier_round_number)
         // are set on INSERT and never change for an in-progress round. Stripping
@@ -7256,6 +7265,7 @@ async function savePartialRoundImpl(
       }
 
       roundId = round.id;
+      roundUpdatedAtForResponse = round.updated_at;
 
       // Upsert holes and shots — feedback_golf_no_destructive_writes:
       // never delete the user's existing data before the replacement is
@@ -7426,7 +7436,15 @@ async function savePartialRoundImpl(
     // NOTE: Do NOT call revalidatePath/updateTag here — see comment in the
     // RPC path above. Auto-save should be invisible to the router.
 
-    return { success: true, data: { roundId, updatedAt: undefined as string | undefined } };
+    // B9: return the real `updated_at` for the row just created/reused so the
+    // caller's optimistic-lock ref reflects the server immediately, rather
+    // than staying `undefined` until some later existing-id save happens to
+    // populate it — a gap that otherwise widens the window in which an
+    // unrelated background beacon write reads as a false multi-device
+    // conflict. Both queries above already `.select()` the full row; see
+    // `roundUpdatedAtForResponse`'s declaration for why `round` itself
+    // cannot be read here directly.
+    return { success: true, data: { roundId, updatedAt: roundUpdatedAtForResponse ?? undefined } };
 
   } catch (err) {
     // Single log call per failure (see updateExisting branch above) — keep

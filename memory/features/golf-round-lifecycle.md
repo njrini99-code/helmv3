@@ -52,6 +52,16 @@ confirms the authenticated player's completed round before returning success;
 an unconfirmed outcome preserves the in-progress round and recovery backup for
 an explicit retry rather than guessing or rebuilding it.
 
+As of 2026-09-02, a device that falls behind the server on a round it is
+tracking (a second device/session/tab wrote to it) can no longer silently
+resync its optimistic-lock token and overwrite the newer server state — both
+round screens now block further writes until the player reloads, with one
+narrow self-healing exception for a background beacon save's own unreadable
+response. A round's start date can no longer be set in the future from
+either round-start screen. Full mechanics for both live in
+`memory/features/shot-tracking.md`, since the RPCs and client guards they
+touch are shared with shot tracking, not lifecycle-specific.
+
 ## Primary Entry Points
 
 ### Routes
@@ -178,6 +188,30 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   rows, not only `completed` ones. `getNextQualifierRoundNumber` and
   `savePartialRound`'s derivation share one implementation
   (`src/lib/golf/qualifier-round-number.ts`) for exactly this reason.
+- A device that has fallen behind the server on a round it is tracking must
+  never write to it again until reloaded (2026-09-02, B2/B9). Neither
+  Continue Round's nor New Round's background status poll or explicit save
+  `conflict` handling may adopt the server's `updated_at` into the
+  optimistic-lock token while proving this device is behind — both
+  `savePartialRound` and `submit_round_atomic` are full-snapshot REPLACE, so
+  a stale device that resyncs its lock token can overwrite a genuinely newer
+  server round with its own outdated in-memory holes/shots. The one
+  sanctioned exception is a background beacon save's own unreadable response,
+  self-healed exactly once. Full mechanics (the write-blocking flag, the
+  beacon self-heal window, the Reload UI) live in
+  `memory/features/shot-tracking.md`'s Current State — this is the same
+  optimistic-lock/RPC surface the lost-round-id bullet above shares, not a
+  lifecycle-specific mechanism.
+- A round's date must not be settable in the future from either round-start
+  screen (2026-09-02, B7): the date input caps at the local "today" and
+  `validateBeforeStart` (the one gate both New Round entry points share)
+  refuses a future date before `persistRoundStart` ever creates the row —
+  previously only the terminal submit path enforced this, by which point an
+  entire round could already have been tracked under the wrong day. Not yet
+  addressed: an in-progress round already created with a future date before
+  this fix has no in-app way to correct its date; only the block on new
+  future-dated rounds shipped this date, tracked as an explicit gap here
+  rather than silently declared solved.
 
 ### Reclassification — changing what a round counts toward
 
@@ -343,13 +377,22 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 
 - Race conditions between save draft, submit, and recovery.
 - Undo, edit, and delete actions share a local single-flight guard. If the
-  authorized server lookup confirms a shot is already absent, the client
-  reconciles only its stale local reference instead of replaying a destructive
-  delete or leaving the active round blocked.
-- Background round-status polling is advisory and never decides whether a
-  player can save, continue, or recover a committed round. Transient transport
-  failures retry without a player-facing alarm; a sustained failure is reported
-  once with status-sync context so it cannot be mistaken for lost progress.
+  authorized server lookup confirms a shot is already absent, Undo and Delete
+  (where removal IS the intent) reconcile only their stale local reference
+  instead of replaying a destructive delete or leaving the active round
+  blocked. Edit (2026-09-02, B1) is deliberately different: the same
+  server-confirmed-absent signal on an EDIT means the point-update path
+  cannot find the shot by its (rotated) id, not that the shot itself is gone —
+  the edit is applied to local history and persisted through a full-snapshot
+  save instead of being reconciled away. See `memory/features/shot-tracking.md`.
+- Background round-status polling is advisory for TRANSPORT failures — it
+  never decides whether a player can save, continue, or recover a committed
+  round on a transient outage, retrying without a player-facing alarm and
+  reporting only a sustained failure once. As of 2026-09-02 (B2) it is NOT
+  merely advisory for a STALENESS result: it can now block further writes on
+  the active round (see the multi-device business rule above), the same way
+  an explicit save `conflict` does — a stale device must never overwrite
+  newer server holes, whether the staleness was noticed by a poll or a save.
 - Bad route revalidation after acknowledgement or player feedback.
 - Hook-order or hydration issues in round-entry and review screens.
 - Schema replay drift in Supabase migrations touching round/shot/review tables.

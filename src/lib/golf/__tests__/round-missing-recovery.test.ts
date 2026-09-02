@@ -21,9 +21,11 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import {
+  ROUND_CONFLICT_MESSAGE,
   ROUND_MISSING_ERROR,
   ROUND_RECREATE_FAILED_MESSAGE,
   describeRoundWriteFailure,
+  describeRoundWriteResult,
   writeRoundRecreatingIfMissing,
   type RoundWriteResult,
 } from '../round-missing-recovery';
@@ -178,5 +180,52 @@ describe('describeRoundWriteFailure', () => {
   it('never returns an empty string', () => {
     expect(describeRoundWriteFailure(undefined).length).toBeGreaterThan(0);
     expect(describeRoundWriteFailure('').length).toBeGreaterThan(0);
+  });
+
+  it('exposes the conflict sentence as the single source both write-blocking UI and this map draw from (B6)', () => {
+    expect(describeRoundWriteFailure('conflict')).toBe(ROUND_CONFLICT_MESSAGE);
+  });
+});
+
+// B6: one helper every round-write call site uses instead of inventing its
+// own branch on `result.error === 'hole_invalid'`. The two round-write
+// actions disagree on WHERE the human sentence lives for this code:
+// `savePartialRound` returns the bare key in `error` with the sentence in a
+// separate `message` field; `submitGolfRoundComprehensive`'s own Zod-failure
+// path already puts the sentence directly in `error` (only `code` says
+// 'hole_invalid'). A single result-shaped helper must get both right without
+// the caller needing to know which action produced the result.
+describe('describeRoundWriteResult', () => {
+  it('prefers `message` when the bare `hole_invalid` key is in `error` (savePartialRound shape)', () => {
+    const result = {
+      success: false as const,
+      error: 'hole_invalid',
+      code: 'hole_invalid',
+      hole: 4,
+      field: 'distanceToHoleBefore',
+      message: 'Hole 4, shot 1: distance to the hole must be 1000 yards or less.',
+    };
+    expect(describeRoundWriteResult(result)).toBe(result.message);
+  });
+
+  it('uses `error` directly when it is already the sentence (submitGolfRoundComprehensive shape)', () => {
+    const result = {
+      success: false as const,
+      error: 'Hole 2, shot 3: strokes must be 20 or less.',
+      code: 'hole_invalid',
+    };
+    expect(describeRoundWriteResult(result)).toBe(result.error);
+  });
+
+  it('falls back to describeRoundWriteFailure for every other signal key', () => {
+    expect(describeRoundWriteResult({ error: 'busy' }))
+      .toBe(describeRoundWriteFailure('busy'));
+    expect(describeRoundWriteResult({ error: 'round_missing', code: 'round_missing' }))
+      .toBe(describeRoundWriteFailure('round_missing'));
+  });
+
+  it('never returns an empty string, even with nothing to work from', () => {
+    expect(describeRoundWriteResult(undefined).length).toBeGreaterThan(0);
+    expect(describeRoundWriteResult({ error: '' }).length).toBeGreaterThan(0);
   });
 });

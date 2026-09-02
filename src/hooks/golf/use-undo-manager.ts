@@ -75,7 +75,17 @@ export function useUndoManager({
       }
 
       if (onAutoSaveRef.current) {
-        await onAutoSaveRef.current(newHistory, currentHoleIndexRef.current);
+        try {
+          await onAutoSaveRef.current(newHistory, currentHoleIndexRef.current);
+        } catch {
+          // `onAutoSave` (Continue Round's `handleAutoSave`) now awaits its
+          // server save and rethrows an unhandled failure so
+          // `useShotStateMachine`'s own circuit breaker can retry it (B3).
+          // The undo itself and its synchronous device snapshot already
+          // succeeded — only the background network save failed, and the
+          // state machine is already tracking and retrying it. Reopening the
+          // undo confirmation over that would be a phantom failure.
+        }
       }
     } catch (error) {
       console.error('Error undoing shot:', error instanceof Error ? error.message : String(error));

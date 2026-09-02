@@ -281,6 +281,16 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
     expect(tables.golf_rounds).toHaveLength(1);
     if (result.success) {
       expect(result.data.roundId).toBe('round-same');
+      // B9: the no-id branch's success result used to hard-code
+      // `updatedAt: undefined` even though the update query already
+      // `.select()`s the full row. Leaving the caller's optimistic-lock ref
+      // stale here widens the exact window a later background beacon write
+      // (no readable response of its own) gets misread as a real
+      // multi-device conflict. The update payload never touches
+      // `updated_at` itself, so the fake's merge-in-place still carries the
+      // seeded value through — pinning that the real column reaches the
+      // caller, not a hard-coded `undefined`.
+      expect(result.data.updatedAt).toBe('2026-07-10T10:00:00Z');
     }
   });
 

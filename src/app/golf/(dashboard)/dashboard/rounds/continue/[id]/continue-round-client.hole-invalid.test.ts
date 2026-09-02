@@ -36,22 +36,19 @@ function slice(fromMarker: string, toMarker: string): string {
 
 describe('Continue Round — handleSaveForLater hole_invalid surfacing', () => {
   it('surfaces the server sentence, not the bare "hole_invalid" key, from the exit-and-save flow', () => {
+    // B6: the dedicated `result.error === 'hole_invalid'` branch this test
+    // used to pin was replaced by the shared `describeRoundWriteResult`
+    // helper (round-missing-recovery.ts), which handles the same
+    // bare-key-plus-message shape for every round-write call site instead of
+    // one more local copy here.
     const handler = slice(
       'const handleSaveForLater = async () => {',
       'const handleDeleteRound = async () => {',
     );
 
-    expect(handler).toContain("result.error === 'hole_invalid'");
-
-    const holeInvalidIdx = handler.indexOf("result.error === 'hole_invalid'");
-    const genericToastIdx = handler.indexOf(
-      "showToast(result.error || 'Failed to save round. Please try again.', 'error');",
-    );
-    expect(genericToastIdx, 'generic fallback toast should still exist').toBeGreaterThanOrEqual(0);
-    expect(holeInvalidIdx).toBeLessThan(genericToastIdx);
-
-    const holeInvalidBranch = handler.slice(holeInvalidIdx, genericToastIdx);
-    expect(holeInvalidBranch).toMatch(/result\.message/);
-    expect(holeInvalidBranch).not.toMatch(/showToast\(result\.error,/);
+    expect(handler).toContain('describeRoundWriteResult(result)');
+    // Never shown the bare key or the raw error string unconditionally.
+    expect(handler).not.toMatch(/showToast\(result\.error,/);
+    expect(handler).not.toMatch(/showToast\(result\.error \|\|/);
   });
 });

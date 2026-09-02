@@ -55,13 +55,19 @@ describe('Continue Round — round_missing recovery', () => {
   });
 
   it('the mid-hole auto-save re-creates on round_missing instead of counting a failure (P2)', () => {
-    const autoSave = slice('const executeServerSave', 'const pending = pendingServerSaveRef.current');
+    // B3 (2026-09-02) inlined the old `executeServerSave` helper directly
+    // into `handleAutoSave` and awaits it, so the primary save's round_missing
+    // handling now lives between the server-save comment and its own catch.
+    const autoSave = slice(
+      '// Server save — AWAITED (B3)',
+      "// Re-throw so `useShotStateMachine` sees a rejected promise (B3).",
+    );
     expect(autoSave).toContain("result.error === 'round_missing'");
     expect(autoSave).toContain('recreateMissingRound(');
   });
 
   it('the queued follow-up save treats busy as a silent skip and round_missing as a re-create (P2)', () => {
-    const queued = slice('// Queued from handleHoleComplete', 'void executeServerSave(');
+    const queued = slice('If a newer save was queued while we were saving', 'const handleRoundSubmit = async (');
     expect(queued).toContain("r.error === 'busy'");
     expect(queued).toContain("r.error === 'round_missing'");
     expect(queued).toContain('recreateMissingRound(');

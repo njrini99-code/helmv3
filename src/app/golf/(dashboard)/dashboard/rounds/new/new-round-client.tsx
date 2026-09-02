@@ -47,6 +47,7 @@ import {
 } from '@/lib/utils/emergency-save';
 import {
   describeRoundWriteFailure,
+  describeRoundWriteResult,
   writeRoundRecreatingIfMissing,
 } from '@/lib/golf/round-missing-recovery';
 import { getRoundRecoverySnapshots } from '@/lib/offline/shot-storage';
@@ -265,6 +266,19 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const [isStartingRound, setIsStartingRound] = useState(false);
   // Optimistic locking: tracks the last server-side updated_at for conflict detection
   const lastServerUpdatedAtRef = useRef<string | undefined>(undefined);
+  // B2: set once polling proves the server moved past this device's own
+  // checkpoint, or a save comes back `conflict`. Every write entry point
+  // checks this and refuses to write until the player reloads — a stale
+  // device must never overwrite newer server holes. New Round gets a real
+  // server round id after its first successful save, same as Continue
+  // Round, so the same multi-device hazard applies here too.
+  const roundConflictBlockedRef = useRef(false);
+  const [roundConflictBlocked, setRoundConflictBlocked] = useState(false);
+  // B9: true from the moment a background beacon save is queued until the
+  // next status check resolves it — see the matching ref in
+  // continue-round-client.tsx for the full "beacon has no readable
+  // response" reasoning.
+  const pendingBeaconRef = useRef(false);
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [showBackToSetupModal, setShowBackToSetupModal] = useState(false);
@@ -286,10 +300,18 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
   inProgressShotsByHoleRef.current = inProgressShotsByHole;
 
+  // B7: the date input's `max` — computed on mount, same as roundDate's
+  // default just below, to avoid a server/client timezone hydration
+  // mismatch (the server's "today" and the client's can legitimately
+  // differ by a day around midnight in either direction).
+  const [maxRoundDate, setMaxRoundDate] = useState<string | undefined>(undefined);
+
   // Set roundDate on mount to avoid server/client timezone hydration mismatch
   useEffect(() => {
+    const today = localDayIso();
+    setMaxRoundDate(today);
     if (!setupData.roundDate) {
-      setSetupData(prev => ({ ...prev, roundDate: localDayIso() }));
+      setSetupData(prev => ({ ...prev, roundDate: today }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -337,32 +359,80 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       || normalizedMessage.includes('already completed');
   }, []);
 
-  const handleRoundSyncConflict = useCallback(async (fallbackMessage: string) => {
+  // B2: engage the write-block, and show the message once as a toast so a
+  // repeated poll/retry tick that finds the round still blocked does not
+  // spam the player.
+  const blockRoundForConflict = useCallback((message: string) => {
+    const alreadyBlocked = roundConflictBlockedRef.current;
+    roundConflictBlockedRef.current = true;
+    setRoundConflictBlocked(true);
+    setError(message);
+    if (!alreadyBlocked) {
+      showToast(message, 'error');
+    }
+  }, [showToast]);
+
+  const handleRoundSyncConflict = useCallback(async (
+    fallbackMessage: string,
+    knownCurrentUpdatedAt?: string | null,
+  ) => {
     const roundId = savedRoundIdRef.current;
     if (!roundId) {
+      // No server round exists yet at all — nothing to reconcile against,
+      // and nothing to block (the next persistRoundStart is the only write).
       setError(fallbackMessage);
       showToast(fallbackMessage, 'error');
       return;
     }
 
+    // B9: a background beacon has no readable response, so its own
+    // successful write is indistinguishable from a genuine multi-device
+    // conflict until this next check. Treat exactly one apparent conflict
+    // after a pending beacon as self-caused rather than escalating to a
+    // permanent write-block on a single device that simply had its phone
+    // lock — see the matching comment in continue-round-client.tsx.
+    if (pendingBeaconRef.current) {
+      pendingBeaconRef.current = false;
+      if (knownCurrentUpdatedAt) {
+        lastServerUpdatedAtRef.current = knownCurrentUpdatedAt;
+        return;
+      }
+      try {
+        const stalenessResult = await checkRoundStaleness(roundId, lastServerUpdatedAtRef.current);
+        if (stalenessResult.success) {
+          if (stalenessResult.data.status === 'completed') {
+            redirectToCompletedRound();
+            return;
+          }
+          if (stalenessResult.data.currentUpdatedAt) {
+            lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
+          }
+        }
+      } catch {
+        // Nothing more to do — a real write attempt will surface a fresh
+        // conflict (and re-enter this function) if this guess was wrong.
+      }
+      return;
+    }
+
     try {
+      // A genuine multi-device write collision. Do NOT adopt the server's
+      // newer `updated_at` into `lastServerUpdatedAtRef` here (B2) — this
+      // device's in-memory holes/shots still reflect the OLD state, so
+      // resyncing the optimistic-lock token alone would let this device's
+      // NEXT save pass the lock and silently overwrite whatever the other
+      // device just wrote. Block further writes instead.
       const stalenessResult = await checkRoundStaleness(roundId, lastServerUpdatedAtRef.current);
-      if (stalenessResult.success) {
-        if (stalenessResult.data.currentUpdatedAt) {
-          lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
-        }
-        if (stalenessResult.data.status === 'completed') {
-          redirectToCompletedRound();
-          return;
-        }
+      if (stalenessResult.success && stalenessResult.data.status === 'completed') {
+        redirectToCompletedRound();
+        return;
       }
     } catch {
       // Fall through to the generic conflict message below.
     }
 
-    setError(fallbackMessage);
-    showToast(fallbackMessage, 'error');
-  }, [redirectToCompletedRound, showToast]);
+    blockRoundForConflict(fallbackMessage);
+  }, [blockRoundForConflict, redirectToCompletedRound, showToast]);
 
   // Check for the freshest emergency save on mount. Restore always persists
   // through savePartialRound before reopening Continue Round. A recovery
@@ -422,6 +492,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     expectedUpdatedAtRef: lastServerUpdatedAtRef,
     enabled: step === 'tracking' || step === 'submitting',
     onRoundCompleted: redirectToCompletedRound,
+    // B2: the hook already refuses to adopt a newer server updated_at once
+    // it proves this device is behind — routed through the same
+    // conflict/self-heal decision (B9) an explicit save `conflict` uses.
+    onRoundStale: ({ currentUpdatedAt }) => {
+      void handleRoundSyncConflict('This round was updated on another device. Please reload.', currentUpdatedAt);
+    },
   });
 
   // Save data when user leaves the page (phone lock, app switch, tab close)
@@ -508,7 +584,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       // never reaches the server and can't be resumed. sendBeacon is guaranteed
       // to deliver during unload. The synchronous emergencySave above is the
       // hard fallback if even the beacon can't be queued.
-      beaconPartialSave(saveData, savedRoundIdRef.current ?? undefined);
+      if (beaconPartialSave(saveData, savedRoundIdRef.current ?? undefined)) {
+        // B9: this write's response is unreadable — see pendingBeaconRef above.
+        pendingBeaconRef.current = true;
+      }
     };
 
     const handleVisibilityChange = () => {
@@ -1074,6 +1153,14 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         return 'Course slope must be between 55 and 155';
       }
     }
+    // B7: only the terminal submit path (golf.ts) rejected a future round
+    // date — by which point an entire round had already been tracked under
+    // the wrong day. This is the one gate both round-start entry points
+    // (handleSetupSubmit, handleConfirmedHolesSave) share, so catching it
+    // here blocks it before persistRoundStart ever creates the round.
+    if (setupData.roundDate && setupData.roundDate > localDayIso()) {
+      return 'Round date cannot be in the future.';
+    }
     return null;
   }, [setupData, selectedQualifierId, selectedRoundNumber]);
 
@@ -1118,7 +1205,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     try {
       const result = await savePartialRound(initialData);
       if (!result.success) {
-        setError(result.error || 'Unable to save this round. Please try again before tracking.');
+        // B6: this call always sends `holes: []` (a fresh round), so
+        // `conflict`/`round_missing`/`hole_invalid` cannot occur here — but
+        // `busy`/`retry` can, and both are bare signal keys, not sentences.
+        setError(describeRoundWriteFailure(result.error));
         return false;
       }
 
@@ -1390,6 +1480,14 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     emergencyTimestamp: number,
     surfaceFailure = true,
   ): Promise<boolean> => {
+    // B2: a prior conflict/staleness already proved this device is behind.
+    // Writing this checkpoint would replace the round with this device's
+    // outdated snapshot — refuse until the player reloads.
+    if (roundConflictBlockedRef.current) {
+      if (surfaceFailure) setError('This round was updated on another device. Please reload.');
+      return false;
+    }
+
     pendingServerSaveRef.current = null;
     // Set when an attempt in this loop came back round_missing: the snapshot
     // for this checkpoint was written under that id, so once the re-create
@@ -1435,6 +1533,15 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           staleRoundId = savedRoundIdRef.current;
           dropStaleRoundId();
           continue;
+        }
+        // B5: not a transient failure — the identical payload will keep
+        // failing until the flagged hole/field is fixed, so retrying below
+        // is pointless and "keep this screen open and try again" actively
+        // misleads. Surface the specific sentence immediately and never
+        // mark this hole checkpointed.
+        if (result.error === 'hole_invalid') {
+          setError(describeRoundWriteResult(result));
+          return false;
         }
         if (result.error !== 'busy' && result.error !== 'retry') break;
       } catch {
@@ -1642,6 +1749,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     // Update pending counts in case there are any offline items
     await useOfflineSyncStore.getState().updatePendingCount();
 
+    // B2: a prior conflict/staleness already proved this device is behind
+    // the server. The localStorage backup above still ran, but writing to
+    // the server now would replace the round with this device's outdated
+    // snapshot — refuse until reload.
+    if (roundConflictBlockedRef.current) return;
+
     // Server save — awaited so the hook's circuit breaker can detect failures.
     // localStorage backup above already succeeded, so throwing here is safe and
     // lets the hook track consecutive failures to engage the circuit breaker.
@@ -1714,6 +1827,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
               if (consecutiveSaveFailuresRef.current >= 2) showAutoSaveWarning();
               throw new Error(`Auto-save could not re-create the round: ${recreated.error}`);
             }
+          } else if (result.error === 'hole_invalid') {
+            // B5: not a transient network failure — the identical payload
+            // will keep failing until the flagged hole/field is fixed, so
+            // this must not throw into the circuit breaker (which exists
+            // for outages, and would keep retrying a failure retrying can
+            // never clear). Surface the specific sentence immediately.
+            setError(describeRoundWriteResult(result));
           } else {
             consecutiveSaveFailuresRef.current++;
             if (consecutiveSaveFailuresRef.current >= 2) {
@@ -1788,6 +1908,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
     if (isSubmittingRef.current) return;
+    // B2: never let a submit from a device already proven behind the
+    // server replace the round with this device's outdated scorecard.
+    if (roundConflictBlockedRef.current) {
+      setError('This round was updated on another device. Please reload.');
+      return;
+    }
     isSubmittingRef.current = true;
     setStep('submitting');
     setError('');
@@ -1924,6 +2050,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   };
 
   const handleSaveForLater = async () => {
+    // B2: a user-initiated "Save & Exit" must not be the write that
+    // overwrites another device's newer holes, either.
+    if (roundConflictBlockedRef.current) {
+      showToast('This round was updated on another device. Please reload.', 'error');
+      return;
+    }
     let result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
 
     // 'busy' = an auto-save for this round is mid-flight server-side. This is a
@@ -2007,6 +2139,137 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       })
     : savedCourses;
 
+  // Dialog handlers for the recovery/reset flow — hoisted ABOVE the
+  // setup/holes early return (B4) so the SAME recovery prompt can appear
+  // there too, before persistRoundStart has ever created a server round.
+  // The pre-fix version of this block lived only after the early return,
+  // so a recovery snapshot detected on mount (before the player had even
+  // reached the tracking step) could never actually be offered until the
+  // player started a brand-new round from scratch — at which point
+  // offering to "recover" the old one no longer made sense.
+  const recoveredHoleCount =
+    newRoundRecoveryData?.completedHoleStats?.filter(h => h != null).length || 0;
+  const handleDiscardRecovery = () => {
+    // B4: the recovered snapshot's OWN key — which can be a real server
+    // round id once a round has survived past its first successful
+    // auto-save (see loadLatestEmergencySave's docstring) — not a
+    // hard-coded `_new_<playerId>`. Clearing the wrong key left the real
+    // snapshot behind, where it resurfaced as "recoverable" again later.
+    clearEmergencySave(newRoundRecoveryData?.roundId ?? null, playerId);
+    setShowNewRoundRecovery(false);
+    setNewRoundRecoveryData(null);
+  };
+  const handleRestoreRecovery = async () => {
+    const rd = newRoundRecoveryData;
+    if (!rd || isRestoringRecovery) return;
+    setIsRestoringRecovery(true);
+    const holesToPlay = rd.holes.length === 9 ? 9 : 18;
+    const inProgressShots = Object.entries(rd.inProgressShotsByHole ?? {})
+      .filter(([, shots]) => Array.isArray(shots) && shots.length > 0)
+      .map(([holeIndex, shots]) => {
+        const index = Number(holeIndex);
+        return {
+          holeNumber: rd.holes[index]?.number ?? index + 1,
+          shots,
+        };
+      });
+    const recoveryData: PartialRoundData = {
+      courseName: rd.setupData.courseName,
+      courseCity: rd.setupData.courseCity || undefined,
+      courseState: rd.setupData.courseState || undefined,
+      courseRating: rd.setupData.courseRating ? parseFloat(rd.setupData.courseRating) : undefined,
+      courseSlope: rd.setupData.courseSlope ? parseInt(rd.setupData.courseSlope) : undefined,
+      teesPlayed: rd.setupData.teesPlayed || undefined,
+      roundType: rd.setupData.roundType,
+      roundDate: rd.setupData.roundDate,
+      qualifierId: rd.setupData.qualifierId || undefined,
+      qualifierRoundNumber: rd.setupData.qualifierRoundNumber || undefined,
+      currentHole: Math.max(1, Math.min(rd.currentHoleIndex + 1, holesToPlay)),
+      holesToPlay,
+      holes: rd.completedHoleStats.filter((hole): hole is HoleStats => hole != null),
+      inProgressShots,
+      holeConfigs: rd.holes.map((hole, index) => ({
+        holeNumber: hole.number ?? index + 1,
+        par: hole.par,
+        yardage: hole.yardage,
+      })),
+    };
+
+    try {
+      // Restore through the server before reopening the tracker. This keeps
+      // the Continue Round contract intact even when the original browser tab
+      // was interrupted before its first background save could finish.
+      // The snapshot may name a server id that has since vanished; the
+      // helper re-creates from this same payload and never surfaces the key.
+      //
+      // `allowReuse: true` (A1) — this IS a real restore, not a plain "begin
+      // new" call: when `rd.roundId` is unknown, the payload carries real
+      // progress the player already has, and it should reconnect to a
+      // matching in_progress round rather than always inserting a duplicate.
+      // Never propagated to the round_missing re-create retry inside the
+      // helper (see RoundWriteHooks.firstCallOptions) — that retry's intent
+      // is CREATE, since the server already proved the given id is gone.
+      const { result } = await writeRoundRecreatingIfMissing(
+        savePartialRound,
+        recoveryData,
+        rd.roundId ?? undefined,
+        { firstCallOptions: { allowReuse: true } },
+      );
+      if (!result.success) {
+        setError(describeRoundWriteFailure(result.error));
+        return;
+      }
+
+      clearEmergencySave(rd.roundId, playerId);
+      setShowNewRoundRecovery(false);
+      setNewRoundRecoveryData(null);
+      router.push(`/golf/dashboard/rounds/continue/${result.data.roundId}`);
+    } catch {
+      setError('Unable to restore your saved shots. Keep this screen open and try again.');
+    } finally {
+      setIsRestoringRecovery(false);
+    }
+  };
+
+  // Shared across BOTH the setup/holes return below and the tracking-step
+  // return further down, so the SAME recovery prompt renders regardless of
+  // which step the player is on when a recoverable snapshot is found (B4).
+  const recoveryDialog = (
+    <ModalShell
+      open={Boolean(showNewRoundRecovery && newRoundRecoveryData)}
+      onOpenChange={(next) => {
+        if (!next) setShowNewRoundRecovery(false);
+      }}
+      size="sm"
+      title="Recover Unsaved Progress?"
+      hideTitle
+      hideClose
+    >
+      <div className="px-6 pb-6 pt-6">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-fw-md bg-fw-warning-bg">
+          <IconWarning size={24} className="text-fw-warning-ink" />
+        </div>
+        <h2 className="mb-2 text-center font-fw-display text-body-lg font-medium tracking-[-0.012em] text-text-primary">
+          Recover Unsaved Progress?
+        </h2>
+        <p className="mb-6 text-center font-fw-sans text-sm text-text-tertiary">
+          {recoveredHoleCount > 0
+            ? `Found locally saved data with ${recoveredHoleCount} completed ${recoveredHoleCount === 1 ? 'hole' : 'holes'}.`
+            : 'Found shots saved locally for a hole in progress.'}{' '}
+          This data may have been saved when the app was interrupted.
+        </p>
+        <div className="flex gap-3">
+          <FwButton variant="secondary" className="flex-1" onClick={handleDiscardRecovery} disabled={isRestoringRecovery}>
+            Discard
+          </FwButton>
+          <FwButton variant="primary" className="flex-1" onClick={handleRestoreRecovery} disabled={isRestoringRecovery}>
+            {isRestoringRecovery ? 'Restoring…' : 'Restore'}
+          </FwButton>
+        </div>
+      </div>
+    </ModalShell>
+  );
+
   // ============================================================================
   // ENTRY SCREENS (setup + holes) — the tracking and submitting steps fall
   // through to the render below. No mutation/autosave/optimistic-lock logic
@@ -2082,6 +2345,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           }}
           setupData={setupData}
           setSetupData={setSetupData}
+          maxRoundDate={maxRoundDate}
           saveCourseChecked={saveCourseChecked}
           onToggleSaveCourse={() => setSaveCourseChecked(!saveCourseChecked)}
           holesPerRound={holesPerRound}
@@ -2115,6 +2379,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           onHolesBack={() => setStep('setup')}
         />
         <FairwayCoursePicker open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
+        {/* B4: offered here too — before a server round has ever been
+            created — not only once the player has already started tracking
+            a brand-new round. */}
+        {recoveryDialog}
       </div>
     );
   }
@@ -2133,86 +2401,6 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const activeHoleShots = completedStatsForHole?.shots ?? inProgressShots;
   const activeShotNumber = activeHoleShots.length > 0 ? activeHoleShots.length + 1 : 1;
 
-  // Dialog handlers for the recovery/reset flows — hoisted above the single
-  // Fairway (ModalShell) render below.
-  const recoveredHoleCount =
-    newRoundRecoveryData?.completedHoleStats?.filter(h => h != null).length || 0;
-  const handleDiscardRecovery = () => {
-    clearEmergencySave(null, playerId);
-    setShowNewRoundRecovery(false);
-    setNewRoundRecoveryData(null);
-  };
-  const handleRestoreRecovery = async () => {
-    const rd = newRoundRecoveryData;
-    if (!rd || isRestoringRecovery) return;
-    setIsRestoringRecovery(true);
-    const holesToPlay = rd.holes.length === 9 ? 9 : 18;
-    const inProgressShots = Object.entries(rd.inProgressShotsByHole ?? {})
-      .filter(([, shots]) => Array.isArray(shots) && shots.length > 0)
-      .map(([holeIndex, shots]) => {
-        const index = Number(holeIndex);
-        return {
-          holeNumber: rd.holes[index]?.number ?? index + 1,
-          shots,
-        };
-      });
-    const recoveryData: PartialRoundData = {
-      courseName: rd.setupData.courseName,
-      courseCity: rd.setupData.courseCity || undefined,
-      courseState: rd.setupData.courseState || undefined,
-      courseRating: rd.setupData.courseRating ? parseFloat(rd.setupData.courseRating) : undefined,
-      courseSlope: rd.setupData.courseSlope ? parseInt(rd.setupData.courseSlope) : undefined,
-      teesPlayed: rd.setupData.teesPlayed || undefined,
-      roundType: rd.setupData.roundType,
-      roundDate: rd.setupData.roundDate,
-      qualifierId: rd.setupData.qualifierId || undefined,
-      qualifierRoundNumber: rd.setupData.qualifierRoundNumber || undefined,
-      currentHole: Math.max(1, Math.min(rd.currentHoleIndex + 1, holesToPlay)),
-      holesToPlay,
-      holes: rd.completedHoleStats.filter((hole): hole is HoleStats => hole != null),
-      inProgressShots,
-      holeConfigs: rd.holes.map((hole, index) => ({
-        holeNumber: hole.number ?? index + 1,
-        par: hole.par,
-        yardage: hole.yardage,
-      })),
-    };
-
-    try {
-      // Restore through the server before reopening the tracker. This keeps
-      // the Continue Round contract intact even when the original browser tab
-      // was interrupted before its first background save could finish.
-      // The snapshot may name a server id that has since vanished; the
-      // helper re-creates from this same payload and never surfaces the key.
-      //
-      // `allowReuse: true` (A1) — this IS a real restore, not a plain "begin
-      // new" call: when `rd.roundId` is unknown, the payload carries real
-      // progress the player already has, and it should reconnect to a
-      // matching in_progress round rather than always inserting a duplicate.
-      // Never propagated to the round_missing re-create retry inside the
-      // helper (see RoundWriteHooks.firstCallOptions) — that retry's intent
-      // is CREATE, since the server already proved the given id is gone.
-      const { result } = await writeRoundRecreatingIfMissing(
-        savePartialRound,
-        recoveryData,
-        rd.roundId ?? undefined,
-        { firstCallOptions: { allowReuse: true } },
-      );
-      if (!result.success) {
-        setError(describeRoundWriteFailure(result.error));
-        return;
-      }
-
-      clearEmergencySave(rd.roundId, playerId);
-      setShowNewRoundRecovery(false);
-      setNewRoundRecoveryData(null);
-      router.push(`/golf/dashboard/rounds/continue/${result.data.roundId}`);
-    } catch {
-      setError('Unable to restore your saved shots. Keep this screen open and try again.');
-    } finally {
-      setIsRestoringRecovery(false);
-    }
-  };
   const handleConfirmBackToSetup = () => {
     setShowBackToSetupModal(false);
     setCompletedHoleStats([]);
@@ -2238,6 +2426,48 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           >
             Submit Round
           </FwButton>
+        </div>
+      )}
+
+      {/* B4: every `setError` call during tracking (a failed checkpoint, a
+          failed autosave, a restore/discard failure) used to have no
+          visible surface at all outside an active submit attempt — the
+          SubmitOverlay's own `error` prop only renders while
+          `step === 'submitting'`. This banner is the one place those
+          errors become visible and dismissible, mirroring Continue Round's
+          tracking-step error banner. A conflict block additionally gets a
+          Reload control: "reload to continue" must name a dead end the
+          player can act on right here. */}
+      {error && step === 'tracking' && (
+        <div className={fairwayScope('max-w-[720px] mx-auto px-4 py-4')}>
+          <div role="alert" className="bg-fw-danger-bg border border-fw-danger/30 text-fw-danger-ink px-4 py-3 rounded-fw-md font-fw-sans text-body-sm">
+            <div className="flex items-start justify-between gap-3">
+              <p className="flex-1">{error}</p>
+              {!roundConflictBlocked && (
+                <FwButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Dismiss error"
+                  onClick={() => setError('')}
+                  className="flex-shrink-0"
+                >
+                  Dismiss
+                </FwButton>
+              )}
+            </div>
+            {roundConflictBlocked && (
+              <FwButton
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="mt-3"
+                onClick={() => window.location.reload()}
+              >
+                Reload
+              </FwButton>
+            )}
+          </div>
         </div>
       )}
 
@@ -2280,40 +2510,9 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           cream-styled Back here would overlap and compete with it
           (Nielsen #4 consistency / #8 minimalist). */}
 
-      {/* Emergency Save Recovery Dialog (new round) */}
-      <ModalShell
-          open={Boolean(showNewRoundRecovery && newRoundRecoveryData)}
-          onOpenChange={(next) => {
-            if (!next) setShowNewRoundRecovery(false);
-          }}
-          size="sm"
-          title="Recover Unsaved Progress?"
-          hideTitle
-          hideClose
-        >
-          <div className="px-6 pb-6 pt-6">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-fw-md bg-fw-warning-bg">
-              <IconWarning size={24} className="text-fw-warning-ink" />
-            </div>
-            <h2 className="mb-2 text-center font-fw-display text-body-lg font-medium tracking-[-0.012em] text-text-primary">
-              Recover Unsaved Progress?
-            </h2>
-            <p className="mb-6 text-center font-fw-sans text-sm text-text-tertiary">
-              {recoveredHoleCount > 0
-                ? `Found locally saved data with ${recoveredHoleCount} completed ${recoveredHoleCount === 1 ? 'hole' : 'holes'}.`
-                : 'Found shots saved locally for a hole in progress.'}{' '}
-              This data may have been saved when the app was interrupted.
-            </p>
-            <div className="flex gap-3">
-              <FwButton variant="secondary" className="flex-1" onClick={handleDiscardRecovery} disabled={isRestoringRecovery}>
-                Discard
-              </FwButton>
-              <FwButton variant="primary" className="flex-1" onClick={handleRestoreRecovery} disabled={isRestoringRecovery}>
-                {isRestoringRecovery ? 'Restoring…' : 'Restore'}
-              </FwButton>
-            </div>
-          </div>
-        </ModalShell>
+      {/* Emergency Save Recovery Dialog — hoisted above the setup/holes
+          early return so it renders there too (B4); see `recoveryDialog`. */}
+      {recoveryDialog}
 
       {/* Save Round Modal */}
       <ExitRoundModal

@@ -318,3 +318,158 @@
 - Verified: `npm run typecheck` (0), `npm run lint` (0), and
   `npx vitest run` over both `rounds/new/` and `rounds/continue/` test
   directories (6 files, 27 tests, 0 failures).
+
+## 2026-09-02 (Cluster B) — client-side round tracking: nine defects on Continue and New Round
+
+- SHA: this cluster's commit on `agent/fix-shot-tracking` (see `git log` —
+  not self-referenceable at write time).
+- Prior work on this branch: `536f99d39`, `08b6bbf50`, `a89e24704`
+  (Cluster A, server-side round-write safety this cluster builds on).
+- Change (B1, critical, data loss): shot ids rotate on every full-snapshot
+  save (both round-write RPCs DELETE-then-INSERT a hole's shots per call),
+  so `updateShot`/`deleteShot` routinely hit a stale id and get
+  `shot_not_found` — indistinguishable from an RLS-hidden row or a genuine
+  delete elsewhere. `use-edit-shot-modal.ts`'s `handleSaveEditedShot` used
+  to treat this as proof of deletion on EDIT: it dispatched
+  `RECONCILE_MISSING_SHOT`, filtering the shot (and the attempted edit) out
+  of local history with no server write at all — the next autosave then
+  persisted the shortened history, silently erasing the shot server-side.
+  Fixed: on `shot_not_found`, the edit is applied to local history exactly
+  as if the point update had succeeded (cascade distance updates to
+  downstream shots tolerate their own `shot_not_found` the same way), and
+  the corrected history reaches the server through the existing `onAutoSave`
+  full-snapshot call — the same mechanism New Round already relies on, since
+  its shots never carry a server id. Undo and Delete-from-Editor needed no
+  code change (their existing fallthrough already applies the deletion and
+  autosaves); `RECONCILE_MISSING_SHOT` is now unreachable and was removed
+  (action type and reducer case both deleted from
+  `use-shot-state-machine.ts`) rather than left as an invitation to wire it
+  back up as "the fix."
+- Change (B2, high, data loss) + B9 (folded in, same root cause): both round
+  screens' `handleRoundSyncConflict`, and the shared
+  `use-round-status-sync.ts` poll, used to silently adopt the server's
+  `updated_at` into the optimistic-lock ref whenever they learned it —
+  including when that value proved the server had moved past this device's
+  own checkpoint. Since both round-write RPCs are full-snapshot REPLACE
+  keyed on that ref, the next save from the resynced (but still-stale)
+  device passed the lock and overwrote another device's newer holes/shots
+  with no warning. Fixed: the poll no longer updates the ref when it proves
+  staleness — it only invokes a new `onRoundStale` callback (previously
+  unwired in both screens); `handleRoundSyncConflict` now engages a
+  write-block (`roundConflictBlockedRef`, checked by every write entry
+  point: autosave, hole checkpoint, save-and-exit, submit) instead of
+  adopting the value. The blocked-state error banner (New Round gained one,
+  see B4) shows a Reload control, and `handleBeforeUnload` skips its
+  unsaved-changes prompt while blocked. B9: a background beacon save
+  (`sendBeacon`/keepalive fetch, no readable response) would otherwise trip
+  this same block on a SINGLE device on every phone lock — `pendingBeaconRef`
+  marks that window, and exactly one apparent conflict inside it self-heals
+  (adopts the value, or re-checks once) instead of blocking.
+  `savePartialRound`'s no-id create/reuse success path (`golf.ts`) also
+  hard-coded `updatedAt: undefined` despite both its queries already
+  `.select()`ing the full row — widening this same window for a round's
+  very first save; fixed via an outer-scoped `roundUpdatedAtForResponse`
+  (the `round` variable itself is scoped to the no-id branch's own block and
+  does not survive to the shared return path — an earlier attempt that
+  returned `round?.updated_at` directly threw
+  `ReferenceError: round is not defined` for every brand-new round, caught
+  by this fix's own TDD test before it shipped).
+- Change (B3, high): Continue Round's `handleAutoSave` fired its primary
+  server save as `void executeServerSave(...)` — the promise
+  `handleAutoSave` returned resolved before the network round-trip started,
+  so `useShotStateMachine`'s retry/circuit-breaker (which only engages on a
+  REJECTED promise) never saw a failure; the chip showed "Saved" regardless.
+  Fixed by inlining and awaiting the save, rethrowing an unrecognized
+  failure. Hole checkpoints (`persistCompletedHole`) were already awaited
+  and are untouched — kept on their own bounded retry path deliberately.
+- Change (B4, high): New Round's recovery dialog rendered only inside the
+  tracking-step JSX (reachable only after `persistRoundStart` has already
+  created a server round), so a recovery snapshot found on mount could never
+  be offered on the setup screen. Hoisted the dialog and its handlers above
+  the setup/holes early return; rendered in both branches from one
+  `recoveryDialog` value. `handleDiscardRecovery` cleared a hard-coded
+  `_new_<playerId>` key instead of the snapshot's own `roundId` (which can
+  be a real server id once a round has survived past its first auto-save),
+  leaving the real snapshot behind to resurface later — fixed to clear
+  `newRoundRecoveryData?.roundId ?? null`. New Round's tracking step gained
+  a visible, dismissible `role="alert"` error banner (Continue Round already
+  had one) — every `setError` during tracking had no surface at all outside
+  an active submit attempt, since `SubmitOverlay`'s own `error` prop only
+  renders while `step === 'submitting'`.
+- Change (B5, high): client-side bounds now match (or, where the server has
+  none, impose) the server's Zod limits. `distanceToHoleBefore` (the "distance
+  remaining"/"leave distance"/"proximity" a player enters on one shot,
+  becoming the NEXT shot's before-distance) is capped at 1000 yards in both
+  `FairwayShotEntry`'s `nextShotBlocker` (the message) and
+  `FairwayShotTracking`'s `isReadyForNextShot` (the actual disabled state —
+  the two must mirror VERBATIM, since the blocker short-circuits to `null`
+  whenever `ready` is true). `FairwayHoleConfig`'s hole-yardage editor
+  gained a 999-yard ceiling (the server schema has none at all) and its
+  disconnected `min="50" max="700"` HTML attributes now agree with the JS
+  validation. Every write entry point (`persistCompletedHole`,
+  `handleAutoSave` in both screens) now branches on `hole_invalid`
+  explicitly: it surfaces the specific sentence via new
+  `describeRoundWriteResult` (round-missing-recovery.ts) and never retries
+  or marks the hole checkpointed — before this fix `persistCompletedHole`
+  fell to its generic "keep this screen open and try again" fallback
+  (actively misleading, since retrying an invalid payload can never
+  succeed) and `handleAutoSave` would have thrown into the circuit breaker.
+- Change (B6): new `describeRoundWriteResult` (round-missing-recovery.ts)
+  is the one helper for every round-write call site — handles both
+  `savePartialRound`'s bare-key-plus-`message` shape and
+  `submitGolfRoundComprehensive`'s already-a-sentence shape for
+  `hole_invalid`. New `ROUND_CONFLICT_MESSAGE` is the single source both
+  `describeRoundWriteFailure('conflict')` and the B2 write-blocking UI draw
+  from. Migrated onto it: `persistRoundStart` (New Round — `busy`/`retry`
+  could reach it verbatim), `handleSaveForLater` (Continue Round),
+  `FairwayRecoverRound.tsx`'s two restore branches (a first-call
+  `busy`/`retry`/`conflict`/`hole_invalid` passed through
+  `writeRoundRecreatingIfMissing` with the bare key intact, since that
+  helper only humanizes a FAILED re-create), and
+  `src/lib/offline/sync-engine.ts`'s four per-item round-sync error pushes
+  (which also used to concatenate the internal offline id into the
+  player-facing string — `` `Round ${offlineId}: ${result.error}` `` —
+  reaching `OfflineIndicator` verbatim via `offline-sync-store.ts`'s
+  `syncError`).
+- Change (B8, low): `FairwayShotEntry`/`FairwayShotTracking` now reject a
+  resolved distance of 0 (a valid, finite, non-negative number that passed
+  every prior check) with "Select Hole if you holed out, or enter the
+  actual distance remaining" — before this fix, `handleNextShot` discovered
+  the same 0 value on its own and bailed with no player-facing feedback at
+  all (a dead tap on an apparently-enabled button). Separately, a new
+  `currentHoleIndexRef` lets `handleNextShot`/`handleRetryHoleCheckpoint`
+  compare the LIVE current hole against the hole a completed-hole checkpoint
+  started on: the hole-nav pills allow navigating away while a checkpoint is
+  still in flight, and its stale resolution (success or failure) used to
+  overwrite `holeCheckpointStatus` unconditionally — painting a false
+  "retry?" banner on a hole that never attempted a save.
+- Not addressed (explicitly scoped out, not silently skipped): B7's
+  correction path for a round already created with a future date BEFORE
+  this fix shipped. The prevention half shipped (date input capped at
+  today; `validateBeforeStart` rejects a future date before
+  `persistRoundStart` runs) — building a date-correction UI for an
+  already-stuck legacy round was judged a separate, narrower feature not
+  worth the added surface/risk under this cluster's scope; tracked as an
+  open gap in `memory/features/golf-round-lifecycle.md`, not declared solved.
+- Why: B1/B2 are both silent-data-loss classes on the same full-snapshot-
+  REPLACE architecture Cluster A hardened server-side — this cluster closes
+  the client-side halves (stale shot ids, stale optimistic-lock tokens) the
+  server-side fixes could not reach. B3/B4/B5/B8 are all "the player sees
+  nothing, or the wrong thing, when a save fails" defects on the SAME two
+  screens Cluster A also touched. B6 consolidates five independent copies
+  of "turn a signal key into a sentence" into one helper so the next screen
+  doesn't need a sixth.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date.
+- Verified from the worktree, each captured to a file, exit code checked:
+  `npm run typecheck` (0), `npm run lint` (0),
+  `npm run docs:schema-drift` (0, 35 vs baseline 35, no new drift),
+  `npm run docs:path-drift` (0, 0 vs baseline 0), and `npx vitest run` over
+  every touched/added test file plus
+  `src/app/golf/(dashboard)/dashboard/rounds/`, `src/app/golf/actions/`,
+  `src/components/fairway/pages/rounds-new/`,
+  `src/components/fairway/pages/rounds-recover/`,
+  `src/components/fairway/pages/rounds-tracking/`, `src/hooks/golf/`,
+  `src/lib/golf/`, `src/lib/offline/`, `src/lib/admin/`, `src/lib/auth/`,
+  and `src/lib/utils/` (278 files, 3274 tests, 0 failures).
+  `npm run build` deliberately not run (worktree has no `.env.local`; CI
+  builds).

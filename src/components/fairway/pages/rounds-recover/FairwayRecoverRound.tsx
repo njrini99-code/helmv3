@@ -50,7 +50,7 @@ import {
   type RoundRecoverySnapshot,
 } from '@/lib/offline/shot-storage';
 import { clearEmergencySaveThrough } from '@/lib/utils/emergency-save';
-import { writeRoundRecreatingIfMissing } from '@/lib/golf/round-missing-recovery';
+import { writeRoundRecreatingIfMissing, describeRoundWriteResult } from '@/lib/golf/round-missing-recovery';
 import type { TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { Flag, ArrowLeft } from 'lucide-react';
 import { ViewHeader, Surface, Button, EmptyState, InlineNotice } from '@/components/fairway';
@@ -522,7 +522,10 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
         );
 
         if (!partialResult.success) {
-          setError(partialResult.error || 'Failed to restore round progress.');
+          // B6: `writeRoundRecreatingIfMissing` only humanizes a FAILED
+          // re-create — a first-call busy/retry/conflict/hole_invalid
+          // passes through with the bare key still in `.error`.
+          setError(describeRoundWriteResult(partialResult));
           setRecovering(null);
           return;
         }
@@ -552,7 +555,8 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
           return;
         }
 
-        setError(result.error || 'Failed to recover round.');
+        // B6: same reasoning as the partial-restore branch above.
+        setError(describeRoundWriteResult(result));
         setRecovering(null);
         return;
       }

@@ -62,6 +62,12 @@ const DEFAULT_YARDAGES = [
   380, 420, 165, 520, 400, 385, 175, 410, 545, 395, 430, 155, 510, 375, 415, 185, 390, 535,
 ];
 
+// B5: the server's comprehensiveHoleSchema (golf.ts) has no upper bound on
+// hole yardage at all — this is a client-side sanity ceiling only, chosen
+// well above any real hole (the longest tracked holes in golf run under 700
+// yards) so it never blocks a legitimate long par 5.
+const MAX_HOLE_YARDAGE = 999;
+
 /**
  * Build the seeded, editable hole set for THIS round. A provided baseline is
  * sliced/padded to `holesPerRound` (renumbered 1..N) so a partial cloud tee or
@@ -119,9 +125,12 @@ export function FairwayHoleConfig({
   }
 
   function handleSubmit() {
-    const isValid = holes.every((h) => h.par >= 3 && h.par <= 6 && h.yardage > 0);
+    const isValid = holes.every((h) => h.par >= 3 && h.par <= 6 && h.yardage > 0 && h.yardage <= MAX_HOLE_YARDAGE);
     if (!isValid) {
-      setValidationError('Please ensure all holes have valid par (3-6) and yardage values');
+      // B5: the server's own comprehensiveHoleSchema puts no upper bound on
+      // yardage at all — this ceiling is the only thing standing between a
+      // typo and a hole nobody can meaningfully play.
+      setValidationError(`Please ensure all holes have valid par (3-6) and yardage between 1 and ${MAX_HOLE_YARDAGE}`);
       return;
     }
     setValidationError(null);
@@ -262,8 +271,8 @@ export function FairwayHoleConfig({
                     onChange={(e) => updateHole(hole.holeNumber, 'yardage', parseInt(e.target.value) || 0)}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     className="w-[84px] rounded-fw-md border border-border-subtle bg-surface-sunken px-2 py-2 text-center font-fw-mono text-body-sm font-medium tabular-nums text-text-primary outline-none transition-colors focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25"
-                    min="50"
-                    max="700"
+                    min={1}
+                    max={MAX_HOLE_YARDAGE}
                     aria-label={`Hole ${hole.holeNumber} yardage`}
                   />
                 </div>

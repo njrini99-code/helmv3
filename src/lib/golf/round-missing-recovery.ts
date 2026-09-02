@@ -30,6 +30,19 @@ export const ROUND_RECREATE_FAILED_MESSAGE =
   'This round is no longer on the server and could not be re-created yet. '
   + 'Every hole is still saved on this device — check your connection and try again.';
 
+/**
+ * B2/B6: the ONE sentence for an optimistic-lock conflict, shared by the bare
+ * `'conflict'` signal key below and by the write-blocking UI
+ * (`new-round-client.tsx` / `continue-round-client.tsx`) that engages once a
+ * conflict or polling-detected staleness proves this device is behind the
+ * server. A save/submit RPC's `conflict` result and a background status
+ * poll's staleness are the same underlying fact — the round moved on another
+ * device — and must read as the same instruction to the player, not two
+ * differently-worded warnings depending on which code path noticed it.
+ */
+export const ROUND_CONFLICT_MESSAGE =
+  'This round was updated on another device. Reload to continue.';
+
 export type RoundWriteResult<T> =
   | { success: true; data: T }
   | { success: false; error: string; code?: string };
@@ -80,8 +93,13 @@ export interface RoundWriteHooks<TOptions = never> {
 const SIGNAL_KEY_MESSAGES: Readonly<Record<string, string>> = {
   busy: 'Another save for this round is just finishing. Try again in a moment.',
   retry: 'That save did not go through. Your shots are still on this device. Please try again.',
-  conflict: 'This round was updated on another device. Please reload before continuing.',
+  conflict: ROUND_CONFLICT_MESSAGE,
   [ROUND_MISSING_ERROR]: ROUND_RECREATE_FAILED_MESSAGE,
+  // Fallback only — `describeRoundWriteResult` below prefers the specific
+  // hole/field sentence carried alongside this key. This bare-key mapping is
+  // what a caller sees if it (incorrectly) passes only `result.error` for a
+  // hole_invalid result instead of the full result object.
+  hole_invalid: 'One of your holes needs a fix before this can be saved. Open it to see what to change.',
 };
 
 /** A player-readable sentence for any round-write failure string. */
@@ -89,6 +107,27 @@ export function describeRoundWriteFailure(error: string | undefined): string {
   const trimmed = (error ?? '').trim();
   if (trimmed.length === 0) return ROUND_RECREATE_FAILED_MESSAGE;
   return SIGNAL_KEY_MESSAGES[trimmed] ?? trimmed;
+}
+
+/**
+ * B6: the one helper every round-write call site should use to turn a
+ * failed `ActionResult` into a player-facing sentence, instead of each site
+ * inventing its own branch on `result.error === 'hole_invalid'` (or worse,
+ * showing `result.error` unconditionally and rendering a bare signal key).
+ *
+ * `savePartialRound`'s `hole_invalid` result carries the bare key in `error`
+ * with the real sentence in a separate `message` field; `submitGolfRoundComprehensive`'s
+ * own Zod-failure path instead puts the sentence directly in `error` (only
+ * `code` says `'hole_invalid'`). This accepts either shape.
+ */
+export function describeRoundWriteResult(
+  result: { error?: string; message?: string; code?: string } | null | undefined,
+): string {
+  if (!result) return ROUND_RECREATE_FAILED_MESSAGE;
+  if (result.code === 'hole_invalid' && typeof result.message === 'string' && result.message.trim().length > 0) {
+    return result.message;
+  }
+  return describeRoundWriteFailure(result.error);
 }
 
 /**

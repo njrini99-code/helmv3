@@ -141,26 +141,20 @@ export function useEditShotModal({
         };
 
         const result = await updateShot(editingShot.id, updateData);
-        if (!result.success) {
-          // A server-confirmed missing row is a stale local reference, not a
-          // failed edit. Reconcile only that shot and deliberately do not
-          // auto-save it back to the server: another request or device has
-          // already established the server as authoritative.
-          if (result.code === 'shot_not_found') {
-            const newHistory = stateRef.current.shotHistory
-              .filter((shot) => shot.id !== editingShot.id)
-              .map((shot, index) => ({ ...shot, shotNumber: index + 1 }));
-            dispatch({ type: 'RECONCILE_MISSING_SHOT', payload: { newHistory } });
-
-            const isStillComplete = newHistory.length > 0 && newHistory[newHistory.length - 1]?.result === 'hole';
-            if (onHoleStatsUpdateRef.current) {
-              const holeStats = isStillComplete
-                ? calculateHoleStats(newHistory, currentHoleRef.current)
-                : null;
-              await onHoleStatsUpdateRef.current(currentHoleIndexRef.current, holeStats);
-            }
-            return;
-          }
+        // `shot_not_found` on the Continue route means the id-keyed point
+        // update could not find a matching row — either because a prior
+        // full-snapshot save rotated every shot id on this hole, or because
+        // the row is momentarily invisible under RLS. Both are indistinguishable
+        // from here, and neither means the shot itself is gone: it means the
+        // point-update path cannot be trusted for it. The old behavior treated
+        // this as proof of deletion and dropped the shot (with the edit never
+        // applied) — a silent data-loss bug, since the next full snapshot save
+        // would then persist the round WITHOUT this real, unedited shot. Do not
+        // return here: fall through and apply the edit locally exactly as the
+        // success path does, then let the snapshot save below (`onAutoSave`)
+        // persist it — the same path New Round always uses, since its shots
+        // never carry a server id to begin with.
+        if (!result.success && result.code !== 'shot_not_found') {
           dispatch({ type: 'EDIT_SAVE_ERROR', payload: result.error || 'Failed to update shot' });
           return;
         }
@@ -211,7 +205,11 @@ export function useEditShotModal({
         }
 
         const cascadeResults = await Promise.all(cascadeUpdates);
-        if (cascadeResults.some((result) => !result.success)) {
+        // Same stale-id/RLS reasoning as the primary update above: a cascade
+        // write that cannot find its row by id is not a reason to abandon the
+        // whole edit, because the full snapshot save below carries every
+        // shot's corrected distances regardless of point-update outcome.
+        if (cascadeResults.some((result) => !result.success && result.code !== 'shot_not_found')) {
           dispatch({ type: 'EDIT_SAVE_ERROR', payload: 'Could not save all shot distance updates. Please try again.' });
           return;
         }
@@ -232,7 +230,18 @@ export function useEditShotModal({
       }
 
       if (onAutoSaveRef.current) {
-        await onAutoSaveRef.current(updatedHistory, currentHoleIndexRef.current);
+        try {
+          await onAutoSaveRef.current(updatedHistory, currentHoleIndexRef.current);
+        } catch {
+          // `onAutoSave` (Continue Round's `handleAutoSave`) now awaits its
+          // server save and rethrows an unhandled failure so
+          // `useShotStateMachine`'s own circuit breaker can retry it (B3).
+          // That rejection reaches here too, but the edit itself and its
+          // synchronous device snapshot already succeeded by this point —
+          // only the background network save failed, and the state machine
+          // is already tracking and retrying it. Do not reopen or error a
+          // shot edit the player already completed successfully.
+        }
       }
     } catch (error) {
       console.error('Error updating shot:', error instanceof Error ? error.message : String(error));
@@ -280,7 +289,12 @@ export function useEditShotModal({
       }
 
       if (onAutoSaveRef.current) {
-        await onAutoSaveRef.current(newHistory, currentHoleIndexRef.current);
+        try {
+          await onAutoSaveRef.current(newHistory, currentHoleIndexRef.current);
+        } catch {
+          // See the matching comment in handleSaveEditedShot above — a
+          // background save rejection (B3) is not a failed deletion.
+        }
       }
     } catch (error) {
       console.error('Error deleting shot:', error instanceof Error ? error.message : String(error));
