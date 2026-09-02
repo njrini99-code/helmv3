@@ -6,6 +6,8 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
+import { resolveMimeType } from './mime';
+import { convertHeicToJpeg } from './heic-to-jpeg';
 
 // Constants
 export const STORAGE_BUCKET = 'golf-attachments';
@@ -92,11 +94,41 @@ export interface PendingAttachment {
 }
 
 /**
+ * Extension -> mime, for the case where the browser reports NOTHING.
+ *
+ * iOS does this. Reproduced against production 2026-08-31 by dispatching the
+ * three shapes an iPhone actually hands back:
+ *
+ *   HEIC, type "image/heic"   -> accepted
+ *   HEIC, type ""             -> SILENTLY DROPPED
+ *   camera capture, type ""   -> SILENTLY DROPPED
+ *
+ * `ALLOWED_MIME_TYPES[""]` is undefined, so the file was rejected before any
+ * request was made — no preview, no error, no log. That is "we can't do
+ * pictures" on a phone, in one line, while the same photo attaches fine from a
+ * desktop because desktop browsers populate `type`.
+ *
+ * Only consulted when the browser gave us nothing usable; a reported type
+ * always wins. The extension is a weaker signal than a real mime type, which
+ * is why it is the fallback rather than the primary — and the Storage bucket
+ * re-checks `allowed_mime_types` server-side regardless, so a lie here cannot
+ * put an unsupported object in the bucket.
+ */
+export function resolveFileMimeType(file: File): string {
+  // "Usable" here means the messages allow-list recognises it — a type this
+  // path could not upload anyway is no better than none.
+  return resolveMimeType(file, (t) => Boolean(ALLOWED_MIME_TYPES[t]));
+}
+
+/**
  * Validate a file for upload
  */
 export function validateFile(file: File): { valid: boolean; error?: string } {
-  // Check mime type first to get the file category
-  const fileType = ALLOWED_MIME_TYPES[file.type];
+  // Check mime type first to get the file category. Falls back to the
+  // extension when the browser reported no usable type — see
+  // EXTENSION_MIME_FALLBACK: iOS reports "" for camera captures and some HEIC
+  // picks, and without this every one of those was dropped in silence.
+  const fileType = ALLOWED_MIME_TYPES[resolveFileMimeType(file)];
   if (!fileType) {
     return {
       valid: false,
@@ -209,22 +241,40 @@ export async function uploadAttachment(
     return { success: false, error: validation.error };
   }
 
-  // Generate storage path
-  const storagePath = generateStoragePath(conversationId, messageId, file.name);
+  // HEIC in, JPEG out — on the one device that can decode it.
+  //
+  // An iPhone photo uploads fine as HEIC and then renders as a BROKEN IMAGE
+  // for every teammate on desktop Chrome, Firefox or Android, because the
+  // thread renders attachments with a plain <img>. Converting here, on the
+  // device that HAS the photo, means what lands in storage is displayable
+  // everywhere. If this device cannot decode HEIC the original comes back
+  // unchanged and the upload proceeds exactly as before — never worse.
+  //
+  // Everything below describes the file that is ACTUALLY stored: its name (so
+  // the extension matches the bytes), its size, and its type.
+  const uploadFile = await convertHeicToJpeg(file, resolveFileMimeType(file));
 
-  // Get file metadata
-  const fileType = getFileType(file.type);
+  // Generate storage path
+  const storagePath = generateStoragePath(conversationId, messageId, uploadFile.name);
+
+  // One resolved type for the whole upload. Using a raw `type` here would
+  // record an empty mimeType, categorise the file as a 'document', and — worse
+  // — let Supabase infer `application/octet-stream` for the object, which the
+  // bucket's `allowed_mime_types` does not permit. The photo would then fail
+  // at the Storage API even after passing validation.
+  const resolvedMimeType = resolveFileMimeType(uploadFile);
+  const fileType = getFileType(resolvedMimeType);
   const metadata: AttachmentMetadata = {
-    fileName: file.name,
+    fileName: uploadFile.name,
     fileType,
-    mimeType: file.type,
-    fileSize: file.size,
+    mimeType: resolvedMimeType,
+    fileSize: uploadFile.size,
   };
 
   // Get dimensions for images/videos and duration for audio
   try {
     if (fileType === 'image') {
-      const dims = await getImageDimensions(file);
+      const dims = await getImageDimensions(uploadFile);
       metadata.width = dims.width;
       metadata.height = dims.height;
     } else if (fileType === 'video') {
@@ -250,9 +300,13 @@ export async function uploadAttachment(
 
   const { error: uploadError } = await supabase.storage
     .from(STORAGE_BUCKET)
-    .upload(storagePath, file, {
+    .upload(storagePath, uploadFile, {
       cacheControl: '3600',
       upsert: false,
+      // Explicit, because the SDK otherwise infers from `file.type` — blank on
+      // an iOS camera capture — and sends `application/octet-stream`, which
+      // this bucket's `allowed_mime_types` rejects.
+      contentType: resolvedMimeType,
     });
 
   if (uploadError) {

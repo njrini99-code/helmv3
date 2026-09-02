@@ -77,6 +77,34 @@ if [ "$BEHIND" != "?" ] && [ "${BEHIND:-0}" -gt 20 ] 2>/dev/null; then
   stale code. Merge or rebase before trusting anything about project state."
 fi
 
+# RELEASE DRIFT — merged is not shipped.
+#
+# On 2026-09-01 eight fixes sat merged on main with none in production. Nobody
+# ignored it; nothing said it. Every session was told how far it was from
+# origin/main and nothing about how far origin/main was from the users.
+#
+# Pure git, no network: scripts/deploy-prod.sh writes this file ONLY after it
+# has verified the release stamp in the served bundle, so its presence means
+# "proven live", not "a deploy command ran". A session-start hook must never
+# make a network call — `npm run release:status` is the online check.
+LVR_FILE=".claude/session-state/last-verified-release"
+if [ -f "$LVR_FILE" ]; then
+  LVR=$(tr -d '[:space:]' < "$LVR_FILE" 2>/dev/null)
+  if [ -n "$LVR" ] && git cat-file -e "${LVR}^{commit}" 2>/dev/null; then
+    UNRELEASED=$(git rev-list --count "${LVR}..origin/main" 2>/dev/null || echo "?")
+    if [ "$UNRELEASED" != "?" ] && [ "${UNRELEASED:-0}" -gt 0 ] 2>/dev/null; then
+      CTX="${CTX}
+- UNRELEASED: ${UNRELEASED} commit(s) are merged to origin/main but NOT in
+  production (last verified live: $(echo "$LVR" | cut -c1-9)). Merging does not
+  ship — vercel.json disables git deploys. Confirm with: npm run release:status"
+    fi
+  fi
+else
+  CTX="${CTX}
+- release state: UNKNOWN — no verified production release recorded on this
+  machine. Do not assume main is live. Check with: npm run release:status"
+fi
+
 WT=$(git worktree list 2>/dev/null | wc -l | tr -d ' ')
 if [ "${WT:-1}" -gt 1 ]; then
   CTX="${CTX}

@@ -35,7 +35,7 @@ human has to remember to invalidate them.
 | --- | --- | --- | --- | --- |
 | Supabase | `mcp__supabase__*` | project-scoped: qmnssrrolpinvwjjnufo, read_only=true | .mcp.json (this repo) | **FAILED** — 2026-08-29 — exposes ONLY authenticate/complete_authentication — OAuth not completed. Its grant requests exclusively :read scopes (organizations, projects, database, analytics, secrets, edge_functions, environment, storage): connector-enforced read-only, not a URL string. |
 | Sentry | `mcp__claude_ai_Sentry__*` | org helm-xs | account connector | **EXERCISED** — 2026-08-29 — find_organizations -> org helm-xs (us.sentry.io) |
-| Vercel | `mcp__claude_ai_Vercel__*` | account | account connector | **EXERCISED** — 2026-08-29 — full tool surface present in session (list_projects, list_deployments, get_runtime_logs) |
+| Vercel | `mcp__claude_ai_Vercel__*` | account | account connector | **STALE** — observed 2026-08-29 under config 877140c1c20967a1; config is now 6a0055d9843bbc8e |
 | GitHub | `gh CLI (gh api)` | repo njrini99-code/helmv3 | scripts/worktree-lifecycle.mjs | **EXERCISED** — 2026-08-29 — exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668). Capability is fingerprintable after all: the authenticated account id, the repository id and the OAuth scope set (X-Oauth-Scopes response header) are all stable and carry no secret material. Recorded 2026-08-30; control-plane:verify re-measures them live and reports drift. |
 
 ## Every namespace, classified
@@ -47,8 +47,8 @@ human has to remember to invalidate them.
 | `mcp__plugin_supabase_supabase__*` | Supabase | PHANTOM_REMOVED | no | no | no | DENIED (server-level) | FAILED |
 | `mcp__claude_ai_Sentry__*` | Sentry | AUTHORITY | yes | yes | yes | yes | EXERCISED |
 | `mcp__plugin_sentry_sentry__*` | Sentry | REDUNDANT_DENIED | yes | yes (pre-deny) | yes (pre-deny) | DENIED (server-level) | DENIED_BY_POLICY |
-| `mcp__claude_ai_Vercel__*` | Vercel | AUTHORITY | yes | yes | yes | yes | EXERCISED |
-| `mcp__plugin_vercel_vercel__*` | Vercel | DEAD_DENIED | yes | no | no | DENIED (server-level) | DENIED_BY_POLICY |
+| `mcp__claude_ai_Vercel__*` | Vercel | AUTHORITY | yes | yes | yes | yes | STALE |
+| `mcp__plugin_vercel_vercel__*` | Vercel | DEAD_DENIED | yes | no | no | DENIED (server-level) | STALE |
 | `gh CLI (gh api)` | GitHub | AUTHORITY | yes | yes | yes | yes | EXERCISED |
 | `mcp__github__*` | GitHub | RETAINED_INTERACTIVE | yes | unknown | yes | yes | NOT_EXERCISED |
 
@@ -83,7 +83,7 @@ When a fingerprint changes, every EXERCISED claim under it becomes STALE.
 | --- | --- | --- |
 | Supabase | `20b8aa0d1c1206ee` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | Sentry | `e1d6b5e512b23087` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
-| Vercel | `877140c1c20967a1` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
+| Vercel | `6a0055d9843bbc8e` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | GitHub | `ungoverned:87544794` | **NO** — no allow/deny/ask rule or `.mcp.json` entry in this repo governs it, so there is nothing here to fingerprint |
 
 <!-- AUTOGEN:tool-authority:end -->

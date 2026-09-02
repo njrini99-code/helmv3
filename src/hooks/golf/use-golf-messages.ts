@@ -36,6 +36,42 @@ export interface GolfMessage extends GolfMessageRow {
 // Keep old name for backward compatibility
 export type MessageWithReadStatus = GolfMessage;
 
+/**
+ * Apply one realtime `golf_messages` UPDATE to the local list.
+ *
+ * Exported and pure so the property that matters can actually be asserted:
+ * when nothing this component RENDERS has changed, it returns the SAME array
+ * reference, and React skips the re-render.
+ *
+ * That bail-out is load-bearing. Opening a thread causes these events —
+ * `fetchMessages` ends by calling `markGolfMessagesAsRead`, which flips
+ * `read = true` on every message someone else sent, so a group thread with N
+ * such messages emits N UPDATEs immediately. Rebuilding the array each time
+ * produced N identical lists and re-rendered the thread N times, which is the
+ * "it loads and then instantly loads again" a coach reported, and why the
+ * thread would not stay where scroll-to-bottom had just put it.
+ */
+export function applyRealtimeMessageUpdate<
+  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null },
+>(prev: T[], updated: T): T[] {
+  if (updated.is_deleted) {
+    if (!prev.some((msg) => msg.id === updated.id)) return prev;
+    return prev.filter((msg) => msg.id !== updated.id);
+  }
+
+  const idx = prev.findIndex((msg) => msg.id === updated.id);
+  if (idx === -1) return prev;
+
+  const current = prev[idx]!;
+  if (current.content === updated.content && current.edited_at === updated.edited_at) {
+    return prev;
+  }
+
+  const next = prev.slice();
+  next[idx] = { ...current, content: updated.content, edited_at: updated.edited_at };
+  return next;
+}
+
 export function useGolfMessages(conversationId: string) {
   const [messages, setMessages] = useState<MessageWithReadStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +82,30 @@ export function useGolfMessages(conversationId: string) {
   const [otherParticipantLastReadAt, setOtherParticipantLastReadAt] = useState<string | null>(null);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  /**
+   * The same value, readable without becoming a dependency.
+   *
+   * `currentUserId` resolves ASYNCHRONOUSLY from `auth.getUser()`, so it is
+   * null on the first render and a string a moment later. It was a dependency
+   * of `fetchOtherParticipantReadStatus`, which was a dependency of
+   * `fetchMessages`, which was a dependency of the effect that fetches the
+   * thread AND opens the realtime channel. One late-arriving id therefore
+   * rebuilt that entire chain and re-ran the effect:
+   *
+   *   mount            -> fetch #1 -> loading false -> thread scrolls to latest
+   *   id resolves      -> fetch #2 -> loading TRUE again -> container remounts
+   *                                   at scrollTop 0, and the one-shot
+   *                                   scroll-to-latest sentinel was already
+   *                                   consumed by fetch #1, so nothing put it
+   *                                   back.
+   *
+   * That is both halves of what was reported on 2026-08-31: "whenever messages
+   * loads, it instantly loads again", and threads opening at the oldest
+   * message instead of the newest. Reading the id through a ref keeps every
+   * callback identity stable, so the thread is fetched and subscribed exactly
+   * once per conversation.
+   */
+  const currentUserIdRef = useRef<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingBroadcastRef = useRef<number>(0);
   const supabaseRef = useRef(createClient());
@@ -58,6 +118,7 @@ export function useGolfMessages(conversationId: string) {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user && mounted) {
+        currentUserIdRef.current = user.id;
         setCurrentUserId(user.id);
       }
     };
@@ -70,7 +131,8 @@ export function useGolfMessages(conversationId: string) {
 
   // Fetch other participant's last_read_at for read receipts
   const fetchOtherParticipantReadStatus = useCallback(async () => {
-    if (!conversationId || !currentUserId) return;
+    const uid = currentUserIdRef.current;
+    if (!conversationId || !uid) return;
 
     const { data: participants, error: participantsError } = await supabase
       .from('golf_conversation_participants')
@@ -92,13 +154,13 @@ export function useGolfMessages(conversationId: string) {
     }
 
     if (participants) {
-      const otherParticipant = participants.find(p => p.user_id !== currentUserId);
+      const otherParticipant = participants.find(p => p.user_id !== uid);
       if (otherParticipant) {
         setOtherParticipantLastReadAt(otherParticipant.last_read_at);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, currentUserId]);
+  }, [conversationId]);
 
   const fetchMessages = useCallback(async () => {
     if (!conversationId) {
@@ -201,8 +263,8 @@ export function useGolfMessages(conversationId: string) {
           const newMessage = payload.new as MessageWithReadStatus;
           setMessages(prev => {
             // Replace optimistic message if this is our own message arriving via realtime
-            if (newMessage.sender_id === currentUserId) {
-              const optimisticIdx = prev.findIndex(m => m.id.startsWith('optimistic-') && m.sender_id === currentUserId);
+            if (newMessage.sender_id === currentUserIdRef.current) {
+              const optimisticIdx = prev.findIndex(m => m.id.startsWith('optimistic-') && m.sender_id === currentUserIdRef.current);
               if (optimisticIdx !== -1) {
                 const updated = [...prev];
                 updated[optimisticIdx] = newMessage;
@@ -214,7 +276,7 @@ export function useGolfMessages(conversationId: string) {
             return [...prev, newMessage];
           });
           // Clear typing indicator when message is received
-          if (newMessage.sender_id !== currentUserId) {
+          if (newMessage.sender_id !== currentUserIdRef.current) {
             setIsOtherTyping(false);
           }
         }
@@ -230,18 +292,7 @@ export function useGolfMessages(conversationId: string) {
         },
         (payload) => {
           const updatedMessage = payload.new as MessageWithReadStatus;
-          setMessages(prev => {
-            // If message was soft-deleted, remove from local state
-            if (updatedMessage.is_deleted) {
-              return prev.filter(msg => msg.id !== updatedMessage.id);
-            }
-            // Otherwise update content and edited_at
-            return prev.map(msg =>
-              msg.id === updatedMessage.id
-                ? { ...msg, content: updatedMessage.content, edited_at: updatedMessage.edited_at }
-                : msg
-            );
-          });
+          setMessages(prev => applyRealtimeMessageUpdate<MessageWithReadStatus>(prev, updatedMessage));
         }
       )
       // Listen for read receipt updates (when other participant reads messages)
@@ -256,7 +307,7 @@ export function useGolfMessages(conversationId: string) {
         (payload) => {
           const updated = payload.new as { user_id: string; last_read_at: string | null };
           // Only update if it's the other participant's read status
-          if (updated.user_id !== currentUserId && updated.last_read_at) {
+          if (updated.user_id !== currentUserIdRef.current && updated.last_read_at) {
             setOtherParticipantLastReadAt(updated.last_read_at);
           }
         }
@@ -267,7 +318,7 @@ export function useGolfMessages(conversationId: string) {
         { event: 'typing' },
         (payload) => {
           const { userId, isTyping } = payload.payload as { userId: string; isTyping: boolean };
-          if (userId !== currentUserId) {
+          if (userId !== currentUserIdRef.current) {
             setIsOtherTyping(isTyping);
             // Auto-clear typing indicator after 3 seconds if no update
             if (isTyping) {
@@ -290,8 +341,12 @@ export function useGolfMessages(conversationId: string) {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, fetchMessages, currentUserId]);
+    // Deliberately keyed on the CONVERSATION only. `fetchMessages` is now
+    // identity-stable and every handler above reads `currentUserIdRef`, so a
+    // late-arriving user id no longer tears this down and re-runs it — which
+    // is what fetched the thread twice and stranded it at the top.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
 
   // Function to broadcast typing status (throttled to avoid spam)
   const sendTypingStatus = useCallback((isTyping: boolean) => {

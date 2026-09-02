@@ -408,13 +408,18 @@ class SyncEngine {
    */
   async syncPendingData(): Promise<SyncResult> {
     if (this.isSyncingFlag) {
+      // Declined, not failed. The in-flight run is already doing this work, so
+      // there is nothing for the caller to report, retry, or worry about.
+      // `errors` stays EMPTY so no surface can render this as a problem — the
+      // reason travels in `declined` for anything that wants to log it.
       return {
         success: false,
         syncedRounds: 0,
         syncedHoles: 0,
         syncedShots: 0,
         failedItems: 0,
-        errors: ['Sync already in progress'],
+        errors: [],
+        declined: 'already-running',
       };
     }
 
