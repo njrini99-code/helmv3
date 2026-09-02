@@ -233,15 +233,25 @@ export async function GET(req: NextRequest) {
         .map(({ e, status }) => `cron ${status}: ${e.jobType}`),
     ];
     const appErrorGroups24h = groupAppErrorEvents((errors24h.data ?? []) as unknown as AppTriageEventRow[]);
+    // The digest names what the Errors tab shows by default — actionable
+    // incidents — and only counts the rest. Until 2026-09-02 every group was
+    // listed, so the morning email led with three WebKit "Load failed" rows
+    // (a phone's POST never leaving the device) and a handled "continuing
+    // without shot drivers" warning, while saying "0 critical" underneath.
+    const namedIncidents = appErrorGroups24h.filter((i) => i.actionable && i.klass !== 'degradation');
+    const degradedCount = appErrorGroups24h.filter((i) => i.actionable && i.klass === 'degradation').length;
+    const quietCount = appErrorGroups24h.length - namedIncidents.length - degradedCount;
 
     const data: DigestData = {
       generatedAt: now.toISOString(),
       errors24h: {
-        total: appErrorGroups24h.length,
-        critical: appErrorGroups24h.filter((i) => i.severity === 'critical').length,
-        topIncidents: appErrorGroups24h.slice(0, 5).map((i) => ({
+        total: namedIncidents.length,
+        critical: namedIncidents.filter((i) => i.severity === 'critical').length,
+        topIncidents: namedIncidents.slice(0, 5).map((i) => ({
           title: i.title, occurrences: i.occurrences, affectedUsers: i.affectedUsers,
         })),
+        degraded: degradedCount,
+        quiet: quietCount,
       },
       sentry: {
         unresolved: triage.sentry.status === 'ok' ? (triage.sentry.data?.length ?? 0) : null,

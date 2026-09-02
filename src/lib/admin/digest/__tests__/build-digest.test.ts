@@ -3,7 +3,7 @@ import { buildDigestEmail, type DigestData } from '@/lib/admin/digest/build-dige
 
 const base: DigestData = {
   generatedAt: '2026-07-01T10:00:00Z',
-  errors24h: { total: 0, critical: 0, topIncidents: [] },
+  errors24h: { total: 0, critical: 0, topIncidents: [], degraded: 0, quiet: 0 },
   sentry: { unresolved: 0, regressed: 0 },
   signups24h: [],
   demoRequests: { new24h: 0, pendingTotal: 0 },
@@ -28,6 +28,8 @@ describe('buildDigestEmail — Cup of Helm', () => {
         total: 12,
         critical: 2,
         topIncidents: [{ title: 'savePartialRound failed', occurrences: 8, affectedUsers: 3 }],
+        degraded: 0,
+        quiet: 0,
       },
       reds: ['integrity FAIL: anon_grant_drift', 'cron overdue: event-reminders'],
     });
@@ -35,6 +37,30 @@ describe('buildDigestEmail — Cup of Helm', () => {
     // Inverted pyramid: the red item must precede the activity numbers.
     expect(email.text.indexOf('anon_grant_drift')).toBeLessThan(email.text.indexOf('golf rounds'));
     expect(email.html).toContain('savePartialRound failed');
+  });
+
+  it('names only actionable incidents and says how many rows it set aside', () => {
+    // 2026-09-02: the list led with three "Client error: Load failed" rows and
+    // a handled "continuing without shot drivers" warning. Those are counted
+    // now, so a quiet-looking list can be checked against the Errors tab.
+    const email = buildDigestEmail({
+      ...base,
+      errors24h: {
+        total: 1,
+        critical: 0,
+        topIncidents: [{ title: 'savePartialRound failed', occurrences: 2, affectedUsers: 1 }],
+        degraded: 1,
+        quiet: 3,
+      },
+    });
+    expect(email.text).toContain('Not listed: 1 handled degradation · 3 quiet (client connectivity, expected access).');
+    expect(email.html).toContain('3 quiet (client connectivity, expected access)');
+  });
+
+  it('says nothing about set-aside rows when there were none', () => {
+    const email = buildDigestEmail(base);
+    expect(email.text).not.toContain('Not listed');
+    expect(email.html).not.toContain('Not listed');
   });
 
   it('singularises so the subject never reads "1 things need you"', () => {
