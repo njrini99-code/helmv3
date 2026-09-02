@@ -303,6 +303,18 @@ function readErrorCode(metadata: unknown): string | null {
  * a BUILD failed — a deployment stuck in ERROR is invisible to an exception
  * tracker because the code never ran. That is what this arm contributes.
  */
+/**
+ * A CANCELED preview deployment is routine — a push superseded by a later
+ * push, or a manual cancel — not a build problem. It is only worth treating
+ * as one on `production`, where a canceled deploy means the intended release
+ * never shipped.
+ */
+function vercelDeploySeverity(state: string, target: string | null): ReliabilitySeverity {
+  if (state === 'ERROR') return 'error';
+  if (state === 'CANCELED' && target !== 'production') return 'info';
+  return 'warning';
+}
+
 export async function collectVercel(windowStartIso: string): Promise<SourceResult> {
   const startedAt = Date.now();
   const res = await fetchVercelDeployments(VERCEL_DEPLOY_LIMIT);
@@ -321,7 +333,7 @@ export async function collectVercel(windowStartIso: string): Promise<SourceResul
     const when = new Date(deploy.createdAt).toISOString();
     return {
       source: 'vercel' as const,
-      severity: deploy.state === 'ERROR' ? ('error' as const) : ('warning' as const),
+      severity: vercelDeploySeverity(deploy.state, deploy.target),
       title: `Deployment ${deploy.state.toLowerCase()}`,
       message: `Deployment ${deploy.uid} on ${deploy.target ?? 'preview'} finished ${deploy.state}`,
       route: null,

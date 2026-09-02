@@ -276,6 +276,11 @@ them would have broken those routes, not the dead one.
   succeeded — a short trace is not a failed one, and a combined "46 problems"
   figure would be false. `trace-fleet.ts` counts them separately;
   `stepCoverage` returns null rather than inventing a denominator.
+- **A canceled preview deployment is not a build problem.** `collectVercel`
+  rates a `CANCELED` Vercel deployment `info` unless its `target` is
+  `production`, where a canceled deploy means the intended release never
+  shipped and stays `warning`. A superseded or manually-canceled preview
+  build is routine noise, not a reliability signal.
 - **Reliability is a lens, not a second queue.** `/admin/reliability` keeps
   source health, the blind-source notice, the severity mix, run history and
   the raw snapshot — removing those was never the goal. What it must not do

@@ -1,5 +1,24 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (c) — canceled preview deploys stop reading as a build problem
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (c) of a
+  six-defect catalogued sweep; each defect lands as its own commit).
+- **`collectVercel` (`src/lib/reliability/sources.ts`) no longer rates every
+  `CANCELED` deployment `warning`.** A canceled `preview` deploy (or one with
+  no recorded `target`) is routine — a push superseded by a later push, or a
+  manual cancel — and now reports `info`. A canceled `production` deployment
+  still reports `warning`: there the intended release never shipped, which is
+  exactly the build-health signal this arm exists to carry. `ERROR` deploys
+  are unaffected (`error` at any target).
+- New helper `vercelDeploySeverity(state, target)` is the single place this
+  is decided; `src/lib/reliability/__tests__/sources.test.ts` pins preview,
+  null-target, and production CANCELED cases plus the untouched ERROR case.
+- **Verified**: `npx vitest run src/lib/reliability/__tests__/sources.test.ts`
+  (25/25 passing, new cases written failing first), `npm run typecheck`,
+  `npm run lint`, `npm run lint:ratchet`, `npm run audit:supabase-errors` all
+  green on this change alone.
+
 ## 2026-09-02 — second audit of `agent/fix-bridge-errors`: a throttle that outlived its write, a `void` the siblings had lost, a lost increment
 
 - SHA: recorded on merge of `agent/fix-bridge-errors` (same PR as the entry
