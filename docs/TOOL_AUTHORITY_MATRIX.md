@@ -52,7 +52,7 @@ human has to remember to invalidate them.
 | `mcp__claude_ai_Vercel__*` | Vercel | AUTHORITY | yes | unknown (name not present) | no (not under this name) | partial (deploy_to_vercel denied) | NOT_EXERCISED |
 | `mcp__plugin_vercel_vercel__*` | Vercel | DEAD_DENIED | yes | no | no | DENIED (server-level) | DENIED_BY_POLICY |
 | `mcp__plugin_vercel-plugin_vercel__*` | Vercel | DEAD_DENIED | yes (plugin) | no | no | DENIED (server-level) | DENIED_BY_POLICY |
-| `mcp__fba2ada3-c190-4053-b91a-3e81f5296483__*` | Vercel | AUTHORITY_UUID_SPELLING | yes (account connector, no file in this repo) | yes | yes | partial (deploy, pause, purchases denied) | EXERCISED |
+| `mcp__fba2ada3-c190-4053-b91a-3e81f5296483__*` | Vercel | AUTHORITY_UUID_SPELLING | yes (account connector, no file in this repo) | yes | yes | partial (deploy, pause, purchases, deployment protection denied) | EXERCISED |
 | `gh CLI (gh api)` | GitHub | AUTHORITY | yes | yes | yes | yes | EXERCISED |
 | `mcp__github__*` | GitHub | RETAINED_INTERACTIVE | yes | unknown | yes | yes | NOT_EXERCISED |
 
@@ -88,7 +88,7 @@ The installed plugin's server is named `vercel-plugin`, not `vercel`: the user-g
 
 **`mcp__fba2ada3-c190-4053-b91a-3e81f5296483__*`** — AUTHORITY_UUID_SPELLING
 
-The SAME account connector as the authority, under the name the 2026-09-01 session inventory actually uses (config/mcp-connector-ids.json); no `mcp__claude_ai_Vercel__*` name exists in that inventory. Exercised 2026-09-01: list_projects -> team_WYEGBoW9Hpg2tB1QClWuVxc5, project helmv3. deploy_to_vercel, pause_project and the four buy_* purchases are denied under this prefix; update_project_deployment_protection, unpause_project and create_git_project are NOT (owner decision, listed in the PR that added these rules). UUID stability across sessions UNVERIFIED (gap MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS).
+The SAME account connector as the authority, under the name the 2026-09-01 session inventory actually uses (config/mcp-connector-ids.json); no `mcp__claude_ai_Vercel__*` name exists in that inventory. Exercised 2026-09-01: list_projects -> team_WYEGBoW9Hpg2tB1QClWuVxc5, project helmv3. deploy_to_vercel, pause_project, the four buy_* purchases and update_project_deployment_protection are denied under this prefix (the last added 2026-09-02, when the second audit of the PR found it recorded as present but not denied); unpause_project and create_git_project are NOT (owner decision, listed in the PR that added these rules). UUID stability across sessions UNVERIFIED (gap MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS).
 
 **`mcp__github__*`** — RETAINED_INTERACTIVE
 
@@ -103,7 +103,7 @@ When a fingerprint changes, every EXERCISED claim under it becomes STALE.
 | --- | --- | --- |
 | Supabase | `7a677da5aeb057cd` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | Sentry | `e1d6b5e512b23087` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
-| Vercel | `2ecfd424a1613344` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
+| Vercel | `5b174c1ef5d936bb` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | GitHub | `ungoverned:87544794` | **NO** — no allow/deny/ask rule or `.mcp.json` entry in this repo governs it, so there is nothing here to fingerprint |
 
 <!-- AUTOGEN:tool-authority:end -->

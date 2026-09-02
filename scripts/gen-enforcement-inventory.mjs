@@ -52,10 +52,17 @@ const OUT = resolve(ROOT, 'docs/CONTROL_PLANE_ENFORCEMENT.md');
  * spelling anchored only the last alternative, so every other one matched as
  * a substring (CodeQL js/regex/missing-regexp-anchor).
  *
- * Supabase also exposes `pause_project`; callers exclude that server by id.
+ * `update_project_deployment_protection` joined the set 2026-09-02: the
+ * connector file had recorded it as present under the Vercel prefix while no
+ * deny rule named it. Its read twin `get_project_deployment_protection` must
+ * NOT match, which the anchoring guarantees.
+ *
+ * Supabase also exposes `pause_project`; callers exclude that server through
+ * `vercelMutatingDenyHits`, which takes the Supabase prefixes from the
+ * connector file rather than carrying an id of its own.
  */
 export const VERCEL_MUTATING_TOOL_RE =
-  /^mcp__.+__(?:deploy_to_vercel|buy_(?:domain|pro|credits|addon)|pause_project)$/;
+  /^mcp__.+__(?:deploy_to_vercel|buy_(?:domain|pro|credits|addon)|pause_project|update_project_deployment_protection)$/;
 
 const START = '<!-- AUTOGEN:enforcement:start -->';
 const END = '<!-- AUTOGEN:enforcement:end -->';
@@ -90,6 +97,39 @@ function loadConnectorIds() {
   } catch {
     return [];
   }
+}
+
+/** Every rule prefix a connector's tools can appear under: `mcp__<uuid>__` and the display name. */
+function connectorPrefixes(service, connectorIds) {
+  return (connectorIds ?? [])
+    .filter((c) => c.service === service)
+    .flatMap((c) => [typeof c.id === 'string' && c.id ? `mcp__${c.id}__` : null, c.display_name_prefix || null])
+    .filter(Boolean);
+}
+
+/**
+ * Deny rules that count as cover for the Vercel claim, split by spelling.
+ *
+ * Supabase also exposes `pause_project`, so a rule naming it under a Supabase
+ * prefix is not Vercel cover. Both Supabase prefixes — the UUID the session
+ * exposes and the display name — come from `connectorIds`, i.e. from
+ * config/mcp-connector-ids.json, the one place the ids live. Until 2026-09-02
+ * the exclusion was the literal `/Supabase|e139bbde/`: the Supabase id written
+ * into this generator by hand, beside a parameter that already carried it.
+ * Had that connector been re-installed and its id rotated — the connector
+ * file says its stability is UNVERIFIED — the new Supabase `pause_project`
+ * rule would have been counted as Vercel cover.
+ */
+export function vercelMutatingDenyHits(denyRules, connectorIds = loadConnectorIds()) {
+  const excluded = connectorPrefixes('Supabase', connectorIds);
+  const vercelIds = (connectorIds ?? [])
+    .filter((c) => c.service === 'Vercel' && typeof c.id === 'string' && c.id)
+    .map((c) => c.id);
+  const hits = (denyRules ?? []).filter(
+    (r) => VERCEL_MUTATING_TOOL_RE.test(r) && !excluded.some((p) => r.startsWith(p)),
+  );
+  const uuidHits = hits.filter((r) => vercelIds.some((id) => r.startsWith(`mcp__${id}__`)));
+  return { hits, uuidHits };
 }
 
 function loadSettings() {
@@ -298,17 +338,15 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
       },
     },
     {
-      claim: 'A production deploy or purchase through the Vercel MCP is refused',
+      claim: 'A production deploy, purchase, pause or deployment-protection change through the Vercel MCP is refused',
       resolve: () => {
-        const hits = denies.mcp.filter((r) => VERCEL_MUTATING_TOOL_RE.test(r) && !/Supabase|e139bbde/.test(r));
-        const ids = connectorIds.filter((c) => c.service === 'Vercel').map((c) => c.id);
-        const uuidHits = hits.filter((r) => ids.some((id) => r.startsWith(`mcp__${id}__`)));
+        const { hits, uuidHits } = vercelMutatingDenyHits(denies.mcp, connectorIds);
         return hits.length
           ? {
               mechanism: `${hits.length} deny rules (${uuidHits.length} under the UUID spelling)`,
               where: '.claude/settings.json → permissions.deny',
               observed: uuidHits.length
-                ? 'CONFIGURED — display-name and UUID spellings; NOT probed (the only probe is a real production deploy or a purchase); id stability UNVERIFIED'
+                ? 'CONFIGURED — display-name and UUID spellings; NOT probed (the only probe is a real production deploy, a purchase, or a protection change); id stability UNVERIFIED'
                 : 'CONFIGURED — display-name spelling only, which measured 2026-09-01 is not in the session inventory',
             }
           : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED' };

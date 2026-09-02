@@ -331,17 +331,32 @@ const nextConfig = {
           // NEXT_PUBLIC_* keys are set outside localhost, and both then POST
           // to hosts that until 2026-09-01 appeared nowhere in the connect
           // directive below, so every capture was blocked by this very header.
-          // The hosts there follow the DEFAULTS in those providers
-          // (us.i.posthog.com, and Datadog site datadoghq.com, whose intake is
-          // browser-intake-datadoghq.com). A non-default NEXT_PUBLIC_POSTHOG_HOST
-          // or NEXT_PUBLIC_DD_SITE needs its host added there too, or it is
-          // blocked the same way. posthog-js also lazy-loads its recorder and
-          // surveys bundles from us-assets.i.posthog.com, which is why that host
-          // is in the script directive as well.
+          // Each host is justified by the INSTALLED SDK's own routing, and the
+          // exact list is pinned by
+          // src/lib/security/__tests__/analytics-csp-hosts.test.ts:
+          //
+          //   us.i.posthog.com (connect) — posthog-js `api_host`, the default
+          //     in PostHogProvider.tsx; events, flags and recordings post here.
+          //   us-assets.i.posthog.com (script AND connect) — posthog-js derives
+          //     it from api_host (utils/request-router.js) and injects <script>
+          //     tags from it for the remote config and the lazy recorder /
+          //     surveys bundles (entrypoints/external-scripts-loader.js), then
+          //     falls back to a plain GET of /array/<token>/config from the
+          //     same host when the script yields no config (remote-config.js).
+          //   browser-intake-datadoghq.com (connect) — @datadog/browser-core
+          //     buildEndpointHost() for the default site datadoghq.com; RUM,
+          //     Logs and Session Replay all post to this one bare host. NO
+          //     wildcard: the SDK reaches a SUBDOMAIN of it only under
+          //     usePciIntake, internalAnalyticsSubdomain or
+          //     remoteConfigurationId, none of which src/lib/datadog/index.ts
+          //     sets. Set one and add its host by name.
+          //
+          // A non-default NEXT_PUBLIC_POSTHOG_HOST or NEXT_PUBLIC_DD_SITE needs
+          // its host added here too, or it is blocked the same way.
           //
           // Do not write the literal directive names in this comment: the CSP
-          // test (src/lib/security/__tests__/local-supabase-csp.test.ts) locates
-          // the directive by its first occurrence in this file.
+          // tests under src/lib/security/__tests__/ locate each directive by
+          // its first occurrence in this file.
           {
             key: 'Content-Security-Policy',
             value: `
@@ -350,7 +365,7 @@ const nextConfig = {
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;
-              connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://vitals.vercel-analytics.com https://us.i.posthog.com https://us-assets.i.posthog.com https://browser-intake-datadoghq.com https://*.browser-intake-datadoghq.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*${localSupabaseConnectSrc()};
+              connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://vitals.vercel-analytics.com https://us.i.posthog.com https://us-assets.i.posthog.com https://browser-intake-datadoghq.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*${localSupabaseConnectSrc()};
               media-src 'self' data:;
               worker-src 'self' blob:;
               frame-src 'self' https://*.supabase.co blob: data:;
