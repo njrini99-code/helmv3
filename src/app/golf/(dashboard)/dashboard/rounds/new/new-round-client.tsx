@@ -1950,6 +1950,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         redirectToCompletedRound();
         return;
       }
+      // A hole failed validation and nothing was written (A3). `result.error`
+      // is the bare key 'hole_invalid', not a sentence — FairwaySaveRoundModal
+      // renders whatever this throws verbatim, so surface the server's own
+      // human message instead of the raw code.
+      if (result.error === 'hole_invalid' && 'message' in result) {
+        throw new Error(result.message);
+      }
       throw new Error(result.error || 'Failed to save round. Please try again.');
     }
 

@@ -190,3 +190,20 @@
   `src/app/golf/(dashboard)/dashboard/rounds/`,
   `src/components/fairway/pages/rounds-recover/`, and
   `src/hooks/golf/__tests__/` (142 files, 1300 tests, 0 failures).
+
+## 2026-09-02 (follow-up) — hole_invalid client-surfacing wiring
+
+- Added `new-round-client.hole-invalid.test.ts` and
+  `continue-round-client.hole-invalid.test.ts`: each proves the
+  `handleSaveForLater` handler in its file branches on
+  `result.error === 'hole_invalid'` and surfaces `result.message` BEFORE
+  the pre-existing generic fallback throw/toast that would otherwise render
+  the bare `'hole_invalid'` key to the player — source-inspection contracts,
+  matching the sibling `round-missing`/`recovery` tests for these two files.
+- Caught by advisor review of the A1-A6 cluster before it was reported done:
+  `savePartialRound`'s new `hole_invalid` result (A3) was not yet
+  special-cased at either "Save & Exit" call site, reproducing the exact
+  defect class P1 fixed for `round_missing`.
+- Verification: both new tests plus the full `rounds/new/` and
+  `rounds/continue/` suites (6 files, 27 tests, 0 failures); `npm run
+  typecheck` (0); `npm run lint` (0).

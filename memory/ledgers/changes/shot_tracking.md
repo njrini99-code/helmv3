@@ -285,3 +285,36 @@
   today, five reads that could bounce a validly signed-in player mid-round,
   and two telemetry outcomes mis-tiered as nothing-failed 'info' when they
   represent loss or a stuck player.
+
+## 2026-09-02 (follow-up) — hole_invalid reached two clients as a bare key
+
+- Change: `handleSaveForLater` in both `new-round-client.tsx` and
+  `continue-round-client.tsx` now branches on `result.error === 'hole_invalid'`
+  and surfaces `result.message` — the human sentence `savePartialRound`
+  already builds — instead of falling through to the generic fallback that
+  throws/toasts `result.error` (the bare key `'hole_invalid'`) verbatim.
+  `new-round-client.tsx`'s throw reaches `FairwaySaveRoundModal`
+  (`src/components/fairway/pages/rounds-new/FairwaySaveRoundModal.tsx`),
+  which renders `err.message` directly in the exit-round sheet;
+  `continue-round-client.tsx`'s toast rendered `result.error` the same way.
+- Why: `hole_invalid` is a new result shape this same review pass introduced
+  (A3, above); it was not yet special-cased at either "Save & Exit" call site
+  the way `conflict`/`round_missing`/the completed-round codes already are,
+  reproducing the exact defect class 536f99d39/6a7577c71's P1 fixed for
+  `round_missing` rendering as the literal string "round_missing". Caught by
+  advisor review before this cluster was reported done, not by a user report.
+  The other `savePartialRound` call sites in both files
+  (`persistRoundStart`, `persistCompletedHole`, the per-shot autosave, the
+  queued follow-up save) were checked and are NOT affected: they either
+  cannot reach `hole_invalid` by construction (`persistRoundStart` always
+  sends `holes: []`) or already show a fixed generic sentence / a
+  diagnostic string with a prefix rather than the bare `result.error`
+  verbatim.
+- Tests:
+  `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.hole-invalid.test.ts`,
+  `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.hole-invalid.test.ts`
+  — source-inspection wiring contracts, matching the sibling
+  `recovery`/`round-missing` tests for these two files.
+- Verified: `npm run typecheck` (0), `npm run lint` (0), and
+  `npx vitest run` over both `rounds/new/` and `rounds/continue/` test
+  directories (6 files, 27 tests, 0 failures).

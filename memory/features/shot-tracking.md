@@ -96,6 +96,18 @@ message is humanized the same way ("Hole 4, shot 1: distance to the hole must
 be 1000 yards or less.", `code: 'hole_invalid'`) instead of the raw
 "Invalid round data: holes.3.shots.0.distanceToHoleBefore — ..." string.
 
+`result.error` on the `hole_invalid` result is the bare key `'hole_invalid'`,
+not a sentence — same shape as `'round_missing'`, `'conflict'`, `'busy'`.
+Both "Save & Exit" flows (`new-round-client.tsx`'s and
+`continue-round-client.tsx`'s `handleSaveForLater`) branch on
+`result.error === 'hole_invalid'` and surface `result.message` instead,
+matching the class of defect P1 fixed for `round_missing` — a client that
+throws/toasts `result.error` unconditionally renders the literal key. The
+mid-round autosave paths (`persistCompletedHole`, the per-shot autosave in
+`new-round-client.tsx`) were already safe: they show a fixed generic
+sentence or a prefixed diagnostic string on any unrecognized code rather than
+the bare key verbatim, so they were left as-is.
+
 ## Primary Entry Points
 
 ### Routes

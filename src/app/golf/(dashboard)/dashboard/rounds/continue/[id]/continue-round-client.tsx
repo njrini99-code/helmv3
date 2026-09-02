@@ -1149,6 +1149,13 @@ export default function ContinueRoundClient({
           redirectToCompletedRound();
           return;
         }
+        // A hole failed validation and nothing was written (A3). `result.error`
+        // is the bare key 'hole_invalid', not a sentence — surface the
+        // server's own human message instead of the raw code.
+        if (result.error === 'hole_invalid' && 'message' in result) {
+          showToast(result.message, 'error');
+          return;
+        }
         showToast(result.error || 'Failed to save round. Please try again.', 'error');
         return;
       }
