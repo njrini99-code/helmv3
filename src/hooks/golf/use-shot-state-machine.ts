@@ -107,7 +107,6 @@ export type ShotAction =
   | { type: 'SET_EDIT_FORM_DATA'; payload: EditFormData }
   | { type: 'EDIT_SAVE_START' }
   | { type: 'EDIT_SAVE_COMPLETE'; payload: { updatedHistory: ShotRecord[] } }
-  | { type: 'RECONCILE_MISSING_SHOT'; payload: { newHistory: ShotRecord[] } }
   | { type: 'EDIT_SAVE_ERROR'; payload: string }
   | { type: 'SHOW_DELETE_CONFIRM' }
   | { type: 'HIDE_DELETE_CONFIRM' }
@@ -361,28 +360,6 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         ...state,
         shotHistory: updatedHistory,
         currentShot: updatedHistory.length + 1,
-        ...restored,
-        ...CLEAR_INPUT,
-        editSaving: false,
-        showEditModal: false,
-        editingShot: null,
-        editFormData: null,
-        editError: null,
-        showDeleteConfirm: false,
-      };
-    }
-
-    // The server is authoritative when a local shot ID no longer exists. This
-    // is a reconciliation, not a successful edit: close the stale editor,
-    // restore the input state from the remaining history, and never surface a
-    // false "Shot not found" failure to the player.
-    case 'RECONCILE_MISSING_SHOT': {
-      const { newHistory } = action.payload;
-      const restored = computeRestoredState(newHistory, state.holeYardage);
-      return {
-        ...state,
-        shotHistory: newHistory,
-        currentShot: newHistory.length + 1,
         ...restored,
         ...CLEAR_INPUT,
         editSaving: false,

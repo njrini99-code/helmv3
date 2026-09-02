@@ -93,6 +93,10 @@ export interface FairwayNewRoundEntryProps {
 
   setupData: FairwaySetupForm;
   setSetupData: Dispatch<SetStateAction<FairwaySetupForm>>;
+  /** B7: today's local day (computed on mount to avoid a hydration
+   *  mismatch) — caps the round-date input so a typo/scroll cannot pick a
+   *  future date; `undefined` before the client-side effect resolves it. */
+  maxRoundDate?: string;
   saveCourseChecked: boolean;
   onToggleSaveCourse: () => void;
 
@@ -361,6 +365,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   const {
     setupData,
     setSetupData,
+    maxRoundDate,
     savedCourses,
     loadingSavedCourses,
     filteredSavedCourses,
@@ -849,6 +854,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                       type="date"
                       value={setupData.roundDate}
                       onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
+                      max={maxRoundDate}
                       className={fwInputCls}
                       required
                     />

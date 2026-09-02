@@ -44,6 +44,9 @@ import { expectRows } from '@/lib/supabase/expect-rows';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Database, Json } from '@/lib/types/database';
 import { getQualifierAutomaticTransition } from '@/lib/golf/qualifier-lifecycle';
+import { resolveQualifierRoundNumber } from '@/lib/golf/qualifier-round-number';
+import { assertHolesPlayedMatchesPayload } from '@/lib/golf/holes-played-assert';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import {
   createHelmFlightRecorder,
   recordRescuedStepOutcome,
@@ -490,6 +493,122 @@ function describeHoleValidationFailure(
   }
 
   return described;
+}
+
+/**
+ * Human-readable labels for the hole/shot fields most likely to fail
+ * validation with a raw Zod message a player would never understand (A3,
+ * 2026-09-02). Fields not listed fall back to a spaced-out camelCase guess.
+ */
+const HOLE_FIELD_LABELS: Readonly<Record<string, string>> = {
+  score: 'score',
+  putts: 'putts',
+  par: 'par',
+  yardage: 'yardage',
+  penaltyStrokes: 'penalty strokes',
+  distanceToHoleBefore: 'distance to the hole',
+  distanceToHoleAfter: 'distance to the hole',
+  shotDistance: 'shot distance',
+  puttDistanceFeet: 'putt distance',
+};
+
+/** Fields whose min/max constraint below is expressed in yards. */
+const HOLE_FIELD_YARD_UNITS: ReadonlySet<string> = new Set(['distanceToHoleBefore', 'shotDistance']);
+
+type HoleIssueLike = { code?: string; message: string; maximum?: unknown; minimum?: unknown };
+
+/**
+ * One human sentence for a single field-level Zod issue inside a hole (or
+ * one of its shots) — "Hole 4, shot 1: distance to the hole must be 1000
+ * yards or less." instead of a dotted path and the library's raw message.
+ *
+ * Shared by savePartialRound's `hole_invalid` result and
+ * submitGolfRoundComprehensive's validation-failure message (A3) — both
+ * schemas use the same `holes.<n>` / `holes.<n>.shots.<m>.<field>` shape.
+ */
+function humanizeHoleFieldIssue(
+  path: readonly PropertyKey[],
+  issue: HoleIssueLike,
+): { hole: number | null; field: string; message: string } {
+  const parts = path.map(String);
+  const holeIndex = parts[0] === 'holes' && /^\d+$/.test(parts[1] ?? '') ? Number(parts[1]) : null;
+  const hole = holeIndex != null ? holeIndex + 1 : null;
+  const shotsAt = parts.indexOf('shots');
+  const shotNumber = shotsAt !== -1 && /^\d+$/.test(parts[shotsAt + 1] ?? '')
+    ? Number(parts[shotsAt + 1]) + 1
+    : null;
+  const fieldKey = parts[parts.length - 1] ?? '';
+  const field = hole != null ? (parts.slice(2).join('.') || fieldKey) : formatIssuePath(path);
+  const label = HOLE_FIELD_LABELS[fieldKey]
+    ?? fieldKey.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
+
+  let sentence: string;
+  const max = issue.maximum;
+  const min = issue.minimum;
+  if (issue.code === 'too_big' && typeof max === 'number') {
+    const unit = HOLE_FIELD_YARD_UNITS.has(fieldKey) ? ' yards' : '';
+    sentence = `${label} must be ${max}${unit} or less`;
+  } else if (issue.code === 'too_small' && typeof min === 'number') {
+    sentence = `${label} must be at least ${min}`;
+  } else {
+    sentence = `${label} — ${issue.message}`;
+  }
+
+  const location = shotNumber != null && hole != null
+    ? `Hole ${hole}, shot ${shotNumber}`
+    : hole != null
+      ? `Hole ${hole}`
+      : (formatIssuePath(path) || '(round)');
+
+  return { hole, field, message: `${location}: ${sentence}.` };
+}
+
+/**
+ * The structured `{hole, field, message}` for the FIRST hole the salvage
+ * path blanked (A3). Two shapes reach here:
+ *
+ * 1. A direct deep-path issue (`holes.2.score`, `holes.2.shots.0.distanceToHoleBefore`)
+ *    — Zod already attributed the failure to a specific field; humanize it
+ *    in place.
+ * 2. A collapsed element-level issue (`holes.2`, a bare "Invalid input") —
+ *    the wrapper union/nullable/refine swallowed the real cause, so
+ *    re-validate the element alone against `partialHoleSchema` to recover it
+ *    (the same recovery `describeHoleValidationFailure` performs for
+ *    logging).
+ *
+ * Returns null only when no reported issue actually points at a hole array
+ * element (the unsalvageable branch already handles that case).
+ */
+function describeHoleInvalidDetail(
+  issues: readonly (ZodIssueLike & { code?: string; maximum?: unknown; minimum?: unknown })[],
+  holes: unknown,
+): { hole: number; field: string; message: string } | null {
+  if (!Array.isArray(holes)) return null;
+  for (const issue of issues) {
+    const pathStr = formatIssuePath(issue.path);
+
+    if (/^holes\.\d+\./.test(pathStr)) {
+      const described = humanizeHoleFieldIssue(issue.path, issue);
+      if (described.hole != null) {
+        return { hole: described.hole, field: described.field, message: described.message };
+      }
+      continue;
+    }
+
+    const elementOnly = /^holes\.(\d+)$/.exec(pathStr);
+    if (!elementOnly) continue;
+    const index = Number(elementOnly[1]);
+    const hole: unknown = holes[index];
+    if (hole == null) continue;
+    const inner = partialHoleSchema.safeParse(hole);
+    if (inner.success) continue;
+    const innerIssue = inner.error.issues[0];
+    if (!innerIssue) continue;
+    const described = humanizeHoleFieldIssue(['holes', index, ...innerIssue.path], innerIssue);
+    if (described.hole == null) continue;
+    return { hole: described.hole, field: described.field, message: described.message };
+  }
+  return null;
 }
 
 const shotUpdateSchema = z.object({
@@ -1539,17 +1658,33 @@ async function submitGolfRoundComprehensiveImpl(
     const zodResult = golfRoundComprehensiveSchema.safeParse(data);
     if (!zodResult.success) {
       const firstIssue = zodResult.error.issues[0];
-      const detail = `${firstIssue?.path.join('.')} — ${firstIssue?.message}`;
-      void logServerError(`Round submit validation failed: ${detail}`, {
+      // Diagnostic-only raw path, kept for the log line — never shown to a
+      // player (see A3, 2026-09-02): "Invalid round data: holes.3.shots.0.
+      // distanceToHoleBefore — Number must be less than or equal to 1000"
+      // told the player nothing they could act on, and looked like a
+      // developer error rather than "fix this one field and resubmit".
+      const rawDetail = `${firstIssue?.path.join('.')} — ${firstIssue?.message}`;
+      const described = firstIssue
+        ? humanizeHoleFieldIssue(firstIssue.path, firstIssue)
+        : { hole: null, field: '', message: rawDetail };
+      void logServerError(`Round submit validation failed: ${rawDetail}`, {
         action: 'submitGolfRoundComprehensive',
         featureArea: 'shot_tracking',
         extra: {
           courseName: data.courseName,
           holesCount: data.holes?.length,
           zodErrors: zodResult.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`),
+          hole: described.hole,
+          field: described.field,
         },
       }, 'warning');
-      return { success: false, error: `Invalid round data: ${detail}` };
+      // A hole/shot-field failure is recoverable with an edit (go fix that
+      // field and resubmit) — `hole_invalid` matches savePartialRound's own
+      // code for the same class of problem, so a client can branch on one
+      // signal across both actions rather than pattern-matching prose.
+      return described.hole != null
+        ? { success: false, error: described.message, code: 'hole_invalid' }
+        : { success: false, error: described.message };
     }
 
     const incompleteHole = data.holes.find(
@@ -1941,6 +2076,27 @@ async function submitGolfRoundComprehensiveImpl(
       up_and_down: hole.scrambleAttempt ? hole.scrambleMade : null,
       sand_save: hole.sandSaveAttempt ? hole.sandSaveMade : null,
     }));
+
+    // A4: the RPC treats a missing/mismatched holes_played as trust-the-
+    // payload ("accepts any count when holes_played is omitted") rather than
+    // a refusal — assert it here, before either RPC call below, so a future
+    // change that decouples `roundData.holes_played` from `holesPayload`
+    // (a client-supplied count, a renamed/dropped field at the call site)
+    // fails loudly at the TS layer with an actionable message instead of
+    // silently trusting whatever was supplied.
+    const holesPlayedCheck = assertHolesPlayedMatchesPayload(roundData.holes_played, holesPayload.length);
+    if (!holesPlayedCheck.ok) {
+      void logServerError(`Round submit refused: ${holesPlayedCheck.error}`, {
+        action: 'submitGolfRoundComprehensive',
+        featureArea: 'shot_tracking',
+        extra: {
+          courseName: data.courseName,
+          holesPlayed: roundData.holes_played,
+          holesPayloadLength: holesPayload.length,
+        },
+      }, 'error');
+      return { success: false, error: holesPlayedCheck.error };
+    }
 
     const shotsPayload = data.holes.map(hole => ({
       hole_number: hole.holeNumber,
@@ -5980,14 +6136,56 @@ export interface PartialRoundData {
  * the mutation-heaviest golf path. Renamed to *Impl and re-exported under
  * the original name so no caller changes.
  */
+export interface SavePartialRoundOptions {
+  /**
+   * Explicit recovery/reuse intent for the no-id branch (A1, 2026-09-02).
+   * Set ONLY by restore flows that are reconnecting a player to progress
+   * they already have on the server — New Round's recovered-snapshot
+   * restore (`handleRestoreRecovery`) and FairwayRecoverRound's partial
+   * restore — never by `persistRoundStart`'s plain "begin a new round" call,
+   * and never propagated into the round_missing re-create retry inside
+   * `writeRoundRecreatingIfMissing` (that retry's intent is CREATE, not
+   * reuse; see that module's own comment). Without this flag the no-id
+   * branch reuses a course/date-matched round only when it is an empty
+   * shell — see `isEmptyShellRound`.
+   */
+  allowReuse?: boolean;
+}
+
+/**
+ * A hole in the payload failed validation and is NOT durable on the server
+ * (A3, 2026-09-02): salvaging it (as the RPC/reuse paths otherwise do) would
+ * silently drop real player-entered data with no trace, while the save still
+ * reports success. Returned instead of a write, so the caller can surface
+ * exactly which hole/field needs fixing rather than discovering the gap only
+ * at submit, via a raw Zod path string.
+ */
+export interface SavePartialRoundHoleInvalid {
+  success: false;
+  error: 'hole_invalid';
+  code: 'hole_invalid';
+  hole: number;
+  field: string;
+  message: string;
+}
+
+export type SavePartialRoundResult =
+  | ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>
+  | SavePartialRoundHoleInvalid;
+
 async function savePartialRoundImpl(
   data: PartialRoundData,
-  existingRoundId?: string
-): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
+  existingRoundId?: string,
+  options?: SavePartialRoundOptions,
+): Promise<SavePartialRoundResult> {
   // Hole numbers the salvage path below could not parse and therefore blanked.
   // Checked against durable server state before the destructive RPC runs — see
   // the guard beside the save_partial_round_atomic call.
   let salvagedAwayHoleNumbers: number[] = [];
+  // Structured {hole, field, message} for the FIRST salvaged hole (A3,
+  // 2026-09-02) — built once, while the original Zod issues are on hand, and
+  // used only if that hole turns out to be non-durable on the target round.
+  let firstSalvagedHoleDetail: { hole: number; field: string; message: string } | null = null;
   try {
     // A browser may retain an older JS bundle across a deployment. Those older
     // bundles built this array sparsely; Server Action transport preserves the
@@ -6100,6 +6298,7 @@ async function savePartialRoundImpl(
       );
 
       salvagedAwayHoleNumbers = droppedHoles;
+      firstSalvagedHoleDetail = describeHoleInvalidDetail(validated.error.issues, data.holes);
       data = { ...data, holes: salvagedHoles } as PartialRoundData;
     }
 
@@ -6234,44 +6433,64 @@ async function savePartialRoundImpl(
     // by a direct database write.
     //
     // Deriving the number costs one read and removes the state entirely.
+    //
+    // A2 (2026-09-02): this used to be `max(completed) + 1`, considering only
+    // COMPLETED rounds — so a lost-id retry on an already-STARTED qualifier
+    // round re-derived the SAME number that round already holds and the
+    // INSERT below failed 23505 against
+    // golf_rounds_qualifier_player_round_number_uq, repeatably (deriving
+    // again after the failure reproduces the same number). Shared with
+    // getNextQualifierRoundNumber via resolveQualifierRoundNumber, which
+    // checks for an in-progress round FIRST and returns it for reuse instead
+    // of deriving a fresh number to insert with — see that module's header.
     let resolvedQualifierRoundNumber = data.qualifierRoundNumber ?? null;
+    // Set when derivation found the player's OWN already-started round for
+    // this exact (qualifier, number) slot — the no-id branch below reuses it
+    // directly rather than running the course/date heuristic, and this reuse
+    // is safe regardless of emptiness (A1's gate) because the slot is
+    // uniquely keyed, not a recency guess.
+    let qualifierActiveRoundId: string | null = null;
     if (data.qualifierId && !resolvedQualifierRoundNumber) {
-      const { data: priorRounds, error: priorRoundsError } = await supabase
-        .from('golf_rounds')
-        .select('qualifier_round_number')
-        .eq('qualifier_id', data.qualifierId)
-        .eq('player_id', player.id)
-        .eq('status', 'completed');
+      const derived = await resolveQualifierRoundNumber(supabase, {
+        qualifierId: data.qualifierId,
+        playerId: player.id,
+      });
 
-      if (priorRoundsError) {
-        // A failed read must not masquerade as "no prior rounds": deriving
-        // number 1 from an outage could claim a slot the player already
-        // holds. Skip derivation — the save proceeds numberless exactly as
-        // before this feature, and the next auto-save retries the read.
-        void logServerEvent(
-          'Auto-save could not read prior qualifier rounds; skipping round-number derivation this save',
-          {
-            action: 'savePartialRound.deriveQualifierRoundNumber',
-            featureArea: 'shot_tracking',
-            playerId: player.id,
-            extra: { qualifierId: data.qualifierId, errorCode: priorRoundsError.code },
-          },
-          'warning',
-        );
+      if (!derived.success) {
+        if (derived.transient) {
+          // A failed read must not masquerade as "no prior rounds": deriving
+          // number 1 from an outage could claim a slot the player already
+          // holds. Skip derivation — the save proceeds numberless exactly as
+          // before this feature, and the next auto-save retries the read.
+          void logServerEvent(
+            'Auto-save could not read prior qualifier rounds; skipping round-number derivation this save',
+            {
+              action: 'savePartialRound.deriveQualifierRoundNumber',
+              featureArea: 'shot_tracking',
+              playerId: player.id,
+              extra: { qualifierId: data.qualifierId },
+            },
+            'warning',
+          );
+        } else {
+          // A real business-rule stop (no configured slot free, or more than
+          // one in-progress round already exists) — inserting numberless
+          // here would only move the deadlock one step later, at submit.
+          return { success: false, error: derived.error, code: derived.code };
+        }
       } else {
-        const usedNumbers = (priorRounds ?? [])
-          .map(r => r.qualifier_round_number)
-          .filter((n): n is number => typeof n === 'number');
-
-        resolvedQualifierRoundNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
+        resolvedQualifierRoundNumber = derived.roundNumber;
+        qualifierActiveRoundId = derived.activeRoundId ?? null;
 
         void logServerEvent(
-          `Auto-save derived a missing qualifier round number (${resolvedQualifierRoundNumber})`,
+          derived.activeRoundId
+            ? `Auto-save found the player's already-started qualifier round (${derived.roundNumber})`
+            : `Auto-save derived a missing qualifier round number (${derived.roundNumber})`,
           {
             action: 'savePartialRound.deriveQualifierRoundNumber',
             featureArea: 'shot_tracking',
             playerId: player.id,
-            extra: { qualifierId: data.qualifierId, usedNumbers },
+            extra: { qualifierId: data.qualifierId, activeRoundId: derived.activeRoundId ?? null },
           },
           'info',
         );
@@ -6456,8 +6675,193 @@ async function savePartialRoundImpl(
     }
 
     let roundId: string;
+    // B9: `round` (below) is scoped to the no-id branch's own block and does
+    // not survive to the shared holes/shots upsert + final-return code past
+    // it — this outer-scoped twin carries its `updated_at` that far so the
+    // no-id create/reuse success path can return the real value instead of
+    // a hard-coded `undefined`.
+    let roundUpdatedAtForResponse: string | null | undefined;
+
+    /**
+     * Returns true when writing this payload to `targetRoundId` would replace a
+     * hole the server already holds a SCORE for with a null-score slot.
+     *
+     * Both persistence branches need this, and until 2026-09-01 only one had
+     * it, and only for SALVAGED holes. The RPC branch is a REPLACE (delete +
+     * rebuild); the no-id branch can REUSE another in_progress round matched
+     * on course + date + qualifier and then UPSERT `holesPayload` on
+     * (round_id, hole_number) — and a null-score hole in that payload nulls
+     * the durable row exactly as the delete would have, whether it went null
+     * because validation salvaged it OR because it is simply a hole this
+     * save's payload never reached (a genuinely different round's progress).
+     *
+     * `holeNumbers` is caller-supplied rather than always `salvagedAwayHoleNumbers`
+     * (A1, 2026-09-02): the RPC/existingRoundId path still checks only the
+     * salvaged set, because that path also legitimately blanks a hole on
+     * purpose when the player reopens it by editing/deleting its final holed
+     * shot — an intentional, same-round null that must NOT be refused. The
+     * no-id REUSE path has no such legitimate reason to null a durable hole
+     * (it is either restoring the SAME progress the round already holds, or
+     * it should never have been allowed to reuse this round at all), so it
+     * passes every null-score hole number in `holesPayload`, not only the
+     * salvaged ones.
+     *
+     * A failed read is treated as "assume there IS something to lose".
+     * Guessing the other way is how the data disappears.
+     */
+    const holesAtRiskOfErasure = async (
+      targetRoundId: string,
+      holeNumbers: number[],
+      recorder: { traceId: string } | null,
+      path: 'existing_round' | 'reuse',
+    ): Promise<boolean> => {
+      if (holeNumbers.length === 0) return false;
+
+      const { data: durable, error: durableErr } = await supabase
+        .from('golf_holes')
+        .select('hole_number')
+        .eq('round_id', targetRoundId)
+        .in('hole_number', holeNumbers)
+        .not('score', 'is', null);
+
+      const atRisk = durableErr
+        ? holeNumbers
+        : (durable ?? []).map((h: { hole_number: number }) => h.hole_number);
+
+      if (atRisk.length === 0) return false;
+
+      await logServerError(
+        `Auto-save refused: writing hole(s) ${atRisk.join(', ')} as unscored would have erased a scored hole already saved`,
+        {
+          action: 'savePartialRound.salvageGuard',
+          featureArea: 'shot_tracking',
+          roundId: targetRoundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          helmTraceId: recorder?.traceId,
+          extra: {
+            courseName: data.courseName,
+            currentHole: data.currentHole,
+            candidateHoleNumbers: holeNumbers,
+            atRisk,
+            durableReadFailed: Boolean(durableErr),
+            path,
+          },
+        },
+        'error',
+      );
+      return true;
+    };
+
+    /** Back-compat name for the RPC/existingRoundId path — salvaged holes only. */
+    const salvageWouldEraseDurableHole = (
+      targetRoundId: string,
+      recorder: { traceId: string } | null,
+    ): Promise<boolean> =>
+      holesAtRiskOfErasure(targetRoundId, salvagedAwayHoleNumbers, recorder, 'existing_round');
+
+    /**
+     * A round the no-id heuristic below matches is safe to REUSE unconditionally
+     * only when nothing durable could be lost: no hole with a recorded score,
+     * and no shot rows at all. Anything else needs explicit reuse intent (A1).
+     *
+     * A failed read is treated as "assume it is NOT empty" — the same
+     * fail-safe direction as `holesAtRiskOfErasure` above; guessing the other
+     * way is how a real round gets silently merged into.
+     */
+    const isEmptyShellRound = async (targetRoundId: string): Promise<boolean> => {
+      const [scoredHoleRead, shotRead] = await Promise.all([
+        supabase
+          .from('golf_holes')
+          .select('id')
+          .eq('round_id', targetRoundId)
+          .not('score', 'is', null)
+          .limit(1),
+        supabase
+          .from('golf_shots')
+          .select('id')
+          .eq('round_id', targetRoundId)
+          .limit(1),
+      ]);
+      if (scoredHoleRead.error || shotRead.error) return false;
+      return (scoredHoleRead.data?.length ?? 0) === 0 && (shotRead.data?.length ?? 0) === 0;
+    };
+
+    /**
+     * A3 (2026-09-02): a salvaged hole that is NOT durable on the round this
+     * save will actually write to must not be silently dropped while the
+     * save reports success — the player believes it saved, keeps playing,
+     * and submit later fails on a hole the server never received. Called
+     * BEFORE any write (the parent round row included) for both the
+     * existingRoundId/RPC path and the no-id branch, with `targetRoundId`
+     * being the round that write is about to touch — `null` for a brand-new
+     * INSERT, which trivially has no durable data for any hole.
+     *
+     * When some (not all) salvaged holes ARE durable there, this returns
+     * null and the existing `holesAtRiskOfErasure` guard further down keeps
+     * handling that case exactly as before (refuse the whole write, retry) —
+     * "keep true salvage as is" from the item's own description.
+     *
+     * A failed durability read defaults to "assume durable" (defer to the
+     * old flow) rather than to "assume invalid": `holesAtRiskOfErasure`'s own
+     * fail-safe (assume AT RISK) still guards the actual write either way, so
+     * this default only affects which message the player sees on a read
+     * failure, never whether data can be lost.
+     */
+    const checkNonDurableSalvageBeforeWrite = async (
+      targetRoundId: string | null,
+    ): Promise<SavePartialRoundHoleInvalid | null> => {
+      if (salvagedAwayHoleNumbers.length === 0 || !firstSalvagedHoleDetail) return null;
+
+      let anyDurable = false;
+      if (targetRoundId) {
+        const { data: durable, error: durableErr } = await supabase
+          .from('golf_holes')
+          .select('hole_number')
+          .eq('round_id', targetRoundId)
+          .in('hole_number', salvagedAwayHoleNumbers)
+          .not('score', 'is', null);
+        anyDurable = durableErr ? true : (durable?.length ?? 0) > 0;
+      }
+      if (anyDurable) return null;
+
+      void logServerError(
+        `Auto-save refused: hole ${firstSalvagedHoleDetail.hole} failed validation and has no durable server row — not salvaging silently`,
+        {
+          action: 'savePartialRound.holeInvalid',
+          featureArea: 'shot_tracking',
+          roundId: targetRoundId ?? undefined,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          extra: {
+            courseName: data.courseName,
+            currentHole: data.currentHole,
+            hole: firstSalvagedHoleDetail.hole,
+            field: firstSalvagedHoleDetail.field,
+            salvagedAwayHoleNumbers,
+          },
+        },
+        'warning',
+      );
+
+      return {
+        success: false,
+        error: 'hole_invalid',
+        code: 'hole_invalid',
+        hole: firstSalvagedHoleDetail.hole,
+        field: firstSalvagedHoleDetail.field,
+        message: firstSalvagedHoleDetail.message,
+      };
+    };
 
     if (existingRoundId) {
+      // A3: before anything is written, refuse silent data loss on a
+      // salvaged hole this round has no durable row for.
+      const holeInvalid = await checkNonDurableSalvageBeforeWrite(existingRoundId);
+      if (holeInvalid) return holeInvalid;
+
       const flightRecorder = await createSafeFlightRecorder({
         workflow: 'golf.round.autosave',
         roundId: existingRoundId,
@@ -6521,45 +6925,10 @@ async function savePartialRoundImpl(
       // holes have nothing stored, there is nothing to lose and the salvage
       // proceeds exactly as before, which keeps the original fix's benefit:
       // one bad hole must not discard seventeen good ones.
-      if (salvagedAwayHoleNumbers.length > 0 && existingRoundId) {
-        const { data: durable, error: durableErr } = await supabase
-          .from('golf_holes')
-          .select('hole_number')
-          .eq('round_id', existingRoundId)
-          .in('hole_number', salvagedAwayHoleNumbers)
-          .not('score', 'is', null);
-
-        // A failed read is treated as "assume there IS something to lose".
-        // Guessing the other way is how the data disappears.
-        const atRisk = durableErr
-          ? salvagedAwayHoleNumbers
-          : (durable ?? []).map((h: { hole_number: number }) => h.hole_number);
-
-        if (atRisk.length > 0) {
-          void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'salvage_would_erase' });
-          void flightRecorder.finalize('warning');
-          await logServerError(
-            `Auto-save refused: salvaging hole(s) ${atRisk.join(', ')} would have erased a scored hole already saved`,
-            {
-              action: 'savePartialRound.salvageGuard',
-              featureArea: 'shot_tracking',
-              roundId: existingRoundId,
-              playerId: player.id,
-              userId: user.id,
-              userEmail: user.email,
-              helmTraceId: flightRecorder.traceId,
-              extra: {
-                courseName: data.courseName,
-                currentHole: data.currentHole,
-                salvagedAwayHoleNumbers,
-                atRisk,
-                durableReadFailed: Boolean(durableErr),
-              },
-            },
-            'error',
-          );
-          return { success: false, error: 'retry' };
-        }
+      if (await salvageWouldEraseDurableHole(existingRoundId, flightRecorder)) {
+        void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'salvage_would_erase' });
+        void flightRecorder.finalize('warning');
+        return { success: false, error: 'retry' };
       }
 
       void flightRecorder.start('db.save_partial_round_atomic');
@@ -6756,7 +7125,15 @@ async function savePartialRoundImpl(
       // If the course can't even be resolved to an id there's no safe way
       // to disambiguate, so skip the heuristic and always insert fresh.
       let existingRound: { id: string } | null = null;
-      if (resolvedCourseId) {
+      // A2: the player's own already-started round for this exact
+      // (qualifier, round number) slot is a uniquely-keyed, always-safe
+      // reuse target — golf_rounds_qualifier_player_round_number_uq is NOT
+      // scoped to status='in_progress', so at most one such row can exist.
+      // Skip the course/date heuristic (and its A1 emptiness gate, below —
+      // this is not a recency guess) and go straight to it.
+      if (qualifierActiveRoundId) {
+        existingRound = { id: qualifierActiveRoundId };
+      } else if (resolvedCourseId) {
         let existingRoundQuery = supabase
           .from('golf_rounds')
           .select('id')
@@ -6767,18 +7144,48 @@ async function savePartialRoundImpl(
         existingRoundQuery = data.qualifierId
           ? existingRoundQuery.eq('qualifier_id', data.qualifierId)
           : existingRoundQuery.is('qualifier_id', null);
-        existingRoundQuery = data.qualifierRoundNumber != null
-          ? existingRoundQuery.eq('qualifier_round_number', data.qualifierRoundNumber)
+        // Matched against the RESOLVED number (A2), not the raw incoming
+        // one: a client relying on server-side derivation sends no number at
+        // all, and matching that raw null against a round that already
+        // carries a real derived number never found it — the mechanical
+        // cause of the 23505 loop this fix closes.
+        existingRoundQuery = resolvedQualifierRoundNumber != null
+          ? existingRoundQuery.eq('qualifier_round_number', resolvedQualifierRoundNumber)
           : existingRoundQuery.is('qualifier_round_number', null);
 
         const { data: candidateRound } = await existingRoundQuery
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        existingRound = candidateRound;
+
+        // A1: a course/date/qualifier match is a HEURISTIC, not a unique
+        // key — two legitimate in-progress rounds can share all of it (a
+        // player re-playing the same course the same day, or an unrelated
+        // practice round with no qualifier context). Reusing one
+        // unconditionally let a brand-new round's mostly-null holes payload
+        // silently overwrite the OTHER round's already-scored holes via the
+        // upsert below, and the orphan trim could delete them outright.
+        // Reuse only when the matched round is an EMPTY SHELL (the genuine
+        // lost-id-on-a-fresh-round case) or the caller explicitly passed
+        // recovery/reuse intent — set by the restore flows in New Round and
+        // FairwayRecoverRound, never by persistRoundStart.
+        if (candidateRound && (options?.allowReuse || await isEmptyShellRound(candidateRound.id))) {
+          existingRound = candidateRound;
+        }
       }
 
-      let round: { id: string } | null = null;
+      // A3: before any write — the round row included — refuse silent data
+      // loss on a salvaged hole. `existingRound` is exactly the round (if
+      // any) about to be updated or reused; `null` means this save is about
+      // to INSERT a brand-new round, which trivially has no durable row for
+      // any hole.
+      const holeInvalid = await checkNonDurableSalvageBeforeWrite(existingRound?.id ?? null);
+      if (holeInvalid) return holeInvalid;
+
+      // `updated_at` is carried through so the no-id create/reuse success
+      // path below can return it (B9) — both queries already `.select()`
+      // the full row; the prior narrower type just discarded the column.
+      let round: { id: string; updated_at?: string | null } | null = null;
       if (existingRound) {
         // Identity columns (player_id, team_id, qualifier_id, qualifier_round_number)
         // are set on INSERT and never change for an in-progress round. Stripping
@@ -6831,6 +7238,23 @@ async function savePartialRoundImpl(
           return { success: true, data: { roundId: existingRound.id } };
         }
         round = updatedRound;
+
+        // Broadened durability check (A1) — NOT the salvage-only guard the
+        // RPC/existingRoundId path uses. A REUSED round (found by the
+        // heuristic above, or the qualifier-slot match) has no legitimate
+        // reason to receive a null score for a hole it already has a
+        // durable score for: unlike a continuing session, this path never
+        // needs to support the "reopen a hole by deleting its final shot"
+        // flow, because that flow always already knows its round id. So
+        // every null-score hole in this save's payload is checked, not just
+        // the ones validation salvaged — 'retry' is the same recoverable
+        // signal, and the next save re-sends full state.
+        const nullScoreHoleNumbers = holesPayload
+          .filter((h) => h.score == null)
+          .map((h) => h.hole_number);
+        if (await holesAtRiskOfErasure(existingRound.id, nullScoreHoleNumbers, null, 'reuse')) {
+          return { success: false, error: 'retry' };
+        }
       }
 
       if (!round) {
@@ -6871,6 +7295,7 @@ async function savePartialRoundImpl(
       }
 
       roundId = round.id;
+      roundUpdatedAtForResponse = round.updated_at;
 
       // Upsert holes and shots — feedback_golf_no_destructive_writes:
       // never delete the user's existing data before the replacement is
@@ -6996,11 +7421,19 @@ async function savePartialRoundImpl(
     if (holesPayload.length > 0) {
       const keepHoleNumbers = holesPayload.map(h => h.hole_number);
 
+      // A1: never delete a durable scored hole, even one this payload never
+      // named at all (e.g. a salvaged hole absent from a stale holeConfigs
+      // list never reaches holesPayload, so the null-over-durable upsert
+      // guard above can't see it — this is the only thing standing between
+      // it and deletion). `.is('score', null)` restricts the trim to holes
+      // that were never scored; a genuinely orphaned SCORED hole is left for
+      // a human to reconcile rather than silently erased.
       const { error: trimHolesErr } = await supabase
         .from('golf_holes')
         .delete()
         .eq('round_id', roundId)
-        .not('hole_number', 'in', `(${keepHoleNumbers.join(',')})`);
+        .not('hole_number', 'in', `(${keepHoleNumbers.join(',')})`)
+        .is('score', null);
       if (trimHolesErr) {
         await logServerError(`Auto-save orphan-hole trim failed (non-fatal): ${trimHolesErr.message}`, {
           action: 'savePartialRound.trimHoles',
@@ -7033,7 +7466,15 @@ async function savePartialRoundImpl(
     // NOTE: Do NOT call revalidatePath/updateTag here — see comment in the
     // RPC path above. Auto-save should be invisible to the router.
 
-    return { success: true, data: { roundId, updatedAt: undefined as string | undefined } };
+    // B9: return the real `updated_at` for the row just created/reused so the
+    // caller's optimistic-lock ref reflects the server immediately, rather
+    // than staying `undefined` until some later existing-id save happens to
+    // populate it — a gap that otherwise widens the window in which an
+    // unrelated background beacon write reads as a false multi-device
+    // conflict. Both queries above already `.select()` the full row; see
+    // `roundUpdatedAtForResponse`'s declaration for why `round` itself
+    // cannot be read here directly.
+    return { success: true, data: { roundId, updatedAt: roundUpdatedAtForResponse ?? undefined } };
 
   } catch (err) {
     // Single log call per failure (see updateExisting branch above) — keep
@@ -7094,9 +7535,10 @@ const SUBMIT_ROUND_UNAVAILABLE = /round not found, already completed, or no perm
 
 export async function savePartialRound(
   data: PartialRoundData,
-  existingRoundId?: string
-): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
-  return observedSavePartialRound(data, existingRoundId);
+  existingRoundId?: string,
+  options?: SavePartialRoundOptions,
+): Promise<SavePartialRoundResult> {
+  return observedSavePartialRound(data, existingRoundId, options);
 }
 
 /**
@@ -7112,7 +7554,9 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
 
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue blip must not read as a
+    // sign-out (A5, 2026-09-02). See getUserResilient's header.
+    const { user } = await getUserResilient(supabase);
     if (!user) {
       return { success: false, error: 'You must be signed in' };
     }
@@ -7228,7 +7672,9 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
   try {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue blip must not read as a
+    // sign-out (A5, 2026-09-02). See getUserResilient's header.
+    const { user } = await getUserResilient(supabase);
     if (!user) {
       return { success: false, error: 'You must be signed in' };
     }
@@ -7388,7 +7834,9 @@ async function getNextQualifierRoundNumberImpl(
   try {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue blip must not read as a
+    // sign-out (A5, 2026-09-02). See getUserResilient's header.
+    const { user } = await getUserResilient(supabase);
     if (!user) {
       return { success: false, error: 'You must be signed in' };
     }
@@ -7438,82 +7886,34 @@ async function getNextQualifierRoundNumberImpl(
     // explicitly discarded. Returning it here lets the client resume the
     // durable parent instead of creating a second parent or overwriting the
     // existing scorecard with a blank setup payload.
-    const { data: activeRounds, error: activeRoundsError } = await supabase
-      .from('golf_rounds')
-      .select('id, qualifier_round_number')
-      .eq('qualifier_id', qualifierId)
-      .eq('player_id', player.id)
-      .eq('status', 'in_progress')
-      .order('updated_at', { ascending: false })
-      .limit(2);
+    //
+    // Shared with savePartialRound's no-id derivation (A2, 2026-09-02) so the
+    // two paths cannot disagree about what "the next round number" means —
+    // see resolveQualifierRoundNumber's own header for why an in-progress
+    // round must be returned for reuse rather than treated as available.
+    const derived = await resolveQualifierRoundNumber(supabase, {
+      qualifierId,
+      playerId: player.id,
+      numRounds: qualifier.num_rounds ?? 1,
+    });
 
-    if (activeRoundsError) {
-      return { success: false, error: 'We could not verify your saved qualifier round. Please try again before starting.' };
+    if (!derived.success) {
+      return { success: false, error: derived.error, code: derived.code };
     }
-    if ((activeRounds?.length ?? 0) > 1) {
-      return {
-        success: false,
-        error: 'You have more than one saved round for this qualifier. Do not start another one; use Continue Round so your existing scorecards stay intact.',
-      };
-    }
-    if (activeRounds?.[0]) {
-      const active = activeRounds[0];
+    if (derived.activeRoundId) {
       return {
         success: true,
         data: {
-          nextRoundNumber: active.qualifier_round_number ?? 1,
+          nextRoundNumber: derived.roundNumber,
           availableRounds: [],
-          activeRoundId: active.id,
+          activeRoundId: derived.activeRoundId,
         },
-      };
-    }
-
-    // Get completed rounds for this player in this qualifier
-    const completedRoundsResult = await supabase
-      .from('golf_rounds')
-      .select('qualifier_round_number')
-      .eq('qualifier_id', qualifierId)
-      .eq('player_id', player.id)
-      .eq('status', 'completed');
-
-    const completedRounds = (completedRoundsResult.data as unknown) as Array<{
-      qualifier_round_number: number | null;
-    }> | null;
-
-    const completedRoundNumbers = new Set(
-      (completedRounds || [])
-        .filter((r) => r.qualifier_round_number !== null)
-        .map((r) => r.qualifier_round_number as number)
-    );
-
-    const numRounds = qualifier.num_rounds ?? 1;
-
-    // Qualifier progression is the first configured number the player has not
-    // submitted, not `max(completed) + 1`. The latter skips a recoverable gap
-    // in legacy/out-of-order data (for example 1 and 3 becoming 4) and can
-    // falsely report that a player has exhausted their configured rounds.
-    const unusedConfiguredRounds = Array.from(
-      { length: numRounds },
-      (_, index) => index + 1,
-    ).filter((roundNumber) => !completedRoundNumbers.has(roundNumber));
-    const nextRoundNumber = unusedConfiguredRounds[0];
-
-    if (nextRoundNumber === undefined) {
-      const roundLabel = numRounds === 1 ? 'round' : 'rounds';
-      // See qualifier_round_already_exists above: the code routes this
-      // expected lifecycle outcome to 'warning', not a Sentry error
-      // (observed live 2026-08-25 as Sentry JAVASCRIPT-NEXTJS-P8 / Bridge
-      // fingerprint 709e5658 — a player at their configured limit).
-      return {
-        success: false,
-        code: 'qualifier_round_limit_reached',
-        error: `This qualifier is still open, but your coach configured ${numRounds} ${roundLabel}. You have submitted ${numRounds} of ${numRounds}. Ask a coach to raise the round count before starting another round.`,
       };
     }
 
     return {
       success: true,
-      data: { nextRoundNumber, availableRounds: [nextRoundNumber] }
+      data: { nextRoundNumber: derived.roundNumber, availableRounds: [derived.roundNumber] }
     };
 
   } catch {
@@ -8313,7 +8713,16 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
 
     const supabase = await createClient();
 
-    const { data: { user }, error: authCheckError } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue blip must not read as a
+    // sign-out mid-round (A5, 2026-09-02). See getUserResilient's header.
+    const { user } = await getUserResilient(supabase);
+    // #1728 reconciled with A5 at the merge (2026-09-02): getUserResilient
+    // absorbs a blip (one retry, then the local-session fallback) but does
+    // not expose WHY it still came back empty, and that null conflates
+    // "GoTrue ruled against the session" with "GoTrue never ruled". Re-read
+    // the raw error once — on this null path only, so the signed-in path
+    // stays a single call — to keep the honest 'retry' sentence below.
+    const authCheckError = user ? null : (await supabase.auth.getUser()).error;
     if (!user) {
       // See isTransientAuthCheckFailure. A destructive edit must not be reported as a sign-out when GoTrue was
       // merely unreachable. The shot is still there; the only honest answer is
@@ -8330,12 +8739,21 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
       return { success: false, error: 'You must be signed in' };
     }
 
-    // Get player record
-    const { data: player } = await supabase
+    // Get player record. The error is BOUND, not discarded: a transport or
+    // RLS failure on this read is not "this user has no profile", and telling
+    // a mid-round player their profile is missing invites them to give up on
+    // a shot that a retry would have saved. Mirrors savePartialRound (fixed
+    // 2026-08-27). The message deliberately carries no `shot_not_found` code —
+    // that is the one signal the client answers by deleting its LOCAL shot.
+    const { data: player, error: playerError } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (playerError) {
+      return { success: false, error: 'Failed to verify your player profile. Please try again.' };
+    }
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -8492,7 +8910,16 @@ async function updateShotImpl(
 
     const supabase = await createClient();
 
-    const { data: { user }, error: authCheckError } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue blip must not read as a
+    // sign-out mid-round (A5, 2026-09-02). See getUserResilient's header.
+    const { user } = await getUserResilient(supabase);
+    // #1728 reconciled with A5 at the merge (2026-09-02): getUserResilient
+    // absorbs a blip (one retry, then the local-session fallback) but does
+    // not expose WHY it still came back empty, and that null conflates
+    // "GoTrue ruled against the session" with "GoTrue never ruled". Re-read
+    // the raw error once — on this null path only, so the signed-in path
+    // stays a single call — to keep the honest 'retry' sentence below.
+    const authCheckError = user ? null : (await supabase.auth.getUser()).error;
     if (!user) {
       // See isTransientAuthCheckFailure. The player is mid-round correcting a shot. Telling them to sign in costs
       // them the edit for a failure that never reached the auth server.
@@ -8508,12 +8935,21 @@ async function updateShotImpl(
       return { success: false, error: 'You must be signed in' };
     }
 
-    // Get player record
-    const { data: player } = await supabase
+    // Get player record. The error is BOUND, not discarded: a transport or
+    // RLS failure on this read is not "this user has no profile", and telling
+    // a mid-round player their profile is missing invites them to give up on
+    // a shot that a retry would have saved. Mirrors savePartialRound (fixed
+    // 2026-08-27). The message deliberately carries no `shot_not_found` code —
+    // that is the one signal the client answers by deleting its LOCAL shot.
+    const { data: player, error: playerError } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (playerError) {
+      return { success: false, error: 'Failed to verify your player profile. Please try again.' };
+    }
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };

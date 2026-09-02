@@ -20,8 +20,22 @@ describe('round recovery behavior', () => {
     const partialRecoverySource = source.slice(partialRecoveryStart, submitRecoveryStart);
 
     expect(partialRecoveryStart).toBeGreaterThanOrEqual(0);
-    expect(partialRecoverySource).toContain('await savePartialRound(partialData');
+    // Through the shared round_missing helper: a snapshot whose server id has
+    // since vanished is re-created, not reported as the literal key.
+    expect(partialRecoverySource).toContain('writeRoundRecreatingIfMissing(');
+    expect(partialRecoverySource).toContain('savePartialRound,');
+    expect(partialRecoverySource).toContain('partialData,');
     expect(partialRecoverySource).toContain('router.push(`/golf/dashboard/rounds/continue/${partialResult.data.roundId}`)');
+  });
+
+  it('re-submits a failed final submission as a new round when its id is dead, never retrying the dead id', () => {
+    const submitRecoveryStart = source.indexOf('const roundData = terminalSubmission;');
+    const submitRecoverySource = source.slice(submitRecoveryStart, source.indexOf('// Clean up the offline data'));
+
+    expect(submitRecoveryStart).toBeGreaterThanOrEqual(0);
+    expect(submitRecoverySource).toContain('writeRoundRecreatingIfMissing(');
+    expect(submitRecoverySource).toContain('submitGolfRoundComprehensive,');
+    expect(submitRecoverySource).not.toContain('await submitGolfRoundComprehensive(roundData, existingRoundId)');
   });
 
   it('keeps failed IndexedDB submissions recoverable and requires the exact terminal payload', () => {

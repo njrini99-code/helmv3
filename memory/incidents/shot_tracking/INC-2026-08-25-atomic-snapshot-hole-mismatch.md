@@ -2,7 +2,7 @@
 
 - Feature: `shot_tracking`
 - Also affects: `golf_round_lifecycle`
-- Status: repairing locally; not deployed
+- Status: released — production health verification passed; recurrence observation pending. Repair `b752bfed4` (#1617) is live and migration `20260825152726_guard_round_snapshot_shot_group_integrity.sql` is APPLIED in production (verified 2026-09-01 via the Supabase connector's `list_migrations`). (Read "repairing locally; not deployed" until 2026-09-01.)
 - Risk: R3 — protected database lifecycle / migration
 - First reproduced: 2026-08-25
 

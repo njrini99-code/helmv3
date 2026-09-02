@@ -50,6 +50,11 @@ import {
   type RoundRecoverySnapshot,
 } from '@/lib/offline/shot-storage';
 import { clearEmergencySaveThrough } from '@/lib/utils/emergency-save';
+import {
+  writeRoundRecreatingIfMissing,
+  describeRoundWriteResult,
+  isQualifierClosedError,
+} from '@/lib/golf/round-missing-recovery';
 import type { TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { Flag, ArrowLeft } from 'lucide-react';
 import { ViewHeader, Surface, Button, EmptyState, InlineNotice } from '@/components/fairway';
@@ -106,6 +111,13 @@ function hasRecoverableProgress(round: OfflineRoundData): boolean {
 
 function isCompletedRoundError(message?: string): boolean {
   if (typeof message !== 'string') {
+    return false;
+  }
+
+  // C3: the qualifier-closed refusal ALSO contains "already been completed"
+  // — about the QUALIFIER, not the round, which stays `in_progress` — see
+  // the round screens' identical exclusion for the full loop it prevents.
+  if (isQualifierClosedError(message)) {
     return false;
   }
 
@@ -501,10 +513,30 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
           })),
         };
 
-        const partialResult = await savePartialRound(partialData, existingRoundId);
+        // If the snapshot's server id has since vanished, the server answers
+        // `round_missing`; the helper re-creates from this same snapshot and
+        // hands back a sentence (never the key) if that fails too. The
+        // device copy is only cleaned up after success, below.
+        //
+        // `allowReuse: true` (A1) — this whole screen exists to reconnect a
+        // real device snapshot to its server round, including when
+        // `existingRoundId` is unknown (a pure local backup). The default
+        // (empty-shell-only) reuse gate would refuse the very round this
+        // flow is recovering; explicit intent is what makes that safe here.
+        // Never propagated to the round_missing re-create retry inside the
+        // helper — that retry's intent is CREATE.
+        const { result: partialResult } = await writeRoundRecreatingIfMissing(
+          savePartialRound,
+          partialData,
+          existingRoundId,
+          { firstCallOptions: { allowReuse: true } },
+        );
 
         if (!partialResult.success) {
-          setError(partialResult.error || 'Failed to restore round progress.');
+          // B6: `writeRoundRecreatingIfMissing` only humanizes a FAILED
+          // re-create — a first-call busy/retry/conflict/hole_invalid
+          // passes through with the bare key still in `.error`.
+          setError(describeRoundWriteResult(partialResult));
           setRecovering(null);
           return;
         }
@@ -517,7 +549,14 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
 
       const roundData = terminalSubmission;
 
-      const result = await submitGolfRoundComprehensive(roundData, existingRoundId);
+      // Same contract for the terminal payload: a dead id is re-submitted as
+      // a NEW round in one atomic call, never retried. The only time the raw
+      // key reached a player was here and in the two round screens.
+      const { result } = await writeRoundRecreatingIfMissing(
+        submitGolfRoundComprehensive,
+        roundData,
+        existingRoundId,
+      );
 
       if (!result.success) {
         if (existingRoundId && isCompletedRoundError(result.error)) {
@@ -527,7 +566,8 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
           return;
         }
 
-        setError(result.error || 'Failed to recover round.');
+        // B6: same reasoning as the partial-restore branch above.
+        setError(describeRoundWriteResult(result));
         setRecovering(null);
         return;
       }

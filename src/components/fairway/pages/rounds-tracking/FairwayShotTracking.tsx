@@ -239,6 +239,15 @@ export default function FairwayShotTracking({
     return onHoleComplete(currentHoleIndex, holeStats);
   }, [currentHole, currentHoleIndex, onHoleComplete]);
 
+  // B8: `handleNextShot` awaits this checkpoint, so its own closure holds
+  // whichever `currentHoleIndex` was current when the tap happened. If the
+  // player navigates to a different hole (the hole-nav pills allow this
+  // mid-save) before that await resolves, the LATEST value is what a
+  // still-pending checkpoint's resolution must be checked against — not the
+  // captured one, which is always stale by definition once navigation moved.
+  const currentHoleIndexRef = useRef(currentHoleIndex);
+  currentHoleIndexRef.current = currentHoleIndex;
+
   // A checkpoint belongs to one hole only. Once navigation moves to a new
   // hole, do not leave stale “saving” or “retry” chrome behind.
   useEffect(() => {
@@ -276,6 +285,21 @@ export default function FairwayShotTracking({
           ? displayToFeet(parsed, 'meters')
           : (distanceAfterUnit === 'feet' ? parsed : parsed * 3);
         if (afterInFeet > 150) return false; // Can't be 150+ feet from hole and "on the green"
+        // B8: "0" is a valid, finite, non-negative number, so it reaches
+        // here — but a shot that did not hole out cannot have landed AT the
+        // hole. Without this, the primary action looked enabled and tapping
+        // it hit `handleNextShot`'s own silent `distanceAfter === 0` bail —
+        // a dead tap with no player-facing feedback at all.
+        if (afterInFeet <= 0) return false;
+      } else {
+        // B5: this value becomes the NEXT shot's `distanceToHoleBefore`,
+        // capped at 1000 yards by the server's comprehensiveShotSchema
+        // (golf.ts) — mirrors FairwayShotEntry's `nextShotBlocker` (see its
+        // own doc comment: "mirror isReadyForNextShot() VERBATIM").
+        const afterInYards = displayToYards(parsed, distancePref);
+        if (afterInYards > 1000) return false;
+        // B8: see the matching comment in the green branch above.
+        if (afterInYards <= 0) return false;
       }
     }
 
@@ -407,6 +431,13 @@ export default function FairwayShotTracking({
 
     onSaveShot?.(shotRecord);
 
+    // B8: this checkpoint belongs to whichever hole was current at tap time.
+    // The hole-nav pills allow navigating away while it's still in flight;
+    // by the time it resolves, `currentHoleIndexRef.current` may already
+    // point at a different hole (whose own per-hole reset effect has
+    // already set 'idle'). A stale resolution — success or failure — must
+    // not overwrite that hole's status with a result that isn't its own.
+    const holeIndexAtCheckpointStart = currentHoleIndex;
     try {
       // A hole-out is visible immediately, but it is not eligible to advance
       // until the parent confirms its durable checkpoint. If that save cannot
@@ -415,7 +446,9 @@ export default function FairwayShotTracking({
       if (isHoleComplete) {
         setHoleCheckpointStatus('saving');
         const checkpointed = await completeHole(updatedHistory);
-        setHoleCheckpointStatus(checkpointed ? 'idle' : 'failed');
+        if (currentHoleIndexRef.current === holeIndexAtCheckpointStart) {
+          setHoleCheckpointStatus(checkpointed ? 'idle' : 'failed');
+        }
         if (!checkpointed) return;
       } else {
         // Update state for next shot
@@ -423,7 +456,9 @@ export default function FairwayShotTracking({
         dispatch({ type: 'UPDATE_AFTER_SHOT', payload: { distanceAfter, unitAfter, newLie } });
       }
     } catch {
-      if (isHoleComplete) setHoleCheckpointStatus('failed');
+      if (isHoleComplete && currentHoleIndexRef.current === holeIndexAtCheckpointStart) {
+        setHoleCheckpointStatus('failed');
+      }
     } finally {
       // Release the double-tap guard even when a checkpoint rejects. The local
       // snapshot remains intact and the player can use the explicit retry.
@@ -443,13 +478,22 @@ export default function FairwayShotTracking({
       || shotHistory.length === 0
     ) return;
 
+    // B8: same stale-resolution hazard as handleNextShot above — the
+    // player can navigate to a different hole while this retry is still in
+    // flight, and its eventual resolution must not overwrite that OTHER
+    // hole's status.
+    const holeIndexAtCheckpointStart = currentHoleIndexRef.current;
     isProcessingShotRef.current = true;
     setHoleCheckpointStatus('saving');
     try {
       const checkpointed = await completeHole(shotHistory);
-      setHoleCheckpointStatus(checkpointed ? 'idle' : 'failed');
+      if (currentHoleIndexRef.current === holeIndexAtCheckpointStart) {
+        setHoleCheckpointStatus(checkpointed ? 'idle' : 'failed');
+      }
     } catch {
-      setHoleCheckpointStatus('failed');
+      if (currentHoleIndexRef.current === holeIndexAtCheckpointStart) {
+        setHoleCheckpointStatus('failed');
+      }
     } finally {
       isProcessingShotRef.current = false;
     }
