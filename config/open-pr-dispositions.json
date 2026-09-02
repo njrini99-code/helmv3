@@ -4,6 +4,11 @@
     "worktree_policy": "KEEP",
     "note": "Opened 2026-08-31 from the canonical checkout. Trims the Vercel upload from 6,667 files / 268 MB to 5,712 / 101 MB by excluding docs/ (145 MB the build never reads) and five untracked tooling directories that upload precisely BECAUSE they are gitignored — the third recurrence of the .vercelignore-replaces-.gitignore trap. Also corrects shipping.md's stale claim that the repo exceeds the 15,000-file cap. No production state, no migration. Canonical checkout — nothing to park. Clears #1697's row."
   },
+  "1736": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Opened 2026-09-01 from worktree /private/tmp/helmv3-worktrees/bridge-selfheal-flow (branch agent/bridge-selfheal-flow, workspace parkPolicy KEEP). Adds the self-heal loop's throughput axis (selfheal-flow.ts: per-incident stage placement and stall detection, surfaced as the stalled lens, the stage-stalled attention reason, the Truth Strip escalation and per-stage backlog strips) and reorganises /admin/errors around five questions with a feature tag, lifecycle headline and details disclosure on every row. No migration, no production state, no 'use server' surface. Build not run on the branch (2.1 GiB free at the time). Waiting on owner review; expected additive conflicts with #1730 in self-heal/page.tsx imports and admin-platform.md."
+  },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
     "exactly — control-plane:verify FAILS on a missing entry AND on a stale one.",
