@@ -167,6 +167,21 @@ export function FairwayShotEntry({
           ? displayToFeet(parsed, 'meters')
           : (distanceAfterUnit === 'feet' ? parsed : parsed * 3);
         if (afterInFeet > 150) return isMeters ? 'Green proximity must be under 46 m' : 'Green proximity must be under 150 ft';
+        // B8: "0" is a valid, finite, non-negative number, so it passed this
+        // far — but a shot that did not hole out cannot have landed AT the
+        // hole. Before this check, `handleNextShot` discovered the same
+        // rounds-to-0 value on its own and bailed with no player-facing
+        // feedback at all: a dead tap on an apparently-enabled button.
+        if (afterInFeet <= 0) return 'Select Hole if you holed out, or enter the actual distance remaining';
+      } else {
+        // B5: this value becomes the NEXT shot's `distanceToHoleBefore`,
+        // which the server's comprehensiveShotSchema (golf.ts) caps at 1000
+        // yards. Catch the typo here, at entry, instead of at the next
+        // save's `hole_invalid`.
+        const afterInYards = displayToYards(parsed, distancePref);
+        if (afterInYards > 1000) return 'Distance remaining must be 1000 yards or less';
+        // B8: see the matching comment in the green branch above.
+        if (afterInYards <= 0) return 'Select Hole if you holed out, or enter the actual distance remaining';
       }
     }
     return 'Complete the required fields above';

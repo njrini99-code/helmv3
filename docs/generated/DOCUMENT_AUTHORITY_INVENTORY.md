@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 62 | 3 | 31 | 156 |
 | `AUDIT_SNAPSHOT` | 81 | 6 | 37 | 132 |
 | `STATE_SNAPSHOT` | 4 | 0 | 3 | 6 |
-| `HISTORY_LEDGER` | 22 | 0 | 2 | 17 |
+| `HISTORY_LEDGER` | 22 | 0 | 2 | 41 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 2 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
@@ -164,7 +164,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | - | 3 | 23 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
-| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 1 | 23 | 2 |
+| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 2 | 25 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 25 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
@@ -172,7 +172,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 11 | 1 |
-| `memory/features/shot-tracking.md` | current | yes | - | yes | 2 | 19 | 2 |
+| `memory/features/shot-tracking.md` | current | yes | - | yes | 4 | 48 | 2 |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 19 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 16 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 2 | 11 | - |
@@ -193,7 +193,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/business/07-baseballhelm-context.md` | current | - | - | yes | 1 | 2 | 1 |
 | `docs/business/08-golfhelm-business-context.md` | current | - | - | yes | 1 | 13 | 1 |
 | `docs/business/09-coachhelm-business-context.md` | current | - | - | - | 1 | 5 | 1 |
-| `docs/features/SHOT_TRACKING_DATA_FLOW.md` | current | yes | - | - | 5 | 1 | 1 |
+| `docs/features/SHOT_TRACKING_DATA_FLOW.md` | current | yes | - | - | 5 | 4 | 1 |
 | `docs/features/SHOT_TRACKING_VERIFICATION.md` | current | yes | - | - | 4 | 0 | - |
 | `docs/features/coachhelm/COACHHELM_DISABLE_FEATURE.md` | superseded | - | - | - | 0 | 6 | 3 |
 | `docs/features/coachhelm/COACHHELM_IMPLEMENTATION_SPEC.md` | superseded | - | - | - | 0 | 0 | - |
@@ -473,7 +473,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/settings_preferences.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 1 | 3 | - |
+| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 24 | 10 |
 | `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/team_communications.md` | current | - | - | - | 1 | 9 | 4 |
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |
@@ -482,7 +482,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/admin_platform.md` | current | - | - | - | 1 | 37 | 2 |
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | 1 | 3 | 1 |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 1 | 4 | 1 |
+| `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 41 | 15 |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | 1 | 1 | 1 |
 
 ### `INCIDENT`

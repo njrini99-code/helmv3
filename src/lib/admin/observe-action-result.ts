@@ -54,6 +54,15 @@ const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
   // for it. Without this pattern, contention that resolves itself on the
   // next tap would page as an incident.
   /^another save for this round is just finishing/i,
+  // A6 (2026-09-02): moved OUT of USER_INPUT_REJECTION_PATTERNS below —
+  // unlike the neighbouring qualifier-lifecycle messages there
+  // (still-open-with-a-cap, already-submitted), this one is reached while a
+  // player is mid-submit or mid-save with real, unsubmitted round data on
+  // their device: the coach closed the qualifier out from under them and
+  // their round now has nowhere to land. A stuck player is worth an
+  // operator's attention, not "you typed something wrong" — 'warning', not
+  // 'info'.
+  /this qualifier has already been completed/i,
 ];
 
 /**
@@ -81,7 +90,8 @@ const USER_INPUT_REJECTION_PATTERNS: readonly RegExp[] = [
   // the stable prose around the numbers rather than the whole sentence.
   /this qualifier is still open, but your coach configured/i,
   /ask a coach to raise the round count/i,
-  /this qualifier has already been completed/i,
+  // "already been completed" moved to EXPECTED_SOFT_FAILURE_PATTERNS above
+  // (A6, 2026-09-02) — it is a stuck-player signal, not user-input noise.
   /you have already submitted this qualifier round/i,
   /^invalid email or password/i,
   /^too many login attempts/i,
@@ -180,7 +190,12 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
  * the operator error queue.
  */
 const ROUTINE_RECONCILIATION_CODES: ReadonlySet<string> = new Set([
-  'shot_not_found',
+  // 'shot_not_found' REMOVED (A6, 2026-09-02): it still reconciles the
+  // client's local state (the stale shot reference is dropped, not retried
+  // or reported as an error), but a shot the server has confirmed absent is
+  // a real loss signal worth an operator's attention if it recurs for one
+  // player — it now falls through to EXPECTED_SOFT_FAILURE_CODES below,
+  // which tiers it 'warning' rather than collapsing it to 'info' here.
   'UNAUTHORIZED_RETRYABLE',
 ]);
 

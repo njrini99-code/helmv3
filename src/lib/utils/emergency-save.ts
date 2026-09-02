@@ -40,6 +40,12 @@ const RECOVERABLE_SUBMIT_ERROR_PATTERNS = [
   'failed to fetch',
   'network',
   'concurrent save',
+  // The server proved the target row is gone. The round is re-created from
+  // the local snapshot (src/lib/golf/round-missing-recovery.ts), so this is
+  // the opposite of terminal — and until 2026-09-01 it matched neither list,
+  // which is how the literal key reached the submit overlay.
+  'round_missing',
+  'could not be re-created',
 ];
 
 export interface EmergencySaveData {
@@ -238,6 +244,46 @@ export function clearEmergencySaveThrough(
 }
 
 /**
+ * C5: fired at most once per browser session when the synchronous
+ * localStorage backup has failed even after compacting old saves.
+ *
+ * `emergencySave` has 13 call sites across both round screens, and none of
+ * them checked its boolean return value — a device whose localStorage is
+ * full (a shared kiosk near its quota) or unavailable (private browsing that
+ * has since filled its allotment) silently lost its FAST local safety net
+ * on every shot, with nothing telling the player. The independent
+ * IndexedDB mirror (`queueRecoverySnapshot`, above) is unaffected by this —
+ * it runs unconditionally on every call regardless of localStorage's
+ * outcome — but it is deliberately slower and best-effort, and the player
+ * deserves to know the fast path specifically is down. A listener (both
+ * round screens) shows a one-time toast; this module only decides WHETHER
+ * to notify, never how.
+ */
+export const EMERGENCY_SAVE_DEGRADED_EVENT = 'golf:emergency-save-degraded';
+
+let hasNotifiedEmergencySaveDegraded = false;
+
+function notifyEmergencySaveDegraded(): void {
+  if (hasNotifiedEmergencySaveDegraded) return;
+  hasNotifiedEmergencySaveDegraded = true;
+  if (typeof window === 'undefined') return;
+  try {
+    // A plain `Event` rather than `CustomEvent` — no payload is needed, and
+    // this keeps the source independent of whether the runtime's global
+    // `CustomEvent` constructor is available (Node's is version-gated;
+    // `Event`/`EventTarget` are the longer-standing baseline).
+    window.dispatchEvent(new Event(EMERGENCY_SAVE_DEGRADED_EVENT));
+  } catch {
+    // Non-critical — the IndexedDB mirror above already ran regardless.
+  }
+}
+
+/** Test-only: the "at most once per session" flag is module state. */
+export function resetEmergencySaveDegradedNoticeForTests(): void {
+  hasNotifiedEmergencySaveDegraded = false;
+}
+
+/**
  * Synchronously save round data to localStorage.
  * This is safe to call in visibilitychange/pagehide handlers because
  * localStorage.setItem is synchronous and completes before the page freezes.
@@ -262,6 +308,7 @@ export function emergencySave(data: EmergencySaveData): boolean {
       localStorage.setItem(key, JSON.stringify(data));
       return true;
     } catch {
+      notifyEmergencySaveDegraded();
       return false;
     }
   }
@@ -358,6 +405,34 @@ export function loadLatestEmergencySave(playerId: string): EmergencySaveData | n
   } catch {
     return null;
   }
+}
+
+/**
+ * Move a device snapshot from a round id the server no longer has to the id
+ * that replaced it.
+ *
+ * A re-create writes the same full snapshot under a NEW round id, but every
+ * emergency save so far was keyed by the OLD one. Clearing "through" the new
+ * id therefore cleared nothing, and because keys never expire the dead-id copy
+ * later surfaced as recoverable — pointing restore back at the dead id.
+ *
+ * Anything newer than the acknowledged save is re-keyed under the new id so
+ * it stays recoverable; anything the server already has is simply dropped.
+ * Player-scoped like every other read here: another account's snapshot under
+ * the same id is left alone.
+ */
+export function migrateEmergencySave(
+  fromRoundId: string | null | undefined,
+  toRoundId: string,
+  playerId: string,
+  acknowledgedTimestamp: number,
+): void {
+  const current = loadEmergencySave(fromRoundId, playerId);
+  if (!current) return;
+  if (current.timestamp > acknowledgedTimestamp) {
+    emergencySave({ ...current, roundId: toRoundId });
+  }
+  clearEmergencySave(fromRoundId, playerId);
 }
 
 /**

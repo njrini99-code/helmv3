@@ -1,8 +1,7 @@
 # INC-2026-08-22 — active-round stale shot delete
 
 - Feature: `shot_tracking` (also affects the Golf Round Lifecycle feature)
-- Status: repairing
-- Status: released — immediate production verification passed; 24-hour Sentry observation pending.
+- Status: released — production health verification passed; recurrence observation pending. Repairs `5eececafc` (deleteShot + shared mutation guard) and `aea2b5ed5` (#1605, `updateShot` reconciliation) are live. The Bridge tier for `shot_not_found` is `info` (`ROUTINE_RECONCILIATION_CODES`), not warning. (Two contradictory Status lines — "repairing" and "released" — stood here until 2026-09-01.)
 - Risk: R2 — product workflow semantics; requires owner approval and release train.
 - First seen: 2026-08-21
 - Last seen: 2026-08-22
@@ -33,8 +32,8 @@ overlap is reproduced by regression coverage and is repaired independently.
   `shot_not_found` only for the existing non-disclosing absent-row response.
 - Undo and Edit Shot share a single-flight ref and reconcile that code locally.
 - Edit cascade writes are awaited before releasing the mutation gate.
-- The observability layer records this result as a handled warning, not a Sentry
-  error.
+- The observability layer records this result at the `info` tier, not as a
+  warning and not as a Sentry error.
 
 ## Verification
 

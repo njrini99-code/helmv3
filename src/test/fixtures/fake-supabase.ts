@@ -170,6 +170,18 @@ class WriteBuilder implements PromiseLike<{ data: Row[] | null; error: unknown; 
     this.filters.push((row) => row[col] === value);
     return this;
   }
+  // `.not(col, 'in', '(1,2,3)')` — the shape savePartialRound's orphan trim
+  // uses on a delete. PostgREST encodes the list as a parenthesised string,
+  // so parse that; any other operator negates plain equality.
+  not(col: string, op: string, value: unknown): this {
+    if (op === 'in') {
+      const list = String(value).replace(/^\(|\)$/g, '').split(',').map((s) => s.trim());
+      this.filters.push((row) => !list.includes(String(row[col])));
+      return this;
+    }
+    this.filters.push((row) => row[col] !== value);
+    return this;
+  }
   select(_cols: string = '*'): this {
     return this;
   }

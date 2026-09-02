@@ -99,10 +99,6 @@ export function useRoundStatusSync({
 
         const { currentUpdatedAt, status, isStale } = result.data;
 
-        if (currentUpdatedAt) {
-          expectedUpdatedAtRef.current = currentUpdatedAt;
-        }
-
         if (status === 'completed') {
           if (!completionHandledRef.current) {
             completionHandledRef.current = true;
@@ -111,9 +107,30 @@ export function useRoundStatusSync({
           return;
         }
 
-        if (isStale && currentUpdatedAt !== lastStaleVersionRef.current) {
-          lastStaleVersionRef.current = currentUpdatedAt;
-          await onRoundStaleRef.current?.({ currentUpdatedAt, status });
+        // B2 (two devices on one round): `isStale` means the server has
+        // moved since this client's own last known checkpoint — some other
+        // device/session/tab wrote to this round. The save RPCs
+        // (save_partial_round_atomic / submit_round_atomic) are full-snapshot
+        // REPLACE and trust `expectedUpdatedAtRef.current` as their
+        // optimistic-lock token. Silently resyncing that token to the
+        // server's newer value here — as this used to do unconditionally —
+        // would make THIS client's next save pass the lock and overwrite the
+        // other device's holes/shots with this client's outdated in-memory
+        // state. Do not adopt it; surface the conflict instead and let the
+        // caller block further writes until the player reloads.
+        if (isStale) {
+          if (currentUpdatedAt !== lastStaleVersionRef.current) {
+            lastStaleVersionRef.current = currentUpdatedAt;
+            await onRoundStaleRef.current?.({ currentUpdatedAt, status });
+          }
+          return;
+        }
+
+        // Not stale: this client's checkpoint already matches (or this is
+        // the first successful check), so recording the server's exact value
+        // is a safe refresh, not an overwrite risk.
+        if (currentUpdatedAt) {
+          expectedUpdatedAtRef.current = currentUpdatedAt;
         }
       } catch (error) {
         // Network error / "unexpected response" (e.g. a deployment transition)

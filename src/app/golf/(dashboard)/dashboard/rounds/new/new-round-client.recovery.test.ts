@@ -49,7 +49,10 @@ describe('New Round shot recovery boundary', () => {
     const restoreSource = source.slice(restoreStart, resetStart);
 
     expect(restoreStart).toBeGreaterThanOrEqual(0);
-    expect(restoreSource).toContain('await savePartialRound(recoveryData');
+    // Still a server write before Continue Round opens — now through the
+    // round_missing helper so a dead snapshot id is re-created, not echoed.
+    expect(restoreSource).toContain('await writeRoundRecreatingIfMissing(');
+    expect(restoreSource).toContain('recoveryData,');
     expect(restoreSource).toContain('router.push(`/golf/dashboard/rounds/continue/${result.data.roundId}`)');
   });
 
@@ -66,5 +69,47 @@ describe('New Round shot recovery boundary', () => {
     expect(statsAndAutoSaveSource).toContain('holeStats: HoleStats | null');
     expect(statsAndAutoSaveSource).toContain('delete updatedStats[holeIndex]');
     expect(statsAndAutoSaveSource).toContain('const hasCompletedHole');
+  });
+});
+
+/**
+ * Review of 6a7577c71, findings P1 and P5 on the New Round screen.
+ *
+ * P1: `submitGolfRoundComprehensive` answered `round_missing` (it had proved
+ * the row was gone), the client threw it, `isRecoverableRoundSubmitError`
+ * matched neither list, and the overlay printed the literal key. P5: the
+ * auto-save re-create branches cleared the device snapshot through the NEW
+ * id while it had been written under the OLD one, leaving a dead-id copy that
+ * New Round later offered as recoverable.
+ */
+describe('New Round — round_missing recovery', () => {
+  it('submit re-creates from the same terminal payload through the shared helper (P1)', () => {
+    const submitStart = source.indexOf('const handleRoundSubmit');
+    const saveForLaterStart = source.indexOf('const handleSaveForLater');
+    const submitSource = source.slice(submitStart, saveForLaterStart);
+
+    expect(submitSource).toContain('writeRoundRecreatingIfMissing(');
+    expect(submitSource).toContain('submitGolfRoundComprehensive,');
+    expect(submitSource).not.toContain('await submitGolfRoundComprehensive(roundData, savedRoundIdRef.current ?? undefined)');
+  });
+
+  it('every auto-save re-create migrates the snapshot off the dead id (P5)', () => {
+    const autoSaveStart = source.indexOf('const handleAutoSave');
+    const submitStart = source.indexOf('const handleRoundSubmit');
+    const autoSaveSource = source.slice(autoSaveStart, submitStart);
+    const checkpointStart = source.indexOf('const persistCompletedHole');
+    const checkpointSource = source.slice(checkpointStart, source.indexOf('const handleHoleComplete'));
+
+    expect(autoSaveSource).toContain('migrateEmergencySave(');
+    expect(checkpointSource).toContain('migrateEmergencySave(');
+  });
+
+  it('restoring a device snapshot re-creates when its round id is dead instead of showing the key', () => {
+    const restoreStart = source.indexOf('const handleRestoreRecovery');
+    const resetStart = source.indexOf('const handleConfirmBackToSetup');
+    const restoreSource = source.slice(restoreStart, resetStart);
+
+    expect(restoreSource).toContain('writeRoundRecreatingIfMissing(');
+    expect(restoreSource).toContain('savePartialRound,');
   });
 });

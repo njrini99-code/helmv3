@@ -162,5 +162,8 @@ P1:
    load/recovery action using the same workflow map.
 
 No production rollout recommendation is made by this document. The migration
-and code are local, uncommitted work pending review and the remaining browser
-proof.
+and code shipped on 2026-08-26 (`641adf741`, #1618; six never-recorded stages
+completed in `dc3b2fec2`, #1712) and the migration is applied in production.
+P1 item 3 — instrumenting the separate add/edit/delete-shot actions and the
+Continue Round load/recovery action with the recorder — remains OPEN as of
+2026-09-01. (This closing line read "local, uncommitted work" until then.)
