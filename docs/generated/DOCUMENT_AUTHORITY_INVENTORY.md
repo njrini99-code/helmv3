@@ -29,7 +29,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 13 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 19 | 19 | 7 | 8 |
+| `CURRENT_FEATURE` | 19 | 19 | 7 | 9 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
 | `GENERATED_TRUTH` | 15 | 3 | 5 | 22 |
 | `PROCESS_CONTRACT` | 8 | 1 | 7 | 10 |
@@ -165,7 +165,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/coachhelm-ai.md` | current | yes | - | - | 3 | 23 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 1 | 23 | 2 |
-| `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 10 | - |
+| `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 11 | 1 |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 25 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 1 | 13 | - |

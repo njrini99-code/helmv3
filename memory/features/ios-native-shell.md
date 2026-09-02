@@ -70,3 +70,8 @@ Live Activity — each gated behind a capability entry when its binary lands. Re
 - `src/test/lib/native-capabilities.test.ts` — capability bridge contract.
 - `src/test/lib/haptics-pref.test.ts` — preference gate.
 - `src/test/lib/push-registration-pending-token.test.ts` — token parking.
+- `src/components/fairway/overlays/keyboard-inset.test.ts` — every overlay
+  edge that touches the bottom of the screen (`Sheet` bottom/left/right,
+  `ModalShell`, the CoachHelm phone drawer) lifts by `--keyboard-height` and
+  carries `data-fw-keyboard-aware`; the WebView never resizes for the keyboard
+  (audit 2026-09-02: 27 sheets/modals carry text inputs).

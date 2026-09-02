@@ -156,14 +156,19 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
               aria-modal="false"
               aria-label="Ask CoachHelm"
               data-testid="coachhelm-drawer"
+              data-fw-keyboard-aware
               initial={reduced ? false : { x: '100%' }}
               animate={{ x: 0 }}
               exit={reduced ? undefined : { x: '100%' }}
               transition={{ type: 'tween', duration: reduced ? 0 : 0.24, ease: [0.32, 0.72, 0, 1] }}
               className={cn(
                 'fixed z-[var(--fw-z-drawer,50)] flex flex-col border-border-subtle bg-canvas',
-                // Phone: a near-full-height sheet, clear of the status bar.
-                'inset-x-0 bottom-0 top-[max(3rem,env(safe-area-inset-top))] rounded-t-fw-lg border-t',
+                // Phone: a near-full-height sheet, clear of the status bar, and
+                // lifted off the soft keyboard (the WebView never resizes for
+                // it) so the composer stays above the keys — same contract as
+                // the messages screen, see ios-native-shell.md.
+                'inset-x-0 bottom-[var(--keyboard-height,0px)] top-[max(3rem,env(safe-area-inset-top))] rounded-t-fw-lg border-t',
+                'transition-[bottom] duration-[250ms] motion-reduce:transition-none',
                 // Desktop: full-height panel, 456px.
                 'md:inset-y-0 md:left-auto md:right-0 md:top-0 md:w-[456px] md:rounded-none md:border-l md:border-t-0',
               )}
