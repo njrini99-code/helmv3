@@ -26,16 +26,17 @@
 --   ae683fa1797204f933b261714d3dba84  (length 3789)
 -- Re-run and STOP if it differs, because CREATE OR REPLACE silently discards
 -- whatever changed:
---   select md5(pg_get_functiondef('public.run_integrity_checks()'::regprocedure));
+--   select md5(
+--     pg_get_functiondef('public.run_integrity_checks()'::regprocedure));
 --
 -- Checks 1-5 below are reproduced VERBATIM from that live definition. The only
 -- addition is check 6.
 
 CREATE OR REPLACE FUNCTION public.run_integrity_checks()
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO 'public', 'pg_temp'
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
 AS $function$
 DECLARE
   v jsonb := '[]'::jsonb;
