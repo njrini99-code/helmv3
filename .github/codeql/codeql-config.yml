@@ -1,0 +1,32 @@
+name: helmv3 CodeQL config
+
+# WHY THIS FILE EXISTS (2026-09-02, PR throughput).
+#
+# `Analyze (javascript-typescript)` was the longest single required check on
+# every pull request — measured 515 s of analysis on run 33642284611 — and it
+# was spending that time on files a security scan gains nothing from:
+#
+#   - test files and fixtures, whose "hardcoded credential" and "unsafe
+#     regex" hits are fake by construction (the ast-grep / semgrep rule-pack
+#     fixtures under .coderabbit/**/__test__/ are DELIBERATELY broken code);
+#   - archive/**, which AGENTS.md defines as historical evidence only and
+#     which nothing deploys;
+#   - docs and public assets, which CodeQL's JavaScript extractor still walks.
+#
+# What stays in scope is everything that ships or runs: src/ (minus tests),
+# scripts/, supabase/functions/, tools/, and the workflow files the `actions`
+# language analyses (paths filters do not apply to that language).
+#
+# Query suite selection lives in codeql.yml, not here — see the note there.
+paths-ignore:
+  - '**/__tests__/**'
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - 'src/test/**'
+  - 'e2e/**'
+  - 'archive/**'
+  - 'docs/**'
+  - 'public/**'
+  - '.next/**'
+  - '.coderabbit/**/__test__/**'
