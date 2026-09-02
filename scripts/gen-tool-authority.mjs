@@ -36,6 +36,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DECL = resolve(ROOT, 'config/tool-authority.json');
 const OBS = resolve(ROOT, 'config/control-plane-observations.json');
+const CONNECTOR_IDS = resolve(ROOT, 'config/mcp-connector-ids.json');
 const SETTINGS = resolve(ROOT, '.claude/settings.json');
 const MCP = resolve(ROOT, '.mcp.json');
 const OUT = resolve(ROOT, 'docs/TOOL_AUTHORITY_MATRIX.md');
@@ -43,7 +44,17 @@ const OUT = resolve(ROOT, 'docs/TOOL_AUTHORITY_MATRIX.md');
 const START = '<!-- AUTOGEN:tool-authority:start -->';
 const END = '<!-- AUTOGEN:tool-authority:end -->';
 
-/** Namespace prefixes that belong to each service, for slicing config. */
+/**
+ * Namespace prefixes that belong to each service, for slicing config.
+ *
+ * The display names alone are not enough. Measured 2026-09-01: the account
+ * connectors appear in the session as `mcp__<uuid>__<tool>`, so a deny rule
+ * written against the UUID spelling contains no service name at all. Without
+ * the ids from config/mcp-connector-ids.json the fingerprint would ignore
+ * exactly the rules that match what the session can call — an edit to them
+ * would stale nothing, and a STALE-detector that cannot see the live rules is
+ * the same defect as a doc that cannot see a deleted hook.
+ */
 const SERVICE_KEYS = {
   Supabase: ['supabase', 'Supabase'],
   Sentry: ['sentry', 'Sentry'],
@@ -51,15 +62,38 @@ const SERVICE_KEYS = {
   GitHub: ['github', 'GitHub'],
 };
 
+/** Connector ids recorded for a service, or [] when none is on file. */
+export function connectorIdsFor(service, connectors = loadConnectorIds()) {
+  return (connectors ?? [])
+    .filter((c) => c.service === service && typeof c.id === 'string' && c.id)
+    .map((c) => c.id);
+}
+
+export function loadConnectorIds() {
+  if (!existsSync(CONNECTOR_IDS)) return [];
+  try {
+    return JSON.parse(readFileSync(CONNECTOR_IDS, 'utf-8')).connectors ?? [];
+  } catch {
+    return [];
+  }
+}
+
 /**
  * The configuration that determines a service's capability, hashed.
  *
  * Deliberately narrow: only the rules and declarations that could change what
  * this service can do. A fingerprint over the whole settings file would go
  * stale on every unrelated edit and train people to ignore STALE.
+ *
+ * `connectors` is optional: every production caller omits it and gets the
+ * ids on file (config/mcp-connector-ids.json); tests pass their own so the
+ * UUID-spelled path is provable without editing that file.
  */
-export function fingerprintFor(service, { settings, mcp }) {
-  const keys = SERVICE_KEYS[service] ?? [service.toLowerCase()];
+export function fingerprintFor(service, { settings, mcp, connectors = loadConnectorIds() }) {
+  const keys = [
+    ...(SERVICE_KEYS[service] ?? [service.toLowerCase()]),
+    ...connectorIdsFor(service, connectors),
+  ];
   const match = (s) => keys.some((k) => String(s).includes(k));
   const perms = settings?.permissions ?? {};
   const slice = {

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   shouldEmit,
   drainCollapsedCount,
+  releaseEmit,
   __resetEmitThrottleForTests,
 } from '@/lib/admin/emit-throttle';
 
@@ -87,5 +88,31 @@ describe('emit-throttle', () => {
   it('never throws even under pathological input', () => {
     expect(() => shouldEmit('', 0)).not.toThrow();
     expect(() => drainCollapsedCount('')).not.toThrow();
+  });
+
+  describe('releaseEmit — an allowed emit whose write did not land gives the window back', () => {
+    it('reopens the window so the very next shouldEmit is allowed', () => {
+      expect(shouldEmit('k', 60_000)).toBe(true);
+      expect(shouldEmit('k', 60_000)).toBe(false);
+      releaseEmit('k');
+      expect(shouldEmit('k', 60_000)).toBe(true);
+    });
+
+    it('restores the drained count and keeps what collapsed while the write was in flight', () => {
+      expect(shouldEmit('k', 60_000)).toBe(true);
+      expect(shouldEmit('k', 60_000)).toBe(false); // collapsed: 1
+      const drained = drainCollapsedCount('k'); // reads 1, resets to 0
+      expect(drained).toBe(1);
+      expect(shouldEmit('k', 60_000)).toBe(false); // collapsed again while the write was pending
+      releaseEmit('k', drained);
+      expect(shouldEmit('k', 60_000)).toBe(true);
+      expect(drainCollapsedCount('k')).toBe(2);
+    });
+
+    it('is a no-op for an unknown key and never throws', () => {
+      expect(() => releaseEmit('never-seen')).not.toThrow();
+      expect(() => releaseEmit('', -5)).not.toThrow();
+      expect(shouldEmit('never-seen', 60_000)).toBe(true);
+    });
   });
 });

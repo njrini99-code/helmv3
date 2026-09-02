@@ -13,6 +13,7 @@
     "check:cycles": "node scripts/check-cycles.mjs",
     "check:env": "node scripts/check-required-env.mjs",
     "check:env-secrets": "node scripts/check-env-secret-fallbacks.mjs",
+    "check:vercelignore": "node scripts/check-vercelignore-coverage.mjs",
     "check:helm-bridge-env": "node scripts/check-helm-bridge-env.mjs",
     "check:ledger": "node scripts/check-migration-ledger.mjs",
     "check:readiness-matrix": "tsx scripts/baseball/check-readiness-matrix.ts",

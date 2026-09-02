@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
+import { classifyCredential, SHAPE_HINTS } from '../src/lib/admin/credential-shape.mjs';
 
 const ROOT = process.cwd();
 const ENV_FILES = [
@@ -18,30 +19,47 @@ for (const file of ENV_FILES) {
   }
 }
 
-function isPlaceholder(value) {
-  return /^(your-|replace-|changeme|todo|example)/i.test(String(value).trim());
-}
-
-function hasUsableSecret(name) {
-  const value = process.env[name]?.trim();
-  return Boolean(value && value.length >= 10 && !isPlaceholder(value));
-}
-
-function hasUsableValue(name) {
-  const value = process.env[name]?.trim();
-  return Boolean(value && !isPlaceholder(value));
+/**
+ * SHAPE, not length.
+ *
+ * Until 2026-09-01 this script accepted any value of >= 10 characters that did
+ * not START with `your-`/`replace-`/`changeme`/`todo`/`example`. Every one of
+ * the eight values in the local `.env.local` was exactly 11 characters, so the
+ * script printed PASS over a wall of placeholders — and `sentry-api.ts`'s
+ * identical `usableSecret()` treated the same 11-character Sentry token as
+ * configured, which is why every local Sentry read failed soft and silently.
+ *
+ * The validators now live in ONE place, `src/lib/admin/credential-shape.mjs`,
+ * shared with the runtime readers, so the deploy-time check and the code that
+ * consumes the value cannot disagree about what "usable" means. Each check
+ * names the SHAPE it expected; it never prints the value.
+ *
+ * @param {import('../src/lib/admin/credential-shape.mjs').CredentialKind} kind
+ * @param {string[]} names  env var names, first usable wins
+ */
+function check(kind, names) {
+  /** @type {import('../src/lib/admin/credential-shape.mjs').CredentialVerdict} */
+  let worst = 'missing';
+  for (const name of names) {
+    const verdict = classifyCredential(kind, process.env[name]);
+    if (verdict === 'ok') return { ok: true, verdict, name };
+    // Report the most informative failure: malformed/placeholder beats missing.
+    if (verdict !== 'missing') worst = verdict;
+  }
+  return { ok: false, verdict: worst, name: names[0] };
 }
 
 const checks = [
   {
     label: 'Sentry read token',
-    ok: hasUsableSecret('SENTRY_READ_TOKEN') || hasUsableSecret('SENTRY_AUTH_TOKEN'),
+    ...check('sentry_auth_token', ['SENTRY_READ_TOKEN', 'SENTRY_AUTH_TOKEN']),
+    kind: 'sentry_auth_token',
     required: 'SENTRY_READ_TOKEN preferred, SENTRY_AUTH_TOKEN fallback',
   },
-  { label: 'Sentry org', ok: hasUsableValue('SENTRY_ORG'), required: 'SENTRY_ORG' },
-  { label: 'Sentry project', ok: hasUsableValue('SENTRY_PROJECT'), required: 'SENTRY_PROJECT' },
-  { label: 'Vercel API token', ok: hasUsableSecret('VERCEL_API_TOKEN'), required: 'VERCEL_API_TOKEN' },
-  { label: 'Vercel project id', ok: hasUsableValue('VERCEL_PROJECT_ID'), required: 'VERCEL_PROJECT_ID' },
+  { label: 'Sentry org', ...check('sentry_slug', ['SENTRY_ORG']), kind: 'sentry_slug', required: 'SENTRY_ORG' },
+  { label: 'Sentry project', ...check('sentry_slug', ['SENTRY_PROJECT']), kind: 'sentry_slug', required: 'SENTRY_PROJECT' },
+  { label: 'Vercel API token', ...check('vercel_api_token', ['VERCEL_API_TOKEN']), kind: 'vercel_api_token', required: 'VERCEL_API_TOKEN' },
+  { label: 'Vercel project id', ...check('vercel_project_id', ['VERCEL_PROJECT_ID']), kind: 'vercel_project_id', required: 'VERCEL_PROJECT_ID' },
   {
     // Shared secret the EDGE-side error paths use to post into the Bridge:
     // instrumentation.ts:280, proxy.ts:119, and middleware.ts:342/656 each
@@ -53,7 +71,8 @@ const checks = [
     // it here means the failure surfaces at deploy time instead of being
     // discovered retroactively during an actual edge incident.
     label: 'Internal log key (edge → Bridge error path)',
-    ok: hasUsableSecret('INTERNAL_LOG_KEY'),
+    ...check('internal_log_key', ['INTERNAL_LOG_KEY']),
+    kind: 'internal_log_key',
     required: 'INTERNAL_LOG_KEY',
   },
   {
@@ -63,19 +82,22 @@ const checks = [
     // from Inngest Cloud, and every round submitted since 2026-07-30 logged
     // "Inngest API Error: 404 Event key not found".
     //
-    // SAY WHAT THIS CANNOT DO: presence is not correctness. A rotated key is
+    // SAY WHAT THIS CANNOT DO: shape is not validity. A rotated key is
     // still well-formed and still passes here — which is exactly the failure
     // that happened. The real detector is the runtime diagnosis in
-    // src/app/api/inngest/route.ts, which measures clock-skew against
-    // key-mismatch and reports which one it saw. This check only closes the
-    // cheaper gap: a key that is missing outright.
-    label: 'Inngest signing key (presence only — cannot detect a stale key)',
-    ok: hasUsableSecret('INNGEST_SIGNING_KEY'),
+    // src/app/api/inngest/route.ts (mismatch) plus src/lib/inngest/credentials.ts
+    // (missing/malformed, reported to the Bridge in production), and the
+    // end-to-end proof is `node scripts/inngest-health-check.mjs`. This check
+    // only closes the cheaper gap: a key that is missing or cannot be a key.
+    label: 'Inngest signing key (shape only — cannot detect a stale key)',
+    ...check('inngest_signing_key', ['INNGEST_SIGNING_KEY']),
+    kind: 'inngest_signing_key',
     required: 'INNGEST_SIGNING_KEY',
   },
   {
-    label: 'Inngest event key (presence only — cannot detect a stale key)',
-    ok: hasUsableSecret('INNGEST_EVENT_KEY'),
+    label: 'Inngest event key (shape only — cannot detect a stale key)',
+    ...check('inngest_event_key', ['INNGEST_EVENT_KEY']),
+    kind: 'inngest_event_key',
     required: 'INNGEST_EVENT_KEY',
   },
 ];
@@ -83,11 +105,27 @@ const checks = [
 const failures = checks.filter((check) => !check.ok);
 
 for (const check of checks) {
-  console.log(`${check.ok ? 'ok' : 'missing'} ${check.label} (${check.required})`);
+  const detail = check.ok ? '' : ` — ${SHAPE_HINTS[check.kind]}`;
+  console.log(`${check.ok ? 'ok' : check.verdict} ${check.label} (${check.required})${detail}`);
 }
 
-if (!hasUsableValue('VERCEL_TEAM_ID')) {
-  console.log('warn Vercel team id is not set; team deployments may be incomplete (VERCEL_TEAM_ID)');
+// Advisory, never a hard check: CI's drift job does not carry a DSN, and
+// adding it to `checks` would turn "some configured, one missing" into a
+// permanent drift failure there. A DSN that is SET but cannot be a DSN is
+// still worth a line — Sentry.init accepts it silently and reports nothing.
+for (const name of ['NEXT_PUBLIC_SENTRY_DSN', 'SENTRY_DSN']) {
+  const verdict = classifyCredential('sentry_dsn', process.env[name]);
+  if (verdict !== 'missing' && verdict !== 'ok') {
+    console.log(`warn ${name} is set but ${verdict} — ${SHAPE_HINTS.sentry_dsn}`);
+  }
+}
+
+const teamVerdict = classifyCredential('vercel_team_id', process.env.VERCEL_TEAM_ID);
+if (teamVerdict !== 'ok') {
+  console.log(
+    `warn Vercel team id is ${teamVerdict}; team deployments may be incomplete (VERCEL_TEAM_ID` +
+      `${teamVerdict === 'missing' ? '' : ` — ${SHAPE_HINTS.vercel_team_id}`})`,
+  );
 }
 
 /**
@@ -110,10 +148,14 @@ if (!hasUsableValue('VERCEL_TEAM_ID')) {
  * So the job stays green until the secrets are actually wired into CI, and
  * from that moment on it starts catching regressions automatically with no
  * follow-up edit. Removing a var that IS set still fails loudly.
+ *
+ * "Nothing configured" means nothing SET. A placeholder or malformed value is
+ * set — it counts as provisioned-and-wrong, and fails.
  */
 const driftMode = process.argv.includes('--drift');
+const nothingSet = failures.length === checks.length && failures.every((f) => f.verdict === 'missing');
 
-if (driftMode && failures.length === checks.length) {
+if (driftMode && nothingSet) {
   console.log(
     'skip No Helm Bridge integration env is provisioned here (0 of ' +
       `${checks.length} set) — nothing to drift-check. This is expected in CI ` +
@@ -126,13 +168,15 @@ if (driftMode && failures.length === checks.length) {
 if (failures.length > 0) {
   if (driftMode) {
     console.error(
-      `Helm Bridge env DRIFT: ${checks.length - failures.length} of ${checks.length} values are set, ` +
-        `but ${failures.length} are missing or placeholder. A partially-configured Bridge ` +
+      `Helm Bridge env DRIFT: ${checks.length - failures.length} of ${checks.length} values are usable, ` +
+        `but ${failures.length} are missing, placeholder or malformed. A partially-configured Bridge ` +
         'silently degrades (blank panels, edge errors that never reach admin_events) ' +
         'rather than failing visibly, so this is treated as an error.',
     );
   } else {
-    console.error(`Helm Bridge env check failed: ${failures.length} required value(s) missing or placeholder.`);
+    console.error(
+      `Helm Bridge env check failed: ${failures.length} required value(s) missing, placeholder or malformed.`,
+    );
   }
   process.exit(1);
 }

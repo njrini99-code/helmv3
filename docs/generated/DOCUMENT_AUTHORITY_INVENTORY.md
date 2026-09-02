@@ -51,7 +51,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `.claude/rules/autonomy.md` | current | - | - | yes | 4 | 2 | - |
+| `.claude/rules/autonomy.md` | current | - | - | yes | 4 | 3 | - |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | 0 | 5 | - |
 | `.claude/rules/baseball-roles.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | 7 | 5 | - |
@@ -64,9 +64,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 0 | 11 | 2 |
-| `.claude/rules/quality-gates.md` | current | - | - | - | 0 | 4 | 2 |
-| `.claude/rules/shipping.md` | current | - | - | yes | 3 | 12 | 1 |
-| `AGENTS.md` | current | yes | - | yes | 0 | 17 | 2 |
+| `.claude/rules/quality-gates.md` | current | - | - | - | 0 | 7 | 2 |
+| `.claude/rules/shipping.md` | current | - | - | yes | 4 | 12 | 1 |
+| `AGENTS.md` | current | yes | - | yes | 0 | 18 | 2 |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 6 | 1 |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | 2 |
 | `README.md` | current | - | - | - | 0 | 2 | - |
@@ -79,7 +79,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/debugger.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/verifier.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/commands/cleanup-db.md` | current | - | - | - | 0 | 2 | 2 |
-| `.claude/commands/gates.md` | current | - | - | - | 0 | 0 | - |
+| `.claude/commands/gates.md` | current | - | - | - | 0 | 2 | - |
 | `.claude/skills/app-store-screenshots/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/capacitor-best-practices/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/debugging-capacitor/SKILL.md` | current | - | - | - | 0 | 0 | - |
@@ -158,7 +158,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 1 | 44 | 2 |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 2 | 65 | 2 |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 21 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
@@ -251,7 +251,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/security-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
-| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 8 | 8 | - |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 9 | 8 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 2 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 129 | - |
@@ -464,7 +464,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/ledgers/README.md` | current | - | - | yes | 5 | 2 | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | - | 1 | 34 | 5 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | - | 1 | 44 | 5 |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 1 | 6 | 2 |
@@ -479,7 +479,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/deployments.md` | current | - | - | yes | 6 | 6 | 1 |
 | `memory/ledgers/tests/README.md` | current | - | - | - | 0 | 1 | - |
-| `memory/ledgers/tests/admin_platform.md` | current | - | - | - | 1 | 25 | 2 |
+| `memory/ledgers/tests/admin_platform.md` | current | - | - | - | 1 | 37 | 2 |
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | 1 | 3 | 1 |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
 | `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 1 | 4 | 1 |
@@ -490,7 +490,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md` | current | - | - | - | 2 | 7 | 1 |
-| `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md` | current | - | - | - | 2 | 4 | - |
+| `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md` | current | - | - | - | 2 | 5 | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md` | current | - | - | - | 1 | 0 | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md` | current | - | - | - | 1 | 0 | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md` | current | - | - | - | 1 | 1 | 1 |
@@ -551,7 +551,7 @@ them would bury everything above.
 | `docs/CI_RUNBOOK.md` | current | - | - | yes | 6 | 8 | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
-| `docs/OBSERVABILITY.md` | current | yes | - | yes | 2 | 5 | - |
+| `docs/OBSERVABILITY.md` | current | yes | - | yes | 2 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 3 | 3 | - |
 | `docs/REPO_MAP.md` | current | - | - | yes | 4 | 37 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 3 | 7 | - |

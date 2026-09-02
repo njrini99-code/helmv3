@@ -93,8 +93,10 @@ jobs:
       - run:
           name: Knip — unused exports, files, deps
           # `|| true` used to swallow EVERY exit code, including 2 (bad config).
-          # knip.json carried a "_comment" key knip rejects, so for as long as
-          # that was true this job posted green while the tool never started.
+          # The config (then knip.json, now knip.jsonc at the repo root — knip
+          # auto-discovers either name) carried a "_comment" key knip rejects,
+          # so for as long as that was true this job posted green while the
+          # tool never started.
           # Distinguish the two: 1 = findings (a report, not a failure — the
           # backlog is not yet ratcheted), 2+ = knip could not run, which is a
           # broken gate and must go red.

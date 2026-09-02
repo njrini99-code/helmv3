@@ -6,11 +6,12 @@
 //
 // Usage: node .claude/hooks/lib/stop-check.mjs <session_id>
 // Reads .claude/session-state/<session_id>.jsonl (already fully populated by
-// the PreToolUse/PostToolUse hooks that ran during this session — this script
+// the PostToolUse recording hooks that ran during this session — this script
 // does no mapping of its own beyond what those events already recorded,
-// EXCEPT for governed/excluded classification, which must match
-// guard-feature-context.mjs exactly and is shared from lib/feature-map.mjs
-// for that reason).
+// EXCEPT for governed/excluded classification, which is shared from
+// lib/feature-map.mjs so every reader of the ledger classifies a path the
+// same way. An edit-time guard-feature-context.mjs once shared it too; that
+// hook no longer exists, and this Stop-time check is the only gate).
 //
 // Outputs one JSON object to stdout, always exit 0 — this is a report, not a
 // gate; stop-verify.sh makes the block/allow decision from its contents.
@@ -107,9 +108,10 @@ async function main() {
   const verifiableFiles = outstandingFiles.filter((f) => !delegatedPaths.has(f.path));
 
   // 1. MAPPING: a touched file under a governed root with zero feature_ids
-  //    and no acknowledged gap. In normal operation guard-feature-context.mjs
-  //    already prevented this at edit time — this is a retroactive
-  //    cross-check, not the primary enforcement point.
+  //    and no acknowledged gap. This IS the enforcement point: the edit-time
+  //    guard-feature-context.mjs that used to prevent it before the write no
+  //    longer exists, so a mapping gap is detected here, after the fact, and
+  //    prevented nowhere (docs/CONTROL_PLANE_ENFORCEMENT.md says the same).
   const mappingGaps = verifiableFiles
     .filter((f) => !isExcluded(f.path) && isGoverned(f.path) && f.feature_ids.length === 0)
     .filter((f) => !state.unmappedAcknowledged.has(f.path))
@@ -117,8 +119,8 @@ async function main() {
 
   // 2. CONTEXT: every feature_id a touch event carries must have a
   //    context_load event for that same feature_id at or before that touch's
-  //    timestamp. Same cross-check relationship to guard-feature-context.mjs
-  //    as the mapping check above.
+  //    timestamp. Same status as the mapping check above: the only gate, and
+  //    a post-hoc one.
   const contextGaps = [];
   for (const f of verifiableFiles) {
     for (const featureId of f.feature_ids) {

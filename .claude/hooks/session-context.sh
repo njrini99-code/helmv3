@@ -83,26 +83,85 @@ fi
 # ignored it; nothing said it. Every session was told how far it was from
 # origin/main and nothing about how far origin/main was from the users.
 #
-# Pure git, no network: scripts/deploy-prod.sh writes this file ONLY after it
-# has verified the release stamp in the served bundle, so its presence means
-# "proven live", not "a deploy command ran". A session-start hook must never
-# make a network call — `npm run release:status` is the online check.
-LVR_FILE=".claude/session-state/last-verified-release"
-if [ -f "$LVR_FILE" ]; then
-  LVR=$(tr -d '[:space:]' < "$LVR_FILE" 2>/dev/null)
-  if [ -n "$LVR" ] && git cat-file -e "${LVR}^{commit}" 2>/dev/null; then
-    UNRELEASED=$(git rev-list --count "${LVR}..origin/main" 2>/dev/null || echo "?")
-    if [ "$UNRELEASED" != "?" ] && [ "${UNRELEASED:-0}" -gt 0 ] 2>/dev/null; then
-      CTX="${CTX}
-- UNRELEASED: ${UNRELEASED} commit(s) are merged to origin/main but NOT in
-  production (last verified live: $(echo "$LVR" | cut -c1-9)). Merging does not
-  ship — vercel.json disables git deploys. Confirm with: npm run release:status"
-    fi
+# TWO SOURCES, and the hook says which one it used.
+#
+#   LIVE    scripts/release-status.mjs reads the served bundle and finds the
+#           stamped commit — the same check deploy-prod.sh runs after a
+#           promote. Bounded (--timeout-ms, default 5000, below this hook's
+#           10 s budget in settings.json) and never a git fetch (--no-fetch),
+#           so a dead network degrades to the marker, not to a hung hook.
+#           Skip it with HELM_SESSION_OFFLINE=1.
+#   MARKER  .claude/session-state/last-verified-release, `<sha> <date>`,
+#           written by deploy-prod.sh only after it verified the bundle. It is
+#           machine state and it goes stale: a deploy from a worktree left the
+#           canonical copy at 53ae81a4c while production served fb425aa2b, and
+#           this hook opened sessions claiming 16 unreleased commits against a
+#           real figure of 1. So the marker is read from the CANONICAL checkout
+#           (deploy-prod.sh now writes it there), and when it is all we have
+#           the context says "marker" and its date, never "verified".
+#
+# This block used to say a session-start hook must never make a network call.
+# It still makes none for git; the one HTTPS probe is bounded, optional, and
+# the reason a session can now be told the truth instead of a stale marker.
+LVR_REL=".claude/session-state/last-verified-release"
+CANON_ROOT=$(jqs '.canonicalRoot')
+[ "$CANON_ROOT" = "?" ] && CANON_ROOT="$(pwd -P)"
+BASE_REF_SHA=$(jqs '.baseSha')
+
+release_line_from() {
+  # $1 = sha, $2 = label. Emits the CTX line(s) for a known production sha.
+  local sha="$1" label="$2" unreleased
+  git cat-file -e "${sha}^{commit}" 2>/dev/null || return 1
+  [ "$BASE_REF_SHA" != "?" ] || return 1
+  unreleased=$(git rev-list --count "${sha}..${BASE_REF_SHA}" 2>/dev/null) || return 1
+  if [ "${unreleased:-0}" -gt 0 ] 2>/dev/null; then
+    CTX="${CTX}
+- UNRELEASED: ${unreleased} commit(s) are merged to origin/main but NOT in
+  production (production ${label}). Merging does not ship —
+  vercel.json disables git deploys. Confirm with: npm run release:status"
+  else
+    CTX="${CTX}
+- production: $(printf '%s' "$sha" | cut -c1-9) — serving origin/main (${label})"
   fi
+  return 0
+}
+
+LIVE_SHA=""
+if [ "${HELM_SESSION_OFFLINE:-0}" != "1" ] && [ -f scripts/release-status.mjs ]; then
+  LIVE_JSON=$(node scripts/release-status.mjs --json --no-fetch \
+    --timeout-ms "${HELM_SESSION_RELEASE_PROBE_MS:-5000}" 2>/dev/null || true)
+  LIVE_SHA=$(printf '%s' "$LIVE_JSON" | jq -r '.deployed // empty' 2>/dev/null)
+fi
+
+if [ -n "$LIVE_SHA" ] && release_line_from "$LIVE_SHA" "verified live in the served bundle at session start"; then
+  # Refresh the marker in both checkouts so the offline path stays honest.
+  for root in "$CANON_ROOT" "$(pwd -P)"; do
+    mkdir -p "$root/.claude/session-state" 2>/dev/null || true
+    printf '%s %s\n' "$LIVE_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$root/$LVR_REL" 2>/dev/null || true
+  done
 else
-  CTX="${CTX}
+  LVR_FILE=""
+  for cand in "$CANON_ROOT/$LVR_REL" "$LVR_REL"; do
+    [ -f "$cand" ] && LVR_FILE="$cand" && break
+  done
+  if [ -n "$LVR_FILE" ]; then
+    LVR_SHA=$(awk '{print $1}' "$LVR_FILE" 2>/dev/null | tr -d '[:space:]')
+    LVR_DATE=$(awk '{print $2}' "$LVR_FILE" 2>/dev/null | tr -d '[:space:]')
+    # Legacy one-field marker: the file's mtime is the only date it has.
+    [ -z "$LVR_DATE" ] && LVR_DATE=$(date -u -r "$LVR_FILE" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "unknown date")
+    if [ -n "$LVR_SHA" ] && release_line_from "$LVR_SHA" "per MARKER written ${LVR_DATE}; NOT re-verified this session — live probe failed or skipped"; then
+      :
+    else
+      CTX="${CTX}
+- release state: UNKNOWN — the marker at ${LVR_FILE} names a commit this
+  checkout cannot resolve. Do not assume main is live. Check with: npm run release:status"
+    fi
+  else
+    CTX="${CTX}
 - release state: UNKNOWN — no verified production release recorded on this
-  machine. Do not assume main is live. Check with: npm run release:status"
+  machine and the live probe failed or was skipped. Do not assume main is live.
+  Check with: npm run release:status"
+  fi
 fi
 
 WT=$(git worktree list 2>/dev/null | wc -l | tr -d ' ')

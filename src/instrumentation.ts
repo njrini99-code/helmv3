@@ -274,11 +274,34 @@ export async function register() {
       .then((m) => m.recordDeployMarker())
       .catch(() => {});
 
+    // Helm Bridge: an absent or malformed Inngest credential in production is
+    // a fault, not a config state — every durable job silently turns off. The
+    // SDK's own "no signing key found" console.error fires here at start-up
+    // (3 of the 4 Sentry events on 2026-09-01 carried no request URL), so
+    // start-up is where the Bridge row is written too. Production-gated,
+    // throttled, collapsed across cold starts — see src/lib/inngest/credentials.ts.
+    //
+    // Started here, AWAITED below. register() runs before the first request
+    // and has no request scope, so `after()` is unavailable and the write
+    // takes scheduleBridgeWrite's awaited fallback (bounded at 2.5s, and handed
+    // to the Vercel request context's waitUntil when one exists). `void`ing
+    // that made it a promise nobody held on a function that freezes: the row
+    // never landed, and the throttle window it had opened silenced the next
+    // `send`/`inbound` report. In the healthy case it returns before any I/O,
+    // so cold start pays nothing.
+    const inngestCredentialReport = import('@/lib/inngest/credentials')
+      .then((m) => m.reportInngestCredentialFault('startup'))
+      .catch(() => false);
+
     // `process.on` is a Node-only API. Load the handler module only from the
     // Node runtime so Edge builds never evaluate that implementation.
     void import('@/lib/observability/register-process-error-handlers')
       .then((m) => m.registerProcessErrorHandlers())
       .catch(() => {});
+
+    // After the handlers are on their way, never before them: a slow Bridge
+    // must not delay the process-level catch-all.
+    await inngestCredentialReport;
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {

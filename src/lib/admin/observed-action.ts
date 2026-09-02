@@ -1,5 +1,6 @@
 import { logServerException } from '@/lib/server-error-logger';
 import { shouldEmit, drainCollapsedCount } from '@/lib/admin/emit-throttle';
+import { scheduleBridgeWrite } from '@/lib/admin/schedule-bridge-write';
 import {
   extractActionSoftFailure,
   observeActionSoftFailure,
@@ -27,7 +28,12 @@ export interface ObservedActionContext {
  * Helm Bridge capture class #2 — failed server actions. Generalizes the
  * with-baseball-action / with-lifting-action idea for cross-sport use.
  * Contract: NEVER changes the wrapped function's behavior — same resolve,
- * same reject; logging is fire-and-forget and self-swallowing.
+ * same reject; logging is self-swallowing. It is no longer fire-and-forget:
+ * the Bridge write is SCHEDULED past the response (`scheduleBridgeWrite` —
+ * Next `after()` in a request scope, an awaited bounded write otherwise)
+ * because a `void`ed promise on a serverless function is dropped the moment
+ * the response is sent, which left thrown-action failures in Sentry but not
+ * in the incident queue.
  */
 
 export function isNextControlFlowError(err: unknown): boolean {
@@ -138,7 +144,7 @@ export function withAdminObserved<Args extends unknown[], R>(
         } catch {
           extraContext = {};
         }
-        observeActionSoftFailure(result, {
+        await observeActionSoftFailure(result, {
           action: name,
           source: 'server_action',
           feature: opts.feature ?? null,
@@ -170,21 +176,25 @@ export function withAdminObserved<Args extends unknown[], R>(
             } catch {
               extraContext = {};
             }
-            void logServerException(err, {
-              action: name,
-              source: 'server_action',
-              feature: opts.feature ?? null,
-              featureArea: opts.featureArea ?? opts.feature ?? null,
-              sport: opts.sport,
-              handled: false,
-              userId: observedUser.userId,
-              userEmail: observedUser.userEmail,
-              roundId: extraContext.roundId ?? null,
-              playerId: extraContext.playerId ?? null,
-              teamId: extraContext.teamId ?? null,
-              route: extraContext.route ?? null,
-              ...(collapsedCount > 0 ? { metadata: { collapsed_count: collapsedCount } } : {}),
-            }).catch(() => {});
+            // Scheduled, not detached: `void logServerException(...)` here was
+            // the shape that reached Sentry but not the Bridge on Vercel.
+            await scheduleBridgeWrite(() =>
+              logServerException(err, {
+                action: name,
+                source: 'server_action',
+                feature: opts.feature ?? null,
+                featureArea: opts.featureArea ?? opts.feature ?? null,
+                sport: opts.sport,
+                handled: false,
+                userId: observedUser.userId,
+                userEmail: observedUser.userEmail,
+                roundId: extraContext.roundId ?? null,
+                playerId: extraContext.playerId ?? null,
+                teamId: extraContext.teamId ?? null,
+                route: extraContext.route ?? null,
+                ...(collapsedCount > 0 ? { metadata: { collapsed_count: collapsedCount } } : {}),
+              }),
+            );
           }
         } catch {
           // Logging must never mask the real failure.

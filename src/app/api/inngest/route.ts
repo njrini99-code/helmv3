@@ -2,6 +2,7 @@ import { serve } from 'inngest/next';
 import { inngest } from '@/lib/inngest/client';
 import { functions } from '@/lib/inngest/functions';
 import { logServerError } from '@/lib/server-error-logger';
+import { inngestCredentialState, reportInngestCredentialFault } from '@/lib/inngest/credentials';
 
 /**
  * Inngest Next.js handler — serves the function registry at
@@ -94,6 +95,19 @@ function quietUnsignedProbes(handler: InngestHandler, method: string): InngestHa
         status: 401,
         headers: { 'content-type': 'application/json' },
       });
+    }
+
+    // A signed request with NO usable signing key on our side is a third
+    // case, and it must not be diagnosed as the second. The SDK cannot even
+    // attempt validation — `checkModeConfiguration` logs "In cloud mode but
+    // no signing key found" and answers 500 — so the 401 branch below never
+    // fires and, until 2026-09-01, nothing reached admin_events at all: four
+    // Sentry console-integration events after the 14:31Z deploy, zero Bridge
+    // rows, `integrations` unable to go red. Report it (production-gated,
+    // throttled, one incident) and still delegate so the SDK's own 500 is
+    // what Inngest Cloud sees.
+    if (inngestCredentialState().signingKey !== 'ok') {
+      await reportInngestCredentialFault('inbound');
     }
 
     try {

@@ -43,13 +43,15 @@ vi.mock('@/app/admin/_components/RelativeTime', () => ({
   RelativeTime: () => <span>just now</span>,
 }));
 vi.mock('@/components/fairway', () => ({
-  AppShell: ({ children, sidebarFooter, moreSheetFooter, bottomNav }: {
+  AppShell: ({ children, sidebarFooter, moreSheetFooter, bottomNav, topBarActions }: {
     children: ReactNode;
     sidebarFooter?: ReactNode;
     moreSheetFooter?: ReactNode;
     bottomNav?: ReactNode;
+    topBarActions?: ReactNode;
   }) => (
     <>
+      <header>{topBarActions}</header>
       <aside>{sidebarFooter}</aside>
       <section>{moreSheetFooter}</section>
       {bottomNav}
@@ -91,6 +93,43 @@ describe('AdminShell bottom-nav Health badge', () => {
       </AdminShell>,
     );
     expect(screen.getByText('Health:none')).toBeInTheDocument();
+  });
+
+  // The incident badge's third state. `fetchBridgeErrorBadge` returns null
+  // when the feed read failed; that used to arrive here as 0 — no badge,
+  // exactly what "no incidents" renders — and sit in the layout cache for 60s.
+  describe('Incidents badge unknown state', () => {
+    it('renders NO numeric badge and a distinct "unreadable" chip when the count is null', () => {
+      render(
+        <AdminShell email="admin@helm.test" errorCount={null} healthCount={0}>
+          <div>Bridge content</div>
+        </AdminShell>,
+      );
+      expect(screen.getByText('Incidents:none')).toBeInTheDocument();
+      const chip = screen.getByTestId('bridge-incidents-unreadable');
+      expect(chip).toHaveTextContent(/incidents unreadable/i);
+      expect(chip).toHaveAttribute('role', 'status');
+    });
+
+    it('renders no chip when the count is a real zero — unknown and zero must look different', () => {
+      render(
+        <AdminShell email="admin@helm.test" errorCount={0} healthCount={0}>
+          <div>Bridge content</div>
+        </AdminShell>,
+      );
+      expect(screen.getByText('Incidents:none')).toBeInTheDocument();
+      expect(screen.queryByTestId('bridge-incidents-unreadable')).toBeNull();
+    });
+
+    it('renders no chip when the count is positive', () => {
+      render(
+        <AdminShell email="admin@helm.test" errorCount={4} healthCount={0}>
+          <div>Bridge content</div>
+        </AdminShell>,
+      );
+      expect(screen.getByText('Incidents:4')).toBeInTheDocument();
+      expect(screen.queryByTestId('bridge-incidents-unreadable')).toBeNull();
+    });
   });
 
   it('keeps the Errors and Health badges independent of each other', () => {

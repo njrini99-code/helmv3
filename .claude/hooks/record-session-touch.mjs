@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 // .claude/hooks/record-session-touch.mjs — PostToolUse / Write|Edit|MultiEdit
 //
-// Runs BEFORE post-edit.sh in the same matcher block (settings.json), per
-// spec §11: "successful edit -> record session-owned path -> existing
-// formatting/lint." PostToolUse only fires after a tool completes
-// successfully (failures go to a separate PostToolUseFailure event per the
-// live hooks docs) — no extra success check needed here.
+// The ONLY hook in its matcher block (settings.json). Spec §11 planned
+// "successful edit -> record session-owned path -> existing formatting/lint",
+// with a post-edit.sh running after this one; that script was never wired and
+// does not exist, so nothing formats an edited file — `npm run lint` and CI
+// do. PostToolUse only fires after a tool completes successfully (failures go
+// to a separate PostToolUseFailure event per the live hooks docs) — no extra
+// success check needed here.
 //
 // This is the primitive that replaces stop-verify.sh's git-diff-based
 // attribution: the write event itself knows, with certainty, which session
