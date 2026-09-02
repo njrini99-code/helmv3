@@ -143,3 +143,21 @@ BEGIN
   RETURN v;
 END;
 $function$;
+
+-- ACL restated, house convention carried by 20260701150000 and 20260704130000:
+-- CREATE OR REPLACE preserves the existing ACL, but the assertion below is
+-- the tripwire for the recreate-re-grants-anon class shipping.md §4 records.
+REVOKE ALL ON FUNCTION public.run_integrity_checks()
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.run_integrity_checks() TO service_role;
+
+DO $$
+DECLARE v_fn oid;
+BEGIN
+  SELECT p.oid INTO v_fn FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='run_integrity_checks';
+  IF has_function_privilege('anon', v_fn, 'EXECUTE')
+     OR has_function_privilege('authenticated', v_fn, 'EXECUTE') THEN
+    RAISE EXCEPTION 'ACL check failed: run_integrity_checks callable by anon/authenticated';
+  END IF;
+END $$;
