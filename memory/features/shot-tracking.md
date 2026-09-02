@@ -214,6 +214,12 @@ accent-green selected thumb and full-contrast inactive labels
 The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 `warm-*` text tokens that rendered unreadable in dark scope. The new-round hole editor's par chips fire the selection detent as of the same date (§32 gap closed by live bridge-log QA).
 
+Keyboard (2026-09-02): the "distance to hole" box was still covered on iOS —
+the keyboardWillShow scroll-into-view had nowhere to scroll for a field in the
+bottom ~45% of a page that ends where it ends. `<body>` now pads by
+`--keyboard-height` while `body.keyboard-open` (globals.css), which is the
+scroll range that scroll needed. See ios-native-shell.md.
+
 ## Related Docs
 
 - `memory/context/golfhelm-features.md`

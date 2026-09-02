@@ -296,6 +296,18 @@ them would have broken those routes, not the dead one.
   at. A control that does nothing is worse than a missing one: it teaches the
   operator the queue is curated when it is not. Counts shown beside a filter
   are measured over the list that filter actually narrows.
+- The overnight digest (`/api/cron/admin-digest` → `build-digest.ts`) NAMES
+  only actionable, non-degradation incident groups — the Errors tab's default
+  view — and COUNTS the rest as "Not listed: N handled degradations · N quiet
+  (client connectivity, expected access)". Before 2026-09-02 every group was
+  listed, so the email led with three "Client error: Load failed" rows above
+  "0 critical".
+- `classifyIncident` rule 3c: a CLIENT-sourced transport-layer TypeError
+  (`isTransientNetworkErrorMessage` — "Load failed", "Failed to fetch", …)
+  is `integration` / not actionable, the same verdict rule 4 gives the generic
+  "network error" wording. Server-side "fetch failed" (undici, a Vercel
+  function) is not matched and stays actionable. The phrase list is shared
+  with `error-logging` and the message-send retry so the three cannot drift.
 
 - **The self-healing loop has THREE axes, and throughput is the one a
   heartbeat cannot show.** Runtime (`selfheal-registry.ts`: is each stage on
