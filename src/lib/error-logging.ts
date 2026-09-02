@@ -5,6 +5,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
+import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 
 const SEVERITY_TO_SENTRY_LEVEL: Record<'low' | 'medium' | 'high' | 'critical', Sentry.SeverityLevel> = {
   low: 'info',
@@ -202,38 +203,9 @@ function isEmbeddedBrowserBridgeNoise(message: string): boolean {
   return /Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/.test(message);
 }
 
-/**
- * A fetch that never reached the server.
- *
- * Every engine words this differently, and the message is all we get — the
- * `TypeError` carries no status and no useful stack:
- *
- *   Safari / iOS WKWebView ... "Load failed"
- *   Chrome / Edge ............ "Failed to fetch"
- *   Firefox .................. "NetworkError when attempting to fetch resource."
- *   Stripe.js ................ "A network error occurred."
- *   WebKit, mid-request ...... "The network connection was lost."
- *
- * All five are the transport layer, not the application: a 500 from our own API
- * does NOT land here, because `fetch` resolves for any HTTP response it
- * actually received. That is what makes the class safe to tier down.
- *
- * Deliberately NOT matched: `AbortError`. Aborts are our own timeouts firing
- * (`AbortSignal.timeout`), which is a budget we chose and may need to revisit —
- * a different question from the user's connection dropping.
- */
-function isTransientNetworkErrorMessage(message: string): boolean {
-  const msg = message.toLowerCase();
-  return (
-    msg.includes('load failed') ||
-    msg.includes('failed to fetch') ||
-    msg.includes('networkerror when attempting to fetch') ||
-    msg.includes('a network error occurred') ||
-    msg.includes('network connection was lost') ||
-    msg.includes('internet connection appears to be offline') ||
-    msg.includes('net::err_')
-  );
-}
+// `isTransientNetworkErrorMessage` — the transport-layer TypeError class — now
+// lives in `@/lib/transient-network-error`, shared with the message-send retry
+// and the incident classifier so the three never disagree about what counts.
 
 /**
  * Ceiling on the severity of failures that carry their own recovery path.

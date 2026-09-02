@@ -441,6 +441,10 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
                 // (~56px) to the mobile bottom pad so it never overlaps content.
                 // Desktop (md+) is unaffected — the bar is md:hidden.
                 bottomNav && 'pb-[calc(2rem+56px+env(safe-area-inset-bottom,0px))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
+                // Keyboard room (a focused field scrolled above the soft keyboard)
+                // is NOT added here: globals.css pads <body> by --keyboard-height
+                // while body.keyboard-open, which covers this shell and every
+                // page outside it (auth, onboarding, join) alike.
                 // Generous gutters (§A: 48–56px page gutters) + premium reading
                 // width — applied only when the shell owns the page frame. When
                 // `contentPadding` is false, PAGES own their gutters + titles
