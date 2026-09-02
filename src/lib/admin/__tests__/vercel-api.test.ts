@@ -84,14 +84,37 @@ describe('fetchVercelWebInsights', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it('surfaces a failed status (not fake zeros) when a period request 404s/403s', async () => {
+  it('surfaces a failed status (not fake zeros) when a period request 403s', async () => {
     // An auth failure or misconfigured token must never render identically
     // to "genuinely zero visitors" — that was the pre-fix bug. It now maps
     // to the same error/status contract fetchVercelDeployments already used.
+    //
+    // Title said "404s/403s" until 2026-09-01 while the mock only ever sent
+    // 403. 404 now has its own meaning and its own test below, so the two
+    // must not be described as one case.
     fetchMock.mockResolvedValue(new Response('nope', { status: 403 }));
     const res = await fetchVercelWebInsights();
     expect(res.status).toBe('error');
     expect(res.error).toContain('403');
+    expect(res.data).toBeNull();
+  });
+
+  it('a 404 is "Web Analytics not enabled", NOT an outage', async () => {
+    // Measured against the live project 2026-09-01: Vercel answers
+    //   404 {"error":{"code":"not_found","message":"Web Analytics not found."}}
+    // when the feature was never enabled. The provider is reachable and the
+    // token is valid, so reporting it through reportIntegrationFault said
+    // "vercel could not be reached" 99 times in one day about a service that
+    // had answered immediately and precisely.
+    //
+    // `unconfigured` is the honest state, and it is also the quiet one: no
+    // admin_events row, and the Bridge renders its not-configured panel.
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: { code: 'not_found', message: 'Web Analytics not found.' } }), { status: 404 }),
+    );
+    const res = await fetchVercelWebInsights();
+    expect(res.status).toBe('unconfigured');
+    expect(res.status).not.toBe('error');
     expect(res.data).toBeNull();
   });
 

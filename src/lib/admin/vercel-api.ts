@@ -168,6 +168,30 @@ export async function fetchVercelWebInsights(): Promise<AdminFetchResult<VercelW
       fetchPeriod(daysAgo(7)),
       fetchPeriod(daysAgo(30)),
     ]);
+    // A 404 here is NOT an outage. Vercel answers it when Web Analytics has
+    // never been enabled for the project, and it answers it instantly and
+    // clearly:
+    //
+    //   404 {"error":{"code":"not_found","message":"Web Analytics not found."}}
+    //
+    // Confirmed 2026-09-01 against the live project: Vercel's own API returns
+    // exactly that, so the provider is reachable and the token is valid — the
+    // feature simply does not exist to be read. Reporting it through
+    // reportIntegrationFault produced 99 admin_events in one day, every one
+    // of them saying "vercel could not be reached", which is the opposite of
+    // what happened and sent a reader looking for a network or credential
+    // problem that was never there.
+    //
+    // `unconfigured` is the state that already exists for exactly this: the
+    // Bridge renders a "not configured" panel instead of a fault, and nothing
+    // is logged. Enabling Web Analytics in the Vercel dashboard turns the
+    // panel into real numbers with no code change.
+    //
+    // Every other status is still a genuine fault: 401/403 mean the token is
+    // wrong or misscoped, 5xx means Vercel actually broke.
+    if (httpFailureStatus === 404) {
+      return unconfigured('Vercel Web Analytics');
+    }
     if (httpFailureStatus !== null) {
       return failed(
         reportIntegrationFault('vercel', 'web insights fetch', `Vercel web insights fetch failed: ${httpFailureStatus}`),
