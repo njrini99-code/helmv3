@@ -60,4 +60,3 @@ ci:
   unique_check_names:
     - CI aggregate
     - Review Gate aggregate
-    - Smoke checks

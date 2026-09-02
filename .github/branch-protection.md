@@ -23,6 +23,20 @@ so a job split/rename does not silently break protection.
 > **Other settings** below for the current, API-verified state. The six
 > required contexts are unchanged.
 >
+> **Updated 2026-09-02: FIVE required contexts.** `Smoke checks` was removed
+> from the required set (`DELETE …/protection/required_status_checks/contexts`,
+> verified by reading the list back) and then its job was deleted from
+> `playwright.yml` — in that order, so no PR was ever left waiting on a name
+> nothing posts. The job was `npm ci` + `next build`, the exact steps ci.yml's
+> `Next build` runs inside `CI aggregate`; every PR was paying two 9-minute
+> builds and two runner slots for one fact. Live state now:
+> `CI aggregate`, `Review Gate aggregate`, `Analyze (actions)`,
+> `Analyze (javascript-typescript)`, `Analyze (python)`. Same day, ci.yml's
+> nine tiny leaf jobs became steps of one `Static checks` job and ESLint
+> joined the ratchets in `Lint`; review-gate.yml's eleven linters became steps
+> of one `Review Gate checks` job. The aggregate names did not change, which
+> is the whole reason branch protection depends on aggregates.
+>
 > **The window this section used to warn about was OPEN, and is now closed.**
 > The job rename (`all` → `CI aggregate` / `Review Gate aggregate`) had already
 > landed on `main`, but the required-context list had not been updated — exactly
@@ -73,17 +87,16 @@ so a job split/rename does not silently break protection.
 > kept struck through rather than deleted so the change is visible to anyone
 > re-applying these settings from this file.
 
-- `CI / all` — hard aggregate for:
-  - `Database types drift`
-  - `Schema invariants`
-  - `Feature knowledge`
+- `CI aggregate` (was `CI / all`) — hard aggregate for:
+  - `Static checks` (since 2026-09-02, one job whose named steps are the
+    former `Database types drift`, `Schema invariants`, `Feature knowledge`,
+    `Control plane`, `Bridge env drift`, `Edge functions (Deno)`,
+    `Business contracts`, `Route Hygiene P0/P1` and `Import-cycle ratchet`
+    jobs)
   - `TypeScript`
-  - `ESLint`
-  - `Lint ratchet`
+  - `Lint` (ESLint plus the former `Lint ratchet` steps)
   - `Unit tests`
-  - `Business contracts`
   - `Next build`
-  - `Route Hygiene P0/P1`
   - `Supabase lint + RLS tests`
   - `BaseballHelm authenticated smoke` (coach + player, #372) — as of PR #1125
     this seeds a throwaway Supabase stack on the runner instead of production, so
@@ -91,13 +104,14 @@ so a job split/rename does not silently break protection.
     fork/Dependabot PRs. Before that change it skipped (did not fail) on those
     runs, because they receive no secrets from GitHub by design — and a required
     gate that silently skipped for a whole class of PR was a hole in it
-- `Review Gate / all` — hard aggregate for ast-grep, semgrep, gitleaks,
-  actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, and
-  hadolint.
-- `Playwright E2E / Smoke checks` — hard smoke build check on pull requests
-  and `main` pushes (`playwright.yml`: `npm ci` + `next build`). The full
-  `Playwright (chromium)` suite runs on `main` pushes and manual
-  `workflow_dispatch` only and remains advisory.
+- `Review Gate aggregate` (was `Review Gate / all`) — hard aggregate for
+  `Review Gate checks` (ast-grep, gitleaks, actionlint, yamllint, shellcheck,
+  markdownlint, ruff+pylint, sqlfluff, hadolint, env-secrets as named steps
+  of one job since 2026-09-02) and `semgrep (custom rules)`.
+- ~~`Playwright E2E / Smoke checks`~~ — **REMOVED 2026-09-02** (context first,
+  then job). It was `npm ci` + `next build`, a duplicate of `Next build`
+  above. The full `Playwright (chromium)` suite is manual `workflow_dispatch`
+  only and remains advisory.
 - `CodeQL` — GitHub code-scanning status.
 - ~~`CodeRabbit` — CodeRabbit's own status check, with assertive review,
   pre-merge checks, issue enrichment, and auto-planning configured in
@@ -174,8 +188,9 @@ sqlfluff, hadolint) plus CodeQL cover the same hard rules and report on every PR
 - Restrict who can push to matching branches: **OFF** (no push-restriction list).
 - Do not allow bypassing the above settings: **OFF** — `enforce_admins` is
   disabled, so the owner can direct-push to `main`.
-- Allow force pushes: **OFF**. Required status checks: Smoke checks, CI aggregate,
-  Review Gate aggregate, Analyze (actions / javascript-typescript / python).
+- Allow force pushes: **OFF**. Required status checks (five, since 2026-09-02):
+  CI aggregate, Review Gate aggregate, Analyze (actions / javascript-typescript /
+  python).
 
 ## Why this matters
 
