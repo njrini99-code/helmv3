@@ -4,6 +4,11 @@
     "worktree_policy": "KEEP",
     "note": "Opened 2026-08-31 from the canonical checkout. Trims the Vercel upload from 6,667 files / 268 MB to 5,712 / 101 MB by excluding docs/ (145 MB the build never reads) and five untracked tooling directories that upload precisely BECAUSE they are gitignored — the third recurrence of the .vercelignore-replaces-.gitignore trap. Also corrects shipping.md's stale claim that the repo exceeds the 15,000-file cap. No production state, no migration. Canonical checkout — nothing to park. Clears #1697's row."
   },
+  "1729": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Opened 2026-09-01 from the canonical checkout. Bridge: a disabled Vercel Web Analytics feature (404 not_found) no longer reads as 'vercel could not be reached'. Two files, no production state. Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in for the database.ts regen. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+  },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
     "exactly — control-plane:verify FAILS on a missing entry AND on a stale one.",
