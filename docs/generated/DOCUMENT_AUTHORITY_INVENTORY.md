@@ -160,7 +160,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/features/admin-platform.md` | current | yes | - | yes | 2 | 65 | 2 |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
-| `memory/features/calendar-events.md` | current | yes | - | - | 2 | 21 | - |
+| `memory/features/calendar-events.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | - | 3 | 23 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
