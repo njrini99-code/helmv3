@@ -191,11 +191,12 @@ TOUCHED_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.verifiableFiles[]' | hea
 # Built as an ARRAY, not a bare unquoted variable expansion — this repo's
 # routes include `[id]`-style dynamic segments, which an unquoted `$VAR`
 # expansion hands to bash as a glob character class, not a literal path.
-# guard-bash.sh's `-f` (noglob) exists for exactly this reason; this script
-# does not set `-f` script-wide (it would change every other expansion
-# here too), so the array form is the locally-scoped equivalent — each
-# element is passed to `git diff` as one already-delimited argument, immune
-# to both word-splitting and glob expansion regardless of its contents.
+# (The since-deleted guard-bash.sh set `-f` (noglob) for exactly this
+# reason.) This script does not set `-f` script-wide (it would change every
+# other expansion here too), so the array form is the locally-scoped
+# equivalent — each element is passed to `git diff` as one already-delimited
+# argument, immune to both word-splitting and glob expansion regardless of
+# its contents.
 TOUCHED_TS_FILES=()
 while IFS= read -r line; do
   [ -n "$line" ] && TOUCHED_TS_FILES+=("$line")
@@ -218,10 +219,13 @@ DOCS_LINE="  npm run docs:check   (any AUTOGEN inventory source changed)"
 [ "$AUTOGEN_RELEVANT" = "true" ] && DOCS_LINE="  npm run docs:check   REQUIRED — this session touched an AUTOGEN inventory source"
 
 # ── Layer 1: mapping/context/memory findings (spec §12's three new gate
-#    dimensions), only when non-empty. In normal operation
-#    guard-feature-context.mjs already prevented mapping/context gaps at edit
-#    time, so these firing here means that gate was bypassed or is missing —
-#    this is defense in depth, not the primary enforcement point.
+#    dimensions), only when non-empty. THIS IS THE ONLY ENFORCEMENT POINT.
+#    An edit-time guard (guard-feature-context.mjs) used to prevent mapping
+#    and context gaps before the write; it no longer exists and nothing is
+#    wired under PreToolUse except guard-canonical-write.mjs (see
+#    docs/CONTROL_PLANE_ENFORCEMENT.md). So a gap reaching this block is the
+#    normal path, not a sign that something was bypassed — the Stop gate
+#    DETECTS after the fact, once per tree state, and prevents nothing.
 GAP_SECTION=""
 if [ "${MAPPING_GAP_COUNT:-0}" -gt 0 ]; then
   MAPPING_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.mappingGaps[] | "  - " + .')

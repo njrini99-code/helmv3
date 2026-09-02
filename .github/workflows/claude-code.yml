@@ -21,9 +21,23 @@ concurrency:
 jobs:
   claude:
     name: Claude guarded PR agent
+    # AUTHOR GATE. This job holds `contents: write` and `id-token: write`, and
+    # an issue or review comment can be posted by anyone with a GitHub account.
+    # Until 2026-09-01 the only condition was that the body contained
+    # "@claude", so any outside account could start a write-capable agent run
+    # on this repo by leaving a comment. The comment-triggered paths now also
+    # require the commenter to be OWNER, MEMBER or COLLABORATOR — the same
+    # people who can already push. The label path is unchanged: applying a
+    # label needs triage permission, so the label IS the authorisation there.
+    # (The "Refuse unsafe labels" step below is the second gate, on content.)
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (
+        (
+          (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+        ) &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      ) ||
       (github.event_name == 'issues' && github.event.label.name == 'agent:ready')
     runs-on: ubuntu-latest
     timeout-minutes: 45

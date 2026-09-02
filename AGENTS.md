@@ -98,10 +98,12 @@ CI runs across two platforms:
   — every-PR fast path (typecheck, lint, vitest, build, RLS tests,
   Review Gate static analyzers).
 - **CircleCI** (`.circleci/config.yml`, see `.circleci/README.md`)
-  — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk)
-  scheduled Mondays 06:00 UTC, plus iOS Capacitor compile on
-  M-series macOS runners (push to `main`, `release/*`, `ios/*`,
-  `capacitor/*`).
+  — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk,
+  Promptfoo evals) scheduled Mondays 06:00 UTC, plus two native compile
+  checks gated by BRANCH NAME: iOS Capacitor compile on M-series macOS
+  runners (push to `main`, `release/*`, `ios/*`, `capacitor/*`) and Android
+  `assembleDebug` on a Linux Android image (push to `main`, `release/*`,
+  `android/*`, `capacitor/*`, `ci/android-*`).
 
 Pre-merge gate blocks (must be `error`-clean before merge):
 - Service-role key in a client bundle
@@ -110,9 +112,13 @@ Pre-merge gate blocks (must be `error`-clean before merge):
 - Bare table names without `golf_` / `baseball_` prefix
 - DELETE-then-INSERT in any save/submit/sync write path
 
-Static analyzers enabled: ESLint, Biome, oxc, ast-grep, ruff, pylint,
-swiftlint, shellcheck, yamllint, actionlint, markdownlint, languagetool,
-hadolint, checkov, gitleaks, semgrep, sqlfluff.
+Static analyzers that actually run, one job each in `review-gate.yml`:
+ast-grep, semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint,
+ruff + pylint, sqlfluff, hadolint, and an env-secrets check. ESLint runs in
+`ci.yml` (`lint`, `lint-ratchet`). Nothing else: this list named Biome, oxc,
+swiftlint, languagetool and checkov until 2026-09-01, none of which has a job
+anywhere (`.editorconfig` says in its first line that this repo has no Biome).
+When a job is added or removed there, change this list in the same PR.
 
 ## Cursor Cloud specific instructions
 
@@ -123,17 +129,25 @@ running after a fresh boot** — only disk state persists. Start them in order.
 
 ### Backend model (important, non-obvious)
 
-The app needs Supabase. The CSP in `next.config.mjs` (`connect-src`) only
-allows `https://*.supabase.co` — the browser therefore **cannot** talk to a
-plain `http://127.0.0.1:54321` local stack. To run fully local without editing
-app code, a **Caddy TLS reverse proxy** fronts the local `supabase start` stack
-under the hostname `https://helmlocaldev.supabase.co` (mapped to `127.0.0.1` in
-`/etc/hosts`; Caddy's internal CA is already trusted in the system store and in
-Chrome's NSS DB at `~/.pki/nssdb`). `.env.local` points
-`NEXT_PUBLIC_SUPABASE_URL` at that proxied hostname.
-Alternative: point `.env.local` at a real remote Supabase project
-(`https://*.supabase.co`), which satisfies the CSP natively — then Docker/Caddy
-are unnecessary.
+The app needs Supabase. **A plain local stack works directly**: when
+`NEXT_PUBLIC_SUPABASE_URL` is a loopback origin (`http://127.0.0.1:54321`,
+`http://localhost:54321`, `http://[::1]:54321`), `next.config.mjs` appends
+that origin and its `ws://` twin to the CSP `connect-src` via
+`src/lib/security/local-supabase-csp.mjs`, and a production URL adds nothing.
+So point `.env.local` at the `supabase start` API URL and skip the proxy.
+
+The **Caddy TLS reverse proxy** described below is legacy, from when the CSP
+allowed only `https://*.supabase.co` and the browser could not reach a plain
+loopback stack. It still works — a VM snapshot that already has Caddy, the
+trusted local CA and the `/etc/hosts` entry (`https://helmlocaldev.supabase.co`
+→ `127.0.0.1`) can keep using them — but it is no longer required, and a
+fresh setup should not build it. (This section said the CSP "cannot" admit the
+loopback stack until 2026-09-01; the loopback allowance had shipped before
+that and the section was not updated.)
+
+Alternative in either case: point `.env.local` at a real remote Supabase
+project (`https://*.supabase.co`), which satisfies the CSP natively — then
+Docker and Caddy are both unnecessary.
 
 ### Start the local stack (fresh VM)
 
@@ -143,11 +157,16 @@ are unnecessary.
 2. Local Supabase (from repo root): `npx supabase start` — applies all
    `supabase/migrations/` + `supabase/seed/v3-seed.sql`. Exposes API 54321,
    DB 54322, Studio 54323, Mailpit 54324. Reset with `npx supabase db reset`.
-3. Caddy TLS proxy: `caddy run --config /home/ubuntu/dev-proxy/Caddyfile &`
-   (proxies `https://helmlocaldev.supabase.co` → `127.0.0.1:54321`).
-4. Dev server, with the CA so server-side/middleware Supabase calls are trusted:
+3. Set `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321` (and the local anon
+   key `supabase status` prints) in `.env.local`, then `npm run dev`
+   → http://localhost:3000. The CSP admits the loopback origin on its own.
+
+   **Legacy alternative** (only if the snapshot's `.env.local` still points at
+   `https://helmlocaldev.supabase.co`): start the Caddy TLS proxy,
+   `caddy run --config /home/ubuntu/dev-proxy/Caddyfile &` (proxies that
+   hostname → `127.0.0.1:54321`), then run the dev server with the CA so
+   server-side/middleware Supabase calls are trusted:
    `NODE_EXTRA_CA_CERTS=/home/ubuntu/.local/share/caddy/pki/authorities/local/root.crt npm run dev`
-   → http://localhost:3000
 
 ### Auth / using the app
 

@@ -7,7 +7,11 @@ real result of each — never summarize a gate you did not actually run.
 
 **Every command below is prefixed with `set -o pipefail` deliberately.** Without
 it a piped gate reports the *pipe's* exit status, so a failing suite reads as a
-pass. A PreToolUse hook blocks unprefixed piped gates for exactly this reason.
+pass. Nothing enforces this — no hook inspects Bash commands
+(`docs/CONTROL_PLANE_ENFORCEMENT.md`: the only PreToolUse hook matches
+Write/Edit/MultiEdit), and `.claude/rules/shipping.md` §3 says the same. This
+file claimed "a PreToolUse hook blocks unprefixed piped gates" until
+2026-09-01; it is on you to keep the prefix.
 
 ```bash
 set -o pipefail; npx tsc --noEmit -p tsconfig.json 2>&1 | grep -v '^\.next/dev/types' | tail -20

@@ -56,9 +56,14 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
 
 | Workflow      | Trigger                                  | Jobs                                                 | Cost          |
 | ------------- | ---------------------------------------- | ---------------------------------------------------- | ------------- |
-| `weekly`      | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk, npm-audit, stryker, promptfoo-evals | ~$2-3/week    |
-| `ios`         | Push to `main` / `release/*` / `ios/*` / `capacitor/*` | ios-compile (M-series macOS)                         | ~$0.15-0.30/run |
-| `lighthouse`  | Every push (except docs/* and noop branches) | lighthouse-preview (polls Vercel, runs advisory lhci against landing + auth routes) | ~$0.02/run |
+| `weekly`      | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk-migrations, npm-audit, stryker-coachhelm, promptfoo-evals | ~$2-3/week    |
+| `ios`         | Push to `main` / `release/*` / `ios/*` / `capacitor/*` / `agent/fix-circleci-ios-*` | ios-compile (M-series macOS)                         | ~$0.15-0.30/run |
+| `android`     | Push to `main` / `release/*` / `android/*` / `capacitor/*` / `ci/android-*` | android-compile (`cimg/android`, `assembleDebug`, no signing) | ~$0.05-0.10/run |
+
+There is no `lighthouse` workflow. This table listed one ("lighthouse-preview,
+polls Vercel, advisory lhci") until 2026-09-01; `config.yml` has never
+carried it, and the `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` env vars in the
+setup steps above exist only for that planned job. See "Future upgrades".
 
 To run iOS on a feature branch, name it `ios/<thing>` or
 `capacitor/<thing>`. Or add the `circleci/path-filtering` orb later
@@ -87,11 +92,11 @@ circleci local execute --job knip
   Plan 02 Task 9, add a `playwright` job that uses
   `circleci tests split` to run 4-8 shards in parallel. Reports flake
   via CircleCI Test Insights.
-- **Lighthouse on Vercel previews**: the current job polls the Vercel
-  API for the PR's preview URL, then runs `lhci autorun` as an advisory
-  check. Needs `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` env vars. Promote it
-  to a required hard gate only after preview lookup and Lighthouse noise are
-  reliably green.
+- **Lighthouse on Vercel previews** (not built): the plan is a job that
+  polls the Vercel API for the PR's preview URL, then runs `lhci autorun`
+  as an advisory check. Needs `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` env vars.
+  Promote it to a required hard gate only after preview lookup and Lighthouse
+  noise are reliably green.
 - **LLM evals (Braintrust/LangFuse)**: when LLM observability is
   wired up, add a weekly job that runs scored evals against the
   CoachHelm composer outputs.

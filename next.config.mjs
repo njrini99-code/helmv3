@@ -9,11 +9,14 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 
 // `--localstorage-file` is a Node 22+ flag (experimental webstorage).
-// Node 20 — which the GitHub Actions `build` job currently uses — exits
-// with "is not allowed in NODE_OPTIONS" the moment Next spawns a worker
-// that inherits this env. Skip the setup on older Node so the build
-// goes through; SSR localStorage shims aren't required for the
-// production bundle to compile.
+// Node 20 exits with "is not allowed in NODE_OPTIONS" the moment Next
+// spawns a worker that inherits this env. Every CI job pins Node 22 now
+// (ci.yml `node-version: 22`; CircleCI `cimg/node:22.13`) — this comment
+// said the GitHub Actions build job "currently uses" Node 20 long after it
+// stopped — but a contributor's machine or a future runner may not, so the
+// guard stays: skip the setup on older Node and let the build go through.
+// SSR localStorage shims aren't required for the production bundle to
+// compile.
 const nodeMajor = parseInt(process.versions.node.split('.')[0] ?? '0', 10);
 if (nodeMajor >= 22) {
   const localStorageOption = `--localstorage-file=${path.join(os.tmpdir(), 'helmv3-localstorage')}`;
@@ -322,15 +325,27 @@ const nextConfig = {
           // Content Security Policy
           // SECURITY: In development, we need 'unsafe-inline' and 'unsafe-eval' for Next.js hot reload
           // TODO: Use nonce-based CSP in production
+          //
+          // ANALYTICS HOSTS. src/app/layout.tsx mounts PostHogProvider and
+          // DatadogProvider; both initialise client-side whenever their
+          // NEXT_PUBLIC_* keys are set outside localhost, and both then POST
+          // to hosts that until 2026-09-01 appeared nowhere in connect-src —
+          // so every capture was blocked by this very header. The hosts below
+          // follow the DEFAULTS in those providers (us.i.posthog.com;
+          // Datadog site datadoghq.com -> browser-intake-datadoghq.com). A
+          // non-default NEXT_PUBLIC_POSTHOG_HOST or NEXT_PUBLIC_DD_SITE needs
+          // its host added here too, or it is blocked the same way.
+          // posthog-js also lazy-loads its recorder/surveys bundles from
+          // us-assets.i.posthog.com, which is why that host is in script-src.
           {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://va.vercel-scripts.com blob:;
+              script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://us-assets.i.posthog.com blob:;
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;
-              connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://vitals.vercel-analytics.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*${localSupabaseConnectSrc()};
+              connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://vitals.vercel-analytics.com https://us.i.posthog.com https://us-assets.i.posthog.com https://browser-intake-datadoghq.com https://*.browser-intake-datadoghq.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*${localSupabaseConnectSrc()};
               media-src 'self' data:;
               worker-src 'self' blob:;
               frame-src 'self' https://*.supabase.co blob: data:;

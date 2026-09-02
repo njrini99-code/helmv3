@@ -29,6 +29,17 @@
  *
  * Exit: 0 in sync (or within --allow), 1 drift, 2 undetermined.
  * UNKNOWN is never reported as fine — that is the failure mode this replaces.
+ *
+ * FLAGS FOR THE SESSION-START HOOK (2026-09-01). .claude/hooks/session-context.sh
+ * calls this at session start so a session is told what production actually
+ * serves rather than what a machine-local marker last said. A hook has a
+ * hard timeout and must not hang, so:
+ *   --json            one JSON object on stdout ({deployed, mainSha, behind}
+ *                     on success; {error} on failure) and nothing else
+ *   --no-fetch        use origin/main as already fetched; never touch the network
+ *                     for git (the page and chunk fetches still happen)
+ *   --timeout-ms N    abort every fetch after N ms and exit 2 — bounded, so a
+ *                     slow network degrades to "unknown", never to a stuck hook
  */
 import { execFileSync } from 'node:child_process';
 
@@ -39,18 +50,33 @@ const num = (flag, dflt) => {
 };
 const allow = num('--allow', 0);
 const depth = num('--depth', 60);
+const timeoutMs = num('--timeout-ms', 0);
+const json = argv.includes('--json');
+const noFetch = argv.includes('--no-fetch');
 const site = process.env.HELM_PROD_URL || 'https://helmsportslabs.com';
 
 const sh = (c, a) => { try { return execFileSync(c, a, { encoding: 'utf-8', maxBuffer: 64e6 }).trim(); } catch { return null; } };
-const die = (code, msg) => { console.error(msg); process.exit(code); };
+const die = (code, msg) => {
+  if (json) console.log(JSON.stringify({ error: msg.split('\n')[0] }));
+  else console.error(msg);
+  process.exit(code);
+};
+// The watchdog is what makes --timeout-ms a real bound rather than a hint: a
+// fetch that never resolves would otherwise hold the process (and the hook)
+// open past its own timeout, and the hook's context would arrive empty.
+const fetchOpts = () => (timeoutMs > 0 ? { signal: AbortSignal.timeout(timeoutMs) } : {});
+if (timeoutMs > 0) {
+  const t = setTimeout(() => die(2, `release-status: timed out after ${timeoutMs} ms — UNKNOWN, not in sync.`), timeoutMs + 250);
+  t.unref();
+}
 
-sh('git', ['fetch', '--quiet', 'origin', 'main']);
+if (!noFetch) sh('git', ['fetch', '--quiet', 'origin', 'main']);
 const mainSha = sh('git', ['rev-parse', 'origin/main']);
 if (!mainSha) die(2, 'release-status: could not resolve origin/main.');
 
 let html;
 try {
-  const res = await fetch(site, { redirect: 'follow' });
+  const res = await fetch(site, { redirect: 'follow', ...fetchOpts() });
   if (!res.ok) die(2, `release-status: ${site} returned ${res.status}. Cannot read the served bundle.`);
   html = await res.text();
 } catch (err) {
@@ -69,7 +95,7 @@ if (candidates.length === 0) die(2, 'release-status: could not list main history
 const bodies = [];
 for (const c of chunks.slice(0, 12)) {
   try {
-    const r = await fetch(site + c);
+    const r = await fetch(site + c, fetchOpts());
     if (r.ok) bodies.push(await r.text());
   } catch { /* a missing chunk is not fatal; others may carry the stamp */ }
 }
@@ -89,6 +115,11 @@ if (!deployed) {
 
 const behind = Number(sh('git', ['rev-list', '--count', `${deployed}..${mainSha}`]) ?? '0');
 const short = (s) => s.slice(0, 9);
+
+if (json) {
+  console.log(JSON.stringify({ deployed, mainSha, behind, verified_at: new Date().toISOString(), site }));
+  process.exit(behind > allow ? 1 : 0);
+}
 
 console.log(`production : ${short(deployed)}  (verified in the served bundle)`);
 console.log(`origin/main: ${short(mainSha)}`);

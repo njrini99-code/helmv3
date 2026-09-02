@@ -43,6 +43,7 @@ prose (this table once carried the numbers and every one of them rotted):
 | `.sqlfluff-baseline.json` | SQL lint |
 | `.paginated-read-baseline.json` | unpaginated PostgREST reads |
 | `.cycles-baseline.json` | import cycles |
+| `.migration-drift-baseline.json` | local↔production migration-ledger drift (`db:ledger-drift`) — **no CI caller, by necessity**: it reads the production ledger and needs `DATABASE_URL` or `SUPABASE_PROJECT_ID` + `SUPABASE_DB_PASSWORD`, and Actions holds no database password (ci.yml's `supabase` job records the same limit for `db:drift:check`). Run it locally against production credentials; a CI job that cannot connect would only ever exit 2 |
 
 **Rules:**
 
@@ -68,21 +69,34 @@ Verified 2026-08-20. Do not treat these as coverage:
   checking nothing**, and the only signal is a warning annotation nobody reads.
   If you need certainty that types are guarded, confirm the secret exists in
   repo settings — a passing job does not prove it.
-- **`check:ledger` and `check:env` are tested but never run.** Both have tests
-  promoted into vitest (so CI proves the guard *works*), but no workflow ever
-  *invokes* the guard. We verify the smoke detector and never install it.
-- **`db:drift:check` and `orphans:mounts`** exist as scripts with no CI caller.
-- **`test:rls` points at an empty vitest project** — the `rls` project matches
-  **0** files. Real RLS coverage is **59 pgTAP suites** under
-  `supabase/tests/rls/*.sql`, run by the "Supabase lint + RLS tests" job. Do not
-  read `npm run test:rls` passing as RLS being tested.
-- **19 of 51 files under `scripts/__tests__/` run nowhere.** Nothing references
-  `node --test` — not one npm script, not one workflow — so an unpromoted file
-  never executes and its guard is decorative. 32 are promoted explicitly in
-  `vitest.config.ts`; **there is no glob**, so a new file there runs only if you
-  add it by name. The 19 hold-outs fail against current `main` (8
-  `single-<h1>` violations, unconsolidated badges, and similar) — real drift
-  that accumulated while they sat unrun.
+- **`check:ledger` is tested but never run.** Its test is promoted into vitest
+  (so CI proves the guard *works*), but no workflow ever *invokes*
+  `scripts/check-migration-ledger.mjs`. We verify the smoke detector and never
+  install it. (`check:env` used to sit in this bullet too; it no longer
+  belongs here — `package.json`'s `prebuild` runs
+  `scripts/check-required-env.mjs` on every `npm run build`, so it fires in
+  CI's `next-build` job and on every local build.)
+- **`orphans:mounts`** exists as a script with no CI caller. (`db:drift:check`
+  was in this bullet until 2026-09-01; it now runs in ci.yml's `supabase` job
+  against the migrations-rebuilt local stack, and in `db-drift.yml` against
+  production — see the comment in ci.yml for what each run does and does not
+  prove.)
+- **`test:rls` is pgTAP, not vitest.** `npm run test:rls` runs
+  `bash scripts/test-pgtap.sh` against `supabase/tests/rls/*.sql`, which needs
+  a local Supabase stack. The vitest `rls` project still exists and still
+  matches **0** `src/**/*.rls.test.*` files — kept so the naming convention
+  stays available, not as evidence of anything (`vitest.config.ts` says the
+  same at the project definition). CI runs the pgTAP suites in the
+  "Supabase lint + RLS tests" job.
+- **A file under `scripts/__tests__/` runs only if `vitest.config.ts` names
+  it.** Nothing references `node --test` — not one npm script, not one
+  workflow — and the `unit` project lists these files explicitly, **with no
+  glob**, so a new file there executes never unless you add it by name. Some
+  legacy hold-outs still fail against `main` (`single-<h1>` violations,
+  unconsolidated badges, and similar) — real drift that accumulated while they
+  sat unrun. How many of each is a count, and counts rot: this bullet carried
+  "19 of 51" and "32 promoted" while both had moved. Measure it when you need
+  it, with the two commands `vitest.config.ts` documents beside the list.
 
 **When you add a guard, add its caller in the same change.** A script in
 `package.json` with no workflow step is not a gate.
@@ -91,13 +105,17 @@ Verified 2026-08-20. Do not treat these as coverage:
 
 | Layer | Runner | Where | CI |
 |---|---|---|---|
-| Unit / unit-dom / integration / business / contract | vitest projects | `src/**/*.test.{ts,tsx}` + 32 named `scripts/**` files | `test:run`, `test:integration` |
-| RLS | **pgTAP**, not vitest | `supabase/tests/rls/*.sql` (59) | "Supabase lint + RLS tests" |
-| E2E | Playwright | `e2e/**` | `smoke` on PRs; full suite on push to `main` only |
+| Unit / unit-dom / integration / business / contract | vitest projects | `src/**/*.test.{ts,tsx}` + the `scripts/**` files named in `vitest.config.ts` | `test:run`, `test:integration` |
+| RLS | **pgTAP**, not vitest | `supabase/tests/rls/*.sql` | "Supabase lint + RLS tests" |
+| E2E | Playwright | `e2e/**` | `smoke` on PRs; the full chromium suite is **manual only** (`workflow_dispatch` with `full_e2e=true`) |
 
 - `npm test` runs **unit + unit-dom only** — the fast inner loop, not coverage.
   `npm run test:all` runs every project.
-- CI does **not** run `npm run test:e2e`. `playwright.yml` runs `smoke` on PRs.
+- CI does **not** run `npm run test:e2e`. `playwright.yml` runs `smoke` on PRs;
+  the full suite has not run automatically since 2026-08-20 (owner decision —
+  its post-merge run seeded PRODUCTION fixtures). It runs only when someone
+  dispatches the workflow with `full_e2e=true`. Nothing runs "on push to
+  `main`"; this table said so until 2026-09-01.
 - Promoting a `scripts/__tests__` file: change its import from `node:test` to
   `vitest`, then add the path **by name** to `vitest.config.ts`. Run it first —
   if it fails against `main`, it encodes real drift and wiring it turns `main`
@@ -110,9 +128,12 @@ Verified 2026-08-20. Do not treat these as coverage:
 - **Blind spots that have shipped bugs:** ESLint does not catch
   `text-[Npx]` arbitrary Tailwind values, and `*.png` in `.gitignore` is a
   blanket rule that has hidden whole directories from `git status`.
-- **`markdownlint-cli2` is not installed locally** — `npm run markdown:ratchet`
-  fails with `ENOENT` on a dev machine. It runs in CI via `review-gate.yml`.
-  A local failure there is an environment gap, not a finding.
+- **`markdownlint-cli2` is a devDependency** (`package.json`), so
+  `npm run markdown:ratchet` runs locally after `npm ci` and in CI via
+  `review-gate.yml`. (This bullet said it was "not installed locally" and that
+  the ratchet failed with `ENOENT`; that stopped being true when the package
+  was added and the bullet was not updated. If you see `ENOENT` now, the
+  checkout has not installed dependencies — a fresh worktree starts empty.)
 - The Review Gate's blocking rules live in `.coderabbit/ast-grep/` and
   `.coderabbit/semgrep/` — **that directory name is historical**; the bots were
   dropped 2026-07-20 and CI consumes those packs directly. Do not delete them
@@ -134,9 +155,15 @@ Verified 2026-08-20. Do not treat these as coverage:
   the rendered `name:`, so changing the matrix silently renames the required
   check.** That produced two phantom required checks and made every PR
   unsatisfiable until 2026-08-19.
-- **`docs:check` is local-only** and its `docs:diff-check` half only compares the
-  generator to itself. The two that catch real problems —
-  `docs:schema-drift` and `docs:path-drift` — run in CI on every PR.
+- **`docs:check` is five gates in one script** (`package.json`):
+  `docs:inventory-check` (regenerated AUTOGEN blocks match their sources —
+  non-mutating, unlike the old `docs:regen && git diff` shape), `docs:schema-drift`,
+  `docs:path-drift`, `enforcement:check` and `tool-authority:check`. All five
+  run in CI: the inventory check directly, and the enforcement and
+  tool-authority checks through `control-plane:verify:static`, in ci.yml's
+  `control-plane` job; the two drift ratchets in its `feature-knowledge` job. (This
+  bullet named a `docs:diff-check` half that does not exist and called the
+  script local-only; both were stale by 2026-09-01.)
 - Renaming any job means updating the required-checks list on GitHub. There is
   no error for a required check that nothing posts; the PR just never goes
   green.
