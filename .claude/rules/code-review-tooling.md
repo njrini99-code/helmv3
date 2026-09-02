@@ -28,6 +28,13 @@ custom packs: service-role key in a client bundle, RLS missing on a new
 table, server action without an auth check, sport-prefixed table name
 violation, destructive DELETE-then-INSERT in a save/submit/sync path.
 
+Layout since 2026-09-02: every tool except semgrep runs as a named STEP of
+one `Review Gate checks` job (semgrep keeps its pinned-container job), and
+the aggregate reads `steps.*.outcome` so one failing tool cannot hide
+another. Twelve jobs became three; nothing stopped running. ci.yml made the
+same move (`Static checks`, `Lint`). The reason was runner-slot starvation:
+~47 check runs per PR on a pool that behaves like 20 concurrent jobs.
+
 **CI split — GitHub Actions vs CircleCI**
 
 GitHub Actions owns the per-PR fast path: typecheck, lint, vitest,
