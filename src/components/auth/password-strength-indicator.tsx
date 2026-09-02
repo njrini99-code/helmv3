@@ -45,8 +45,8 @@ function evaluatePassword(password: string): StrengthResult {
   if (password.length === 0) {
     score = 0;
     label = '';
-    color = 'bg-warm-200';
-    bgColor = 'bg-warm-100';
+    color = 'bg-surface-sunken';
+    bgColor = 'bg-surface-sunken';
   } else if (metCount <= 1) {
     score = 1;
     label = 'Weak';
@@ -78,7 +78,7 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
   if (password.length === 0) {
     return (
       <div className={cn('space-y-2', className)}>
-        <p className="text-xs text-warm-400">Must be at least 8 characters</p>
+        <p className="text-xs text-text-tertiary">Must be at least 8 characters</p>
       </div>
     );
   }
@@ -100,7 +100,7 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
               key={level}
               className={cn(
                 'h-1 flex-1 rounded-full transition-all duration-300',
-                level <= strength.score ? strength.color : 'bg-warm-200'
+                level <= strength.score ? strength.color : 'bg-surface-sunken'
               )}
             />
           ))}
@@ -121,11 +121,11 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             ) : (
-              <svg className="w-3 h-3 text-warm-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 text-text-tertiary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             )}
-            <span className={cn('text-xs', check.met ? 'text-warm-600' : 'text-warm-400')}>
+            <span className={cn('text-xs', check.met ? 'text-text-secondary' : 'text-text-tertiary')}>
               {check.label}
             </span>
           </div>

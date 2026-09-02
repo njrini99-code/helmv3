@@ -66,7 +66,7 @@ import {
   updateWatchlistStatus,
   addWatchlistNote,
 } from '@/app/baseball/actions/watchlist';
-import type { PipelineStage, Player, WatchlistWithPlayer } from '@/lib/types';
+import type { PipelineStage, BaseballPlayer as Player, WatchlistWithPlayer } from '@/lib/types';
 import { PIPELINE_STAGES } from '@/lib/recruiting/stages';
 
 const gradYearOptions = [

@@ -100,6 +100,7 @@ describe('Announcements card/page coherence (#152)', () => {
         announcements={SAME_ACCOUNT_ANNOUNCEMENTS}
         players={[]}
         documents={[]}
+        teamId={null}
         isCoach={false}
         playerId="player-1"
         recentCount={0}

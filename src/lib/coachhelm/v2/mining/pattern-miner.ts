@@ -432,6 +432,28 @@ export class PatternMiner {
             // Routine "tried and found nothing" telemetry — keep the admin-feed +
             // console signal, but do not page Sentry (issues 13/1B).
             skipSentry: true,
+            // Per-player dedup. Without this, admin_events.fingerprint falls
+            // back to buildIncidentSignature(severity, errorCode, route,
+            // message) (server-error-logger.ts) — and that function's
+            // normalizeIncidentMessagePrefix strips every UUID from the
+            // message before hashing (`.replace(/\b[0-9a-f]{8}-…\b/gi,
+            // ':uuid')`, incident-grouping.ts), which is exactly where this
+            // event's ONLY per-player detail lives ("for player
+            // ${this.playerId}"). Two structurally different players'
+            // starvation therefore hashed to the SAME signature and merged
+            // into one incident: 3,493 rows from 2 players over 3 months,
+            // indistinguishable from one player firing 3,493 times. A THIRD
+            // player starting to starve would have been invisible — it just
+            // added to the same shared count.
+            //
+            // `deterministicPatternId` above (this file) solved the identical
+            // shape of problem for pattern rows themselves — one deterministic
+            // key per (player, signature) so repeated runs upsert instead of
+            // duplicating. This is that same fix for the telemetry row: one
+            // stable key per player, so a genuinely new player showing up in
+            // this incident is now the visible, correct signal it should be.
+            dbFingerprint: `pattern-miner-starvation:${this.playerId}`,
+            fingerprint: ['pattern-miner-starvation', this.playerId],
             metadata: {
               playerId: this.playerId,
               roundCount: this.rounds.length,

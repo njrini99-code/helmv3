@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
-import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
+import { verifyTeamAccess, verifyPlayersOnTeam } from '@/lib/auth/verify-player-access';
 import {
   transitionSelectionState,
   setCoachPick,
@@ -96,6 +96,23 @@ async function setQualifierCoachPickImpl(
   try {
     const ctx = await getAuthedCoachContext(qualifier_id);
     if (!ctx.ok) return ctx;
+
+    // getAuthedCoachContext resolves the team from the QUALIFIER and proves the
+    // caller staffs it — but `player_id` is the caller's own argument and went
+    // into golf_qualifier_selections unchecked. A coach could forge a selection
+    // for a player on another team, or burn coach-pick capacity on one, and the
+    // workspace renders selections by qualifier ENTRY, so the forged row stayed
+    // invisible in the candidate list while still moving selection state. That
+    // is also what made the confirm step exploitable downstream.
+    const roster = await verifyPlayersOnTeam(ctx.team_id, [player_id], ctx.supabase);
+    if (!roster.ok) {
+      return {
+        ok: false,
+        error: roster.reason === 'unavailable'
+          ? "Couldn't confirm your roster just now. Please try again."
+          : 'That player is not on this team',
+      };
+    }
 
     const r = await setCoachPick(ctx.supabase, {
       qualifier_id,

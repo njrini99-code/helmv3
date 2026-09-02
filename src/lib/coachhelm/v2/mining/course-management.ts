@@ -4,7 +4,7 @@
  *   - generateWorstHolesInsights(playerId) — aggregates holes by
  *     (course_id, hole_number) over the last 365 days and emits ONE
  *     course-scoped insight per course that highlights the worst-3 holes
- *     the player has played >= 4 times with avg_score_to_par >= 0.8.
+ *     the player has played >= 5 times with avg_score_to_par >= 0.8.
  *
  *   - generateWarmupHoleInsight(playerId) — compares the player's hole 1
  *     average score-to-par vs their average on holes 2-18 over 90 days.
@@ -35,7 +35,11 @@ type Supabase = SupabaseClient<Database>;
 // ---------------------------------------------------------------------------
 
 const WORST_HOLES_WINDOW_DAYS = 365;
-const WORST_HOLES_MIN_ROUNDS = 4;
+// This evidence is emitted as one course-level insight. Its sample count is
+// the sum of the selected holes, so a single four-round hole used to reach the
+// shared writer below with sample_n=4. The writer correctly refused it, but
+// the caller reported that expected quality gate as a production error.
+const WORST_HOLES_MIN_ROUNDS = 5;
 const WORST_HOLES_MIN_AVG_OVER_PAR = 0.8;
 const WORST_HOLES_TOP_N = 3;
 

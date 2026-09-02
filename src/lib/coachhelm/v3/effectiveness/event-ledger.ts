@@ -30,6 +30,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { dedupeExposureRows, exposureDedupeKey, startOfUtcDayIso } from './exposure-rows';
 
 // ============================================================================
 // PUBLIC TYPES (shared contract — other agents depend on these exact shapes)
@@ -137,6 +138,17 @@ const FEATURE_AREA = 'coachhelm_effectiveness';
  * Record one or more insight EXPOSURE events — "this insight was actually shown".
  * Call from the read path that renders a ranked insight list (server side).
  * No-op on empty input; never throws.
+ *
+ * Dedup (#1506): the caller runs on every server render, not once per view —
+ * production measured up to 349 rows for one (insight, coach, surface) bucket
+ * in a single day. Before inserting, this reads today's already-recorded keys
+ * for the batch's insights and skips any row whose (insight_id, coach_id,
+ * surface) is already covered. Racy-but-adequate app-level dedup (issue's
+ * Option 1) — a concurrent request can still slip through between the select
+ * and the insert; the robust version needs a unique index + migration, which
+ * is an owner decision on the shared production DB (tracked in #1506). If the
+ * dedup lookup itself fails, fall back to writing every row rather than
+ * dropping the exposure signal entirely.
  */
 export async function recordInsightExposure(
   rows: Array<{
@@ -159,13 +171,37 @@ export async function recordInsightExposure(
       rank_position: r.rank_position ?? null,
       rank_score: r.rank_score ?? null,
     }));
-    const { error } = await admin.from('golf_insight_exposure').insert(payload);
+
+    const insightIds = Array.from(new Set(payload.map((r) => r.insight_id)));
+    const { data: existing, error: existingError } = await admin
+      .from('golf_insight_exposure')
+      .select('insight_id, coach_id, surface')
+      .in('insight_id', insightIds)
+      .gte('shown_at', startOfUtcDayIso());
+
+    if (existingError) {
+      await logServerError(`recordInsightExposure dedup read failed: ${existingError.message}`, {
+        action: 'recordInsightExposure',
+        featureArea: FEATURE_AREA,
+        errorCode: existingError.code,
+      });
+    }
+
+    // A failed dedup read must not cost the exposure write — fall back to
+    // recording every row (the pre-fix behavior) rather than losing signal.
+    const toInsert = existingError
+      ? payload
+      : dedupeExposureRows(payload, new Set((existing ?? []).map((r) => exposureDedupeKey(r))));
+
+    if (toInsert.length === 0) return;
+
+    const { error } = await admin.from('golf_insight_exposure').insert(toInsert);
     if (error) {
       await logServerError(`recordInsightExposure insert failed: ${error.message}`, {
         action: 'recordInsightExposure',
         featureArea: FEATURE_AREA,
         errorCode: error.code,
-        extra: { count: payload.length },
+        extra: { count: toInsert.length },
       });
     }
   } catch (err) {

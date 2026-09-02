@@ -288,16 +288,37 @@ function formatDateTime(date: Date): string {
 }
 
 /**
- * Escape special characters in iCal text fields
+ * Escape special characters in iCal text fields (RFC 5545 §3.3.11).
+ *
+ * EXPORTED, and deliberately the single implementation. There used to be a
+ * second hand-copy in `src/app/api/calendar/feeds/[token]/route.ts`, and it had
+ * drifted: it escaped backslash, comma, semicolon and `\n` but never neutralised
+ * a bare carriage return. Because iCal properties are joined with CRLF, a
+ * coach-supplied event title containing a raw `\r` survived into the served feed
+ * as a real line terminator — many calendar clients (Google, Apple, Outlook)
+ * treat a bare CR as a line break despite the RFC mandating CRLF — which let
+ * that value close `SUMMARY:` and inject arbitrary iCalendar properties into a
+ * feed every subscriber's calendar parses. CWE-93; security scan finding F14.
+ *
+ * The fix is one function rather than a corrected second copy, because two
+ * copies is what produced the bug: this version was already correct, and had
+ * been for as long as the broken one existed.
+ *
+ * All three line-ending forms collapse to an escaped `\n` rather than being
+ * deleted, so a multi-line description keeps its breaks instead of silently
+ * running its lines together.
  */
-function escapeText(text: string): string {
+export function escapeICalText(text: string | null | undefined): string {
+  if (!text) return '';
   return text
-    .replace(/\\/g, '\\\\') // Backslash
-    .replace(/;/g, '\\;') // Semicolon
-    .replace(/,/g, '\\,') // Comma
-    .replace(/\n/g, '\\n') // Newline
-    .replace(/\r/g, ''); // Remove carriage returns
+    .replace(/\\/g, '\\\\') // Backslash FIRST, or it re-escapes our own output
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r\n|\r|\n/g, '\\n'); // CRLF, bare CR and bare LF alike
 }
+
+/** Internal alias for this module's own call sites. */
+const escapeText = escapeICalText;
 
 // ============================================================================
 // CONVENIENCE FUNCTIONS

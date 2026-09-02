@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
+import { isCoarsePointer } from '@/lib/utils/pointer';
 
 const FOCUSABLE_SELECTOR = [
   'button:not([disabled]):not([tabindex="-1"])',
@@ -82,8 +83,22 @@ export function useFocusTrap(isOpen: boolean, onClose: () => void) {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    // Focus first focusable element after render
+    // Focus first focusable element after render — desktop only. On touch,
+    // the first focusable is often a text input, and focusing it summons the
+    // iOS keyboard over the overlay on open (owner TestFlight report,
+    // 2026-08-26). There we land focus on the trap's root instead — the
+    // tabindex is stamped programmatically because this hook has 17 consumers
+    // and their roots don't declare one — so focus stays inside the trap and
+    // the keyboard waits for a tap.
     const timer = setTimeout(() => {
+      if (isCoarsePointer()) {
+        const root = modalRef.current;
+        if (root) {
+          if (!root.hasAttribute('tabindex')) root.setAttribute('tabindex', '-1');
+          root.focus({ preventScroll: true });
+        }
+        return;
+      }
       const focusableElements = getFocusableElements();
       if (focusableElements.length > 0) {
         focusableElements[0]?.focus();

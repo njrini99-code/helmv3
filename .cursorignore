@@ -29,12 +29,18 @@ npm-debug.log*
 !.env.example
 
 # Generated
-src/lib/types/database.ts
+# NOTE: src/lib/types/database.ts is deliberately NOT ignored. It is
+# generated, but it is also the source of truth for every table and column
+# in this repo, and CLAUDE.md rule 3 tells agents to check it by name. An
+# agent that cannot read it is blind to the schema.
 
 # Temporary/Archive
 archive/
-*.sql
 *.vsix
+# NOTE: *.sql is deliberately NOT ignored either. Migrations are the other
+# half of the schema's source of truth, and `.claude/rules/database.md` is
+# path-triggered on supabase/migrations. Ignoring them left Cursor agents
+# unable to see either the types or the migrations while doing DB work.
 
 # Large assets
 public/videos/
@@ -43,3 +49,15 @@ public/videos/
 
 # Supabase local
 supabase/.temp/
+
+# Historical evidence and tool artifacts — non-authoritative by AGENTS.md.
+# Mirrors the root .ignore (which governs ripgrep/Claude searches).
+docs/archive/
+supabase/migrations_archive/
+tools/**/node_modules/
+.momentic/
+.momentic-mcp/
+.helm/
+.superpowers/
+.ultracode/
+frames/

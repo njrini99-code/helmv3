@@ -1,5 +1,5 @@
 ---
-verified: unverified  # never re-checked against code — do not trust without grepping first
+verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 ## Code Review Tooling
@@ -8,9 +8,7 @@ verified: unverified  # never re-checked against code — do not trust without g
 > their credit quota had become the slowest step in shipping, and the Review
 > Gate + CodeQL cover the same hard rules deterministically. `.coderabbit.yaml`
 > is now a disable stub, and the bots were removed from main's required status
-> checks. The GitHub Apps themselves still need an owner uninstall
-> (repo Settings → Integrations) — until that happens they keep posting
-> advisory checks on PRs. The custom rule packs under
+> checks. No bot checks appear on current PRs. The custom rule packs under
 > `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` REMAIN — CI consumes
 > them directly; treat that directory name as historical.
 
@@ -21,7 +19,11 @@ verified: unverified  # never re-checked against code — do not trust without g
 **Review Gate** (`.github/workflows/review-gate.yml`) — the deterministic
 review toolchain (ast-grep, semgrep, gitleaks, actionlint, yamllint,
 shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint). Aggregate
-status check: `Review Gate / all`. The blocking hard rules live in the
+status check: `Review Gate aggregate` (renamed from `all` on 2026-08-19 —
+`Review Gate / all` posts NOTHING, and required contexts are matched by
+name, so looking for the old name is the phantom-check trap that made
+every PR unsatisfiable; CI's is `CI aggregate`). The blocking hard rules
+live in the
 custom packs: service-role key in a client bundle, RLS missing on a new
 table, server action without an auth check, sport-prefixed table name
 violation, destructive DELETE-then-INSERT in a save/submit/sync path.

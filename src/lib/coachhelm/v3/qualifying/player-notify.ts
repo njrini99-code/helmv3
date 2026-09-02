@@ -20,6 +20,7 @@ import type { Database } from '@/lib/types/database';
 import { sendEmailNotification } from '@/lib/notifications/email';
 import { sendPushNotification } from '@/lib/notifications/push';
 import type { QualifyingWorkspace } from './types';
+import { allSettledReported } from '@/lib/settled-failures';
 
 type Sb = SupabaseClient<Database>;
 
@@ -48,7 +49,12 @@ export async function notifyPlayersOfSelectionOutcome(
   const { data: userRows } = await supabase
     .from('users')
     .select('id, email')
-    .in('id', playerRows.map((p) => p.user_id));
+    // `user_id` is nullable once an account is deleted and the player's history
+    // is preserved (20260819200000). A null is not a recipient — drop it so the
+    // rest of the batch still gets notified, matching the three fan-outs in
+    // golf.ts that already do this. NOT NULL in production today, so this
+    // removes nothing yet: that is what lets it ship before the migration.
+    .in('id', playerRows.map((p) => p.user_id).filter((id): id is string => Boolean(id)));
   if (!userRows?.length) return;
 
   const emailByUser = new Map(userRows.map((u) => [u.id, u.email]));
@@ -70,12 +76,17 @@ export async function notifyPlayersOfSelectionOutcome(
       const outcome = selectedPlayerIds.has(c.player_id) ? 'selected' : 'not_selected';
       const data = { qualifierName: workspace.name, outcome };
 
-      await Promise.allSettled([
-        email
-          ? sendEmailNotification('qualifier_updated', userId, email, data)
-          : Promise.resolve({ success: true }),
-        sendPushNotification('qualifier_updated', userId, data),
-      ]);
+      // Reasons reported, not swallowed — see INC-2026-08-27. A failed send
+      // here previously left no trace anywhere the Bridge could see.
+      await allSettledReported(
+        [
+          email
+            ? sendEmailNotification('qualifier_updated', userId, email, data)
+            : Promise.resolve({ success: true }),
+          sendPushNotification('qualifier_updated', userId, data),
+        ],
+        { action: 'coachhelm.qualifying.notifyPlayers', featureArea: 'qualifiers', label: outcome },
+      );
     }),
   );
 }

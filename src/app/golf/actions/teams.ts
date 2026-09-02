@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { describeError } from '@/lib/utils/describe-error';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import {
   signStaffInvite,
   verifyStaffInvite,
@@ -295,6 +296,24 @@ export async function validateGolfPlayerCanJoinTeam(
 }
 
 /**
+ * The shape both join paths return.
+ *
+ * Stated explicitly rather than inferred. With inference, `alreadyMember`
+ * exists on only one arm of a three-arm union, so every caller and test that
+ * reads it after checking `success` is a type error — `expect(...)` narrows
+ * nothing for the compiler. That broke `main`'s typecheck, and since
+ * `next.config.mjs` sets `typescript: { ignoreBuildErrors: false }` and
+ * tsconfig's `include` covers tests, it fails the PRODUCTION BUILD, not just
+ * CI. All existing return shapes already satisfy this; no runtime change.
+ */
+export interface GolfJoinTeamResult {
+  success: boolean;
+  /** Already on this team — an idempotent no-op, not a failure. */
+  alreadyMember?: boolean;
+  error?: string;
+}
+
+/**
  * Add a golf player to a team via golf_team_members
  * Also notifies coaches when a player joins
  */
@@ -303,7 +322,7 @@ async function joinGolfTeamImpl(
   teamId: string,
   joinCode?: string,
   resolvedTeam?: ResolvedTeamRef | null
-) {
+): Promise<GolfJoinTeamResult> {
   const supabase = await createClient();
 
   // Validate first
@@ -529,7 +548,7 @@ export async function joinGolfTeam(
  * Process a golf team join code
  * Note: golf_teams uses join_code, not invite_code
  */
-async function processGolfTeamInvitationImpl(joinCode: string, playerId: string) {
+async function processGolfTeamInvitationImpl(joinCode: string, playerId: string): Promise<GolfJoinTeamResult> {
   const supabase = await createClient();
 
   // Normalize join code to uppercase for case-insensitive matching
@@ -1039,12 +1058,14 @@ async function createTeamJoinRequestImpl(
   // Notify coaches about the join request
   if (team.organization_id) {
     try {
-      const { data: coaches } = await supabase
+      const { data: coaches, error: coachesError } = await supabase
         .from('golf_coaches')
         .select('id, user_id')
         .eq('organization_id', team.organization_id);
 
-      if (coaches && coaches.length > 0) {
+      // Best-effort notification: a failed read means we can't know who to
+      // notify — skip explicitly rather than treating it as "no coaches".
+      if (!coachesError && coaches && coaches.length > 0) {
         const playerName = `${player.first_name} ${player.last_name}`.trim();
 
         const notifications = coaches.map((coach) => ({
@@ -1123,9 +1144,10 @@ export async function createTeamJoinRequest(
 async function getTeamJoinRequestsImpl(): Promise<TeamActionResult<JoinRequestData[]>> {
   const supabase = await createClient();
 
-  // Verify user is authenticated
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  // Resilient, not raw — fetched from a client component on mount, so a
+  // transient GoTrue error here surfaces as a false "Not authenticated".
+  const { user } = await getUserResilient(supabase);
+  if (!user) {
     return { success: false, error: 'Not authenticated' };
   }
 
@@ -1747,6 +1769,39 @@ async function addSecondTeamImpl(
     return { success: false, error: 'You must have a primary team before adding a second team.' };
   }
 
+  // ...and be a program head, which until now was only asserted in the comment
+  // above. Holding ANY primary staff row was the whole gate, so an assistant
+  // coach could call this, get a new team created in their org, and be written
+  // into its staff as `role: 'head_coach'` by the insert further down — a
+  // self-service promotion on a team of their own making.
+  //
+  // 'head_coach' on at least one staffed row is the same predicate the team
+  // switcher already uses for program-head capability (see
+  // getCoachTeamSwitchContext), so this adds no new notion of seniority; it
+  // applies the existing one to the action that hands out the role.
+  const { data: headCoachRow, error: headCoachError } = await supabase
+    .from('golf_team_coach_staff')
+    .select('id')
+    .eq('coach_id', coach.id)
+    .eq('role', 'head_coach')
+    .limit(1)
+    .maybeSingle();
+
+  // Same fail-closed-but-honest split as the primary-team read above: a failed
+  // read must not be reported to a real head coach as "you are not one".
+  if (headCoachError) {
+    await logServerError(
+      `addSecondTeam: head-coach check failed for coach ${coach.id}: ${describeError(headCoachError)}`,
+      { action: 'teams.addSecondTeam', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: "Couldn't verify your role. Please try again." };
+  }
+
+  if (!headCoachRow) {
+    return { success: false, error: 'Only a head coach can add another team.' };
+  }
+
   // Prevent exact-duplicate gender: a coach should not have two teams with the
   // same gender. Fetch all teams in the org this coach staffs, check genders.
   const { data: existingStaffTeams, error: existingStaffError } = await supabase
@@ -2207,10 +2262,14 @@ async function redeemStaffInviteImpl(
     };
   }
 
-  const { data: orgTeams } = await admin
+  const { data: orgTeams, error: orgTeamsError } = await admin
     .from('golf_teams')
     .select('id, name, gender')
     .eq('organization_id', organizationId);
+  // A failed read must not present as "that program has no teams" below.
+  if (orgTeamsError) {
+    return { success: false, error: 'Could not load the program\'s teams. Please try again.' };
+  }
 
   // coach → the invited team only. admin → the whole program, which is what
   // makes the Men's/Women's toggle appear (canSwitch needs head_coach on >1).
@@ -2221,10 +2280,15 @@ async function redeemStaffInviteImpl(
     return { success: false, error: 'That program has no teams to join yet.' };
   }
 
-  const { data: alreadyStaffed } = await admin
+  const { data: alreadyStaffed, error: alreadyStaffedError } = await admin
     .from('golf_team_coach_staff')
     .select('team_id')
     .eq('coach_id', coachId);
+  // Unchecked, a failed read looked like "staffed nowhere" and produced
+  // duplicate staff rows on retry.
+  if (alreadyStaffedError) {
+    return { success: false, error: 'Could not check existing team access. Please try again.' };
+  }
   const staffedIds = new Set((alreadyStaffed ?? []).map((r) => r.team_id));
 
   const rows = targetTeams
@@ -2352,4 +2416,645 @@ const observedPreviewStaffInvite = withAdminObserved(
 
 export async function previewStaffInvite(token: string): Promise<PreviewStaffInviteResult> {
   return observedPreviewStaffInvite(token);
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Coaching staff — who is on this team's staff                                */
+/* -------------------------------------------------------------------------- */
+
+export interface TeamCoachingStaffMember {
+  coachId: string;
+  fullName: string | null;
+  title: string | null;
+  role: 'head_coach' | 'assistant_coach' | string;
+  isPrimary: boolean;
+}
+
+/**
+ * List the coaching staff of a team, head coach first.
+ *
+ * WHY THIS EXISTS (2026-08-20): assistants now join with full access the
+ * moment they sign up with the team code — and were then visible NOWHERE. The
+ * Team page had no staff list at all, so a head coach whose assistant had just
+ * joined ("will it upload him to the team?") had no surface that showed the
+ * answer. The join notification told them once; this is the durable view.
+ *
+ * Caller must be STAFFED on the team — the same golf_team_coach_staff row that
+ * is team access everywhere else. Reads with the admin client after that gate
+ * so an assistant sees the full staff, not the RLS-visible slice of it.
+ */
+async function listTeamCoachingStaffImpl(
+  teamId: string,
+): Promise<{ success: boolean; error?: string; staff?: TeamCoachingStaffMember[] }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'You need to be signed in.' };
+  }
+
+  const admin = createAdminClient();
+
+  const { data: callerCoach, error: callerError } = await admin
+    .from('golf_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (callerError || !callerCoach) {
+    return { success: false, error: 'Coach profile not found.' };
+  }
+
+  const { data: callerStaffRow, error: gateError } = await admin
+    .from('golf_team_coach_staff')
+    .select('coach_id')
+    .eq('team_id', teamId)
+    .eq('coach_id', callerCoach.id)
+    .maybeSingle();
+  // Fail CLOSED on error: a failed gate read must never widen visibility.
+  if (gateError || !callerStaffRow) {
+    return { success: false, error: 'You are not on this team\'s staff.' };
+  }
+
+  const { data: rows, error: staffError } = await admin
+    .from('golf_team_coach_staff')
+    .select('coach_id, role, is_primary, golf_coaches!inner(full_name, title)')
+    .eq('team_id', teamId);
+  if (staffError) {
+    return { success: false, error: 'Could not load the coaching staff. Please try again.' };
+  }
+
+  const staff: TeamCoachingStaffMember[] = (rows ?? [])
+    .map((row) => {
+      const c = (row as unknown as { golf_coaches?: { full_name?: string | null; title?: string | null } }).golf_coaches;
+      return {
+        coachId: String((row as { coach_id: string }).coach_id),
+        fullName: c?.full_name ?? null,
+        title: c?.title ?? null,
+        role: String((row as { role: string }).role),
+        isPrimary: Boolean((row as { is_primary: boolean | null }).is_primary),
+      };
+    })
+    .sort((a, b) =>
+      // Head coach first, then alphabetical — a stable, legible order.
+      a.role === b.role
+        ? (a.fullName ?? '').localeCompare(b.fullName ?? '')
+        : a.role === 'head_coach' ? -1 : 1,
+    );
+
+  return { success: true, staff };
+}
+
+const observedListTeamCoachingStaff = withAdminObserved(
+  'listTeamCoachingStaff',
+  { sport: 'golf', feature: 'join_team_flow', observeSoftFailures: false },
+  listTeamCoachingStaffImpl,
+);
+
+export async function listTeamCoachingStaff(
+  teamId: string,
+): Promise<{ success: boolean; error?: string; staff?: TeamCoachingStaffMember[] }> {
+  return observedListTeamCoachingStaff(teamId);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Assistant coaches — the single-code path                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ONE CODE, TWO DESTINATIONS — and no waiting room.
+ *
+ * A head coach hands out exactly one thing: the team code. Whoever types it at
+ * signup picks Player or Assistant coach, and BOTH are attached immediately.
+ *
+ * WHY THERE IS NO APPROVAL STEP (owner decision, 2026-08-20)
+ * ---------------------------------------------------------
+ * An earlier version of this recorded a REQUEST and parked the person on a
+ * waiting page until a head coach approved it. That was removed on the owner's
+ * explicit instruction, stated twice: "they choose and go through the
+ * appropriate onboarding, and then boom theyre on the team", and "There
+ * shouldn't be an approval. The approval is them having the access code, and
+ * putting it in when they hit sign up."
+ *
+ * The trade-off, written down so it stays a decision and not an accident: the
+ * roster code goes to every player, so anyone holding it can now sign up as an
+ * assistant coach and read the whole team's rounds and PII. HOLDING THE CODE IS
+ * THE AUTHORIZATION. If that ever needs tightening, the fix is a separate
+ * assistant-only code — `createStaffInvite` already mints one — and NOT a
+ * waiting room, because the waiting room is what made this feel broken.
+ *
+ * FULL ACCESS MEANS EVERY TEAM IN THE PROGRAM.
+ * `golf_team_coach_staff` is per-TEAM and a program can carry several:
+ * Shenandoah runs a men's and a women's team and its head coach is staffed on
+ * both. An assistant staffed only on the team whose code they happened to be
+ * handed would silently see half the program — so a row is written for every
+ * team in the organization. That is what the access helpers read:
+ *
+ *   is_golf_team_coach(t) = EXISTS(golf_team_coach_staff WHERE team = t ...)
+ *
+ * Neither that helper nor `is_golf_team_head_coach` reads
+ * `golf_coaches.organization_id`, and every coach-side RLS policy routes
+ * through one of them. The staff rows ARE the access; nothing else grants it.
+ */
+export interface PendingAssistantCoach {
+  coachId: string;
+  fullName: string | null;
+  email: string | null;
+  requestedAt: string | null;
+}
+
+async function joinTeamAsAssistantCoachImpl(
+  userId: string,
+  teamJoinCode: string,
+  fullName: string | undefined,
+  email: string,
+): Promise<{ success: boolean; error?: string }> {
+  const admin = createAdminClient();
+
+  // The join code is the ONLY thing that decides which program is joined. It
+  // came from the server-side gate cookie, never from the form.
+  const { data: team, error: teamError } = await admin
+    .from('golf_teams')
+    .select('id, name, organization_id')
+    .eq('join_code', teamJoinCode.toUpperCase())
+    .maybeSingle();
+
+  if (teamError || !team?.organization_id) {
+    await logServerError(
+      `[joinTeamAsAssistantCoach] team lookup failed: ${describeError(teamError)}`,
+      { action: 'teams.joinTeamAsAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not find the team for that code.' };
+  }
+
+  // `onboarding_completed: true` — they are DONE. The wizard at '/golf/coach'
+  // is new-program onboarding: it inserts a fresh organization and team and
+  // re-points organization_id at them. Running it for this account is what
+  // produced the "An organization named X already exists" dead end an assistant
+  // hit on 2026-08-19, and, when the name did not collide, a phantom duplicate
+  // program. The flag keeps every routing entry point away from that form.
+  const { data: coachRow, error: coachError } = await admin
+    .from('golf_coaches')
+    .upsert(
+      {
+        user_id: userId,
+        organization_id: team.organization_id,
+        full_name: fullName ?? null,
+        email,
+        onboarding_completed: true,
+      },
+      { onConflict: 'user_id' },
+    )
+    .select('id')
+    .maybeSingle();
+
+  if (coachError || !coachRow) {
+    await logServerError(
+      `[joinTeamAsAssistantCoach] coach upsert failed: ${describeError(coachError)}`,
+      { action: 'teams.joinTeamAsAssistantCoach', featureArea: 'teams' },
+      'error',
+    );
+    return { success: false, error: 'We could not finish setting up your account.' };
+  }
+
+  // EVERY team in the program, not just the one whose code was typed.
+  const { data: programTeams, error: teamsError } = await admin
+    .from('golf_teams')
+    .select('id')
+    .eq('organization_id', team.organization_id);
+
+  if (teamsError) {
+    // Not fatal: fall back to the team the code names, so the assistant still
+    // gets in. Logged because on a multi-team program this is the difference
+    // between full access and half of it.
+    await logServerError(
+      `[joinTeamAsAssistantCoach] program team list failed; granting access to the code's team only: ${describeError(teamsError)}`,
+      { action: 'teams.joinTeamAsAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+  }
+
+  const teamIds = Array.from(
+    new Set([team.id, ...((programTeams ?? []).map((t) => t.id))]),
+  );
+
+  // ALWAYS 'assistant_coach'. This path cannot mint a head coach — that stays
+  // with createStaffInvite's admin role, which requires deliberately choosing
+  // "Program admin".
+  //
+  // Upsert on (team_id, coach_id) so a repeat signup or a re-run is idempotent
+  // rather than a duplicate-key failure.
+  const { error: staffError } = await admin
+    .from('golf_team_coach_staff')
+    .upsert(
+      teamIds.map((id) => ({
+        team_id: id,
+        coach_id: coachRow.id,
+        role: 'assistant_coach' as const,
+        is_primary: false,
+      })),
+      { onConflict: 'team_id,coach_id' },
+    );
+
+  if (staffError) {
+    // These rows ARE the access. Unlike the notification below, this failure
+    // must be reported: staying silent would hand somebody an account that can
+    // sign in and see nothing, which is precisely the old broken experience.
+    await logServerError(
+      `[joinTeamAsAssistantCoach] staff insert failed for coach ${coachRow.id}: ${describeError(staffError)}`,
+      { action: 'teams.joinTeamAsAssistantCoach', featureArea: 'teams' },
+      'error',
+    );
+    return {
+      success: false,
+      error: 'We created your account but could not add you to the team. Please try signing in again.',
+    };
+  }
+
+  // Tell the head coach somebody joined. INFORMATIONAL — there is nothing to
+  // approve any more — so it is fire-and-forget and never fails the signup.
+  // ADMIN client because this is a cross-user write: `notifications_insert_own`
+  // is WITH CHECK (user_id = auth.uid()) and would refuse a row addressed to
+  // somebody else.
+  try {
+    const { data: heads, error: headsError } = await admin
+      .from('golf_team_coach_staff')
+      .select('coach_id, golf_coaches!inner(user_id)')
+      .eq('team_id', team.id)
+      .eq('role', 'head_coach');
+
+    // Best-effort notification — a failed read is "recipients unknown", not
+    // "no recipients"; skip rather than silently notify nobody.
+    const recipients = (headsError ? [] : heads ?? [])
+      .map((row) => (row as unknown as { golf_coaches?: { user_id?: string | null } }).golf_coaches?.user_id)
+      .filter((id): id is string => Boolean(id) && id !== userId);
+
+    if (recipients.length > 0) {
+      const joinerName = fullName?.trim() || email;
+      // `team_join` — a REAL member of the notification_type enum. That enum
+      // has 11 values (checked against production 2026-08-20) and none of them
+      // is assistant-shaped; `fromUntyped` bypasses the generated types at
+      // exactly this call, so an invented label compiles, fails at runtime with
+      // 22P02, and vanishes into the catch below. The copy carries the meaning.
+      await fromUntyped(admin, 'notifications').insert(
+        recipients.map((recipientId) => ({
+          user_id: recipientId,
+          type: 'team_join' as const,
+          title: 'Assistant coach joined',
+          body: `${joinerName} joined ${team.name ?? 'your team'} as an assistant coach.`,
+          action_url: '/golf/dashboard/team',
+          data: {
+            team_id: team.id,
+            team_name: team.name,
+            joiner_email: email,
+            joiner_name: joinerName,
+          },
+          read: false,
+        })),
+      );
+    }
+  } catch (error) {
+    await logServerError(
+      `[joinTeamAsAssistantCoach] notification step threw; the coach is on the team regardless: ${describeError(error)}`,
+      { action: 'teams.joinTeamAsAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+  }
+
+  revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/dashboard/team');
+  return { success: true };
+}
+
+const observedJoinTeamAsAssistantCoach = withAdminObserved(
+  'joinTeamAsAssistantCoach',
+  { sport: 'golf', feature: 'join_team_flow', demoSafe: true },
+  joinTeamAsAssistantCoachImpl,
+);
+
+/**
+ * Attach a new assistant coach to the program named by `teamJoinCode`, with
+ * full access, immediately. No approval step — see the docblock above.
+ */
+export async function joinTeamAsAssistantCoach(
+  userId: string,
+  teamJoinCode: string,
+  fullName: string | undefined,
+  email: string,
+): Promise<{ success: boolean; error?: string }> {
+  return observedJoinTeamAsAssistantCoach(userId, teamJoinCode, fullName, email);
+}
+
+/**
+ * Resolve the caller to a HEAD COACH of `teamId`, or fail.
+ *
+ * Shared by the list/approve/decline actions below so the gate is written once
+ * — an assistant must never be able to approve another assistant, which would
+ * turn one approval into an unbounded chain.
+ */
+async function requireHeadCoachOfTeam(
+  teamId: string,
+): Promise<{ ok: true; coachId: string; organizationId: string } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return { ok: false, error: 'Not authenticated' };
+
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (coachError || !coach?.organization_id) {
+    return { ok: false, error: 'Coach profile not found' };
+  }
+
+  const { data: staffRow, error: staffRowError } = await supabase
+    .from('golf_team_coach_staff')
+    .select('id')
+    .eq('team_id', teamId)
+    .eq('coach_id', coach.id)
+    .eq('role', 'head_coach')
+    .maybeSingle();
+
+  if (staffRowError) {
+    await logServerError(
+      `[requireHeadCoachOfTeam] head-coach check failed for team ${teamId}: ${describeError(staffRowError)}`,
+      { action: 'teams.requireHeadCoachOfTeam', featureArea: 'teams' },
+      'warning',
+    );
+    return { ok: false, error: 'We could not verify your access just now.' };
+  }
+  if (!staffRow) return { ok: false, error: 'Only a head coach of this team can do that.' };
+
+  return { ok: true, coachId: coach.id, organizationId: coach.organization_id };
+}
+
+async function listPendingAssistantCoachesImpl(
+  teamId: string,
+): Promise<{ success: boolean; error?: string; pending?: PendingAssistantCoach[] }> {
+  const gate = await requireHeadCoachOfTeam(teamId);
+  if (!gate.ok) return { success: false, error: gate.error };
+
+  const admin = createAdminClient();
+
+  // Everyone who asked to join this program…
+  const { data: candidates, error: candidatesError } = await admin
+    .from('golf_coaches')
+    .select('id, full_name, email, created_at')
+    .eq('organization_id', gate.organizationId)
+    .eq('onboarding_completed', false)
+    .order('created_at', { ascending: true });
+
+  if (candidatesError) {
+    await logServerError(
+      `[listPendingAssistantCoaches] candidate read failed: ${describeError(candidatesError)}`,
+      { action: 'teams.listPendingAssistantCoaches', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not load pending requests.' };
+  }
+
+  const ids = (candidates ?? []).map((c) => c.id);
+  if (ids.length === 0) return { success: true, pending: [] };
+
+  // …minus anyone who already holds staff anywhere. Holding a staff row is the
+  // definition of "already in", so this is the same predicate the access
+  // helpers use rather than a parallel notion of pending that could drift.
+  const { data: staffed, error: staffedError } = await admin
+    .from('golf_team_coach_staff')
+    .select('coach_id')
+    .in('coach_id', ids);
+
+  if (staffedError) {
+    await logServerError(
+      `[listPendingAssistantCoaches] staff read failed: ${describeError(staffedError)}`,
+      { action: 'teams.listPendingAssistantCoaches', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not load pending requests.' };
+  }
+
+  const attached = new Set((staffed ?? []).map((row) => row.coach_id));
+
+  return {
+    success: true,
+    pending: (candidates ?? [])
+      .filter((c) => !attached.has(c.id) && c.id !== gate.coachId)
+      .map((c) => ({
+        coachId: c.id,
+        fullName: c.full_name,
+        email: c.email,
+        requestedAt: c.created_at,
+      })),
+  };
+}
+
+const observedListPendingAssistantCoaches = withAdminObserved(
+  'listPendingAssistantCoaches',
+  { sport: 'golf', feature: 'join_team_flow', demoSafe: true },
+  listPendingAssistantCoachesImpl,
+);
+
+export async function listPendingAssistantCoaches(
+  teamId: string,
+): Promise<{ success: boolean; error?: string; pending?: PendingAssistantCoach[] }> {
+  return observedListPendingAssistantCoaches(teamId);
+}
+
+async function approvePendingAssistantCoachImpl(
+  coachId: string,
+  teamId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await requireHeadCoachOfTeam(teamId);
+  if (!gate.ok) return { success: false, error: gate.error };
+
+  const admin = createAdminClient();
+
+  // Re-check the request belongs to this head coach's own program. Without it,
+  // a head coach could pass any coach id and attach a stranger to their team.
+  const { data: candidate, error: candidateError } = await admin
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('id', coachId)
+    .maybeSingle();
+
+  if (candidateError || !candidate) {
+    return { success: false, error: 'That request no longer exists.' };
+  }
+  if (candidate.organization_id !== gate.organizationId) {
+    return { success: false, error: 'That request is not part of your program.' };
+  }
+
+  // ALWAYS 'assistant_coach'. This action cannot mint a head coach — promoting
+  // someone to head coach stays with createStaffInvite's admin role, which
+  // requires deliberately choosing "Program admin".
+  const { error: staffError } = await admin
+    .from('golf_team_coach_staff')
+    .upsert(
+      { team_id: teamId, coach_id: coachId, role: 'assistant_coach', is_primary: false },
+      { onConflict: 'team_id,coach_id' },
+    );
+
+  if (staffError) {
+    await logServerError(
+      `[approvePendingAssistantCoach] staff insert failed: ${describeError(staffError)}`,
+      { action: 'teams.approvePendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not approve that request.' };
+  }
+
+  // APPROVAL IS THEIR ONBOARDING — say so in the row.
+  //
+  // This step did not exist, and its absence made approval actively harmful.
+  // `createPendingAssistantCoach` writes `onboarding_completed: false`; five
+  // separate entry points then read `!onboarding_completed` and sent the
+  // account to '/golf/coach', which is NEW-PROGRAM onboarding. So the moment a
+  // head coach approved an assistant, that assistant's next login walked them
+  // into the school-details wizard, and finishing it overwrote their
+  // organization_id and detached them from the program that had just accepted
+  // them. Being approved was worse than being ignored.
+  //
+  // Those entry points now key on the staff row instead (see
+  // lib/golf/coach-entry-path.ts), so this write is no longer load-bearing for
+  // routing. It is still correct: the flag means "this account needs no
+  // further setup", and after approval that is true. Both layers agree, and
+  // neither depends on the other being right.
+  //
+  // Logged rather than failed: the staff row above is the grant, and it landed.
+  // Refusing the approval now would leave access granted and the caller told it
+  // was refused, which is the worse of the two outcomes.
+  const { error: flagError } = await admin
+    .from('golf_coaches')
+    .update({ onboarding_completed: true })
+    .eq('id', coachId);
+
+  if (flagError) {
+    await logServerError(
+      `[approvePendingAssistantCoach] approved coach ${coachId} but could not clear onboarding_completed: ${describeError(flagError)}`,
+      { action: 'teams.approvePendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+  }
+
+  // Tell them they're in. They have been sitting on a page that says "reload to
+  // check"; a notification is the difference between joining the team and
+  // discovering later that they had.
+  try {
+    const { data: approved, error: approvedError } = await admin
+      .from('golf_coaches')
+      .select('user_id')
+      .eq('id', coachId)
+      .maybeSingle();
+    const { data: team, error: teamReadError } = await admin
+      .from('golf_teams')
+      .select('name')
+      .eq('id', teamId)
+      .maybeSingle();
+
+    // Best-effort notification — on a failed read, skip rather than address
+    // a notification from partial data.
+    if (!approvedError && !teamReadError && approved?.user_id) {
+      const { error: notifyError } = await fromUntyped(admin, 'notifications').insert({
+        user_id: approved.user_id,
+        // Same enum constraint as the request notification above.
+        type: 'team_join_approved' as const,
+        title: "You're on the team",
+        body: `You were approved as an assistant coach for ${team?.name ?? 'your team'}.`,
+        action_url: '/golf/dashboard',
+        data: { team_id: teamId, team_name: team?.name ?? null },
+        read: false,
+      });
+      if (notifyError) {
+        await logServerError(
+          `[approvePendingAssistantCoach] approval notification insert failed: ${describeError(notifyError)}`,
+          { action: 'teams.approvePendingAssistantCoach', featureArea: 'teams' },
+          'warning',
+        );
+      }
+    }
+  } catch (error) {
+    await logServerError(
+      `[approvePendingAssistantCoach] approval notification step threw: ${describeError(error)}`,
+      { action: 'teams.approvePendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+  }
+
+  revalidatePath('/golf/dashboard/team');
+  revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/coach/pending');
+  return { success: true };
+}
+
+const observedApprovePendingAssistantCoach = withAdminObserved(
+  'approvePendingAssistantCoach',
+  { sport: 'golf', feature: 'join_team_flow' },
+  approvePendingAssistantCoachImpl,
+);
+
+export async function approvePendingAssistantCoach(
+  coachId: string,
+  teamId: string,
+): Promise<{ success: boolean; error?: string }> {
+  return observedApprovePendingAssistantCoach(coachId, teamId);
+}
+
+async function declinePendingAssistantCoachImpl(
+  coachId: string,
+  teamId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await requireHeadCoachOfTeam(teamId);
+  if (!gate.ok) return { success: false, error: gate.error };
+
+  const admin = createAdminClient();
+
+  const { data: candidate, error: candidateError } = await admin
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('id', coachId)
+    .maybeSingle();
+
+  if (candidateError || !candidate) return { success: false, error: 'That request no longer exists.' };
+  if (candidate.organization_id !== gate.organizationId) {
+    return { success: false, error: 'That request is not part of your program.' };
+  }
+
+  // Detach rather than delete. The person still has working credentials — they
+  // simply are not attached to this program — so declining never destroys an
+  // account, and a mistaken decline costs one re-request instead of a support
+  // ticket.
+  const { error: detachError } = await admin
+    .from('golf_coaches')
+    .update({ organization_id: null })
+    .eq('id', coachId);
+
+  if (detachError) {
+    await logServerError(
+      `[declinePendingAssistantCoach] detach failed: ${describeError(detachError)}`,
+      { action: 'teams.declinePendingAssistantCoach', featureArea: 'teams' },
+      'warning',
+    );
+    return { success: false, error: 'We could not decline that request.' };
+  }
+
+  revalidatePath('/golf/dashboard/team');
+  return { success: true };
+}
+
+const observedDeclinePendingAssistantCoach = withAdminObserved(
+  'declinePendingAssistantCoach',
+  { sport: 'golf', feature: 'join_team_flow' },
+  declinePendingAssistantCoachImpl,
+);
+
+export async function declinePendingAssistantCoach(
+  coachId: string,
+  teamId: string,
+): Promise<{ success: boolean; error?: string }> {
+  return observedDeclinePendingAssistantCoach(coachId, teamId);
 }

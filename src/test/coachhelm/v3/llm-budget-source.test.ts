@@ -15,10 +15,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn().mockResolvedValue(undefined),
+  logServerEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { checkBudget, PLATFORM_DEFAULT_DAILY_BUDGET_USD } from '@/lib/coachhelm/v3/llm/budget';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 /**
  * Minimal Supabase stand-in: one canned reply per table. Enough to drive the
@@ -77,6 +78,7 @@ function fakeSb(opts: {
 
 beforeEach(() => {
   vi.mocked(logServerError).mockClear();
+  vi.mocked(logServerEvent).mockClear();
 });
 
 describe('checkBudget — where the number came from', () => {
@@ -100,14 +102,41 @@ describe('checkBudget — where the number came from', () => {
     expect(result.allowed).toBe(true);
   });
 
+  /**
+   * The intent of this case is unchanged — a missing config must stay
+   * findable. What changed deliberately is the TIER and the CADENCE.
+   *
+   * It used to be `logServerError(..., 'warning')` on every call. Nothing has
+   * failed in this branch: the platform default applied and CoachHelm ran. But
+   * it fires from the round-detail page, so one coach opening a few rounds
+   * produced a burst of warning-tier incidents in a feed whose default view
+   * excludes only 'info' — routine behaviour competing with real regressions.
+   * Now: 'info', once per coach per warm instance.
+   *
+   * A UNIQUE coach id per case, because the dedupe is module-level and
+   * therefore outlives `mockClear()` — reusing 'c1' here would assert against
+   * a call the earlier cases already consumed.
+   */
   it('says so in the log when it falls back, so a missing config is findable', async () => {
-    await checkBudget(fakeSb({ teamId: 't1', settingsByCoach: {} }), 'c1', 0.05);
+    await checkBudget(fakeSb({ teamId: 't1', settingsByCoach: {} }), 'findable-coach', 0.05);
 
-    expect(logServerError).toHaveBeenCalledWith(
+    expect(logServerEvent).toHaveBeenCalledWith(
       expect.stringContaining('no configured daily budget'),
       expect.objectContaining({ action: 'v3.llm.budget.platform_default' }),
-      'warning',
+      'info',
     );
+  });
+
+  it('logs an unconfigured coach once, not on every render', async () => {
+    const sb = fakeSb({ teamId: 't1', settingsByCoach: {} });
+    await checkBudget(sb, 'repeat-coach', 0.05);
+    await checkBudget(sb, 'repeat-coach', 0.05);
+    await checkBudget(sb, 'repeat-coach', 0.05);
+
+    const forThisCoach = vi
+      .mocked(logServerEvent)
+      .mock.calls.filter(([message]) => String(message).includes('repeat-coach'));
+    expect(forThisCoach).toHaveLength(1);
   });
 
   it('honours a deliberate zero, and labels it as a decision', async () => {

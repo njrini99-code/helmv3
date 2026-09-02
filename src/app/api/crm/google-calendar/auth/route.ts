@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { signOAuthState, verifyOAuthState } from '@/lib/crm/oauth-state';
 
 // Google OAuth Configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -39,11 +40,10 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    // Generate state token for CSRF protection
-    const state = Buffer.from(JSON.stringify({
-      userId: user.id,
-      timestamp: Date.now(),
-    })).toString('base64');
+    // Signed state. The previous value was unsigned base64 JSON, so comparing
+    // its userId to the session only caught a mismatch, never a forgery — see
+    // src/lib/crm/oauth-state.ts for the account-linking attack that allowed.
+    const state = signOAuthState(user.id);
 
     // Build authorization URL
     const params = new URLSearchParams({
@@ -87,17 +87,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No authorization code provided' }, { status: 400 });
     }
 
-    // Verify state token
-    try {
-      const decodedState = JSON.parse(Buffer.from(state, 'base64').toString());
-      if (decodedState.userId !== user.id) {
-        return NextResponse.json({ error: 'Invalid state token' }, { status: 400 });
-      }
-      // Check if state is not too old (5 minutes)
-      if (Date.now() - decodedState.timestamp > 5 * 60 * 1000) {
-        return NextResponse.json({ error: 'State token expired' }, { status: 400 });
-      }
-    } catch {
+    // Signature, subject and age in one call — the hand-rolled version below
+    // it checked subject and age but never authenticity, which is the half
+    // that mattered.
+    if (!verifyOAuthState(state, user.id)) {
       return NextResponse.json({ error: 'Invalid state token' }, { status: 400 });
     }
 

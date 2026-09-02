@@ -58,6 +58,39 @@ export const EXPECTED_EMPTY_STATES = {
     unit: 'rounds',
   },
   /**
+   * getPlayerShotContext / getPlayerShotAnalytics: rounds WERE played in the
+   * window, but none of them carry shot-level rows.
+   *
+   * Distinct from `no_rounds_in_period` above, and the distinction is the
+   * whole point: shot tracking is optional, so a player who logs scores
+   * without shots is in a permanent, correct state that no retry and no
+   * operator can change. Left uncoded, it reached the Bridge as an
+   * error-severity defect on every CoachHelm render for that player, and
+   * dragged a synthetic `GET /golf/dashboard/coachhelm` Sentry trace along
+   * with it — one quiet player, two incidents, every page load.
+   *
+   * Safe to code because the call site returns an UNCODED error for a real
+   * query failure first: `fetchAllRowsResult` surfaces a non-null `error` on
+   * any page of a partial read, so reaching zero rows here means the read
+   * genuinely succeeded and found nothing.
+   */
+  no_shot_data: {
+    title: 'No shot data yet',
+    description: 'Rounds are logged, but without shot-by-shot detail. Track shots on your next round to unlock this analysis.',
+    unit: 'shots',
+  },
+  /**
+   * Shot rows exist, but none carry both a starting lie and a distance — the
+   * two fields every strokes-gained calculation is built on. Same class as
+   * `no_shot_data`: partial tracking is a routine way to use the app, not a
+   * fault.
+   */
+  no_shot_detail: {
+    title: 'Shot detail incomplete',
+    description: 'Shots are recorded without lie and distance, which strokes-gained needs. Add those on your next round.',
+    unit: 'shots',
+  },
+  /**
    * getPlayerTrendAnalysis / what-if scenarios: fewer than the 3 completed
    * rounds those analyses mathematically require.
    */

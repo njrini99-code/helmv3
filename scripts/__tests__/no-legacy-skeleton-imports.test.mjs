@@ -139,7 +139,24 @@ test('deleted skeleton modules no longer exist', async () => {
   }
 });
 
-test('no imports of the deleted skeleton modules remain in src', async () => {
+/**
+ * Raised from vitest's 5s default.
+ *
+ * This test walks the entire source tree and READS every matching file — a few
+ * thousand of them. That is quick on a warm local disk (the whole 408-file
+ * shard it lives in finishes in about a minute) and not reliably quick on a
+ * shared CI runner: it timed out at 5,000ms on run 33037507786 while all 407
+ * other files in the same shard passed, on a commit that touched nothing it
+ * scans for.
+ *
+ * The assertion is unchanged and the work is no faster — only the budget is
+ * now honest about what the test actually does. A time limit a CORRECT run can
+ * exceed does not test anything; it fails at random and teaches people to
+ * re-run red checks, which is how a real failure eventually gets waved through.
+ */
+const TREE_WALK_TIMEOUT_MS = 60_000;
+
+test('no imports of the deleted skeleton modules remain in src', { timeout: TREE_WALK_TIMEOUT_MS }, async () => {
   for (const dir of SCAN_DIRS) {
     const info = await stat(dir).catch(() => null);
     assert.ok(info && info.isDirectory(), `Expected scan directory to exist: ${dir}`);

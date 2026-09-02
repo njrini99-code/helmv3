@@ -94,15 +94,15 @@ async function writeTerminalState(
   patch: Record<string, string | null>,
   contextAction: string,
 ): Promise<void> {
-  // Use .select('id') instead of relying on count=exact header — some
-  // Supabase SDK versions drop the count when a chained .select() isn't
-  // present or when the role's RLS returns empty without an error. Reading
-  // data.length is the authoritative signal that a row was actually written.
-  const { data, error } = await admin
-    .from('golf_rounds')
-    .update(patch)
-    .eq('id', roundId)
-    .select('id');
+  // Completed scorecards are immutable.  Terminal CoachHelm state is the
+  // narrow exception, written only by a server-only SECURITY DEFINER RPC that
+  // can update these three operational columns and nothing else.
+  const { data, error } = await admin.rpc('record_round_coachhelm_terminal_state', {
+    p_round_id: roundId,
+    p_analyzed_at: patch.coachhelm_analyzed_at ?? null,
+    p_failed_at: patch.coachhelm_failed_at ?? null,
+    p_failure_reason: patch.coachhelm_failure_reason ?? null,
+  });
 
   if (error) {
     await logServerError(
@@ -115,7 +115,7 @@ async function writeTerminalState(
     );
     return;
   }
-  if (!data || data.length === 0) {
+  if (!data) {
     await logServerError(
       `[postRoundTrigger] terminal-state write affected 0 rows (RLS or missing round)`,
       {

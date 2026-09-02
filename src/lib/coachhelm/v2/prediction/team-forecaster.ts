@@ -548,15 +548,18 @@ function forecastBreakoutCandidates(
       });
     }
 
-    // SG: Putting improving significantly (above 0 = gaining strokes)
-    if (stats.strokes_gained_putting !== null && stats.strokes_gained_putting > 0.5) {
+    // SG: Putting improving significantly (above 0 = gaining strokes).
+    // Per-round average (sg_putting_per_round) — NOT strokes_gained_putting,
+    // the season-cumulative SUM on the same golf_player_stats_cache row
+    // (#1297/#1300). The > 0.5 threshold assumes per-round scale.
+    if (stats.sg_putting_per_round !== null && stats.sg_putting_per_round > 0.5) {
       breakoutScore += 20;
       signals.push({
         name: 'Elite Putting',
-        value: `+${stats.strokes_gained_putting.toFixed(1)} SG`,
+        value: `+${stats.sg_putting_per_round.toFixed(1)} SG`,
         contribution: 0.3,
         direction: 'positive',
-        explanation: `Gaining ${stats.strokes_gained_putting.toFixed(1)} strokes on the greens — a major scoring weapon`,
+        explanation: `Gaining ${stats.sg_putting_per_round.toFixed(1)} strokes on the greens — a major scoring weapon`,
       });
     }
 

@@ -64,9 +64,11 @@ import { PrescribedPracticePlanCard } from '@/components/golf/coachhelm/coach';
 // Hierarchical THEME insights (v3) — flag-gated replacement for the flat feed.
 import { ThemesPanel } from '@/components/fairway/cards-insight/themes';
 import { FairwayTrendBrain } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
+import { TrajectoryCard } from '@/components/golf/coachhelm/player/TrajectoryCard';
 import { isThemesEnabled } from '@/lib/redesign/flag';
 import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
+import type { PlayerTrajectorySummary } from '@/lib/coachhelm/v2/types';
 import { useToast } from '@/components/ui/sonner';
 
 // Server actions — REUSED VERBATIM.
@@ -194,6 +196,16 @@ export interface FairwayPlayerInsightProps {
    * component renders its own honest-empty state (never fabricated).
    */
   trendData?: Record<string, unknown> | null;
+  /**
+   * 90-day scoring-average forecast (#1485 — TrajectoryForecaster's first
+   * consumer). NOT the same "trajectory" `trendSummary` refers to above (that
+   * one is the recent-form verdict word); this is the forward-looking
+   * statistical projection rendered by `TrajectoryCard`. `null` when the
+   * forecaster ran and found too little round history; `undefined` on fetch
+   * failure — both render `TrajectoryCard`'s own honest empty state, never a
+   * fabricated line. Coach-only, like the rest of this component.
+   */
+  trajectory?: PlayerTrajectorySummary | null;
   /**
    * GOLF IA REORG (final_migrations #11) — true when this component is mounted
    * as the "Scouting Report" tab inside /players/[playerId]/game (via
@@ -421,6 +433,7 @@ export function FairwayPlayerInsight({
   predictions,
   themes,
   trendData,
+  trajectory,
   signalCount,
   embedded = false,
 }: FairwayPlayerInsightProps) {
@@ -991,6 +1004,12 @@ export function FairwayPlayerInsight({
               </div>
             ) : null}
           </div>
+        </section>
+
+        {/* ════════ E2 · TRAJECTORY (#1485 — the forecast finally reaches a coach) ════════ */}
+        <section>
+          <Eyebrow className="mb-3">Trajectory</Eyebrow>
+          <TrajectoryCard trajectory={trajectory} />
         </section>
 
         {/* ════════ F · GO DEEPER — stats cockpit bridge ════════ */}

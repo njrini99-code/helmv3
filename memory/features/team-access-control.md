@@ -57,6 +57,10 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
 - Players can read or mutate only their own/team-allowed records, depending on the feature.
 - Every new table needs RLS enabled and policies in the same migration.
 - Security definer functions must pin `search_path`.
+- Completed golf rounds may be changed only by protected submit flows, with a
+  separately scoped service-only exception for derived strokes-gained cache
+  fields and CoachHelm terminal-processing metadata; no client or coach write
+  may alter completed score history.
 - Bare unprefixed sport tables such as `players`, `coaches`, `teams`, and `rounds` are wrong.
 
 ## UI Contract

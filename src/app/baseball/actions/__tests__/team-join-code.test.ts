@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const getUser = vi.fn();
 const from = vi.fn();
 const rpc = vi.fn();
+const adminRpc = vi.fn(async () => ({ error: null }));
 const fromUntypedUpdate = vi.fn();
 const fromUntypedEq = vi.fn();
 
@@ -16,6 +17,14 @@ vi.mock('@/lib/supabase/server', () => ({
     from,
     rpc,
   })),
+}));
+// The redemption RELEASE deliberately runs through the service-role client, not
+// the caller's session: the RPC it calls is SECURITY DEFINER with no ownership
+// check, so it is being revoked from `authenticated`. Mocking the two clients
+// SEPARATELY is what lets the test below prove which one each call used — a
+// single shared spy would pass whichever client the code picked.
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({ rpc: adminRpc })),
 }));
 vi.mock('@/lib/supabase/untyped', () => ({
   fromUntyped: vi.fn(() => ({
@@ -237,7 +246,16 @@ describe('processTeamInvitation max_uses accounting', () => {
       'try_redeem_baseball_team_invitation',
       { p_invitation_id: 'inv-1' },
     );
-    expect(rpc).toHaveBeenCalledWith(
+    // The release must go through the ADMIN client. Asserting it on the shared
+    // `rpc` spy would pass even if the call reverted to the caller's session,
+    // which is the exact regression this guards: with EXECUTE revoked from
+    // `authenticated`, a user-client release fails silently and the invitation
+    // permanently loses a use.
+    expect(adminRpc).toHaveBeenCalledWith(
+      'release_baseball_team_invitation_redemption',
+      { p_invitation_id: 'inv-1' },
+    );
+    expect(rpc).not.toHaveBeenCalledWith(
       'release_baseball_team_invitation_redemption',
       { p_invitation_id: 'inv-1' },
     );

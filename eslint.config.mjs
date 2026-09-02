@@ -45,6 +45,17 @@ export default tseslint.config(
       "node_modules/**",
       ".next/**",
       "eslint-rules/**",
+      // `.gitignore` line 158 is a blanket `scripts/*.js`, and NOTHING matching
+      // it is tracked — every one is a local scratch/workflow file. ESLint was
+      // still linting them, so `npm run lint:ratchet` failed on a dev machine
+      // with violations that cannot exist in CI (the files aren't in the repo)
+      // and cannot be fixed by a PR (a fix couldn't be committed either).
+      // Measured 2026-08-26: exactly +12 over baseline, all 12 from a single
+      // untracked file. Ignoring them costs no coverage and makes the local
+      // ratchet count equal CI's. Keep this pattern identical to the
+      // `.gitignore` line — `scripts/*.js`, not `scripts/**/*.js`, which would
+      // also swallow committed files in subdirectories.
+      "scripts/*.js",
     ],
   },
   {
@@ -52,6 +63,41 @@ export default tseslint.config(
     languageOptions: {
       globals: {
         ...globals.node,
+      },
+    },
+  },
+  {
+    // The GolfHelm Engineering OS's hooks (P2) are plain Node scripts, same
+    // shape as scripts/** above — `npm run lint` doesn't reach .claude/ (it
+    // targets src/**/*.{ts,tsx} only), but ad-hoc/future linting of these
+    // files should not report 50 fake `process`/`console` no-undef errors,
+    // for the same reason the scripts/wf_*.js block above exists: that is
+    // exactly how a directory ends up excluded from linting altogether.
+    files: [".claude/hooks/**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
+    // Workflow scripts (the Workflow tool's `script` payload, saved to disk).
+    // They are executed inside a sandbox that INJECTS these as globals, so they
+    // are never imported or declared in the file itself. Without this block
+    // eslint reports 62 no-undef errors that are all false — and 62 fake errors
+    // is precisely how a directory ends up excluded from linting altogether,
+    // which is what had happened to scripts/ before 2026-08-19.
+    files: ["scripts/wf_*.js", "scripts/**/*.workflow.js"],
+    languageOptions: {
+      globals: {
+        agent: "readonly",
+        parallel: "readonly",
+        pipeline: "readonly",
+        phase: "readonly",
+        log: "readonly",
+        args: "readonly",
+        budget: "readonly",
+        workflow: "readonly",
       },
     },
   },

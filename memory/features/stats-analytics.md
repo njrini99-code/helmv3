@@ -1,5 +1,16 @@
 # Feature: Stats And Analytics
 
+<!-- schema-drift-banner -->
+> **⚠️ 1 identifier named below does not exist in the database.**
+> Verified 2026-08-19 against production. `golf_putting_tendencies`
+>
+> It is described here as if live. Do not query, type, or build on it —
+> check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
+> before trusting any table name in this file. Tracked in
+> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
+> Removing this is a ratchet-down — re-run
+> `node scripts/check-doc-schema-drift.mjs --update` after.
+
 ## Status
 
 - active
@@ -22,8 +33,8 @@ The current architecture uses cached stats for performance. Cache invalidation m
 
 - `src/components/golf/stats/**`
 - `src/components/golf/stats/sections/**`
-- `src/app/golf/(dashboard)/dashboard/stats/stats-client.tsx`
-- `src/app/golf/(dashboard)/dashboard/stats/team/team-stats-table.tsx`
+- `src/app/golf/(dashboard)/dashboard/stats/page.tsx`
+- `src/app/golf/(dashboard)/dashboard/stats/team/page.tsx`
 
 ### Actions And Services
 
@@ -48,7 +59,7 @@ The current architecture uses cached stats for performance. Cache invalidation m
 Round completion
   -> invalidateOnRoundComplete()
   -> mark golf_player_stats_cache stale
-  -> attempt non-critical SG recalculation RPCs
+  -> trusted SG recalculation refreshes only derived strokes-gained columns
   -> next stats read refreshes cache lazily
   -> player stats, team stats, roster profile, CoachHelm reads consume cache/source data
 ```
@@ -56,6 +67,12 @@ Round completion
 ## Business Rules
 
 - Round and shot data remain the source of truth; cached stats are derived.
+- `recalculate_round_strokes_gained` is the protected derived-write path for
+  completed rounds. It may change only the five stored strokes-gained fields;
+  it must never require a general exception to completed-round immutability.
+- A completed round's score, identity, status, holes, and shots are immutable;
+  only the server-side strokes-gained recalculation may refresh its five derived
+  strokes-gained columns.
 - Stats shown to coaches must be scoped to their team/player access.
 - Player stats pages should show only the authenticated player's allowed data.
 - Strokes-gained and putting tendency gaps should be called out rather than silently treated as complete.

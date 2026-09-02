@@ -234,7 +234,7 @@ export function JoinTeamClient({
               ) : (
                 <>
                   <IconCheck size={20} />
-                  <span>Confirm & Join Team</span>
+                  <span>Confirm &amp; Join Team</span>
                 </>
               )}
             </Button>

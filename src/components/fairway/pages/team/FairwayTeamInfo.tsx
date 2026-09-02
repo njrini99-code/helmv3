@@ -41,7 +41,7 @@ import {
 } from '@/components/icons';
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
 import { parseDateOnly } from '@/lib/utils/date-only';
-import { isGolfTaskOverdue } from '@/lib/golf/task-overdue';
+import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the legacy TeamInfoPlayer loader output EXACTLY
@@ -53,6 +53,9 @@ export interface FairwayTeamInfoProps {
     name: string;
     season: string | null;
     created_at: string | null;
+    /** `golf_teams.timezone` — overdue badges below decide on the TEAM's wall
+     * clock, not the viewer's (#1487); see `isGolfTaskOverdueInZone`. */
+    timezone: string | null;
   };
   coach: {
     full_name: string | null;
@@ -339,11 +342,12 @@ export function FairwayTeamInfo({
                 const urgent = priority === 'high' || priority === 'urgent';
                 // Same overdue rule as the canonical Tasks page (FairwayTasks)
                 // and Team Hub's Tasks tab (TaskRow): a real due date in the
-                // past on a task that isn't complete.
-                // `isGolfTaskOverdue`, not `parseDateOnly(due) < now`: the
-                // latter anchors a DATE at local midnight and compares it to an
-                // instant, so a task due TODAY read as late from 00:00 onward.
-                const isOverdue = !!now && isGolfTaskOverdue(task.due_date, now);
+                // past on a task that isn't complete, decided on the TEAM's
+                // wall clock via `team.timezone` — NOT the viewer's (#1487).
+                // A travelling player and their coach must see the same badge
+                // on the same task, which `isGolfTaskOverdue` (deleted; read
+                // the reader's own clock) couldn't guarantee.
+                const isOverdue = !!now && isGolfTaskOverdueInZone(task.due_date, team.timezone, now);
                 return (
                   <Surface key={task.id} elevation="border" padding="md">
                     <div className="flex items-start gap-3">

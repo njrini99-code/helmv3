@@ -1,4 +1,6 @@
+import '@supabase/supabase-js/tracing';
 import { createBrowserClient } from '@supabase/ssr';
+import * as Sentry from '@sentry/nextjs';
 import { Database } from '@/lib/types/database';
 
 /**
@@ -49,7 +51,7 @@ export function createClient() {
   if (!anonKey) {
     throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Check Vercel env.');
   }
-  return createBrowserClient<Database>(
+  const client = createBrowserClient<Database>(
     url,
     anonKey,
     {
@@ -61,6 +63,16 @@ export function createClient() {
           return fetch(fetchUrl, { ...options, signal });
         },
       },
+      tracePropagation: {
+        enabled: true,
+        // Workflow traces must remain correlatable even when a parent span is
+        // not selected for export by production sampling.
+        respectSamplingDecision: false,
+      },
     }
   );
+  // Keep SQL bodies and filters out of telemetry. Business spans carry safe,
+  // explicit round/shot-count summaries instead.
+  Sentry.instrumentSupabaseClient(client, { sendOperationData: false });
+  return client;
 }

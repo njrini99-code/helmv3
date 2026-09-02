@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { IconSearch, IconX } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
-import type { Player } from '@/lib/types';
+import type { BaseballPlayer as Player } from '@/lib/types';
 
 interface SearchAutocompleteProps {
   value: string;

@@ -1,0 +1,33 @@
+fileType: momentic/test/v2
+id: golf-hell-round-three-units
+name: GolfHelm qualifier hell - round three unit boundaries
+url: https://helmsportslabs.com/golf/login
+steps:
+  - type:
+      text: "{{ env.PLAYER_EMAIL }}"
+      into: Email
+  - type:
+      text: "{{ env.PLAYER_PASSWORD }}"
+      into: Password
+  - click: Sign in
+  - waitForUrl: /golf/dashboard
+  - act: >-
+      Open player Settings and switch distance preference to Meters. Verify the
+      setting visibly saves, then start exactly Round 3 of {{ env.QA_QUALIFIER_NAME }}
+      using a unique 18-hole par-72 manual course named {{ env.QA_COURSE_R3 }}.
+      Record and submit exactly 72. Use legal shots while testing equivalent
+      green proximities of 1, 40, 149 and 150 feet. In meters mode test about
+      45m as legal and about 46m as rejected if above the canonical 150-ft
+      ceiling; correct rejected values before advancing. Also test 400+, 300,
+      200, 100 and 1 yard-equivalent remaining distances; meter quick selections
+      near 1m, 2m, 3m, 5m, 9m and 12m; negative distance; and a contradictory
+      zero-distance non-holed result. Each invalid attempt must be rejected
+      without creating a shot or advancing its number. Reload several tested
+      distances to verify semantic round-trip conversion, then restore the
+      normal distance preference. Stop and fail on any accepted invalid value,
+      corrupted distance, lost qualifier identity, or mutation error.
+  - checkPageContains: Round Complete
+  - checkPageContains: "72"
+  - navigate: https://helmsportslabs.com/golf/dashboard/my-qualifiers
+  - checkPageContains: "{{ env.QA_QUALIFIER_NAME }}"
+  - checkPageContains: 3/4

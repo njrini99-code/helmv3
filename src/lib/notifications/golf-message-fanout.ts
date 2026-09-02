@@ -4,6 +4,7 @@ import { notifyNewMessage } from '@/lib/notifications';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { allSettledReported } from '@/lib/settled-failures';
 
 /**
  * Fan out "new message" notifications (email + push + in-app bell) to every
@@ -104,25 +105,28 @@ export async function notifyGolfMessageRecipients(
       return;
     }
 
-    // Email notifications
-    await Promise.allSettled(
+    // Email notifications. Reasons are reported, not just counted — see
+    // src/lib/settled-failures.ts and INC-2026-08-27.
+    await allSettledReported(
       recipientProfiles.map(r =>
         r.email
           ? notifyNewMessage(r.id, r.email, senderName, previewText, conversationId, 'golf')
           : Promise.resolve()
-      )
+      ),
+      { action: 'notifications.notifyGolfMessageRecipients', featureArea: 'messaging', label: 'email' },
     );
 
     // Push notifications — carry the conversation id so the push payload
     // deep-links straight to the thread that fired it (P260).
-    await Promise.allSettled(
+    await allSettledReported(
       recipientProfiles.map(r =>
         sendPushNotification('new_message', r.id, {
           senderName,
           preview: previewText,
           conversationId,
         })
-      )
+      ),
+      { action: 'notifications.notifyGolfMessageRecipients', featureArea: 'messaging', label: 'push' },
     );
 
     // In-app notifications (golf_calendar_notifications)

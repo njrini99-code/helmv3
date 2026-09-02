@@ -15,8 +15,9 @@
  *
  *   1. SYMPTOM   — "3.2 three-putts per round" arrives as masked words.
  *   2. CANDIDATES— every plausible explanation is put on the table at once.
- *   3. ELIMINATE — they are struck through one at a time, each with the test it
- *                  failed: no temporal precedence, no dose–response, confounded.
+ *   3. ELIMINATE — they are struck through one at a time, each with the plain-
+ *                  language reason it failed (timing doesn't line up, amount
+ *                  didn't matter, tangled up with travel).
  *   4. SURVIVOR  — one cause is left standing and lights up.
  *   5. CAUSE     — only now does the "Caused by —" sentence resolve.
  *   6. EVIDENCE  — the supporting rows land with their real sample sizes.
@@ -30,7 +31,7 @@
  * thinking" clip art unconnected to any data on screen.
  * ========================================================================== */
 
-import { gsap } from '@/lib/motion/gsap/register';
+import { gsap, ScrollTrigger } from '@/lib/motion/gsap/register';
 import { DUR, EASE, SCRUB, STAGGER, DIST } from '@/lib/motion/gsap/tokens';
 import { arrive, maskedWords } from '@/lib/motion/gsap/primitives';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
@@ -111,9 +112,34 @@ export function coachHelmDeepScene({ root, reduced, compact }: SceneContext): vo
     },
   });
 
-  // 1. The symptom.
+  // 1. The symptom — on a clock, NOT on the scrub that drives the elimination
+  //    cascade below.
+  //
+  //    A masked word is legible at 0% and at 100% of its travel and at no
+  //    point in between (primitives.ts / the fix in f35e71f26 for the landing
+  //    thesis and coachHelmScene's own insight sentence): parking mid-scroll
+  //    means the reader is looking at a sentence sliced through the middle of
+  //    its own line boxes, which reads as unreadable dim text — reported on
+  //    mobile Safari, where momentum scrolling settles on arbitrary
+  //    intermediate positions far more than a desktop wheel does. This scene
+  //    tied it to `tl`'s scrub anyway; the pattern below matches the one
+  //    already shipped for every other masked reveal on this page.
   if (symptomWords.length) {
-    tl.to(symptomWords, { yPercent: 0, duration: DUR.medium, ease: EASE.glide, stagger: STAGGER.wideStep }, 0);
+    const symptomTl = gsap.timeline({ paused: true });
+    symptomTl.to(symptomWords, { yPercent: 0, duration: DUR.medium, ease: EASE.glide, stagger: STAGGER.wideStep });
+    ScrollTrigger.create({
+      trigger: card ?? root,
+      start: compact ? 'top 88%' : 'top 80%',
+      invalidateOnRefresh: true,
+      onEnter: () => symptomTl.play(),
+      // Arriving already past the trigger (deep link, restored scroll, a
+      // resize that re-runs this context) must show the symptom arrived,
+      // never sliced mid-word forever because `onEnter` has no edge left to
+      // fire on.
+      onRefresh: (self) => {
+        if (self.progress > 0) symptomTl.progress(1);
+      },
+    });
   }
 
   // 2 + 3. Each candidate is struck through in turn. The strike is a scaleX on

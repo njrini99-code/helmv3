@@ -1,0 +1,73 @@
+# ast-grep rule: forbid a catch clause in src/app/**/actions/** whose ENTIRE
+# body is a bare `return [];` / `return null;` / `return {};` — the failure
+# is swallowed with zero trace: no logServerException, no
+# captureGolfActionError/captureBaseballActionError, no console.error, nothing
+# an operator could ever use to notice the read silently started failing.
+#
+# The two sites this rule was written for — insights.ts and golf.ts, both
+# `} catch { return []; }` with nothing else in the block — were fixed in the
+# same change that added this rule, so the whole server-action tree is clean
+# of the pattern. Re-verified 2026-08-26 by scanning every non-test file under
+# src/app/*/actions/**: zero matches.
+#
+# That clean baseline is what makes `error` severity safe here. review-gate's
+# `run_rule` passes whole CHANGED FILE PATHS to `sg scan`, not diff hunks, so
+# any surviving violation would fail every future PR that touched its file for
+# an unrelated reason — and golf.ts is the hottest file in this repo. Wiring
+# the rule in while a single known hit remained would have done exactly that.
+# Keep the baseline at zero: if a silent fallback is ever genuinely needed,
+# log first (`captureGolfActionError` from src/lib/golf/with-golf-action.ts),
+# then return the fallback.
+#
+# WIRED INTO review-gate.yml as of 2026-08-26 — dropping a YAML file into this
+# directory does NOT make CI pick it up; each rule needs an explicit `run_rule`
+# call in the `ast-grep` job (four rules in this directory still sit
+# unregistered for that reason: no-console-log-in-src.yml, no-explicit-any.yml,
+# no-fixme-without-issue.yml, no-getByTestId-when-role-exists.yml).
+#
+# WHY `context`/`selector` instead of a plain top-level `pattern`: a bare
+# `catch (e) { ... }` clause is not parseable as a standalone TypeScript
+# program (a catch clause only exists attached to a `try`), so ast-grep
+# rejects a naked `pattern: "catch ($ERR) { return []; }"` with "Multiple AST
+# nodes are detected". Wrapping it in a minimal `try { $$$TRY } catch (...) {
+# ... }` context and selecting just the `catch_clause` node out of it is
+# ast-grep's documented way to match a sub-statement that cannot stand alone.
+id: helmv3-no-silent-catch-fallback
+language: typescript
+severity: error
+message: >
+  This catch clause's entire body is a bare return [] / null / {} — the
+  error is swallowed with no trace. Log it first: captureGolfActionError /
+  captureBaseballActionError (src/lib/golf/with-golf-action.ts /
+  src/lib/baseball/with-baseball-action.ts), logServerException, or an
+  equivalent logger call, THEN return the fallback.
+note: >
+  Scoped to src/app/**/actions/** via review-gate.yml's run_rule
+  include/exclude regex (this file carries no `files:` scoping of its own —
+  same convention as no-process-env-in-edge.yml / no-service-role-key.yml).
+  Test files are excluded below as belt-and-braces even though the workflow
+  filter already does it.
+ignores:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/__tests__/**"
+rule:
+  any:
+    - pattern:
+        context: "try { $$$TRY } catch ($ERR) { return []; }"
+        selector: catch_clause
+    - pattern:
+        context: "try { $$$TRY } catch ($ERR) { return null; }"
+        selector: catch_clause
+    - pattern:
+        context: "try { $$$TRY } catch ($ERR) { return {}; }"
+        selector: catch_clause
+    - pattern:
+        context: "try { $$$TRY } catch { return []; }"
+        selector: catch_clause
+    - pattern:
+        context: "try { $$$TRY } catch { return null; }"
+        selector: catch_clause
+    - pattern:
+        context: "try { $$$TRY } catch { return {}; }"
+        selector: catch_clause

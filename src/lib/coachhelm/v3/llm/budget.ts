@@ -28,7 +28,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { ComposeTask } from './types';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 type Sb = SupabaseClient<Database>;
 
@@ -67,6 +67,43 @@ export type BudgetSource =
 export const PLATFORM_DEFAULT_DAILY_BUDGET_USD = Number(
   process.env.COACHHELM_DEFAULT_DAILY_BUDGET_USD ?? 3,
 );
+
+/**
+ * Coaches already logged for in this warm instance, so an unconfigured budget
+ * is reported ONCE rather than on every render.
+ *
+ * Severity moved from 'warning' to 'info' at the same time, and both halves
+ * matter. The state this describes is not a failure: nobody set a budget, the
+ * platform default applied, CoachHelm ran. But it fired from
+ * `/golf/dashboard/rounds/[id]`, so a single coach opening a handful of rounds
+ * produced a burst of warning-tier incidents — and the incident feed's default
+ * view excludes only 'info', which put "working as designed" in the same list
+ * an operator scans for regressions.
+ *
+ * Findability is the reason the line exists at all, so it is kept, not
+ * dropped: one 'info' row per coach still answers "why is this coach on $3?".
+ * This is the same one-shot idiom `warnMissingAccessCodeOnce` uses in
+ * `lib/golf/signup-gate.ts`, widened to per-coach because the answer differs
+ * per coach.
+ *
+ * Bounded so a long-lived instance cannot accumulate ids without limit; on
+ * overflow the set resets and at worst one extra 'info' row is emitted.
+ */
+const LOGGED_UNCONFIGURED_BUDGET_COACHES = new Set<string>();
+const LOGGED_UNCONFIGURED_BUDGET_CAP = 500;
+
+async function noteUnconfiguredBudgetOnce(coach_id: string): Promise<void> {
+  if (LOGGED_UNCONFIGURED_BUDGET_COACHES.has(coach_id)) return;
+  if (LOGGED_UNCONFIGURED_BUDGET_COACHES.size >= LOGGED_UNCONFIGURED_BUDGET_CAP) {
+    LOGGED_UNCONFIGURED_BUDGET_COACHES.clear();
+  }
+  LOGGED_UNCONFIGURED_BUDGET_COACHES.add(coach_id);
+  await logServerEvent(
+    `budget: coach_id=${coach_id} has no configured daily budget; using the platform default of $${PLATFORM_DEFAULT_DAILY_BUDGET_USD}`,
+    { action: 'v3.llm.budget.platform_default' },
+    'info',
+  ).catch(() => {});
+}
 
 export interface BudgetCheckResult {
   allowed: boolean;
@@ -292,11 +329,7 @@ async function resolveDefaultBudgetForCoach(
     // for this coach. That is not a decision to switch CoachHelm off — it is
     // the absence of a decision, and the product should work with a ceiling
     // until someone makes one.
-    await logServerError(
-      `budget: coach_id=${coach_id} has no configured daily budget; using the platform default of $${PLATFORM_DEFAULT_DAILY_BUDGET_USD}`,
-      { action: 'v3.llm.budget.platform_default' },
-      'warning',
-    );
+    await noteUnconfiguredBudgetOnce(coach_id);
     return { budget_usd: PLATFORM_DEFAULT_DAILY_BUDGET_USD, source: 'platform_default' };
   }
 

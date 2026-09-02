@@ -26,7 +26,13 @@ function baseProps(
   tasks: NonNullable<FairwayTeamInfoProps['tasks']>,
 ): FairwayTeamInfoProps {
   return {
-    team: { id: 't1', name: 'Wildcats Golf', season: '2026', created_at: '2020-01-01T00:00:00.000Z' },
+    team: {
+      id: 't1',
+      name: 'Wildcats Golf',
+      season: '2026',
+      created_at: '2020-01-01T00:00:00.000Z',
+      timezone: 'America/New_York',
+    },
     coach: { full_name: 'Coach Davis', avatar_url: null },
     roster: [],
     announcements: [],

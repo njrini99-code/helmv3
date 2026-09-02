@@ -50,9 +50,32 @@ export const INCIDENT_SEVERITIES: AdminSeverity[] = ['warning', 'error', 'critic
  */
 export const FAILURE_SEVERITIES: AdminSeverity[] = ['error', 'critical'];
 
+/**
+ * What an operator SEES but which does not mean something is broken.
+ *
+ * DERIVED, never hand-listed: it is exactly the gap between the two tiers
+ * above. That matters because the point of this module is that the tiers are
+ * declared once — a literal `['warning']` here would be a third hand-written
+ * definition, and the next severity added to INCIDENT but not to FAILURE would
+ * silently fall out of every "warnings" count instead of being picked up.
+ *
+ * Added 2026-08-27, after the Feature Health detail surface reached for
+ * `.eq('severity', 'warning')` and was caught by
+ * `src/test/lib/admin/severity-single-source.test.ts` — which is the guard this
+ * file exists to make possible.
+ */
+export const NOTICE_SEVERITIES: AdminSeverity[] = INCIDENT_SEVERITIES.filter(
+  (severity) => !(FAILURE_SEVERITIES as string[]).includes(severity),
+);
+
 /** Is this severity shown in the incident feed? */
 export function isIncidentSeverity(severity: string): boolean {
   return (INCIDENT_SEVERITIES as string[]).includes(severity);
+}
+
+/** Visible to an operator, but not a failure (today: `warning`). */
+export function isNoticeSeverity(severity: string): boolean {
+  return (NOTICE_SEVERITIES as string[]).includes(severity);
 }
 
 /** Does this severity mean something is broken (counts toward headline KPIs)? */

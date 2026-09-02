@@ -51,9 +51,17 @@ export const DEMO_SESSION_IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 hours
  * it daily ("my guys still get logged out every time you close the app") — it
  * reads as the app being broken, not as a security feature.
  *
- * 30 days matches {@link SESSION_IDLE_COOKIE_MAX_AGE_S}: a window longer than
- * the marker's own lifetime would be meaningless, because a marker that has
- * expired reads as absent, and absent fails open to "not idle".
+ * The marker cookie MUST OUTLIVE this window — see
+ * {@link SESSION_IDLE_COOKIE_MAX_AGE_S}, which is deliberately longer.
+ *
+ * This comment previously said 30 days "matches" the cookie's max-age, and had
+ * the invariant backwards. It is true that a window longer than the marker's
+ * lifetime is meaningless; the error was concluding that EQUAL is therefore
+ * correct. Equal is exactly as broken as longer: the marker expires at the same
+ * instant the window is crossed, so the one request that needs to read a stale
+ * marker finds none, and `isSessionIdleExpired(null, ...)` fails open to "not
+ * idle". The native idle boundary silently did not exist — an abandoned app
+ * session would never be asked to re-authenticate, no matter how long it sat.
  */
 export const NATIVE_APP_SESSION_IDLE_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -93,8 +101,17 @@ export const SESSION_VISIBLE_HEARTBEAT_MS = 60 * 1000; // 1 minute
  * read it to detect staleness (a fail-open bug: a missing marker would look like
  * "just active"). A long-lived marker guarantees that a genuine reopen after the
  * idle window is always "present + stale", never "absent".
+ *
+ * So this MUST be strictly greater than the LONGEST idle window, which is
+ * {@link NATIVE_APP_SESSION_IDLE_TIMEOUT_MS} at 30 days. It sat at exactly 30
+ * days, which met the letter of the paragraph above and broke its intent for
+ * native sessions. 45 days restores the headroom for every window.
+ *
+ * `session-idle-invariant.test.ts` pins this against every exported window, so
+ * adding a new one longer than 45 days fails the build rather than silently
+ * re-opening the hole.
  */
-export const SESSION_IDLE_COOKIE_MAX_AGE_S = 60 * 60 * 24 * 30; // 30 days
+export const SESSION_IDLE_COOKIE_MAX_AGE_S = 60 * 60 * 24 * 45; // 45 days
 
 /** Parse a cookie value into epoch ms, or `null` when absent/malformed. */
 export function parseLastActivity(raw: string | undefined | null): number | null {

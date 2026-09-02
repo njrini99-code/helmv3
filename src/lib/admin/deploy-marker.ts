@@ -26,6 +26,7 @@ export async function recordDeployMarker(): Promise<void> {
       .limit(1);
     if (existing && existing.length > 0) return;
 
+    const nowIso = new Date().toISOString();
     await admin.from('admin_events').insert({
       event_type: 'deploy',
       title: `Deployed ${sha.slice(0, 7)} (${process.env.VERCEL_GIT_COMMIT_REF ?? 'unknown ref'})`,
@@ -38,6 +39,14 @@ export async function recordDeployMarker(): Promise<void> {
       },
       source: 'system',
       sport: 'shared',
+      // A deploy marker is a pure activity record, not an incident — nothing
+      // ever triages or resolves it (auto-resolve.ts and the triage UI both
+      // filter event_type='error'), so it sat resolved=false forever with no
+      // consumer that cared. Born resolved instead. See admin-logger.ts's
+      // ACTIVITY_RECORD_EVENT_TYPES for the sibling write paths and the
+      // measurement (538 such rows cleaned by hand 2026-08-20).
+      resolved: true,
+      resolved_at: nowIso,
     });
   } catch {
     // Never fail boot for a marker.

@@ -21,6 +21,7 @@
 import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   ModalShell,
   DiscardChangesModal,
@@ -130,6 +131,10 @@ export function FairwayCreateTaskModal({
   playersError = false,
   categories = [],
 }: FairwayCreateTaskModalProps) {
+  // Desktop-only autofocus: on touch, focusing the title as the modal opens
+  // summons the iOS keyboard over the form (owner TestFlight report,
+  // 2026-08-26 — same class as the event editor). The keyboard waits for a tap.
+  const finePointer = useMediaQuery('(pointer: fine)');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -373,7 +378,7 @@ export function FairwayCreateTaskModal({
                 // `!title.trim()` check in handleSubmit is the single source
                 // of truth for this validation now, on every submit path.
                 // eslint-disable-next-line jsx-a11y/no-autofocus
-                autoFocus
+                autoFocus={finePointer}
               />
             </FormField>
 

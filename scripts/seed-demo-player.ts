@@ -23,6 +23,7 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { assertSafeTarget } from './lib/prod-target-guard.mjs';
 
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
 
@@ -44,6 +45,18 @@ async function main() {
   const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
   if (!supabaseUrl || !serviceKey) throw new Error('Missing SUPABASE env vars');
   const dryRun = process.argv.includes('--dry-run');
+
+  // Deletes the target player's shots, holes and rounds explicitly before
+  // cloning. Scoped to one hardcoded TARGET_PLAYER_ID today -- the guard is
+  // here because nothing stops the next edit from widening that.
+  assertSafeTarget({
+    url: supabaseUrl,
+    allowProd: process.argv.includes('--allow-prod'),
+    dryRun,
+    scriptName: 'seed-demo-player',
+    deletes: ['golf_rounds', 'golf_holes', 'golf_shots'],
+  });
+
   const supabase: SupabaseClient = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false },
   });

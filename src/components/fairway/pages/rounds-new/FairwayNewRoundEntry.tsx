@@ -112,6 +112,9 @@ export interface FairwayNewRoundEntryProps {
   onRetryQualifiers: () => void;
   selectedQualifierId: string | null;
   setSelectedQualifierId: (id: string | null) => void;
+  /** Exact server reason the selected, coach-open qualifier has no next round. */
+  qualifierRoundError: string | null;
+  onRetryQualifierRound: () => void;
   availableRounds: number[];
   selectedRoundNumber: number | null;
   setSelectedRoundNumber: (n: number | null) => void;
@@ -326,7 +329,10 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   const baselineLabel = seededHoles ? (formattedCourseName || 'this course') : undefined;
   if (step === 'holes') {
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
+      // pt: max() folds in the iOS status-bar inset — the WKWebView is
+      // edge-to-edge, so without it the cockpit band collides with the clock
+      // (iOS premium audit 2026-08-25, F-SAFEAREA-02/03).
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pb-6 pt-[max(1.5rem,calc(env(safe-area-inset-top,0px)+0.75rem))] md:py-10">
         <m.div {...enter(0)}>
           <CockpitBand
             step="holes"
@@ -367,6 +373,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
     loadingQualifiers,
     qualifierError,
     selectedQualifierId,
+    qualifierRoundError,
     availableRounds,
     selectedRoundNumber,
     holesPerRound,
@@ -403,7 +410,8 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   const courseConfirmed = courseMode === 'saved' && (props.cloudPickActive || !!selectedCourse);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-10">
+    // pt: same safe-area fold-in as the holes step (F-SAFEAREA-02/03).
+    <div className="mx-auto w-full max-w-2xl px-4 pb-6 pt-[max(1.5rem,calc(env(safe-area-inset-top,0px)+0.75rem))] md:py-10">
       <div className="flex flex-col gap-6">
         <m.div {...enter(i++)}>
           <CockpitBand
@@ -892,10 +900,14 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                   <p className="font-fw-sans text-body-sm text-text-tertiary">Loading your qualifiers…</p>
                 ) : qualifierError ? (
                   // "no active qualifiers" is an empty-state (quiet info, no retry);
-                  // anything else is a genuine fetch failure → InlineNotice with an
-                  // inline "Try again" so the player never has to refresh the page.
+                  // a capacity/coach-closure result is a correct player-facing
+                  // answer (not a fetch failure); anything else is retriable.
                   /no active qualifiers/i.test(qualifierError) ? (
                     <p className="font-fw-sans text-body-sm text-text-tertiary">{qualifierError}</p>
+                  ) : /completed every configured round|closed by the coach|only has \d+ round/i.test(qualifierError) ? (
+                    <InlineNotice tone="warning" title="This qualifier is not available for a new round">
+                      {qualifierError}
+                    </InlineNotice>
                   ) : (
                     <InlineNotice
                       tone="danger"
@@ -928,6 +940,24 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         className={fwInputCls}
                       />
                     </div>
+                    {selectedQualifierId && qualifierRoundError ? (
+                      <InlineNotice
+                        tone="warning"
+                        title="Round setup needs a coach update"
+                        action={
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={props.onRetryQualifierRound}
+                          >
+                            Try again
+                          </Button>
+                        }
+                      >
+                        {qualifierRoundError}
+                      </InlineNotice>
+                    ) : null}
                     {selectedQualifierId && availableRounds.length > 0 && (
                       <div>
                         <Select
@@ -1000,7 +1030,12 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
               <Button variant="secondary" type="button" onClick={props.onCancel} disabled={props.isStartingRound} className="flex-1">
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" disabled={props.isStartingRound} className="flex-[2]">
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={props.isStartingRound || Boolean(selectedQualifierId && qualifierRoundError)}
+                className="flex-[2]"
+              >
                 {props.isStartingRound
                   ? 'Starting…'
                   : seededHoles

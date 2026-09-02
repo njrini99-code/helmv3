@@ -51,11 +51,11 @@ export async function getFailedEmailCounts(): Promise<FailedEmailCounts> {
   const [bouncedRes, complainedRes] = await Promise.all([
     supabase
       .from('emails')
-      .select('id', { count: 'exact', head: true })
+      .select('resend_message_id', { count: 'exact', head: true })
       .not('bounced_at', 'is', null),
     supabase
       .from('emails')
-      .select('id', { count: 'exact', head: true })
+      .select('resend_message_id', { count: 'exact', head: true })
       .not('complained_at', 'is', null),
   ]);
 

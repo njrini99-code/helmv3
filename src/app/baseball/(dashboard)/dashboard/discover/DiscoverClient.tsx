@@ -25,7 +25,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { SectionMasthead, EditorsLetter, InkBadge } from '@/components/baseball/living-annual';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import type { Player, Organization } from '@/lib/types';
+import type { BaseballPlayer as Player, Organization } from '@/lib/types';
 
 const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 

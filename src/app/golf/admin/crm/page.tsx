@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { buildCsv } from '@/lib/csv/safe-cell';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   IconChevronRight,
@@ -1224,9 +1225,16 @@ export default function CRMPage() {
       PRIORITY_CONFIG[c.priority]?.label || 'Normal',
       c.is_starred ? 'Yes' : 'No',
       c.last_contacted_at || '',
-      (c.notes || '').replace(/"/g, '""'),
+      c.notes || '',
     ]);
-    const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    // buildCsv, not hand-rolled quoting. These fields come from the bulk CSV
+    // importer (externally scraped coach lists), so a name or notes value can
+    // legitimately begin with `=` — which Excel/Sheets evaluate as a FORMULA
+    // even inside quotes, because quoting is stripped before interpretation
+    // (CWE-1236, security scan finding F15). The previous version also doubled
+    // embedded quotes on `notes` ALONE, so a `"` in any other field silently
+    // terminated it early and shifted every following column.
+    const csvContent = buildCsv(headers, rows);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);

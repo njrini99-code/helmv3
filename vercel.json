@@ -99,11 +99,19 @@
     },
     {
       "path": "/api/cron/refresh-engagement",
-      "schedule": "*/5 * * * *"
+      "schedule": "10 */4 * * *"
     },
     {
       "path": "/api/cron/ingest-gmail-replies",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/helm-debug-prune",
+      "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/reliability-triage",
+      "schedule": "0 */3 * * *"
     }
   ]
 }

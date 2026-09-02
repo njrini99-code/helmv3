@@ -16,6 +16,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { UIMessage } from 'ai';
 import { useCoachHelmChat, type ChatContextChip } from './useCoachHelmChat';
 import { ChatThread } from './ChatThread';
@@ -79,6 +80,14 @@ export function CoachHelmChat({
   const scroller = React.useRef<HTMLDivElement>(null);
   const isEmpty = chat.messages.length === 0;
 
+  // Autofocus is a desktop behaviour. On a phone, focusing the composer on
+  // arrival summons the iOS keyboard over a page the coach hasn't read yet
+  // (owner TestFlight report, 2026-08-26 — the keyboard plus the empty-thread
+  // layout left most of the screen blank). `pointer: fine` is false on touch
+  // devices and false in the SSR snapshot, so the keyboard only ever appears
+  // from an intentional tap there.
+  const finePointer = useMediaQuery('(pointer: fine)');
+
   const playersByName = React.useMemo(
     () => Object.fromEntries(players.map((p) => [p.name, p.id])),
     [players],
@@ -107,8 +116,8 @@ export function CoachHelmChat({
       onAddContext={chat.addContext}
       safeArea={variant === 'drawer'}
       initialValue={initialInput}
-      // eslint-disable-next-line jsx-a11y/no-autofocus -- an empty Ask page exists to be typed into
-      autoFocus={variant === 'page' && isEmpty}
+      // eslint-disable-next-line jsx-a11y/no-autofocus -- an empty Ask page exists to be typed into (desktop only; see finePointer above)
+      autoFocus={variant === 'page' && isEmpty && finePointer}
       placeholder={variant === 'drawer' ? 'Ask about this page' : 'Ask about your program'}
     />
   );

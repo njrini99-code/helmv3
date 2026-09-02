@@ -36,7 +36,8 @@
 import {
   useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
-import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/fairway/controls/button';
@@ -92,7 +93,7 @@ export function FairwayCoursePicker({
   // showToast in a ref so the data callbacks stay referentially stable.
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
-  const reduceMotion = !!useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
 
   const [stage, setStage] = useState<Stage>('courses');
   const [courses, setCourses] = useState<GolfCourse[]>([]);     // full shared library
@@ -265,7 +266,7 @@ export function FairwayCoursePicker({
             type="button"
             onClick={() => onOpenChange(false)}
             aria-label="Close"
-            className="absolute right-4 top-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-text-secondary shadow-soft backdrop-blur transition-[transform,color] [transition-duration:var(--fw-dur-fast)] hover:scale-105 hover:text-text-primary active:scale-95 sm:right-6 sm:top-6"
+            className="absolute right-4 top-[max(1rem,calc(env(safe-area-inset-top,0px)+0.5rem))] z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-text-secondary shadow-soft backdrop-blur transition-[transform,color] [transition-duration:var(--fw-dur-fast)] hover:scale-105 hover:text-text-primary active:scale-95 sm:right-6 sm:top-[max(1.5rem,calc(env(safe-area-inset-top,0px)+0.5rem))]"
           >
             <IconX size={18} aria-hidden />
           </button>

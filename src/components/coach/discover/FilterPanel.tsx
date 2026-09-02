@@ -9,7 +9,7 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useSavedSearches } from '@/hooks/use-dashboard';
-import type { Player } from '@/lib/types';
+import type { BaseballPlayer as Player } from '@/lib/types';
 import { IconUsers, IconBuilding, IconBookmark, IconTrash, IconChevronDown, IconChevronUp } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 

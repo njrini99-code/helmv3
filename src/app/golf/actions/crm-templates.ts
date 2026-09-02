@@ -569,8 +569,16 @@ export async function sendTestTemplate(input: {
     const format = normalizeFormat(template.format);
 
     // 4) POST to the internal send route with the caller's cookies forwarded so
-    //    the route's auth.getUser() + admin check pass. Base URL mirrors
-    //    task-reminders.ts.
+    //    the route's super-admin gate resolves the caller's session. Base URL
+    //    mirrors task-reminders.ts.
+    //
+    //    The route moved from a local `users.role === 'admin'` read to
+    //    `checkSuperAdminAccess()` on 2026-08-19. This call is unaffected --
+    //    both resolve the identity from the same forwarded cookie, and the
+    //    predicate change was measured against live data first (1 user holds
+    //    role='admin', 0 admins are absent from admin_allowlist). Keep
+    //    forwarding the cookie: without it the route sees no session and
+    //    returns 401, which surfaces here as a confusing "Test send failed".
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
     const cookieHeader = (await cookies()).toString();
 

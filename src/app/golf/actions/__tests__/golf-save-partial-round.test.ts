@@ -31,6 +31,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
+import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 
 let fake: FakeSupabase;
 let adminFake: FakeSupabase;
@@ -82,7 +83,7 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
-import { savePartialRound } from '../golf';
+import { getNextQualifierRoundNumber, savePartialRound } from '../golf';
 
 type Row = Record<string, unknown>;
 interface SeedTables extends Record<string, Row[]> {
@@ -109,11 +110,109 @@ function seedAs(userId: string, tables: SeedTables) {
   adminFake = fake;
 }
 
+function completedHole(overrides: Partial<HoleStats> = {}): HoleStats {
+  return {
+    holeNumber: 1,
+    par: 4,
+    yardage: 400,
+    score: 4,
+    putts: 2,
+    fairwayHit: true,
+    greenInRegulation: true,
+    drivingDistance: null,
+    usedDriver: true,
+    driveMissDirection: null,
+    approachDistance: 150,
+    approachLie: 'fairway',
+    approachProximity: 10,
+    approachMissDirection: null,
+    scrambleAttempt: false,
+    scrambleMade: false,
+    sandSaveAttempt: false,
+    sandSaveMade: false,
+    penaltyStrokes: 0,
+    firstPuttDistance: null,
+    firstPuttLeave: null,
+    firstPuttBreak: null,
+    firstPuttSlope: null,
+    firstPuttMissDirection: null,
+    holedOutDistance: null,
+    holedOutType: null,
+    shots: [],
+    ...overrides,
+  };
+}
+
+function trackedShot(): ShotRecord {
+  return {
+    shotNumber: 1,
+    shotType: 'tee',
+    clubType: 'driver',
+    lieBefore: 'tee',
+    distanceToHoleBefore: 400,
+    distanceUnitBefore: 'yards',
+    result: 'fairway',
+    distanceToHoleAfter: 150,
+    distanceUnitAfter: 'yards',
+    shotDistance: 250,
+    isPenalty: false,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe('savePartialRound — no-existingRoundId fallback', () => {
+  it('materializes sparse legacy holes as explicit empty checkpoints', async () => {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-sparse',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_B,
+      course_name: 'New Course',
+      round_date: '2026-07-10',
+      status: 'in_progress',
+      updated_at: '2026-07-10T10:00:00Z',
+    });
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: {
+        save_partial_round_atomic: async () => ({
+          data: { success: true, updated_at: '2026-07-10T10:00:01Z' },
+          error: null,
+        }),
+      },
+    });
+    adminFake = fake;
+
+    // Older mobile bundles serialized an incomplete scorecard as a sparse
+    // array. Server Action transport presents the empty slot as undefined;
+    // that must be treated exactly like an explicit uncompleted (null) hole.
+    const legacySparseHoles: Array<HoleStats | null> = new Array(3);
+    legacySparseHoles[0] = completedHole();
+    legacySparseHoles[2] = completedHole({ holeNumber: 3 });
+    const result = await savePartialRound({
+      courseName: 'New Course',
+      courseId: COURSE_B,
+      roundType: 'practice',
+      roundDate: '2026-07-10',
+      currentHole: 3,
+      holesToPlay: 18,
+      holes: legacySparseHoles,
+      holeConfigs: [
+        { holeNumber: 1, par: 4, yardage: 400 },
+        { holeNumber: 2, par: 4, yardage: 400 },
+        { holeNumber: 3, par: 4, yardage: 400 },
+      ],
+    }, 'round-sparse');
+
+    expect(result.success).toBe(true);
+    expect(tables.golf_rounds).toHaveLength(1);
+  });
+
   it('does NOT repurpose an unrelated in_progress round at a different course/date', async () => {
     const tables = baseTables();
     tables.golf_rounds.push({
@@ -183,6 +282,237 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
     if (result.success) {
       expect(result.data.roundId).toBe('round-same');
     }
+  });
+
+  it('does not invent a qualifier slot when the completed-round read fails', async () => {
+    const tables = baseTables();
+    seedAs('u-p1', tables);
+
+    const originalFrom = fake.from.bind(fake);
+    fake.from = ((table: string) => {
+      const api = originalFrom(table);
+      if (table !== 'golf_rounds') return api;
+
+      const unavailable = { data: null, error: { code: '08006', message: 'connection reset' } };
+      const builder: Record<string, unknown> = {};
+      builder.eq = () => builder;
+      builder.then = (
+        onfulfilled?: (value: unknown) => unknown,
+        onrejected?: (reason: unknown) => unknown,
+      ) => Promise.resolve(unavailable).then(onfulfilled, onrejected);
+
+      // This intentionally returns a minimal thenable error result, rather
+      // than a full Supabase query builder.  Keep that test double isolated
+      // from the production builder type.
+      return { ...api, select: () => builder } as unknown as typeof api;
+    }) as typeof fake.from;
+
+    const result = await savePartialRound({
+      courseName: 'Qualifier Course',
+      courseId: COURSE_A,
+      roundType: 'qualifier',
+      qualifierId: '33333333-3333-4333-8333-333333333333',
+      roundDate: '2026-08-25',
+      currentHole: 1,
+      holesToPlay: 18,
+      holes: [],
+    });
+
+    // The durable contract (either failure semantics): a failed history read
+    // must never be interpreted as "no prior rounds" and mint slot 1. On main
+    // the derivation is skipped and the save continues numberless; in this
+    // mock world every golf_rounds read is broken, so the save itself then
+    // fails — but no round row may exist claiming a qualifier slot.
+    expect(result.success).toBe(false);
+    const inventedSlot = tables.golf_rounds.find(
+      (r) =>
+        r.qualifier_id === '33333333-3333-4333-8333-333333333333' &&
+        r.qualifier_round_number != null,
+    );
+    expect(inventedSlot).toBeUndefined();
+  });
+});
+
+describe('getNextQualifierRoundNumber — coach-controlled completion', () => {
+  // Reversed 2026-08-31 on the owner's instruction: "there should be no time
+  // constraints." A closed qualifier used to refuse here, which meant opening
+  // only the SUBMIT-side check would have been half a fix — a round has to be
+  // started before it can be submitted, so this would have become the new dead
+  // end one step earlier.
+  //
+  // The rules that actually protect the standings are untouched and are
+  // asserted by the neighbouring cases: the player must be ENTERED, and the
+  // round cap (`num_rounds`) still applies. Only the clock stopped mattering.
+  it('ALLOWS a round in a closed qualifier — no time limit, cap still applies', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'completed' }];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result.success).toBe(true);
+  });
+
+  it('explains an open qualifier round cap without falsely calling the qualifier completed', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 1, status: 'in_progress' }];
+    tables.golf_rounds = [{
+      id: 'round-1',
+      qualifier_id: 'qualifier-1',
+      player_id: 'player-1',
+      qualifier_round_number: 1,
+      status: 'completed',
+    }];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result.success).toBe(false);
+    expect(result.success === false && result.error).toMatch(/1 of 1/i);
+    expect(result.success === false && result.error).toMatch(/still open/i);
+    expect(result.success === false && result.error).toMatch(/coach.*raise.*round/i);
+    expect(result.success === false && result.error).not.toMatch(/completed every round/i);
+  });
+
+  it('does not use a scheduled end date to close an in-progress qualifier', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{
+      id: 'qualifier-1',
+      num_rounds: 2,
+      status: 'in_progress',
+      // This date is intentionally historical. Only an explicit coach status
+      // change may close a qualifier.
+      end_date: '2020-01-01',
+    }];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 1, availableRounds: [1] },
+    });
+  });
+
+  it('returns the first missing configured round instead of skipping over a legacy gap', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
+    tables.golf_rounds = [
+      { id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed' },
+      { id: 'round-3', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 3, status: 'completed' },
+    ];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 2, availableRounds: [2] },
+    });
+  });
+
+  it('progresses a three-round qualifier in order', async () => {
+    const tables = baseTables();
+    tables.golf_qualifier_entries = [{ id: 'entry-1', qualifier_id: 'qualifier-1', player_id: 'player-1' }];
+    tables.golf_qualifiers = [{ id: 'qualifier-1', num_rounds: 3, status: 'in_progress' }];
+    tables.golf_rounds = [
+      { id: 'round-1', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 1, status: 'completed' },
+      { id: 'round-2', qualifier_id: 'qualifier-1', player_id: 'player-1', qualifier_round_number: 2, status: 'completed' },
+    ];
+    seedAs('u-p1', tables);
+
+    const result = await getNextQualifierRoundNumber('qualifier-1');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { nextRoundNumber: 3, availableRounds: [3] },
+    });
+  });
+});
+
+/**
+ * P0 regression: a transient child write failure must NEVER delete an
+ * in-progress round. A player whose client lost its local round ID reaches
+ * this fallback path after signing back in; deleting the parent here made a
+ * recoverable retry appear as though the whole round had vanished.
+ */
+describe('savePartialRound — child-write failures preserve the round', () => {
+  function seedRecoverableRound() {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-preserve',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_A,
+      course_name: 'Same Course',
+      round_date: '2026-08-22',
+      status: 'in_progress',
+      qualifier_id: null,
+      qualifier_round_number: null,
+      updated_at: '2026-08-22T10:00:00Z',
+    });
+    seedAs('u-p1', tables);
+    return tables;
+  }
+
+  function failUpsert(
+    client: FakeSupabase,
+    table: string,
+    error: { code?: string; message: string },
+  ) {
+    const origFrom = client.from.bind(client);
+    client.from = ((requestedTable: string) => {
+      const api = origFrom(requestedTable);
+      if (requestedTable !== table) return api;
+      return {
+        ...api,
+        upsert: () => ({
+          select: async () => ({ data: null, error }),
+        }),
+      };
+    }) as typeof client.from;
+  }
+
+  const baseSaveData = {
+    courseName: 'Same Course',
+    courseId: COURSE_A,
+    roundType: 'practice' as const,
+    roundDate: '2026-08-22',
+    currentHole: 2,
+    holesToPlay: 18 as const,
+    holeConfigs: [{ holeNumber: 1, par: 4, yardage: 400 }],
+  };
+
+  it('preserves the existing round when hole persistence fails', async () => {
+    const tables = seedRecoverableRound();
+    failUpsert(fake, 'golf_holes', { code: '08006', message: 'connection reset' });
+
+    const result = await savePartialRound({
+      ...baseSaveData,
+      holes: [completedHole()],
+    });
+
+    expect(result.success).toBe(false);
+    expect(tables.golf_rounds).toHaveLength(1);
+    expect(tables.golf_rounds[0]?.id).toBe('round-preserve');
+  });
+
+  it('preserves the existing round when shot persistence fails', async () => {
+    const tables = seedRecoverableRound();
+    failUpsert(fake, 'golf_shots', { code: '08006', message: 'connection reset' });
+
+    const result = await savePartialRound({
+      ...baseSaveData,
+      holes: [completedHole({ shots: [trackedShot()] })],
+    });
+
+    expect(result.success).toBe(false);
+    expect(tables.golf_rounds).toHaveLength(1);
+    expect(tables.golf_rounds[0]?.id).toBe('round-preserve');
   });
 });
 
@@ -290,5 +620,148 @@ describe('savePartialRound — single admin_events row per failure (no duplicate
     expect(logServerEvent).toHaveBeenCalledTimes(1);
     expect(logServerError).not.toHaveBeenCalled();
     expect(logServerException).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Single-flight coalescing (2026-08-20, docs/audits/
+ * ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md): save_partial_round_atomic
+ * now takes its golf_rounds row with FOR UPDATE NOWAIT and returns
+ * {success:false, error:'busy'} when another save (or a submit) already holds
+ * it. A whole-team session produced 15 auto-save timeouts across 8 rounds in
+ * one evening by QUEUEING on that row lock instead — 'busy' is the healthy
+ * outcome, so it must pass through to the client verbatim and must NOT land
+ * in admin_events as a failure.
+ */
+describe('savePartialRound — single-flight busy skip', () => {
+  it("returns error:'busy' verbatim and logs NOTHING", async () => {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-busy',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_A,
+      course_name: 'Bryan Park Champs',
+      round_date: '2026-08-19',
+      status: 'in_progress',
+      updated_at: '2026-08-19T22:00:00Z',
+    });
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: {
+        // Another save for this round holds the row — the RPC skipped.
+        save_partial_round_atomic: async () => ({
+          data: { success: false, error: 'busy' },
+          error: null,
+        }),
+      },
+    });
+    adminFake = fake;
+
+    const result = await savePartialRound(
+      {
+        courseName: 'Bryan Park Champs',
+        courseId: COURSE_A,
+        roundType: 'practice',
+        roundDate: '2026-08-19',
+        currentHole: 17,
+        holesToPlay: 18,
+        holes: [],
+      },
+      'round-busy'
+    );
+
+    // The distinct key the clients branch on — never remapped to a generic
+    // "Failed to save" message the circuit breaker would count.
+    expect(result).toEqual({ success: false, error: 'busy' });
+
+    // A coalescing skip is not an incident. Pre-fix, an unrecognized RPC
+    // failure logged an admin_events row — 15 of those in one evening was
+    // exactly the noise that buried the real signal.
+    const { logServerError, logServerException, logServerEvent } = await import('@/lib/server-error-logger');
+    expect(logServerError).not.toHaveBeenCalled();
+    expect(logServerException).not.toHaveBeenCalled();
+    expect(logServerEvent).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Transient auth-check failures are NOT session expiry (2026-08-19,
+ * fingerprint 836ce3b6). Six times in one evening, getUser() failed in
+ * transit during DB contention — GoTrue shares the contended Postgres and
+ * the then-10s client abort killed the round trip — and the discarded error
+ * meant `!user` was logged as "session expired mid-round" for players whose
+ * rotation chains prove they held valid, unexpired tokens. A background
+ * auto-save must treat transit failure like 'busy' (silent skip, next tick
+ * covers), and reserve the sign-in message for a real 4xx rejection.
+ */
+describe('savePartialRound — transient auth-check failure is not a sign-out', () => {
+  function seedRound() {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: 'round-auth',
+      player_id: 'player-1',
+      team_id: 'team-1',
+      course_id: COURSE_A,
+      course_name: 'Bryan Park Champs',
+      round_date: '2026-08-19',
+      status: 'in_progress',
+      updated_at: '2026-08-19T22:00:00Z',
+    });
+    fake = createFakeSupabase({ user: { id: 'u-p1' }, tables });
+    adminFake = fake;
+    return tables;
+  }
+
+  const partialData = {
+    courseName: 'Bryan Park Champs',
+    courseId: COURSE_A,
+    roundType: 'practice' as const,
+    roundDate: '2026-08-19',
+    currentHole: 15,
+    holesToPlay: 18,
+    holes: [],
+  };
+
+  it("returns 'retry' (not a sign-in demand) when the auth check dies in transit", async () => {
+    seedRound();
+    // AuthRetryableFetchError shape: user null, status 0 — GoTrue never ruled.
+    fake.auth.getUser = async () => ({
+      data: { user: null },
+      error: { name: 'AuthRetryableFetchError', status: 0, message: 'fetch failed' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
+
+    const result = await savePartialRound(partialData, 'round-auth');
+    expect(result).toEqual({ success: false, error: 'retry' });
+
+    // Logged as a WARNING with the transit language — never as the
+    // "session expired mid-round" error that misled the incident triage.
+    const { logServerError } = await import('@/lib/server-error-logger');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calls = (logServerError as any).mock.calls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0]).toContain('NOT a session expiry');
+    expect(calls[0][2]).toBe('warning');
+  });
+
+  it('still demands sign-in on a REAL 401 rejection', async () => {
+    seedRound();
+    fake.auth.getUser = async () => ({
+      data: { user: null },
+      error: { name: 'AuthApiError', status: 401, message: 'invalid JWT' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
+
+    const result = await savePartialRound(partialData, 'round-auth');
+    expect(result).toEqual({ success: false, error: 'You must be signed in' });
+
+    const { logServerError } = await import('@/lib/server-error-logger');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calls = (logServerError as any).mock.calls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0]).toContain('session expired mid-round');
+    expect(calls[0][2]).toBe('error');
   });
 });

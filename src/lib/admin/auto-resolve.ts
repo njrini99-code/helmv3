@@ -32,6 +32,18 @@
  *   Rule C (legacy, no fingerprint): rows with `fingerprint IS NULL` older
  *   than the same 14-day quiet window.
  *
+ *   Rule D (non-actionable, per the CLASSIFIER): unlike A/B/C, this rule
+ *   infers nothing from silence or age — `classifyIncident()`
+ *   (incident-classification.ts) already labels a row `actionable: false`
+ *   from its CONTENT alone (routine telemetry, an empty state surfaced
+ *   through the error path, an integrity check that passed, an expected
+ *   access denial), and the live triage UI already hides those rows behind
+ *   the "actionable" filter. If the UI has already decided nobody needs to
+ *   act on a row, it does not need to sit open waiting for a deploy or two
+ *   quiet weeks to prove that — it can resolve the moment it is read. See
+ *   the Rule D section below for the exception this rule does NOT relax.
+ *
+
  *   EXCLUSION (operator-gated provider faults): Rules A and B are skipped
  *   entirely for any fingerprint whose rows carry a `provider_*_credit_exhausted
  *   / _invalid_credential / _missing_credential / _plan_gated_model` code. Both
@@ -75,6 +87,33 @@
  * is a strict extension of an already-accepted policy to the rows that policy
  * could not reach — not a new, more aggressive one.
  *
+ * WHY RULE D EXISTS. Measured against production 2026-08-20: 3,661 unresolved
+ * `event_type = 'error'` rows, of which ~2,570 classify `actionable: false` —
+ * routine `.gateMetrics`/`.starvation` telemetry, `Integrity PASS` rows,
+ * "not enough data yet" empty states, and expected access denials (a wrong
+ * password, a join code typo). None of these will EVER become actionable no
+ * matter how long they sit or how many deploys ship — they are not evidence
+ * of anything breaking, so Rules A/B/C's silence-based reasoning does not
+ * apply and does not need to: the classifier already answered the only
+ * question that matters, at read time, from the row's own content.
+ *
+ * Rule D does NOT touch a `provider_*` fault. `classifyIncident` already
+ * routes a server-side provider/billing fault (Inngest credential, AI Gateway
+ * credit, etc.) to `actionable: true` — the exact SAME "silence is not
+ * recovery" reasoning documented above for Rules A/B applies, and Rule D
+ * reads classification, it does not re-derive it. Belt-and-braces: Rule D
+ * additionally excludes any row whose `metadata.errorCode` is
+ * `isOperatorGatedFaultCode` outright, rather than depending solely on that
+ * one branch of the classifier never changing.
+ *
+ * No fingerprint grouping, no cutoff race to guard against (see
+ * resolveFingerprints' doc comment for why A/B/C need one): classification is
+ * a pure function of a SINGLE row's own content, not a claim about a window
+ * of time, so there is nothing for a row inserted mid-run to race against —
+ * it either classifies actionable:false right now, in which case resolving
+ * it immediately is correct, or it does not, in which case Rule D leaves it
+ * alone exactly like any other row it read this pass.
+ *
  * Metadata tagging ({ autoResolved: { at, rule, deploySha? } }) is NOT
  * applied: each candidate row carries its own pre-existing metadata JSON, so
  * tagging it would require either an N-row loop of individual UPDATEs (the
@@ -92,6 +131,17 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { isOperatorGatedFaultCode } from '@/lib/admin/provider-fault';
 import { fetchVercelDeployments, type VercelDeployment } from '@/lib/admin/vercel-api';
+import { classifyIncident } from '@/lib/admin/incident-classification';
+import { extractErrorCode } from '@/lib/admin/incident-report';
+import {
+  recordAutoResolutions,
+  markRegressions,
+  fetchResolutionsFor,
+  type ResolutionEntry,
+  type LedgerWriteResult,
+  type RegressionWriteResult,
+} from '@/lib/admin/resolution-ledger';
+import { planReopens } from '@/lib/reliability/resolution';
 
 /** Exported so incident-feed.ts's read-time Sentry filter (the "mirror of
  *  Rule A" described in its own doc comment) can never drift from the
@@ -128,6 +178,13 @@ const ID_CHUNK_SIZE = 200;
  *  check means what it says, and 1,000 x 25 clears up to 25k per nightly run. */
 const LEGACY_BATCH = 1000;
 const LEGACY_MAX_BATCHES = 25;
+/** Rule D batching — same reasoning and same numbers as Rule C's LEGACY_BATCH
+ *  / LEGACY_MAX_BATCHES: PostgREST's own 1,000-row cap bounds one page, and
+ *  25 pages/night (up to 25k rows classified) clears the measured ~2,570-row
+ *  backlog in a single run without holding locks on a table live Golf
+ *  traffic also writes to. */
+const NON_ACTIONABLE_BATCH = 1000;
+const NON_ACTIONABLE_MAX_BATCHES = 25;
 /** Short cache — mirrors vercel-api.ts's own REVALIDATE_SECONDS. Both the
  *  cron (one call/run) and the Errors-tab read path (one call per admin
  *  page load) resolve the same deploy anchor; caching avoids a redundant
@@ -139,12 +196,28 @@ export interface AutoResolveResult {
   resolvedQuiet: number;
   /** Rule C — rows with NO fingerprint, aged out. See the module doc. */
   resolvedLegacy: number;
+  /** Rule D — rows the classifier already says are not actionable. See the module doc. */
+  resolvedNonActionable: number;
   fingerprints: number;
   /** Present when Rule A did not run this pass — Vercel deploy data was
    *  unavailable, or the newest production deploy isn't 24h old yet. Rule B
    *  still runs regardless (see module doc). */
   releaseSkippedReason?: string;
   deploySha?: string | null;
+  /**
+   * Fingerprint-level ledger writes made from THIS pass's decisions. Separate
+   * from the row counts above because they answer a different question: the
+   * counts say how many rows were hidden, these say what the system now
+   * remembers about why.
+   */
+  ledger: LedgerWriteResult;
+  regressions: RegressionWriteResult;
+  /**
+   * Set when regression detection could not run — the resolutions read
+   * failed, so "nothing regressed" was never established. Reported rather
+   * than rendered as a clean zero.
+   */
+  regressionSkippedReason?: string;
 }
 
 interface DeployAnchor {
@@ -297,6 +370,90 @@ async function resolveLegacyUnfingerprinted(
   return total;
 }
 
+interface NonActionableCandidateRow {
+  id: string;
+  title: string | null;
+  message: string | null;
+  severity: string | null;
+  source: string | null;
+  metadata: unknown;
+}
+
+/**
+ * Rule D — bulk-resolve unresolved error rows the CLASSIFIER already says
+ * nobody needs to act on. See the module doc for why this needs no cutoff
+ * race guard the way Rules A/B/C do.
+ *
+ * Batched the same way Rule C is (bounded pages, chunked updates) — a single
+ * predicate-wide UPDATE would hold locks on a table live Golf traffic also
+ * writes to, and PostgREST's own row cap bounds one SELECT page regardless.
+ * Re-queries the SAME unresolved-error page each iteration rather than
+ * paging by offset: resolved rows drop out of `.eq('resolved', false)` on
+ * their own, so the loop naturally advances — the same design Rule C already
+ * relies on. A page that resolves NOTHING (every row on it classified
+ * actionable — genuine open defects, which is normal and expected) still
+ * needs a bail-out, or the loop would spend every remaining batch re-reading
+ * that exact page.
+ */
+async function resolveNonActionable(admin: AdminClient, resolvedAtIso: string): Promise<number> {
+  let total = 0;
+  for (let i = 0; i < NON_ACTIONABLE_MAX_BATCHES; i++) {
+    const { data, error } = await admin
+      .from('admin_events')
+      .select('id, title, message, severity, source, metadata')
+      .eq('resolved', false)
+      .eq('event_type', 'error')
+      .order('id', { ascending: true })
+      .limit(NON_ACTIONABLE_BATCH);
+    if (error) {
+      throw new Error(`autoResolveFixedIncidents: non-actionable select failed: ${error.message}`);
+    }
+
+    const rows = (data ?? []) as unknown as NonActionableCandidateRow[];
+    if (rows.length === 0) return total;
+
+    const candidateIds = rows
+      .filter((row) => {
+        const errorCode = extractErrorCode(row.metadata);
+        // Belt-and-braces on top of classifyIncident's own actionable:true
+        // for a non-client provider fault — see the module doc's Rule D
+        // section. Never let this exclusion depend on a single branch of the
+        // classifier never changing.
+        if (isOperatorGatedFaultCode(errorCode)) return false;
+        const classification = classifyIncident({
+          title: row.title,
+          message: row.message,
+          severity: row.severity,
+          source: row.source,
+          errorCode,
+        });
+        return !classification.actionable;
+      })
+      .map((row) => row.id);
+
+    for (const idBatch of chunk(candidateIds, ID_CHUNK_SIZE)) {
+      const { error: updateError, count } = await admin
+        .from('admin_events')
+        .update({ resolved: true, resolved_at: resolvedAtIso }, { count: 'exact' })
+        .eq('resolved', false)
+        .eq('event_type', 'error')
+        .in('id', idBatch);
+      if (updateError) {
+        throw new Error(`autoResolveFixedIncidents: non-actionable update failed: ${updateError.message}`);
+      }
+      total += count ?? 0;
+    }
+
+    // A short page means the unresolved-error backlog is drained. A page that
+    // resolved nothing (every row classified actionable) makes no more
+    // progress by re-reading it, so stop rather than burn every remaining
+    // batch on the same rows — the real defects on it stay open, correctly,
+    // and get picked up again next run alongside whatever else is new.
+    if (rows.length < NON_ACTIONABLE_BATCH || candidateIds.length === 0) return total;
+  }
+  return total;
+}
+
 export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   const admin = createAdminClient();
   const now = Date.now();
@@ -351,6 +508,41 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   //
   // Silence is not recovery. These stay open until a human clears them.
 
+  // ── Regression detection, BEFORE anything below records a new resolution.
+  //
+  // Order is load-bearing. Recording a resolution overwrites
+  // `last_seen_at_resolution`, which is the exact baseline a regression is
+  // measured against — so detecting afterwards would compare this pass's
+  // occurrences against a baseline this pass just moved past them, and no
+  // fault would ever be seen to come back.
+  //
+  // `maxByFingerprint` is built from currently-UNRESOLVED rows, which is
+  // precisely where a recurrence lands: a fault that fires again after being
+  // archived arrives as a fresh row with `resolved` defaulting to false.
+  const knownFingerprints = [...maxByFingerprint.keys()];
+  const stored = await fetchResolutionsFor(admin, knownFingerprints);
+
+  let regressions: RegressionWriteResult = { marked: 0, failed: 0, capped: 0, firstError: null };
+  let regressedSet = new Set<string>();
+  let regressionSkippedReason: string | undefined;
+
+  if (stored.error) {
+    // A failed READ is not evidence that nothing regressed. Skipping loudly
+    // beats reporting a clean zero we never established.
+    regressionSkippedReason = `resolutions read failed: ${stored.error}`;
+  } else {
+    const reopen = planReopens({
+      openFaults: [...maxByFingerprint].map(([fingerprint, maxT]) => ({
+        fingerprint,
+        lastSeenAt: new Date(maxT).toISOString(),
+        occurrences: 0,
+      })),
+      resolutions: stored.resolutions,
+    });
+    regressedSet = new Set(reopen.map((r) => r.fingerprint));
+    regressions = await markRegressions(admin, [...regressedSet]);
+  }
+
   const deploy = await getProductionDeployAt(now);
 
   const releaseFingerprints: string[] = [];
@@ -400,12 +592,58 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
     resolvedAtIso,
   );
 
+  // Rule D — independent of the fingerprint snapshot above (it classifies
+  // each row from its own content, not from a max(created_at) aggregate), so
+  // it runs against the live table rather than the `rows` snapshot already
+  // read for Rules A/B.
+  const resolvedNonActionable = await resolveNonActionable(admin, resolvedAtIso);
+
+  // ── Record WHAT was decided, at fingerprint level.
+  //
+  // Only Rules A and B: those are fix CLAIMS. Rule C (aged-out rows with no
+  // fingerprint) has nothing to key on, and Rule D (the classifier says nobody
+  // needs to act) asserts the row was never actionable — neither claims
+  // anything was fixed, so neither writes a resolution.
+  //
+  // A fingerprint that regressed in this same pass is excluded. It has come
+  // back, and re-archiving it in the pass that noticed would erase the signal
+  // immediately after raising it.
+  const ledgerEntries: ResolutionEntry[] = [];
+  const addEntry = (fingerprint: string, fixedInSha: string | null, note: string) => {
+    if (regressedSet.has(fingerprint)) return;
+    const maxT = maxByFingerprint.get(fingerprint);
+    if (maxT === undefined) return;
+    ledgerEntries.push({
+      fingerprint,
+      lastSeenAt: new Date(maxT).toISOString(),
+      fixedInSha,
+      note,
+    });
+  };
+
+  for (const fp of releaseFingerprints) {
+    addEntry(fp, deploy.deploySha, 'rule A: quiet since a production deploy at least 24h old');
+  }
+  for (const fp of quietFingerprints) {
+    // Deliberately null: Rule B infers from 14 days of silence alone and
+    // claims no deploy evidence. Crediting the current production SHA would
+    // attribute the fix to a release that may have nothing to do with it, and
+    // `shipStatus` already answers honestly with a null SHA.
+    addEntry(fp, null, 'rule B: no occurrence in 14 days; no deploy evidence claimed');
+  }
+
+  const ledger = await recordAutoResolutions(admin, ledgerEntries);
+
   return {
     resolvedRelease,
     resolvedQuiet,
     resolvedLegacy,
+    resolvedNonActionable,
     fingerprints: releaseFingerprints.length + quietFingerprints.length,
     ...(releaseFingerprints.length === 0 && releaseSkippedReason ? { releaseSkippedReason } : {}),
     deploySha: deploy.deploySha,
+    ledger,
+    regressions,
+    ...(regressionSkippedReason ? { regressionSkippedReason } : {}),
   };
 }

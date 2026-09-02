@@ -1,6 +1,7 @@
 import 'server-only';
 import { importPKCS8, SignJWT } from 'jose';
 import type { Json } from '@/lib/types';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // GMAIL API READ — mirror coach replies from the real admin@ mailbox into the
@@ -81,16 +82,102 @@ async function getReadToken(): Promise<string> {
 }
 
 /**
+ * Statuses worth trying again. Gmail returns a bare `backendError` 500 on
+ * individual messages fairly regularly — one did exactly that on
+ * 2026-08-19T23:01Z and took the whole ingest run down with it.
+ *
+ * 4xx is deliberately excluded. A 403 means the `gmail.readonly` scope has
+ * not been granted on the DWD client (see the setup block in this file's
+ * header) and a 404 means the message is gone; retrying either burns the
+ * cron's 120s budget to arrive at the same answer.
+ */
+function isRetryableGmailStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+/** Small fixed backoff — the cron's whole budget is 120s, so this stays tiny. */
+const GMAIL_RETRY_DELAYS_MS = [250, 1000];
+
+/**
  * The ONLY Gmail transport in this module. The GET is hard-coded — read the
  * read-only invariant in the file header before adding anything here.
+ *
+ * Retries transient upstream faults; a non-retryable status throws on the
+ * first response, exactly as before.
  */
 async function gmailGet<T>(token: string, path: string): Promise<T> {
-  const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= GMAIL_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (attempt > 0) {
+      const delay = GMAIL_RETRY_DELAYS_MS[attempt - 1] ?? 0;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+    let res: Response;
+    try {
+      res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+    } catch (err) {
+      // Transport-level failure (DNS, socket reset). Same class as a 5xx.
+      lastError = err instanceof Error ? err : new Error(String(err));
+      continue;
+    }
+    if (res.ok) return (await res.json()) as T;
     const detail = (await res.text().catch(() => '')).slice(0, 300);
-    throw new Error(`Gmail API ${path} failed (${res.status}): ${detail}`);
+    lastError = new Error(`Gmail API ${path} failed (${res.status}): ${detail}`);
+    if (!isRetryableGmailStatus(res.status)) throw lastError;
   }
-  return (await res.json()) as T;
+  throw lastError ?? new Error(`Gmail API ${path} failed`);
+}
+
+/**
+ * Fetch one batch of message details WITHOUT letting a single poisoned message
+ * sink the batch.
+ *
+ * `Promise.all` rejects on the first rejection, so one message's 500 discarded
+ * every other message fetched alongside it AND propagated out of the cron's
+ * try/catch as `Cron failed: ingest-gmail-replies` — an entire run lost to one
+ * bad id. Skipping is safe and self-healing: `crm_replies.message_id` and
+ * `crm_unmatched_inbound.message_id` are both UNIQUE, so the next scheduled
+ * run re-reads the same window and picks up whatever was skipped for free.
+ */
+async function fetchMessageBatch(
+  refs: Array<{ id: string }>,
+  fetchOne: (id: string) => Promise<GmailMessage>,
+): Promise<{ messages: GmailMessage[]; skipped: number; firstError: string | null }> {
+  const settled = await Promise.allSettled(refs.map((ref) => fetchOne(ref.id)));
+  const messages: GmailMessage[] = [];
+  let skipped = 0;
+  let firstError: string | null = null;
+  for (const outcome of settled) {
+    if (outcome.status === 'fulfilled') {
+      messages.push(outcome.value);
+      continue;
+    }
+    skipped += 1;
+    if (firstError === null) {
+      firstError =
+        outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason);
+    }
+  }
+  return { messages, skipped, firstError };
+}
+
+/**
+ * One log line for a whole run's skipped messages, not one per message —
+ * trading a single cron-failure incident for N per-message incidents would
+ * not be an improvement. Warning, not error: the run succeeded and the next
+ * one re-reads the same window.
+ */
+async function reportSkippedMessages(
+  scope: string,
+  skipped: number,
+  firstError: string | null,
+): Promise<void> {
+  if (skipped === 0) return;
+  await logServerError(
+    `${scope}: skipped ${skipped} message(s) after retries; first error: ${firstError ?? 'unknown'}`,
+    { action: 'cron.ingest_gmail_replies', featureArea: 'crm', source: 'cron' },
+    'warning',
+  ).catch(() => {});
 }
 
 interface GmailHeader { name: string; value: string }
@@ -435,11 +522,15 @@ export async function listInboundMessages(lookbackDays = 2, max = 50): Promise<I
   );
   const refs = list.messages ?? [];
   const out: InboundGmailMessage[] = [];
+  let skippedInbound = 0;
+  let firstInboundError: string | null = null;
   for (let offset = 0; offset < refs.length; offset += MESSAGE_FETCH_CONCURRENCY) {
     const batch = refs.slice(offset, offset + MESSAGE_FETCH_CONCURRENCY);
-    const messages = await Promise.all(
-      batch.map((ref) => gmailGet<GmailMessage>(token, `/messages/${ref.id}?format=full`)),
+    const { messages, skipped, firstError } = await fetchMessageBatch(batch, (id) =>
+      gmailGet<GmailMessage>(token, `/messages/${id}?format=full`),
     );
+    skippedInbound += skipped;
+    if (firstInboundError === null) firstInboundError = firstError;
     for (const msg of messages) {
       const { text, html } = extractBodies(msg.payload);
       const fromHeader = header(msg, 'From');
@@ -471,6 +562,7 @@ export async function listInboundMessages(lookbackDays = 2, max = 50): Promise<I
       });
     }
   }
+  await reportSkippedMessages('listInboundMessages', skippedInbound, firstInboundError);
   return out;
 }
 
@@ -574,11 +666,67 @@ function isPermanentFailureDsn(deliveryStatusText: string): boolean {
   return false;
 }
 
-/** Paragraph-scoped prose window for the last-resort fallback above. */
+/**
+ * Longest body we will scan for bounce prose. A bounce notice is short; the cap
+ * exists so an attacker-supplied body cannot drive the scan super-linear.
+ */
+const MAX_BOUNCE_SCAN_CHARS = 64 * 1024;
+
+/** Window taken from the matched phrase — the extraction only needs prose. */
+const BOUNCE_WINDOW_CHARS = 8 * 1024;
+
+/**
+ * The literal openers the old alternation matched, lower-cased for indexOf.
+ * `delivery to the following recipient[s]? failed` is spelled out as both
+ * arms rather than a pattern, so this stays a literal search.
+ */
+const BOUNCE_OPENERS = [
+  'failed permanently',
+  "wasn't delivered to",
+  "couldn't be delivered to",
+  'delivery to the following recipient failed',
+  'delivery to the following recipients failed',
+] as const;
+
+/**
+ * Paragraph-scoped prose window for the last-resort fallback above.
+ *
+ * This used to be one unanchored regex with a leading multi-branch literal
+ * alternation and two lazy `[\s\S]*?` spans, run over the FULL body of any
+ * email an outside sender could send to the admin mailbox. On a body with no
+ * newline anywhere, each literal hit forced a failed suffix scan to the end of
+ * the input, so ~1MB of repeated openers cost on the order of 10^10 character
+ * comparisons — enough to burn the ingest cron's whole execution budget. And
+ * because bounce rows are not deduped by `message_id` the way replies are, the
+ * same poison message came back on every scheduled run until it aged out of the
+ * lookback window (up to 365 days).
+ *
+ * Now: cap the input, locate the opener with indexOf (no backtracking), and run
+ * the paragraph scan only inside a small bounded window from that offset.
+ */
 function scopedBounceParagraph(bodyText: string): string | null {
-  const re =
-    /(?:failed permanently|wasn't delivered to|couldn't be delivered to|delivery to the following recipient[s]? failed)[\s\S]*?\n\s*\n[\s\S]*?(?=\n\s*\n|$)/i;
-  return bodyText.match(re)?.[0] ?? null;
+  const body =
+    bodyText.length > MAX_BOUNCE_SCAN_CHARS ? bodyText.slice(0, MAX_BOUNCE_SCAN_CHARS) : bodyText;
+  const haystack = body.toLowerCase();
+
+  let start = -1;
+  for (const opener of BOUNCE_OPENERS) {
+    const at = haystack.indexOf(opener);
+    if (at !== -1 && (start === -1 || at < start)) start = at;
+  }
+  if (start === -1) return null;
+
+  const window = body.slice(start, start + BOUNCE_WINDOW_CHARS);
+
+  // Original semantics: from the opener, skip to the first blank-line break,
+  // then return through the paragraph that follows, ending at the next blank
+  // line (or, here, the end of the bounded window).
+  const separator = /\n\s*\n/g;
+  const firstBreak = separator.exec(window);
+  if (!firstBreak) return null;
+  separator.lastIndex = firstBreak.index + firstBreak[0].length;
+  const secondBreak = separator.exec(window);
+  return window.slice(0, secondBreak ? secondBreak.index : window.length);
 }
 
 // ---------------------------------------------------------------------------
@@ -614,16 +762,18 @@ export async function listSentMessages(lookbackDays = 2, max = 50): Promise<Sent
   );
   const refs = list.messages ?? [];
   const out: SentGmailMessage[] = [];
+  let skippedSent = 0;
+  let firstSentError: string | null = null;
   for (let offset = 0; offset < refs.length; offset += MESSAGE_FETCH_CONCURRENCY) {
     const batch = refs.slice(offset, offset + MESSAGE_FETCH_CONCURRENCY);
-    const messages = await Promise.all(
-      batch.map((ref) =>
-        gmailGet<GmailMessage>(
-          token,
-          `/messages/${ref.id}?format=metadata&metadataHeaders=To&metadataHeaders=Subject`,
-        ),
+    const { messages, skipped, firstError } = await fetchMessageBatch(batch, (id) =>
+      gmailGet<GmailMessage>(
+        token,
+        `/messages/${id}?format=metadata&metadataHeaders=To&metadataHeaders=Subject`,
       ),
     );
+    skippedSent += skipped;
+    if (firstSentError === null) firstSentError = firstError;
     for (const msg of messages) {
       out.push({
         gmailId: msg.id,
@@ -636,6 +786,7 @@ export async function listSentMessages(lookbackDays = 2, max = 50): Promise<Sent
       });
     }
   }
+  await reportSkippedMessages('listSentMessages', skippedSent, firstSentError);
   return out;
 }
 

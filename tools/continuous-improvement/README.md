@@ -1,4 +1,4 @@
-# 🔄 Continuous Improvement Cycle Agent
+ # 🔄 Continuous Improvement Cycle Agent
 
 **Closed-loop autonomous improvement system** that verifies fixes and finds new issues.
 

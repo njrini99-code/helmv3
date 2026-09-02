@@ -1,0 +1,76 @@
+// knip configuration.
+//
+// THIS FILE IS .jsonc DELIBERATELY. It was knip.json with the notes below
+// stored in a "_comment" key, which knip 5.88.1 rejects outright:
+//     ERROR: Invalid input (unrecognized_keys: _comment)   exit 2
+// CircleCI ran it as `npx knip ... || true`, so the job posted green while
+// the tool never started. The dead-code gate had never once run.
+// Keep the notes as // comments; do not reintroduce a "_comment" key.
+//
+// Entry points must be ONLY the files Next.js reaches by FILE POSITION.
+// This config previously listed 'src/app/**' as entry. An entry point is
+// reachable by definition, so knip structurally could not report anything
+// under src/app -- which is most of the codebase. It reported 7 unused
+// files. With real entry points it reports 86. src/components/ui/** was
+// additionally in 'ignore', hiding 18 more.
+// Do not add a broad glob here to quiet the output. A broad entry glob does
+// not fix findings, it hides them.
+//
+// MEASURED 2026-08-19 — WIDENING `project` TO scripts/ WAS TRIED AND REVERTED.
+// An audit recommended widening so scripts/ and tools/ stop being invisible.
+// Widening to "scripts/**" is clean to configure and yields 168 unused files
+// (85 src, unchanged, + 83 scripts). But cross-checking every one of those 83
+// against package.json, .github, .circleci, docs, .claude and scripts/*.sh:
+//
+//     78 of 83 ARE referenced        <- 94% false positive
+//      5 of 83 genuinely unreferenced
+//
+// The cause is structural, not fixable by tuning: knip follows JS imports, and
+// scripts here are invoked from npm scripts, YAML and shell. Enabling knip's
+// github-actions plugin against .github/workflows/*.yml changed the count by
+// zero. So a widened report is mostly noise, and a noisy report is worse than
+// a narrow one — it teaches people to ignore the artifact, which is how the
+// `_comment`/`|| true` breakage survived unnoticed in the first place.
+//
+// If you widen anyway, budget for the cross-check: the audit's headline
+// "292 unused files" is a RAW knip number. Its own usable figure (125) came
+// from hand-subtracting 53 still-referenced files, i.e. the same manual pass.
+//
+// tools/ is a separate problem. tools/ux-flow-auditor and tools/ultra-agent-audit
+// are self-contained packages with their own package.json and entry chains, so
+// they need knip `workspaces` entries, not a project glob. Configured naively
+// their whole subtree reads as dead. Three attempts gave 215 / 223 / 236 unused
+// depending on the entry and project globs chosen — the count tracks the config,
+// not the code, which is the tell that the config was wrong rather than the code
+// being dead.
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/app/**/page.{ts,tsx}",
+    "src/app/**/layout.{ts,tsx}",
+    "src/app/**/route.{ts,tsx}",
+    "src/app/**/loading.{ts,tsx}",
+    "src/app/**/error.{ts,tsx}",
+    "src/app/**/global-error.{ts,tsx}",
+    "src/app/**/not-found.{ts,tsx}",
+    "src/app/**/template.{ts,tsx}",
+    "src/app/**/default.{ts,tsx}",
+    "src/app/**/opengraph-image.{ts,tsx}",
+    "src/app/**/twitter-image.{ts,tsx}",
+    "src/app/**/icon.{ts,tsx}",
+    "src/app/**/apple-icon.{ts,tsx}",
+    "src/app/**/sitemap.ts",
+    "src/app/**/robots.ts",
+    "src/app/**/manifest.ts",
+    "src/middleware.{ts,tsx}",
+    "src/instrumentation.{ts,tsx}",
+    "src/instrumentation-client.{ts,tsx}",
+    "next.config.mjs",
+    "src/**/*.test.{ts,tsx}",
+    "src/**/*.spec.{ts,tsx}",
+    "src/test/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}"
+  ]
+}

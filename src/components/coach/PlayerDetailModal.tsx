@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Player } from '@/lib/types';
+import { BaseballPlayer as Player } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button, IconButton } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

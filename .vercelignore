@@ -43,3 +43,85 @@ coverage/
 # them here is what makes .gitignore's intent apply to the upload too.
 .deepsec/
 .worktrees/
+# .claude/worktrees/ is the SAME hazard as .worktrees/ above, at a new address:
+# Claude Code's own worktree tooling creates them here now rather than in the
+# repo-root .worktrees/ this file already covered. Measured 2026-08-19: 5.0 GB
+# and ~44,000 .ts/.tsx across 12 trees, against src/'s 3,888 — an order of
+# magnitude more source than the app itself.
+#
+# This is not hypothetical tidiness. `scripts/deploy-prod.sh` uploads the local
+# tree, and production deploys began failing outright with
+# "Request body too large. Limit: 10mb" until this line existed.
+.claude/worktrees/
+
+# Untracked local artifact directories. Same .gitignore-is-ignored trap as the
+# blocks above, and measured 2026-08-20 during a production promote that STALLED
+# at "Uploading (0.0B/1.6GB)" and never moved:
+#
+#   audit/   1,070 MB — audit + research output, 0 files tracked by git
+#   tools/      71 MB — local tooling checkouts
+#
+# Neither has ever been part of a build. `audit/` alone was two thirds of the
+# upload. The deploy that stalled on it produced a Canceled PREVIEW and never
+# moved the production alias — i.e. it looked like a deploy and shipped nothing,
+# which is the exact failure this repo keeps re-learning.
+audit/
+tools/
+
+# More untracked local artifact directories — the SAME trap as audit/ and
+# tools/ above, at new addresses. Every one of these is in .gitignore and
+# untracked, which is exactly why they upload: the moment this file exists
+# Vercel consults it INSTEAD of .gitignore, so "git ignores it" stops meaning
+# "Vercel ignores it". Measured 2026-08-31, all five together: 166 files, 21 MB.
+#
+#   .playwright-mcp   browser session logs from a debugging run in August
+#   .agents           local agent skill definitions
+#   routes            generated route dumps and a wiki export
+#   .ruff_cache       linter cache
+#   .momentic-mcp     tooling state
+#
+# None has ever been a build input.
+.playwright-mcp/
+.agents/
+routes/
+.ruff_cache/
+.momentic-mcp/
+# Tracked, unlike the five above, but still pure test artifacts (jpegs from
+# MCP CLI runs) that no build step reads.
+.momentic/
+
+# Documentation. 1,698 tracked files and 145 MB — 54% of the entire upload,
+# and more than half of that is binary: marketing mockup references, visual-audit
+# screenshots, PDFs.
+#
+# Nothing in the build reads it. Verified 2026-08-31: no reference in
+# next.config.mjs, tailwind.config.ts, tsconfig.json or package.json; no import
+# from src/; no /docs route; no runtime readFile against it. Next.js serves
+# static assets from public/, which is separate and stays.
+#
+# This excludes docs from the UPLOAD only. They remain tracked in git, which is
+# where they are actually read.
+docs/
+
+# Secrets. This is the .gitignore-is-ignored trap at its worst address.
+#
+# .gitignore keeps the .env family out of git, and that is the ONLY thing that
+# was keeping it out of the upload too — so the moment this file appeared,
+# Vercel stopped consulting .gitignore and every `vercel deploy` began shipping
+# them off this machine. Measured 2026-08-31 by simulating the upload set
+# against this file: .env, .env.local, .env.development.local and
+# .env.production.local were all in it. .env.local is the one that carries
+# SUPABASE_SERVICE_ROLE_KEY, HELM_PROD_POSTGRES_PASSWORD and
+# HELM_PROD_DB_URL_DIRECT — the credentials .claude/rules/shipping.md calls the
+# path that "nothing intercepts".
+#
+# Runtime env comes from Vercel's own project settings, never from an uploaded
+# file, so excluding these changes nothing about how the app runs.
+.env
+.env.*
+# .env.example is documentation and carries no live values — keep it.
+!.env.example
+
+# Native shell — built by Capacitor/Xcode, never by the Vercel build.
+android/
+ios/

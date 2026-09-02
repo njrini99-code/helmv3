@@ -4,7 +4,7 @@ paths:
   - "src/lib/golf/**"
   - "src/components/golf/**"
   - "src/app/api/golf/**"
-verified: unverified  # never re-checked against code — do not trust without grepping first
+verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 # GolfHelm review checklist
@@ -16,7 +16,7 @@ GolfHelm is a college **golf team-management** product with the **CoachHelm** AI
 layer. Buyer = the program/coach; players are student-athletes (often minors).
 Business context: `docs/business/08-golfhelm-business-context.md`,
 `docs/business/03-product-invariants.md`. Feature/data map:
-`memory/context/golfhelm-features.md`, `memory/context/golfhelm-database.md`.
+the mapped `memory/features/*.md`, `memory/context/golfhelm-database.md`.
 
 ## Always check
 

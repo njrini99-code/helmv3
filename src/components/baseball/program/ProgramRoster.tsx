@@ -13,7 +13,7 @@ import {
   IconChevronRight,
   IconSparkles,
 } from '@/components/icons';
-import type { Player } from '@/lib/types';
+import type { BaseballPlayer as Player } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 
 type RosterPlayer = Pick<

@@ -13,16 +13,19 @@
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import type { FwStatusTone } from '@/components/fairway/controls';
 import type { ShotRecord, RoundHole } from '@/lib/types/golf';
 
 interface FairwayCompletedHoleProps {
   shotHistory: ShotRecord[];
   currentHole: RoundHole;
+  checkpointStatus: 'idle' | 'saving' | 'failed';
   showBackToCurrentHole: boolean;
   nextUnplayedIdx: number;
   onEditShot: (shot: ShotRecord) => void;
   onNavigateToHole: (targetIndex: number) => void;
+  onRetryCheckpoint: () => void;
 }
 
 /** Result → StatusPill tone (legacy badge color map, mapped to Fairway tones). */
@@ -37,10 +40,12 @@ function resultTone(result: ShotRecord['result']): FwStatusTone {
 export function FairwayCompletedHole({
   shotHistory,
   currentHole,
+  checkpointStatus,
   showBackToCurrentHole,
   nextUnplayedIdx,
   onEditShot,
   onNavigateToHole,
+  onRetryCheckpoint,
 }: FairwayCompletedHoleProps) {
   return (
     <div className="space-y-4">
@@ -52,6 +57,21 @@ export function FairwayCompletedHole({
         </StatusPill>
       </div>
       <p className="font-fw-sans text-xs text-text-tertiary">Tap any shot to edit</p>
+      {checkpointStatus !== 'idle' && (
+        <InlineNotice
+          tone="warning"
+          title={checkpointStatus === 'saving' ? 'Saving this hole…' : 'This hole needs a save retry'}
+          action={checkpointStatus === 'failed' ? (
+            <Button variant="secondary" size="sm" onClick={onRetryCheckpoint}>
+              Retry save
+            </Button>
+          ) : undefined}
+        >
+          {checkpointStatus === 'saving'
+            ? 'Keeping this hole in place until its score and shots are confirmed.'
+            : 'Your shots are safely retained on this device. Retry once you are connected.'}
+        </InlineNotice>
+      )}
       <div className="space-y-2">
         {shotHistory.map((shot) => {
           // VERBATIM label derivation from the legacy file.
@@ -70,6 +90,7 @@ export function FairwayCompletedHole({
               type="button"
               variant="ghost"
               onClick={() => onEditShot(shot)}
+              disabled={checkpointStatus === 'saving'}
               className={cn(
                 'block h-auto min-h-0 w-full rounded-fw-md border-0 p-3 text-left font-normal transition-colors',
                 'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
@@ -134,7 +155,7 @@ export function FairwayCompletedHole({
 
       {/* Back to current hole button */}
       {showBackToCurrentHole && (
-        <Button variant="secondary" fullWidth onClick={() => onNavigateToHole(nextUnplayedIdx)}>
+        <Button variant="secondary" fullWidth onClick={() => onNavigateToHole(nextUnplayedIdx)} disabled={checkpointStatus === 'saving'}>
           Back to Current Hole →
         </Button>
       )}

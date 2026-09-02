@@ -1434,6 +1434,27 @@ export function HapticsPanel() {
           aria-label="Haptic feedback"
         />
       </div>
+
+      {/* The §72 feel lab's only entry point. The page is deliberately absent
+          from every nav surface, but "reachable by URL" is not reachable at
+          all inside the app — a Capacitor WebView has no address bar. This row
+          inherits the panel's `if (!native) return null`, so it exists only in
+          the installed app, which is also the only place the lab means
+          anything (a browser has no Taptic Engine). */}
+      <Link
+        href="/golf/dashboard/dev/haptics"
+        className="mt-4 flex items-center gap-3 rounded-fw-md border border-border-subtle p-3 outline-none transition-colors hover:bg-surface-sunken focus-visible:bg-surface-sunken"
+      >
+        <span className="flex-1 min-w-0">
+          <span className="block font-fw-sans text-body-sm font-medium text-text-primary">
+            Feel lab
+          </span>
+          <span className="block font-fw-sans text-caption text-text-tertiary">
+            Play every haptic pattern back to back, for tuning.
+          </span>
+        </span>
+        <IconChevronRight size={18} className="shrink-0 text-text-tertiary" aria-hidden />
+      </Link>
     </SectionCard>
   );
 }

@@ -1,4 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
+import '@supabase/supabase-js/tracing';
+import { redactEventPii } from '@/lib/observability/redact-pii';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { resolveClientEnvironment } from '@/lib/sentry-environment';
 
@@ -32,6 +34,14 @@ const environment = resolveClientEnvironment(
   typeof window === 'undefined' ? undefined : window.location.hostname,
 );
 
+const supabaseTraceTarget = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').origin;
+  } catch {
+    return null;
+  }
+})();
+
 Sentry.init({
   dsn,
 
@@ -39,6 +49,14 @@ Sentry.init({
 
   // Never enable debug — it floods the console
   debug: false,
+  // Required for Supabase JS OpenTelemetry propagation. Keep the target list
+  // narrow so browser traces do not leak to unrelated third-party requests.
+  propagateTraceparent: true,
+  tracePropagationTargets: [
+    'localhost',
+    /^\//,
+    ...(supabaseTraceTarget ? [supabaseTraceTarget] : []),
+  ],
 
   // 20% in prod keeps trace cost sane while still surfacing slow paths.
   // 10% in dev to reduce overhead.
@@ -140,7 +158,10 @@ Sentry.init({
         : 'marketing';
       event.tags = { ...event.tags, sport };
     }
-    return event;
+    // Mask email addresses in message / extra / contexts / exception values.
+    // The scrubbing above covers only the request envelope; the free-text fields
+    // are where addresses actually appear.
+    return redactEventPii(event);
   },
 
   // Filter out noisy errors

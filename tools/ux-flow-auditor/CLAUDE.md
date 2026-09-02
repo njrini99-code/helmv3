@@ -1,5 +1,22 @@
 # HelmDev - Claude Code Instructions
 
+> **Root Helm instructions remain authoritative.** Claude Code loads every
+> `CLAUDE.md` on the path from the repo root down to the file you are editing,
+> so this file is read *in addition to* the root `/CLAUDE.md` and `/AGENTS.md`
+> — never instead of them. It adds HelmDev-tool-specific procedure and nothing
+> else.
+>
+> Where this file appears to conflict with `/AGENTS.md`, `/CLAUDE.md`,
+> `.claude/rules/*`, or the canonical sources those name
+> (`src/styles/design-tokens.css`, `src/lib/golf/surface-registry.ts`,
+> `src/lib/types/database.ts`), **root wins** — including on stack choices,
+> design language, and database conventions. This file has no authority to
+> redefine them.
+>
+> A nested `CLAUDE.md` that silently asserts different conventions is how one
+> session ends up building to a different standard than the next; if something
+> here has drifted from root, fix it here rather than following it.
+
 > This file tells Claude Code how to work with HelmDev tasks.
 
 ## When You See a HelmDev Task

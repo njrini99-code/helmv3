@@ -60,7 +60,10 @@ function resetTables() {
     }),
     helm_lifting_set_results: makeQueryBuilder({ data: { id: 'set-result-1' }, error: null }),
     helm_lifting_athletes: makeQueryBuilder({
-      data: { id: ATHLETE_ID, organization_id: ORG_ID, sport: 'baseball' },
+      // `user_id` matters now: logMySetResult verifies the supplied athleteId
+      // actually belongs to the caller before writing, so the fixture has to
+      // say whose athlete this is. These tests log the user's OWN set.
+      data: { id: ATHLETE_ID, user_id: 'user-1', organization_id: ORG_ID, sport: 'baseball', sport_player_id: null },
       error: null,
     }),
     helm_lifting_readiness_checkins: makeQueryBuilder({ data: { id: 'checkin-1' }, error: null }),

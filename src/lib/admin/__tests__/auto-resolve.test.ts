@@ -6,6 +6,14 @@ interface MockRow {
   id?: string;
   fingerprint: string | null;
   created_at: string;
+  /** Rule D fields — undefined on every Rule A/B/C fixture, which is fine:
+   *  classifyIncident treats missing title/message/severity/source as
+   *  "unknown", not as a match for any rule. */
+  title?: string | null;
+  message?: string | null;
+  severity?: string | null;
+  source?: string | null;
+  metadata?: unknown;
 }
 
 /** PostgREST's server-side per-request row cap. Hoisted alongside `mocks`
@@ -18,21 +26,69 @@ const mocks = vi.hoisted(() => ({
   /** Rule C updates, keyed by row id rather than fingerprint. Kept separate so
    *  the Rule A/B assertions above stay exactly as strict as they were. */
   legacyUpdates: [] as Array<{ ids: string[]; patch: Record<string, unknown> }>,
+  /** Rule D updates — also keyed by id, but distinguished from Rule C's via
+   *  the mock's own `.eq('event_type', …)` marker (see makeUpdateChain). */
+  nonActionableUpdates: [] as Array<{ ids: string[]; patch: Record<string, unknown> }>,
   deployResult: { status: 'unconfigured', data: null, fetchedAt: null, error: 'Vercel API not configured' } as AdminFetchResult<VercelDeployment[]>,
+  /** Rows the fingerprint-resolution ledger already holds. */
+  storedResolutions: [] as Array<{
+    fingerprint: string;
+    resolved_at: string;
+    resolution_source: string;
+    last_seen_at_resolution: string | null;
+    reopened_at: string | null;
+  }>,
+  /** Set to make the ledger READ fail, so the "we never established that
+   *  nothing regressed" path can be asserted rather than assumed. */
+  storedResolutionsError: null as string | null,
+  /** Every ledger RPC, in call order, so the test can assert what was
+   *  recorded and with which SHA — not merely that something was called. */
+  rpcCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
+  /** Fingerprints the auto-resolve RPC should report as already MANUALLY
+   *  resolved (it returns false, declining to downgrade a human decision). */
+  manualFingerprints: [] as string[],
 }));
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
+    rpc: (name: string, args: Record<string, unknown>) => {
+      mocks.rpcCalls.push({ name, args });
+      if (name === 'admin_auto_resolve_error_fingerprint') {
+        const fp = String(args.p_fingerprint);
+        return Promise.resolve({ data: !mocks.manualFingerprints.includes(fp), error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    },
     from: (table: string) => {
+      if (table === 'admin_error_resolutions') {
+        const chain = {
+          select: () => chain,
+          in: () =>
+            Promise.resolve(
+              mocks.storedResolutionsError
+                ? { data: null, error: { message: mocks.storedResolutionsError } }
+                : { data: mocks.storedResolutions, error: null },
+            ),
+        };
+        return chain;
+      }
       if (table !== 'admin_events') throw new Error(`unexpected table ${table}`);
 
-      // One builder serving two different reads: the Rule A/B snapshot
-      // (`.not('fingerprint','is',null)` … `.range()`) and Rule C's legacy
-      // sweep (`.is('fingerprint', null)` … `.limit()`). The mock tracks which
-      // fingerprint predicate was applied so it can answer each correctly —
-      // a mock that ignored the difference would let Rule C "pass" while
-      // selecting fingerprinted rows, which is the exact bug being fixed.
-      function makeSelectChain() {
+      // One builder serving three different reads: the Rule A/B snapshot
+      // (`.not('fingerprint','is',null)` … `.range()`), Rule C's legacy sweep
+      // (`.is('fingerprint', null)` … `.limit()`), and Rule D's classifier
+      // sweep (`.select('id, title, message, severity, source, metadata')` …
+      // `.limit()`). Mode is inferred from the select() column list — Rule D
+      // is the only caller that selects `title` — so each returns the right
+      // row shape and applies the right filter. A mock that ignored the
+      // difference would let one rule "pass" while actually exercising
+      // another's code path.
+      function makeSelectChain(selectedCols: string) {
+        const mode: 'ab' | 'c' | 'd' = selectedCols.includes('title')
+          ? 'd'
+          : selectedCols.includes('fingerprint')
+            ? 'ab'
+            : 'c';
         let nullFingerprintOnly = false;
         let cutoffIso: string | null = null;
         const chain = {
@@ -51,17 +107,33 @@ vi.mock('@/lib/supabase/admin', () => ({
           range: (from: number, to: number) =>
             Promise.resolve({ data: mocks.rows.filter((r) => r.fingerprint !== null).slice(from, to + 1), error: null }),
           limit: (n: number) => {
+            // PostgREST caps ANY request at 1,000 rows — `.limit(n)` above
+            // that is silently truncated, it does not raise the cap. Modelled
+            // here because a mock that honours an oversized limit hides the
+            // exact bug that stalled Rule C's drain loop after one batch.
+            const served = Math.min(n, POSTGREST_MAX_ROWS);
+
+            if (mode === 'd') {
+              const matched = mocks.rows.filter((r) => !resolvedIds.has(r.id ?? ''));
+              return Promise.resolve({
+                data: matched.slice(0, served).map((r) => ({
+                  id: r.id ?? '',
+                  title: r.title ?? null,
+                  message: r.message ?? null,
+                  severity: r.severity ?? null,
+                  source: r.source ?? null,
+                  metadata: r.metadata ?? null,
+                })),
+                error: null,
+              });
+            }
+
             const matched = mocks.rows.filter(
               (r) =>
                 (nullFingerprintOnly ? r.fingerprint === null : true) &&
                 (cutoffIso === null || r.created_at < cutoffIso) &&
                 !resolvedIds.has(r.id ?? ''),
             );
-            // PostgREST caps ANY request at 1,000 rows — `.limit(n)` above
-            // that is silently truncated, it does not raise the cap. Modelled
-            // here because a mock that honours an oversized limit hides the
-            // exact bug that stalled Rule C's drain loop after one batch.
-            const served = Math.min(n, POSTGREST_MAX_ROWS);
             return Promise.resolve({
               data: matched.slice(0, served).map((r) => ({ id: r.id ?? '' })),
               error: null,
@@ -71,24 +143,35 @@ vi.mock('@/lib/supabase/admin', () => ({
         return chain;
       }
 
-      // Rule C re-issues its select each batch and expects already-updated
-      // rows to fall out of the next page — model that, or the loop would
-      // spin on the same ids until MAX_BATCHES.
+      // Rules C and D both re-issue their select each batch and expect
+      // already-updated rows to fall out of the next page — model that, or
+      // the loop would spin on the same ids until MAX_BATCHES.
       const resolvedIds = mockResolvedIds;
 
       return {
-        select: (...args: unknown[]) => makeSelectChain().select(...(args as [])),
+        select: (cols?: string) => makeSelectChain(cols ?? ''),
         update: (patch: Record<string, unknown>) => {
           let cutoffIso: string | null = null;
+          // Rule D's update carries `.eq('event_type', 'error')`; Rule C's
+          // does not (it has no event_type predicate at all) — that's the
+          // signal used to route to the right tracking array below.
+          let eventTypeFiltered = false;
           const updateChain = {
-            eq: () => updateChain,
+            eq: (col: string, _value: string) => {
+              if (col === 'event_type') eventTypeFiltered = true;
+              return updateChain;
+            },
             lt: (_col: string, value: string) => {
               cutoffIso = value;
               return updateChain;
             },
             in: (col: string, values: string[]) => {
               if (col === 'id') {
-                mocks.legacyUpdates.push({ ids: values, patch });
+                if (eventTypeFiltered) {
+                  mocks.nonActionableUpdates.push({ ids: values, patch });
+                } else {
+                  mocks.legacyUpdates.push({ ids: values, patch });
+                }
                 for (const id of values) resolvedIds.add(id);
                 const count = mocks.rows.filter(
                   (r) =>
@@ -153,7 +236,12 @@ describe('autoResolveFixedIncidents', () => {
     mocks.rows = [];
     mocks.updates = [];
     mocks.legacyUpdates = [];
+    mocks.nonActionableUpdates = [];
     mockResolvedIds.clear();
+    mocks.storedResolutions = [];
+    mocks.storedResolutionsError = null;
+    mocks.rpcCalls = [];
+    mocks.manualFingerprints = [];
     mocks.deployResult = { status: 'unconfigured', data: null, fetchedAt: null, error: 'Vercel API not configured' };
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
@@ -360,5 +448,363 @@ describe('autoResolveFixedIncidents', () => {
     expect(result.resolvedQuiet).toBe(0);
     expect(result.fingerprints).toBe(0);
     expect(mocks.updates).toHaveLength(0);
+  });
+
+  // ── Rule D ────────────────────────────────────────────────────────────────
+  // Unlike A/B/C, Rule D infers nothing from silence or age — it trusts
+  // classifyIncident's `actionable` verdict, which is a pure function of a
+  // row's own content, so a non-actionable row can resolve immediately, brand
+  // new or not. Measured against production 2026-08-20: 3,661 unresolved
+  // error rows, ~2,570 of them classifier-non-actionable (routine telemetry,
+  // integrity-pass rows, empty states, expected access denials).
+  //
+  // Every fixture below gets its OWN fingerprint + a RECENT created_at, so
+  // Rules A/B (stale-fingerprint-based) and Rule C (no-fingerprint-based)
+  // never touch them — only Rule D's classifier-based selection can.
+
+  it('Rule D: resolves routine telemetry the classifier says is not actionable', async () => {
+    mocks.rows = [
+      {
+        id: 'telemetry-1',
+        fingerprint: 'fp-telemetry',
+        created_at: new Date(NOW - 3600_000).toISOString(),
+        title: 'insights.triggerPlayerInsightsAfterRound.gateMetrics',
+        message: 'gate metrics recorded',
+        severity: 'warning',
+        source: 'server_action',
+        metadata: {},
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedNonActionable).toBe(1);
+    expect(mocks.nonActionableUpdates).toHaveLength(1);
+    expect(mocks.nonActionableUpdates[0]!.ids).toEqual(['telemetry-1']);
+    // Rules A/B/C must not also claim it — no double-counting across rules.
+    expect(mocks.updates).toHaveLength(0);
+    expect(mocks.legacyUpdates).toHaveLength(0);
+  });
+
+  it('Rule D: resolves an integrity-pass row and an expected access denial in the same pass', async () => {
+    mocks.rows = [
+      {
+        id: 'integrity-1',
+        fingerprint: 'fp-integrity',
+        created_at: new Date(NOW - 3600_000).toISOString(),
+        title: 'Integrity PASS: golf_rounds row count (0)',
+        message: null,
+        severity: 'info',
+        source: 'cron',
+        metadata: {},
+      },
+      {
+        id: 'access-1',
+        fingerprint: 'fp-access',
+        created_at: new Date(NOW - 3600_000).toISOString(),
+        title: 'Login failed',
+        message: 'Invalid email or password',
+        severity: 'warning',
+        source: 'server_action',
+        metadata: {},
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedNonActionable).toBe(2);
+    expect(mocks.nonActionableUpdates.flatMap((u) => u.ids).sort()).toEqual(['access-1', 'integrity-1']);
+  });
+
+  it('Rule D: leaves a genuine defect open — the classifier says it is actionable', async () => {
+    mocks.rows = [
+      {
+        id: 'defect-1',
+        fingerprint: 'fp-defect',
+        created_at: new Date(NOW - 3600_000).toISOString(),
+        title: 'documents.handleError',
+        message: '[object Object]',
+        severity: 'error',
+        source: 'server_action',
+        metadata: {},
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedNonActionable).toBe(0);
+    expect(mocks.nonActionableUpdates).toHaveLength(0);
+  });
+
+  it('Rule D: never resolves a server-side provider/billing fault — same invariant Rules A/B protect', async () => {
+    // classifyIncident already routes a non-client provider_* fault to
+    // actionable:true, so this pins BOTH layers: the classifier's own
+    // behavior, and Rule D's belt-and-braces isOperatorGatedFaultCode
+    // exclusion, by using a fault code the classifier alone would already
+    // catch — the real assertion is that neither layer's absence would let
+    // this slip through.
+    mocks.rows = [
+      {
+        id: 'provider-1',
+        fingerprint: 'fp-provider',
+        created_at: new Date(NOW - 3600_000).toISOString(),
+        title: 'Inngest sync failed',
+        message: 'invalid credential',
+        severity: 'error',
+        source: 'cron',
+        metadata: { errorCode: 'provider_inngest_invalid_credential' },
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedNonActionable).toBe(0);
+    expect(mocks.nonActionableUpdates).toHaveLength(0);
+  });
+
+  it('Rule D: resolves a CLIENT-side network-noise row even though the same code is server-actionable', async () => {
+    // classifyIncident's integration rule is source-dependent: a server-side
+    // provider fault is actionable, but a client-reported network error is
+    // the visitor's connectivity, not ours to fix. This is the single class
+    // that dominates the historical backlog (71,821 rows in one measurement).
+    mocks.rows = [
+      {
+        id: 'client-net-1',
+        fingerprint: 'fp-client-net',
+        created_at: new Date(NOW - 3600_000).toISOString(),
+        title: 'Client error',
+        message: 'network error',
+        severity: 'error',
+        source: 'client',
+        metadata: {},
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedNonActionable).toBe(1);
+    expect(mocks.nonActionableUpdates[0]!.ids).toEqual(['client-net-1']);
+  });
+
+  it('Rule D: chunks its UPDATE so the request URI can never overflow', async () => {
+    mocks.rows = Array.from({ length: 450 }, (_, i) => ({
+      id: `telemetry-${i}`,
+      fingerprint: `fp-telemetry-${i}`,
+      created_at: new Date(NOW - 3600_000).toISOString(),
+      title: 'insights.triggerPlayerInsightsAfterRound.gateMetrics',
+      message: 'gate metrics recorded',
+      severity: 'warning' as const,
+      source: 'server_action',
+      metadata: {},
+    }));
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedNonActionable).toBe(450);
+    expect(mocks.nonActionableUpdates.length).toBeGreaterThan(1);
+    for (const update of mocks.nonActionableUpdates) {
+      expect(update.ids.length).toBeLessThanOrEqual(200);
+    }
+    const touched = mocks.nonActionableUpdates.flatMap((u) => u.ids);
+    expect(new Set(touched).size).toBe(450);
+  });
+
+  it('Rule D reports 0 when there is nothing non-actionable (non-vacuity)', async () => {
+    mocks.rows = [
+      {
+        id: 'defect-1',
+        fingerprint: 'fp-defect',
+        created_at: new Date(NOW - 3600_000).toISOString(),
+        title: 'React error #310',
+        message: 'Minified React error',
+        severity: 'error',
+        source: 'server_action',
+        metadata: {},
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedNonActionable).toBe(0);
+    expect(mocks.nonActionableUpdates).toHaveLength(0);
+  });
+});
+
+/**
+ * The fingerprint-level ledger.
+ *
+ * These cover what the row-level `resolved` flip cannot record: WHICH commit
+ * is credited, that a fault has come BACK, and the refusal to overwrite a
+ * human's decision. The archive judgement itself is Rule A/B's and is asserted
+ * above — nothing here re-derives it, which is the whole point of the split.
+ */
+describe('autoResolveFixedIncidents — fingerprint resolution ledger', () => {
+  const NOW = Date.parse('2026-08-27T12:00:00.000Z');
+
+  beforeEach(() => {
+    vi.resetModules();
+    mocks.rows = [];
+    mocks.updates = [];
+    mocks.legacyUpdates = [];
+    mocks.nonActionableUpdates = [];
+    mockResolvedIds.clear();
+    mocks.storedResolutions = [];
+    mocks.storedResolutionsError = null;
+    mocks.rpcCalls = [];
+    mocks.manualFingerprints = [];
+    mocks.deployResult = { status: 'unconfigured', data: null, fetchedAt: null, error: 'Vercel API not configured' };
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const autoResolveCalls = () =>
+    mocks.rpcCalls.filter((c) => c.name === 'admin_auto_resolve_error_fingerprint');
+  const regressionCalls = () =>
+    mocks.rpcCalls.filter((c) => c.name === 'admin_mark_error_regressed');
+
+  it('credits the production SHA on a Rule A resolution', async () => {
+    const deployAt = NOW - 48 * 3600_000;
+    mocks.deployResult = {
+      status: 'ok',
+      data: [deployment({ uid: 'dpl_prod', ready: deployAt, createdAt: deployAt - 60_000 })],
+      fetchedAt: new Date(NOW).toISOString(),
+    };
+    const lastSeen = new Date(deployAt - 10 * 3600_000).toISOString();
+    mocks.rows = [{ fingerprint: 'fp-fixed', created_at: lastSeen }];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.ledger.recorded).toBe(1);
+    expect(result.ledger.failed).toBe(0);
+    const calls = autoResolveCalls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.args.p_fingerprint).toBe('fp-fixed');
+    expect(calls[0]!.args.p_fixed_in_sha).toBe('abc123');
+    // The baseline every future regression check measures against — it must be
+    // the fault's own last occurrence, not "now".
+    expect(calls[0]!.args.p_last_seen_at).toBe(lastSeen);
+  });
+
+  it('records a Rule B resolution with NO sha, because it claims no deploy evidence', async () => {
+    // Rule B infers from 14 days of silence alone. Crediting whatever happens
+    // to be in production would attribute the fix to a release that may have
+    // nothing to do with it.
+    mocks.rows = [{ fingerprint: 'fp-old', created_at: new Date(NOW - 20 * 86400_000).toISOString() }];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedQuiet).toBe(1);
+    expect(result.ledger.recorded).toBe(1);
+    const calls = autoResolveCalls();
+    expect(calls).toHaveLength(1);
+    // Omitted rather than explicitly null: supabase-js drops undefined keys,
+    // so the function's own `default null` supplies the stored value. Asserted
+    // as the absence of a value, since that is what actually goes over the
+    // wire.
+    expect(calls[0]!.args.p_fixed_in_sha).toBeUndefined();
+  });
+
+  it('marks a recurrence as a regression and does NOT re-archive it in the same pass', async () => {
+    // The fault was archived, then fired again. Re-archiving it in the very
+    // pass that noticed would erase the signal immediately after raising it.
+    const recurredAt = new Date(NOW - 30 * 86400_000).toISOString();
+    mocks.rows = [{ fingerprint: 'fp-back', created_at: recurredAt }];
+    mocks.storedResolutions = [
+      {
+        fingerprint: 'fp-back',
+        resolved_at: new Date(NOW - 60 * 86400_000).toISOString(),
+        resolution_source: 'auto',
+        last_seen_at_resolution: new Date(NOW - 90 * 86400_000).toISOString(),
+        reopened_at: null,
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressions.marked).toBe(1);
+    expect(regressionCalls()[0]!.args.p_fingerprint).toBe('fp-back');
+    // Quiet for 30 days, so Rule B DID flip its rows — but the ledger must not
+    // record a fresh resolution over the regression it just raised.
+    expect(result.resolvedQuiet).toBe(1);
+    expect(autoResolveCalls()).toHaveLength(0);
+    expect(result.ledger.recorded).toBe(0);
+  });
+
+  it('does not raise a regression twice for a fault already flagged', async () => {
+    const recurredAt = new Date(NOW - 30 * 86400_000).toISOString();
+    mocks.rows = [{ fingerprint: 'fp-back', created_at: recurredAt }];
+    mocks.storedResolutions = [
+      {
+        fingerprint: 'fp-back',
+        resolved_at: new Date(NOW - 60 * 86400_000).toISOString(),
+        resolution_source: 'auto',
+        last_seen_at_resolution: new Date(NOW - 90 * 86400_000).toISOString(),
+        reopened_at: new Date(NOW - 40 * 86400_000).toISOString(),
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressions.marked).toBe(0);
+    expect(regressionCalls()).toHaveLength(0);
+  });
+
+  it('SKIPS regression detection loudly when the resolutions read fails', async () => {
+    // A failed read is not evidence that nothing regressed. Reporting a clean
+    // zero here would be the `error -> []` shape the OS forbids, in the one
+    // place whose job is noticing that a fix did not hold.
+    mocks.storedResolutionsError = 'connection reset';
+    mocks.rows = [{ fingerprint: 'fp-old', created_at: new Date(NOW - 20 * 86400_000).toISOString() }];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressionSkippedReason).toContain('connection reset');
+    expect(result.regressions.marked).toBe(0);
+    expect(regressionCalls()).toHaveLength(0);
+  });
+
+  it('counts a declined overwrite of a MANUAL resolution as skipped, not as a failure', async () => {
+    // The RPC returning false is the "never downgrade a human decision" rule
+    // working. Collapsing that into `failed` would report a working rule as a
+    // fault.
+    mocks.manualFingerprints = ['fp-old'];
+    mocks.rows = [{ fingerprint: 'fp-old', created_at: new Date(NOW - 20 * 86400_000).toISOString() }];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.ledger.skippedManual).toBe(1);
+    expect(result.ledger.recorded).toBe(0);
+    expect(result.ledger.failed).toBe(0);
+    expect(result.ledger.firstError).toBeNull();
+  });
+
+  it('writes NOTHING to the ledger for Rule C — an unfingerprinted row has nothing to key on', async () => {
+    mocks.rows = [
+      { id: 'row-1', fingerprint: null, created_at: new Date(NOW - 20 * 86400_000).toISOString() },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.resolvedLegacy).toBe(1);
+    expect(autoResolveCalls()).toHaveLength(0);
+    expect(result.ledger.recorded).toBe(0);
   });
 });

@@ -5,6 +5,7 @@
 
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import { assertSafeTarget } from './lib/prod-target-guard.mjs';
 
 loadEnv({ path: '.env.local' });
 
@@ -17,6 +18,16 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   );
   process.exit(1);
 }
+
+// Deletes from golf_players by user_id. A golf_players delete CASCADES to that
+// player's entire round history, so a widened filter here is unrecoverable.
+assertSafeTarget({
+  url: SUPABASE_URL,
+  allowProd: process.argv.includes('--allow-prod'),
+  dryRun: process.argv.includes('--dry-run'),
+  scriptName: 'debug-player-insert',
+  deletes: ['golf_players'],
+});
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: {

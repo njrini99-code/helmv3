@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 435', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 445', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -269,11 +269,9 @@ describe('global tripwire', () => {
     // public, directly-POSTable action regardless of who actually imports it.
     // 425 - 1 - 1 - 4 = 419.
     //
-    // 421 as of the 2026-07-10 feature-flow sweep (+2): golf.ts gains
-    // `updateGolfQualifierDetails` (the previously-missing qualifier edit
-    // flow) and `reconcileQualifierStatus` (view-time lifecycle self-heal on
-    // the qualifier detail page) — both withAdminObserved-wrapped and listed
-    // in FEATURE_REGISTRY's qualifiers manifest.
+    // 2026-07-10 feature-flow sweep added qualifier editing. The old
+    // `reconcileQualifierStatus` page-view mutation was removed on
+    // 2026-08-22: only coaches may close a qualifier explicitly.
     //
     // 422 as of the 2026-07-17 course-library-owner-gate fix (#913, +1):
     // course-library.ts (already 'ALL'-mapped to `course_library`) gains
@@ -308,6 +306,12 @@ describe('global tripwire', () => {
     // src/app/golf/actions/tasks.ts — the series-create action, bounded by
     // MAX_SERIES_OCCURRENCES and withAdminObserved-wrapped like its siblings.
     // creating a second organization for a school that already exists.
+    // 436-439: the pending-assistant path. A head coach hands out ONE code;
+    //   whoever types it picks Player or Assistant coach, and the assistant
+    //   choice records a REQUEST (createPendingAssistantCoach) that a head
+    //   coach approves (list/approve/decline). The approval is the grant —
+    //   writing golf_team_coach_staff is the whole of team access — so the
+    //   single-code flow ships without re-opening 266d02d91's escalation.
     // 435: createStaffInvite + redeemStaffInvite — coach-issued staff
     // invitations, replacing a join-code path that let any player
     // grant themselves program-administrator.
@@ -319,6 +323,31 @@ describe('global tripwire', () => {
     // redeeming it (staff join flow).
     // 438: signupWithStaffInviteAction (auth.ts) — create account for staff
     // invited to join a program.
-    expect(total).toBe(438);
+    // 443: getGolfCoachEntry (golf/actions/coach-entry.ts) — where a signed-in
+    //   coach account belongs. Wrapped because it is a ROUTING decision: a
+    //   silent failure sends somebody to the wrong onboarding rather than
+    //   showing them an error.
+    // 444: updateRoundType (golf/actions/round-type.ts) — change a submitted
+    //   round's type, and keep its qualifier linkage honest. demoSafe because
+    //   it moves a score in or out of a qualifier's standings.
+    // 445: listTeamCoachingStaff (teams.ts) — the coaching staff of a team,
+    //   head coach first. Added when assistants started joining at signup and
+    //   were visible nowhere on the Team page.
+    // 446: getAdminStuckRounds (admin-data.ts) — status='in_progress' +
+    //   updated_at-correct stuck-rounds query for the admin overview "Rounds"
+    //   card, replacing a filter that couldn't distinguish a completed round
+    //   with no score from a genuinely stuck one. admin-data.ts is already
+    //   'ALL'-mapped to admin_dashboard, so this live scan picks it up with
+    //   no manifest edit needed.
+    // 447 as of #1485 (+1): getPlayerTrajectory (insights.ts) — TrajectoryForecaster's
+    //   first consumer, a coach-only read that calls the forecaster directly
+    //   (not the full analyzePlayer orchestrator). withAdminObserved-wrapped.
+    //   insights.ts is one of the six explicit (non-'ALL') multi-feature
+    //   files in FEATURE_REGISTRY, so it needed a manifest edit too — added
+    //   to coachhelm_ai_engine's array alongside its siblings analyzePlayer/
+    //   generateTournamentPrep/getPlayerPatterns (see feature-registry.ts).
+    // 2026-08-22: -1 removes reconcileQualifierStatus. Qualifier closure is
+    // a coach-only explicit action, not a page-view side effect.
+    expect(total).toBe(446);
   });
 });

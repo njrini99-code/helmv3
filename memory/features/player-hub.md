@@ -1,5 +1,17 @@
 # Feature: Player Hub
 
+<!-- schema-drift-banner -->
+> **⚠️ 1 identifier named below does not exist in the database.**
+> Verified 2026-08-19 against production. `golf_task_completions`
+>
+> It is described here as if live. Do not query, type, or build on it —
+> check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
+> before trusting any table name in this file. Tracked in
+> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
+> Removing this is a ratchet-down — re-run
+> `node scripts/check-doc-schema-drift.mjs --update` after.
+
+
 ## Status
 
 - active
@@ -18,9 +30,7 @@ It depends on Team Operations, Calendar, and Team Communications. Because it agg
 
 ### Components
 
-- `src/components/golf/player-hub/PlayerHub.tsx`
-- `src/components/golf/player-hub/PlayerHubWrapper.tsx`
-- `src/components/golf/player-hub/PlayerHubAnnouncementsSection.tsx`
+- `src/components/fairway/pages/hub/hub-parts.tsx` — the whole `src/components/golf/player-hub/` tree was removed with the legacy dual-tree (`ffd0fd8ab`)
 - `src/components/golf/player-hub/HubInsightSignalCard.tsx`
 
 ### Actions

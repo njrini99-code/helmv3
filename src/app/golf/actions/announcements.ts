@@ -26,6 +26,7 @@ import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { withGolfAction } from '@/lib/golf/with-golf-action';
 import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
@@ -469,7 +470,12 @@ async function createEnrichedAnnouncementImpl(input: {
         }
 
         if (playerRows && playerRows.length > 0) {
-          const userIds = playerRows.map(p => p.user_id);
+          // `user_id` is nullable once an account is deleted and the player's history
+          // is preserved (20260819200000). A null is not a recipient — drop it so the
+          // rest of the batch still gets notified, matching the three fan-outs in
+          // golf.ts that already do this. NOT NULL in production today, so this
+          // removes nothing yet: that is what lets it ship before the migration.
+          const userIds = playerRows.map(p => p.user_id).filter((id): id is string => Boolean(id));
 
           // Get emails for those users.
           //
@@ -490,7 +496,11 @@ async function createEnrichedAnnouncementImpl(input: {
           // success:true with send_email/send_push false, and nothing records
           // that delivery was attempted at all — the exact silent-failure
           // class this change exists to remove.
-          if (userRowsError || !userRows || userRows.length === 0) {
+          // `userIds.length > 0` matters only after 20260819200000: a batch whose
+          // players are ALL anonymized has nobody to look up, and reporting that as
+          // a delivery failure would be the failure-vs-empty conflation this guard
+          // was added to remove, pointed the other way.
+          if (userIds.length > 0 && (userRowsError || !userRows || userRows.length === 0)) {
             await logServerError(
               userRowsError
                 ? `[createEnrichedAnnouncement] Recipient lookup FAILED for ${userIds.length} player(s): ${userRowsError.message}`
@@ -606,10 +616,29 @@ async function createEnrichedAnnouncementImpl(input: {
   }
 }
 
+// withGolfAction nests INSIDE withAdminObserved — see the identical note on
+// roster.ts's removePlayerFromTeam. withAdminObserved still owns the
+// demoSafe gate + request-context scope; withGolfAction now owns the
+// classify -> RLS-denial-capture -> log sequence for whatever reaches it
+// (createEnrichedAnnouncementImpl already catches everything internally and
+// returns an ActionResult, so this is mainly the soft-failure observation
+// path today, plus a safety net for any future uncaught throw).
+// `observeSoftFailures: false` on the outer wrapper avoids a duplicate log.
+const golfActionCreateEnrichedAnnouncement = withGolfAction(
+  'createEnrichedAnnouncement',
+  {
+    featureArea: 'golf-announcements',
+    feature: 'announcements',
+    rlsContext: { table: 'golf_announcements', verb: 'insert' },
+    toErrorResult: (message) => ({ success: false, error: message }),
+  },
+  createEnrichedAnnouncementImpl,
+);
+
 const observedCreateEnrichedAnnouncement = withAdminObserved(
   'createEnrichedAnnouncement',
-  { demoSafe: true, sport: 'golf', feature: 'announcements' },
-  createEnrichedAnnouncementImpl,
+  { demoSafe: true, sport: 'golf', feature: 'announcements', observeSoftFailures: false },
+  golfActionCreateEnrichedAnnouncement,
 );
 
 export async function createEnrichedAnnouncement(input: {
@@ -1168,10 +1197,23 @@ async function completeAnnouncementTaskImpl(
   }
 }
 
+// See the note on createEnrichedAnnouncement above — same nesting, same
+// reason (demoSafe stays on the outer withAdminObserved layer).
+const golfActionCompleteAnnouncementTask = withGolfAction(
+  'completeAnnouncementTask',
+  {
+    featureArea: 'golf-announcements',
+    feature: 'announcements',
+    rlsContext: { table: 'golf_task_assignments', verb: 'update' },
+    toErrorResult: (message) => ({ success: false, error: message }),
+  },
+  completeAnnouncementTaskImpl,
+);
+
 const observedCompleteAnnouncementTask = withAdminObserved(
   'completeAnnouncementTask',
-  { demoSafe: true, sport: 'golf', feature: 'announcements' },
-  completeAnnouncementTaskImpl,
+  { demoSafe: true, sport: 'golf', feature: 'announcements', observeSoftFailures: false },
+  golfActionCompleteAnnouncementTask,
 );
 
 export async function completeAnnouncementTask(
@@ -1237,10 +1279,23 @@ async function deleteAnnouncementImpl(
   }
 }
 
+// See the note on createEnrichedAnnouncement above — same nesting, same
+// reason (demoSafe stays on the outer withAdminObserved layer).
+const golfActionDeleteAnnouncement = withGolfAction(
+  'deleteAnnouncement',
+  {
+    featureArea: 'golf-announcements',
+    feature: 'announcements',
+    rlsContext: { table: 'golf_announcements', verb: 'delete' },
+    toErrorResult: (message) => ({ success: false, error: message }),
+  },
+  deleteAnnouncementImpl,
+);
+
 const observedDeleteAnnouncement = withAdminObserved(
   'deleteAnnouncement',
-  { demoSafe: true, sport: 'golf', feature: 'announcements' },
-  deleteAnnouncementImpl,
+  { demoSafe: true, sport: 'golf', feature: 'announcements', observeSoftFailures: false },
+  golfActionDeleteAnnouncement,
 );
 
 export async function deleteAnnouncement(

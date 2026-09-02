@@ -22,7 +22,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import type { AdminDashboardData } from '../admin-data';
-import type { RollupC, AllRoundsMinimal } from './rollup-c.shared';
+import {
+  filterToGolfLinkedUsers,
+  computeDemoExclusions,
+  type RollupC,
+  type AllRoundsMinimal,
+} from './rollup-c.shared';
+import { DEMO_TEAM_IDS } from './demo-teams';
 
 // ----------------------------------------------------------------------------
 // RPC payload shape (must match the SELECT in 20260421000007_admin_analytics.sql)
@@ -213,6 +219,16 @@ async function fetchAdminRollupCImpl(
     throw new Error(`get_admin_analytics_rollup RPC failed: ${parts.length ? parts.join(' ') : JSON.stringify(error)}`);
   }
   if (!data) throw new Error('Empty analytics rollup response');
+
+  // Audit finding F1 (2026-08-20): `users_json` in get_admin_analytics_rollup
+  // is unscoped by sport — BaseballHelm-only accounts share the platform
+  // `users` table and were rendering on GolfHelm admin surfaces (People tab
+  // "Unassigned" directory, never-logged-in / inactive-14d+ KPIs, and the
+  // "Email these N" re-engagement button that reads off that same
+  // inactive-14d+ population). Every computation below reads `data.users`,
+  // so reassigning it once here scopes all of them from a single point —
+  // see `filterToGolfLinkedUsers`'s doc comment for the one known edge case.
+  data.users = filterToGolfLinkedUsers(data.users, data.players, data.coaches);
 
   // ---------------------------------------------------------------------------
   // Build lookup maps once — the same indexes are reused across every field.
@@ -617,6 +633,11 @@ async function fetchAdminRollupCImpl(
       avgRoundsPerPlayer: Math.round(avgRoundsPerPlayer * 10) / 10,
       lastTeamActivity,
       healthStatus,
+      // Audit finding F2: seed/demo teams carry real roster data and were
+      // rendering as ordinary programs. Flagged (not filtered) so the owner
+      // can still see them; platform totals exclude them via
+      // `demoExclusions` below.
+      isDemo: DEMO_TEAM_IDS.has(team.id),
       members,
     });
   }
@@ -1056,6 +1077,10 @@ async function fetchAdminRollupCImpl(
         ? Math.round((data.errors7d / totalPageViews7d) * 10_000) / 100
         : 0,
       totalClientErrors7d: data.errors7d,
+      // Placeholder like the rest of this shell — admin-data.ts recomputes
+      // the real `measured` flag from apiPerf once it merges, same as it
+      // recomputes avgResponseMs/p95ResponseMs.
+      measured: false,
     },
   };
 
@@ -1087,6 +1112,16 @@ async function fetchAdminRollupCImpl(
     allClear: data.errors7d === 0 && data.adminErrorEventsUnresolved === 0,
   };
 
+  // Audit finding F2: how many of Slice A's totalCoaches/totalPlayers belong
+  // only to the demo teams — subtracted at the admin-data.ts assembly point.
+  const demoExclusions = computeDemoExclusions(
+    data.teamMembers,
+    data.teamCoachStaff ?? [],
+    data.players,
+    data.coaches,
+    DEMO_TEAM_IDS,
+  );
+
   return {
     userActivity,
     cohortMatrix,
@@ -1100,6 +1135,7 @@ async function fetchAdminRollupCImpl(
     userJourney,
     stickiness,
     playerFunnel,
+    demoExclusions,
   };
 }
 

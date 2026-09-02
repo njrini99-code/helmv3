@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { verifyOAuthState } from '@/lib/crm/oauth-state';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -40,15 +41,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Verify state token
-    let decodedState;
-    try {
-      decodedState = JSON.parse(Buffer.from(state, 'base64').toString());
-      if (decodedState.userId !== user.id) {
-        redirectUrl.searchParams.set('gcal_error', 'invalid_state');
-        return NextResponse.redirect(redirectUrl);
-      }
-    } catch {
+    // Verify state: signature, subject AND age. This route previously checked
+    // only that the (unsigned) payload named the session user, so a state an
+    // attacker minted for a known victim uuid passed, and a captured one never
+    // expired. Signing is what closes the account-linking path — an attacker's
+    // authorization code can no longer be paired with a victim's session.
+    if (!verifyOAuthState(state, user.id)) {
       redirectUrl.searchParams.set('gcal_error', 'invalid_state');
       return NextResponse.redirect(redirectUrl);
     }

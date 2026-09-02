@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useId } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconSparkles } from '@/components/icons';
+import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconSparkles, IconAlertCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
 import {
@@ -230,6 +230,18 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       {/* Days */}
                       <div>
                         <p className="block text-xs font-medium text-text-tertiary mb-2 uppercase tracking-wider">Meeting Days</p>
+                        {cls.days.length === 0 && cls.start_time ? (
+                          /* The two vision reads disagreed on this class's days,
+                             so they were cleared on purpose (a wrong day is worse
+                             than a blank). What was MISSING was any pressure to
+                             act on the blank: players confirmed straight through
+                             and the class silently never reached the calendar —
+                             4 live rows at Guilford, 2026-08-20. */
+                          <p className="mb-2 flex items-center gap-1.5 rounded-lg bg-fw-warning-bg px-2.5 py-1.5 text-xs font-medium text-fw-warning-ink">
+                            <IconAlertCircle size={14} className="flex-shrink-0" aria-hidden />
+                            We couldn&rsquo;t read this class&rsquo;s days. Tap the days it meets — without them it won&rsquo;t appear on your calendar.
+                          </p>
+                        ) : null}
                         <div className="flex gap-2">
                           {DAYS.map(day => (
                             <Button variant="ghost"

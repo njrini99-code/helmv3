@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import * as Sentry from '@sentry/nextjs';
-import type { User, CoachWithOrganization, Player } from '@/lib/types';
+import type { User, CoachWithOrganization, BaseballPlayer as Player } from '@/lib/types';
 
 type CoachMode = 'recruiting' | 'team';
 

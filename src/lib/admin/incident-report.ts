@@ -74,6 +74,33 @@ export interface IncidentReportInput {
    * concluding the error itself is content-free.
    */
   hasDegradedMessage?: boolean;
+  /** PG SQLSTATE or provider error code (admin_events.metadata.errorCode). */
+  errorCode?: string | null;
+  /** Human-readable hint accompanying errorCode (metadata.errorHint). */
+  errorHint?: string | null;
+  /** Correlation id captured at log time (metadata.requestId). */
+  requestId?: string | null;
+  /** Flight-recorder workflow correlation id (metadata.helmTraceId) — the
+   *  fingerprint page links this to /admin/golf/tracer?trace=<id>. */
+  helmTraceId?: string | null;
+  /** 'nodejs' | 'edge' | 'unknown' (metadata.runtime). */
+  runtime?: string | null;
+  /** Whether the call site explicitly handled/continued past this error
+   *  (metadata.handled). `null`/absent means unknown — never inferred. */
+  handled?: boolean | null;
+  /**
+   * A previously-stored root-cause analysis (@/lib/admin/rca's RcaAnalysis),
+   * if one exists for this fingerprint — included so a pasted report already
+   * carries whatever the in-app "Analyze with Claude" pass already concluded,
+   * instead of a reader re-running an analysis that already happened.
+   */
+  rca?: {
+    probableCause: string;
+    confidence: string;
+    suggestedFix: string;
+    model: string;
+    generatedAt: string;
+  } | null;
   /** Injectable for deterministic tests; defaults to `new Date().toISOString()`. */
   generatedAt?: string;
 }
@@ -168,6 +195,77 @@ export function extractErrorCode(metadata: unknown): string | null {
   return null;
 }
 
+/** Human-readable hint paired with errorCode (server-error-logger.ts's
+ *  normalizeContext writes both from RoundErrorContext.errorHint). */
+export function extractErrorHint(metadata: unknown): string | null {
+  if (metadata && typeof metadata === 'object') {
+    const hint = (metadata as { errorHint?: unknown }).errorHint;
+    if (typeof hint === 'string' && hint.length > 0) return hint;
+  }
+  return null;
+}
+
+/** Correlation id set by the ambient request-context scope
+ *  (@/lib/admin/request-context) or an explicit caller override. */
+export function extractRequestId(metadata: unknown): string | null {
+  if (metadata && typeof metadata === 'object') {
+    const id = (metadata as { requestId?: unknown }).requestId;
+    if (typeof id === 'string' && id.length > 0) return id;
+  }
+  return null;
+}
+
+/** Opaque flight-recorder workflow correlation id. When present, the
+ *  fingerprint page links out to /admin/golf/tracer?trace=<id>. */
+export function extractHelmTraceId(metadata: unknown): string | null {
+  if (metadata && typeof metadata === 'object') {
+    const id = (metadata as { helmTraceId?: unknown }).helmTraceId;
+    if (typeof id === 'string' && id.length > 0) return id;
+  }
+  return null;
+}
+
+/** 'nodejs' | 'edge' | 'unknown' — server-error-logger.ts's normalizeContext
+ *  always writes one of these, but older rows predating the field come back
+ *  null rather than a guess. */
+export function extractRuntime(metadata: unknown): string | null {
+  if (metadata && typeof metadata === 'object') {
+    const runtime = (metadata as { runtime?: unknown }).runtime;
+    if (typeof runtime === 'string' && runtime.length > 0) return runtime;
+  }
+  return null;
+}
+
+/** Whether the call site explicitly handled/continued past this error.
+ *  `null` (not `false`) when the field is genuinely absent — a row predating
+ *  this field must never be presented as a known "unhandled" the way an
+ *  explicit `handled: false` would be. */
+export function extractHandled(metadata: unknown): boolean | null {
+  if (metadata && typeof metadata === 'object' && 'handled' in metadata) {
+    const handled = (metadata as { handled?: unknown }).handled;
+    if (typeof handled === 'boolean') return handled;
+  }
+  return null;
+}
+
+/**
+ * "0 affected users" reads as "this hit nobody," which is misleading for an
+ * app-origin incident: the count there is DISTINCT KNOWN identities
+ * (user_id/user_email) — zero usually means the failure happened before/
+ * outside auth, not that zero people were impacted. Sentry's own userCount
+ * IS a real zero-means-zero metric, so only non-Sentry origins ever read as
+ * unknown. Single source of truth for this rule — TriageQueue's
+ * affectedUsersLabel and the fingerprint page's rollup/header both call this
+ * rather than each encoding the "0 and origin isn't sentry" check themselves.
+ */
+export function hasUnknownAffectedUsers(
+  isSentryOrigin: boolean,
+  affectedUserCount: number,
+  occurrences: number,
+): boolean {
+  return !isSentryOrigin && affectedUserCount === 0 && occurrences > 0;
+}
+
 /** Flood-throttle collapsed count lives at metadata.metadata.collapsed_count
  *  (observed-action.ts nests it under RoundErrorContext.metadata, which
  *  normalizeContext then nests again under the admin_events.metadata column). */
@@ -205,6 +303,32 @@ export function selectNearbyDeploys(
     .sort((a, b) => b.time - a.time)
     .slice(0, maxCount)
     .map((d) => ({ sha: d.sha, time: new Date(d.time).toISOString() }));
+}
+
+/**
+ * The single "prime suspect" out of `selectNearbyDeploys`' output: the last
+ * production deploy at/before the incident's first occurrence. A deploy
+ * AFTER first-seen cannot be what introduced the bug, so this is never the
+ * most-recent entry in the (most-recent-first) `nearbyDeploys` list — it is
+ * whichever entry is closest to, but not after, `firstSeenIso`.
+ *
+ * Returns `null` — not a guess — when no deploy in the window is at/before
+ * first-seen (every candidate fired after the incident started, so the true
+ * cause predates this deploy window entirely) or when `firstSeenIso` itself
+ * is unknown.
+ */
+export function selectSuspectDeploy(
+  nearbyDeploys: readonly IncidentReportDeploy[],
+  firstSeenIso: string | null | undefined,
+): IncidentReportDeploy | null {
+  if (!firstSeenIso || nearbyDeploys.length === 0) return null;
+  const firstMs = Date.parse(firstSeenIso);
+  if (!Number.isFinite(firstMs)) return null;
+
+  const atOrBefore = nearbyDeploys
+    .filter((d) => Date.parse(d.time) <= firstMs)
+    .sort((a, b) => Date.parse(b.time) - Date.parse(a.time));
+  return atOrBefore[0] ?? null;
 }
 
 function dash(value: string | number | null | undefined): string {
@@ -267,6 +391,15 @@ export function buildIncidentReport(input: IncidentReportInput): string {
   lines.push(
     `- Source file: ${actionFilePath ? `\`${actionFilePath}\`` : '— (not resolvable from the feature registry)'}`,
   );
+  lines.push(
+    `- Error code: ${dash(input.errorCode)}${input.errorHint ? ` — ${input.errorHint}` : ''}`,
+  );
+  lines.push(`- Request id: ${dash(input.requestId)}`);
+  lines.push(`- Trace id: ${dash(input.helmTraceId)}`);
+  lines.push(`- Runtime: ${dash(input.runtime)}`);
+  lines.push(
+    `- Handled: ${input.handled === null || input.handled === undefined ? '—' : input.handled ? 'yes' : 'no — unhandled'}`,
+  );
   lines.push('');
 
   // Classification leads, because it changes how the whole report should be
@@ -300,7 +433,16 @@ export function buildIncidentReport(input: IncidentReportInput): string {
       ? ` (plus ${input.collapsedCount} collapsed by flood-throttle)`
       : '';
   lines.push(`- Events: ${dash(input.eventCount)}${collapsedSuffix}`);
-  lines.push(`- Affected users: ${dash(input.affectedUserCount)}`);
+  const unknownUsers = hasUnknownAffectedUsers(
+    input.source === 'sentry',
+    input.affectedUserCount ?? 0,
+    input.eventCount ?? 0,
+  );
+  lines.push(
+    `- Affected users: ${dash(input.affectedUserCount)}${
+      unknownUsers ? ' (unknown — no identity captured on these rows; not necessarily zero people affected)' : ''
+    }`,
+  );
   lines.push(`- First seen: ${dash(input.firstSeen)}`);
   lines.push(`- Last seen: ${dash(input.lastSeen)}`);
   lines.push(`- Window: ${dash(input.windowLabel)}`);
@@ -327,12 +469,28 @@ export function buildIncidentReport(input: IncidentReportInput): string {
 
   lines.push('## Nearby deploys', '');
   if (input.deployMarkers?.length) {
+    const suspect = selectSuspectDeploy(input.deployMarkers, input.firstSeen);
+    if (suspect) {
+      lines.push(
+        `Suspect deploy (last production deploy at/before first-seen): ${suspect.sha ?? 'unknown-sha'} @ ${suspect.time}`,
+        '',
+      );
+    }
     const rows = input.deployMarkers.map((d) => `${d.time}${d.sha ? ` sha=${d.sha}` : ''}`);
     lines.push(fence(rows.join('\n')));
   } else {
     lines.push('_no deploy data available_');
   }
   lines.push('');
+
+  if (input.rca) {
+    lines.push('## Root-cause analysis (stored)', '');
+    lines.push(`- Probable cause: ${input.rca.probableCause}`);
+    lines.push(`- Confidence: ${input.rca.confidence}`);
+    lines.push(`- Suggested fix: ${input.rca.suggestedFix}`);
+    lines.push(`- Model: ${input.rca.model} · generated ${input.rca.generatedAt}`);
+    lines.push('');
+  }
 
   lines.push('## Sentry');
   lines.push(input.sentryUrl ? input.sentryUrl : '_not linked to a Sentry issue_');

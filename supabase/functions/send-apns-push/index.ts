@@ -99,9 +99,54 @@ async function generateAPNsJWT(): Promise<string> {
   return `${unsignedToken}.${encodedSignature}`;
 }
 
+/**
+ * Only a trusted server-side caller may drive this function.
+ *
+ * The platform default `verify_jwt = true` is satisfied by the ANON key, which
+ * is published in the client bundle and is itself a signed JWT. So "verified"
+ * meant nothing here: anyone with the project URL and that public key could
+ * POST a device token, title, body and deep-link `data`, and this function
+ * would sign it with the org's own APNS_PRIVATE_KEY and deliver it through
+ * Apple's production gateway. That is a phishing channel riding the
+ * organisation's trusted push identity, with no rate limit on it either.
+ *
+ * The only legitimate caller (`sendPushToUser` in src/lib/notifications/push.ts)
+ * invokes through an ADMIN client, so its bearer token already carries
+ * `role: "service_role"`. Requiring that role costs the real caller nothing and
+ * removes the anon key as a way in.
+ *
+ * The signature was already validated by the platform before this runs; this
+ * only reads the role claim out of the verified payload.
+ */
+function isServiceRoleCaller(req: Request): boolean {
+  const auth = req.headers.get("Authorization") ?? "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  if (!token) return false;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  try {
+    // base64url -> JSON. Deno's atob needs standard base64 padding.
+    const b64 = (parts[1] ?? "").replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const claims = JSON.parse(atob(padded)) as { role?: string };
+    return claims.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  if (!isServiceRoleCaller(req)) {
+    // Deliberately terse: an unauthorised caller learns nothing about whether
+    // the token, topic or payload would otherwise have been accepted.
+    return new Response(
+      JSON.stringify({ success: false, error: "Forbidden" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   try {
@@ -201,13 +246,32 @@ Deno.serve(async (req: Request) => {
     const errorBody = await response.text();
     const statusCode = response.status;
 
-    // Handle common APNs errors
-    if (statusCode === 410 || statusCode === 400) {
-      // Token is invalid or expired — caller should deactivate it
+    // Deactivate ONLY on true dead-token signals. Apple returns 400 for
+    // roughly fourteen unrelated reasons (BadTopic, MissingTopic,
+    // PayloadEmpty, TopicDisallowed, InvalidPushType, …), and a config fault
+    // is by nature identical for every token in a sweep — a bare-400 match
+    // here would mass-deactivate every live device the first time someone
+    // mistyped a bundle id. 410 is safe on status alone: Apple only returns
+    // it for Unregistered, which is per-token by construction. This mirrors
+    // DEAD_TOKEN_REASONS in src/lib/notifications/push.ts; keep the two in
+    // step. (The previously deployed v5 predates this file — do not redeploy
+    // any copy that sets shouldDeactivateToken on a bare 400.)
+    let apnsReason = "";
+    try {
+      apnsReason = (JSON.parse(errorBody) as { reason?: string }).reason ?? "";
+    } catch {
+      /* non-JSON APNs body — no reason available */
+    }
+    const DEAD_TOKEN_REASONS = ["Unregistered", "BadDeviceToken", "DeviceTokenNotForTopic"];
+    const isDeadToken = statusCode === 410 || DEAD_TOKEN_REASONS.includes(apnsReason);
+
+    if (isDeadToken) {
       return new Response(
         JSON.stringify({
           success: false,
           error: `APNs error ${statusCode}: ${errorBody}`,
+          reason: apnsReason || undefined,
+          apnsStatus: statusCode,
           shouldDeactivateToken: true,
         }),
         { status: statusCode, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -215,7 +279,12 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ success: false, error: `APNs error ${statusCode}: ${errorBody}` }),
+      JSON.stringify({
+        success: false,
+        error: `APNs error ${statusCode}: ${errorBody}`,
+        reason: apnsReason || undefined,
+        apnsStatus: statusCode,
+      }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

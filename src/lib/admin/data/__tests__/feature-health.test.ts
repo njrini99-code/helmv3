@@ -1,13 +1,40 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// fetchFeatureHealthRedCount() (below) is the DB-only red-count fetcher the
+// admin layout badge now calls instead of the full fetchFeatureHealth() +
+// Sentry sweep. These mocks let it be exercised end-to-end — RPC in, count
+// out — without a real Supabase/Sentry round-trip, mirroring the
+// `vi.mock('@/lib/supabase/server', ...)` pattern used across
+// src/lib/admin/__tests__/*.
+const mocks = vi.hoisted(() => ({
+  rpc: vi.fn(),
+  fetchSentryFeatureCounts: vi.fn(async () => ({})),
+  logServerError: vi.fn(async () => {}),
+}));
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(async () => ({ rpc: mocks.rpc })),
+}));
+vi.mock('@/lib/admin/sentry-api', () => ({
+  fetchSentryFeatureCounts: mocks.fetchSentryFeatureCounts,
+}));
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: mocks.logServerError,
+}));
+
 import {
   computeFeatureStatus,
   summarizeFeatureHealth,
   computeFeatureHealthBanner,
+  fetchFeatureHealthRedCount,
   type FeatureHealthInputs,
   type FeatureHealth,
 } from '@/lib/admin/data/feature-health';
 
 const NOW = new Date('2026-07-02T12:00:00Z');
+
+/** Neutral-reason matchers for the integrations case below. */
+const SEASONAL_REASON_RE = /expected-empty/i;
+const NOT_REPORTING_RE = /not yet reporting/i;
 
 function iso(hoursAgo: number): string {
   return new Date(NOW.getTime() - hoursAgo * 3_600_000).toISOString();
@@ -75,6 +102,34 @@ describe('computeFeatureStatus — neutral-first (§3.1)', () => {
     );
     expect(result.status).toBe('neutral');
     expect(result.reason).toMatch(/not yet reporting/i);
+  });
+
+  it("integrations with zero everything → NEUTRAL, never green (it must not claim Inngest is healthy)", () => {
+    // The registry entry's whole point. `integrations` is quiet by design
+    // between a Mon 14:00 UTC cron and a round-submitted event, and a quiet
+    // window has two readings the DB cannot separate: the signing key was
+    // fixed, or Inngest stopped calling us and durable jobs are dead silently.
+    // Green would assert the first. Neutral asserts neither, which is the only
+    // honest answer — so this asserts the RENDERED status, not registry shape.
+    const result = computeFeatureStatus(
+      baseInputs({
+        key: 'integrations',
+        tier: 'med',
+        seasonalEmpty: true,
+        neverNeutral: false,
+        events24h: {
+          total: 0, errors: 0, criticalUnresolved: 0, warnings: 0,
+          fingerprints: 0, rlsDenials: 0, rlsDenialFingerprints: 0, rlsDenialUsers: 0,
+        },
+        heartbeatLastActivity: null,
+      }),
+    );
+    expect(result.status).toBe('neutral');
+    expect(result.status).not.toBe('green');
+    // seasonalEmpty picks the reason: "expected-empty", NOT the false
+    // "instrumentation not yet reporting" — it reported 454 times.
+    expect(result.reason).toMatch(SEASONAL_REASON_RE);
+    expect(result.reason).not.toMatch(NOT_REPORTING_RE);
   });
 
   it('neverNeutral (admin_dashboard) with zero everything → green, not neutral', () => {
@@ -328,5 +383,175 @@ describe('summarizeFeatureHealth + computeFeatureHealthBanner — banner discipl
     const summary = summarizeFeatureHealth({ features, generatedAt: NOW.toISOString(), degraded: false }, NOW);
     expect(summary).toMatchObject({ green: 2, amber: 0, red: 0, neutral: 1 });
     expect(computeFeatureHealthBanner(summary).contributes).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchFeatureHealthRedCount — the admin layout's Health badge fetcher.
+// bridge-refit Finding 1: the previous layout.tsx called the FULL
+// fetchFeatureHealth() (RPC + ~15-round Sentry sweep across 85 features) on
+// every navigation and AutoRefresh tick, and swallowed any failure as `0` —
+// indistinguishable from "0 red features". fetchFeatureHealthRedCount() is
+// the DB-only replacement: one get_feature_health() RPC call, zero Sentry
+// round-trips, and `null` (never `0`) when the pipeline is degraded.
+// ---------------------------------------------------------------------------
+describe('fetchFeatureHealthRedCount — DB-only, no Sentry', () => {
+  beforeEach(() => {
+    mocks.rpc.mockReset();
+    mocks.fetchSentryFeatureCounts.mockClear();
+    mocks.logServerError.mockClear();
+  });
+
+  it('is 0 when the RPC returns no rows for any feature — RED needs real signal, never a bare default', async () => {
+    mocks.rpc.mockResolvedValue({ data: [], error: null });
+    await expect(fetchFeatureHealthRedCount()).resolves.toBe(0);
+    expect(mocks.fetchSentryFeatureCounts).not.toHaveBeenCalled();
+  });
+
+  it('counts a feature RED from a DB-only signal (unresolved critical) with zero Sentry round-trips', async () => {
+    mocks.rpc.mockResolvedValue({
+      data: [
+        {
+          key: 'round_tracking',
+          events_24h: {
+            total: 1,
+            errors: 1,
+            critical_unresolved: 1,
+            warnings: 0,
+            fingerprints: 1,
+            rls_denials: 0,
+            rls_denial_fingerprints: 0,
+            rls_denial_users: 0,
+          },
+        },
+      ],
+      error: null,
+    });
+    await expect(fetchFeatureHealthRedCount()).resolves.toBe(1);
+    expect(mocks.fetchSentryFeatureCounts).not.toHaveBeenCalled();
+  });
+
+  it('returns null — never 0 — when the RPC fails, so a degraded pipeline can never read as a clean badge', async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { message: 'connection refused' } });
+    await expect(fetchFeatureHealthRedCount()).resolves.toBeNull();
+    expect(mocks.fetchSentryFeatureCounts).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Health-consolidation pinning test (rendering-only change) — FeatureDotGrid
+// and FeatureHealthRollup were unified behind one FeatureHealthSummary
+// component in this pass, and the classifier itself was NOT touched. This
+// pins the full { status, trend, reason } output of computeFeatureStatus
+// across one representative input per branch, so a rendering-layer refactor
+// can never silently carry a status-logic change with it.
+// ---------------------------------------------------------------------------
+describe('computeFeatureStatus — pinned outputs (health-consolidation regression guard)', () => {
+  it('matches the exact status/trend/reason for one representative input per classifier branch', () => {
+    const cases: Array<{ name: string; inputs: FeatureHealthInputs }> = [
+      { name: 'neutral — no feature-tagged data', inputs: baseInputs({ events24h: { ...baseInputs().events24h, total: 0, warnings: 0 }, heartbeatLastActivity: null, sentryUnresolved: null }) },
+      { name: 'red — unresolved critical', inputs: baseInputs({ events24h: { ...baseInputs().events24h, criticalUnresolved: 1 } }) },
+      { name: 'red — integrity check failed', inputs: baseInputs({ integrityStatus: 'fail' }) },
+      {
+        name: 'red — hysteresis across 2 windows (high tier)',
+        inputs: baseInputs({ tier: 'high', events24h: { ...baseInputs().events24h, fingerprints: 20 }, fingerprintsPrev24h: 20 }),
+      },
+      { name: 'red — low-tier trailing-7d line', inputs: baseInputs({ tier: 'low', fingerprints7d: 2 }) },
+      {
+        name: 'amber — RLS-denial cluster (many users)',
+        inputs: baseInputs({ events24h: { ...baseInputs().events24h, rlsDenials: 3, rlsDenialUsers: 3 } }),
+      },
+      { name: 'amber — fingerprint at threshold', inputs: baseInputs({ tier: 'high', events24h: { ...baseInputs().events24h, fingerprints: 5 } }) },
+      { name: 'amber — unresolved non-critical Sentry issue', inputs: baseInputs({ sentryUnresolved: { total: 2, critical: 0 } }) },
+      { name: 'amber — stale heartbeat', inputs: baseInputs({ heartbeatLastActivity: iso(200) }) },
+      { name: 'green — healthy baseline', inputs: baseInputs() },
+    ];
+
+    const pinned = cases.map(({ name, inputs }) => ({ name, result: computeFeatureStatus(inputs) }));
+
+    expect(pinned).toMatchInlineSnapshot(`
+      [
+        {
+          "name": "neutral — no feature-tagged data",
+          "result": {
+            "reason": "No feature-tagged data yet — instrumentation not yet reporting for this feature. Sentry unavailable — status computed from DB signals only.",
+            "status": "neutral",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "red — unresolved critical",
+          "result": {
+            "reason": "1 unresolved critical incident(s) in the last 24h.",
+            "status": "red",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "red — integrity check failed",
+          "result": {
+            "reason": "Latest integrity check failed for this feature.",
+            "status": "red",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "red — hysteresis across 2 windows (high tier)",
+          "result": {
+            "reason": "Error-fingerprint rate at/above 5/24h across 2 consecutive windows (current 20, previous 20).",
+            "status": "red",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "red — low-tier trailing-7d line",
+          "result": {
+            "reason": "2 error fingerprint(s) in the trailing 7 days (low-traffic RED line 2).",
+            "status": "red",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "amber — RLS-denial cluster (many users)",
+          "result": {
+            "reason": "RLS-denial cluster: 3 denial(s) across 3 user(s) in 24h — possible missing grant / unapplied migration.",
+            "status": "amber",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "amber — fingerprint at threshold",
+          "result": {
+            "reason": "5 error fingerprint(s) in the last 24h.",
+            "status": "amber",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "amber — unresolved non-critical Sentry issue",
+          "result": {
+            "reason": "2 unresolved non-critical Sentry issue(s) tagged to this feature.",
+            "status": "amber",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "amber — stale heartbeat",
+          "result": {
+            "reason": "Heartbeat stale — last activity 200h ago (threshold 6h).",
+            "status": "amber",
+            "trend": "flat",
+          },
+        },
+        {
+          "name": "green — healthy baseline",
+          "result": {
+            "reason": "Healthy — no error fingerprints, no RLS cluster, heartbeat within threshold.",
+            "status": "green",
+            "trend": "flat",
+          },
+        },
+      ]
+    `);
   });
 });

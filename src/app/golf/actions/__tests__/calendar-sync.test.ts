@@ -187,7 +187,12 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: vi.fn(async () => {}),
+}));
+
 import { syncClassToCalendar, removeClassFromCalendar } from '../calendar-sync';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ---- Fixtures ----------------------------------------------------------------
 // Winter 2025, custom start 2025-12-15 (a Monday), Mondays only.
@@ -660,5 +665,59 @@ describe('syncClassToCalendar — a zero-event sync says so', () => {
   it('never sets noMeetings while also reporting created events', async () => {
     const result = await syncClassToCalendar(classData(), CLASS_ID, PLAYER_ID, TEAM_ID);
     expect(Boolean(result.noMeetings) && (result.eventsCreated ?? 0) > 0).toBe(false);
+  });
+});
+
+/**
+ * Re-verification of the audited swallow at offsetMinutesFor's
+ * `catch { return null; }` (Helm Bridge observability refit). The fallback
+ * behavior is UNCHANGED — an unrecognized IANA zone still falls back to the
+ * caller's fixed offset for every occurrence — but an invalid zone now
+ * surfaces exactly ONCE per sync call (not once per occurrence, which this
+ * fixture's 5-occurrence semester would otherwise turn into 5 admin_events
+ * rows for one typo).
+ */
+describe('syncClassToCalendar — unrecognized timezone is observed once, not per-occurrence', () => {
+  beforeEach(() => {
+    adminCfg = {};
+    adminOps = [];
+    authedUserId = 'user-1';
+    playerRow = { id: PLAYER_ID };
+    classRow = { id: CLASS_ID, player_id: PLAYER_ID };
+    membershipRow = { team_id: TEAM_ID };
+    membershipList = [{ team_id: TEAM_ID }];
+    vi.clearAllMocks();
+  });
+
+  it('logs exactly one warning across a 5-occurrence semester and still syncs every event', async () => {
+    const result = await syncClassToCalendar(
+      classData({ timezone: 'Not/AZone', timezoneOffset: 300 }),
+      CLASS_ID, PLAYER_ID, TEAM_ID,
+    );
+
+    // Fallback behavior is unchanged: every desired occurrence still synced.
+    expect(result.success).toBe(true);
+    expect(result.eventsCreated).toBe(DESIRED_DATES.length);
+
+    expect(logServerError).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [message, context] = (logServerError as any).mock.calls[0];
+    expect(message).toContain('Not/AZone');
+    expect(context).toMatchObject({
+      action: 'syncClassToCalendar.offsetForDate',
+      feature: 'academics_classes',
+      sport: 'golf',
+      playerId: PLAYER_ID,
+      teamId: TEAM_ID,
+    });
+  });
+
+  it('logs nothing for a valid IANA timezone', async () => {
+    const result = await syncClassToCalendar(
+      classData({ timezone: 'America/New_York', timezoneOffset: 300 }),
+      CLASS_ID, PLAYER_ID, TEAM_ID,
+    );
+    expect(result.success).toBe(true);
+    expect(logServerError).not.toHaveBeenCalled();
   });
 });

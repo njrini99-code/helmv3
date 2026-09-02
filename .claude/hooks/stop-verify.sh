@@ -3,112 +3,273 @@
 #
 # CLAUDE.md and .claude/rules/autonomy.md ask for this in prose. Prose is a
 # request; a hook is enforcement. This fires when Claude tries to end a turn
-# with source changes sitting in the tree, and pushes back once.
+# with unverified work, and pushes back once.
 #
 # LOOP SAFETY is the whole design. It blocks AT MOST ONCE per distinct tree
-# state: the marker is keyed to HEAD + a hash of `git status --porcelain`. If
-# Claude stops again having changed nothing, the marker already exists and the
-# hook allows the stop. Any real edit changes the hash and re-arms it once.
-# A Stop hook that can loop is worse than no Stop hook.
+# state: the marker is keyed to HEAD + a hash of `git status --porcelain` +
+# `git diff --stat`. If Claude stops again having changed nothing, the marker
+# already exists and the hook allows the stop. Any real edit changes the hash
+# and re-arms it once. A Stop hook that can loop is worse than no Stop hook.
+# UNCHANGED from the previous version of this file.
 #
 # exit 0 + no output  = allow the stop
 # {"decision":"block"} = Claude keeps working, reason is fed back
 #
-# ATTRIBUTION (2026-08-18). This hook used to read the WHOLE dirty tree, which
-# is only correct when one session owns the checkout. With several Claude
-# sessions sharing this working tree it blamed whoever happened to be ending a
-# turn for whatever anyone else had dirty: one session was blocked five times
-# over 17-21 files it never touched, while the count moved 19 -> 20 -> 21 -> 17
-# -> 18 underneath it as a peer committed and edited. Four turns were spent
-# proving "not mine" instead of working.
+# ATTRIBUTION (rebuilt 2026-08-21, GolfHelm Engineering OS P2). The OLD
+# mechanism read the whole dirty tree and diffed it against a per-session
+# baseline file — correct only when git alone could tell sessions apart, which
+# it fundamentally cannot: `git status --porcelain` reports what's dirty, never
+# who dirtied it. One session was blocked five times for 17-21 files it never
+# touched while a peer session's count moved underneath it (2026-08-18).
 #
-# Two changes, both conservative — the gate still fires, it just stops
-# misattributing:
-#   1. A per-session BASELINE. The first stop records what was already dirty;
-#      later stops only count what appeared since. Churn from a peer session
-#      no longer re-arms this hook against you.
-#   2. An honest CONCURRENCY note. When other sessions are live in this tree,
-#      attribution is genuinely unknowable from git alone, so the message says
-#      so rather than asserting the files are yours.
+# The FIX is event-time ownership: `.claude/session-state/<session_id>.jsonl`
+# (written by record-session-touch.mjs at the moment of every successful
+# Write/Edit/MultiEdit) is ground truth for "did THIS session write this
+# file" — no git-diffing, no peer-attribution ambiguity, because it was never
+# inferred from the shared tree in the first place. `.claude/hooks/lib/
+# stop-check.mjs` folds that ledger into a mapping/context/memory verdict;
+# this script stays bash for the loop-safety/exit-code machinery that was
+# already correct and untouched by the attribution bug.
+#
+# Git is now a FALLBACK cross-check only, for the case session-state cannot
+# cover by construction: a session with nothing left to verify (it genuinely
+# wrote nothing, the recording hooks did not fire, or — since Phase 7B —
+# everything it wrote has already landed on origin/main). In that case the old
+# baseline-diff mechanism still runs, but ADVISORY ONLY — it can no longer
+# block, because it is exactly the mechanism proven unable to attribute
+# correctly under concurrency.
+#
+# The advisory has TWO shapes, on purpose. Before Phase 7B, reaching this
+# branch implied the ledger was empty, so one message ("the hook may not be
+# firing") was always true. Now the counts are derived from what still DIFFERS
+# from origin/main, and a session whose work merged reports zero to verify with
+# a full ledger — telling that reader their recording hook is broken would be a
+# wrong diagnosis introduced by the very change that made the gate accurate.
 set -uo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
+# shellcheck source=lib/active-root.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/active-root.sh"
+
+# ACTIVE worktree. Verifying the wrong checkout is how a Stop gate passes
+# while the work it was meant to verify sits in another tree.
+ACTIVE_ROOT="$(helm_active_root)"
+cd "$ACTIVE_ROOT" 2>/dev/null || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+command -v node >/dev/null 2>&1 || exit 0
 
 SRC_RE='\.(ts|tsx|js|jsx|mjs|cjs|sql|css)$'
 
-# Stop hooks receive JSON on stdin; session_id is what makes the baseline
-# per-session. Fall back to the parent pid so a missing/!jq environment still
-# gets a stable-enough key rather than sharing one baseline across sessions.
+# Stop hooks receive JSON on stdin; session_id is what makes attribution
+# per-session (both here and for stop-check.mjs, which resolves the SAME
+# .claude/session-state/<session_id>.jsonl file record-session-touch.mjs
+# wrote to during this session — the raw, unsanitized id, since that is what
+# every PostToolUse/PreToolUse hook in this build also received and used).
 STDIN_JSON=$(cat 2>/dev/null || true)
 SESSION_ID=$(printf '%s' "$STDIN_JSON" | jq -r '.session_id // empty' 2>/dev/null)
 [ -z "$SESSION_ID" ] && SESSION_ID="ppid-$PPID"
-SESSION_ID=$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')
+SESSION_ID_SAFE=$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9._-' '_')
 
-DIRTY_NOW=$(git status --porcelain 2>/dev/null | grep -E "$SRC_RE" | awk '{print $NF}' | sort)
+STOP_CHECK_JSON=$(node "$ACTIVE_ROOT/.claude/hooks/lib/stop-check.mjs" "$SESSION_ID" 2>/dev/null)
+printf '%s' "$STOP_CHECK_JSON" | jq -e . >/dev/null 2>&1 || STOP_CHECK_JSON='{"touchedFiles":[]}'
 
-BASE=".git/claude-stop-baseline-$SESSION_ID"
-if [ ! -f "$BASE" ]; then
-  # First stop this session. Anything already dirty predates our first chance
-  # to have touched it in a way we can prove, so record it and don't claim it.
+# Counts/lists below are computed from .verifiableFiles, NOT .touchedFiles —
+# .touchedFiles includes files a delegated_verification event already covers
+# (a subagent's/worker session's own PR + CI verified them; this session has
+# no local context to redo that work) and .verifiableFiles is touchedFiles
+# minus those. Non-repo paths (e.g. session scratchpad artifacts) never
+# appear in EITHER list — record-session-touch.mjs excludes them at the
+# recording step, since there is nothing there to gate.
+TOUCHED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.verifiableFiles | length')
+TOUCHED_SRC_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq --arg re "$SRC_RE" '[.verifiableFiles[] | select(test($re))] | length')
+MAPPING_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.mappingGaps | length')
+CONTEXT_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.contextGaps | length')
+MEMORY_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.memoryGaps | length')
+DATE_GAP_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.dateGaps | length')
+DELEGATED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.delegatedFiles | length')
+# HISTORICAL touch count, deliberately separate from the counts above. Since
+# Phase 7B those counts are derived from what is still DIFFERENT from
+# origin/main, so "zero to verify" no longer implies "recorded nothing" — a
+# session whose work has all merged reports 0 verifiable and N historical. The
+# advisory below has to tell those two apart or it misdiagnoses a healthy
+# session as a broken hook.
+HISTORICAL_TOUCH_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.touchedFiles | length')
+SETTLED_COUNT=$(printf '%s' "$STOP_CHECK_JSON" | jq '.settledTouchedFiles | length')
+
+# `.git` is a DIRECTORY in a normal clone and a FILE in a worktree.
+GITDIR=$(git rev-parse --git-dir 2>/dev/null || echo ".git")
+BASE="$GITDIR/claude-stop-baseline-$SESSION_ID_SAFE"
+
+# ── FALLBACK PATH: this session's own ledger shows nothing SOURCE touched ──
+# Either genuinely nothing changed, or the recording hooks did not fire. The
+# old git-baseline-diff logic still runs here, but ONLY as an advisory signal
+# — it must never block, because it cannot attribute correctly under
+# concurrency (that is exactly the bug this rebuild fixes). Preserved mostly
+# unchanged from the prior version of this file.
+#
+# Gated on TOUCHED_SRC_COUNT, not TOUCHED_COUNT — the OLD script only ever
+# cared about SRC_RE-matching files (ts/tsx/js/jsx/mjs/cjs/sql/css); a
+# doc-only session (e.g. touching ONLY memory/features/<id>.md, which is
+# exactly the memory-update step the MEMORY GAP message below instructs) must
+# not itself trip the "unverified source" gate control-plane loop. A real gap
+# (mapping/context/memory) still reaches the main path regardless, because a
+# non-source file CAN carry a real gap — package.json maps to
+# feature_awareness_system via its code.services glob, for one.
+if [ "${TOUCHED_SRC_COUNT:-0}" -eq 0 ] && [ "${MAPPING_GAP_COUNT:-0}" -eq 0 ] \
+   && [ "${CONTEXT_GAP_COUNT:-0}" -eq 0 ] && [ "${MEMORY_GAP_COUNT:-0}" -eq 0 ] \
+   && [ "${DATE_GAP_COUNT:-0}" -eq 0 ]; then
+  DIRTY_NOW=$(git status --porcelain 2>/dev/null | grep -E "$SRC_RE" | awk '{print $NF}' | sort)
+  if [ ! -f "$BASE" ]; then
+    printf '%s\n' "$DIRTY_NOW" > "$BASE"
+    exit 0
+  fi
+  find "$GITDIR" -maxdepth 1 -name 'claude-stop-baseline-*' -mmin +720 -delete 2>/dev/null
+  NEW_SINCE_BASELINE=$(comm -13 <(sort "$BASE" 2>/dev/null) <(printf '%s\n' "$DIRTY_NOW") 2>/dev/null | grep -E "$SRC_RE" || true)
+  GIT_ONLY_COUNT=$(printf '%s' "$NEW_SINCE_BASELINE" | grep -cE "$SRC_RE" || true)
   printf '%s\n' "$DIRTY_NOW" > "$BASE"
+  if [ "${GIT_ONLY_COUNT:-0}" -gt 0 ]; then
+    if [ "${HISTORICAL_TOUCH_COUNT:-0}" -eq 0 ]; then
+      cat >&2 <<ADVISORY
+[stop-verify] git shows ${GIT_ONLY_COUNT} dirty source file(s) since this session's
+last stop, but this session's OWN ledger (.claude/session-state/${SESSION_ID_SAFE}.jsonl)
+recorded zero touches. Either these are a peer session's changes (git cannot
+tell — that is the whole reason attribution moved to session-state), or the
+record-session-touch.mjs hook is not wired/firing for this session. This is a
+NOTE, not a block: verify the hook is active if these files are actually yours.
+  ${NEW_SINCE_BASELINE}
+ADVISORY
+    else
+      cat >&2 <<ADVISORY
+[stop-verify] git shows ${GIT_ONLY_COUNT} dirty source file(s) since this session's
+last stop. This session's ledger DID record ${HISTORICAL_TOUCH_COUNT} touch(es), but all of
+them are settled against origin/main (${SETTLED_COUNT} settled), so none is an outstanding
+verification demand. The dirty files below are therefore a peer session's
+changes, or were written by a path that records no touch event (Bash, for
+one). This is a NOTE, not a block.
+  ${NEW_SINCE_BASELINE}
+ADVISORY
+    fi
+  fi
+  exit 0
 fi
-find .git -maxdepth 1 -name 'claude-stop-baseline-*' -mmin +720 -delete 2>/dev/null
 
-# Only files that appeared since this session's baseline are plausibly ours.
-NEW_FILES=$(comm -13 <(sort "$BASE" 2>/dev/null) <(printf '%s\n' "$DIRTY_NOW") 2>/dev/null | grep -E "$SRC_RE" || true)
-CHANGED=$(printf '%s' "$NEW_FILES" | grep -cE "$SRC_RE" || true)
-[ "${CHANGED:-0}" -eq 0 ] && exit 0
-
-# Other live Claude sessions in this tree mean git alone cannot attribute a
-# change to anyone. Say that instead of implying certainty.
-PEERS=$(ls -1 /tmp/cc-socks/*.sock 2>/dev/null | wc -l | tr -d ' ')
-CONCURRENCY=""
-if [ "${PEERS:-0}" -gt 1 ]; then
-  CONCURRENCY="
-NOTE: ${PEERS} Claude sessions are live in this working tree, so these files
-cannot be attributed to you from git alone. If none of them are yours, say so
-with evidence (\`git status --porcelain\` scoped to the paths you edited) and
-stop — do not run gates over another session's in-flight work, and never
-'fix' a failure you did not cause."
-fi
-
-# The state key must be CONTENT-sensitive, not just file-list-sensitive.
-# `git status --porcelain` alone reports which files are dirty, not what is in
-# them — so after one block, every further edit to those same files produced an
-# identical key and the check never re-armed. `git diff --stat` moves with
-# insertion/deletion counts, which is cheap and tracks real edits.
+# ── MAIN PATH: this session touched something, or has an outstanding gap ───
 STATE=$(printf '%s%s%s' "$(git rev-parse HEAD 2>/dev/null)" \
                         "$(git status --porcelain 2>/dev/null)" \
                         "$(git diff --stat 2>/dev/null)" \
         | shasum | cut -d' ' -f1)
-MARK=".git/claude-stop-verify-$STATE"
+# SESSION-SCOPED, not state-scoped. The hash alone was a cross-session
+# fail-open: session A gets nagged at tree state X, leaves the mark, and a
+# DIFFERENT session B arriving at the same state finds it and exits silently —
+# B is never told about its OWN unverified files, context gaps or memory gaps.
+# One session's suppression swallowed another session's warning, invisibly.
+#
+# Note what this mark is NOT: there is no "verification passed" state here. It
+# is written BEFORE the block is emitted and means "this tree state has already
+# been nagged". That property is deliberate and preserved — without it the gate
+# re-blocks every Stop at an unchanged tree and a session that legitimately
+# cannot satisfy a gate can never end its turn. Adding the session id keeps the
+# loop safety and makes it un-shareable.
+MARK="$GITDIR/claude-stop-verify-$SESSION_ID_SAFE-$STATE"
 
-# Already pushed back on this exact tree state — let it go.
+# Already pushed back on this exact tree state IN THIS SESSION — let it go.
 [ -f "$MARK" ] && exit 0
 
-# Prune old markers so .git does not accumulate them.
-find .git -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 -delete 2>/dev/null
+find "$GITDIR" -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 -delete 2>/dev/null
 : > "$MARK"
+printf '%s\n' "$(git status --porcelain 2>/dev/null | grep -E "$SRC_RE" | awk '{print $NF}' | sort)" > "$BASE"
 
-FILES=$(printf '%s\n' "$NEW_FILES" | head -8 | tr '\n' ' ')
+TOUCHED_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.verifiableFiles[]' | head -8 | tr '\n' ' ')
+
+# 'use server' build trigger — scoped to THIS SESSION's touched .ts/.tsx
+# files (an improvement on the old whole-tree diff, now that we know exactly
+# which files are ours). Same real incident this guards against: an
+# `export type` inside a 'use server' module passed typecheck AND unit tests,
+# then threw ReferenceError at runtime, past 8,763 green tests.
+#
+# Built as an ARRAY, not a bare unquoted variable expansion — this repo's
+# routes include `[id]`-style dynamic segments, which an unquoted `$VAR`
+# expansion hands to bash as a glob character class, not a literal path.
+# guard-bash.sh's `-f` (noglob) exists for exactly this reason; this script
+# does not set `-f` script-wide (it would change every other expansion
+# here too), so the array form is the locally-scoped equivalent — each
+# element is passed to `git diff` as one already-delimited argument, immune
+# to both word-splitting and glob expansion regardless of its contents.
+TOUCHED_TS_FILES=()
+while IFS= read -r line; do
+  [ -n "$line" ] && TOUCHED_TS_FILES+=("$line")
+done < <(printf '%s' "$STOP_CHECK_JSON" | jq -r --arg re '\.(ts|tsx)$' '.verifiableFiles[] | select(test($re))')
 
 SERVER_ACTION=""
-if git diff --name-only 2>/dev/null | grep -qE '\.(ts|tsx)$' \
-   && git diff 2>/dev/null | grep -q "'use server'"; then
+if [ "${#TOUCHED_TS_FILES[@]}" -gt 0 ] && git diff -- "${TOUCHED_TS_FILES[@]}" 2>/dev/null | grep -q "'use server'"; then
   SERVER_ACTION="
-A 'use server' module changed. \`npm run build\` is REQUIRED here — typecheck
-and unit tests both pass while an \`export type\` in a 'use server' file throws
-ReferenceError at runtime. That shipped 100%-dead golf messaging past 8,763
-green tests."
+A 'use server' module this session touched changed. \`npm run build\` is
+REQUIRED here — typecheck and unit tests both pass while an \`export type\` in
+a 'use server' file throws ReferenceError at runtime. That shipped 100%-dead
+golf messaging past 8,763 green tests."
 fi
 
-# Build the message in the shell. A jq program cannot contain raw newlines
-# inside a string literal — doing that emitted invalid JSON, which a Stop hook
-# silently discards, so the guard looked like it worked while doing nothing.
+RLS_RELEVANT=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.rlsRelevant')
+AUTOGEN_RELEVANT=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.autogenRelevant')
+RLS_LINE="  npm run test:rls     (any RLS/policy/migration change)"
+[ "$RLS_RELEVANT" = "true" ] && RLS_LINE="  npm run test:rls     REQUIRED — this session touched a migration/RLS file"
+DOCS_LINE="  npm run docs:check   (any AUTOGEN inventory source changed)"
+[ "$AUTOGEN_RELEVANT" = "true" ] && DOCS_LINE="  npm run docs:check   REQUIRED — this session touched an AUTOGEN inventory source"
+
+# ── Layer 1: mapping/context/memory findings (spec §12's three new gate
+#    dimensions), only when non-empty. In normal operation
+#    guard-feature-context.mjs already prevented mapping/context gaps at edit
+#    time, so these firing here means that gate was bypassed or is missing —
+#    this is defense in depth, not the primary enforcement point.
+GAP_SECTION=""
+if [ "${MAPPING_GAP_COUNT:-0}" -gt 0 ]; then
+  MAPPING_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.mappingGaps[] | "  - " + .')
+  GAP_SECTION="${GAP_SECTION}
+
+MAPPING GAP — touched file(s) under a governed path with no feature mapping in memory/registry.yml:
+${MAPPING_LIST}
+Run 'npm run knowledge:map -- --files <path>' to acknowledge, or add the mapping to memory/registry.yml."
+fi
+if [ "${CONTEXT_GAP_COUNT:-0}" -gt 0 ]; then
+  CONTEXT_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.contextGaps[] | "  - " + .path + " (feature: " + .feature_id + ")"')
+  GAP_SECTION="${GAP_SECTION}
+
+CONTEXT GAP — touched file(s) whose mapped feature's context was not loaded (or not loaded before the touch) this session:
+${CONTEXT_LIST}
+Read the feature's memory/features/<id>.md, or run knowledge:context for it."
+fi
+if [ "${MEMORY_GAP_COUNT:-0}" -gt 0 ]; then
+  MEMORY_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.memoryGaps[] | "  - " + .feature_id + ": " + .doc')
+  GAP_SECTION="${GAP_SECTION}
+
+MEMORY GAP — feature(s) touched this session with neither a memory-doc update nor a recorded no_memory_change_reason:
+${MEMORY_LIST}
+If truth changed, update the doc (and append to memory/ledgers/changes/<id>.md). If this was
+genuinely non-behavioral, record why:
+  node .claude/hooks/lib/record-event.mjs no-memory-change --reason <format-only|generated-file-refresh|test-only-no-contract-change|comment-correction|mechanical-refactor-with-proven-equivalent-behavior>
+Bare \"not needed\" is never accepted."
+fi
+if [ "${DATE_GAP_COUNT:-0}" -gt 0 ]; then
+  DATE_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.dateGaps[] | "  - " + .')
+  GAP_SECTION="${GAP_SECTION}
+
+DATE GAP — ledger entr(y/ies) touched this session with no explicit YYYY-MM-DD date in the new content (owner directive: explicit dates on everything):
+${DATE_LIST}
+Add a YYYY-MM-DD date to the entry you just wrote."
+fi
+
+DELEGATED_NOTE=""
+if [ "${DELEGATED_COUNT:-0}" -gt 0 ]; then
+  DELEGATED_LIST=$(printf '%s' "$STOP_CHECK_JSON" | jq -r '.delegatedFiles[] | "  - " + .path + (if .pr then " (PR #" + (.pr|tostring) + ")" else "" end)')
+  DELEGATED_NOTE="
+
+${DELEGATED_COUNT} file(s) touched this session are DELEGATED (verified elsewhere, not re-demanded here):
+${DELEGATED_LIST}"
+fi
+
 REASON=$(cat <<EOF
-${CHANGED} source file(s) are modified and unverified: ${FILES}
+${TOUCHED_COUNT} file(s) touched by this session are unverified: ${TOUCHED_LIST}${DELEGATED_NOTE}
 
 Before ending the turn, run the gates that apply and report their real exit
 codes — do not infer them:
@@ -116,12 +277,12 @@ codes — do not infer them:
   npm run lint
   npm test
   npm run build        (required if a 'use server' file or component changed)
-  npm run test:rls     (any RLS/policy/migration change)
-  npm run docs:check   (any AUTOGEN inventory source changed)
+${RLS_LINE}
+${DOCS_LINE}
 
 Never pipe a gate without 'set -o pipefail' — the pipeline reports the LAST
 command's exit code, so a failing suite reads as success.
-Never delete, skip, or weaken a test to reach green.${SERVER_ACTION}${CONCURRENCY}
+Never delete, skip, or weaken a test to reach green.${SERVER_ACTION}${GAP_SECTION}
 
 If you already ran these and they passed, say so with the exit codes and stop —
 this will not fire again for this tree state. If a gate is genuinely unrunnable

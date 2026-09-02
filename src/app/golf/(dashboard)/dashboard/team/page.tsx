@@ -39,6 +39,7 @@ interface TeamForClient {
   join_code: string | null;
   created_at: string;
   gender: string | null;
+  timezone: string | null;
 }
 
 interface CoachWithTeam {
@@ -65,7 +66,7 @@ export default async function TeamSettingsPage() {
     const { data: orgTeam } = orgTeamId
       ? await supabase
           .from('golf_teams')
-          .select('id, name, season, join_code, created_at, gender')
+          .select('id, name, season, join_code, created_at, gender, timezone')
           .eq('id', orgTeamId)
           .maybeSingle()
       : { data: null };
@@ -82,6 +83,7 @@ export default async function TeamSettingsPage() {
         join_code: orgTeam.join_code,
         created_at: orgTeam.created_at || '',
         gender: orgTeam.gender ?? null,
+        timezone: orgTeam.timezone ?? null,
       } : null,
     };
   } else if (coach) {
@@ -190,10 +192,12 @@ export default async function TeamSettingsPage() {
     redirect('/golf/dashboard'); // No team - redirect to dashboard
   }
 
-  // Get team info for player view
+  // Get team info for player view. `timezone` is read for FairwayTeamInfo's
+  // task-overdue badges, not for display: overdue is decided on the TEAM's
+  // wall clock, not the viewer's (#1487) — see isGolfTaskOverdueInZone.
   const { data: team, error: teamError } = await supabase
     .from('golf_teams')
-    .select('id, name, season, created_at, organization_id')
+    .select('id, name, season, created_at, organization_id, timezone')
     .eq('id', teamMember.team_id)
     .maybeSingle();
 

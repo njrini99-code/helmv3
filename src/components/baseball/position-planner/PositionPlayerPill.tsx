@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Avatar } from '@/components/ui/avatar';
 import { cn, getFullName } from '@/lib/utils';
-import type { Player, PipelineStage } from '@/lib/types';
+import type { BaseballPlayer as Player, PipelineStage } from '@/lib/types';
 
 // Stage color configuration type
 interface StageColorConfig {

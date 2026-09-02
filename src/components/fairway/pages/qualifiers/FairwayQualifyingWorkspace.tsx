@@ -152,25 +152,51 @@ export function FairwayQualifyingWorkspace({ workspace }: FairwayQualifyingWorks
 /* ───────────────────────────────────────────────────────────────────────────
  * 4 · Conclude qualifier — the missing caller for updateQualifierStatus.
  * Only reachable once the roster is committed (selection_state === 'selected').
- * A best-effort auto-transition also runs from the round-submit path once
- * every entrant has posted every round (see advanceQualifierOnRoundSubmit in
- * golf.ts) — this button is the manual override for a coach who doesn't want
- * to wait for stragglers, or who never lets that auto-transition fire.
+ * The qualifier remains open after players finish their rounds. This is the
+ * sole completion path: only a coach can explicitly conclude the qualifier.
  * ────────────────────────────────────────────────────────────────────────── */
 function ConcludeQualifier({ qualifierId, status }: { qualifierId: string; status: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
+  const handleReopen = () => {
+    startTransition(async () => {
+      const r = await updateQualifierStatus(qualifierId, 'in_progress');
+      if (!r.success) {
+        fairwayToast.danger("Couldn't reopen the qualifier", { description: r.error });
+      } else {
+        fairwayToast.success('Qualifier reopened — players can post rounds again');
+        router.refresh();
+      }
+    });
+  };
+
+  // Concluding used to be a one-way door: the only completion path is a coach
+  // clicking Conclude, but there was no way back, so a qualifier concluded
+  // while players still owed rounds locked those players out with no in-app
+  // remedy. On 2026-08-23 that closed Guilford's "Kentucky Qualifier Rounds
+  // (1-3)" with four players still owing a round each, and reopening it took
+  // a direct database write. A coach who can close it can reopen it.
   if (status === 'completed') {
     return (
       <Surface elevation="border" padding="md">
-        <div className="flex items-center gap-3">
-          <StatusPill tone="neutral" size="md">
-            Completed
-          </StatusPill>
-          <p className="font-fw-sans text-body-sm text-text-secondary">
-            This qualifier is closed out — it now shows under Concluded on the qualifiers list.
-          </p>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <StatusPill tone="neutral" size="md">
+              Completed
+            </StatusPill>
+            <p className="font-fw-sans text-body-sm text-text-secondary">
+              This qualifier is closed out — it now shows under Concluded on the qualifiers list.
+              Reopen it if anyone still needs to post a round.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={handleReopen}
+            busy={pending}
+          >
+            Reopen qualifier
+          </Button>
         </div>
       </Surface>
     );

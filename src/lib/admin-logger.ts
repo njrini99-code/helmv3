@@ -28,6 +28,24 @@ export type AdminEventType =
 
 export type AdminEventSeverity = 'info' | 'warning' | 'error' | 'critical';
 
+/**
+ * Pure activity records — a login, a signup, a round submission, a security
+ * note. Nothing ever triages or resolves these: the Bridge's auto-resolve
+ * rules (auto-resolve.ts) and its triage/incident-feed reads both filter
+ * `event_type = 'error'`, so a row of one of these types can never appear in
+ * either place — but it still defaulted to `resolved = false` at insert and
+ * then sat there permanently, since nothing was ever going to flip it.
+ * Measured 2026-08-20: 538 such rows cleaned by hand. Cheapest fix per that
+ * audit: these are not incidents, so write them already resolved instead of
+ * adding a table or a sweep to age out rows that were never going to age.
+ */
+const ACTIVITY_RECORD_EVENT_TYPES: ReadonlySet<AdminEventType> = new Set([
+  'login',
+  'signup',
+  'round_submitted',
+  'security',
+]);
+
 interface AdminEventInput {
   eventType: AdminEventType;
   title: string;
@@ -88,6 +106,12 @@ async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
         fingerprint: input.fingerprint ?? null,
         source: input.source ?? null,
         feature: input.feature ?? null,
+        // Activity records are born resolved — see ACTIVITY_RECORD_EVENT_TYPES.
+        // Omitted (not `false`/`null`) for every other type so the columns'
+        // own defaults still apply unchanged.
+        ...(ACTIVITY_RECORD_EVENT_TYPES.has(input.eventType)
+          ? { resolved: true, resolved_at: new Date().toISOString() }
+          : {}),
       })
       .select('id')
       .single();

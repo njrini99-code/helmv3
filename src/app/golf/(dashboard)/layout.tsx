@@ -9,6 +9,7 @@ import { ThemeApplier } from '@/components/golf/theme/ThemeApplier';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 
 /**
  * Golf Dashboard Layout — SERVER COMPONENT
@@ -136,9 +137,33 @@ export default async function GolfDashboardLayout({
   let userData: GolfUserData;
 
   if (resolvedRole === 'coach') {
-    if (!coach || !coach.onboarding_completed) {
-      redirect('/golf/coach');
-    }
+    // An ASSISTANT COACH — pending OR approved — must not be sent to
+    // '/golf/coach'. That path is new-program onboarding: the school-details
+    // form that mints a fresh organization and team, and completing it
+    // overwrites organization_id and detaches them from the program that
+    // invited them (UNCW 2026-08-18, Shenandoah 2026-08-19).
+    //
+    // This block used to check the staff row only when
+    // `!onboarding_completed && organization_id`, then fall through to
+    // `if (!coach.onboarding_completed) redirect('/golf/coach')`. Approval
+    // inserted the staff row and never touched the flag, so an APPROVED
+    // assistant passed the staff check, fell through, and was redirected into
+    // new-program onboarding anyway — they could not reach the dashboard at
+    // all. Routing now lives in one place for every entry point; see
+    // lib/golf/coach-entry-path.ts.
+    const entry = await resolveGolfCoachEntry(session.userId);
+    if (entry.path !== '/golf/dashboard') redirect(entry.path);
+
+    // The resolver only answers '/golf/dashboard' when a coach row AND a staff
+    // row exist, so `coach` is non-null by the time we get here. That reasoning
+    // lives in another module though, so it is stated for the compiler — and
+    // the fallback is the WAITING page, not the wizard: if the layout's own
+    // RLS-scoped read came back empty while the service-role resolver saw a
+    // staffed coach, that is a transient read disagreement, and
+    // /golf/coach/pending redirects straight through to the dashboard the
+    // moment the staff row is readable. Guessing '/golf/coach' instead would
+    // offer new-program onboarding to a coach who demonstrably has a program.
+    if (!coach) redirect('/golf/coach/pending');
 
     // Fetch coach's active team with cookie-awareness:
     //   1. Read the golf_active_team cookie (if set).

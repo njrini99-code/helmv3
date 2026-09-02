@@ -1,6 +1,7 @@
 <!--
-  Keep this short and honest. The required checks (CodeRabbit, CodeQL, all,
-  Smoke checks) gate merge automatically — this template is the human layer.
+  Keep this short and honest. The six required checks (Smoke checks,
+  CI aggregate, Review Gate aggregate, and the three Analyze (...) runs)
+  gate merge automatically — this template is the human layer.
 -->
 
 ## Summary

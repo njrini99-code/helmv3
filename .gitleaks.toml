@@ -43,6 +43,19 @@ tags = ["supabase", "credential", "jwt", "env"]
 
 # Allowlist for the audit and plan documents that intentionally reference
 # the rotated credential to document the finding.
+[[rules]]
+description = "Supabase personal/access token (sbp_ prefix)"
+id = "supabase-access-token-sbp"
+regex = '''sbp_[a-f0-9]{40,}'''
+tags = ["supabase", "access-token"]
+# Added 2026-08-19. There was NO rule for this shape, so `sbp_`-prefixed
+# tokens were invisible to the scanner — verified with `grep -c sbp_` on this
+# file returning 0. One such token lives in .cursor/mcp.json, which is
+# correctly gitignored and has never been committed (verified via
+# `git ls-files` + `git check-ignore`), but nothing would have caught it if it
+# ever were. A scanner that cannot see a token shape reports clean for the
+# same reason it reports clean when there is nothing there.
+
 [allowlist]
 paths = [
   '''docs/superpowers/plans/2026-05-17-.*\.md''',

@@ -12,12 +12,25 @@
 name: "CodeQL Advanced"
 
 on:
+  # merge_group: required for GitHub's merge queue — a queued merge re-runs
+  # these checks on the speculative merge result; without this trigger the
+  # queue waits forever for contexts that never arrive and every merge times out.
+  merge_group:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
   schedule:
     - cron: '35 23 * * 4'
+
+# Least-privilege DEFAULT for the whole workflow. The `analyze` job below
+# declares its own (wider) block, which correctly overrides this — so this line
+# changes nothing about today's behaviour. It exists so a job added later
+# WITHOUT its own permissions block inherits read-only instead of whatever the
+# repository default happens to be. That absence is the whole of Scorecard's
+# Token-Permissions 0 for this repo; 11 of 14 workflows already declare one.
+permissions:
+  contents: read
 
 jobs:
   analyze:
@@ -28,6 +41,7 @@ jobs:
     #   - https://gh.io/using-larger-runners (GitHub.com only)
     # Consider using larger runners or machines with greater resources for possible analysis time improvements.
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    timeout-minutes: 45
     permissions:
       # required for all workflows
       security-events: write

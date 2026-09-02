@@ -45,7 +45,7 @@ routine backend plumbing. Business context:
 - **Every causal or comparative claim traces to `docs/v3-research-golf-domain.md`.**
 - **Never call the LLM client-side** — composers are server-only; a `'use client'`
   component making a model call bypasses budget + citation checks.
-- **Scoring functions stay pure.** Code under `v2/insights/`, `v2/composite/`
+- **Scoring functions stay pure.** Code under `v2/insights/`, `v3/composite/`
   takes data in and returns a score out — no fetches, no Supabase calls inside
   scoring (keeps it deterministic and testable).
 - **Effectiveness ledger.** New insight-generating code should write to the
@@ -57,7 +57,7 @@ routine backend plumbing. Business context:
 - an LLM provider is called without the budget check, or from a client component;
 - a composer skips citation verification / regenerate-once / template fallback,
   or falls back to template on a transient (non-budget) failure;
-- a scoring function under `v2/insights/` or `v2/composite/` performs a fetch or
+- a scoring function under `v2/insights/` or `v3/composite/` performs a fetch or
   Supabase call;
 - a causal claim in output isn't traceable to the research doc.
 

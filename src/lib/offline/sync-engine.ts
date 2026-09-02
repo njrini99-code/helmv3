@@ -35,6 +35,7 @@ import {
   clearSyncedData,
   shouldRetry,
   MAX_RETRY_COUNT,
+  isIdbUnavailableThisSession,
   type OfflineRound,
   type OfflineHole,
   type OfflineShot,
@@ -44,6 +45,25 @@ import {
 
 // Dynamic import to avoid lib/ → app/ circular dependency
 type RoundDraftData = import('@/app/golf/actions/round-drafts').RoundDraftData;
+type TerminalRoundSubmissionData = import('@/app/golf/actions/round-drafts').TerminalRoundSubmissionData;
+
+function readTerminalRoundSubmission(
+  draftData: Record<string, unknown>,
+): TerminalRoundSubmissionData | null {
+  const candidate = draftData.terminalSubmission;
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
+  const value = candidate as Record<string, unknown>;
+  if (
+    typeof value.courseName !== 'string'
+    || value.courseName.length === 0
+    || !Array.isArray(value.holes)
+    || !['practice', 'tournament', 'qualifier'].includes(String(value.roundType))
+    || typeof value.roundDate !== 'string'
+  ) {
+    return null;
+  }
+  return value as unknown as TerminalRoundSubmissionData;
+}
 
 // ============================================================================
 // TYPES
@@ -368,7 +388,14 @@ class SyncEngine {
         total: totalRounds + holes.length + shots.length,
       };
     } catch (error) {
-      console.error('Failed to refresh pending count:', error);
+      // `shot-storage.ts` already reports a device-level IndexedDB open
+      // failure exactly once, at 'low' severity. This runs on every
+      // auto-sync tick, so an unconditional log here would re-report the
+      // SAME already-known condition on the same interval — one production
+      // incident showing up as several Sentry events instead of one.
+      if (!isIdbUnavailableThisSession()) {
+        console.error('Failed to refresh pending count:', error);
+      }
     }
   }
 
@@ -381,13 +408,18 @@ class SyncEngine {
    */
   async syncPendingData(): Promise<SyncResult> {
     if (this.isSyncingFlag) {
+      // Declined, not failed. The in-flight run is already doing this work, so
+      // there is nothing for the caller to report, retry, or worry about.
+      // `errors` stays EMPTY so no surface can render this as a problem — the
+      // reason travels in `declined` for anything that wants to log it.
       return {
         success: false,
         syncedRounds: 0,
         syncedHoles: 0,
         syncedShots: 0,
         failedItems: 0,
-        errors: ['Sync already in progress'],
+        errors: [],
+        declined: 'already-running',
       };
     }
 
@@ -579,13 +611,22 @@ class SyncEngine {
 
     let pendingRounds: Awaited<ReturnType<typeof legacy.getPendingRounds>>;
     try {
-      pendingRounds = await legacy.getPendingRounds();
+      const [pending, failedRecords] = await Promise.all([
+        legacy.getPendingRounds(),
+        legacy.getFailedRounds(),
+      ]);
+      // A v1 failure must remain recoverable after its retry budget. Keep it
+      // visible to this drain (and the recovery screen) rather than letting a
+      // status flip make a terminal scorecard disappear from every path.
+      pendingRounds = [...pending, ...failedRecords]
+        .filter((round, index, all) => all.findIndex((item) => item.id === round.id) === index);
     } catch {
       // v1 DB unreadable (e.g. unsupported environment) — skip silently.
       return { synced, failed, errors };
     }
 
     const { saveRoundDraft } = await import('@/app/golf/actions/round-drafts');
+    const { submitGolfRoundComprehensive } = await import('@/app/golf/actions/golf');
 
     for (const round of pendingRounds) {
       if (this.syncAbortController?.signal.aborted) {
@@ -638,7 +679,19 @@ class SyncEngine {
           ...((round.draftData as Partial<RoundDraftData>) || {}),
         } as RoundDraftData;
 
-        const result = await saveRoundDraft(draftData, round.serverRoundId);
+        const isTerminalSubmission = draftData.submissionIntent === 'submit';
+        const result = isTerminalSubmission
+          ? await (async () => {
+              const terminalSubmission = readTerminalRoundSubmission(round.draftData);
+              if (!terminalSubmission || !round.serverRoundId) {
+                return {
+                  success: false as const,
+                  error: 'Your completed round is safely stored on this device, but it needs an in-app recovery before it can be submitted.',
+                };
+              }
+              return submitGolfRoundComprehensive(terminalSubmission, round.serverRoundId);
+            })()
+          : await saveRoundDraft(draftData, round.serverRoundId);
 
         if (result.success) {
           // Non-destructive: flip status + dequeue, keep the row.
@@ -920,7 +973,12 @@ class SyncEngine {
         this.state.lastSuccessfulSync = new Date(lastSuccessfulSync);
       }
     } catch (error) {
-      console.error('Failed to load sync metadata:', error);
+      // Same rationale as refreshPendingCount above: this runs once from the
+      // constructor and again from initialize(), so an unconditional log
+      // double-reports the same already-known device-level failure.
+      if (!isIdbUnavailableThisSession()) {
+        console.error('Failed to load sync metadata:', error);
+      }
     }
   }
 

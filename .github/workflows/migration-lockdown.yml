@@ -35,7 +35,16 @@ jobs:
           # supabase/migrations_archive/) and deletions don't count as edits.
           # Renames INTO supabase/migrations/ still show up as A on the target
           # side and are caught.
-          CHANGED=$(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" -- 'supabase/migrations/*.sql' || true)
+          # NO `|| true` here, deliberately. `git diff` without --exit-code
+          # returns 0 whether or not there are differences, so a trailing
+          # `|| true` could never absorb "no changes" — it could ONLY absorb a
+          # genuine failure: an unresolvable SHA, a shallow clone missing the
+          # base commit, a corrupt object. Every one of those produces an empty
+          # CHANGED, which falls into the `exit 0` below and reports "No
+          # migration files changed." A security gate would then pass green
+          # without ever having looked at a single file. `set -e` is on, so an
+          # actual git failure now stops the step loudly instead.
+          CHANGED=$(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" -- 'supabase/migrations/*.sql')
 
           if [ -z "$CHANGED" ]; then
             echo "No migration files changed."

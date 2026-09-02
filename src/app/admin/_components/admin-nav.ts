@@ -2,6 +2,10 @@ type AdminHref =
   | '/admin'
   | '/admin/activity'
   | '/admin/errors'
+  | '/admin/traces'
+  | '/admin/qualifiers'
+  | '/admin/reliability'
+  | '/admin/self-heal'
   | '/admin/auth'
   | '/admin/golf'
   | '/admin/baseball'
@@ -33,12 +37,37 @@ export interface AdminNavEntry {
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // TRIAGE — "what is broken right now"
   { label: 'Overview', href: '/admin', key: '1', section: 'Triage', description: 'Command posture, triage, deploys', meta: 'live' },
-  { label: 'Errors', href: '/admin/errors', key: '3', section: 'Triage', description: 'Sentry plus app incident groups', meta: 'trace' },
+  // "Incidents", not "Errors". The list now carries app errors, Sentry
+  // issues, Supabase faults, Vercel faults, reliability-only signals and
+  // regressions folded into ONE incident each — "Errors" had become too
+  // narrow a word for what the tab holds. The ROUTE is deliberately unchanged:
+  // renaming it would break every stored deep link, every rca_analysis row's
+  // /admin/errors/<fp> reference, and the repair contract's PR-body join,
+  // and buys nothing an operator can see.
+  { label: 'Incidents', href: '/admin/errors', key: '3', section: 'Triage', description: 'One incident per cause, with every source that saw it', meta: 'trace' },
   { label: 'Health', href: '/admin/health', key: '0', section: 'Triage', description: 'Feature health across every app', meta: 'map' },
   { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Triage', description: 'Crons, guards, integrity checks' },
+  // The 3-hourly collector's correlated view. Distinct from Errors: that tab
+  // shows each source's incidents, this one shows what MORE THAN ONE source
+  // agrees on, plus which sources were readable at all.
+  { label: 'Reliability', href: '/admin/reliability', key: 'R', section: 'Triage', description: 'Correlated Vercel, Sentry and Supabase signals', meta: '3h' },
+  // The self-healing circuit as a thing that can be watched. Distinct from
+  // Jobs & Integrity, which answers "did the crons run": this answers "is the
+  // loop alive, and has each stage ever actually produced its output" — a
+  // stage can heartbeat healthily for a week while never once doing its job,
+  // which is exactly what Repair did.
+  { label: 'Self-heal', href: '/admin/self-heal', key: 'S', section: 'Triage', description: 'Collect, Diagnose, Repair, Close — runtime and capability', meta: 'loop' },
   // Was reachable ONLY from a text-xs back-arrow three levels deep, despite
   // being the one cross-sport board built to answer "who needs attention" —
   // 30-day activity/error EKG with four triage sorts.
+  // The Flight Recorder tree. Distinct from the Golf Tracer at /admin/golf/tracer:
+  // that answers "which rounds are stuck", this answers "walk me through one
+  // execution and show me where it diverged".
+  { label: 'Flight Recorder', href: '/admin/traces', key: 'F', section: 'Triage', description: 'One round mutation traced end to end', meta: 'trace' },
+  // Qualifier lifecycle + the business rules rendered as live invariant checks.
+  // Sits in Triage because a breached invariant (a round on another team's
+  // qualifier) is an integrity incident, not a reporting curiosity.
+  { label: 'Qualifiers', href: '/admin/qualifiers', key: 'Q', section: 'Triage', description: 'Qualifier lifecycle and rule invariants', meta: 'rules' },
   { label: 'Teams pulse', href: '/admin/teams', key: 'T', section: 'Triage', description: 'Cross-sport team activity and error EKG' },
 
   // CUSTOMERS — "who is this, and how are they doing"
@@ -57,10 +86,10 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
 
   // REVENUE — zero inbound links repo-wide before this entry.
-  { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Invoices, Stripe posture' },
+  { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Create invoices' },
 
   // INTAKE
-  { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Submit bugs, changes, additions', meta: 'issues' },
+  { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Log tester-reported bugs on their behalf', meta: 'issues' },
 ] as const;
 
 /** Quick links in the Overview command header — must be real ADMIN_NAV routes. */
@@ -97,7 +126,9 @@ export const BRIDGE_BOTTOM_NAV_HREFS = [
  */
 export const BRIDGE_BOTTOM_NAV_LABELS: Record<(typeof BRIDGE_BOTTOM_NAV_HREFS)[number], string> = {
   '/admin': 'Overview',
-  '/admin/errors': 'Errors',
+  // Matches the rail label. The bottom tab is the same destination, and two
+  // names for one place is how muscle memory gets taught wrong.
+  '/admin/errors': 'Incidents',
   '/admin/health': 'Health',
   '/admin/users': 'Users',
 };

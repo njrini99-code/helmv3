@@ -283,7 +283,20 @@ export function Reveal({ as = 'div', delay, wipeOnly = false, children, ...rest 
       const el = ref.current;
       if (!el || revealedRef.current || prefersReducedMotion()) return;
       const threshold = window.innerWidth < 768 ? 0.06 : 0.12;
-      if (visibleFraction(el) < threshold) return;
+      // FAIL-VISIBLE SAFETY NET. `visibleFraction` only catches a reveal on a
+      // scroll FRAME where the element happens to be sampled crossing
+      // `threshold`. iOS Safari can coalesce `scroll` events so sparsely during
+      // a fast fling that the entire "entering" window — the whole climb from
+      // below-threshold to fully past it — falls between two callbacks, and the
+      // crossing is never sampled. The element then sits clipped to zero height
+      // forever, even though the reader scrolled right past it: this is what
+      // produced the AboutView "The Problem" heading and CoachHelm's
+      // "ROOT CAUSE · PUTTING" card reading as invisible on production iPhone
+      // Safari. If the element's bottom has already scrolled above the
+      // viewport, the reader is already past it — there is nothing left to lose
+      // by settling it now instead of leaving it hidden indefinitely.
+      const scrolledPast = el.getBoundingClientRect().bottom <= 0;
+      if (visibleFraction(el) < threshold && !scrolledPast) return;
       revealedRef.current = true;
       // Double-rAF: guarantee one painted hidden frame first, so content
       // already in the viewport at load still gets its entrance wipe.
@@ -385,7 +398,9 @@ export function useSequence(containerRef: RefObject<HTMLElement | null>): void {
     useCallback(() => {
       const container = containerRef.current;
       if (!container || firedRef.current || prefersReducedMotion()) return;
-      if (visibleFraction(container) < 0.25) return;
+      // Same fail-visible fallback as `Reveal` above — see its comment.
+      const scrolledPast = container.getBoundingClientRect().bottom <= 0;
+      if (visibleFraction(container) < 0.25 && !scrolledPast) return;
       firedRef.current = true;
       runSequence(container, timersRef.current);
     }, [containerRef]),

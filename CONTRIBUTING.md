@@ -11,11 +11,20 @@ first; this file is just the workflow summary.
    required reviews + checks). Never push to it directly.
 2. **Open a PR** and fill out the template. Stale branches are auto-deleted on
    merge; use the "Update branch" button if you fall behind.
-3. **Pass the required checks.** A PR can merge only when these are green:
-   `CodeRabbit`, `CodeQL`, `all` (the CI/Review-Gate aggregate), and
-   `Smoke checks`. Treat `Supabase lint + RLS tests`, `Lint ratchet`, `ESLint`,
-   `TypeScript`, `Unit tests`, and `Next build` as must-pass too — they are
-   being promoted into the required set.
+3. **Pass the required checks.** A PR can merge only when these six are
+   green: `Smoke checks`, `CI aggregate`, `Review Gate aggregate`,
+   `Analyze (actions)`, `Analyze (javascript-typescript)` and
+   `Analyze (python)`. Treat `Supabase lint + RLS tests`, `Lint ratchet`,
+   `ESLint`, `TypeScript`, `Unit tests`, and `Next build` as must-pass too —
+   they gate the aggregates.
+
+   This list was wrong until 2026-08-19. It named `CodeRabbit` (dropped
+   2026-07-20), `CodeQL` (never a check name — that workflow posts three
+   `Analyze (...)` runs) and `all` (renamed to the two aggregates). Required
+   contexts are matched by NAME, so a name nothing posts is indistinguishable
+   from a check that has not finished — which is why every PR was
+   unsatisfiable. Verify against the API, not this file, if in doubt:
+   `gh api repos/njrini99-code/helmv3/branches/main/protection`
 
 ## Local checks before you push
 

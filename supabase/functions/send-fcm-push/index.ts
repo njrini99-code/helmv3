@@ -53,7 +53,15 @@ function b64url(input: string | Uint8Array): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
-function pemToPkcs8(pem: string): Uint8Array {
+// Returns Uint8Array<ArrayBuffer>, not the default Uint8Array<ArrayBufferLike>.
+// `new Uint8Array(n)` is always backed by a real ArrayBuffer, so this annotation
+// states a fact rather than asserting one. It matters because crypto.subtle
+// .importKey's BufferSource parameter requires ArrayBufferView<ArrayBuffer>:
+// under the bare `Uint8Array` alias TS 5.7+ widens the buffer to
+// ArrayBufferLike (which includes SharedArrayBuffer) and the call no longer
+// type-checks. Deliberately NOT an `as BufferSource` cast at the call site — a
+// cast there would silence any future real mismatch too.
+function pemToPkcs8(pem: string): Uint8Array<ArrayBuffer> {
   // Supabase secrets round-trip newlines as literal \n; tolerate both forms.
   const normalized = pem.replace(/\\n/g, "\n");
   const body = normalized

@@ -889,7 +889,8 @@ export function FairwayGolfClasses({
                   // "Online / arranged · Online" reads twice — drop the location
                   // when it adds nothing beyond the no-meeting fallback label.
                   const showLocation =
-                    location != null && !(days.length === 0 && /^online$/i.test(location.trim()));
+                    location != null &&
+                    !(days.length === 0 && !cls.start_time && /^online$/i.test(location.trim()));
                   return (
                     <Button
                       key={cls.id}
@@ -955,9 +956,21 @@ export function FairwayGolfClasses({
                             ) : null}
                           </span>
                           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 font-fw-sans text-caption text-text-tertiary">
-                            <span className="font-medium text-text-secondary">
-                              {days.length > 0 ? formatDaysDisplay(days) : 'Online / arranged'}
-                            </span>
+                            {days.length > 0 ? (
+                              <span className="font-medium text-text-secondary">{formatDaysDisplay(days)}</span>
+                            ) : cls.start_time ? (
+                              /* Times but NO days: almost always a schedule-image
+                                 import whose ambiguous day boxes were cleared and
+                                 confirmed anyway (4 live Guilford rows, 2026-08-20).
+                                 "Online / arranged" was a euphemism here — the class
+                                 silently never reaches the calendar. Say that. */
+                              <span className="flex items-center gap-1 font-medium text-fw-warning-ink">
+                                <AlertTriangle className="h-3 w-3 flex-shrink-0" aria-hidden />
+                                No meeting days — not on your calendar. Tap to fix.
+                              </span>
+                            ) : (
+                              <span className="font-medium text-text-secondary">Online / arranged</span>
+                            )}
                             {showLocation ? (
                               <>
                                 <span aria-hidden>·</span>

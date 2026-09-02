@@ -11,6 +11,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { resolveMimeType } from '@/lib/storage/mime';
 
 // Type helper for golf_document_versions table (until types are regenerated)
 interface DocumentVersionRow {
@@ -337,7 +338,7 @@ async function createDocumentImpl(
 
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(storagePath, file);
+      .upload(storagePath, file, { contentType: resolveMimeType(file) });
 
     if (uploadError) throw uploadError;
 
@@ -354,7 +355,7 @@ async function createDocumentImpl(
         title,
         description: options.description || null,
         file_url: urlData.publicUrl,
-        file_type: file.type,
+        file_type: resolveMimeType(file),
         file_size: file.size,
         category: options.category || 'other',
         is_public: options.playerVisible ?? true,
@@ -377,7 +378,7 @@ async function createDocumentImpl(
         file_url: urlData.publicUrl,
         file_name: file.name,
         file_size: file.size,
-        mime_type: file.type,
+        mime_type: resolveMimeType(file),
         storage_path: storagePath,
         change_notes: 'Initial upload',
         uploaded_by: user.id,
@@ -704,6 +705,16 @@ async function uploadNewVersionImpl(
 
     if (docError) throw docError;
 
+    // The storage path is derived from the document's own team (good), but
+    // authentication was the only gate on WHO could push a version — so any
+    // player on the team, or any signed-in user RLS happened to let read the
+    // row, could add a version and change what the document resolves to.
+    // Coach-only, scoped to the document's team, same as saveTextDocument.
+    const role = await resolveTeamRole(supabase, user.id, document.team_id);
+    if (role !== 'coach') {
+      return { success: false, error: 'Only a coach on this team can upload a new version' };
+    }
+
     const newVersionNumber = (document.version_count || 1) + 1;
 
     // Upload new file
@@ -713,7 +724,7 @@ async function uploadNewVersionImpl(
 
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(storagePath, file);
+      .upload(storagePath, file, { contentType: resolveMimeType(file) });
 
     if (uploadError) throw uploadError;
 
@@ -734,7 +745,7 @@ async function uploadNewVersionImpl(
         file_url: urlData.publicUrl,
         file_name: file.name,
         file_size: file.size,
-        mime_type: file.type,
+        mime_type: resolveMimeType(file),
         storage_path: storagePath,
         change_notes: changeNotes || null,
         uploaded_by: user.id,
@@ -752,7 +763,7 @@ async function uploadNewVersionImpl(
       .from('golf_documents')
       .update({
         file_url: urlData.publicUrl,
-        file_type: file.type,
+        file_type: resolveMimeType(file),
         file_size: file.size,
         version_count: newVersionNumber,
       })
@@ -1209,7 +1220,7 @@ async function uploadGolfDocumentImpl(
 
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(storagePath, file);
+      .upload(storagePath, file, { contentType: resolveMimeType(file) });
 
     if (uploadError) throw uploadError;
 
@@ -1257,7 +1268,9 @@ async function createGolfDocumentImpl(data: {
   file_size: number;
   category?: string;
   player_visible: boolean;
-  uploaded_by: string;
+  /** Ignored — the row's uploaded_by is always the authenticated user. Kept
+   *  optional for legacy callers that still pass it. */
+  uploaded_by?: string;
   folder?: string;
   // Real storage object path (e.g. 'golf-documents/{teamId}/{fileName}') returned
   // by uploadGolfDocument. Persisted verbatim so preview/download can sign it.
@@ -1269,6 +1282,17 @@ async function createGolfDocumentImpl(data: {
     // Get authenticated user ID (uploaded_by now references auth.users)
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error('Not authenticated');
+
+    // Authentication was the ONLY gate here: `data.team_id` came from the
+    // client and was written straight onto the row, so any signed-in user
+    // could create a document record under any team they could name. RLS was
+    // the sole backstop. Use the same rule saveTextDocument already applies —
+    // a coach STAFFED on this team, not merely a member of it — since the
+    // whole documents surface is coach-managed.
+    const role = await resolveTeamRole(supabase, user.id, data.team_id);
+    if (role !== 'coach') {
+      return { success: false, error: 'Only a coach on this team can add documents' };
+    }
 
     // Create document record
     const { data: document, error: insertError } = await supabase
@@ -1344,7 +1368,9 @@ export async function createGolfDocument(data: {
   file_size: number;
   category?: string;
   player_visible: boolean;
-  uploaded_by: string;
+  /** Ignored — the row's uploaded_by is always the authenticated user. Kept
+   *  optional for legacy callers that still pass it. */
+  uploaded_by?: string;
   folder?: string;
   // Real storage object path (e.g. 'golf-documents/{teamId}/{fileName}') returned
   // by uploadGolfDocument. Persisted verbatim so preview/download can sign it.

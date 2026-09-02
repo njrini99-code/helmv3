@@ -77,6 +77,11 @@ beforeEach(() => {
   outcomes.set('golf_coaches:single', ok({ id: 'coach-1', organization_id: 'org-1', full_name: 'Coach' }));
   outcomes.set('golf_teams:single', ok({ id: 'team-1' }));
   outcomes.set('golf_tasks:single', ok({ id: 'task-1' }));
+  // The roster gate added with verifyPlayersOnTeam runs BEFORE the task
+  // insert, so every case here needs the assignee to actually be on team-1 --
+  // otherwise the action returns early and the notification path under test is
+  // never reached.
+  outcomes.set('golf_team_members', ok([{ player_id: PLAYER_ID }]));
   outcomes.set('golf_task_assignments', ok([]));
   outcomes.set('golf_players', ok([{ user_id: 'u-player' }]));
   outcomes.set('users', ok([{ id: 'u-player', email: 'p@example.com' }]));

@@ -4,8 +4,14 @@ import { useState, type ComponentType } from 'react';
 import { CheckCircle2, AlertTriangle, XCircle, MinusCircle } from 'lucide-react';
 import { Button, StatusPill, Eyebrow, type FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
-import type { FeatureHealth, FeatureStatus, FeatureTrend } from '@/lib/admin/data/feature-health';
+import type {
+  FeatureHealth,
+  FeatureHealthSummary as FeatureHealthSummaryData,
+  FeatureStatus,
+  FeatureTrend,
+} from '@/lib/admin/data/feature-health';
 import { FeatureHealthCard } from './FeatureHealthCard';
+import { FeatureHealthSummary } from './FeatureHealthSummary';
 
 const TONE_FOR_STATUS: Record<FeatureStatus, FwStatusTone> = {
   green: 'success',
@@ -48,14 +54,14 @@ function byStatusRank(a: FeatureHealth, b: FeatureHealth): number {
   return STATUS_RANK[a.status] - STATUS_RANK[b.status];
 }
 
-/** Mirrors the group header's own "N healthy · M no data" phrasing (this
- *  file, header rollup below) so the below-`md` disclosure CTA never claims
- *  a flat "healthy" count for a set that also folds in neutral (no
- *  feature-tagged data) chips. */
-function formatCollapsedSummary(counts: Record<FeatureStatus, number>): string {
+/** Mirrors `FeatureHealthSummary`'s own "N healthy · M no data" phrasing
+ *  (variant="full", rendered in the group header below) so the below-`md`
+ *  disclosure CTA never claims a flat "healthy" count for a set that also
+ *  folds in neutral (no feature-tagged data) chips. */
+function formatCollapsedSummary(summary: Pick<FeatureHealthSummaryData, 'green' | 'neutral'>): string {
   const parts: string[] = [];
-  if (counts.green > 0) parts.push(`${counts.green} healthy`);
-  if (counts.neutral > 0) parts.push(`${counts.neutral} no data`);
+  if (summary.green > 0) parts.push(`${summary.green} healthy`);
+  if (summary.neutral > 0) parts.push(`${summary.neutral} no data`);
   return parts.join(' · ');
 }
 
@@ -113,11 +119,19 @@ function FeatureChip({
 function FeatureGroup({
   heading,
   features,
+  summary,
   selectedKey,
   onSelect,
 }: {
   heading: string;
   features: FeatureHealth[];
+  /** This group's slice of the SAME `summarizeFeatureHealth()` output the
+   *  Overview/golf/baseball banner reads — computed once by the Health page
+   *  server component (see `admin/health/page.tsx`) and passed down, never
+   *  re-derived here. A client component cannot import the (server-only)
+   *  `summarizeFeatureHealth` value itself, so the count derivation happens
+   *  one layer up and this component only renders it. */
+  summary: FeatureHealthSummaryData;
   selectedKey: string | null;
   onSelect: (key: string) => void;
 }) {
@@ -134,21 +148,19 @@ function FeatureGroup({
   // keeps rendering every chip, untouched.
   const [showHealthy, setShowHealthy] = useState(false);
 
-  const counts = sorted.reduce(
-    (acc, f) => {
-      acc[f.status] += 1;
-      return acc;
-    },
-    { red: 0, amber: 0, neutral: 0, green: 0 } as Record<FeatureStatus, number>,
-  );
-  const needsEyes = counts.red + counts.amber;
+  // Counts come from the SAME `summarizeFeatureHealth()` slice passed down
+  // from the Health page — never re-derived here (health-consolidation
+  // pass: this used to be its own `sorted.reduce(...)` tally, a third
+  // independent rendering of the red/amber/neutral vocabulary alongside
+  // `FeatureHealthRollup` and this same header's own text).
+  const needsEyes = summary.red + summary.amber;
   // Collapsed-by-default set = green AND neutral (REPAIR: neutral used to
   // stay in the flat list uncollapsed — feature tagging only began
   // 2026-07-02, so a group can be mostly neutral this soon after
   // instrumentation and still blow the rule-3 ~3-screen-height cap even
   // with green folded away). The header rollup above already reports both
   // counts ("N healthy · M no data"), so the CTA mirrors that phrasing.
-  const collapsedCount = counts.green + counts.neutral;
+  const collapsedCount = summary.green + summary.neutral;
 
   return (
     <section aria-label={heading} className="min-w-0">
@@ -160,23 +172,7 @@ function FeatureGroup({
         <Eyebrow as="h2" tone="secondary">
           {heading}
         </Eyebrow>
-        <p className="font-fw-mono text-xs tabular-nums text-warm-500">
-          {needsEyes > 0 ? (
-            <>
-              {counts.red > 0 ? <span className="font-semibold text-fw-danger-ink">{counts.red} red</span> : null}
-              {counts.red > 0 && counts.amber > 0 ? ' · ' : null}
-              {counts.amber > 0 ? <span className="font-semibold text-fw-warning-ink">{counts.amber} amber</span> : null}
-            </>
-          ) : counts.neutral > 0 ? (
-            // Neutral (no feature-tagged data yet) is never relabeled
-            // "healthy" — same honesty rule the page's own copy states.
-            <span>
-              {counts.green} healthy · {counts.neutral} no data
-            </span>
-          ) : (
-            <span className="text-accent-700">{counts.green} healthy</span>
-          )}
-        </p>
+        <FeatureHealthSummary variant="full" summary={summary} />
       </div>
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {sorted.map((f) => {
@@ -206,8 +202,8 @@ function FeatureGroup({
           {showHealthy
             ? 'Hide healthy & no-data features'
             : needsEyes === 0
-              ? `All ${formatCollapsedSummary(counts)} — show list →`
-              : `Show ${formatCollapsedSummary(counts)} →`}
+              ? `All ${formatCollapsedSummary(summary)} — show list →`
+              : `Show ${formatCollapsedSummary(summary)} →`}
         </Button>
       ) : null}
       {selected ? <FeatureHealthCard feature={selected} /> : null}
@@ -215,7 +211,18 @@ function FeatureGroup({
   );
 }
 
-export function FeatureDotGrid({ features }: { features: FeatureHealth[] }) {
+export function FeatureDotGrid({
+  features,
+  groupSummaries,
+}: {
+  features: FeatureHealth[];
+  /** Per-app `summarizeFeatureHealth()` output, keyed by app — computed by
+   *  the Health page server component (`admin/health/page.tsx`) from the
+   *  same `features` list, and passed down so every group header reads
+   *  the identical red/amber/neutral tally as the Overview/golf/baseball
+   *  banner instead of re-deriving its own. */
+  groupSummaries: Record<FeatureHealth['app'], FeatureHealthSummaryData>;
+}) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   const groups = (['golfhelm', 'coachhelm', 'baseballhelm'] as const).map((app) => ({
@@ -235,6 +242,7 @@ export function FeatureDotGrid({ features }: { features: FeatureHealth[] }) {
           key={group.app}
           heading={group.heading}
           features={group.features}
+          summary={groupSummaries[group.app]}
           selectedKey={selectedKey}
           onSelect={toggle}
         />

@@ -545,8 +545,15 @@ async function processBounce(
 }
 
 /**
- * Idempotently add a bounced address to crm_email_suppressions. Mirrors
- * src/app/api/webhooks/resend/route.ts's suppressEmail() (check-then-insert;
+ * Idempotently add a bounced address to crm_email_suppressions. Returns true
+ * only when a row was actually inserted -- the caller counts those.
+ *
+ * NOTE: src/app/api/webhooks/resend/route.ts's suppressEmail() still uses the
+ * check-then-insert shape this one moved away from, and carries the same benign
+ * race (the UNIQUE constraint prevents the duplicate; the loser surfaces as a
+ * logged error). Worth converting for the same reason, but it is a separate
+ * path with its own callers and was not touched here.
+ * (was: mirrors resend/route.ts's suppressEmail() -- check-then-insert;
  * the table's real UNIQUE(email, reason) constraint is the backstop). reason
  * 'hard_bounce' / source 'admin' are both confirmed live values against
  * crm_email_suppressions_reason_check / _source_check — 'admin' is already
@@ -559,20 +566,33 @@ async function suppressBouncedEmail(
   const normalized = email.toLowerCase().trim();
   if (!normalized) return false;
   try {
-    const { data: existing } = await supabase
+    // Let the UNIQUE (email, reason) constraint BE the check, rather than
+    // SELECTing first and then inserting.
+    //
+    // The read-then-write version was correct in outcome but wrong in its
+    // failure mode. Two bounces for the same address -- concurrent cron ticks,
+    // or two messages in one tick -- could both see no existing row and both
+    // insert. The constraint stopped the duplicate, so the data was never
+    // wrong; the loser got 23505, which the catch below swallowed and reported
+    // as "bounce suppression failed". A benign race therefore produced a
+    // spurious error, in a queue where most entries are already not errors.
+    //
+    // ignoreDuplicates makes the second write a no-op instead. There is no
+    // check-then-write window left, because there is no check.
+    // `.select()` is load-bearing, not decorative. The caller COUNTS the true
+    // returns as `suppressed` in the cron's reported result, so this has to
+    // keep meaning "newly suppressed" rather than "processed". With
+    // ignoreDuplicates a conflicting row is skipped and therefore not
+    // returned, so a non-empty result is exactly an insert that happened.
+    const { data, error } = await supabase
       .from('crm_email_suppressions')
-      .select('id')
-      .eq('email', normalized)
-      .eq('reason', 'hard_bounce')
-      .maybeSingle();
-    if (existing) return false;
-    const { error } = await supabase.from('crm_email_suppressions').insert({
-      email: normalized,
-      reason: 'hard_bounce',
-      source: 'admin',
-    });
+      .upsert(
+        { email: normalized, reason: 'hard_bounce', source: 'admin' },
+        { onConflict: 'email,reason', ignoreDuplicates: true },
+      )
+      .select('id');
     if (error) throw error;
-    return true;
+    return (data?.length ?? 0) > 0;
   } catch (err) {
     await logServerError(`ingest-gmail-replies bounce suppression failed for ${normalized}: ${describeError(err)}`, {
       action: 'cron.ingest_gmail_replies', featureArea: 'crm', source: 'cron', extra: { email: normalized },

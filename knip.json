@@ -1,9 +1,0 @@
-{
-  "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": [
-    "src/app/**/!(*.test|*.spec).{ts,tsx}",
-    "next.config.mjs"
-  ],
-  "project": ["src/**/*.{ts,tsx}"],
-  "ignore": ["src/components/ui/**/*.tsx"]
-}

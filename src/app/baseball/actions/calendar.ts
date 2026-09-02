@@ -9,6 +9,7 @@ import { sanitizeDbError } from '@/lib/db-error';
 import { logServerError } from '@/lib/server-error-logger';
 import { revalidatePath } from 'next/cache';
 import { requireBaseballCapability, BaseballCapabilityError } from '@/lib/baseball/capabilities';
+import { assertPlayersOnBaseballTeam } from '@/lib/baseball/resolve-team';
 import {
   withBaseballAction,
   BaseballUnauthorizedError,
@@ -219,6 +220,13 @@ const createBaseballEventAction = withBaseballAction(
     if (input.teamId && input.teamId !== ctx.activeTeamId) {
       await requireBaseballCapability(input.teamId, 'can_manage_calendar');
     }
+
+    // `attendeeIds` become baseball_event_attendance rows further down, and
+    // nothing checked them against the event's team — a coach could create RSVP
+    // rows for players outside it, exposing the event's time, location and
+    // title to unrelated accounts. Verified HERE, before the event row exists,
+    // so a rejection does not strand an event with a half-built invite list.
+    await assertPlayersOnBaseballTeam(supabase, resolvedTeamId, input.attendeeIds ?? []);
 
     const startDateTime = buildDateTime(input.startDate, input.startTime, input.timezoneOffset);
     const endDateTime = buildEndDateTime(

@@ -1,0 +1,37 @@
+# Formatting source of truth for editors and agents that do NOT run ESLint.
+#
+# This repo has no Prettier and no Biome; formatting is enforced by
+# eslint.config.mjs, and .claude/hooks/post-edit.sh runs `eslint --fix` on
+# edited files. That covers Claude Code, but not Cursor, Devin, or a plain
+# editor without the ESLint extension — those fall back to their own defaults
+# for indent, line endings and final newline, which produces noise diffs that
+# look like real changes.
+#
+# Values below match what the tree already is, not an aspiration.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+# Trailing whitespace is significant in Markdown (two spaces = hard break),
+# and the markdownlint ratchet tracks MD009 separately.
+trim_trailing_whitespace = false
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.sql]
+# supabase/migrations is linted by sqlfluff with an 80-column LT05 rule and a
+# 7,649-violation ratchet; keep this consistent with that.
+indent_size = 4
+max_line_length = 80
+
+[Makefile]
+indent_style = tab

@@ -85,6 +85,7 @@ export default function NewQualifierLoading() {
               <FieldSkeleton labelWidth="w-14" />
               <FieldSkeleton labelWidth="w-14" />
             </div>
+            <FieldSkeleton labelWidth="w-16" />
             <FieldSkeleton labelWidth="w-24" controlHeight="h-16" />
           </SectionSkeleton>
 

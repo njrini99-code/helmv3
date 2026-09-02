@@ -87,18 +87,75 @@ export function collapseEmbeddedHtml(message: string): string | null {
   return prefix.length > 0 ? `${prefix} ${collapsed}` : collapsed;
 }
 
+/**
+ * A malformed/truncated 2xx response body puts the RAW, unparsed response
+ * text into `error.message` — postgrest-js's own fallback when
+ * `JSON.parse(body)` throws on an otherwise-successful request
+ * (`PostgrestBuilder.ts`: on a 2xx status, `catch { error = { message: body
+ * } } `). For a query that returns rows — the common shape — that raw body
+ * IS the near-complete result set: a JSON array of row objects.
+ *
+ * Found 2026-08-03: `getInsightsForCoach failed: [{"id":"0138a7f6-…` put an
+ * entire coach's insight feed — a player's putting percentages, coaching
+ * evidence, drill content — into `error_logs.message`, because the response
+ * simply failed to finish streaming. The request substantively SUCCEEDED;
+ * only the last byte or so was lost in transit. None of that row content is
+ * what an operator needs to triage a transport hiccup, and — same harm as the
+ * HTML gateway page above — every occurrence carries different row content,
+ * so each one mints its own incident group instead of collapsing into one.
+ *
+ * Detects the shape (a JSON array/object opener that runs on far longer than
+ * any genuine error message ever does — Postgrest/JS error text is a short
+ * English sentence, never a multi-hundred-byte run of `{"key":value,…}`) and
+ * collapses it to ONE fixed summary line, deliberately dropping the byte
+ * count along with the row content: two occurrences of the same underlying
+ * truncation never fetch the same number of rows, so a length-bearing summary
+ * would still fragment into a new incident group per occurrence — exactly the
+ * failure mode this exists to fix. Stability is the requirement, same as the
+ * HTML case above; the size is not worth keeping if keeping it defeats the
+ * point.
+ */
+const RAW_JSON_DUMP_OPENER = /(\[\s*\{"|\{\s*"[^"]{1,64}"\s*:)/;
+const RAW_JSON_DUMP_MIN_LENGTH = 300;
+const RAW_JSON_DUMP_SUMMARY =
+  'upstream response body could not be parsed as JSON — looks like a truncated row dump, not an error message';
+
+export function collapseRawJsonDumpBody(text: string): string | null {
+  if (text.length < RAW_JSON_DUMP_MIN_LENGTH) return null;
+  if (!RAW_JSON_DUMP_OPENER.test(text)) return null;
+  return RAW_JSON_DUMP_SUMMARY;
+}
+
+/**
+ * Same collapse, but for a message with the raw JSON dump embedded PART WAY
+ * THROUGH — the shape every `logServerError(`prefix: ${error.message}`)` call
+ * site produces when postgrest-js hits this fallback. Keeps the prefix (which
+ * says WHICH call failed) and collapses only the dump.
+ */
+export function collapseEmbeddedRawJsonDump(message: string): string | null {
+  const start = RAW_JSON_DUMP_OPENER.exec(message);
+  if (!start || start.index === undefined) return null;
+
+  const prefix = message.slice(0, start.index).trimEnd();
+  const collapsed = collapseRawJsonDumpBody(message.slice(start.index));
+  if (!collapsed) return null;
+
+  return prefix.length > 0 ? `${prefix} ${collapsed}` : collapsed;
+}
+
 export function describeError(err: unknown): string {
   if (err == null) return 'unknown';
-  if (err instanceof Error) return collapseHtmlErrorBody(err.message) ?? err.message;
-  if (typeof err === 'string') return collapseHtmlErrorBody(err) ?? err;
+  if (err instanceof Error) return collapseHtmlErrorBody(err.message) ?? collapseRawJsonDumpBody(err.message) ?? err.message;
+  if (typeof err === 'string') return collapseHtmlErrorBody(err) ?? collapseRawJsonDumpBody(err) ?? err;
   if (typeof err !== 'object') return String(err);
 
   const e = err as Record<string, unknown>;
 
-  // Same collapse for the Supabase/transport shape, where the HTML arrives as
+  // Same collapse for the Supabase/transport shape, where the HTML — or a raw
+  // unparsed response body, see collapseRawJsonDumpBody below — arrives as
   // `.message` on a plain object rather than on an Error.
   if (typeof e.message === 'string') {
-    const collapsed = collapseHtmlErrorBody(e.message);
+    const collapsed = collapseHtmlErrorBody(e.message) ?? collapseRawJsonDumpBody(e.message);
     if (collapsed) {
       return e.code ? `code=${e.code} msg=${collapsed}` : collapsed;
     }
@@ -205,5 +262,86 @@ export function describeWriteFailure(
     // failed', code: '' }` — no Postgres code, so an empty code with a
     // message is a transport problem, not a database rejection.
     transport: !(err instanceof Error) && code === null && e.message != null,
+  };
+}
+
+/**
+ * The Supabase/Postgres error shape, structurally. Deliberately not imported
+ * from `@supabase/supabase-js`: node-postgres, PostgREST and supabase-js all
+ * produce this shape, and a structural type accepts every one of them without
+ * tying this module to a client library.
+ */
+interface PostgrestShaped {
+  message?: unknown;
+  code?: unknown;
+  details?: unknown;
+  hint?: unknown;
+}
+
+function str(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+/**
+ * Turn a Supabase/Postgres-shaped error into a real `Error` that carries its
+ * Postgres code where the Bridge can actually see it.
+ *
+ * The pattern this replaces is `new Error(err.message)`, which appears ~50
+ * times in this codebase. `logError` requires an `Error`, and wrapping the
+ * message is the obvious way to get one — but it throws away `code`, `details`
+ * and `hint`, which are precisely the fields that answer the first triage
+ * question: RLS denial (42501) vs. constraint violation (23514) vs. statement
+ * timeout (57014) vs. a transport failure (empty code). The Bridge then renders
+ * a blank ERROR CODE next to a message that cannot distinguish them.
+ *
+ * The code goes on `.name` because that is the ONLY channel the client path
+ * has: `/api/log-error` lifts `context.error.name` to `metadata.errorCode`,
+ * which is where `incident-report.ts`'s `extractErrorCode()` reads. A context
+ * field named `errorCode` is NOT read there — that route exists only on the
+ * server logger. One value, one channel, no third spelling.
+ *
+ * `.message` is left EXACTLY as the driver produced it. `details` and `hint`
+ * deliberately do not go into it: `admin_events` fingerprints hash the message,
+ * and `details` routinely carries row-specific text ("Failing row contains
+ * (…)"), so folding it in would mint a new incident group per occurrence — the
+ * same fragmentation failure documented for Cloudflare Ray IDs above. Codes are
+ * stable per failure class, so `.name` is fingerprint-safe; `details`/`hint`
+ * belong in context, via `postgrestErrorContext()`.
+ */
+export function toPostgrestError(err: unknown): Error {
+  if (err instanceof Error) return err;
+
+  const e = (err && typeof err === 'object' ? err : {}) as PostgrestShaped;
+  const error = new Error(str(e.message) ?? describeError(err));
+
+  const code = str(e.code);
+  if (code) error.name = code;
+
+  return error;
+}
+
+/**
+ * The `details`/`hint`/`code` fields as a context fragment, to spread into a
+ * `logError`/`logServerError` call alongside `toPostgrestError()`.
+ *
+ * Named `errorCode`/`errorHint` to match what `server-error-logger.ts` writes
+ * and what `incident-report.ts`'s `extractErrorCode()`/`extractErrorHint()`
+ * render. (`describeWriteFailure()` above emits `pgCode`/`pgDetails`/`pgHint`
+ * instead — verified 2026-08-27 that nothing in the Bridge reads those three,
+ * so they are written and never displayed. Do not add a third vocabulary here.)
+ *
+ * `errorDetails` has no renderer yet either, but is spelled to match the two
+ * that do rather than inventing another prefix.
+ */
+export function postgrestErrorContext(err: unknown): {
+  errorCode: string | null;
+  errorHint: string | null;
+  errorDetails: string | null;
+} {
+  const e = (err && typeof err === 'object' ? err : {}) as PostgrestShaped;
+  return {
+    errorCode: str(e.code),
+    errorHint: str(e.hint),
+    errorDetails: str(e.details),
   };
 }

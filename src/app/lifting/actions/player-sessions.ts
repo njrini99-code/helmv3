@@ -208,6 +208,48 @@ export async function startMySession(sessionId: string): Promise<{ success: bool
 // logMySetResult — upsert a set result for the authenticated athlete
 // ---------------------------------------------------------------------------
 
+/**
+ * Confirm that `athleteId` is the signed-in user's own lifting athlete.
+ *
+ * Two links are accepted because helm_lifting_athletes is populated by two
+ * routes: rows created from an auth user carry `user_id`, and rows created
+ * from a roster import carry `sport_player_id` pointing at the baseball or
+ * golf player row instead. Checking only the first would lock out every
+ * imported athlete, which is most of them.
+ *
+ * Fails CLOSED, and separates "not yours" from "could not tell".
+ */
+async function callerOwnsAthlete(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  athleteId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!athleteId) return { ok: false, error: 'Not authorized for this athlete.' };
+
+  const { data: athlete, error } = await fromUntyped(supabase, 'helm_lifting_athletes')
+    .select('id, user_id, sport, sport_player_id')
+    .eq('id', athleteId)
+    .maybeSingle() as {
+    data: { id: string; user_id: string | null; sport: string | null; sport_player_id: string | null } | null;
+    error: unknown;
+  };
+
+  if (error) return { ok: false, error: 'Could not verify this athlete. Please try again.' };
+  if (!athlete) return { ok: false, error: 'Not authorized for this athlete.' };
+  if (athlete.user_id === userId) return { ok: true };
+  if (!athlete.sport_player_id) return { ok: false, error: 'Not authorized for this athlete.' };
+
+  const table = athlete.sport === 'golf' ? 'golf_players' : 'baseball_players';
+  const { data: playerRow, error: playerError } = await fromUntyped(supabase, table)
+    .select('id')
+    .eq('id', athlete.sport_player_id)
+    .eq('user_id', userId)
+    .maybeSingle() as { data: { id: string } | null; error: unknown };
+
+  if (playerError) return { ok: false, error: 'Could not verify this athlete. Please try again.' };
+  return playerRow ? { ok: true } : { ok: false, error: 'Not authorized for this athlete.' };
+}
+
 export async function logMySetResult(input: {
   sessionExerciseId: string;
   sessionId: string;
@@ -229,6 +271,14 @@ export async function logMySetResult(input: {
     .maybeSingle() as { data: { organization_id: string; sport: string } | null };
 
   if (!session) return { success: false, error: 'Session not found.' };
+
+  // The action is named logMY-set-result and it took `athleteId` on trust: any
+  // authenticated user could write a set result against another athlete's
+  // prescribed exercise, polluting that athlete's training history and the
+  // coach-facing analytics built on it. The DB policy blocks OVERWRITING a
+  // result another athlete already owns; it does not stop a new row.
+  const owns = await callerOwnsAthlete(supabase, user.id, input.athleteId);
+  if (!owns.ok) return { success: false, error: owns.error };
 
   const payload: HelmLiftingSetResultInsert = {
     session_exercise_id: input.sessionExerciseId,

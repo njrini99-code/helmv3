@@ -20,7 +20,7 @@
 // rethrow. Capability enforcement is server-side; the client cannot assert it.
 //
 // NON-DESTRUCTIVE WRITES: acknowledge UPSERTs on UNIQUE(timeline_event_id,
-// user_id) (idempotent re-ack bumps acknowledged_at) — never delete-then-insert.
+// acked_by) (idempotent re-ack bumps acknowledged_at) — never delete-then-insert.
 // Withdraw is an explicit, scoped DELETE of the caller's OWN single row.
 //
 // DEFENSE IN DEPTH: before writing we confirm the timeline event exists and
@@ -78,7 +78,7 @@ export const acknowledgeTimelineEvent = withBaseballAction(
       supabase as unknown as UntypedClient
     )
       .from('baseball_player_timeline_events')
-      .select('id, team_id')
+      .select('id, team_id, player_id')
       .eq('id', timelineEventId)
       .maybeSingle();
 
@@ -89,16 +89,23 @@ export const acknowledgeTimelineEvent = withBaseballAction(
 
     const acknowledgedAt = new Date().toISOString();
 
-    // UPSERT on UNIQUE(timeline_event_id, user_id) — never delete-then-reinsert.
+    // UPSERT on UNIQUE(timeline_event_id, acked_by) — never delete-then-reinsert.
     const { data, error } = await (supabase as unknown as UntypedClient)
       .from('baseball_timeline_event_acks')
       .upsert(
         {
           timeline_event_id: timelineEventId,
+          team_id: event.team_id,
+          player_id: event.player_id,
+          acked_by: ctx.user.id,
+          acked_at: acknowledgedAt,
           user_id: ctx.user.id,
           acknowledged_at: acknowledgedAt,
         },
-        { onConflict: 'timeline_event_id,user_id' },
+        // Production historically keyed this table by acked_by, while newer
+        // local replays used user_id. The reconciliation migration keeps both
+        // actor aliases synchronized and guarantees this legacy-compatible key.
+        { onConflict: 'timeline_event_id,acked_by' },
       )
       .select('acknowledged_at')
       .maybeSingle();

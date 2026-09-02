@@ -3,7 +3,7 @@
 # GolfHelm Database Audit Runner using psql
 # This script runs database audit queries via psql command
 
-PGPASSWORD='EHl4yASa9zM1sb1k'
+PGPASSWORD="${PGPASSWORD:?Set PGPASSWORD in your environment. This script no longer ships a hardcoded credential; the one that used to be here is in git history and must be treated as compromised.}"
 DB_HOST='aws-0-us-west-1.pooler.supabase.com'
 DB_PORT='6543'
 DB_NAME='postgres'

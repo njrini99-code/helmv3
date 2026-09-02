@@ -16,6 +16,7 @@ import {
   isExpectedEmptyStateCode,
   isUserInputRejection,
   observeActionSoftFailure,
+  classifySoftFailure,
 } from '@/lib/admin/observe-action-result';
 import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
 
@@ -61,6 +62,45 @@ describe('observe-action-result', () => {
     expect(isExpectedSoftFailureMessage('Invalid email or password (4 attempts remaining)')).toBe(true);
     expect(isExpectedSoftFailureMessage('Too many login attempts. Please try again in 10 minutes.')).toBe(true);
     expect(isExpectedSoftFailureMessage('Could not complete the calendar action. Please try again.')).toBe(false);
+  });
+
+  // submitGolfRoundComprehensive is withAdminObserved-wrapped, so its 'busy'
+  // carve-out (a same-round auto-save or a second submit still held the row
+  // past submit_round_atomic's bounded 3s wait) reaches this classifier even
+  // though the call site itself deliberately skips its own logServerError
+  // call. Without this pattern, contention that resolves itself on the next
+  // tap would page as an 'error'-severity incident.
+  it('classifies the round-submit busy message as an expected soft failure', () => {
+    expect(isExpectedSoftFailureMessage('Another save for this round is just finishing — try again in a moment.')).toBe(true);
+  });
+
+  // createGolfConversationImpl's tenancy gate (src/app/golf/actions/
+  // messages.ts) throws these two exact strings on an ordinary authorization
+  // denial. Neither previously matched an anchored pattern — the closest,
+  // `/^you do not have permission/i`, is a different wording — so both
+  // classified as 'error' and paged Sentry for a routine "not on this team"
+  // rejection.
+  it('classifies the golf-messaging tenancy denials as expected soft failures', () => {
+    expect(isExpectedSoftFailureMessage('You do not have access to this team')).toBe(true);
+    expect(isExpectedSoftFailureMessage('One or more recipients are not on this team')).toBe(true);
+    // A genuine infrastructure failure from the same gate (the audience
+    // probe itself failing) must NOT be swallowed alongside them.
+    expect(isExpectedSoftFailureMessage('Could not verify team access. Please try again.')).toBe(false);
+  });
+
+  it('keeps expected qualifier lifecycle protections out of the error incident feed', () => {
+    for (const code of ['qualifier_closed', 'qualifier_round_limit_reached', 'qualifier_round_already_exists']) {
+      expect(isExpectedSoftFailureMessage('A qualifier lifecycle response', code)).toBe(true);
+    }
+  });
+
+  it('keeps an active-round roster safety guard out of Sentry', () => {
+    expect(
+      isExpectedSoftFailureMessage(
+        'This player has a saved in-progress round. Have them finish or discard it before removing them from the team.',
+        'active_round_in_progress',
+      ),
+    ).toBe(true);
   });
 
   // Two identical outcomes reached the Bridge at two different severities
@@ -130,6 +170,21 @@ describe('observe-action-result', () => {
     // with the known code is still expected.
     expect(isExpectedSoftFailureMessage('anything at all', 'engine_session_expired')).toBe(true);
     expect(isExpectedSoftFailureMessage('anything at all', 'some_other_code')).toBe(false);
+  });
+
+  it('records a stale deleted-shot reconciliation as info, not a warning incident', () => {
+    expect(isExpectedSoftFailureMessage('Shot not found', 'shot_not_found')).toBe(true);
+    expect(classifySoftFailure('Shot not found', 'shot_not_found')).toEqual({
+      severity: 'info',
+      skipSentry: true,
+    });
+  });
+
+  it('records the expected native-session token retry as info, not a warning incident', () => {
+    expect(classifySoftFailure('Unauthorized', 'UNAUTHORIZED_RETRYABLE')).toEqual({
+      severity: 'info',
+      skipSentry: true,
+    });
   });
 
   it('classifies engine_no_recent_rounds as an empty-state code, not a generic soft failure', () => {

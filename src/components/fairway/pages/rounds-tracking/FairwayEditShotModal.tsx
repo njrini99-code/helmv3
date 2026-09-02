@@ -418,9 +418,16 @@ export function FairwayEditShotModal({
         )}
       </div>
 
-      {/* Modal Footer */}
+      {/* Modal Footer — hand-rolled (sticky + danger slot), so it must carry
+          ModalShell.Footer's safe-area formula itself: contentInset:'never'
+          in capacitor.config.ts means web code owns the home-indicator inset,
+          and a tall shot form can run the panel to its max-height cap where
+          plain py-4 leaves the buttons riding the indicator. */}
       {!showDeleteConfirm && (
-        <div className="sticky bottom-0 rounded-b-fw-lg border-t border-border-subtle bg-surface px-6 py-4">
+        <div
+          className="sticky bottom-0 rounded-b-fw-lg border-t border-border-subtle bg-surface px-6 pt-4"
+          style={{ paddingBottom: 'max(1rem, calc(0.5rem + env(safe-area-inset-bottom)))' }}
+        >
           <div className="flex gap-3">
             <IconButton variant="danger" onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })} disabled={editSaving} aria-label="Delete shot">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

@@ -3,7 +3,8 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { FeatureDotGrid } from '@/app/admin/_components/FeatureDotGrid';
-import type { FeatureHealth } from '@/lib/admin/data/feature-health';
+import { summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
+import type { FeatureHealth, FeatureHealthSummary } from '@/lib/admin/data/feature-health';
 
 // next/link's prefetch path calls `new IntersectionObserver(...)`; the
 // global jsdom mock in src/test/setup.tsx is a plain vi.fn() (not
@@ -49,9 +50,29 @@ const FEATURES: FeatureHealth[] = [
   fh({ key: 'baseball_roster', app: 'baseballhelm', label: 'Baseball Roster', status: 'amber', reason: '1 warning event.' }),
 ];
 
+const NOW = new Date('2026-07-02T12:00:00Z');
+
+/** Health-consolidation pass: FeatureDotGrid no longer re-derives its own
+ *  red/amber/neutral tally per group — it renders a `groupSummaries` prop
+ *  computed by the caller via the same `summarizeFeatureHealth()` the
+ *  Overview/golf/baseball banner uses (see admin/health/page.tsx). Build it
+ *  here the same way so the test fixture matches production shape. */
+function groupSummariesFor(features: FeatureHealth[]): Record<FeatureHealth['app'], FeatureHealthSummary> {
+  const apps = ['golfhelm', 'coachhelm', 'baseballhelm'] as const;
+  return Object.fromEntries(
+    apps.map((app) => [
+      app,
+      summarizeFeatureHealth(
+        { features: features.filter((f) => f.app === app), generatedAt: NOW.toISOString(), degraded: false },
+        NOW,
+      ),
+    ]),
+  ) as Record<FeatureHealth['app'], FeatureHealthSummary>;
+}
+
 describe('FeatureDotGrid', () => {
   it('renders each of the 4 tones with an icon AND a text label (queried by text, not color)', () => {
-    render(<FeatureDotGrid features={FEATURES} />);
+    render(<FeatureDotGrid features={FEATURES} groupSummaries={groupSummariesFor(FEATURES)} />);
     expect(screen.getByRole('button', { name: /Round Tracking: red/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Course Library: needs attention/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Stats & Analytics: healthy/i })).toBeInTheDocument();
@@ -59,28 +80,28 @@ describe('FeatureDotGrid', () => {
   });
 
   it('neutral renders "no data" — never "red"', () => {
-    render(<FeatureDotGrid features={FEATURES} />);
+    render(<FeatureDotGrid features={FEATURES} groupSummaries={groupSummariesFor(FEATURES)} />);
     const neutralChip = screen.getByRole('button', { name: /What's New/i });
     expect(neutralChip.getAttribute('aria-label')).toMatch(/no data/i);
     expect(neutralChip.getAttribute('aria-label')).not.toMatch(/: red/i);
   });
 
   it('renders GolfHelm, CoachHelm, and BaseballHelm lanes in command order', () => {
-    render(<FeatureDotGrid features={FEATURES} />);
+    render(<FeatureDotGrid features={FEATURES} groupSummaries={groupSummariesFor(FEATURES)} />);
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(headings.indexOf('GolfHelm')).toBeLessThan(headings.indexOf('CoachHelm'));
     expect(headings.indexOf('CoachHelm')).toBeLessThan(headings.indexOf('BaseballHelm'));
   });
 
   it('sorts red first within a group, regardless of input order', () => {
-    render(<FeatureDotGrid features={FEATURES} />);
+    render(<FeatureDotGrid features={FEATURES} groupSummaries={groupSummariesFor(FEATURES)} />);
     const golfSection = screen.getByRole('region', { name: 'GolfHelm' });
     const buttons = within(golfSection).getAllByRole('button');
     expect(buttons[0]?.getAttribute('aria-label')).toMatch(/Round Tracking: red/i);
   });
 
   it('renders BaseballHelm as live feature chips, not a paused note', () => {
-    const { container } = render(<FeatureDotGrid features={FEATURES} />);
+    const { container } = render(<FeatureDotGrid features={FEATURES} groupSummaries={groupSummariesFor(FEATURES)} />);
     expect(screen.queryByText(/Baseball — paused/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Baseball Roster: needs attention/i })).toBeInTheDocument();
     expect(container.querySelectorAll('[data-slot="fw-status-pill"]').length).toBe(FEATURES.length);
@@ -88,12 +109,23 @@ describe('FeatureDotGrid', () => {
 
   it('clicking a chip expands the per-feature card with top signatures as grouped single lines with counts', async () => {
     const user = userEvent.setup();
-    render(<FeatureDotGrid features={FEATURES} />);
+    render(<FeatureDotGrid features={FEATURES} groupSummaries={groupSummariesFor(FEATURES)} />);
     await user.click(screen.getByRole('button', { name: /CoachHelm Engine/i }));
     const card = screen.getByLabelText('CoachHelm Engine detail');
     expect(within(card).getByText(/timeout on fan-out/i)).toBeInTheDocument();
-    expect(within(card).getByText(/4×/)).toBeInTheDocument();
+    // The count is a bare right-aligned number now, so a column of them
+    // scans vertically; the unit travels as its accessible name. Same
+    // contract as the triage queue — these cards share ./Row.
+    expect(within(card).getByLabelText('4 occurrences')).toBeInTheDocument();
     // ONE line per fingerprint, not N rows.
     expect(within(card).getAllByText(/timeout on fan-out/i)).toHaveLength(1);
+  });
+
+  it('the group header reads the shared summarizeFeatureHealth() tally, not a locally re-derived count', () => {
+    render(<FeatureDotGrid features={FEATURES} groupSummaries={groupSummariesFor(FEATURES)} />);
+    // GolfHelm slice: 1 red (Round Tracking), 1 amber (Course Library).
+    const golfSection = screen.getByRole('region', { name: 'GolfHelm' });
+    expect(within(golfSection).getByText(/1 red/i)).toBeInTheDocument();
+    expect(within(golfSection).getByText(/1 amber/i)).toBeInTheDocument();
   });
 });

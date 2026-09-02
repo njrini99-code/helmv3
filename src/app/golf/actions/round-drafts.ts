@@ -7,6 +7,7 @@ import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 // UUID format validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,6 +39,27 @@ interface RoundSetupForm {
 
 type Hole = RoundHole;
 
+/**
+ * The complete payload required to finish a round after an indeterminate
+ * submit result. This is intentionally stored alongside the emergency copy;
+ * replaying it as a draft would falsely acknowledge an unfinished round.
+ */
+export interface TerminalRoundSubmissionData {
+  courseName: string;
+  courseCity?: string;
+  courseState?: string;
+  courseRating?: number;
+  courseSlope?: number;
+  teesPlayed?: string;
+  courseId?: string;
+  teeId?: string;
+  roundType: 'practice' | 'tournament' | 'qualifier';
+  roundDate: string;
+  holes: HoleStats[];
+  qualifierId?: string;
+  qualifierRoundNumber?: number;
+}
+
 export interface RoundDraftData {
   step: 'setup' | 'holes' | 'tracking' | 'submitting';
   setupData: RoundSetupForm;
@@ -48,6 +70,8 @@ export interface RoundDraftData {
   selectedRoundNumber?: number | null;
   inProgressShots?: Record<number, ShotRecord[]>;
   holesPerRound?: 9 | 18;
+  submissionIntent?: 'draft' | 'submit';
+  terminalSubmission?: TerminalRoundSubmissionData;
 }
 
 export interface DraftInfo {
@@ -91,7 +115,8 @@ async function saveRoundDraftImpl(
       return { success: false, error: 'Invalid round ID format' };
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue error must not read as logged out.
+    const { user } = await getUserResilient(supabase);
     if (!user) {
       return { success: false, error: 'You must be signed in' };
     }
@@ -185,7 +210,27 @@ async function saveRoundDraftImpl(
       ]);
 
       if (holeCountError || shotCountError) {
-        return false;
+        // FAIL CLOSED. A failed count is UNKNOWN, not "no tracked data".
+        //
+        // Returning false here sent the caller straight into the draft overlay
+        // on a round that may well be full of tracked shots -- the single case
+        // this guard exists to prevent -- and it did so precisely when the
+        // database was already misbehaving, which is when a retry is most
+        // likely and the overlay most likely to land.
+        //
+        // The asymmetry decides it. A false positive skips ONE autosave: the
+        // caller gets success, writes nothing, and the next autosave a few
+        // seconds later re-reads and proceeds normally. A false negative
+        // overlays draft_data onto a round whose shots are being tracked by the
+        // other persistence path. One is a few seconds of a draft; the other
+        // corrupts the state of round data that cannot be reconstructed.
+        await logServerError(
+          `[saveRoundDraft] tracked-data count failed for round ${roundId}; treating as TRACKED and skipping the draft overlay: ` +
+            describeError(holeCountError ?? shotCountError),
+          { action: 'round_drafts.saveRoundDraft', featureArea: 'round_tracking' },
+          'warning',
+        );
+        return true;
       }
 
       return (holeCount ?? 0) > 0 || (shotCount ?? 0) > 0;
@@ -377,7 +422,8 @@ async function loadRoundDraftImpl(): Promise<ActionResult<DraftInfo | null>> {
   try {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue error must not read as logged out.
+    const { user } = await getUserResilient(supabase);
     if (!user) {
       return { success: false, error: 'You must be signed in' };
     }
@@ -505,7 +551,8 @@ async function clearRoundDraftImpl(roundId: string): Promise<ActionResult<void>>
 
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue error must not read as logged out.
+    const { user } = await getUserResilient(supabase);
     if (!user) {
       return { success: false, error: 'You must be signed in' };
     }
@@ -600,7 +647,8 @@ async function checkRoundStalenessImpl(
 
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Resilient, not raw — a transient GoTrue error must not read as logged out.
+    const { user } = await getUserResilient(supabase);
     if (!user) {
       return { success: false, error: 'You must be signed in' };
     }

@@ -63,7 +63,7 @@ export default function NotificationSettingsLoading() {
               <Skeleton className="col-span-2 h-2.5 w-12 justify-self-center" />
             </div>
 
-            {[3, 4, 3].map((rowCount, g) => (
+            {[2, 4, 3].map((rowCount, g) => (
               <div key={g} className={g > 0 ? 'border-t border-border-subtle' : undefined}>
                 <div className="px-5 pt-3">
                   <Skeleton className="h-3 w-32" />

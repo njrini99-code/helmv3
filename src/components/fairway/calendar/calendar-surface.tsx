@@ -54,6 +54,34 @@ const SIZE_CELL: Record<CalendarSize, string> = {
 /* -------------------------------------------------------------------------- */
 /* Warm-skinned chevron (left/right) + day button custom components.          */
 /* -------------------------------------------------------------------------- */
+/**
+ * Pull a representative Date out of whatever a DayPicker date-ish prop holds.
+ *
+ * `selected` is `Date` in single mode, `Date[]` in multiple, and
+ * `{ from, to }` in range — and `month` / `defaultMonth` are plain Dates. This
+ * only needs to identify a MONTH to compare against, so the first real Date in
+ * any of those shapes is enough, and a runtime check avoids narrowing the
+ * generic `mode` union at every call site.
+ *
+ * Returns null rather than a fallback so the caller decides the default.
+ */
+function firstDateOf(value: unknown): Date | null {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const d = firstDateOf(item);
+      if (d) return d;
+    }
+    return null;
+  }
+  if (value && typeof value === 'object') {
+    // DateRange — `from` may be set with `to` still undefined mid-selection.
+    const range = value as { from?: unknown; to?: unknown };
+    return firstDateOf(range.from) ?? firstDateOf(range.to);
+  }
+  return null;
+}
+
 function CalendarChevron({ orientation, className }: ChevronProps) {
   const Icon = orientation === 'left' ? ChevronLeft : ChevronRight;
   return <Icon className={cn('h-4 w-4', className)} aria-hidden="true" />;
@@ -115,20 +143,93 @@ export const CalendarSurface = React.forwardRef<
   // Track travel direction so the grid can slide the way time moves.
   const [direction, setDirection] = React.useState<TemporalDirection>('next');
   const prevMonthRef = React.useRef<Date | null>(null);
-  // Bump a key on each month change to re-trigger the entrance animation.
-  const [animKey, setAnimKey] = React.useState(0);
+  const gridRef = React.useRef<HTMLDivElement | null>(null);
+
+  /*
+   * REPLAY THE ENTRANCE ANIMATION WITHOUT REMOUNTING THE GRID.
+   *
+   * This used to bump a `key` on the wrapper div. That div contains
+   * <DayPicker>, and DayPicker is UNCONTROLLED here — no `month` or
+   * `defaultMonth` prop is passed, so it holds the displayed month in its own
+   * internal state. Changing the key unmounted and remounted it, discarding
+   * that state and snapping the view back to the month derived from
+   * `selected`.
+   *
+   * So every arrow click advanced the month and instantly reverted it. From
+   * the user's side the nav simply did nothing — reported from Shenandoah
+   * 2026-08-19 as "calendar is glitching and won't let him change months",
+   * with the picker stuck on the selected date's month.
+   *
+   * The remount also destroyed the focused nav button on every click, so a
+   * keyboard user had to re-find the arrow each time.
+   *
+   * Restarting a CSS animation needs the class removed, a reflow forced, then
+   * the class re-added — assigning the same class name again is a no-op
+   * because nothing changed from the browser's point of view. Doing it on a
+   * ref keeps DayPicker mounted, so its month state and the DOM focus both
+   * survive.
+   */
+  const replayEnterAnimation = React.useCallback((dir: TemporalDirection) => {
+    const el = gridRef.current;
+    const cls = dir === 'next' ? styles.enterNext : styles.enterPrev;
+    if (!el || !cls) return;
+    const other = dir === 'next' ? styles.enterPrev : styles.enterNext;
+    if (other) el.classList.remove(other);
+    el.classList.remove(cls);
+    // Force a reflow so the removal is committed before the re-add; without
+    // this the browser coalesces both mutations and the animation never
+    // restarts.
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }, []);
+
+  /*
+   * The month the grid STARTED on, so the very first arrow click knows which
+   * way it travelled.
+   *
+   * `prevMonthRef` is only ever written in `handleMonthChange`, so on the first
+   * call there was nothing to compare against and the direction fell back to
+   * the 'next' default — clicking BACK first slid the grid forwards. Cosmetic,
+   * but wrong every time a coach's first move is backwards.
+   *
+   * Resolution order month → defaultMonth → selected → today. NOTE this is NOT
+   * DayPicker's own order: getInitialMonth (react-day-picker 10.0.1,
+   * helpers/getInitialMonth.js) is literally `month || defaultMonth || today`
+   * and never consults `selected`. This comment claimed it mirrored DayPicker
+   * until 2026-09-01. It does not, and that difference WAS the bug fixed
+   * below — the seed here happened to be right while DayPicker's was wrong. Read through a
+   * runtime helper rather than by narrowing the generic `mode` union: `selected`
+   * is Date | Date[] | DateRange depending on mode, and type-narrowing that here
+   * would cost far more than the animation is worth.
+   */
+  const seedMonth = React.useCallback((): Date => {
+    const props = dayPickerProps as {
+      month?: unknown;
+      defaultMonth?: unknown;
+      selected?: unknown;
+    };
+    return (
+      firstDateOf(props.month) ??
+      firstDateOf(props.defaultMonth) ??
+      firstDateOf(props.selected) ??
+      new Date()
+    );
+     
+  }, [dayPickerProps]);
 
   const handleMonthChange = React.useCallback(
     (month: Date) => {
-      const prev = prevMonthRef.current;
-      if (prev) {
-        setDirection(month.getTime() >= prev.getTime() ? 'next' : 'prev');
-      }
+      // Falling back to the seed means direction is ALWAYS computed, so the
+      // `if (prev)` branch that silently defaulted to 'next' is gone.
+      const prev = prevMonthRef.current ?? seedMonth();
+      const dir: TemporalDirection =
+        month.getTime() >= prev.getTime() ? 'next' : 'prev';
+      setDirection(dir);
       prevMonthRef.current = month;
-      setAnimKey((k) => k + 1);
+      replayEnterAnimation(dir);
       onMonthChange?.(month);
     },
-    [onMonthChange],
+    [onMonthChange, replayEnterAnimation, seedMonth],
   );
 
   // Merge caller modifiers with the eventDays matcher (drives the dot).
@@ -160,8 +261,10 @@ export const CalendarSurface = React.forwardRef<
         </div>
       ) : null}
 
+      {/* NO `key` here. Keying this wrapper remounts <DayPicker>, which owns
+          the displayed month internally — see replayEnterAnimation above. */}
       <div
-        key={animKey}
+        ref={gridRef}
         className={cn(
           styles.grid,
           direction === 'next' ? styles.enterNext : styles.enterPrev,
@@ -283,6 +386,25 @@ export const CalendarSurface = React.forwardRef<
             ),
             ...(classNames ?? {}),
           }}
+          // OPEN ON THE SELECTED DATE'S MONTH, NOT TODAY'S.
+          //
+          // react-day-picker resolves its initial month as
+          // `month || defaultMonth || today` and never looks at `selected`
+          // (10.0.1, helpers/getInitialMonth.js). CalendarSurface passed
+          // neither, so a picker opened on an event in any other month showed
+          // TODAY, with the selected day off-screen — a coach editing an
+          // August event on 1 September opens the Start-date field and is
+          // looking at September.
+          //
+          // This was invisible for as long as "today" and the selected date
+          // shared a month, which is why two month-navigation suites passed
+          // every day until the month rolled over and eight of their
+          // assertions failed at once. The tests were right; the component
+          // was wrong.
+          //
+          // Placed BEFORE the spread so an explicit month/defaultMonth from
+          // the caller still wins.
+          defaultMonth={seedMonth()}
           {...dayPickerProps}
         />
       </div>

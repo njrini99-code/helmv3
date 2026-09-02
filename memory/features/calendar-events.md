@@ -1,12 +1,54 @@
 # Feature: Calendar And Events
 
+<!-- schema-drift-banner: hand-written above/below; do not auto-band this file -->
+
 ## Status
 
 - active
 
+> **⚠️ Schema claims in this file were corrected 2026-08-19 against production.**
+> It previously named 17 tables, **10 of which do not exist** — and, because it
+> listed them beside the 8 real ones in the same format, described several
+> subsystems the product does not have. The 10 are recorded in
+> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on any new one.
+>
+> **The 8 calendar tables that exist in production** (verified by direct
+> `pg_class` query, and matching what the shipped calendar code queries):
+> `golf_events`, `golf_event_attendance`, `golf_event_documents`,
+> `golf_academic_exclusions`, `golf_attendance_summary`, `golf_calendar_feeds`,
+> `golf_calendar_notifications`, `golf_coach_blocked_time`.
+>
+> **These 10 table names do not exist:** `golf_recurring_events`,
+> `golf_availability_polls`, `golf_poll_responses`, `golf_calendar_sync_log`,
+> `golf_calendar_sync_state`, `golf_external_calendars`,
+> `golf_event_exclusions`, `golf_event_status_log`,
+> `golf_player_availability_blocks`, `golf_player_attendance_stats`.
+>
+> **A missing table does not always mean a missing feature** — check which case
+> you're in before concluding anything. See "Current State".
+
 ## Current State
 
-Calendar and Events provide team scheduling, RSVP, attendance tracking, recurring events, availability polling, iCal feeds, sync state, academic conflict detection, and links into related team workflows.
+Calendar and Events provide team scheduling, RSVP, attendance tracking,
+**recurring events**, iCal feed subscriptions, calendar notifications, coach
+blocked time, academic conflict detection, class-schedule sync, event document
+links, and attendance summaries.
+
+**Recurring events ARE implemented — just not where this file said.** There is no
+`golf_recurring_events` table. Recurrence lives on `golf_events` itself:
+`recurring` (bool), `recurrence_rule` (text), `parent_event_id` (uuid), driven by
+`src/app/golf/actions/recurring-events.ts` (~2,000 lines). Verified 2026-08-19
+against `information_schema.columns`.
+
+**"Sync" here means class-schedule sync, not external-calendar sync.**
+`src/app/golf/actions/calendar-sync.ts` materializes a player's class schedule
+into events (`parseSemesterDates`, `CLASS_EVENT_TYPE`). It has nothing to do with
+Google/Outlook, and there is no sync-state or sync-log table.
+
+**Genuinely not implemented** — no backing table *and* no source references:
+availability polling / poll responses, external-calendar connections, player
+availability blocks. If asked to extend one of these, it is new work, not an
+extension.
 
 The route is shared by coaches and players, but permissions and actions differ. Coaches create/manage events and attendance; players respond and consume schedule context.
 
@@ -18,7 +60,7 @@ The route is shared by coaches and players, but permissions and actions differ. 
 
 ### Components
 
-- `src/components/golf/calendar/GolfCalendarWrapper.tsx`
+- `src/components/fairway/pages/calendar/FairwayCalendar.tsx`
 - `src/components/golf/calendar/PremiumCalendarClient.tsx`
 - `src/components/golf/calendar/MonthView.tsx`
 - `src/components/golf/calendar/WeekView.tsx`
@@ -33,29 +75,38 @@ The route is shared by coaches and players, but permissions and actions differ. 
 - `src/app/golf/actions/calendar-feeds.ts`
 - `src/app/golf/actions/calendar-sync.ts`
 - `src/app/golf/actions/event-documents.ts`
-- `src/app/golf/actions/event-lifecycle.ts`
+- `src/app/golf/actions/golf.ts` — event lifecycle CRUD (createGolfEvent / updateGolfEvent / deleteGolfEvent); the separate `event-lifecycle.ts` no longer exists
 - `src/app/golf/actions/recurring-events.ts`
 - `src/lib/calendar/**`
 
 ## Core Data
 
-- `golf_events`
+Verified against production 2026-08-19. **Only the first group exists.**
+
+Real:
+
+- `golf_events` — also carries recurrence: `recurring`, `recurrence_rule`, `parent_event_id`
 - `golf_event_attendance`
-- `golf_event_exclusions`
-- `golf_event_status_log`
-- `golf_availability_polls`
-- `golf_poll_responses`
+- `golf_event_documents`
 - `golf_academic_exclusions`
-- `golf_player_availability_blocks`
 - `golf_coach_blocked_time`
 - `golf_attendance_summary`
-- `golf_player_attendance_stats`
 - `golf_calendar_feeds`
 - `golf_calendar_notifications`
-- `golf_calendar_sync_log`
-- `golf_calendar_sync_state`
-- `golf_external_calendars`
-- `golf_recurring_events`
+
+❌ **Do not exist. Not tables, views, functions, or types** — every one returned
+absent from `pg_class`/`pg_proc`/`pg_type`:
+
+- ❌ `golf_recurring_events` — recurrence is columns on `golf_events` (see above)
+- ❌ `golf_event_exclusions`
+- ❌ `golf_event_status_log`
+- ❌ `golf_availability_polls`
+- ❌ `golf_poll_responses`
+- ❌ `golf_player_availability_blocks`
+- ❌ `golf_player_attendance_stats`
+- ❌ `golf_calendar_sync_log`
+- ❌ `golf_calendar_sync_state`
+- ❌ `golf_external_calendars`
 
 ## Data Flow
 

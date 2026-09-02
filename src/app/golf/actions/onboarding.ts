@@ -11,6 +11,7 @@ import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import type { Database } from '@/lib/types/database';
+import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -91,6 +92,40 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       return { success: false, error: 'Session not found. Please try logging in again, or check if email confirmation is required in Supabase settings.' };
     }
 
+    // THE CHOKEPOINT. Everything below creates a NEW organization, a NEW team,
+    // and makes this user their head coach — and the coach upsert further down
+    // overwrites `organization_id`, which is the entire link between a person
+    // and their program. Run by an assistant coach, that detaches them from the
+    // program that invited them and stands up a phantom duplicate of it
+    // (UNCW 2026-08-18, Shenandoah 2026-08-19).
+    //
+    // Five separate entry points decide who gets shown this form, and they were
+    // all fixed — but "five places I found" is not the same as "every place
+    // there is", and RLS will not catch a sixth: `golf_coaches_update_own` has
+    // no WITH CHECK, and `organizations_insert_coaches` only tests
+    // `users.role = 'coach'`. So the guard belongs HERE, once, where the damage
+    // is actually done.
+    //
+    // Deliberately the SAME function the routers call. If routing would not
+    // send you to this page, this action will not run for you, and the two
+    // cannot drift into disagreeing about who belongs here.
+    const entry = await resolveGolfCoachEntry(user.id);
+    if (entry.path !== '/golf/coach') {
+      await logServerError(
+        `[Onboarding] refused new-program onboarding for user ${user.id}: belongs at ${entry.path} (${entry.reason})`,
+        { action: 'onboarding.completeCoachOnboarding' },
+        'warning',
+      );
+      return {
+        success: false,
+        error:
+          entry.path === '/golf/coach/pending'
+            ? "You've already asked to join a program — your head coach just needs to approve you. You don't need to set up a new one."
+            : "You're already part of a program, so there's nothing to set up here.",
+        redirectTo: entry.path,
+      };
+    }
+
     // Ensure users table record exists with correct role
     // Note: 'sport' column doesn't exist on users table, role is sufficient
     const { error: usersError } = await supabase
@@ -137,9 +172,22 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       // direct the coach to be added to the existing program instead.
       if ((orgError as { code?: string } | null)?.code === '23505') {
         await logServerError(`[Onboarding] Duplicate organization name rejected: "${orgName}"`, { action: 'onboarding.completeCoachOnboarding' });
+        // THIS MESSAGE STRANDED PEOPLE. It used to read "Ask your program's head
+        // coach to add you to the team", which named an action that did not
+        // exist — there is no add-a-coach control, and the person reading it had
+        // already been handed the only thing that works: the team code. Two
+        // accounts died here on 2026-08-19/20 (Guilford, Shenandoah), each left
+        // with an auth login and no profile, unable to sign up again (email
+        // taken) or sign in (routed straight back to this same form).
+        //
+        // The branch already knows the program exists, so the honest answer is
+        // the one that works: go back and enter the team code, which now joins
+        // this program as an assistant coach outright. Anyone already stuck
+        // reaches the fix by re-running signup with the code.
         return {
           success: false,
-          error: `An organization named "${orgName}" already exists. Ask your program's head coach to add you to the team, or contact support if you believe this is a mistake.`,
+          error: `${orgName} is already set up on Helm — so there's nothing to create. Ask your head coach for the team code and enter it at sign-up; that joins you to the existing program as an assistant coach, with full access.`,
+          redirectTo: '/golf/signup',
         };
       }
       await logServerError(`[Onboarding] Organization creation failed: ${describeError(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });

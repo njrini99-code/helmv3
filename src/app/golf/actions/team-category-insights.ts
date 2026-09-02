@@ -5,6 +5,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeSeriesTrend } from '@/lib/coachhelm/trend';
 import { getInsightsForCoachWithMeta } from '@/app/golf/actions/insight-delivery';
@@ -340,6 +341,31 @@ async function getTeamOverviewImpl(
     //    skip the redundant org→team lookup. Otherwise look it up here.
     let team: { id: string } | null = null;
     if (teamIdArg) {
+      // teamIdArg arrives from the caller. Both real callers pass a
+      // server-resolved id, but this is a `'use server'` export, so the
+      // browser can POST any uuid it likes and the coach check above only
+      // proves the caller is A coach, not a coach of THIS team.
+      //
+      // Today the leak is contained: every read below runs on the RLS-scoped
+      // client, and golf_team_members_select_v5 requires a golf_team_coach_staff
+      // row for the team, so an outside coach gets zero members and the whole
+      // aggregate resolves over an empty roster. So this is defense in depth,
+      // not a live hole.
+      //
+      // It is worth adding anyway, and 2026-08-19 is why: the goals_coach_create
+      // policy that everyone assumed bound player to team had been authored
+      // twice and never applied in prod (see 523be3527). "RLS covers it" is an
+      // assumption this codebase has already been wrong about. One unapplied
+      // migration is all that separates this from being live.
+      const allowed = await validateCoachTeamAccess(
+        supabase,
+        session.coach.id,
+        teamIdArg,
+        orgId,
+      );
+      if (!allowed) {
+        return { success: false, error: 'Not authorized for this team' };
+      }
       team = { id: teamIdArg };
     } else {
       const resolvedTeamId = await resolveCoachTeamIdWithCookie(
@@ -709,6 +735,31 @@ async function getTeamCategoryInsightsImpl(
     //    skip the redundant org→team lookup. Otherwise look it up here.
     let team: { id: string } | null = null;
     if (teamIdArg) {
+      // teamIdArg arrives from the caller. Both real callers pass a
+      // server-resolved id, but this is a `'use server'` export, so the
+      // browser can POST any uuid it likes and the coach check above only
+      // proves the caller is A coach, not a coach of THIS team.
+      //
+      // Today the leak is contained: every read below runs on the RLS-scoped
+      // client, and golf_team_members_select_v5 requires a golf_team_coach_staff
+      // row for the team, so an outside coach gets zero members and the whole
+      // aggregate resolves over an empty roster. So this is defense in depth,
+      // not a live hole.
+      //
+      // It is worth adding anyway, and 2026-08-19 is why: the goals_coach_create
+      // policy that everyone assumed bound player to team had been authored
+      // twice and never applied in prod (see 523be3527). "RLS covers it" is an
+      // assumption this codebase has already been wrong about. One unapplied
+      // migration is all that separates this from being live.
+      const allowed = await validateCoachTeamAccess(
+        supabase,
+        session.coach.id,
+        teamIdArg,
+        orgId,
+      );
+      if (!allowed) {
+        return { success: false, error: 'Not authorized for this team' };
+      }
       team = { id: teamIdArg };
     } else {
       const resolvedTeamId = await resolveCoachTeamIdWithCookie(
