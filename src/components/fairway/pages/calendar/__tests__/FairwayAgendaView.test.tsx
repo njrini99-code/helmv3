@@ -7,7 +7,7 @@
  * bucket into view instead of leaving the viewport on stale history.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayAgendaView } from '../FairwayAgendaView';
 
@@ -77,7 +77,7 @@ describe('FairwayAgendaView — anchor scroll', () => {
     });
   });
 
-  it('scrolls the today-or-later bucket into view, past a six-week-old stale bucket', () => {
+  it('does not scroll on load when earlier buckets are collapsed — today already heads the list', () => {
     const events = [
       // ~6 weeks before NOW, midday ET.
       makeEvent('stale', '2026-06-04T16:00:00.000Z', 'Old Practice'),
@@ -98,9 +98,43 @@ describe('FairwayAgendaView — anchor scroll', () => {
       />,
     );
 
+    // The stale bucket sits behind "Show 1 earlier event", so "Today" is the
+    // first thing rendered. Scrolling it to the top of the viewport anyway
+    // only pushed the calendar masthead off-screen — fresh loads landed
+    // 130–386px down the page (audit 2026-09-02, UI-2/UI-3).
+    expect(screen.getByRole('button', { name: /show 1 earlier event/i })).toBeInTheDocument();
+    expect(scrollIntoViewMock).not.toHaveBeenCalled();
+  });
+
+  it('scrolls the today-or-later bucket into view when earlier buckets are visible above it and the range changes', () => {
+    const events = [
+      makeEvent('stale', '2026-06-04T16:00:00.000Z', 'Old Practice'),
+      makeEvent('today', middayEt(16), 'Today Practice'),
+      makeEvent('future', middayEt(20), 'Upcoming Tournament'),
+    ];
+    const view = (rangeStart: Date) => (
+      <FairwayAgendaView
+        events={events}
+        mode="range"
+        focusDate={NOW}
+        rangeStart={rangeStart}
+        rangeEnd={new Date(2026, 9, 16)}
+        timezone={TEAM_TZ}
+        isCoach
+        nowRef={NOW}
+      />
+    );
+    const { rerender } = render(view(new Date(2026, 3, 16)));
+
+    // Opening the history is a read, not a navigation — no yank.
+    fireEvent.click(screen.getByRole('button', { name: /show 1 earlier event/i }));
+    expect(scrollIntoViewMock).not.toHaveBeenCalled();
+
+    // A genuine range change with history still open: "Today" is no longer
+    // the first bucket, so it is anchored into view — past the stale one.
+    rerender(view(new Date(2026, 2, 16)));
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
     expect(scrollIntoViewMock).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }));
-    // The scrolled-to section is the "Today" bucket, not the stale one.
     const scrolledSection = scrollIntoViewMock.mock.instances[0] as unknown as HTMLElement;
     expect(scrolledSection.getAttribute('aria-label')).toBe('Today');
   });
@@ -137,36 +171,31 @@ describe('FairwayAgendaView — anchor scroll', () => {
   });
 
   it('does not re-scroll on a data-only refresh of the same navigation range', () => {
-    const events = [makeEvent('today', middayEt(16))];
-    const { rerender } = render(
+    const events = [
+      makeEvent('stale', '2026-06-04T16:00:00.000Z', 'Old Practice'),
+      makeEvent('today', middayEt(16)),
+    ];
+    const view = (rangeStart: Date, evs: CalendarEvent[]) => (
       <FairwayAgendaView
-        events={events}
+        events={evs}
         mode="range"
         focusDate={NOW}
-        rangeStart={new Date(2026, 3, 16)}
+        rangeStart={rangeStart}
         rangeEnd={new Date(2026, 9, 16)}
         timezone={TEAM_TZ}
         isCoach
         nowRef={NOW}
-      />,
+      />
     );
+    const { rerender } = render(view(new Date(2026, 3, 16), events));
+    fireEvent.click(screen.getByRole('button', { name: /show 1 earlier event/i }));
+    rerender(view(new Date(2026, 2, 16), events));
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
 
     // Same nav range (mode/focusDate/rangeStart/rangeEnd unchanged), just a
     // new events array (e.g. a realtime refetch) — must NOT yank the scroll
     // position again mid-read.
-    rerender(
-      <FairwayAgendaView
-        events={[...events, makeEvent('new', middayEt(17))]}
-        mode="range"
-        focusDate={NOW}
-        rangeStart={new Date(2026, 3, 16)}
-        rangeEnd={new Date(2026, 9, 16)}
-        timezone={TEAM_TZ}
-        isCoach
-        nowRef={NOW}
-      />,
-    );
+    rerender(view(new Date(2026, 2, 16), [...events, makeEvent('new', middayEt(17))]));
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -703,11 +703,15 @@ async function verifyRoundAccess(
     .from('golf_rounds')
     .select('player_id')
     .eq('id', roundId)
-    .single();
+    .maybeSingle();
 
-  // `.single()` reports a genuine no-row as PGRST116 — that one really is
-  // "round not found" and keeps its message.
-  if (roundError && roundError.code !== 'PGRST116') {
+  // `.maybeSingle()` answers a genuine no-row with `data: null` and NO error.
+  // `.single()` answered it with PGRST116 ("Cannot coerce the result to a
+  // single JSON object"), and although the code here handled that code, the
+  // Sentry Supabase integration captured it as an exception on every coach
+  // view of a player's round (JAVASCRIPT-NEXTJS-Q9). Zero rows is a verdict
+  // in this function, not a failure — a remaining error is a real read fault.
+  if (roundError) {
     await logServerError(
       `verifyRoundAccess: round read failed for ${roundId}: ${describeError(roundError)}`,
       { action: 'insights.verifyRoundAccess', featureArea: 'rounds' },
@@ -726,12 +730,13 @@ async function verifyRoundAccess(
     .select('id')
     .eq('id', round.player_id)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   // A failure here is NOT "this user does not own the round". Falling through
   // to the coach branch on a failed ownership check is how a player ends up
-  // denied access to their own round.
-  if (playerError && playerError.code !== 'PGRST116') {
+  // denied access to their own round. (No-row is `player === null`, not an
+  // error — see the round read above.)
+  if (playerError) {
     await logServerError(
       `verifyRoundAccess: ownership read failed for round ${roundId}: ${describeError(playerError)}`,
       { action: 'insights.verifyRoundAccess', featureArea: 'rounds' },

@@ -79,7 +79,11 @@ export function ToastStack({ mobileBreakpointPx = 768, ...props }: ToastStackPro
       position={isMobile ? 'bottom-center' : 'bottom-right'}
       duration={5000}
       gap={12}
-      offset={isMobile ? 'calc(env(safe-area-inset-bottom) + 5rem)' : '1.5rem'}
+      // sonner applies `offset` on wide viewports only and reads `mobileOffset`
+      // under 600px — so the phone clearance below the toasts was never applied
+      // and they sat on top of the bottom nav (audit 2026-09-02, UI-6).
+      offset="1.5rem"
+      mobileOffset={{ bottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}
       visibleToasts={4}
       closeButton
       // We render our own tone icons, so disable sonner's rich colors.

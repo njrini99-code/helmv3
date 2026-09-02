@@ -19,6 +19,7 @@
  */
 
 import { notFound, redirect } from 'next/navigation';
+import { isUuid } from '@/lib/utils/uuid';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { createClient } from '@/lib/supabase/server';
@@ -37,6 +38,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { playerId } = await params;
+  if (!isUuid(playerId)) notFound();
   const sb = await createClient();
   const { data } = await sb
     .from('golf_players')
@@ -49,6 +51,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PlayerGenomePage({ params }: PageProps) {
   const { playerId } = await params;
+  if (!isUuid(playerId)) notFound();
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
   if (!session.coach) redirect('/golf/dashboard');

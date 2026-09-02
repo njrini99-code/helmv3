@@ -5,6 +5,7 @@ import { escapeICalText } from '@/lib/calendar/ical';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
+import { vercelWaitUntil } from '@/lib/observability/vercel-wait-until';
 
 /**
  * Calendar Feed API Route
@@ -217,6 +218,55 @@ function generateICal(events: CalendarFeedEvent[], feedName: string, timezone: s
 }
 
 // ============================================================================
+// SYNC STAMP
+// ============================================================================
+
+/**
+ * Stamp `last_synced_at` on the feed row after a subscriber fetch.
+ *
+ * Non-blocking by design: the caller registers the returned promise with the
+ * platform's waitUntil instead of awaiting it, so the response never pays for
+ * the write. NEVER rejects — a failed stamp is logged and dropped, because a
+ * missing sync timestamp must not cost a subscriber their calendar, and an
+ * unobserved rejection is exactly the failure this replaced.
+ */
+async function recordFeedSync(
+  supabase: ReturnType<typeof createAdminClient>,
+  feed: CalendarFeed,
+): Promise<void> {
+  const context = {
+    action: 'calendarFeedApi.get.recordSync',
+    // No request URL: the feed_token is a path-segment credential (see the
+    // events-query error below).
+    route: '/api/calendar/feeds/[token]',
+    source: 'route_handler',
+    sport: 'golf',
+    featureArea: 'calendar',
+    teamId: feed.team_id,
+    handled: true,
+    extra: { feedId: feed.id, feedType: feed.feed_type },
+  } satisfies Parameters<typeof logServerError>[1];
+
+  try {
+    const { error } = await supabase
+      .from('golf_calendar_feeds')
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq('id', feed.id);
+    if (!error) return;
+    await logServerError(
+      `Calendar feed last_synced_at update failed: ${error.message}`,
+      { ...context, errorCode: error.code },
+      'warning',
+    );
+  } catch (error) {
+    // Either the write threw (a fetch that died) or the log of its failure
+    // did. Neither may escape: the response has already been returned, and
+    // a rejection here has nowhere to go but the process-level handlers.
+    await logServerException(error, context).catch(() => undefined);
+  }
+}
+
+// ============================================================================
 // ROUTE HANDLER
 // ============================================================================
 
@@ -265,12 +315,13 @@ export async function GET(
       }
     }
 
-    // Update last_synced_at (fire-and-forget, don't block response)
-    void supabase
-      .from('golf_calendar_feeds')
-      .update({ last_synced_at: new Date().toISOString() })
-      .eq('id', typedFeed.id)
-      .then(() => {});
+    // Stamp last_synced_at without blocking the response. The write is handed
+    // to the platform's waitUntil so a Vercel function freeze after the
+    // response cannot kill it mid-flight. Until 2026-09-02 this was a bare
+    // `void ….then(() => {})` with no rejection handler and no registration:
+    // the fetch died in the frozen function and surfaced as an unhandled
+    // "fetch failed" (Sentry rel:cd27d9ac). recordFeedSync never rejects.
+    vercelWaitUntil(recordFeedSync(supabase, typedFeed));
 
     // All feed types must be scoped to a team for security
     if (!typedFeed.team_id) {
