@@ -276,6 +276,53 @@ them would have broken those routes, not the dead one.
   succeeded — a short trace is not a failed one, and a combined "46 problems"
   figure would be false. `trace-fleet.ts` counts them separately;
   `stepCoverage` returns null rather than inventing a denominator.
+- **"Steps observed" has exactly one definition, and only one place fixes it
+  up.** The fleet-list RPC (`helm_debug_list_traces`) and the per-trace tree
+  (`trace-tree.ts`'s `buildTraceTree`) each carry their own count over the
+  same underlying fact — the list's is a DB-stored counter, the tree's is
+  computed live over the steps array it was actually handed — and the two can
+  disagree for a trace finalized before the 2026-09-01
+  `helm_debug_finalize_trace` migration, or one still mid-flight.
+  `TraceTree.observedStepCount` is the one named, tested definition
+  (`observed.length`, before synthesised missing nodes); `bridgeGetFlightTrace`
+  reconciles a trace's `observed_step_count` against it via
+  `reconcileObservedStepCount` the moment that trace is OPENED. This fixes the
+  number for whichever trace is open, not for the other rows still sitting in
+  the fleet list — that needs a `helm_debug_list_traces` migration change and
+  stays a known, documented gap.
+- **An observed step can be undeclared, and that is not the same as missing.**
+  `TraceStepNode.isUndeclared` marks a step that WAS recorded but whose key
+  isn't in the workflow's own declared-step set (`golf-round-flight-workflow.ts`)
+  — the shape every postgres-layer checkpoint child the trace-checkpoints
+  migration writes will have, since e.g. `golf.round.submit` declares only its
+  top-level RPC key, never the in-transaction children already observed under
+  it. `isMissing` stays the opposite condition (declared, never observed);
+  neither ever overlaps the other on the same node. A step recording only
+  `finished_at` (a single-moment checkpoint, not a measured span) is
+  `isPointInTime` and renders "point-in-time" rather than reading identically
+  to a step with no data at all. `errorCode` falls back to
+  `metadata.sqlstate`/`metadata.failure_code` when the `error_code` column is
+  empty, matching what `helm_private.trace_exception_checkpoint` actually
+  writes.
+- **A downgraded trace's badge only ever appears once you open it.**
+  `helm_debug_finalize_trace` (since the applied
+  `20260901140000_trace_cannot_claim_success_while_blind.sql`) writes
+  `status_downgraded_from`/`status_downgraded_reason` into a run's `metadata`
+  when it silently downgrades a caller-claimed `success`. `helm_debug_get_trace`
+  returns that metadata in full; `helm_debug_list_traces` explicitly SELECTs a
+  fixed column list that omits it. So the warning `InlineNotice` in
+  `TracesClient.tsx` can only ever render on the opened trace's detail panel —
+  never as a fleet-list row badge — without a list-RPC migration change.
+- **`npm run flight-recorder:audit`** (`scripts/flight-recorder-audit.mjs` +
+  `scripts/lib/flight-recorder-audit-lib.mjs`) is the read-only, post-deploy
+  check that the two in-flight timing/checkpoint branches actually wrote real
+  data: runs/steps/distinct-step-keys/steps-with-identity/zero-step-runs/
+  downgraded-runs over the last 24h. It calls the same two `helm_debug_*` RPCs
+  the app uses — `helm_debug` sits outside PostgREST's exposed schema list, so
+  an ordinary Supabase table client cannot reach `trace_runs`/`trace_steps`
+  under any key, service-role included. `helm_debug_list_traces` hard-caps at
+  200 rows server-side with no offset/cursor; the script logs (never silently
+  drops) the case where that cap may have truncated the true 24h population.
 - **Reliability is a lens, not a second queue.** `/admin/reliability` keeps
   source health, the blind-source notice, the severity mix, run history and
   the raw snapshot — removing those was never the goal. What it must not do
