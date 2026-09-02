@@ -61,8 +61,9 @@ export interface TraceStepNode {
    * workflow definition — e.g. a postgres-layer checkpoint child the trace
    * checkpoints migration writes under an RPC that only declares itself, not
    * its children. Always false on a synthesised missing node (the opposite
-   * condition: declared but never observed); always false when the workflow
-   * itself is unrecognised, since nothing was declared to check against.
+   * condition: declared but never observed). When the workflow itself is
+   * unrecognised, every observed step is treated as undeclared — nothing was
+   * declared to check against, so nothing observed can be "declared" either.
    */
   isUndeclared: boolean;
   /**
