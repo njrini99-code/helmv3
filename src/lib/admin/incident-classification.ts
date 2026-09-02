@@ -41,6 +41,8 @@
  *   direction for a triage tool.
  */
 
+import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
+
 export type IncidentClass =
   /** A genuine unexpected failure. Belongs in triage. */
   | 'defect'
@@ -322,6 +324,31 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
   const accessHit = matchesAny(haystack, ACCESS_PHRASES);
   if (accessHit) {
     return done('access', false, `Expected access control ("${accessHit}")`);
+  }
+
+  // 3c. A CLIENT fetch that never reached the server. WebKit says "Load
+  //     failed", Chromium "Failed to fetch" — the TypeError carries no status
+  //     because there was no HTTP response to carry one. Rule 4 below already
+  //     treats a client-reported provider fault as the visitor's connectivity,
+  //     but its phrase list only knew the generic "network error" wording, so
+  //     the overnight digest of 2026-09-02 paged on three "Client error: Load
+  //     failed" rows (two Shenandoah phones mid-send, one route boundary) as
+  //     actionable degradations. Same class, same verdict. Server-side
+  //     transport failures (undici's "fetch failed" from a Vercel function)
+  //     are deliberately NOT matched here and stay actionable — those are ours.
+  //     A stale-deployment chunk failure ("Failed to fetch dynamically
+  //     imported module") shares the wording but not the cause; rule 5b owns
+  //     it, so it is excluded here rather than re-filed as connectivity.
+  if (
+    source === 'client' &&
+    isTransientNetworkErrorMessage(haystack) &&
+    !matchesAny(haystack, STALE_DEPLOYMENT_PHRASES)
+  ) {
+    return done(
+      'integration',
+      false,
+      'Client-side connectivity — the request never reached the server (transport-layer TypeError)',
+    );
   }
 
   // 4. Provider/upstream faults. Checked before empty-state and telemetry
