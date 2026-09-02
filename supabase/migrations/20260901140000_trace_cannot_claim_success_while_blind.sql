@@ -119,3 +119,11 @@ begin
   where trace_id = p_trace_id;
 end;
 $function$;
+
+-- Grants restated, house convention: CREATE OR REPLACE preserves the ACL
+-- 20260825200811 set (service_role only), but a migration that touches a
+-- SECURITY DEFINER function says so explicitly rather than relying on it.
+REVOKE ALL ON FUNCTION public.helm_debug_finalize_trace(uuid, text, jsonb)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.helm_debug_finalize_trace(uuid, text, jsonb)
+TO service_role;
