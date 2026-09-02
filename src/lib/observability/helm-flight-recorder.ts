@@ -9,6 +9,7 @@ import {
   type FlightStepStatus,
   type GolfRoundWorkflow,
 } from './golf-round-flight-workflow';
+import { vercelWaitUntil } from './vercel-wait-until';
 
 type SafeMetadata = Record<string, unknown>;
 
@@ -226,9 +227,40 @@ export async function createHelmFlightRecorder(
     expected_step_count: trace.steps().length,
   });
 
+  /**
+   * Every call site in golf.ts fires `void flightRecorder.x(...)` — by
+   * design, so a trace write can never block the player's save. That means
+   * the promise `write()` returns here is, from the caller's perspective,
+   * already fire-and-forget before it ever reaches this function. On a plain
+   * Node server that is merely untidy: the event loop keeps running until
+   * the promise settles regardless of who is watching it. On Vercel it is a
+   * race — the function can freeze the instant the Server Action's response
+   * is sent, and a promise nobody registered with the platform is frozen
+   * mid-flight along with it. When that frozen fetch is later resumed (on
+   * whatever invocation next thaws the same execution environment) it
+   * surfaces as an "unhandled fetch failed": Sentry's Supabase auto-
+   * instrumentation on the admin client (src/lib/supabase/admin.ts) reports
+   * it once there, and this function's own `catch` below reports it again
+   * whenever it eventually gets to run — two Sentry events for one failure.
+   *
+   * `vercelWaitUntil` (src/lib/observability/vercel-wait-until.ts) is the
+   * repo's existing fix for exactly this shape of race (see
+   * src/lib/admin/schedule-bridge-write.ts for the idiom PR #1737 used for
+   * Bridge writes): registering `task` tells the Vercel runtime to hold the
+   * function open until it settles. That keeps the write inside the SAME
+   * invocation it started in, so the `try/catch` below always gets to run —
+   * exactly one handled report, through `onRecorderFailure`, every time —
+   * and the freeze/resume race that produced the second, unhandled report
+   * can no longer happen. Registering is additive and never throws (see the
+   * helper's own contract), so this changes nothing outside Vercel: `task`
+   * is still awaited here regardless, fail-open, non-blocking to the
+   * caller either way.
+   */
   const failOpen = async (operation: string, write: () => Promise<void>) => {
+    const task = write();
+    vercelWaitUntil(task);
     try {
-      await write();
+      await task;
     } catch (error) {
       dependencies.onRecorderFailure(error, { operation, trace_id: traceId, workflow: input.workflow });
     }

@@ -589,3 +589,38 @@
   src/app/golf/actions src/test/lib` (0 failures),
   `node scripts/knowledge/document-inventory.mjs --check` (0). Not run:
   `npm run build` (no `.env.local` in this worktree).
+
+## 2026-09-02 — Flight Recorder: recorder writes survive the response returning
+
+- SHA: pending (this commit).
+- Change: `helm-flight-recorder.ts`'s internal `failOpen` — the single choke
+  point every `persistStart`/`persistStep`/`persistFinalize` write passes
+  through — now registers the write's own promise with `vercelWaitUntil`
+  (`src/lib/observability/vercel-wait-until.ts`) before awaiting it, in
+  addition to (not instead of) the existing `await`/`catch`. No call site in
+  `golf.ts` changed; every one still fires `void flightRecorder.x(...)`.
+- Why: every recorder call in `golf.ts` is deliberately unawaited so a trace
+  write can never block the player's save. On Vercel that made the write a
+  race against the function freezing the instant the response returns — a
+  write frozen mid-flight and resumed on a later, unrelated invocation
+  surfaced as an unhandled "fetch failed", reported once by Sentry's
+  Supabase auto-instrumentation on the admin client
+  (`src/lib/supabase/admin.ts`) and reported again by `failOpen`'s own catch
+  whenever it eventually got to run. Registering the write with
+  `vercelWaitUntil` holds the function open until it settles, so the write
+  finishes inside the same invocation it started in and `failOpen`'s catch
+  always gets to run — one handled report, never two. The write stays
+  fail-open and non-blocking to the player's write; `vercelWaitUntil` is
+  additive and a no-op outside Vercel, by its own contract.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date — new cases
+  in `helm-flight-recorder.test.ts` prove `persistStart`/`persistStep`/
+  `persistFinalize` writes are each registered with `vercelWaitUntil`, that a
+  rejecting write still reaches `onRecorderFailure` exactly once (not
+  duplicated by the registration), and that nothing changes outside Vercel
+  or on the caller's side (still fail-open, still never propagates).
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0), `npx vitest run
+  src/lib/observability src/test/golf src/app/golf/actions src/test/lib`
+  (0 failures), `node scripts/knowledge/document-inventory.mjs --check` (0).
+  Not run: `npm run build` (no `.env.local` in this worktree; excluded by
+  this task's own instructions).

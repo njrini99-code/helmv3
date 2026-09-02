@@ -172,7 +172,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 11 | 1 |
-| `memory/features/shot-tracking.md` | current | yes | - | yes | 4 | 48 | 2 |
+| `memory/features/shot-tracking.md` | current | yes | - | yes | 4 | 50 | 2 |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 19 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 16 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 2 | 11 | - |
@@ -473,7 +473,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/settings_preferences.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 24 | 10 |
+| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 26 | 10 |
 | `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/team_communications.md` | current | - | - | - | 1 | 9 | 4 |
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |

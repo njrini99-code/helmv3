@@ -434,6 +434,26 @@ after the trace's own reported total-duration window by design — the
 alternative, deferring `finalize()` into the background tail, would leave the
 player-facing trace open long after the response has already been sent.
 
+Every call site above fires the recorder with `void flightRecorder.x(...)` —
+deliberately unawaited, so a trace write can never block the player's save.
+The write itself (`persistStart`/`persistStep`/`persistFinalize` in
+`helm-flight-recorder.ts`, routed through the module's internal `failOpen`)
+is now registered with `vercelWaitUntil`
+(`src/lib/observability/vercel-wait-until.ts`) before it is awaited, so the
+Vercel runtime holds the function open until that write settles instead of
+freezing mid-flight the instant the response returns. Before this, an
+in-flight persistence RPC frozen by the platform and resumed on a later,
+unrelated invocation surfaced as an unhandled "fetch failed" that Sentry's
+Supabase auto-instrumentation on the admin client
+(`src/lib/supabase/admin.ts`) reported once, while `failOpen`'s own catch —
+which never got the chance to run before the freeze — reported the same
+underlying failure again whenever it eventually resumed. Keeping the write
+inside the same invocation it started in means `failOpen`'s catch always
+runs, so a failure now reaches Sentry through exactly one handled path. The
+write stays fail-open and non-blocking to the player's write throughout;
+`vercelWaitUntil` is additive (a no-op outside Vercel, by its own contract)
+and never changes what the caller awaits.
+
 ## Business Rules
 
 - Do not lose user-entered shots. Save/submit/recover paths must be idempotent and interruption-tolerant.

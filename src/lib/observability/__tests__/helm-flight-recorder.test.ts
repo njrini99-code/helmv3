@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createHelmFlightRecorder,
   recordRescuedStepOutcome,
   PERSIST_START_TIMEOUT_MS,
   type FlightRecorderDependencies,
 } from '../helm-flight-recorder';
+import { __setVercelRequestContextForTests } from '../vercel-wait-until';
 
 function fakeDependencies(
   overrides: Partial<FlightRecorderDependencies> = {},
@@ -211,6 +212,109 @@ describe('Helm flight recorder', () => {
         vi.useRealTimers();
       }
     });
+  });
+});
+
+describe('persistence writes survive the response returning (Vercel freeze)', () => {
+  // golf.ts calls every recorder method with `void flightRecorder.x(...)` —
+  // deliberately not awaited, so the trace write never blocks the player's
+  // save. On Vercel the function can freeze the instant the response is
+  // sent, and a promise nobody registered with the platform simply stops
+  // mid-flight: the underlying RPC surfaces as an unhandled "fetch failed"
+  // (reported once by Sentry's Supabase auto-instrumentation) while
+  // failOpen's own catch — which never got to run before the freeze —
+  // reports it again on the NEXT invocation that happens to resume the
+  // frozen microtask. Registering the write with vercelWaitUntil tells the
+  // Vercel runtime to hold the function open until the write settles, so it
+  // always finishes (and is caught) within the SAME invocation: exactly one
+  // handled report, ever, and the freeze/resume race that produced the
+  // second one can't happen.
+  afterEach(() => __setVercelRequestContextForTests(null));
+
+  it('registers persistStart with vercelWaitUntil at construction time', async () => {
+    const waitUntil = vi.fn();
+    __setVercelRequestContextForTests({ waitUntil });
+    const { dependencies } = fakeDependencies();
+
+    await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+
+    expect(waitUntil).toHaveBeenCalledTimes(1);
+    expect(waitUntil.mock.calls[0]?.[0]).toBeInstanceOf(Promise);
+  });
+
+  it('registers every persistStep and persistFinalize write with vercelWaitUntil', async () => {
+    const waitUntil = vi.fn();
+    __setVercelRequestContextForTests({ waitUntil });
+    const { dependencies } = fakeDependencies();
+
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+    waitUntil.mockClear(); // isolate from the persistStart registration above
+
+    await recorder.start('server.validation');
+    await recorder.complete('server.validation');
+    await recorder.finalize('success');
+
+    // one registration per persistStep call (start, complete) plus one for finalize
+    expect(waitUntil).toHaveBeenCalledTimes(3);
+    for (const call of waitUntil.mock.calls) {
+      expect(call[0]).toBeInstanceOf(Promise);
+    }
+  });
+
+  it('still reports a rejecting write through onRecorderFailure exactly once, even though the same promise is registered with vercelWaitUntil', async () => {
+    const waitUntil = vi.fn();
+    __setVercelRequestContextForTests({ waitUntil });
+    const onRecorderFailure = vi.fn();
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => '9c1f3a2b-4d5e-6f70-8192-a3b4c5d6e7f8',
+      startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+      persistStart: async () => {},
+      persistStep: async () => { throw new Error('debug store unavailable'); },
+      persistFinalize: async () => {},
+      onRecorderFailure,
+    };
+
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+    await recorder.complete('server.validation');
+
+    expect(onRecorderFailure).toHaveBeenCalledTimes(1);
+    expect(onRecorderFailure).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ operation: 'step' }));
+    // The promise handed to vercelWaitUntil is the very one failOpen also
+    // awaits — the same reference, not a second wrapped copy that would give
+    // the underlying write two independent `.catch` paths (the doubling this
+    // fix closes). It settles (by rejecting, same as the real write) rather
+    // than hanging, and — because this test completes without vitest
+    // flagging an unhandled rejection — was never left without a handler.
+    const registered = waitUntil.mock.calls.at(-1)?.[0] as Promise<unknown> | undefined;
+    await expect(registered).rejects.toThrow('debug store unavailable');
+  });
+
+  it('never propagates a persistence rejection to the caller', async () => {
+    __setVercelRequestContextForTests({ waitUntil: vi.fn() });
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+      persistStart: async () => {},
+      persistStep: async () => { throw new Error('fetch failed'); },
+      persistFinalize: async () => { throw new Error('fetch failed'); },
+      onRecorderFailure: vi.fn(),
+    };
+
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+    await expect(recorder.complete('server.validation')).resolves.toBeUndefined();
+    await expect(recorder.finalize('success')).resolves.toBeUndefined();
+  });
+
+  it('works identically outside Vercel, where vercelWaitUntil finds no request context', async () => {
+    // No __setVercelRequestContextForTests call — vercelWaitUntil returns
+    // false and is a pure no-op, exactly like a local dev server or a test.
+    const { dependencies, calls } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+    await recorder.complete('server.validation');
+    await recorder.finalize('success');
+
+    expect(calls.some((c) => c.kind === 'step')).toBe(true);
+    expect(calls.some((c) => c.kind === 'finalize')).toBe(true);
   });
 });
 
