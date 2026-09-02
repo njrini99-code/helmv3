@@ -63,9 +63,9 @@ These branches must **not** trigger automatic Vercel preview builds. With the po
 | **`CI`** (`.github/workflows/ci.yml`) | Every PR | typecheck, lint, unit tests, build, RLS tests |
 | **`PR E2E smoke`** (`.github/workflows/pr-smoke.yml`) | Every PR (a11y path-filtered inside workflow) | Public **accessibility** Playwright only when src/e2e paths change (~12 min max) |
 | **`Review Gate`** | Every PR | Static analyzers (fast) |
-| **`Playwright E2E`** (`.github/workflows/playwright.yml`) | Every PR + main + manual | **Smoke checks** build on every PR; full Chromium/baseball/screenshots on main or manual only |
+| **`Playwright E2E`** (`.github/workflows/playwright.yml`) | Manual only (since 2026-09-02) | Full Chromium suite on `workflow_dispatch`. The **Smoke checks** build job it carried on every PR was a duplicate of CI's `Next build` and is gone. |
 
-**PR a11y path filter** (pr-smoke): docs-only PRs skip the accessibility job; build smoke still runs via `Playwright E2E / Smoke checks`.
+**PR a11y path filter** (pr-smoke): docs-only PRs skip the accessibility job; the build verdict comes from CI's `Next build` (inside `CI aggregate`).
 
 ### `main` branch pushes
 
