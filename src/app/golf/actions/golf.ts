@@ -8283,8 +8283,20 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
 
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authCheckError } = await supabase.auth.getUser();
     if (!user) {
+      // See isTransientAuthCheckFailure. A destructive edit must not be reported as a sign-out when GoTrue was
+      // merely unreachable. The shot is still there; the only honest answer is
+      // 'retry'.
+      if (isTransientAuthCheckFailure(authCheckError)) {
+        void logServerError('Delete-shot auth check failed in transit (NOT a session expiry) — retryable', {
+          action: 'deleteShot',
+          featureArea: 'shot_tracking',
+          errorDetails: authCheckError?.message,
+          extra: { authStatus: authCheckError?.status ?? null },
+        }, 'warning');
+        return { success: false, error: 'Could not verify your session — check your connection and try again. Your shot was not deleted.' };
+      }
       return { success: false, error: 'You must be signed in' };
     }
 
@@ -8450,8 +8462,19 @@ async function updateShotImpl(
 
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authCheckError } = await supabase.auth.getUser();
     if (!user) {
+      // See isTransientAuthCheckFailure. The player is mid-round correcting a shot. Telling them to sign in costs
+      // them the edit for a failure that never reached the auth server.
+      if (isTransientAuthCheckFailure(authCheckError)) {
+        void logServerError('Update-shot auth check failed in transit (NOT a session expiry) — retryable', {
+          action: 'updateShot',
+          featureArea: 'shot_tracking',
+          errorDetails: authCheckError?.message,
+          extra: { authStatus: authCheckError?.status ?? null },
+        }, 'warning');
+        return { success: false, error: 'Could not verify your session — check your connection and try again. Your change was not saved.' };
+      }
       return { success: false, error: 'You must be signed in' };
     }
 
@@ -8716,8 +8739,20 @@ async function getRoundShotDetailsImpl(
     const supabase = await createClient();
 
     // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authCheckError } = await supabase.auth.getUser();
     if (!user) {
+      // See isTransientAuthCheckFailure. A read, so nothing is at risk but the screen. Still worth separating: a
+      // transit blip rendering as 'Not authenticated' is what sent players to
+      // the login screen mid-round on 2026-08-19.
+      if (isTransientAuthCheckFailure(authCheckError)) {
+        void logServerError('Round shot-review auth check failed in transit (NOT a session expiry) — retryable', {
+          action: 'getRoundShotDetails',
+          featureArea: 'shot_tracking',
+          errorDetails: authCheckError?.message,
+          extra: { authStatus: authCheckError?.status ?? null },
+        }, 'warning');
+        return { success: false, error: 'Could not verify your session — check your connection and try again.' };
+      }
       return { success: false, error: 'Not authenticated' };
     }
 

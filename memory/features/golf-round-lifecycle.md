@@ -322,6 +322,13 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Continue Round uses the shared Fairway mobile header, scorecard controls,
   buttons, and recovery modal. Its save-and-exit action is secondary; the live
   shot/complete control is the only primary action in the thumb zone.
+- The confirmed-course scorecard editor (`FairwayHoleConfig`) follows the
+  9/18 and Front/Back controls that sit above it on the same screen: a change
+  to the seeded baseline re-seeds the editable holes (compared by content, so
+  the player's own par/yardage edits survive ordinary re-renders), and Start
+  round saves exactly the holes on screen. Before 2026-09-01 the editor seeded
+  once on mount, so "9 holes · Front 9" tapped after the course was confirmed
+  still started an 18-hole round (Shenandoah field report).
 
 ## Known Risk Areas
 
@@ -341,6 +348,11 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Lifecycle migrations that introduce a completed-round guard can strand older
   direct writers unless their compatible RPC path and regression tests ship in
   the same release.
+- The post-round AI recap (`round-recap.ts`) must be handed the player's own
+  first name (`golf_players.first_name`, cleaned by `promptSafeName`, falling
+  back to "the player") both as a fact and in the third-person rule. Until
+  2026-09-02 the prompt named nobody and offered "Nick" as an example, and the
+  model copied the example into a Shenandoah player's stored recap.
 
 ## Tests To Prefer
 

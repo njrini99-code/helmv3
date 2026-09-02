@@ -4,6 +4,56 @@
     "worktree_policy": "KEEP",
     "note": "Opened 2026-08-31 from the canonical checkout. Trims the Vercel upload from 6,667 files / 268 MB to 5,712 / 101 MB by excluding docs/ (145 MB the build never reads) and five untracked tooling directories that upload precisely BECAUSE they are gitignored — the third recurrence of the .vercelignore-replaces-.gitignore trap. Also corrects shipping.md's stale claim that the repo exceeds the 15,000-file cap. No production state, no migration. Canonical checkout — nothing to park. Clears #1697's row."
   },
+  "1718": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Opened 2026-09-01 by an earlier session; adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep. One file: scripts/deploy-prod.sh calls the repo-local ./node_modules/.bin/vercel instead of a bare vercel; main's --archive=tgz and verify block kept in the merge. No production state. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+  },
+  "1747": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "CI throughput: 47 check runs per PR -> ~19 (job consolidation, Smoke checks context removed first, CodeQL scoped). Merge as soon as its own lean CI is green; every later PR run benefits."
+  },
+  "1728": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Opened 2026-09-01 from the canonical checkout. Golf: deleteShot/updateShot/getRoundShotDetails separate a GoTrue transport failure from a rejected session, the way #1713 did for the round path. Two files, no production state. Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+  },
+  "1729": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Opened 2026-09-01 from the canonical checkout. Bridge: a disabled Vercel Web Analytics feature (404 not_found) no longer reads as 'vercel could not be reached'. Two files, no production state. Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in for the database.ts regen. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+  },
+  "1730": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Opened 2026-09-01 from the canonical checkout. Bridge: the self-heal board splits a completed run's note from an error, carries provenance and the overdue window, and the Flight Recorder shows fleet coverage separately from outcome. No production state. Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in for the database.ts regen. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+  },
+  "1724": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Opened 2026-09-01. Docs only: docs/AGENT_LIFECYCLE.md, without the autoMemoryEnabled flip that closed #1638. No code, no production state. Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+  },
+  "1719": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Opened 2026-09-01 from a pushed-and-left branch. Push: sign-out deactivates the registered device token so a shared device stops receiving the previous user's pushes; four files plus a test. No production state. Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+  },
+  "1727": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Opened 2026-09-01. Flight Recorder: helm_debug_finalize_trace no longer reports success for a trace that observed none of its required steps; migration HELD per supabase/migrations/HELD.md. Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in and the new migration reflowed to lint clean so the sqlfluff ratchet stays at baseline. Carries a migration: merging lands the FILE only; applying is a separate owner step. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+  },
+  "1723": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Opened 2026-09-01 from a parked wf_509b1144 worktree snapshot. Baseball: drops a byte-identical duplicate index on baseball_decision_log and adds three FK covering indexes flagged by Supabase's performance advisor. Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in and the new migration reflowed to lint clean so the sqlfluff ratchet stays at baseline. Carries a migration: merging lands the FILE only; applying is a separate owner step. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+  },
+  "1736": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Opened 2026-09-01 from worktree /private/tmp/helmv3-worktrees/bridge-selfheal-flow (branch agent/bridge-selfheal-flow, workspace parkPolicy KEEP). Adds the self-heal loop's throughput axis (selfheal-flow.ts: per-incident stage placement and stall detection, surfaced as the stalled lens, the stage-stalled attention reason, the Truth Strip escalation and per-stage backlog strips) and reorganises /admin/errors around five questions with a feature tag, lifecycle headline and details disclosure on every row. No migration, no production state, no 'use server' surface. Build not run on the branch (2.1 GiB free at the time). Waiting on owner review; expected additive conflicts with #1730 in self-heal/page.tsx imports and admin-platform.md."
+  },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
     "exactly — control-plane:verify FAILS on a missing entry AND on a stale one.",
