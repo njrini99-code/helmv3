@@ -75,6 +75,7 @@ describe('shot editing — a transit failure is reported as retryable, not as a 
     authFails(TRANSIT);
     const r = await deleteShot(SHOT_ID);
     expect(r.success).toBe(false);
+    if (r.success) throw new Error('expected the action to fail');
     expect(r.error).toMatch(/check your connection/i);
     // The claim that matters to a player mid-round.
     expect(r.error).toMatch(/not deleted/i);
@@ -85,6 +86,7 @@ describe('shot editing — a transit failure is reported as retryable, not as a 
     authFails(TRANSIT);
     const r = await updateShot(SHOT_ID, VALID_UPDATE);
     expect(r.success).toBe(false);
+    if (r.success) throw new Error('expected the action to fail');
     expect(r.error).toMatch(/check your connection/i);
     expect(r.error).toMatch(/not saved/i);
     expect(r.error).not.toMatch(/must be signed in/i);
@@ -94,6 +96,7 @@ describe('shot editing — a transit failure is reported as retryable, not as a 
     authFails(TRANSIT);
     const r = await getRoundShotDetails(ROUND_ID);
     expect(r.success).toBe(false);
+    if (r.success) throw new Error('expected the action to fail');
     expect(r.error).toMatch(/check your connection/i);
     expect(r.error).not.toMatch(/not authenticated/i);
   });
@@ -106,6 +109,7 @@ describe('shot editing — a real rejection still reads as a sign-out', () => {
     authFails(REJECTED);
     const r = await deleteShot(SHOT_ID);
     expect(r.success).toBe(false);
+    if (r.success) throw new Error('expected the action to fail');
     expect(r.error).toMatch(/must be signed in/i);
   });
 
@@ -113,6 +117,7 @@ describe('shot editing — a real rejection still reads as a sign-out', () => {
     authFails(REJECTED);
     const r = await updateShot(SHOT_ID, VALID_UPDATE);
     expect(r.success).toBe(false);
+    if (r.success) throw new Error('expected the action to fail');
     expect(r.error).toMatch(/must be signed in/i);
   });
 
@@ -120,6 +125,7 @@ describe('shot editing — a real rejection still reads as a sign-out', () => {
     authFails(REJECTED);
     const r = await getRoundShotDetails(ROUND_ID);
     expect(r.success).toBe(false);
+    if (r.success) throw new Error('expected the action to fail');
     expect(r.error).toMatch(/not authenticated/i);
   });
 });
