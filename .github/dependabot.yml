@@ -30,19 +30,27 @@ updates:
       # ALL dev-dependency bumps (majors included) → one PR.
       dev-dependencies:
         dependency-type: "development"
+        # Minor and patch only. A major rides alone as its own PR, so a
+        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
+        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
+        # four majors and failed lint on "typescript-eslint does not
+        # support TS 7.0"; #1745 carried 30 updates).
         update-types:
           - "minor"
           - "patch"
-          - "major"
       # ALL production bumps (majors included) → one PR. 2026-07-03 a Monday
       # run opened ~13 individual major PRs, each triggering a billed Vercel
       # preview build; one reviewable PR per dependency-type instead.
       production-dependencies:
         dependency-type: "production"
+        # Minor and patch only. A major rides alone as its own PR, so a
+        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
+        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
+        # four majors and failed lint on "typescript-eslint does not
+        # support TS 7.0"; #1745 carried 30 updates).
         update-types:
           - "minor"
           - "patch"
-          - "major"
 
   # ── GitHub Actions ────────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
@@ -79,10 +87,14 @@ updates:
       helm-website-ui:
         patterns:
           - "*"
+        # Minor and patch only. A major rides alone as its own PR, so a
+        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
+        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
+        # four majors and failed lint on "typescript-eslint does not
+        # support TS 7.0"; #1745 carried 30 updates).
         update-types:
           - "minor"
           - "patch"
-          - "major"
 
   - package-ecosystem: "npm"
     # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
@@ -100,10 +112,14 @@ updates:
       helm-intelligence:
         patterns:
           - "*"
+        # Minor and patch only. A major rides alone as its own PR, so a
+        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
+        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
+        # four majors and failed lint on "typescript-eslint does not
+        # support TS 7.0"; #1745 carried 30 updates).
         update-types:
           - "minor"
           - "patch"
-          - "major"
 
   - package-ecosystem: "npm"
     # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
@@ -121,10 +137,14 @@ updates:
       ultra-agent-audit:
         patterns:
           - "*"
+        # Minor and patch only. A major rides alone as its own PR, so a
+        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
+        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
+        # four majors and failed lint on "typescript-eslint does not
+        # support TS 7.0"; #1745 carried 30 updates).
         update-types:
           - "minor"
           - "patch"
-          - "major"
 
   - package-ecosystem: "npm"
     # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
@@ -142,10 +162,14 @@ updates:
       ux-flow-auditor:
         patterns:
           - "*"
+        # Minor and patch only. A major rides alone as its own PR, so a
+        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
+        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
+        # four majors and failed lint on "typescript-eslint does not
+        # support TS 7.0"; #1745 carried 30 updates).
         update-types:
           - "minor"
           - "patch"
-          - "major"
 
   # ── iOS native (Swift Package Manager under the Capacitor app) ────────────
   - package-ecosystem: "swift"

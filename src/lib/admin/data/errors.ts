@@ -232,9 +232,20 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
   /** fingerprint (or `row:<id>`) → rolling 24h hourly histogram. See
    *  computeAppHourlyBuckets's doc comment for what it does and doesn't cover. */
   appHourlyBuckets: Record<string, number[]>;
+  /** The instant `appHourlyBuckets` was computed against (epoch ms) — the
+   *  only clock that turns a bucket index back into a wall-clock hour. */
+  appHourlyComputedAt: number;
+  /**
+   * Error-or-worse `admin_events` rows written in the current window and in
+   * the equal window before it — the one comparison no other Bridge surface
+   * makes. Every count elsewhere answers "now"; this answers "worse than
+   * last time". `null` means the count query failed, never zero.
+   */
+  appErrorRows: { current: number | null; previous: number | null };
 }> {
   const admin = createAdminClient();
-  const ago24h = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const nowMs = Date.now();
+  const ago24h = new Date(nowMs - 24 * 3600_000).toISOString();
   const feedFilters: IncidentFeedFilters = {
     windowHours: filters.windowHours,
     sport: filters.sport,
@@ -274,14 +285,36 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
           .is('sport', null)
       : null;
 
-  const [hourly, deploys, rlsRes, widerRes, widerUntaggedRes, feed] = await Promise.all([
-    fetchSentryHourlyStats(),
-    fetchVercelDeployments(20),
-    rlsQuery,
-    widerQuery,
-    widerUntaggedQuery,
-    fetchIncidentFeed(feedFilters),
-  ]);
+  // Window-over-window. Rows WRITTEN in each window, resolved or not — a
+  // rate comparison is about what happened, and resolving a row later does
+  // not un-happen it. The sport chip applies (it is the one filter that
+  // changes what "the platform" means); severity/source/feature do not, so
+  // the two numbers stay comparable across chip clicks.
+  const windowStartIso = new Date(nowMs - filters.windowHours * 3600_000).toISOString();
+  const priorStartIso = new Date(nowMs - 2 * filters.windowHours * 3600_000).toISOString();
+  const errorRowsBetween = (fromIso: string, toIso: string | null) => {
+    let q = admin
+      .from('admin_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_type', 'error')
+      .in('severity', INCIDENT_SEVERITIES)
+      .gte('created_at', fromIso);
+    if (toIso) q = q.lt('created_at', toIso);
+    if (filters.sport) q = q.eq('sport', filters.sport);
+    return q;
+  };
+
+  const [hourly, deploys, rlsRes, widerRes, widerUntaggedRes, feed, currentRowsRes, priorRowsRes] =
+    await Promise.all([
+      fetchSentryHourlyStats(),
+      fetchVercelDeployments(20),
+      rlsQuery,
+      widerQuery,
+      widerUntaggedQuery,
+      fetchIncidentFeed(feedFilters),
+      errorRowsBetween(windowStartIso, null),
+      errorRowsBetween(priorStartIso, windowStartIso),
+    ]);
 
   const windowStart = Date.now() - filters.windowHours * 3600_000;
   const deployMarkers = (deploys.data ?? [])
@@ -299,7 +332,12 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
     rlsDenials24h: rlsRes.count ?? 0,
     widerWindowUnresolved: widerRes ? widerRes.count ?? 0 : null,
     widerWindowUntagged: widerUntaggedRes ? widerUntaggedRes.count ?? 0 : null,
-    appHourlyBuckets: computeAppHourlyBuckets(feed.appEvents, filters.windowHours),
+    appHourlyBuckets: computeAppHourlyBuckets(feed.appEvents, filters.windowHours, nowMs),
+    appHourlyComputedAt: nowMs,
+    appErrorRows: {
+      current: currentRowsRes.error ? null : (currentRowsRes.count ?? 0),
+      previous: priorRowsRes.error ? null : (priorRowsRes.count ?? 0),
+    },
   };
 }
 

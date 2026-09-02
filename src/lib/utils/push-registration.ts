@@ -92,6 +92,12 @@ export function setPushSoftAskState(state: SoftAskState): void {
 let pendingDeviceToken: { value: string; platform: 'ios' | 'android' } | null = null;
 /** Guards against two flushes racing (auth event + app-resume, say). */
 let deviceTokenSubmitInFlight = false;
+/**
+ * The token that last registered SUCCESSFULLY this launch. APNs delivers the
+ * token only once per launch, and a successful submit consumes the parked
+ * copy — this is the surviving handle sign-out teardown needs (M2-1).
+ */
+let lastRegisteredDeviceToken: { value: string; platform: 'ios' | 'android' } | null = null;
 
 /**
  * Try to hand the parked token to the server, with a short backoff for the
@@ -113,6 +119,7 @@ async function submitPendingDeviceToken(): Promise<void> {
       try {
         const result = await registerDeviceToken(token.value, token.platform);
         if (result.success) {
+          lastRegisteredDeviceToken = token;
           pendingDeviceToken = null;
           return;
         }
@@ -153,11 +160,58 @@ export async function flushPendingDeviceToken(): Promise<void> {
   await submitPendingDeviceToken();
 }
 
+/**
+ * Sign-out teardown for the device token (M2-1, 2026-08-19): deactivate the
+ * row server-side so a logged-out — possibly shared — device stops receiving
+ * the old user's pushes, and RE-PARK the token so the existing
+ * flush-on-auth machinery (CapacitorProvider's onAuthStateChange →
+ * flushPendingDeviceToken) registers it for the NEXT sign-in in this same
+ * launch. APNs only delivers the token once per launch, so without the
+ * re-park, deactivation would leave push dead until the app restarts.
+ *
+ * MUST be called BEFORE supabase.auth.signOut() — the server action
+ * authenticates the caller (same ordering trap the register path documents
+ * above). Deliberately synchronous-return and never-throwing: sign-out must
+ * never hang or fail on token cleanup. On any failure the row simply stays
+ * active (the pre-fix status quo for that one sign-out) and the next
+ * launch's registration self-heals it.
+ */
+export function teardownDeviceTokenOnSignOut(): void {
+  const token = lastRegisteredDeviceToken ?? pendingDeviceToken;
+  if (!token) return; // web session, or push never registered this launch
+  // Re-park FIRST so the next SIGNED_IN re-registers even if the network
+  // request below never lands.
+  pendingDeviceToken = token;
+  void import('@/app/golf/actions/push-notifications')
+    .then(({ unregisterDeviceToken }) => unregisterDeviceToken(token.value))
+    .then((result) => {
+      if (!result.success) {
+        console.warn(
+          '[Push] Sign-out token deactivation failed; row stays active until next launch:',
+          result.error,
+        );
+      }
+    })
+    .catch((err) => {
+      console.warn(
+        '[Push] Sign-out token deactivation failed; row stays active until next launch:',
+        err,
+      );
+    });
+}
+
 /** Test seam — the parked token is module state with no other way in. */
 export async function __setPendingDeviceTokenForTest(
   token: { value: string; platform: 'ios' | 'android' } | null,
 ): Promise<void> {
   pendingDeviceToken = token;
+}
+
+/** Test seam — the last successfully registered token is module state too. */
+export function __setLastRegisteredDeviceTokenForTest(
+  token: { value: string; platform: 'ios' | 'android' } | null,
+): void {
+  lastRegisteredDeviceToken = token;
 }
 
 /** Test seam — see above. */

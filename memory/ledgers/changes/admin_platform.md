@@ -669,3 +669,42 @@ data the Feature Health board reads. Needs the local Supabase stack.
 Stale-warning correction: the W7 "★ CI NOTE" said a final polish sweep still
 owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
 0 arbitrary text-[Npx], lint exit 0. Debt already paid; warning removed.
+
+## 2026-09-01 — self-heal flow, and the Errors page reorganised around five questions
+
+- SHA: branch `agent/bridge-selfheal-flow`, PR pending.
+- **What**: `src/lib/admin/selfheal-flow.ts` — the loop's third axis
+  (throughput): every incident placed at the stage whose turn it is, stalled
+  once that stage has had two of its registry cadences to act. Surfaced as
+  the `stalled` lens, the `stage-stalled` attention reason, the Truth Strip
+  self-heal cell escalation, and a per-stage backlog strip on the Overview
+  and the Self-heal page (`SelfHealFlow.tsx`), with the stalled rows listed on
+  the Self-heal page only.
+- **Errors tab**: lens counts measured over the `?kind=` facet
+  (`countLensesForKind`); `awaiting-proof` no longer admits blind-only gaps;
+  window-over-window row counts (`appErrorRows`, `describeWindowDelta`); the
+  hourly chart falls back to the app's own buckets when Sentry's series is
+  unavailable (`sumHourlyBuckets`, `appHourlyComputedAt`); deploy markers
+  outside the plotted hours no longer paint off-axis. The page itself is
+  reorganised (queue → trends → coverage → Sentry → archive), the flat
+  parameter-name chip row is replaced by a grouped, worded, collapsible
+  filter bar (`ErrorsFilterBar`; `ErrorsFilterChips.tsx` deleted), and a
+  closed legend (`HowToReadIncidents`) sits under the header. Each row gains a
+  feature tag in registry words, the lifecycle headline, and a Details
+  disclosure (`error-code-hint.ts` supplies the code gloss).
+- **Overview**: the legacy `TriageQueue` and the Regressed panel stop
+  rendering an unconditional all-clear when Sentry is unreadable.
+- **Why**: measured on this branch's own fixtures and the explorer's map of
+  the read model — the loop reported "Healthy" with a proven history while a
+  `new` incident sat unanalysed for eight days and had no attention row at
+  all; the rail said one count while the faceted list showed another; the
+  Errors page opened with `kind: integrity_ok` as a label. Owner asked for
+  more detail per error, a feature tag, better language and better
+  organisation on the Errors page.
+- **Not done, deliberately**: `attention.ts` still has no per-incident row for
+  `lifecycle.state === 'unknown'` (a blind source is named once, per the
+  module's rule 3); `AttentionQueue` still renders ages off `Date.now()`;
+  `TriageQueue` remains the Overview's queue rather than the unified one.
+- **Verified**: see the tests ledger entry of the same date. `npm run build`
+  NOT run — the volume reported 0 GiB free at the time and a cold `.next`
+  costs up to 5.7 GiB; no `'use server'` surface changed.

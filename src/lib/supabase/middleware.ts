@@ -1,5 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import {
+  SUPABASE_TRACE_PROPAGATION,
+  withSupabaseTracing,
+} from '@/lib/observability/supabase-tracing';
 import { ACTIVE_BASEBALL_TEAM_COOKIE } from '@/lib/baseball/active-context-shared';
 import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
 // Pure/isomorphic (no node deps) — safe on the edge runtime this file targets.
@@ -574,38 +578,49 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabase = createServerClient(
-    url,
-    anonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
+  // This is the proxy/edge client (src/proxy.ts -> updateSession). Trace
+  // propagation works on the edge runtime because @sentry/vercel-edge calls
+  // `propagation.setGlobalPropagator(new SentryPropagator())`, so supabase-js
+  // has a real OpenTelemetry context to read `traceparent` from.
+  //
+  // The 1_500ms GoTrue budget below is UNCHANGED and load-bearing — middleware
+  // runs in front of every document request and a longer budget previously
+  // blanked the whole authenticated app.
+  const supabase = withSupabaseTracing(
+    createServerClient(
+      url,
+      anonKey,
+      {
+        tracePropagation: SUPABASE_TRACE_PROPAGATION,
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            supabaseResponse = NextResponse.next({
+              request,
+            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
+          },
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
+        global: {
+          // Middleware sits in front of every document/action request. Give
+          // GoTrue a short verification window, then fall back to the locally
+          // stored, sanity-checked session; route data still goes through RLS.
+          // A 5s attempt plus retry exceeded the middleware execution budget and
+          // caused blank pages across the entire authenticated app.
+          fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
+            const signal = options.signal ?? AbortSignal.timeout(1_500);
+            return fetch(fetchUrl, { ...options, signal });
+          },
         },
-      },
-      global: {
-        // Middleware sits in front of every document/action request. Give
-        // GoTrue a short verification window, then fall back to the locally
-        // stored, sanity-checked session; route data still goes through RLS.
-        // A 5s attempt plus retry exceeded the middleware execution budget and
-        // caused blank pages across the entire authenticated app.
-        fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
-          const signal = options.signal ?? AbortSignal.timeout(1_500);
-          return fetch(fetchUrl, { ...options, signal });
-        },
-      },
-    }
+      }
+    )
   );
 
   // IMPORTANT: Avoid writing any logic between createServerClient and
