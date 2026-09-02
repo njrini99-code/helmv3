@@ -406,6 +406,34 @@ checkpoints, so Docker's optional `npm run trace:db` collector can preserve the
 last database checkpoint after a business transaction rolls back. Production
 recording remains opt-in; tracing cannot block a player save or submit.
 
+**The recorder is constructed before Zod, auth, and the player lookup on every
+wired action** (`savePartialRound`'s existing-round AND no-id/new-round
+branches, `submitGolfRoundComprehensive`, `deleteShot`, `updateShot`), not
+after — a stage cannot report its own timing to a recorder that does not exist
+yet. Every started step reaches a terminal transition (complete/warn/fail) on
+every exit path, backed by a per-action idempotent `endTrace` guard plus a
+`finally`-block safety net, so a branch that returns early can never leave a
+step stuck `started` or a trace permanently `pending` in
+`helm_debug.trace_runs`. `verify.round`/`verify.holes`/`verify.shots` (and
+`verify.recovery_state`) are `best_effort`, not `required` — they still run,
+still get `start()`+`complete()` so their real duration is visible, but a
+short or failed read no longer counts against a trace's required-step
+coverage. The no-id/new-round autosave branch — a sequence of separate round
+trips, not one atomic RPC — additionally reports `db.create_or_update_draft`
+(the round row), `db.shot_details` (the holes/shots/putt-detail/approach-detail
+upserts), and `db.orphan_trim`, none of which had a call site before. One
+known gap: because construction now precedes the player lookup,
+`trace_runs.player_id`/`team_id` are null for every trace (the persisted
+columns are extracted once, from construction-time metadata) — per-step
+metadata on `server.auth`/`server.player` still carries `user_id`/`player_id`
+for correlation. `post.stats`, `post.qualifier_transition`, and
+`post.coachhelm` are started before `after()` (or, for qualifier transition,
+before its own synchronous block) and completed/failed inside it; because the
+trace is already finalized by then, their real start/finish timestamps land
+after the trace's own reported total-duration window by design — the
+alternative, deferring `finalize()` into the background tail, would leave the
+player-facing trace open long after the response has already been sent.
+
 ## Business Rules
 
 - Do not lose user-entered shots. Save/submit/recover paths must be idempotent and interruption-tolerant.

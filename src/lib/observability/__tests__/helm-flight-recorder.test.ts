@@ -23,7 +23,7 @@ function fakeDependencies(
 }
 
 describe('Helm flight recorder', () => {
-  it('is fail-open while still recording missing required work after a database failure', async () => {
+  it('is fail-open while still recording the failed required step after a database failure', async () => {
     const calls: Array<{ kind: string; payload: Record<string, unknown> }> = [];
     const dependencies: FlightRecorderDependencies = {
       newTraceId: () => '28f3c4cc-845c-4e4d-8d45-c5a996b0f5f5',
@@ -55,13 +55,18 @@ describe('Helm flight recorder', () => {
     await recorder.finalize('failure');
 
     const final = calls.at(-1);
+    // verify.round/holes/shots are 'best_effort' (2026-09-02), so a submit
+    // that never reaches them because the write itself failed does not ALSO
+    // report them missing — missing_required_step_count reflects only
+    // server.validation/auth/player and db.submit_round_atomic, all of
+    // which ran (the last one to failure) above.
     expect(final).toMatchObject({
       kind: 'finalize',
       payload: {
         traceId: '28f3c4cc-845c-4e4d-8d45-c5a996b0f5f5',
         status: 'failure',
         metadata: {
-          missing_required_step_count: 3,
+          missing_required_step_count: 0,
           failure_step: 'db.submit_round_atomic',
           failure_code: '23503',
         },

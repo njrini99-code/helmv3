@@ -549,3 +549,43 @@
   `npm run build` (no `.env.local` in the worktree; CI builds),
   `lint:ratchet`, `docs:schema-drift`, `knowledge:check` — the push CI runs
   them.
+
+## 2026-09-02 — Flight Recorder: real per-stage timings, not 0ms placeholders
+
+- SHA: (this commit).
+- Change: `savePartialRound` (both the existing-round and no-id/new-round
+  branches), `submitGolfRoundComprehensive`, `deleteShot` and `updateShot` now
+  construct their `helm-flight-recorder` trace FIRST — before Zod validation,
+  the auth check, and the player lookup — and wrap each of those stages with
+  `start()`/`complete()`/`fail()`/`warn()` instead of retroactively
+  `complete()`-ing them once the recorder finally existed (which produced the
+  0ms-duration steps the live traces showed). The no-id/new-round autosave
+  path, previously uninstrumented end to end, gains `db.create_or_update_draft`,
+  a new `db.shot_details` step (the holes/shots/putt-detail/approach-detail
+  upserts), a new `db.orphan_trim` step, and its own `verify.round/holes/shots`
+  block. `submitGolfRoundComprehensive` gains `verify.round/holes/shots` (it
+  had none before) plus `post.stats`/`post.qualifier_transition`/
+  `post.coachhelm` instrumentation. `deleteShot` -> `golf.shot.delete` and
+  `updateShot` -> `golf.shot.add_or_edit` are wired for the first time.
+  `golf-round-flight-workflow.ts`: every `verify.*` step (including
+  `verify.recovery_state`) is now `best_effort` rather than `required`, so a
+  trace whose write failed before reaching verification is no longer ALSO
+  flagged with missing required steps for reads it never got to attempt.
+  Every action uses an idempotent per-call `endTrace` helper plus an outer
+  `finally` safety net so a branch that returns early — including ones this
+  refit newly gave a trace to, by moving construction earlier — cannot leave
+  a step `started` forever or a trace permanently `pending`.
+- Why: production traces attributed almost none of an autosave's real wall
+  time — the atomic RPC measured correctly, and every surrounding stage
+  (validation, auth, player lookup, the no-id path's own writes, the
+  verification reads) read 0ms because the recorder did not exist yet when
+  those stages ran, or was never wired to them at all. The recorder itself
+  stays fail-open and non-blocking throughout — nothing here gates a save,
+  submit, or shot edit on trace-store availability.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date.
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0, no regressions against
+  its baseline), `npx vitest run src/lib/observability src/test/golf
+  src/app/golf/actions src/test/lib` (0 failures),
+  `node scripts/knowledge/document-inventory.mjs --check` (0). Not run:
+  `npm run build` (no `.env.local` in this worktree).
