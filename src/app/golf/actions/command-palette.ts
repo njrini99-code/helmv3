@@ -101,20 +101,26 @@ async function getCommandPaletteDataImpl(): Promise<CommandPaletteData> {
   const playersPromise = isCoach
     ? supabase
         .from('golf_team_members')
+        // `status` is the MEMBERSHIP's (active/inactive) and lives on
+        // golf_team_members. It used to be read as `status:roster_status`
+        // inside the golf_players embed — a column golf_players does not have —
+        // so the whole palette query failed with "column
+        // golf_players_1.roster_status does not exist" (JAVASCRIPT-NEXTJS-QP,
+        // 2026-09-02) and a coach's palette showed no players at all.
         .select(`
+          status,
           player:golf_players (
             id,
             first_name,
             last_name,
             handicap,
-            avatar_url,
-            status:roster_status
+            avatar_url
           )
         `)
         .eq('team_id', teamId)
         .order('created_at', { ascending: true })
         .limit(60)
-    : Promise.resolve({ data: [] as Array<{ player: { id: string; first_name: string | null; last_name: string | null; handicap: number | null; avatar_url: string | null; status: string | null } | null }> });
+    : Promise.resolve({ data: [] as Array<{ status: string | null; player: { id: string; first_name: string | null; last_name: string | null; handicap: number | null; avatar_url: string | null } | null }> });
 
   // ── Recent rounds (last 10 across team for coach; player's own for player) ──
   const roundsQuery = supabase
@@ -179,13 +185,13 @@ async function getCommandPaletteDataImpl(): Promise<CommandPaletteData> {
   // shape is what we declared above, so we cast through `any` at the
   // boundary and validate by hand below.
   const playersRaw = (playersResult.data ?? []) as Array<{
+    status: string | null;
     player: {
       id: string;
       first_name: string | null;
       last_name: string | null;
       handicap: number | null;
       avatar_url: string | null;
-      status: string | null;
     } | null;
   }>;
   const roundsRaw = (roundsResult.data ?? []) as Array<{
@@ -204,16 +210,17 @@ async function getCommandPaletteDataImpl(): Promise<CommandPaletteData> {
     player: { first_name: string | null; last_name: string | null } | null;
   }>;
 
-  const players: CommandPalettePlayer[] = playersRaw
-    .map((row) => row.player)
-    .filter((p): p is NonNullable<typeof p> => p !== null)
-    .map((p) => ({
-      id: p.id,
-      full_name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || 'Unnamed Player',
-      status: p.status,
-      handicap: p.handicap,
-      avatar_url: p.avatar_url,
-    }));
+  const players: CommandPalettePlayer[] = playersRaw.flatMap(({ status, player: p }) =>
+    p
+      ? [{
+          id: p.id,
+          full_name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || 'Unnamed Player',
+          status,
+          handicap: p.handicap,
+          avatar_url: p.avatar_url,
+        }]
+      : [],
+  );
 
   const recentRounds: CommandPaletteRound[] = roundsRaw.map((r) => ({
     id: r.id,

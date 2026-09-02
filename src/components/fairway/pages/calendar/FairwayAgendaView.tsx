@@ -221,11 +221,16 @@ export function FairwayAgendaView({
     const todayStart = startOfDay(nowRef);
     const anchorBucket = buckets.find((b) => !isBefore(b.date, todayStart));
     if (!anchorBucket) return; // all-past range (e.g. the honest-empty demo) — top is correct.
+    // Past buckets are collapsed by default, so on a fresh load the anchor is
+    // usually already the FIRST visible bucket — there is nothing to scroll
+    // past, and scrolling the document anyway only hid the calendar masthead
+    // (audit 2026-09-02, UI-2/UI-3: fresh loads landed 130–386px down).
+    if (visibleBuckets[0]?.key === anchorBucket.key) return;
     const node = bucketNodesRef.current.get(anchorBucket.key);
     if (node && typeof node.scrollIntoView === 'function') {
       node.scrollIntoView({ block: 'start' });
     }
-  }, [mode, focusDate, rangeStart, rangeEnd, nowRef, buckets]);
+  }, [mode, focusDate, rangeStart, rangeEnd, nowRef, buckets, visibleBuckets]);
 
   // ── HONEST-EMPTY: range mode, zero events ──────────────────────────────────
   if (mode === 'range' && totalEvents === 0) {

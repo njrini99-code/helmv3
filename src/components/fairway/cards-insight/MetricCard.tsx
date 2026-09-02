@@ -351,7 +351,10 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
                   // the fixed `min-h-8` (16px eyebrow line-height × 2) reserves
                   // the same slot whether a given tile's label needs 1 or 2
                   // lines, so sibling tiles in the same KPI row stay aligned.
-                  'line-clamp-2 min-h-8 break-words'
+                  // `[overflow-wrap:anywhere]`: break-words cannot split ONE long
+                  // word, so "Scrambling" clipped to "SCRAMBLI…" at 390px
+                  // (audit 2026-09-02, UI-7).
+                  'line-clamp-2 min-h-8 break-words [overflow-wrap:anywhere]'
                 : 'truncate',
             )}
           >

@@ -48,19 +48,25 @@ BEGIN
     ('00000000-0000-0000-0000-0000000fc202', 'golf.round.autosave', 'test'),
     ('00000000-0000-0000-0000-0000000fc203', 'golf.round.autosave', 'test'),
     ('00000000-0000-0000-0000-0000000fc204', 'golf.round.submit', 'test'),
-    ('00000000-0000-0000-0000-0000000fc205', 'golf.round.submit', 'test')
+    ('00000000-0000-0000-0000-0000000fc205', 'golf.round.autosave', 'test')
   ON CONFLICT DO NOTHING;
 
   -- Fixture for Test F: the row the JS application layer would already have
-  -- written for this trace's RPC-level key BEFORE the RPC runs (per
-  -- golf-round-flight-workflow.ts, which declares db.submit_round_atomic
-  -- layer 'supabase', requiredness 'required') -- this is the real
-  -- production shape, since db.submit_round_atomic is one of the eight step
-  -- keys the JS side already records for every traced call.
+  -- written for this trace's RPC-level key BEFORE the RPC runs. Per
+  -- golf-round-flight-workflow.ts, db.submit_round_atomic is declared layer
+  -- 'postgres' -- the SAME value this migration's own writer would propose
+  -- -- so an UPSERT against that key can never reveal an override bug; both
+  -- sides already agree. db.save_partial_round_atomic is the one declared
+  -- layer 'supabase' by the JS side while this migration's writer always
+  -- proposes 'postgres' for a first insert, which is exactly the row the
+  -- migration header's ownership argument ("layer ... deliberately NOT in
+  -- the SET list ... must never override a value the JS application layer
+  -- already recorded") is about. This fixture pins that key, not
+  -- db.submit_round_atomic, which a prior version of this test wrongly used.
   INSERT INTO helm_debug.trace_steps (trace_id, step_key, layer, status, requiredness)
   VALUES (
     '00000000-0000-0000-0000-0000000fc205',
-    'db.submit_round_atomic',
+    'db.save_partial_round_atomic',
     'supabase',
     'started',
     'required'
@@ -413,16 +419,20 @@ SELECT ok(
 );
 
 -- ---------------------------------------------------------------------------
--- F: the UPSERT path a live request actually takes -- db.submit_round_atomic
--- and db.save_partial_round_atomic are two of the eight step keys the JS
--- application layer already records for every traced call (see this file's
--- header / the migration header), so the ON CONFLICT branch this fixture
--- exercises is the NORMAL path every production trace takes for its own
--- entry key, not an edge case. The migration's whole ownership argument --
--- "layer and requiredness are deliberately NOT in the SET list ... must
--- never override a value the JS application layer already recorded" -- is
--- asserted in the migration header and untested by A-E, which only ever see
--- this writer's OWN first insert for a key. Pin it here.
+-- F: the UPSERT path a live request actually takes for the ONE step key
+-- where the JS and Postgres layers genuinely disagree. Per
+-- golf-round-flight-workflow.ts, db.submit_round_atomic is declared layer
+-- 'postgres' -- identical to what this migration's writer proposes -- so an
+-- UPSERT against that key can never expose an override bug, both sides
+-- already agree before the RPC even runs. db.save_partial_round_atomic is
+-- declared layer 'supabase' by the JS side while this migration's writer's
+-- own first-insert default is 'postgres', which is exactly the ownership
+-- collision the migration header warns about: "layer and requiredness are
+-- deliberately NOT in the SET list ... must never override a value the JS
+-- application layer already recorded." Untested by A-E, which only ever see
+-- this writer's OWN first insert for a key. Pin it here, against the RPC
+-- and step key where the guarantee actually matters, not one where it is
+-- vacuously true.
 -- ---------------------------------------------------------------------------
 
 SET LOCAL role TO authenticated;
@@ -430,16 +440,17 @@ SET LOCAL request.jwt.claims TO
   '{"sub": "00000000-0000-0000-0000-0000000fc001", "role": "authenticated"}';
 
 SELECT is(
-  public.submit_round_atomic(
+  public.save_partial_round_atomic(
     '00000000-0000-0000-0000-0000000fc105',
-    '{"course_name":"Upsert Ownership","holes_played":1,"total_score":4,"total_putts":2,"_helm_trace":{"trace_id":"00000000-0000-0000-0000-0000000fc205","enabled":true}}'::jsonb,
+    '{"course_name":"Upsert Ownership","holes_played":1,"current_hole":1,"_helm_trace":{"trace_id":"00000000-0000-0000-0000-0000000fc205","enabled":true}}'::jsonb,
     '[{"hole_number":1,"par":4,"score":4,"putts":2}]'::jsonb,
     '[{"hole_number":1,"shots":[{"shot_number":1,"shot_type":"tee","distance_to_hole_before":400,"distance_unit_before":"yards","result":"fairway"}]}]'::jsonb,
     '[]'::jsonb,
-    '[]'::jsonb
+    '[]'::jsonb,
+    NULL
   )->>'success',
   'true',
-  'submit_round_atomic succeeds when its own entry key already carries a JS-written row'
+  'save_partial_round_atomic succeeds when its own entry key already carries a JS-written row'
 );
 
 RESET role;
@@ -448,7 +459,7 @@ RESET request.jwt.claims;
 SELECT is(
   (SELECT layer FROM helm_debug.trace_steps
    WHERE trace_id = '00000000-0000-0000-0000-0000000fc205'
-     AND step_key = 'db.submit_round_atomic'),
+     AND step_key = 'db.save_partial_round_atomic'),
   'supabase',
   'the Postgres checkpoint UPSERT never overwrites a layer the JS layer already recorded'
 );
@@ -456,7 +467,7 @@ SELECT is(
 SELECT is(
   (SELECT requiredness FROM helm_debug.trace_steps
    WHERE trace_id = '00000000-0000-0000-0000-0000000fc205'
-     AND step_key = 'db.submit_round_atomic'),
+     AND step_key = 'db.save_partial_round_atomic'),
   'required',
   'the Postgres checkpoint UPSERT never overwrites a requiredness the JS layer already recorded'
 );
