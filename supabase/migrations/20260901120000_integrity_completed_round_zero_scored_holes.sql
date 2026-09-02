@@ -17,8 +17,12 @@
 -- malformed payload arriving after a durable write is a real route into this
 -- state, not only a seeding artifact.
 --
--- Expect this to report `fail` with count=4 until the fixtures are removed.
--- That is the intended reading: the alert is correct and the DATA is wrong.
+-- 2026-09-02, owner decision: the four fixture rounds are KEPT, not removed.
+-- Check 6 therefore excludes their team, Demo University Golf
+-- (6ecdd1a6-63fe-4beb-b094-00118f334163) — the one team that is QA by
+-- construction — instead of paging on known data every morning. Every other
+-- team is in scope. Validated read-only against production 2026-09-02 with
+-- the exclusion in place: count=0, sample=[]. Expect `pass` on first run.
 --
 -- R3 (privileged: SECURITY DEFINER, service_role-only EXECUTE). Prepared by an
 -- agent; only the owner applies. Verify before applying that the function has
@@ -132,6 +136,10 @@ BEGIN
     SELECT r.id, row_number() OVER (ORDER BY r.created_at DESC) AS rn
     FROM golf_rounds r
     WHERE r.status = 'completed'
+      -- Demo University Golf (the QA team). Its four patterned fixture
+      -- rounds are KEPT by owner decision 2026-09-02, so the team is out
+      -- of scope for this check rather than paging on known data daily.
+      AND r.team_id IS DISTINCT FROM '6ecdd1a6-63fe-4beb-b094-00118f334163'::uuid
       AND NOT EXISTS (
         SELECT 1 FROM golf_holes h
         WHERE h.round_id = r.id AND h.score IS NOT NULL
