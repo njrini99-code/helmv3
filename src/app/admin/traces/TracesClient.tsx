@@ -10,6 +10,8 @@ import {
 } from '@/app/admin/actions/golf-tracer';
 import { LocalTime } from '../_components/LocalTime';
 import { TraceTree, EYEBROW_CLASS } from './TraceTree';
+import { TraceFleetStrip } from './TraceFleetStrip';
+import { stepCoverage } from './trace-fleet';
 
 function runTone(run: FlightTraceRun) {
   if (run.status === 'failure' || run.failure_step) return 'danger' as const;
@@ -45,6 +47,15 @@ export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) 
 
   return (
     <div className="space-y-4">
+      {/* The shape of the whole recording, above the individual rows. Without
+          it the list is 50 mostly-green pills and the fact that 46 of them
+          skipped most of the pipeline is only visible by reading every badge. */}
+      <Surface>
+        <Inset>
+          <TraceFleetStrip traces={traces} />
+        </Inset>
+      </Surface>
+
       <Surface>
         <Inset>
           <h2 className={EYEBROW_CLASS}>Traces</h2>
@@ -86,6 +97,20 @@ export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) 
                       {run.missing_required_step_count} never ran
                     </Badge>
                   )}
+                  {/* Observed against declared, per run. Absent — never zero —
+                      when either count is missing, so an unknown denominator
+                      can't render as a confident fraction. */}
+                  {(() => {
+                    const coverage = stepCoverage(run);
+                    return coverage ? (
+                      <span
+                        title={`${coverage.observed} of ${coverage.expected} declared steps recorded`}
+                        className="shrink-0 font-fw-mono text-caption tabular-nums text-warm-400"
+                      >
+                        {coverage.observed}/{coverage.expected}
+                      </span>
+                    ) : null;
+                  })()}
                   <span className="ml-auto shrink-0 font-fw-mono text-caption text-warm-400">
                     {run.trace_id.slice(0, 8)}
                   </span>
