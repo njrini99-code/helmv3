@@ -11,17 +11,27 @@ updated.
 
 ## 1. Status classification — hard gate vs. advisory
 
-**SIX** required contexts are enforced on `main` as of 2026-08-19 — read live
-from the API, not from this table:
+**FIVE** required contexts are enforced on `main` as of 2026-09-02 (six from
+2026-08-19 until then) — read live from the API, not from this table:
 
 ```bash
 gh api repos/njrini99-code/helmv3/branches/main/protection \
   -q '.required_status_checks | {strict, contexts}'
-# => {"strict": true, "contexts": [
-#      "Smoke checks", "CI aggregate", "Review Gate aggregate",
+# => {"strict": false, "contexts": [
+#      "CI aggregate", "Review Gate aggregate",
 #      "Analyze (actions)", "Analyze (javascript-typescript)", "Analyze (python)"
 #    ]}
 ```
+
+`Smoke checks` **left the required set on 2026-09-02.** It was playwright.yml's
+build-only job — `npm ci` + `next build`, the same steps `Next build` runs
+inside `CI aggregate` — so every PR ran two identical 9-minute builds. The
+context was deleted from branch protection FIRST and the job second, so no
+PR waited on a name nothing posts. The same change turned ci.yml's nine
+seconds-of-work leaf jobs into named steps of one `Static checks` job, folded
+ESLint into `Lint`, and turned review-gate.yml's eleven linters into steps of
+one `Review Gate checks` job: ~47 check runs per PR became ~19, on a runner
+pool that behaves like 20 concurrent jobs.
 
 `CodeRabbit` **is no longer one of them** — dropped by founder decision on
 2026-07-20 and removed from the required set (the app itself still needs an owner
@@ -41,8 +51,9 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 > **Of the three contexts formerly required, two matched nothing and only
 > `Smoke checks` was real.**
 >
-> Now required: `Smoke checks`, `CI aggregate`, `Review Gate aggregate`, and the
-> three `Analyze (...)` runs. All six verified to run on both `push` to `main`
+> Required from then until 2026-09-02: `Smoke checks`, `CI aggregate`,
+> `Review Gate aggregate`, and the three `Analyze (...)` runs (five now — see
+> above). All six verified to run on both `push` to `main`
 > and `pull_request`, with no path filters, so none can hang a PR.
 >
 > **The transferable lesson: a required context is matched by NAME against what
@@ -76,9 +87,9 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
-| `CI aggregate` | `ci.yml` | aggregate: DB-types drift, schema invariants, feature knowledge, typecheck, ESLint, lint-ratchet, unit tests, business contracts, `next build`, route hygiene, **Supabase lint + RLS tests**, **BaseballHelm authenticated coach/player smoke (#372)** | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
-| `Review Gate aggregate` | `review-gate.yml` | aggregate: ast-grep, semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint | **Hard gate** — uniquely named since 2026-08-19 |
-| `Smoke checks` | `playwright.yml` (PRs + main push) | build-only smoke: `npm ci` + `next build` (no full E2E) | **Hard gate** |
+| `CI aggregate` | `ci.yml` | aggregate: `Static checks` (DB-types drift, schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles — named steps of one job since 2026-09-02), `TypeScript`, `Lint` (ESLint + ratchets), `Unit tests` ×3, `Next build`, **`Supabase lint + RLS tests`** | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
+| `Review Gate aggregate` | `review-gate.yml` | aggregate: `Review Gate checks` (ast-grep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint, env-secrets as steps) + `semgrep (custom rules)` | **Hard gate** — uniquely named since 2026-08-19 |
+| ~~`Smoke checks`~~ | ~~`playwright.yml`~~ | ~~build-only smoke: `npm ci` + `next build`~~ | **REMOVED 2026-09-02** — a duplicate of `Next build`; context dropped first, job second |
 | `Playwright PR smoke (a11y)` | `pr-smoke.yml` | public-route accessibility Playwright only when frontend/e2e paths change | Advisory |
 | `CodeRabbit` | CodeRabbit GitHub App | ~~assertive line-level review + blocking custom checks~~ | **DROPPED 2026-07-20** — removed from the required set by founder decision; `.coderabbit.yaml` is a disable stub. If a `CodeRabbit` status still appears, it is informational. The custom rule packs under `.coderabbit/` REMAIN and are consumed directly by the Review Gate. |
 | `CodeQL` | `codeql.yml` | code-scanning security analysis | **Hard gate** |
@@ -104,15 +115,15 @@ Don't treat a check as "stuck" before its normal window has passed:
   see `.claude/rules/code-review-tooling.md`. There is no AI review on a PR,
   so their absence is never a pending check. The Review Gate + CodeQL cover
   the same hard rules deterministically.
-- **PR smoke** (`pr-smoke.yml`) — `Smoke checks` build ~15 min; optional
-  `Playwright PR smoke (a11y)` ~12 min when frontend/e2e paths change.
-- **Full Playwright** (`playwright.yml`, main + manual only) — `e2e` job
-  75-minute budget; `picker-screenshots` and `baseball-smoke` 20 minutes each;
-  main-push `Smoke checks` 15 minutes.
+- **PR smoke** (`pr-smoke.yml`) — optional `Playwright PR smoke (a11y)` ~12 min
+  when frontend/e2e paths change. (The `Smoke checks` build is gone since
+  2026-09-02; `Next build` inside CI is the build verdict, ~6 min warm.)
+- **Full Playwright** (`playwright.yml`, manual `workflow_dispatch` only since
+  2026-09-02) — `e2e` job, 120-minute budget.
 - **`baseball-auth-smoke` (#372)** — 30-minute budget. It
   installs Playwright chromium, runs a full `npm run build`, seeds BaseballHelm
   CI accounts, then runs the coach/player smoke. Separate from — and in
-  addition to — the broader `Smoke checks` build. **Out of the PR gate since
+  addition to — CI's `Next build`. **Out of the PR gate since
   2026-08-26 (owner decision)**: it runs on push to `main` only and no longer
   feeds `CI aggregate` — a red run on `main` blocks the next production
   promote, not PR merges. It had failed two consecutive PR runs with the

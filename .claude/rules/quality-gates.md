@@ -61,7 +61,8 @@ prose (this table once carried the numbers and every one of them rotted):
 Verified 2026-08-20. Do not treat these as coverage:
 
 - **`check:types-drift` degrades to advisory if its secret is unset.** The
-  workflow is wired correctly — the `Database types drift` job sets
+  workflow is wired correctly — the `Database types drift` step (of the
+  `Static checks` job since 2026-09-02) sets
   `SUPABASE_ACCESS_TOKEN` in a job-level `env:` block. But without a token value
   the script takes its tokenless branch: `::warning::` then **`exit 0`**. So if
   that repo secret is ever unset or rotated away, the job stays **green while
@@ -127,9 +128,11 @@ Verified 2026-08-20. Do not treat these as coverage:
   build, RLS, knowledge + doc gates) and `review-gate.yml` (static analyzers).
 - **CircleCI** — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk)
   Mondays 06:00 UTC, plus iOS Capacitor compile.
-- **6 required checks on `main`**, verified live 2026-08-20 and all resolving to
-  real job names: `Smoke checks`, `CI aggregate`, `Review Gate aggregate`,
+- **5 required checks on `main`**, verified live 2026-09-02 and all resolving to
+  real job names: `CI aggregate`, `Review Gate aggregate`,
   `Analyze (actions)`, `Analyze (javascript-typescript)`, `Analyze (python)`.
+  (`Smoke checks` was the sixth until 2026-09-02 — a duplicate `next build`,
+  removed job-and-context together.)
   The last three render from the CodeQL matrix — **a matrix job's status name is
   the rendered `name:`, so changing the matrix silently renames the required
   check.** That produced two phantom required checks and made every PR
