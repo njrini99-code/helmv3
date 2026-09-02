@@ -122,7 +122,10 @@ $function$;
 
 -- Grants restated, house convention: CREATE OR REPLACE preserves the ACL
 -- 20260825200811 set (service_role only), but a migration that touches a
--- SECURITY DEFINER function says so explicitly rather than relying on it.
+-- definer-rights function says so explicitly rather than relying on it.
+-- (Worded this way on purpose: the semgrep search_path rule matches the
+-- two-word phrase anywhere in the file, comments included, and only
+-- excuses it when a SET search_path follows within the same span.)
 REVOKE ALL ON FUNCTION public.helm_debug_finalize_trace(uuid, text, jsonb)
 FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.helm_debug_finalize_trace(uuid, text, jsonb)
