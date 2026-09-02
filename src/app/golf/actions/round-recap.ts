@@ -152,11 +152,31 @@ async function generateRoundRecapImpl(
   // the model did what examples do: a Shenandoah player's recap opened
   // "Nick's back nine collapse". The name is user data, so it is cleaned
   // (promptSafeName) before it is placed inside the instruction.
-  const { data: playerRow } = await supabase
+  const { data: playerRow, error: playerError } = await supabase
     .from('golf_players')
     .select('first_name')
     .eq('id', round.player_id)
     .maybeSingle<{ first_name: string | null }>();
+  if (playerError) {
+    // The name is a nicety: the recap still reads correctly as "the player".
+    // Logged, not raised, so a broken lookup can neither block the recap nor
+    // silently rename every recap without a trace.
+    await logServerError(
+      `Recap player-name lookup failed (continuing as "the player"): ${playerError.message}`,
+      {
+        action: 'generateRoundRecap.playerName',
+        featureArea: 'round_review_ai',
+        roundId,
+        playerId: round.player_id,
+        userId: user.id,
+        errorCode: playerError.code,
+        errorHint: playerError.hint,
+        errorDetails: playerError.details,
+        skipSentry: true,
+      },
+      'warning',
+    );
+  }
   const playerName = promptSafeName(playerRow?.first_name);
 
   // 3. Build deterministic fallback first — compose() needs a fallback to
