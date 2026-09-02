@@ -1,10 +1,14 @@
 # Make clones deterministic across platforms.
 #
-# .git/config here sets `ignorecase = true` and `precomposeunicode = true`
-# (macOS defaults). Those are local settings and do NOT travel with a clone, so
-# a Linux checkout can disagree about path casing and Unicode normalisation
-# with no error — the kind of difference that shows up as a phantom diff or a
-# module that resolves locally and 404s in CI.
+# On macOS git applies `core.ignorecase = true` and `core.precomposeunicode =
+# true` as DEFAULTS whenever they are unset — and on the canonical checkout
+# they are unset: `git config --show-origin --get-all core.ignorecase` returns
+# nothing and .git/config has no [core] section (measured 2026-09-01; this
+# header used to say .git/config "sets" them, which it never did). The effect
+# is the same either way: those are per-machine behaviours that do NOT travel
+# with a clone, so a Linux checkout can disagree about path casing and Unicode
+# normalisation with no error — the kind of difference that shows up as a
+# phantom diff or a module that resolves locally and 404s in CI.
 
 * text=auto eol=lf
 

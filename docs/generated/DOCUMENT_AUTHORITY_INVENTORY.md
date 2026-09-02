@@ -51,7 +51,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `.claude/rules/autonomy.md` | current | - | - | yes | 4 | 2 | - |
+| `.claude/rules/autonomy.md` | current | - | - | yes | 4 | 3 | - |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | 0 | 5 | - |
 | `.claude/rules/baseball-roles.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | 7 | 5 | - |
@@ -64,9 +64,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 0 | 11 | 2 |
-| `.claude/rules/quality-gates.md` | current | - | - | - | 0 | 4 | 2 |
-| `.claude/rules/shipping.md` | current | - | - | yes | 3 | 12 | 1 |
-| `AGENTS.md` | current | yes | - | yes | 0 | 17 | 2 |
+| `.claude/rules/quality-gates.md` | current | - | - | - | 0 | 7 | 2 |
+| `.claude/rules/shipping.md` | current | - | - | yes | 4 | 12 | 1 |
+| `AGENTS.md` | current | yes | - | yes | 0 | 18 | 2 |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 6 | 1 |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | 2 |
 | `README.md` | current | - | - | - | 0 | 2 | - |
@@ -79,7 +79,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/debugger.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/verifier.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/commands/cleanup-db.md` | current | - | - | - | 0 | 2 | 2 |
-| `.claude/commands/gates.md` | current | - | - | - | 0 | 0 | - |
+| `.claude/commands/gates.md` | current | - | - | - | 0 | 2 | - |
 | `.claude/skills/app-store-screenshots/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/capacitor-best-practices/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/debugging-capacitor/SKILL.md` | current | - | - | - | 0 | 0 | - |
@@ -251,7 +251,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/security-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
-| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 8 | 8 | - |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 9 | 8 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 2 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 129 | - |

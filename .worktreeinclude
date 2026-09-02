@@ -11,7 +11,9 @@
 # explicitly rather than inheriting the founder's.
 
 # Node version pin — the repo auto-switches via fnm; without it a worktree
-# lands on the machine default (v26) while all 24 CI workflows pin 22.
+# lands on the machine default (v26) while every CI job pins 22 (grep
+# `node-version` in .github/workflows/*.yml and `cimg/node` in
+# .circleci/config.yml — the workflow count that used to sit here rotted).
 .node-version
 
 # Local editor/tooling config that is ignored but harmless and useful.

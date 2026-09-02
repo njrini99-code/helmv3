@@ -158,12 +158,26 @@ fi
 
 echo "  release stamp $SHORT found in the served bundle."
 
-# Record the VERIFIED release so the session-start hook can report drift
-# without a network call. Written only after the checks above passed, so this
-# file means "proven live", never "we ran a deploy command". Gitignored: it is
-# machine state, not repo state.
-mkdir -p .claude/session-state 2>/dev/null || true
-printf '%s\n' "$SHA" > .claude/session-state/last-verified-release 2>/dev/null || true
+# Record the VERIFIED release so the session-start hook has an offline answer.
+# Written only after the checks above passed, so this file means "proven
+# live", never "we ran a deploy command". Gitignored: it is machine state, not
+# repo state. Format: `<sha> <ISO-8601 UTC>` — the date is what lets a reader
+# see how old the claim is; the hook labels an old marker as such.
+#
+# WRITTEN TO THE CANONICAL CHECKOUT, NOT JUST THE CWD. Deploys promote from a
+# worktree pinned at the merged main SHA (AGENTS.md), and until 2026-09-01
+# this wrote only `.claude/session-state/` under the cwd — the worktree's,
+# which is retired minutes later — so the canonical marker sat at 53ae81a4c
+# while production served fb425aa2b, and every session opened with "16
+# unreleased commits" against a real figure of 1. `--git-common-dir` is the
+# shared .git from any linked worktree; its parent is the canonical root.
+STAMP="$SHA $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+CANON="$(cd "$(git rev-parse --git-common-dir)/.." 2>/dev/null && pwd -P)"
+for root in "$CANON" "$(pwd -P)"; do
+  [ -n "$root" ] && [ -d "$root" ] || continue
+  mkdir -p "$root/.claude/session-state" 2>/dev/null || true
+  printf '%s\n' "$STAMP" > "$root/.claude/session-state/last-verified-release" 2>/dev/null || true
+done
 
 echo
 echo "✅ VERIFIED LIVE: production is serving $SHORT."
