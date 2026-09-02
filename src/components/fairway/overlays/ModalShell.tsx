@@ -45,6 +45,10 @@ import {
 
 /* ── size variants ────────────────────────────────────────────────────────── */
 
+/** Bottom inset of the dialog box: safe area, or the keyboard when it is up. */
+const MODAL_BOTTOM_INSET =
+  'max(1rem, env(safe-area-inset-bottom), calc(var(--keyboard-height, 0px) + 1rem))';
+
 const SIZE_CLASS = {
   sm: 'max-w-sm',
   md: 'max-w-md',
@@ -234,14 +238,25 @@ function ModalShellRoot({
                 // comes from `m-auto` + `h-fit`; it now centres inside the SAFE
                 // box rather than the raw viewport, which also stays correct
                 // when the two insets differ (they always do on iPhone).
+                // The bottom inset also clears the soft keyboard: the WebView
+                // never resizes for it (`resize: 'ionic'`, no <ion-app>) and
+                // Safari does not either, so a modal centred in the raw
+                // viewport put its lower half — the field being typed into,
+                // the Save button — under the keys. `--keyboard-height` is 0px
+                // with the keyboard down, so the safe-area form is unchanged
+                // then; with it up, `m-auto` re-centres the panel in the
+                // visible box and the body scrolls inside the shorter cap.
                 style={{
                   zIndex: FW_Z.modal,
                   position: 'fixed',
                   top: 'max(1rem, env(safe-area-inset-top))',
-                  bottom: 'max(1rem, env(safe-area-inset-bottom))',
-                  maxHeight:
-                    'calc(100dvh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom)))',
+                  bottom: MODAL_BOTTOM_INSET,
+                  maxHeight: `calc(100dvh - max(1rem, env(safe-area-inset-top)) - ${MODAL_BOTTOM_INSET})`,
+                  transition: reduced ? undefined : 'bottom 250ms ease-out',
                 }}
+                // The panel handles its own keyboard clearance; the provider's
+                // global keyboardWillShow scroll must leave the page alone.
+                data-fw-keyboard-aware
                 className={cn(
                   'fixed inset-x-0 m-auto h-fit w-[calc(100vw-2rem)]',
                   'overflow-hidden',
