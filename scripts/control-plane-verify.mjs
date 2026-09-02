@@ -420,6 +420,82 @@ function checkToolStaticAuthority() {
     unrecorded.length ? `declared but never observed: ${unrecorded.join(', ')}` : `${declared.size} namespaces declared and observed`);
 }
 
+/**
+ * MCP deny rules vs the connector ids the session actually exposes.
+ *
+ * Permission rules match tool NAMES. Measured 2026-09-01: the account
+ * connectors appear in the session as `mcp__<uuid>__<tool>` and under NO
+ * `mcp__claude_ai_*` name, so every MCP deny rule written against the display
+ * name matched nothing the session could call — while the enforcement
+ * inventory reported them EXERCISED. The UUID spellings are denied too now, and
+ * config/mcp-connector-ids.json is the one place the ids live.
+ *
+ * Two things this check can establish from the repo alone, and one it cannot:
+ *
+ *   FAIL   a deny rule names a UUID the file does not record — a rule nobody
+ *          can trace to an observation
+ *   FAIL   a display-name deny rule has no twin under the recorded UUID prefix
+ *          for the same service — the spelling that runs is uncovered
+ *   GAP    both hold, but the id's stability across sessions is UNVERIFIED
+ *          (MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS) — a script cannot
+ *          see the live tool inventory, so consistent is the most it can say
+ *
+ * PASS is reserved for a connector whose stability has been recorded as
+ * VERIFIED in the file, which only repeated measurement can earn.
+ */
+export function classifyMcpDenyConnectorIds(facts) {
+  const f = facts ?? {};
+  const deny = f.deny ?? [];
+  const connectors = f.connectors ?? [];
+  const gapRegistered = f.gapRegistered === true;
+
+  const recorded = new Map(connectors.filter((c) => c?.id).map((c) => [c.id, c]));
+  const uuidRule = /^mcp__([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})__(.+)$/;
+
+  const untraceable = deny
+    .map((r) => r.match(uuidRule))
+    .filter((m) => m && !recorded.has(m[1]))
+    .map((m) => m[0]);
+  if (untraceable.length) {
+    return { state: FAIL, detail: `deny rules name connector ids config/mcp-connector-ids.json does not record: ${untraceable.join(', ')}` };
+  }
+
+  const uncovered = [];
+  for (const c of recorded.values()) {
+    if (!c.display_name_prefix) continue;
+    for (const r of deny.filter((x) => x.startsWith(c.display_name_prefix))) {
+      const tool = r.slice(c.display_name_prefix.length);
+      if (!deny.includes(`mcp__${c.id}__${tool}`)) uncovered.push(`${r} -> mcp__${c.id}__${tool}`);
+    }
+  }
+  if (uncovered.length) {
+    return { state: FAIL, detail: `display-name deny rules with no twin under the spelling the session exposes: ${uncovered.join(', ')}` };
+  }
+
+  const unverified = [...recorded.values()].filter((c) => !/^VERIFIED/i.test(String(c.stability ?? '')));
+  if (unverified.length) {
+    const ids = unverified.map((c) => `${c.service}=${c.id.slice(0, 8)}… (observed ${c.observed_at ?? '?'})`).join(', ');
+    return gapRegistered
+      ? { state: GAP, detail: `rules and recorded ids agree; id stability across sessions UNVERIFIED for ${ids} (MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS)` }
+      : { state: FAIL, detail: `id stability UNVERIFIED for ${ids} and no MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS gap is registered — an unowned bet` };
+  }
+  return { state: PASS, detail: `${recorded.size} connector id(s) recorded as VERIFIED, every display-name deny rule has its UUID twin` };
+}
+
+function checkMcpDenyConnectorIds() {
+  const settings = readJson(resolve(ROOT, '.claude/settings.json'));
+  const ids = readJson(resolve(ROOT, 'config/mcp-connector-ids.json'));
+  if (!settings) return add('tools', 'mcp-deny-connector-ids', UNKNOWN, 'could not read .claude/settings.json');
+  if (!ids) return add('tools', 'mcp-deny-connector-ids', UNKNOWN, 'config/mcp-connector-ids.json missing or unreadable — the UUID deny rules cannot be traced to an observation');
+  const gaps = readJson(resolve(ROOT, 'config/control-plane-gaps.json'))?.gaps ?? [];
+  const v = classifyMcpDenyConnectorIds({
+    deny: settings.permissions?.deny ?? [],
+    connectors: ids.connectors ?? [],
+    gapRegistered: gaps.some((g) => g.id === 'MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS'),
+  });
+  add('tools', 'mcp-deny-connector-ids', v.state, v.detail);
+}
+
 function checkWorktreePolicy() {
   const src = existsSync(resolve(ROOT, 'scripts/new-worktree.sh'))
     ? readFileSync(resolve(ROOT, 'scripts/new-worktree.sh'), 'utf-8')
@@ -775,6 +851,7 @@ async function run() {
   checkHookWiring();
   checkClaimConsistency();
   checkToolStaticAuthority();
+  checkMcpDenyConnectorIds();
   checkWorktreePolicy();
   checkControlPlaneTests();
 
