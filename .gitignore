@@ -278,6 +278,11 @@ __pycache__/
 # committed), and screenshots of auth flows are risky to publish.
 .momentic-mcp/
 tests/**/.momentic-mcp/
+# The sibling directory the Momentic MCP CLI writes to. Sixteen jpegs of the
+# same auth-flow runs sat TRACKED here until 2026-09-01 while the rule above
+# named only .momentic-mcp/ — same artifacts, same risk, different address.
+# Untracked with `git rm --cached`; the files stay on disk.
+.momentic/
 
 # Extracted from PR #1638 (closed as superseded 2026-08-29) — the one piece of
 # it that is still true. The rest of that PR described a lifecycle that no
