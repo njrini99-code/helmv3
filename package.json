@@ -40,6 +40,7 @@
     "enforcement:regen": "node scripts/gen-enforcement-inventory.mjs",
     "evals": "promptfoo eval -c evals/round-review.yaml",
     "evals:view": "promptfoo view",
+    "flight-recorder:audit": "node scripts/flight-recorder-audit.mjs",
     "guards": "node scripts/repo-guards.mjs",
     "knowledge:check": "node scripts/knowledge/check.mjs",
     "knowledge:context": "node scripts/knowledge/generate-context-pack.mjs",
