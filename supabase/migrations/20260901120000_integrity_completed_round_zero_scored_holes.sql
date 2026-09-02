@@ -18,11 +18,13 @@
 -- state, not only a seeding artifact.
 --
 -- 2026-09-02, owner decision: the four fixture rounds are KEPT, not removed.
--- Check 6 therefore excludes their team, Demo University Golf
--- (6ecdd1a6-63fe-4beb-b094-00118f334163) — the one team that is QA by
--- construction — instead of paging on known data every morning. Every other
--- team is in scope. Validated read-only against production 2026-09-02 with
--- the exclusion in place: count=0, sample=[]. Expect `pass` on first run.
+-- Check 6 therefore names those four ids out of scope instead of paging on
+-- known data every morning. By id, not by team: Demo University Golf holds
+-- ~100 real demo rounds and the shared demo coach, so excluding the team
+-- would blind this check to the save path it exists to catch. Every other
+-- round, on every team, is in scope. Validated read-only against production
+-- 2026-09-02 with the exclusion in place: count=0, sample=[]. Expect `pass`
+-- on first run.
 --
 -- R3 (privileged: SECURITY DEFINER, service_role-only EXECUTE). Prepared by an
 -- agent; only the owner applies. Verify before applying that the function has
@@ -136,10 +138,18 @@ BEGIN
     SELECT r.id, row_number() OVER (ORDER BY r.created_at DESC) AS rn
     FROM golf_rounds r
     WHERE r.status = 'completed'
-      -- Demo University Golf (the QA team). Its four patterned fixture
-      -- rounds are KEPT by owner decision 2026-09-02, so the team is out
-      -- of scope for this check rather than paging on known data daily.
-      AND r.team_id IS DISTINCT FROM '6ecdd1a6-63fe-4beb-b094-00118f334163'::uuid
+      -- The four patterned QA fixture rounds are KEPT by owner decision
+      -- 2026-09-02, so they are named out of scope here — by id, not by
+      -- team: their team (Demo University Golf) carries ~100 real demo
+      -- rounds and the shared demo coach, so the REPLACE save path this
+      -- check exists to catch runs there too. A repeat ad-hoc fixture
+      -- insert will page, which is the correct reading of it.
+      AND r.id <> ALL (ARRAY[
+        '0b000000-0000-4000-b000-000000000001',
+        '0b000000-0000-4000-b000-000000000002',
+        '0b000000-0000-4000-b000-000000000003',
+        '0b000000-0000-4000-b000-000000000004'
+      ]::uuid[])
       AND NOT EXISTS (
         SELECT 1 FROM golf_holes h
         WHERE h.round_id = r.id AND h.score IS NOT NULL
