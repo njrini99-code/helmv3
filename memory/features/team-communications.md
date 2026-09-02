@@ -98,6 +98,13 @@ Announcement create
 - The composer's Attachments section renders for any coach with a team (2026-08-26): it offers direct device upload (25 MB cap, mirrors the Documents-page accept list) plus the library picker; it must NOT be hidden just because the team library is empty.
 - Announcement player view needs compact cards, clear acknowledgement action, linked documents/tasks, and urgency state.
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.
+- On a phone the messages column shrinks by whichever is taller of the bottom
+  chrome (56px nav + safe area) and `--keyboard-height`, so the composer sits
+  directly above the keys ("I can't see what I'm typing", Shenandoah team
+  chat 2026-09-01); the thread pane re-pins to the newest message when its
+  region shrinks, and the composer drops its home-indicator pad while the
+  keyboard covers the home indicator. The screen carries
+  `data-fw-keyboard-aware` so the shell's global scroll-into-view stays out.
 
 ## Conversation Rail Failure Semantics (2026-08-27)
 
