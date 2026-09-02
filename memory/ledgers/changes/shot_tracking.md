@@ -552,7 +552,7 @@
 
 ## 2026-09-02 — Flight Recorder: real per-stage timings, not 0ms placeholders
 
-- SHA: (this commit).
+- SHA: `46ab32534`.
 - Change: `savePartialRound` (both the existing-round and no-id/new-round
   branches), `submitGolfRoundComprehensive`, `deleteShot` and `updateShot` now
   construct their `helm-flight-recorder` trace FIRST — before Zod validation,
