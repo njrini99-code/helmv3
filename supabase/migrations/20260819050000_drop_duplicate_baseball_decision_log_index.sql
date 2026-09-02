@@ -2,12 +2,15 @@
 --
 -- baseball_decision_log carries TWO byte-identical, non-unique btree indexes
 -- on the same single column:
---   baseball_decision_log_meeting_item_id_idx  (CREATE INDEX ... USING btree (meeting_item_id))
---   baseball_decision_log_meeting_item_idx     (CREATE INDEX ... USING btree (meeting_item_id))
+--   baseball_decision_log_meeting_item_id_idx
+--     (CREATE INDEX ... USING btree (meeting_item_id))
+--   baseball_decision_log_meeting_item_idx
+--     (CREATE INDEX ... USING btree (meeting_item_id))
 -- Confirmed live via pg_indexes (2026-08-19) and independently flagged right
 -- now by Supabase's own performance advisor (duplicate_index): "Table
 -- `public.baseball_decision_log` has identical indexes
--- {baseball_decision_log_meeting_item_id_idx,baseball_decision_log_meeting_item_idx}.
+-- {baseball_decision_log_meeting_item_id_idx,
+--  baseball_decision_log_meeting_item_idx}.
 -- Drop all except one of them."
 --
 -- Neither index backs a constraint: joining pg_constraint on conindid for

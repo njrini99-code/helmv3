@@ -54,10 +54,10 @@
 -- only, for the lead to review and apply.
 
 CREATE INDEX IF NOT EXISTS baseball_postgame_review_items_timeline_event_id_idx
-  ON public.baseball_postgame_review_items (timeline_event_id);
+ON public.baseball_postgame_review_items (timeline_event_id);
 
 CREATE INDEX IF NOT EXISTS baseball_postgame_reviews_coach_id_idx
-  ON public.baseball_postgame_reviews (coach_id);
+ON public.baseball_postgame_reviews (coach_id);
 
 CREATE INDEX IF NOT EXISTS baseball_settings_audit_log_actor_coach_id_idx
-  ON public.baseball_settings_audit_log (actor_coach_id);
+ON public.baseball_settings_audit_log (actor_coach_id);
