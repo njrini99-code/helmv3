@@ -10,6 +10,12 @@ import {
   __resetSentryFeatureCountCooldown,
 } from '@/lib/admin/sentry-api';
 
+// Well-formed by shape (an org token). The old fixtures — 'sentry-read-token',
+// 'ci-token-long' — are exactly the short opaque strings credential-shape.mjs
+// now rejects, which is the point of the change.
+const READ_TOKEN = 'sntrys_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const CI_TOKEN = 'sntryu_cccccccccccccccccccccccccccccccccccccccccccccccc';
+
 function issuePayload(id: string) {
   return {
     id, shortId: `HELM-${id}`, title: `Issue ${id}`, culprit: 'route',
@@ -23,7 +29,7 @@ function issuePayload(id: string) {
 
 describe('fetchSentryIssues', () => {
   beforeEach(() => {
-    vi.stubEnv('SENTRY_READ_TOKEN', 'sentry-read-token');
+    vi.stubEnv('SENTRY_READ_TOKEN', READ_TOKEN);
     vi.stubEnv('SENTRY_ORG', 'helm-xs');
     vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
     fetchMock.mockReset();
@@ -40,25 +46,25 @@ describe('fetchSentryIssues', () => {
 
   it('falls back to SENTRY_AUTH_TOKEN when SENTRY_READ_TOKEN is absent', async () => {
     vi.stubEnv('SENTRY_READ_TOKEN', '');
-    vi.stubEnv('SENTRY_AUTH_TOKEN', 'ci-token-long');
+    vi.stubEnv('SENTRY_AUTH_TOKEN', CI_TOKEN);
     fetchMock.mockResolvedValue(new Response(JSON.stringify([issuePayload('1')]), {
       status: 200, headers: { 'content-type': 'application/json' },
     }));
     const res = await fetchSentryIssues();
     expect(res.status).toBe('ok');
     const headers = fetchMock.mock.calls[0]![1] as { headers: Record<string, string> };
-    expect(headers.headers.Authorization).toBe('Bearer ci-token-long');
+    expect(headers.headers.Authorization).toBe(`Bearer ${CI_TOKEN}`);
   });
 
   it('prefers SENTRY_READ_TOKEN over SENTRY_AUTH_TOKEN when both are set', async () => {
-    vi.stubEnv('SENTRY_AUTH_TOKEN', 'ci-token-long');
+    vi.stubEnv('SENTRY_AUTH_TOKEN', CI_TOKEN);
     fetchMock.mockResolvedValue(new Response(JSON.stringify([issuePayload('1')]), {
       status: 200, headers: { 'content-type': 'application/json' },
     }));
     const res = await fetchSentryIssues();
     expect(res.status).toBe('ok');
     const headers = fetchMock.mock.calls[0]![1] as { headers: Record<string, string> };
-    expect(headers.headers.Authorization).toBe('Bearer sentry-read-token');
+    expect(headers.headers.Authorization).toBe(`Bearer ${READ_TOKEN}`);
   });
 
   it('treats placeholder or too-short tokens as unconfigured', async () => {
@@ -128,7 +134,7 @@ describe('fetchSentryIssues', () => {
 
 describe('fetchSentryFeatureCounts', () => {
   beforeEach(() => {
-    vi.stubEnv('SENTRY_READ_TOKEN', 'sentry-read-token');
+    vi.stubEnv('SENTRY_READ_TOKEN', READ_TOKEN);
     vi.stubEnv('SENTRY_ORG', 'helm-xs');
     vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
     fetchMock.mockReset();
@@ -199,7 +205,7 @@ describe('fetchSentryFeatureCounts', () => {
 
 describe('updateSentryIssueStatus', () => {
   beforeEach(() => {
-    vi.stubEnv('SENTRY_READ_TOKEN', 'sentry-read-token');
+    vi.stubEnv('SENTRY_READ_TOKEN', READ_TOKEN);
     vi.stubEnv('SENTRY_ORG', 'helm-xs');
     vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
     fetchMock.mockReset();
@@ -226,7 +232,7 @@ describe('updateSentryIssueStatus', () => {
     const [url, init] = fetchMock.mock.calls[0]! as [string, RequestInit & { headers: Record<string, string> }];
     expect(String(url)).toBe('https://sentry.io/api/0/organizations/helm-xs/issues/123/');
     expect(init.method).toBe('PUT');
-    expect(init.headers.Authorization).toBe('Bearer sentry-read-token');
+    expect(init.headers.Authorization).toBe(`Bearer ${READ_TOKEN}`);
     expect(init.body).toBe(JSON.stringify({ status: 'resolved' }));
   });
 
@@ -367,7 +373,7 @@ describe('updateSentryIssueStatus', () => {
 // ---------------------------------------------------------------------------
 describe('fetchSentryFeatureCounts — one aggregate query, not one per feature', () => {
   beforeEach(() => {
-    vi.stubEnv('SENTRY_READ_TOKEN', 'sentry-read-token');
+    vi.stubEnv('SENTRY_READ_TOKEN', READ_TOKEN);
     vi.stubEnv('SENTRY_ORG', 'helm-xs');
     vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
     fetchMock.mockReset();

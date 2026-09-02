@@ -139,16 +139,26 @@ export const BRIDGE_INCIDENT_CACHE_TAG = 'bridge-incidents';
  *     resolved something, which is precisely the "it doesn't go away" the
  *     resolve fix exists to end.
  *
- * Honest-only: a query failure degrades to 0 (no badge) rather than guessing.
+ * Honest-only: a query failure returns `null` — "could not find out" — never
+ * 0. It used to `catch { return 0 }`, which converted the fault that
+ * `queryAppErrorEvents` deliberately throws (bridge-honest-failure.test.ts)
+ * back into the reassuring zero that throw exists to prevent, held it in this
+ * cache for 60s, and rendered it as no badge — indistinguishable from "no
+ * incidents". Twenty lines away, layout.tsx's Health badge already did the
+ * opposite ("null — never 0"). AdminShell renders `null` as a distinct
+ * "unreadable" state.
  */
 export const fetchBridgeErrorBadge = unstable_cache(
-  async (): Promise<number> => {
+  async (): Promise<number | null> => {
     try {
       const rows = await queryAppErrorEvents({ windowHours: DEFAULT_INCIDENT_WINDOW_HOURS });
       const { counts } = buildIncidentFeedFromSources(rows, [], DEFAULT_INCIDENT_WINDOW_HOURS);
       return counts.actionableGroups;
-    } catch {
-      return 0;
+    } catch (error) {
+      console.warn('[Bridge] incident badge unreadable — rendering unknown, never 0', {
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return null;
     }
   },
   ['bridge-error-badge'],

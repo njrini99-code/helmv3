@@ -128,3 +128,38 @@ The bug was never the status code. It was that the cause was invisible.
    not been individually cleared. Do not read this item as finished.
 3. The four ERROR `security_definer_view` advisories remain open and are the
    context for this fault.
+
+## Update 2026-09-01 — the same class, three more instances, and what remains open
+
+The visibility repair above was one instance of a wider shape: a failure that
+exists as a VALUE (or a detached promise) never enters the Bridge pipeline. A
+review of the pipeline on 2026-09-01 (`agent/fix-bridge-errors`) closed three
+more instances and left the class itself open:
+
+- **Value-shaped RPC failure, client side.** `permission denied for function
+  heartbeat` — 15 Sentry events in 7d (2026-08-26..28, Chrome and WKWebView on
+  `/golf/dashboard/rounds/*`), reported only by the Supabase driver's
+  auto-instrumentation, 0 `admin_events` rows. `src/hooks/use-presence.ts` now
+  routes the resolved `error` through `logError` (feature `auth_onboarding`,
+  severity `low`). Grants were verified against production via the read-only
+  connector: `public.heartbeat()` is SECURITY DEFINER with EXECUTE for
+  `authenticated` and `service_role` only — correct — so the fault was a JWT
+  that expired between the session check and the call, evaluated as `anon`.
+  No migration; the last occurrence predates the `getSession()` guard.
+- **Detached promises on the thrown-action path.** `void logServerException(…)`
+  then `throw` is dropped on Vercel once the response is sent. Every capture
+  class now goes through `scheduleBridgeWrite` (`after()` in a request scope,
+  awaited-with-timeout otherwise), and the process-level handlers await under
+  a bound and register with the platform's `waitUntil`.
+- **Errors this pipeline could not even represent.** A MISSING Inngest signing
+  key produced an SDK `console.error` and nothing else; it is now a
+  `provider_inngest_missing_credential` row on `integrations` in production.
+
+**Still open — do not read the above as closing the class:**
+
+1. The `.supabase-error-baseline.json` class (1,044 unchecked reads returning
+   failures as values) is untouched beyond the one heartbeat call site.
+2. Follow-up 2's ~21 remaining `Promise.allSettled` sites are not individually
+   cleared.
+3. R3 — the client used by the `coachhelm-safety-net` path — remains an owner
+   action. Do not grant `anon`.

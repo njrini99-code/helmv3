@@ -98,9 +98,12 @@ them would have broken those routes, not the dead one.
   RPC Forbids. Service-role access is read-only on this path.
 - **An in-app RCA analysis is not an incident.** `analyzeErrorFingerprint`
   stores its verdict as an `admin_events` row with `event_type='rca_analysis'`
-  under the analyzed fingerprint. Every incident query must exclude that event
-  type, or an analysis is counted as an occurrence of the thing it analyzes
-  (inflating occurrence counts and moving last-seen).
+  under the analyzed fingerprint, written BORN RESOLVED (`resolved: true`,
+  `resolved_at`) like every other non-incident record this table holds —
+  pinned by `src/app/admin/actions/__tests__/analyze-error.test.ts`. Every
+  incident query must still exclude that event type, or an analysis is counted
+  as an occurrence of the thing it analyzes (inflating occurrence counts and
+  moving last-seen).
 - **The reliability collector writes TWO `background_job_logs` rows per run, and
   they must stay distinct.** `recordJobRun('reliability-triage', …)` writes the
   standard cron-board row — every registered cron must call it, enforced by
@@ -334,6 +337,117 @@ them would have broken those routes, not the dead one.
   function) is not matched and stays actionable. The phrase list is shared
   with `error-logging` and the message-send retry so the three cannot drift.
 
+- **A Bridge write on an error path is SCHEDULED, never detached.** Every
+  capture class used to `void logServerException(...)` and throw. On Vercel a
+  promise nobody awaited and nobody registered with the platform is dropped
+  the moment the response is sent — Sentry's own capture landed (its SDK
+  flushes through the platform), the Bridge row did not: 6 process-level
+  rejections in Sentry on 2026-09-01, 0 `admin_events` rows for `process.*`
+  in 60 days. `scheduleBridgeWrite` (`src/lib/admin/schedule-bridge-write.ts`)
+  is the single mechanism: Next 16's `after()` inside a request scope (zero
+  latency on the error path, Vercel keeps the function alive), and an AWAITED
+  write under a bounded timeout wherever `after()` throws (unit tests, module
+  init, inside `unstable_cache`, a prerender). The fallback is the awaited
+  path on purpose — a dropped write is the failure being removed, and it is
+  ALSO handed to the Vercel request context's `waitUntil` when one exists
+  (start-up on Vercel has a request context but no request scope). It captures
+  the correlation scope (`bindRequestContext`) because `after()` callbacks run
+  outside the request's AsyncLocalStorage and would otherwise lose
+  `requestId`. Wired into `observed-action.ts`, `observe-action-result.ts`
+  (which now returns a promise), `job-log.ts`, `integration-health.ts`
+  (`reportIntegrationFault` is async and its callers `await` it — a `void`ed
+  bounded await is still a promise nobody holds) and
+  `src/lib/inngest/credentials.ts`; `instrumentation.ts`'s `register()`
+  AWAITS the start-up credential report, after starting the process-handler
+  import so a slow Bridge cannot delay the catch-all. The process-level handlers
+  (`register-process-error-handlers.ts`) have no request scope, so they import
+  the logger statically, hand the write to the Vercel request context's
+  `waitUntil` when one exists (`vercel-wait-until.ts` — `@sentry/core`'s own
+  helper is Edge-only) and await it under `BRIDGE_PROCESS_WRITE_TIMEOUT_MS`.
+- **Flood collapse has a DURABLE half.** `emit-throttle.ts` is per process;
+  on serverless a 60s auto-refresh lands on a fresh lambda most of the time,
+  so "one row per window" became one row per refresh — 99 identical
+  `provider_vercel_unavailable` rows in 2h05m on 2026-09-01, 83% of all
+  unresolved error rows in seven days, every `collapsed_count` NULL, and
+  `admin_dashboard` RED because `get_feature_health` counts rows. The logger
+  now runs `absorbIntoRecentEvent` (`src/lib/admin/durable-collapse.ts`)
+  before inserting any `provider_*` fault: an UNRESOLVED row with the same
+  fingerprint inside 15 minutes gets its `metadata.metadata.collapsed_count`
+  bumped (plus `last_seen_at`) instead of a new row. The bump is a
+  compare-and-swap — the UPDATE is guarded on the counter exactly as it was
+  read (`metadata->metadata->>collapsed_count`, or its absence), re-read and
+  retried once on a miss — because the new count is computed in JS and two
+  lambdas that both read N would otherwise both write N+1. Fails OPEN — an
+  unreadable lookup, a failed update, or a second guard miss (`lost_race`)
+  inserts as before. Opt in for other codes with
+  `durableCollapse: true`, out with `false`. Severity is never changed by it.
+  The Vercel insights reader additionally negative-caches its own failure for
+  5 minutes per process so a dead endpoint is not re-probed on every refresh.
+- **In production a MISSING Inngest credential is a fault, not a config
+  state.** `integration-health.ts`'s "never report unconfigured" is right for
+  an optional Bridge reader and wrong for Inngest, on which round analysis,
+  reminders and the reliability automation depend. `src/lib/inngest/
+  credentials.ts` classifies both keys by SHAPE (`signkey-<env>-<hex>`; an
+  opaque event key of >= 20 chars — an 11-character placeholder is
+  `malformed`, not configured) and, when `VERCEL_ENV === 'production'`, writes
+  `provider_inngest_missing_credential` on feature `integrations` from three
+  triggers: process start (`instrumentation.ts`), every `isInngestConfigured()`
+  that answers false (the round-submit routing branch and the Jobs board), and
+  every SIGNED inbound request to `/api/inngest` when the signing key is
+  unusable (the SDK answers 500 there, so the route's 401 mismatch diagnosis
+  never fires). Throttled per process, collapsed across processes, one
+  incident — and the throttle window is a promise to write, not a record of
+  one: a write that does not land (rejected, timed out on the awaited path,
+  or failed inside the `after()` task) gives the window and its drained count
+  back via `releaseEmit`, so a frozen start-up cannot silence the next
+  trigger for 60s. With one fingerprint the med tier lands on AMBER — the honest
+  reading of one known fault; RED needs two consecutive 24h windows. The
+  registry entry still carries NO heartbeat, deliberately: silence between a
+  Monday cron and a round submit is normal, and `scripts/inngest-health-check.mjs`
+  is the active proof. Setting the variables in Vercel Production and
+  redeploying is an OWNER action.
+- **The incident badge has THREE states.** `fetchBridgeErrorBadge` returns
+  `null` — never 0 — when the feed read fails (it used to `catch { return 0 }`,
+  converting the throw `bridge-honest-failure.test.ts` pins into the
+  reassuring zero that throw exists to prevent, and `unstable_cache` held it
+  for 60s). `AdminShell` renders `null` as no numeric badge PLUS a distinct
+  "Incidents unreadable" chip in the top bar at every breakpoint. Same rule
+  layout.tsx already applied to the Health badge.
+- **Feature attribution aliases `feature` too, not only `featureArea`.**
+  `resolveFeatureKey` used to return an explicit `feature` untouched, so
+  `feature: 'coachhelm_chat'` landed unregistered while the same string as
+  `featureArea` would have been aliased. Both go through
+  `FEATURE_AREA_ALIASES` now, and the table carries every key measured with
+  rows in 30d, each mapped to the registry entry whose action manifest owns
+  the emitting file: `calendar → calendar_events`, `insights → coachhelm_ai_engine`,
+  `coachhelm_chat → coachhelm_ai_engine`, `coachhelm_effectiveness →
+  coachhelm_analytics`, `teams → join_team_flow`, `rounds → round_tracking`.
+  Deliberately NOT aliased: `crm` (owner directive — CRM is never tagged onto
+  the Bridge) and `lifting-onboarding` (Helm Lifting Lab has no registry entry
+  at all; the Baseball Lift Onboarding `FeatureKey` maps a different file,
+  `src/app/baseball/actions/lift-onboarding.ts`, not the Lift Lab one). Every
+  alias must resolve to a registered key and never shadow one —
+  `src/lib/admin/__tests__/feature-aliases.test.ts`.
+- **Credential values are validated by SHAPE, in one module.** Every one of
+  the eight Bridge values in the local `.env.local` was exactly 11 characters,
+  which cleared the old `length >= 10` floor in both
+  `scripts/check-helm-bridge-env.mjs` (printed PASS) and the runtime readers'
+  identical `usableSecret()` (treated Sentry as configured, so every local
+  read failed soft and silently). `src/lib/admin/credential-shape.mjs` is the
+  single implementation — `.mjs` so the plain-node script and the TS readers
+  (`sentry-api.ts`, `vercel-api.ts`, `inngest/credentials.ts`) import the same
+  code — and it never returns or prints a value it was not given. Shape is not
+  validity: a rotated key still passes; the runtime diagnosis and the health
+  probe are what detect that.
+- **Message-shaped traces get a real Sentry title and the Bridge's own
+  fingerprint.** `logServerError`/`logServerEvent` at error/critical hand
+  Sentry a synthetic Error; its message was the constant "Server trace error"
+  (six issues in one week, one title). It is now `ServerTrace:
+  <errorCode>: <redacted summary>`, and the Sentry fingerprint is pinned to
+  `['helm-server-trace', <admin_events.fingerprint>]` (tag
+  `bridge_fingerprint`) so one Bridge incident is one Sentry issue and a
+  varying title cannot fragment grouping. An explicit `context.fingerprint`
+  still wins. Consequence: existing server-trace Sentry issues regroup once.
 - **The self-healing loop has THREE axes, and throughput is the one a
   heartbeat cannot show.** Runtime (`selfheal-registry.ts`: is each stage on
   schedule) and capability (`selfheal-capability.ts`: has it ever produced its
@@ -382,6 +496,11 @@ them would have broken those routes, not the dead one.
 
 - Admin surfaces should be dense, scannable, and operational rather than marketing-style.
 - Health, errors, data freshness, and needs-attention states should be visible without hunting.
+- A count that could not be read is rendered as UNREADABLE, never as zero and
+  never as nothing. The incident badge's `null` state is a visible chip
+  ("Incidents unreadable", `role="status"`) in the shell's top bar, shown at
+  every breakpoint because on the phone the bottom-nav badge is the only other
+  signal.
 - The Overview answers "is anything on fire" above the fold: banner, briefing,
   severity mix, then the triage queue. Posture KPIs live in a disclosure below
   it, not above it. Each KPI carries its own source note — the provenance is
@@ -442,6 +561,26 @@ them would have broken those routes, not the dead one.
 
 - `src/test/lib/cron/auth.test.ts`
 - `src/test/api/cron/shared-auth.test.ts`
+- `src/test/lib/admin/bridge-honest-failure.test.ts` — the Bridge never fails
+  toward reassurance (feed throw, badge `null`).
+- `src/lib/admin/__tests__/schedule-bridge-write.test.ts`,
+  `src/lib/admin/__tests__/observed-action-scheduling.test.ts`,
+  `src/test/lib/admin/integration-health-scheduling.test.ts`,
+  `src/lib/observability/__tests__/register-process-error-handlers.test.ts`
+  — error-path writes are scheduled or awaited, never dropped.
+- `src/lib/admin/__tests__/durable-collapse.test.ts` and the durable-collapse
+  block of `src/lib/__tests__/server-error-logger-bridge.test.ts` — provider
+  faults bump the open row across processes; unreadable lookups fail open.
+- `src/lib/inngest/__tests__/credentials.test.ts`,
+  `src/lib/inngest/__tests__/is-inngest-configured.test.ts`,
+  `src/test/api/inngest-signature-diagnosis.test.ts` — a missing/malformed
+  Inngest credential is a production fault named as MISSING, never as a
+  mismatch, and never off production.
+- `src/lib/admin/__tests__/feature-aliases.test.ts` — every alias resolves to
+  a registered key; `crm` and `lifting-onboarding` deliberately do not.
+- `src/lib/admin/__tests__/credential-shape.test.ts`,
+  `src/test/scripts/check-helm-bridge-env.test.ts` — shape validators and the
+  script run for real against eight 11-character placeholders.
 - `src/lib/reliability/__tests__/normalize.test.ts` — source-degradation
   semantics and cross-source correlation.
 - `src/lib/reliability/__tests__/sources.test.ts` — the self-feeding-read

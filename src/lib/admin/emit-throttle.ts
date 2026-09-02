@@ -85,6 +85,25 @@ export function drainCollapsedCount(key: string): number {
   }
 }
 
+/**
+ * Give the window back. The emit `shouldEmit(key)` allowed did not land —
+ * rejected, timed out, dropped by a frozen function — so the NEXT caller must
+ * be let through instead of being silenced for `windowMs` by a row that does
+ * not exist. `collapsed` is whatever `drainCollapsedCount` handed the failed
+ * write, so the count it was carrying is not lost; anything that collapsed
+ * while the write was in flight is kept as well. Never throws.
+ */
+export function releaseEmit(key: string, collapsed: number = 0): void {
+  try {
+    const existing = entries.get(key);
+    const carried = (existing?.collapsed ?? 0) + Math.max(0, Math.floor(collapsed) || 0);
+    if (carried > 0) touch(key, { windowStart: 0, collapsed: carried });
+    else entries.delete(key);
+  } catch {
+    // Releasing must never throw either.
+  }
+}
+
 /** Test-only: clears all throttle state. */
 export function __resetEmitThrottleForTests(): void {
   entries.clear();

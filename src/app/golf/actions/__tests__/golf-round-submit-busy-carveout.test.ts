@@ -49,6 +49,22 @@ vi.mock('next/server', () => ({
   after: vi.fn(() => {}),
 }));
 
+// The wrapper's soft-failure observer no longer `void`s its admin_events
+// write: it defers it past the response through `scheduleBridgeWrite`, which
+// is Next's `after()` inside a request scope. The `next/server` mock above
+// swallows `after` callbacks (it exists for golf.ts's own post-response
+// trigger, which this file must NOT run), so without this the deferred write
+// would vanish and the observer's call count would read 0 for a reason that
+// has nothing to do with the code under test. Run the write inline instead —
+// the test-side stand-in for Next executing the callback.
+vi.mock('@/lib/admin/schedule-bridge-write', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/admin/schedule-bridge-write')>()),
+  scheduleBridgeWrite: vi.fn(async (write: () => Promise<unknown>) => {
+    await write().catch(() => {});
+    return 'awaited' as const;
+  }),
+}));
+
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   updateTag: vi.fn(),
