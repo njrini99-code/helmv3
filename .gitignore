@@ -299,3 +299,13 @@ graphify-out/
 # Staging snapshot from the OS backfill. Its incident-mining JSON accounts for
 # ~8.6 MiB of blobs in history and nothing prevented it recurring.
 _staging-snapshot/
+
+# Janitor entropy-report output (scripts/janitor/run.mjs). NOT tracked,
+# deliberately — the report embeds a HEAD SHA and an ISO timestamp that
+# change on every regeneration, which would make every future `npm run
+# janitor` run (or any edit that moves HEAD) show as an unrelated diff on
+# these two files. Same precedent as knip-report.txt / npm-audit.json: the
+# weekly CircleCI `janitor` job publishes both as build artifacts; run
+# `npm run janitor` locally to read them.
+docs/generated/JANITOR_REPORT.md
+docs/generated/janitor-findings.json
