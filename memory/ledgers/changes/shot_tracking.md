@@ -627,7 +627,7 @@
 
 ## 2026-09-02 — Flight Recorder: three reviewer findings on PR #1769
 
-- SHA: (this commit).
+- SHA: `7c6ae7e8b`.
 - Change, finding 1 (`golf.ts`, `submitGolfRoundComprehensiveImpl`):
   `post.qualifier_transition` is awaited synchronously on the
   response-blocking path (see its own comment above the `if
