@@ -25,22 +25,43 @@ function humanizeResetRequestError(message: string): string {
   return humanizeAuthError(message);
 }
 
+// Pragmatic format check, not a full RFC 5322 validator — matches the intent
+// of the native `type="email"` check the form skips via `noValidate`.
+const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  // The normalized address actually submitted — shown in the confirmation
+  // copy instead of the raw input, so it always reflects what was sent.
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // `noValidate` deliberately skips the browser's native check, so nothing
+    // else was stopping a malformed address from reaching Supabase and
+    // rendering a false-positive "sent" confirmation.
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setError('Enter your email address.');
+      return;
+    }
+    if (!EMAIL_FORMAT.test(normalizedEmail)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo: `${origin}/baseball/reset-password`,
       });
 
@@ -50,6 +71,7 @@ export default function ForgotPasswordPage() {
         return;
       }
 
+      setSubmittedEmail(normalizedEmail);
       setSuccess(true);
       setLoading(false);
     } catch {
@@ -80,7 +102,7 @@ export default function ForgotPasswordPage() {
             {success ? 'Check your email' : 'Reset your password'}
           </h2>
           {success && (
-            <p className="mt-1 text-sm text-warm-500">We&apos;ve sent a reset link to {email}</p>
+            <p className="mt-1 text-sm text-warm-500">We&apos;ve sent a reset link to {submittedEmail}</p>
           )}
         </div>
 
@@ -121,7 +143,10 @@ export default function ForgotPasswordPage() {
               label="Email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError('');
+              }}
               placeholder="you@example.com"
               required
               // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on a single-field auth page

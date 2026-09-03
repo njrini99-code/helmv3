@@ -1,8 +1,10 @@
 {
   "skipped": [
+    "@sentry/node",
     "@supabase/supabase-js",
     "@supabase/supabase-js/tracing",
     "dotenv/config",
+    "js-yaml",
     "server-only"
   ],
   "cycles": [

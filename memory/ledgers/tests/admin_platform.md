@@ -1,4 +1,65 @@
+<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # Admin Platform test ledger
+
+## 2026-09-02 — Reliability/Bridge catalogued-defect sweep (agent/reliability-bridge-fixes), defects (b), (c), (d), (e), (f), (h)
+
+- SHA: recorded on merge of `agent/reliability-bridge-fixes`.
+- New: `src/lib/admin/__tests__/qa-fixture-rounds.test.ts` (3 — the drift
+  guard that reads `supabase/migrations/
+  20260901120000_integrity_completed_round_zero_scored_holes.sql` itself and
+  asserts `QA_FIXTURE_ROUND_IDS` still matches it exactly).
+- Extended, each new case written failing first against the pre-fix code
+  unless noted: `src/lib/admin/__tests__/capture-quality.test.ts` (3 — the
+  'user' field's own denominator excludes cron/system rows; a cron row that
+  is otherwise fully captured does not rank as a weak emitter for lacking a
+  user; total is 0/null when every row is self-referential),
+  `src/lib/admin/__tests__/observe-action-result.test.ts` (1 — pins
+  userId/userEmail forwarding through the soft-failure path unchanged; passed
+  immediately, no code bug — only the thrown-error path had coverage
+  before), `src/lib/reliability/__tests__/sources.test.ts` (preview/
+  null-target/production CANCELED severity), `src/lib/admin/__tests__/
+  sentry-api.test.ts` + `src/lib/reliability/__tests__/normalize.test.ts`
+  (429 retry/degraded, `worstStatus` ranking), `src/lib/admin/data/
+  __tests__/triage.test.ts` (per-issue `resolveFeatureId` fallback for
+  un-scoped Sentry issues, batch hint still wins, non-mapping culprit stays
+  null; three `isFixture` cases — flags without touching `actionable`, a
+  normal round id/no roundId is never a fixture, a Sentry item is never a
+  fixture), `src/lib/admin/incidents/__tests__/lifecycle.test.ts` (2 — a
+  regressed incident whose latest analysis says `not-a-defect` verdicts
+  `'expected-recurrence'`, not `'regressed'`; every other category, or none,
+  still verdicts `'regressed'`), `src/lib/admin/incidents/__tests__/
+  lens.test.ts` (2 — `expected-recurrence` lands in its own lens, never in
+  `regressions`/`actionable`; a QA fixture round stays actionable/true and
+  visible under `all` but never counts in the `actionable` lens),
+  `src/lib/admin/incidents/__tests__/attention.test.ts` (1 — a CRITICAL,
+  unresolved `expected-recurrence` incident still produces a `critical`
+  attention row: this one caught a real gap on first pass — an earlier
+  version left `expected-recurrence` out of `UNRESOLVED_STATES`, silencing a
+  critical recurrence entirely once an LLM-authored "NOT A DEFECT" verdict
+  existed for it), `src/lib/admin/incidents/__tests__/truth-strip.test.ts`
+  (1 — the same fixture exclusion at the Truth Strip's `actionable` cell),
+  `src/lib/admin/incidents/__tests__/correlate.test.ts` (3 — `isFixture`
+  propagation, `actionable` left untouched, propagation across a
+  cross-source join), `src/lib/admin/data/__tests__/incident-feed.test.ts`
+  (1 — `actionableGroups` excludes a fixture while `totalGroups` keeps it;
+  verified red against a temporarily-reverted fix before being restored
+  green), `src/lib/admin/__tests__/incident-report.test.ts` (2 —
+  `extractRoundId`), `src/app/admin/_components/__tests__/
+  unified-incident-card.test.tsx` (3 — the FIXTURE chip renders/does not
+  render, and outranks the blind-source chip under the 5-chip cap).
+- Six pre-existing `TriageItem`/`UnifiedIncident` object-literal test
+  fixtures across five files needed the two new required fields added
+  (`isFixture` on each) once they stopped satisfying their own interfaces —
+  a compile-time gap `tsc` surfaced directly, not a behavioural test change.
+- `npm run build` (webpack + `next build`'s own TypeScript pass, not bare
+  `tsc --noEmit`) run once at the end with the sandbox network disabled:
+  `✓ Compiled successfully`, `Finished TypeScript` clean — the specific
+  failure class `rca-category.ts`'s header warns about (a `server-only`
+  import poisoning a client bundle, invisible to `tsc` and to vitest) did not
+  fire. The run's only failures were prerender errors on unrelated pages
+  (baseball/golf/lifting dashboards, forgot-password, coach-onboarding) from
+  `NEXT_PUBLIC_SUPABASE_URL` being absent in this worktree — expected,
+  `.env.local` is deliberately withheld from worktrees per `.worktreeinclude`.
 
 ## 2026-09-02 — second audit of `agent/fix-bridge-errors`
 
@@ -469,3 +530,149 @@
   0 before the Errors page rewrite, re-run after it (result recorded in the
   PR). The page test (`errors/__tests__/page.test.tsx`) covers
   `loadErrorsPageData` only, by design, and is unchanged.
+
+## 2026-09-02 — Flight Recorder: canonical observed-step-count, undeclared/point-in-time step states, audit-lib pure functions
+
+- SHA: branch `agent/tracer-gaps`, PR pending.
+- New/extended, each written red before its fix (TDD): `trace-tree.test.ts`
+  gains cases for `observedStepCount` (equals the normalized input length,
+  including on a fixture with a genuine `parent_step_key` cycle — the
+  existing cycle case only asserted an upper bound, which passed even when
+  a cyclic node was silently dropped from the flattened output),
+  `isUndeclared` (true for the fixture's postgres-layer children of a
+  declared parent, and for every observed row under an unrecognised
+  workflow), `isPointInTime` (true only for `finished_at` present /
+  `started_at` absent / no `duration_ms`), and the `metadata.sqlstate` /
+  `metadata.failure_code` fallback chain for `errorCode`.
+  `trace-view-helpers.test.ts` gains `resolveTotalDurationMs` (pinned to
+  `run.duration_ms`, with a regression case guarding against it ever being
+  reimplemented as a sum of step durations) and `extractStatusDowngrade`
+  (reads the two downgrade keys from a run's `metadata`, returns `null` on
+  absent/malformed metadata).
+  `scripts/lib/__tests__/flight-recorder-audit-lib.test.ts` (new, 19 cases)
+  covers the pure summarization functions the new audit script calls:
+  window filtering, distinct-step-key counting, identity-carrying-step
+  counting, zero-step-run and downgraded-run detection, and the 200-row-cap
+  truncation warning.
+- Guarantees now covered:
+  - **The fleet-list step count and the per-trace tree's step count are
+    computed from one named field**, `TraceTree.observedStepCount` — a test
+    fails if the KPI strip is ever re-derived inline instead of reading it.
+  - **A trace's total duration is never resummed from its steps.** Point-in-time
+    and postgres-checkpoint child steps exist specifically so a naive sum would
+    double-count nested time; `resolveTotalDurationMs`'s test pins the
+    single-source-of-truth read from `run.duration_ms`.
+  - **An observed-but-undeclared step (e.g. a postgres checkpoint child) is
+    never confused with a missing (declared-but-unobserved) one** — the two
+    booleans are asserted mutually exclusive on every fixture node.
+  - **The audit script's counts are labelled as a floor, never presented as
+    exact, once the list RPC's 200-row cap is hit** — tested directly against
+    `coverageNotGuaranteed`'s boundary condition (199 vs 200 vs 201 returned
+    rows).
+- Verification: `npx vitest run src/app/admin/traces scripts/lib` — 6 files,
+  109 tests, all passing. `npm run typecheck` / `npm run lint` / `npm run
+  lint:ratchet` (68 warnings, no regression) all clean on the full tree.
+
+## 2026-09-03 — Janitor + Stryker mutation gate: new node:test guarantees, no vitest wiring
+
+- `scripts/janitor/__tests__/*.test.mjs` (`npm run test:janitor`) — 52
+  cases across `lib.test.mjs` (verdict-shape assertion, ranking), the
+  baseline-file classifiers (`duplicate-helpers`, `stale-docs`), the
+  git-grep classifiers (`dead-flags`, `deprecated-apis`, `mock-inflation`,
+  `duplicate-telemetry`, `abandoned-experiments`), the fs/registry
+  classifiers (`oversized-modules`, `unused-tests`,
+  `missing-feature-mappings`, `orphan-routes`), and `run.mjs`'s orchestrator
+  (every classifier against one real fixture repo, both report writers
+  round-tripped through `JSON.parse(JSON.stringify(...))`, a crash-isolation
+  test). Fixtures are real disposable git repos
+  (`scripts/janitor/__tests__/helpers.mjs`'s `makeFixtureRepo`, backdating
+  commits via `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` for the staleness
+  classifier) — not mocks of `git`, because several classifiers shell out to
+  real `git ls-files`/`git grep`/`git log` on principle (see
+  `scripts/janitor/lib/repo.mjs`'s header on the `.worktrees/` filesystem-walk
+  incident) and a mock cannot exercise that path honestly.
+- `scripts/mutation-gate.test.mjs` (`npm run test:mutation-gate`) — 13 cases
+  covering `computeMutationScore`'s formula (killed/timeout vs.
+  survived/no-coverage, Ignored/CompileError/RuntimeError excluded), the
+  floor-boundary case (`score === floor` is PASS, not FAIL), and every
+  `UNKNOWN` path (missing report file, unparseable JSON, missing/non-numeric
+  floor, zero valid mutants — i.e. an empty `mutate` glob never silently
+  reads as a pass).
+- **Deliberately node:test, not vitest**, per this task's instruction and to
+  avoid the dead-guard trap this repo has hit before
+  (`.claude/rules/quality-gates.md` §2: "A file under `scripts/__tests__/`
+  runs only if `vitest.config.ts` names it... with no glob"): both suites
+  are wired to real callers instead — `npm run test:janitor` /
+  `npm run test:mutation-gate` in `package.json`, and both run as an actual
+  CircleCI step (`.circleci/config.yml`'s `janitor` and `stryker-coachhelm`
+  jobs) BEFORE the expensive work they gate, not left as an unwired script.
+
+## 2026-09-03 — Bridge Premium Observability Phase 2: Command Deck read-model and render tests
+
+53 new vitest cases across 11 files, both auto-picked-up by
+`vitest.config.ts`'s glob projects (`src/**/*.test.ts` -> `unit`,
+`src/**/*.test.tsx` -> `unit-dom`) — no manual wiring needed, unlike the
+`node:test` suites above.
+
+- `src/lib/admin/command-deck/__tests__/{posture,orbit,selfheal-circuit,
+  release-wake,decisions}.test.ts` — 35 cases, five fixtures per read model
+  (healthy, blind source, regression, decision waiting, all-unknown), plus
+  `parseHeldMigrations` pinned against a literal excerpt of the REAL
+  `supabase/migrations/HELD.md` table (copied, not read from disk, so the
+  test stays hermetic against that file changing shape later) — including
+  one row whose status cell is two words ("VERIFIED APPLIED"), the exact
+  kind of format drift the parser must skip rather than mis-classify as
+  `HOLD`.
+- `src/components/admin/command-deck/__tests__/*.test.tsx` — 18 cases,
+  `@testing-library/react` render tests for every new component: the
+  posture banner never shows HEALTHY under blind evidence, the System Orbit
+  renders all 8 node labels with Realtime always Unknown, the Attention
+  Stack's user-impact badge only appears for a row with a known-affected
+  match, the Decision Inbox never shows the calm empty state when
+  unreadable, the Release Wake ribbon's lanes render the em dash (never a
+  bare "0") when the deploy time is unknown, the Self-Heal Circuit summary
+  shows an honest "could not be read" notice rather than a fabricated
+  verdict when the board is null.
+- **Two real bugs caught by writing these tests, both fixed in the same
+  change** (recorded in the change ledger's own "Fixed during review"
+  bullet, restated here because both are load-bearing test guarantees, not
+  incidental fixes): `orbit.ts`'s Jobs node read `'healthy'` by default
+  when the self-heal board itself was unreadable (now gated on a new
+  `selfHealReadable` input); `release-wake.ts`'s `selfHealActions` lane
+  read a confirmed `0` rather than `unknown` when the deploy time itself
+  could not be established. Both are now pinned by their respective
+  all-unknown fixtures.
+- **No dedicated `CommandDeck.tsx` test.** The composition function itself
+  (six `Promise.all`-gathered upstream reads, wired into the six pure
+  builders above) has no integration test — this repo has no established
+  pattern for testing an async Server Component this way (grepped for
+  `render(await ...)` across every `*.test.tsx` file; no hits), and
+  building one would mean mocking six modules with no precedent to follow.
+  Its correctness is covered by `npm run typecheck` (every builder call
+  site's argument shapes checked against the real exported types) plus
+  every constituent read-model and component test above — a real wiring
+  bug (wrong field name, wrong argument) fails typecheck before it would
+  ever reach a runtime test.
+## 2026-09-03 — Bridge Premium Phase 3: triage tab read models + components
+
+- 71 new pure-logic unit tests across eight `src/lib/admin/triage/
+  __tests__/*.test.ts` files (self-heal-circuit 9, job-waterfall 8,
+  trace-incident-link 6, feature-constellation 5, evidence-braid 9,
+  release-runway 7, heartbeat-matrix 8, invariant-lattice 8 — 60 counted
+  here plus the remainder from earlier files in this same batch) — each
+  covers at minimum: an unknown-vs-zero distinction, a blind/unreadable
+  source, and an empty-data case, per the task's own fixture requirement.
+- 32 new render tests across seven `src/components/admin/triage/
+  __tests__/*.test.tsx` files, one per new component, each asserting the
+  page's dominant new visual renders and its honest-empty/unreadable state
+  renders distinctly from a clean pass.
+- Full scoped run after the `agent/bridge-premium-p1` merge:
+  `npx vitest run --maxWorkers=4 src/lib/admin/triage
+  src/components/admin/triage src/app/admin/health src/app/admin/jobs
+  src/app/admin/reliability src/app/admin/self-heal src/app/admin/traces
+  src/app/admin/deploys src/app/admin/__tests__` — 21 files, 199 tests, all
+  passing. `npx vitest run src/components/admin/premium` (the merged-in
+  primitives) — 7 files, 25 tests, still passing after this PR's lint
+  fixes to three of those files.
+- `npm run typecheck` and `npm run lint` (0 warnings) both exit 0 on the
+  full tree, checked independently of stdout (never piped through `tail`).

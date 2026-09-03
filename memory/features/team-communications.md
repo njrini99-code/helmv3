@@ -105,6 +105,40 @@ Announcement create
   region shrinks, and the composer drops its home-indicator pad while the
   keyboard covers the home indicator. The screen carries
   `data-fw-keyboard-aware` so the shell's global scroll-into-view stays out.
+- On a phone with a thread open, the inbox masthead (`ViewHeader`) is hidden
+  (`hidden md:block`) so the thread gets the screen; the thread header carries
+  Back. With both stacked, 100–272px of an 844px viewport was left for the
+  conversation and read as "doesn't load the newest message" (mobile audit
+  2026-09-02, UI-4).
+- **Coach announcement edit (2026-09-02, GAPS_AUDIT_INTERACTION_CRUD).**
+  Before this, there was no Edit action anywhere — expanding a posted
+  announcement only revealed Delete, so fixing a typo meant a destructive
+  delete-then-recreate that also discarded every acknowledgement. The coach
+  card (`FairwayCoachAnnouncementCard`) now shows an Edit control (ghost
+  variant, matching Delete's size) next to Delete once expanded. Edit opens
+  the same Sheet component the create flow uses
+  (`AnnouncementFormSheet`, mode-aware, in `FairwayCreateAnnouncement.tsx`)
+  prefilled from the announcement's own title/body/urgency/
+  requires_acknowledgement, and calls the new `updateAnnouncement` server
+  action (announcements.ts), authorized identically to `deleteAnnouncement`
+  (any coach staffed on the announcement's team, F036/F037 — not just the
+  original author). **Editable: title, body, urgency,
+  requires_acknowledgement — the row's own columns.** Recipients
+  (`golf_announcement_recipients`), attachments
+  (`golf_announcement_documents`), and inline tasks (`golf_announcement_tasks`
+  / `golf_tasks` / `golf_task_assignments`) are deliberately NOT editable —
+  changing any of them means delete-then-reinsert of junction rows, the exact
+  DELETE-then-INSERT-in-a-save-path shape the Review Gate blocks, and
+  re-targeting recipients would silently orphan existing
+  acknowledgements/task-completions. Delete-and-recreate remains the path for
+  changing those. Toggling `requires_acknowledgement` is non-retroactive in
+  both directions: turning it off does not clear already-acknowledged
+  players' acknowledged status, and turning it on does not require anyone who
+  already read the original version to (re-)acknowledge — existing
+  `golf_announcement_acknowledgements` rows are never touched by the edit
+  action. The card patches its own collapsed header optimistically on save
+  (an `override` local state cleared once the prop's own fields catch up via
+  `router.refresh()`) rather than waiting on a full reload.
 
 ## Conversation Rail Failure Semantics (2026-08-27)
 

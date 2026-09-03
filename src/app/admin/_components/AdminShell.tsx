@@ -4,10 +4,41 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
-  Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
-  Radar, CreditCard, GitBranch, Trophy, Waypoints,
-  RefreshCw, Dumbbell, Search, LogOut, Recycle,
+  LayoutDashboard,
+  Activity,
+  AlertTriangle,
+  KeyRound,
+  Flag,
+  CircleDot,
+  Users,
+  Timer,
+  Rocket,
+  HeartPulse,
+  ExternalLink,
+  MessageSquarePlus,
+  Gauge,
+  SearchCheck,
+  ScrollText,
+  Radar,
+  CreditCard,
+  GitBranch,
+  Trophy,
+  Waypoints,
+  Database,
+  RefreshCw,
+  Dumbbell,
+  Search,
+  LogOut,
+  Recycle,
+  Bot,
+  FileCheck2,
+  Route,
+  Milestone,
+  LineChart,
+  Footprints,
+  TrendingUp,
+  ToggleLeft,
+  Target,
 } from 'lucide-react';
 import {
   AppShell,
@@ -27,7 +58,13 @@ import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
-import { ADMIN_NAV, hrefForShortcut, BRIDGE_BOTTOM_NAV_HREFS, BRIDGE_BOTTOM_NAV_LABELS } from './admin-nav';
+import {
+  ADMIN_NAV,
+  hrefForShortcut,
+  RESERVED_LOCAL_SHORTCUTS,
+  BRIDGE_BOTTOM_NAV_HREFS,
+  BRIDGE_BOTTOM_NAV_LABELS,
+} from './admin-nav';
 import { RelativeTime } from './RelativeTime';
 
 /** Sub-route leaf labels the Breadcrumb trail can't derive from ADMIN_NAV
@@ -106,11 +143,22 @@ const NAV_ICON_BY_HREF = {
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,
+  '/admin/engineering': Bot,
+  '/admin/work-log': FileCheck2,
   '/admin/qualifiers': Trophy,
   // Waypoints, not another alert glyph: this tab's subject is the CORRELATION
   // between three sources, and it sits directly beside Errors in the same
   // section — a second warning triangle would read as a duplicate of it.
   '/admin/reliability': Waypoints,
+  // The database's own icon, not a variant of Reliability's Waypoints or
+  // Jobs' Timer — this tab's subject is Postgres state itself (connections,
+  // deduped DB errors, query deltas), not cross-source correlation or cron
+  // scheduling.
+  '/admin/database': Database,
+  // A target, not another gauge: Utilization's Gauge measures ADOPTION, this
+  // tab's subject is a BUDGET against a threshold (how much of the allowance
+  // is consumed) — a second gauge glyph would read as a duplicate of it.
+  '/admin/slo': Target,
   // A closed loop, not another gauge: this tab's subject is a CIRCUIT that
   // either completes or does not, and it sits beside Reliability where a
   // second measurement glyph would read as a variant of it.
@@ -125,9 +173,18 @@ const NAV_ICON_BY_HREF = {
   '/admin/users': Users,
   '/admin/jobs': Timer,
   '/admin/deploys': Rocket,
+  // A toggle, not another release/rocket glyph: this tab's subject is
+  // per-flag on/off governance, distinct from Deploys & Infra's release
+  // ledger — a second rocket would read as a duplicate of it.
+  '/admin/releases': ToggleLeft,
   '/admin/health': HeartPulse,
   '/admin/teams': Radar,
   '/admin/billing': CreditCard,
+  '/admin/lenses/golf': Route,
+  '/admin/lenses/baseball': Milestone,
+  '/admin/lenses/lifting': TrendingUp,
+  '/admin/lenses/teams': LineChart,
+  '/admin/lenses/users': Footprints,
 } as const;
 
 /**
@@ -331,10 +388,16 @@ export function AdminShell({
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === 'r' || e.key === 'R') {
+      // Reserved BEFORE hrefForShortcut, and case-SENSITIVE (plain 'r' only)
+      // — every ADMIN_NAV letter shortcut is the Shift+letter (uppercase)
+      // form precisely so it never collides with a local key reserved here.
+      // This used to check `e.key === 'r' || e.key === 'R'`, which ate
+      // Shift+R and made Reliability's 'R' tab shortcut permanently
+      // unreachable; see RESERVED_LOCAL_SHORTCUTS in admin-nav.ts.
+      if (RESERVED_LOCAL_SHORTCUTS.has(e.key)) {
         e.preventDefault();
         // Routed through the SAME `doRefresh` the Refresh button/icon use —
-        // one refresh path, so the "R" shortcut also updates the freshness
+        // one refresh path, so the "r" shortcut also updates the freshness
         // clock and the icon spin instead of silently going stale.
         doRefresh();
         return;

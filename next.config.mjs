@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
 import { localSupabaseConnectSrc } from './src/lib/security/local-supabase-csp.mjs';
+import { buildSentryBuildOptions } from './src/lib/sentry-build-options.mjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -96,6 +97,41 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // Smaller image sizes
     qualities: [72, 75, 95], // Next 16 requires every <Image quality> value to be listed
     minimumCacheTTL: 60, // Cache images for 60 seconds
+  },
+
+  // Bridge Premium Phase 5 (Engineering OS, PR #1790): the /admin/engineering
+  // page's read models (src/lib/admin/engineering/{blast-radius,charter,
+  // decision-inbox}.ts) call `readFile(join(process.cwd(), '<repo path>'))`
+  // against these five repo files at request time. Next's build-time file
+  // tracer only follows the static import graph to decide what a route's
+  // serverless function bundle carries — a computed `readFile` argument is
+  // invisible to it, so without an explicit include here the panels would
+  // read `unconfigured` in production forever even once the underlying
+  // migration/World-Model PRs land, because the files were traced OUT of the
+  // bundle despite being present in the Vercel upload (see the matching
+  // carve-out in .vercelignore's docs/ exclusion — being uploaded and being
+  // traced into the function bundle are two different gates, and this repo
+  // was missing the second one). Paths are relative to next.config.mjs
+  // (= the repo root, matching `process.cwd()` at runtime in this app).
+  outputFileTracingIncludes: {
+    '/admin/engineering': [
+      './docs/generated/WORLD_MODEL.json',
+      './docs/generated/contracts/**',
+      './docs/generated/janitor-findings.json',
+      './supabase/migrations/HELD.md',
+      './config/mutation-gate.json',
+    ],
+  // `held-migrations.ts` (`src/lib/admin/command-deck/held-migrations.ts`)
+  // reads `supabase/migrations/HELD.md` via `fs` at request time from
+  // `/admin` — output file tracing only bundles files it can see imported
+  // or explicitly listed here, so a Vercel serverless function is not
+  // otherwise guaranteed to ship a plain markdown file read this way. If
+  // this glob is ever wrong, `held-migrations.ts`'s own `fetchHeldMigrations`
+  // still degrades safely (any read failure returns `null`, and
+  // `buildDecisionInbox` treats that as `readable: false`, never an empty
+  // all-clear inbox) — this entry closes the gap, it isn't load-bearing for
+  // correctness.
+    '/admin': ['./supabase/migrations/HELD.md'],
   },
 
   // Experimental features
@@ -402,21 +438,26 @@ const nextConfig = {
 // Sentry still works in dev via instrumentation.ts, just without source map uploads
 const isDev = process.env.NODE_ENV === 'development';
 
+// The installed @sentry/nextjs (10.71.0) withSentryConfig has exactly two
+// parameters — (nextConfig, sentryBuildOptions) — confirmed against both the
+// type declaration and the runtime source
+// (node_modules/@sentry/nextjs/build/cjs/config/withSentryConfig/index.js:6).
+// This used to be called with three positional arguments; the third was
+// silently discarded (JS never binds an extra call-site argument to
+// anything), which meant six real options — including the ad-blocker-safe
+// tunnel route and automatic Vercel Cron Monitor check-ins — had zero
+// effect regardless of their values. See
+// docs/observability/SENTRY_PHASE_A_FINDINGS.md §(h) and
+// src/lib/sentry-build-options.mjs (the extracted, unit-tested merged
+// options object).
 export default isDev
   ? withBundleAnalyzer(nextConfig)
   : withSentryConfig(
       withBundleAnalyzer(nextConfig),
-      {
-        // https://github.com/getsentry/sentry-webpack-plugin#options
-        silent: true,
+      buildSentryBuildOptions({
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,
         authToken: process.env.SENTRY_AUTH_TOKEN,
-        // Release name + commits — falls back to Vercel's git SHA so each
-        // deploy is a distinct release. setCommits with auto:true lets Sentry
-        // associate the commits in this build with the release, which powers
-        // Suspect Commits ("this error was introduced by commit abc123") and
-        // the per-release commit list in the UI.
         release: {
           name: sentryRelease,
           setCommits: {
@@ -432,28 +473,23 @@ export default isDev
             env: process.env.VERCEL_ENV || process.env.NODE_ENV || 'production',
           },
         },
-        // Don't phone home about build telemetry
-        telemetry: false,
-      },
-      {
-        // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-        // Upload a larger set of source maps for prettier stack traces (increases build time)
-        widenClientFileUpload: true,
-
-        // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers
-        tunnelRoute: '/monitoring',
-
-        // Hides source maps from generated client bundles
-        hideSourceMaps: true,
-
-        // Tree-shake Sentry logger statements
-        disableLogger: true,
-
-        // Auto-instrument Vercel Cron Monitors
-        automaticVercelMonitors: true,
-
-        // React component annotations make stack traces show JSX component names
-        reactComponentAnnotation: { enabled: true },
-      }
+        // Identifies first-party bundles for `thirdPartyErrorFilterIntegration`
+        // (src/instrumentation-client.ts): at build time this key gets
+        // forwarded to @sentry/webpack-plugin's `moduleMetadata` /
+        // `applicationKey` option (webpack) or injected via a Turbopack
+        // loader (Next.js 16+, this repo's bundler — see `turbopack: {}`
+        // above), tagging every first-party module with `_sentryModuleMetadata`.
+        // MUST match the `filterKeys` array passed to
+        // thirdPartyErrorFilterIntegration exactly — pinned together by
+        // src/lib/security/__tests__/sentry-application-key.test.ts, which
+        // greps this literal directly out of THIS file's raw text (not out of
+        // sentry-build-options.mjs, which only supplies the default for
+        // callers that don't pass their own — see that module's header).
+        // Verified field location: `applicationKey` is a TOP-LEVEL key of
+        // `SentryBuildOptions`, not nested under `_experimental` —
+        // node_modules/@sentry/nextjs/build/types/config/types.d.ts. Only
+        // takes effect in production builds: withSentryConfig itself is
+        // skipped in dev (the `isDev` branch below).
+        applicationKey: 'helm-web',
+      })
     );

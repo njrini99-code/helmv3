@@ -1,9 +1,11 @@
+<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # helmv3 CircleCI setup
 
 CircleCI owns the things GitHub Actions does poorly:
 
 - **Weekly heavy jobs**: Knip dead-code, Stryker mutation tests on
-  CoachHelm V2, full-repo sqlfluff, npm audit, Squawk migration safety.
+  CoachHelm V2, full-repo sqlfluff, npm audit, Squawk migration safety,
+  Janitor entropy report (advisory — never fails, never edits source).
 - **iOS Capacitor compile**: builds on M-series macOS runners (~2×
   faster, ~⅓ the cost of GitHub Actions' `macos-13`). Catches
   Xcode/Capacitor breakage before TestFlight.
@@ -56,7 +58,7 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
 
 | Workflow      | Trigger                                  | Jobs                                                 | Cost          |
 | ------------- | ---------------------------------------- | ---------------------------------------------------- | ------------- |
-| `weekly`      | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk-migrations, npm-audit, stryker-coachhelm, promptfoo-evals | ~$2-3/week    |
+| `weekly`      | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk-migrations, npm-audit, stryker-coachhelm, promptfoo-evals, janitor | ~$2-3/week    |
 | `ios`         | Push to `main` / `release/*` / `ios/*` / `capacitor/*` / `agent/fix-circleci-ios-*` | ios-compile (M-series macOS)                         | ~$0.15-0.30/run |
 | `android`     | Push to `main` / `release/*` / `android/*` / `capacitor/*` / `ci/android-*` | android-compile (`cimg/android`, `assembleDebug`, no signing) | ~$0.05-0.10/run |
 

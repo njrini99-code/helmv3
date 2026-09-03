@@ -366,7 +366,10 @@ describe('FEATURE_REGISTRY completeness', () => {
     // 2026-08-22: -1 removes reconcileQualifierStatus. It was an implicit
     // page-view lifecycle mutation; qualifiers now close only by a coach's
     // explicit action.
-    expect(total).toBe(438);
+    // 2026-09-02 (+1): +updateAnnouncement (announcements.ts) — in-place edit
+    // of a posted announcement. announcements.ts is already 'ALL'-mapped, so
+    // scanExports picks it up with no manifest edit needed.
+    expect(total).toBe(439);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

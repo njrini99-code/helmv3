@@ -108,7 +108,9 @@ function AutoSaveChip({
           <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          {!compact && 'Save failed'}
+          {/* Always in words: a lone orange triangle told a player nothing
+              (audit 2026-09-02, UI-11). */}
+          Save failed
         </>
       )}
     </span>
@@ -289,6 +291,18 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
     </div>
   );
 
+  // The mobile Prev/Next controls used to only scroll the hole strip, so a
+  // fully-enabled "Next →" did nothing visible before the current hole was
+  // finished (audit 2026-09-02, UI-10). They now move to the hole, under the
+  // same rule as the pills: earlier holes always, a later hole only once it
+  // has a score. Anything else is disabled, with the reason on the control.
+  const prevIndex = currentHoleIndex - 1;
+  const nextIndex = currentHoleIndex + 1;
+  const canGoPrev = Boolean(onNavigateToHole) && prevIndex >= 0;
+  const canGoNext = Boolean(onNavigateToHole) && nextIndex < holes.length && holes[nextIndex]?.score != null;
+  const nextBlockedReason =
+    !canGoNext && nextIndex < holes.length ? 'Finish this hole to move on' : undefined;
+
   return (
     // pt safe-area: the WKWebView is edge-to-edge (contentInset 'never'), so this
     // sticky bar owns the status-bar zone — without the inset pad the Prev/Exit/Next
@@ -305,8 +319,11 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => scrollHoleIntoView(Math.max(1, currentHoleNumber - 1))}
-            disabled={currentHoleIndex === 0}
+            onClick={() => {
+              scrollHoleIntoView(Math.max(1, currentHoleNumber - 1));
+              if (canGoPrev) onNavigateToHole?.(prevIndex);
+            }}
+            disabled={!canGoPrev}
           >
             ← Prev
           </Button>
@@ -325,8 +342,13 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => scrollHoleIntoView(Math.min(holes.length, currentHoleNumber + 1))}
-          disabled={currentHoleIndex === holes.length - 1}
+          onClick={() => {
+            scrollHoleIntoView(Math.min(holes.length, currentHoleNumber + 1));
+            if (canGoNext) onNavigateToHole?.(nextIndex);
+          }}
+          disabled={!canGoNext}
+          title={nextBlockedReason}
+          aria-label={nextBlockedReason ? `Next hole — ${nextBlockedReason}` : 'Next hole'}
         >
           Next →
         </Button>

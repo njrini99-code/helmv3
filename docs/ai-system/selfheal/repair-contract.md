@@ -241,6 +241,33 @@ Then, in order:
    not a regression test — it is decoration, and it proves nothing.
 2. Make the smallest change that makes it pass.
 3. Confirm it now passes, and that you did not weaken it to get there.
+4. **Write the reproduction as a fixture + manifest under `replay/`, as a
+   required output of this repair — not a follow-up task.** This is not a
+   parallel system: `replay/README.md` and `replay/schema/manifest.schema.json`
+   formalize exactly the three steps above. Once the failing test from STEP 1
+   is passing:
+   - Copy the test file (and any other file your fix's regression test needs)
+     into `replay/fixtures/<feature_id>/<replay_id>/`.
+   - Add `replay/manifests/<replay_id>.yml`: `bad_version` is the commit
+     before your fix (its parent, if your fix is one commit), `fixed_version`
+     is your fix's SHA, `fixture` lists the file(s) you copied and where they
+     land in the tree, `test_command` is the exact command that runs your
+     test, `expected: {bad_version: fail, fixed_version: pass}`, and
+     `sanitization: {reviewed: true, contains_production_data: false}` — a
+     manifest cannot land without an explicit sanitization statement; if the
+     test fixture touches real data of any kind, stop and sanitize it first,
+     it does not get an assumed-safe default.
+   - `expected_failure_mode` is usually `missing-export` in this repo: a
+     regression test written against symbols your fix introduces will fail
+     the bad-version run with a module-resolution error, not a thrown
+     assertion. That is a correct, expected reproduction — record it as such
+     rather than treating it as fixture drift.
+   - You do not need to run `replay/runners/run.mjs` yourself as part of this
+     step — STEP 4's gates already prove your test fails-then-passes locally.
+     The manifest is what lets that same proof be re-run later, by anyone,
+     without redoing your investigation.
+   - Skip this step only when the fix has no isolable regression test (e.g. a
+     pure documentation or config change), and say so in your PR body.
 
 ---
 
@@ -392,6 +419,39 @@ died before you could speak — it is not a Repair verdict.
 `status='completed'` with `prs_opened: 0` is a healthy quiet run. Use
 `'failed'` only when the run itself broke — a gate you could not read, a
 worktree you could not create — not when you correctly decided to open nothing.
+
+### The launchd config is tracked in the repo, not hand-edited on the Mac
+
+`config/launchd/com.helm.bridge-rca-repair.plist` is the source of truth for
+the live agent at `~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`.
+Install (or reinstall after editing the repo copy) with:
+
+```bash
+npm run selfheal:repair:install
+```
+
+which copies the repo plist over the live one, lints it with `plutil`,
+reloads it (`launchctl bootout` + `bootstrap`), and prints its loaded state.
+Verify the whole chain — plist installed and matching, job loaded, env file
+present, binary and prompt file resolve, the `-p` argument is safe, and the
+newest production heartbeat is fresh — with:
+
+```bash
+npm run selfheal:repair:doctor
+```
+
+**The frontmatter trap.** The 06:40 fire on 2026-09-02 failed in 0.6s because
+the plist passed `SKILL.md`'s raw text as the `claude -p` argument, and that
+file opens with YAML frontmatter (`---`). The CLI parsed `---` as an unknown
+option and exited before writing anything, including its own heartbeat — the
+outer runner's fallback row carried no stderr, so `/admin/jobs` could only say
+"child exited 1", not why. The rule this leaves behind: **a `-p` argument must
+never start with `-` or `$(`.** Put a plain sentence before any
+`$(cat ...)` substitution, the way the current plist does
+(`"Follow the instructions in the text below exactly. $(cat ...)"`). The
+doctor's check (f) enforces this on every run, and the vitest at
+`src/test/scripts/selfheal-repair-launchd.test.ts` enforces it statically
+against every plist under `config/launchd/`.
 
 ---
 

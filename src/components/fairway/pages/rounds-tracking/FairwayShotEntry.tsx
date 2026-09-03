@@ -443,7 +443,17 @@ export function FairwayShotEntry({
                 {distanceAfterShot && (
                   <Inset padding="sm" className="flex items-center justify-between px-4 py-2.5">
                     <span className="font-fw-sans text-xs font-medium uppercase tracking-wide text-text-secondary">Shot distance</span>
-                    <span className="font-fw-mono text-body-lg font-medium tabular-nums text-accent-700">
+                    <span
+                      className={cn(
+                        'font-fw-mono text-body-lg font-medium tabular-nums',
+                        // While the entered distance is invalid (NaN / negative — see
+                        // `distanceInvalid` above), this auto-computed preview must not
+                        // read as a positive/success value next to the red-bordered
+                        // input and its error message. Neutral/muted instead of the
+                        // success-toned accent-700 "metric face" ink.
+                        distanceInvalid ? 'text-text-tertiary' : 'text-accent-700',
+                      )}
+                    >
                       {(() => {
                         // Convert the user-typed value to yards for the geometry calc —
                         // meters-mode input must go through the same conversion boundary

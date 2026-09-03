@@ -65,8 +65,14 @@ export default defineConfig({
       // otherwise) and only ever invoked by visual-audit.yml against
       // baseball-coach/baseball-player — excluded here too so it never
       // shows up (even as a no-op skip) in the ordinary e2e lane.
+      // sentry-snapshots-baseball.spec.ts needs the same baseball-coach /
+      // baseball-player storageState as visual-audit.spec.ts, for the same
+      // reason — excluded here, matched below. sentry-snapshots.spec.ts
+      // (public + golf player) is standalone like appstore-screenshots.spec.ts
+      // and does NOT need excluding: no project references it, and it
+      // self-skips via SENTRY_SNAPSHOTS=1 like the others self-skip.
       testIgnore:
-        /baseball-(smoke|route-crawler)\.spec\.ts|mobile-viewports\.spec\.ts|visual-audit\.spec\.ts/,
+        /baseball-(smoke|route-crawler)\.spec\.ts|mobile-viewports\.spec\.ts|visual-audit\.spec\.ts|sentry-snapshots-baseball\.spec\.ts/,
     },
 
     // BaseballHelm mandatory smoke (#372) — durable per-role auth. `setup`
@@ -81,11 +87,12 @@ export default defineConfig({
     },
     {
       name: 'baseball-coach',
-      // visual-audit.spec.ts (#visual-audit) rides these same projects —
-      // it is a separate, gated (VISUAL_AUDIT=1) screenshot crawl, not a
-      // new auth mechanism, so it belongs on the existing role-scoped
-      // projects rather than growing a third set.
-      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts|visual-audit\.spec\.ts/,
+      // visual-audit.spec.ts (#visual-audit) and sentry-snapshots-baseball.spec.ts
+      // (#sentry-snapshots) both ride these same projects — each is a
+      // separate, gated (VISUAL_AUDIT=1 / SENTRY_SNAPSHOTS=1) screenshot
+      // capture, not a new auth mechanism, so they belong on the existing
+      // role-scoped projects rather than growing a third set.
+      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts|visual-audit\.spec\.ts|sentry-snapshots-baseball\.spec\.ts/,
       grep: /@coach/,
       dependencies: ['setup'],
       use: {
@@ -95,7 +102,7 @@ export default defineConfig({
     },
     {
       name: 'baseball-player',
-      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts|visual-audit\.spec\.ts/,
+      testMatch: /baseball-(smoke|route-crawler)\.spec\.ts|visual-audit\.spec\.ts|sentry-snapshots-baseball\.spec\.ts/,
       grep: /@player/,
       dependencies: ['setup'],
       use: {

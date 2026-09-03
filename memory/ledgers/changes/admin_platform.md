@@ -1,4 +1,561 @@
+<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
+
 # Admin Platform change ledger
+
+## 2026-09-03 — Zero-cost Supabase observability, Phase 1 (foundation): envelope, classifier, out-of-band DB error store, health/stat collectors, `/admin/database`
+
+New track (`agent/supabase-observability`), Phase 1 of a multi-phase
+zero-incremental-recurring-cost Supabase/Postgres observability program (the
+master brief lives on a sibling control-plane branch, not yet merged).
+
+- **Re-measured the production baseline** read-only via the Supabase
+  Management API — `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.
+  Corrects four numbers the brief's own 2026-09-03 snapshot got wrong:
+  `max_connections` is 60, not ~200; `service_role` statement_timeout is
+  30s, not 2m; per-role `idle_in_transaction_session_timeout` is UNKNOWN
+  (methodology limit — `pg_roles.rolconfig` can't see pooler-applied GUCs),
+  not 8s; and `helm_debug` (`trace_runs`/`trace_steps`/`helm_debug_prune`)
+  is LIVE in production and has been for about a week, while `HELD.md` and
+  the `helm-debug-prune` cron route's own header still describe it as
+  unapplied — recorded as a stale-doc finding rather than silently fixed
+  (`HELD.md` is shared surface, not this track's to edit).
+- **`src/lib/observability/supabase/{envelope,classify}.ts`** — one
+  canonical error shape and a code-first SQLSTATE/PostgREST classifier
+  covering every always-investigate family the brief names, plus the three
+  context-sensitive codes (42501/23505/23503) where the SAME code is
+  routine in one call path and a defect in another, resolved by an explicit
+  caller-stated flag rather than inferred from message text.
+- **`observe-result.ts` / `record-db-error.ts` / `integrity.ts`** —
+  `observeSupabaseResult()` (the one call a server call site adds around a
+  `{data,error}` result: metric + structured log + a scheduled durable
+  write, for the two actionable+ buckets only — never a duplicate Sentry
+  capture, that stays the existing M1-M4 wrappers' job),
+  `recordDbErrorOutOfBand()` (fail-open, 3s-timeout, opened as a SEPARATE
+  transaction AFTER the failed request already returned, so a rolled-back
+  business transaction can never erase its own failure record), and
+  `checkZeroRowMutationIntegrity()` (the brief's mandatory "HTTP 200 with
+  error payload" primitive — NOT yet wired into any specific workflow's
+  full outcome contract; that is a later, feature-by-feature phase).
+- **`db-health-delta.ts` / `query-regression.ts`** — pure, fixture-tested
+  delta/baseline/regression arithmetic behind two new Vercel-cron
+  collectors (`db-health-sampler` every 5m, `db-stat-delta` every 15m).
+  Reset detection uses two signals in both modules (a changed
+  `stats_reset`, OR any counter going negative) because production's own
+  `pg_stat_database.stats_reset` reads NULL — a timestamp-only check would
+  miss that exact shape.
+- **Four HELD migrations** (`20260903180000`-`20260903180300`) — new
+  `helm_debug` tables (`db_error_events`, `db_health_samples`,
+  `db_stat_deltas`, `db_stat_prior_state`) plus SECURITY DEFINER read/write
+  facades, same isolation pattern as `20260825200811`: schema revoked from
+  public, anon and authenticated, EXECUTE service_role-only, ACL tripwire, no
+  direct table grant to any role including service_role. Not applied — see
+  `supabase/migrations/HELD.md`.
+- **`/admin/database`** (`src/app/admin/database/page.tsx` +
+  `src/lib/admin/database/{overview,errors,performance}.ts`) — Mission
+  Control / Database Errors / Query Performance, registered in `ADMIN_NAV`
+  (Triage, key `D`, beside Reliability). Every fetcher degrades to
+  `status:'unconfigured'` on the HELD-migration shape, so the tab currently
+  renders "not shipped yet" honestly rather than a false green or a false
+  failure.
+- **Verified**: 120 new unit tests, `npx tsc --noEmit` clean,
+  `npm run lint --max-warnings 0` clean on every touched file,
+  `npm run docs:path-drift` clean. NOT VERIFIED: this PR does not compile
+  under CI until the sibling `agent/sentry-max-server` branch (Phase C —
+  `src/lib/observability/{metrics,structured-log,correlation}.ts`) merges
+  to `main` first; `observe-result.ts`/`integrity.ts`/`record-db-error.ts`
+  import from those paths as instructed, and they do not exist on `main`
+  yet as of this writing.
+
+## 2026-09-02 — Registry granularity split: admin_incidents / admin_reliability_collector / admin_selfheal carved out
+
+- SHA: recorded on merge of `agent/bridge-worldmodel`.
+- `memory/registry.yml`'s single `admin_platform` entry (every capability this
+  control-plane program builds — incidents, the reliability collector, the
+  self-healing loop, the Bridge shell — resolved to one `feature_id`) split
+  into the shared shell plus three sub-capability entries, per owner decision
+  (ADR-2026-09-03-control-plane-owner-decisions, memory/decisions/ — on the parallel Bridge control-plane session's branch, not yet on this branch, closing
+  `ADMIN_PLATFORM_REGISTRY_GRANULARITY`). `admin_platform` keeps the sole
+  runtime `FeatureKey` (`admin_dashboard`) and the general shell/Tracer/
+  Flight-Recorder/CRM/cross-cutting-infra surface; the three new entries carry
+  `feature_keys: []` with `covered_by: admin_platform` since nothing writes a
+  dedicated `FeatureKey` for them yet.
+- `memory/features/admin-platform.md` (686 lines) split by moving its
+  incidents/reliability/selfheal-specific sections into three new docs —
+  `admin-incidents.md`, `admin-reliability-collector.md`,
+  `admin-selfheal.md` — verbatim where a business rule was cleanly scoped to
+  one capability, with a cross-reference note added wherever a rule mentions
+  code another doc now owns. Cross-cutting infrastructure (error-path write
+  scheduling, flood collapse, credential shape, feature aliasing, the
+  `background_job_logs` status vocabulary, `/admin/traces`) stayed on the
+  shell — none of it is specific to incidents, the collector, or self-heal.
+- Also closed as a system gap in the same change: `src/app/admin/actions/**`
+  mapped to NO feature before this — `analyze-error.ts`/`resolve-error.ts`/
+  `sentry-resolve.ts` now route to `admin_incidents`, `triage.ts` to
+  `admin_selfheal`, and the remaining four (`view-as.ts`, `golf-tracer.ts`,
+  `billing.ts`, `sessions.ts`) to the shell.
+- `src/lib/admin/**` stays on the shell as a broad glob rather than being
+  enumerated file-by-file with the carved paths excluded — an overlap
+  documented as intentional in the registry (see `check-feature-registry.ts`'s
+  own note on shared modules claimed by more than one feature); the world-model
+  generator (`scripts/knowledge/world-model.mjs`, this same change) resolves a
+  file's PRIMARY feature by most-specific-glob-wins so the overlap does not
+  blur blast-radius attribution.
+- Verified: `npm run knowledge:registry-check` (0 reconciliation problems, 24
+  semantic features / 87 runtime FeatureKeys), `npm run knowledge:globs` (0 new
+  dead entries), `npm run knowledge:map -- --files <one file per new entry>`
+  routes each to exactly the intended id, `npm run knowledge:feature-map` /
+  `document-inventory.mjs` regenerated clean.
+
+## 2026-09-03 — Feature-flag registry, never-gate rules, and the expiry CI gate (Phase F.4.2)
+
+New, self-contained module — `config/feature-flags.yml` +
+`src/lib/flags/**` + `scripts/flags/**` + `scripts/check-feature-flags.mjs`
+— per Phase F.4.2 of the 2026-09-03 control-plane implementation plan
+(a docs-only worktree deliverable, not yet committed to `main` as of this
+entry — see the Bridge-track handoff brief for context) and owner decision
+`FEATURE_FLAG_INFRASTRUCTURE_NET_NEW` ("flags yes") recorded the same
+session. Percentage/cohort canary rollout was explicitly deferred by the
+same decision round ("canary later") and is NOT built here — `environment`
+rollout is booleans only.
+
+- **The registry.** `config/feature-flags.yml` is hand-edited; `npm run
+  flags:generate` compiles it to a typed constant,
+  `src/lib/flags/registry.generated.ts` — no YAML parsing at runtime.
+  Seeded with two flags that DESCRIBE existing env-driven toggles without
+  changing their behavior: `flight_recorder`
+  (`HELM_FLIGHT_RECORDER_ENABLED`, read at `src/app/golf/actions/golf.ts:1207-1209`
+  and `src/lib/observability/helm-flight-recorder.ts:194`, both owned by the
+  parallel Sentry session per that handoff brief's ownership table) and
+  `coachhelm_v2_availability` (`NEXT_PUBLIC_COACHHELM_ENABLED`,
+  `src/lib/coachhelm/v2/gate.ts`). Neither call site was touched — both
+  files sit outside this change's ownership boundary.
+- **The NEVER-GATE list.** A flag may never gate auth, RLS, tenancy,
+  membership, or required persistence — enforced twice, independently: the
+  generator refuses to write `registry.generated.ts` on a violation
+  (`scripts/flags/lib.mjs#validateFlag`), and `scripts/check-feature-flags.mjs`
+  re-derives the same violation straight from the YAML, so a hand-edited
+  generated file cannot bypass the rule (matches `.claude/rules/shipping.md`
+  §1's "verify the generator, not the stamp").
+- **The CI gate.** `npm run flags:check` (new `Feature flags` step in
+  `.github/workflows/ci.yml`'s `Static checks` job, `continue-on-error: true`
+  + the existing aggregate) fails on an expired-but-`active` flag, a flag
+  missing `owner`/`cleanup_plan`, a `temporary_migration` flag with no (or a
+  past) `expires_at`, or a NEVER-GATE hit.
+- **Sentry correlation.** `src/lib/flags/sentry.ts` attaches flag name +
+  boolean value to Sentry via `@sentry/nextjs` 10.71.0's real
+  `featureFlagsIntegration` when registered. It is not registered today —
+  `Sentry.init()` lives in the two `src/instrumentation*.ts` files, owned by
+  the parallel Sentry session — so this falls back to a bounded
+  `flag.<name>` tag until that session adds the integration.
+- **Bridge surface.** `/admin/releases` (new nav entry, key `K`, Platform
+  section) reads `src/lib/admin/data/feature-flags.ts`'s `fetchFeatureFlags`
+  and renders every registered flag with a computed rollout status
+  (`active`/`expiring_soon`/`expired`/`archived`/`no_expiry`).
+- **Not wired, by design, and documented as a real limitation.** Neither
+  seed flag routes its real call site through `isFlagEnabled()` — both
+  files belong to the parallel Sentry session. Instead,
+  `src/lib/flags/__tests__/is-enabled.test.ts`'s `flight_recorder` suite
+  proves the registry's seeded per-environment defaults match exactly what
+  `golf.ts:1207`'s `shouldEmitHelmTraceContext()` evaluates today (for
+  `HELM_FLIGHT_RECORDER_ENABLED` at its documented default, i.e. unset) —
+  and explicitly tests that an out-of-band env override diverges from the
+  static registry snapshot, rather than overclaiming live parity. See
+  `docs/ai-system/FEATURE_FLAGS.md` "What is, and isn't, wired".
+- **Verified**: `npx vitest run src/lib/flags src/lib/admin/data` (pass);
+  `node --test scripts/flags/__tests__/*.test.mjs
+  scripts/__tests__/check-feature-flags.test.mjs` (39 pass); `npm run
+  flags:check` clean against the seeded registry; `npm run typecheck` /
+  `npm run lint --max-warnings 0` clean; `npm run knowledge:globs` clean
+  (new `config/feature-flags.yml` / `src/lib/flags/**` / `scripts/flags/**`
+  / `scripts/check-feature-flags.mjs` globs added to `admin_platform` in
+  `memory/registry.yml`); `npm run docs:check` (all five) clean;
+  `actionlint .github/workflows/ci.yml` clean.
+
+## 2026-09-02 — Golden-path journey registry and Context Retrieval Bench (Bridge Control Plane Phases D.4.1, K.4.2)
+
+Two new pieces of engineering-os tooling, not a change to the Bridge's
+runtime behavior — recorded here because both are Bridge-surface
+control-plane work and this feature (`admin_platform`) is, per the Bridge
+control-plane implementation plan (2026-09-03, finding #8; that plan
+document lives on the `agent/sentry-max-controlplane` branch and is not yet
+merged to `main` as of this entry, so it is described here rather than
+path-cited — citing an unmerged branch's path from this ledger would read as
+a resolvable reference and trip `docs:path-drift`), the one `feature_id` the
+entire Bridge surface maps under.
+
+- **`memory/journeys/golden-paths.yml`** — a thin index over EXISTING
+  `e2e/*.spec.ts` coverage and the live Flight Recorder workflow/step-key
+  vocabulary in `src/app/golf/actions/golf.ts`, seeding the 8 golden paths
+  named in the Bridge Track C task (`player_login_hub`, `player_start_round`,
+  `player_resume_round`, `player_submit_round`, `coach_view_player_stats`,
+  `coach_view_coachhelm_insight`, `coach_create_event`, `player_rsvp_event`).
+  Three journeys (`player_submit_round`, `coach_create_event`,
+  `player_rsvp_event`) are marked `status: collecting` rather than seeded
+  with invented e2e coverage — no current e2e spec submits a round, creates
+  a calendar event, or RSVPs to one; each gap is documented in the journey's
+  own stage notes as a real product/test-infra gap, not an oversight.
+  `scripts/knowledge/check-journeys.mjs` validates every citation
+  structurally (feature ids resolve against `memory/registry.yml`, e2e
+  `test_name` strings are found verbatim in their `spec_path`, Flight
+  Recorder `workflow`/`step_key` strings are found verbatim in their
+  `source_path`) — `npm run knowledge:journeys-check`.
+- **`scripts/knowledge/bench.mjs`** — the Context Retrieval Bench K.4.2
+  describes: scores the current `knowledge:map`/`knowledge:context` CLIs
+  against a frozen gold set (`scripts/knowledge/bench/gold-set.v1.json`)
+  hand-curated from all `memory/incidents/**/INC-*.md` files that existed at
+  freeze time. Its first run surfaced genuine `memory/registry.yml` coverage
+  gaps this ledger entry does NOT attempt to fix (out of this task's scope,
+  and fixing a registry gap that this bench itself surfaced, inside the same
+  change that adds the bench, would make the bench's own first-run numbers
+  unverifiable against what a reviewer can reproduce) — see
+  `docs/generated/RETRIEVAL_BENCH.md`'s "Reading these numbers" section for
+  the specific files and features involved. `npm run knowledge:bench`
+  regenerates the report; no CI caller was added (K.7 says read early scores
+  as directional, not a hard gate, until the incident corpus grows, and the
+  plan does not name a trigger condition for this specific check).
+
+**Verified**: `node --test scripts/knowledge/__tests__/check-journeys.test.mjs
+scripts/knowledge/__tests__/bench.test.mjs` — 26/26 pass. `npm run
+knowledge:journeys-check` — PASS, every citation in the journey registry
+resolved against this worktree. `npm run knowledge:bench` — ran clean against
+the real gold set (see `docs/generated/RETRIEVAL_BENCH.md` for the numbers).
+`npm run typecheck` and `npm run lint` NOT run in this pass — this worktree's
+`node_modules` is a symlink to the canonical checkout's, per
+`AGENTS.md`/`.claude/rules/autonomy.md`'s worktree-dependency policy (this
+task explicitly said not to install dependencies); CI runs both for real.
+`npm run build` NOT run — no `'use server'` surface changed.
+
+## 2026-09-02 — Correction to (e) and (h): a critical expected-recurrence must still page, and a fixture must still be visible
+
+Two follow-up fixes to the same session's own defect-(e) and defect-(h)
+commits, found by a stronger-model review before the branch was handed off —
+recorded as their own entries rather than folded silently into the originals,
+since both change behaviour the first pass shipped.
+
+- **(e) — `attention.ts`'s `UNRESOLVED_STATES` now includes
+  `'expected-recurrence'`.** The first pass left it out (matching
+  `'not-a-defect'`, which it is NOT the same as). Consequence: a CRITICAL,
+  still-unresolved fault whose latest analysis said NOT A DEFECT produced NO
+  attention row at all — rule 1 (regression) no longer matched by design,
+  and rule 2 (critical) requires `UNRESOLVED_STATES.has(state)`, which it
+  didn't. An LLM-authored `suggestedFix` string was able to silence a
+  critical fault outright, not merely soften the regression-specific alarm
+  it was wrong about. Fixed by including the state in `UNRESOLVED_STATES`
+  while keeping it OUT of `NEEDS_ATTENTION_STATES` — the regression alarm
+  stays gone, but rule 2 can still fire for one.
+- **(h) — `mergeTriage` no longer forces `actionable: false` for a fixture;
+  the exclusion moved to each count site.** The first pass forced it at the
+  source, which removed the row from `matchesKind`'s default view entirely
+  (`kind === undefined -> incident.actionable`) — the fixture vanished into
+  "N held back" and the FIXTURE badge nobody would ever see it on became the
+  literal opposite of the task's ask ("label them... in the incident feed").
+  `actionable` is now left as `classifyIncident`'s real verdict; the
+  exclusion from "the actionable COUNT" happens explicitly, keyed on
+  `isFixture`, at `lens.ts`'s `actionable` lens, `truth-strip.ts`'s
+  `actionable` cell, `errors/page.tsx`'s `shownActionable`, and
+  `incident-feed.ts`'s `actionableGroups` (the last one because
+  `overview.ts` and `errors/page.tsx` both render that exact field and would
+  otherwise disagree).
+- **Verified**: new failing-first case in `attention.test.ts` (critical
+  expected-recurrence produces a `critical` row); a new case in
+  `truth-strip.test.ts` and `lens.test.ts` pinning the fixture exclusion at
+  each site; a new case in `incident-feed.test.ts` (verified red against a
+  temporarily-reverted fix, then restored); `correlate.test.ts` and
+  `triage.test.ts`'s fixture cases updated to assert `actionable` is left
+  untouched rather than forced false. Full ripple:
+  `src/lib/admin src/lib/reliability src/app/admin` 1748/1748 passing.
+  `npm run typecheck`, `lint`, `lint:ratchet`, `audit:supabase-errors` (1039
+  baseline, no regression) all green, and `npm run build` run once (network
+  sandbox disabled) confirming a clean webpack compile + TypeScript pass —
+  see `memory/ledgers/tests/admin_platform.md` for what it did and did not
+  prove.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (h) — QA fixture rounds get a FIXTURE badge and drop out of the actionable count
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (h) — the
+  last of the six-defect sweep).
+- **New `src/lib/admin/qa-fixture-rounds.ts`**: `QA_FIXTURE_ROUND_IDS`, a
+  literal copy of the four ids
+  `supabase/migrations/20260901120000_integrity_completed_round_zero_scored_holes.sql`
+  names as seeded fixtures (owner decision 2026-09-02: KEPT), plus
+  `isQaFixtureRoundId`. Copied rather than read at runtime — nothing in this
+  code path can read a `.sql` file — so `qa-fixture-rounds.test.ts` instead
+  reads the migration itself and asserts the constant still matches it
+  exactly, closing the drift gap a hand-maintained copy would otherwise open.
+- **New `extractRoundId` in `incident-report.ts`**: `metadata.roundId`, a
+  TOP-LEVEL key (same shape as the existing `extractRoute`/`extractActionName`
+  — `normalizeContext` in `server-error-logger.ts` writes it from
+  `ObservedActionContext.roundId`).
+- **`mergeTriage` (`triage.ts`) sets `TriageItem.isFixture` and forces
+  `actionable: false` at the source.** Any row in an app-origin bucket naming
+  a QA fixture round makes the whole grouped item a fixture — same
+  "any-occurrence-counts" shape `regressed` already uses — and its
+  `actionable` is forced `false` regardless of what `classifyIncident`
+  decided from the message/severity text alone. Forcing it HERE, once,
+  rather than adding a parallel exclusion at every downstream consumer, is
+  what keeps a fixture out of every actionable count that already gates on
+  `.actionable`: the Incidents tab's `shownActionable`, the default-kind
+  facet (`matchesKind`), and the Truth Strip's `actionable` cell all needed
+  NO additional change. Sentry-origin items are always `isFixture: false` — a
+  Sentry issue carries no round-id metadata to match against.
+- **`correlate.ts` carries `isFixture` onto `UnifiedIncident`** (new field,
+  `bucket.appItems.some(i => i.isFixture)`) purely so the card can explain
+  WHY — the exclusion itself already happened upstream.
+  `UnifiedIncidentCard.tsx` renders a neutral-tone FIXTURE chip, SECOND
+  priority (right after the lifecycle chip, ahead of stalled/corroboration/
+  RCA/PR/blind-source) — a fact about the data outranks everything derived
+  from it, including outranking the blind-source chip under the 5-chip cap.
+- **Verified**: `qa-fixture-rounds.test.ts` (3/3, including the drift guard
+  against the live migration file); a new `extractRoundId` case in
+  `incident-report.test.ts` (failing-first); three new `mergeTriage` cases in
+  `triage.test.ts` pinning `isFixture`/forced `actionable: false`
+  (failing-first — all three were red against the pre-fix code); three new
+  `correlateIncidents` cases in `correlate.test.ts`; three new
+  `UnifiedIncidentCard` cases in `unified-incident-card.test.tsx` (chip
+  renders, does not render for an ordinary incident, and outranks the
+  blind-source chip under the cap). Full ripple:
+  `src/lib/admin src/lib/reliability src/app/admin` 1745/1745 passing
+  (six pre-existing `TriageItem`/`UnifiedIncident` test fixtures across five
+  files needed the new required field added — a compile-time gap TS itself
+  surfaced, all fixed). `npm run typecheck`, `lint`, `lint:ratchet`,
+  `audit:supabase-errors` (1039 baseline, no regression) all green.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (e) — a fingerprint the analysis already ruled NOT A DEFECT stops re-triggering as a regression
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (e) of the
+  six-defect sweep).
+- **New lifecycle state `'expected-recurrence'`, and a new rule-1 branch in
+  `deriveLifecycle` (`src/lib/admin/incidents/lifecycle.ts`).** A fault
+  recurring after a prior human resolution used to ALWAYS verdict
+  `'regressed'` — the single loudest signal this system produces. Now, when
+  the latest RCA `analysis.category === 'not-a-defect'` (the analysis already
+  explained the recurrence — e.g. an access denial that is supposed to keep
+  firing), it verdicts `'expected-recurrence'` instead: neutral tone, not
+  `danger`; excluded from `NEEDS_ATTENTION_STATES`; excluded from the
+  `actionable` lens (`lens.ts`) and the Truth Strip's `actionable` count
+  (`truth-strip.ts`), same treatment as the pre-existing `'not-a-defect'`
+  state; `selfheal-flow.ts` places it `offLoop('done', …)`, same as
+  `'not-a-defect'`. Deliberately a SEPARATE state from `'not-a-defect'`
+  (the classifier's `!actionable` verdict, which never had a resolution to
+  regress from) — this keeps "recurred after being fixed" countable apart
+  from "was never a defect".
+- **A new `expected-recurrence` lens** (`INCIDENT_LENSES`,
+  `INCIDENT_LENS_LABEL`, `INCIDENT_LENS_DESCRIPTION` in `types.ts`) counts
+  these separately from `regressions`. The `regressions` lens predicate
+  itself is UNCHANGED (`state === 'regressed'`) — no exclusion clause needed,
+  because the underlying data no longer produces `'regressed'` for these
+  incidents. `countLenses`/`IncidentLensRail` both derive from the
+  `INCIDENT_LENSES` array, so the new lens renders and counts with no other
+  code change.
+- **Verified**: new failing-first cases in `lifecycle.test.ts` (the
+  `not-a-defect` category case was red against the pre-fix code; a companion
+  case pins that every OTHER category — or none — still verdicts
+  `'regressed'`), a new case in `lens.test.ts` pinning the lens split and the
+  `actionable`-lens exclusion. Full ripple check across
+  `src/lib/admin src/lib/reliability src/app/admin`: 1731/1731. `npm run
+  typecheck` surfaced the three sites TS's exhaustiveness checking forces on
+  a new union member (`lens.ts`'s and `selfheal-flow.ts`'s non-exhaustive
+  switches, and one test's inline `IncidentLensCounts` literal) — all three
+  fixed. `npm run lint`, `lint:ratchet`, `audit:supabase-errors` (1039
+  baseline, no regression) all green.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (d) — Sentry-origin incidents get an advisory feature tag instead of grouping as unknown
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (d) of the
+  six-defect sweep).
+- **`mergeTriage` (`src/lib/admin/data/triage.ts`) falls back to a per-issue
+  advisory feature tag when the batch-level `sentryTagHint` is absent.** Every
+  un-scoped Sentry issue used to carry `feature: null` unconditionally, so the
+  feature lens on `/admin/errors` (`featureBreakdown` in `errors/page.tsx`)
+  grouped all of them under the empty-string "unknown" bucket. It now applies
+  `resolveFeatureId(issue.culprit)` per issue — `culprit` is the only
+  per-issue location field `SentryIssue` returns; there is no
+  transaction/url. The batch hint still wins outright when present (honest,
+  Sentry-tag-scoped attribution beats a route-string guess); `feature: null`
+  still results when the culprit doesn't map to anything, unchanged. The same
+  resolved value now also feeds `buildIncidentReport`'s `featureKey` so the
+  Copy-for-Claude report and the row's rendered tag agree.
+- **`resolveFeatureId` moved from `collect.ts` to `normalize.ts`, exported.**
+  It was a private function in `collect.ts` used only for the Reliability
+  tab's own correlation pass; it is pure (no I/O) and belongs beside the
+  module's other pure logic so `triage.ts` can reuse the SAME map rather than
+  writing a second copy that eventually drifts. `collect.ts` now imports it
+  back. Its doc comment states explicitly that three of the six ids it
+  returns (`golf_round_lifecycle`, `coachhelm_ai`, `admin_platform`) are NOT
+  `FEATURE_REGISTRY` keys — a pre-existing mismatch (the Reliability tab's own
+  `CorrelatedSignal.featureId` has used this function since the collector
+  shipped) left as-is rather than silently reinterpreted; an unregistered tag
+  still renders, unlinked, in `UnifiedIncidentCard` rather than falling into
+  "unknown".
+- **Verified**: renamed the now-overbroad sport/feature test in
+  `triage.test.ts` (it previously implied NEITHER field had a fallback; only
+  sport doesn't) and added 3 new cases, one written failing first (per-issue
+  culprit fallback fires; batch hint still wins; a non-mapping culprit stays
+  null) — `npx vitest run src/lib/admin/data/__tests__/triage.test.ts`
+  (20/20). Full ripple check: `npx vitest run src/lib/reliability src/lib/admin`
+  (1312/1312, unchanged pass count). `npm run typecheck`, `lint`,
+  `lint:ratchet` all green.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (b) — the capture-quality panel stops penalising cron rows for lacking a user, and observed-action user attribution is pinned
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (b) of the
+  six-defect sweep).
+- **`analyzeCaptureQuality` (`src/lib/admin/data/capture-quality.ts`) gives the
+  'user' field its own, smaller denominator.** A `source: 'cron'` row
+  (`job-log.ts`'s `Cron failed: <jobType>`, including the reliability
+  collector's own) or `source: 'system'` row (`deploy-marker.ts`) is a machine
+  invocation — it has no session to resolve a user from, so counting it
+  against 'user' coverage blamed a call site for a gap it could never close.
+  New `SELF_REFERENTIAL_SOURCES` set + `isSelfReferentialRow`; the 'user'
+  field's `total`/`present`/`ratio` are computed over the user-eligible
+  subset, every other field (and `report.rows`, and `weakestSources`' row
+  counts) is unchanged — a cron failure legitimately carries error-code,
+  stack, route, feature and action, and stays eligible to rank as a weakest
+  emitter on those. `rca_analysis` rows need no matching filter: they are
+  already excluded upstream by `queryAppErrorEvents`'s `event_type='error'`
+  clause, so a second check here would be a guard that can never fire — not
+  added.
+- **Observed-action user attribution ("second half" of this defect): verified
+  correct, not a bug.** `withAdminObserved` (`src/lib/admin/observed-action.ts`)
+  and its three consumers — `withGolfAction`, `withBaseballAction`,
+  `withLiftingAction` — already resolve `userId`/`userEmail` from the session
+  before calling `observeActionSoftFailure`/`logServerException`, and
+  `observe-action-result.ts` forwards them unchanged into the logger context.
+  No code change was needed; a new test pins the soft-failure path (only the
+  thrown-error path had coverage before) so a future refactor can't silently
+  drop it.
+- **Verified**: new failing-first cases in `capture-quality.test.ts` (11/11
+  passing — 3 new cases were red against the pre-fix code); a new pinning
+  case in `observe-action-result.test.ts` (30/30, passed immediately — see
+  above); `npm run typecheck`, `lint`, `lint:ratchet`, `audit:supabase-errors`
+  all green on this change alone.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (f) — a Sentry 429 gets one honoured retry before it reads as blind
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (f) of the
+  six-defect sweep).
+- **`fetchSentryIssues` no longer gives up on the first 429.** On a 429 it
+  waits out `Retry-After` (parsed, clamped to 30s max, a fixed 1s fallback
+  when the header is missing) and retries the same request exactly once.
+  Only if that retry ALSO fails does it give up — any other status (500,
+  403, ...) still fails immediately, since there's no reason to believe a
+  second attempt changes those.
+- **A rate limit that survives the retry is `degraded`, not `blind`.**
+  `AdminFetchResult` gained an optional `degraded?: boolean` (`fetch-result.ts`,
+  `failed()`); `SourceStatus` in `src/lib/reliability/types.ts` gained a
+  `'degraded'` member, ranked in `worstStatus` between `partial` and `blind`
+  (worse than partial, better than blind — a rate limit usually clears on
+  its own). `statusFromFetch` (`sources.ts`) maps a degraded envelope to
+  `{status: 'degraded', reason: 'rate limited'}`. `readingCount`
+  (`reliability-view.ts`) excludes degraded arms from "arms that returned
+  data", same as blind. `collectVercel`... n/a here; `collect.ts`'s job-log
+  `error_message` now names degraded arms alongside blind ones without
+  flipping the run's `completed`/`failed` status for a degraded-only run.
+- **Deliberately NOT widened**: the Incidents tab's separate `SourceHealth`
+  union (`src/lib/admin/incidents/types.ts`) has no `'degraded'` member. A
+  degraded reliability arm folds into its existing `'blind'` there via
+  `readReliability()`'s ternary in `fetch.ts` — the conservative direction,
+  and consistent with "no all-clear while a required source is blind". A
+  full second-union widening (8 files: `types.ts`, `fetch.ts`, `correlate.ts`,
+  `sources.ts`, `reconciliation.ts`, `triage-engine.ts`,
+  `SourceCoverage.tsx`, `EvidenceWall.tsx`) was assessed and set aside as
+  disproportionate to this fix; the Reliability tab is where the fact
+  ("Sentry reads ... mark the source degraded") is anchored and is now
+  correct end to end.
+- **Verified**: new failing-first retry/degraded cases in
+  `src/lib/admin/__tests__/sentry-api.test.ts` (43/43 passing — a test-only
+  `__setSentryRetryDelayForTests` stub keeps the 429 tests instant instead of
+  actually pausing 30s), new `worstStatus` ranking cases in
+  `normalize.test.ts`; `npx vitest run src/lib/reliability/__tests__/
+  src/lib/admin/__tests__/sentry-api.test.ts src/app/admin/reliability`
+  (139/139); `npm run typecheck`, `lint`, `lint:ratchet`,
+  `audit:supabase-errors` all green.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (c) — canceled preview deploys stop reading as a build problem
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (c) of a
+  six-defect catalogued sweep; each defect lands as its own commit).
+- **`collectVercel` (`src/lib/reliability/sources.ts`) no longer rates every
+  `CANCELED` deployment `warning`.** A canceled `preview` deploy (or one with
+  no recorded `target`) is routine — a push superseded by a later push, or a
+  manual cancel — and now reports `info`. A canceled `production` deployment
+  still reports `warning`: there the intended release never shipped, which is
+  exactly the build-health signal this arm exists to carry. `ERROR` deploys
+  are unaffected (`error` at any target).
+- New helper `vercelDeploySeverity(state, target)` is the single place this
+  is decided; `src/lib/reliability/__tests__/sources.test.ts` pins preview,
+  null-target, and production CANCELED cases plus the untouched ERROR case.
+- **Verified**: `npx vitest run src/lib/reliability/__tests__/sources.test.ts`
+  (25/25 passing, new cases written failing first), `npm run typecheck`,
+  `npm run lint`, `npm run lint:ratchet`, `npm run audit:supabase-errors` all
+  green on this change alone.
+
+## 2026-09-02 — Diagnose moves off the Anthropic-hosted cloud routine onto a Vercel cron
+
+- Branch: `agent/selfheal-diagnose-cron`.
+- **Why**: the Diagnose stage's cloud-routine environment carried no
+  `SUPABASE_SERVICE_ROLE_KEY`, so `npm run triage` failed before reading a
+  row every time it actually ran there — every `selfheal-triage` heartbeat
+  that ever read `completed` was a human substituting via MCP or a manual
+  run. This deployment already carries `SUPABASE_SERVICE_ROLE_KEY`,
+  `ANTHROPIC_API_KEY` and `CRON_SECRET`, so Diagnose runs here instead.
+- **Extracted, no behaviour change**: `collectAdminEvents`,
+  `collectReliabilitySignals`, `collectRelAnalyses` and `applyPlan` moved out
+  of `scripts/run-triage.ts` into `src/lib/admin/triage-collect.ts` /
+  `triage-apply.ts`; the CLI is now a thin wrapper over both, byte-identical
+  output. `runRcaForFingerprint` / `persistRcaAnalysis` moved out of
+  `src/app/admin/actions/analyze-error.ts` into `src/lib/admin/rca-run.ts`
+  (server-only, no `requireSuperAdmin` gate — the action keeps its own gate
+  and delegates), which also gains `runRcaForReliabilitySignal` for
+  `rel:<signature>` groups with no `admin_events` rows to analyse.
+- **One real behaviour change while extracting**:
+  `collectReliabilitySignals` used to read only the NEWEST
+  `reliability-snapshot` row (`.limit(1)`). It now reads every row inside the
+  triage window and unions their signals (dedupe by correlation signature,
+  count = MAX across rows never sum, firstSeen/lastSeen widened,
+  `sourceHealth` still taken from the newest row only) — a Sentry/Vercel/
+  Supabase signal that fired early in a 72h window and quieted down before
+  the most recent 3-hourly snapshot was previously invisible to triage.
+- **New**: `src/app/api/cron/selfheal-triage/route.ts`, four times a day
+  (`vercel.json`'s `17 3,9,15,21 * * *`, 6h cadence; `09:17 UTC` sits 83
+  minutes before Repair's `10:40 UTC`). Applies the closeable set exactly as
+  `--apply` does, then analyses the queue up to `SELFHEAL_TRIAGE_MAX_ANALYSES`
+  (default 8) groups, persists per-member with deterministic
+  `relatedFingerprints`, and resolves only `not-a-defect` and the SHA-free
+  half of `already-fixed` (a Vercel function has no git checkout to verify a
+  named commit's ancestry, so a SHA-bearing claim is left analysed-but-open
+  for `auto-resolve.ts`'s nightly Rule A or a human run). A provider-fault
+  guard re-classifies each member's own message text
+  (`classifyProviderFault`), not just a stored `errorCode` — three of the
+  four production "Inngest signature" fingerprints carry no persisted
+  `errorCode` at all. The heartbeat is written LAST, directly (not through
+  `recordJobRun`, which drops nested fields), under the same `job_type` both
+  `CRON_REGISTRY` and `SELFHEAL_STAGES` already used; an unregistered,
+  separate `recordJobRun` call wraps the handler purely for crash-safety.
+  `status='failed'` only on a genuine collector read failure or an analyzer
+  error — a blind arm inside an otherwise-readable snapshot reports
+  `completed` with `degraded: true`, because Repair's STEP 0b refuses to run
+  at all on a `failed` Diagnose row and a single flaky Sentry poll should
+  never silently disable Repair.
+- **Registries updated**: `SELFHEAL_STAGES.triage.runner` → `'vercel-cron'`,
+  `cadenceMinutes` → 360 (contract path unchanged); `CRON_REGISTRY` gains the
+  `selfheal-triage` entry; the contract test's `cronScheduleToMinutes` helper
+  (`cron-registry.test.ts`) extended to parse a comma-separated, evenly-spaced
+  hour list — it threw on `vercel.json`'s new schedule string otherwise.
+- **Docs**: `docs/ai-system/selfheal/README.md` and `triage-contract.md`
+  record the new runner and the SHA-ancestry capability gap; the cloud
+  routine is retired, `npm run triage` stays the full-contract fallback.
+- **Verified**: `npm run typecheck`, `npm run lint` (whole repo, both clean);
+  targeted `vitest run` over `src/lib/admin/__tests__`,
+  `src/app/api/cron/**/__tests__`, `src/app/admin/actions/__tests__`, and
+  `scripts` (1172 tests, all passing, including the pre-existing
+  `analyze-error.test.ts` unmodified against the extraction). New tests cover
+  the reliability-collector union fix (two-snapshot fixtures), the extracted
+  analyzer (regression-tested against the same fixtures `analyze-error.test.ts`
+  used), and the route's five required scenarios: cap reached, a blind arm
+  degrading rather than failing the run, an analyzer error leaving one group
+  open while the closeable set still applies, the provider-fault guard
+  refusing to resolve, and the heartbeat write landing last in call order.
 
 ## 2026-09-02 — second audit of `agent/fix-bridge-errors`: a throttle that outlived its write, a `void` the siblings had lost, a lost increment
 
@@ -818,3 +1375,1001 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
 - **Verified**: see the tests ledger entry of the same date. `npm run build`
   NOT run — the volume reported 0 GiB free at the time and a cold `.next`
   costs up to 5.7 GiB; no `'use server'` surface changed.
+
+## 2026-09-02 — Diagnose cron final gate: `collectRelAnalyses` binds its read error
+
+- SHA: branch `agent/selfheal-diagnose-cron`, PR pending (final-gate pass on
+  the "move Diagnose onto a Vercel cron" work already committed on this
+  branch — the cron route, the `triage-collect.ts`/`triage-apply.ts`
+  extraction, and the RCA-analysis extraction into `rca-run.ts` were already
+  shipped in prior commits; this entry covers only the fix made during the
+  gate run).
+- **What**: `src/lib/admin/triage-collect.ts`'s `collectRelAnalyses` now
+  destructures `error` from its `fetchAllRowsResult` call (it previously took
+  only `data`) and logs a failure instead of silently returning an empty
+  `Map` indistinguishable from "no prior analyses exist".
+- **Why**: `npm run audit:paginated-reads` regressed 12 -> 13 on this branch
+  — the ratchet's `helm/no-unchecked-paginated-read` rule flagged the
+  unbound `error`. Fixed rather than baseline-raised, per the no-ratchet-
+  raise rule. This read is best-effort enrichment (an "already analysed"
+  annotation merged onto reliability candidates), not a health-critical read
+  — a failure here does not flip `runSelfHealTriage`'s heartbeat to
+  `failed`/`degraded`; the two health-critical reads it sits beside
+  (`collectAdminEvents`, `collectReliabilitySignals`) already bound and
+  reported their own errors into `SourceHealth` before this fix.
+- **Verified**: `npm run typecheck`, `npm run lint` (0 warnings),
+  `npm run lint:ratchet` (68 warnings, no regression),
+  `npx vitest run src/lib/admin src/app/admin src/app/api/cron/selfheal-triage`
+  (146 files / 1671 tests, all pass, before and after the fix),
+  `npm run audit:paginated-reads` (12, baseline 12, confirmed fixed),
+  `npm run audit:supabase-errors` / `audit:fail-open` (1039 / 51, no
+  regression), `node scripts/markdown-lint-ratchet.mjs`,
+  `npm run lint:duplicate-exports`,
+  `node scripts/knowledge/document-inventory.mjs --check`,
+  `npm run docs:path-drift`, `npm run docs:schema-drift`. `npm run build`
+  NOT run locally — CI builds it.
+
+## 2026-09-02 — Flight Recorder: one observed-step-count definition, undeclared steps, point-in-time durations, downgrade badge, audit script
+
+- SHA: branch `agent/tracer-gaps`, PR pending. Scoped deliberately to stay
+  outside the two in-flight Flight Recorder branches
+  (`agent/flight-recorder-real-timings`, `agent/flight-recorder-db-checkpoints`)
+  — no edit to `src/app/golf/actions/golf.ts`,
+  `src/lib/observability/golf-round-flight-workflow.ts`,
+  `src/lib/observability/helm-flight-recorder.ts`, or any
+  `supabase/migrations/*flight*`/`*trace_steps*` file.
+- **What**: `trace-tree.ts`'s `TraceTree` gains `observedStepCount` as the one
+  named definition of "steps actually observed" (`observed.length`, before
+  synthesised missing nodes) — the KPI strip in `TraceTree.tsx` now reads this
+  field instead of re-deriving `tree.flat.filter(!isMissing).length` inline,
+  so the fleet-list count and the tree's own count can no longer silently
+  read as two different numbers for an OPENED trace.
+  `bridgeGetFlightTrace` (`golf-tracer.ts`) reconciles a trace's
+  `observed_step_count` against its own fetched steps array on open via the
+  new `reconcileObservedStepCount` helper — this only fixes the count once a
+  trace is opened; unopened fleet-list rows still show the DB's own
+  (possibly-stale-pre-2026-09-01-migration) stored counter, a documented scope
+  boundary rather than a full fix (closing it needs a `helm_debug_list_traces`
+  migration change, out of scope here).
+  `TraceStepNode` gains `isUndeclared` (an OBSERVED step whose key is not in
+  the workflow's own declared-key set — verified against
+  `golf-round-flight-workflow.ts` that `golf.round.submit` declares only the
+  top-level `db.submit_round_atomic` key, never its in-transaction children,
+  so every postgres-layer checkpoint child the db-checkpoints migration will
+  start writing hits this by construction) and `isPointInTime` (a row with
+  `finished_at` but no `started_at` — a single-moment checkpoint, rendered as
+  "point-in-time" rather than reading identically to "no data at all").
+  `errorCode` now falls back to `metadata.sqlstate` then `metadata.failure_code`
+  when the `error_code` column is empty, matching the shape
+  `helm_private.trace_exception_checkpoint` actually writes.
+  `trace-view-helpers.ts` gains `resolveTotalDurationMs` (named wrapper around
+  `run.duration_ms`, replacing an inline expression, explicitly documented
+  against ever becoming a sum of step durations — which would double-count
+  time inside nested postgres checkpoint children) and
+  `extractStatusDowngrade` (reads `status_downgraded_from`/
+  `status_downgraded_reason` from a run's `metadata`, matching the exact keys
+  `20260901140000_trace_cannot_claim_success_while_blind.sql` writes).
+  `TracesClient.tsx` renders that downgrade as a warning `InlineNotice` — only
+  ever on the opened trace's detail panel, never the fleet-list row, since
+  `helm_debug_list_traces`'s fixed column list omits `metadata` entirely
+  (a real scope boundary, not an oversight).
+  `missing_required_step_count` was checked against the task's "expose it"
+  wording and found already fully exposed (required field on
+  `FlightTraceRun`, already rendered in `TracesClient.tsx` and
+  `trace-fleet.ts`) — no gap, no change made.
+  New: `scripts/flight-recorder-audit.mjs` +
+  `scripts/lib/flight-recorder-audit-lib.mjs` (`npm run flight-recorder:audit`)
+  — a read-only script over the two `helm_debug_*` RPCs (the only reachable
+  path for a service-role key; `helm_debug` is outside PostgREST's exposed
+  schema list) reporting runs/steps/distinct-step-keys/steps-with-identity/
+  zero-step-runs/downgraded-runs for the last 24h, with an explicit warning
+  when `helm_debug_list_traces`'s 200-row cap may have truncated the window.
+- **Why**: the list RPC's DB-stored `observed_step_count` and the tree's own
+  live count over the fetched steps array are two independently-maintained
+  numbers over the same fact, and can disagree for a trace finalized before
+  the 2026-09-01 finalize-function migration or one still in progress — a
+  debugging tool showing two different counts for the same trace undermines
+  trust in both. The db-checkpoints branch is about to start writing observed
+  postgres-layer rows nested under RPCs whose workflow definitions were never
+  updated to declare them; without `isUndeclared` those rows read as
+  regular declared children with no signal that the workflow model hasn't
+  caught up. The audit script is what proves, after both in-flight branches
+  deploy, that real timings and postgres checkpoints actually started
+  landing — before this track there was no way to check that without reading
+  the database by hand.
+- **Not done, deliberately**: the fleet-list row's `observed_step_count` and
+  the downgrade badge are both scoped to the OPENED trace's detail panel only
+  — fixing either for unopened list rows needs a `helm_debug_list_traces`
+  migration change, which is out of scope for this track (the migration files
+  it would touch are the two in-flight branches' territory).
+- **Verified**: `npm run typecheck`, targeted `eslint --max-warnings 0` on
+  every touched file, `npm run lint:ratchet` (no regression against the
+  tracked baseline), `npm run audit:supabase-errors` (no regression against
+  the tracked baseline), the admin_platform registry's required checks
+  (`src/test/lib/cron/auth.test.ts`, `src/test/api/cron/shared-auth.test.ts`),
+  and the full `unit` vitest project (every file, no regressions). New tests
+  written first and confirmed failing before each implementation
+  (`src/app/admin/traces/__tests__/trace-tree.test.ts`,
+  `src/app/admin/traces/__tests__/trace-view-helpers.test.ts`,
+  `scripts/lib/__tests__/flight-recorder-audit-lib.test.ts`) — the last one
+  registered by exact name in `vitest.config.ts`'s unit project include array,
+  the repo's documented convention for `scripts/lib/__tests__` files, without
+  which it would run under nothing. `npm run build` NOT yet run as of this
+  entry — see the commit history for whether it was run before merge; a
+  `'use server'` surface (`golf-tracer.ts`) changed, so it is required before
+  merge per CLAUDE.md.
+
+## 2026-09-02 — Flight Recorder: a genuine parent_step_key cycle no longer silently vanishes from the rendered tree
+
+- SHA: branch `agent/tracer-gaps`, PR pending. Follow-up to the same day's
+  "one observed-step-count definition" entry above.
+- **What**: `buildTraceTree`'s containment loop pushes every node into either
+  `roots` or its resolved parent's `children` array; a genuine mutual cycle
+  (A's parent is B, B's parent is A, or a longer ring) left every member
+  attached as some OTHER member's child and none ever reached `roots`, so
+  the depth-first walk never visited any of them — the whole cycle vanished
+  from `tree.flat` with no error. Fixed with a rescue sweep: after the
+  normal walk, any node still unvisited is promoted to an additional root
+  and walked from there too. A no-op on every acyclic trace this repo has
+  ever recorded.
+- **Why**: this module's own header comment states the guarantee directly —
+  "the tree would be quietly, plausibly wrong" is exactly what a debugging
+  tool must never be — and `observedStepCount` being correct (fixed earlier
+  today) does not by itself guarantee the *rendered tree* still shows every
+  node; this closes the same gap on the render side. `parent_step_key` is
+  free text written by three separate producers (server, collector, RPC), so
+  a cycle, while never observed in production, is not impossible.
+- **Verified**: two new tests (2-node and 3-node mutual cycles asserting the
+  exact surviving node set) written first and confirmed red (`flat: []` on
+  both) before the fix; full touched-directory suite green after (6 files,
+  111 tests, up from 109). `npm run typecheck` / `lint` / `lint:ratchet` (68
+  warnings, no regression) / `audit:supabase-errors` (baseline 1039, no
+  regression) all clean.
+
+## 2026-09-02 — Repair stage's launchd config tracked in the repo, runner captures a failure tail
+
+- SHA: branch `agent/selfheal-repair-hardening`, PR pending.
+- **What**: `config/launchd/com.helm.bridge-rca-repair.plist` added (copied
+  byte-identical from the live agent, `cmp` verified) so the launchd config
+  driving the Repair stage is diffable in git instead of living only on the
+  owner's Mac. `scripts/selfheal-repair-install.sh` installs/reloads it
+  (`plutil -lint`, `launchctl bootout`/`bootstrap`, `launchctl print`).
+  `scripts/selfheal-repair-doctor.mjs` verifies the whole chain read-only:
+  plist installed and byte-identical, job loaded, `~/.config/helm/selfheal.env`
+  carries both required variable names (never reads/prints a value), the
+  `claude` binary and prompt `SKILL.md` resolve, the `-p` argument does not
+  start with `-`/`$(`, and the newest production `selfheal-repair` heartbeat
+  is <26h old and not a runner failure. New npm scripts
+  `selfheal:repair:install` / `selfheal:repair:doctor`.
+  `scripts/run-selfheal-repair.mjs` now pipes the child's stdout/stderr
+  (`stdio: ['inherit', 'pipe', 'pipe']`, still forwarding every byte live so
+  the plist's `>> log 2>&1` sees the same output as before) and reconciles on
+  `'close'` rather than `'exit'` (bounded by a 5s grace timer against a
+  detached grandchild holding a pipe open), so the last ~4KB the child wrote
+  is available when the runner writes a fallback heartbeat. Two new pure
+  exports in `scripts/lib/selfheal-repair-runner.mjs` — `redactSecrets`
+  (JWT-shaped and key/token/secret/password assignment-like patterns) and
+  `truncateTail` (keep the last N bytes) — are applied to that captured text
+  before it is written to `metadata.child_output_tail` on a runner-failure
+  row; `reconcileRepairRun`'s existing result shape is unchanged (new field
+  only on the inserted row, never on the returned result).
+- **Why**: the 06:40 2026-09-02 scheduled Repair fire failed in 0.6s because
+  the live plist passed `SKILL.md`'s raw text — opening with YAML `---`
+  frontmatter — as the `claude -p` argument, and the CLI parsed `---` as an
+  unknown option before writing anything. The fallback heartbeat carried no
+  stderr, so `/admin/selfheal` could only say "child exited 1", not why. The
+  commander hand-patched and reloaded the live plist (prompt now prefixed
+  with a sentence); this change makes the repo the source of truth for that
+  fix and makes a future occurrence of the same failure self-explaining.
+- **Tests**: `src/test/scripts/selfheal-repair-launchd.test.ts` (new) parses
+  every plist under `config/launchd/**` and fails if the `-p` frontmatter
+  trap, a missing `--strict-mcp-config`, or a wrong `--mcp-config` target ever
+  regresses (the `--mcp-config` file's actual JSON content is checked only
+  when that machine-local path exists, since it lives outside the repo and
+  outside any CI runner — `it.skipIf`, same pattern as
+  `check-helm-bridge-env.test.ts`'s "CI without secrets" skip). Extended
+  `src/test/scripts/run-selfheal-repair.test.ts`: `redactSecrets`/
+  `truncateTail` unit cases, a `childOutputTail` case using `toMatchObject`
+  (existing `toEqual` result-shape assertions untouched), and an end-to-end
+  case that spawns the real runner script against a fixture child that writes
+  a marker to stderr and exits immediately, asserting the marker is still
+  forwarded live to this process's stderr and that reconcile completes after
+  `close` without hanging.
+- **knowledge:map gap closed**: these paths (`scripts/run-selfheal-repair.mjs`,
+  `scripts/lib/selfheal-repair-runner.mjs`, `scripts/selfheal-repair-install.sh`,
+  `scripts/selfheal-repair-doctor.mjs`, `config/launchd/**`,
+  `docs/ai-system/selfheal/**`) resolved to `impactedFeatures: []` before this
+  change — added to `admin_platform` in `memory/registry.yml`
+  (`services`/`docs`) alongside `src/lib/admin/**` and `src/lib/reliability/**`,
+  the same feature's existing Bridge/self-heal code.
+- **Not done**: the SKILL.md prompt text itself was not changed — the
+  commander's live fix (a leading sentence before `$(cat ...)`) is what the
+  repo copy now carries, verbatim.
+- **Verified**: `npm run typecheck`, `npm run lint`, `npm run lint:ratchet`,
+  targeted vitest (`run-selfheal-repair.test.ts`,
+  `selfheal-repair-launchd.test.ts`, `scripts-no-committed-secrets.test.mjs`),
+  `shellcheck` on the new `.sh`, `npm run audit:supabase-errors`,
+  `npm run knowledge:map`/`knowledge:globs`, `plutil -lint` on the committed
+  plist, `cmp` against the live installed plist. `npm run build` NOT run —
+  no `'use server'` surface changed.
+
+## 2026-09-02 — Repair-stage hardening review: redactSecrets mis-bound String.replace's offset argument as a capture group
+
+- SHA: local commit on `agent/selfheal-repair-hardening`, not yet merged.
+- **`redactSecrets` in `scripts/lib/selfheal-repair-runner.mjs` leaked a
+  numeric match offset into the fallback heartbeat instead of redacting
+  cleanly** (HIGH). `SECRET_PATTERNS[0]`, the JWT-shaped regex, has zero
+  capturing groups. `String.replace`'s callback signature for a
+  zero-capture-group pattern is `(match, offset, wholeString)` — so
+  `out.replace(pattern, (match, group1) => group1 ? \`${group1}=[REDACTED]\`
+  : '[REDACTED]')` bound the match's numeric OFFSET to `group1`, which is
+  truthy for any match not at index 0. A JWT appearing mid-line (the realistic
+  shape — claude's `stream-json --verbose` output rarely starts a line with
+  the secret) was replaced with a mangled `"18=[REDACTED]"` instead of a
+  clean `"[REDACTED]"`. The full match text was still replaced either way —
+  no actual secret bytes reached `background_job_logs.metadata.child_output_tail`
+  — but the redaction contract ("a captured tail never leaks a credential,
+  cleanly") was violated, and the corrupted text (a stray numeric offset with
+  no operational meaning) is what a future on-call would have read.
+- **Why the existing tests missed it**: the direct unit test asserted
+  `not.toContain(jwt)` / `toContain('[REDACTED]')` — both still true of the
+  mangled `"18=[REDACTED]"` string, since it contains neither the JWT nor
+  breaks the substring `[REDACTED]`. The integration-style
+  `reconcileRepairRun` test placed its JWT immediately after
+  `SUPABASE_SERVICE_ROLE_KEY=`, so the second (key/value) pattern's own
+  correct second pass overwrote the first pass's garbage — pattern-ordering
+  coincidence, not a passing proof.
+- **Fix**: `SECRET_PATTERNS` entries now carry an explicit `keyGroup: boolean`
+  telling `redactSecrets` which replacement shape to use, instead of the
+  callback inferring it from whether its second argument is truthy. This
+  makes the offset-as-group-1 class of bug structurally impossible regardless
+  of how many capturing groups a future pattern adds.
+- **Tests**: added to `src/test/scripts/run-selfheal-repair.test.ts` — an
+  exact-string assertion for a JWT mid-line (fails on the old code with
+  `18=[REDACTED]`, the discriminating case `toContain` could not catch), a
+  JWT at offset 0 (the one input that accidentally worked before the fix, to
+  guard against a regression in the other direction), a JWT with no
+  `KEY=`-shaped prefix (so the second pattern's pass cannot mask a
+  regression in the first), and a quoted `KEY="value"` assignment (proves the
+  key-group branch still redacts cleanly with no dangling quote).
+- **A separate finding from the same review** — that a prior report's
+  `commit_shas[0]` cited a fabricated 40-char SHA
+  (`791fb7105ee0c1e5e0dc1a8c1b0e8a5a4c9c4c1a`) instead of the real commit
+  (`git rev-parse 791fb7105` → `791fb7105b22dad1cfd87341ac9f611f91ddbaa9`,
+  confirmed present; the fabricated one 404s via `git cat-file -t`) — is a
+  defect in that report's text, not in any tracked file. No code, doc, or
+  test change was made for it.
+- **Verified**: `npx vitest run src/test/scripts/run-selfheal-repair.test.ts
+  src/test/scripts/selfheal-repair-launchd.test.ts --project unit` — 28/28
+  pass (2 new failing pre-fix, both pass post-fix). `npm run typecheck` and
+  `npm run lint` exit 0. `npm run lint:ratchet` run separately (long-running
+  full-repo scan); see commit message for its result. `npm run build` NOT
+  run — no `'use server'` surface changed.
+
+## 2026-09-03 — Phase K.4.5 Janitor generator; Phase K.4.1 Stryker mutation gate (adjacent, unmapped)
+
+- **What**: Two Phase K (Engineering OS Intelligence) deliverables from the
+  Helm Bridge control-plane implementation plan, §7/K.4 (that plan document
+  is scaffolding in a separate, not-yet-committed worktree as of this
+  change, so it is described here rather than cited by a path that would
+  not resolve — `npm run docs:path-drift` catches exactly this class of
+  drift, and caught it against an earlier draft of this entry).
+  (1) `scripts/janitor/**` — a read-only entropy-report generator (see the
+  new "Actions And Services" entry in `memory/features/admin-platform.md`
+  for the full description; mapped to this feature in `memory/registry.yml`
+  after `knowledge:map` resolved it to `impactedFeatures: []`, same
+  precedent as the self-heal REPAIR-stage runner entry above this one).
+  (2) `.circleci/config.yml`'s `stryker-coachhelm` job ran
+  `npx stryker run || true`, masking every exit code including a crash —
+  fixed with `scripts/mutation-gate.mjs`, which reads Stryker's own JSON
+  report, computes the mutation score from mutant status counts, and fails
+  the job below a committed floor (`config/mutation-gate.json`, marked
+  PROVISIONAL — no real weekly score is recorded anywhere in this repo).
+- **Why (2) is NOT added to this feature's `memory/registry.yml` glob**:
+  the mutation gate governs `src/lib/coachhelm/v2/` test quality, not the
+  Bridge/admin surface — `knowledge:map --files .circleci/config.yml
+  scripts/mutation-gate.mjs` returns `impactedFeatures: []` and stays that
+  way after this change; forcing it under `admin_platform` would be a wrong
+  mapping, not a closed gap, so it is recorded here only for the adjacent
+  provenance (same PR, same Phase K plan section) — it has no feature-doc
+  entry anywhere in this repo, by design, and the next session that touches
+  Stryker/mutation testing should read `scripts/mutation-gate.mjs`'s own
+  header comment, not a feature doc, for its contract.
+- **Why the ratchet-baseline pattern this repo uses everywhere else
+  (`.lint-baseline.json` etc.) does NOT apply to the mutation floor**: those
+  work because a human runs `--update` locally and commits the result; the
+  weekly Stryker job runs on an ephemeral CircleCI container that cannot
+  commit back to the repo, so a "write the baseline on first run" design
+  would silently treat every week as week one, forever green — the same
+  failure class this ledger entry's fix closes, in a new shape. The floor
+  is a committed number instead, explicitly provisional in its own file.
+- **Why the Janitor writes a SEPARATE file, never `config/control-plane-gaps.json`
+  itself**, even though it reuses that file's `id`/`owner`/`opened`/`scope`/
+  `reason`/`closes_when` field shape: that file's own `$comment` says
+  "Nothing may be listed here to make a red verifier green... Adding one is
+  a decision, not a repair" — an automated finding is a PROPOSAL, not a
+  decision a human has made. `janitor-findings.json` (same directory, gitignored) and
+  `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) say this explicitly in their own
+  headers.
+- **Verified**: `npm run test:janitor` (`node --test
+  scripts/janitor/__tests__/*.test.mjs`) — 52/52 pass, covering every
+  classifier's `FINDINGS`/`ZERO_FINDINGS_VERIFIED`/`NO_SIGNAL` paths against
+  real disposable git-repo fixtures (not mocks — several classifiers shell
+  out to real `git ls-files`/`git grep`/`git log`). `npm run test:mutation-gate`
+  (`node --test scripts/mutation-gate.test.mjs`) — 13/13 pass, covering the
+  score formula, the floor boundary, and every UNKNOWN path (missing
+  report, unparseable JSON, missing floor, zero valid mutants). `npm run
+  janitor` run for real against this worktree: 12/12 classes returned a
+  valid verdict, 0 classifier crashes, found a real, previously-invisible
+  entropy signal in the process — `abandoned-experiments.mjs`'s first draft
+  used `\d` inside a `git grep -E` pattern, which is POSIX ERE (no Perl
+  shorthand support) and silently matched nothing; fixed to `[0-9]` and
+  caught by this run producing 0 findings pre-fix vs. real findings
+  post-fix, plus a regression test. `circleci config validate
+  .circleci/config.yml` passes. Stryker was **not** run locally (explicit
+  instruction) — the mutation gate's real report path
+  (`reports/mutation/mutation.json`, Stryker's JSON-reporter default) and
+  computed score are therefore unverified against a live Stryker run; check
+  both against the first real weekly job log. `npm run typecheck` / `npm
+  run lint` / `npm run build` were **not** run from this worktree — no
+  `node_modules` installed (shared-disk policy across concurrent agent
+  worktrees); every new script here is dependency-free (`node:fs`,
+  `node:path`, `node:child_process`, `node:url` only) and was verified to
+  run correctly with no `node_modules` present at all, which is direct
+  evidence typecheck/lint have no missing-import surface to fail on, but is
+  not a substitute for actually running them — CI does.
+
+## 2026-09-03 — Bridge Premium Observability Phase 0: six truth-model read models under incidents/
+
+Implements Phase 0 ("Truth and naming") of the owner's Bridge Premium
+Observability brief — pure read models and resolvers, no UI, no new tables.
+See `memory/features/admin-platform.md`'s "Phase 0 truth models" section for
+the full description of each module; summarized here for the change record.
+
+- **`present.ts`** — `resolveIncidentPresentation`: deterministic
+  code/operation/feature/fingerprint/generic tiered resolver producing a
+  plain-English title, operation context, and technical signature. 38
+  table-driven mappings grounded in `memory/incidents/**` and direct code
+  reads (not invented) — e.g. the 2026-08-25 CoachHelm recap-persist
+  permission-denied incident, the 2026-09-02 command-palette missing-column
+  incident, `src/lib/notifications/push.ts`'s Apple dead-token handling,
+  `src/app/api/inngest/route.ts`'s signature-failure messages.
+- **`aliases.ts`** — `classifyMergeConfidence` / `groupIntoRootIncidents`:
+  a SECOND pass above `correlate.ts`'s existing exact-signature join,
+  grouping already-built incident-shaped facts into root incidents via
+  trace ids / RPC+code+feature (highest tier) or a six-dimension tight-window
+  match (medium tier), with the brief's never-merge rules (message/time/
+  source/user alone) enforced structurally — the classifier never reads
+  those fields as merge keys, so a fixture stacking every forbidden signal
+  at once still classifies `'none'`.
+- **`episodes.ts`** — `deriveEpisodes`: episodes are opened by regressions,
+  never pre-emptively by resolutions.
+- **`coverage.ts`** — `buildEvidenceCoverage`: six-source (Sentry/Supabase/
+  Flight Recorder/Vercel/GitHub/Jobs) per-incident coverage as check/
+  question/blind, reusing `SourceHealth` rather than a new vocabulary.
+- **`release-context.ts`** — Runtime Identity Triplet, `classifyReleaseRelationship`
+  (proximity alone is `NO CAUSAL SIGNAL`, never `NEW AFTER RELEASE`;
+  confidence capped below 1), `classifyReleaseWatch` (bad news always
+  outranks elapsed time; `PROVEN HEALTHY` requires full source coverage).
+  `fetchProductionMigrationHead` is a separate, deliberately UNTESTED
+  fail-open reader (no file-based source of truth for the production DB
+  migration head exists in this repo; the only path is a live query or the
+  Supabase Management API) — same split as `deploy-freshness.ts`'s
+  `fetchDeployFreshness`/`classifyDeployFreshness`.
+- **`release-compare.ts`** — `buildReleaseComparison`: baseline-vs-current
+  deltas; DB-derived metrics (p95, invariant breaches, new SQLSTATEs) are
+  forced `'unknown'` TOGETHER whenever either side's DB source was blind,
+  even over a caller-supplied raw `0`.
+- **Wiring**: `fetch.ts`'s `IncidentBoard` gained one additive field,
+  `presentations: Record<string, IncidentPresentation>`, computed per
+  incident in the existing `drafts.map` construction. Deliberately kept OFF
+  `UnifiedIncident` itself — every `incidents/__tests__/*.test.ts` file
+  (`attention`, `lens`, `truth-strip`) and `correlate.ts`'s `IncidentDraft`
+  hand-build full `UnifiedIncident` object literals satisfying the
+  interface exactly, so a new required field there is a mechanical diff
+  across all of them and a name other live Bridge sessions are also
+  touching. A board-level map costs zero churn against that surface.
+- **Scope note**: `memory/registry.yml` still maps the entire Bridge/
+  control-plane surface (`src/app/admin/**`, `src/lib/admin/**`,
+  `src/lib/reliability/**`) to the single `admin_platform` feature id — no
+  separate `observability`/`reliability` key exists, matching the scout
+  plan's own §0.8 finding. This entry and the feature-doc section above are
+  filed under that one id for that reason, not because the six modules are
+  narrowly scoped.
+- **Tests**: 159 new tests across seven new `__tests__` files —
+  `present.test.ts` 71, `aliases.test.ts` 24, `episodes.test.ts` 10,
+  `coverage.test.ts` 13, `release-context.test.ts` 26,
+  `release-compare.test.ts` 13, `fetch-presentation.test.ts` (the wiring
+  test) 2. All ran green at commit time, per-file `vitest run` output.
+  Full `src/lib/admin` + `src/lib/reliability` suite (102 files, 1436
+  tests) run green after the wiring commit; each subsequent module's tests
+  plus a full re-run of that combined suite were captured to file with exit
+  codes checked separately (never piped through `tail`) after every commit.
+- **Verified**: `npm run typecheck` and `npx eslint --max-warnings 0` on
+  every new/changed file, exit code 0 each, checked independently of the
+  command's own stdout tail. `npm run audit:supabase-errors`,
+  `node scripts/knowledge/document-inventory.mjs`, `npm run docs:path-drift`
+  and `npm run docs:schema-drift` run as the PR's own gate pass — see the
+  PR description for each command's captured result.
+- **Not done**: no live-network integration test for
+  `fetchProductionMigrationHead` (matches the established
+  `fetchDeployFreshness` pattern — an I/O boundary with no pure logic to
+  pin) and no live table for the production DB migration head to read from
+  file-based truth, since none exists in this repo; the reader depends
+  entirely on `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF` being present
+  in the runtime environment and fails open to `'unknown'` otherwise.
+
+## 2026-09-03 — Bridge Premium Observability Phase 5: Engineering OS (Agent Flight Recorder, Decision Inbox, Charter, blast radius, Work Log)
+
+Implements Phase 5 of the owner's Bridge Premium Observability brief (§29-40,
+§45). One HELD migration, six new read-model modules, two new routes. See
+`memory/features/admin-platform.md`'s "Phase 5 Engineering OS" section for
+the full description of each module; summarized here for the change record.
+
+- **Migration** (`supabase/migrations/20260903150000_helm_debug_agent_runs.sql`,
+  HELD, registered in `HELD.md`, `db-migration-reviewer` review NOT yet
+  performed): `helm_debug.agent_runs` — one table in the already-applied
+  `helm_debug` schema, plus `helm_private.agent_run_safe_payload` and three
+  service-role-only facades (`helm_debug_record_agent_run`/`_list_agent_runs`/
+  `_get_agent_run`). Four-parameter write facade (`p_run_id`, `p_workflow`,
+  `p_status`, `p_payload` jsonb) rather than one parameter per field, so the
+  REVOKE line, GRANT line and ACL tripwire stay in sync by construction. No
+  `workflow` CHECK constraint (unlike the golf recorder's `^golf[.]`) — the
+  writer is fail-open, and a CHECK that rejects an unrecognized value would
+  turn a swallowed insert into a silently blind recorder, the exact failure
+  class `20260901140000`'s header names.
+- **`src/lib/admin/agent-runs/{record,fetch}.ts`** — `record.ts` is a
+  fail-open server-only writer: sanitizes/truncates every string field
+  (600-char cap, strips secret-shaped keys, mirrors the DB-side sanitizer as
+  defense in depth) and never throws — an RPC rejection or error result both
+  route to `onFailure` and resolve normally. `fetch.ts` maps
+  `helm_debug_record_agent_run`/`_list_agent_runs`/`_get_agent_run`
+  RPC results to `AgentRunListRow`/`AgentRunDetail`, reporting the migration's
+  current absence (`42883`/`42P01`/"does not exist") as `unconfigured`, not
+  `error` — matching the established convention for a not-yet-applied
+  `helm_debug_*` RPC.
+- **`src/lib/admin/engineering/{held-migrations,decision-inbox}.ts`** —
+  `parseHeldMigrations` extracts HOLD-status rows from `HELD.md`'s register
+  table (deliberately not a full markdown-table parser: a handful of APPLIED
+  rows carry an embedded literal `|` that breaks naive splitting, but no HOLD
+  row has ever been observed to, and only the migration filename + bolded
+  status token are read before any prose). `buildDecisionInbox` composes
+  those rows with Janitor findings (its machine-readable findings file
+  under `docs/generated`, capped at `janitorLimit`) into
+  `EngineeringDecisionItem[]` — sources kept
+  disjoint from `UnifiedIncident`/`SelfHealStageDetail` on purpose (see the
+  feature-doc section for why: the control-plane plan explicitly says not to
+  build a second Decision Inbox).
+- **`src/lib/admin/engineering/charter.ts`** — three independent
+  `fetch*Charter` functions (mutation gate, resolved contracts, Janitor),
+  each reporting its own artifact's absence without affecting the others.
+- **`src/lib/admin/engineering/blast-radius.ts`** — `computeBlastRadius`:
+  pure breadth-first walk over `WorldModelEdge[]`, capped at 2 hops and 40
+  nodes, flagging an edge `weak` when every piece of its evidence is
+  `import_graph`-only (the same rule `world-model.mjs`'s own `--impact`
+  output uses). `fetchBlastRadius` reads the World Model graph file under
+  `docs/generated` and reports `unconfigured` — it does not exist on
+  `main` as of this change (ships on PR #1785). `formatCausalConfidenceLadder` is pure
+  formatting over `release-context.ts`'s existing `ReleaseRelationshipVerdict`
+  — no second causal engine.
+- **`src/lib/admin/engineering/work-log.ts`** — `buildWorkLogProof`
+  time-buckets each merged `WorkLogEntry` against the earliest
+  `ReleaseCardData` deployed at or after its merge time (ascending-sorted
+  internally regardless of input order); `null` release data yields
+  `shippedInRelease: null` for every row rather than fabricating a match.
+  `buildRepairQuality` filters to PRs claiming a repair
+  (`repairIncidentIds.length > 0`) and labels `stayedFixed` from the
+  shipping release's own verdict tone (`improved`/`worsened`/`unchanged`),
+  or `not-yet-deployed`/`unknown` when there is no release match.
+- **`src/app/admin/engineering/page.tsx`** — five independently
+  `PanelBoundary`-wrapped sections (Decision Inbox, Agent Flight Recorder,
+  Charter & verifier visibility, blast radius + causal confidence, repair
+  quality), each backed 1:1 by the modules above. `?entity=<feature_id>`
+  selects the blast-radius entity (default `admin_platform`).
+- **`src/app/admin/work-log/page.tsx`** + `WorkLogProofCard.tsx` — the
+  change-to-proof PR list, distinct from the existing narrative timeline at
+  `/admin/work`.
+- **Nav**: `ADMIN_NAV` gained two entries (`/admin/engineering` key `G`,
+  `/admin/work-log` key `P`, both Platform section) and `AdminShell.tsx`'s
+  route-icon map gained matching entries (`Bot`, `FileCheck2`);
+  `nav-covers-every-route.test.ts` passes unmodified (both routes are top-
+  level rail entries, no `DETAIL_LEAVES` change needed).
+- **`memory/registry.yml`**: added
+  `supabase/migrations/*helm_debug_agent_runs*.sql` to `admin_platform`'s
+  `db:` globs — the migration's filename also matches `shot_tracking`'s
+  broader `*helm_debug*.sql` glob (a real, accepted double-mapping: that
+  glob correctly covers the GOLF round Flight Recorder's own
+  `helm_debug_retention` file and is not narrowed here, out of scope for
+  this change) but did not match `admin_platform` at all before this entry,
+  the actual owning feature for a Bridge/Engineering-OS table.
+- **Tests**: 74 new tests across eleven files — `agent-runs/__tests__/
+  {record,fetch}.test.ts` (18), `engineering/__tests__/{held-migrations,
+  decision-inbox,charter,blast-radius,work-log}.test.ts` (48), `admin/
+  engineering/__tests__/page.test.tsx` (3), `admin/work-log/__tests__/
+  {page,WorkLogProofCard}.test.tsx` (1 + 6 = 7 — some folded into the 48
+  above by directory; see each file for its own count). All green,
+  `npx vitest run --maxWorkers=4` scoped to the changed directories, plus
+  `src/test/lib/admin/nav-covers-every-route.test.ts` re-run to confirm the
+  nav change didn't regress it.
+- **Verified**: `npm run typecheck` (full project, 0 errors) and
+  `npx eslint --max-warnings 0` on every new/changed file (0 warnings after
+  fixing two `text-[Npx]` arbitrary-value hits and one stale
+  `eslint-disable` comment), each checked independently of the command's
+  own stdout tail, never piped through `tail`.
+- **Not done / owner action needed**: the migration is HELD pending
+  `db-migration-reviewer` review and owner apply — until then, Agent Flight
+  Recorder reads/writes are no-ops (fail-open) and the panel shows
+  `unconfigured`. No live World Model artifact yet (PR #1785 open) — blast
+  radius shows `unconfigured` until it merges. No Janitor findings file
+  committed (by design — regenerate on demand with `npm run janitor`) —
+  Charter's Janitor panel and the Decision Inbox's Janitor half both show
+  the disclosed-gap state until then. No live per-PR CI check-run data in
+  Work Log (would be a new network call outside this deliverable's
+  authorization) — "which gates proved it" is the PR's self-reported
+  verdict plus current gate posture, stated as a scope limit in the code
+  comments and the feature doc, not implied by the field names.
+
+  **CORRECTED below, not edited in place** (per this repo's own convention
+  of leaving prior reasoning legible rather than silently rewriting it):
+  PR #1785 merged into `main` on 2026-09-03, so "No live World Model
+  artifact yet" and "ships on PR #1785" above are stale — see the
+  2026-09-03 review-fixes entry immediately following.
+
+## 2026-09-03 — PR #1790 review fixes (Engineering OS)
+
+Three runtime defects found in review of the entry above, fixed after main
+(including PR #1785's World Model artifact/generator) was merged into the
+branch. Full detail in `memory/features/admin-platform.md`'s "PR #1790
+review fixes" subsection; summarized here for the change record.
+
+1. **`fetch.ts`'s `isUnappliedMigrationError`** only recognized
+   `42883`/`42P01`/a "does not exist" message. PostgREST actually answers a
+   HELD migration's unknown RPC with `PGRST202`, which that classifier
+   never matched — every `/admin/engineering` `AutoRefresh` poll rendered a
+   red "read failed" alert instead of the not-yet-live empty state. Fixed
+   to match `helm-debug-prune/route.ts`'s `isMigrationNotAppliedError`
+   exactly (four codes: `PGRST202`, `42883`, `42P01`, `3F000`).
+2. **Runtime `readFile` calls against `docs/generated/**`/`supabase/
+   migrations/HELD.md`/`config/mutation-gate.json`** were invisible to
+   Next's build-time file tracer (it only follows the static import graph)
+   and `docs/` was fully excluded from the Vercel upload — so even once the
+   artifacts existed, production would never have served them. Fixed:
+   `.vercelignore` carves the three `docs/generated/*` files back in;
+   `next.config.mjs` gained an `outputFileTracingIncludes` entry for
+   `/admin/engineering` naming all five files; `blast-radius.ts` gained a
+   module-level `WORLD_MODEL.json` parse cache keyed by `mtimeMs`.
+3. **`record.ts`'s `buildAgentRunPayload`** spread `sanitizeMetadata(...)`
+   LAST, so a metadata key colliding with a structured column name
+   silently overwrote the clamped value (defeating the confidence cap
+   among others); `sanitizeMetadata` was also top-level-only, so a nested
+   object/array in `metadata` passed through completely unbounded. Fixed:
+   metadata now spreads first; sanitization is recursive with depth (4),
+   per-level key count (40), per-string length (600, unchanged), and total
+   byte budget (32,000) bounds; the RPC call races a 1500ms timeout
+   (`RECORD_AGENT_RUN_TIMEOUT_MS`) matching `helm-flight-recorder.ts`'s
+   `PERSIST_START_TIMEOUT_MS` pattern, so a hung write cannot block the
+   self-heal loop calling this mid-run.
+
+Non-blocking, also fixed: two "SECURITY DEFINER" prose mentions in the
+migration reworded to "security-definer"; stale World-Model-doesn't-exist
+copy updated across `blast-radius.ts`, `page.tsx` and the feature doc; the
+hard-coded illustrative causal-confidence example (a fabricated release SHA
+and confidence number rendered unconditionally on a production surface)
+removed from `/admin/engineering` in favor of a plain-text, no-fabricated-
+numbers explanation; `AgentRunRecord.finishedAt` is now sent in the RPC
+payload (still lands in the row's `metadata`, not the `finished_at` column
+— the migration's own RPC deliberately computes that column from the
+status transition, not a caller-supplied timestamp).
+
+- **Tests added**: `fetch.test.ts` (+3: PGRST202 for both `fetchAgentRuns`
+  and `fetchAgentRun`, 3F000), `blast-radius.test.ts` (+3: cache hit on
+  unchanged mtime, cache miss on changed mtime, ENOENT still reports
+  `unconfigured`), `record.test.ts` (+6: spread-order regression, nested
+  unsafe-key stripping, depth cap, per-level key-count cap, total-byte
+  budget, timeout race both hung and fast-settling).
+- **Verified**: `npm run typecheck`, `npx eslint --max-warnings 0` on
+  changed files, `npx vitest run --maxWorkers=4` for
+  `src/lib/admin/agent-runs`, `src/lib/admin/engineering`,
+  `src/app/admin/engineering`, `src/app/admin/work-log`,
+  `node scripts/sql-lint-ratchet.mjs`,
+  `node scripts/knowledge/document-inventory.mjs --check`,
+  `node scripts/markdown-lint-ratchet.mjs` — all exit 0.
+- **Not verified**: no production deploy exercised the
+  `outputFileTracingIncludes`/`.vercelignore` fix end to end (this repo's
+  own rule: never run `next build`/`npm run build` in a mutation worktree,
+  disk is at the safety floor) — the fix is reasoned from Next.js's
+  documented file-tracing behavior and the exact file paths this code
+  reads, not verified against a real traced function bundle.
+
+## 2026-09-03 — Bridge Premium Observability Phase 2: Helm Command Deck (posture, System Orbit, Attention Stack, Decision Inbox, Release Wake, Self-Heal Circuit summary)
+
+Implements Phase 2 ("Overview Command Deck") of the owner's Bridge Premium
+Observability brief — the upper 40-50% of `/admin`, inserted above every
+existing panel, which is left unchanged. See
+`memory/features/admin-platform.md`'s "Phase 2 Command Deck" section for
+the full per-module description; summarized here for the change record.
+
+- **New read models** (`src/lib/admin/command-deck/`): `posture.ts`
+  (`derivePostureSentence`), `orbit.ts` (`buildSystemOrbit`, the fixed
+  8-node System Orbit — Realtime always `'unknown'`, no evidence source
+  covers it), `selfheal-circuit.ts` (`buildCircuitSummary`, the real
+  3-stage Diagnose/Repair/Close loop, not the brief's idealized 6-stage
+  one), `release-wake.ts` (`buildReleaseWake`, wiring Phase 0's
+  `classifyReleaseWatch`/`classifyReleaseRelationship` against real
+  evidence; latency/invariant lanes honestly `unknown`, no read model backs
+  them), `decisions.ts` + `held-migrations.ts` (`buildDecisionInbox`,
+  sourced from `selectAttention`'s `needs-evidence` rows and
+  `supabase/migrations/HELD.md`'s open `HOLD` rows).
+- **New components** (`src/components/admin/command-deck/`):
+  `PostureSentence.tsx`, `SystemOrbit.tsx` (server-rendered SVG, tokens
+  only, `motion-safe:` pulse; mobile swaps to a stacked node list — no
+  network diagram on a phone, brief §10/§41-43), `AttentionStack.tsx`
+  (top-5 compact sibling of the existing `AttentionQueue`, same
+  `selectAttention` data, user-impact badge via a presentational join onto
+  `UnifiedIncident.affectedUsers`), `DecisionInboxSummary.tsx`,
+  `ReleaseWakeRibbon.tsx`, `SelfHealCircuitSummary.tsx`, and the
+  composition `CommandDeck.tsx`.
+- **Wiring**: `src/app/admin/page.tsx` gained one `PanelBoundary`-wrapped
+  `<CommandDeck />` above the existing "Right now" section. `CommandDeck.tsx`
+  gathers all six upstream reads via one `Promise.all` (all fail-soft; none
+  throw) rather than per-panel fetches — avoids a second live GitHub-API
+  round trip beyond `MissionTruthStrip`'s existing one
+  (`fetchDeployFreshness`/`fetchBriefing` are not React `cache()`-memoised)
+  and buys no independent streaming anyway, since every panel reads the
+  same shared data.
+- **Fixed during review**: `orbit.ts`'s Jobs node defaulted to `'healthy'`
+  when the self-heal board itself was unreadable (only `selfHealStalled`
+  gated it, defaulting `false`) — added `selfHealReadable` to `OrbitInput`
+  so an unread board renders Jobs `'unknown'`, never healthy on silence.
+  `release-wake.ts`'s `selfHealActions` lane was unconditionally
+  `knownLane(...)` even with `deployedAtMs: null` — gated it the same as
+  the other since-deploy lanes so a caller's default `0` (itself only
+  computed because it, too, could not establish the deploy time) reads as
+  unknown, not as a confirmed zero.
+- **Registry**: `memory/registry.yml`'s `admin_platform.code.components`
+  gained `src/components/admin/command-deck/**` — `knowledge:map` resolved
+  it to `impactedFeatures: []` before this entry (verified by direct
+  `knowledge:map -- --files` invocation both before and after the fix).
+  `src/lib/admin/command-deck/**` already resolved via the existing
+  `src/lib/admin/**` glob; no change needed there.
+- **Known gap, not fixed here**: `AttentionRow.headline` (`attention.ts`,
+  outside this task's ownership — Phase 1's territory) still reads
+  `incident.description`, not Phase 0's `IncidentPresentation.title` — the
+  posture sentence and Attention Stack surface the same headline
+  `/admin/errors` shows today, not yet brief §7's deterministic
+  plain-English title.
+- **Shared primitives**: the sibling `bridge-premium-p1` branch (posture
+  pill / evidence chips / confidence meter / unknown-treatment / episode
+  strip under `src/components/admin/premium/*`) had not pushed to
+  `origin` as of this entry (`git fetch` + `git ls-remote` checked at
+  session start and again before finishing). `tone.ts` and every component
+  here are local, small (~40 lines of presentation each) and additive —
+  nothing duplicates `premium/*`; swapping to it later is a straightforward
+  per-component import change.
+- **Tests**: 53 vitest cases across 11 new files (5 read-model files under
+  `src/lib/admin/command-deck/__tests__/`, 6 component-render files under
+  `src/components/admin/command-deck/__tests__/`) — five fixtures per read
+  model (healthy / blind source / regression / decision waiting /
+  all-unknown), render tests via `@testing-library/react` for every
+  component. Full suite run green, exit code checked independently
+  (`npx vitest run --maxWorkers=4 src/lib/admin/command-deck
+  src/components/admin/command-deck`, never piped through `tail`).
+- **Verified**: `npm run typecheck` (whole repo, exit 0, both before and
+  after the render-layer additions) and `npx eslint ... --max-warnings 0`
+  scoped to every new/changed file (one warning fixed — an arbitrary
+  `text-[10px]` replaced with the canonical `text-caption` scale).
+- **Not done**: no live-network verification that `held-migrations.ts`'s
+  `fs.readFile` of `supabase/migrations/HELD.md` survives a real Vercel
+  serverless bundle — this repo has no `outputFileTracingIncludes` entry
+  for it in `next.config.mjs`, and confirming one would need a real
+  `npm run build`, out of this task's gate scope. The read degrades safely
+  either way (`null` -> `readable: false`, never a silently-empty inbox),
+  but the fix (if the read does fail in production) is a `next.config.mjs`
+  entry, not a change to `decisions.ts`'s shape. No dedicated
+  `CommandDeck.tsx` integration test (no established repo precedent for
+  mocking six modules to test an async Server Component this way) — its
+  wiring is exercised by `npm run typecheck` plus every constituent
+  read-model/component test.
+
+## 2026-09-03 — Command Deck: merged in `bridge-premium-p1`'s shared primitives, swapped two hand-rolled chips
+
+`bridge-premium-p1`'s `src/components/admin/premium/*` had not pushed to
+`origin` when the previous entry was written; it pushed shortly after. Per
+the task's own instruction ("if the primitives you need exist there, merge
+them in and import them"), re-checked with `git fetch origin
+agent/bridge-premium-p1`, found real primitives this time (`PosturePill`,
+`ReleaseWatchPosturePill`, `UnknownValue`, `EvidenceSourceChips`,
+`ConfidenceMeter`, `EpisodeTimelineStrip`, `ReleaseRelationshipLabel`,
+`EvidenceInspector` — 19 files, ~1857 lines), and merged:
+`git merge --no-edit origin/agent/bridge-premium-p1` — clean, no conflicts
+(disjoint file sets; the only shared-directory neighbor is
+`src/lib/admin/incidents/**`, which that branch only ADDED to via two new
+files, `genome.ts`/`release-watch.ts`).
+
+- **`PostureSentence.tsx`**: the hand-rolled tone chip (a `<span>` styled
+  from `POSTURE_TONE_RAIL`) is now `PosturePill`, tone mapped through
+  `POSTURE_TONE_STATE_TONE` (`command-deck/types.ts`) since this module's
+  `PostureTone` (four values) is coarser than `PosturePill`'s
+  `StateTone | 'unknown'` (six). `PosturePill`'s own `'unknown'` branch
+  already renders `UnknownValue`'s hatched treatment rather than a colored
+  pill — a strictly better fit than what was hand-rolled.
+- **`ReleaseWakeRibbon.tsx`**: the hand-rolled `WATCH_LABEL`/`WATCH_TONE`
+  maps (14 lines, duplicating `RELEASE_WATCH_LABEL` from
+  `release-context.ts`) are deleted; the watch-state chip is now
+  `ReleaseWatchPosturePill`, which already maps every `ReleaseWatchState` to
+  the identical label plus a real "why unknown" tooltip this file never had.
+- **`command-deck/tone.ts`**: dropped `POSTURE_TONE_INK`/`POSTURE_TONE_RAIL`/
+  `NODE_STATE_INK`/`NODE_STATE_RAIL` (dead after the `PostureSentence.tsx`
+  swap — `NODE_STATE_*` had been dead from the start, since `SystemOrbit.tsx`
+  needs `var(--fw-*)` CSS strings for SVG fill/stroke, not Tailwind classes,
+  and always built its own separate map). Kept only `TONE_RAIL`/`TONE_INK`
+  (`StateTone`-keyed), still used by `AttentionStack.tsx`'s row rail — no
+  `premium/*` primitive covers that list-row shape.
+- **Cleanup**: `ReleaseWakeSnapshot.watchState` and
+  `PostureInput`/`PostureSentence.releaseWatch` were typed
+  `ReleaseWatchState | 'unknown'`, a redundant union — `ReleaseWatchState`
+  already includes `'unknown'` as one of its seven members. Simplified to
+  `ReleaseWatchState` in both files; no behavior change, caught while
+  wiring `ReleaseWatchPosturePill`'s `state` prop (typed as the bare
+  `ReleaseWatchState`) against the redundant union and confirming they were
+  structurally identical rather than assuming it.
+- **Verified**: `npm run typecheck` (whole repo, exit 0), `npx eslint
+  src/lib/admin/command-deck src/components/admin/command-deck
+  --max-warnings 0` (exit 0), and the combined suite —
+  `npx vitest run --maxWorkers=4 src/lib/admin/command-deck
+  src/components/admin/command-deck src/components/admin/premium
+  src/lib/admin/incidents/__tests__/genome.test.ts
+  src/lib/admin/incidents/__tests__/release-watch.test.ts` — 92/92 green
+  (54 own + 38 from the merged branch), exit code checked independently.
+  No test assertions needed changing: `ReleaseWatchPosturePill` renders the
+  identical label strings (`RELEASE_WATCH_LABEL`) the deleted hand-rolled
+  map used.
+
+## 2026-09-03 — Bridge Premium Observability Phase 1: incident cards, Incident Genome, Release Watch, Evidence Inspector
+
+**What**: wired the Phase 0 truth models (previous entry) into `/admin/errors`
+and `/admin/errors/[fingerprint]`, per the same brief's §14/§9/§12/§13/§45
+(Phase 1, "Incidents + release tracking"). Two new adapter modules, a shared
+visual-vocabulary directory, and additive changes to the existing incident
+card and detail page.
+
+- **`genome.ts`** (`src/lib/admin/incidents/`): `buildIncidentEvidenceCoverage`
+  (maps `UnifiedIncident.sources` onto three of `coverage.ts`'s six cells
+  plus a repair-derived GitHub reading — `flight-recorder`/`jobs` always
+  `unknown`, no signal exists for either), `buildIncidentEpisodes` (adapts
+  `episodes.ts` to the two timestamps + one current resolution
+  `UnifiedIncident` carries; flags `timelineIncomplete` against
+  `resolution.reopenedCount` rather than fabricating episode boundaries it
+  cannot see), `buildBoardAliasGroups`/`buildIncidentGenome` (`aliases.ts`'s
+  second pass over a board, using only the fields `UnifiedIncident` actually
+  has — no trace ids/normalized frames exist yet, so only the classifier's
+  `highest`/`medium` tiers can fire in practice; documented, not hidden).
+- **`release-watch.ts`** (`src/lib/admin/incidents/`): wires
+  `release-context.ts`/`release-compare.ts` onto `release-ledger.ts`'s
+  already-existing deploy history (`fetchReleaseLedger`) rather than
+  re-deriving deploy data. `classifyIncidentReleaseRelationship` (pure,
+  tested) uses `firstSeen` vs. deploy time plus whether the incident's
+  feature shows a worsening delta in `ReleaseCardData.topFeatureDeltas` —
+  the one real corroborating signal available; every other evidence field is
+  `null`. `fetchCurrentReleaseWatch` (I/O, untested, matches
+  `fetchDeployFreshness`'s convention) always passes `dbSourceBlind: true` —
+  journey success, DB p95 and invariant breaches have no read model in this
+  repo yet, so they render `unknown`, never a fabricated zero.
+- **`src/components/admin/premium/**`** (new directory): `PosturePill` (one
+  tone-mapping surface for closed-vocabulary states — `unknown` routes
+  through `UnknownValue`'s hatched treatment, never a plain gray pill),
+  `EvidenceSourceChips`/`SourceConfidenceRing` (the six-source model, blind
+  vs. partial vs. never-attempted rendered as three distinct states),
+  `ReleaseRelationshipLabel`, `ConfidenceMeter` (structurally clamps below
+  100% and warns in dev if ever passed `1`, on top of every producer already
+  capping below 1), `EpisodeTimelineStrip`, `UnknownValue`/`UnknownInline`,
+  and `EvidenceInspector` (the shared Fairway `Sheet`, Summary/Evidence/
+  Timeline/Repair tabs, typed against a narrow `EvidenceInspectorData`
+  rather than a raw `UnifiedIncident` so a later phase can open it for a
+  release/feature/journey/trace without fabricating a fake incident).
+- **UI wiring**: `UnifiedIncidentCard` gained four optional props
+  (`presentation`, `genome`, `releaseRelationship`, `onInspect`) — additive;
+  a caller that does not pass them renders unchanged. Title prefers the
+  Phase 0 human title over `incident.description`; a muted-mono technical
+  signature line renders beneath it; a release relationship label renders
+  whenever a Release Watch was computed (`undefined` = omitted,
+  `null` = computed-but-unanswerable, rendered hatched); an episode
+  timeline strip renders only when an incident has actually regressed
+  (`episodes.length > 1`); an "Inspect" trigger opens the shared Evidence
+  Inspector. `UnifiedIncidentQueue` owns ONE `EvidenceInspector` instance
+  (not one per row — a per-card Sheet for every row in a long list is
+  exactly the payload §41 asks to avoid) and threads `presentations`/
+  `genomeByIncident`/`releaseRelationships` down. `/admin/errors/page.tsx`
+  computes all three per render and adds a new `ReleaseWatchPanel` (Runtime
+  Identity Triplet, new/regressed fingerprint counts, baseline comparison)
+  above the queue. `/admin/errors/[fingerprint]/page.tsx` renders the human
+  title as an `<h2>` (the page's `<h1>` stays the raw fingerprint — the
+  stable identifier every RCA row/repair artefact keys on) plus a new
+  `IncidentGenomePanel` (occurrence timeline, root-cause alias group with
+  each member's merge tier and reason, attached evidence chips).
+- **Scope note**: same as the Phase 0 entry — filed under `admin_platform`
+  because `memory/registry.yml` has no separate `admin_incidents`/
+  `observability` feature id for this surface as of this entry, not because
+  the work is narrowly scoped. `src/components/admin/premium/**` added to
+  that entry's component glob in the same change.
+- **Tests**: 51 new tests across 12 new `__tests__` files — `genome.test.ts`
+  8, `release-watch.test.ts` 5 (pure half only, per the `fetchDeployFreshness`
+  convention), seven `src/components/admin/premium/__tests__/*` files 25,
+  `UnifiedIncidentCard.premium.test.tsx` 7 (new props only — the
+  pre-existing 580-line card's own behavior is unchanged and untouched by
+  this suite), `ReleaseWatchPanel.test.tsx` 3, `IncidentGenomePanel.test.tsx`
+  3. All ran green per-file. Full `src/app/admin` + `src/lib/admin/incidents`
+  + `src/components/admin` suite (859 tests across 83 files at commit time)
+  run green, exit code checked independently of `tail`.
+- **Verified**: `npm run typecheck` (whole repo, exit 0) after each
+  incremental change. `npx vitest run --maxWorkers=4` on each new/changed
+  test scope, output captured to file with exit code checked separately —
+  never piped through `tail`.
+- **Fixed along the way**: an unrelated `node_modules/node_modules/react`
+  duplication in this worktree (caused by re-running `cp -Rc` against an
+  already-partially-populated destination from an earlier interrupted copy),
+  which produced two React copies and "Invalid hook call" in any test
+  mounting Fairway's `Sheet`. Removed and re-cloned cleanly; not a repo
+  defect, a one-time local setup mistake.
+- **Not done**: `EvidenceInspector` is not opened from `IncidentGenomePanel`
+  or `ReleaseWatchPanel` in this entry, only from the incident card — a
+  later phase can wire additional triggers to the existing shared instance
+  pattern without rebuilding the component. No baseline comparison for
+  journey success/DB p95/invariant breaches (no read model exists anywhere
+  in this repo yet — later Phase D work per `release-compare.ts`'s own
+  header). `ReleaseWatchPanel` lives on `/admin/errors`, not a new
+  `/admin/deploys` Release Runway — that full view is Phase 3's territory
+  per the brief's own implementation order (§45).
+
+## 2026-09-03 — App and customer lenses (Bridge Premium Observability Phase 4)
+
+Source: `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`
+§20-27 (resolves in this checkout, on `main`). Seven new pure read models
+(`src/lib/admin/lenses/*.ts`), five new Fairway-token components
+(`src/components/admin/lenses/*.tsx`), and six new pages
+(`src/app/admin/lenses/**`) — see the feature doc's new "Phase 4 lenses"
+section for the full per-module description; not restated here.
+
+- **Reuse audit performed before writing anything**: `/admin/teams`
+  (`pulse-grid.ts` + `EkgSparkline`), `/admin/utilization`
+  (`feature-adoption.ts` + `AdoptionHeatGrid`) and
+  `/admin/thread/[entity]/[id]` (`entity-thread.ts`) already ship
+  substantially what the brief describes for Teams EKG, the Adoption Map
+  and semantic threads. `teams-ekg.ts` and `adoption-map.ts` wrap those
+  existing functions rather than re-querying `admin_events`;
+  `activity-threads.ts` links to the existing thread page instead of
+  rebuilding it. The five new `/admin/lenses/*` routes are net-new and sit
+  alongside the pre-existing `/admin/{golf,baseball,lifting,teams,users}`
+  tabs, which were NOT edited or retired — that overlap is disclosed to the
+  owner in the PR body, not resolved here.
+- **`admin_events` cannot fund a usage funnel** — it is overwhelmingly a
+  failure/soft-failure log (`withAdminObserved`'s own contract). Every
+  attempts/completions number in this phase is sourced from a durable
+  domain table (`golf_rounds`, `helm_lifting_*`, `baseball_players`,
+  `baseball_developmental_plans`) or is honestly `null`; the only
+  admin_events rows treated as usage are the confirmed genuine
+  positive-signal writers (`logLogin`/`logSignup`/`logRoundSubmitted`/
+  `logAIGeneration`).
+- **`memory/registry.yml`**: added `src/components/admin/lenses/**` under
+  `admin_platform.code.components` — `knowledge:map` resolved it to
+  `impactedFeatures: []` before this change (the existing
+  `src/app/admin/**`/`src/lib/admin/**` globs already covered the read
+  models and pages). `node scripts/check-registry-globs.mjs` passes (0
+  dead entries) after the addition.
+- **`ADMIN_NAV`** (`src/app/admin/_components/admin-nav.ts`): 5 new entries
+  under Platform (`/admin/lenses/{golf,baseball,lifting,teams,users}`),
+  keys `G`/`A`/`P`/`E`/`D` — every digit 1-9/0 and every previously-used
+  letter shortcut was already taken. `/admin/lenses/users/[id]` is a
+  `DETAIL_LEAVES` entry in `nav-covers-every-route.test.ts` (same pattern
+  as `/admin/users/[id]`), not a nav entry. `AdminShell.tsx`'s
+  `NAV_ICON_BY_HREF` map got 5 matching icons
+  (`Route`/`Milestone`/`TrendingUp`/`LineChart`/`Footprints`) — the map is
+  exhaustively typed over `AdminHref`, so `tsc` catches a missing entry.
+- **Tests**: 32 read-model tests (`src/lib/admin/lenses/__tests__/`, one
+  file per module) via a shared queued-chainable Supabase-client mock
+  (`test-helpers.ts` — handles modules that call `.from('admin_events')`
+  multiple times in one `Promise.all` with different expected results per
+  call, which the codebase's existing single-chain mock pattern does not);
+  17 render tests (`src/components/admin/lenses/*.test.tsx`,
+  `@testing-library/react`). Both suites plus the three nav-consistency
+  tests and the per-export `requireSuperAdmin` gate-coverage test ran
+  green together (97 tests, 16 files) after the nav-registry commit.
+- **Verified**: `npx tsc --noEmit -p .` (repo-wide, 0 errors) and
+  `npx eslint <changed paths> --max-warnings 0` (0 warnings — fixed 8
+  `helm/no-arbitrary-text-px` violations to the canonical `text-caption`
+  scale) after every commit, each checked independently of the command's
+  own stdout tail.
+- **Not done**: no live-browser smoke check of the six pages (super-admin
+  gate + no local credentials available, same limitation the Phase 0 entry
+  above and the AI-availability test file both record); `AdoptionMapPanel`/
+  `ActivityThreadsPanel` are supporting panels embedded in the Teams lens
+  page rather than standalone routes, since the brief names 5 top-level
+  pages, not 7, and the team-lead task brief's own fallback instruction
+  ("or the routes the brief names if it names them") left no named route
+  for either.
+
+## 2026-09-03 — Bridge Premium Phase 3: triage tabs (Constellation, Braid, Circuit, Waterfall, Heartbeat, Runway)
+
+- **Scope**: eight new pure/server read models under `src/lib/admin/triage/`
+  (`self-heal-circuit.ts`, `job-waterfall.ts`, `heartbeat-matrix.ts`,
+  `invariant-lattice.ts`, `feature-constellation.ts`, `evidence-braid.ts`,
+  `trace-incident-link.ts`, `release-runway.ts`) feeding six existing pages
+  (`/admin/health`, `/admin/jobs`, `/admin/reliability`, `/admin/self-heal`,
+  `/admin/traces`, `/admin/deploys`) — see the feature doc's "Phase 3 triage
+  tabs" section for what each module reads and every honest gap it
+  documents rather than fabricates (untracked self-heal budget, unknown
+  schema/business-contract invariants, no-edge-source constellation
+  fallback, unlinked flight-recorder/jobs evidence, no rollback
+  recommendation).
+- **Additive-only data-layer change**: `data/selfheal.ts`'s `SelfHealBoard`
+  gained `repairLink: RepairPrLink | null` — the newest PR naming an
+  incident, sourced from the work-log read that file already performs.
+  Nothing else in `src/lib/admin/data/` or `src/lib/admin/incidents/`
+  changed.
+- **Merged `agent/bridge-premium-p1`** (shared `src/components/admin/
+  premium/*` primitives) mid-task once it landed. `ReleaseRunwayStrip.tsx`
+  refactored to import `ReleaseWatchPosturePill` instead of keeping a local
+  tone table — the one direct 1:1 match among p1's seven primitives.
+  Fixed six pre-existing lint warnings in the merged-in `premium/*` files
+  (arbitrary Tailwind values, one unused eslint-disable) so the merge did
+  not carry lint debt into this PR's gate.
+- **Verified**: `npm run typecheck` and `npm run lint` (0 warnings) on the
+  full tree after the merge, exit code checked independently of stdout.
+  `npx vitest run --maxWorkers=4` across every new triage module/component
+  test plus the six touched pages' existing suites plus the merged-in
+  `premium/*` suite — all green (see the tests ledger entry below for
+  counts).
+- **Not done**: no live per-release migration-head history (accepted,
+  documented in release-runway.ts's own header); no incident-to-
+  background-job linkage for the Evidence Braid's `jobs` lane (reads
+  `unknown` honestly); Feature Constellation edges are a shared-table
+  fallback, not a true dependency graph, since neither
+  `WORLD_MODEL.json` under `docs/generated` nor `memory/registry.yml` carries
+  feature-to-feature edges in this repo today.
+
+## 2026-09-03 — Bridge Premium Phase 6: polish (motion, keyboard, mobile, loading/error, performance, a11y audit)
+
+- **Scope**: audited what was actually on `main` at task start against the
+  Phase 6 brief
+  (`docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`
+  §41-46) — Phase 0 truth models, Phase 3 triage tabs, Phase 4
+  lenses, the shared `src/components/admin/premium/*` primitives, and the
+  admin shell. Phases 1/2/5 were not on `main` and were not touched; fixes
+  here (especially the new motion guard test) apply to them by convention
+  once they land.
+- **Fixed, with a regression test each**:
+  - 4 unguarded Tailwind motion utilities (2 infinite `animate-pulse`/
+    `animate-spin` loops, 2 transform-transitions) across
+    `activity/page.tsx`, `TracerRoundDiagnostic.tsx`, `TracerIncidentRow.tsx`,
+    `TracerPlayerList.tsx`. New
+    `src/app/admin/__tests__/admin-motion-guard-coverage.test.ts` scans
+    `src/app/admin/**` + `src/components/admin/**` for the same class of gap
+    going forward.
+  - AdminShell's global keydown handler ate Shift+R for "refresh" before
+    `hrefForShortcut` ever saw it, permanently unreachable-ing Reliability's
+    `'R'` `ADMIN_NAV` shortcut. Fixed via `RESERVED_LOCAL_SHORTCUTS`
+    (`admin-nav.ts`) plus a collision-regression test in `admin-nav.test.ts`.
+  - `NavItem.shortcut` had no `aria-keyshortcuts` companion — reachable but
+    never announced. `FairwaySidebar.tsx` now emits it (digit verbatim,
+    letter as `Shift+<letter>`) and hides the now-redundant visible badge
+    from assistive tech, with 4 new tests in `FairwaySidebar.test.tsx`.
+- **Verified clean, no change needed** (see the feature doc's "Phase 6
+  polish" section for the full evidence trail): the "unknown never renders
+  as zero" rule across `incidents/triage/lenses` read models; no
+  SVG-wraps-a-focusable-link pattern; mobile horizontal-overflow risk on the
+  eleven in-scope pages; per-panel loading/error coverage (`PanelBoundary`);
+  duplicate-fetch performance risk in Phase 3/4 read models; `accent-500`
+  contrast-failing token usage in admin.
+- **Blocked, documented rather than worked around**: automated axe coverage
+  and the Sentry Snapshots visual-regression flow both need a super-admin
+  Playwright auth fixture that does not exist (`e2e/accessibility.spec.ts`
+  and the sentry-snapshots specs are both auth-gated per-caller today, and
+  neither has one for `SUPER_ADMIN_USER_IDS`). Standing one up is auth
+  infrastructure, not a route-table addition — not built, per the task
+  brief's own instruction not to invent a new screenshot/audit system.
+- **Verified**: `npx tsc --noEmit` clean. New/changed tests
+  (`admin-motion-guard-coverage.test.ts`, `admin-nav.test.ts`,
+  `FairwaySidebar.test.tsx`) run scoped via
+  `npx vitest run --maxWorkers=4 <paths>` — 17/17 passing, including a
+  manual revert-and-rerun of the motion guard test to confirm it actually
+  fails on the violation it exists to catch (then restored).

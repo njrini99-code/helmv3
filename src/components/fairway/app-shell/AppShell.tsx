@@ -301,6 +301,27 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   // viewport via useSyncExternalStore's snapshot check.
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
+  // #4 (tablet portrait / compact width, GAPS_AUDIT_TABLET_LANDSCAPE
+  // 2026-09-02): the full 260px labeled rail doesn't collapse below 1024px,
+  // so a 810px-wide tablet gets ~550px of content that then stacks into a
+  // single column with dead space beside it. Force the icon rail in the
+  // 768–1023px band — rendering only, never the stored preference below, so
+  // >=1024px still honors whatever the user actually chose.
+  const isCompactWidth = useMediaQuery('(min-width: 768px) and (max-width: 1023px)');
+  // #2 (short viewport height, same audit): at 390px-tall mobile-landscape
+  // viewports the desktop rail mounts (width >= 768px) but only 2 of 8 items
+  // fit, with no visible scroll cue (`scrollbar-hidden` removes the only
+  // affordance). Icon-only rows are shorter, so force the rail collapsed
+  // here too; FairwaySidebar's `hideScrollbar` prop below additionally
+  // exposes the native scrollbar as the guarantee in case even the icon
+  // rail still overflows at this height.
+  const isShortViewport = useMediaQuery('(max-height: 500px)');
+  // Rendering-only override — deliberately NOT written to `collapsed` /
+  // `internalCollapsed` / localStorage, so a session that visits a compact
+  // or short viewport never corrupts the user's real preference.
+  const forcedCollapsed = isCompactWidth || isShortViewport;
+  const renderCollapsed = forcedCollapsed || collapsed;
+
   const topBarProps: FairwayTopBarProps = {
     breadcrumbs,
     onSearchOpen,
@@ -317,9 +338,11 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     flush: !!subNav,
   };
 
-  // Desktop content column offset by the (collapsed) rail width.
-  const railOffset = collapsed ? 'md:pl-[76px]' : 'md:pl-[260px]';
-  const railWidth = collapsed ? '76px' : '260px';
+  // Desktop content column offset by the (collapsed) rail width. Driven by
+  // `renderCollapsed`, not the raw `collapsed` state, so the compact-width /
+  // short-height overrides above and the offset never drift apart.
+  const railOffset = renderCollapsed ? 'md:pl-[76px]' : 'md:pl-[260px]';
+  const railWidth = renderCollapsed ? '76px' : '260px';
 
   // CommandPalette is mounted beside (rather than inside) AppShell by the
   // active Golf dashboard shell. Publish the rail width on documentElement as
@@ -370,8 +393,13 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
         <div className="hidden md:block">
           <FairwaySidebar
             {...sidebarProps}
-            collapsed={collapsed}
-            onToggleCollapsed={collapsible ? toggleCollapsed : undefined}
+            collapsed={renderCollapsed}
+            // Hidden (not just disabled) while a forced override is active —
+            // toggling "expand" wouldn't actually expand, since the compact/
+            // short-viewport override always wins, so a working-looking
+            // control there would read as broken.
+            onToggleCollapsed={collapsible && !forcedCollapsed ? toggleCollapsed : undefined}
+            hideScrollbar={!isShortViewport}
           />
         </div>
       )}

@@ -142,7 +142,14 @@ export function summarizeIncidentFeed(incidents: readonly TriageItem[]): Inciden
   const highSeverityGroups = incidents.filter(
     (item) => item.severity === 'critical' || item.severity === 'error',
   ).length;
-  const actionableGroups = incidents.filter((item) => item.actionable).length;
+  // `item.actionable` is left as the classifier's own verdict for a QA
+  // fixture round (it stays visible in the default feed, badged) — this
+  // count must still exclude it, same reasoning as `errors/page.tsx`'s
+  // `shownActionable` and `lens.ts`'s `actionable` lens. Catalogued
+  // defect (h); both tallies have to agree or the two surfaces that render
+  // them (`overview.ts` and `errors/page.tsx` both read `actionableGroups`)
+  // disagree with each other.
+  const actionableGroups = incidents.filter((item) => item.actionable && !item.isFixture).length;
   const affectedUsers = incidents.reduce((sum, item) => sum + item.affectedUsers, 0);
   return {
     totalGroups: incidents.length,

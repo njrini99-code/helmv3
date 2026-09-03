@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Surface, Inset, StatusPill, Badge, InlineNotice } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import {
@@ -12,6 +13,7 @@ import { LocalTime } from '../_components/LocalTime';
 import { TraceTree, EYEBROW_CLASS } from './TraceTree';
 import { TraceFleetStrip } from './TraceFleetStrip';
 import { stepCoverage } from './trace-fleet';
+import type { TraceIncidentLink } from '@/lib/admin/triage/trace-incident-link';
 
 function runTone(run: FlightTraceRun) {
   if (run.status === 'failure' || run.failure_step) return 'danger' as const;
@@ -20,7 +22,17 @@ function runTone(run: FlightTraceRun) {
   return 'neutral' as const;
 }
 
-export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) {
+export function TracesClient({
+  traces,
+  incidentLinks = {},
+}: {
+  traces: readonly FlightTraceRun[];
+  /** trace_id -> the incident this trace's evidence links to (Bridge Premium
+   *  Phase 3), or null when no incident's evidence names this trace's round.
+   *  See `trace-incident-link.ts` — deliberately conservative, so most
+   *  traces have no entry here rather than a guessed one. */
+  incidentLinks?: Readonly<Record<string, TraceIncidentLink | null>>;
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(traces[0]?.trace_id ?? null);
   const [detail, setDetail] = useState<FlightTraceDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -97,6 +109,11 @@ export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) 
                       {run.missing_required_step_count} never ran
                     </Badge>
                   )}
+                  {incidentLinks[run.trace_id] && (
+                    <Badge tone="danger" variant="outline" size="sm">
+                      {incidentLinks[run.trace_id]!.title}
+                    </Badge>
+                  )}
                   {/* Observed against declared, per run. Absent — never zero —
                       when either count is missing, so an unknown denominator
                       can't render as a confident fraction. */}
@@ -131,6 +148,30 @@ export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) 
               </span>
             )}
           </div>
+          {/* The Phase 0 human title for the incident this trace's evidence
+              links to (Bridge Premium Phase 3) — see trace-incident-link.ts.
+              Absent for most traces on purpose: this is a conservative,
+              ref-matched link, not a guess. */}
+          {selectedId && incidentLinks[selectedId] && (
+            <InlineNotice tone="danger" title="Linked incident">
+              {incidentLinks[selectedId]!.href ? (
+                <Link href={incidentLinks[selectedId]!.href as string} className="underline underline-offset-2">
+                  {incidentLinks[selectedId]!.title}
+                </Link>
+              ) : (
+                incidentLinks[selectedId]!.title
+              )}
+            </InlineNotice>
+          )}
+          {/* Only ever present on the DETAIL response — helm_debug_get_trace
+              returns the run's full metadata, helm_debug_list_traces does
+              not — so this can only ever appear once a trace is opened. See
+              the doc comment on FlightTraceRun's status_downgraded_from. */}
+          {detail?.run.status_downgraded_from && (
+            <InlineNotice tone="warning" title={`Claimed ${detail.run.status_downgraded_from}, downgraded`}>
+              {detail.run.status_downgraded_reason}
+            </InlineNotice>
+          )}
           {/* Says what the CODE contains — checkable — and nothing about the live
               value of HELM_FLIGHT_RECORDER_ENABLED, which is a deploy-time
               environment fact this page cannot read. An earlier draft asserted

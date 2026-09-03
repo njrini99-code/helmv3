@@ -1,0 +1,274 @@
+name: Sentry Snapshots
+
+# Visual-diff CI for PRs, via Sentry's Snapshots product (Beta). Captures a
+# fixed, named set of screenshots — public pages, GolfHelm player screens,
+# BaseballHelm coach + player screens — from THIS PR's own build, and
+# uploads them with sentry-cli for Sentry to diff head against base and post
+# a status check. See docs/observability/SENTRY_SNAPSHOTS.md for the full
+# design, the screen list, determinism rules, and the advisory-then-required
+# plan.
+#
+# WHY A NEW WORKFLOW, NOT A JOB IN visual-audit.yml: that workflow crawls
+# EVERY discovered baseball route from a live DOM (no fixed file names, no
+# fixed count) against a manual-only production target — the opposite of
+# what a diffing tool needs, which is a STABLE set of named images so the
+# same filename means the same screen on every run. This workflow instead
+# reuses visual-audit.spec.ts's settle pattern and the baseball-coach /
+# baseball-player Playwright projects' proven auth (see e2e/fixtures/
+# sentry-snapshot-helpers.ts and playwright.config.ts) against a curated
+# route table in e2e/sentry-snapshots.spec.ts + e2e/sentry-snapshots-baseball.spec.ts.
+#
+# WHY THIS RUNS AGAINST PRODUCTION DATA, NOT A LOCAL THROWAWAY STACK (unlike
+# ci.yml's baseball-auth-smoke): no GolfHelm demo-seed script exists in this
+# repo — only scripts/seed-baseball-demo.ts does, for baseball. Building that
+# for golf too, to run entirely against a disposable local stack, is out of
+# this change's scope and would double this job's runtime on top of the
+# ~17-minute cost that got baseball-auth-smoke moved OFF the PR gate in the
+# first place (see that job's own comment in ci.yml). Every test here is
+# STRICTLY READ-ONLY (navigate + screenshot only, same discipline as
+# e2e/appstore-screenshots.spec.ts), and content that could legitimately
+# drift between runs (clocks, relative timestamps) is masked — see
+# e2e/fixtures/sentry-snapshot-helpers.ts.
+#
+# WHY BOTH `pull_request` AND `push: main`: Sentry diffs a PR's head build
+# against a base build resolved from git metadata (merge-base with `main`).
+# A base build only exists if something uploads on push to `main` too —
+# without that trigger, every PR would upload a head with no base to diff
+# against, and the status check would never have anything to say. See
+# docs/observability/SENTRY_SNAPSHOTS.md "How it works".
+#
+# ADVISORY, NOT REQUIRED (owner plan — see docs/observability/SENTRY_SNAPSHOTS.md
+# "Advisory-then-required plan"): this workflow is not added to branch
+# protection's required checks. A capture failure here can never block a
+# merge on its own; only promoting it into the required list later can.
+#
+# SECURITY: zero untrusted user input in run: blocks — only trusted secrets,
+# github.sha, and a workflow_dispatch-free set of pull_request/push events.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: sentry-snapshots-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Cheap on every PR (a few seconds): decide whether the heavy job below
+  # should run at all. Two independent reasons to skip, both intentional
+  # cost controls learned from this repo's CI history (see ci.yml's own
+  # "PR throughput" note and baseball-auth-smoke's move off the PR gate):
+  #   1. No SENTRY_AUTH_TOKEN secret yet — capturing screenshots nobody can
+  #      upload is pure cost with no product. Re-arms itself automatically
+  #      once the owner adds the secret (see docs, "OWNER ACTION").
+  #   2. On a `pull_request` run, no frontend/e2e-relevant path changed —
+  #      mirrors pr-smoke.yml's `detect-changes` job exactly, so a docs-only
+  #      or backend-only PR never pays for a Next build + Playwright browser
+  #      install + capture it has no reason to need. A `push` to `main`
+  #      always runs regardless (see header: main refreshes the base build).
+  gate:
+    name: Check Sentry snapshot prerequisites
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.token.outputs.enabled }}
+      relevant: ${{ steps.paths.outputs.relevant }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # `if:` cannot read `secrets.*` directly (GitHub Actions does not
+      # expose the secrets context to job/step `if:` conditions) — resolve it
+      # to a step output here instead, exactly the way ci.yml's own
+      # detect-changes -> needs.*.outputs pattern gates next-build.
+      - name: Check for SENTRY_AUTH_TOKEN
+        id: token
+        env:
+          TOKEN_SET: ${{ secrets.SENTRY_SNAPSHOTS_AUTH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [ "$TOKEN_SET" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SENTRY_AUTH_TOKEN is not set — Sentry snapshot capture and upload are skipped. See docs/observability/SENTRY_SNAPSHOTS.md OWNER ACTION."
+          fi
+
+      - name: Check changed paths
+        id: paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            echo "non-PR event (push to main refreshes the base build) -> relevant"
+            exit 0
+          fi
+          if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            echo "missing base/head sha -> relevant (fail closed)"
+            exit 0
+          fi
+          if ! changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")"; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            echo "git diff failed -> relevant (fail closed)"
+            exit 0
+          fi
+          if echo "$changed" | grep -Eq '^(src/|e2e/|public/)|^(playwright\.config\.ts|package\.json|package-lock\.json)$|^\.github/workflows/sentry-snapshots\.yml$'; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            echo "Frontend/e2e paths changed -> Sentry snapshots will run."
+          else
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+            echo "No frontend/e2e path changes -> skipping Sentry snapshots."
+          fi
+
+  snapshots:
+    name: Capture + upload Sentry snapshots
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true' && needs.gate.outputs.relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Real secrets on same-repo PRs; ci.yml's own dummy fallback (a fork/
+      # Dependabot PR gets no secrets and `enabled` above is false anyway,
+      # so this job never actually starts without them — the fallback here
+      # only keeps `npm run build` from throwing on an unset var).
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
+      # e2e/fixtures/golf-auth.ts's player role falls back to E2E_GOLF_* on
+      # its own; GOLFHELM_PLAYER_* is set explicitly here anyway so
+      # playwright/auth.setup.ts's identical fallback-free read also works
+      # if anything ever depends on it. No GOLFHELM_COACH_* secret exists —
+      # golf coach screens are not captured; see the spec file header.
+      GOLFHELM_PLAYER_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
+      GOLFHELM_PLAYER_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+      E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
+      E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+      E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
+      E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
+      E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
+      E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
+      SENTRY_SNAPSHOTS: "1"
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      # fetch-depth 0: Sentry Snapshots resolves the base build from git
+      # metadata (merge-base against main) — a shallow clone would give
+      # sentry-cli nothing to compute that from.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # READ-ONLY restore of the SAME cache namespace ci.yml's `next-build`
+      # job writes (lockfile-prefix restore-key, not the exact-SHA key it
+      # saves under) — a warm run reuses whatever main's last build already
+      # compiled instead of paying a full cold build here too. Never saves:
+      # ci.yml's own comment on this exact mechanism measured the save step
+      # alone at ~99s per run, worth paying once (push to main) not on every
+      # PR.
+      - name: Restore Next build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v4
+        with:
+          path: .next/cache
+          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            next-build-${{ runner.os }}-
+
+      - name: Build (this PR's own frontend)
+        run: npm run build
+
+      # ONE Playwright invocation across both spec files and all three
+      # projects, not two separate `playwright test` calls — a second call
+      # would try to bind another webServer on port 3000 right after the
+      # first one tears down, the exact port-contention risk
+      # pr-smoke.yml's "Start dev server" step comment documents. `chromium`
+      # picks up the public + golf-player file (not excluded from its
+      # testIgnore); `baseball-coach` / `baseball-player` pick up the
+      # baseball file via their testMatch (playwright.config.ts) and their
+      # `@coach` / `@player` tag filters — see that file's comments.
+      - name: Capture Sentry snapshot screenshots
+        run: |
+          npx playwright test \
+            --project=chromium \
+            --project=baseball-coach \
+            --project=baseball-player \
+            e2e/sentry-snapshots.spec.ts \
+            e2e/sentry-snapshots-baseball.spec.ts
+
+      - name: Count captured images
+        id: count
+        run: |
+          set -euo pipefail
+          dir="test-results/sentry-snapshots"
+          if [ -d "$dir" ]; then
+            count=$(find "$dir" -name '*.png' | wc -l | tr -d ' ')
+          else
+            count=0
+          fi
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "Captured $count image(s) in $dir"
+
+      # Pinned to the exact version verified against `sentry-cli snapshots
+      # upload --help` while building this workflow (minimum supported is
+      # 3.5.0 per docs.sentry.io/cli/snapshots — 3.7.0 was npm's latest at
+      # verification time). Bump deliberately, not via a floating `^3` range,
+      # so a CLI regression can't silently change this job's behavior.
+      - name: Upload snapshots to Sentry
+        if: steps.count.outputs.count != '0'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SNAPSHOTS_AUTH_TOKEN }}
+          SENTRY_ORG: helm-xs
+          SENTRY_PROJECT: javascript-nextjs
+        run: |
+          npx --yes @sentry/cli@3.7.0 snapshots upload test-results/sentry-snapshots \
+            --app-id helm-web \
+            --project javascript-nextjs
+
+      - name: No images captured
+        if: steps.count.outputs.count == '0'
+        run: |
+          echo "::warning::Sentry snapshots: 0 images captured — nothing uploaded. Check the Playwright report artifact below for the cause (likely a login failure)."
+
+      - name: Upload Playwright report (debugging)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v4
+        with:
+          name: sentry-snapshots-playwright-report-${{ github.run_number }}
+          path: |
+            playwright-report/
+            test-results/sentry-snapshots/
+          retention-days: 7
+          if-no-files-found: warn

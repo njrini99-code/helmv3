@@ -306,3 +306,12 @@ _staging-snapshot/
 # artifact and IS committed — the images are regenerable evidence that was
 # blocking a clean working tree on main.
 docs/ui-audits/**/*.jpg
+# Janitor entropy-report output (scripts/janitor/run.mjs). NOT tracked,
+# deliberately — the report embeds a HEAD SHA and an ISO timestamp that
+# change on every regeneration, which would make every future `npm run
+# janitor` run (or any edit that moves HEAD) show as an unrelated diff on
+# these two files. Same precedent as knip-report.txt / npm-audit.json: the
+# weekly CircleCI `janitor` job publishes both as build artifacts; run
+# `npm run janitor` locally to read them.
+docs/generated/JANITOR_REPORT.md
+docs/generated/janitor-findings.json

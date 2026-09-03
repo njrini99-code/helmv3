@@ -487,7 +487,11 @@ export function FairwayMessages() {
       className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-max(56px+env(safe-area-inset-bottom,0px),var(--keyboard-height,0px)))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]')}
     >
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 py-6 sm:px-6 lg:py-8">
-        {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ── */}
+        {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ──
+            On a phone with a thread open it steps aside: the masthead plus the
+            thread's own header left 100–272px of an 844px screen for messages
+            (audit 2026-09-02, UI-4). The thread header carries Back. */}
+        <div className={mobileShowChat ? 'hidden md:block' : undefined}>
         <ViewHeader
           eyebrow="Messages"
           title="Team messages"
@@ -515,11 +519,22 @@ export function FairwayMessages() {
             </Button>
           }
         />
+        </div>
 
         {/* ── Two-pane inbox: rail (supporting aside) + thread (focal hero) ──── */}
         {/* flex-1 min-h-0 on the grid so it fills remaining height without
-            overflowing; min-h-0 overrides the implicit min-h-auto on flex items. */}
-        <div className="mt-6 flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6">
+            overflowing; min-h-0 overrides the implicit min-h-auto on flex items.
+            GAPS_AUDIT_TABLET_LANDSCAPE #6 reported this row as narrow with
+            blank cream beside the thread at 810px — but that screenshot
+            predates AppShell's isCompactWidth fix for the SAME audit's #4
+            (the 260px rail not collapsing below 1024px). Re-derived against
+            the current collapsed 76px rail: the 12-col grid below already
+            fills its row exactly (5/12+7/12 of the row, with the gap, sums to
+            the full row width by construction — a CSS Grid with only
+            fractional tracks cannot leave dead space). No grid/width change
+            here; see the inner max-w wrapper below for the one real gap this
+            audit surfaced (an uncapped thread column on wide desktops). */}
+        <div className={`${mobileShowChat ? 'mt-0 md:mt-6' : 'mt-6'} flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6`}>
           {/* TRIAGE — conversation rail. On mobile it hides when a chat is open. */}
           <aside
             className={
@@ -550,43 +565,53 @@ export function FairwayMessages() {
           {/* P263: w-full so the thread spans the full viewport on mobile (flex
               parent — col-span is a no-op there; w-full governs width). */}
           <div className={mobileShowChat ? 'flex w-full min-h-0 flex-col md:w-auto md:col-span-7 lg:col-span-8' : 'hidden min-h-0 flex-col md:col-span-7 md:flex lg:col-span-8'}>
-            <MessageThreadPane
-              conversation={selectedConversation}
-              messages={messages}
-              loading={messagesLoading}
-              error={messagesError}
-              onRetry={refetchMessages}
-              userId={userId}
-              currentUserId={currentUserId}
-              isOtherTyping={isOtherTyping}
-              onBack={handleBack}
-              onNewMessage={() => setShowNewMessageModal(true)}
-              editingMessageId={editingMessageId}
-              editContent={editContent}
-              isEditSaving={isEditSaving}
-              deleteConfirmId={deleteConfirmId}
-              mobileActionsId={mobileActionsId}
-              onStartEdit={handleStartEdit}
-              onEditContentChange={setEditContent}
-              onCancelEdit={handleCancelEdit}
-              onSaveEdit={handleSaveEdit}
-              onDeleteClick={handleDeleteClick}
-              onConfirmDelete={handleConfirmDelete}
-              onCancelDelete={handleCancelDelete}
-              onSetMobileActions={setMobileActionsId}
-              groupParticipants={groupParticipants}
-              scrollToMessageId={pendingScrollMessageId}
-              onScrolledToMessage={() => setPendingScrollMessageId(null)}
-              className="flex-1 min-h-0"
-            >
-              {selectedConversation ? (
-                <MessageComposer
-                  onSend={handleSendMessage}
-                  onSendWithAttachments={handleSendMessageWithAttachments}
-                  onTyping={sendTypingStatus}
-                />
-              ) : null}
-            </MessageThreadPane>
+            {/* The grid cell above is already the honest width (see the
+                comment on the row) — but on a genuinely wide desktop monitor
+                (col-span-8 of a >=1400px-wide window) that cell can exceed a
+                comfortable reading width for a chat column. This inner
+                wrapper caps the PANEL, not the cell, at ~720px and centers it
+                with mx-auto once the cell is wider than that; at every
+                narrower width (everything this audit actually screenshotted)
+                it's a no-op — w-full already matches the cell exactly. */}
+            <div className="mx-auto flex w-full min-h-0 max-w-[720px] flex-1 flex-col">
+              <MessageThreadPane
+                conversation={selectedConversation}
+                messages={messages}
+                loading={messagesLoading}
+                error={messagesError}
+                onRetry={refetchMessages}
+                userId={userId}
+                currentUserId={currentUserId}
+                isOtherTyping={isOtherTyping}
+                onBack={handleBack}
+                onNewMessage={() => setShowNewMessageModal(true)}
+                editingMessageId={editingMessageId}
+                editContent={editContent}
+                isEditSaving={isEditSaving}
+                deleteConfirmId={deleteConfirmId}
+                mobileActionsId={mobileActionsId}
+                onStartEdit={handleStartEdit}
+                onEditContentChange={setEditContent}
+                onCancelEdit={handleCancelEdit}
+                onSaveEdit={handleSaveEdit}
+                onDeleteClick={handleDeleteClick}
+                onConfirmDelete={handleConfirmDelete}
+                onCancelDelete={handleCancelDelete}
+                onSetMobileActions={setMobileActionsId}
+                groupParticipants={groupParticipants}
+                scrollToMessageId={pendingScrollMessageId}
+                onScrolledToMessage={() => setPendingScrollMessageId(null)}
+                className="flex-1 min-h-0"
+              >
+                {selectedConversation ? (
+                  <MessageComposer
+                    onSend={handleSendMessage}
+                    onSendWithAttachments={handleSendMessageWithAttachments}
+                    onTyping={sendTypingStatus}
+                  />
+                ) : null}
+              </MessageThreadPane>
+            </div>
           </div>
         </div>
       </div>

@@ -53,13 +53,16 @@ async function timedFetch(url: string, init?: RequestInit): Promise<{ status: nu
 async function main(): Promise<void> {
   console.log(`Edge warm-up against ${BASE}  (rounds=${ROUNDS}, slow>${SLOW_MS}ms)\n`);
 
-  // 0) which deployment is live right now
+  // 0) which release is live right now. /api/health used to report
+  // `deploymentId` (the raw Vercel deployment id); it now reports `release`
+  // (the git SHA Sentry uses) instead, deliberately — an unauthenticated
+  // health endpoint should not hand back a Vercel-internal identifier.
   try {
     const h = await timedFetch(`${BASE}/api/health`, { redirect: 'follow' });
-    const dep = (() => { try { return JSON.parse(h.body).deploymentId; } catch { return '?'; } })();
-    console.log(`  deployment: ${dep}  (health ${h.status}, ${h.ms}ms)\n`);
+    const rel = (() => { try { return JSON.parse(h.body).release; } catch { return '?'; } })();
+    console.log(`  release: ${rel}  (health ${h.status}, ${h.ms}ms)\n`);
   } catch {
-    console.log('  deployment: (health check failed)\n');
+    console.log('  release: (health check failed)\n');
   }
 
   // 1) demo auto-login → follow the redirect chain (www→apex→dashboard),

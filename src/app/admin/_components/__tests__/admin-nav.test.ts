@@ -3,6 +3,7 @@ import {
   ADMIN_NAV,
   ADMIN_COMMAND_SHORTCUTS,
   hrefForShortcut,
+  RESERVED_LOCAL_SHORTCUTS,
   BRIDGE_BOTTOM_NAV_HREFS,
   BRIDGE_BOTTOM_NAV_LABELS,
 } from '@/app/admin/_components/admin-nav';
@@ -14,46 +15,41 @@ describe('ADMIN_NAV', () => {
   // routes so existing muscle memory survives the regrouping.
   it('declares the canonical tabs in order', () => {
     expect(ADMIN_NAV.map((e) => e.href)).toEqual([
-      // Triage
       '/admin',
       '/admin/errors',
       '/admin/health',
       '/admin/jobs',
-      // Added 2026-08-26 with the 3-hourly reliability collector. Sits in
-      // Triage beside Errors because it answers the same question from a
-      // different angle: not "what did each source report" but "what do
-      // several sources agree on, and which sources could be read at all".
       '/admin/reliability',
-      // Added with the Mission Control work. Sits beside Reliability because
-      // it answers the third question in that family: not "what broke" or
-      // "could we see it", but "is the thing that repairs it alive AND
-      // proven".
+      '/admin/slo',
+      '/admin/database',
       '/admin/self-heal',
       '/admin/traces',
       '/admin/qualifiers',
       '/admin/teams',
-      // Customers
       '/admin/users',
       '/admin/activity',
       '/admin/utilization',
-      // Apps
       '/admin/golf',
       '/admin/baseball',
       '/admin/lifting',
-      // Platform
       '/admin/deploys',
+      '/admin/releases',
       '/admin/auth',
       '/admin/work',
-      // Revenue
+      '/admin/work-log',
+      '/admin/engineering',
+      '/admin/lenses/golf',
+      '/admin/lenses/baseball',
+      '/admin/lenses/lifting',
+      '/admin/lenses/teams',
+      '/admin/lenses/users',
       '/admin/billing',
-      // Intake
       '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      // 'R' (Reliability) is a letter, not a digit, for the documented reason
-      // above: '1'-'9'/'0' are never renumbered, so a tab added later takes a
-      // letter rather than displacing a shortcut someone already knows.
-      '1', '3', '0', '8', 'R', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
+      '1', '3', '0', '8', 'R', 'O', 'X', 'S', 'F', 'Q', 'T', '7',
+      '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'Y', 'Z', 'G',
+      'A', 'P', 'E', 'D', 'V', 'B',
     ]);
   });
 
@@ -78,6 +74,23 @@ describe('ADMIN_NAV', () => {
       expect(navHrefs.has(shortcut.href), `${shortcut.href} is not a registered admin tab`).toBe(true);
     }
     expect(ADMIN_COMMAND_SHORTCUTS.map((s) => s.href)).not.toContain('/admin/audit');
+  });
+
+  // Regression for Bridge Premium Phase 6: AdminShell's global keydown
+  // handler used to intercept BOTH 'r' and 'R' for "refresh now" before ever
+  // consulting hrefForShortcut, which made Reliability's 'R' tab shortcut
+  // permanently unreachable (Shift+R always refreshed, never navigated).
+  // AdminShell now only reserves the exact keys in RESERVED_LOCAL_SHORTCUTS
+  // (case-sensitive) — this asserts no ADMIN_NAV entry's key can ever fall
+  // into that reserved set again, on either side of a future edit.
+  it('no ADMIN_NAV shortcut collides with a key AdminShell reserves locally', () => {
+    for (const entry of ADMIN_NAV) {
+      expect(
+        RESERVED_LOCAL_SHORTCUTS.has(entry.key),
+        `${entry.href}'s shortcut '${entry.key}' is reserved by AdminShell's local keydown ` +
+          'handler (see RESERVED_LOCAL_SHORTCUTS) and can never navigate there',
+      ).toBe(false);
+    }
   });
 });
 

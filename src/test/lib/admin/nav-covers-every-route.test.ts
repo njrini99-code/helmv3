@@ -29,6 +29,9 @@ const DETAIL_LEAVES = new Set([
   '/admin/users/[id]/view-as',
   '/admin/thread/[entity]/[id]',
   '/admin/golf/tracer',
+  // Phase 4 lens layer — clicked into from /admin/lenses/users, not navigated
+  // to directly, same pattern as /admin/users/[id] above.
+  '/admin/lenses/users/[id]',
 ]);
 
 function walkRoutes(dir: string, base = '/admin'): string[] {

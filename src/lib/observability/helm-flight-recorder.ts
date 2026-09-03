@@ -9,6 +9,10 @@ import {
   type FlightStepStatus,
   type GolfRoundWorkflow,
 } from './golf-round-flight-workflow';
+import { vercelWaitUntil } from './vercel-wait-until';
+import { attachHelmTrace } from './correlation';
+import { recordWorkflow } from './metrics';
+import { helmLog } from './structured-log';
 
 type SafeMetadata = Record<string, unknown>;
 
@@ -22,6 +26,17 @@ export interface StartHelmFlightRecorderInput {
   existingRoundId?: string | null;
   environment?: string;
   metadata?: SafeMetadata;
+  /**
+   * Overrides `PERSIST_START_TIMEOUT_MS` for this recorder's start write.
+   * `deleteShot`/`updateShot` (golf.shot.delete, golf.shot.add_or_edit) now
+   * await recorder construction — which awaits this bounded write — BEFORE
+   * any business logic, unlike submit/autosave, where a slower shot-edit
+   * budget was never part of the contract. Passing a tighter bound there
+   * caps how much a hung `trace_runs` insert can add to an action that
+   * previously paid nothing for it. Omit to keep the shared default —
+   * submit and savePartialRound (both branches) do, deliberately.
+   */
+  startTimeoutMs?: number;
 }
 
 export interface FlightRecorderStepInput {
@@ -149,6 +164,17 @@ function environmentForTrace(value: string | undefined): string {
  * latency onto every round write. `persistStart`'s own `failOpen` wrapper
  * only guards against a REJECTION; a hang that never settles at all would
  * still block the caller forever without this.
+ *
+ * The default stays at 1500ms for `submitGolfRoundComprehensive` and
+ * `savePartialRound` (the same bound main shipped with). The real-per-stage-
+ * timing refit (2026-09-02) moved recorder construction — which awaits this
+ * bounded write — BEFORE any business logic in `deleteShot` and `updateShot`
+ * too, paths that previously paid nothing for the recorder. Those two shot
+ * workflows therefore pass `startTimeoutMs: 300` explicitly (see
+ * `StartHelmFlightRecorderInput.startTimeoutMs`): a hung `helm_debug` write
+ * can add at most 300ms to a shot edit, while a submit or autosave keeps the
+ * longer bound so a slow-but-alive trace store still gets its run row during
+ * the incidents traces exist for.
  */
 export const PERSIST_START_TIMEOUT_MS = 1500;
 
@@ -181,6 +207,75 @@ export async function createHelmFlightRecorder(
   dependencies: FlightRecorderDependencies = defaultDependencies(),
 ): Promise<HelmFlightRecorder> {
   const traceId = input.traceId ?? dependencies.newTraceId();
+  const startedAt = Date.now();
+
+  // Correlate every Sentry event this invocation produces with Helm's own
+  // trace id, BEFORE the enabled-gate below — deliberately, on two counts.
+  // First, `attachHelmTrace`'s scope-tag write (the half that matters here)
+  // must land regardless of whether the DB-persisting side of this recorder
+  // is enabled: the `enabled` gate below is a helm_debug retention/volume
+  // decision (see its own comment), not a decision about whether Sentry
+  // should be able to find this trace id. Second, this runs before
+  // `dependencies.startSpan` creates the `golf.workflow` span below, so the
+  // span-attribute half of attachHelmTrace lands on whatever span was
+  // already active when this function was called (the Server Action's own),
+  // not on the span this function is about to start — which already sets
+  // its own `'helm.trace_id': traceId` attribute directly (see
+  // `defaultDependencies().startSpan`). That makes the span-attribute half
+  // redundant here on purpose; the scope tag is not, and is what makes a
+  // Sentry error or log searchable by this trace id everywhere else.
+  attachHelmTrace(traceId);
+
+  /**
+   * `helm.workflow.*` (metrics.ts) + one `helmLog` line, emitted once per
+   * invocation from whichever of this function's THREE return points ends
+   * up finalizing — the disabled-mode no-op below, the start-timeout
+   * degrade path further down, and the real `finalize` at the bottom.
+   * Deliberately NOT gated behind `enabled`: `recordWorkflow`/`helmLog` are
+   * in-memory-only, fail-open Sentry emissions that never touch helm_debug,
+   * so the workflow-level Sentry signal this deliverable exists to add must
+   * not inherit the same production opt-in that guards the (heavier,
+   * DB-writing) flight recorder trace itself — see this file's other
+   * comments on why persistence defaults to off in production. Workflow-
+   * OUTCOME level, not per-step: `trace_runs` already persists every
+   * start/complete/fail/warn transition durably; duplicating ~15-50 of
+   * those into Sentry logs per invocation would be cost without signal.
+   * `recordWorkflow`'s own doc comment agrees: "Call once, after the
+   * workflow settles."
+   */
+  const recordFinalWorkflowMetric = (
+    outcome: 'success' | 'failure' | 'warning' | 'pending',
+    errorCode?: string,
+  ): void => {
+    const durationMs = Date.now() - startedAt;
+    const runtime = process.env.NEXT_RUNTIME;
+    recordWorkflow({
+      feature: 'golf_round_lifecycle',
+      action: input.workflow,
+      outcome,
+      durationMs,
+      sport: 'golf',
+      runtime,
+      errorCode,
+    });
+    // 'warning' covers a rescued/degraded finish (recordRescuedStepOutcome's
+    // fallback path) — real, but not the workflow breaking outright, so it
+    // logs at 'warn' rather than 'error'. 'pending' means finalize() was
+    // reached without any branch having decided success or failure — an
+    // interrupted invocation, not a failed one, and also logged at 'warn'.
+    const level = outcome === 'failure' ? 'error' : outcome === 'success' ? 'info' : 'warn';
+    helmLog[level]('golf.round_lifecycle.finished', {
+      sport: 'golf',
+      feature: 'golf_round_lifecycle',
+      action: input.workflow,
+      result: outcome,
+      runtime,
+      error_code: errorCode,
+      helm_trace_id: traceId,
+      duration_ms: durationMs,
+    });
+  };
+
   const trace = createGolfRoundWorkflowTrace({
     workflow: input.workflow,
     traceId,
@@ -202,7 +297,7 @@ export async function createHelmFlightRecorder(
       fail: noop,
       warn: noop,
       skip: noop,
-      finalize: noop,
+      finalize: async (status) => { recordFinalWorkflowMetric(status); },
     };
   }
   const span = dependencies.startSpan({
@@ -226,9 +321,48 @@ export async function createHelmFlightRecorder(
     expected_step_count: trace.steps().length,
   });
 
+  /**
+   * Every call site in golf.ts fires `void flightRecorder.x(...)` — by
+   * design, so a trace write can never block the player's save. That means
+   * the promise `write()` returns here is, from the caller's perspective,
+   * already fire-and-forget before it ever reaches this function. On a plain
+   * Node server that is merely untidy: the event loop keeps running until
+   * the promise settles regardless of who is watching it. On Vercel it is a
+   * race — the function can freeze the instant the Server Action's response
+   * is sent, and a promise nobody registered with the platform is frozen
+   * mid-flight along with it. When that frozen fetch is later resumed (on
+   * whatever invocation next thaws the same execution environment) it
+   * surfaces as an "unhandled fetch failed": Sentry's Supabase auto-
+   * instrumentation on the admin client (src/lib/supabase/admin.ts) reports
+   * it once there, and this function's own `catch` below reports it again
+   * whenever it eventually gets to run — two Sentry events for one failure.
+   *
+   * `vercelWaitUntil` (src/lib/observability/vercel-wait-until.ts) is the
+   * repo's existing fix for exactly this shape of race (see
+   * src/lib/admin/schedule-bridge-write.ts for the idiom PR #1737 used for
+   * Bridge writes): registering `task` tells the Vercel runtime to hold the
+   * function open until it settles. That keeps the write inside the SAME
+   * invocation it started in, so the `try/catch` below always gets to run —
+   * exactly one handled report, through `onRecorderFailure`, every time —
+   * and the freeze/resume race that produced the second, unhandled report
+   * can no longer happen. Registering is additive and never throws (see the
+   * helper's own contract), so this changes nothing outside Vercel: `task`
+   * is still awaited here regardless, fail-open, non-blocking to the
+   * caller either way.
+   */
   const failOpen = async (operation: string, write: () => Promise<void>) => {
     try {
-      await write();
+      // `write` is typed to return a promise, but nothing enforces that at
+      // the call site — a bug in the closure that builds the payload (or in
+      // a misbehaving dependency) can throw SYNCHRONOUSLY before any promise
+      // exists. Both the construction and the `vercelWaitUntil` registration
+      // live inside this try (not before it) so that case is caught exactly
+      // like an async rejection: one handled report through
+      // `onRecorderFailure`, never an unhandled rejection escaping to a
+      // `void flightRecorder.x(...)` call site in golf.ts.
+      const task = write();
+      vercelWaitUntil(task);
+      await task;
     } catch (error) {
       dependencies.onRecorderFailure(error, { operation, trace_id: traceId, workflow: input.workflow });
     }
@@ -251,6 +385,7 @@ export async function createHelmFlightRecorder(
     }
   };
 
+  const startTimeoutMs = input.startTimeoutMs ?? PERSIST_START_TIMEOUT_MS;
   const startOutcome = await raceAgainstTimeout(
     failOpen('start', () => dependencies.persistStart({
       traceId,
@@ -258,7 +393,7 @@ export async function createHelmFlightRecorder(
       environment: environmentForTrace(input.environment),
       metadata: baseMetadata,
     })),
-    PERSIST_START_TIMEOUT_MS,
+    startTimeoutMs,
   );
 
   if (startOutcome === 'timeout') {
@@ -268,8 +403,8 @@ export async function createHelmFlightRecorder(
     // disabled-mode branch above returns, and close out the Sentry span we
     // already opened so it doesn't leak as permanently "in progress".
     dependencies.onRecorderFailure(
-      new Error(`persistStart exceeded ${PERSIST_START_TIMEOUT_MS}ms`),
-      { operation: 'start_timeout', trace_id: traceId, workflow: input.workflow, timeout_ms: PERSIST_START_TIMEOUT_MS },
+      new Error(`persistStart exceeded ${startTimeoutMs}ms`),
+      { operation: 'start_timeout', trace_id: traceId, workflow: input.workflow, timeout_ms: startTimeoutMs },
     );
     closeSpanSafely('internal_error');
     const noop = async () => undefined;
@@ -281,7 +416,7 @@ export async function createHelmFlightRecorder(
       fail: noop,
       warn: noop,
       skip: noop,
-      finalize: noop,
+      finalize: async (status) => { recordFinalWorkflowMetric(status); },
     };
   }
 
@@ -335,6 +470,13 @@ export async function createHelmFlightRecorder(
       const missingSteps = getMissingRequiredSteps(trace);
       const failedStep = trace.steps().find((step) => step.status === 'failure');
       const finalStatus = failedStep ? 'failure' : status;
+      // Emitted BEFORE the persistFinalize write below, deliberately: that
+      // RPC is fail-open but not bounded the way persistStart is (see
+      // `raceAgainstTimeout` above, used only for the start write), so a
+      // hung `helm_debug_finalize_trace` call must not be able to delay —
+      // or, if this file's own execution were ever cut off, swallow — the
+      // Sentry-side emission this deliverable exists to add.
+      recordFinalWorkflowMetric(finalStatus, failedStep?.errorCode);
       await failOpen('finalize', () => dependencies.persistFinalize({
         traceId,
         status: finalStatus,
@@ -363,6 +505,19 @@ export interface RescuedStepOutcomeInput {
   stepInput?: FlightRecorderStepInput;
   /** Attached to the fallback step's `complete` call — only used when `rescued`. */
   fallbackStepInput?: FlightRecorderStepInput;
+  /**
+   * When true, a RESCUED outcome (`rescued: true`) still marks the failed
+   * step warned and the fallback step complete, but does NOT call
+   * `finalize('success')` — the caller has more response-blocking work left
+   * to record (e.g. golf.ts's `post.qualifier_transition`) before the
+   * trace's real window closes, and must finalize itself once that work is
+   * done. Has no effect on the unrescued branch, which always finalizes
+   * 'failure' immediately: that branch returns control to the caller before
+   * any such later step could run, so there is nothing left to protect.
+   * Defaults to false (finalize immediately either way), preserving the
+   * original contract for any caller that doesn't pass it.
+   */
+  deferFinalizeOnRescue?: boolean;
 }
 
 /**
@@ -393,5 +548,6 @@ export async function recordRescuedStepOutcome(
   await recorder.warn(input.failedStepKey, input.stepInput);
   await recorder.start(input.fallbackStepKey);
   await recorder.complete(input.fallbackStepKey, input.fallbackStepInput);
+  if (input.deferFinalizeOnRescue) return;
   await recorder.finalize('success');
 }

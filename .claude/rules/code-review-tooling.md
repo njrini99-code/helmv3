@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 ---
 verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
@@ -44,7 +45,8 @@ CircleCI (`.circleci/config.yml`) owns what GHA does poorly:
 
 - `weekly` workflow — Knip dead-code, Stryker mutation tests on
   `src/lib/coachhelm/v2/`, full-repo sqlfluff, npm audit, Squawk
-  migration safety. Scheduled Mondays 06:00 UTC; triggered via the
+  migration safety, Janitor entropy report (`scripts/janitor/`, advisory).
+  Scheduled Mondays 06:00 UTC; triggered via the
   `run-weekly=true` pipeline parameter (configure in CircleCI
   project settings → Triggers).
 - `ios` workflow — iOS Capacitor compile verification on M-series

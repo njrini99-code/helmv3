@@ -393,6 +393,8 @@ export {
   TONES,
   type FeedbackTone,
   type ToneStyle,
+  ReportProblemButton,
+  type ReportProblemButtonProps,
 } from './feedback';
 
 // ── overlays ────────────────────────────────────────────────────────────────

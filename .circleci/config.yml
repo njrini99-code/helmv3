@@ -126,6 +126,13 @@ jobs:
       - checkout
       - install-node-deps
       - run:
+          # scripts/mutation-gate.mjs has no non-builtin deps, so this runs
+          # against the checkout as-is, BEFORE Stryker installs or runs —
+          # a broken gate should fail fast with a clear message, not mid-run
+          # 30 minutes into a mutation pass. See scripts/mutation-gate.test.mjs.
+          name: Mutation gate unit tests (scripts/mutation-gate.mjs)
+          command: npm run test:mutation-gate
+      - run:
           name: Install Stryker
           command: |
             npm install --no-save \
@@ -149,7 +156,29 @@ jobs:
               "ignorePatterns": ["**/*.test.ts", "**/__tests__/**"]
             }
             EOF
-            npx stryker run || true
+            # Used to be `npx stryker run || true`, which swallowed EVERY exit
+            # code including a crash — see scripts/mutation-gate.mjs's header
+            # comment for the incident and why the fix is not simply dropping
+            # `|| true`. No `thresholds.break` is set here deliberately: that
+            # would make Stryker's OWN process exit code the enforcement point,
+            # duplicating (and risking silently diverging from) the score
+            # computed by scripts/mutation-gate.mjs below. One gate, one place.
+            #
+            # Distinguish Stryker itself failing to run (config/compile/runtime
+            # crash — always a hard failure, same principle as the knip job
+            # above) from a completed run whose SCORE is the thing under test
+            # (config/mutation-gate.json's floor, checked next).
+            set +e
+            npx stryker run
+            stryker_exit=$?
+            set -e
+            if [ "$stryker_exit" -ne 0 ]; then
+              echo "Stryker exited $stryker_exit — the mutation run itself failed (config/compile/runtime), not a score gate. Failing."
+              exit "$stryker_exit"
+            fi
+      - run:
+          name: Mutation score gate (config/mutation-gate.json)
+          command: node scripts/mutation-gate.mjs reports/mutation/mutation.json config/mutation-gate.json
       - store_artifacts:
           path: reports/mutation/
           destination: stryker
@@ -363,6 +392,34 @@ jobs:
           path: evals/results/
           destination: promptfoo
 
+  # ---------- Weekly: Janitor entropy report (Phase K.4.5) ----------
+  # Advisory only — never fails the job on findings, and never modifies
+  # source files (scripts/janitor/run.mjs is read-only by construction; see
+  # its own header). Regenerates docs/generated/JANITOR_REPORT.md +
+  # janitor-findings.json as build ARTIFACTS on every run — same pattern as
+  # the knip/npm-audit jobs above, and for the same reason: a scheduled
+  # CircleCI job cannot commit back to the repo, so its output is an
+  # artifact for a human to read and, if they choose, commit locally after
+  # `npm run janitor`. No `install-node-deps` step: every Janitor module is
+  # dependency-free (node:fs/path/child_process/url only) — verified by
+  # running it against a worktree with no node_modules installed at all.
+  janitor:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: Janitor unit tests
+          command: npm run test:janitor
+      - run:
+          name: Run the Janitor
+          command: npm run janitor
+      - store_artifacts:
+          path: docs/generated/JANITOR_REPORT.md
+          destination: janitor/JANITOR_REPORT.md
+      - store_artifacts:
+          path: docs/generated/janitor-findings.json
+          destination: janitor/janitor-findings.json
+
 # ---------------------------------------------------------------------------
 # Workflows
 # ---------------------------------------------------------------------------
@@ -379,6 +436,7 @@ workflows:
       - npm-audit
       - stryker-coachhelm
       - promptfoo-evals
+      - janitor
 
   # iOS compile verification. Gated by BRANCH NAME, not by which files
   # changed: only runs on `main`, `release/*`, `ios/*`, `capacitor/*`, or

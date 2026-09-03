@@ -274,6 +274,36 @@ export default defineConfig({
             // The unit project's own timeout, and the removal of the
             // hand-maintained count above, must not silently revert.
             'scripts/__tests__/vitest-sweep-timeout.test.mjs',
+            // Pure summarization functions behind `npm run flight-recorder:audit`
+            // (scripts/flight-recorder-audit.mjs) — the read-only script that
+            // proves the two in-flight Flight Recorder branches actually wrote
+            // real timings and postgres checkpoints after deploy. Named here for
+            // the same reason as its scripts/lib/__tests__ neighbours above (no
+            // scripts/** glob — this repo runs everything through vitest, never
+            // `node --test`, so an unlisted file here executes nowhere at all).
+            'scripts/lib/__tests__/flight-recorder-audit-lib.test.ts',
+            // The pure edge extractors and impact walk behind
+            // `scripts/knowledge/world-model.mjs` (the Helm World Model graph
+            // generator, admin_platform registry split, 2026-09-02): primary-
+            // feature resolution when a shell glob and a sub-capability glob
+            // both match a file, the doc-cross-reference extractor's negation
+            // guard (regression-pinned against the real "Not to be confused
+            // with `recruiting`" sentence in memory/features/crm_outreach.md,
+            // which is exactly the false-positive class this guard exists to
+            // reject), the qualifier-invariant extractor, and the blast-radius
+            // walk's weak/strong edge distinction. Named here for the same
+            // reason as its scripts/**/__tests__ neighbours — no scripts/**
+            // glob, so an unlisted file here executes nowhere at all.
+            'scripts/knowledge/__tests__/world-model-core.test.mjs',
+            // The inline-array parsing bug in coerceScalar() that
+            // world-model.mjs's first real read of `observability.
+            // feature_keys` turned up (2026-09-02): a non-empty inline array
+            // (`feature_keys: [a, b]`, the form 16 pre-existing registry.yml
+            // entries use) fell through to the plain-scalar branch and
+            // became a literal string, which a naive `for...of` then
+            // iterated character by character. Fixed in the same change;
+            // this is the regression pin.
+            'scripts/knowledge/lib/__tests__/registry.test.mjs',
           ],
           exclude: [
             'node_modules',

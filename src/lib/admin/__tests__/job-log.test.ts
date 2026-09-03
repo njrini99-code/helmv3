@@ -4,6 +4,10 @@ const mocks = vi.hoisted(() => ({
   inserted: [] as Record<string, unknown>[],
   logServerEvent: vi.fn(async (..._args: unknown[]) => {}),
   failInsert: false,
+  startCronCheckIn: vi.fn((_jobType: string) => 'checkin-id-1'),
+  finishCronCheckIn: vi.fn(
+    (_jobType: string, _checkInId: string | null, _status: 'ok' | 'error', _durationMs?: number) => {},
+  ),
 }));
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -17,6 +21,10 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerEvent: mocks.logServerEvent }));
+vi.mock('@/lib/observability/cron-monitors', () => ({
+  startCronCheckIn: mocks.startCronCheckIn,
+  finishCronCheckIn: mocks.finishCronCheckIn,
+}));
 
 import { recordJobRun, summariseErrorBody } from '@/lib/admin/job-log';
 
@@ -25,6 +33,8 @@ describe('recordJobRun', () => {
     mocks.inserted.length = 0;
     mocks.logServerEvent.mockClear();
     mocks.failInsert = false;
+    mocks.startCronCheckIn.mockClear();
+    mocks.finishCronCheckIn.mockClear();
   });
 
   it('passes the result through and writes a completed row', async () => {
@@ -45,6 +55,54 @@ describe('recordJobRun', () => {
   it('a broken log table never fails the cron (fire-and-forget)', async () => {
     mocks.failInsert = true;
     await expect(recordJobRun('event-reminders', async () => 42)).resolves.toBe(42);
+  });
+});
+
+describe('recordJobRun — Sentry Cron Monitor check-in on every exit path', () => {
+  beforeEach(() => {
+    mocks.inserted.length = 0;
+    mocks.logServerEvent.mockClear();
+    mocks.failInsert = false;
+    mocks.startCronCheckIn.mockClear();
+    mocks.startCronCheckIn.mockReturnValue('checkin-id-1');
+    mocks.finishCronCheckIn.mockClear();
+  });
+
+  it('starts a check-in at entry, for the jobType passed to recordJobRun', async () => {
+    await recordJobRun('event-reminders', async () => 'done');
+    expect(mocks.startCronCheckIn).toHaveBeenCalledWith('event-reminders');
+    expect(mocks.startCronCheckIn).toHaveBeenCalledTimes(1);
+  });
+
+  it('finishes ok on a plain success', async () => {
+    await recordJobRun('event-reminders', async () => 'done');
+    expect(mocks.finishCronCheckIn).toHaveBeenCalledWith(
+      'event-reminders', 'checkin-id-1', 'ok', expect.any(Number),
+    );
+  });
+
+  it('finishes error on a resolved 4xx/5xx Response (no throw)', async () => {
+    const failed = new Response('nope', { status: 500 });
+    await recordJobRun('event-reminders', async () => failed);
+    expect(mocks.finishCronCheckIn).toHaveBeenCalledWith(
+      'event-reminders', 'checkin-id-1', 'error', expect.any(Number),
+    );
+  });
+
+  it('finishes error when the job throws, then still rethrows', async () => {
+    const boom = new Error('job blew up');
+    await expect(recordJobRun('event-reminders', async () => { throw boom; })).rejects.toBe(boom);
+    expect(mocks.finishCronCheckIn).toHaveBeenCalledWith(
+      'event-reminders', 'checkin-id-1', 'error', expect.any(Number),
+    );
+  });
+
+  it('still finishes the check-in even when the Bridge insert is broken (fail-open, independent paths)', async () => {
+    mocks.failInsert = true;
+    await recordJobRun('event-reminders', async () => 'done');
+    expect(mocks.finishCronCheckIn).toHaveBeenCalledWith(
+      'event-reminders', 'checkin-id-1', 'ok', expect.any(Number),
+    );
   });
 });
 

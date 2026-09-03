@@ -73,12 +73,25 @@ vi.mock('@/lib/supabase/admin', () => ({
 }));
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn(async () => undefined),
+  logServerEvent: vi.fn(async () => undefined),
 }));
-vi.mock('@/lib/coachhelm/v2/insights/upsert', () => ({
-  upsertInsight: upsertInsightMock,
-  attachDrills: attachDrillsMock,
-  GATED_OUT: '__gated_out__',
-}));
+// isEvidenceRefusal/InsightEvidenceRefusal must be the REAL implementation —
+// not a stub — so the production code's `isEvidenceRefusal(err)` check and
+// this test's `new InsightEvidenceRefusal(...)` agree on the same `code`
+// marker. Only the DB-touching exports (upsertInsight, attachDrills) are
+// replaced with mocks; GATED_OUT is kept as the plain-string sentinel the
+// rest of this file already asserts against.
+vi.mock('@/lib/coachhelm/v2/insights/upsert', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/lib/coachhelm/v2/insights/upsert')
+  >('@/lib/coachhelm/v2/insights/upsert');
+  return {
+    ...actual,
+    upsertInsight: upsertInsightMock,
+    attachDrills: attachDrillsMock,
+    GATED_OUT: '__gated_out__',
+  };
+});
 
 import {
   generateWorstHolesInsights,
@@ -87,6 +100,8 @@ import {
   aggregateWarmup,
   __internal,
 } from '@/lib/coachhelm/v2/mining/course-management';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { InsightEvidenceRefusal } from '@/lib/coachhelm/v2/insights/upsert';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -247,6 +262,61 @@ describe('generateWorstHolesInsights', () => {
     );
   });
 
+  // Incident fingerprint ea766422 ("worst_holes upsert failed"): the catch
+  // block around upsertInsight() did not route through isEvidenceRefusal(),
+  // so an EXPECTED quality-gate refusal (upsertInsight throws
+  // InsightEvidenceRefusal when evidence.sample_n < 5) was logged via
+  // logServerError and paged as a production incident, even though this
+  // file's own header comment already documented that the writer "correctly
+  // refused it, but the caller reported that expected quality gate as a
+  // production error."
+  it('does not log an error when upsertInsight refuses for insufficient evidence', async () => {
+    const rows = [
+      ...manyHoles(5, { par: 4, score: 6, hole_number: 3, course_id: 'course-1' }),
+      ...manyHoles(5, { par: 4, score: 6, hole_number: 7, course_id: 'course-1' }),
+      ...manyHoles(5, { par: 4, score: 5, hole_number: 12, course_id: 'course-1' }),
+    ];
+    tables.primary = rows;
+    upsertInsightMock.mockRejectedValueOnce(
+      new InsightEvidenceRefusal('upsertInsight: evidence.sample_n=4 < 5; refusing to emit'),
+    );
+
+    await generateWorstHolesInsights('player-1');
+
+    expect(upsertInsightMock).toHaveBeenCalled();
+    // Documented outcome for a refusal: no error-severity log, no page.
+    expect(logServerError).not.toHaveBeenCalledWith(
+      'course-management.worst_holes.upsert_failed',
+      expect.anything(),
+    );
+    // The refusal is still recorded, at a non-paging severity with Sentry
+    // suppressed — mirrors src/lib/coachhelm/v3/composite/synthesis.ts.
+    expect(logServerEvent).toHaveBeenCalledWith(
+      expect.stringContaining('sample_n=4'),
+      expect.objectContaining({ source: 'background_job', skipSentry: true }),
+      'warning',
+    );
+  });
+
+  it('still logs an error when upsertInsight throws a genuine failure', async () => {
+    const rows = [
+      ...manyHoles(5, { par: 4, score: 6, hole_number: 3, course_id: 'course-1' }),
+      ...manyHoles(5, { par: 4, score: 6, hole_number: 7, course_id: 'course-1' }),
+      ...manyHoles(5, { par: 4, score: 5, hole_number: 12, course_id: 'course-1' }),
+    ];
+    tables.primary = rows;
+    upsertInsightMock.mockRejectedValueOnce(new Error('connection terminated unexpectedly'));
+
+    await generateWorstHolesInsights('player-1');
+
+    expect(upsertInsightMock).toHaveBeenCalled();
+    expect(logServerError).toHaveBeenCalledWith(
+      'course-management.worst_holes.upsert_failed',
+      expect.anything(),
+    );
+    expect(logServerEvent).not.toHaveBeenCalled();
+  });
+
   it('scopes by course — same player on two courses yields two different signatures', async () => {
     const rows = [
       ...manyHoles(5, { par: 4, score: 6, hole_number: 3, course_id: 'course-1', course_name: 'A' }),
@@ -345,6 +415,50 @@ describe('generateWarmupHoleInsight', () => {
         'breath_work',
       ]),
     );
+  });
+
+  // Same gap as generateWorstHolesInsights (incident ea766422): the catch
+  // block must distinguish an InsightEvidenceRefusal from a genuine failure.
+  it('does not log an error when upsertInsight refuses for insufficient evidence', async () => {
+    const rows = [
+      ...manyHoles(8, { par: 4, score: 5, hole_number: 1, course_id: 'c' }),
+      ...manyHoles(40, { par: 4, score: 4, hole_number: 7, course_id: 'c' }),
+    ];
+    tables.primary = rows;
+    upsertInsightMock.mockRejectedValueOnce(
+      new InsightEvidenceRefusal('upsertInsight: evidence.sample_n=4 < 5; refusing to emit'),
+    );
+
+    await generateWarmupHoleInsight('player-1');
+
+    expect(upsertInsightMock).toHaveBeenCalled();
+    expect(logServerError).not.toHaveBeenCalledWith(
+      'course-management.warmup.upsert_failed',
+      expect.anything(),
+    );
+    expect(logServerEvent).toHaveBeenCalledWith(
+      expect.stringContaining('sample_n=4'),
+      expect.objectContaining({ source: 'background_job', skipSentry: true }),
+      'warning',
+    );
+  });
+
+  it('still logs an error when upsertInsight throws a genuine failure', async () => {
+    const rows = [
+      ...manyHoles(8, { par: 4, score: 5, hole_number: 1, course_id: 'c' }),
+      ...manyHoles(40, { par: 4, score: 4, hole_number: 7, course_id: 'c' }),
+    ];
+    tables.primary = rows;
+    upsertInsightMock.mockRejectedValueOnce(new Error('connection terminated unexpectedly'));
+
+    await generateWarmupHoleInsight('player-1');
+
+    expect(upsertInsightMock).toHaveBeenCalled();
+    expect(logServerError).toHaveBeenCalledWith(
+      'course-management.warmup.upsert_failed',
+      expect.anything(),
+    );
+    expect(logServerEvent).not.toHaveBeenCalled();
   });
 
   it('does not emit when hole-1 excess is <= 0.4 strokes', async () => {

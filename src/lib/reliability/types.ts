@@ -31,6 +31,8 @@
  * "never error→[]" line names it directly.
  */
 
+import type { InvariantRunSummary } from './invariants/run-checks';
+
 /** Reuses the Bridge's incident vocabulary so severities compare across sources. */
 export type ReliabilitySeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -48,12 +50,16 @@ export type RiskTier = 'R0' | 'R1' | 'R2' | 'R3';
 /**
  * Why an arm produced what it produced.
  *
- * - `ok`      — reached the provider, results are complete for the window.
- * - `partial` — reached it, but truncated (see `bounded`). Still useful.
- * - `blind`   — could not read it at all. Signals from this arm are ABSENT,
- *               not zero. Never render a blind arm as healthy.
+ * - `ok`       — reached the provider, results are complete for the window.
+ * - `partial`  — reached it, but truncated (see `bounded`). Still useful.
+ * - `degraded` — a rate limit (429) survived one honoured Retry-After retry.
+ *                Signals from this arm are ABSENT for this run, same as
+ *                `blind`, but the cause is transient and usually self-clears
+ *                — worth telling apart from a token that is dead or missing.
+ * - `blind`    — could not read it at all. Signals from this arm are ABSENT,
+ *                not zero. Never render a blind arm as healthy.
  */
-export type SourceStatus = 'ok' | 'partial' | 'blind';
+export type SourceStatus = 'ok' | 'partial' | 'degraded' | 'blind';
 
 export interface SourceResult {
   source: ReliabilitySource;
@@ -143,6 +149,13 @@ export interface CorrelatedSignal {
   errorCode: string | null;
   /** Total occurrences across every source that saw it. */
   count: number;
+  /**
+   * True when `count` is a provable FLOOR rather than an exact total — set
+   * whenever any contributing `RawSignal` carried `countBasis: 'unknown'`
+   * (see that field's doc on `RawSignal`). Sticky across a merge: one
+   * source's floor is not erased by another source's exact count.
+   */
+  countIsFloor: boolean;
   firstSeen: string;
   lastSeen: string;
   /** Which arms saw this — the cross-source corroboration an operator wants. */
@@ -186,4 +199,14 @@ export interface ReliabilityRun {
   signals: CorrelatedSignal[];
   /** Signals discarded by the top-N cap after correlation. */
   truncatedSignals: number;
+  /**
+   * Bridge Control Plane Phase D.4.3 — executable data invariants, run as a
+   * fourth, independently fault-isolated arm alongside sentry/supabase/vercel
+   * (see `collect.ts`). OPTIONAL and deliberately does not bump `version`: a
+   * row written before this shipped has no `invariants` key, and
+   * `src/lib/admin/data/reliability.ts`'s `parseRun` must keep reading it as
+   * a valid `version: 1` run rather than rejecting it outright. Absent means
+   * "not run yet" and must never be read as "no violations".
+   */
+  invariants?: InvariantRunSummary;
 }

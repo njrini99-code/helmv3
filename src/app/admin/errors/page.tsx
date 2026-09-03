@@ -42,7 +42,10 @@ import { BulkResolveButton } from '../_components/BulkResolveButton';
 import { ErrorsFilterBar, type ActiveFilter, type FilterGroup } from './_components/ErrorsFilterBar';
 import { HowToReadIncidents } from './_components/HowToReadIncidents';
 import { ArchivePanel } from './_components/ArchivePanel';
+import { ReleaseWatchPanel } from './_components/ReleaseWatchPanel';
 import { loadErrorsPageData } from './_data';
+import { buildBoardAliasGroups, buildIncidentGenome } from '@/lib/admin/incidents/genome';
+import { fetchCurrentReleaseWatch, emptyReleaseWatch } from '@/lib/admin/incidents/release-watch';
 export const dynamic = 'force-dynamic';
 
 /**
@@ -426,6 +429,27 @@ export default async function ErrorsPage({
     const lensed = applyIncidentFacets(board.incidents, lens, filters.kind);
     const allClearAllowed = canClaimAllClear(board.coverage);
 
+    // Phase 1 — Incident Genome + Release Watch (brief §8/§9/§14).
+    // `fetchCurrentReleaseWatch` itself fails soft to an `unavailableReason`
+    // for the ordinary "ledger unconfigured" case; the outer `.catch()` is
+    // defense against a genuinely unexpected throw — a Release Watch that
+    // could not be computed must never blank the rest of the Incidents
+    // queue behind it. Alias grouping runs over the FULL board (not just
+    // `lensed`) so a card's "same root cause" answer never depends on which
+    // lens happens to be selected; the Genome itself is only computed for
+    // rows this render actually shows.
+    const releaseWatch = await fetchCurrentReleaseWatch({ incidents: board.incidents, coverage: board.coverage }).catch(
+      (err: unknown) =>
+        emptyReleaseWatch(
+          err instanceof Error ? `Release watch failed: ${err.message}` : 'Release watch failed unexpectedly.',
+          board.coverage.anyBlind,
+        ),
+    );
+    const aliasGroups = buildBoardAliasGroups(board.incidents);
+    const genomeByIncident = new Map(
+      lensed.map((incident) => [incident.id, buildIncidentGenome(incident, board.incidents, aliasGroups)] as const),
+    );
+
     // The two surfaces, separately. Counting INCIDENTS rather than raw rows is
     // deliberate: an incident is one production cause, so twelve Sentry events
     // of one fault are one thing wrong, not twelve. Worth knowing before
@@ -499,7 +523,13 @@ export default async function ErrorsPage({
     // worse than no filter, because the operator cannot tell the queue is
     // being curated at all.
     const suppressedBreakdown = suppressedByClass(board.incidents);
-    const shownActionable = board.incidents.filter((incident) => incident.actionable).length;
+    // A QA fixture round stays `actionable` (unforced — see the field's doc
+    // comment on `TriageItem.isFixture`) so it still renders in this default
+    // feed, badged FIXTURE; it must not count toward "what needs action"
+    // here. Catalogued defect (h).
+    const shownActionable = board.incidents.filter(
+      (incident) => incident.actionable && !incident.isFixture,
+    ).length;
     const heldBack = suppressedBreakdown.reduce((sum, entry) => sum + entry.count, 0);
     const showSuppressedNotice = !filters.kind && heldBack > 0;
     const showWiderWindowHint =
@@ -570,6 +600,8 @@ export default async function ErrorsPage({
         </section>
 
         <BlindnessBeacon note={board.blindnessNote} coverage={board.coverage} />
+
+        <ReleaseWatchPanel releaseWatch={releaseWatch} />
 
         {/* 1. THE canonical list. One incident per production cause, every
             source that saw it attached, and no second copy of it anywhere on
@@ -678,6 +710,9 @@ export default async function ErrorsPage({
               canClaimAllClear={allClearAllowed}
               blindnessNote={board.blindnessNote}
               checkedAt={board.computedAt}
+              presentations={board.presentations}
+              genomeByIncident={genomeByIncident}
+              releaseRelationships={releaseWatch.relationships}
             />
           </div>
           <p className="mt-3 text-caption text-warm-500">

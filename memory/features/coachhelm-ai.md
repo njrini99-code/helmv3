@@ -87,15 +87,21 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Mobile views must use the shared app shell, Standard or Action headers, and bottom-nav clearance from `AGENTS.md`.
 - The Ask composer autofocuses only on fine-pointer (desktop) clients (2026-08-26). On touch, no CoachHelm surface may focus a text input on open — iOS answers that focus with a keyboard over an unread page.
 - The phone Ask drawer (`CoachHelmDrawer`) lifts by `--keyboard-height` and the composer drops its home-indicator pad while `body.keyboard-open` (2026-09-02) — the WebView never resizes for the keyboard, so a `bottom-0` drawer put the composer under the keys exactly like the messages screen.
+- A question started on the Brief tab (`CoachIntelligenceHome` → `?q=` → the Ask page) auto-submits exactly once through `PromptComposer`'s own `submit()` (2026-09-02) — it previously only pre-filled the composer, so the coach had to press Send a second time on the page it navigated to. `AskSurface` strips `q` from the URL the moment the submit is kicked off, before the server has minted a conversation, so a refresh or back-navigation in that window cannot resend it. `PromptComposer` also now restores the just-submitted text into the field on a failed turn (never on success) instead of the previous unconditional clear-on-submit, so a failure does not force retyping. See `src/components/golf/coachhelm/chat/PromptComposer.tsx`, `CoachHelmChat.tsx` (`autoSubmitInitialInput`), and `AskSurface.tsx`.
 
 ## Known Risk Areas
 
 - Generated insight evidence can drift from real data if adapters or fallback paths skip citation validation.
 - Safety-net fallback behavior can mask generator failures if logs are ignored.
-- Course-management "worst holes" insights require at least five samples,
-  matching the persisted insight writer's validation contract. Smaller samples
-  are intentionally skipped rather than surfacing a validation warning after a
-  player submits a round.
+- Course-management "worst holes" and hole-1 "warmup" insights require at
+  least five samples, matching the persisted insight writer's Rule 1
+  validation contract (`upsertInsight` throws `InsightEvidenceRefusal` below
+  the floor). `generateWorstHolesInsights` and `generateWarmupHoleInsight`
+  (`src/lib/coachhelm/v2/mining/course-management.ts`) route that refusal
+  through `isEvidenceRefusal()` and log it as a quiet, non-paging event —
+  the same pattern `v3/composite/synthesis.ts` uses. Before this was wired
+  up, the refusal reached `logServerError` unconditionally and paged as a
+  production incident (fingerprint `ea766422`, "worst_holes upsert failed").
 - A completed round's CoachHelm terminal state is written only through the
   service-only `record_round_coachhelm_terminal_state` RPC. It may update
   processing metadata but cannot modify score, shots, identity, or status.

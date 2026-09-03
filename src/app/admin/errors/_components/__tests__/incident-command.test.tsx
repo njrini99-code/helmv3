@@ -70,6 +70,7 @@ function makeIncident(overrides: Partial<UnifiedIncident> = {}): UnifiedIncident
     klass: 'defect',
     actionable: true,
     klassReason: 'Genuine unexpected failure.',
+    isFixture: false,
     analysis: null,
     repair: null,
     deployProof: null,

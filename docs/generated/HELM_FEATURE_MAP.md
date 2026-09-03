@@ -25,11 +25,22 @@ is a second thing to keep true.
 **Feature Awareness System** · active · criticality high · owner platform
 
 - **Behaviour:** `docs/ai-system/helmv3-ai-codebase-intelligence.md`
-- **Code:** `scripts/knowledge/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json`, `AGENTS.md`, `CLAUDE.md`
+- **Code:** `scripts/knowledge/**`, `scripts/contracts/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json` … and 2 more in the registry
 - **Telemetry:** none. Agent tooling, not a product surface. Nothing here writes admin_events.feature, and no FeatureKey should exist for it.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/feature_awareness_system.md`
+
+## `observability_sentry`
+
+**Sentry Observability — Telemetry Vocabulary** · active · criticality medium · owner platform
+
+- **Behaviour:** `memory/features/observability-sentry.md`
+- **Code:** `src/instrumentation*.ts`, `src/lib/observability/**`, `src/lib/observability/__tests__/**`, `src/test/observability/**`
+- **Telemetry:** none. This module IS the observability layer (metric/span/log vocabulary and the beforeSend*/scrubPii hooks) — instrumenting itself would be circular. No admin_events.feature key exists for it by design; see classification: observability_only in observability_keys_unowned below for the same reasoning applied to a runtime key.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/observability_sentry.md`, `memory/ledgers/tests/observability_sentry.md`
 
 ## `coachhelm_ai`
 
@@ -91,7 +102,7 @@ is a second thing to keep true.
 **Shot Tracking** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/shot-tracking.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/new/**`, `src/app/golf/(dashboard)/dashboard/rounds/continue/**`, `src/app/golf/(dashboard)/dashboard/rounds/recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**` … and 13 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/new/**`, `src/app/golf/(dashboard)/dashboard/rounds/continue/**`, `src/app/golf/(dashboard)/dashboard/rounds/recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**` … and 17 more in the registry
 - **Telemetry:** none — covered by `golf_round_lifecycle`. Shot entry is instrumented as part of round_tracking; no separate FeatureKey exists. High criticality with no key of its own is a real observability limit, recorded here rather than hidden by inventing one.
 - **Incidents:** `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md`, `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md`, `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`, `memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md`
 - **Repair units:** `confirmed-snapshot-recovery-prompt-2026-08-22` (verified_in_production)
@@ -223,11 +234,66 @@ is a second thing to keep true.
 **Admin Platform** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-platform.md`
-- **Code:** `src/app/admin/**`, `src/app/golf/admin/**`, `src/app/admin/_components/**`, `src/app/golf/admin/crm/components/**`, `src/app/api/admin/**`, `src/app/api/cron/reliability-triage/**` … and 13 more in the registry
+- **Code:** `src/app/admin/engineering/**`, `src/app/admin/work-log/**`, `src/app/admin/database/**`, `src/app/admin/lenses/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**` … and 58 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
 - **Incidents:** `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
 - **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
 - **History:** `memory/ledgers/changes/admin_platform.md`, `memory/ledgers/tests/admin_platform.md`
+
+## `admin_incidents`
+
+**Admin Incidents** · active · criticality high · owner platform
+
+- **Behaviour:** `memory/features/admin-incidents.md`
+- **Code:** `src/app/admin/errors/**`, `src/app/admin/actions/analyze-error.ts`, `src/app/admin/actions/resolve-error.ts`, `src/app/admin/actions/sentry-resolve.ts`, `src/lib/admin/incidents/**`, `src/lib/admin/incident-*.ts` … and 8 more in the registry
+- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — incident telemetry writes through admin_events under the shared admin_dashboard key on admin_platform, the shell this entry was carved from.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/admin_incidents.md`
+
+## `admin_reliability_collector`
+
+**Admin Reliability Collector** · active · criticality high · owner platform
+
+- **Behaviour:** `memory/features/admin-reliability-collector.md`
+- **Code:** `src/app/admin/reliability/**`, `src/app/admin/releases/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`, `src/lib/admin/release-intel/**`, `scripts/release-intel/**` … and 1 more in the registry
+- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — writes background_job_logs rows (reliability-snapshot/-triage job types), not admin_events.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/admin_reliability_collector.md`, `memory/ledgers/tests/admin_reliability_collector.md`
+
+## `admin_slo`
+
+**Admin SLO Center** · active · criticality high · owner platform
+
+- **Behaviour:** `memory/features/admin-slo.md`
+- **Code:** `src/app/admin/slo/**`, `src/lib/admin/slo/**`
+- **Telemetry:** none — covered by `admin_platform`. A synthesis layer — reads background_job_logs, get_feature_health() and helm_debug_list_traces; writes nothing of its own, so it has no admin_events feature tag.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/admin_slo.md`, `memory/ledgers/tests/admin_slo.md`
+
+## `admin_selfheal`
+
+**Admin Self-Heal** · active · criticality high · owner platform
+
+- **Behaviour:** `memory/features/admin-selfheal.md`
+- **Code:** `src/app/admin/self-heal/**`, `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts` … and 16 more in the registry
+- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/admin_selfheal.md`
+
+## `admin_replay_lab`
+
+**Admin Replay Lab** · active · criticality medium · owner platform
+
+- **Behaviour:** `memory/features/admin-replay-lab.md`
+- **Code:** `src/components/admin/replay/**`, `replay/**`, `src/lib/admin/replay/**`, `src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts`
+- **Telemetry:** none. Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/self-heal) reads a bundled generated index, not a runtime telemetry source.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** no ledger yet
 
 ## `team_access_control`
 

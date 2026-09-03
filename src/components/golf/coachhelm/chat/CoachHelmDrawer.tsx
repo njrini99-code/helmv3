@@ -63,6 +63,7 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
   const opener = React.useRef<HTMLButtonElement>(null);
 
   const routeContext = useRouteContext(pathname, search, players);
+  const fieldFocused = useIsTextFieldFocused();
 
   // Focus moves into the panel on open and back to the launcher on close. A
   // drawer that opens without moving focus strands keyboard and screen-reader
@@ -96,7 +97,7 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
   return (
     <>
       <AnimatePresence>
-        {!open && shouldRenderCoachHelmLauncher(pathname) && (
+        {!open && shouldRenderCoachHelmLauncher(pathname) && !fieldFocused && (
           <m.button
             key="coachhelm-launcher"
             ref={opener}
@@ -119,8 +120,25 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
             // capability was advertised by a symbol that could equally have
             // meant "messages" — which golf also has, in the rail, two icons
             // away. The name is the affordance; it now ships visibly.
+            //
+            // SHORT VIEWPORT: `md:inline-flex` is a WIDTH breakpoint, so a
+            // wide-but-short viewport (844×390 mobile landscape — an iPad-ish
+            // width in landscape, or a phone rotated) still satisfies it and
+            // the fixed bottom-right launcher lands on top of whatever else
+            // lives there: the composer's send button, the calendar's
+            // Fri/Sat day cells, a round-review chart axis
+            // (GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #3/#5). CSS-only, so
+            // it can't flicker in before layout settles. HIDDEN rather than
+            // shrunk: at that same width the desktop sidebar (not the bottom
+            // tab bar) renders, and "CoachHelm AI" is its second item —
+            // verified still visible pre-cutoff in the same audit finding —
+            // so the destination stays reachable with no shrunk-button
+            // geometry to re-verify against every screen this FAB appears on.
+            // `!` (important) because `md:inline-flex` and this rule can both
+            // match at once and utility ordering alone shouldn't decide which
+            // wins.
             className={cn(
-              'fixed bottom-6 right-6 z-[var(--fw-z-nav,40)] hidden h-14 items-center justify-center gap-2 px-5 md:inline-flex',
+              'fixed bottom-6 right-6 z-[var(--fw-z-nav,40)] hidden h-14 items-center justify-center gap-2 px-5 md:inline-flex [@media(max-height:500px)]:!hidden',
               'rounded-full bg-accent-650 text-text-on-accent shadow-soft',
               'font-fw-sans text-label font-semibold',
               'transition-colors hover:bg-accent-800',
@@ -228,6 +246,51 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
       </AnimatePresence>
     </>
   );
+}
+
+/**
+ * True while a text field anywhere on the page — most relevantly the message
+ * composer's textarea — has focus.
+ *
+ * The `max-height` CSS rule on the launcher (above) handles the general
+ * short-viewport collision, but a composer can be focused on a viewport tall
+ * enough to keep the FAB mounted (soft keyboard open on a taller phone,
+ * split-screen iPad, etc.), and the same bottom-right corner is exactly
+ * where a send button lives. This is the independent, height-agnostic guard
+ * for that: unmount the launcher for as long as a text field holds focus.
+ *
+ * `focusout` fires before the next element takes focus, so the recheck is
+ * deferred to the next tick — otherwise tabbing between two text fields
+ * flashes the FAB back in for a frame between them.
+ */
+function useIsTextFieldFocused(): boolean {
+  const [focused, setFocused] = React.useState(false);
+
+  React.useEffect(() => {
+    const isTextField = (target: EventTarget | null): boolean =>
+      target instanceof HTMLElement &&
+      (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT');
+
+    const syncFromActiveElement = () => setFocused(isTextField(document.activeElement));
+
+    const onFocusIn = (event: FocusEvent) => {
+      if (isTextField(event.target)) setFocused(true);
+    };
+    const onFocusOut = (event: FocusEvent) => {
+      if (isTextField(event.target)) {
+        window.setTimeout(syncFromActiveElement, 0);
+      }
+    };
+
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
+    return () => {
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+    };
+  }, []);
+
+  return focused;
 }
 
 /**

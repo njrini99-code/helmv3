@@ -29,34 +29,17 @@ import { collectSentry, collectSupabase, collectVercel } from './sources';
 import {
   RELIABILITY_SNAPSHOT_JOB_TYPE,
   correlateSignals,
+  resolveFeatureId,
   summarizeSources,
   worstStatus,
 } from './normalize';
+import { runInvariantChecks } from './invariants/run-checks';
+import type { InvariantRunSummary } from './invariants/run-checks';
 import type { ReliabilityRun, SourceResult } from './types';
 
 /** Collection window. Matches the 3-hourly cadence with overlap so a skipped
  *  run (Vercel cron scheduling is best-effort) does not leave a blind gap. */
 const WINDOW_HOURS = 4;
-
-/**
- * Advisory route → feature mapping.
- *
- * Deliberately a coarse prefix match and NOT presented as authoritative:
- * `memory/registry.yml` is the canonical router per the OS contract, and it is
- * a build-time artifact this runtime path cannot read. A null here means "not
- * attributed", never "no feature".
- */
-function resolveFeatureId(route: string | null): string | null {
-  if (!route) return null;
-  const r = route.toLowerCase();
-  if (r.includes('/rounds') || r.includes('round')) return 'golf_round_lifecycle';
-  if (r.includes('/qualifier')) return 'qualifiers';
-  if (r.includes('/stats') || r.includes('/analytics')) return 'stats_analytics';
-  if (r.includes('/coachhelm')) return 'coachhelm_ai';
-  if (r.includes('/admin')) return 'admin_platform';
-  if (r.includes('/calendar') || r.includes('/events')) return 'calendar_events';
-  return null;
-}
 
 export interface CollectOutcome {
   run: ReliabilityRun;
@@ -74,13 +57,44 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
   // Arms run concurrently and are individually fault-isolated: one arm throwing
   // must not take the run down, because a run that dies produces no record at
   // all — which is indistinguishable from "never scheduled" on the jobs board.
-  const settled = await Promise.allSettled([
-    // ONE window owner. Every arm receives the same start, so
-    // ReliabilityRun.windowStart/windowEnd actually describe all three.
-    collectSentry(windowStartIso),
-    collectSupabase(windowStartIso),
-    collectVercel(windowStartIso),
+  //
+  // The invariant runner (Phase D.4.3) is a SEPARATE Promise.allSettled, run
+  // concurrently via Promise.all rather than folded into the array above.
+  // `ReliabilitySource`/`sourceNames` below is a closed 3-element union
+  // indexed positionally against `settled` — widening that array to 4 would
+  // ripple into `summarizeSources`, `worstStatus`, and every consumer keyed
+  // on `ReliabilitySource` (including the Reliability tab's coverage
+  // matrix). The invariant runner has its own result shape
+  // (`InvariantRunSummary`) and its own field on `ReliabilityRun`, so it
+  // never needs to pretend to be a fourth source.
+  const [settled, [invariantsSettled]] = await Promise.all([
+    Promise.allSettled([
+      // ONE window owner. Every arm receives the same start, so
+      // ReliabilityRun.windowStart/windowEnd actually describe all three.
+      collectSentry(windowStartIso),
+      collectSupabase(windowStartIso),
+      collectVercel(windowStartIso),
+    ]),
+    Promise.allSettled([runInvariantChecks(now)]),
   ]);
+
+  // `runInvariantChecks` already catches every per-check failure internally
+  // (timeouts, fetch errors) and reports them as `'unknown'` rows — a
+  // rejection here means something outside that contract broke (e.g.
+  // `createAdminClient()` throwing synchronously). Synthesize the same
+  // all-unknown shape rather than dropping the field: `invariants` being
+  // ABSENT reads as "not run yet" (see the field's own doc on
+  // `ReliabilityRun`), which is a different and less honest claim than
+  // "attempted and failed".
+  const invariants: InvariantRunSummary =
+    invariantsSettled.status === 'fulfilled'
+      ? invariantsSettled.value
+      : {
+          version: 1,
+          generatedAt: now.toISOString(),
+          checks: [],
+          blind: true,
+        };
 
   const sourceNames = ['sentry', 'supabase', 'vercel'] as const;
   const results: SourceResult[] = settled.map((outcome, i) => {
@@ -106,6 +120,7 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
     sources: summarizeSources(results),
     signals,
     truncatedSignals,
+    invariants,
   };
 
   const completedAt = new Date();
@@ -120,8 +135,21 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
   // production rather than assumed: all 19,832 existing rows use those two and
   // nothing else. An earlier draft wrote 'success', which no other writer emits
   // and every status-based filter would have missed.
+  // `degraded` (a rate limit that survived retry) does not flip the run to
+  // 'failed' — it usually clears on its own, same reasoning as a `partial`
+  // arm — but it is worth naming in the error_message so it isn't invisible
+  // on the jobs board.
   const jobStatus = overallStatus === 'blind' ? 'failed' : 'completed';
   const blindArms = results.filter((r) => r.status === 'blind').map((r) => r.source);
+  const degradedArms = results.filter((r) => r.status === 'degraded').map((r) => r.source);
+  const statusNotes = [
+    ...(blindArms.length > 0 ? [`blind sources: ${blindArms.join(', ')}`] : []),
+    ...(degradedArms.length > 0 ? [`degraded sources: ${degradedArms.join(', ')}`] : []),
+    // Invariants going blind never flips `jobStatus` — it measures data
+    // self-consistency, a different question from "can we see errors" — but
+    // it belongs in the same operator-facing note so it is never silent.
+    ...(invariants.blind ? ['invariants: blind (no check produced a result this run)'] : []),
+  ];
 
   const { data, error } = await admin
     .from('background_job_logs')
@@ -131,7 +159,7 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
       started_at: startedAt.toISOString(),
       completed_at: completedAt.toISOString(),
       duration_ms: completedAt.getTime() - startedAt.getTime(),
-      error_message: blindArms.length > 0 ? `blind sources: ${blindArms.join(', ')}` : null,
+      error_message: statusNotes.length > 0 ? statusNotes.join('; ') : null,
       // `ReliabilityRun` is a closed, JSON-only shape (strings, numbers, arrays
       // of the same) so the cast to the generated `Json` type is safe rather
       // than merely convenient — there is no Date, Map or undefined in it.

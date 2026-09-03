@@ -96,6 +96,30 @@ describe('FairwayCoachRoster — roster-health header band', () => {
     expect(screen.getByText('Build your team')).toBeInTheDocument();
   });
 
+  /**
+   * GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1 (HIGH) — at 810×1080 tablet
+   * portrait and 844×390 mobile landscape, `md:grid-cols-2` (768px) put the
+   * player grid into 2 columns while the app shell's sidebar still left only
+   * a ~550px content column, so each card was ~265px: too narrow for a name
+   * + year badge + hometown + the SG:Total/Focus/Goals row, and "Cole
+   * Bennett" rendered as "C...". The grid now steps to 2-up at `lg` (1024px)
+   * instead, so tablet/mobile-landscape widths get a full single column.
+   */
+  it('sizes the player grid at lg (1024px), not md (768px), so tablet/mobile-landscape width is not squeezed into 2 narrow columns', () => {
+    const { container } = render(
+      <FairwayCoachRoster
+        players={[makePlayer()]}
+        teamName="Helm Golf"
+        inviteCode="ABC123"
+        intents={{}}
+        joinRequests={[]}
+        focusAreas={[]}
+      />,
+    );
+    expect(container.innerHTML).toMatch(/\blg:grid-cols-2\b/);
+    expect(container.innerHTML).not.toMatch(/\bmd:grid-cols-2\b/);
+  });
+
   it('reflects a covered, non-flagged roster as the honest "covered" state', () => {
     const covered = makePlayer({
       id: 'p2',

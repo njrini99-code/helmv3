@@ -142,9 +142,14 @@ export function FairwayRosterSkeleton() {
         </div>
 
         {/* Card grid — gap-5 matches FairwayPlayerRoster's real grid (the
-            coach grid steps gap-4 → md:gap-5 instead; this skeleton now
-            follows the shorter player shape it renders below). */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            coach grid steps gap-4 → lg:gap-5 instead; this skeleton now
+            follows the shorter player shape it renders below). Breakpoint is
+            lg (1024px), not md — GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1
+            moved both real grids off md:grid-cols-2 because it left tablet/
+            mobile-landscape cards too narrow for their content; the skeleton
+            must mirror the real grid's breakpoints exactly or it reserves
+            the wrong slot shape and the real content shifts on paint. */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <FairwayTeammateCardSkeleton key={i} />
           ))}

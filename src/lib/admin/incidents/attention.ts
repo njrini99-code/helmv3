@@ -330,6 +330,13 @@ const UNRESOLVED_STATES: ReadonlySet<IncidentLifecycleState> = new Set(
       'awaiting-deploy',
       'awaiting-proof',
       'regressed',
+      // A recurrence the analysis already found NOT A DEFECT stops firing
+      // rule 1's regression alarm (catalogued defect (e)) — but the fault
+      // itself is still open. Included here so rule 2 below can still catch
+      // it when it is CRITICAL: an LLM-authored "NOT A DEFECT" verdict must
+      // never be able to silence a critical fault outright, only to soften
+      // the specific "this is a regression" alarm it was wrong about.
+      'expected-recurrence',
       'unknown',
     ] satisfies IncidentLifecycleState[]
   ),

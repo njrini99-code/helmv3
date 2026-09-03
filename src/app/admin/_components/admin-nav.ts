@@ -3,8 +3,12 @@ type AdminHref =
   | '/admin/activity'
   | '/admin/errors'
   | '/admin/traces'
+  | '/admin/engineering'
+  | '/admin/work-log'
   | '/admin/qualifiers'
   | '/admin/reliability'
+  | '/admin/slo'
+  | '/admin/database'
   | '/admin/self-heal'
   | '/admin/auth'
   | '/admin/golf'
@@ -16,9 +20,15 @@ type AdminHref =
   | '/admin/utilization'
   | '/admin/jobs'
   | '/admin/deploys'
+  | '/admin/releases'
   | '/admin/health'
   | '/admin/teams'
-  | '/admin/billing';
+  | '/admin/billing'
+  | '/admin/lenses/golf'
+  | '/admin/lenses/baseball'
+  | '/admin/lenses/lifting'
+  | '/admin/lenses/teams'
+  | '/admin/lenses/users';
 
 export interface AdminNavEntry {
   label: string;
@@ -51,6 +61,18 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // shows each source's incidents, this one shows what MORE THAN ONE source
   // agrees on, plus which sources were readable at all.
   { label: 'Reliability', href: '/admin/reliability', key: 'R', section: 'Triage', description: 'Correlated Vercel, Sentry and Supabase signals', meta: '3h' },
+  // Error budgets/golden-path health/silence detection/trace funnels —
+  // Bridge Control Plane Phase D. Distinct from Reliability above: that tab
+  // is the 3-hourly correlated SIGNAL feed; this rolls the same tier
+  // vocabulary up into a rolling-window BUDGET, a golden-path rollup, a
+  // heartbeat-staleness read, and a fleet view of the flight recorder.
+  { label: 'SLO Center', href: '/admin/slo', key: 'O', section: 'Triage', description: 'Error budgets, golden paths, silence detection, trace funnels', meta: 'slo' },
+  // Database/Postgres-layer signal, distinct from Reliability: that tab
+  // correlates APPLICATION-level signals across three sources every 3
+  // hours; this tab is the DATABASE's own state — connections, deduped
+  // Supabase/PostgREST failures, query-performance deltas — read from the
+  // zero-cost collectors every 5-15 minutes.
+  { label: 'Database', href: '/admin/database', key: 'X', section: 'Triage', description: 'Postgres health, deduped DB errors, query deltas', meta: '5m' },
   // The self-healing circuit as a thing that can be watched. Distinct from
   // Jobs & Integrity, which answers "did the crons run": this answers "is the
   // loop alive, and has each stage ever actually produced its output" — a
@@ -82,8 +104,29 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
 
   // PLATFORM
   { label: 'Deploys & Infra', href: '/admin/deploys', key: '9', section: 'Platform', description: 'Vercel releases and web insight' },
+  // The flag/kill-switch governance board — feature-flags.yml rendered as a
+  // registry, not the deploy-risk/rollback surface `/admin/deploys` owns.
+  { label: 'Releases', href: '/admin/releases', key: 'K', section: 'Platform', description: 'Feature flags and kill switches', meta: 'flags' },
   { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Platform', description: 'Access, sessions, auth failures' },
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
+  // Distinct from the "Work log" tab above: that is the PR-timeline view
+  // (github-pr-timeline.ts entries, problem/fix narrative), this is the
+  // change-to-proof join over the SAME entries (repair verdict, shipped
+  // release, post-deploy delta) — Bridge Premium Phase 5 (Engineering OS).
+  { label: 'Proof Log', href: '/admin/work-log', key: 'Y', section: 'Platform', description: 'PR → release shipped in → post-deploy proof', meta: 'proof' },
+  { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'Platform', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
+
+  // LENSES — Bridge Premium Phase 4 (brief §20-27). Journey/flow-shaped
+  // dominant visuals over the same underlying data the Apps/Customers tabs
+  // above already surface — see each page's own header comment for what it
+  // reuses vs. adds. Deliberately in Platform per that brief's routing, not
+  // Apps/Customers, so it reads as an operating-model lens rather than a
+  // second app tab competing with Golf/Baseball/Lift Lab/Teams/Users above.
+  { label: 'Golf journey lens', href: '/admin/lenses/golf', key: 'G', section: 'Platform', description: 'Golf Journey River — funnel + incidents' },
+  { label: 'Baseball journey lens', href: '/admin/lenses/baseball', key: 'A', section: 'Platform', description: 'Baseball journeys — funnel + incidents' },
+  { label: 'Lift Lab flow lens', href: '/admin/lenses/lifting', key: 'P', section: 'Platform', description: 'Program Execution Flow, fully durable' },
+  { label: 'Teams EKG lens', href: '/admin/lenses/teams', key: 'E', section: 'Platform', description: 'Team EKG + release impact + adoption' },
+  { label: 'Users journey lens', href: '/admin/lenses/users', key: 'D', section: 'Platform', description: 'Directory + per-user Journey Ribbon' },
 
   // REVENUE — zero inbound links repo-wide before this entry.
   { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Create invoices' },
@@ -103,6 +146,22 @@ export const ADMIN_COMMAND_SHORTCUTS = [
 export function hrefForShortcut(key: string): string | null {
   return ADMIN_NAV.find((e) => e.key === key)?.href ?? null;
 }
+
+/**
+ * Single, UNMODIFIED (no Shift) keys that AdminShell's global keydown
+ * handler intercepts for something other than tab navigation — currently
+ * just plain 'r' for "refresh now" (the same action the Refresh button
+ * fires). Every ADMIN_NAV letter shortcut is deliberately the Shift+letter
+ * (uppercase `e.key`) form specifically so it can never collide with one of
+ * these; digit shortcuts need no Shift and have no local reservation to
+ * collide with. `admin-nav.test.ts` asserts no ADMIN_NAV key falls in this
+ * set, so a future addition here — or a future lowercase ADMIN_NAV key — is
+ * caught immediately instead of silently making a tab unreachable, which is
+ * exactly what happened to Reliability's 'R' shortcut when AdminShell used
+ * to treat plain 'r' and Shift+'R' as the same refresh trigger (fixed
+ * alongside this constant, Bridge Premium Phase 6).
+ */
+export const RESERVED_LOCAL_SHORTCUTS: ReadonlySet<string> = new Set(['r']);
 
 /**
  * M1 (bridge-chrome, docs/MOBILE_DOCTRINE.md rule 10): Bridge's mobile

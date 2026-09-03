@@ -1,10 +1,30 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { attachHelmTrace, recordWorkflow, helmLog } = vi.hoisted(() => ({
+  attachHelmTrace: vi.fn(),
+  recordWorkflow: vi.fn(),
+  helmLog: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+vi.mock('../correlation', () => ({ attachHelmTrace }));
+vi.mock('../metrics', () => ({ recordWorkflow }));
+vi.mock('../structured-log', () => ({ helmLog }));
+
 import {
   createHelmFlightRecorder,
   recordRescuedStepOutcome,
   PERSIST_START_TIMEOUT_MS,
   type FlightRecorderDependencies,
 } from '../helm-flight-recorder';
+import { __setVercelRequestContextForTests } from '../vercel-wait-until';
+
+beforeEach(() => {
+  attachHelmTrace.mockClear();
+  recordWorkflow.mockClear();
+  helmLog.debug.mockClear();
+  helmLog.info.mockClear();
+  helmLog.warn.mockClear();
+  helmLog.error.mockClear();
+});
 
 function fakeDependencies(
   overrides: Partial<FlightRecorderDependencies> = {},
@@ -23,7 +43,7 @@ function fakeDependencies(
 }
 
 describe('Helm flight recorder', () => {
-  it('is fail-open while still recording missing required work after a database failure', async () => {
+  it('is fail-open while still recording the failed required step after a database failure', async () => {
     const calls: Array<{ kind: string; payload: Record<string, unknown> }> = [];
     const dependencies: FlightRecorderDependencies = {
       newTraceId: () => '28f3c4cc-845c-4e4d-8d45-c5a996b0f5f5',
@@ -55,13 +75,18 @@ describe('Helm flight recorder', () => {
     await recorder.finalize('failure');
 
     const final = calls.at(-1);
+    // verify.round/holes/shots are 'best_effort' (2026-09-02), so a submit
+    // that never reaches them because the write itself failed does not ALSO
+    // report them missing — missing_required_step_count reflects only
+    // server.validation/auth/player and db.submit_round_atomic, all of
+    // which ran (the last one to failure) above.
     expect(final).toMatchObject({
       kind: 'finalize',
       payload: {
         traceId: '28f3c4cc-845c-4e4d-8d45-c5a996b0f5f5',
         status: 'failure',
         metadata: {
-          missing_required_step_count: 3,
+          missing_required_step_count: 0,
           failure_step: 'db.submit_round_atomic',
           failure_code: '23503',
         },
@@ -206,6 +231,225 @@ describe('Helm flight recorder', () => {
         vi.useRealTimers();
       }
     });
+
+    it('honors a per-call startTimeoutMs override tighter than the shared default', async () => {
+      // golf.shot.delete/golf.shot.add_or_edit pass startTimeoutMs: 300
+      // because their recorder construction now sits before any business
+      // logic — a hung persistStart there must degrade well before the
+      // shared 500ms default would let it. Advancing only 300ms + 50 (never
+      // PERSIST_START_TIMEOUT_MS, which stays 500) proves the override, not
+      // the default, is what the race actually uses.
+      vi.useFakeTimers();
+      try {
+        const spanEnd = vi.fn();
+        const spanSetStatus = vi.fn();
+        const onRecorderFailure = vi.fn();
+        const persistStep = vi.fn(async () => {});
+        const dependencies: FlightRecorderDependencies = {
+          newTraceId: () => 'c1d2e3f4-5061-4708-9203-a0b0c0d0e0f0',
+          startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: spanEnd, setStatus: spanSetStatus }),
+          persistStart: () => new Promise(() => {}),
+          persistStep,
+          persistFinalize: async () => {},
+          onRecorderFailure,
+        };
+
+        const pending = createHelmFlightRecorder(
+          { workflow: 'golf.shot.delete', startTimeoutMs: 300 },
+          dependencies,
+        );
+        await vi.advanceTimersByTimeAsync(300 + 50);
+
+        const recorder = await pending;
+
+        expect(onRecorderFailure).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'persistStart exceeded 300ms' }),
+          expect.objectContaining({ operation: 'start_timeout', timeout_ms: 300 }),
+        );
+        expect(spanSetStatus).toHaveBeenCalledWith('internal_error');
+        expect(spanEnd).toHaveBeenCalled();
+
+        // Degrades to the same inert no-op shape, and the caller proceeds —
+        // never awaited past the 300ms bound, never rejected.
+        await expect(recorder.start('db.delete_shot')).resolves.toBeUndefined();
+        await expect(recorder.finalize('success')).resolves.toBeUndefined();
+        expect(persistStep).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('still respects the shared PERSIST_START_TIMEOUT_MS default when no override is given', async () => {
+      // Companion to the override test above: submit/savePartialRound pass
+      // no startTimeoutMs, so a hang there must NOT degrade at 300ms +
+      // 50ms — only at the full shared default.
+      vi.useFakeTimers();
+      try {
+        const onRecorderFailure = vi.fn();
+        const dependencies: FlightRecorderDependencies = {
+          newTraceId: () => 'd1e2f3a4-5061-4708-9203-a0b0c0d0e0f1',
+          startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+          persistStart: () => new Promise(() => {}),
+          persistStep: async () => {},
+          persistFinalize: async () => {},
+          onRecorderFailure,
+        };
+
+        const pending = createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+        await vi.advanceTimersByTimeAsync(300 + 50);
+        expect(onRecorderFailure).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(PERSIST_START_TIMEOUT_MS);
+        await pending;
+        expect(onRecorderFailure).toHaveBeenCalledWith(
+          expect.objectContaining({ message: `persistStart exceeded ${PERSIST_START_TIMEOUT_MS}ms` }),
+          expect.objectContaining({ operation: 'start_timeout', timeout_ms: PERSIST_START_TIMEOUT_MS }),
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+});
+
+describe('persistence writes survive the response returning (Vercel freeze)', () => {
+  // golf.ts calls every recorder method with `void flightRecorder.x(...)` —
+  // deliberately not awaited, so the trace write never blocks the player's
+  // save. On Vercel the function can freeze the instant the response is
+  // sent, and a promise nobody registered with the platform simply stops
+  // mid-flight: the underlying RPC surfaces as an unhandled "fetch failed"
+  // (reported once by Sentry's Supabase auto-instrumentation) while
+  // failOpen's own catch — which never got to run before the freeze —
+  // reports it again on the NEXT invocation that happens to resume the
+  // frozen microtask. Registering the write with vercelWaitUntil tells the
+  // Vercel runtime to hold the function open until the write settles, so it
+  // always finishes (and is caught) within the SAME invocation: exactly one
+  // handled report, ever, and the freeze/resume race that produced the
+  // second one can't happen.
+  afterEach(() => __setVercelRequestContextForTests(null));
+
+  it('registers persistStart with vercelWaitUntil at construction time', async () => {
+    const waitUntil = vi.fn();
+    __setVercelRequestContextForTests({ waitUntil });
+    const { dependencies } = fakeDependencies();
+
+    await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+
+    expect(waitUntil).toHaveBeenCalledTimes(1);
+    expect(waitUntil.mock.calls[0]?.[0]).toBeInstanceOf(Promise);
+  });
+
+  it('registers every persistStep and persistFinalize write with vercelWaitUntil', async () => {
+    const waitUntil = vi.fn();
+    __setVercelRequestContextForTests({ waitUntil });
+    const { dependencies } = fakeDependencies();
+
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+    waitUntil.mockClear(); // isolate from the persistStart registration above
+
+    await recorder.start('server.validation');
+    await recorder.complete('server.validation');
+    await recorder.finalize('success');
+
+    // one registration per persistStep call (start, complete) plus one for finalize
+    expect(waitUntil).toHaveBeenCalledTimes(3);
+    for (const call of waitUntil.mock.calls) {
+      expect(call[0]).toBeInstanceOf(Promise);
+    }
+  });
+
+  it('still reports a rejecting write through onRecorderFailure exactly once, even though the same promise is registered with vercelWaitUntil', async () => {
+    const waitUntil = vi.fn();
+    __setVercelRequestContextForTests({ waitUntil });
+    const onRecorderFailure = vi.fn();
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => '9c1f3a2b-4d5e-6f70-8192-a3b4c5d6e7f8',
+      startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+      persistStart: async () => {},
+      persistStep: async () => { throw new Error('debug store unavailable'); },
+      persistFinalize: async () => {},
+      onRecorderFailure,
+    };
+
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+    await recorder.complete('server.validation');
+
+    expect(onRecorderFailure).toHaveBeenCalledTimes(1);
+    expect(onRecorderFailure).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ operation: 'step' }));
+    // The promise handed to vercelWaitUntil is the very one failOpen also
+    // awaits — the same reference, not a second wrapped copy that would give
+    // the underlying write two independent `.catch` paths (the doubling this
+    // fix closes). It settles (by rejecting, same as the real write) rather
+    // than hanging, and — because this test completes without vitest
+    // flagging an unhandled rejection — was never left without a handler.
+    const registered = waitUntil.mock.calls.at(-1)?.[0] as Promise<unknown> | undefined;
+    await expect(registered).rejects.toThrow('debug store unavailable');
+  });
+
+  it('never propagates a persistence rejection to the caller', async () => {
+    __setVercelRequestContextForTests({ waitUntil: vi.fn() });
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+      persistStart: async () => {},
+      persistStep: async () => { throw new Error('fetch failed'); },
+      persistFinalize: async () => { throw new Error('fetch failed'); },
+      onRecorderFailure: vi.fn(),
+    };
+
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+    await expect(recorder.complete('server.validation')).resolves.toBeUndefined();
+    await expect(recorder.finalize('success')).resolves.toBeUndefined();
+  });
+
+  it('works identically outside Vercel, where vercelWaitUntil finds no request context', async () => {
+    // No __setVercelRequestContextForTests call — vercelWaitUntil returns
+    // false and is a pure no-op, exactly like a local dev server or a test.
+    const { dependencies, calls } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+    await recorder.complete('server.validation');
+    await recorder.finalize('success');
+
+    expect(calls.some((c) => c.kind === 'step')).toBe(true);
+    expect(calls.some((c) => c.kind === 'finalize')).toBe(true);
+  });
+});
+
+describe('failOpen catches a synchronous throw from the write dependency', () => {
+  // `write()` is typed `() => Promise<void>`, but nothing enforces that a
+  // dependency actually returns a promise rather than throwing synchronously
+  // before ever constructing one (e.g. a bug in the closure that builds the
+  // RPC payload, thrown before `dependencies.persistStep` is even reached).
+  // Before this fix, `const task = write(); vercelWaitUntil(task);` sat
+  // OUTSIDE failOpen's try block, so a synchronous throw there was never
+  // caught — it escaped as a rejected promise straight out of failOpen,
+  // through transition(), through the `void flightRecorder.x(...)` call
+  // sites in golf.ts, becoming an unhandled rejection on the round-save hot
+  // path instead of the one handled, reported failure the fail-open
+  // guarantee promises.
+  it('reports through onRecorderFailure exactly once and never rejects the caller', async () => {
+    const onRecorderFailure = vi.fn();
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => 'e5f6a7b8-c9d0-4e1f-8203-405060708090',
+      startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+      persistStart: async () => {},
+      // A synchronous throw, not an async function returning a rejected
+      // promise — that distinction is exactly what this test guards.
+      persistStep: (() => {
+        throw new Error('persistStep threw synchronously');
+      }) as unknown as FlightRecorderDependencies['persistStep'],
+      persistFinalize: async () => {},
+      onRecorderFailure,
+    };
+
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    await expect(recorder.complete('server.validation')).resolves.toBeUndefined();
+    expect(onRecorderFailure).toHaveBeenCalledTimes(1);
+    expect(onRecorderFailure).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ operation: 'step' }),
+    );
   });
 });
 
@@ -260,5 +504,228 @@ describe('recordRescuedStepOutcome', () => {
 
     // The fallback step was never attempted — no fallback ran.
     expect(calls.some((c) => c.kind === 'step' && c.payload.stepKey === 'db.direct_submit_fallback')).toBe(false);
+  });
+
+  it('records the rescued warn/fallback-complete pair but does NOT finalize when deferFinalizeOnRescue is true', async () => {
+    // golf.ts's submit path needs this: a rescued direct-submit-fallback can
+    // fall through into the synchronous, response-blocking
+    // post.qualifier_transition step, whose real timing must land inside the
+    // trace's window before the caller finalizes it itself.
+    const { dependencies, calls } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    await recordRescuedStepOutcome(recorder, {
+      failedStepKey: 'db.submit_round_atomic',
+      fallbackStepKey: 'db.direct_submit_fallback',
+      rescued: true,
+      stepInput: { errorCode: '57014', errorSummary: 'statement timeout' },
+      fallbackStepInput: { observed: { round_id: 'r-1' } },
+      deferFinalizeOnRescue: true,
+    });
+
+    expect(calls.some((c) => c.kind === 'finalize')).toBe(false);
+
+    const rpcStepCalls = calls.filter((c) => c.kind === 'step' && c.payload.stepKey === 'db.submit_round_atomic');
+    expect(rpcStepCalls.at(-1)).toMatchObject({ payload: { status: 'warning' } });
+    const fallbackStepCalls = calls.filter((c) => c.kind === 'step' && c.payload.stepKey === 'db.direct_submit_fallback');
+    expect(fallbackStepCalls.map((c) => c.payload.status)).toEqual(['started', 'success']);
+
+    // The caller is responsible for finalizing afterward.
+    await recorder.finalize('success');
+    expect(calls.at(-1)).toMatchObject({ kind: 'finalize', payload: { status: 'success' } });
+  });
+
+  it('still finalizes immediately on an UNRESCUED outcome even when deferFinalizeOnRescue is true', async () => {
+    // The flag only ever applies to the rescued branch — see its own doc.
+    // An unrescued outcome returns control to the caller immediately, so
+    // there is nothing later whose timing deferring finalize could protect.
+    const { dependencies, calls } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    await recordRescuedStepOutcome(recorder, {
+      failedStepKey: 'db.submit_round_atomic',
+      fallbackStepKey: 'db.direct_submit_fallback',
+      rescued: false,
+      stepInput: { errorCode: '57014', errorSummary: 'statement timeout' },
+      deferFinalizeOnRescue: true,
+    });
+
+    expect(calls.at(-1)).toMatchObject({ kind: 'finalize', payload: { status: 'failure' } });
+  });
+
+  /**
+   * Phase B's correlation.ts brief asked for the flight recorder's run
+   * metadata to carry the Sentry trace id "when one is active" — this
+   * ALREADY happens (see baseMetadata's `sentry_trace_id`/`root_span_id`
+   * spread above, unchanged by this file) because `startInactiveSpan`
+   * inherits the ambient trace when one exists, so the span this recorder
+   * constructs already IS the correlated span. Locking it here so a future
+   * refactor of `defaultDependencies`/`createHelmFlightRecorder` cannot drop
+   * it silently — there was no assertion on this before.
+   */
+  it('carries the Sentry span ids the recorder constructed into the persisted start metadata', async () => {
+    const { dependencies, calls } = fakeDependencies();
+    await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    const start = calls.find((c) => c.kind === 'start');
+    expect(start?.payload.metadata).toMatchObject({
+      sentry_trace_id: 'sentry-trace',
+      root_span_id: 'sentry-span',
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// helm.workflow.* metrics + helmLog + Sentry trace correlation (Deliverable
+// 6) — the Sentry-side signal this file adds on top of the pre-existing
+// helm_debug persistence above. Covers all THREE return points `finalize`
+// can come from: the real recorder, the disabled-mode no-op, and the
+// start-timeout degrade path — deliberately, since the whole point of
+// emitting from `createHelmFlightRecorder` rather than from each of golf.ts's
+// four call sites is that every path finalizes the same way.
+// ---------------------------------------------------------------------------
+describe('helm.workflow.* metrics, helmLog, and Sentry trace correlation', () => {
+  it('calls attachHelmTrace with the resolved trace id at construction, before any enabled check', async () => {
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    expect(attachHelmTrace).toHaveBeenCalledWith(recorder.traceId);
+  });
+
+  it('records helm.workflow.* once on finalize(\'success\'), with duration and the golf_round_lifecycle feature', async () => {
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+
+    await recorder.finalize('success');
+
+    expect(recordWorkflow).toHaveBeenCalledTimes(1);
+    expect(recordWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feature: 'golf_round_lifecycle',
+        action: 'golf.round.autosave',
+        outcome: 'success',
+        sport: 'golf',
+        durationMs: expect.any(Number),
+      }),
+    );
+    expect(helmLog.info).toHaveBeenCalledWith(
+      'golf.round_lifecycle.finished',
+      expect.objectContaining({ result: 'success', action: 'golf.round.autosave' }),
+    );
+    expect(helmLog.warn).not.toHaveBeenCalled();
+    expect(helmLog.error).not.toHaveBeenCalled();
+  });
+
+  it('reports the PROMOTED outcome (failure) when a required step failed, even though the caller passed success', async () => {
+    // Mirrors the very first test in this file: finalize()'s own promotion
+    // rule (a failed step always wins) must be what the metric/log see too,
+    // not the raw status the caller happened to pass.
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    await recorder.fail('db.submit_round_atomic', { errorCode: '23503' });
+    await recorder.finalize('success');
+
+    expect(recordWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'failure', errorCode: '23503' }),
+    );
+    expect(helmLog.error).toHaveBeenCalledWith(
+      'golf.round_lifecycle.finished',
+      expect.objectContaining({ result: 'failure', error_code: '23503' }),
+    );
+  });
+
+  it('logs at warn (not error) for a warning/rescued finish', async () => {
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.shot.add_or_edit' }, dependencies);
+
+    await recorder.finalize('warning');
+
+    expect(recordWorkflow).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'warning' }));
+    expect(helmLog.warn).toHaveBeenCalledWith(
+      'golf.round_lifecycle.finished',
+      expect.objectContaining({ result: 'warning' }),
+    );
+    expect(helmLog.error).not.toHaveBeenCalled();
+  });
+
+  it('logs at warn for a pending finish (interrupted, not failed) and passes outcome through unmodified', async () => {
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.shot.delete' }, dependencies);
+
+    await recorder.finalize('pending');
+
+    expect(recordWorkflow).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'pending' }));
+    expect(helmLog.warn).toHaveBeenCalledWith(
+      'golf.round_lifecycle.finished',
+      expect.objectContaining({ result: 'pending' }),
+    );
+  });
+
+  it('still records the workflow metric from the DISABLED-mode no-op recorder (production, no override)', async () => {
+    const original = process.env.VERCEL_ENV;
+    process.env.VERCEL_ENV = 'production';
+    try {
+      const { dependencies, calls } = fakeDependencies();
+      const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+      // Confirms this really is the disabled path: no persistStart write happened.
+      expect(calls).toHaveLength(0);
+      await recorder.finalize('failure');
+
+      expect(recordWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'golf.round.submit', outcome: 'failure' }),
+      );
+      expect(helmLog.error).toHaveBeenCalledTimes(1);
+    } finally {
+      if (original === undefined) delete process.env.VERCEL_ENV;
+      else process.env.VERCEL_ENV = original;
+    }
+  });
+
+  it('still records the workflow metric from the start-TIMEOUT degrade path', async () => {
+    vi.useFakeTimers();
+    try {
+      const dependencies: FlightRecorderDependencies = {
+        newTraceId: () => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+        persistStart: () => new Promise(() => {}),
+        persistStep: vi.fn(async () => {}),
+        persistFinalize: async () => {},
+        onRecorderFailure: vi.fn(),
+      };
+
+      const pending = createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+      await vi.advanceTimersByTimeAsync(PERSIST_START_TIMEOUT_MS + 50);
+      const recorder = await pending;
+
+      await recorder.finalize('failure');
+
+      expect(recordWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'golf.round.submit', outcome: 'failure' }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('emits the workflow metric BEFORE the (unbounded) persistFinalize write, so a hung write cannot swallow it', async () => {
+    const finalizeOrder: string[] = [];
+    recordWorkflow.mockImplementationOnce(() => { finalizeOrder.push('metric'); });
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => 'ffffffff-1111-2222-3333-444444444444',
+      startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+      persistStart: async () => {},
+      persistStep: async () => {},
+      persistFinalize: async () => {
+        finalizeOrder.push('persist');
+      },
+      onRecorderFailure: vi.fn(),
+    };
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+
+    await recorder.finalize('success');
+
+    expect(finalizeOrder).toEqual(['metric', 'persist']);
   });
 });

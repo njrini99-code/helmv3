@@ -14,6 +14,8 @@ import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { StateChip } from '../_components/Row';
 import { LocalTime } from '../_components/LocalTime';
+import { buildJobWaterfall } from '@/lib/admin/triage/job-waterfall';
+import { JobExecutionWaterfall } from '@/components/admin/triage/JobExecutionWaterfall';
 
 export const dynamic = 'force-dynamic';
 
@@ -464,11 +466,13 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
 /**
  * The self-healing loop.
  *
- * Two of its three stages run OUTSIDE this deployment — a cloud routine and a
- * launchd agent on the owner's laptop — so nothing in the app can observe them
- * failing. Their only evidence of life is a heartbeat row, and this panel is
- * where its absence becomes visible. Without it, a dead stage and a quiet week
- * look the same.
+ * One of its three stages runs OUTSIDE this deployment — a launchd agent on
+ * the owner's laptop (Repair) — so nothing in the app can observe it failing.
+ * Its only evidence of life is a heartbeat row, and this panel is where its
+ * absence becomes visible. Without it, a dead stage and a quiet week look the
+ * same. (Diagnose moved from an Anthropic-hosted cloud routine onto a Vercel
+ * cron 2026-09-02 — this deployment can now see it fail directly, same as
+ * Close.)
  *
  * Rendered as a numbered circuit rather than a list of jobs because the stages
  * are sequential: a dead Diagnose starves Repair, and a dead Repair leaves
@@ -590,6 +594,14 @@ async function JobsBody() {
           that they stopped writing.
         </p>
         <SelfHealLoop stages={tab.selfHeal} status={tab.selfHealStatus} />
+      </Surface>
+
+      <Surface padding="sm">
+        <KeyPanelRule />
+        <SectionLabel>Execution waterfall</SectionLabel>
+        <div className="mt-3">
+          <JobExecutionWaterfall view={buildJobWaterfall(tab, Date.now())} />
+        </div>
       </Surface>
 
       {/* Key panel: the board that answers "is anything actually running on

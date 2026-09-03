@@ -110,8 +110,24 @@
       "schedule": "30 4 * * *"
     },
     {
+      "path": "/api/cron/db-health-sampler",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/db-stat-delta",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/db-observability-prune",
+      "schedule": "45 4 * * *"
+    },
+    {
       "path": "/api/cron/reliability-triage",
       "schedule": "0 */3 * * *"
+    },
+    {
+      "path": "/api/cron/selfheal-triage",
+      "schedule": "17 3,9,15,21 * * *"
     }
   ]
 }
