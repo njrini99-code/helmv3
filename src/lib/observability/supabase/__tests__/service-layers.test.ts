@@ -118,7 +118,7 @@ describe('attributeServiceLayer — service-native codes and bare HTTP', () => {
     expect(result.originConfidence).toBe('likely');
   });
 
-  it('nothing at all yields unknown rather than a guess', () => {
+  it('with no code and no status, falls back to the OBSERVING service at "likely", never "certain"', () => {
     const result = attributeServiceLayer({
       service: 'postgrest',
       sqlstate: null,
@@ -128,10 +128,49 @@ describe('attributeServiceLayer — service-native codes and bare HTTP', () => {
       code: null,
       httpStatus: null,
     });
+    // Deliberately not a claim about origin: the observing service is the only
+    // thing the evidence names, and the confidence says so.
     expect(result.likelyOriginLayer).toBe('postgrest');
     expect(result.originConfidence).toBe('likely');
     expect(result.reasons.join(' ')).toContain('No code or HTTP status');
   });
+
+  it('an unidentified service with nothing else yields unknown rather than a guess', () => {
+    const result = attributeServiceLayer({
+      service: 'unknown' as never,
+      sqlstate: null,
+      postgrestCode: null,
+      authCode: null,
+      storageCode: null,
+      code: null,
+      httpStatus: null,
+    });
+    expect(result.likelyOriginLayer).toBe('unknown');
+    expect(result.originConfidence).toBe('unknown');
+  });
+});
+
+describe('attributeServiceLayer — a non-PGRST value in postgrestCode is rejected', () => {
+  // `classify.ts`'s message-fallback path stores these in `code` with a null
+  // sqlstate when a proxy swallowed the SQLSTATE. Every one is a SWALLOWED
+  // POSTGRES verdict, so the catch-all "is a PostgREST-native code — the
+  // request never became a Postgres verdict" sentence would assert the exact
+  // opposite of the truth. The module refuses the value rather than trusting
+  // every caller to derive the field correctly.
+  const FALLBACK_CODES = [
+    'unknown_authorization',
+    'unknown_deadlock',
+    'unknown_timeout',
+    'unknown_missing_object',
+    'classifier_failure',
+  ];
+
+  for (const code of FALLBACK_CODES) {
+    it(`never calls ${code} a PostgREST-native code`, () => {
+      const result = attributeServiceLayer(envelope({ postgrestCode: code, code }));
+      expect(result.reasons.join(' ')).not.toContain('PostgREST-native code');
+    });
+  }
 });
 
 describe('attributeMultiLayerEvidence', () => {

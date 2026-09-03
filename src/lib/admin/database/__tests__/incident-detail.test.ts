@@ -44,6 +44,19 @@ function errorRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/** A missing-object failure — the only class recent-change attribution covers. */
+function missingObjectRow(overrides: Record<string, unknown> = {}) {
+  return errorRow({
+    error_code: '42P01',
+    sqlstate: '42P01',
+    operation: 'select',
+    rpc_name: null,
+    relation_name: 'golf_round_notes',
+    normalized_message: 'relation "golf_round_notes" does not exist',
+    ...overrides,
+  });
+}
+
 const CLEAN_DRIFT_INPUTS = {
   ledger: { filesReadable: true, files: [], appliedVersions: [], heldVersions: [] },
   types: { readable: true, tables: [], columns: [], functions: [] },
@@ -189,6 +202,69 @@ describe('fetchDatabaseIncidentDetail', () => {
     stubRpcs({ helm_debug_read_db_error_events: { data: [errorRow({ expectedness: 'unknown' })], error: null } });
     const unknown = await fetchDatabaseIncidentDetail(FINGERPRINT);
     expect(unknown.data?.authorization.verdict).toBe('UNKNOWN');
+  });
+
+  it('never calls a swallowed SQLSTATE a PostgREST-native code', async () => {
+    // `classify.ts`'s message fallback stores `unknown_authorization` in `code`
+    // with a null sqlstate when a proxy ate the SQLSTATE. It is a Postgres
+    // verdict; calling it PostgREST-native would make the service-layer panel
+    // contradict the authorization panel on the same incident.
+    stubRpcs({
+      helm_debug_read_db_error_events: {
+        data: [errorRow({ error_code: 'unknown_authorization', sqlstate: null })],
+        error: null,
+      },
+    });
+    const result = await fetchDatabaseIncidentDetail(FINGERPRINT);
+    expect(result.data?.serviceLayer.reasons.join(' ')).not.toContain('PostgREST-native code');
+    // The authorization module DOES recognise this code, so the two panels must
+    // not disagree about whether Postgres decided it.
+    expect(result.data?.authorization.applies).toBe(true);
+  });
+
+  it('marks the commit stage unknown for a transport failure, not "not reached"', async () => {
+    stubRpcs({
+      helm_debug_read_db_error_events: {
+        data: [errorRow({ error_code: '08006', sqlstate: '08006' })],
+        error: null,
+      },
+    });
+    const result = await fetchDatabaseIncidentDetail(FINGERPRINT);
+    const commit = result.data?.workflowStages.find((s) => s.stage === 'commit');
+    // Losing the connection is not evidence the server rolled back —
+    // `commit-outcome.ts` calls this UNKNOWN_COMMIT.
+    expect(commit?.status).toBe('unknown');
+    // A server-side verdict still marks commit not-reached.
+    stubRpcs({ helm_debug_read_db_error_events: { data: [errorRow()], error: null } });
+    const authz = await fetchDatabaseIncidentDetail(FINGERPRINT);
+    expect(authz.data?.workflowStages.find((s) => s.stage === 'commit')?.status).toBe('not-reached');
+  });
+
+  it('does not request the applied ledger for a non-missing-object failure', async () => {
+    stubRpcs({ helm_debug_read_db_error_events: { data: [errorRow()], error: null } });
+    await fetchDatabaseIncidentDetail(FINGERPRINT);
+    // A 42501 says nothing about the ledger, and the page auto-refreshes every
+    // 60s — an unconditional fetch here would become a standing poll.
+    expect(mocks.readDriftInputs).toHaveBeenCalledWith({ includeAppliedLedger: false });
+  });
+
+  it('does request the applied ledger for a missing-object failure', async () => {
+    stubRpcs({
+      helm_debug_read_db_error_events: {
+        data: [errorRow({ error_code: '42P01', sqlstate: '42P01', relation_name: 'golf_x', rpc_name: null })],
+        error: null,
+      },
+    });
+    await fetchDatabaseIncidentDetail(FINGERPRINT);
+    expect(mocks.readDriftInputs).toHaveBeenCalledWith({ includeAppliedLedger: true });
+  });
+
+  it('links the Flight Trace explorer index, never a deep link the page would drop', async () => {
+    stubRpcs({ helm_debug_read_db_error_events: { data: [errorRow()], error: null } });
+    const result = await fetchDatabaseIncidentDetail(FINGERPRINT);
+    const hrefs = result.data?.repairLinks.filter((l) => l.kind === 'href').map((l) => l.target) ?? [];
+    expect(hrefs).toContain('/admin/traces');
+    expect(hrefs.some((h) => h.includes('?trace='))).toBe(false);
   });
 
   it('attributes a PostgREST-relayed SQLSTATE to Postgres', async () => {
@@ -339,6 +415,36 @@ describe('fetchDatabaseIncidentDetail', () => {
       const result = await fetchDatabaseIncidentDetail(FINGERPRINT);
       expect(result.data?.schemaDrift.state).toBe('blind');
       expect(result.data?.schemaDrift.data?.verdict).toBe('not-applicable'); // 42501 is not a missing object
+      // The claim "no migration names the failing object" is ABOUT the axis
+      // that just came back blind, so it must not be asserted. In a deployed
+      // Bridge this is the default condition, so keying on an empty filename
+      // array would deny a migration exists on essentially every incident.
+      // A 42501 names no missing object, so recent-change attribution has no
+      // mechanism at all here — and must never read as "no migration exists".
+      expect(result.data?.recentChange.state).toBe('unconfigured');
+      expect(result.data?.recentChange.note).not.toContain('No migration in this tree');
+    });
+
+    it('reports recentChange as blind when only the MIGRATION axis is unknown', async () => {
+      mocks.readDriftInputs.mockResolvedValue({
+        ledger: { filesReadable: false, files: [], appliedVersions: null, heldVersions: null },
+        types: { readable: true, tables: [], columns: [], functions: [] },
+      });
+      stubRpcs({ helm_debug_read_db_error_events: { data: [missingObjectRow()], error: null } });
+      const result = await fetchDatabaseIncidentDetail(FINGERPRINT);
+      expect(result.data?.schemaDrift.state).toBe('ok');
+      expect(result.data?.schemaDrift.data?.migrationFile).toBe('unknown');
+      // "We could not list the migrations" must never render as "none names it".
+      expect(result.data?.recentChange.state).toBe('blind');
+      expect(result.data?.recentChange.note).not.toContain('No migration in this tree');
+    });
+
+    it('reports recentChange as empty only when the migrations WERE listed and named nothing', async () => {
+      stubRpcs({ helm_debug_read_db_error_events: { data: [missingObjectRow()], error: null } });
+      const result = await fetchDatabaseIncidentDetail(FINGERPRINT);
+      expect(result.data?.schemaDrift.data?.migrationFile).toBe('absent');
+      expect(result.data?.recentChange.state).toBe('empty');
+      expect(result.data?.recentChange.note).toContain('No migration in this tree');
     });
 
     it('attaches a held-migration verdict and a HELD.md repair link to a missing-object incident', async () => {
@@ -379,6 +485,6 @@ describe('fetchDatabaseIncidentDetail', () => {
     const result = await fetchDatabaseIncidentDetail(FINGERPRINT);
     const targets = result.data?.repairLinks.map((l) => l.target) ?? [];
     expect(targets).toContain('npm run db:drift:check');
-    expect(targets).toContain('/admin/traces?trace=helm-trace-1');
+    expect(targets).toContain('/admin/traces');
   });
 });

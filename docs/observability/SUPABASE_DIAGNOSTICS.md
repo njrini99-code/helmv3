@@ -104,12 +104,23 @@ Two honest limitations, both stated in the file's own header:
   and the detail surface renders `UNREADABLE`. Making them readable would mean
   adding `outputFileTracingIncludes` to `next.config.mjs` — a deliberate,
   separate change that this track did not make.
-- **The applied-ledger read is NOT VERIFIED.** It is one bounded Management API
-  query (`select version from supabase_migrations.schema_migrations`), gated on
-  `SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF`, on demand only, mirroring
+- **The applied-ledger read is NOT VERIFIED, and it is OPT-IN.** It is one
+  bounded Management API query
+  (`select version from supabase_migrations.schema_migrations`), gated on
+  `SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF`, mirroring
   `release-context.ts`'s existing `fetchProductionMigrationHead`. `.env.local`
   is withheld from worktrees, so it has never been observed returning a
-  non-null result here. Cost (§4): a read, no polling, no schedule, no writes.
+  non-null result here.
+
+  `readSchemaDriftInputs` does **not** make the request unless the caller passes
+  `includeAppliedLedger`, and that gate is load-bearing rather than decorative:
+  the Bridge database page carries an unconditional `AutoRefresh
+  intervalMs={60_000}` and is `force-dynamic`, so an unconditional fetch would
+  become a once-a-minute poll per open tab, indefinitely — the recurring-load
+  shape §4 forbids, even though the endpoint itself is free. `incident-detail.ts`
+  asks only for a missing-object mechanism, where the ledger axis means
+  anything; for a `42501` (the majority case) it is meaningless and no request
+  is made. No polling, no schedule, no writes.
 
 ---
 
@@ -339,6 +350,32 @@ occurrence. A sample further away is `empty`, not presented as contemporaneous.
 **Query health** shows only rows carrying a regression flag; the rest is ordinary
 workload and would be noise.
 
+**Recent change takes its state from the drift AXIS, never from an array
+length.** An empty migration-filename list means two different things — the
+listing was read and named nothing, or it was never read — and in a deployed
+Bridge the second is the default. Keying on length would render the confident
+denial "No migration in this tree names the failing object" on essentially every
+production incident. The section is `unconfigured` for a failure that names no
+missing object (attribution here is object-based, so a `42501` has nothing to
+attribute), `blind` when the migrations could not be listed, and `empty` only
+when they were listed and named nothing.
+
+**`postgrestCode` is only ever a `PGRST`-prefixed value.** The error store's
+`error_code` also holds `classify.ts`'s message-fallback labels
+(`unknown_authorization`, `unknown_deadlock`, `unknown_timeout`,
+`unknown_missing_object`, `classifier_failure`) whenever a proxy swallowed the
+SQLSTATE. Those are swallowed **Postgres** verdicts; calling one PostgREST-native
+would make the service-layer panel assert the opposite of the truth and
+contradict the authorization panel on the same incident. Both sides guard —
+`incident-detail.ts` when it derives the field, and `service-layers.ts` when it
+reads it.
+
+**The commit stage is `unknown`, not `not-reached`, for a transport or
+connection failure** (`PGRST000`–`PGRST003`, SQLSTATE class `08`). A client
+losing the connection is not evidence the server rolled back; `commit-outcome.ts`
+calls exactly this case `UNKNOWN_COMMIT`, and §36–39 is explicit that a client
+timeout must never be read as "nothing committed".
+
 **The authorization expectation is read back** from the stored `expectedness`
 (`expected` → `denial-is-possible`, `unexpected` → `must-be-authorized`,
 anything else → `unknown`), which already encodes what the call site declared.
@@ -374,6 +411,11 @@ Fairway tokens only, the page's existing `Surface` / `Inset` / `Eyebrow` /
 - **A journey-attribution collector** for §53 — see the gap in section 6.
 - **A Sentry issue fetch**, a Flight Recorder read, or any change to
   `src/lib/admin/incidents/**`.
+- **A deep link into the Flight Trace explorer.** `/admin/traces` takes no
+  `searchParams` (verified against its page component's signature), so a
+  `?trace=` parameter would be silently dropped. The repair link points at the
+  index and carries the trace id in its label; the id is also a field on the
+  detail surface.
 - **An `outputFileTracingIncludes` change** to make the drift file reads work in
   a deployed Bridge.
 
@@ -383,7 +425,7 @@ Fairway tokens only, the page's existing `Surface` / `Inset` / `Eyebrow` /
 npx tsc --noEmit -p .                                              clean
 npx eslint <every changed file> --max-warnings 0                   clean
 npx vitest run src/lib/observability/supabase src/lib/admin/database
-  src/app/admin/__tests__                    35 files, 463 tests passing
+                                             34 files, 472 tests passing
 ```
 
 `npm run build`, `npm test` in full, and `npm run test:rls` were **not run** —

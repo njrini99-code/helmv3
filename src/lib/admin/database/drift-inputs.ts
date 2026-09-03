@@ -27,10 +27,16 @@ import 'server-only';
  * production would mean adding `outputFileTracingIncludes` to `next.config.mjs`,
  * which is a deliberate, separate change.
  *
- * COST (§4): the ledger read is ONE bounded Management API query, made only on
- * demand when an operator opens one incident's detail, and only when both
- * `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF` are set. No polling, no
- * schedule, no writes.
+ * COST (§4): the ledger read is ONE bounded Management API query, and it is
+ * OPT-IN — `readSchemaDriftInputs` does not make it unless the caller asks.
+ * That gate is load-bearing, not decorative: the Bridge database page carries
+ * an unconditional `AutoRefresh intervalMs={60_000}` and is `force-dynamic`, so
+ * an unconditional fetch here would become a once-a-minute poll per open tab,
+ * indefinitely — which is precisely the recurring-load shape §4 forbids, even
+ * though the endpoint itself is free. `incident-detail.ts` asks only for a
+ * missing-object mechanism, where the ledger axis means anything; for a 42501
+ * (the majority case) it is meaningless and no request is made. No schedule, no
+ * writes.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -263,9 +269,17 @@ export interface SchemaDriftInputs {
   types: GeneratedTypesListing;
 }
 
-export async function readSchemaDriftInputs(): Promise<SchemaDriftInputs> {
+/**
+ * `includeAppliedLedger` defaults to FALSE. A caller that does not opt in gets
+ * `appliedVersions: null`, which `schema-drift.ts` reports as `ledgerRow:
+ * 'unknown'` — the honest answer for an axis nobody looked at, and never
+ * `absent`.
+ */
+export async function readSchemaDriftInputs(
+  options?: { includeAppliedLedger?: boolean },
+): Promise<SchemaDriftInputs> {
   const migrations = readMigrationFiles();
-  const [appliedVersions] = await Promise.all([fetchAppliedMigrationVersions()]);
+  const appliedVersions = options?.includeAppliedLedger === true ? await fetchAppliedMigrationVersions() : null;
 
   return {
     ledger: {

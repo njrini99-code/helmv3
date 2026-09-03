@@ -51,7 +51,11 @@ import {
   attributeServiceLayer,
   type ServiceLayerAttribution,
 } from '@/lib/observability/supabase/service-layers';
-import { diagnoseSchemaDrift, type SchemaDriftDiagnosis } from '@/lib/observability/supabase/schema-drift';
+import {
+  classifyDriftMechanism,
+  diagnoseSchemaDrift,
+  type SchemaDriftDiagnosis,
+} from '@/lib/observability/supabase/schema-drift';
 import { readSchemaDriftInputs } from '@/lib/admin/database/drift-inputs';
 
 type MaybePostgrestError = { code?: string | null; message?: string | null } | null;
@@ -140,12 +144,37 @@ export interface DbWorkflowStageRow {
 }
 
 /**
+ * Transport/connection failures: the statement may never have been sent, or
+ * may have been sent AND committed before the connection died. `commit-outcome.ts`
+ * calls exactly this case `UNKNOWN_COMMIT`, and the brief's §36-39 is explicit
+ * that a client-side timeout must never be read as "nothing committed". So for
+ * these codes the commit stage is `unknown` rather than `not-reached` — the
+ * positive assertion would be a claim the evidence does not support.
+ */
+const TRANSPORT_CODES_WITH_UNKNOWN_COMMIT = new Set(['PGRST000', 'PGRST001', 'PGRST002', 'PGRST003']);
+
+function commitStateIsUnknown(code: string | null): boolean {
+  if (code === null) return false;
+  if (TRANSPORT_CODES_WITH_UNKNOWN_COMMIT.has(code)) return true;
+  // SQLSTATE class 08 — connection_exception and friends.
+  return /^08[0-9A-Z]{3}$/.test(code);
+}
+
+/**
  * Where the failure landed, derived from the service-layer attribution rather
  * than re-decided. Every stage after the failing one is `not-reached`; every
  * stage before it is `reached`. When the origin layer is ambiguous, the whole
  * ladder is `unknown` — a guessed stage marker is worse than none.
+ *
+ * One exception to "everything after the failure is not-reached": for a
+ * transport or connection failure the COMMIT stage is `unknown`, because the
+ * client losing the connection is not evidence the server rolled back.
  */
-export function buildWorkflowStages(attribution: ServiceLayerAttribution): DbWorkflowStageRow[] {
+export function buildWorkflowStages(
+  attribution: ServiceLayerAttribution,
+  options?: { code?: string | null },
+): DbWorkflowStageRow[] {
+  const commitUnknown = commitStateIsUnknown(options?.code ?? null);
   const failingStage: DbWorkflowStage | null =
     attribution.likelyOriginLayer === 'postgres'
       ? 'postgres-execution'
@@ -168,6 +197,13 @@ export function buildWorkflowStages(attribution: ServiceLayerAttribution): DbWor
     if (index < failingIndex) return { stage, status: 'reached' as StageStatus, detail: null };
     if (index === failingIndex) {
       return { stage, status: 'failed-here' as StageStatus, detail: attribution.reasons[0] ?? null };
+    }
+    if (stage === 'commit' && commitUnknown) {
+      return {
+        stage,
+        status: 'unknown' as StageStatus,
+        detail: 'A transport or connection failure is not evidence the server rolled back.',
+      };
     }
     return { stage, status: 'not-reached' as StageStatus, detail: null };
   });
@@ -421,6 +457,55 @@ function expectationFrom(expectedness: string): AuthorizationExpectation {
   return 'unknown';
 }
 
+/**
+ * "Recent change" is a claim ABOUT the migration axis, so its state must come
+ * from that axis — never from `migrationFilenames.length`.
+ *
+ * An empty filename list means two completely different things: the drift read
+ * worked and found nothing, or the drift read never happened. In a DEPLOYED
+ * Bridge the second is the DEFAULT, because `drift-inputs.ts` cannot read
+ * repository files from a serverless bundle (its own header says so). Keying
+ * on the array length would therefore render "No migration in this tree names
+ * the failing object" — a confident denial — on essentially every production
+ * incident. That is the exact "we could not look" rendered as "we looked and
+ * there is nothing" failure this whole track exists to prevent.
+ */
+function buildRecentChangeSection(
+  drift: Section<SchemaDriftDiagnosis>,
+  releaseSha: string | null,
+): Section<{ migrationFilenames: readonly string[]; releaseSha: string | null }> {
+  // Mechanism first: it is derived from the failure's CODE alone, so it is
+  // knowable whether or not any listing could be read. Recent-change
+  // attribution here is object-based — it names the migrations that create the
+  // object the failure could not find — and a 42501 or a deadlock has no such
+  // object. Declared unconfigured, never "no migration exists".
+  if (drift.data !== null && drift.data.mechanism === 'not_a_missing_object_failure') {
+    return {
+      state: 'unconfigured',
+      data: null,
+      note: 'Recent-change attribution is object-based and this failure names no missing object, so no migration can be tied to it here.',
+    };
+  }
+  if (drift.state !== 'ok' || drift.data === null) {
+    return {
+      state: drift.state === 'ok' ? 'blind' : drift.state,
+      data: null,
+      note: drift.note ?? 'The migration listing could not be read, so no claim about recent changes is supportable.',
+    };
+  }
+  if (drift.data.migrationFile === 'unknown') {
+    return {
+      state: 'blind',
+      data: null,
+      note: 'The migrations directory could not be listed here, so whether one names the failing object is unknown.',
+    };
+  }
+  if (drift.data.migrationFilenames.length === 0) {
+    return { state: 'empty', data: null, note: 'No migration in this tree names the failing object.' };
+  }
+  return sectionOk({ migrationFilenames: drift.data.migrationFilenames, releaseSha });
+}
+
 function buildRepairLinks(input: {
   drift: SchemaDriftDiagnosis | null;
   authorization: AuthorizationDiagnosis;
@@ -432,7 +517,12 @@ function buildRepairLinks(input: {
   ];
 
   if (input.helmTraceId !== null) {
-    links.push({ label: 'Open the Helm flight trace', target: `/admin/traces?trace=${input.helmTraceId}`, kind: 'href' });
+    // `/admin/traces` takes NO searchParams (verified: its page component's
+    // signature has none), so a `?trace=` deep link would be silently dropped
+    // and land on the index anyway. Link the index honestly and let the trace
+    // id travel as a field the operator can search for — a repair link that
+    // quietly does something other than it says is worse than a plainer one.
+    links.push({ label: `Open the Flight Trace explorer (trace ${input.helmTraceId})`, target: '/admin/traces', kind: 'href' });
   }
   if (input.drift?.verdict === 'migration-held') {
     links.push({ label: 'Read why the migration is held', target: 'supabase/migrations/HELD.md', kind: 'doc' });
@@ -487,17 +577,28 @@ export async function fetchDatabaseIncidentDetail(
   const occurrences = buckets.reduce((sum, r) => sum + r.occurrence_count, 0);
 
   // --- Pure evaluators over the identity ----------------------------------
+  // `postgrestCode` is ONLY a PGRST-prefixed code. The store's `error_code`
+  // also holds `classify.ts`'s message-fallback labels (`unknown_authorization`,
+  // `unknown_deadlock`, `unknown_timeout`, `unknown_missing_object`,
+  // `classifier_failure`) whenever a proxy swallowed the SQLSTATE — those are
+  // swallowed POSTGRES verdicts, and calling them PostgREST-native would state
+  // the opposite of the truth. `service-layers.ts` also rejects a non-PGRST
+  // value; both sides guard, because a mis-derivation here is the kind of
+  // false assertion this whole track exists to prevent.
+  const postgrestCodeOrNull =
+    latest.error_code !== null && latest.error_code.startsWith('PGRST') ? latest.error_code : null;
+
   const envelopeLike = {
     service: latest.service as never,
     sqlstate: latest.sqlstate,
-    postgrestCode: latest.sqlstate === null ? latest.error_code : null,
+    postgrestCode: postgrestCodeOrNull,
     authCode: null,
     storageCode: null,
     code: latest.error_code,
     httpStatus: null,
   };
   const serviceLayer = attributeServiceLayer(envelopeLike);
-  const workflowStages = buildWorkflowStages(serviceLayer);
+  const workflowStages = buildWorkflowStages(serviceLayer, { code: latest.sqlstate ?? latest.error_code });
 
   const authorization = diagnoseAuthorization({
     envelope: {
@@ -515,12 +616,22 @@ export async function fetchDatabaseIncidentDetail(
   // --- Schema drift, from the on-demand reader ----------------------------
   let schemaDrift: Section<SchemaDriftDiagnosis>;
   try {
-    const inputs = await readSchemaDriftInputs();
+    // The applied-ledger read is a network call, so ask for it ONLY when the
+    // axis means something. For a 42501 — the majority case — whether a
+    // migration is recorded says nothing, and the page's own 60s AutoRefresh
+    // would otherwise turn one on-demand query into a standing poll.
+    const isMissingObject =
+      classifyDriftMechanism({
+        code: latest.error_code,
+        sqlstate: latest.sqlstate,
+        postgrestCode: postgrestCodeOrNull,
+      }) !== 'not_a_missing_object_failure';
+    const inputs = await readSchemaDriftInputs({ includeAppliedLedger: isMissingObject });
     const diagnosis = diagnoseSchemaDrift({
       envelope: {
         code: latest.error_code,
         sqlstate: latest.sqlstate,
-        postgrestCode: latest.sqlstate === null ? latest.error_code : null,
+        postgrestCode: postgrestCodeOrNull,
         relation: latest.relation_name,
         rpc: latest.rpc_name,
         normalizedMessage: latest.normalized_message,
@@ -694,10 +805,7 @@ export async function fetchDatabaseIncidentDetail(
     sentryIssue: sectionUnconfigured(
       'The Sentry issue is not fetched here. The trace id on the event is the correlation key; the issue itself lives in Sentry.',
     ),
-    recentChange:
-      driftDiagnosis !== null && driftDiagnosis.migrationFilenames.length > 0
-        ? sectionOk({ migrationFilenames: driftDiagnosis.migrationFilenames, releaseSha: latest.release_sha })
-        : sectionEmpty('No migration in this tree names the failing object.'),
+    recentChange: buildRecentChangeSection(schemaDrift, latest.release_sha),
     repairLinks: buildRepairLinks({
       drift: driftDiagnosis,
       authorization,

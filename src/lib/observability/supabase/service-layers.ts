@@ -113,7 +113,18 @@ export type ServiceLayerEnvelope = Pick<
 export function attributeServiceLayer(envelope: ServiceLayerEnvelope): ServiceLayerAttribution {
   const observedLayer = observedServiceLayer(envelope.service);
   const sqlstate = envelope.sqlstate ?? (isSqlstate(envelope.code) ? envelope.code : null);
-  const postgrestCode = envelope.postgrestCode ?? null;
+  // A PostgREST-native code MUST start with `PGRST`. Anything else in that
+  // field is a caller's mis-derivation, and the catch-all branch below would
+  // turn it into a false assertion ("… is a PostgREST-native code — the
+  // request never became a Postgres verdict"). `classify.ts`'s message
+  // fallback stores `unknown_authorization` / `unknown_deadlock` /
+  // `unknown_timeout` / `unknown_missing_object` / `classifier_failure` in
+  // `code` with a null sqlstate — every one of those is a SWALLOWED Postgres
+  // verdict, the exact opposite of what that sentence claims. Rejecting the
+  // value here makes the false assertion unreachable from any caller rather
+  // than relying on each of them to derive the field correctly.
+  const rawPostgrestCode = envelope.postgrestCode ?? null;
+  const postgrestCode = rawPostgrestCode !== null && rawPostgrestCode.startsWith('PGRST') ? rawPostgrestCode : null;
   const reasons: string[] = [];
 
   const settle = (

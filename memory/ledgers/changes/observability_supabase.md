@@ -56,12 +56,41 @@
   the serialized output does not contain it. `schema-drift.ts` reads the
   already-sanitized `normalizedMessage` only to recover an object NAME, and
   its explanation is built from enumerated axes alone (also tested).
-- Verified: `npx tsc --noEmit -p .` clean; `npx eslint <changed files>
-  --max-warnings 0` clean; `npx vitest run src/lib/observability/supabase
-  src/lib/admin/database src/app/admin/__tests__` — 35 files, 463 tests
-  passing (123 of them new in this track). Not run, by this track's own
-  constraints: `npm run build`, the full `npm test`, `npm run test:rls`,
-  deno, any docs regeneration script.
+- Four composition-layer defects found in review AFTER the first eight
+  commits and fixed in a ninth, each with the regression test that would
+  have caught it:
+  1. `recentChange` keyed on `migrationFilenames.length`, so a blind drift
+     read rendered "No migration in this tree names the failing object" — a
+     confident denial, and the DEFAULT condition in a deployed Bridge where
+     the file reads never work. It now derives its state from the drift
+     axis: `unconfigured` for a failure that names no missing object,
+     `blind` when the migrations could not be listed, `empty` only when
+     they were listed and named nothing.
+  2. `postgrestCode` was derived as "the error code whenever sqlstate is
+     null", which swept in `classify.ts`'s message-fallback labels
+     (`unknown_authorization` and friends). Those are SWALLOWED POSTGRES
+     verdicts, and the catch-all branch labelled them "a PostgREST-native
+     code — the request never became a Postgres verdict", contradicting the
+     authorization panel on the same incident. Both sides now require a
+     `PGRST` prefix.
+  3. The applied-ledger read was unconditional, and the page carries an
+     unconditional 60s `AutoRefresh` while being `force-dynamic` — so an
+     "on-demand" query was in fact a once-a-minute poll per open tab.
+     `readSchemaDriftInputs` now takes `includeAppliedLedger`, defaulting
+     false, and `incident-detail.ts` opts in only for a missing-object
+     mechanism (a 42501 says nothing about the ledger).
+  4. Two smaller ones: the commit workflow stage asserted `not-reached` for
+     transport/connection failures where `commit-outcome.ts` says
+     UNKNOWN_COMMIT (now `unknown` for PGRST000-003 and SQLSTATE class 08),
+     and the repair link pointed at `/admin/traces?trace=<id>` when that
+     page takes no `searchParams` at all — it now links the index honestly
+     and carries the trace id in the label.
+- Verified after the fixes: `npx tsc --noEmit -p .` clean; `npx eslint
+  <changed files> --max-warnings 0` clean; `npx vitest run
+  src/lib/observability/supabase src/lib/admin/database` — 34 files, 472
+  tests passing. Not run, by this track's own constraints: `npm run build`,
+  the full `npm test`, `npm run test:rls`, deno, any docs regeneration
+  script.
 - **NOT VERIFIED / open items:**
   - `drift-inputs.ts`'s applied-ledger read is credential-gated
     (`SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF`) and `.env.local` is
