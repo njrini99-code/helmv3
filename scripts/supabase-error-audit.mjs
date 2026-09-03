@@ -81,6 +81,118 @@ const top = [...byArea.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
 console.log(`unchecked Supabase reads: ${total}`);
 for (const [area, n] of top) console.log(`  ${String(n).padStart(5)}  ${area}`);
 
+// -----------------------------------------------------------------------
+// Phase 2 Track B addition — Auth/Storage/Realtime/Edge coverage inventory.
+//
+// REPORT-ONLY. Nothing below this line affects the exit code or the
+// helm/no-unchecked-supabase-error ratchet above — that check keeps its
+// exact prior behaviour (SLACK / REGRESSION / OK, still gated on
+// BASELINE_PATH). This section exists so a coverage question ("which Auth
+// call sites still have no observeAuthResult wired?") has one command to
+// answer instead of four separate greps, and prints unconditionally
+// regardless of which branch (--update / regression / slack / OK) the
+// ratchet above takes.
+//
+// HOW "OBSERVED" IS DECIDED: file-level, not call-site-level. A real
+// per-call-site answer needs an AST walk (does THIS specific `.channel(...)`
+// chain feed into `observeRealtimeChannel`); this is deliberately a cheaper,
+// coarser heuristic — a file that calls a raw Supabase surface AND also
+// imports the matching observe* wrapper is reported OBSERVED, otherwise
+// UNOBSERVED. A file can import the wrapper for one call site and still
+// leave another one in the same file bare; this heuristic will not catch
+// that. It is a starting point for the coverage audit brief §49-55 asks
+// for, not a certification.
+//
+// `.auth.` is DELIBERATELY THE BRIEF'S OWN GREP TARGET, not narrowed to
+// `supabase.auth.` — which means it also matches non-Supabase `.auth.`
+// property access (a false-positive risk the brief's own wording accepts
+// for this report-only pass; narrow it before ever gating on this count).
+// -----------------------------------------------------------------------
+
+/** Runs `grep -rn -F <pattern> src --include=*.ts --include=*.tsx`, returns
+ *  `{ file, lineNo, text }` rows. Exit code 1 (grep's "no matches") is not
+ *  an error here — it means zero call sites, a valid and common result. */
+function grepCallSites(pattern) {
+  try {
+    const raw = execFileSync(
+      'grep',
+      ['-rn', '-F', '--include=*.ts', '--include=*.tsx', pattern, 'src'],
+      { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 },
+    );
+    return raw
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const firstColon = line.indexOf(':');
+        const secondColon = line.indexOf(':', firstColon + 1);
+        if (firstColon < 0 || secondColon < 0) return null;
+        return {
+          file: line.slice(0, firstColon),
+          lineNo: line.slice(firstColon + 1, secondColon),
+          text: line.slice(secondColon + 1).trim(),
+        };
+      })
+      .filter((row) => row !== null)
+      // Drop the obvious comment/JSDoc noise (this script's own new files,
+      // and any future doc comment mentioning the pattern in prose) —
+      // best-effort, not exhaustive.
+      .filter((row) => !row.text.startsWith('//') && !row.text.startsWith('*') && !row.text.startsWith('/**'));
+  } catch (err) {
+    if (err.status === 1) return [];
+    throw err;
+  }
+}
+
+/** True when `file` (relative to repo root, as grep reports it) imports
+ *  ANY of `wrapperNames` somewhere in its own text — the file-level
+ *  "observed" heuristic described above. Cached per (file) since the same
+ *  file is checked once per call site it contains. */
+const fileTextCache = new Map();
+function fileImportsAnyOf(file, wrapperNames) {
+  if (!fileTextCache.has(file)) {
+    try {
+      fileTextCache.set(file, readFileSync(resolve(ROOT, file), 'utf-8'));
+    } catch {
+      fileTextCache.set(file, '');
+    }
+  }
+  const text = fileTextCache.get(file);
+  return wrapperNames.some((name) => text.includes(name));
+}
+
+function reportCoverage(label, pattern, wrapperNames) {
+  const sites = grepCallSites(pattern);
+  let observed = 0;
+  let unobserved = 0;
+  const unobservedFiles = new Set();
+  for (const site of sites) {
+    if (fileImportsAnyOf(site.file, wrapperNames)) {
+      observed += 1;
+    } else {
+      unobserved += 1;
+      unobservedFiles.add(site.file);
+    }
+  }
+  console.log(`\n${label}: ${sites.length} call site(s) matching ${JSON.stringify(pattern)}`);
+  console.log(`  observed (file imports ${wrapperNames.join(' or ')}): ${observed}`);
+  console.log(`  unobserved: ${unobserved}`);
+  if (unobservedFiles.size > 0) {
+    const shown = [...unobservedFiles].sort().slice(0, 15);
+    for (const f of shown) console.log(`    - ${f}`);
+    if (unobservedFiles.size > shown.length) {
+      console.log(`    ... and ${unobservedFiles.size - shown.length} more file(s)`);
+    }
+  }
+  return { label, total: sites.length, observed, unobserved };
+}
+
+console.log('\n--- Auth / Storage / Realtime / Edge coverage (report-only, Phase 2 Track B) ---');
+reportCoverage('Auth (.auth.)', '.auth.', ['observeAuthResult']);
+reportCoverage('Storage (storage.from()', 'storage.from(', ['observeStorageResult']);
+reportCoverage('Realtime (.channel())', '.channel(', ['observeRealtimeChannel']);
+reportCoverage('Realtime (.subscribe())', '.subscribe(', ['observeRealtimeChannel']);
+reportCoverage('Edge Functions (functions.invoke())', 'functions.invoke(', ['observeEdgeInvoke']);
+
 if (UPDATE) {
   writeFileSync(BASELINE_PATH, `${JSON.stringify({ total, byArea: Object.fromEntries(top) }, null, 2)}\n`);
   console.log(`\nbaseline updated → ${total}`);

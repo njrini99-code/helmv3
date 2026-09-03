@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 export function useUnreadCount() {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -92,7 +93,8 @@ export function useUnreadCount() {
       // already-subscribed channel on remount/multi-mount, so the chained `.on()` ran
       // AFTER `.subscribe()` → "cannot add postgres_changes callbacks ... after
       // subscribe()". A per-mount id guarantees a fresh channel each time.
-      const channel = supabase
+      const channel = observeRealtimeChannel(
+        supabase
         .channel(channelNameRef.current)
         // OPTIMIZED: was an unfiltered `baseball_messages` INSERT subscription
         // — any message sent by any user in the org re-triggered this
@@ -147,8 +149,9 @@ export function useUnreadCount() {
           () => {
             fetchUnreadCount();
           }
-        )
-        .subscribe();
+        ),
+        { feature: 'baseball.unread_count', channelClass: 'baseball_conversation_participants', subscriptionType: 'postgres_changes' },
+      );
 
       return () => {
         supabase.removeChannel(channel);

@@ -8,6 +8,7 @@ import { logError } from '@/lib/error-logging';
 import { describeError } from '@/lib/utils/describe-error';
 import type { Message } from '@/lib/types';
 import type { ConversationWithMeta } from '@/lib/types/messages';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 export function useMessages(conversationId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -69,7 +70,8 @@ export function useMessages(conversationId: string) {
     fetchMessages();
 
     // Set up real-time subscription
-    const channel = supabase
+    const channel = observeRealtimeChannel(
+      supabase
       .channel(`conversation:${conversationId}`)
       .on(
         'postgres_changes',
@@ -105,8 +107,9 @@ export function useMessages(conversationId: string) {
             m.id === updatedMessage.id ? { ...m, read: updatedMessage.read } : m
           )));
         }
-      )
-      .subscribe();
+      ),
+      { feature: 'baseball.messages', channelClass: 'baseball_conversation', subscriptionType: 'postgres_changes' },
+    );
 
     return () => {
       supabase.removeChannel(channel);
@@ -402,7 +405,8 @@ export function useConversations() {
       // thread writes last_read_at on THIS participant row
       // (markMessagesAsRead in src/app/actions/messages.ts), which clears the
       // viewer's own unread badge without ever touching another user's rows.
-      const channel = supabase
+      const channel = observeRealtimeChannel(
+        supabase
         .channel(`baseball_conversations:${user.id}`)
         .on(
           'postgres_changes',
@@ -436,8 +440,9 @@ export function useConversations() {
               debouncedFetch();
             }
           }
-        )
-        .subscribe();
+        ),
+        { feature: 'baseball.messages', channelClass: 'baseball_conversations_list', subscriptionType: 'postgres_changes' },
+      );
 
       return () => {
         supabase.removeChannel(channel);

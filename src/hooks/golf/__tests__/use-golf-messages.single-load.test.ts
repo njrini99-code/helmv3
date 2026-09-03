@@ -47,7 +47,12 @@ describe('useGolfMessages — one fetch and one subscription per conversation', 
 
   it('reads the user id through a ref inside the realtime handlers', () => {
     const channelStart = source.indexOf('// Set up real-time subscription');
-    const channelEnd = source.indexOf('.subscribe();', channelStart);
+    // The channel-builder chain now ends at `observeRealtimeChannel(channel,`
+    // (Phase 2 Track B wraps the bare `.subscribe()` for connect-latency/
+    // reconnect/transport-failure observability — see
+    // src/lib/observability/supabase/realtime.ts) rather than a literal
+    // `.subscribe();` call.
+    const channelEnd = source.indexOf('observeRealtimeChannel(channel,', channelStart);
     expect(channelStart).toBeGreaterThan(-1);
     expect(channelEnd).toBeGreaterThan(channelStart);
 

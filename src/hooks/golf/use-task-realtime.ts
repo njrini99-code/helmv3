@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 /**
  * Task priority levels (based on golf_tasks.priority)
@@ -390,7 +391,8 @@ export function useTaskRealtime(
     // assignment rows change (a player completing a task). The assignment
     // table has no team_id column to filter on, so it's subscribed unfiltered
     // and fetchTasks re-derives the team-scoped view (which is RLS-bounded).
-    const channel = supabase
+    const channel = observeRealtimeChannel(
+      supabase
       .channel(`tasks-${teamId}`)
       .on(
         'postgres_changes',
@@ -414,8 +416,9 @@ export function useTaskRealtime(
         () => {
           fetchTasks();
         }
-      )
-      .subscribe();
+      ),
+      { feature: 'golf.tasks', channelClass: 'golf_tasks', subscriptionType: 'postgres_changes' },
+    );
 
     return () => {
       supabase.removeChannel(channel);

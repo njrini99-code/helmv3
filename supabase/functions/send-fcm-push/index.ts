@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { withObservedRequest } from "../_shared/observability.ts";
 
 /**
  * Android push transport — the FCM counterpart to `send-apns-push`.
@@ -27,7 +28,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, sentry-trace, baggage, traceparent",
 };
 
 const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
@@ -129,7 +130,7 @@ async function getAccessToken(
   return json.access_token;
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withObservedRequest("send-fcm-push", async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -261,4 +262,4 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-});
+}));

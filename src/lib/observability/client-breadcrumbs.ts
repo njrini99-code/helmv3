@@ -26,7 +26,11 @@ export type HelmBreadcrumbCategory =
   | 'golf.shot'
   | 'coachhelm'
   | 'auth'
-  | 'navigation';
+  | 'navigation'
+  /** Added for realtime.ts (Phase 2 Track B, brief §12) — channel subscribe
+   *  status transitions. No channel id, topic, or filter value ever reaches
+   *  this category: see the allow-list below. */
+  | 'realtime';
 
 /**
  * Every key this helper will ever forward to Sentry. Deliberately excludes

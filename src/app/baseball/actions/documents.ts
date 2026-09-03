@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import { observeStorageResult } from '@/lib/observability/supabase/observe-storage';
 import {
   withBaseballAction,
   BaseballUnauthorizedError,
@@ -527,7 +528,15 @@ const deleteBaseballDocumentAction = withBaseballAction(
 
     if (versions && versions.length > 0) {
       const paths = versions.map((v) => v.storage_path);
-      await supabase.storage.from('documents').remove(paths);
+      const { error: removeError } = await supabase.storage.from('documents').remove(paths);
+      observeStorageResult({
+        error: removeError,
+        operation: 'delete',
+        feature: 'documents',
+        action: 'delete_document_storage_objects',
+        bucketClass: 'documents/document_version',
+        accessDeniedOnOwnPath: true,
+      });
     }
 
     const { error: deleteError } = await (supabase as any)

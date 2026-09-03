@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { respondToEvent, getPendingInvitations, getEventRSVP, getPlayerEventRSVP } from '@/app/golf/actions/golf';
 import { createClient } from '@/lib/supabase/client';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 // ============================================================================
 // TYPES
@@ -240,7 +241,8 @@ export function useRSVP({
     if (!enabled || !eventId) return;
 
     const supabase = createClient();
-    const channel = supabase
+    const channel = observeRealtimeChannel(
+      supabase
       .channel(`rsvp-${eventId}`)
       .on(
         'postgres_changes',
@@ -254,8 +256,9 @@ export function useRSVP({
           // Refetch when attendance changes
           fetchRSVPSummary();
         }
-      )
-      .subscribe();
+      ),
+      { feature: 'golf.rsvp', channelClass: 'golf_event_attendance', subscriptionType: 'postgres_changes' },
+    );
 
     return () => {
       supabase.removeChannel(channel);
@@ -363,7 +366,8 @@ export function usePlayerEventRSVP(
     if (!enabled || !eventId) return;
 
     const supabase = createClient();
-    const channel = supabase
+    const channel = observeRealtimeChannel(
+      supabase
       .channel(`player-rsvp-${eventId}`)
       .on(
         'postgres_changes',
@@ -377,8 +381,9 @@ export function usePlayerEventRSVP(
           // Refetch when attendance changes
           fetchStatus();
         }
-      )
-      .subscribe();
+      ),
+      { feature: 'golf.rsvp', channelClass: 'golf_event_attendance', subscriptionType: 'postgres_changes' },
+    );
 
     return () => {
       supabase.removeChannel(channel);

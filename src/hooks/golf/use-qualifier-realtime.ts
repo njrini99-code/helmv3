@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 /**
  * Qualifier leaderboard entry with player info and scoring aggregates
@@ -202,7 +203,8 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
     if (!qualifierId) return;
 
     // Set up real-time subscription for qualifier entries (scores/positions)
-    const channel = supabase
+    const channel = observeRealtimeChannel(
+      supabase
       .channel(`qualifier-${qualifierId}`)
       // Listen for entry changes (score updates, position changes)
       .on(
@@ -259,8 +261,9 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
           const update = payload.new as Partial<QualifierDetails>;
           setQualifier((prev) => prev ? { ...prev, ...update } : null);
         }
-      )
-      .subscribe();
+      ),
+      { feature: 'golf.qualifiers', channelClass: 'golf_qualifiers', subscriptionType: 'postgres_changes' },
+    );
 
     return () => {
       supabase.removeChannel(channel);
