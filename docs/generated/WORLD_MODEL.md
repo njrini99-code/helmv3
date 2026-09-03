@@ -6,7 +6,7 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 25 features, 69 routes, 43 components, 30 apis, 91 actions, 64 services, 53 tests, 128 tables, 145 rpcs, 27 jobs, 11 invariants, 86 sentrySignals, 8 journeys.
+**Node counts:** 26 features, 70 routes, 43 components, 30 apis, 91 actions, 60 services, 49 tests, 128 tables, 145 rpcs, 27 jobs, 11 invariants, 86 sentrySignals, 8 journeys.
 **Edges:** 990 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
@@ -19,7 +19,7 @@ A dependency graph over `memory/registry.yml`'s feature ownership, not a second 
 
 Admin Incidents · active · criticality high · owner platform
 
-- **Relations:** 7 doc/structurally-evidenced, 2 import-graph-only (weak)
+- **Relations:** 8 doc/structurally-evidenced, 2 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `admin_unresolve_error_fingerprint`, `resolve_admin_event`
 - **Test surfaces:** 7
@@ -29,7 +29,7 @@ Admin Incidents · active · criticality high · owner platform
 
 Admin Platform · active · criticality high · owner platform
 
-- **Relations:** 8 doc/structurally-evidenced, 22 import-graph-only (weak)
+- **Relations:** 9 doc/structurally-evidenced, 22 import-graph-only (weak)
 - **Tables:** `admin_allowlist`, `admin_error_resolutions`, `baseball_ai_audit`, `baseball_staff_audit_events`, `baseball_strength_group_audit`, `crm_stage_transitions`, `crm_unmatched_inbound`, `helm_lifting_group_audit`
 - **RPCs:** `admin_auto_resolve_error_fingerprint`, `admin_mark_error_regressed`, `get_active_sessions`, `get_admin_dashboard_rollup`, `get_crm_coach_stage_history`, `get_crm_email_stats`, `get_crm_events_in_range`, `get_crm_funnel`, `get_crm_stage_ages`, `get_crm_time_to_open`, `get_crm_weekly_kpis`, `get_feature_health`, `get_platform_health_stats`, `helm_debug_db_health_snapshot`, `helm_debug_list_traces`, `helm_debug_prune_observability`, `helm_debug_read_db_error_events`, `helm_debug_read_db_health_history`, `helm_debug_read_db_stat_deltas`, `helm_debug_stat_statements_snapshot`, `is_super_admin`, `recalculate_round_strokes_gained`, `record_db_error_event`, `record_db_health_sample`, `record_db_stat_snapshot`, `refresh_player_stats_cache`, `revoke_user_sessions`
 - **Test surfaces:** 3
@@ -39,20 +39,30 @@ Admin Platform · active · criticality high · owner platform
 
 Admin Reliability Collector · active · criticality high · owner platform
 
-- **Relations:** 6 doc/structurally-evidenced, 0 import-graph-only (weak)
+- **Relations:** 8 doc/structurally-evidenced, 0 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
-- **Test surfaces:** 1
+- **Test surfaces:** 0
 - **Sentry/admin_events signals:** none
 
 ### `admin_selfheal`
 
 Admin Self-Heal · active · criticality high · owner platform
 
-- **Relations:** 5 doc/structurally-evidenced, 2 import-graph-only (weak)
+- **Relations:** 6 doc/structurally-evidenced, 2 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `admin_auto_resolve_error_fingerprint`, `resolve_admin_event`
-- **Test surfaces:** 5
+- **Test surfaces:** 2
+- **Sentry/admin_events signals:** none
+
+### `admin_slo`
+
+Admin SLO Center · active · criticality high · owner platform
+
+- **Relations:** 5 doc/structurally-evidenced, 1 import-graph-only (weak)
+- **Tables:** none
+- **RPCs:** `helm_debug_list_traces`
+- **Test surfaces:** 0
 - **Sentry/admin_events signals:** none
 
 ### `auth_onboarding_join`
@@ -149,7 +159,7 @@ iOS Native Shell · active · criticality high · owner product
 
 Sentry Observability — Telemetry Vocabulary · active · criticality medium · owner platform
 
-- **Relations:** 4 doc/structurally-evidenced, 7 import-graph-only (weak)
+- **Relations:** 4 doc/structurally-evidenced, 8 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `helm_debug_finalize_trace`, `helm_debug_record_trace_step`, `helm_debug_start_trace`
 - **Test surfaces:** 2
@@ -320,12 +330,18 @@ Team Operations · active · criticality high · owner product
 | `admin_platform` | `observability_sentry` | import_graph (weak) |
 | `admin_platform` | `player_hub` | import_graph (weak) |
 | `admin_reliability_collector` | `admin_incidents` | feature_doc_contract |
-| `admin_reliability_collector` | `admin_platform` | feature_doc_contract, import_graph |
+| `admin_reliability_collector` | `admin_platform` | feature_doc_contract |
+| `admin_reliability_collector` | `admin_slo` | feature_doc_contract |
 | `admin_reliability_collector` | `coachhelm_ai` | feature_doc_contract |
 | `admin_selfheal` | `admin_incidents` | feature_doc_contract, import_graph |
 | `admin_selfheal` | `admin_platform` | feature_doc_contract, import_graph |
 | `admin_selfheal` | `auth_onboarding_join` | import_graph (weak) |
 | `admin_selfheal` | `observability_sentry` | import_graph (weak) |
+| `admin_slo` | `admin_incidents` | feature_doc_contract |
+| `admin_slo` | `admin_platform` | feature_doc_contract, import_graph |
+| `admin_slo` | `admin_reliability_collector` | feature_doc_contract |
+| `admin_slo` | `admin_selfheal` | feature_doc_contract |
+| `admin_slo` | `observability_sentry` | import_graph (weak) |
 | `auth_onboarding_join` | `admin_platform` | import_graph (weak) |
 | `auth_onboarding_join` | `baseball_core` | import_graph (weak) |
 | `auth_onboarding_join` | `crm_outreach` | import_graph (weak) |

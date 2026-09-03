@@ -30,6 +30,13 @@
         "status": "active"
       },
       {
+        "id": "admin_slo",
+        "name": "Admin SLO Center",
+        "criticality": "high",
+        "owner": "platform",
+        "status": "active"
+      },
+      {
         "id": "auth_onboarding_join",
         "name": "Auth Onboarding And Join",
         "criticality": "high",
@@ -266,6 +273,11 @@
       {
         "id": "routes:src/app/admin/self-heal/**",
         "pattern": "src/app/admin/self-heal/**",
+        "category": "routes"
+      },
+      {
+        "id": "routes:src/app/admin/slo/**",
+        "pattern": "src/app/admin/slo/**",
         "category": "routes"
       },
       {
@@ -1427,11 +1439,6 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/release-intel/**",
-        "pattern": "scripts/release-intel/**",
-        "category": "services"
-      },
-      {
         "id": "services:scripts/run-selfheal-repair.mjs",
         "pattern": "scripts/run-selfheal-repair.mjs",
         "category": "services"
@@ -1472,21 +1479,6 @@
         "category": "services"
       },
       {
-        "id": "services:src/lib/admin/autonomy/**",
-        "pattern": "src/lib/admin/autonomy/**",
-        "category": "services"
-      },
-      {
-        "id": "services:src/lib/admin/causal/**",
-        "pattern": "src/lib/admin/causal/**",
-        "category": "services"
-      },
-      {
-        "id": "services:src/lib/admin/ensemble/**",
-        "pattern": "src/lib/admin/ensemble/**",
-        "category": "services"
-      },
-      {
         "id": "services:src/lib/admin/incident-*.ts",
         "pattern": "src/lib/admin/incident-*.ts",
         "category": "services"
@@ -1502,13 +1494,13 @@
         "category": "services"
       },
       {
-        "id": "services:src/lib/admin/release-intel/**",
-        "pattern": "src/lib/admin/release-intel/**",
+        "id": "services:src/lib/admin/selfheal-*.ts",
+        "pattern": "src/lib/admin/selfheal-*.ts",
         "category": "services"
       },
       {
-        "id": "services:src/lib/admin/selfheal-*.ts",
-        "pattern": "src/lib/admin/selfheal-*.ts",
+        "id": "services:src/lib/admin/slo/**",
+        "pattern": "src/lib/admin/slo/**",
         "category": "services"
       },
       {
@@ -1771,26 +1763,6 @@
       {
         "id": "tests:src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
         "pattern": "src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
-        "category": "tests"
-      },
-      {
-        "id": "tests:src/lib/admin/autonomy/__tests__/**",
-        "pattern": "src/lib/admin/autonomy/__tests__/**",
-        "category": "tests"
-      },
-      {
-        "id": "tests:src/lib/admin/causal/__tests__/**",
-        "pattern": "src/lib/admin/causal/__tests__/**",
-        "category": "tests"
-      },
-      {
-        "id": "tests:src/lib/admin/ensemble/__tests__/**",
-        "pattern": "src/lib/admin/ensemble/__tests__/**",
-        "category": "tests"
-      },
-      {
-        "id": "tests:src/lib/admin/release-intel/__tests__/**",
-        "pattern": "src/lib/admin/release-intel/__tests__/**",
         "category": "tests"
       },
       {
@@ -6488,27 +6460,27 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 100
+          "line": 103
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 125
+          "line": 128
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 134
+          "line": 137
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 144
+          "line": 147
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 161
+          "line": 164
         }
       ]
     },
@@ -6526,46 +6498,23 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
           "line": 8
+        }
+      ]
+    },
+    {
+      "source": "admin_reliability_collector",
+      "target": "admin_slo",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-reliability-collector.md",
+          "line": 40
         },
         {
-          "kind": "import_graph",
-          "path": "src/lib/admin/release-intel/__tests__/rollback.test.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/release-intel/read-model.ts",
-          "line": 46
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/release-intel/read-model.ts",
-          "line": 47
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/release-intel/read-model.ts",
-          "line": 48
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/release-intel/read-model.ts",
-          "line": 49
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/release-intel/read-model.ts",
-          "line": 50
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/release-intel/rollback.ts",
-          "line": 18
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/release-intel/types.ts",
-          "line": 14
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-reliability-collector.md",
+          "line": 63
         }
       ]
     },
@@ -6589,7 +6538,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 39
+          "line": 53
         }
       ]
     },
@@ -6619,30 +6568,6 @@
     },
     {
       "source": "admin_reliability_collector",
-      "target": "services:scripts/release-intel/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/release-intel/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_reliability_collector",
-      "target": "services:src/lib/admin/release-intel/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/release-intel/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_reliability_collector",
       "target": "services:src/lib/reliability/**",
       "kind": "feature_service",
       "evidence": [
@@ -6650,18 +6575,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/reliability/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_reliability_collector",
-      "target": "tests:src/lib/admin/release-intel/__tests__/**",
-      "kind": "feature_test",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/release-intel/__tests__/**"
         }
       ]
     },
@@ -6702,12 +6615,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 109
+          "line": 90
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 164
+          "line": 145
         },
         {
           "kind": "import_graph",
@@ -6718,26 +6631,6 @@
           "kind": "import_graph",
           "path": "src/lib/admin/auto-resolve.ts",
           "line": 135
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/causal/__tests__/causal-score.test.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/causal/__tests__/incident-similarity.test.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/causal/causal-score.ts",
-          "line": 40
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/causal/incident-similarity.ts",
-          "line": 39
         },
         {
           "kind": "import_graph",
@@ -6848,16 +6741,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/admin/ensemble/verification-ensemble.ts",
-          "line": 61
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/ensemble/verification-ensemble.ts",
-          "line": 63
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/admin/rca-run.ts",
           "line": 23
         },
@@ -6929,11 +6812,6 @@
       "target": "observability_sentry",
       "kind": "feature_relation",
       "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/ensemble/verification-ensemble.ts",
-          "line": 62
-        },
         {
           "kind": "import_graph",
           "path": "src/lib/admin/rca.ts",
@@ -7051,42 +6929,6 @@
     },
     {
       "source": "admin_selfheal",
-      "target": "services:src/lib/admin/autonomy/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/autonomy/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "services:src/lib/admin/causal/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/causal/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "services:src/lib/admin/ensemble/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/ensemble/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
       "target": "services:src/lib/admin/rca*.ts",
       "kind": "feature_service",
       "evidence": [
@@ -7123,42 +6965,6 @@
     },
     {
       "source": "admin_selfheal",
-      "target": "tests:src/lib/admin/autonomy/__tests__/**",
-      "kind": "feature_test",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/autonomy/__tests__/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "tests:src/lib/admin/causal/__tests__/**",
-      "kind": "feature_test",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/causal/__tests__/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "tests:src/lib/admin/ensemble/__tests__/**",
-      "kind": "feature_test",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/ensemble/__tests__/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
       "target": "tests:src/test/scripts/run-selfheal-repair.test.ts",
       "kind": "feature_test",
       "evidence": [
@@ -7178,6 +6984,182 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/test/scripts/selfheal-repair-launchd.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "admin_incidents",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "admin_platform",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 7
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 80
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/__tests__/golden-path-health.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/__tests__/silence-detection.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/__tests__/trace-funnels.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/fetch.ts",
+          "line": 25
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/fetch.ts",
+          "line": 26
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/fetch.ts",
+          "line": 27
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/golden-path-health.ts",
+          "line": 30
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/golden-path-health.ts",
+          "line": 31
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/silence-detection.ts",
+          "line": 33
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/silence-detection.ts",
+          "line": 34
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/trace-funnels.ts",
+          "line": 29
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/trace-funnels.ts",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "admin_reliability_collector",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 6
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 46
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 67
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 78
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "admin_selfheal",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "helm_debug_list_traces",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/slo/trace-funnels.ts",
+          "line": 82
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "observability_sentry",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/trace-funnels.ts",
+          "line": 30
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "routes:src/app/admin/slo/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/slo/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "services:src/lib/admin/slo/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/slo/**"
         }
       ]
     },

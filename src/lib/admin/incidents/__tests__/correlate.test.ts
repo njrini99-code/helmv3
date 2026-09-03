@@ -102,6 +102,7 @@ function signal(overrides: Partial<CorrelatedSignal> = {}): CorrelatedSignal {
     route: '/api/golf/rounds/load',
     errorCode: null,
     count: 10,
+    countIsFloor: false,
     firstSeen: '2026-08-20T08:00:00.000Z',
     lastSeen: '2026-08-20T14:00:00.000Z',
     sources: ['supabase'],
