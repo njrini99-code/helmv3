@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Sentry Monitors, Detectors, Workflows, Uptime & Dashboards
 
 This is the Phase E "control plane" build for Sentry org `helm-xs`
