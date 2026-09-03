@@ -25,7 +25,7 @@ describe('golf ForgotPasswordPage', () => {
   it('shows an inline error and never calls the action for a malformed email', async () => {
     const { user } = render(<ForgotPasswordPage />);
 
-    await user.type(screen.getByLabelText('Email'), 'not-an-email');
+    await user.type(screen.getByLabelText(/email/i), 'not-an-email');
     await user.click(screen.getByRole('button', { name: /send reset link/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Enter a valid email address.');
@@ -51,7 +51,7 @@ describe('golf ForgotPasswordPage', () => {
 
     const { user } = render(<ForgotPasswordPage />);
 
-    await user.type(screen.getByLabelText('Email'), '  Coach@Example.COM  ');
+    await user.type(screen.getByLabelText(/email/i), '  Coach@Example.COM  ');
     await user.click(screen.getByRole('button', { name: /send reset link/i }));
 
     await waitFor(() => {
@@ -65,7 +65,7 @@ describe('golf ForgotPasswordPage', () => {
   it('clears a validation error once the user edits the field again', async () => {
     const { user } = render(<ForgotPasswordPage />);
 
-    const input = screen.getByLabelText('Email');
+    const input = screen.getByLabelText(/email/i);
     await user.type(input, 'not-an-email');
     await user.click(screen.getByRole('button', { name: /send reset link/i }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();

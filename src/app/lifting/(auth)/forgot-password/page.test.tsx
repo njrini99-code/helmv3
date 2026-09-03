@@ -26,7 +26,7 @@ describe('lifting ForgotPasswordPage', () => {
   it('shows an inline error and never calls resetPasswordForEmail for a malformed email', async () => {
     const { user } = render(<LiftingForgotPasswordPage />);
 
-    await user.type(screen.getByLabelText('Email'), 'not-an-email');
+    await user.type(screen.getByLabelText(/email/i), 'not-an-email');
     await user.click(screen.getByRole('button', { name: /send reset link/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Enter a valid email address.');
@@ -39,7 +39,7 @@ describe('lifting ForgotPasswordPage', () => {
 
     const { user } = render(<LiftingForgotPasswordPage />);
 
-    await user.type(screen.getByLabelText('Email'), '  Lifter@Example.COM  ');
+    await user.type(screen.getByLabelText(/email/i), '  Lifter@Example.COM  ');
     await user.click(screen.getByRole('button', { name: /send reset link/i }));
 
     await waitFor(() => {
