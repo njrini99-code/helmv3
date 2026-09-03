@@ -36,13 +36,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
 | `PLAN` | 64 | 5 | 33 | 176 |
-| `AUDIT_SNAPSHOT` | 92 | 6 | 38 | 145 |
+| `AUDIT_SNAPSHOT` | 82 | 6 | 38 | 137 |
 | `STATE_SNAPSHOT` | 6 | 1 | 5 | 7 |
 | `HISTORY_LEDGER` | 31 | 0 | 5 | 66 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 3 | 0 | 2 | 0 |
 | `INDEX` | 20 | 1 | 7 | 28 |
-| `ARCHIVE` | 1196 | 0 | 419 | 527 |
+| `ARCHIVE` | 1206 | 0 | 419 | 535 |
 | `UNKNOWN` | 104 | 8 | 44 | 140 |
 
 ## Files
@@ -447,17 +447,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/player/ERRORS.md` | current | - | - | - | 0 | 1 | - |
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/player/INDEX.md` | current | - | - | - | 0 | 5 | - |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 0 | 7 | 1 |
-| `docs/ui-audits/ACCESSIBILITY_AUDIT_2026-09-02.md` | current | - | - | - | 0 | 1 | - |
-| `docs/ui-audits/ADMIN_DASHBOARD_UX_AUDIT_2026-09-02.md` | current | - | - | - | 0 | 5 | 2 |
-| `docs/ui-audits/BASEBALL_PUBLIC_PLAYER_AUDIT_2026-09-02.md` | current | - | - | - | 0 | 4 | 2 |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | 0 | 3 | - |
-| `docs/ui-audits/GAPS_AUDIT_INTERACTION_CRUD_2026-09-02.md` | current | - | - | - | 0 | 1 | 1 |
-| `docs/ui-audits/GAPS_AUDIT_ONBOARDING_2026-09-02.md` | current | - | - | - | 0 | 0 | - |
-| `docs/ui-audits/GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md` | current | - | - | - | 0 | 0 | - |
-| `docs/ui-audits/MASTER_BUG_REPORT_2026-09-02.md` | current | - | - | - | 0 | 1 | 1 |
-| `docs/ui-audits/MOBILE_VIEWPORT_AUDIT_2026-09-02-COACH.md` | current | - | - | - | 0 | 1 | 1 |
-| `docs/ui-audits/MOBILE_VIEWPORT_AUDIT_2026-09-02-FOLLOWUP.md` | current | - | - | - | 0 | 0 | - |
-| `docs/ui-audits/MOBILE_VIEWPORT_AUDIT_2026-09-02.md` | current | - | - | - | 0 | 2 | 1 |
 | `docs/ui-audits/UI_AUDIT_2026-08-14.md` | current | - | - | yes | 0 | 2 | - |
 | `docs/ui-audits/UI_AUDIT_2026-08-15-PRE-DEPLOY-BASELINE.md` | current | - | - | - | 0 | 1 | 1 |
 | `docs/ui-audits/UI_AUDIT_2026-08-15.md` | current | - | - | - | 0 | 1 | 1 |
@@ -572,7 +562,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 ### `ARCHIVE`
 
-1196 file(s) under `docs/archive/` — historical evidence only, listed
+1206 file(s) under `docs/archive/` — historical evidence only, listed
 by count rather than by name because none of them is a reference and enumerating
 them would bury everything above.
 
