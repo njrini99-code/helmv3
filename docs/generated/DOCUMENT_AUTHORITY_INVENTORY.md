@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 64 | 3 | 33 | 179 |
 | `AUDIT_SNAPSHOT` | 82 | 6 | 38 | 137 |
 | `STATE_SNAPSHOT` | 6 | 1 | 5 | 7 |
-| `HISTORY_LEDGER` | 28 | 0 | 5 | 60 |
+| `HISTORY_LEDGER` | 28 | 0 | 5 | 56 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 3 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
@@ -159,7 +159,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/features/admin-incidents.md` | current | yes | - | yes | 5 | 29 | 1 |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 11 | 126 | 7 |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 11 | 123 | 7 |
 | `memory/features/admin-reliability-collector.md` | current | yes | - | - | 5 | 16 | - |
 | `memory/features/admin-selfheal.md` | current | yes | - | yes | 5 | 27 | - |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 13 | - |
@@ -480,7 +480,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/README.md` | current | - | - | yes | 5 | 2 | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
 | `memory/ledgers/changes/admin_incidents.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 7 | 144 | 22 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 7 | 136 | 18 |
 | `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | 1 | 5 | - |
 | `memory/ledgers/changes/admin_selfheal.md` | current | - | - | - | 1 | 4 | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
@@ -499,7 +499,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/deployments.md` | current | - | - | yes | 7 | 6 | 1 |
 | `memory/ledgers/tests/README.md` | current | - | - | - | 0 | 1 | - |
-| `memory/ledgers/tests/admin_platform.md` | current | - | - | yes | 3 | 56 | 2 |
+| `memory/ledgers/tests/admin_platform.md` | current | - | - | yes | 3 | 52 | 2 |
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | 2 | 3 | 1 |
 | `memory/ledgers/tests/observability_sentry.md` | current | - | - | - | 1 | 25 | - |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
@@ -662,7 +662,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 8 | 8 | 1 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 7 | 9 | 1 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |
