@@ -30,7 +30,7 @@
 import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import type { UnifiedIncident } from '@/lib/admin/incidents/types';
-import type { FlightTraceRun } from '@/app/admin/actions/golf-tracer';
+import { bridgeListFlightTraces, type FlightTraceRun } from '@/app/admin/actions/golf-tracer';
 
 export interface TraceIncidentLink {
   incidentId: string;
@@ -79,4 +79,30 @@ export async function fetchTraceIncidentLinks(
 ): Promise<Readonly<Record<string, TraceIncidentLink | null>>> {
   const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
   return correlateTracesToIncidents(traces, board.incidents);
+}
+
+/**
+ * The reverse index the Evidence Braid's flight-recorder lane needs: which
+ * incident ids have at least one linked trace. `null` — never an empty
+ * `Set` — when the trace store itself could not be read this refresh, so a
+ * genuinely blind lane is never rendered identically to "checked, found
+ * none" (the same distinction `EvidenceReading.health` makes everywhere
+ * else in this module).
+ */
+export async function fetchFlightRecorderLinkedIncidentIds(
+  incidents: readonly UnifiedIncident[],
+): Promise<ReadonlySet<string> | null> {
+  let traces: FlightTraceRun[];
+  try {
+    traces = await bridgeListFlightTraces();
+  } catch {
+    return null;
+  }
+
+  const links = correlateTracesToIncidents(traces, incidents);
+  const ids = new Set<string>();
+  for (const link of Object.values(links)) {
+    if (link) ids.add(link.incidentId);
+  }
+  return ids;
 }
