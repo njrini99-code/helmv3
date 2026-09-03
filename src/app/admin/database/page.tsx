@@ -238,12 +238,23 @@ function StatDeltaRowView({ row }: { row: StatDeltaRow }) {
           ))}
         </div>
         <p className="mt-0.5 font-fw-mono text-caption text-warm-500">
-          {row.callsDelta ?? 0} calls · mean {row.meanExecMsWindow ? row.meanExecMsWindow.toFixed(1) : '—'}ms · max{' '}
+          {/* `?? 0` here said "0 calls" for a window with NO prior state to diff
+              against — a first observation rendered as a measured zero. Every
+              row on this panel is flagged `new query` on a fresh collector, so
+              the whole list read "0 calls · 0ms" beside a max of 26 seconds.
+              null means no delta exists; it is not zero activity. */}
+          {row.callsDelta === null ? '—' : row.callsDelta} calls · mean{' '}
+          {row.meanExecMsWindow ? row.meanExecMsWindow.toFixed(1) : '—'}ms · max{' '}
           {row.maxExecMsObserved ? row.maxExecMsObserved.toFixed(0) : '—'}ms
         </p>
       </div>
       <p className="shrink-0 font-fw-mono text-sm font-medium text-warm-800">
-        {row.totalExecMsDelta ? Math.round(row.totalExecMsDelta).toLocaleString() : 0}ms
+        {/* Truthiness collapsed BOTH null and a genuine 0 into "0ms". A delta of
+            exactly zero is a real measurement — the query ran and cost no more
+            than last window — and is not the same fact as "no prior window". */}
+        {row.totalExecMsDelta === null || row.totalExecMsDelta === undefined
+          ? '—'
+          : `${Math.round(row.totalExecMsDelta).toLocaleString()}ms`}
       </p>
     </div>
   );
