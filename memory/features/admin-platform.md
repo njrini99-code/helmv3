@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # Feature: Admin Platform
 
 ## Status
@@ -78,6 +79,30 @@ them would have broken those routes, not the dead one.
 - `src/app/golf/actions/resend-activity.ts`
 - `src/lib/supabase/admin*`
 - `src/lib/cron/**`
+- `scripts/janitor/**` — the Phase K.4.5 (Engineering OS Intelligence) Janitor
+  entropy-report generator. Read-only: it never modifies source files, only
+  writes `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) and
+  `janitor-findings.json` (same directory, gitignored). Scans the entropy classes
+  (duplicate helpers, dead flags, stale docs, orphan routes, deprecated
+  APIs, stale TODOs, oversized modules, unused tests, mock inflation,
+  duplicate telemetry, missing feature mappings, abandoned experiments)
+  using only signals this repo already produces — `.duplicate-exports-baseline.json`,
+  `.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,
+  `memory/registry.yml` (via `scripts/knowledge/lib/registry.mjs`),
+  `git ls-files`/`git grep`/`git log` — never a filesystem walk. Every
+  classifier returns one of three verdicts, `FINDINGS` /
+  `ZERO_FINDINGS_VERIFIED` / `NO_SIGNAL` (`scripts/janitor/lib/verdicts.mjs`);
+  `NO_SIGNAL` means the substrate a class needs does not exist yet (no
+  feature-flag module, no committed Knip report) and is never conflated with
+  a genuine zero-findings pass. Findings are written in
+  `config/control-plane-gaps.json`'s `id`/`owner`/`opened`/`scope`/`reason`/
+  `closes_when` field shape but to a SEPARATE file — never into that file
+  itself, which records human-approved "won't fix" decisions
+  ("Adding one is a decision, not a repair" — its own `$comment`). `npm run
+  janitor` regenerates both output files; a weekly CircleCI job
+  (`.circleci/config.yml`'s `janitor` job) runs it as an advisory artifact.
+  `npm run test:janitor` (`node --test scripts/janitor/__tests__/*.test.mjs`)
+  covers every classifier against real disposable git-repo fixtures.
 
 ## Core Data
 
