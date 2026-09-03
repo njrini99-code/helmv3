@@ -256,7 +256,7 @@ is a second thing to keep true.
 **Admin Reliability Collector** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-reliability-collector.md`
-- **Code:** `src/app/admin/reliability/**`, `src/app/admin/releases/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`
+- **Code:** `src/app/admin/reliability/**`, `src/app/admin/releases/**`, `src/app/admin/engineering/**`, `src/app/admin/work-log/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — writes background_job_logs rows (reliability-snapshot/-triage job types), not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
