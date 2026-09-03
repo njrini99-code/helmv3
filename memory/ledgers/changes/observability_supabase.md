@@ -76,8 +76,9 @@
   own Status section as a real gap, not silently filled, since adding a
   registry mapping was outside this track's assigned deliverables.
 
-<!-- merged: Track B section appended by the Phase 2 integrator -->
-# Change ledger — observability_supabase
+<!-- merged: Track B section appended by the Phase 2 integrator. The
+     duplicate `# Change ledger` H1 that arrived with this merge was removed
+     2026-09-03 (Phase 3 Track F): one document, one title. -->
 
 ## 2026-09-03 — Phase 2 Track B: Auth/Storage/Realtime/Edge Function observability, retry-outcome model, coverage audit
 
@@ -164,3 +165,107 @@
   anywhere, `Sentry.continueTrace` for Edge Functions was not verified
   against the pinned SDK, and the Deno type-check is NOT VERIFIED as of
   this entry (deno disabled on this machine by the integrator).
+
+## 2026-09-03 — Phase 3 Track F: absence, memory and the operating model
+
+- Branch: `agent/dbobs-p3-intelligence`, built on the Phase 2 integration
+  tip (Phase 1 + Track A + Track B). Sibling Phase 3 tracks C, D and E were
+  building in parallel and are NOT represented here.
+- Change: eight new pure modules under `src/lib/observability/supabase/`,
+  one server-only writer, one tsx CLI, two docs, and NO migration and NO
+  new table.
+  - `db-state.ts` (§67) — `foldDatabaseState` returns GREEN / AMBER / RED /
+    DEGRADED / UNKNOWN plus the evidence that produced it. A required
+    source that is not live can never yield GREEN; RED still beats DEGRADED
+    (DEGRADED is on the observability axis, not the severity axis) with
+    confidence capped at `low`; a stale source's last row contributes a cap
+    and no signals, so a dead collector cannot render as a healthy
+    database. Consumes `FreshnessState` from `freshness.ts` rather than
+    redefining it.
+  - `absence.ts` (§74) — five detectors for signals that STOPPED.
+    `ActivityContext` is a REQUIRED field with three variants, so omitting
+    it is a compile error and an unreadable context yields `unknown`, never
+    `absent`. No sport calendar is hardcoded; an EMPTY season-window list
+    reads `unknown` rather than `quiet`.
+  - `layered-performance.ts` (§73) — request p95 (measured, supplied) vs
+    database shape (aggregates). The database half carries no
+    percentile-shaped field at all and a test asserts that structurally
+    over the output keys; a missing layer yields `request_unknown` /
+    `database_unknown` rather than a clean-looking verdict.
+  - `incident-memory.ts` + `incident-memory-writer.ts` (§75) — writes into
+    `memory/incidents/**`, the store this repo already has. No database
+    table: a store that can disagree with committed state is a second
+    authority for engineering truth. Templates only the contract
+    `scripts/knowledge/check-ledger-integrity.mjs` enforces (read from the
+    checker, not the README prose) plus the nine §75 fields; narrative is
+    caller-supplied. An unmapped feature id and an unreadable registry are
+    both refusals, and an existing file is never overwritten.
+  - `repair-completeness.ts` (§76) — eight criteria, PASS / FAIL / UNKNOWN
+    each, three-valued roll-up, no score and no boolean anywhere in the
+    result (asserted by test). FAIL outranks UNKNOWN; the unknown ids are
+    listed alongside so a failure never swallows them.
+  - `query-explainer.ts` (§69) — the file has NO IMPORTS AT ALL, so "never
+    runs against production automatically" is a property of the import
+    graph rather than a promise. ANALYZE is withheld for every mutating
+    class in every environment and for reads against production;
+    `persistsPlan` is `false`. A non-safe-query-class input is refused and
+    the rejected value is never echoed back.
+  - `repo-mapping.ts` (§70) — envelope feature + object to migration,
+    callers, tests and feature doc, with the registry and migration listing
+    passed in. Resolves a runtime feature KEY through
+    `observability.feature_keys`, not just an exact id. Gaps are reported,
+    never swallowed.
+  - `sentry-contract.ts` (§71–72) — allow-list, not a scrubber: the ten
+    named keys are copied and an eleventh structurally cannot ride along.
+    An allow-listed key with an unsafe value is refused rather than masked
+    (a masked tag is still a series). `helm.trace_id` is the one exemption,
+    the one §6 carves out itself, and gets a shape check instead of the
+    free-text masker. Three trace ids stay separately named and
+    `sentryMatchesW3c` is REPORTED, not assumed.
+  - `docs/observability/SUPABASE_RUNBOOKS.md` (§68) — 42501 and 57014 as
+    ordered steps with the exact command per step, and an explicit section
+    on why raising the statement timeout is never the fix for a 57014.
+  - `docs/observability/SUPABASE_OPERATING_MODEL.md` (§77, §86) — the
+    operating model plus a §86 scoring that marks four criteria NOT MET or
+    NOT VERIFIED with the evidence for each.
+  - `scripts/observability/record-db-incident.ts` — a thin tsx CLI.
+    `tsconfig.json` excludes `scripts/`, so it is lint-covered but NOT
+    type-checked by `npm run typecheck`; it is deliberately small enough to
+    verify by eye and every rule lives in the two `src/` modules.
+- Also changed: `envelope.ts`'s `sanitizeSupabaseFreeText` gained an
+  optional `maxChars` (default unchanged) so a human-read incident record
+  gets more room under identical masking rather than forking a second,
+  weaker redactor. And two prose line-wraps in
+  `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` that began with a
+  plus sign and a space were re-wrapped: markdownlint parsed them as list
+  items, and that
+  pre-existing MD004 regression was what made `npm run markdown:ratchet`
+  fail on this branch's base before Track F wrote anything. Verified by
+  moving the new runbook aside and re-running.
+- Why: brief §67–77 and §86.
+- Verification, every deliverable: `npx tsc --noEmit -p .` exit 0;
+  `npx eslint <changed files> --max-warnings 0` exit 0;
+  `npx vitest run src/lib/observability/supabase src/lib/admin/database`
+  501 passed / 36 files; `npm run markdown:ratchet` exit 0 (30484 → 30465,
+  baseline deliberately NOT updated — that is the integrator's call once
+  every track has landed). Two read-only audits were run for the §86
+  scoring rather than asserting it: `npm run audit:supabase-errors`
+  (baseline 1039 unchecked reads, no regression) and
+  `npm run audit:fail-open` (baseline 51, no regression).
+- Cost: INCREMENTAL RECURRING OBSERVABILITY COST $0. No migration, no new
+  table, no drain, no vendor, no continuous polling, no second incident
+  store, no second trace system.
+- Registry gaps found and NOT closed by this track: two features claim the
+  identical `src/lib/observability/**` glob (`observability_sentry` and
+  `shot_tracking`); no runtime feature key covers the database
+  observability surfaces (`admin_platform`'s only key is
+  `admin_dashboard`); five features declare no `code.db` and four declare
+  no `code.tests`. Listed in full in
+  `docs/observability/SUPABASE_OPERATING_MODEL.md`.
+- Not verified / open: the W3C propagation certification (§14) is modelled
+  but not measured, so "traceable" is a design property here, not an
+  observed one. `db-state.ts` is not mounted on any Bridge surface —
+  `src/app/admin/database/page.tsx` was owned by a sibling track this
+  phase, so no component was added; `foldDatabaseState` is the intended
+  input to a Mission Control header chip. Nothing in Track F is wired into
+  a production call site.
