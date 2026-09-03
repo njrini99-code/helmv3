@@ -298,6 +298,20 @@ jobs:
         continue-on-error: true
         run: npm run knowledge:globs
 
+      # Feature-flag registry governance (config/feature-flags.yml).
+      # `flags:check` chains three things: registry.generated.ts is current
+      # relative to the YAML (non-mutating drift comparison, same pattern as
+      # docs:inventory-check), the node:test suites covering the generator
+      # and the CI gate itself pass, then the gate re-parses the YAML
+      # independently and fails on an expired-but-active flag, a flag
+      # missing owner/cleanup_plan, a temporary_migration flag past (or
+      # missing) its expires_at, or a NEVER-GATE violation (auth/RLS/
+      # tenancy/membership/persistence). See docs/ai-system/FEATURE_FLAGS.md.
+      - name: Feature flags
+        id: feature_flags
+        continue-on-error: true
+        run: npm run flags:check
+
       # Helm Bridge integration env drift.
       #
       # Runs in --drift mode, which is a no-op while NONE of these secrets are

@@ -41,6 +41,8 @@
     "enforcement:regen": "node scripts/gen-enforcement-inventory.mjs",
     "evals": "promptfoo eval -c evals/round-review.yaml",
     "evals:view": "promptfoo view",
+    "flags:check": "node scripts/flags/generate-flags.mjs --check && node --test scripts/flags/__tests__/*.test.mjs scripts/__tests__/check-feature-flags.test.mjs && node scripts/check-feature-flags.mjs",
+    "flags:generate": "node scripts/flags/generate-flags.mjs",
     "flight-recorder:audit": "node scripts/flight-recorder-audit.mjs",
     "guards": "node scripts/repo-guards.mjs",
     "janitor": "node scripts/janitor/run.mjs",

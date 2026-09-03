@@ -285,6 +285,7 @@ src/lib/coachhelm/
 - `/admin/jobs`
 - `/admin/lifting`
 - `/admin/qualifiers`
+- `/admin/releases`
 - `/admin/reliability`
 - `/admin/self-heal`
 - `/admin/teams`

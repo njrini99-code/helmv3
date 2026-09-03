@@ -65,6 +65,70 @@ master brief lives on a sibling control-plane branch, not yet merged).
   import from those paths as instructed, and they do not exist on `main`
   yet as of this writing.
 
+## 2026-09-03 — Feature-flag registry, never-gate rules, and the expiry CI gate (Phase F.4.2)
+
+New, self-contained module — `config/feature-flags.yml` +
+`src/lib/flags/**` + `scripts/flags/**` + `scripts/check-feature-flags.mjs`
+— per Phase F.4.2 of the 2026-09-03 control-plane implementation plan
+(a docs-only worktree deliverable, not yet committed to `main` as of this
+entry — see the Bridge-track handoff brief for context) and owner decision
+`FEATURE_FLAG_INFRASTRUCTURE_NET_NEW` ("flags yes") recorded the same
+session. Percentage/cohort canary rollout was explicitly deferred by the
+same decision round ("canary later") and is NOT built here — `environment`
+rollout is booleans only.
+
+- **The registry.** `config/feature-flags.yml` is hand-edited; `npm run
+  flags:generate` compiles it to a typed constant,
+  `src/lib/flags/registry.generated.ts` — no YAML parsing at runtime.
+  Seeded with two flags that DESCRIBE existing env-driven toggles without
+  changing their behavior: `flight_recorder`
+  (`HELM_FLIGHT_RECORDER_ENABLED`, read at `src/app/golf/actions/golf.ts:1207-1209`
+  and `src/lib/observability/helm-flight-recorder.ts:194`, both owned by the
+  parallel Sentry session per that handoff brief's ownership table) and
+  `coachhelm_v2_availability` (`NEXT_PUBLIC_COACHHELM_ENABLED`,
+  `src/lib/coachhelm/v2/gate.ts`). Neither call site was touched — both
+  files sit outside this change's ownership boundary.
+- **The NEVER-GATE list.** A flag may never gate auth, RLS, tenancy,
+  membership, or required persistence — enforced twice, independently: the
+  generator refuses to write `registry.generated.ts` on a violation
+  (`scripts/flags/lib.mjs#validateFlag`), and `scripts/check-feature-flags.mjs`
+  re-derives the same violation straight from the YAML, so a hand-edited
+  generated file cannot bypass the rule (matches `.claude/rules/shipping.md`
+  §1's "verify the generator, not the stamp").
+- **The CI gate.** `npm run flags:check` (new `Feature flags` step in
+  `.github/workflows/ci.yml`'s `Static checks` job, `continue-on-error: true`
+  + the existing aggregate) fails on an expired-but-`active` flag, a flag
+  missing `owner`/`cleanup_plan`, a `temporary_migration` flag with no (or a
+  past) `expires_at`, or a NEVER-GATE hit.
+- **Sentry correlation.** `src/lib/flags/sentry.ts` attaches flag name +
+  boolean value to Sentry via `@sentry/nextjs` 10.71.0's real
+  `featureFlagsIntegration` when registered. It is not registered today —
+  `Sentry.init()` lives in the two `src/instrumentation*.ts` files, owned by
+  the parallel Sentry session — so this falls back to a bounded
+  `flag.<name>` tag until that session adds the integration.
+- **Bridge surface.** `/admin/releases` (new nav entry, key `K`, Platform
+  section) reads `src/lib/admin/data/feature-flags.ts`'s `fetchFeatureFlags`
+  and renders every registered flag with a computed rollout status
+  (`active`/`expiring_soon`/`expired`/`archived`/`no_expiry`).
+- **Not wired, by design, and documented as a real limitation.** Neither
+  seed flag routes its real call site through `isFlagEnabled()` — both
+  files belong to the parallel Sentry session. Instead,
+  `src/lib/flags/__tests__/is-enabled.test.ts`'s `flight_recorder` suite
+  proves the registry's seeded per-environment defaults match exactly what
+  `golf.ts:1207`'s `shouldEmitHelmTraceContext()` evaluates today (for
+  `HELM_FLIGHT_RECORDER_ENABLED` at its documented default, i.e. unset) —
+  and explicitly tests that an out-of-band env override diverges from the
+  static registry snapshot, rather than overclaiming live parity. See
+  `docs/ai-system/FEATURE_FLAGS.md` "What is, and isn't, wired".
+- **Verified**: `npx vitest run src/lib/flags src/lib/admin/data` (pass);
+  `node --test scripts/flags/__tests__/*.test.mjs
+  scripts/__tests__/check-feature-flags.test.mjs` (39 pass); `npm run
+  flags:check` clean against the seeded registry; `npm run typecheck` /
+  `npm run lint --max-warnings 0` clean; `npm run knowledge:globs` clean
+  (new `config/feature-flags.yml` / `src/lib/flags/**` / `scripts/flags/**`
+  / `scripts/check-feature-flags.mjs` globs added to `admin_platform` in
+  `memory/registry.yml`); `npm run docs:check` (all five) clean;
+  `actionlint .github/workflows/ci.yml` clean.
 ## 2026-09-02 — Golden-path journey registry and Context Retrieval Bench (Bridge Control Plane Phases D.4.1, K.4.2)
 
 Two new pieces of engineering-os tooling, not a change to the Bridge's

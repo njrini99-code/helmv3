@@ -64,6 +64,14 @@ This area is high criticality because it often uses broader access patterns, ope
   analyzer core is `src/lib/admin/rca-run.ts` (shared with the super-admin
   `analyzeErrorFingerprint` server action). See
   `docs/ai-system/selfheal/README.md`.
+- `src/app/admin/releases/**` — the feature-flag/kill-switch governance
+  board (added 2026-09-03, Phase F.4.2). Reads
+  `src/lib/admin/data/feature-flags.ts`, which reads the typed constant
+  `src/lib/flags/registry.generated.ts` (compiled from `config/feature-
+  flags.yml` by `npm run flags:generate`). No business logic of its own.
+  Full governance contract — schema, the NEVER-GATE list, the `npm run
+  flags:check` CI gate, how to add/expire a flag — lives in
+  `docs/ai-system/FEATURE_FLAGS.md`, not duplicated here.
 
 ### Components
 

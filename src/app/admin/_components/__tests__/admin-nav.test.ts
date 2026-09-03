@@ -48,6 +48,10 @@ describe('ADMIN_NAV', () => {
       '/admin/lifting',
       // Platform
       '/admin/deploys',
+      // Added with the feature-flag registry (config/feature-flags.yml):
+      // the flag/kill-switch governance board, distinct from Deploys &
+      // Infra's release ledger.
+      '/admin/releases',
       '/admin/auth',
       '/admin/work',
       // Revenue
@@ -60,6 +64,8 @@ describe('ADMIN_NAV', () => {
       // above: '1'-'9'/'0' are never renumbered, so a tab added later takes a
       // letter rather than displacing a shortcut someone already knows.
       '1', '3', '0', '8', 'R', 'D', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
+      // 'K' (Releases) follows the same rule.
+      '1', '3', '0', '8', 'R', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'V', 'B',
     ]);
   });
 
