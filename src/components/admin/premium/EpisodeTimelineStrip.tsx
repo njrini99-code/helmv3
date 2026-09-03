@@ -73,7 +73,7 @@ export function EpisodeTimelineStrip({ episodes, incomplete = false, size = 'md'
           />
         );
       })}
-      <span className="shrink-0 whitespace-nowrap font-fw-mono text-[11px] text-warm-500">
+      <span className="shrink-0 whitespace-nowrap font-fw-mono text-caption text-warm-500">
         {episodes.length} episode{episodes.length === 1 ? '' : 's'}
         {incomplete ? '+' : ''}
       </span>

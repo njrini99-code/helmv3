@@ -1,24 +1,16 @@
 /**
  * Bridge Premium Phase 3 — Release Runway for `/admin/deploys`.
  *
- * `to be replaced by premium/<name>` — no shared `src/components/admin/
- * premium/*` release-timeline primitive existed on `agent/bridge-premium-p1`
- * as of this PR (branch not yet pushed).
+ * The release-timeline LAYOUT here is still local — no `premium/*` runway/
+ * timeline primitive exists — but the Release Watch pill itself now imports
+ * `ReleaseWatchPosturePill` from `src/components/admin/premium`, merged in
+ * from `agent/bridge-premium-p1` once that branch landed, rather than
+ * keeping this file's own tone table alongside it.
  */
-import { StatusPill, type FwStatusTone } from '@/components/fairway';
+import { StatusPill } from '@/components/fairway';
 import type { ReleaseRunwayRow, ReleaseRunwayView } from '@/lib/admin/triage/release-runway';
-import { RELEASE_WATCH_LABEL, type ReleaseWatchState } from '@/lib/admin/incidents/release-context';
+import { ReleaseWatchPosturePill } from '@/components/admin/premium';
 import { LocalTime } from '@/app/admin/_components/LocalTime';
-
-const WATCH_TONE: Record<ReleaseWatchState, FwStatusTone> = {
-  observing: 'info',
-  'clean-so-far': 'success',
-  degraded: 'warning',
-  'regression-detected': 'danger',
-  'rollback-recommended': 'danger',
-  'proven-healthy': 'success',
-  unknown: 'neutral',
-};
 
 function RunwayRow({ row }: { row: ReleaseRunwayRow }) {
   return (
@@ -34,9 +26,7 @@ function RunwayRow({ row }: { row: ReleaseRunwayRow }) {
             </StatusPill>
           ) : null}
         </div>
-        <StatusPill tone={WATCH_TONE[row.watchState]} dot size="sm">
-          {RELEASE_WATCH_LABEL[row.watchState]}
-        </StatusPill>
+        <ReleaseWatchPosturePill state={row.watchState} pulse={row.isLive} />
       </div>
 
       <p className="mt-1 truncate text-caption text-warm-600" title={row.commitMessage ?? undefined}>

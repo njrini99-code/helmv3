@@ -67,7 +67,7 @@ function SourceChip({ cell, size }: { cell: EvidenceCoverageCell; size: 'sm' | '
       className={cn(
         'inline-flex shrink-0 items-center gap-1 rounded-full border font-fw-sans font-medium',
         'whitespace-nowrap align-middle',
-        size === 'sm' ? 'h-5 px-1.5 text-[11px] gap-1' : 'h-6 px-2 text-[12px] gap-1.5',
+        size === 'sm' ? 'h-5 px-1.5 text-caption gap-1' : 'h-6 px-2 text-caption gap-1.5',
         CELL_TONE_CLASS[cell.mark],
       )}
     >
