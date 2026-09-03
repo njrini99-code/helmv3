@@ -3,6 +3,7 @@ import { inngest } from './client';
 import { logServerException, logServerEvent } from '@/lib/server-error-logger';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
+import { startCronCheckIn, finishCronCheckIn } from '@/lib/observability/cron-monitors';
 
 /**
  * Inngest function registry.
@@ -40,11 +41,29 @@ import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
  * (not fire-and-forget): logServerException never throws on its own logging
  * failures, so awaiting it here cannot change whether/what this function
  * throws — it just orders the log write before the retry-triggering throw.
+ *
+ * Also wraps a Sentry Cron Monitor check-in around every attempt (job_name =
+ * fnId, the same `id` each function is registered under), via the identical
+ * fail-open helpers job-log.ts uses for Vercel crons
+ * (src/lib/observability/cron-monitors.ts). None of these three ids are
+ * Vercel-scheduled paths, so CRON_REGISTRY has no entry for them and every
+ * check-in here carries no monitorConfig (cron-monitors.ts's documented
+ * fallback) — Sentry still records occurrences and duration, it just never
+ * invents a cadence Inngest's own event/cron triggers don't come from
+ * vercel.json in the first place.
  */
-async function withBridgeLogging<T>(fnId: string, run: () => Promise<T>): Promise<T> {
+// Exported ONLY for direct unit testing of the check-in/Bridge-logging
+// wrapper without needing a live Inngest test harness to invoke a full
+// InngestFunction — see __tests__/functions-bridge-logging.test.ts.
+export async function withBridgeLogging<T>(fnId: string, run: () => Promise<T>): Promise<T> {
+  const checkInId = startCronCheckIn(fnId);
+  const startedAt = Date.now();
   try {
-    return await run();
+    const result = await run();
+    finishCronCheckIn(fnId, checkInId, 'ok', Date.now() - startedAt);
+    return result;
   } catch (err) {
+    finishCronCheckIn(fnId, checkInId, 'error', Date.now() - startedAt);
     await logServerException(err, { action: fnId, source: 'background_job', skipSentry: true }, 'warning');
     throw err;
   }

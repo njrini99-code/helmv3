@@ -27,6 +27,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import * as Sentry from '@sentry/nextjs';
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -37,6 +38,7 @@ import {
   type UIMessage,
 } from 'ai';
 import { resolveModelProvider } from '@/lib/ai/model-provider';
+import { recordAi } from '@/lib/observability/metrics';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
@@ -127,6 +129,19 @@ function sanitiseStreamError(error: unknown): string {
 function logStreamModelError(error: unknown): void {
   const fault = classifyProviderFault(error);
   const raw = describeError(error);
+
+  // A failed call before the AI SDK returns usage carries no token counts —
+  // recordAi's own doc comment: those distributions are only emitted when
+  // supplied. helm.ai.request/failure still land either way.
+  recordAi({
+    feature: 'coachhelm_chat',
+    action: 'v3.chat.stream.model',
+    model: MODEL_FOR_TASK.coach_chat,
+    provider: fault?.provider,
+    outcome: 'failure',
+    errorCode: fault?.code,
+    runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+  });
 
   if (!fault) {
     void logServerError(`chat/stream: model error — ${raw}`, { action: 'v3.chat.stream.model' }, 'warning');
@@ -301,6 +316,12 @@ export async function POST(req: NextRequest) {
   };
 
   const convId = conversationId;
+  // Opaque, server-generated (gen_random_uuid() — golf_coachhelm_chat_conversations.id
+  // default, prod_public_baseline.sql), never derived from coach_id/player
+  // identity — safe to hand to Sentry as the AI conversation grouping key.
+  // Ties every span/error/AI-observability event this turn produces back to
+  // the same thread without exposing who the coach or their players are.
+  Sentry.setConversationId(convId);
   // Captured in `execute` so `onFinish` can bill ACTUAL tokens, not the gate's
   // worst-case estimate. See recordTurnCost below.
   let usagePromise: Promise<{ inputTokens?: number; outputTokens?: number }> | null = null;
@@ -365,6 +386,22 @@ export async function POST(req: NextRequest) {
         },
         onError: ({ error }) => {
           logStreamModelError(error);
+        },
+        // Sentry AI observability opt-in (vercelAIIntegration instruments
+        // NOTHING for a call unless it itself sets isEnabled — Phase A
+        // finding, docs/observability/SENTRY_PHASE_A_FINDINGS.md §(a)).
+        // recordInputs/recordOutputs:false explicitly overrides the
+        // integration's own global recordInputs/recordOutputs:true
+        // (instrumentation.ts) at this specific call site — a coach chat
+        // prompt/message can carry a player's first name (see
+        // hero-narrative.ts's own pattern in the same Phase A finding) and
+        // this app's own numeric-grounding tool-call payloads, neither of
+        // which belongs in Sentry.
+        experimental_telemetry: {
+          isEnabled: true,
+          functionId: 'coachhelm.chat',
+          recordInputs: false,
+          recordOutputs: false,
         },
       });
 
@@ -487,6 +524,23 @@ export async function POST(req: NextRequest) {
         // did) over-charges every short answer several times over and
         // exhausts a coach's daily budget long before they have spent it.
         await recordTurnCost({ admin, ctx, conversationId: convId, usagePromise, grounded });
+
+        // helm.ai.* — the call reached this point, so the model responded and
+        // was billed; an ungrounded/failed-audit turn is still a successful
+        // AI SDK call (recordAi's outcome is about the call itself, not
+        // content quality — that has its own logServerEvent above).
+        // usagePromise is already settled by recordTurnCost's own await.
+        const usage = usagePromise ? await usagePromise.catch(() => null) : null;
+        recordAi({
+          feature: 'coachhelm_chat',
+          action: 'v3.chat.stream.model',
+          model: MODEL_FOR_TASK.coach_chat,
+          outcome: 'success',
+          durationMs: Date.now() - startedAt,
+          inputTokens: usage?.inputTokens,
+          outputTokens: usage?.outputTokens,
+          runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+        });
       } catch (err) {
         await logServerError(
           `chat/stream: persistence failed — ${describeError(err)}`,

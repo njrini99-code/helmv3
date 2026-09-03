@@ -96,6 +96,7 @@ import {
   Avatar,
   InlineNotice,
   fairwayToast,
+  ReportProblemButton,
 } from '@/components/fairway';
 import { SettingsToggleRow } from '@/components/fairway/settings/settings-list';
 import {
@@ -804,6 +805,21 @@ export function FairwaySettingsGeneral() {
             </span>
             <IconChevronRight size={18} className="shrink-0 text-text-tertiary" aria-hidden />
           </Link>
+        </Surface>
+
+        {/* Support */}
+        <Surface elevation="border" padding="lg">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="font-fw-sans text-body font-medium text-text-primary">
+                Report a problem
+              </p>
+              <p className="font-fw-sans text-body-sm text-text-secondary">
+                Send us what happened, right from here.
+              </p>
+            </div>
+            <ReportProblemButton />
+          </div>
         </Surface>
 
         {/* Danger zone */}

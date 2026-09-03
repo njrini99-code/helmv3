@@ -95,6 +95,7 @@ import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { isNextControlFlowError } from '@/lib/admin/observed-action';
 import type { ObservedActionContext } from '@/lib/admin/observed-action';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
+import { recordWorkflow } from '@/lib/observability/metrics';
 
 // -----------------------------------------------------------------------------
 // Public types
@@ -407,6 +408,15 @@ export function withGolfAction<TArgs extends unknown[], TResult>(
     opts;
 
   return async (...args: TArgs): Promise<TResult> => {
+    // Deliberately coarse: `helm.workflow.*` dimensioned by sport + action
+    // ONLY (feature is a fixed literal, not per-call), never round/player/
+    // team ids — this wrapper is generic across every golf action it wraps,
+    // and a per-call identity dimension would be unbounded cardinality on a
+    // Sentry-side metric index key. Classified purely on this wrapper's own
+    // throw/no-throw boundary (a returned soft-failure envelope still counts
+    // as 'success' here) — the richer soft-failure/RLS-denial distinction
+    // below is `observeActionSoftFailure`'s job, not this metric's.
+    const startedAt = Date.now();
     return Sentry.withScope(async (scope) => {
       scope.setTag('sport', 'golf');
       scope.setTag('feature_area', featureArea);
@@ -457,6 +467,14 @@ export function withGolfAction<TArgs extends unknown[], TResult>(
           teamId: logCtx.teamId,
         });
         scope.addBreadcrumb({ category: 'golf.action', message: `done ${name}`, level: 'info' });
+        recordWorkflow({
+          feature: 'golf_action',
+          action: name,
+          outcome: 'success',
+          durationMs: Date.now() - startedAt,
+          sport: 'golf',
+          runtime: process.env.NEXT_RUNTIME,
+        });
         return result;
       } catch (error) {
         // Next.js control-flow throws (redirect()/notFound()) are framework
@@ -469,6 +487,23 @@ export function withGolfAction<TArgs extends unknown[], TResult>(
         const classified = classifyThrown(error);
         const rls = typeof rlsContext === 'function' ? rlsContext(...args) : (rlsContext ?? null);
         await logGolfActionFailure(error, classified, logCtx, rls);
+        // outcome carries classifyThrown's own severity ('error'->'failure',
+        // else 'warning'/'info' as-is) rather than a flat 'failure' — the
+        // SAME expected/benign-vs-unexpected split this catch block already
+        // uses to decide sanitize-vs-rethrow, so a transient/expected throw
+        // (severity !== 'error') reads distinctly from a genuine one in the
+        // `result` dimension, even though both bucket under
+        // helm.workflow.failure at the metric-name level (recordWorkflow's
+        // own outcome!=='success' rule).
+        recordWorkflow({
+          feature: 'golf_action',
+          action: name,
+          outcome: classified.severity === 'error' ? 'failure' : classified.severity,
+          durationMs: Date.now() - startedAt,
+          sport: 'golf',
+          runtime: process.env.NEXT_RUNTIME,
+          errorCode: classified.code ?? undefined,
+        });
 
         if (toErrorResult) {
           const outMessage =

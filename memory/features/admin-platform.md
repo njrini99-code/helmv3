@@ -166,6 +166,154 @@ them would have broken those routes, not the dead one.
   nothing else. An earlier draft wrote `success`, which no other writer emits and
   every status-based filter would have missed. Both `admin_reliability_collector`
   and `admin_selfheal` write to this shared table under this vocabulary.
+  every status-based filter would have missed.
+- **As of 2026-09-02, `recordJobRun` also drives a Sentry Cron Monitor
+  check-in — a SEPARATE signal from `background_job_logs`/the Jobs board,
+  not a replacement for it.** `startCronCheckIn`/`finishCronCheckIn`
+  (`src/lib/observability/cron-monitors.ts`) wrap all 3 exit paths (success,
+  a resolved >=400 Response, a thrown error), keyed by a monitor slug
+  resolved from `CRON_REGISTRY` (`api-cron-<dashed-path>`, or
+  `job-<jobType>` for anything unregistered). This is Sentry's OWN Cron
+  Monitors feature (an external "did this heartbeat arrive on schedule"
+  alert), independent of the Jobs board's own overdue/failed
+  classification (`classifyCronStatus`) — the two can disagree (Sentry
+  alerts on a missed check-in before the Jobs board's own 1.5x-cadence
+  threshold would mark a row overdue), and that is intentional redundancy,
+  not a bug to reconcile. `automaticVercelMonitors` in
+  `src/lib/sentry-build-options.mjs` is deliberately `false` so this
+  manual, per-job check-in stays the SINGLE Cron Monitor mechanism — the
+  installed SDK's own build-time source shows the auto option would
+  build-time-inject a second, independent monitor per Vercel cron path,
+  duplicating this. Fail-open throughout: a Sentry outage never blocks or
+  fails a cron. Full job table, monitor slug conventions, and the
+  `automaticVercelMonitors:false` decision record live in
+  `docs/observability/SENTRY_CRON_MONITORS.md`. The Inngest durable-function
+  path (`withBridgeLogging`, `src/lib/inngest/functions.ts`) and the
+  launchd Repair script (`scripts/run-selfheal-repair.mjs` via
+  `scripts/lib/sentry-cron-checkin.mjs`, which cannot import TS/`@/`-aliased
+  modules) get the same check-in treatment through their own call sites,
+  not through `recordJobRun`.
+- **Only a TOTALLY blind reliability run returns 503; a partially blind one
+  returns 200.** `recordJobRun` does more than write a job row on a >=400 — it
+  also calls `logServerEvent(..., 'error')`, which writes an `admin_events` row.
+  Failing the run whenever ANY arm was blind therefore produced eight error rows
+  a day, indefinitely, into `/admin/errors`, the incident feed and the nav error
+  badge. A degraded run is already reported honestly twice — the snapshot row
+  carries `status='failed'` and the tab renders a danger band naming each blind
+  source — so a red Jobs board is not worth polluting the triage queue for.
+  These behaviours are coupled with the self-feed filter: a failed run's
+  `admin_events` row is titled `Cron failed: reliability-triage`, which is
+  exactly what `collectSupabase` excludes. Do not change one without the other.
+- **Evidence references carry their source; they are never paired by index.**
+  A `CorrelatedSignal`'s `sources[]` and its evidence list dedupe on different
+  keys, so their indices do not correspond — one source contributing two refs
+  shifts every later index and misattributes the rest. Evidence is
+  `Array<{source, ref}>` for that reason, and `evidenceTarget` needs the source
+  to decide whether a ref is a Sentry permalink, a Bridge drill-through, or
+  opaque text.
+- **Error resolution belongs to the FINGERPRINT, not the row.**
+  `public.admin_error_resolutions` (applied 2026-08-27) records what fixed a
+  fault: PR, merge SHA, who decided (`auto` cron vs `manual` operator), and
+  whether it has regressed. `admin_events.resolved` stays per-row and is not a
+  substitute — with it alone, a fixed fault's next occurrence is a new
+  unresolved row, indistinguishable from a regression.
+- **An archived fault must come back if it recurs.** "Never show it again" is
+  correct only until the fault returns after its fix shipped; that is a
+  REGRESSION and the most valuable signal this system produces. Nothing is
+  deleted and archiving is a read-time join, so dropping the table makes every
+  incident reappear — the correct failure direction for a feature whose job is
+  hiding things. `reopened_count` survives a re-resolve, so "fixed three times
+  already" cannot be laundered.
+- **A regression whose analysis already says NOT A DEFECT is expected
+  recurrence, not a regression.** `deriveLifecycle` rule 1
+  (`src/lib/admin/incidents/lifecycle.ts`) checks `analysis?.category ===
+  'not-a-defect'` before returning `'regressed'` — the analysis already
+  explained why this fingerprint fires (e.g. an access denial that is
+  SUPPOSED to keep happening), so its recurrence is not new information and
+  must not re-alarm an operator with the single loudest signal this system
+  produces. Lands in the dedicated `'expected-recurrence'` lifecycle state
+  (`INCIDENT_LIFECYCLE_STATES`) instead — distinct from the pre-existing
+  `'not-a-defect'` state, which is the classifier's verdict (`!actionable`)
+  and never had a resolution to regress from in the first place; keeping
+  them separate lets a lens count "this specifically recurred after being
+  fixed" apart from "this was never a defect". Neutral tone, not danger; not
+  in `NEEDS_ATTENTION_STATES` (so the REGRESSION-specific alarm is gone);
+  treated as `offLoop('done', …)` by `selfheal-flow.ts`, same as
+  `not-a-defect`; excluded from the `actionable` lens and the Truth Strip's
+  `actionable` count, same as `not-a-defect`. The `regressions` lens
+  (`incident.lifecycle.state === 'regressed'`) needed no change — the state
+  itself no longer produces `'regressed'` for these, so the exclusion is
+  automatic — and a new `expected-recurrence` lens counts them apart.
+  **It IS still in `attention.ts`'s `UNRESOLVED_STATES`**, deliberately unlike
+  `not-a-defect` — an LLM-authored "NOT A DEFECT" `suggestedFix` string must
+  never be able to silence a CRITICAL, still-unresolved fault outright; only
+  the specific "this is a regression" alarm it was wrong about is what goes
+  quiet. Rule 2 (critical) still fires for one, same as any other open state.
+- **Auto-resolution requires a production DEPLOY after the last occurrence, not
+  merely silence.** A nightly cron is silent 23 hours a day and a seasonal
+  feature for months. When the deploy timestamp is unreadable, nothing is
+  auto-resolved and the plan states why. The cron's inference never overwrites
+  an operator's `manual` resolution.
+- **`shipStatus` has three outcomes, not two.** `unknown` exists because Vercel
+  can be unreachable; rendering that as `pending` tells an operator their fix
+  has not shipped when the truth is that we could not find out.
+- **A discarded rejection reason is an invisible outage.** `Promise.allSettled`
+  callers must capture WHY a task rejected, not just count it — the reason is
+  the only thing that answers "what is wrong". See
+  INC-2026-08-27: a counter-only handler let a cron fail for two days while
+  `background_job_logs` recorded 72 consecutive `completed` runs. Reasons
+  written into a cron response must be SCALARS: `recordJobRun`'s
+  `extractOutcomeMetadata` keeps only top-level scalars and silently drops
+  arrays.
+- **A source that could not be read is never reported as zero problems.** The
+  reliability collector's arms each return `{status, reason, signals}`, and the
+  run's status is the WORST arm — so a run whose Sentry token is missing writes
+  `status='failed'` and the Bridge renders a danger band, not a green tick. An
+  arm that returned `[]` on failure would be indistinguishable from a healthy
+  arm finding nothing, which inverts the meaning of the entire tab. This is the
+  OS contract's "never error→[]" rule; `worstStatus` is the single function
+  enforcing it and it is covered red/green.
+- **The reliability collector must never read its own emissions.** It is a cron
+  that reads the table crons write failures to, so without exclusions one failed
+  run becomes a signal, becomes a triage item, becomes another error row — a
+  loop that manufactures work from its own failure. `collectSupabase` filters
+  out `event_type='rca_analysis'` AND any row naming `reliability-triage`. This
+  is the same shape as the `rca_analysis` bug above, which is why the fix is the
+  same fix; do not remove either filter.
+- **Cross-source correlation drops severity from the key, and must.**
+  `buildIncidentSignature` folds severity INTO its key
+  (`severity::errorCode::route::messagePrefix`), which is right for its original
+  callers — they group rows arriving from one source through one writer. It is
+  wrong across sources: Sentry rates as `error` plenty of conditions this app
+  logs to `admin_events` as `warning`, so the severity-bearing key splits one
+  root cause into two entries and the "confirmed by N sources" badge never
+  fires. `correlationSignature` in `src/lib/reliability/normalize.ts` therefore
+  calls the same function with a FIXED severity and lets `pickWorseSeverity`
+  carry severity across the fold instead.
+  Be precise about what this shares with the other views, because the looser
+  claim rots: the reliability tab reuses the **normalisation** — and therefore
+  the notion of what counts as the same failure — but its signature value is
+  **not** equal to the row's stored `admin_events.fingerprint`, which was
+  computed with that row's real severity. Within the Supabase arm, rows are
+  still pre-grouped on the stored fingerprint before correlation runs.
+- **One incident model, derived at read time, never stored.**
+  `src/lib/admin/incidents/` folds the app fingerprint bucket, the Sentry
+  issue, the reliability `CorrelatedSignal` and the `rca_analysis` row into a
+  single `UnifiedIncident`. It is a READ MODEL: there is no `admin_incidents`
+  table and no persisted `lifecycleState`, because lifecycle and proof are
+  functions of evidence that changes underneath them (a PR merges, production
+  rolls forward, a fault recurs) and a stored string would outrank live
+  evidence. The layering is `existing readers -> correlate -> lifecycle+proof
+  -> UnifiedIncident[]`; every derivation is a pure function unit-tested with
+  no I/O. If persistence is ever added, persist durable EVENTS, never the
+  derived state.
+- **An incident's id is the key that was already stored under it.** In
+  priority order: an `admin_events` fingerprint, then `rel:<signature>`, then
+  `sentry:<issueId>`. That order is not cosmetic — `rca_analysis` rows,
+  `/admin/errors/<id>` links and repair PR bodies all address exactly these
+  strings, so a synthetic key would break every artefact the self-healing loop
+  has already written. `fetchIncidentById` also matches on any fingerprint an
+  incident folded, so links written before correlation still resolve.
 - **`unknown` is a state, and nothing may collapse it into a healthy value.**
   A CI check read that failed is `unknown`, never `pending` — pending reads as
   orderly progress. An unreadable deploy leaves an incident `merged`, never

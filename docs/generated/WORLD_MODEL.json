@@ -93,6 +93,13 @@
         "status": "active"
       },
       {
+        "id": "observability_sentry",
+        "name": "Sentry Observability — Telemetry Vocabulary",
+        "criticality": "medium",
+        "owner": "platform",
+        "status": "active"
+      },
+      {
         "id": "player_coachhelm_development",
         "name": "Player CoachHelm And Development",
         "criticality": "high",
@@ -1390,6 +1397,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/instrumentation*.ts",
+        "pattern": "src/instrumentation*.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/admin/**",
         "pattern": "src/lib/admin/**",
         "category": "services"
@@ -1677,6 +1689,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/lib/observability/__tests__/**",
+        "pattern": "src/lib/observability/__tests__/**",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/test/api/calendar/**",
         "pattern": "src/test/api/calendar/**",
         "category": "tests"
@@ -1779,6 +1796,11 @@
       {
         "id": "tests:src/test/lib/push-registration-pending-token.test.ts",
         "pattern": "src/test/lib/push-registration-pending-token.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/test/observability/**",
+        "pattern": "src/test/observability/**",
         "category": "tests"
       },
       {
@@ -4497,12 +4519,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 174
+          "line": 302
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 379
+          "line": 322
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-platform.md",
+          "line": 527
         },
         {
           "kind": "import_graph",
@@ -4616,7 +4643,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 173
+          "line": 321
         }
       ]
     },
@@ -4643,12 +4670,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 183
+          "line": 331
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 265
+          "line": 413
         },
         {
           "kind": "import_graph",
@@ -4668,7 +4695,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/admin/__tests__/rca.test.ts",
-          "line": 18
+          "line": 22
         },
         {
           "kind": "import_graph",
@@ -5448,6 +5475,33 @@
     },
     {
       "source": "admin_platform",
+      "target": "observability_sentry",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/__tests__/schedule-bridge-write.test.ts",
+          "line": 16
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/job-log.ts",
+          "line": 5
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/schedule-bridge-write.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/reliability/normalize.ts",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "player_hub",
       "kind": "feature_relation",
       "evidence": [
@@ -5844,28 +5898,6 @@
     },
     {
       "source": "admin_platform",
-      "target": "shot_tracking",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/__tests__/schedule-bridge-write.test.ts",
-          "line": 16
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/schedule-bridge-write.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/normalize.ts",
-          "line": 11
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
       "target": "tests:src/app/admin/__tests__/**",
       "kind": "feature_test",
       "evidence": [
@@ -6170,6 +6202,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/rca.ts",
+          "line": 23
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/selfheal-registry.ts",
           "line": 39
         }
@@ -6218,6 +6255,18 @@
           "kind": "import_graph",
           "path": "src/lib/admin/triage-collect.ts",
           "line": 17
+        }
+      ]
+    },
+    {
+      "source": "admin_selfheal",
+      "target": "observability_sentry",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/rca.ts",
+          "line": 22
         }
       ]
     },
@@ -6762,6 +6811,28 @@
     },
     {
       "source": "auth_onboarding_join",
+      "target": "observability_sentry",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/auth.ts",
+          "line": 38
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/supabase-rate-limit.ts",
+          "line": 23
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/supabase/middleware.ts",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
       "target": "roster_team",
       "kind": "feature_relation",
       "evidence": [
@@ -6834,23 +6905,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/supabase/**"
-        }
-      ]
-    },
-    {
-      "source": "auth_onboarding_join",
-      "target": "shot_tracking",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/lib/auth/supabase-rate-limit.ts",
-          "line": 23
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/supabase/middleware.ts",
-          "line": 6
         }
       ]
     },
@@ -7083,7 +7137,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/baseball/__tests__/with-baseball-action-observability.test.ts",
-          "line": 68
+          "line": 71
         },
         {
           "kind": "import_graph",
@@ -9648,6 +9702,18 @@
           "kind": "source_reference",
           "path": "src/lib/baseball/operational-rule-engine.ts",
           "line": 465
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "observability_sentry",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/baseball/with-baseball-action.ts",
+          "line": 96
         }
       ]
     },
@@ -12841,22 +12907,22 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 38
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
-          "line": 39
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
           "line": 40
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
           "line": 41
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 42
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 43
         },
         {
           "kind": "import_graph",
@@ -12891,12 +12957,12 @@
         {
           "kind": "import_graph",
           "path": "src/lib/golf/__tests__/with-golf-action.test.ts",
-          "line": 43
+          "line": 46
         },
         {
           "kind": "import_graph",
           "path": "src/lib/golf/__tests__/with-golf-action.test.ts",
-          "line": 44
+          "line": 47
         },
         {
           "kind": "import_graph",
@@ -13020,12 +13086,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 43
+          "line": 45
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 49
+          "line": 51
         },
         {
           "kind": "import_graph",
@@ -13237,6 +13303,43 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "observability_sentry",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 31
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 32
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 33
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 57
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/schedule-vision.ts",
+          "line": 30
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/with-golf-action.ts",
+          "line": 98
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
@@ -13380,7 +13483,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7169
+          "line": 7171
         }
       ]
     },
@@ -13422,23 +13525,6 @@
     },
     {
       "source": "golf_round_lifecycle",
-      "target": "shot_tracking",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
-          "line": 31
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
-          "line": 55
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
       "target": "stats_analytics",
       "kind": "feature_relation",
       "evidence": [
@@ -13472,12 +13558,12 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2320
+          "line": 2322
         },
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2554
+          "line": 2556
         }
       ]
     },
@@ -13770,6 +13856,160 @@
         {
           "kind": "registry_glob",
           "path": "config/launchd/com.helm.bridge-rca-repair.plist"
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "admin_platform",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/observability/cron-monitors.ts",
+          "line": 58
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/observability/helm-flight-recorder.ts",
+          "line": 4
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/observability/register-process-error-handlers.ts",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "auth_onboarding_join",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/observability-sentry.md",
+          "line": 181
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "coachhelm_ai",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/observability-sentry.md",
+          "line": 176
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "golf_round_lifecycle",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/observability-sentry.md",
+          "line": 159
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "helm_debug_finalize_trace",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/observability/helm-flight-recorder.ts",
+          "line": 138
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "helm_debug_record_trace_step",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/observability/helm-flight-recorder.ts",
+          "line": 130
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "helm_debug_start_trace",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/observability/helm-flight-recorder.ts",
+          "line": 124
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "services:src/instrumentation*.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/instrumentation*.ts"
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "services:src/lib/observability/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/observability/**"
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "shot_tracking",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/observability-sentry.md",
+          "line": 159
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "tests:src/lib/observability/__tests__/**",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/observability/__tests__/**"
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "tests:src/test/observability/**",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/test/observability/**"
         }
       ]
     },
@@ -14597,6 +14837,18 @@
           "kind": "registry_declaration",
           "path": "memory/registry.yml",
           "pattern": "observability.feature_keys"
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
+      "target": "observability_sentry",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/llm/compose.ts",
+          "line": 51
         }
       ]
     },
@@ -16297,16 +16549,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-drafts.ts",
           "line": 8
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/observability/helm-flight-recorder.ts",
-          "line": 4
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/observability/register-process-error-handlers.ts",
-          "line": 3
         }
       ]
     },
@@ -16417,42 +16659,6 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260825200811_helm_flight_recorder.sql"
-        }
-      ]
-    },
-    {
-      "source": "shot_tracking",
-      "target": "helm_debug_finalize_trace",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/lib/observability/helm-flight-recorder.ts",
-          "line": 135
-        }
-      ]
-    },
-    {
-      "source": "shot_tracking",
-      "target": "helm_debug_record_trace_step",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/lib/observability/helm-flight-recorder.ts",
-          "line": 127
-        }
-      ]
-    },
-    {
-      "source": "shot_tracking",
-      "target": "helm_debug_start_trace",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/lib/observability/helm-flight-recorder.ts",
-          "line": 121
         }
       ]
     },
