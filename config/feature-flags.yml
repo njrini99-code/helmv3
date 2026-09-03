@@ -110,3 +110,40 @@ flags:
       PR's scope. A future session may wire src/lib/coachhelm/v2/gate.ts
       through isFlagEnabled('coachhelm_v2_availability') as a small,
       independent follow-up.
+
+  # Phase J remainder (docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md
+  # §6 J.4.2). Owner decision: ADR 2026-09-03-control-plane-owner-decisions.md
+  # (VERIFICATION_ENSEMBLE_MODEL_COST = "No cost" — same Anthropic account,
+  # no second provider, no recurring spend; runs only when explicitly
+  # invoked, never on a schedule). Wired: src/lib/admin/ensemble/
+  # verification-ensemble.ts checks isFlagEnabled('verification_ensemble')
+  # before its first model call and is proven inert when off
+  # (src/lib/admin/ensemble/__tests__/verification-ensemble.test.ts asserts
+  # zero generateObject calls with the flag off).
+  - feature_id: verification_ensemble
+    owner: platform (Bridge)
+    purpose: >-
+      Runs a multi-pass adversarial/security/product review chain over an
+      already-produced root-cause analysis before it reaches the repair
+      queue; default off, no recurring cost.
+    type: operations_kill_switch
+    status: active
+    created_at: "2026-09-03"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: >-
+      Off (the default everywhere): runVerificationEnsemble returns
+      status: 'disabled' immediately, before resolving a model provider or
+      calling generateObject — zero additional model calls beyond today's
+      single Diagnose call. On: adds up to four more model calls
+      (ADVERSARY, conditional SECURITY, PRODUCT, JUDGE) per invocation, on
+      the same Anthropic account Diagnose already uses. Changed by editing
+      this file's environment block and running npm run flags:generate;
+      auditable via git history on config/feature-flags.yml.
+    cleanup_plan: >-
+      No planned removal — permanent ops lever gating a genuinely optional
+      verification pass, not a migration bridge.

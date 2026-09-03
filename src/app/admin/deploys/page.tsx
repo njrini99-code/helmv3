@@ -17,6 +17,7 @@ import { ShowMoreList } from './_components/ShowMoreList';
 import { ReleaseLedger } from './_components/ReleaseLedger';
 import { fetchReleaseRunway } from '@/lib/admin/triage/release-runway';
 import { ReleaseRunwayStrip } from '@/components/admin/triage/ReleaseRunwayStrip';
+import { ReleaseIntelPanel } from './_components/ReleaseIntelPanel';
 
 /** Phone card list (below `md`) shows this many deploys before "Show more" —
  *  keeps the default view inside the ~3-screen-height scroll budget (Mobile
@@ -410,6 +411,15 @@ export default async function DeploysPage() {
         <div className="mt-3">
           <PanelBoundary title="Release runway" skeleton={<SkeletonList rows={3} />}>
             <ReleaseRunwaySection />
+          </PanelBoundary>
+        </div>
+      </Surface>
+
+      <Surface padding="sm">
+        <SectionLabel>Release intelligence</SectionLabel>
+        <div className="mt-3">
+          <PanelBoundary title="Release intelligence" skeleton={<SkeletonList rows={4} />}>
+            <ReleaseIntelPanel />
           </PanelBoundary>
         </div>
       </Surface>

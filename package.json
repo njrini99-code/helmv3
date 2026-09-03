@@ -120,7 +120,9 @@
     "worktrees:retire": "node scripts/worktree-lifecycle.mjs --retire",
     "workspace:clean": "node scripts/workspace-clean.mjs",
     "workspace:clean:apply": "node scripts/workspace-clean.mjs --apply",
-    "release:status": "node scripts/release-status.mjs"
+    "release:status": "node scripts/release-status.mjs",
+    "release:rollback-check": "tsx scripts/release-intel/evaluate-rollback.ts",
+    "risk:score": "tsx scripts/release-intel/score-change.ts"
   },
   "keywords": [],
   "author": "",

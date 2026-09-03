@@ -23,13 +23,6 @@
         "status": "active"
       },
       {
-        "id": "admin_replay_lab",
-        "name": "Admin Replay Lab",
-        "criticality": "medium",
-        "owner": "platform",
-        "status": "active"
-      },
-      {
         "id": "admin_selfheal",
         "name": "Admin Self-Heal",
         "criticality": "high",
@@ -548,11 +541,6 @@
         "category": "components"
       },
       {
-        "id": "components:src/components/admin/command-deck/**",
-        "pattern": "src/components/admin/command-deck/**",
-        "category": "components"
-      },
-      {
         "id": "components:src/components/admin/lenses/**",
         "pattern": "src/components/admin/lenses/**",
         "category": "components"
@@ -560,11 +548,6 @@
       {
         "id": "components:src/components/admin/premium/**",
         "pattern": "src/components/admin/premium/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/admin/replay/**",
-        "pattern": "src/components/admin/replay/**",
         "category": "components"
       },
       {
@@ -1414,11 +1397,6 @@
         "category": "services"
       },
       {
-        "id": "services:replay/**",
-        "pattern": "replay/**",
-        "category": "services"
-      },
-      {
         "id": "services:scripts/check-feature-flags.mjs",
         "pattern": "scripts/check-feature-flags.mjs",
         "category": "services"
@@ -1446,6 +1424,11 @@
       {
         "id": "services:scripts/lib/selfheal-repair-runner.mjs",
         "pattern": "scripts/lib/selfheal-repair-runner.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/release-intel/**",
+        "pattern": "scripts/release-intel/**",
         "category": "services"
       },
       {
@@ -1489,6 +1472,21 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/admin/autonomy/**",
+        "pattern": "src/lib/admin/autonomy/**",
+        "category": "services"
+      },
+      {
+        "id": "services:src/lib/admin/causal/**",
+        "pattern": "src/lib/admin/causal/**",
+        "category": "services"
+      },
+      {
+        "id": "services:src/lib/admin/ensemble/**",
+        "pattern": "src/lib/admin/ensemble/**",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/admin/incident-*.ts",
         "pattern": "src/lib/admin/incident-*.ts",
         "category": "services"
@@ -1504,8 +1502,8 @@
         "category": "services"
       },
       {
-        "id": "services:src/lib/admin/replay/**",
-        "pattern": "src/lib/admin/replay/**",
+        "id": "services:src/lib/admin/release-intel/**",
+        "pattern": "src/lib/admin/release-intel/**",
         "category": "services"
       },
       {
@@ -1776,8 +1774,23 @@
         "category": "tests"
       },
       {
-        "id": "tests:src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts",
-        "pattern": "src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts",
+        "id": "tests:src/lib/admin/autonomy/__tests__/**",
+        "pattern": "src/lib/admin/autonomy/__tests__/**",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/admin/causal/__tests__/**",
+        "pattern": "src/lib/admin/causal/__tests__/**",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/admin/ensemble/__tests__/**",
+        "pattern": "src/lib/admin/ensemble/__tests__/**",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/admin/release-intel/__tests__/**",
+        "pattern": "src/lib/admin/release-intel/__tests__/**",
         "category": "tests"
       },
       {
@@ -3158,7 +3171,7 @@
       },
       {
         "id": "record_db_error_event",
-        "definedIn": "supabase/migrations/20260903193000_helm_debug_error_events_individual_rows.sql"
+        "definedIn": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
       },
       {
         "id": "record_db_health_sample",
@@ -4737,76 +4750,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/__tests__/decisions.test.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/__tests__/fixtures.ts",
-          "line": 8
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/__tests__/fixtures.ts",
-          "line": 9
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/__tests__/fixtures.ts",
-          "line": 10
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/__tests__/posture.test.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/decisions.ts",
-          "line": 30
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/orbit.ts",
-          "line": 12
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/posture.ts",
-          "line": 22
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/posture.ts",
-          "line": 23
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/posture.ts",
-          "line": 24
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/release-wake.ts",
-          "line": 20
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/release-wake.ts",
-          "line": 26
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/selfheal-circuit.ts",
-          "line": 21
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/types.ts",
-          "line": 19
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/admin/data/capture-quality.ts",
           "line": 6
         },
@@ -5035,26 +4978,6 @@
           "kind": "import_graph",
           "path": "src/lib/admin/__tests__/triage-engine.test.ts",
           "line": 16
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/__tests__/selfheal-circuit.test.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/__tests__/selfheal-circuit.test.ts",
-          "line": 4
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/selfheal-circuit.ts",
-          "line": 22
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/command-deck/selfheal-circuit.ts",
-          "line": 24
         },
         {
           "kind": "import_graph",
@@ -5368,7 +5291,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/admin/data/briefing.ts",
-          "line": 4
+          "line": 3
         },
         {
           "kind": "import_graph",
@@ -5481,7 +5404,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 907
+          "line": 805
         },
         {
           "kind": "import_graph",
@@ -5533,18 +5456,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/admin/crm/components/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "components:src/components/admin/command-deck/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/admin/command-deck/**"
         }
       ]
     },
@@ -5821,7 +5732,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/admin/data/briefing.ts",
-          "line": 9
+          "line": 8
         },
         {
           "kind": "import_graph",
@@ -6577,27 +6488,27 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 86
+          "line": 100
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 111
+          "line": 125
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 120
+          "line": 134
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 130
+          "line": 144
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 147
+          "line": 161
         }
       ]
     },
@@ -6615,6 +6526,46 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
           "line": 8
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/__tests__/rollback.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 46
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 47
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 48
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 49
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 50
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/rollback.ts",
+          "line": 18
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/types.ts",
+          "line": 14
         }
       ]
     },
@@ -6668,6 +6619,30 @@
     },
     {
       "source": "admin_reliability_collector",
+      "target": "services:scripts/release-intel/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/release-intel/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_reliability_collector",
+      "target": "services:src/lib/admin/release-intel/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/release-intel/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_reliability_collector",
       "target": "services:src/lib/reliability/**",
       "kind": "feature_service",
       "evidence": [
@@ -6679,86 +6654,14 @@
       ]
     },
     {
-      "source": "admin_replay_lab",
-      "target": "admin_selfheal",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "feature_doc_contract",
-          "path": "memory/features/admin-replay-lab.md",
-          "line": 60
-        }
-      ]
-    },
-    {
-      "source": "admin_replay_lab",
-      "target": "components:src/components/admin/replay/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/admin/replay/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_replay_lab",
-      "target": "qualifiers",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "feature_doc_contract",
-          "path": "memory/features/admin-replay-lab.md",
-          "line": 28
-        }
-      ]
-    },
-    {
-      "source": "admin_replay_lab",
-      "target": "services:replay/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "replay/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_replay_lab",
-      "target": "services:src/lib/admin/replay/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/replay/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_replay_lab",
-      "target": "shot_tracking",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "feature_doc_contract",
-          "path": "memory/features/admin-replay-lab.md",
-          "line": 28
-        }
-      ]
-    },
-    {
-      "source": "admin_replay_lab",
-      "target": "tests:src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts",
+      "source": "admin_reliability_collector",
+      "target": "tests:src/lib/admin/release-intel/__tests__/**",
       "kind": "feature_test",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts"
+          "pattern": "src/lib/admin/release-intel/__tests__/**"
         }
       ]
     },
@@ -6799,12 +6702,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 90
+          "line": 109
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 145
+          "line": 164
         },
         {
           "kind": "import_graph",
@@ -6815,6 +6718,26 @@
           "kind": "import_graph",
           "path": "src/lib/admin/auto-resolve.ts",
           "line": 135
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/causal/__tests__/causal-score.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/causal/__tests__/incident-similarity.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/causal/causal-score.ts",
+          "line": 40
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/causal/incident-similarity.ts",
+          "line": 39
         },
         {
           "kind": "import_graph",
@@ -6925,6 +6848,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/ensemble/verification-ensemble.ts",
+          "line": 61
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/ensemble/verification-ensemble.ts",
+          "line": 63
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/rca-run.ts",
           "line": 23
         },
@@ -6996,6 +6929,11 @@
       "target": "observability_sentry",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/ensemble/verification-ensemble.ts",
+          "line": 62
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/admin/rca.ts",
@@ -7113,6 +7051,42 @@
     },
     {
       "source": "admin_selfheal",
+      "target": "services:src/lib/admin/autonomy/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/autonomy/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_selfheal",
+      "target": "services:src/lib/admin/causal/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/causal/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_selfheal",
+      "target": "services:src/lib/admin/ensemble/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/ensemble/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_selfheal",
       "target": "services:src/lib/admin/rca*.ts",
       "kind": "feature_service",
       "evidence": [
@@ -7144,6 +7118,42 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/admin/triage-*.ts"
+        }
+      ]
+    },
+    {
+      "source": "admin_selfheal",
+      "target": "tests:src/lib/admin/autonomy/__tests__/**",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/autonomy/__tests__/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_selfheal",
+      "target": "tests:src/lib/admin/causal/__tests__/**",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/causal/__tests__/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_selfheal",
+      "target": "tests:src/lib/admin/ensemble/__tests__/**",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/ensemble/__tests__/**"
         }
       ]
     },
