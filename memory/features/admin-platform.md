@@ -111,6 +111,15 @@ them would have broken those routes, not the dead one.
   primitive), `db-health-delta.ts` / `query-regression.ts` (pure delta and
   regression-detection arithmetic the two health/stat collectors call). See
   `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.
+  **Phase 2 Track B (2026-09-03)** extended the SAME directory with
+  service-specific classifiers/observers for Auth, Storage, Realtime, and
+  Edge Functions, plus a pure retry/timeout/commit-outcome model — see
+  `memory/features/observability-supabase.md` for that current-state doc and
+  `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` for the full
+  design/verification writeup. Kept as a SEPARATE feature doc rather than
+  folded into this section because it is large enough (four services, its
+  own fetched-docs ledger) to need its own current-state doc; this section
+  stays the pointer, not a duplicate.
 - `src/lib/admin/database/**` — the `/admin/database` read models.
 - `scripts/janitor/**` — the Phase K.4.5 (Engineering OS Intelligence) Janitor
   entropy-report generator. Read-only: it never modifies source files, only
