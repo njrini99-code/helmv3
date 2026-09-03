@@ -214,6 +214,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/engineering/**",
+        "pattern": "src/app/admin/engineering/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/errors/**",
         "pattern": "src/app/admin/errors/**",
         "category": "routes"
@@ -281,6 +286,11 @@
       {
         "id": "routes:src/app/admin/utilization/**",
         "pattern": "src/app/admin/utilization/**",
+        "category": "routes"
+      },
+      {
+        "id": "routes:src/app/admin/work-log/**",
+        "pattern": "src/app/admin/work-log/**",
         "category": "routes"
       },
       {
@@ -5479,7 +5489,7 @@
         {
           "kind": "rpc_call",
           "path": "src/lib/admin/agent-runs/fetch.ts",
-          "line": 116
+          "line": 149
         }
       ]
     },
@@ -5491,7 +5501,7 @@
         {
           "kind": "rpc_call",
           "path": "src/lib/admin/agent-runs/fetch.ts",
-          "line": 92
+          "line": 125
         }
       ]
     },
@@ -5515,7 +5525,7 @@
         {
           "kind": "rpc_call",
           "path": "src/lib/admin/agent-runs/record.ts",
-          "line": 82
+          "line": 158
         }
       ]
     },
@@ -5751,6 +5761,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "routes:src/app/admin/engineering/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/engineering/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "routes:src/app/admin/golf/**",
       "kind": "feature_route",
       "evidence": [
@@ -5866,6 +5888,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/utilization/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "routes:src/app/admin/work-log/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/work-log/**"
         }
       ]
     },
