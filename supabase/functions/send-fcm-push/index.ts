@@ -1,4 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { initEdgeSentry, captureEdgeException } from "../_shared/sentry.ts";
+
+initEdgeSentry("send-fcm-push");
 
 /**
  * Android push transport — the FCM counterpart to `send-apns-push`.
@@ -253,6 +256,7 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("FCM push error:", error);
+    await captureEdgeException(error);
     return new Response(
       JSON.stringify({
         success: false,

@@ -1,4 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { initEdgeSentry, captureEdgeException } from "../_shared/sentry.ts";
+
+initEdgeSentry("personalize-email");
 
 interface CoachData {
   name: string;
@@ -208,6 +211,7 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("personalize-email error:", error);
+    await captureEdgeException(error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Internal error" }),
       { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }

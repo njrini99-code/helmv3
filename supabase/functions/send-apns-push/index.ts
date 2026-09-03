@@ -1,4 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { initEdgeSentry, captureEdgeException } from "../_shared/sentry.ts";
+
+initEdgeSentry("send-apns-push");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -289,6 +292,7 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("APNs push error:", error);
+    await captureEdgeException(error);
     return new Response(
       JSON.stringify({
         success: false,
