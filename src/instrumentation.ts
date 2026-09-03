@@ -49,6 +49,27 @@ const sharedIgnoreErrors = [
   // Bridge auth tab needs). Keep ONLY the routine refresh-token-expiry noise
   // suppressed; every other AuthApiError now reaches Sentry.
   /AuthApiError: Invalid Refresh Token/,
+  // A HELD migration's RPC does not exist yet, and that is a normal, recorded
+  // environment fact — not a production incident.
+  //
+  // src/lib/admin/agent-runs/fetch.ts ALREADY treats PGRST202 as
+  // `unconfigured` and renders the not-yet-live PanelNoData state, so the
+  // product behaves correctly. The event reaches Sentry anyway because the
+  // Supabase integration captures the failed call at the driver, before any
+  // application code gets to classify it. Result, first seen 46 minutes after
+  // the 2026-09-03 deploy: an unresolved issue on GET /admin/engineering
+  // re-raised by every 60s AutoRefresh poll, for a migration deliberately
+  // awaiting review.
+  //
+  // Listed BY RPC NAME rather than as a generic "Could not find the function"
+  // pattern, so this suppresses exactly the three facades whose migration
+  // (20260903150000_helm_debug_agent_runs.sql) is HELD. A LIVE helm_debug RPC
+  // that disappears — dropped, mis-granted, lost to a bad deploy — still
+  // pages, which a broad pattern would have silenced. Delete these three lines
+  // in the same change that applies that migration.
+  /Could not find the function public\.helm_debug_record_agent_run/,
+  /Could not find the function public\.helm_debug_list_agent_runs/,
+  /Could not find the function public\.helm_debug_get_agent_run/,
   /Refresh Token Not Found/,
   // Baseball expected control-flow throws. withBaseballAction already
   // classifies these as handled/expected (admin_events + Sentry warning with
