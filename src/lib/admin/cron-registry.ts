@@ -46,6 +46,9 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   // Supabase zero-cost observability Phase 1 (#1786): schedules mirror vercel.json byte-for-byte.
   { jobType: 'db-health-sampler', path: '/api/cron/db-health-sampler', cadenceMinutes: 5, schedule: '*/5 * * * *' },
   { jobType: 'db-stat-delta', path: '/api/cron/db-stat-delta', cadenceMinutes: 15, schedule: '*/15 * * * *' },
+  // Phase 2 track A3 (table health, brief §29): hourly, offset 7 minutes
+  // past the hour — vercel.json schedules this "7 * * * *".
+  { jobType: 'db-table-health', path: '/api/cron/db-table-health', cadenceMinutes: 60, schedule: '7 * * * *' },
   { jobType: 'db-observability-prune', path: '/api/cron/db-observability-prune', cadenceMinutes: DAILY, schedule: '45 4 * * *' },
   // vercel.json schedules this "0 */3 * * *" — every 3 hours, hence 180. Read
   // the refresh-engagement note above before touching either half: the cadence
