@@ -150,6 +150,17 @@ export default defineConfig({
             // accepted as a loopback suffix) both passed a grep happily.
             'scripts/lib/__tests__/seed-target-guard.test.ts',
             'scripts/repo-doctor/__tests__/repo-doctor.test.ts',
+            // Phase 3 Track E (Supabase observability certification). Named
+            // here for the same reason as every neighbour: a file under
+            // scripts/ that is NOT listed runs under nothing, and a guard that
+            // never executes is decorative. Both are failure-injection suites
+            // for their own detectors as much as for the code they check --
+            // the security one pins two measured false positives (a comment
+            // mentioning error_logs, and a getUser() call that refuses
+            // nobody), and the coverage one proves an UNKNOWN cell can never
+            // be silently upgraded to NO.
+            'scripts/lib/__tests__/db-observability-security.test.ts',
+            'scripts/lib/__tests__/db-observability-coverage.test.ts',
             // MCP deny rules vs the connector ids the session actually exposes
             // (config/mcp-connector-ids.json). Named here for the same reason as
             // its neighbours; it is the failure-injection suite for the

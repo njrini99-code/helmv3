@@ -54,6 +54,19 @@ export interface TraceStepNode {
   errorSummary: string | null;
   expected: unknown;
   observed: unknown;
+  /**
+   * The row's own `metadata` jsonb, normalized to an object (never null, so
+   * a reader never has to null-check before a lookup). Carried on the node
+   * because it is the ONLY place several per-step facts live: the JS
+   * recorder writes `sentry_trace_id`/`root_span_id` here
+   * (helm-flight-recorder.ts's `baseMetadata`), and
+   * `helm_private.trace_exception_checkpoint` writes `{sqlstate, message}`
+   * here rather than into a column. `errorCode` below already reached into
+   * it for exactly that reason; the field simply makes the same jsonb
+   * available to a reader that needs a different key out of it, instead of
+   * each one re-deriving it from a row this model has already consumed.
+   */
+  metadata: Record<string, unknown>;
   /** True when the workflow expected this step and the trace never recorded it. */
   isMissing: boolean;
   /**
@@ -174,6 +187,7 @@ function normalize(row: Record<string, unknown>): TraceStepNode | null {
     errorSummary: str(row, 'error_summary'),
     expected: row.expected ?? null,
     observed: row.observed ?? null,
+    metadata,
     isMissing: false,
     // Overwritten in buildTraceTree once the declared-key set is known.
     isUndeclared: false,
@@ -224,6 +238,9 @@ function missingNode(
     errorSummary: null,
     expected: null,
     observed: null,
+    // A step that never ran wrote no row and therefore no metadata. Empty,
+    // never null, so a reader treats it exactly like any other node's.
+    metadata: {},
     isMissing: true,
     // A synthesised node is DECLARED by construction (it comes from the
     // workflow definition itself) — the opposite condition from undeclared.

@@ -413,3 +413,77 @@
   config defect that classifies EXPECTED — a recorded false negative.
   `lib/supabase/middleware.ts` is unwired by choice (local-scope cookie
   clear, no auth-server round-trip, already self-reporting).
+
+## 2026-09-03 — Phase 3 track E: certification, replay fixtures, fault injection, security posture, coverage matrix
+
+- Branch: `agent/dbobs-p3-certification`, built on the Phase 2 integration
+  tip (Phase 1 + track A + track B). Sibling tracks' work (the platform
+  track's trace-cert script and repo-doctor module, the Bridge database
+  page) is NOT on this branch and was neither rebuilt nor modified.
+- Change: this track adds CHECKS, not observability. Six deliverables —
+  a Trace Explorer layer model with the brief's rollback banner
+  (`src/app/admin/traces/trace-explorer-layers.ts` +
+  `TraceExplorerLayerPanel.tsx`, mounted in `TraceTree.tsx`); replay
+  fixtures and a runner (`src/lib/observability/supabase/__fixtures__/`,
+  `scripts/db-observability-replay.mjs`); a certification matrix
+  (`scripts/db-observability-certify.mjs`); a fault-injection suite; a
+  static security-posture check (`scripts/db-observability-security.mjs`);
+  and a GENERATED coverage matrix
+  (`scripts/db-observability-coverage.mjs` ->
+  `docs/observability/SUPABASE_COVERAGE_MATRIX.md`, `--check` supported).
+  Full narrative in `docs/observability/SUPABASE_CERTIFICATION.md`.
+- Production-code changes are three and are all one seam:
+  `RecordDbErrorOptions.client`, threaded through `observe-result.ts` and
+  `integrity.ts` as `recorderClient`. It exists because the recorder was
+  previously testable only via `vi.mock`, and a fixture suite that can only
+  run inside one test framework cannot be run from a runbook. Production
+  call sites never pass it, so `createAdminClient()` remains the only path
+  a request takes. `trace-tree.ts` also gained one additive field
+  (`metadata`), because the step's jsonb is the only place
+  `sentry_trace_id` and the exception checkpoint's `{sqlstate}` live.
+- Why: brief §56–61 (Trace Explorer layers, replay, certification, chaos,
+  security, no generic ingest), §79 (coverage matrix), §80 (acceptance).
+- Verification: `npx tsc --noEmit -p .` clean; targeted
+  `npx eslint <changed files> --max-warnings 0` clean each time;
+  `npx vitest run src/lib/observability scripts` all green; all four new
+  scripts run and their output is recorded in the certification doc. A
+  NEGATIVE CONTROL was run on the replay suite (corrupting one expected
+  bucket and removing one sentinel from the sweep input failed exactly the
+  two tests that should have failed), so it is discriminating rather than
+  vacuous. The two `scripts/lib/__tests__` files are registered in
+  `vitest.config.ts` and were confirmed running from a `--reporter=verbose`
+  run by filename, not inferred from a passing total.
+- Bugs found in this track's OWN checks, all of the same shape and all
+  fixed: (1) a Sentry detector matched `observe-result.ts`'s doc comment
+  saying it does NOT capture, reporting the opposite of the truth — the
+  same failure the platform track hit with its live-proof regex; (2) a
+  §61 detector flagged the CRM calendar route because a COMMENT mentions
+  `error_logs`; (3) the same detector flagged an admin route that returns
+  401 without a session, because it did not distinguish reading a session
+  from enforcing one; (4) a storage-privacy assertion tested `/key/i`
+  against the error CODE, so `NoSuchKey` failed it; (5) one test passed
+  VACUOUSLY because a path helper silently returned `''` and
+  `not.toContain` is true of the empty string. Every source-pattern check
+  now strips comments and carries a positive control.
+- Findings reported, NOT papered over: `buildSupabaseFingerprint` ignores
+  `action`, so two actions on one relation with one code share a dedupe
+  key; and in `observe-result.ts` the durable write sits downstream of the
+  metric call, so a throwing metrics emit would suppress the durable
+  evidence (not reachable today — `metrics.ts` guards its own emits — but
+  the ordering consequence is pinned by a test). Neither was changed:
+  both are behaviour changes to contracts other tracks depend on.
+- Not verified / open: every migration in this program is HELD and
+  unapplied, so every claim about a durable ROW (persistence,
+  occurrence_count collapsing, rollback survival, rows/day, table sizes)
+  is NOT VERIFIED — the DISPATCH is exercised, the row is not. Sentry and
+  Bridge routing for Supabase failures is static-only: it depends on
+  whether the error escapes to an action wrapper. No pgTAP suite was
+  written or run for these migrations. The live catalog is NOT_CONFIGURED
+  (no credential used, no query run). `log-error` is a pre-existing
+  anonymous ingest route lacking auth and a field allow-list — allow-listed
+  with its per-control status printed, an owner decision. Full acceptance
+  table in `docs/observability/SUPABASE_CERTIFICATION.md` §8.
+- Cost: INCREMENTAL RECURRING OBSERVABILITY COST $0. No drain, no
+  continuous ingestion, no new vendor, no scheduled job; every script is
+  static or in-process and none opens a database connection or makes a
+  network request.
